@@ -1,5 +1,35 @@
 # @ensforge/react
 
+## 0.4.0
+
+### Minor Changes
+
+- f53985c: Default SDK instances to their own memory workflow storage, and React providers created from config
+  to lazy IndexedDB storage. Preserve caller-supplied storage and SDK instances. Keep the Effect service
+  context when adding default storage to an existing core config.
+- f1147a9: Expose HCA and workflow hooks through the existing React provider, with generic action bindings for
+  provider extensions. Add authenticated remote registration orchestration with explicit session signer
+  custody and redacted progress responses.
+
+### Patch Changes
+
+- f53985c: Preserve action parameter, success and failure types in generated named query and mutation declarations.
+- Updated dependencies [0ced8e8]
+- Updated dependencies [f53985c]
+- Updated dependencies [e48eedc]
+- Updated dependencies [41bf652]
+- Updated dependencies [0943f56]
+- Updated dependencies [b9073ba]
+- Updated dependencies [8aa0bb6]
+- Updated dependencies [0a68e20]
+- Updated dependencies [9bef00b]
+- Updated dependencies [47095d1]
+- Updated dependencies [bdf2872]
+- Updated dependencies [c1e8c43]
+- Updated dependencies [f53985c]
+  - @ensforge/core@0.4.0
+  - @ensforge/sdk@0.4.0
+
 ## 0.3.1
 
 ### Patch Changes

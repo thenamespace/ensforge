@@ -1,6 +1,6 @@
 {
   "name": "@ensforge/hca",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Typed execution adapters and persistence for ENS HCA accounts",
   "keywords": [
     "ens",

@@ -1,5 +1,56 @@
 # @ensforge/sdk
 
+## 0.4.0
+
+### Minor Changes
+
+- 0ced8e8: Support custom ENS V1 and V2 deployment profiles in Viem and Wagmi configuration. Validate chain IDs and complete contract address groups, snapshot custom deployments, and avoid inheriting preset indexer endpoints. Resolved network IDs and chain IDs now support arbitrary deployments; runtime deployment provenance is optional.
+- f53985c: Default SDK instances to their own memory workflow storage, and React providers created from config
+  to lazy IndexedDB storage. Preserve caller-supplied storage and SDK instances. Keep the Effect service
+  context when adding default storage to an existing core config.
+- e48eedc: Add HCA account inspection, EntryPoint deposits and owner-authorized withdrawals, signature verification, and upgrades with both directional gate checks. Expose factory, upgrade-gate, and trusted-set governance through hca/admin and sdk.hca.admin. Include exact deployed ABI fragments and an explicit function-coverage catalogue.
+- 0943f56: Add the optional HCA adapter package with typed execution envelopes, versioned tracking codecs,
+  review and fee policies, and capability extensions. Preserve provider submission types through the
+  SDK and add shared bounded execution waiting/watching with cancellation and receipt confirmation checks.
+
+  Reserve type-only Rhinestone and Pimlico entrypoints for the initial provider integrations.
+
+- b9073ba: Add 16 HCA account, deployment, owner-execution and tracking actions with the existing sdk.hca group.
+  Support direct atomic owner transactions and an explicit execution adapter boundary without wallet
+  fallback. Add matching execution ABI fragments, profile configuration, session revocation, and
+  validated submission tracking. Provider packages and session execution remain future work.
+- 9bef00b: Add resumable same-chain HCA registration with caller-owned revision-checked storage, explicit
+  spending limits, atomic registration and resolver grants, optional primary-name setup, and safe
+  submission reconciliation. Expose start, get, resume, and local cancellation on the existing SDK.
+- 47095d1: Add fixed-policy HCA destination sessions and a Rhinestone execution adapter. Core exposes owner
+  enablement, bounded refunds, enabled-status reads and confirmed session references. Session plans
+  validate complete calldata and reconcile expiry, replacement and nonce revocation.
+
+  The optional Rhinestone subpath requires SDK 1.8.0 with the shipped compatibility patch. It supports
+  prefunded same-chain destination execution, SDK signing, on-chain signature verification and
+  restorable public intent tracking. Hosted relayer settlement remains a release verification step.
+
+- c1e8c43: Add shared config workflow storage with memory and IndexedDB adapters, generated workflow IDs,
+  automatic unfinished-operation recovery, transaction checkpoints, and workflow inspection and
+  reconciliation. Preserve explicit resume and legacy HCA storage while allowing HCA registration
+  and independent Rhinestone funding to use config storage.
+
+### Patch Changes
+
+- Updated dependencies [0ced8e8]
+- Updated dependencies [e48eedc]
+- Updated dependencies [41bf652]
+- Updated dependencies [0943f56]
+- Updated dependencies [b9073ba]
+- Updated dependencies [8aa0bb6]
+- Updated dependencies [0a68e20]
+- Updated dependencies [9bef00b]
+- Updated dependencies [47095d1]
+- Updated dependencies [bdf2872]
+- Updated dependencies [c1e8c43]
+- Updated dependencies [f53985c]
+  - @ensforge/core@0.4.0
+
 ## 0.3.1
 
 ### Patch Changes
