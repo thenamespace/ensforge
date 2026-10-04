@@ -149,6 +149,9 @@
   "dependencies": {
     "@ensforge/core": "workspace:*"
   },
+  "devDependencies": {
+    "viem": "catalog:"
+  },
   "peerDependencies": {
     "effect": "^4.0.0",
     "viem": "^2.56.0",

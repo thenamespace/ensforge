@@ -209,7 +209,8 @@
     "@effect/platform-node": "catalog:",
     "@graphql-codegen/cli": "catalog:",
     "@graphql-codegen/typescript-operations": "catalog:",
-    "graphql": "catalog:"
+    "graphql": "catalog:",
+    "viem": "catalog:"
   },
   "peerDependencies": {
     "effect": "^4.0.0",

@@ -78,7 +78,8 @@
     "happy-dom": "catalog:",
     "react": "catalog:",
     "react-dom": "catalog:",
-    "scheduler": "catalog:"
+    "scheduler": "catalog:",
+    "viem": "catalog:"
   },
   "peerDependencies": {
     "effect": "^4.0.0",
