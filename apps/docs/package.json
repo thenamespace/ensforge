@@ -24,7 +24,7 @@
     "@x402/extensions": "^2.24.0",
     "@x402/svm": "^2.24.0",
     "effect": "catalog:",
-    "posthog-js": "^1.427.2",
+    "posthog-js": "^1.435.6",
     "react": "catalog:",
     "react-dom": "catalog:",
     "tslib": "2.8.1",
