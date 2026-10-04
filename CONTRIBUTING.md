@@ -27,11 +27,12 @@ declaration files.
 ## Repository structure
 
 ```text
-apps/docs/          VitePress documentation
+apps/docs/          Vocs documentation
 packages/contracts/ ENS ABIs, fragments, interfaces, and deployments
 packages/core/      Standalone ENS actions and Effect APIs
 packages/sdk/       Config-bound, grouped SDK
 packages/react/     Providers, hooks, atoms, and cache APIs
+packages/hca/       Pimlico and Rhinestone execution adapters
 packages/test-env/  Private deterministic ENS integration environment
 packages/template/  Starter for new packages
 ```
@@ -67,11 +68,14 @@ Integration tests run against a pinned Docker image containing deterministic ENS
 deployments. Docker must be running locally.
 
 ```sh
+pnpm build:devnet
 pnpm test:integration
 ```
 
 The test environment starts once for the suite, seeds its fixtures, and resets chain state between
-tests. Normal runs pull the published image and do not build ENS contracts locally.
+tests. Local runs use the pinned local image by default. CI pulls a prebuilt image. To reuse a
+published image locally, authenticate with GHCR if needed and set `ENSFORGE_TEST_IMAGE` to its
+digest. See [test environment setup](packages/test-env/README.md).
 
 Live read-only smoke suites verify the public deployments separately. They require provider URLs and
 never submit transactions. The commands automatically load a root `.env` file when present:
@@ -93,8 +97,9 @@ ENSFORGE_SEPOLIA_V2_INDEXER_URL=https://…
 `ENSFORGE_MAINNET_V1_INDEXER_URL` remains supported as a compatibility alias.
 
 The Sepolia suite uses `ENSFORGE_SEPOLIA_V2_NAME` when set and otherwise reads the public
-`ensforge-smoke.eth` fixture tree. Run `pnpm setup:sepolia-v2` separately when that fixture needs to
-be created or refreshed.
+configured fixture tree. Follow the [Sepolia deployment guide](https://ensforge.com/core/guides/sepolia-deployment)
+when creating your own fixtures. `pnpm setup:sepolia-v2` previews the setup; `pnpm setup:docs-sepolia`
+applies it and sends transactions. Use a dedicated test wallet and never commit its keys.
 
 When adding an action, cover domain logic with focused unit tests and contract behavior with an
 integration test when the behavior depends on deployed bytecode or chain state. Use `@effect/vitest`
@@ -122,8 +127,19 @@ fix(react): preserve mutation failure state
 docs(sdk): explain Wagmi configuration
 ```
 
-A pull request should explain the behavior being changed, include appropriate tests, and pass CI.
-Avoid unrelated refactors in the same change.
+A pull request should explain the behavior being changed and include appropriate tests. Avoid
+unrelated refactors in the same change. Changes to `main` require one code-owner approval from
+@envoy1084. The maintainer bypass team lets the sole maintainer integrate their own changes.
+Force pushes and deletion of `main` remain blocked, including for that team.
+
+The full CI suite is manually dispatched by a maintainer before release; it is not a required PR
+status check. CodeQL and dependency review run separately as security checks. Contributors should
+run the relevant local checks and report their results in the PR. Dependency updates, especially
+wallet, signing, and account-abstraction libraries, require review and are not automatically merged.
+
+Do not add live wallet keys or provider credentials to PR workflows. Report vulnerabilities through
+[private security reporting](https://github.com/thenamespace/ensforge/security/advisories/new), not
+public issues. See [SECURITY.md](SECURITY.md) for the reporting policy.
 
 ## Changesets
 
@@ -135,7 +151,7 @@ pnpm changeset
 
 Choose the affected packages and describe the change from a package user's perspective. The public
 packages use a fixed version group, so Changesets releases `@ensforge/contracts`, `@ensforge/core`,
-`@ensforge/sdk`, and `@ensforge/react` together. Tests, documentation-only changes, and private
+`@ensforge/sdk`, `@ensforge/react`, and `@ensforge/hca` together. Tests, documentation-only changes, and private
 workspace packages generally do not require a changeset.
 
 ## License

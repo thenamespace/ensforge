@@ -1,0 +1,42 @@
+name: Bug report
+description: Report a reproducible problem with ensforge.
+body:
+  - type: markdown
+    attributes:
+      value: |
+        For vulnerabilities, use private reporting in the Security tab. Never paste private keys,
+        session keys, provider API keys, or authenticated RPC URLs.
+  - type: input
+    id: versions
+    attributes:
+      label: Packages and versions
+      description: Include the ensforge packages and Effect, Viem, or provider SDK versions involved.
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      description: Runtime or browser, chain ID, protocol version, and built-in or custom deployment.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction
+      description: Provide minimal code or a repository link and the steps to reproduce.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+      description: Include redacted errors or logs where useful.
+    validations:
+      required: true

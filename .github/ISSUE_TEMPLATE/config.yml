@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Report a security vulnerability
+    url: https://github.com/thenamespace/ensforge/security/advisories/new
+    about: Report vulnerabilities privately. Do not include exploit details in public issues.
+  - name: Questions and discussions
+    url: https://github.com/thenamespace/ensforge/discussions
+    about: Ask usage questions or discuss an idea before proposing a change.

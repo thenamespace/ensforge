@@ -1,0 +1,22 @@
+name: Feature request
+description: Propose a change that helps an application or integration.
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: Describe what you are trying to do and what currently prevents it.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed behavior
+      description: Include an example API or user flow if helpful.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives and compatibility
+      description: Mention existing workarounds and any effects on current APIs or deployments.
