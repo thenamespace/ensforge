@@ -38,7 +38,7 @@
     "@ensforge/test-env": "workspace:*",
     "@rhinestone/sdk": "1.8.0",
     "@tailwindcss/vite": "4.3.3",
-    "@types/node": "24.13.3",
+    "@types/node": "26.6.3",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
     "permissionless": "0.4.0",
