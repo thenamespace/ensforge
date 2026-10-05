@@ -76,7 +76,8 @@
   },
   "devDependencies": {
     "@rhinestone/sdk": "1.8.0",
-    "permissionless": "0.4.0"
+    "permissionless": "0.4.0",
+    "viem": "catalog:"
   },
   "peerDependencies": {
     "@rhinestone/sdk": "1.8.0",
