@@ -1,6 +1,6 @@
 {
   "name": "@ensforge/sdk",
-  "version": "0.6.0",
+  "version": "0.6.1",
   "description": "A type-safe TypeScript SDK for ENS",
   "keywords": [
     "ens",

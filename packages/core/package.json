@@ -1,6 +1,6 @@
 {
   "name": "@ensforge/core",
-  "version": "0.6.0",
+  "version": "0.6.1",
   "description": "Type-safe actions and utilities for ENS",
   "keywords": [
     "ens",

@@ -1,6 +1,6 @@
 {
   "name": "@ensforge/contracts",
-  "version": "0.6.0",
+  "version": "0.6.1",
   "description": "Type-safe contract ABIs, deployment addresses, and interfaces for ENS",
   "keywords": [
     "abi",
