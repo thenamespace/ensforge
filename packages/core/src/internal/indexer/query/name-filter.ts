@@ -56,7 +56,6 @@ const sharedWhere = (filter: NameFilter): Record<string, unknown> => {
     ...(filter.resolvedAddress === undefined
       ? {}
       : { resolvedAddress: filter.resolvedAddress.toLowerCase() }),
-    ...(filter.migrated === undefined ? {} : { isMigrated: filter.migrated }),
   };
 };
 
@@ -73,15 +72,11 @@ const validateExpiryRange = (filter: NameFilter) => {
   }
 };
 
-export const compileV1NameFilter = (
-  filter: NameFilter,
-  options: { readonly excludeMigrated?: boolean } = {},
-): CompiledNameFilter<V1NameWhere> => {
+export const compileV1NameFilter = (filter: NameFilter): CompiledNameFilter<V1NameWhere> => {
   validateExpiryRange(filter);
 
   return {
-    excludesSource:
-      filter.protocol === "v2" || (options.excludeMigrated === true && filter.migrated === true),
+    excludesSource: filter.protocol === "v2" || filter.migrated === true,
     requiresPostFilter: false,
     where: {
       ...sharedWhere(filter),
@@ -96,11 +91,14 @@ export const compileV1NameFilter = (
       ...(filter.resolver === undefined
         ? {}
         : { resolver_: { address: filter.resolver.toLowerCase() } }),
-      ...(filter.expiryAfter === undefined ? {} : { expiryDate_gt: filter.expiryAfter.toString() }),
+      ...(filter.expiryAfter === undefined
+        ? {}
+        : {
+            and: [{ or: [{ expiryDate: null }, { expiryDate_gt: filter.expiryAfter.toString() }] }],
+          }),
       ...(filter.expiryBefore === undefined
         ? {}
         : { expiryDate_lt: filter.expiryBefore.toString() }),
-      ...(options.excludeMigrated === true ? { isMigrated: false } : {}),
     },
   };
 };
@@ -119,12 +117,13 @@ export const compileV2NameFilter = (filter: NameFilter): CompiledNameFilter<V2Na
 
   return {
     excludesSource: false,
-    requiresPostFilter: filter.protocol !== undefined,
+    // DomainFilter has no null-expiry predicate. Keep those rows and filter locally.
+    requiresPostFilter: filter.protocol !== undefined || filter.expiryAfter !== undefined,
     where: {
       ...sharedWhere(filter),
       ...(filter.owner === undefined ? {} : { owner: filter.owner.toLowerCase() }),
       ...(filter.resolver === undefined ? {} : { resolver: filter.resolver.toLowerCase() }),
-      ...(filter.expiryAfter === undefined ? {} : { expiryDate_gt: Number(filter.expiryAfter) }),
+      ...(filter.migrated === undefined ? {} : { isMigrated: filter.migrated }),
       ...(filter.expiryBefore === undefined ? {} : { expiryDate_lt: Number(filter.expiryBefore) }),
       ...(filter.includeUnreachable === true ? { includeUnreachable: true } : {}),
     },
@@ -165,7 +164,8 @@ export const matchesNameFilter = (name: IndexedName, filter: NameFilter): boolea
 
   if (filter.migrated !== undefined && name.isMigrated !== filter.migrated) return false;
 
-  if (filter.expiryAfter !== undefined && (name.expiry ?? -1n) <= filter.expiryAfter) return false;
+  if (filter.expiryAfter !== undefined && name.expiry !== null && name.expiry <= filter.expiryAfter)
+    return false;
 
   if (filter.expiryBefore !== undefined && (name.expiry ?? 1n << 256n) >= filter.expiryBefore) {
     return false;

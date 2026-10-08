@@ -93,9 +93,7 @@ const getNamesEffect = Effect.fn("ensforge.getNames")(function* (
 
   const compiled = yield* Effect.try({
     try: () => ({
-      v1: compileV1NameFilter(filter, {
-        excludeMigrated: getIndexerRuntimeConfig(config.indexer).sourceStates.v2 === "enabled",
-      }),
+      v1: compileV1NameFilter(filter),
       v2: compileV2NameFilter(filter),
     }),
     catch: (error) => error as IndexerFilterError,
@@ -111,7 +109,7 @@ const getNamesEffect = Effect.fn("ensforge.getNames")(function* (
       exhausted:
         states.v2 !== "enabled" ||
         compiled.v2.excludesSource ||
-        (filter.protocol === "v1" && states.v1 === "enabled"),
+        (filter.protocol === "v1" && states.v1 === "enabled" && !compiled.v1.excludesSource),
     },
   };
 

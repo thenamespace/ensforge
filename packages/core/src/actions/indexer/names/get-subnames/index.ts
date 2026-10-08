@@ -104,7 +104,7 @@ const getSubnamesEffect = Effect.fn("ensforge.getSubnames")(function* (
 
   const compiled = yield* Effect.try({
     try: () => ({
-      v1: compileV1NameFilter(filter, { excludeMigrated: states.v2 === "enabled" }),
+      v1: compileV1NameFilter(filter),
       v2: compileV2NameFilter(filter),
     }),
     catch: (error) => error as IndexerFilterError,
@@ -144,6 +144,7 @@ const getSubnamesEffect = Effect.fn("ensforge.getSubnames")(function* (
               config,
               parent,
               compiled.v2.where,
+              filter,
               order,
               pageSize,
               positions.v2.position,
