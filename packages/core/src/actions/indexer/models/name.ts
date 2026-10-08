@@ -59,6 +59,7 @@ const commonNameFields = {
   createdAt: Schema.BigInt,
   expiry: Schema.NullOr(Schema.BigInt),
   subnameCount: NonNegativeInt,
+  /** ENSv1-to-ENSv2 migration reported by the V2 indexer; false for V1-source rows. */
   isMigrated: Schema.Boolean,
   source: IndexedEntitySource,
 };

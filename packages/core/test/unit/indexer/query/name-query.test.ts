@@ -53,7 +53,7 @@ describe("indexed name queries", () => {
         labelName_starts_with_nocase: "ali",
         or: [{ owner: owner.toLowerCase() }, { wrappedOwner: owner.toLowerCase() }],
         resolver_: { address: owner.toLowerCase() },
-        expiryDate_gt: "1800000000",
+        and: [{ or: [{ expiryDate: null }, { expiryDate_gt: "1800000000" }] }],
       },
     });
     assert.deepStrictEqual(compileV2NameFilter(filter), {
@@ -64,7 +64,6 @@ describe("indexed name queries", () => {
         labelName_starts_with_nocase: "ali",
         owner: owner.toLowerCase(),
         resolver: owner.toLowerCase(),
-        expiryDate_gt: 1_800_000_000,
         includeUnreachable: true,
       },
     });
@@ -74,13 +73,29 @@ describe("indexed name queries", () => {
     assert.throws(() => compileV2NameFilter({ expiryAfter: 2_147_483_648n }), "GraphQL Int range");
   });
 
-  it("excludes migrated V1 rows when a V2 source owns current state", () => {
-    assert.deepStrictEqual(compileV1NameFilter({}, { excludeMigrated: true }).where, {
-      isMigrated: false,
-    });
-    assert.isTrue(
-      compileV1NameFilter({ migrated: true }, { excludeMigrated: true }).excludesSource,
-    );
+  it("only uses the V2 migration flag for migration filters", () => {
+    assert.deepStrictEqual(compileV1NameFilter({}).where, {});
+    assert.deepStrictEqual(compileV1NameFilter({ migrated: false }).where, {});
+    assert.isTrue(compileV1NameFilter({ migrated: true }).excludesSource);
+    assert.deepStrictEqual(compileV2NameFilter({ migrated: true }).where, { isMigrated: true });
+    assert.deepStrictEqual(compileV2NameFilter({ migrated: false }).where, { isMigrated: false });
+  });
+
+  it("includes missing expiry only when no upper expiry bound is requested", () => {
+    assert.isTrue(matchesNameFilter(indexedName, { expiryAfter: 100n }));
+    assert.isFalse(matchesNameFilter(indexedName, { expiryBefore: 200n }));
+    assert.isFalse(matchesNameFilter(indexedName, { expiryAfter: 100n, expiryBefore: 200n }));
+
+    for (const expiry of [99n, 100n, 101n, 199n, 200n]) {
+      assert.strictEqual(
+        matchesNameFilter({ ...indexedName, expiry }, { expiryAfter: 100n, expiryBefore: 200n }),
+        expiry > 100n && expiry < 200n,
+      );
+    }
+
+    const compiled = compileV2NameFilter({ expiryAfter: 100n });
+    assert.deepStrictEqual(compiled.where, {});
+    assert.isTrue(compiled.requiresPostFilter);
   });
 
   it("applies post-filters without treating unknown values as matches", () => {

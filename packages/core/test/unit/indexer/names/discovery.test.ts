@@ -133,6 +133,80 @@ describe("indexed discovery actions", () => {
     }),
   );
 
+  it.effect("retains current-registry V1 names with both sources enabled", () =>
+    Effect.gen(function* () {
+      const fetch: typeof globalThis.fetch = (_input, init) => {
+        const request = operation(init);
+        const data = request.query.includes("V1GetNamesForAddress")
+          ? { domains: [{ ...v1Name("alice.eth", 10), isMigrated: true, expiryDate: null }] }
+          : { owned: emptyConnection };
+        return Promise.resolve(response({ data: { _meta: { block: { number: 100 } }, ...data } }));
+      };
+
+      const config = createConfig({
+        network: "sepolia",
+        publicClient: makeSepoliaPublicClient(),
+        indexer: { fetch, retry: { attempts: 0 } },
+      });
+
+      const page = yield* getNamesForAddress.effect(config, {
+        address: owner,
+        relations: ["owner"],
+        filter: { protocol: "v1", migrated: false, expiryAfter: 100n },
+      });
+
+      assert.strictEqual(page.items.length, 1);
+      assert.strictEqual(page.items[0]?.name.value, "alice.eth");
+      assert.isFalse(page.items[0]?.isMigrated);
+      assert.isFalse(page.pageInfo.hasNextPage);
+    }),
+  );
+
+  it.effect("refills V2 subname pages after filtering expired names", () =>
+    Effect.gen(function* () {
+      const children = [
+        { ...v2Name("expired.parent.eth", 30), expiryDate: 99 },
+        { ...v2Name("boundary.parent.eth", 20), expiryDate: 100 },
+        { ...v2Name("permanent.parent.eth", 10), expiryDate: null },
+      ];
+      let requests = 0;
+
+      const fetch: typeof globalThis.fetch = (_input, init) => {
+        const request = operation(init);
+
+        requests += 1;
+        assert.notProperty(request.variables.where, "expiryDate_gt");
+
+        const skip = Number(request.variables.skip);
+        const first = Number(request.variables.first);
+        return Promise.resolve(
+          response({
+            data: {
+              _meta: { block: { number: 100 } },
+              domain: { subregistry: { labels: children.slice(skip, skip + first) } },
+            },
+          }),
+        );
+      };
+
+      const config = createConfig({
+        network: "sepolia",
+        publicClient: makeSepoliaPublicClient(),
+        indexer: { endpoints: { v1: null }, fetch, retry: { attempts: 0 } },
+      });
+
+      const page = yield* getSubnames.effect(config, {
+        name: "parent.eth",
+        filter: { expiryAfter: 100n },
+        pageSize: 1,
+      });
+
+      assert.strictEqual(requests, 2);
+      assert.strictEqual(page.items[0]?.name.value, "permanent.parent.eth");
+      assert.isFalse(page.pageInfo.hasNextPage);
+    }),
+  );
+
   it.effect("combines V2 ownership, resolution, registration, and role-holder relations", () =>
     Effect.gen(function* () {
       const alice = v2Name("alice.eth", 30);
@@ -289,7 +363,9 @@ describe("indexed discovery actions", () => {
             ? response({
                 data: {
                   _meta: { block: { number: 100 } },
-                  domain: { subdomains: [legacy] },
+                  domain: {
+                    subdomains: [legacy, { ...v1Name("other.parent.eth", 5), isMigrated: true }],
+                  },
                 },
               })
             : response({
@@ -313,7 +389,8 @@ describe("indexed discovery actions", () => {
 
       const page = yield* getSubnames.effect(config, { name: "parent.eth" });
 
-      assert.strictEqual(page.items.length, 1);
+      assert.strictEqual(page.items.length, 2);
+      assert.strictEqual(page.items[1]?.name.value, "other.parent.eth");
       assert.strictEqual(page.items[0]?.source.protocol, "v2");
     }),
   );

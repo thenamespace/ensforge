@@ -87,12 +87,16 @@ const v2Wire: V2IndexedNameWire = {
 describe("indexed name normalization", () => {
   it.effect("normalizes V1 wire values and uses the wrapped owner", () =>
     Effect.gen(function* () {
-      const result = yield* normalizeV1IndexedName(v1Wire, {
-        ...context,
-        protocol: "v1",
-      });
+      const result = yield* normalizeV1IndexedName(
+        { ...v1Wire, isMigrated: true },
+        {
+          ...context,
+          protocol: "v1",
+        },
+      );
 
       assert.strictEqual(result.protocol, "v1");
+      assert.isFalse(result.isMigrated);
 
       if (result.protocol !== "v1") return;
 

@@ -162,9 +162,7 @@ const getNamesForAddressEffect = Effect.fn("ensforge.getNamesForAddress")(functi
         }
 
         const names = Arr.sort(
-          result.success.names.filter(
-            (name) => !(protocol === "v1" && states.v2 === "enabled" && name.isMigrated),
-          ),
+          result.success.names,
           Order.make<RelatedIndexedName>((left, right) => {
             const compared = compareIndexedNames(order)(left, right);
 

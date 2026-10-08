@@ -3,7 +3,11 @@ import { Effect } from "effect";
 
 import { labelhash, namehash } from "viem/ens";
 
-import { getIndexedName, getNames } from "../../../../src/actions/indexer/names/index.js";
+import {
+  getIndexedName,
+  getNames,
+  searchNames,
+} from "../../../../src/actions/indexer/names/index.js";
 import { createConfig } from "../../../../src/index.js";
 import {
   makeMainnetPublicClient,
@@ -18,7 +22,7 @@ const response = (data: unknown, status = 200): Response =>
     headers: { "content-type": "application/json" },
   });
 
-const v1Name = (name: string, createdAt: number, migrated = false) => {
+const v1Name = (name: string, createdAt: number, migrated = true) => {
   const [label = ""] = name.split(".");
 
   return {
@@ -283,6 +287,7 @@ describe("indexed name actions", () => {
 
         requests += 1;
         assert.include(request.query, "V1GetNames");
+        assert.notProperty(request.variables.where, "isMigrated");
 
         return Promise.resolve(
           response({
@@ -301,7 +306,7 @@ describe("indexed name actions", () => {
       });
 
       const result = yield* getNames.effect(config, {
-        filter: { protocol: "v1" },
+        filter: { protocol: "v1", migrated: false },
         pageSize: 1,
       });
 
@@ -359,6 +364,85 @@ describe("indexed name actions", () => {
       assert.strictEqual(requests, 2);
       assert.strictEqual(result.items.length, 1);
       assert.strictEqual(result.items[0]?.protocol, "v2");
+      assert.isFalse(result.pageInfo.hasNextPage);
+    }),
+  );
+
+  it.effect("searches live V1 names when the V2 source is enabled", () =>
+    Effect.gen(function* () {
+      const fetch: typeof globalThis.fetch = (_input, init) => {
+        const request = operation(init);
+        assert.include(request.query, "V1GetNames");
+        assert.notProperty(request.variables.where, "isMigrated");
+
+        return Promise.resolve(
+          response({
+            data: {
+              _meta: { block: { number: 100 } },
+              domains: [v1Name("alice.eth", 10)],
+            },
+          }),
+        );
+      };
+
+      const config = createConfig({
+        network: "sepolia",
+        publicClient: makeSepoliaPublicClient(),
+        indexer: { fetch, retry: { attempts: 0 } },
+      });
+
+      const result = yield* searchNames.effect(config, {
+        query: "ali",
+        filter: { protocol: "v1" },
+      });
+
+      assert.strictEqual(result.items.length, 1);
+      assert.isFalse(result.items[0]?.isMigrated);
+    }),
+  );
+
+  it.effect("refills V2 expiry-filtered pages and retains names without expiry", () =>
+    Effect.gen(function* () {
+      let requests = 0;
+
+      const fetch: typeof globalThis.fetch = (_input, init) => {
+        const request = operation(init);
+
+        requests += 1;
+        assert.notProperty(request.variables.where, "expiryDate_gt");
+
+        const nodes =
+          request.variables.after === null
+            ? [
+                { ...v2Name("expired.eth", 30), expiryDate: 99 },
+                { ...v2Name("boundary.eth", 20), expiryDate: 100 },
+              ]
+            : [{ ...v2Name("permanent.eth", 10), expiryDate: null }];
+        const edges = nodes.map((node) => ({ node, cursor: node.id }));
+        return Promise.resolve(
+          response({
+            data: {
+              _meta: { block: { number: 200 } },
+              domainConnection: {
+                edges,
+                pageInfo: { hasNextPage: requests === 1, endCursor: edges.at(-1)?.cursor },
+              },
+            },
+          }),
+        );
+      };
+
+      const config = createConfig({
+        network: "sepolia",
+        publicClient: makeSepoliaPublicClient(),
+        indexer: { endpoints: { v1: null }, fetch, retry: { attempts: 0 } },
+      });
+
+      const result = yield* getNames.effect(config, { filter: { expiryAfter: 100n }, pageSize: 1 });
+
+      assert.strictEqual(requests, 2);
+      assert.strictEqual(result.items[0]?.name.value, "permanent.eth");
+      assert.isNull(result.items[0]?.expiry);
       assert.isFalse(result.pageInfo.hasNextPage);
     }),
   );

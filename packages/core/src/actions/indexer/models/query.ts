@@ -22,9 +22,12 @@ export const NameFilter = Schema.Struct({
   resolvedAddress: Schema.optional(EthereumAddress),
   resolver: Schema.optional(EthereumAddress),
   protocol: Schema.optional(Schema.Literals(["v1", "v2"])),
+  /** Migration from ENSv1 to ENSv2, not the historical V1 registry migration. */
   migrated: Schema.optional(Schema.Boolean),
   includeUnreachable: Schema.optional(Schema.Boolean),
+  /** Exclusive lower bound; names without a recorded expiry are included. */
   expiryAfter: Schema.optional(NonNegativeBigInt),
+  /** Exclusive upper bound; requires a recorded expiry. */
   expiryBefore: Schema.optional(NonNegativeBigInt),
 });
 export type NameFilter = typeof NameFilter.Type;

@@ -81,7 +81,8 @@ export const normalizeV1IndexedName = Effect.fn("normalizeV1IndexedName")(functi
         createdAt: decodeBigInt(wire.createdAt),
         expiry: decodeNullableBigInt(wire.expiryDate),
         subnameCount: decodeInteger(wire.subdomainCount),
-        isMigrated: Schema.decodeUnknownSync(Schema.Boolean)(wire.isMigrated),
+        // The V1 flag describes the 2020 registry migration, not ENSv2 migration.
+        isMigrated: false,
         ttl: decodeNullableBigInt(wire.ttl),
         registration:
           wire.registration === null

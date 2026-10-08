@@ -3,3 +3,16 @@
 Narrows names by exact `name` or `label`, structured `search`, `owner`, `resolvedAddress`,
 `resolver`, `protocol`, migration state, reachability, or expiry bounds. Conditions are combined with
 AND semantics. Support is validated against the selected protocol sources before a request is sent.
+
+`migrated` means migrated from ENSv1 to ENSv2. `true` selects migrated names from the V2
+indexer; `false` includes V1 names and native V2 names. The V1 subgraph's historical registry
+migration flag is not used. The returned `isMigrated` field follows the same meaning; a V1-only
+source cannot establish whether a name has migrated to ENSv2.
+
+`expiryAfter` is an exclusive lower bound and also includes names with no recorded expiry.
+`expiryBefore` is an exclusive upper bound and requires a recorded expiry. When both are set,
+only names with an expiry strictly between the bounds match. A missing expiry does not guarantee
+that a name will remain usable: parent-name expiry or registry permissions may still affect it.
+
+V2 queries with `expiryAfter` apply that bound locally and may fetch additional pages because the
+indexer does not expose a null-expiry filter.
