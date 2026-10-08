@@ -60,9 +60,11 @@ const writeLocalPackageOverrides = (projectDirectory) => {
     .join("\n");
   write(
     join(projectDirectory, "pnpm-workspace.yaml"),
-    `packages:\n  - "."\n\nallowBuilds:\n  bufferutil: true\n  esbuild: true\n  keccak: true\n  msgpackr-extract: true\n  utf-8-validate: true\n\noverrides:\n${overrides}\n`,
+    `packages:\n  - "."\n\nallowBuilds:\n  bufferutil: true\n  esbuild: true\n  keccak: true\n  msgpackr-extract: true\n  utf-8-validate: true\n\noverrides:\n  viem: "${viemVersion}"\n${overrides}\n`,
   );
 };
+
+const viemVersion = process.env.ENSFORGE_TEST_VIEM_VERSION ?? catalogVersion("viem");
 
 const packageNames = ["contracts", "core", "sdk", "react", "hca"];
 const tarballs = Object.fromEntries(
@@ -98,7 +100,7 @@ try {
           "@ensforge/sdk": fileDependency(nodeProject, tarballs.sdk),
           "@ensforge/hca": fileDependency(nodeProject, tarballs.hca),
           effect: catalogVersion("effect"),
-          viem: catalogVersion("viem"),
+          viem: viemVersion,
         },
         devDependencies: {
           typescript: dependencyVersion("typescript"),
@@ -217,7 +219,7 @@ assert.match(mainnetV1Deployment.contracts.registry, /^0x[0-9a-fA-F]{40}$/);
             react: catalogVersion("react"),
             "react-dom": catalogVersion("react-dom"),
             scheduler: catalogVersion("scheduler"),
-            viem: catalogVersion("viem"),
+            viem: viemVersion,
             wagmi,
           },
           devDependencies: {

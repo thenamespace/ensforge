@@ -83,7 +83,7 @@
     "@rhinestone/sdk": "1.8.0",
     "effect": "^4.0.0",
     "permissionless": "^0.4.0",
-    "viem": "^2.56.0"
+    "viem": "^2.49.0"
   },
   "peerDependenciesMeta": {
     "@rhinestone/sdk": {

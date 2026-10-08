@@ -158,3 +158,13 @@ workspace packages generally do not require a changeset.
 
 By contributing, you agree that your contributions are licensed under the
 [Apache License 2.0](./LICENSE).
+
+When changing viem compatibility, also check the minimum supported version against the packed
+packages:
+
+```sh
+ENSFORGE_TEST_VIEM_VERSION=2.49.0 pnpm test:packages
+```
+
+This runs the Node, React/Wagmi, and HCA provider consumer checks with one viem version throughout
+each temporary project.

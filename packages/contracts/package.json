@@ -84,7 +84,10 @@
     "test:watch": "vitest --passWithNoTests",
     "typecheck": "tsc --noEmit"
   },
-  "dependencies": {
+  "devDependencies": {
     "viem": "catalog:"
+  },
+  "peerDependencies": {
+    "viem": "^2.49.0"
   }
 }
