@@ -1,0 +1,16 @@
+.git
+.github
+.changeset
+.repos
+.turbo
+**/.turbo
+**/.vocs
+**/dist
+**/node_modules
+**/.env*
+apps/docs/pages.gen.ts
+gha-creds-*.json
+coverage
+research
+*.log
+*.tgz
