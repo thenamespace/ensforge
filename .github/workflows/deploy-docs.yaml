@@ -1,0 +1,115 @@
+---
+name: Deploy - Docs
+
+# Follows the org deployment pattern: build the docs image, push it to GCP
+# Artifact Registry under <repo>/<app>, then dispatch image-tag-update to
+# thenamespace/infra so it PRs the new tag into the helm values for ArgoCD.
+#
+# This repository is public. The build job runs repository code with a GCP
+# OIDC token but no PAT; the dispatch job holds the PAT and runs no repository
+# code. Both are gated by the prod environment.
+
+on:
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: deploy-docs-prod
+  cancel-in-progress: false
+
+env:
+  APP_NAME: ensforge-docs
+  INFRA_APP: core
+  ENVIRONMENT: prod
+
+jobs:
+  build-and-push:
+    name: Build and push
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: prod
+    permissions:
+      contents: read
+      id-token: write
+    # GCP coordinates are kept out of this public repository.
+    env:
+      REGION: ${{ secrets.GCP_REGION }}
+      PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+      WORKLOAD_IDENTITY_PROVIDER: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+    outputs:
+      image_tag: ${{ steps.meta.outputs.image_tag }}
+    steps:
+      - name: Require main
+        if: github.ref != 'refs/heads/main'
+        run: |
+          echo "::error::Docs deployments must be dispatched from main."
+          exit 1
+
+      - name: Require GCP secrets
+        run: |
+          for name in REGION PROJECT_ID WORKLOAD_IDENTITY_PROVIDER; do
+            if [[ -z "${!name}" ]]; then
+              echo "::error::Missing secret GCP_${name}."
+              exit 1
+            fi
+          done
+
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@c200f3691d83b41bf9bbd8638997a462592937ed # v2
+        with:
+          project_id: ${{ env.PROJECT_ID }}
+          workload_identity_provider: ${{ env.WORKLOAD_IDENTITY_PROVIDER }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@e427ad8a34f8676edf47cf7d7925499adf3eb74f # v2
+
+      - name: Configure docker for artifact registry
+        run: gcloud auth configure-docker "${REGION}-docker.pkg.dev" --quiet
+
+      - name: Get metadata for tags
+        id: meta
+        run: echo "image_tag=$(git rev-parse --short HEAD)-${ENVIRONMENT}" >> "$GITHUB_OUTPUT"
+
+      - name: Build and push Docker image
+        env:
+          IMAGE: ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ github.event.repository.name }}/${{ env.APP_NAME }}:${{ steps.meta.outputs.image_tag }}
+          # Build-time VITE_ values, one KEY=value per line. They end up in the
+          # public bundle, but live in the prod environment rather than in this
+          # public repository.
+          DOTENV: ${{ secrets.DOCS_DOTENV }}
+        run: |
+          docker build \
+            -f apps/docs/Dockerfile \
+            --secret id=dotenv,env=DOTENV \
+            --build-arg DOTENV_SHA256="$(printf '%s' "$DOTENV" | sha256sum | cut -d' ' -f1)" \
+            --label "org.opencontainers.image.source=${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}" \
+            --label "org.opencontainers.image.revision=${GITHUB_SHA}" \
+            -t "$IMAGE" \
+            .
+          docker push "$IMAGE"
+
+  update-image-tag:
+    name: Update image tag in infra
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    environment: prod
+    permissions: {}
+    steps:
+      - name: Repository Dispatch
+        uses: peter-evans/repository-dispatch@ff45666b9427631e3450c54a1bcbee4d9ff4d7c0 # v3
+        with:
+          token: ${{ secrets.REPOSITORY_DISPATCH_PAT }}
+          repository: thenamespace/infra
+          event-type: image-tag-update
+          client-payload: >-
+            {"repository": "${{ env.APP_NAME }}",
+            "infra_app": "${{ env.INFRA_APP }}",
+            "image_tag": "${{ needs.build-and-push.outputs.image_tag }}",
+            "environment": "${{ env.ENVIRONMENT }}"}
