@@ -1,11 +1,4 @@
 # syntax=docker/dockerfile:1.7
-# Build from the repository root: docker build -f apps/docs/Dockerfile .
-#
-# Build-time VITE_ variables are passed as a BuildKit secret so they stay out of
-# the image history: --secret id=dotenv,env=DOTENV (one KEY=value per line),
-# plus --build-arg DOTENV_SHA256=<hash of the value> so changes bust the cache.
-# Indexer URLs are read at runtime and belong in the deployment, not here.
-
 FROM node:24.18.0-bookworm-slim AS base
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
@@ -22,8 +15,6 @@ RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
 COPY . .
 RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
     pnpm install --frozen-lockfile --offline --ignore-scripts
-# Secret contents are not part of the layer cache key; pass the dotenv's hash so
-# a changed value rebuilds instead of reusing a cached bundle.
 ARG DOTENV_SHA256=""
 RUN --mount=type=secret,id=dotenv,required=false \
     if [ -f /run/secrets/dotenv ]; then cp /run/secrets/dotenv apps/docs/.env.production; fi \

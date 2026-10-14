@@ -1,14 +1,6 @@
 ---
 name: Deploy - Docs
 
-# Follows the org deployment pattern: build the docs image, push it to GCP
-# Artifact Registry under <repo>/<app>, then dispatch image-tag-update to
-# thenamespace/infra so it PRs the new tag into the helm values for ArgoCD.
-#
-# This repository is public. The build job runs repository code with a GCP
-# OIDC token but no PAT; the dispatch job holds the PAT and runs no repository
-# code. Both are gated by the prod environment.
-
 on:
   workflow_dispatch:
 
@@ -19,7 +11,7 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  APP_NAME: ensforge-docs
+  APP_NAME: ${{ github.event.repository.name }}
   INFRA_APP: core
   ENVIRONMENT: prod
 
@@ -32,7 +24,6 @@ jobs:
     permissions:
       contents: read
       id-token: write
-    # GCP coordinates are kept out of this public repository.
     env:
       REGION: ${{ secrets.GCP_REGION }}
       PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
@@ -78,10 +69,7 @@ jobs:
 
       - name: Build and push Docker image
         env:
-          IMAGE: ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ github.event.repository.name }}/${{ env.APP_NAME }}:${{ steps.meta.outputs.image_tag }}
-          # Build-time VITE_ values, one KEY=value per line. They end up in the
-          # public bundle, but live in the prod environment rather than in this
-          # public repository.
+          IMAGE: ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.APP_NAME }}/${{ env.APP_NAME }}:${{ steps.meta.outputs.image_tag }}
           DOTENV: ${{ secrets.DOCS_DOTENV }}
         run: |
           docker build \
