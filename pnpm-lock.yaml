@@ -7,14 +7,14 @@ settings:
 catalogs:
   default:
     '@effect/atom-react':
-      specifier: 4.0.0
-      version: 4.0.0
+      specifier: 4.0.3
+      version: 4.0.3
     '@effect/platform-node':
-      specifier: 4.0.0
-      version: 4.0.0
+      specifier: 4.0.3
+      version: 4.0.3
     '@effect/vitest':
-      specifier: 4.0.0
-      version: 4.0.0
+      specifier: 4.0.3
+      version: 4.0.3
     '@ensdomains/address-encoder':
       specifier: 1.1.4
       version: 1.1.4
@@ -40,8 +40,8 @@ catalogs:
       specifier: 6.1.1
       version: 6.1.1
     effect:
-      specifier: 4.0.0
-      version: 4.0.0
+      specifier: 4.0.3
+      version: 4.0.3
     fflate:
       specifier: 0.8.3
       version: 0.8.3
@@ -106,7 +106,7 @@ importers:
         version: 21.2.2
       '@effect/vitest':
         specifier: 'catalog:'
-        version: 4.0.0(effect@4.0.0)(vitest@5.0.3)
+        version: 4.0.3(effect@4.0.3)(vitest@5.0.3)
       '@ensforge/test-env':
         specifier: workspace:*
         version: link:packages/test-env
@@ -118,7 +118,7 @@ importers:
         version: 5.0.3(vitest@5.0.3)
       effect:
         specifier: 'catalog:'
-        version: 4.0.0
+        version: 4.0.3
       klarity:
         specifier: 0.2.0
         version: 0.2.0(@commitlint/cli@21.2.2(@types/node@24.13.3)(conventional-commits-parser@7.1.2)(typescript@6.0.3))(@commitlint/config-conventional@21.2.2)(@vitest/coverage-v8@5.0.3)(lefthook@2.1.10)(oxfmt@0.65.0)(oxlint@1.80.0)(publint@0.3.24)(tsdown@0.22.14(@arethetypeswrong/core@0.18.5)(@volar/typescript@2.4.28)(publint@0.3.24)(tsx@4.22.4)(typescript@6.0.3)(vue-tsc@3.3.11(typescript@6.0.3)))(turbo@2.10.12)(typescript@6.0.3)(vitest@5.0.3)
@@ -190,7 +190,7 @@ importers:
         version: 2.24.0(@solana/kit@5.5.1(bufferutil@4.1.0)(typescript@6.0.3)(utf-8-validate@5.0.10))(@solana/sysvars@5.5.1(typescript@6.0.3))
       effect:
         specifier: 'catalog:'
-        version: 4.0.0
+        version: 4.0.3
       posthog-js:
         specifier: ^1.435.6
         version: 1.435.6(@types/react@19.2.18)(react@19.2.8)
@@ -291,7 +291,7 @@ importers:
     devDependencies:
       '@effect/platform-node':
         specifier: 'catalog:'
-        version: 4.0.0(bufferutil@4.1.0)(effect@4.0.0)(redis@6.2.1)(utf-8-validate@5.0.10)
+        version: 4.0.3(bufferutil@4.1.0)(effect@4.0.0)(redis@6.2.1)(utf-8-validate@5.0.10)
       '@graphql-codegen/cli':
         specifier: 'catalog:'
         version: 7.4.0(@types/node@24.13.3)(bufferutil@4.1.0)(crossws@0.3.5)(graphql@16.14.2)(typescript@6.0.3)(utf-8-validate@5.0.10)
@@ -331,7 +331,7 @@ importers:
     dependencies:
       '@effect/atom-react':
         specifier: 'catalog:'
-        version: 4.0.0(effect@4.0.0)(react@19.2.8)(scheduler@0.27.0)
+        version: 4.0.3(effect@4.0.0)(react@19.2.8)(scheduler@0.27.0)
       '@ensforge/core':
         specifier: workspace:*
         version: link:../core
@@ -390,7 +390,7 @@ importers:
     dependencies:
       effect:
         specifier: 'catalog:'
-        version: 4.0.0
+        version: 4.0.3
 
   packages/test-env:
     dependencies:
@@ -402,7 +402,7 @@ importers:
         version: link:../core
       effect:
         specifier: 'catalog:'
-        version: 4.0.0
+        version: 4.0.3
       viem:
         specifier: 'catalog:'
         version: 2.57.2(bufferutil@4.1.0)(typescript@6.0.3)(utf-8-validate@5.0.10)(zod@4.5.4)
@@ -806,30 +806,30 @@ packages:
     peerDependencies:
       '@noble/ciphers': ^1.0.0
 
-  '@effect/atom-react@4.0.0':
-    resolution: {integrity: sha512-VPP2oOjj56iwOpL5aIGbu7Qhb4+1sFNdU16aI5of3JqToqWWX9eJPBfeiPyQ1eTYof1hnNX1auyRiTORSfLT6g==}
+  '@effect/atom-react@4.0.3':
+    resolution: {integrity: sha512-niFAKlL2heOKYfjSaC6nbMBQfxBZRX4LLaSBlnNgLLvamj735aBHTGqejyddMlvAbUYGUV0tD5ov9C9hxFFLJg==}
     peerDependencies:
-      effect: ^4.0.0
+      effect: ^4.0.3
       react: '>=19.0.0 <20.0.0'
-      scheduler: '>=0.25.0 <0.28.0'
+      scheduler: '>=0.25.0 <0.29.0'
 
-  '@effect/platform-node-shared@4.0.0':
-    resolution: {integrity: sha512-VBXHJU9UXVZPdQGGDRjGXpo+TpOzRwZuMrdKAtIxi1qwcRftmacZ1zTgIrzBa0Z2RA2KVkoOecQUsTlt/nJZhw==}
+  '@effect/platform-node-shared@4.0.3':
+    resolution: {integrity: sha512-5srkJfmWklWSgwZwlkMeTXobfNtxuwuTCvY9JWdPXRv/PBXAe5kKSptzRxT778oFFsaE9IMI8X61pvkifT9Eug==}
     engines: {node: '>=18.0.0'}
     peerDependencies:
-      effect: ^4.0.0
+      effect: ^4.0.3
 
-  '@effect/platform-node@4.0.0':
-    resolution: {integrity: sha512-/L+4MUbl8FejPKLHLROYSOebvHnfixkP8KiblSD/DE5uH5xENZBHaux4nH6XMnRP+lr8ajpEJFS8sUrmmxFJeQ==}
+  '@effect/platform-node@4.0.3':
+    resolution: {integrity: sha512-ctvREpC1EzRVsOm0JyIzYHajAQScFaec6Gl+M7TEIpEqdmmx6Ju11Um92EA/CE2KBfY5Fp1QWlqTkK6lOL7tqg==}
     engines: {node: '>=18.0.0'}
     peerDependencies:
-      effect: ^4.0.0
+      effect: ^4.0.3
       redis: '>=5.0.0 <7.0.0'
 
-  '@effect/vitest@4.0.0':
-    resolution: {integrity: sha512-kGElCPFGtP+CgMCwV/HjJWqtE3zYo6I1+8MSA54l+EI24lPU9p2Efa+TBp1jfkg9j711KKzEqgSAy3VzTsb76Q==}
+  '@effect/vitest@4.0.3':
+    resolution: {integrity: sha512-jsIkpssf0CFuOeycW2sQZkWx0qzlsRv+JIkzd9qQpoFDcHC9JZFSdIjEBAhsdp20pDy4Y/b2vT/ew7wXZxvEig==}
     peerDependencies:
-      effect: ^4.0.0
+      effect: ^4.0.3
       vitest: '>=5.0.0 <6.0.0'
 
   '@emnapi/core@1.10.0':
@@ -4131,6 +4131,9 @@ packages:
   '@types/ws@8.18.1':
     resolution: {integrity: sha512-ThVF6DCVhA8kUGy+aazFQ4kXQ7E1Ty7A3ypFOe0IcJV8O/M511G99AW24irKrW56Wt44yG9+ij8FaqoBGkuBXg==}
 
+  '@types/ws@8.18.2':
+    resolution: {integrity: sha512-67MQl+fpWKVTT1NYdnmo3U4sc/xPo/zQBncVnI74qmQa0z/b+1g6iYqNmGCPbxO+zz2aklb08a0oHfegiVd0/w==}
+
   '@typescript/vfs@1.6.4':
     resolution: {integrity: sha512-PJFXFS4ZJKiJ9Qiuix6Dz/OwEIqHD7Dme1UwZhTK11vR+5dqW2ACbdndWQexBzCx+CPuMe5WBYQWCsFyGlQLlQ==}
     peerDependencies:
@@ -5504,6 +5507,9 @@ packages:
 
   effect@4.0.0:
     resolution: {integrity: sha512-ooc1TG5t+FfzgYnFz2ff6BBKyZ7EwBRVXC7c4RhQUAD6/TZ2gTXXMeb4WX7a19ozQo4J73/QW+S00YAIresoMQ==}
+
+  effect@4.0.3:
+    resolution: {integrity: sha512-LoWn/Uwwx0JjHSDmBAAahx8sB+klzM6vsZovnbYowBNw6B4QScJLRLBByO61plvNiycx7HPN8FnsWUCu0eXW5w==}
 
   electron-to-chromium@1.5.419:
     resolution: {integrity: sha512-nHMPn8x4yCxCI0iSnL+LlHL5sUoUfjLXkcRIagZ4GBdrfFLFaiLNvzJWbJqZhFT9IAhw5tUSNlhggWN+otvp/A==}
@@ -10040,24 +10046,24 @@ snapshots:
     dependencies:
       '@noble/ciphers': 1.3.0
 
-  '@effect/atom-react@4.0.0(effect@4.0.0)(react@19.2.8)(scheduler@0.27.0)':
+  '@effect/atom-react@4.0.3(effect@4.0.0)(react@19.2.8)(scheduler@0.27.0)':
     dependencies:
       effect: 4.0.0
       react: 19.2.8
       scheduler: 0.27.0
 
-  '@effect/platform-node-shared@4.0.0(bufferutil@4.1.0)(effect@4.0.0)(utf-8-validate@5.0.10)':
+  '@effect/platform-node-shared@4.0.3(bufferutil@4.1.0)(effect@4.0.0)(utf-8-validate@5.0.10)':
     dependencies:
-      '@types/ws': 8.18.1
+      '@types/ws': 8.18.2
       effect: 4.0.0
       ws: 8.22.0(bufferutil@4.1.0)(utf-8-validate@5.0.10)
     transitivePeerDependencies:
       - bufferutil
       - utf-8-validate
 
-  '@effect/platform-node@4.0.0(bufferutil@4.1.0)(effect@4.0.0)(redis@6.2.1)(utf-8-validate@5.0.10)':
+  '@effect/platform-node@4.0.3(bufferutil@4.1.0)(effect@4.0.0)(redis@6.2.1)(utf-8-validate@5.0.10)':
     dependencies:
-      '@effect/platform-node-shared': 4.0.0(bufferutil@4.1.0)(effect@4.0.0)(utf-8-validate@5.0.10)
+      '@effect/platform-node-shared': 4.0.3(bufferutil@4.1.0)(effect@4.0.0)(utf-8-validate@5.0.10)
       effect: 4.0.0
       redis: 6.2.1
       undici: 8.11.2
@@ -10065,9 +10071,9 @@ snapshots:
       - bufferutil
       - utf-8-validate
 
-  '@effect/vitest@4.0.0(effect@4.0.0)(vitest@5.0.3)':
+  '@effect/vitest@4.0.3(effect@4.0.3)(vitest@5.0.3)':
     dependencies:
-      effect: 4.0.0
+      effect: 4.0.3
       vitest: 5.0.3(@types/node@24.13.3)(@vitest/coverage-v8@5.0.3)(happy-dom@20.12.0(bufferutil@4.1.0)(utf-8-validate@5.0.10))(vite@8.0.16(@types/node@24.13.3)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.22.4)(yaml@2.9.0))
 
   '@emnapi/core@1.10.0':
@@ -14129,6 +14135,10 @@ snapshots:
     dependencies:
       '@types/node': 24.13.3
 
+  '@types/ws@8.18.2':
+    dependencies:
+      '@types/node': 24.13.3
+
   '@typescript/vfs@1.6.4(typescript@6.0.3)':
     dependencies:
       debug: 4.4.3
@@ -16313,6 +16323,8 @@ snapshots:
 
   effect@4.0.0: {}
 
+  effect@4.0.3: {}
+
   electron-to-chromium@1.5.419: {}
 
   embla-carousel-autoplay@8.6.0(embla-carousel@8.6.0):
@@ -16859,7 +16871,7 @@ snapshots:
     dependencies:
       '@types/node': 24.13.3
       '@types/whatwg-mimetype': 3.0.2
-      '@types/ws': 8.18.1
+      '@types/ws': 8.18.2
       buffer-image-size: 0.6.4
       entities: 7.0.1
       whatwg-mimetype: 3.0.0
