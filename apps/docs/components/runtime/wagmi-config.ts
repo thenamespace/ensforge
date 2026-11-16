@@ -18,9 +18,6 @@ const connectors = connectorsForWallets(
   },
 );
 
-// Production builds read through Namespace's RPC proxy, which keeps the provider key server side and
-// only answers allowed origins (ensforge.com among them). The overrides apply to local dev only, so a
-// keyed URL in the build environment can't reach the published bundle.
 export const wagmiConfig = createConfig({
   chains: [mainnet, sepolia],
   connectors,
