@@ -199,9 +199,9 @@
     "viem": "catalog:"
   },
   "peerDependencies": {
-    "effect": "^4.0.0",
-    "viem": "^2.49.0",
-    "wagmi": ">=2.19.0 <4.0.0"
+    "effect": "^4.1.4",
+    "viem": "^2.57.0",
+    "wagmi": "^3.7.0"
   },
   "peerDependenciesMeta": {
     "wagmi": {
