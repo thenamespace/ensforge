@@ -25,8 +25,8 @@
     "@x402/svm": "^2.24.0",
     "effect": "catalog:",
     "posthog-js": "^1.435.6",
-    "react": "catalog:",
-    "react-dom": "catalog:",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
     "tslib": "2.8.1",
     "viem": "catalog:",
     "wagmi": "2.19.5"
@@ -39,13 +39,13 @@
     "@rhinestone/sdk": "1.8.0",
     "@tailwindcss/vite": "4.3.3",
     "@types/node": "24.13.3",
-    "@types/react": "catalog:",
-    "@types/react-dom": "catalog:",
+    "@types/react": "19.2.18",
+    "@types/react-dom": "19.2.3",
     "permissionless": "0.4.0",
     "react-server-dom-webpack": "~19.3.0",
     "tailwindcss": "4.3.3",
     "tsx": "4.22.4",
-    "vite": "catalog:",
+    "vite": "8.0.16",
     "vocs": "2.8.1",
     "waku": "1.0.0-beta.6"
   }

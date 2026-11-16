@@ -87,10 +87,10 @@ const deletePreparer: EnsWriteIntentPreparer<SubnameParameters, WriteError> = Ef
   if (unavailable !== null || route.subregistry === null || route.childState === null) {
     return yield* (
       unavailable ??
-      new AuthorizationError({
-        code: "WRITE_TARGET_UNAVAILABLE",
-        message: `Registered subname state is unavailable for ${route.name}`,
-      })
+        new AuthorizationError({
+          code: "WRITE_TARGET_UNAVAILABLE",
+          message: `Registered subname state is unavailable for ${route.name}`,
+        })
     );
   }
 
@@ -144,10 +144,10 @@ const managerPreparer: EnsWriteIntentPreparer<SetSubnameManagerParameters, Write
   if (unavailable !== null || route.subregistry === null || route.childState === null) {
     return yield* (
       unavailable ??
-      new AuthorizationError({
-        code: "WRITE_TARGET_UNAVAILABLE",
-        message: `Registered subname state is unavailable for ${route.name}`,
-      })
+        new AuthorizationError({
+          code: "WRITE_TARGET_UNAVAILABLE",
+          message: `Registered subname state is unavailable for ${route.name}`,
+        })
     );
   }
 
@@ -202,10 +202,10 @@ const resolverPreparer: EnsWriteIntentPreparer<SetSubnameResolverParameters, Wri
     if (unavailable !== null || route.subregistry === null || route.childState === null) {
       return yield* (
         unavailable ??
-        new AuthorizationError({
-          code: "WRITE_TARGET_UNAVAILABLE",
-          message: `Registered subname state is unavailable for ${route.name}`,
-        })
+          new AuthorizationError({
+            code: "WRITE_TARGET_UNAVAILABLE",
+            message: `Registered subname state is unavailable for ${route.name}`,
+          })
       );
     }
 
@@ -264,10 +264,10 @@ const expiryPreparer: EnsWriteIntentPreparer<SetSubnameExpiryParameters, WriteEr
   if (unavailable !== null || route.subregistry === null || route.childState === null) {
     return yield* (
       unavailable ??
-      new AuthorizationError({
-        code: "WRITE_TARGET_UNAVAILABLE",
-        message: `Registered subname state is unavailable for ${route.name}`,
-      })
+        new AuthorizationError({
+          code: "WRITE_TARGET_UNAVAILABLE",
+          message: `Registered subname state is unavailable for ${route.name}`,
+        })
     );
   }
 
