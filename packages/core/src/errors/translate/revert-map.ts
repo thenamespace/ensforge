@@ -76,7 +76,11 @@ export const revertMap: Readonly<Record<string, Mapper>> = {
   NotApprovedOperator: notApproved,
   OperationProhibited: () => new UnauthorizedError({ code: "FUSE_BURNED" }),
   TransferDisallowed: transferDisallowed,
-  TransferUnsafeWithMultipleAssignees: transferDisallowed,
+  TransferUnsafeWithMultipleAssignees: () =>
+    new UnauthorizedError({
+      code: "TRANSFER_DISALLOWED",
+      hint: "Other accounts hold roles on the name; pass `unsafe: true` to transfer anyway.",
+    }),
   NameNotAvailable: nameNotAvailable,
   LabelAlreadyRegistered: nameNotAvailable,
   LabelAlreadyReserved: () => new NameStateError({ code: "NAME_RESERVED" }),
@@ -86,7 +90,10 @@ export const revertMap: Readonly<Record<string, Mapper>> = {
   NameRequiresMigration: () => new NameStateError({ code: "NAME_REQUIRES_MIGRATION" }),
   ParentNotMigrated: () => new NameStateError({ code: "PARENT_NOT_MIGRATED" }),
   TransferUnsafeUntilRegistryIsEmancipated: () =>
-    new NameStateError({ code: "REGISTRY_NOT_EMANCIPATED" }),
+    new NameStateError({
+      code: "REGISTRY_NOT_EMANCIPATED",
+      hint: "Pass `unsafe: true` to transfer without the receiver checks.",
+    }),
   CommitmentTooNew: commitmentTooNew,
   CommitmentTooOld: commitmentTooOld,
   UnexpiredCommitmentExists: ([commitment]) =>

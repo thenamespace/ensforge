@@ -2,9 +2,11 @@ import { Effect } from "effect";
 
 import { Abis } from "@ensforge/contracts";
 import type { Deployments } from "@ensforge/contracts";
-import { encodeFunctionData, hexToBigInt, type Address } from "viem";
+import { ownedResolverSalt } from "@ensforge/contracts/v2";
+import { encodeFunctionData, hexToBigInt, isAddressEqual, type Address } from "viem";
 
 import type { Client } from "../../../client/types.js";
+import { InvalidInputError } from "../../../errors/classes/InvalidInputError.js";
 import { UnsupportedError } from "../../../errors/classes/UnsupportedError.js";
 import type { AnyError } from "../../../errors/types.js";
 import * as Action from "../../../internal/action/index.js";
@@ -13,9 +15,13 @@ import {
   requireAddress,
   requireRegistered,
   requireV1Contracts,
-  singleStepPlan,
 } from "../../../internal/name/write.js";
 import { explainFor } from "../../../internal/permission/check.js";
+import { setterKeying } from "../../../internal/records/setter-keying.js";
+import { deployPermissionedResolver } from "../../../internal/resolver/deploy.js";
+import * as Rpc from "../../../internal/rpc/index.js";
+import { addressOf } from "../../../internal/write/signer.js";
+import { make as makePlan } from "../../../plan/make.js";
 import type { Plan } from "../../../plan/Plan.js";
 import type { Write } from "../../../Types.js";
 import type { transfer as Promises } from "./index.js";
@@ -108,6 +114,99 @@ const v1Calls = (
   ]);
 };
 
+/**
+ * ENSv2 names keep their PermissionedResolver roles with the sender after a transfer: resolver
+ * roles are not tied to registry ownership. `handover` moves the sender's root roles to the
+ * recipient around the transfer; `keep` leaves them and warns.
+ */
+const recordControl = Effect.fnUntraced(function* (
+  client: Client,
+  loaded: LoadedName,
+  sender: Address | undefined,
+  to: Address,
+  records: "keep" | "handover",
+): Effect.fn.Return<
+  {
+    readonly before: Plan.Call[];
+    readonly after: Plan.Call[];
+    readonly warnings: Plan.Warning[];
+  },
+  AnyError
+> {
+  const none = { before: [], after: [], warnings: [] };
+  const resolver = loaded.state.resolver;
+  if (loaded.state.protocol !== "v2" || resolver === null || sender === undefined) {
+    return records === "handover" ? yield* Effect.fail(handoverUnavailable) : none;
+  }
+
+  const keying = yield* setterKeying(client, resolver);
+  const roles =
+    keying === "name"
+      ? yield* Rpc.readContract(client, {
+          address: resolver,
+          abi: Abis.v2.permissionedResolver,
+          functionName: "roles",
+          args: [0n, sender],
+        })
+      : 0n;
+  if (roles === 0n) return records === "handover" ? yield* Effect.fail(handoverUnavailable) : none;
+
+  if (records === "keep") {
+    return {
+      ...none,
+      warnings: [
+        {
+          code: "RECORD_CONTROL_RETAINED",
+          message:
+            'The sender keeps its roles on the name\'s PermissionedResolver and can still edit its records; pass `records: "handover"` to move them.',
+        },
+      ],
+    };
+  }
+
+  // The signer's shared resolver serves its other names too; handing it over would give them away.
+  const owned = yield* deployPermissionedResolver(client, {
+    deployer: sender,
+    owner: sender,
+    salt: ownedResolverSalt(sender),
+  });
+  if (isAddressEqual(owned.address, resolver)) {
+    return yield* Effect.fail(
+      new InvalidInputError({
+        code: "INVALID_RECORD_VALUE",
+        field: "records",
+        input: records,
+        shortMessage:
+          "The name uses the sender's shared resolver; its roles cover other names too.",
+        hint: "Give the name its own resolver first, or grant record access with permission.setRecordAccess.",
+      }),
+    );
+  }
+
+  const rolesCall = (functionName: "grantRootRoles" | "revokeRootRoles", account: Address) =>
+    call(
+      resolver,
+      encodeFunctionData({
+        abi: Abis.v2.permissionedResolver,
+        functionName,
+        args: [roles, account],
+      }),
+    );
+  return {
+    before: [rolesCall("grantRootRoles", to)],
+    after: [rolesCall("revokeRootRoles", sender)],
+    warnings: [],
+  };
+});
+
+const handoverUnavailable = new InvalidInputError({
+  code: "INVALID_RECORD_VALUE",
+  field: "records",
+  input: "handover",
+  shortMessage:
+    "Nothing to hand over: the sender holds no roles on an ENSv2 PermissionedResolver for the name.",
+});
+
 /** @internal Builds the plan of `Actions.name.transfer`. */
 export const plan = Effect.fnUntraced(function* (
   client: Client,
@@ -121,12 +220,21 @@ export const plan = Effect.fnUntraced(function* (
     loaded.state.protocol === "v2"
       ? v2Calls(loaded, to, options.unsafe ?? false)
       : yield* v1Calls(yield* requireV1Contracts(client), loaded, to, options.role ?? "owner");
+  const sender = addressOf(options.account) ?? client.account;
+  const control = yield* recordControl(client, loaded, sender, to, options.records ?? "keep");
 
-  return singleStepPlan(client, {
+  return makePlan({
     operation: "name.transfer",
-    account: options.account,
-    description: "Transfer name",
-    calls,
+    chainId: client.chain.id,
+    account: sender,
+    steps: [
+      {
+        id: "write",
+        description: "Transfer name",
+        calls: [...control.before, ...calls, ...control.after],
+      },
+    ],
+    warnings: control.warnings,
   });
 });
 

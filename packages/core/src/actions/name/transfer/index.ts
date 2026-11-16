@@ -25,6 +25,10 @@ import * as Impl from "./effect.js";
  * **Gotchas**
  *
  * - Expired, reserved and unregistered names cannot be transferred.
+ * - ENSv2: roles on the name's PermissionedResolver stay with the sender, who can still edit its
+ *   records (the plan carries a `RECORD_CONTROL_RETAINED` warning). `records: "handover"` grants
+ *   them to the recipient and revokes the sender's in the same step; it is refused for the
+ *   sender's shared `"owned"` resolver, whose roles cover other names.
  *
  * **Example** (Sending a name)
  *
@@ -86,6 +90,12 @@ export declare namespace transfer {
      * @default false
      */
     unsafe?: boolean | undefined;
+    /**
+     * ENSv2: what happens to the sender's roles on the name's PermissionedResolver.
+     *
+     * @default "keep"
+     */
+    records?: "keep" | "handover" | undefined;
   };
   /** Submitted transaction hashes and the plan that produced them. */
   type ReturnType = Write.Result;
