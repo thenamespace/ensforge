@@ -1,4 +1,6 @@
 export * as Errors from "./errors/index.js";
+export { Plan } from "./plan/Plan.js";
+export type { Read, Request, Write } from "./Types.js";
 export * as CoinType from "./utils/CoinType.js";
 export * as ContentHash from "./utils/ContentHash.js";
 export * as Duration from "./utils/Duration.js";

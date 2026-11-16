@@ -9,6 +9,7 @@ const defaults: {
   }),
   PLAN_CHAIN_MISMATCH: () => ({ shortMessage: "The plan was prepared for another chain." }),
   PLAN_ACCOUNT_MISMATCH: () => ({ shortMessage: "The plan was prepared for another account." }),
+  PLAN_INVALID: () => ({ shortMessage: "The text is not a serialized ensforge plan." }),
 };
 
 /**
@@ -24,6 +25,6 @@ export class PlanError extends EnsforgeError<"PlanError", PlanError.Code> {
 }
 
 export declare namespace PlanError {
-  type Code = "PLAN_STALE" | "PLAN_CHAIN_MISMATCH" | "PLAN_ACCOUNT_MISMATCH";
+  type Code = "PLAN_STALE" | "PLAN_CHAIN_MISMATCH" | "PLAN_ACCOUNT_MISMATCH" | "PLAN_INVALID";
   type Options = EnsforgeError.ClassOptions<Code>;
 }

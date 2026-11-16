@@ -350,6 +350,11 @@ export const messages: { readonly [code in Code]: Template<code> } = {
     title: "Wrong account",
     message: "This was prepared for a different account.",
   }),
+  PLAN_INVALID: () => ({
+    title: "Cannot resume",
+    message: "The saved progress is damaged.",
+    action: "Start again.",
+  }),
   CONTRACT_REVERTED: () => ({
     title: "Transaction would fail",
     message: "The network rejected this action.",
