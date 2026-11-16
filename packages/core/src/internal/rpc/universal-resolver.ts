@@ -87,11 +87,18 @@ export const resolve = Effect.fnUntraced(function* (
   >,
 ) => Effect.Effect<Resolved, AnyError>;
 
-/** Resolver address of `name` (including wildcard parents), or `null` when it has none. */
+/** The resolver serving a name. */
+export type FoundResolver = {
+  readonly address: Address;
+  /** Whether the resolver is set on a parent and serves this name as a wildcard. */
+  readonly inherited: boolean;
+};
+
+/** Resolver of `name`, or `null` when neither it nor a parent has one. */
 export const findResolver = (
   client: Client,
   options: { readonly name: string } & Read.BlockOptions,
-): Effect.Effect<Address | null, AnyError> =>
+): Effect.Effect<FoundResolver | null, AnyError> =>
   readContract(client, {
     address: universalResolverOf(client),
     abi: universalResolverAbi,
@@ -100,4 +107,8 @@ export const findResolver = (
     ...(options.blockNumber === undefined
       ? { blockTag: options.blockTag }
       : { blockNumber: options.blockNumber }),
-  }).pipe(Effect.map(([resolver]) => (resolver === zeroAddress ? null : resolver)));
+  }).pipe(
+    Effect.map(([address, , offset]) =>
+      address === zeroAddress ? null : { address, inherited: offset !== 0n },
+    ),
+  );

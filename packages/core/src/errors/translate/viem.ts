@@ -71,6 +71,16 @@ const fromContractError = (
     typeof raw === "string" ? raw : (raw as { readonly data?: Hex } | undefined)?.data;
   if (rawData !== undefined) return fromRevert({ data: rawData as Hex }, context);
 
+  // `eth_call` reverts arrive as JSON-RPC code 3; the revert data is on the RPC error, if any.
+  const executionReverted =
+    find(chain, "ExecutionRevertedError") ?? chain.find((error) => error.code === 3);
+  if (executionReverted !== undefined) {
+    const revertData = chain
+      .map((error) => error.data)
+      .find((data) => typeof data === "string" && data.length > 2);
+    return fromRevert({ data: revertData as Hex | undefined }, context);
+  }
+
   if (find(chain, "ContractFunctionZeroDataError") !== undefined) {
     return new ConfigError({ code: "CONTRACT_NOT_DEPLOYED" });
   }
