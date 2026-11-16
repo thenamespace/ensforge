@@ -12,17 +12,13 @@ import {
   type WorkflowActions,
   makeHcaActions,
   type HcaActions,
-  makeDnsActions,
   makeEventsActions,
   makeIndexerActions,
   makeMigrationActions,
-  makeWrappingActions,
   type BatchActions,
-  type DnsActions,
   type EventsActions,
   type IndexerActions,
   type MigrationActions,
-  type WrappingActions,
 } from "./groups/index.js";
 
 export class Ensforge {
@@ -30,11 +26,9 @@ export class Ensforge {
   readonly hca: HcaActions;
   readonly batch: BatchActions;
   readonly workflows: WorkflowActions;
-  readonly dns: DnsActions;
   readonly events: EventsActions;
   readonly indexer: IndexerActions;
   readonly migration: MigrationActions;
-  readonly wrapping: WrappingActions;
 
   constructor(parameters: CreateConfigParameters | EnsforgeConfig) {
     const storage = parameters.storage ?? createMemoryWorkflowStorage();
@@ -58,11 +52,9 @@ export class Ensforge {
     this.hca = makeHcaActions(config);
     this.batch = makeBatchActions(config);
     this.workflows = makeWorkflowActions(config);
-    this.dns = makeDnsActions(config);
     this.events = makeEventsActions(config);
     this.indexer = makeIndexerActions(config);
     this.migration = makeMigrationActions(config);
-    this.wrapping = makeWrappingActions(config);
 
     Object.freeze(this);
   }

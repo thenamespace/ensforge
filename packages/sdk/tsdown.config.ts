@@ -5,7 +5,6 @@ export default defineConfig({
   alias: { "#/": "./src/" },
   entry: {
     batch: "src/entrypoints/batch.ts",
-    dns: "src/entrypoints/dns.ts",
     events: "src/entrypoints/events.ts",
     "hca/admin": "src/entrypoints/hca-admin.ts",
     hca: "src/entrypoints/hca.ts",
@@ -13,7 +12,6 @@ export default defineConfig({
     indexer: "src/entrypoints/indexer.ts",
     migration: "src/entrypoints/migration.ts",
     wagmi: "src/wagmi.ts",
-    wrapping: "src/entrypoints/wrapping.ts",
   },
   exports: { devExports: "workspace-source" },
   unbundle: true,

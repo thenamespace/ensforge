@@ -33,11 +33,9 @@ export { Ensforge } from "./ensforge.js";
 export type {
   HcaActions,
   BatchActions,
-  DnsActions,
   EventsActions,
   IndexerActions,
   MigrationActions,
-  WrappingActions,
 } from "./groups/index.js";
 export type {
   BoundAction,

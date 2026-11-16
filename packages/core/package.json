@@ -49,10 +49,6 @@
       "workspace-source": "./src/legacy/actions/batch/index.ts",
       "default": "./dist/legacy/batch.js"
     },
-    "./legacy/dns": {
-      "workspace-source": "./src/legacy/actions/dns/index.ts",
-      "default": "./dist/legacy/dns.js"
-    },
     "./legacy/events": {
       "workspace-source": "./src/legacy/actions/events/index.ts",
       "default": "./dist/legacy/events.js"
@@ -109,10 +105,6 @@
       "workspace-source": "./src/legacy/wagmi/index.ts",
       "default": "./dist/legacy/wagmi.js"
     },
-    "./legacy/wrapping": {
-      "workspace-source": "./src/legacy/actions/wrapping/index.ts",
-      "default": "./dist/legacy/wrapping.js"
-    },
     "./package.json": "./package.json",
     "./legacy/testing": {
       "workspace-source": "./src/legacy/testing/index.ts",
@@ -129,7 +121,6 @@
       "./effect": "./dist/effect.js",
       "./legacy": "./dist/legacy.js",
       "./legacy/batch": "./dist/legacy/batch.js",
-      "./legacy/dns": "./dist/legacy/dns.js",
       "./legacy/events": "./dist/legacy/events.js",
       "./legacy/hca": "./dist/legacy/hca.js",
       "./legacy/hca/admin": "./dist/legacy/hca/admin.js",
@@ -144,7 +135,6 @@
       "./legacy/storage": "./dist/legacy/storage.js",
       "./legacy/storage/browser": "./dist/legacy/storage/browser.js",
       "./legacy/wagmi": "./dist/legacy/wagmi.js",
-      "./legacy/wrapping": "./dist/legacy/wrapping.js",
       "./package.json": "./package.json"
     },
     "access": "public",

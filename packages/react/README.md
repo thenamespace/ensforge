@@ -38,34 +38,33 @@ import { EnsforgeProvider } from "@ensforge/react";
 Use read hooks anywhere below the provider:
 
 ```tsx
-import { useFuses } from "@ensforge/react";
+import { useMigrationStatus } from "@ensforge/react";
 
-function Fuses({ name }: { name: string }) {
-  const fuses = useFuses({ name, atom: { swr: { staleTime: "1 minute" } } });
+function Migration({ name }: { name: string }) {
+  const migration = useMigrationStatus({ name, atom: { swr: { staleTime: "1 minute" } } });
 
-  if (fuses.isInitial) return <span>Loading…</span>;
-  if (fuses.isFailure) return <span>{fuses.error.message}</span>;
-  if (fuses.data?.supported !== true) return <span>Not wrapped</span>;
+  if (migration.isInitial) return <span>Loading…</span>;
+  if (migration.isFailure) return <span>{migration.error.message}</span>;
 
-  return <p>{fuses.data.active.join(", ")}</p>;
+  return <p>{migration.data?.status}</p>;
 }
 ```
 
 Write hooks expose mutation state and Promise-based execution:
 
 ```tsx
-import { useSetFuses } from "@ensforge/react";
+import { useMigrateName } from "@ensforge/react";
 
-const setFuses = useSetFuses();
+const migrateName = useMigrateName();
 
-const lock = () => setFuses.mutate({ name: "alice.eth", fuses: ["cannotUnwrap"] });
+const migrate = () => migrateName.mutate({ name: "alice.eth" });
 ```
 
 Hook inputs are inferred automatically. When an action parameter type is needed explicitly, import
 it from the matching SDK group.
 
 ```ts
-import type { SetFusesParameters } from "@ensforge/sdk/wrapping";
+import type { MigrateNameParameters } from "@ensforge/sdk/migration";
 ```
 
 An existing SDK instance can also be shared through the provider:

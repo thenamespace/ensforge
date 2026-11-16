@@ -9,7 +9,6 @@ export default defineConfig({
     index: "src/index.ts",
     legacy: "src/legacy/index.ts",
     "legacy/batch": "src/legacy/actions/batch/index.ts",
-    "legacy/dns": "src/legacy/actions/dns/index.ts",
     "legacy/events": "src/legacy/actions/events/index.ts",
     "legacy/hca": "src/legacy/actions/hca/index.ts",
     "legacy/hca/admin": "src/legacy/actions/hca/admin/index.ts",
@@ -25,7 +24,6 @@ export default defineConfig({
     "legacy/storage/browser": "src/legacy/storage/browser.ts",
     "legacy/testing": "src/legacy/testing/index.ts",
     "legacy/wagmi": "src/legacy/wagmi/index.ts",
-    "legacy/wrapping": "src/legacy/actions/wrapping/index.ts",
   },
   exports: {
     devExports: "workspace-source",

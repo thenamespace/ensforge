@@ -6,11 +6,12 @@ A type-safe client for building ENS applications.
 
 - Config-bound actions with no repeated client arguments
 - Unified behavior across supported ENS deployments
-- Grouped APIs for migration, wrapping, and DNS
+- Grouped APIs for migration, HCA accounts, events and the indexer
 
 Name, record, resolver, primary-name and registration actions live in `@ensforge/core`
 (`ens.name.*`, `ens.record.*`, `ens.resolver.*`, `ens.primaryName.*`, `ens.registration.*`,
-`ens.subname.*`, `ens.registry.*`, `ens.permission.*`, `ens.role.*`, `ens.approval.*`).
+`ens.subname.*`, `ens.registry.*`, `ens.permission.*`, `ens.role.*`, `ens.approval.*`,
+`ens.wrapper.*`, `ens.dns.*`).
 
 - Batched reads and wallet-aware write workflows
 - Compatible with viem clients and Wagmi configs
@@ -33,29 +34,29 @@ const sdk = new Ensforge({
   publicClient: createPublicClient({ chain: mainnet, transport: http() }),
 });
 
-const fuses = await sdk.wrapping.getFuses({ name: "ens.eth" });
+const status = await sdk.migration.getMigrationStatus({ name: "ens.eth" });
 ```
 
 Actions are grouped by ENS capability:
 
 ```ts
-const fuses = await sdk.wrapping.getFuses({ name: "ens.eth" });
-const expiry = await sdk.wrapping.getWrapperExpiry({ name: "ens.eth" });
+const status = await sdk.migration.getMigrationStatus({ name: "ens.eth" });
+const target = await sdk.migration.getMigrationTarget({ name: "ens.eth" });
 ```
 
 Import action-specific types from the corresponding group entrypoint. This keeps editor type
 loading focused while method calls remain fully inferred.
 
 ```ts
-import type { GetFusesParameters } from "@ensforge/sdk/wrapping";
+import type { GetMigrationStatusParameters } from "@ensforge/sdk/migration";
 ```
 
 Compatible reads can be executed together:
 
 ```ts
 const profile = await sdk.batch.readBatch({
-  ens: sdk.wrapping.getFuses.request({ name: "ens.eth" }),
-  wallet: sdk.wrapping.getFuses.request({ name: "wallet.eth" }),
+  ens: sdk.migration.getMigrationStatus.request({ name: "ens.eth" }),
+  wallet: sdk.migration.getMigrationStatus.request({ name: "wallet.eth" }),
 });
 ```
 

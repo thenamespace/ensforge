@@ -56,8 +56,6 @@ export {
   ConfigErrorCode,
   ContractError,
   ContractErrorCode,
-  DnsImportError,
-  DnsImportErrorCode,
   GatewayError,
   GatewayErrorCode,
   NameError,

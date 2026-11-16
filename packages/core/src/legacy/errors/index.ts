@@ -2,7 +2,6 @@ export { AuthorizationError, AuthorizationErrorCode } from "./authorization-erro
 export { CodecError, CodecErrorCode } from "./codec-error.js";
 export { ConfigError, ConfigErrorCode } from "./config-error.js";
 export { ContractError, ContractErrorCode } from "./contract-error.js";
-export { DnsImportError, DnsImportErrorCode } from "./dns-import-error.js";
 export { GatewayError, GatewayErrorCode } from "./gateway-error.js";
 export { IndexerConfigError, IndexerConfigErrorCode } from "./indexer-config-error.js";
 export { IndexerDecodeError } from "./indexer-decode-error.js";
