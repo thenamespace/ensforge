@@ -26,6 +26,16 @@ export const mainnetV1 = {
     dnssecOracle: "0x0fc3152971714E5ed7723FAFa650F86A4BaF30C5",
     offchainDnsResolver: "0xF142B308cF687d4358410a4cB885513b30A42025",
   },
+  legacyPublicResolvers: [
+    "0x231b0Ee14048e9dCcD1d247744d114a4EB5E8E63",
+    "0x4976fb03C32e5B8cfe2b6cCB31c09Ba78EBaBa41",
+    "0xDaaF96c344f63131acadD0Ea35170E7892d3dfBA",
+  ],
+  frozenPublicResolvers: [
+    "0x226159d592E2b063810a10Ebf6dcbADA94Ed68b8",
+    "0x1da022710dF5002339274AaDEe8D58218e9D6AB5",
+    "0x5FfC014343cd971B7eb70732021E26C35B744cc4",
+  ],
   provenance: {
     repository: "https://github.com/ensdomains/ens-contracts",
     release: "v1.7.0",

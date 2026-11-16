@@ -25,6 +25,11 @@ export const sepoliaV1 = {
     dnssecOracle: "0xe62E4b6cE018Ad6e916fcC24545e20a33b9d8653",
     offchainDnsResolver: "0x179Be112b24Ad4cFC392eF8924DfA08C20Ad8583",
   },
+  legacyPublicResolvers: [
+    "0x8948458626811dd0c23EB25Cc74291247077cC51",
+    "0x8FADE66B79cC9f707aB26799354482EB93a5B7dD",
+    "0x0CeEC524b2807841739D3B5E161F5bf1430FFA48",
+  ],
   provenance: {
     repository: "https://github.com/ensdomains/ens-contracts",
     release: "v1.7.0",

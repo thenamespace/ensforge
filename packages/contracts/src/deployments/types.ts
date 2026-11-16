@@ -80,6 +80,16 @@ export interface V1 {
   readonly protocol: "v1";
   readonly status: Status;
   readonly contracts: V1Contracts;
+  /**
+   * Earlier ENS PublicResolver generations, still used by many names. They authorize writes the
+   * same way, through the current registry. Newest first; `contracts.publicResolver` is not listed.
+   */
+  readonly legacyPublicResolvers?: readonly Address[];
+  /**
+   * ENS PublicResolvers bound to the registry that ENS replaced in 2020. Their records can be read
+   * but no longer changed; the oldest store raw `content` instead of `contenthash`.
+   */
+  readonly frozenPublicResolvers?: readonly Address[];
   readonly provenance?: Provenance;
 }
 

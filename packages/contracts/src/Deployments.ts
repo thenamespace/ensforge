@@ -295,6 +295,18 @@ const validateV1 = (deployment: V1, chainId: number, issues: string[]): void => 
   validateIdentity("v1", deployment, chainId, issues);
   if (deployment.protocol !== "v1") issues.push('v1.protocol must be "v1"');
   validateGroup("v1.contracts", deployment.contracts, v1ContractKeys, issues);
+  for (const key of ["legacyPublicResolvers", "frozenPublicResolvers"] as const) {
+    const addresses: unknown = deployment[key];
+    if (
+      addresses !== undefined &&
+      !(
+        Array.isArray(addresses) &&
+        addresses.every((address) => typeof address === "string" && addressPattern.test(address))
+      )
+    ) {
+      issues.push(`v1.${key} must be an array of 0x-prefixed 20-byte addresses`);
+    }
+  }
 };
 
 const validateV2 = (deployment: V2, chainId: number, issues: string[]): void => {
