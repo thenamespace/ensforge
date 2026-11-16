@@ -179,6 +179,7 @@ const ensErrorsAbi: Abi
   error ERC20InvalidReceiver(address)
   error ERC20InvalidSender(address)
   error ERC20InvalidSpender(address)
+  error InvalidUpgradeTarget(address,address)
 const erc1155Abi: Abi
   error ERC1155InsufficientBalance(address,uint256,uint256,uint256)
   error ERC1155InvalidApprover(address)

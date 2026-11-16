@@ -225,6 +225,7 @@ const Abis.shared.errors: Abi
   error ERC20InvalidReceiver(address)
   error ERC20InvalidSender(address)
   error ERC20InvalidSpender(address)
+  error InvalidUpgradeTarget(address,address)
 const Abis.shared.extendedDnsResolver: Abi
   function resolve(bytes,bytes,bytes) view returns (bytes)
 const Abis.shared.extendedResolver: Abi
