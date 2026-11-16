@@ -118,6 +118,7 @@ export const revertMap: Readonly<Record<string, Mapper>> = {
     }),
   PaymentTokenNotSupported: () => new UnsupportedError({ code: "PAYMENT_TOKEN_UNSUPPORTED" }),
   UpgradeTargetNotApproved: () => new UnsupportedError({ code: "UPGRADE_NOT_APPROVED" }),
+  InvalidUpgradeTarget: () => new UnsupportedError({ code: "UPGRADE_NOT_APPROVED" }),
   UnsupportedResolverProfile: () => new UnsupportedError({ code: "RESOLVER_PROFILE_UNSUPPORTED" }),
   ResolverNotFound: () => new NotFoundError({ code: "RESOLVER_NOT_FOUND" }),
   ResolverNotContract: () => new NotFoundError({ code: "RESOLVER_NOT_FOUND" }),

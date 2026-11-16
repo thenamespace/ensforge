@@ -6,7 +6,9 @@ import * as name from "./name/index.js";
 import * as primaryName from "./primaryName/index.js";
 import * as record from "./record/index.js";
 import * as registration from "./registration/index.js";
+import * as registry from "./registry/index.js";
 import * as resolver from "./resolver/index.js";
+import * as subname from "./subname/index.js";
 
 /** `name` actions bound to a client. */
 export type NameActions = {
@@ -269,6 +271,92 @@ export const registrationActions =
     },
   });
 
+/** `registry` actions bound to a client. */
+export type RegistryActions = {
+  readonly registry: {
+    /** Sets or removes the subregistry of an ENSv2 name. Resolves once the transaction is submitted. */
+    readonly attach: BoundWrite<typeof registry.attach>;
+    /** Sets or removes the subregistry of an ENSv2 name. Resolves once the receipt is in. */
+    readonly attachSync: Bound<typeof registry.attachSync>;
+    /** Deploys an ENSv2 UserRegistry, optionally attaching it as a name's subregistry. Resolves once the transaction is submitted. */
+    readonly deploy: BoundWrite<typeof registry.deploy>;
+    /** Deploys an ENSv2 UserRegistry, optionally attaching it as a name's subregistry. Resolves once the receipt is in. */
+    readonly deploySync: Bound<typeof registry.deploySync>;
+    /** Reads an ENSv2 registry: its kind, implementation, parent, canonical name, URI, whether it is emancipated, and whether it can be upgraded. */
+    readonly get: Bound<typeof registry.get>;
+    /** Sets the metadata URI of an ENSv2 registry. Resolves once the transaction is submitted. */
+    readonly setUri: BoundWrite<typeof registry.setUri>;
+    /** Sets the metadata URI of an ENSv2 registry. Resolves once the receipt is in. */
+    readonly setUriSync: Bound<typeof registry.setUriSync>;
+    /** Upgrades an ENSv2 registry to the deployment's latest implementation. Resolves once the transaction is submitted. */
+    readonly upgrade: BoundWrite<typeof registry.upgrade>;
+    /** Upgrades an ENSv2 registry to the deployment's latest implementation. Resolves once the receipt is in. */
+    readonly upgradeSync: Bound<typeof registry.upgradeSync>;
+  };
+};
+
+/**
+ * Adds the `registry` actions to a client.
+ *
+ * @category decorators
+ * @since 1.0.0
+ */
+export const registryActions =
+  () =>
+  (client: Client<object>): RegistryActions => ({
+    registry: {
+      attach: Object.assign(
+        (options: Parameters<typeof registry.attach>[1]) => registry.attach(client, options),
+        {
+          prepare: (options: Parameters<typeof registry.attach.prepare>[1]) =>
+            registry.attach.prepare(client, options),
+          simulate: (options: Parameters<typeof registry.attach.simulate>[1]) =>
+            registry.attach.simulate(client, options),
+          estimateGas: (options: Parameters<typeof registry.attach.estimateGas>[1]) =>
+            registry.attach.estimateGas(client, options),
+        },
+      ),
+      attachSync: (options) => registry.attachSync(client, options),
+      deploy: Object.assign(
+        (options: Parameters<typeof registry.deploy>[1]) => registry.deploy(client, options),
+        {
+          prepare: (options: Parameters<typeof registry.deploy.prepare>[1]) =>
+            registry.deploy.prepare(client, options),
+          simulate: (options: Parameters<typeof registry.deploy.simulate>[1]) =>
+            registry.deploy.simulate(client, options),
+          estimateGas: (options: Parameters<typeof registry.deploy.estimateGas>[1]) =>
+            registry.deploy.estimateGas(client, options),
+        },
+      ),
+      deploySync: (options) => registry.deploySync(client, options),
+      get: (options) => registry.get(client, options),
+      setUri: Object.assign(
+        (options: Parameters<typeof registry.setUri>[1]) => registry.setUri(client, options),
+        {
+          prepare: (options: Parameters<typeof registry.setUri.prepare>[1]) =>
+            registry.setUri.prepare(client, options),
+          simulate: (options: Parameters<typeof registry.setUri.simulate>[1]) =>
+            registry.setUri.simulate(client, options),
+          estimateGas: (options: Parameters<typeof registry.setUri.estimateGas>[1]) =>
+            registry.setUri.estimateGas(client, options),
+        },
+      ),
+      setUriSync: (options) => registry.setUriSync(client, options),
+      upgrade: Object.assign(
+        (options: Parameters<typeof registry.upgrade>[1]) => registry.upgrade(client, options),
+        {
+          prepare: (options: Parameters<typeof registry.upgrade.prepare>[1]) =>
+            registry.upgrade.prepare(client, options),
+          simulate: (options: Parameters<typeof registry.upgrade.simulate>[1]) =>
+            registry.upgrade.simulate(client, options),
+          estimateGas: (options: Parameters<typeof registry.upgrade.estimateGas>[1]) =>
+            registry.upgrade.estimateGas(client, options),
+        },
+      ),
+      upgradeSync: (options) => registry.upgradeSync(client, options),
+    },
+  });
+
 /** `resolver` actions bound to a client. */
 export type ResolverActions = {
   readonly resolver: {
@@ -361,12 +449,81 @@ export const resolverActions =
     },
   });
 
+/** `subname` actions bound to a client. */
+export type SubnameActions = {
+  readonly subname: {
+    /** Creates a subname, routed by its parent: an ENSv2 subregistry, the ENSv1 registry or the NameWrapper. Resolves once the transaction is submitted. */
+    readonly create: BoundWrite<typeof subname.create>;
+    /** Creates a subname, routed by its parent: an ENSv2 subregistry, the ENSv1 registry or the NameWrapper. Resolves once the receipt is in. */
+    readonly createSync: Bound<typeof subname.createSync>;
+    /** Removes a subname. Resolves once the transaction is submitted. */
+    readonly remove: BoundWrite<typeof subname.remove>;
+    /** Removes a subname. Resolves once the receipt is in. */
+    readonly removeSync: Bound<typeof subname.removeSync>;
+    /** Changes a subname from its parent: owner, resolver or expiry, in one plan. Resolves once the transaction is submitted. */
+    readonly update: BoundWrite<typeof subname.update>;
+    /** Changes a subname from its parent: owner, resolver or expiry, in one plan. Resolves once the receipt is in. */
+    readonly updateSync: Bound<typeof subname.updateSync>;
+  };
+};
+
+/**
+ * Adds the `subname` actions to a client.
+ *
+ * @category decorators
+ * @since 1.0.0
+ */
+export const subnameActions =
+  () =>
+  (client: Client<object>): SubnameActions => ({
+    subname: {
+      create: Object.assign(
+        (options: Parameters<typeof subname.create>[1]) => subname.create(client, options),
+        {
+          prepare: (options: Parameters<typeof subname.create.prepare>[1]) =>
+            subname.create.prepare(client, options),
+          simulate: (options: Parameters<typeof subname.create.simulate>[1]) =>
+            subname.create.simulate(client, options),
+          estimateGas: (options: Parameters<typeof subname.create.estimateGas>[1]) =>
+            subname.create.estimateGas(client, options),
+        },
+      ),
+      createSync: (options) => subname.createSync(client, options),
+      remove: Object.assign(
+        (options: Parameters<typeof subname.remove>[1]) => subname.remove(client, options),
+        {
+          prepare: (options: Parameters<typeof subname.remove.prepare>[1]) =>
+            subname.remove.prepare(client, options),
+          simulate: (options: Parameters<typeof subname.remove.simulate>[1]) =>
+            subname.remove.simulate(client, options),
+          estimateGas: (options: Parameters<typeof subname.remove.estimateGas>[1]) =>
+            subname.remove.estimateGas(client, options),
+        },
+      ),
+      removeSync: (options) => subname.removeSync(client, options),
+      update: Object.assign(
+        (options: Parameters<typeof subname.update>[1]) => subname.update(client, options),
+        {
+          prepare: (options: Parameters<typeof subname.update.prepare>[1]) =>
+            subname.update.prepare(client, options),
+          simulate: (options: Parameters<typeof subname.update.simulate>[1]) =>
+            subname.update.simulate(client, options),
+          estimateGas: (options: Parameters<typeof subname.update.estimateGas>[1]) =>
+            subname.update.estimateGas(client, options),
+        },
+      ),
+      updateSync: (options) => subname.updateSync(client, options),
+    },
+  });
+
 /** Every action group bound to a client. */
 export type EnsActions = NameActions &
   PrimaryNameActions &
   RecordActions &
   RegistrationActions &
-  ResolverActions;
+  RegistryActions &
+  ResolverActions &
+  SubnameActions;
 
 /**
  * Adds every ENS action group to a client.
@@ -387,5 +544,7 @@ export const ensActions =
     ...primaryNameActions()(client),
     ...recordActions()(client),
     ...registrationActions()(client),
+    ...registryActions()(client),
     ...resolverActions()(client),
+    ...subnameActions()(client),
   });

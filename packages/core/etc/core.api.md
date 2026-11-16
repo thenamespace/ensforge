@@ -169,6 +169,55 @@ function Actions.registration.renewSync(client: Client<object> | ViemClient, opt
 type Actions.registration.renewSync.ErrorType = CommitmentError | ConfigError | ContractRevertError | DnsError | GatewayError | IndexerError | InsufficientFundsError | InternalError | InvalidInputError | MigrationError | NameStateError | NetworkError | NotFoundError | PlanError | TransactionError | UnauthorizedError | UnsupportedError | UserRejectedError | WalletError
 type Actions.registration.renewSync.Options = renew.Options & Write.Options & { confirmations?: number | undefined; timeout?: number | undefined; }
 type Actions.registration.renewSync.ReturnType = Result & { readonly receipt: TransactionReceipt; readonly receipts: readonly TransactionReceipt[]; } & { readonly names: readonly { readonly name: string; readonly expiry: bigint; }[]; readonly paid: bigint; }
+function Actions.registry.attach(client: Client<object> | ViemClient, options: attach.Options & Write.Options) => Promise<Result>
+type Actions.registry.attach.ErrorType = CommitmentError | ConfigError | ContractRevertError | DnsError | GatewayError | IndexerError | InsufficientFundsError | InternalError | InvalidInputError | MigrationError | NameStateError | NetworkError | NotFoundError | PlanError | TransactionError | UnauthorizedError | UnsupportedError | UserRejectedError | WalletError
+function Actions.registry.attach.estimateGas(client: Client<object> | ViemClient, options: Options & Pick<Options, 'account'>) => Promise<Estimate>
+type Actions.registry.attach.Options = { name: string; registry: string | null; setParent?: boolean | undefined; }
+function Actions.registry.attach.prepare(client: Client<object> | ViemClient, options: Options & Pick<Options, 'account'>) => Promise<Plan>
+type Actions.registry.attach.ReturnType = { readonly hash: `0x${string}`; readonly hashes: readonly `0x${string}`[]; readonly id: string | undefined; readonly plan: Plan; }
+function Actions.registry.attach.simulate(client: Client<object> | ViemClient, options: Options & Pick<Options, 'account'>) => Promise<Simulation>
+function Actions.registry.attachSync(client: Client<object> | ViemClient, options: attach.Options & Write.Options & { confirmations?: number | undefined; timeout?: number | undefined; }) => Promise<SyncResult>
+type Actions.registry.attachSync.ErrorType = CommitmentError | ConfigError | ContractRevertError | DnsError | GatewayError | IndexerError | InsufficientFundsError | InternalError | InvalidInputError | MigrationError | NameStateError | NetworkError | NotFoundError | PlanError | TransactionError | UnauthorizedError | UnsupportedError | UserRejectedError | WalletError
+type Actions.registry.attachSync.Options = attach.Options & Write.Options & { confirmations?: number | undefined; timeout?: number | undefined; }
+type Actions.registry.attachSync.ReturnType = Result & { readonly receipt: TransactionReceipt; readonly receipts: readonly TransactionReceipt[]; }
+function Actions.registry.deploy(client: Client<object> | ViemClient, options: deploy.Options & Write.Options) => Promise<ReturnType>
+type Actions.registry.deploy.ErrorType = CommitmentError | ConfigError | ContractRevertError | DnsError | GatewayError | IndexerError | InsufficientFundsError | InternalError | InvalidInputError | MigrationError | NameStateError | NetworkError | NotFoundError | PlanError | TransactionError | UnauthorizedError | UnsupportedError | UserRejectedError | WalletError
+function Actions.registry.deploy.estimateGas(client: Client<object> | ViemClient, options: Options & Pick<Options, 'account'>) => Promise<Estimate>
+type Actions.registry.deploy.Options = { owner?: string | undefined; grants?: readonly { account: string; roles: bigint | readonly Name[]; }[] | undefined; emancipated?: boolean | undefined; attachTo?: string | undefined; salt?: bigint | undefined; }
+function Actions.registry.deploy.prepare(client: Client<object> | ViemClient, options: Options & Pick<Options, 'account'>) => Promise<Plan>
+type Actions.registry.deploy.ReturnType = Result & { readonly registry: `0x${string}`; }
+function Actions.registry.deploy.simulate(client: Client<object> | ViemClient, options: Options & Pick<Options, 'account'>) => Promise<Simulation>
+function Actions.registry.deploySync(client: Client<object> | ViemClient, options: deploy.Options & Write.Options & { confirmations?: number | undefined; timeout?: number | undefined; }) => Promise<ReturnType>
+type Actions.registry.deploySync.ErrorType = CommitmentError | ConfigError | ContractRevertError | DnsError | GatewayError | IndexerError | InsufficientFundsError | InternalError | InvalidInputError | MigrationError | NameStateError | NetworkError | NotFoundError | PlanError | TransactionError | UnauthorizedError | UnsupportedError | UserRejectedError | WalletError
+type Actions.registry.deploySync.Options = deploy.Options & Write.Options & { confirmations?: number | undefined; timeout?: number | undefined; }
+type Actions.registry.deploySync.ReturnType = Result & { readonly receipt: TransactionReceipt; readonly receipts: readonly TransactionReceipt[]; } & { readonly registry: `0x${string}`; }
+function Actions.registry.get(client: Client<object> | ViemClient, options: (Pick<Options, 'signal' | 'strict'> & BlockOptions) & (({ name: string; } | { registry: string; }) & { account?: string | undefined; })) => Promise<ReturnType>
+type Actions.registry.get.ErrorType = CommitmentError | ConfigError | ContractRevertError | DnsError | GatewayError | IndexerError | InsufficientFundsError | InternalError | InvalidInputError | MigrationError | NameStateError | NetworkError | NotFoundError | PlanError | TransactionError | UnauthorizedError | UnsupportedError | UserRejectedError | WalletError
+type Actions.registry.get.Options = (Pick<Options, 'signal' | 'strict'> & BlockOptions) & (({ name: string; } | { registry: string; }) & { account?: string | undefined; })
+function Actions.registry.get.request(options: (Pick<Options, 'signal' | 'strict'> & BlockOptions) & (({ name: string; } | { registry: string; }) & { account?: string | undefined; })) => Request<ReturnType, AnyError>
+type Actions.registry.get.ReturnType = RegistryInfo | null
+function Actions.registry.setUri(client: Client<object> | ViemClient, options: setUri.Options & Write.Options) => Promise<Result>
+type Actions.registry.setUri.ErrorType = CommitmentError | ConfigError | ContractRevertError | DnsError | GatewayError | IndexerError | InsufficientFundsError | InternalError | InvalidInputError | MigrationError | NameStateError | NetworkError | NotFoundError | PlanError | TransactionError | UnauthorizedError | UnsupportedError | UserRejectedError | WalletError
+function Actions.registry.setUri.estimateGas(client: Client<object> | ViemClient, options: Options & Pick<Options, 'account'>) => Promise<Estimate>
+type Actions.registry.setUri.Options = ({ name: string; } | { registry: string; }) & { uri: string; renderer?: string | null | undefined; }
+function Actions.registry.setUri.prepare(client: Client<object> | ViemClient, options: Options & Pick<Options, 'account'>) => Promise<Plan>
+type Actions.registry.setUri.ReturnType = { readonly hash: `0x${string}`; readonly hashes: readonly `0x${string}`[]; readonly id: string | undefined; readonly plan: Plan; }
+function Actions.registry.setUri.simulate(client: Client<object> | ViemClient, options: Options & Pick<Options, 'account'>) => Promise<Simulation>
+function Actions.registry.setUriSync(client: Client<object> | ViemClient, options: setUri.Options & Write.Options & { confirmations?: number | undefined; timeout?: number | undefined; }) => Promise<SyncResult>
+type Actions.registry.setUriSync.ErrorType = CommitmentError | ConfigError | ContractRevertError | DnsError | GatewayError | IndexerError | InsufficientFundsError | InternalError | InvalidInputError | MigrationError | NameStateError | NetworkError | NotFoundError | PlanError | TransactionError | UnauthorizedError | UnsupportedError | UserRejectedError | WalletError
+type Actions.registry.setUriSync.Options = setUri.Options & Write.Options & { confirmations?: number | undefined; timeout?: number | undefined; }
+type Actions.registry.setUriSync.ReturnType = Result & { readonly receipt: TransactionReceipt; readonly receipts: readonly TransactionReceipt[]; }
+function Actions.registry.upgrade(client: Client<object> | ViemClient, options: upgrade.Options & Write.Options) => Promise<Result>
+type Actions.registry.upgrade.ErrorType = CommitmentError | ConfigError | ContractRevertError | DnsError | GatewayError | IndexerError | InsufficientFundsError | InternalError | InvalidInputError | MigrationError | NameStateError | NetworkError | NotFoundError | PlanError | TransactionError | UnauthorizedError | UnsupportedError | UserRejectedError | WalletError
+function Actions.registry.upgrade.estimateGas(client: Client<object> | ViemClient, options: Options & Pick<Options, 'account'>) => Promise<Estimate>
+type Actions.registry.upgrade.Options = ({ name: string; } | { registry: string; }) & { implementation?: string | undefined; }
+function Actions.registry.upgrade.prepare(client: Client<object> | ViemClient, options: Options & Pick<Options, 'account'>) => Promise<Plan>
+type Actions.registry.upgrade.ReturnType = { readonly hash: `0x${string}`; readonly hashes: readonly `0x${string}`[]; readonly id: string | undefined; readonly plan: Plan; }
+function Actions.registry.upgrade.simulate(client: Client<object> | ViemClient, options: Options & Pick<Options, 'account'>) => Promise<Simulation>
+function Actions.registry.upgradeSync(client: Client<object> | ViemClient, options: upgrade.Options & Write.Options & { confirmations?: number | undefined; timeout?: number | undefined; }) => Promise<SyncResult>
+type Actions.registry.upgradeSync.ErrorType = CommitmentError | ConfigError | ContractRevertError | DnsError | GatewayError | IndexerError | InsufficientFundsError | InternalError | InvalidInputError | MigrationError | NameStateError | NetworkError | NotFoundError | PlanError | TransactionError | UnauthorizedError | UnsupportedError | UserRejectedError | WalletError
+type Actions.registry.upgradeSync.Options = upgrade.Options & Write.Options & { confirmations?: number | undefined; timeout?: number | undefined; }
+type Actions.registry.upgradeSync.ReturnType = Result & { readonly receipt: TransactionReceipt; readonly receipts: readonly TransactionReceipt[]; }
 function Actions.resolver.create(client: Client<object> | ViemClient, options: create.Options & Write.Options) => Promise<ReturnType>
 type Actions.resolver.create.ErrorType = CommitmentError | ConfigError | ContractRevertError | DnsError | GatewayError | IndexerError | InsufficientFundsError | InternalError | InvalidInputError | MigrationError | NameStateError | NetworkError | NotFoundError | PlanError | TransactionError | UnauthorizedError | UnsupportedError | UserRejectedError | WalletError
 function Actions.resolver.create.estimateGas(client: Client<object> | ViemClient, options: Options & Pick<Options, 'account'>) => Promise<Estimate>
@@ -228,6 +277,39 @@ function Actions.resolver.upgradeSync(client: Client<object> | ViemClient, optio
 type Actions.resolver.upgradeSync.ErrorType = CommitmentError | ConfigError | ContractRevertError | DnsError | GatewayError | IndexerError | InsufficientFundsError | InternalError | InvalidInputError | MigrationError | NameStateError | NetworkError | NotFoundError | PlanError | TransactionError | UnauthorizedError | UnsupportedError | UserRejectedError | WalletError
 type Actions.resolver.upgradeSync.Options = upgrade.Options & Write.Options & { confirmations?: number | undefined; timeout?: number | undefined; }
 type Actions.resolver.upgradeSync.ReturnType = Result & { readonly receipt: TransactionReceipt; readonly receipts: readonly TransactionReceipt[]; }
+function Actions.subname.create(client: Client<object> | ViemClient, options: create.Options & Write.Options) => Promise<Result>
+type Actions.subname.create.ErrorType = CommitmentError | ConfigError | ContractRevertError | DnsError | GatewayError | IndexerError | InsufficientFundsError | InternalError | InvalidInputError | MigrationError | NameStateError | NetworkError | NotFoundError | PlanError | TransactionError | UnauthorizedError | UnsupportedError | UserRejectedError | WalletError
+function Actions.subname.create.estimateGas(client: Client<object> | ViemClient, options: Options & Pick<Options, 'account'>) => Promise<Estimate>
+type Actions.subname.create.Options = { name: string; owner?: string | undefined; resolver?: string | null | undefined; records?: Omit<Options, 'name' | 'resolver' | 'clear' | 'pubkey'> | undefined; expiry?: bigint | undefined; fuses?: readonly ('cannotUnwrap' | 'cannotBurnFuses' | 'cannotTransfer' | 'cannotSetResolver' | 'cannotSetTtl' | 'cannotCreateSubdomain' | 'cannotApprove' | 'parentCannotControl' | 'isDotEth' | 'canExtendExpiry')[] | undefined; roles?: bigint | readonly Name[] | undefined; emancipate?: boolean | undefined; upsert?: boolean | undefined; }
+function Actions.subname.create.prepare(client: Client<object> | ViemClient, options: Options & Pick<Options, 'account'>) => Promise<Plan>
+type Actions.subname.create.ReturnType = { readonly hash: `0x${string}`; readonly hashes: readonly `0x${string}`[]; readonly id: string | undefined; readonly plan: Plan; }
+function Actions.subname.create.simulate(client: Client<object> | ViemClient, options: Options & Pick<Options, 'account'>) => Promise<Simulation>
+function Actions.subname.createSync(client: Client<object> | ViemClient, options: create.Options & Write.Options & { confirmations?: number | undefined; timeout?: number | undefined; }) => Promise<SyncResult>
+type Actions.subname.createSync.ErrorType = CommitmentError | ConfigError | ContractRevertError | DnsError | GatewayError | IndexerError | InsufficientFundsError | InternalError | InvalidInputError | MigrationError | NameStateError | NetworkError | NotFoundError | PlanError | TransactionError | UnauthorizedError | UnsupportedError | UserRejectedError | WalletError
+type Actions.subname.createSync.Options = create.Options & Write.Options & { confirmations?: number | undefined; timeout?: number | undefined; }
+type Actions.subname.createSync.ReturnType = Result & { readonly receipt: TransactionReceipt; readonly receipts: readonly TransactionReceipt[]; }
+function Actions.subname.remove(client: Client<object> | ViemClient, options: remove.Options & Write.Options) => Promise<Result>
+type Actions.subname.remove.ErrorType = CommitmentError | ConfigError | ContractRevertError | DnsError | GatewayError | IndexerError | InsufficientFundsError | InternalError | InvalidInputError | MigrationError | NameStateError | NetworkError | NotFoundError | PlanError | TransactionError | UnauthorizedError | UnsupportedError | UserRejectedError | WalletError
+function Actions.subname.remove.estimateGas(client: Client<object> | ViemClient, options: Options & Pick<Options, 'account'>) => Promise<Estimate>
+type Actions.subname.remove.Options = { name: string; }
+function Actions.subname.remove.prepare(client: Client<object> | ViemClient, options: Options & Pick<Options, 'account'>) => Promise<Plan>
+type Actions.subname.remove.ReturnType = { readonly hash: `0x${string}`; readonly hashes: readonly `0x${string}`[]; readonly id: string | undefined; readonly plan: Plan; }
+function Actions.subname.remove.simulate(client: Client<object> | ViemClient, options: Options & Pick<Options, 'account'>) => Promise<Simulation>
+function Actions.subname.removeSync(client: Client<object> | ViemClient, options: remove.Options & Write.Options & { confirmations?: number | undefined; timeout?: number | undefined; }) => Promise<SyncResult>
+type Actions.subname.removeSync.ErrorType = CommitmentError | ConfigError | ContractRevertError | DnsError | GatewayError | IndexerError | InsufficientFundsError | InternalError | InvalidInputError | MigrationError | NameStateError | NetworkError | NotFoundError | PlanError | TransactionError | UnauthorizedError | UnsupportedError | UserRejectedError | WalletError
+type Actions.subname.removeSync.Options = remove.Options & Write.Options & { confirmations?: number | undefined; timeout?: number | undefined; }
+type Actions.subname.removeSync.ReturnType = Result & { readonly receipt: TransactionReceipt; readonly receipts: readonly TransactionReceipt[]; }
+function Actions.subname.update(client: Client<object> | ViemClient, options: update.Options & Write.Options) => Promise<Result>
+type Actions.subname.update.ErrorType = CommitmentError | ConfigError | ContractRevertError | DnsError | GatewayError | IndexerError | InsufficientFundsError | InternalError | InvalidInputError | MigrationError | NameStateError | NetworkError | NotFoundError | PlanError | TransactionError | UnauthorizedError | UnsupportedError | UserRejectedError | WalletError
+function Actions.subname.update.estimateGas(client: Client<object> | ViemClient, options: Options & Pick<Options, 'account'>) => Promise<Estimate>
+type Actions.subname.update.Options = { name: string; owner?: string | undefined; resolver?: string | null | undefined; expiry?: bigint | undefined; }
+function Actions.subname.update.prepare(client: Client<object> | ViemClient, options: Options & Pick<Options, 'account'>) => Promise<Plan>
+type Actions.subname.update.ReturnType = { readonly hash: `0x${string}`; readonly hashes: readonly `0x${string}`[]; readonly id: string | undefined; readonly plan: Plan; }
+function Actions.subname.update.simulate(client: Client<object> | ViemClient, options: Options & Pick<Options, 'account'>) => Promise<Simulation>
+function Actions.subname.updateSync(client: Client<object> | ViemClient, options: update.Options & Write.Options & { confirmations?: number | undefined; timeout?: number | undefined; }) => Promise<SyncResult>
+type Actions.subname.updateSync.ErrorType = CommitmentError | ConfigError | ContractRevertError | DnsError | GatewayError | IndexerError | InsufficientFundsError | InternalError | InvalidInputError | MigrationError | NameStateError | NetworkError | NotFoundError | PlanError | TransactionError | UnauthorizedError | UnsupportedError | UserRejectedError | WalletError
+type Actions.subname.updateSync.Options = update.Options & Write.Options & { confirmations?: number | undefined; timeout?: number | undefined; }
+type Actions.subname.updateSync.ReturnType = Result & { readonly receipt: TransactionReceipt; readonly receipts: readonly TransactionReceipt[]; }
 function CoinType.decodeAddress(coinType: bigint, data: `0x${string}`) => string | null
 function CoinType.encodeAddress(coinType: bigint, address: string) => `0x${string}`
 function CoinType.from(input: string | bigint | { readonly chainId: number; }) => bigint
@@ -244,7 +326,7 @@ function ContentHash.toGatewayUrl(uri: string, gateways?: Readonly<Partial<Recor
 function Duration.days(n: number | bigint) => bigint
 function Duration.years(n: number | bigint) => bigint
 function ensActions() => (client: Client<object>) => EnsActions
-type EnsActions = NameActions & PrimaryNameActions & RecordActions & RegistrationActions & ResolverActions
+type EnsActions = NameActions & PrimaryNameActions & RecordActions & RegistrationActions & RegistryActions & ResolverActions & SubnameActions
 type Ensforge.Client = actions & ClientBase<actions>
 interface Ensforge.ClientBase {
   chain: { readonly id: number; readonly name: string; }
@@ -750,6 +832,7 @@ type Fuse.Decoded = { readonly cannotUnwrap: boolean; readonly cannotBurnFuses: 
 function Fuse.from(names: readonly ('cannotUnwrap' | 'cannotBurnFuses' | 'cannotTransfer' | 'cannotSetResolver' | 'cannotSetTtl' | 'cannotCreateSubdomain' | 'cannotApprove' | 'parentCannotControl' | 'isDotEth' | 'canExtendExpiry')[]) => number
 function Fuse.has(mask: number, name: 'cannotUnwrap' | 'cannotBurnFuses' | 'cannotTransfer' | 'cannotSetResolver' | 'cannotSetTtl' | 'cannotCreateSubdomain' | 'cannotApprove' | 'parentCannotControl' | 'isDotEth' | 'canExtendExpiry') => boolean
 type Fuse.Name = 'cannotUnwrap' | 'cannotBurnFuses' | 'cannotTransfer' | 'cannotSetResolver' | 'cannotSetTtl' | 'cannotCreateSubdomain' | 'cannotApprove' | 'parentCannotControl' | 'isDotEth' | 'canExtendExpiry'
+function Name.dnsDecode(data: `0x${string}`) => string
 function Name.dnsEncode(name: string) => `0x${string}`
 function Name.fromLabelhash(hash: `0x${string}`) => string
 function Name.getParent(name: string) => string | null
@@ -792,6 +875,8 @@ function recordActions() => (client: Client<object>) => RecordActions
 type RecordActions = { readonly record: { readonly get: Bound; readonly getAddress: Bound; readonly getAvatar: Bound<typeof getAvatar>; readonly getContentHash: Bound<typeof getContentHash>; readonly getText: Bound<typeof getText>; readonly set: BoundWrite<typeof set>; readonly setSync: Bound<(client: Like, options: Options) => Promise<SyncResult>>; }; }
 function registrationActions() => (client: Client<object>) => RegistrationActions
 type RegistrationActions = { readonly registration: { readonly commit: BoundWrite<typeof commit>; readonly commitSync: Bound<(client: Like, options: Options) => Promise<ReturnType>>; readonly getCommitmentStatus: Bound<typeof getCommitmentStatus>; readonly getParameters: Bound<typeof getParameters>; readonly getPrice: Bound<typeof getPrice>; readonly getRenewalPrice: Bound<typeof getRenewalPrice>; readonly isAvailable: Bound<typeof isAvailable>; readonly register: BoundWrite<typeof register>; readonly registerSync: Bound<(client: Like, options: Options) => Promise<ReturnType>>; readonly renew: BoundWrite<typeof renew>; readonly renewSync: Bound<(client: Like, options: Options) => Promise<ReturnType>>; }; }
+function registryActions() => (client: Client<object>) => RegistryActions
+type RegistryActions = { readonly registry: { readonly attach: BoundWrite<typeof attach>; readonly attachSync: Bound<(client: Like, options: Options) => Promise<SyncResult>>; readonly deploy: BoundWrite<typeof deploy>; readonly deploySync: Bound<(client: Like, options: Options) => Promise<ReturnType>>; readonly get: Bound<typeof get>; readonly setUri: BoundWrite<typeof setUri>; readonly setUriSync: Bound<(client: Like, options: Options) => Promise<SyncResult>>; readonly upgrade: BoundWrite<typeof upgrade>; readonly upgradeSync: Bound<(client: Like, options: Options) => Promise<SyncResult>>; }; }
 interface Request {
   path: string
   options: unknown
@@ -808,6 +893,8 @@ const Role.registry: { readonly registrar: bigint; readonly registrarAdmin: bigi
 const Role.resolver: { readonly setAddr: bigint; readonly setAddrAdmin: bigint; readonly setText: bigint; readonly setTextAdmin: bigint; readonly setContenthash: bigint; readonly setContenthashAdmin: bigint; readonly setAbi: bigint; readonly setAbiAdmin: bigint; readonly setInterface: bigint; readonly setInterfaceAdmin: bigint; readonly setName: bigint; readonly setNameAdmin: bigint; readonly link: bigint; readonly linkAdmin: bigint; readonly setData: bigint; readonly setDataAdmin: bigint; readonly canName: bigint; readonly canNameAdmin: bigint; readonly upgrade: bigint; readonly upgradeAdmin: bigint; }
 type Role.Target = 'resolver' | 'registry'
 function Role.toNames(bitmap: bigint, target: 'resolver' | 'registry') => readonly Name[]
+function subnameActions() => (client: Client<object>) => SubnameActions
+type SubnameActions = { readonly subname: { readonly create: BoundWrite<typeof create>; readonly createSync: Bound<(client: Like, options: Options) => Promise<SyncResult>>; readonly remove: BoundWrite<typeof remove>; readonly removeSync: Bound<(client: Like, options: Options) => Promise<SyncResult>>; readonly update: BoundWrite<typeof update>; readonly updateSync: Bound<(client: Like, options: Options) => Promise<SyncResult>>; }; }
 type Write.Method = (client: Like, options: options & Pick<Options, 'account'>) => Promise<value>
 type Write.Mode = 'batch' | 'auto' | 'sequential'
 type Write.Options = { account?: `0x${string}` | Account | undefined; simulate?: boolean | undefined; signal?: AbortSignal | undefined; mode?: Mode | undefined; }
