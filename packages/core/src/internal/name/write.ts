@@ -13,11 +13,16 @@ import type { Plan } from "../../plan/Plan.js";
 import { addressOf } from "../write/signer.js";
 import type { LoadedName } from "./load.js";
 
-/** Fails unless the name is registered (not available, expired, in grace or reserved). */
+/**
+ * Fails unless the name is registered (not available, expired, in grace or reserved) and ENSv2
+ * resolution still reaches it.
+ */
 export const requireRegistered = ({ state }: LoadedName): Effect.Effect<void, AnyError> => {
   switch (state.status) {
     case "registered":
-      return Effect.void;
+      return state.reachable
+        ? Effect.void
+        : Effect.fail(new NameStateError({ code: "NAME_UNREACHABLE" }));
     case "grace":
     case "expired":
       return Effect.fail(new NameStateError({ code: "NAME_EXPIRED" }));

@@ -1,7 +1,7 @@
 import { hexToBigInt, isAddressEqual, maxUint64, zeroAddress, type Address } from "viem";
 
 import type { NameKind, NameState, NameStatus } from "../../actions/name/get/types.js";
-import type { NameData, V1Data, V2Data } from "./read.js";
+import { RegistryStatus, type NameData, type V1Data, type V2Data } from "./read.js";
 
 const orNull = (address: Address | undefined): Address | null =>
   address === undefined || isAddressEqual(address, zeroAddress) ? null : address;
@@ -18,7 +18,11 @@ const flags = (status: NameStatus, isEth2ld: boolean) => ({
   renewable: isEth2ld && (status === "registered" || status === "grace"),
 });
 
-const fromV2 = (data: NameData, v2: V2Data, kind: NameKind): Omit<NameState, "name" | "kind"> => {
+const fromV2 = (
+  data: NameData,
+  v2: V2Data,
+  kind: NameKind,
+): Omit<NameState, "name" | "kind" | "reachable"> => {
   const { state } = v2;
   const neverExpires = state.expiry === maxUint64;
   const status: NameStatus =
@@ -51,7 +55,11 @@ const fromV2 = (data: NameData, v2: V2Data, kind: NameKind): Omit<NameState, "na
   };
 };
 
-const fromV1 = (data: NameData, v1: V1Data, wrapped: boolean): Omit<NameState, "name" | "kind"> => {
+const fromV1 = (
+  data: NameData,
+  v1: V1Data,
+  wrapped: boolean,
+): Omit<NameState, "name" | "kind" | "reachable"> => {
   const { registrar } = v1;
   const unwrapped2ld = !wrapped && registrar !== undefined;
   const expiry =
@@ -98,7 +106,7 @@ const fromV1 = (data: NameData, v1: V1Data, wrapped: boolean): Omit<NameState, "
   };
 };
 
-const unregistered = (data: NameData): Omit<NameState, "name" | "kind"> => ({
+const unregistered = (data: NameData): Omit<NameState, "name" | "kind" | "reachable"> => ({
   protocol: data.v2 !== undefined || data.v1 === undefined ? "v2" : "v1",
   status: "available",
   owner: null,
@@ -120,6 +128,14 @@ const unregistered = (data: NameData): Omit<NameState, "name" | "kind"> => ({
 
 /** Builds the public state of a classified name. */
 export const toNameState = (data: NameData, kind: NameKind): NameState => {
+  // ENSv2 resolution of an ENSv1 name stops early when ENSv2 has a registry for its siblings but
+  // no reservation for it (reserved names fall back to ENSv1), or when an ancestor below the TLD
+  // is registered on ENSv2 without a registry for its children.
+  const v1 = kind === "v1-unwrapped" || kind === "v1-wrapped";
+  const reachable = !(
+    v1 &&
+    (data.v2 !== undefined ? data.v2.state.status !== RegistryStatus.reserved : data.ownedAncestor)
+  );
   const fields =
     (kind === "v2-native" || kind === "v2-migrated" || kind === "v2-reserved") &&
     data.v2 !== undefined
@@ -128,5 +144,5 @@ export const toNameState = (data: NameData, kind: NameKind): NameState => {
         ? fromV1(data, data.v1, kind === "v1-wrapped")
         : unregistered(data);
 
-  return { name: data.parts.name, kind, ...fields };
+  return { name: data.parts.name, kind, ...fields, reachable };
 };

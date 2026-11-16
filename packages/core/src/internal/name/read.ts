@@ -56,6 +56,11 @@ export type NameData = {
   readonly v1: V1Data | undefined;
   /** `undefined` when the deployment has no ENSv2 or the name has no ENSv2 parent registry. */
   readonly v2: V2Data | undefined;
+  /**
+   * Whether an ancestor below the top-level domain is registered on ENSv2 (it owns that subtree).
+   * Only read for names three or more labels deep.
+   */
+  readonly ownedAncestor: boolean;
 };
 
 const readV1 = (client: Client, parts: NameParts, block: Read.BlockOptions) => {
@@ -187,6 +192,49 @@ const readV2 = Effect.fnUntraced(function* (
   return { registry, gracePeriod, ...reads } satisfies V2Data;
 });
 
+/** Whether an ancestor of `parts` below its TLD has an ENSv2 owner. */
+const readOwnedAncestor = (
+  client: Client,
+  parts: NameParts,
+  block: Read.BlockOptions,
+): Effect.Effect<boolean, AnyError> => {
+  const helper = client.deployment.v2?.contracts.universalHelper;
+  const labels = parts.name.split(".");
+  if (helper === undefined || labels.length < 3) return Effect.succeed(false);
+
+  return Rpc.readContractOrUndefined(client, {
+    address: helper,
+    abi: Abis.v2.universalHelper,
+    functionName: "findNearestOwner",
+    args: [parts.dns],
+    ...(block.blockNumber === undefined
+      ? { blockTag: block.blockTag }
+      : { blockNumber: block.blockNumber }),
+  }).pipe(
+    Effect.map((nearest) => {
+      if (nearest === undefined) return false;
+      const [owner, offset] = nearest;
+      if (isAddressEqual(owner, zeroAddress) || offset === 0n) return false;
+      // The owner belongs to the ancestor starting at `offset`; it counts when that ancestor is
+      // below the TLD (TLD owners hold reserved ENSv1 names too).
+      const ancestorLabels = parts.name.slice(byteOffsetToCharIndex(parts.name, offset)).split(".");
+      return ancestorLabels.length >= 2;
+    }),
+  );
+};
+
+/** The character index in `name` of the label that starts at DNS-encoded byte `offset`. */
+const byteOffsetToCharIndex = (name: string, offset: bigint): number => {
+  let bytes = 0;
+  let chars = 0;
+  for (const label of name.split(".")) {
+    if (BigInt(bytes) >= offset) break;
+    bytes += new TextEncoder().encode(label).length + 1;
+    chars += label.length + 1;
+  }
+  return chars;
+};
+
 /**
  * Reads a name's ENSv1 and ENSv2 records. Every read of a round runs concurrently, so the batch
  * resolver sends each round as one multicall.
@@ -201,6 +249,7 @@ export const readName = (
       now: Rpc.blockTimestamp(client, block),
       v1: readV1(client, parts, block),
       v2: readV2(client, parts, block),
+      ownedAncestor: readOwnedAncestor(client, parts, block),
     },
     { concurrency: "unbounded" },
-  ).pipe(Effect.map(({ now, v1, v2 }) => ({ parts, now, v1, v2 })));
+  ).pipe(Effect.map(({ now, v1, v2, ownedAncestor }) => ({ parts, now, v1, v2, ownedAncestor })));

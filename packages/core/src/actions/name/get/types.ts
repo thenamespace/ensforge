@@ -71,6 +71,11 @@ export type NameState = {
   readonly wrapped: boolean;
   /** Whether the name was migrated from ENSv1 to ENSv2. */
   readonly migrated: boolean;
+  /**
+   * Whether ENSv2 resolution reaches the name. `false` for an ENSv1 name whose parent moved to
+   * ENSv2 without it (or that was never reserved there): its ENSv1 records no longer resolve.
+   */
+  readonly reachable: boolean;
   /** Whether the name can be registered now. */
   readonly available: boolean;
   /** Whether the name can be renewed now (`.eth` second-level names when registered or in grace). */

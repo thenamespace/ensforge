@@ -455,6 +455,10 @@ export declare namespace setTtlSync {
  * **Gotchas**
  *
  * - Expired, reserved and unregistered names cannot be transferred.
+ * - ENSv2: roles on the name's PermissionedResolver stay with the sender, who can still edit its
+ *   records (the plan carries a `RECORD_CONTROL_RETAINED` warning). `records: "handover"` grants
+ *   them to the recipient and revokes the sender's in the same step; it is refused for the
+ *   sender's shared `"owned"` resolver, whose roles cover other names.
  *
  * **Example** (Sending a name)
  *

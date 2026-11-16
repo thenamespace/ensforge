@@ -112,6 +112,10 @@ export const messages: { readonly [code in Code]: Template<code> } = {
     title: "Name not wrapped",
     message: `${thisName(error)} is not wrapped.`,
   }),
+  NAME_UNREACHABLE: (error) => ({
+    title: "Name unreachable",
+    message: `${thisName(error)} no longer resolves: its parent moved to ENSv2 without it.`,
+  }),
   NAME_WRAPPED: (error) => ({
     title: "Name already wrapped",
     message: `${thisName(error)} is already wrapped.`,
