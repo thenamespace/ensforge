@@ -1,3 +1,4 @@
+export * as Ensforge from "./client/Ensforge.js";
 export * as Errors from "./errors/index.js";
 export { Plan } from "./plan/Plan.js";
 export type { Read, Request, Write } from "./Types.js";

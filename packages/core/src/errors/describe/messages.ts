@@ -37,6 +37,10 @@ export const messages: { readonly [code in Code]: Template<code> } = {
     title: "Search unavailable",
     message: "Name search is not available in this app.",
   }),
+  INVALID_ACTION_GROUP: () => ({
+    title: "Configuration problem",
+    message: "This app is misconfigured.",
+  }),
   CCIP_READ_DISABLED: (error) => ({
     title: "Off-chain name",
     message: `${thisName(error)} is stored off-chain, and off-chain lookups are turned off.`,

@@ -23,6 +23,10 @@ const defaults: {
     shortMessage: "This action needs an indexer.",
     hint: "Pass `indexer: bigname()` to Ensforge.create.",
   }),
+  INVALID_ACTION_GROUP: () => ({
+    shortMessage: "A decorator added an action group with a reserved name.",
+    hint: "Rename the group; chain, account, deployment, publicClient, config and extend are reserved.",
+  }),
   CCIP_READ_DISABLED: () => ({
     shortMessage: "This name resolves off-chain, and CCIP-Read is disabled.",
     hint: "Remove `ccipRead: false` from Ensforge.create.",
@@ -48,6 +52,7 @@ export declare namespace ConfigError {
     | "CONTRACT_NOT_DEPLOYED"
     | "WALLET_NOT_CONFIGURED"
     | "INDEXER_NOT_CONFIGURED"
-    | "CCIP_READ_DISABLED";
+    | "CCIP_READ_DISABLED"
+    | "INVALID_ACTION_GROUP";
   type Options = EnsforgeError.ClassOptions<Code>;
 }
