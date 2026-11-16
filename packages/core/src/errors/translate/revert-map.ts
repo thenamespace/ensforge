@@ -71,6 +71,7 @@ export const revertMap: Readonly<Record<string, Mapper>> = {
   WrappedOwnerMismatch: notOwner,
   PermissionDenied: notOwner,
   ERC1155MissingApprovalForAll: notApproved,
+  UnauthorizedNamer: notApproved,
   NotApprovedOperator: notApproved,
   OperationProhibited: () => new UnauthorizedError({ code: "FUSE_BURNED" }),
   TransferDisallowed: transferDisallowed,
@@ -100,6 +101,15 @@ export const revertMap: Readonly<Record<string, Mapper>> = {
   UnsupportedResolverProfile: () => new UnsupportedError({ code: "RESOLVER_PROFILE_UNSUPPORTED" }),
   ResolverNotFound: () => new NotFoundError({ code: "RESOLVER_NOT_FOUND" }),
   ResolverNotContract: () => new NotFoundError({ code: "RESOLVER_NOT_FOUND" }),
+  ReverseAddressMismatch: () => new NotFoundError({ code: "PRIMARY_NAME_MISMATCH" }),
+  PrimaryNameNotNormalized: ([name]) =>
+    new InvalidInputError({ code: "INVALID_NAME", input: name, field: "primary name" }),
+  InvalidRecord: () =>
+    new InvalidInputError({
+      code: "INVALID_RECORD_VALUE",
+      field: "link target",
+      shortMessage: "The link target has no records on this resolver.",
+    }),
   HttpError: ([status, message]) =>
     new GatewayError({
       code: "GATEWAY_REQUEST_FAILED",

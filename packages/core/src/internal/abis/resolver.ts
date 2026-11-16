@@ -43,3 +43,20 @@ export const permissionedResolverWriteAbi = /* @__PURE__ */ parseAbi([
 export const erc165Abi = /* @__PURE__ */ parseAbi([
   "function supportsInterface(bytes4 interfaceId) view returns (bool)",
 ]);
+
+/** Record versions of ENSv1 resolvers (`IVersionableResolver`). */
+export const versionableResolverAbi = /* @__PURE__ */ parseAbi([
+  "function recordVersions(bytes32 node) view returns (uint64)",
+]);
+
+/** ENSv2 PermissionedResolver administration: initialization, links and upgrades. */
+export const permissionedResolverAdminAbi = /* @__PURE__ */ parseAbi([
+  "struct Grant { address account; uint256 roleBitmap; }",
+  "function initialize(Grant[] grants, bytes[] calls)",
+  "function getRecordId(bytes32 node) view returns (uint256)",
+  "function getRecordCount() view returns (uint256)",
+  "function linkToNode(bytes sourceName, bytes32 targetNode)",
+  "function linkToRecord(bytes sourceName, uint256 recordId)",
+  "function canUpgradeFrom(address previousImplementation) view returns (bool)",
+  "function upgradeToAndCall(address newImplementation, bytes data) payable",
+]);

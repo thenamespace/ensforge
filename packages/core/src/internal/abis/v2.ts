@@ -27,3 +27,24 @@ export const ethRegistrarAbi = /* @__PURE__ */ parseAbi([
 export const labelStoreAbi = /* @__PURE__ */ parseAbi([
   "function getLabel(uint256 anyId) view returns (string)",
 ]);
+
+/** VerifiableFactory: deploys verifiable UUPS proxies at CREATE2 addresses. */
+export const verifiableFactoryAbi = /* @__PURE__ */ parseAbi([
+  "function proxyLogic() view returns (address)",
+  "function deployProxy(address implementation, uint256 salt, bytes data) returns (address)",
+]);
+
+/** PermissionedAddressSet (e.g. the set of known public resolvers). */
+export const addressSetAbi = /* @__PURE__ */ parseAbi([
+  "function includes(address addr) view returns (bool)",
+]);
+
+/** ReverseRegistrarAdapter: claims `addr.reverse` nodes for accounts the caller may name. */
+export const reverseRegistrarAdapterAbi = /* @__PURE__ */ parseAbi([
+  "function claim(address account, address resolver) returns (bytes32)",
+]);
+
+/** DefaultReverseRegistrarAdapter: sets `default.reverse` names for accounts the caller may name. */
+export const defaultReverseRegistrarAdapterAbi = /* @__PURE__ */ parseAbi([
+  "function setName(address account, string name)",
+]);

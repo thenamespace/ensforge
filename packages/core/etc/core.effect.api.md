@@ -55,6 +55,21 @@ function Actions.name.transferSync(client: ClientBase<{}>, options: transfer.Opt
 type Actions.name.transferSync.ErrorType = CommitmentError | ConfigError | ContractRevertError | DnsError | GatewayError | IndexerError | InsufficientFundsError | InternalError | InvalidInputError | MigrationError | NameStateError | NetworkError | NotFoundError | PlanError | TransactionError | UnauthorizedError | UnsupportedError | UserRejectedError | WalletError
 type Actions.name.transferSync.Options = transfer.Options & Write.Options & { confirmations?: number | undefined; timeout?: number | undefined; }
 type Actions.name.transferSync.ReturnType = Result & { readonly receipt: TransactionReceipt; readonly receipts: readonly TransactionReceipt[]; }
+function Actions.primaryName.get(client: ClientBase<{}>, options: Options & { address: string; coin?: Input | undefined; verify?: boolean | undefined; }) => Effect<ReturnType, AnyError, never>
+type Actions.primaryName.get.ErrorType = CommitmentError | ConfigError | ContractRevertError | DnsError | GatewayError | IndexerError | InsufficientFundsError | InternalError | InvalidInputError | MigrationError | NameStateError | NetworkError | NotFoundError | PlanError | TransactionError | UnauthorizedError | UnsupportedError | UserRejectedError | WalletError
+type Actions.primaryName.get.Options = Options & { address: string; coin?: Input | undefined; verify?: boolean | undefined; }
+type Actions.primaryName.get.ReturnType = string | null
+function Actions.primaryName.set(client: ClientBase<{}>, options: set.Options & Write.Options) => Effect<Result, AnyError, never>
+const Actions.primaryName.set.prepare: (client: ClientBase<{}>, options: Options & Pick<Options, 'account'>) => Effect<Plan, AnyError, never>
+const Actions.primaryName.set.simulate: (client: ClientBase<{}>, options: Options & Pick<Options, 'account'>) => Effect<Simulation, AnyError, never>
+const Actions.primaryName.set.estimateGas: (client: ClientBase<{}>, options: Options & Pick<Options, 'account'>) => Effect<Estimate, AnyError, never>
+type Actions.primaryName.set.ErrorType = CommitmentError | ConfigError | ContractRevertError | DnsError | GatewayError | IndexerError | InsufficientFundsError | InternalError | InvalidInputError | MigrationError | NameStateError | NetworkError | NotFoundError | PlanError | TransactionError | UnauthorizedError | UnsupportedError | UserRejectedError | WalletError
+type Actions.primaryName.set.Options = { name: string | null; address?: string | undefined; coin?: 'default' | 'eth' | undefined; verify?: boolean | undefined; }
+type Actions.primaryName.set.ReturnType = { readonly hash: `0x${string}`; readonly hashes: readonly `0x${string}`[]; readonly id: string | undefined; readonly plan: Plan; }
+function Actions.primaryName.setSync(client: ClientBase<{}>, options: set.Options & Write.Options & { confirmations?: number | undefined; timeout?: number | undefined; }) => Effect<SyncResult, AnyError, never>
+type Actions.primaryName.setSync.ErrorType = CommitmentError | ConfigError | ContractRevertError | DnsError | GatewayError | IndexerError | InsufficientFundsError | InternalError | InvalidInputError | MigrationError | NameStateError | NetworkError | NotFoundError | PlanError | TransactionError | UnauthorizedError | UnsupportedError | UserRejectedError | WalletError
+type Actions.primaryName.setSync.Options = set.Options & Write.Options & { confirmations?: number | undefined; timeout?: number | undefined; }
+type Actions.primaryName.setSync.ReturnType = Result & { readonly receipt: TransactionReceipt; readonly receipts: readonly TransactionReceipt[]; }
 function Actions.record.get<const selection extends Selection>(client: ClientBase<{}>, options: Options & selection) => Effect<Records<selection>, AnyError, never>
 type Actions.record.get.ErrorType = CommitmentError | ConfigError | ContractRevertError | DnsError | GatewayError | IndexerError | InsufficientFundsError | InternalError | InvalidInputError | MigrationError | NameStateError | NetworkError | NotFoundError | PlanError | TransactionError | UnauthorizedError | UnsupportedError | UserRejectedError | WalletError
 type Actions.record.get.Options = Options & Selection & { name: string; }
@@ -86,6 +101,62 @@ function Actions.record.setSync(client: ClientBase<{}>, options: set.Options & W
 type Actions.record.setSync.ErrorType = CommitmentError | ConfigError | ContractRevertError | DnsError | GatewayError | IndexerError | InsufficientFundsError | InternalError | InvalidInputError | MigrationError | NameStateError | NetworkError | NotFoundError | PlanError | TransactionError | UnauthorizedError | UnsupportedError | UserRejectedError | WalletError
 type Actions.record.setSync.Options = set.Options & Write.Options & { confirmations?: number | undefined; timeout?: number | undefined; }
 type Actions.record.setSync.ReturnType = Result & { readonly receipt: TransactionReceipt; readonly receipts: readonly TransactionReceipt[]; }
+function Actions.resolver.create(client: ClientBase<{}>, options: create.Options & Write.Options) => Effect<ReturnType, AnyError, never>
+const Actions.resolver.create.prepare: (client: ClientBase<{}>, options: Options & Pick<Options, 'account'>) => Effect<Plan, AnyError, never>
+const Actions.resolver.create.simulate: (client: ClientBase<{}>, options: Options & Pick<Options, 'account'>) => Effect<Simulation, AnyError, never>
+const Actions.resolver.create.estimateGas: (client: ClientBase<{}>, options: Options & Pick<Options, 'account'>) => Effect<Estimate, AnyError, never>
+type Actions.resolver.create.ErrorType = CommitmentError | ConfigError | ContractRevertError | DnsError | GatewayError | IndexerError | InsufficientFundsError | InternalError | InvalidInputError | MigrationError | NameStateError | NetworkError | NotFoundError | PlanError | TransactionError | UnauthorizedError | UnsupportedError | UserRejectedError | WalletError
+type Actions.resolver.create.Options = { name?: string | undefined; records?: Omit<Options, 'resolver' | 'name' | 'clear' | 'pubkey'> | undefined; owner?: string | undefined; grants?: readonly { account: string; roles: bigint | readonly Name[]; }[] | undefined; salt?: bigint | undefined; }
+type Actions.resolver.create.ReturnType = Result & { readonly resolver: `0x${string}`; }
+function Actions.resolver.createSync(client: ClientBase<{}>, options: create.Options & Write.Options & { confirmations?: number | undefined; timeout?: number | undefined; }) => Effect<Result & { readonly receipt: TransactionReceipt; readonly receipts: readonly TransactionReceipt[]; } & { readonly resolver: `0x${string}`; }, AnyError, never>
+type Actions.resolver.createSync.ErrorType = CommitmentError | ConfigError | ContractRevertError | DnsError | GatewayError | IndexerError | InsufficientFundsError | InternalError | InvalidInputError | MigrationError | NameStateError | NetworkError | NotFoundError | PlanError | TransactionError | UnauthorizedError | UnsupportedError | UserRejectedError | WalletError
+type Actions.resolver.createSync.Options = create.Options & Write.Options & { confirmations?: number | undefined; timeout?: number | undefined; }
+type Actions.resolver.createSync.ReturnType = Result & { readonly receipt: TransactionReceipt; readonly receipts: readonly TransactionReceipt[]; } & { readonly resolver: `0x${string}`; }
+function Actions.resolver.get(client: ClientBase<{}>, options: Pick<Options, 'signal' | 'strict'> & (BlockOptions & { name: string; })) => Effect<ReturnType, AnyError, never>
+type Actions.resolver.get.ErrorType = CommitmentError | ConfigError | ContractRevertError | DnsError | GatewayError | IndexerError | InsufficientFundsError | InternalError | InvalidInputError | MigrationError | NameStateError | NetworkError | NotFoundError | PlanError | TransactionError | UnauthorizedError | UnsupportedError | UserRejectedError | WalletError
+type Actions.resolver.get.Options = Pick<Options, 'signal' | 'strict'> & (BlockOptions & { name: string; })
+type Actions.resolver.get.ReturnType = ResolverInfo | null
+function Actions.resolver.getLink(client: ClientBase<{}>, options: Pick<Options, 'signal' | 'strict'> & (BlockOptions & { name: string; })) => Effect<ReturnType, AnyError, never>
+type Actions.resolver.getLink.ErrorType = CommitmentError | ConfigError | ContractRevertError | DnsError | GatewayError | IndexerError | InsufficientFundsError | InternalError | InvalidInputError | MigrationError | NameStateError | NetworkError | NotFoundError | PlanError | TransactionError | UnauthorizedError | UnsupportedError | UserRejectedError | WalletError
+type Actions.resolver.getLink.Options = Pick<Options, 'signal' | 'strict'> & (BlockOptions & { name: string; })
+type Actions.resolver.getLink.ReturnType = { readonly resolver: `0x${string}`; readonly recordId: bigint; } | null
+function Actions.resolver.link(client: ClientBase<{}>, options: link.Options & Write.Options) => Effect<Result, AnyError, never>
+const Actions.resolver.link.prepare: (client: ClientBase<{}>, options: Options & Pick<Options, 'account'>) => Effect<Plan, AnyError, never>
+const Actions.resolver.link.simulate: (client: ClientBase<{}>, options: Options & Pick<Options, 'account'>) => Effect<Simulation, AnyError, never>
+const Actions.resolver.link.estimateGas: (client: ClientBase<{}>, options: Options & Pick<Options, 'account'>) => Effect<Estimate, AnyError, never>
+type Actions.resolver.link.ErrorType = CommitmentError | ConfigError | ContractRevertError | DnsError | GatewayError | IndexerError | InsufficientFundsError | InternalError | InvalidInputError | MigrationError | NameStateError | NetworkError | NotFoundError | PlanError | TransactionError | UnauthorizedError | UnsupportedError | UserRejectedError | WalletError
+type Actions.resolver.link.Options = { name: string; to: string | { recordId: bigint; }; }
+type Actions.resolver.link.ReturnType = { readonly hash: `0x${string}`; readonly hashes: readonly `0x${string}`[]; readonly id: string | undefined; readonly plan: Plan; }
+function Actions.resolver.linkSync(client: ClientBase<{}>, options: link.Options & Write.Options & { confirmations?: number | undefined; timeout?: number | undefined; }) => Effect<SyncResult, AnyError, never>
+type Actions.resolver.linkSync.ErrorType = CommitmentError | ConfigError | ContractRevertError | DnsError | GatewayError | IndexerError | InsufficientFundsError | InternalError | InvalidInputError | MigrationError | NameStateError | NetworkError | NotFoundError | PlanError | TransactionError | UnauthorizedError | UnsupportedError | UserRejectedError | WalletError
+type Actions.resolver.linkSync.Options = link.Options & Write.Options & { confirmations?: number | undefined; timeout?: number | undefined; }
+type Actions.resolver.linkSync.ReturnType = Result & { readonly receipt: TransactionReceipt; readonly receipts: readonly TransactionReceipt[]; }
+function Actions.resolver.resolve(client: ClientBase<{}>, options: Omit<Options, 'strict'> & { name: string; data: `0x${string}`; }) => Effect<ReturnType, AnyError, never>
+type Actions.resolver.resolve.ErrorType = CommitmentError | ConfigError | ContractRevertError | DnsError | GatewayError | IndexerError | InsufficientFundsError | InternalError | InvalidInputError | MigrationError | NameStateError | NetworkError | NotFoundError | PlanError | TransactionError | UnauthorizedError | UnsupportedError | UserRejectedError | WalletError
+type Actions.resolver.resolve.Options = Omit<Options, 'strict'> & { name: string; data: `0x${string}`; }
+type Actions.resolver.resolve.ReturnType = { readonly data: `0x${string}`; readonly resolver: `0x${string}`; }
+function Actions.resolver.set(client: ClientBase<{}>, options: set.Options & Write.Options) => Effect<Result, AnyError, never>
+const Actions.resolver.set.prepare: (client: ClientBase<{}>, options: Options & Pick<Options, 'account'>) => Effect<Plan, AnyError, never>
+const Actions.resolver.set.simulate: (client: ClientBase<{}>, options: Options & Pick<Options, 'account'>) => Effect<Simulation, AnyError, never>
+const Actions.resolver.set.estimateGas: (client: ClientBase<{}>, options: Options & Pick<Options, 'account'>) => Effect<Estimate, AnyError, never>
+type Actions.resolver.set.ErrorType = CommitmentError | ConfigError | ContractRevertError | DnsError | GatewayError | IndexerError | InsufficientFundsError | InternalError | InvalidInputError | MigrationError | NameStateError | NetworkError | NotFoundError | PlanError | TransactionError | UnauthorizedError | UnsupportedError | UserRejectedError | WalletError
+type Actions.resolver.set.Options = { name: string; resolver: `0x${string}` | 'default' | null; }
+type Actions.resolver.set.ReturnType = { readonly hash: `0x${string}`; readonly hashes: readonly `0x${string}`[]; readonly id: string | undefined; readonly plan: Plan; }
+function Actions.resolver.setSync(client: ClientBase<{}>, options: set.Options & Write.Options & { confirmations?: number | undefined; timeout?: number | undefined; }) => Effect<SyncResult, AnyError, never>
+type Actions.resolver.setSync.ErrorType = CommitmentError | ConfigError | ContractRevertError | DnsError | GatewayError | IndexerError | InsufficientFundsError | InternalError | InvalidInputError | MigrationError | NameStateError | NetworkError | NotFoundError | PlanError | TransactionError | UnauthorizedError | UnsupportedError | UserRejectedError | WalletError
+type Actions.resolver.setSync.Options = set.Options & Write.Options & { confirmations?: number | undefined; timeout?: number | undefined; }
+type Actions.resolver.setSync.ReturnType = Result & { readonly receipt: TransactionReceipt; readonly receipts: readonly TransactionReceipt[]; }
+function Actions.resolver.upgrade(client: ClientBase<{}>, options: upgrade.Options & Write.Options) => Effect<Result, AnyError, never>
+const Actions.resolver.upgrade.prepare: (client: ClientBase<{}>, options: Options & Pick<Options, 'account'>) => Effect<Plan, AnyError, never>
+const Actions.resolver.upgrade.simulate: (client: ClientBase<{}>, options: Options & Pick<Options, 'account'>) => Effect<Simulation, AnyError, never>
+const Actions.resolver.upgrade.estimateGas: (client: ClientBase<{}>, options: Options & Pick<Options, 'account'>) => Effect<Estimate, AnyError, never>
+type Actions.resolver.upgrade.ErrorType = CommitmentError | ConfigError | ContractRevertError | DnsError | GatewayError | IndexerError | InsufficientFundsError | InternalError | InvalidInputError | MigrationError | NameStateError | NetworkError | NotFoundError | PlanError | TransactionError | UnauthorizedError | UnsupportedError | UserRejectedError | WalletError
+type Actions.resolver.upgrade.Options = { name: string; implementation?: string | undefined; }
+type Actions.resolver.upgrade.ReturnType = { readonly hash: `0x${string}`; readonly hashes: readonly `0x${string}`[]; readonly id: string | undefined; readonly plan: Plan; }
+function Actions.resolver.upgradeSync(client: ClientBase<{}>, options: upgrade.Options & Write.Options & { confirmations?: number | undefined; timeout?: number | undefined; }) => Effect<SyncResult, AnyError, never>
+type Actions.resolver.upgradeSync.ErrorType = CommitmentError | ConfigError | ContractRevertError | DnsError | GatewayError | IndexerError | InsufficientFundsError | InternalError | InvalidInputError | MigrationError | NameStateError | NetworkError | NotFoundError | PlanError | TransactionError | UnauthorizedError | UnsupportedError | UserRejectedError | WalletError
+type Actions.resolver.upgradeSync.Options = upgrade.Options & Write.Options & { confirmations?: number | undefined; timeout?: number | undefined; }
+type Actions.resolver.upgradeSync.ReturnType = Result & { readonly receipt: TransactionReceipt; readonly receipts: readonly TransactionReceipt[]; }
 function CoinType.decodeAddress(coinType: bigint, data: `0x${string}`) => string | null
 function CoinType.encodeAddress(coinType: bigint, address: string) => `0x${string}`
 function CoinType.from(input: string | bigint | { readonly chainId: number; }) => bigint
@@ -140,7 +211,7 @@ class Errors.CommitmentError {
   hint: string | undefined
   details: readonly string[]
   retryable: boolean
-  context: { readonly operation?: string | undefined; readonly name?: string | undefined; readonly account?: `0x${string}` | undefined; readonly chainId?: number | undefined; readonly contract?: `0x${string}` | undefined; readonly functionName?: string | undefined; readonly contractKind?: 'resolver' | 'registry' | 'wrapper' | 'registrar' | undefined; readonly registry?: `0x${string}` | undefined; }
+  context: { readonly operation?: string | undefined; readonly name?: string | undefined; readonly account?: `0x${string}` | undefined; readonly chainId?: number | undefined; readonly contract?: `0x${string}` | undefined; readonly functionName?: string | undefined; readonly contractKind?: 'resolver' | 'registrar' | 'registry' | 'wrapper' | undefined; readonly registry?: `0x${string}` | undefined; }
   docsUrl: string
   withContext: (context: Context | undefined) => CommitmentError
   withCause: (cause: unknown) => CommitmentError
@@ -168,7 +239,7 @@ class Errors.ConfigError {
   hint: string | undefined
   details: readonly string[]
   retryable: boolean
-  context: { readonly operation?: string | undefined; readonly name?: string | undefined; readonly account?: `0x${string}` | undefined; readonly chainId?: number | undefined; readonly contract?: `0x${string}` | undefined; readonly functionName?: string | undefined; readonly contractKind?: 'resolver' | 'registry' | 'wrapper' | 'registrar' | undefined; readonly registry?: `0x${string}` | undefined; }
+  context: { readonly operation?: string | undefined; readonly name?: string | undefined; readonly account?: `0x${string}` | undefined; readonly chainId?: number | undefined; readonly contract?: `0x${string}` | undefined; readonly functionName?: string | undefined; readonly contractKind?: 'resolver' | 'registrar' | 'registry' | 'wrapper' | undefined; readonly registry?: `0x${string}` | undefined; }
   docsUrl: string
   withContext: (context: Context | undefined) => ConfigError
   withCause: (cause: unknown) => ConfigError
@@ -198,7 +269,7 @@ class Errors.ContractRevertError {
   hint: string | undefined
   details: readonly string[]
   retryable: boolean
-  context: { readonly operation?: string | undefined; readonly name?: string | undefined; readonly account?: `0x${string}` | undefined; readonly chainId?: number | undefined; readonly contract?: `0x${string}` | undefined; readonly functionName?: string | undefined; readonly contractKind?: 'resolver' | 'registry' | 'wrapper' | 'registrar' | undefined; readonly registry?: `0x${string}` | undefined; }
+  context: { readonly operation?: string | undefined; readonly name?: string | undefined; readonly account?: `0x${string}` | undefined; readonly chainId?: number | undefined; readonly contract?: `0x${string}` | undefined; readonly functionName?: string | undefined; readonly contractKind?: 'resolver' | 'registrar' | 'registry' | 'wrapper' | undefined; readonly registry?: `0x${string}` | undefined; }
   docsUrl: string
   withContext: (context: Context | undefined) => ContractRevertError
   withCause: (cause: unknown) => ContractRevertError
@@ -216,7 +287,7 @@ class Errors.ContractRevertError {
 type Errors.ContractRevertError.Code = 'CONTRACT_REVERTED'
 type Errors.ContractRevertError.Options = ClassOptions<'CONTRACT_REVERTED'> & { readonly errorName?: string | undefined; readonly args?: readonly unknown[] | undefined; readonly data?: `0x${string}` | undefined; }
 function Errors.describe(value: unknown, options?: DescribeOptions | undefined) => Copy & { readonly code: CommitmentError.Code | ConfigError.Code | 'CONTRACT_REVERTED' | DnsError.Code | GatewayError.Code | IndexerError.Code | InsufficientFundsError.Code | 'UNEXPECTED' | InvalidInputError.Code | MigrationError.Code | NameStateError.Code | NetworkError.Code | NotFoundError.Code | PlanError.Code | TransactionError.Code | UnauthorizedError.Code | UnsupportedError.Code | 'USER_REJECTED' | WalletError.Code; readonly retryable: boolean; readonly severity: 'info' | 'warning' | 'error'; }
-type Errors.DescribeOptions = { readonly messages?: { readonly COMMITMENT_TOO_NEW?: (error: CommitmentError) => Partial<Copy>; readonly COMMITMENT_TOO_OLD?: (error: CommitmentError) => Partial<Copy>; readonly COMMITMENT_EXISTS?: (error: CommitmentError) => Partial<Copy>; readonly COMMITMENT_NOT_FOUND?: (error: CommitmentError) => Partial<Copy>; readonly UNKNOWN_CHAIN?: (error: ConfigError) => Partial<Copy>; readonly INVALID_DEPLOYMENT?: (error: ConfigError) => Partial<Copy>; readonly CONTRACT_NOT_DEPLOYED?: (error: ConfigError) => Partial<Copy>; readonly WALLET_NOT_CONFIGURED?: (error: ConfigError) => Partial<Copy>; readonly INDEXER_NOT_CONFIGURED?: (error: ConfigError) => Partial<Copy>; readonly CCIP_READ_DISABLED?: (error: ConfigError) => Partial<Copy>; readonly INVALID_ACTION_GROUP?: (error: ConfigError) => Partial<Copy>; readonly CONTRACT_REVERTED?: (error: ContractRevertError) => Partial<Copy>; readonly DNS_RECORD_MISSING?: (error: DnsError) => Partial<Copy>; readonly DNS_OWNER_MISMATCH?: (error: DnsError) => Partial<Copy>; readonly DNSSEC_PROOF_FAILED?: (error: DnsError) => Partial<Copy>; readonly PROOF_STALE?: (error: DnsError) => Partial<Copy>; readonly TLD_NOT_PUBLIC?: (error: DnsError) => Partial<Copy>; readonly GATEWAY_REQUEST_FAILED?: (error: GatewayError) => Partial<Copy>; readonly GATEWAY_RESPONSE_INVALID?: (error: GatewayError) => Partial<Copy>; readonly OFFCHAIN_LOOKUP_INVALID?: (error: GatewayError) => Partial<Copy>; readonly INDEXER_UNAVAILABLE?: (error: IndexerError) => Partial<Copy>; readonly INDEXER_RATE_LIMITED?: (error: IndexerError) => Partial<Copy>; readonly INDEXER_RESPONSE_INVALID?: (error: IndexerError) => Partial<Copy>; readonly INDEXER_REQUEST_REJECTED?: (error: IndexerError) => Partial<Copy>; readonly INDEXER_BEHIND?: (error: IndexerError) => Partial<Copy>; readonly INSUFFICIENT_ETH?: (error: InsufficientFundsError) => Partial<Copy>; readonly INSUFFICIENT_TOKEN_BALANCE?: (error: InsufficientFundsError) => Partial<Copy>; readonly PRICE_ABOVE_MAXIMUM?: (error: InsufficientFundsError) => Partial<Copy>; readonly UNEXPECTED?: (error: InternalError) => Partial<Copy>; readonly INVALID_NAME?: (error: InvalidInputError) => Partial<Copy>; readonly INVALID_ADDRESS?: (error: InvalidInputError) => Partial<Copy>; readonly INVALID_COIN_TYPE?: (error: InvalidInputError) => Partial<Copy>; readonly INVALID_CONTENT_HASH?: (error: InvalidInputError) => Partial<Copy>; readonly INVALID_RECORD_VALUE?: (error: InvalidInputError) => Partial<Copy>; readonly INVALID_DURATION?: (error: InvalidInputError) => Partial<Copy>; readonly DURATION_TOO_SHORT?: (error: InvalidInputError) => Partial<Copy>; readonly INVALID_EXPIRY?: (error: InvalidInputError) => Partial<Copy>; readonly INVALID_ROLES?: (error: InvalidInputError) => Partial<Copy>; readonly NOT_ELIGIBLE?: (error: MigrationError) => Partial<Copy>; readonly ALREADY_MIGRATED?: (error: MigrationError) => Partial<Copy>; readonly NAME_NOT_LOCKED?: (error: MigrationError) => Partial<Copy>; readonly NAME_NOT_AVAILABLE?: (error: NameStateError) => Partial<Copy>; readonly NAME_NOT_REGISTERED?: (error: NameStateError) => Partial<Copy>; readonly NAME_RESERVED?: (error: NameStateError) => Partial<Copy>; readonly NAME_EXPIRED?: (error: NameStateError) => Partial<Copy>; readonly NAME_NOT_RENEWABLE?: (error: NameStateError) => Partial<Copy>; readonly NAME_LOCKED?: (error: NameStateError) => Partial<Copy>; readonly NAME_NOT_WRAPPED?: (error: NameStateError) => Partial<Copy>; readonly NAME_REQUIRES_MIGRATION?: (error: NameStateError) => Partial<Copy>; readonly PARENT_NOT_MIGRATED?: (error: NameStateError) => Partial<Copy>; readonly REGISTRY_NOT_EMANCIPATED?: (error: NameStateError) => Partial<Copy>; readonly RPC_REQUEST_FAILED?: (error: NetworkError) => Partial<Copy>; readonly RPC_TIMEOUT?: (error: NetworkError) => Partial<Copy>; readonly RATE_LIMITED?: (error: NetworkError) => Partial<Copy>; readonly RESOLVER_NOT_FOUND?: (error: NotFoundError) => Partial<Copy>; readonly RECORD_NOT_FOUND?: (error: NotFoundError) => Partial<Copy>; readonly PRIMARY_NAME_NOT_SET?: (error: NotFoundError) => Partial<Copy>; readonly REGISTRY_NOT_FOUND?: (error: NotFoundError) => Partial<Copy>; readonly PLAN_NOT_FOUND?: (error: NotFoundError) => Partial<Copy>; readonly PLAN_STALE?: (error: PlanError) => Partial<Copy>; readonly PLAN_CHAIN_MISMATCH?: (error: PlanError) => Partial<Copy>; readonly PLAN_ACCOUNT_MISMATCH?: (error: PlanError) => Partial<Copy>; readonly PLAN_INVALID?: (error: PlanError) => Partial<Copy>; readonly TRANSACTION_REVERTED?: (error: TransactionError) => Partial<Copy>; readonly TRANSACTION_REPLACED?: (error: TransactionError) => Partial<Copy>; readonly RECEIPT_TIMEOUT?: (error: TransactionError) => Partial<Copy>; readonly NONCE_CONFLICT?: (error: TransactionError) => Partial<Copy>; readonly NOT_OWNER?: (error: UnauthorizedError) => Partial<Copy>; readonly MISSING_ROLES?: (error: UnauthorizedError) => Partial<Copy>; readonly CANNOT_GRANT_ROLES?: (error: UnauthorizedError) => Partial<Copy>; readonly NOT_APPROVED?: (error: UnauthorizedError) => Partial<Copy>; readonly FUSE_BURNED?: (error: UnauthorizedError) => Partial<Copy>; readonly TRANSFER_DISALLOWED?: (error: UnauthorizedError) => Partial<Copy>; readonly UNSUPPORTED_PROTOCOL?: (error: UnsupportedError) => Partial<Copy>; readonly UNSUPPORTED_ON_DEPLOYMENT?: (error: UnsupportedError) => Partial<Copy>; readonly RESOLVER_PROFILE_UNSUPPORTED?: (error: UnsupportedError) => Partial<Copy>; readonly PAYMENT_TOKEN_UNSUPPORTED?: (error: UnsupportedError) => Partial<Copy>; readonly UPGRADE_NOT_APPROVED?: (error: UnsupportedError) => Partial<Copy>; readonly WALLET_BATCH_UNSUPPORTED?: (error: UnsupportedError) => Partial<Copy>; readonly USER_REJECTED?: (error: UserRejectedError) => Partial<Copy>; readonly CHAIN_MISMATCH?: (error: WalletError) => Partial<Copy>; readonly ACCOUNT_NOT_FOUND?: (error: WalletError) => Partial<Copy>; }; }
+type Errors.DescribeOptions = { readonly messages?: { readonly COMMITMENT_TOO_NEW?: (error: CommitmentError) => Partial<Copy>; readonly COMMITMENT_TOO_OLD?: (error: CommitmentError) => Partial<Copy>; readonly COMMITMENT_EXISTS?: (error: CommitmentError) => Partial<Copy>; readonly COMMITMENT_NOT_FOUND?: (error: CommitmentError) => Partial<Copy>; readonly UNKNOWN_CHAIN?: (error: ConfigError) => Partial<Copy>; readonly INVALID_DEPLOYMENT?: (error: ConfigError) => Partial<Copy>; readonly CONTRACT_NOT_DEPLOYED?: (error: ConfigError) => Partial<Copy>; readonly WALLET_NOT_CONFIGURED?: (error: ConfigError) => Partial<Copy>; readonly INDEXER_NOT_CONFIGURED?: (error: ConfigError) => Partial<Copy>; readonly CCIP_READ_DISABLED?: (error: ConfigError) => Partial<Copy>; readonly INVALID_ACTION_GROUP?: (error: ConfigError) => Partial<Copy>; readonly CONTRACT_REVERTED?: (error: ContractRevertError) => Partial<Copy>; readonly DNS_RECORD_MISSING?: (error: DnsError) => Partial<Copy>; readonly DNS_OWNER_MISMATCH?: (error: DnsError) => Partial<Copy>; readonly DNSSEC_PROOF_FAILED?: (error: DnsError) => Partial<Copy>; readonly PROOF_STALE?: (error: DnsError) => Partial<Copy>; readonly TLD_NOT_PUBLIC?: (error: DnsError) => Partial<Copy>; readonly GATEWAY_REQUEST_FAILED?: (error: GatewayError) => Partial<Copy>; readonly GATEWAY_RESPONSE_INVALID?: (error: GatewayError) => Partial<Copy>; readonly OFFCHAIN_LOOKUP_INVALID?: (error: GatewayError) => Partial<Copy>; readonly INDEXER_UNAVAILABLE?: (error: IndexerError) => Partial<Copy>; readonly INDEXER_RATE_LIMITED?: (error: IndexerError) => Partial<Copy>; readonly INDEXER_RESPONSE_INVALID?: (error: IndexerError) => Partial<Copy>; readonly INDEXER_REQUEST_REJECTED?: (error: IndexerError) => Partial<Copy>; readonly INDEXER_BEHIND?: (error: IndexerError) => Partial<Copy>; readonly INSUFFICIENT_ETH?: (error: InsufficientFundsError) => Partial<Copy>; readonly INSUFFICIENT_TOKEN_BALANCE?: (error: InsufficientFundsError) => Partial<Copy>; readonly PRICE_ABOVE_MAXIMUM?: (error: InsufficientFundsError) => Partial<Copy>; readonly UNEXPECTED?: (error: InternalError) => Partial<Copy>; readonly INVALID_NAME?: (error: InvalidInputError) => Partial<Copy>; readonly INVALID_ADDRESS?: (error: InvalidInputError) => Partial<Copy>; readonly INVALID_COIN_TYPE?: (error: InvalidInputError) => Partial<Copy>; readonly INVALID_CONTENT_HASH?: (error: InvalidInputError) => Partial<Copy>; readonly INVALID_RECORD_VALUE?: (error: InvalidInputError) => Partial<Copy>; readonly INVALID_DURATION?: (error: InvalidInputError) => Partial<Copy>; readonly DURATION_TOO_SHORT?: (error: InvalidInputError) => Partial<Copy>; readonly INVALID_EXPIRY?: (error: InvalidInputError) => Partial<Copy>; readonly INVALID_ROLES?: (error: InvalidInputError) => Partial<Copy>; readonly NOT_ELIGIBLE?: (error: MigrationError) => Partial<Copy>; readonly ALREADY_MIGRATED?: (error: MigrationError) => Partial<Copy>; readonly NAME_NOT_LOCKED?: (error: MigrationError) => Partial<Copy>; readonly NAME_NOT_AVAILABLE?: (error: NameStateError) => Partial<Copy>; readonly NAME_NOT_REGISTERED?: (error: NameStateError) => Partial<Copy>; readonly NAME_RESERVED?: (error: NameStateError) => Partial<Copy>; readonly NAME_EXPIRED?: (error: NameStateError) => Partial<Copy>; readonly NAME_NOT_RENEWABLE?: (error: NameStateError) => Partial<Copy>; readonly NAME_LOCKED?: (error: NameStateError) => Partial<Copy>; readonly NAME_NOT_WRAPPED?: (error: NameStateError) => Partial<Copy>; readonly NAME_REQUIRES_MIGRATION?: (error: NameStateError) => Partial<Copy>; readonly PARENT_NOT_MIGRATED?: (error: NameStateError) => Partial<Copy>; readonly REGISTRY_NOT_EMANCIPATED?: (error: NameStateError) => Partial<Copy>; readonly RPC_REQUEST_FAILED?: (error: NetworkError) => Partial<Copy>; readonly RPC_TIMEOUT?: (error: NetworkError) => Partial<Copy>; readonly RATE_LIMITED?: (error: NetworkError) => Partial<Copy>; readonly RESOLVER_NOT_FOUND?: (error: NotFoundError) => Partial<Copy>; readonly RECORD_NOT_FOUND?: (error: NotFoundError) => Partial<Copy>; readonly PRIMARY_NAME_NOT_SET?: (error: NotFoundError) => Partial<Copy>; readonly PRIMARY_NAME_MISMATCH?: (error: NotFoundError) => Partial<Copy>; readonly REGISTRY_NOT_FOUND?: (error: NotFoundError) => Partial<Copy>; readonly PLAN_NOT_FOUND?: (error: NotFoundError) => Partial<Copy>; readonly PLAN_STALE?: (error: PlanError) => Partial<Copy>; readonly PLAN_CHAIN_MISMATCH?: (error: PlanError) => Partial<Copy>; readonly PLAN_ACCOUNT_MISMATCH?: (error: PlanError) => Partial<Copy>; readonly PLAN_INVALID?: (error: PlanError) => Partial<Copy>; readonly TRANSACTION_REVERTED?: (error: TransactionError) => Partial<Copy>; readonly TRANSACTION_REPLACED?: (error: TransactionError) => Partial<Copy>; readonly RECEIPT_TIMEOUT?: (error: TransactionError) => Partial<Copy>; readonly NONCE_CONFLICT?: (error: TransactionError) => Partial<Copy>; readonly NOT_OWNER?: (error: UnauthorizedError) => Partial<Copy>; readonly MISSING_ROLES?: (error: UnauthorizedError) => Partial<Copy>; readonly CANNOT_GRANT_ROLES?: (error: UnauthorizedError) => Partial<Copy>; readonly NOT_APPROVED?: (error: UnauthorizedError) => Partial<Copy>; readonly FUSE_BURNED?: (error: UnauthorizedError) => Partial<Copy>; readonly TRANSFER_DISALLOWED?: (error: UnauthorizedError) => Partial<Copy>; readonly UNSUPPORTED_PROTOCOL?: (error: UnsupportedError) => Partial<Copy>; readonly UNSUPPORTED_ON_DEPLOYMENT?: (error: UnsupportedError) => Partial<Copy>; readonly RESOLVER_PROFILE_UNSUPPORTED?: (error: UnsupportedError) => Partial<Copy>; readonly PAYMENT_TOKEN_UNSUPPORTED?: (error: UnsupportedError) => Partial<Copy>; readonly UPGRADE_NOT_APPROVED?: (error: UnsupportedError) => Partial<Copy>; readonly WALLET_BATCH_UNSUPPORTED?: (error: UnsupportedError) => Partial<Copy>; readonly USER_REJECTED?: (error: UserRejectedError) => Partial<Copy>; readonly CHAIN_MISMATCH?: (error: WalletError) => Partial<Copy>; readonly ACCOUNT_NOT_FOUND?: (error: WalletError) => Partial<Copy>; }; }
 type Errors.Description = Copy & { readonly code: CommitmentError.Code | ConfigError.Code | 'CONTRACT_REVERTED' | DnsError.Code | GatewayError.Code | IndexerError.Code | InsufficientFundsError.Code | 'UNEXPECTED' | InvalidInputError.Code | MigrationError.Code | NameStateError.Code | NetworkError.Code | NotFoundError.Code | PlanError.Code | TransactionError.Code | UnauthorizedError.Code | UnsupportedError.Code | 'USER_REJECTED' | WalletError.Code; readonly retryable: boolean; readonly severity: 'info' | 'warning' | 'error'; }
 class Errors.DnsError {
   constructor(options: ClassOptions<Code> & { readonly onchainOwner?: `0x${string}` | undefined; readonly dnsOwner?: `0x${string}` | undefined; }) => DnsError
@@ -230,7 +301,7 @@ class Errors.DnsError {
   hint: string | undefined
   details: readonly string[]
   retryable: boolean
-  context: { readonly operation?: string | undefined; readonly name?: string | undefined; readonly account?: `0x${string}` | undefined; readonly chainId?: number | undefined; readonly contract?: `0x${string}` | undefined; readonly functionName?: string | undefined; readonly contractKind?: 'resolver' | 'registry' | 'wrapper' | 'registrar' | undefined; readonly registry?: `0x${string}` | undefined; }
+  context: { readonly operation?: string | undefined; readonly name?: string | undefined; readonly account?: `0x${string}` | undefined; readonly chainId?: number | undefined; readonly contract?: `0x${string}` | undefined; readonly functionName?: string | undefined; readonly contractKind?: 'resolver' | 'registrar' | 'registry' | 'wrapper' | undefined; readonly registry?: `0x${string}` | undefined; }
   docsUrl: string
   withContext: (context: Context | undefined) => DnsError
   withCause: (cause: unknown) => DnsError
@@ -257,7 +328,7 @@ class Errors.EnsforgeError {
   hint: string | undefined
   details: readonly string[]
   retryable: boolean
-  context: { readonly operation?: string | undefined; readonly name?: string | undefined; readonly account?: `0x${string}` | undefined; readonly chainId?: number | undefined; readonly contract?: `0x${string}` | undefined; readonly functionName?: string | undefined; readonly contractKind?: 'resolver' | 'registry' | 'wrapper' | 'registrar' | undefined; readonly registry?: `0x${string}` | undefined; }
+  context: { readonly operation?: string | undefined; readonly name?: string | undefined; readonly account?: `0x${string}` | undefined; readonly chainId?: number | undefined; readonly contract?: `0x${string}` | undefined; readonly functionName?: string | undefined; readonly contractKind?: 'resolver' | 'registrar' | 'registry' | 'wrapper' | undefined; readonly registry?: `0x${string}` | undefined; }
   docsUrl: string
   withContext: (context: Context | undefined) => EnsforgeError<tag, code>
   withCause: (cause: unknown) => EnsforgeError<tag, code>
@@ -273,7 +344,7 @@ class Errors.EnsforgeError {
   ~effect/ErrorReporter/attributes: { readonly [x: string]: unknown; }
 }
 type Errors.EnsforgeError.ClassOptions = { readonly code: code; readonly shortMessage?: string | undefined; readonly hint?: string | undefined; readonly details?: readonly string[] | undefined; readonly context?: Context | undefined; readonly cause?: unknown; }
-type Errors.EnsforgeError.Context = { readonly operation?: string | undefined; readonly name?: string | undefined; readonly account?: `0x${string}` | undefined; readonly chainId?: number | undefined; readonly contract?: `0x${string}` | undefined; readonly functionName?: string | undefined; readonly contractKind?: 'resolver' | 'registry' | 'wrapper' | 'registrar' | undefined; readonly registry?: `0x${string}` | undefined; }
+type Errors.EnsforgeError.Context = { readonly operation?: string | undefined; readonly name?: string | undefined; readonly account?: `0x${string}` | undefined; readonly chainId?: number | undefined; readonly contract?: `0x${string}` | undefined; readonly functionName?: string | undefined; readonly contractKind?: 'resolver' | 'registrar' | 'registry' | 'wrapper' | undefined; readonly registry?: `0x${string}` | undefined; }
 type Errors.EnsforgeError.Defaults = { readonly shortMessage: string; readonly hint?: string | undefined; readonly details?: readonly string[] | undefined; }
 type Errors.EnsforgeError.Json = { readonly name: string; readonly code: string; readonly shortMessage: string; readonly hint: string | undefined; readonly details: readonly string[]; readonly retryable: boolean; readonly context: Context; readonly docsUrl: string; }
 type Errors.EnsforgeError.Options = { readonly code: code; readonly shortMessage: string; readonly hint?: string | undefined; readonly details?: readonly string[] | undefined; readonly retryable?: boolean | undefined; readonly context?: Context | undefined; readonly cause?: unknown; }
@@ -291,7 +362,7 @@ class Errors.GatewayError {
   hint: string | undefined
   details: readonly string[]
   retryable: boolean
-  context: { readonly operation?: string | undefined; readonly name?: string | undefined; readonly account?: `0x${string}` | undefined; readonly chainId?: number | undefined; readonly contract?: `0x${string}` | undefined; readonly functionName?: string | undefined; readonly contractKind?: 'resolver' | 'registry' | 'wrapper' | 'registrar' | undefined; readonly registry?: `0x${string}` | undefined; }
+  context: { readonly operation?: string | undefined; readonly name?: string | undefined; readonly account?: `0x${string}` | undefined; readonly chainId?: number | undefined; readonly contract?: `0x${string}` | undefined; readonly functionName?: string | undefined; readonly contractKind?: 'resolver' | 'registrar' | 'registry' | 'wrapper' | undefined; readonly registry?: `0x${string}` | undefined; }
   docsUrl: string
   withContext: (context: Context | undefined) => GatewayError
   withCause: (cause: unknown) => GatewayError
@@ -322,7 +393,7 @@ class Errors.IndexerError {
   hint: string | undefined
   details: readonly string[]
   retryable: boolean
-  context: { readonly operation?: string | undefined; readonly name?: string | undefined; readonly account?: `0x${string}` | undefined; readonly chainId?: number | undefined; readonly contract?: `0x${string}` | undefined; readonly functionName?: string | undefined; readonly contractKind?: 'resolver' | 'registry' | 'wrapper' | 'registrar' | undefined; readonly registry?: `0x${string}` | undefined; }
+  context: { readonly operation?: string | undefined; readonly name?: string | undefined; readonly account?: `0x${string}` | undefined; readonly chainId?: number | undefined; readonly contract?: `0x${string}` | undefined; readonly functionName?: string | undefined; readonly contractKind?: 'resolver' | 'registrar' | 'registry' | 'wrapper' | undefined; readonly registry?: `0x${string}` | undefined; }
   docsUrl: string
   withContext: (context: Context | undefined) => IndexerError
   withCause: (cause: unknown) => IndexerError
@@ -352,7 +423,7 @@ class Errors.InsufficientFundsError {
   hint: string | undefined
   details: readonly string[]
   retryable: boolean
-  context: { readonly operation?: string | undefined; readonly name?: string | undefined; readonly account?: `0x${string}` | undefined; readonly chainId?: number | undefined; readonly contract?: `0x${string}` | undefined; readonly functionName?: string | undefined; readonly contractKind?: 'resolver' | 'registry' | 'wrapper' | 'registrar' | undefined; readonly registry?: `0x${string}` | undefined; }
+  context: { readonly operation?: string | undefined; readonly name?: string | undefined; readonly account?: `0x${string}` | undefined; readonly chainId?: number | undefined; readonly contract?: `0x${string}` | undefined; readonly functionName?: string | undefined; readonly contractKind?: 'resolver' | 'registrar' | 'registry' | 'wrapper' | undefined; readonly registry?: `0x${string}` | undefined; }
   docsUrl: string
   withContext: (context: Context | undefined) => InsufficientFundsError
   withCause: (cause: unknown) => InsufficientFundsError
@@ -379,7 +450,7 @@ class Errors.InternalError {
   hint: string | undefined
   details: readonly string[]
   retryable: boolean
-  context: { readonly operation?: string | undefined; readonly name?: string | undefined; readonly account?: `0x${string}` | undefined; readonly chainId?: number | undefined; readonly contract?: `0x${string}` | undefined; readonly functionName?: string | undefined; readonly contractKind?: 'resolver' | 'registry' | 'wrapper' | 'registrar' | undefined; readonly registry?: `0x${string}` | undefined; }
+  context: { readonly operation?: string | undefined; readonly name?: string | undefined; readonly account?: `0x${string}` | undefined; readonly chainId?: number | undefined; readonly contract?: `0x${string}` | undefined; readonly functionName?: string | undefined; readonly contractKind?: 'resolver' | 'registrar' | 'registry' | 'wrapper' | undefined; readonly registry?: `0x${string}` | undefined; }
   docsUrl: string
   withContext: (context: Context | undefined) => InternalError
   withCause: (cause: unknown) => InternalError
@@ -408,7 +479,7 @@ class Errors.InvalidInputError {
   hint: string | undefined
   details: readonly string[]
   retryable: boolean
-  context: { readonly operation?: string | undefined; readonly name?: string | undefined; readonly account?: `0x${string}` | undefined; readonly chainId?: number | undefined; readonly contract?: `0x${string}` | undefined; readonly functionName?: string | undefined; readonly contractKind?: 'resolver' | 'registry' | 'wrapper' | 'registrar' | undefined; readonly registry?: `0x${string}` | undefined; }
+  context: { readonly operation?: string | undefined; readonly name?: string | undefined; readonly account?: `0x${string}` | undefined; readonly chainId?: number | undefined; readonly contract?: `0x${string}` | undefined; readonly functionName?: string | undefined; readonly contractKind?: 'resolver' | 'registrar' | 'registry' | 'wrapper' | undefined; readonly registry?: `0x${string}` | undefined; }
   docsUrl: string
   withContext: (context: Context | undefined) => InvalidInputError
   withCause: (cause: unknown) => InvalidInputError
@@ -437,7 +508,7 @@ class Errors.MigrationError {
   hint: string | undefined
   details: readonly string[]
   retryable: boolean
-  context: { readonly operation?: string | undefined; readonly name?: string | undefined; readonly account?: `0x${string}` | undefined; readonly chainId?: number | undefined; readonly contract?: `0x${string}` | undefined; readonly functionName?: string | undefined; readonly contractKind?: 'resolver' | 'registry' | 'wrapper' | 'registrar' | undefined; readonly registry?: `0x${string}` | undefined; }
+  context: { readonly operation?: string | undefined; readonly name?: string | undefined; readonly account?: `0x${string}` | undefined; readonly chainId?: number | undefined; readonly contract?: `0x${string}` | undefined; readonly functionName?: string | undefined; readonly contractKind?: 'resolver' | 'registrar' | 'registry' | 'wrapper' | undefined; readonly registry?: `0x${string}` | undefined; }
   docsUrl: string
   withContext: (context: Context | undefined) => MigrationError
   withCause: (cause: unknown) => MigrationError
@@ -464,7 +535,7 @@ class Errors.NameStateError {
   hint: string | undefined
   details: readonly string[]
   retryable: boolean
-  context: { readonly operation?: string | undefined; readonly name?: string | undefined; readonly account?: `0x${string}` | undefined; readonly chainId?: number | undefined; readonly contract?: `0x${string}` | undefined; readonly functionName?: string | undefined; readonly contractKind?: 'resolver' | 'registry' | 'wrapper' | 'registrar' | undefined; readonly registry?: `0x${string}` | undefined; }
+  context: { readonly operation?: string | undefined; readonly name?: string | undefined; readonly account?: `0x${string}` | undefined; readonly chainId?: number | undefined; readonly contract?: `0x${string}` | undefined; readonly functionName?: string | undefined; readonly contractKind?: 'resolver' | 'registrar' | 'registry' | 'wrapper' | undefined; readonly registry?: `0x${string}` | undefined; }
   docsUrl: string
   withContext: (context: Context | undefined) => NameStateError
   withCause: (cause: unknown) => NameStateError
@@ -492,7 +563,7 @@ class Errors.NetworkError {
   hint: string | undefined
   details: readonly string[]
   retryable: boolean
-  context: { readonly operation?: string | undefined; readonly name?: string | undefined; readonly account?: `0x${string}` | undefined; readonly chainId?: number | undefined; readonly contract?: `0x${string}` | undefined; readonly functionName?: string | undefined; readonly contractKind?: 'resolver' | 'registry' | 'wrapper' | 'registrar' | undefined; readonly registry?: `0x${string}` | undefined; }
+  context: { readonly operation?: string | undefined; readonly name?: string | undefined; readonly account?: `0x${string}` | undefined; readonly chainId?: number | undefined; readonly contract?: `0x${string}` | undefined; readonly functionName?: string | undefined; readonly contractKind?: 'resolver' | 'registrar' | 'registry' | 'wrapper' | undefined; readonly registry?: `0x${string}` | undefined; }
   docsUrl: string
   withContext: (context: Context | undefined) => NetworkError
   withCause: (cause: unknown) => NetworkError
@@ -512,7 +583,7 @@ type Errors.NetworkError.Options = ClassOptions<Code> & { readonly status?: numb
 class Errors.NotFoundError {
   constructor(options: ClassOptions<Code> & { readonly resource?: string | undefined; }) => NotFoundError
   resource: string | undefined
-  code: 'RESOLVER_NOT_FOUND' | 'RECORD_NOT_FOUND' | 'PRIMARY_NAME_NOT_SET' | 'REGISTRY_NOT_FOUND' | 'PLAN_NOT_FOUND'
+  code: 'RESOLVER_NOT_FOUND' | 'RECORD_NOT_FOUND' | 'PRIMARY_NAME_NOT_SET' | 'PRIMARY_NAME_MISMATCH' | 'REGISTRY_NOT_FOUND' | 'PLAN_NOT_FOUND'
   ~ensforge/error: true
   _tag: 'NotFoundError'
   name: 'NotFoundError'
@@ -520,7 +591,7 @@ class Errors.NotFoundError {
   hint: string | undefined
   details: readonly string[]
   retryable: boolean
-  context: { readonly operation?: string | undefined; readonly name?: string | undefined; readonly account?: `0x${string}` | undefined; readonly chainId?: number | undefined; readonly contract?: `0x${string}` | undefined; readonly functionName?: string | undefined; readonly contractKind?: 'resolver' | 'registry' | 'wrapper' | 'registrar' | undefined; readonly registry?: `0x${string}` | undefined; }
+  context: { readonly operation?: string | undefined; readonly name?: string | undefined; readonly account?: `0x${string}` | undefined; readonly chainId?: number | undefined; readonly contract?: `0x${string}` | undefined; readonly functionName?: string | undefined; readonly contractKind?: 'resolver' | 'registrar' | 'registry' | 'wrapper' | undefined; readonly registry?: `0x${string}` | undefined; }
   docsUrl: string
   withContext: (context: Context | undefined) => NotFoundError
   withCause: (cause: unknown) => NotFoundError
@@ -535,7 +606,7 @@ class Errors.NotFoundError {
   ~effect/ErrorReporter/severity: 'Fatal' | 'Error' | 'Warn' | 'Info' | 'Debug' | 'Trace'
   ~effect/ErrorReporter/attributes: { readonly [x: string]: unknown; }
 }
-type Errors.NotFoundError.Code = 'RESOLVER_NOT_FOUND' | 'RECORD_NOT_FOUND' | 'PRIMARY_NAME_NOT_SET' | 'REGISTRY_NOT_FOUND' | 'PLAN_NOT_FOUND'
+type Errors.NotFoundError.Code = 'RESOLVER_NOT_FOUND' | 'RECORD_NOT_FOUND' | 'PRIMARY_NAME_NOT_SET' | 'PRIMARY_NAME_MISMATCH' | 'REGISTRY_NOT_FOUND' | 'PLAN_NOT_FOUND'
 type Errors.NotFoundError.Options = ClassOptions<Code> & { readonly resource?: string | undefined; }
 class Errors.PlanError {
   constructor(options: { readonly code: Code; readonly shortMessage?: string | undefined; readonly hint?: string | undefined; readonly details?: readonly string[] | undefined; readonly context?: Context | undefined; readonly cause?: unknown; }) => PlanError
@@ -547,7 +618,7 @@ class Errors.PlanError {
   hint: string | undefined
   details: readonly string[]
   retryable: boolean
-  context: { readonly operation?: string | undefined; readonly name?: string | undefined; readonly account?: `0x${string}` | undefined; readonly chainId?: number | undefined; readonly contract?: `0x${string}` | undefined; readonly functionName?: string | undefined; readonly contractKind?: 'resolver' | 'registry' | 'wrapper' | 'registrar' | undefined; readonly registry?: `0x${string}` | undefined; }
+  context: { readonly operation?: string | undefined; readonly name?: string | undefined; readonly account?: `0x${string}` | undefined; readonly chainId?: number | undefined; readonly contract?: `0x${string}` | undefined; readonly functionName?: string | undefined; readonly contractKind?: 'resolver' | 'registrar' | 'registry' | 'wrapper' | undefined; readonly registry?: `0x${string}` | undefined; }
   docsUrl: string
   withContext: (context: Context | undefined) => PlanError
   withCause: (cause: unknown) => PlanError
@@ -576,7 +647,7 @@ class Errors.TransactionError {
   hint: string | undefined
   details: readonly string[]
   retryable: boolean
-  context: { readonly operation?: string | undefined; readonly name?: string | undefined; readonly account?: `0x${string}` | undefined; readonly chainId?: number | undefined; readonly contract?: `0x${string}` | undefined; readonly functionName?: string | undefined; readonly contractKind?: 'resolver' | 'registry' | 'wrapper' | 'registrar' | undefined; readonly registry?: `0x${string}` | undefined; }
+  context: { readonly operation?: string | undefined; readonly name?: string | undefined; readonly account?: `0x${string}` | undefined; readonly chainId?: number | undefined; readonly contract?: `0x${string}` | undefined; readonly functionName?: string | undefined; readonly contractKind?: 'resolver' | 'registrar' | 'registry' | 'wrapper' | undefined; readonly registry?: `0x${string}` | undefined; }
   docsUrl: string
   withContext: (context: Context | undefined) => TransactionError
   withCause: (cause: unknown) => TransactionError
@@ -606,7 +677,7 @@ class Errors.UnauthorizedError {
   hint: string | undefined
   details: readonly string[]
   retryable: boolean
-  context: { readonly operation?: string | undefined; readonly name?: string | undefined; readonly account?: `0x${string}` | undefined; readonly chainId?: number | undefined; readonly contract?: `0x${string}` | undefined; readonly functionName?: string | undefined; readonly contractKind?: 'resolver' | 'registry' | 'wrapper' | 'registrar' | undefined; readonly registry?: `0x${string}` | undefined; }
+  context: { readonly operation?: string | undefined; readonly name?: string | undefined; readonly account?: `0x${string}` | undefined; readonly chainId?: number | undefined; readonly contract?: `0x${string}` | undefined; readonly functionName?: string | undefined; readonly contractKind?: 'resolver' | 'registrar' | 'registry' | 'wrapper' | undefined; readonly registry?: `0x${string}` | undefined; }
   docsUrl: string
   withContext: (context: Context | undefined) => UnauthorizedError
   withCause: (cause: unknown) => UnauthorizedError
@@ -635,7 +706,7 @@ class Errors.UnsupportedError {
   hint: string | undefined
   details: readonly string[]
   retryable: boolean
-  context: { readonly operation?: string | undefined; readonly name?: string | undefined; readonly account?: `0x${string}` | undefined; readonly chainId?: number | undefined; readonly contract?: `0x${string}` | undefined; readonly functionName?: string | undefined; readonly contractKind?: 'resolver' | 'registry' | 'wrapper' | 'registrar' | undefined; readonly registry?: `0x${string}` | undefined; }
+  context: { readonly operation?: string | undefined; readonly name?: string | undefined; readonly account?: `0x${string}` | undefined; readonly chainId?: number | undefined; readonly contract?: `0x${string}` | undefined; readonly functionName?: string | undefined; readonly contractKind?: 'resolver' | 'registrar' | 'registry' | 'wrapper' | undefined; readonly registry?: `0x${string}` | undefined; }
   docsUrl: string
   withContext: (context: Context | undefined) => UnsupportedError
   withCause: (cause: unknown) => UnsupportedError
@@ -662,7 +733,7 @@ class Errors.UserRejectedError {
   hint: string | undefined
   details: readonly string[]
   retryable: boolean
-  context: { readonly operation?: string | undefined; readonly name?: string | undefined; readonly account?: `0x${string}` | undefined; readonly chainId?: number | undefined; readonly contract?: `0x${string}` | undefined; readonly functionName?: string | undefined; readonly contractKind?: 'resolver' | 'registry' | 'wrapper' | 'registrar' | undefined; readonly registry?: `0x${string}` | undefined; }
+  context: { readonly operation?: string | undefined; readonly name?: string | undefined; readonly account?: `0x${string}` | undefined; readonly chainId?: number | undefined; readonly contract?: `0x${string}` | undefined; readonly functionName?: string | undefined; readonly contractKind?: 'resolver' | 'registrar' | 'registry' | 'wrapper' | undefined; readonly registry?: `0x${string}` | undefined; }
   docsUrl: string
   withContext: (context: Context | undefined) => UserRejectedError
   withCause: (cause: unknown) => UserRejectedError
@@ -691,7 +762,7 @@ class Errors.WalletError {
   hint: string | undefined
   details: readonly string[]
   retryable: boolean
-  context: { readonly operation?: string | undefined; readonly name?: string | undefined; readonly account?: `0x${string}` | undefined; readonly chainId?: number | undefined; readonly contract?: `0x${string}` | undefined; readonly functionName?: string | undefined; readonly contractKind?: 'resolver' | 'registry' | 'wrapper' | 'registrar' | undefined; readonly registry?: `0x${string}` | undefined; }
+  context: { readonly operation?: string | undefined; readonly name?: string | undefined; readonly account?: `0x${string}` | undefined; readonly chainId?: number | undefined; readonly contract?: `0x${string}` | undefined; readonly functionName?: string | undefined; readonly contractKind?: 'resolver' | 'registrar' | 'registry' | 'wrapper' | undefined; readonly registry?: `0x${string}` | undefined; }
   docsUrl: string
   withContext: (context: Context | undefined) => WalletError
   withCause: (cause: unknown) => WalletError
@@ -735,8 +806,10 @@ interface Plan {
   calls: readonly Call[]
   requirements: readonly Requirement[]
   warnings: readonly Warning[]
+  deploys: readonly Deployment[]
 }
 type Plan.Call = { readonly to: `0x${string}`; readonly data: `0x${string}`; readonly value: bigint; }
+type Plan.Deployment = { readonly contract: 'resolver' | 'registry'; readonly address: `0x${string}`; }
 type Plan.Estimate = { readonly plan: Plan; readonly gas: bigint; readonly value: bigint; }
 type Plan.Event = { readonly step: Step; readonly status: 'waiting' | 'submitted' | 'confirmed' | 'failed'; readonly hash?: `0x${string}` | undefined; }
 type Plan.Record = { readonly plan: Plan; readonly status: 'pending' | 'failed' | 'completed'; readonly submitted: Readonly<Record<string, `0x${string}`>>; readonly updatedAt: number; }
@@ -756,7 +829,7 @@ interface Request {
 function Role.admin<const name extends Name>(name: name) => `${name}Admin`
 function Role.from(names: readonly Name[]) => bigint
 function Role.has(bitmap: bigint, names: Name | readonly Name[]) => boolean
-type Role.Name = 'link' | 'registrar' | 'registrarAdmin' | 'registerReserved' | 'registerReservedAdmin' | 'setParent' | 'setParentAdmin' | 'unregister' | 'unregisterAdmin' | 'renew' | 'renewAdmin' | 'setSubregistry' | 'setSubregistryAdmin' | 'setResolver' | 'setResolverAdmin' | 'canTransfer' | 'canTransferAdmin' | 'wasReserved' | 'setUri' | 'setUriAdmin' | 'canName' | 'canNameAdmin' | 'upgrade' | 'upgradeAdmin' | 'setAddr' | 'setAddrAdmin' | 'setText' | 'setTextAdmin' | 'setContenthash' | 'setContenthashAdmin' | 'setAbi' | 'setAbiAdmin' | 'setInterface' | 'setInterfaceAdmin' | 'setName' | 'setNameAdmin' | 'linkAdmin' | 'setData' | 'setDataAdmin'
+type Role.Name = 'registrar' | 'registrarAdmin' | 'registerReserved' | 'registerReservedAdmin' | 'setParent' | 'setParentAdmin' | 'unregister' | 'unregisterAdmin' | 'renew' | 'renewAdmin' | 'setSubregistry' | 'setSubregistryAdmin' | 'setResolver' | 'setResolverAdmin' | 'canTransfer' | 'canTransferAdmin' | 'wasReserved' | 'setUri' | 'setUriAdmin' | 'canName' | 'canNameAdmin' | 'upgrade' | 'upgradeAdmin' | 'setAddr' | 'setAddrAdmin' | 'setText' | 'setTextAdmin' | 'setContenthash' | 'setContenthashAdmin' | 'setAbi' | 'setAbiAdmin' | 'setInterface' | 'setInterfaceAdmin' | 'setName' | 'setNameAdmin' | 'link' | 'linkAdmin' | 'setData' | 'setDataAdmin'
 const Role.registry: { readonly registrar: bigint; readonly registrarAdmin: bigint; readonly registerReserved: bigint; readonly registerReservedAdmin: bigint; readonly setParent: bigint; readonly setParentAdmin: bigint; readonly unregister: bigint; readonly unregisterAdmin: bigint; readonly renew: bigint; readonly renewAdmin: bigint; readonly setSubregistry: bigint; readonly setSubregistryAdmin: bigint; readonly setResolver: bigint; readonly setResolverAdmin: bigint; readonly canTransfer: bigint; readonly canTransferAdmin: bigint; readonly wasReserved: bigint; readonly setUri: bigint; readonly setUriAdmin: bigint; readonly canName: bigint; readonly canNameAdmin: bigint; readonly upgrade: bigint; readonly upgradeAdmin: bigint; }
 const Role.resolver: { readonly setAddr: bigint; readonly setAddrAdmin: bigint; readonly setText: bigint; readonly setTextAdmin: bigint; readonly setContenthash: bigint; readonly setContenthashAdmin: bigint; readonly setAbi: bigint; readonly setAbiAdmin: bigint; readonly setInterface: bigint; readonly setInterfaceAdmin: bigint; readonly setName: bigint; readonly setNameAdmin: bigint; readonly link: bigint; readonly linkAdmin: bigint; readonly setData: bigint; readonly setDataAdmin: bigint; readonly canName: bigint; readonly canNameAdmin: bigint; readonly upgrade: bigint; readonly upgradeAdmin: bigint; }
 type Role.Target = 'resolver' | 'registry'

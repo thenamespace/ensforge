@@ -11,6 +11,10 @@ const defaults: {
     shortMessage: `The record${o.resource === undefined ? "" : ` ${o.resource}`} is not set.`,
   }),
   PRIMARY_NAME_NOT_SET: () => ({ shortMessage: "The address has no primary name." }),
+  PRIMARY_NAME_MISMATCH: () => ({
+    shortMessage: "The primary name does not resolve back to this address.",
+    hint: "Set the name's address record to this address, or set another primary name.",
+  }),
   REGISTRY_NOT_FOUND: () => ({ shortMessage: "No registry was found for this name." }),
   PLAN_NOT_FOUND: () => ({ shortMessage: "No saved plan was found with this id." }),
 };
@@ -37,6 +41,7 @@ export declare namespace NotFoundError {
     | "RESOLVER_NOT_FOUND"
     | "RECORD_NOT_FOUND"
     | "PRIMARY_NAME_NOT_SET"
+    | "PRIMARY_NAME_MISMATCH"
     | "REGISTRY_NOT_FOUND"
     | "PLAN_NOT_FOUND";
   type Options = EnsforgeError.ClassOptions<Code> & { readonly resource?: string | undefined };

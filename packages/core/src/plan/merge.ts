@@ -40,5 +40,6 @@ export const merge = (plans: readonly [Plan, ...Plan[]]): Plan => {
     ),
     requirements: plans.flatMap((plan) => plan.requirements),
     warnings: plans.flatMap((plan) => plan.warnings),
+    deploys: plans.flatMap((plan) => plan.deploys),
   });
 };

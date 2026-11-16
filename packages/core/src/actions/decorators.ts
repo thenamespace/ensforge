@@ -3,7 +3,9 @@
 import type { Client } from "../client/types.js";
 import type { Bound, BoundWrite } from "./bound.js";
 import * as name from "./name/index.js";
+import * as primaryName from "./primaryName/index.js";
 import * as record from "./record/index.js";
+import * as resolver from "./resolver/index.js";
 
 /** `name` actions bound to a client. */
 export type NameActions = {
@@ -94,6 +96,44 @@ export const nameActions =
     },
   });
 
+/** `primaryName` actions bound to a client. */
+export type PrimaryNameActions = {
+  readonly primaryName: {
+    /** Reads the primary name of an address (ENSIP-19 reverse resolution), verified against the name's address record. */
+    readonly get: Bound<typeof primaryName.get>;
+    /** Sets or clears the primary name (reverse record) of an address. Resolves once the transaction is submitted. */
+    readonly set: BoundWrite<typeof primaryName.set>;
+    /** Sets or clears the primary name (reverse record) of an address. Resolves once the receipt is in. */
+    readonly setSync: Bound<typeof primaryName.setSync>;
+  };
+};
+
+/**
+ * Adds the `primaryName` actions to a client.
+ *
+ * @category decorators
+ * @since 1.0.0
+ */
+export const primaryNameActions =
+  () =>
+  (client: Client<object>): PrimaryNameActions => ({
+    primaryName: {
+      get: (options) => primaryName.get(client, options),
+      set: Object.assign(
+        (options: Parameters<typeof primaryName.set>[1]) => primaryName.set(client, options),
+        {
+          prepare: (options: Parameters<typeof primaryName.set.prepare>[1]) =>
+            primaryName.set.prepare(client, options),
+          simulate: (options: Parameters<typeof primaryName.set.simulate>[1]) =>
+            primaryName.set.simulate(client, options),
+          estimateGas: (options: Parameters<typeof primaryName.set.estimateGas>[1]) =>
+            primaryName.set.estimateGas(client, options),
+        },
+      ),
+      setSync: (options) => primaryName.setSync(client, options),
+    },
+  });
+
 /** `record` actions bound to a client. */
 export type RecordActions = {
   readonly record: {
@@ -144,8 +184,100 @@ export const recordActions =
     },
   });
 
+/** `resolver` actions bound to a client. */
+export type ResolverActions = {
+  readonly resolver: {
+    /** Deploys an ENSv2 PermissionedResolver, optionally with records, and points a name at it. Resolves once the transaction is submitted. */
+    readonly create: BoundWrite<typeof resolver.create>;
+    /** Deploys an ENSv2 PermissionedResolver, optionally with records, and points a name at it. Resolves once the receipt is in. */
+    readonly createSync: Bound<typeof resolver.createSync>;
+    /** Reads the resolver of an ENS name: its address, what kind of resolver it is, who may write to it and which record profiles it supports. */
+    readonly get: Bound<typeof resolver.get>;
+    /** Reads which record set an ENS name uses on its PermissionedResolver. */
+    readonly getLink: Bound<typeof resolver.getLink>;
+    /** Links an ENS name to the records of another name on the same PermissionedResolver. Resolves once the transaction is submitted. */
+    readonly link: BoundWrite<typeof resolver.link>;
+    /** Links an ENS name to the records of another name on the same PermissionedResolver. Resolves once the receipt is in. */
+    readonly linkSync: Bound<typeof resolver.linkSync>;
+    /** Calls the resolver of an ENS name with raw calldata through the Universal Resolver (ENSIP-10). */
+    readonly resolve: Bound<typeof resolver.resolve>;
+    /** Points an ENS name at a resolver. Resolves once the transaction is submitted. */
+    readonly set: BoundWrite<typeof resolver.set>;
+    /** Points an ENS name at a resolver. Resolves once the receipt is in. */
+    readonly setSync: Bound<typeof resolver.setSync>;
+    /** Upgrades the PermissionedResolver of an ENS name to a newer implementation. Resolves once the transaction is submitted. */
+    readonly upgrade: BoundWrite<typeof resolver.upgrade>;
+    /** Upgrades the PermissionedResolver of an ENS name to a newer implementation. Resolves once the receipt is in. */
+    readonly upgradeSync: Bound<typeof resolver.upgradeSync>;
+  };
+};
+
+/**
+ * Adds the `resolver` actions to a client.
+ *
+ * @category decorators
+ * @since 1.0.0
+ */
+export const resolverActions =
+  () =>
+  (client: Client<object>): ResolverActions => ({
+    resolver: {
+      create: Object.assign(
+        (options: Parameters<typeof resolver.create>[1]) => resolver.create(client, options),
+        {
+          prepare: (options: Parameters<typeof resolver.create.prepare>[1]) =>
+            resolver.create.prepare(client, options),
+          simulate: (options: Parameters<typeof resolver.create.simulate>[1]) =>
+            resolver.create.simulate(client, options),
+          estimateGas: (options: Parameters<typeof resolver.create.estimateGas>[1]) =>
+            resolver.create.estimateGas(client, options),
+        },
+      ),
+      createSync: (options) => resolver.createSync(client, options),
+      get: (options) => resolver.get(client, options),
+      getLink: (options) => resolver.getLink(client, options),
+      link: Object.assign(
+        (options: Parameters<typeof resolver.link>[1]) => resolver.link(client, options),
+        {
+          prepare: (options: Parameters<typeof resolver.link.prepare>[1]) =>
+            resolver.link.prepare(client, options),
+          simulate: (options: Parameters<typeof resolver.link.simulate>[1]) =>
+            resolver.link.simulate(client, options),
+          estimateGas: (options: Parameters<typeof resolver.link.estimateGas>[1]) =>
+            resolver.link.estimateGas(client, options),
+        },
+      ),
+      linkSync: (options) => resolver.linkSync(client, options),
+      resolve: (options) => resolver.resolve(client, options),
+      set: Object.assign(
+        (options: Parameters<typeof resolver.set>[1]) => resolver.set(client, options),
+        {
+          prepare: (options: Parameters<typeof resolver.set.prepare>[1]) =>
+            resolver.set.prepare(client, options),
+          simulate: (options: Parameters<typeof resolver.set.simulate>[1]) =>
+            resolver.set.simulate(client, options),
+          estimateGas: (options: Parameters<typeof resolver.set.estimateGas>[1]) =>
+            resolver.set.estimateGas(client, options),
+        },
+      ),
+      setSync: (options) => resolver.setSync(client, options),
+      upgrade: Object.assign(
+        (options: Parameters<typeof resolver.upgrade>[1]) => resolver.upgrade(client, options),
+        {
+          prepare: (options: Parameters<typeof resolver.upgrade.prepare>[1]) =>
+            resolver.upgrade.prepare(client, options),
+          simulate: (options: Parameters<typeof resolver.upgrade.simulate>[1]) =>
+            resolver.upgrade.simulate(client, options),
+          estimateGas: (options: Parameters<typeof resolver.upgrade.estimateGas>[1]) =>
+            resolver.upgrade.estimateGas(client, options),
+        },
+      ),
+      upgradeSync: (options) => resolver.upgradeSync(client, options),
+    },
+  });
+
 /** Every action group bound to a client. */
-export type EnsActions = NameActions & RecordActions;
+export type EnsActions = NameActions & PrimaryNameActions & RecordActions & ResolverActions;
 
 /**
  * Adds every ENS action group to a client.
@@ -163,5 +295,7 @@ export const ensActions =
   () =>
   (client: Client<object>): EnsActions => ({
     ...nameActions()(client),
+    ...primaryNameActions()(client),
     ...recordActions()(client),
+    ...resolverActions()(client),
   });

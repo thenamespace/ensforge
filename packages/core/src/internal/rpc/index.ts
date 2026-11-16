@@ -5,4 +5,11 @@ export {
   readContractOrUndefined,
   type ReadContractParameters,
 } from "./readContract.js";
-export { resolve, type Resolved } from "./universal-resolver.js";
+export {
+  findResolver,
+  resolve,
+  reverse,
+  type FoundResolver,
+  type Resolved,
+  type Reversed,
+} from "./universal-resolver.js";

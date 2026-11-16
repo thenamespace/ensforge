@@ -28,3 +28,15 @@ export const nameWrapperAbi = /* @__PURE__ */ parseAbi([
   "function setResolver(bytes32 node, address resolver)",
   "function setTTL(bytes32 node, uint64 ttl)",
 ]);
+
+/** ReverseRegistrar (`addr.reverse`). */
+export const reverseRegistrarAbi = /* @__PURE__ */ parseAbi([
+  "function defaultResolver() view returns (address)",
+  "function setName(string name) returns (bytes32)",
+  "function setNameForAddr(address addr, address owner, address resolver, string name) returns (bytes32)",
+]);
+
+/** DefaultReverseRegistrar (`default.reverse`). */
+export const defaultReverseRegistrarAbi = /* @__PURE__ */ parseAbi([
+  "function setName(string name)",
+]);

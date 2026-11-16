@@ -35,6 +35,8 @@ export interface Plan {
   readonly requirements: readonly Plan.Requirement[];
   /** Non-blocking notes for the user, e.g. that a resolver is not a public resolver. */
   readonly warnings: readonly Plan.Warning[];
+  /** Contracts the plan deploys, at their predicted addresses. */
+  readonly deploys: readonly Plan.Deployment[];
 }
 
 export declare namespace Plan {
@@ -67,6 +69,9 @@ export declare namespace Plan {
 
   /** A non-blocking note about the plan. */
   type Warning = { readonly code: string; readonly message: string };
+
+  /** A contract the plan deploys. The address is known before sending (CREATE2). */
+  type Deployment = { readonly contract: "resolver" | "registry"; readonly address: Address };
 
   /** Result of simulating every call. */
   type Simulation = {

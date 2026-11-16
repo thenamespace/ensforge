@@ -180,6 +180,10 @@ export const messages: { readonly [code in Code]: Template<code> } = {
     title: "No primary name",
     message: "This address has no primary name.",
   }),
+  PRIMARY_NAME_MISMATCH: () => ({
+    title: "Primary name not verified",
+    message: "The primary name of this address does not point back to it.",
+  }),
   REGISTRY_NOT_FOUND: (error) => ({
     title: "Not found",
     message: `${thisName(error)} could not be found.`,

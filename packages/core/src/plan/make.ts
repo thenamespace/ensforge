@@ -14,6 +14,7 @@ export const make = (options: {
   readonly steps: readonly Plan.Step[];
   readonly requirements?: readonly Plan.Requirement[] | undefined;
   readonly warnings?: readonly Plan.Warning[] | undefined;
+  readonly deploys?: readonly Plan.Deployment[] | undefined;
 }): Plan => ({
   id: crypto.randomUUID(),
   operation: options.operation,
@@ -23,4 +24,5 @@ export const make = (options: {
   calls: options.steps.flatMap((step) => step.calls),
   requirements: options.requirements ?? [],
   warnings: options.warnings ?? [],
+  deploys: options.deploys ?? [],
 });
