@@ -73,6 +73,10 @@ export declare namespace get {
  *
  * - `coin: "eth"` (default) sets the Ethereum primary name in `addr.reverse`; `"default"` sets the
  *   fallback for every EVM chain in `default.reverse` (ENSIP-19).
+ * - An `addr.reverse` name outranks `default.reverse` on Ethereum, so `"default"` also sets
+ *   `addr.reverse` when it holds a different name.
+ * - A default name with only an Ethereum address verifies on Ethereum alone; the plan carries a
+ *   `DEFAULT_PRIMARY_NAME_ETHEREUM_ONLY` warning.
  * - `address` names another account: the signer must be its operator or, for a contract, its
  *   Ownable owner (or ContractNamer for `"default"`).
  * - Before sending, checks that the name resolves back to the address, as readers require.
