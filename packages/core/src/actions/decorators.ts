@@ -107,9 +107,9 @@ export type RecordActions = {
     readonly getContentHash: Bound<typeof record.getContentHash>;
     /** Reads one text record of an ENS name, such as `url`, `avatar` or `com.twitter`. */
     readonly getText: Bound<typeof record.getText>;
-    /** Writes text records of an ENS name and resolves once the transaction is submitted. */
+    /** Writes records of an ENS name and resolves once the transaction is submitted. */
     readonly set: BoundWrite<typeof record.set>;
-    /** Writes text records of an ENS name and resolves once the receipt is in. */
+    /** Writes records of an ENS name and resolves once the receipt is in. */
     readonly setSync: Bound<typeof record.setSync>;
   };
 };

@@ -291,27 +291,39 @@ export declare namespace getText {
 }
 
 /**
- * Writes text records of an ENS name and resolves once the transaction is submitted.
+ * Writes records of an ENS name and resolves once the transaction is submitted.
  *
  * **When to use**
  *
- * Use to update profile fields when the UI tracks confirmation itself. Use {@link setSync} to
- * wait for the receipt instead.
+ * Use to update a profile (texts, addresses, content hash and more) when the UI tracks
+ * confirmation itself. Use {@link setSync} to wait for the receipt instead.
  *
  * **Details**
  *
  * - `null` deletes a record.
- * - Several keys become one `multicall` on the name's resolver.
- * - The call is simulated before the wallet prompt, so permission errors surface first.
+ * - All records are written in one `multicall` on the resolver.
+ * - Works with ENSv1 resolvers and the ENSv2 PermissionedResolver; the kind is detected on-chain.
+ * - The records go to the resolver set on the name in its registry, never to a wildcard resolver
+ *   inherited from a parent.
+ * - `resolver` first points the name at another resolver, then writes the records there.
+ * - The plan is simulated before the wallet prompt, so permission errors surface first.
  *
  * **Gotchas**
  *
- * - The name needs its own resolver; a wildcard resolver inherited from a parent is not written to.
+ * - The ENSv2 PermissionedResolver has no `pubkey` records and no `clear`.
+ * - Older resolvers lack newer profiles; the ENSv1 public resolver has no `data` records, so the
+ *   simulation reverts.
+ * - `resolver: "default"` (the ENSv1 public resolver) is for ENSv1 names only; ENSv2 names pass the
+ *   address of a resolver such as their own PermissionedResolver.
  *
- * **Example** (Updating a profile URL)
+ * **Example** (Updating a profile)
  *
  * ```ts
- * const { hash } = await ens.record.set({ name: "alice.eth", texts: { url: "https://alice.dev" } })
+ * const { hash } = await ens.record.set({
+ *   name: "alice.eth",
+ *   texts: { url: "https://alice.dev" },
+ *   addresses: { eth: "0x225f137127d9067788314bc7fcc1f36746a3c3B5" },
+ * })
  * ```
  *
  * **Example** (Deleting a record with a standalone call)
@@ -322,21 +334,27 @@ export declare namespace getText {
  * await Actions.record.set(ens, { name: "alice.eth", texts: { url: null } })
  * ```
  *
- * **Example** (Writing in an Effect program)
+ * **Example** (Switching to the public resolver in an Effect program)
  *
  * ```ts
  * import { Actions } from "@ensforge/core/effect"
  *
- * const { hash } = yield* Actions.record.set(ens, { name: "alice.eth", texts: { url: "https://alice.dev" } })
+ * const { hash } = yield* Actions.record.set(ens, {
+ *   name: "alice.eth",
+ *   resolver: "default",
+ *   contentHash: "ipfs://bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi",
+ * })
  * ```
  *
- * @throws `Errors.InvalidInputError` (`INVALID_NAME`, `INVALID_RECORD_VALUE`) for invalid input.
+ * @throws `Errors.InvalidInputError` (`INVALID_NAME`, `INVALID_ADDRESS`, `INVALID_COIN_TYPE`, `INVALID_CONTENT_HASH`, `INVALID_RECORD_VALUE`) for invalid input.
  * @throws `Errors.NotFoundError` (`RESOLVER_NOT_FOUND`) when the name has no resolver of its own.
+ * @throws `Errors.UnsupportedError` (`RESOLVER_PROFILE_UNSUPPORTED`, `UNSUPPORTED_PROTOCOL`) for `pubkey` or `clear` on a PermissionedResolver, or `resolver: "default"` on an ENSv2 name.
+ * @throws `Errors.NameStateError` (`NAME_EXPIRED`, `NAME_RESERVED`, `NAME_NOT_REGISTERED`) when the name is not registered.
  * @throws `Errors.UnauthorizedError` (`NOT_OWNER`, `MISSING_ROLES`) when the account may not edit records.
  * @throws `Errors.ConfigError` (`WALLET_NOT_CONFIGURED`) when the client has no wallet.
  * @throws `Errors.UserRejectedError` when the user rejects the request.
  *
- * @see {@link Actions.record.getText} to read records
+ * @see {@link Actions.record.get} to read records
  * @stability stable
  * @category writing
  * @since 1.0.0
@@ -352,7 +370,7 @@ export declare namespace set {
 }
 
 /**
- * Writes text records of an ENS name and resolves once the receipt is in.
+ * Writes records of an ENS name and resolves once the receipt is in.
  *
  * **When to use**
  *
@@ -380,8 +398,10 @@ export declare namespace set {
  * yield* Actions.record.setSync(ens, { name: "alice.eth", texts: { url: "https://alice.dev" } })
  * ```
  *
- * @throws `Errors.InvalidInputError` (`INVALID_NAME`, `INVALID_RECORD_VALUE`) for invalid input.
+ * @throws `Errors.InvalidInputError` (`INVALID_NAME`, `INVALID_ADDRESS`, `INVALID_COIN_TYPE`, `INVALID_CONTENT_HASH`, `INVALID_RECORD_VALUE`) for invalid input.
  * @throws `Errors.NotFoundError` (`RESOLVER_NOT_FOUND`) when the name has no resolver of its own.
+ * @throws `Errors.UnsupportedError` (`RESOLVER_PROFILE_UNSUPPORTED`, `UNSUPPORTED_PROTOCOL`) for records or resolvers the name's resolver or protocol does not support.
+ * @throws `Errors.NameStateError` (`NAME_EXPIRED`, `NAME_RESERVED`, `NAME_NOT_REGISTERED`) when the name is not registered.
  * @throws `Errors.UnauthorizedError` (`NOT_OWNER`, `MISSING_ROLES`) when the account may not edit records.
  * @throws `Errors.TransactionError` (`TRANSACTION_REVERTED`, `RECEIPT_TIMEOUT`) when confirmation fails.
  *
