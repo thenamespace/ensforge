@@ -6,12 +6,12 @@ A type-safe client for building ENS applications.
 
 - Config-bound actions with no repeated client arguments
 - Unified behavior across supported ENS deployments
-- Grouped APIs for migration, HCA accounts, events and the indexer
+- Grouped APIs for HCA accounts, events, batches and the indexer
 
 Name, record, resolver, primary-name and registration actions live in `@ensforge/core`
 (`ens.name.*`, `ens.record.*`, `ens.resolver.*`, `ens.primaryName.*`, `ens.registration.*`,
 `ens.subname.*`, `ens.registry.*`, `ens.permission.*`, `ens.role.*`, `ens.approval.*`,
-`ens.wrapper.*`, `ens.dns.*`).
+`ens.wrapper.*`, `ens.dns.*`, `ens.migration.*`).
 
 - Batched reads and wallet-aware write workflows
 - Compatible with viem clients and Wagmi configs
@@ -34,30 +34,21 @@ const sdk = new Ensforge({
   publicClient: createPublicClient({ chain: mainnet, transport: http() }),
 });
 
-const status = await sdk.migration.getMigrationStatus({ name: "ens.eth" });
+const name = await sdk.indexer.getIndexedName({ name: "ens.eth" });
 ```
 
 Actions are grouped by ENS capability:
 
 ```ts
-const status = await sdk.migration.getMigrationStatus({ name: "ens.eth" });
-const target = await sdk.migration.getMigrationTarget({ name: "ens.eth" });
+const name = await sdk.indexer.getIndexedName({ name: "ens.eth" });
+const history = await sdk.indexer.getNameHistory({ name: "ens.eth" });
 ```
 
 Import action-specific types from the corresponding group entrypoint. This keeps editor type
 loading focused while method calls remain fully inferred.
 
 ```ts
-import type { GetMigrationStatusParameters } from "@ensforge/sdk/migration";
-```
-
-Compatible reads can be executed together:
-
-```ts
-const profile = await sdk.batch.readBatch({
-  ens: sdk.migration.getMigrationStatus.request({ name: "ens.eth" }),
-  wallet: sdk.migration.getMigrationStatus.request({ name: "wallet.eth" }),
-});
+import type { GetIndexedNameParameters } from "@ensforge/sdk/indexer";
 ```
 
 Use an existing Wagmi config instead of supplying viem clients:

@@ -1,7 +1,6 @@
 export * from "./batch.js";
 export * from "./events.js";
 export * from "./indexer.js";
-export * from "./migration.js";
 export { readBatchAtom, readBatchSettledAtom, type ReadBatchAtomParameters } from "./generic.js";
 export { makeMutationAtom, type EnsMutationAtom, type EnsMutationAtomFactory } from "./mutation.js";
 export { makeQueryAtom, type EnsAtom, type EnsAtomFactory } from "./query.js";

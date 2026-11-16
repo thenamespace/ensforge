@@ -89,10 +89,6 @@
       "workspace-source": "./src/legacy/actions/indexer/resolvers/index.ts",
       "default": "./dist/legacy/indexer/resolvers.js"
     },
-    "./legacy/migration": {
-      "workspace-source": "./src/legacy/actions/migration/index.ts",
-      "default": "./dist/legacy/migration.js"
-    },
     "./legacy/storage": {
       "workspace-source": "./src/legacy/storage/index.ts",
       "default": "./dist/legacy/storage.js"
@@ -131,7 +127,6 @@
       "./legacy/indexer/registrations": "./dist/legacy/indexer/registrations.js",
       "./legacy/indexer/registries": "./dist/legacy/indexer/registries.js",
       "./legacy/indexer/resolvers": "./dist/legacy/indexer/resolvers.js",
-      "./legacy/migration": "./dist/legacy/migration.js",
       "./legacy/storage": "./dist/legacy/storage.js",
       "./legacy/storage/browser": "./dist/legacy/storage/browser.js",
       "./legacy/wagmi": "./dist/legacy/wagmi.js",

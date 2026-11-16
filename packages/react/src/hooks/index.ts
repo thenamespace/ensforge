@@ -1,7 +1,6 @@
 export * from "./batch.js";
 export * from "./events.js";
 export * from "./indexer.js";
-export * from "./migration.js";
 export { useReadBatch, useReadBatchSettled } from "./generic.js";
 export { useInvalidate, type Invalidate } from "./use-cache.js";
 export { makeMutationHook } from "./use-mutation.js";

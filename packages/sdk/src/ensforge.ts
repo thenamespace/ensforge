@@ -14,11 +14,9 @@ import {
   type HcaActions,
   makeEventsActions,
   makeIndexerActions,
-  makeMigrationActions,
   type BatchActions,
   type EventsActions,
   type IndexerActions,
-  type MigrationActions,
 } from "./groups/index.js";
 
 export class Ensforge {
@@ -28,7 +26,6 @@ export class Ensforge {
   readonly workflows: WorkflowActions;
   readonly events: EventsActions;
   readonly indexer: IndexerActions;
-  readonly migration: MigrationActions;
 
   constructor(parameters: CreateConfigParameters | EnsforgeConfig) {
     const storage = parameters.storage ?? createMemoryWorkflowStorage();
@@ -54,7 +51,6 @@ export class Ensforge {
     this.workflows = makeWorkflowActions(config);
     this.events = makeEventsActions(config);
     this.indexer = makeIndexerActions(config);
-    this.migration = makeMigrationActions(config);
 
     Object.freeze(this);
   }

@@ -38,33 +38,34 @@ import { EnsforgeProvider } from "@ensforge/react";
 Use read hooks anywhere below the provider:
 
 ```tsx
-import { useMigrationStatus } from "@ensforge/react";
+import { useIndexedName } from "@ensforge/react";
 
-function Migration({ name }: { name: string }) {
-  const migration = useMigrationStatus({ name, atom: { swr: { staleTime: "1 minute" } } });
+function IndexedName({ name }: { name: string }) {
+  const indexed = useIndexedName({ name, atom: { swr: { staleTime: "1 minute" } } });
 
-  if (migration.isInitial) return <span>Loading…</span>;
-  if (migration.isFailure) return <span>{migration.error.message}</span>;
+  if (indexed.isInitial) return <span>Loading…</span>;
+  if (indexed.isFailure) return <span>{indexed.error.message}</span>;
 
-  return <p>{migration.data?.status}</p>;
+  return <p>{indexed.data === null ? "Not indexed" : `${indexed.data?.subnameCount} subnames`}</p>;
 }
 ```
 
 Write hooks expose mutation state and Promise-based execution:
 
 ```tsx
-import { useMigrateName } from "@ensforge/react";
+import { useSendCalls } from "@ensforge/react";
 
-const migrateName = useMigrateName();
+const sendCalls = useSendCalls();
 
-const migrate = () => migrateName.mutate({ name: "alice.eth" });
+const send = () =>
+  sendCalls.mutate({ calls: [{ to: "0xB0b0000000000000000000000000000000000000", value: 1n }] });
 ```
 
 Hook inputs are inferred automatically. When an action parameter type is needed explicitly, import
 it from the matching SDK group.
 
 ```ts
-import type { MigrateNameParameters } from "@ensforge/sdk/migration";
+import type { GetIndexedNameParameters } from "@ensforge/sdk/indexer";
 ```
 
 An existing SDK instance can also be shared through the provider:

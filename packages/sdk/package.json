@@ -53,10 +53,6 @@
       "workspace-source": "./src/entrypoints/indexer.ts",
       "default": "./dist/indexer.js"
     },
-    "./migration": {
-      "workspace-source": "./src/entrypoints/migration.ts",
-      "default": "./dist/migration.js"
-    },
     "./wagmi": {
       "workspace-source": "./src/wagmi.ts",
       "default": "./dist/wagmi.js"
@@ -74,7 +70,6 @@
       "./hca": "./dist/hca.js",
       "./hca/admin": "./dist/hca/admin.js",
       "./indexer": "./dist/indexer.js",
-      "./migration": "./dist/migration.js",
       "./wagmi": "./dist/wagmi.js",
       "./package.json": "./package.json"
     },
