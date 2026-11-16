@@ -25,6 +25,7 @@ const normalizeLabel = (label: string): string => {
  * **Details**
  *
  * - `""` is the root name and is returned as-is.
+ * - Uses viem's ENSIP-15 normalizer (ENSIP-15 rejects alternative full stops such as `。`).
  * - Encoded labels such as `[af2c…]` (64 hex digits) are kept, so names from indexers round-trip.
  *
  * **Example** (Normalizing user input)
@@ -43,7 +44,24 @@ export const normalize = (name: string): string => {
   if (name === "") return "";
 
   try {
-    return name.split(".").map(normalizeLabel).join(".");
+    // ENSIP-15 rejects `[`, so encoded labels are kept as they are and every run of labels
+    // between them goes through viem's normalizer as one name.
+    const parts: string[] = [];
+    let run: string[] = [];
+    const flush = () => {
+      if (run.length > 0) parts.push(viemNormalize(run.join(".")));
+      run = [];
+    };
+    for (const label of name.split(".")) {
+      if (encodedLabelPattern.test(label)) {
+        flush();
+        parts.push(label);
+      } else {
+        run.push(label);
+      }
+    }
+    flush();
+    return parts.join(".");
   } catch (cause) {
     throw new InvalidInputError({ code: "INVALID_NAME", input: name, cause });
   }
