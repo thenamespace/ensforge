@@ -265,6 +265,14 @@ export const messages: { readonly [code in Code]: Template<code> } = {
     title: "Upgrade unavailable",
     message: `${thisName(error)} cannot use this upgrade path.`,
   }),
+  RECORDS_UNKNOWN: (error) => ({
+    title: "Profile needed",
+    message: `The records of ${thisName(error)} must be provided before it can be upgraded.`,
+  }),
+  VERIFICATION_FAILED: (error) => ({
+    title: "Upgrade incomplete",
+    message: `${thisName(error)} was upgraded, but its new state does not match the plan.`,
+  }),
   DNS_RECORD_MISSING: () => ({
     title: "DNS record missing",
     message: "The required DNS TXT record was not found.",

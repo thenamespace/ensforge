@@ -2,6 +2,7 @@
 
 export * as approval from "./approval/index.js";
 export * as dns from "./dns/index.js";
+export * as migration from "./migration/index.js";
 export * as name from "./name/index.js";
 export * as permission from "./permission/index.js";
 export * as primaryName from "./primaryName/index.js";

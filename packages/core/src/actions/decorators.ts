@@ -4,6 +4,7 @@ import type { Client } from "../client/types.js";
 import * as approval from "./approval/index.js";
 import type { Bound, BoundWrite } from "./bound.js";
 import * as dns from "./dns/index.js";
+import * as migration from "./migration/index.js";
 import * as name from "./name/index.js";
 import * as permission from "./permission/index.js";
 import * as primaryName from "./primaryName/index.js";
@@ -153,6 +154,44 @@ export const dnsActions =
         },
       ),
       setRecordsSync: (options) => dns.setRecordsSync(client, options),
+    },
+  });
+
+/** `migration` actions bound to a client. */
+export type MigrationActions = {
+  readonly migration: {
+    /** Reads whether an ENSv1 name can migrate to ENSv2, how, and what it becomes. */
+    readonly get: Bound<typeof migration.get>;
+    /** Migrates one or more ENSv1 names to ENSv2, carrying their resolver records and subnames. Resolves once the transaction is submitted. */
+    readonly migrate: BoundWrite<typeof migration.migrate>;
+    /** Migrates one or more ENSv1 names to ENSv2, carrying their resolver records and subnames. Resolves once the receipt is in. */
+    readonly migrateSync: Bound<typeof migration.migrateSync>;
+  };
+};
+
+/**
+ * Adds the `migration` actions to a client.
+ *
+ * @category decorators
+ * @since 1.0.0
+ */
+export const migrationActions =
+  () =>
+  (client: Client<object>): MigrationActions => ({
+    migration: {
+      get: (options) => migration.get(client, options),
+      migrate: Object.assign(
+        (options: Parameters<typeof migration.migrate>[1]) => migration.migrate(client, options),
+        {
+          prepare: (options: Parameters<typeof migration.migrate.prepare>[1]) =>
+            migration.migrate.prepare(client, options),
+          simulate: (options: Parameters<typeof migration.migrate.simulate>[1]) =>
+            migration.migrate.simulate(client, options),
+          estimateGas: (options: Parameters<typeof migration.migrate.estimateGas>[1]) =>
+            migration.migrate.estimateGas(client, options),
+        },
+      ),
+      migrateSync: (options) => migration.migrateSync(client, options),
     },
   });
 
@@ -848,6 +887,7 @@ export const wrapperActions =
 /** Every action group bound to a client. */
 export type EnsActions = ApprovalActions &
   DnsActions &
+  MigrationActions &
   NameActions &
   PermissionActions &
   PrimaryNameActions &
@@ -876,6 +916,7 @@ export const ensActions =
   (client: Client<object>): EnsActions => ({
     ...approvalActions()(client),
     ...dnsActions()(client),
+    ...migrationActions()(client),
     ...nameActions()(client),
     ...permissionActions()(client),
     ...primaryNameActions()(client),

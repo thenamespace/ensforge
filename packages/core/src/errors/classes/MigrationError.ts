@@ -16,6 +16,12 @@ const defaults: {
   NAME_NOT_LOCKED: () => ({
     shortMessage: "The wrapped name is not locked, so it cannot use the locked migration route.",
   }),
+  RECORDS_UNKNOWN: () => ({
+    shortMessage: "The name's records are not known, so they cannot be copied to its new resolver.",
+  }),
+  VERIFICATION_FAILED: () => ({
+    shortMessage: "The migration was sent, but the name's ENSv2 state differs from the plan.",
+  }),
 };
 
 /**
@@ -34,7 +40,12 @@ export class MigrationError extends EnsforgeError<"MigrationError", MigrationErr
 }
 
 export declare namespace MigrationError {
-  type Code = "NOT_ELIGIBLE" | "ALREADY_MIGRATED" | "NAME_NOT_LOCKED";
+  type Code =
+    | "NOT_ELIGIBLE"
+    | "ALREADY_MIGRATED"
+    | "NAME_NOT_LOCKED"
+    | "RECORDS_UNKNOWN"
+    | "VERIFICATION_FAILED";
   type Options = EnsforgeError.ClassOptions<Code> & {
     readonly blockers?: readonly string[] | undefined;
   };
