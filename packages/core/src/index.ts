@@ -1,1 +1,1 @@
-export { version } from "./version.js";
+export * as Errors from "./errors/index.js";
