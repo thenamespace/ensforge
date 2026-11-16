@@ -196,6 +196,7 @@
     "provenance": true
   },
   "scripts": {
+    "api:report": "node ../../scripts/api-report.mjs index effect",
     "build": "tsdown",
     "codegen": "node scripts/codegen.mjs",
     "codegen:check": "node scripts/codegen.mjs --check",
@@ -203,7 +204,8 @@
     "lint": "oxlint --deny-warnings .",
     "pack:check": "publint && attw --pack . --profile esm-only --exclude-entrypoints ./legacy/testing",
     "prepack": "pnpm build",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "verify": "pnpm codegen:check && node ../../scripts/lint-jsdoc.mjs src/index.ts src/effect.ts && node ../../scripts/api-report.mjs --check index effect && node ../../scripts/check-dist-types.mjs index actions --consumer scripts/fixtures/consumer.ts && typedoc"
   },
   "dependencies": {
     "@ensdomains/address-encoder": "catalog:",

@@ -1,0 +1,15 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/tsdoc/v0/tsdoc.schema.json",
+  "tagDefinitions": [
+    { "tagName": "@since", "syntaxKind": "block" },
+    { "tagName": "@stability", "syntaxKind": "block" },
+    { "tagName": "@category", "syntaxKind": "block" },
+    { "tagName": "@default", "syntaxKind": "block" }
+  ],
+  "supportForTags": {
+    "@since": true,
+    "@stability": true,
+    "@category": true,
+    "@default": true
+  }
+}

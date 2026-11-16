@@ -3,7 +3,9 @@
   "compilerOptions": {
     "jsx": "react-jsx",
     "rootDir": ".",
-    "types": ["node"]
+    "types": ["node"],
+    "erasableSyntaxOnly": true,
+    "noErrorTruncation": true
   },
   "include": ["src/**/*.ts", "src/**/*.tsx"]
 }

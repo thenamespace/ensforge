@@ -3,7 +3,9 @@
   "compilerOptions": {
     "customConditions": ["workspace-source"],
     "types": ["node"],
-    "rootDir": "."
+    "rootDir": ".",
+    "erasableSyntaxOnly": true,
+    "noErrorTruncation": true
   },
   "include": ["src/**/*.ts"]
 }

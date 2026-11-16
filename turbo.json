@@ -22,6 +22,10 @@
     },
     "clean": {
       "cache": false
+    },
+    "verify": {
+      "dependsOn": ["build", "^build"],
+      "outputs": []
     }
   }
 }

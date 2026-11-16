@@ -6,16 +6,17 @@
   "scripts": {
     "build": "turbo run build",
     "changeset": "changeset",
-    "check": "pnpm format:check && pnpm lint && turbo run typecheck build",
+    "check": "pnpm format:check && pnpm lint && turbo run typecheck build verify",
     "dev": "turbo run dev",
     "format": "oxfmt --write .",
     "format:check": "oxfmt --check .",
-    "lint": "turbo run lint",
+    "lint": "oxlint --deny-warnings scripts && turbo run lint",
     "lint:fix": "oxlint --fix .",
     "pack:check": "turbo run pack:check",
     "prepare": "lefthook install",
     "release": "changeset publish",
     "typecheck": "turbo run typecheck",
+    "verify": "turbo run verify",
     "version-packages": "changeset version"
   },
   "devDependencies": {
@@ -33,6 +34,7 @@
     "tsdown": "0.23.7",
     "tslib": "2.9.1",
     "turbo": "2.11.11",
+    "typedoc": "0.28.20",
     "typescript": "6.0.3",
     "viem": "catalog:",
     "wagmi": "catalog:"

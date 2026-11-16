@@ -1,7 +1,9 @@
 {
   "extends": "klarity/tsconfig/library",
   "compilerOptions": {
-    "rootDir": "src"
+    "rootDir": "src",
+    "erasableSyntaxOnly": true,
+    "noErrorTruncation": true
   },
   "include": ["src/**/*.ts"]
 }

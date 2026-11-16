@@ -1,0 +1,11 @@
+{
+  "$schema": "https://typedoc.org/schema.json",
+  "entryPoints": ["src/index.ts", "src/effect.ts"],
+  "tsconfig": "tsconfig.json",
+  "emit": "none",
+  "excludeInternal": true,
+  "excludePrivate": true,
+  "validation": { "invalidLink": true, "notExported": false, "notDocumented": false },
+  "treatValidationWarningsAsErrors": true,
+  "treatWarningsAsErrors": true
+}
