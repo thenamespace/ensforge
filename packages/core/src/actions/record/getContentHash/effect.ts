@@ -1,0 +1,22 @@
+import { Effect } from "effect";
+
+import type { Client } from "../../../client/types.js";
+import * as Action from "../../../internal/action/index.js";
+import { readSingleRecord } from "../../../internal/records/single.js";
+import type { Decoded } from "../../../utils/ContentHash.js";
+import type { getContentHash as Promises } from "./index.js";
+
+/** @internal Implementation of `Actions.record.getContentHash`. */
+export const getContentHash = Effect.fn("ensforge.record.getContentHash")(
+  function* (
+    client: Client,
+    options: Promises.Options,
+  ): Effect.fn.Return<Promises.ReturnType, Promises.ErrorType> {
+    return yield* readSingleRecord(
+      client,
+      { ...options, selection: { contentHash: true }, resource: "contenthash" },
+      (records) => records.contentHash as Decoded | null,
+    );
+  },
+  Action.withContext("record.getContentHash", { contractKind: "resolver" }),
+);

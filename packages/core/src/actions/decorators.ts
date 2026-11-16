@@ -97,6 +97,14 @@ export const nameActions =
 /** `record` actions bound to a client. */
 export type RecordActions = {
   readonly record: {
+    /** Reads any mix of a name's records in one request: texts, addresses, content hash, ABI, public key, name record, interface implementers and data records. */
+    readonly get: record.get.Bound;
+    /** Reads one address record of an ENS name, for Ethereum by default or any coin (ENSIP-9, ENSIP-11). */
+    readonly getAddress: record.getAddress.Bound;
+    /** Reads the avatar of an ENS name and resolves it to a URL a browser can load (ENSIP-12). */
+    readonly getAvatar: Bound<typeof record.getAvatar>;
+    /** Reads the content hash of an ENS name (ENSIP-7), decoded into its protocol, value and URI. */
+    readonly getContentHash: Bound<typeof record.getContentHash>;
     /** Reads one text record of an ENS name, such as `url`, `avatar` or `com.twitter`. */
     readonly getText: Bound<typeof record.getText>;
     /** Writes text records of an ENS name and resolves once the transaction is submitted. */
@@ -116,6 +124,10 @@ export const recordActions =
   () =>
   (client: Client<object>): RecordActions => ({
     record: {
+      get: (options) => record.get(client, options),
+      getAddress: (options) => record.getAddress(client, options),
+      getAvatar: (options) => record.getAvatar(client, options),
+      getContentHash: (options) => record.getContentHash(client, options),
       getText: (options) => record.getText(client, options),
       set: Object.assign(
         (options: Parameters<typeof record.set>[1]) => record.set(client, options),
