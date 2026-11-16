@@ -50,12 +50,15 @@ export class UnauthorizedError extends EnsforgeError<"UnauthorizedError", Unauth
   readonly missingRoles: readonly string[];
   /** Raw role bitmap from the revert. */
   readonly roleBitmap: bigint | undefined;
+  /** What the account lacks, or what blocks the change, from `permission.check`. */
+  readonly requirements: readonly UnauthorizedError.Requirement[];
 
   constructor(options: UnauthorizedError.Options) {
     super("UnauthorizedError", withDefaults(defaults[options.code](options), options));
     this.account = options.account;
     this.missingRoles = options.missingRoles ?? [];
     this.roleBitmap = options.roleBitmap;
+    this.requirements = options.requirements ?? [];
   }
 }
 
@@ -71,5 +74,28 @@ export declare namespace UnauthorizedError {
     readonly account?: Address | undefined;
     readonly missingRoles?: readonly string[] | undefined;
     readonly roleBitmap?: bigint | undefined;
+    readonly requirements?: readonly Requirement[] | undefined;
   };
+
+  /**
+   * One thing an account lacks for a change, or one thing that blocks it for everyone:
+   *
+   * - `owner`: be `owner` of the name at `contract`, or an account it approved.
+   * - `roles`: hold `roles` on `resource` (or the root) of `contract`.
+   * - `blocked`: nobody can, because of a burned fuse, the name's status, a transfer rule, or
+   *   because the contract does not support it.
+   */
+  type Requirement =
+    | { readonly type: "owner"; readonly contract: Address; readonly owner: Address | null }
+    | {
+        readonly type: "roles";
+        readonly contract: Address;
+        readonly resource: bigint;
+        readonly roles: readonly string[];
+      }
+    | {
+        readonly type: "blocked";
+        readonly reason: "fuse" | "status" | "transfer-disallowed" | "unsupported";
+        readonly detail: string;
+      };
 }
