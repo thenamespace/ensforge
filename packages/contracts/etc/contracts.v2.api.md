@@ -768,6 +768,7 @@ const permissionedResolverV2InterfaceAbi: Abi
   function setInterface(bytes,bytes4,address)
   function setName(bytes,string)
   function setText(bytes,string,string)
+function predictVerifiableProxyAddress(options: { readonly factory: `0x${string}`; readonly proxyLogic: `0x${string}`; readonly deployer: `0x${string}`; readonly salt: bigint; }) => `0x${string}`
 const publicResolverV2Abi: Abi
   constructor(address,address,address)
   error DNSDecodingFailed(bytes)
