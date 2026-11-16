@@ -42,7 +42,8 @@ export const readContract = <
   const { multicall } = client.config.batch;
   const args = (parameters.args ?? []) as readonly unknown[];
 
-  if (multicall === false) {
+  // Chains without Multicall3 (e.g. a bare devnet) read one call at a time.
+  if (multicall === false || client.publicClient.chain?.contracts?.multicall3 === undefined) {
     return fromPromise(
       () =>
         viemReadContract(client.publicClient, {
@@ -78,3 +79,24 @@ export const readContract = <
     resolverOf(client, multicall.batchSize, multicall.wait),
   ) as Effect.Effect<Result, AnyError>;
 };
+
+/**
+ * {@link readContract} that returns `undefined` when the call reverts, e.g. `ownerOf` on an
+ * expired token. Network and configuration failures still fail.
+ */
+export const readContractOrUndefined = <
+  const abi extends Abi,
+  functionName extends ContractFunctionName<abi, "pure" | "view">,
+>(
+  client: Client,
+  parameters: ReadContractParameters<abi, functionName>,
+): Effect.Effect<
+  ContractFunctionReturnType<abi, "pure" | "view", functionName> | undefined,
+  AnyError
+> =>
+  readContract(client, parameters).pipe(
+    Effect.catchIf(
+      (error: AnyError) => error._tag === "ContractRevertError",
+      () => Effect.succeed(undefined),
+    ),
+  );

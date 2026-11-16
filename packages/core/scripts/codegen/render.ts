@@ -69,7 +69,12 @@ const decoratorBlock = ({ domain, actions }: Domain): string => {
   const typeName = `${pascal(domain)}Actions`;
   const members = actions.map((action) => {
     const ref = `${domain}.${action.name}`;
-    const type = isWrite(action) ? `BoundWrite<typeof ${ref}>` : `Bound<typeof ${ref}>`;
+    // Generic actions declare their own bound signature, which `Parameters`/`ReturnType` would erase.
+    const type = action.types.includes("Bound")
+      ? `${ref}.Bound`
+      : isWrite(action)
+        ? `BoundWrite<typeof ${ref}>`
+        : `Bound<typeof ${ref}>`;
     return `/** ${summary(action.jsdoc)} */\nreadonly ${action.name}: ${type};`;
   });
   const values = actions.map((action) => {

@@ -17,6 +17,8 @@ export type Action = {
   readonly jsdoc: string;
   /** Properties assigned after the declaration (`request`, `prepare`, …). */
   readonly properties: readonly string[];
+  /** Types declared in the action's namespace (`Options`, `ReturnType`, `Bound`, …). */
+  readonly types: readonly string[];
 };
 
 export type Domain = {
@@ -49,7 +51,7 @@ const readActions = (file: string, folder: string): Action[] => {
   const source = parse(file);
   const actions = new Map<
     string,
-    { name: string; folder: string; jsdoc: string; properties: string[] }
+    { name: string; folder: string; jsdoc: string; properties: string[]; types: string[] }
   >();
 
   for (const statement of source.statements) {
@@ -59,8 +61,26 @@ const readActions = (file: string, folder: string): Action[] => {
       isExported(statement)
     ) {
       const name = statement.name.text;
-      actions.set(name, { name, folder, jsdoc: leadingJsDoc(statement, source), properties: [] });
+      actions.set(name, {
+        name,
+        folder,
+        jsdoc: leadingJsDoc(statement, source),
+        properties: [],
+        types: [],
+      });
     }
+  }
+  for (const statement of source.statements) {
+    if (
+      !ts.isModuleDeclaration(statement) ||
+      statement.body === undefined ||
+      !ts.isModuleBlock(statement.body)
+    )
+      continue;
+    const types = statement.body.statements
+      .filter(ts.isTypeAliasDeclaration)
+      .map((alias) => alias.name.text);
+    actions.get(statement.name.text)?.types.push(...types);
   }
   for (const statement of source.statements) {
     if (!ts.isExpressionStatement(statement) || !ts.isBinaryExpression(statement.expression))
