@@ -8,6 +8,7 @@ import * as Action from "../../../internal/action/index.js";
 import { loadName } from "../../../internal/name/load.js";
 import { requestedResolver, setResolverCall } from "../../../internal/name/set-resolver.js";
 import { requireRegistered, singleStepPlan } from "../../../internal/name/write.js";
+import { explainFor } from "../../../internal/permission/check.js";
 import type { Plan } from "../../../plan/Plan.js";
 import type { Write } from "../../../Types.js";
 import type { set as Promises } from "./index.js";
@@ -32,7 +33,15 @@ export const plan = Effect.fnUntraced(function* (
   });
 });
 
-const write = Action.write("resolver.set", plan, { contractKind: "registry" });
+const write = Action.write(
+  "resolver.set",
+  plan,
+  { contractKind: "registry" },
+  explainFor(
+    (options) => options.name,
+    () => ["setResolver" as const],
+  ),
+);
 
 /** @internal Implementation of `Actions.resolver.set`. */
 export const set = write.send;

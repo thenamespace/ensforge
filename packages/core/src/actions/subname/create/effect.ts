@@ -13,6 +13,7 @@ import type { AnyError } from "../../../errors/types.js";
 import * as Action from "../../../internal/action/index.js";
 import { randomSalt } from "../../../internal/factory/verifiable-proxy.js";
 import { requireAddress, requireV1Contracts } from "../../../internal/name/write.js";
+import { explainFor } from "../../../internal/permission/check.js";
 import { recordsCall } from "../../../internal/records/write-call.js";
 import { attachCalls, deployUserRegistry } from "../../../internal/registry/deploy.js";
 import { deployPermissionedResolver } from "../../../internal/resolver/deploy.js";
@@ -287,7 +288,15 @@ export const plan = Effect.fnUntraced(function* (
   });
 });
 
-const write = Action.write("subname.create", plan, { contractKind: "registry" });
+const write = Action.write(
+  "subname.create",
+  plan,
+  { contractKind: "registry" },
+  explainFor(
+    (options: { readonly name: string }) => options.name.slice(options.name.indexOf(".") + 1),
+    () => ["createSubname" as const],
+  ),
+);
 
 /** @internal Implementation of `Actions.subname.create`. */
 export const create = write.send;

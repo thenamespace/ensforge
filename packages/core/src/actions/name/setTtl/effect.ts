@@ -14,6 +14,7 @@ import {
   requireV1Contracts,
   singleStepPlan,
 } from "../../../internal/name/write.js";
+import { explainFor } from "../../../internal/permission/check.js";
 import type { Plan } from "../../../plan/Plan.js";
 import type { Write } from "../../../Types.js";
 import type { setTtl as Promises } from "./index.js";
@@ -61,7 +62,15 @@ export const plan = Effect.fnUntraced(function* (
   });
 });
 
-const write = Action.write("name.setTtl", plan, { contractKind: "registry" });
+const write = Action.write(
+  "name.setTtl",
+  plan,
+  { contractKind: "registry" },
+  explainFor(
+    (options) => options.name,
+    () => ["setTtl" as const],
+  ),
+);
 
 /** @internal Implementation of `Actions.name.setTtl`. */
 export const setTtl = write.send;

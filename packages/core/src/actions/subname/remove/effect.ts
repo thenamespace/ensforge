@@ -9,6 +9,7 @@ import { NameStateError } from "../../../errors/classes/NameStateError.js";
 import type { AnyError } from "../../../errors/types.js";
 import * as Action from "../../../internal/action/index.js";
 import { requireV1Contracts, singleStepPlan } from "../../../internal/name/write.js";
+import { explainFor } from "../../../internal/permission/check.js";
 import { loadSubname, type LoadedSubname } from "../../../internal/subname/load.js";
 import { addressOf } from "../../../internal/write/signer.js";
 import type { Plan } from "../../../plan/Plan.js";
@@ -112,7 +113,15 @@ export const plan = Effect.fnUntraced(function* (
   });
 });
 
-const write = Action.write("subname.remove", plan, { contractKind: "registry" });
+const write = Action.write(
+  "subname.remove",
+  plan,
+  { contractKind: "registry" },
+  explainFor(
+    (options: { readonly name: string }) => options.name.slice(options.name.indexOf(".") + 1),
+    () => ["removeSubname" as const],
+  ),
+);
 
 /** @internal Implementation of `Actions.subname.remove`. */
 export const remove = write.send;

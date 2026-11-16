@@ -14,6 +14,7 @@ import {
   requireV1Contracts,
   singleStepPlan,
 } from "../../../internal/name/write.js";
+import { explainFor } from "../../../internal/permission/check.js";
 import { loadSubname, type LoadedSubname } from "../../../internal/subname/load.js";
 import type { Plan } from "../../../plan/Plan.js";
 import type { Write } from "../../../Types.js";
@@ -199,7 +200,15 @@ export const plan = Effect.fnUntraced(function* (
   });
 });
 
-const write = Action.write("subname.update", plan, { contractKind: "registry" });
+const write = Action.write(
+  "subname.update",
+  plan,
+  { contractKind: "registry" },
+  explainFor(
+    (options: { readonly name: string }) => options.name.slice(options.name.indexOf(".") + 1),
+    () => ["createSubname" as const],
+  ),
+);
 
 /** @internal Implementation of `Actions.subname.update`. */
 export const update = write.send;

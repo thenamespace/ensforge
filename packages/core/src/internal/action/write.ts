@@ -1,5 +1,7 @@
 import { Effect } from "effect";
 
+import type { Address } from "viem";
+
 import type { Client } from "../../client/types.js";
 import type { EnsforgeError } from "../../errors/EnsforgeError.js";
 import type { AnyError } from "../../errors/types.js";
@@ -18,6 +20,38 @@ export type Planner<options, error> = (
 ) => Effect.Effect<Plan, error>;
 
 /**
+ * Explains why the signer could not perform the write: an `UnauthorizedError` with what is
+ * missing, or `undefined`. Only consulted when simulation fails with a revert that carries no
+ * error name (ENSv1 `require` strings), so successful writes pay nothing for it.
+ */
+export type Explainer<options> = (
+  client: Client,
+  options: options,
+  account: Address,
+) => Effect.Effect<AnyError | undefined, AnyError>;
+
+const isOpaqueRevert = (error: AnyError): boolean =>
+  error._tag === "ContractRevertError" && error.context.revert?.errorName === undefined;
+
+/** Replaces an opaque revert with the explainer's error, keeping the revert as its cause. */
+const explained = <options>(
+  client: Client,
+  options: options,
+  account: Address | undefined,
+  explain: Explainer<options> | undefined,
+  error: AnyError,
+): Effect.Effect<AnyError> =>
+  explain === undefined || account === undefined || !isOpaqueRevert(error)
+    ? Effect.succeed(error)
+    : explain(client, options, account).pipe(
+        Effect.map((explanation) =>
+          explanation === undefined ? error : (explanation.withCause(error) as AnyError),
+        ),
+        // A failing explanation must not hide the original error.
+        Effect.orElseSucceed(() => error),
+      );
+
+/**
  * Every Effect a write action exposes, built from one planner: `send` (the action itself),
  * `sendSync` (its `…Sync` sibling) and `methods` (`.prepare`, `.simulate`, `.estimateGas`).
  * Each gets one span and the action's error context.
@@ -26,6 +60,7 @@ export const write = <options, error extends EnsforgeError>(
   path: string,
   planner: Planner<options, error>,
   extra?: EnsforgeError.Context,
+  explain?: Explainer<options>,
 ) => {
   const prepare = Effect.fn(`ensforge.${path}.prepare`)(
     function* (
@@ -43,7 +78,16 @@ export const write = <options, error extends EnsforgeError>(
       options: options & Pick<Write.Options, "account">,
     ): Effect.fn.Return<Plan.Simulation, error> {
       const plan = yield* planner(client, options);
-      return yield* simulatePlan(client, plan, addressOf(options.account) ?? client.account);
+      const account = addressOf(options.account) ?? client.account;
+      const simulation = yield* simulatePlan(client, plan, account);
+      const steps = yield* Effect.forEach(simulation.steps, (step) =>
+        step.error === undefined
+          ? Effect.succeed(step)
+          : explained(client, options, account, explain, step.error).pipe(
+              Effect.map((error) => ({ ...step, error })),
+            ),
+      );
+      return { ...simulation, steps };
     },
     withContext(`${path}.simulate`, extra),
   );
@@ -66,7 +110,13 @@ export const write = <options, error extends EnsforgeError>(
     ): Effect.fn.Return<Write.Result, error | AnyError> {
       const plan = yield* planner(client, options);
       const signer = yield* resolveSigner(client, options.account);
-      return yield* sendPlan(client, plan, signer, options);
+      return yield* sendPlan(client, plan, signer, options).pipe(
+        Effect.catch((error: AnyError) =>
+          explained(client, options, addressOf(signer.account), explain, error).pipe(
+            Effect.flatMap(Effect.fail),
+          ),
+        ),
+      );
     },
     withContext(path, extra),
   );
@@ -78,7 +128,13 @@ export const write = <options, error extends EnsforgeError>(
     ): Effect.fn.Return<Write.SyncResult, error | AnyError> {
       const plan = yield* planner(client, options);
       const signer = yield* resolveSigner(client, options.account);
-      const result = yield* sendPlan(client, plan, signer, options);
+      const result = yield* sendPlan(client, plan, signer, options).pipe(
+        Effect.catch((error: AnyError) =>
+          explained(client, options, addressOf(signer.account), explain, error).pipe(
+            Effect.flatMap(Effect.fail),
+          ),
+        ),
+      );
       return yield* waitForReceipts(client, result, options);
     },
     withContext(`${path}Sync`, extra),

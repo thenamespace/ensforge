@@ -15,6 +15,7 @@ import {
   requireV1Contracts,
   singleStepPlan,
 } from "../../../internal/name/write.js";
+import { explainFor } from "../../../internal/permission/check.js";
 import { addressOf } from "../../../internal/write/signer.js";
 import type { Plan } from "../../../plan/Plan.js";
 import type { Write } from "../../../Types.js";
@@ -77,7 +78,15 @@ export const plan = Effect.fnUntraced(function* (
   });
 });
 
-const write = Action.write("name.setManager", plan, { contractKind: "registry" });
+const write = Action.write(
+  "name.setManager",
+  plan,
+  { contractKind: "registry" },
+  explainFor(
+    (options) => options.name,
+    () => ["setManager" as const],
+  ),
+);
 
 /** @internal Implementation of `Actions.name.setManager`. */
 export const setManager = write.send;

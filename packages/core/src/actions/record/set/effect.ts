@@ -10,6 +10,8 @@ import * as Action from "../../../internal/action/index.js";
 import { loadName } from "../../../internal/name/load.js";
 import { requestedResolver, setResolverCall } from "../../../internal/name/set-resolver.js";
 import { requireRegistered } from "../../../internal/name/write.js";
+import { explainFor } from "../../../internal/permission/check.js";
+import { writeOperations } from "../../../internal/permission/records.js";
 import { setterKeying } from "../../../internal/records/setter-keying.js";
 import { encodeRecordWrites, resolverCall } from "../../../internal/records/write-profiles.js";
 import { addressOf } from "../../../internal/write/signer.js";
@@ -75,7 +77,18 @@ export const plan = Effect.fnUntraced(function* (
   });
 });
 
-const write = Action.write("record.set", plan, { contractKind: "resolver" });
+const write = Action.write(
+  "record.set",
+  plan,
+  { contractKind: "resolver" },
+  explainFor(
+    (options) => options.name,
+    (options) => [
+      ...writeOperations(options),
+      ...(options.resolver === undefined ? [] : ["setResolver" as const]),
+    ],
+  ),
+);
 
 /** @internal Implementation of `Actions.record.set`. */
 export const set = write.send;

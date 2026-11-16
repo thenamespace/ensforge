@@ -15,6 +15,7 @@ import {
   requireV1Contracts,
   singleStepPlan,
 } from "../../../internal/name/write.js";
+import { explainFor } from "../../../internal/permission/check.js";
 import type { Plan } from "../../../plan/Plan.js";
 import type { Write } from "../../../Types.js";
 import type { transfer as Promises } from "./index.js";
@@ -129,7 +130,15 @@ export const plan = Effect.fnUntraced(function* (
   });
 });
 
-const write = Action.write("name.transfer", plan, { contractKind: "registry" });
+const write = Action.write(
+  "name.transfer",
+  plan,
+  { contractKind: "registry" },
+  explainFor(
+    (options) => options.name,
+    () => ["transfer" as const],
+  ),
+);
 
 /** @internal Implementation of `Actions.name.transfer`. */
 export const transfer = write.send;
