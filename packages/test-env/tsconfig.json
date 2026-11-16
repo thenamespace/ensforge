@@ -1,7 +1,0 @@
-{
-  "extends": "klarity/tsconfig/library/node",
-  "compilerOptions": {
-    "rootDir": "."
-  },
-  "include": ["src/**/*.ts"]
-}

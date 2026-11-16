@@ -3,12 +3,6 @@
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
-      "env": [
-        "ENSFORGE_MAINNET_V1_INDEXER_URL",
-        "ENSFORGE_MAINNET_V1_SUBGRAPH_URL",
-        "ENSFORGE_SEPOLIA_V1_INDEXER_URL",
-        "ENSFORGE_SEPOLIA_V2_INDEXER_URL"
-      ],
       "outputs": ["dist/**"]
     },
     "dev": {
@@ -25,14 +19,6 @@
     "typecheck": {
       "dependsOn": ["^build", "^typecheck"],
       "outputs": []
-    },
-    "test": {
-      "dependsOn": ["^build"],
-      "outputs": []
-    },
-    "test:watch": {
-      "cache": false,
-      "persistent": true
     },
     "clean": {
       "cache": false

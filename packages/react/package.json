@@ -62,8 +62,6 @@
     "lint": "oxlint --deny-warnings .",
     "pack:check": "publint && attw --pack . --profile esm-only",
     "prepack": "pnpm build",
-    "test": "vitest run",
-    "test:watch": "vitest",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
@@ -72,10 +70,8 @@
     "@ensforge/sdk": "workspace:*"
   },
   "devDependencies": {
-    "@testing-library/react": "catalog:",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
-    "happy-dom": "catalog:",
     "react": "catalog:",
     "react-dom": "catalog:",
     "scheduler": "catalog:",

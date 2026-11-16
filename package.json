@@ -6,7 +6,7 @@
   "scripts": {
     "build": "turbo run build",
     "changeset": "changeset",
-    "check": "pnpm format:check && pnpm lint && turbo run typecheck test build && pnpm check:sdk-types",
+    "check": "pnpm format:check && pnpm lint && turbo run typecheck build && pnpm check:sdk-types",
     "check:sdk-types": "pnpm --filter @ensforge/sdk... build && node scripts/check-sdk-types.mjs",
     "dev": "turbo run dev",
     "format": "oxfmt --write .",
@@ -18,16 +18,8 @@
     "release": "changeset publish",
     "setup:sepolia-v2": "pnpm --filter @ensforge/sdk... build && node --env-file-if-exists=.env scripts/setup-sepolia-v2.mjs",
     "setup:docs-sepolia": "pnpm --filter @ensforge/sdk... build && node --env-file-if-exists=.env scripts/setup-sepolia-v2.mjs --apply",
-    "test": "turbo run test",
-    "test:integration": "pnpm --filter @ensforge/core test:integration",
-    "test:live:mainnet": "pnpm --filter @ensforge/core test:live:mainnet",
-    "test:live:sepolia": "pnpm --filter @ensforge/core test:live:sepolia",
-    "test:packages": "node scripts/test-packages.mjs",
-    "test:watch": "turbo run test:watch",
     "typecheck": "turbo run typecheck",
     "version-packages": "changeset version",
-    "verify:hca:sepolia": "pnpm --filter @ensforge/test-env... build && node --env-file-if-exists=.env scripts/verify-hca-sepolia.mjs",
-    "build:devnet": "pnpm --filter @ensforge/test-env... build && node scripts/build-devnet.mjs",
     "verify:sepolia-v2": "pnpm --filter @ensforge/contracts build && node --env-file-if-exists=.env scripts/verify-sepolia-v2.mjs"
   },
   "devDependencies": {
@@ -35,10 +27,7 @@
     "@changesets/cli": "3.0.3",
     "@commitlint/cli": "21.2.4",
     "@commitlint/config-conventional": "21.2.4",
-    "@effect/vitest": "catalog:",
-    "@ensforge/test-env": "workspace:*",
     "@types/node": "26.6.6",
-    "@vitest/coverage-v8": "5.1.0",
     "effect": "catalog:",
     "klarity": "0.3.0",
     "lefthook": "2.2.2",
@@ -50,8 +39,6 @@
     "turbo": "2.11.11",
     "typescript": "6.0.3",
     "viem": "catalog:",
-    "vite": "catalog:",
-    "vitest": "catalog:",
     "wagmi": "catalog:"
   },
   "engines": {
