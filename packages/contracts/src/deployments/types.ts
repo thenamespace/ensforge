@@ -214,11 +214,12 @@ export interface V2Hca {
 }
 
 /**
- * ERC-20 test tokens accepted by testnet registrars.
+ * ERC-20 tokens the `.eth` registrar accepts: real stablecoins on mainnet, mocks on testnets.
+ * The rent price oracle (`isPaymentToken`) stays the source of truth.
  *
  * @since 1.0.0
  */
-export interface V2TestTokens {
+export interface V2PaymentTokens {
   readonly dai: Address;
   readonly usdc: Address;
 }
@@ -274,7 +275,7 @@ export interface V2 {
   readonly infrastructure: V2Infrastructure;
   readonly dns?: V2Dns;
   readonly hca?: V2Hca;
-  readonly testTokens?: V2TestTokens;
+  readonly paymentTokens?: V2PaymentTokens;
   readonly capabilities: Capabilities;
   readonly provenance?: Provenance;
 }

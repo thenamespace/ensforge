@@ -65,6 +65,11 @@ export const mainnetV2 = {
     standaloneFactory: "0x742bf21897a78e2C98cC5f5C5473A370a081e561",
     standaloneImplementation: "0x116F462FA078ec0009e9b25DCd60309E70aaC4F4",
   },
+  // Circle USDC and MakerDAO DAI; both are accepted by the StandardRentPriceOracle.
+  paymentTokens: {
+    dai: "0x6B175474E89094C44Da98b954EedeAC495271d0F",
+    usdc: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+  },
   capabilities: {
     resolutionErrorWrapping: true,
     wrapperRegistryInitializer: "fuse-derived",

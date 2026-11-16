@@ -29,7 +29,7 @@ import type {
   V2Implementations,
   V2Infrastructure,
   V2Migration,
-  V2TestTokens,
+  V2PaymentTokens,
 } from "./deployments/types.js";
 
 export type {
@@ -43,7 +43,7 @@ export type {
   V2Infrastructure,
   V2Dns,
   V2Hca,
-  V2TestTokens,
+  V2PaymentTokens,
   Capabilities,
   V2,
   Profile,
@@ -228,10 +228,10 @@ const v2GroupKeys = {
     ],
     optional: [],
   } satisfies Keys<V2Hca>,
-  testTokens: { required: ["dai", "usdc"], optional: [] } satisfies Keys<V2TestTokens>,
+  paymentTokens: { required: ["dai", "usdc"], optional: [] } satisfies Keys<V2PaymentTokens>,
 } as const;
 
-const optionalV2Groups = new Set(["dns", "hca", "testTokens"]);
+const optionalV2Groups = new Set(["dns", "hca", "paymentTokens"]);
 
 const capabilityValues = {
   resolutionErrorWrapping: [true, false],

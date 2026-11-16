@@ -62,7 +62,7 @@ export const sepoliaV2 = {
     standaloneFactory: "0x6Bad0176236e97b346B5Dd13BCc8325B931EE8ab",
     standaloneImplementation: "0xC940e5C5bF263C0e097054AECf73826769A72CEE",
   },
-  testTokens: {
+  paymentTokens: {
     dai: "0xF6faC8A58a0BE13b9197f27C41B73162Fe32572b",
     usdc: "0x240b0316Df57887DBBE58b586508b19e633a14aa",
   },
