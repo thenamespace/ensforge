@@ -1,0 +1,106 @@
+import { Effect } from "effect";
+
+import { Abis } from "@ensforge/contracts";
+import { decodeFunctionData, type Hex } from "viem";
+
+import type { Client } from "../../../client/types.js";
+import { CommitmentError } from "../../../errors/classes/CommitmentError.js";
+import { ConfigError } from "../../../errors/classes/ConfigError.js";
+import type { AnyError } from "../../../errors/types.js";
+import * as Action from "../../../internal/action/index.js";
+import { randomSecret } from "../../../internal/registration/commitment.js";
+import { requireRegistrationContracts } from "../../../internal/registration/contracts.js";
+import { prepareRegistration } from "../../../internal/registration/prepare.js";
+import { commitCall, pendingCommitments } from "../../../internal/registration/steps.js";
+import * as Rpc from "../../../internal/rpc/index.js";
+import { addressOf } from "../../../internal/write/signer.js";
+import { make as makePlan } from "../../../plan/make.js";
+import type { Plan } from "../../../plan/Plan.js";
+import type { Write } from "../../../Types.js";
+import type { commit as Promises, commitSync as SyncPromises } from "./index.js";
+
+/** @internal Builds the plan of `Actions.registration.commit`. */
+export const plan = Effect.fnUntraced(function* (
+  client: Client,
+  options: Promises.Options & Pick<Write.Options, "account">,
+): Effect.fn.Return<Plan, AnyError> {
+  const signer = addressOf(options.account) ?? client.account;
+  if (signer === undefined) {
+    return yield* Effect.fail(new ConfigError({ code: "WALLET_NOT_CONFIGURED" }));
+  }
+
+  const registration = yield* prepareRegistration(client, options, signer);
+  const toCommit = yield* pendingCommitments(registration);
+  if (toCommit.length === 0) {
+    return yield* Effect.fail(
+      new CommitmentError({
+        code: "COMMITMENT_EXISTS",
+        hint: "Register now with the same options and secret.",
+      }),
+    );
+  }
+
+  return makePlan({
+    operation: "registration.commit",
+    chainId: client.chain.id,
+    account: signer,
+    steps: [
+      {
+        id: "commit",
+        description: "Commit to the names",
+        calls: toCommit.map((name) => commitCall(registration, name)),
+      },
+    ],
+  });
+});
+
+const write = Action.write("registration.commit", plan, { contractKind: "registrar" });
+
+/** The commitments a commit plan sends, in order. */
+const commitmentsOf = (commitPlan: Plan): readonly Hex[] =>
+  commitPlan.calls.map(
+    (call) => decodeFunctionData({ abi: Abis.v2.ethRegistrar, data: call.data }).args?.[0] as Hex,
+  );
+
+/** @internal Implementation of `Actions.registration.commit`. */
+export const commit = (
+  client: Client,
+  options: Promises.Options & Write.Options,
+): Effect.Effect<Promises.ReturnType, AnyError> => {
+  const secret = options.secret ?? randomSecret();
+  return write
+    .send(client, { ...options, secret })
+    .pipe(Effect.map((result) => ({ ...result, secret, commitments: commitmentsOf(result.plan) })));
+};
+
+/** @internal Implementation of `Actions.registration.commitSync`. */
+export const commitSync = (
+  client: Client,
+  options: SyncPromises.Options,
+): Effect.Effect<SyncPromises.ReturnType, AnyError> => {
+  const secret = options.secret ?? randomSecret();
+  return write.sendSync(client, { ...options, secret }).pipe(
+    Effect.flatMap(
+      Effect.fnUntraced(function* (result) {
+        const contracts = yield* requireRegistrationContracts(client);
+        const commitments = commitmentsOf(result.plan);
+        const registrar = { address: contracts.registrar, abi: Abis.v2.ethRegistrar } as const;
+        const { committedAt, minAge } = yield* Effect.all(
+          {
+            committedAt: Rpc.readContract(client, {
+              ...registrar,
+              functionName: "commitmentAt",
+              args: [commitments[0] as Hex],
+            }),
+            minAge: Rpc.readContract(client, { ...registrar, functionName: "MIN_COMMITMENT_AGE" }),
+          },
+          { concurrency: "unbounded" },
+        );
+        return { ...result, secret, commitments, readyAt: committedAt + minAge };
+      }),
+    ),
+  );
+};
+
+/** @internal `.prepare`, `.simulate` and `.estimateGas` of `Actions.registration.commit`. */
+export const commitMethods = write.methods;

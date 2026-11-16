@@ -3,4 +3,5 @@
 export * as name from "./name/effect.js";
 export * as primaryName from "./primaryName/effect.js";
 export * as record from "./record/effect.js";
+export * as registration from "./registration/effect.js";
 export * as resolver from "./resolver/effect.js";

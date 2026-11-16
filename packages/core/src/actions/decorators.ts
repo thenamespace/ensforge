@@ -5,6 +5,7 @@ import type { Bound, BoundWrite } from "./bound.js";
 import * as name from "./name/index.js";
 import * as primaryName from "./primaryName/index.js";
 import * as record from "./record/index.js";
+import * as registration from "./registration/index.js";
 import * as resolver from "./resolver/index.js";
 
 /** `name` actions bound to a client. */
@@ -184,6 +185,90 @@ export const recordActions =
     },
   });
 
+/** `registration` actions bound to a client. */
+export type RegistrationActions = {
+  readonly registration: {
+    /** Commits to registering `.eth` names, the first half of a registration. Resolves once the transaction is submitted. */
+    readonly commit: BoundWrite<typeof registration.commit>;
+    /** Commits to registering `.eth` names, the first half of a registration. Resolves once the receipt is in. */
+    readonly commitSync: Bound<typeof registration.commitSync>;
+    /** Reads where a registration commitment is in its window. */
+    readonly getCommitmentStatus: Bound<typeof registration.getCommitmentStatus>;
+    /** Reads the `.eth` registration settings: contracts, commitment window, minimum duration, grace period and accepted payment tokens. */
+    readonly getParameters: Bound<typeof registration.getParameters>;
+    /** Quotes the price of registering a `.eth` name, in an ERC-20 payment token. */
+    readonly getPrice: Bound<typeof registration.getPrice>;
+    /** Quotes renewing one or more `.eth` names, in an ERC-20 payment token. */
+    readonly getRenewalPrice: Bound<typeof registration.getRenewalPrice>;
+    /** Checks whether a `.eth` name can be registered now. */
+    readonly isAvailable: Bound<typeof registration.isAvailable>;
+    /** Registers one or more `.eth` names: approve, commit, wait, register, then records and primary name. Resolves once the transaction is submitted. */
+    readonly register: BoundWrite<typeof registration.register>;
+    /** Registers one or more `.eth` names: approve, commit, wait, register, then records and primary name. Resolves once the receipt is in. */
+    readonly registerSync: Bound<typeof registration.registerSync>;
+    /** Renews one or more `.eth` names, ENSv1 or ENSv2, paying in an ERC-20 token. Resolves once the transaction is submitted. */
+    readonly renew: BoundWrite<typeof registration.renew>;
+    /** Renews one or more `.eth` names, ENSv1 or ENSv2, paying in an ERC-20 token. Resolves once the receipt is in. */
+    readonly renewSync: Bound<typeof registration.renewSync>;
+  };
+};
+
+/**
+ * Adds the `registration` actions to a client.
+ *
+ * @category decorators
+ * @since 1.0.0
+ */
+export const registrationActions =
+  () =>
+  (client: Client<object>): RegistrationActions => ({
+    registration: {
+      commit: Object.assign(
+        (options: Parameters<typeof registration.commit>[1]) =>
+          registration.commit(client, options),
+        {
+          prepare: (options: Parameters<typeof registration.commit.prepare>[1]) =>
+            registration.commit.prepare(client, options),
+          simulate: (options: Parameters<typeof registration.commit.simulate>[1]) =>
+            registration.commit.simulate(client, options),
+          estimateGas: (options: Parameters<typeof registration.commit.estimateGas>[1]) =>
+            registration.commit.estimateGas(client, options),
+        },
+      ),
+      commitSync: (options) => registration.commitSync(client, options),
+      getCommitmentStatus: (options) => registration.getCommitmentStatus(client, options),
+      getParameters: (options) => registration.getParameters(client, options),
+      getPrice: (options) => registration.getPrice(client, options),
+      getRenewalPrice: (options) => registration.getRenewalPrice(client, options),
+      isAvailable: (options) => registration.isAvailable(client, options),
+      register: Object.assign(
+        (options: Parameters<typeof registration.register>[1]) =>
+          registration.register(client, options),
+        {
+          prepare: (options: Parameters<typeof registration.register.prepare>[1]) =>
+            registration.register.prepare(client, options),
+          simulate: (options: Parameters<typeof registration.register.simulate>[1]) =>
+            registration.register.simulate(client, options),
+          estimateGas: (options: Parameters<typeof registration.register.estimateGas>[1]) =>
+            registration.register.estimateGas(client, options),
+        },
+      ),
+      registerSync: (options) => registration.registerSync(client, options),
+      renew: Object.assign(
+        (options: Parameters<typeof registration.renew>[1]) => registration.renew(client, options),
+        {
+          prepare: (options: Parameters<typeof registration.renew.prepare>[1]) =>
+            registration.renew.prepare(client, options),
+          simulate: (options: Parameters<typeof registration.renew.simulate>[1]) =>
+            registration.renew.simulate(client, options),
+          estimateGas: (options: Parameters<typeof registration.renew.estimateGas>[1]) =>
+            registration.renew.estimateGas(client, options),
+        },
+      ),
+      renewSync: (options) => registration.renewSync(client, options),
+    },
+  });
+
 /** `resolver` actions bound to a client. */
 export type ResolverActions = {
   readonly resolver: {
@@ -277,7 +362,11 @@ export const resolverActions =
   });
 
 /** Every action group bound to a client. */
-export type EnsActions = NameActions & PrimaryNameActions & RecordActions & ResolverActions;
+export type EnsActions = NameActions &
+  PrimaryNameActions &
+  RecordActions &
+  RegistrationActions &
+  ResolverActions;
 
 /**
  * Adds every ENS action group to a client.
@@ -297,5 +386,6 @@ export const ensActions =
     ...nameActions()(client),
     ...primaryNameActions()(client),
     ...recordActions()(client),
+    ...registrationActions()(client),
     ...resolverActions()(client),
   });

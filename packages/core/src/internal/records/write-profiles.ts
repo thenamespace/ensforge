@@ -12,6 +12,7 @@ import {
 
 import { InvalidInputError } from "../../errors/classes/InvalidInputError.js";
 import { UnsupportedError } from "../../errors/classes/UnsupportedError.js";
+import type { Plan } from "../../plan/Plan.js";
 import * as CoinType from "../../utils/CoinType.js";
 import * as ContentHash from "../../utils/ContentHash.js";
 import { encodeAbiJson } from "./abi-record.js";
@@ -219,3 +220,17 @@ export const encodeRecordWrites = (
 
   return calls;
 };
+
+/** One call on the resolver: the setter itself, or a resolver `multicall` of several. */
+export const resolverCall = (resolver: Address, calls: readonly Hex[]): Plan.Call => ({
+  to: resolver,
+  data:
+    calls.length === 1
+      ? (calls[0] as Hex)
+      : encodeFunctionData({
+          abi: Abis.shared.multicallResolver,
+          functionName: "multicall",
+          args: [calls],
+        }),
+  value: 0n,
+});

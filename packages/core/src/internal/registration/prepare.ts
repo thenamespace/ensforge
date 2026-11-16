@@ -1,0 +1,356 @@
+import { Effect } from "effect";
+
+import { Abis } from "@ensforge/contracts";
+import {
+  encodeFunctionData,
+  isAddressEqual,
+  isHex,
+  zeroAddress,
+  zeroHash,
+  type Address,
+  type Hex,
+} from "viem";
+import { getCode } from "viem/actions";
+
+import type { Client } from "../../client/types.js";
+import { InvalidInputError } from "../../errors/classes/InvalidInputError.js";
+import { NameStateError } from "../../errors/classes/NameStateError.js";
+import { NotFoundError } from "../../errors/classes/NotFoundError.js";
+import type { AnyError } from "../../errors/types.js";
+import type { Plan } from "../../plan/Plan.js";
+import * as Role from "../../utils/Role.js";
+import { deployProxy } from "../factory/verifiable-proxy.js";
+import { requireAddress } from "../name/write.js";
+import { encodeRecordWrites, type RecordWrites } from "../records/write-profiles.js";
+import * as Rpc from "../rpc/index.js";
+import { makeCommitment, randomSecret, resolverSalt } from "./commitment.js";
+import { requireRegistrationContracts, type RegistrationContracts } from "./contracts.js";
+import { parseEthNames, type EthName } from "./labels.js";
+import { paymentTokenAddress, requirePaymentToken, type PaymentTokenInput } from "./payment.js";
+
+/** What `registration.commit` and `registration.register` take. */
+export type RegistrationInput = {
+  readonly names: string | readonly string[];
+  readonly duration: bigint;
+  readonly owner?: string | undefined;
+  /** `undefined`: a new PermissionedResolver per name; `null`: none. */
+  readonly resolver?: string | null | undefined;
+  readonly records?: Omit<RecordWrites, "clear" | "pubkey"> | undefined;
+  readonly primaryName?: boolean | undefined;
+  readonly paymentToken?: PaymentTokenInput | undefined;
+  readonly subregistry?: string | undefined;
+  readonly referrer?: Hex | undefined;
+  readonly secret?: Hex | undefined;
+};
+
+/** One name of a registration, ready to commit and register. */
+export type PreparedName = EthName & {
+  readonly commitment: Hex;
+  readonly resolver: Address;
+  /** The resolver deployment for this name, when ensforge creates its resolver. */
+  readonly deploy: Plan.Call | undefined;
+  readonly price: { readonly base: bigint; readonly premium: bigint };
+  /** Timestamp the commitment was made at, or `0n` when it has not been made. */
+  readonly committedAt: bigint;
+};
+
+/** A validated registration. */
+export type PreparedRegistration = {
+  readonly contracts: RegistrationContracts;
+  readonly names: readonly PreparedName[];
+  readonly owner: Address;
+  readonly signer: Address;
+  readonly secret: Hex;
+  readonly duration: bigint;
+  readonly subregistry: Address;
+  readonly referrer: Hex;
+  readonly token: Address;
+  readonly total: bigint;
+  readonly records: Omit<RecordWrites, "clear" | "pubkey"> | undefined;
+  /** Explicit resolver given by the caller; records then need their own step. */
+  readonly explicitResolver: Address | undefined;
+  readonly minCommitmentAge: bigint;
+  readonly maxCommitmentAge: bigint;
+  readonly now: bigint;
+};
+
+// The owner gets every resolver role and its admin role on the resolver created for the name.
+const allResolverRoles = Object.values(Role.resolver).reduce((bitmap, role) => bitmap | role, 0n);
+
+const invalid = (field: string, input: unknown, shortMessage: string) =>
+  new InvalidInputError({ code: "INVALID_RECORD_VALUE", field, input, shortMessage });
+
+/** Validates options that need no RPC: addresses, secret, and record/primary-name rules. */
+const validateOptions = Effect.fnUntraced(function* (
+  input: RegistrationInput,
+  signer: Address,
+  names: readonly EthName[],
+): Effect.fn.Return<
+  {
+    owner: Address;
+    subregistry: Address;
+    resolver: Address | null | undefined;
+    secret: Hex;
+    records: Omit<RecordWrites, "clear" | "pubkey"> | undefined;
+  },
+  AnyError
+> {
+  const owner = input.owner === undefined ? signer : yield* requireAddress(input.owner, "owner");
+  const subregistry =
+    input.subregistry === undefined
+      ? zeroAddress
+      : yield* requireAddress(input.subregistry, "subregistry");
+  const resolver =
+    input.resolver === undefined || input.resolver === null
+      ? input.resolver
+      : yield* requireAddress(input.resolver, "resolver");
+  if (input.secret !== undefined && !(isHex(input.secret) && input.secret.length === 66)) {
+    return yield* Effect.fail(invalid("secret", input.secret, "The secret must be 32 bytes."));
+  }
+  if (input.referrer !== undefined && !(isHex(input.referrer) && input.referrer.length === 66)) {
+    return yield* Effect.fail(
+      invalid("referrer", input.referrer, "The referrer must be 32 bytes."),
+    );
+  }
+
+  let records = input.records;
+  if (resolver === null && (records !== undefined || input.primaryName === true)) {
+    return yield* Effect.fail(
+      invalid("resolver", null, "Records and a primary name need a resolver."),
+    );
+  }
+  if (input.primaryName === true) {
+    // The reverse record is set for the signer, and must resolve back to it.
+    if (names.length !== 1) {
+      return yield* Effect.fail(
+        invalid("primaryName", names.length, "A primary name needs exactly one name."),
+      );
+    }
+    if (!isAddressEqual(owner, signer)) {
+      return yield* Effect.fail(
+        invalid("primaryName", owner, "Only the signer's own name can become its primary name."),
+      );
+    }
+    const eth = records?.addresses?.["eth"] ?? records?.addresses?.["60"];
+    if (eth !== undefined && (eth === null || !isAddressEqual(eth as Address, owner))) {
+      return yield* Effect.fail(
+        new NotFoundError({
+          code: "PRIMARY_NAME_MISMATCH",
+          shortMessage: "The eth address record must be the owner for a primary name.",
+        }),
+      );
+    }
+    if (eth === undefined) {
+      records = { ...records, addresses: { ...records?.addresses, eth: owner } };
+    }
+  }
+
+  return { owner, subregistry, resolver, secret: input.secret ?? randomSecret(), records };
+});
+
+/**
+ * Validates a registration and computes everything its plan needs, in two batched rounds:
+ * availability, validity, prices and registrar parameters, then commitments and resolver
+ * deployments. Fails before anything is sent when a name cannot be registered.
+ */
+export const prepareRegistration = Effect.fnUntraced(function* (
+  client: Client,
+  input: RegistrationInput,
+  signer: Address,
+): Effect.fn.Return<PreparedRegistration, AnyError> {
+  const contracts = yield* requireRegistrationContracts(client);
+  const names = yield* parseEthNames(input.names);
+  const options = yield* validateOptions(input, signer, names);
+  const token = yield* paymentTokenAddress(contracts, input.paymentToken);
+  const referrer = input.referrer ?? zeroHash;
+
+  const registrar = { address: contracts.registrar, abi: Abis.v2.ethRegistrar } as const;
+  const quotes = Effect.forEach(
+    names,
+    (name) =>
+      Effect.all(
+        {
+          available: Rpc.readContract(client, {
+            ...registrar,
+            functionName: "isAvailable",
+            args: [name.label],
+          }),
+          valid: Rpc.readContract(client, {
+            address: contracts.oracle,
+            abi: Abis.v2.standardRentPriceOracle,
+            functionName: "isValid",
+            args: [name.label],
+          }),
+          price: Rpc.readContractOrUndefined(client, {
+            ...registrar,
+            functionName: "getRegisterPrice",
+            args: [name.label, input.duration, token],
+          }),
+        },
+        { concurrency: "unbounded" },
+      ),
+    { concurrency: "unbounded" },
+  );
+  const { quoted, minDuration, minCommitmentAge, maxCommitmentAge, now } = yield* Effect.all(
+    {
+      quoted: quotes,
+      accepted: requirePaymentToken(client, contracts, token),
+      minDuration: Rpc.readContract(client, {
+        ...registrar,
+        functionName: "MIN_REGISTER_DURATION",
+      }),
+      minCommitmentAge: Rpc.readContract(client, {
+        ...registrar,
+        functionName: "MIN_COMMITMENT_AGE",
+      }),
+      maxCommitmentAge: Rpc.readContract(client, {
+        ...registrar,
+        functionName: "MAX_COMMITMENT_AGE",
+      }),
+      now: Rpc.blockTimestamp(client, {}),
+    },
+    { concurrency: "unbounded" },
+  );
+
+  if (input.duration < minDuration) {
+    return yield* Effect.fail(
+      new InvalidInputError({ code: "DURATION_TOO_SHORT", input: input.duration }),
+    );
+  }
+  for (const [index, name] of names.entries()) {
+    const quote = quoted[index];
+    if (quote?.valid !== true) {
+      return yield* Effect.fail(
+        new InvalidInputError({
+          code: "INVALID_NAME",
+          input: name.name,
+          shortMessage: `${name.name} cannot be registered (too short or not allowed).`,
+        }),
+      );
+    }
+    if (!quote.available) {
+      return yield* Effect.fail(
+        new NameStateError({
+          code: "NAME_NOT_AVAILABLE",
+          shortMessage: `${name.name} is not available.`,
+        }),
+      );
+    }
+  }
+
+  const prepared = yield* Effect.forEach(
+    names,
+    (name, index) =>
+      prepareName(client, {
+        contracts,
+        name,
+        options,
+        signer,
+        referrer,
+        duration: input.duration,
+        price: (quoted[index]?.price ?? [0n, 0n]) as readonly [bigint, bigint],
+      }),
+    { concurrency: "unbounded" },
+  );
+
+  return {
+    contracts,
+    names: prepared,
+    owner: options.owner,
+    signer,
+    secret: options.secret,
+    duration: input.duration,
+    subregistry: options.subregistry,
+    referrer,
+    token,
+    total: prepared.reduce((sum, name) => sum + name.price.base + name.price.premium, 0n),
+    records: options.records,
+    explicitResolver: options.resolver ?? undefined,
+    minCommitmentAge,
+    maxCommitmentAge,
+    now,
+  };
+});
+
+/** Resolver, commitment and (when resuming) commitment time of one name. */
+const prepareName = Effect.fnUntraced(function* (
+  client: Client,
+  context: {
+    readonly contracts: RegistrationContracts;
+    readonly name: EthName;
+    readonly options: {
+      readonly owner: Address;
+      readonly subregistry: Address;
+      readonly resolver: Address | null | undefined;
+      readonly secret: Hex;
+      readonly records: Omit<RecordWrites, "clear" | "pubkey"> | undefined;
+    };
+    readonly signer: Address;
+    readonly referrer: Hex;
+    readonly duration: bigint;
+    readonly price: readonly [bigint, bigint];
+  },
+): Effect.fn.Return<PreparedName, AnyError> {
+  const { contracts, name, options } = context;
+  let resolver: Address = options.resolver ?? zeroAddress;
+  let deploy: Plan.Call | undefined;
+
+  if (options.resolver === undefined) {
+    // The resolver address must be known for the commitment, so it is a CREATE2 proxy whose
+    // salt comes from the secret: a resumed registration recomputes the same address.
+    const records =
+      options.records === undefined
+        ? []
+        : yield* Effect.try({
+            try: () => encodeRecordWrites("name", name, options.records ?? {}),
+            catch: (error) => error as AnyError,
+          });
+    const deployment = yield* deployProxy(client, {
+      factory: contracts.resolverFactory,
+      implementation: contracts.resolverImplementation,
+      deployer: context.signer,
+      salt: resolverSalt(options.secret, name.label),
+      data: encodeFunctionData({
+        abi: Abis.v2.permissionedResolver,
+        functionName: "initialize",
+        args: [[{ account: options.owner, roleBitmap: allResolverRoles }], records],
+      }),
+    });
+    resolver = deployment.address;
+    deploy = deployment.call;
+  }
+
+  const commitment = makeCommitment({
+    label: name.label,
+    owner: options.owner,
+    secret: options.secret,
+    subregistry: options.subregistry,
+    resolver,
+    duration: context.duration,
+    referrer: context.referrer,
+  });
+
+  // The commitment may already be on-chain (`registration.commit`, or an interrupted
+  // registration); its resolver can only have been deployed if it was.
+  const committedAt = yield* Rpc.readContract(client, {
+    address: contracts.registrar,
+    abi: Abis.v2.ethRegistrar,
+    functionName: "commitmentAt",
+    args: [commitment],
+  });
+  const deployed =
+    committedAt !== 0n && deploy !== undefined
+      ? yield* Rpc.fromPromise(() => getCode(client.publicClient, { address: resolver })).pipe(
+          Effect.map((code) => code !== undefined && code !== "0x"),
+        )
+      : false;
+
+  return {
+    ...name,
+    commitment,
+    resolver,
+    deploy: deployed ? undefined : deploy,
+    price: { base: context.price[0], premium: context.price[1] },
+    committedAt,
+  };
+});

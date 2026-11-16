@@ -1,24 +1,18 @@
 import { Effect } from "effect";
 
-import { Abis } from "@ensforge/contracts";
-import { encodeFunctionData, isAddressEqual, type Address } from "viem";
+import { isAddressEqual, type Address } from "viem";
 
 import type { Client } from "../../../client/types.js";
 import { ConfigError } from "../../../errors/classes/ConfigError.js";
 import { NotFoundError } from "../../../errors/classes/NotFoundError.js";
-import { UnsupportedError } from "../../../errors/classes/UnsupportedError.js";
 import type { AnyError } from "../../../errors/types.js";
 import * as Action from "../../../internal/action/index.js";
 import { normalizeName } from "../../../internal/name/normalize.js";
-import {
-  requireAddress,
-  requireV1Contracts,
-  singleStepPlan,
-} from "../../../internal/name/write.js";
+import { requireAddress, singleStepPlan } from "../../../internal/name/write.js";
 import { defaultEvmCoinType } from "../../../internal/records/read-profiles.js";
 import { readRecords } from "../../../internal/records/read.js";
+import { defaultPrimaryNameCall, ethPrimaryNameCall } from "../../../internal/reverse/calls.js";
 import { ethCoinType } from "../../../internal/reverse/coin.js";
-import * as Rpc from "../../../internal/rpc/index.js";
 import { addressOf } from "../../../internal/write/signer.js";
 import type { Plan } from "../../../plan/Plan.js";
 import type { Write } from "../../../Types.js";
@@ -48,85 +42,6 @@ const requireForwardMatch = Effect.fnUntraced(function* (
   }
 });
 
-/** `addr.reverse`: the v1 ReverseRegistrar, for the signer or an account it may name. */
-const ethReverseCall = Effect.fnUntraced(function* (
-  client: Client,
-  target: Address,
-  self: boolean,
-  name: string,
-): Effect.fn.Return<Plan.Call, AnyError> {
-  const registrar = (yield* requireV1Contracts(client)).reverseRegistrar;
-  if (self) {
-    return {
-      to: registrar,
-      data: encodeFunctionData({
-        abi: Abis.v1.reverseRegistrar,
-        functionName: "setName",
-        args: [name],
-      }),
-      value: 0n,
-    };
-  }
-
-  // Another address keeps ownership of its reverse node; the signer must be its operator or,
-  // for a contract, its Ownable owner.
-  const resolver = yield* Rpc.readContract(client, {
-    address: registrar,
-    abi: Abis.v1.reverseRegistrar,
-    functionName: "defaultResolver",
-  });
-  return {
-    to: registrar,
-    data: encodeFunctionData({
-      abi: Abis.v1.reverseRegistrar,
-      functionName: "setNameForAddr",
-      args: [target, target, resolver, name],
-    }),
-    value: 0n,
-  };
-});
-
-/** `default.reverse`: the v1 DefaultReverseRegistrar for the signer, else the ENSv2 adapter. */
-const defaultReverseCall = Effect.fnUntraced(function* (
-  client: Client,
-  target: Address,
-  self: boolean,
-  name: string,
-): Effect.fn.Return<Plan.Call, AnyError> {
-  if (self) {
-    return {
-      to: (yield* requireV1Contracts(client)).defaultReverseRegistrar,
-      data: encodeFunctionData({
-        abi: Abis.v1.defaultReverseRegistrar,
-        functionName: "setName",
-        args: [name],
-      }),
-      value: 0n,
-    };
-  }
-
-  // The registrar only lets controllers name other accounts; the adapter is one, and allows
-  // the account's Ownable owner or ContractNamer.
-  const adapter = client.deployment.v2?.contracts.defaultReverseRegistrarAdapter;
-  if (adapter === undefined) {
-    return yield* Effect.fail(
-      new UnsupportedError({
-        code: "UNSUPPORTED_ON_DEPLOYMENT",
-        feature: "Default primary names for other accounts",
-      }),
-    );
-  }
-  return {
-    to: adapter,
-    data: encodeFunctionData({
-      abi: Abis.v2.defaultReverseRegistrarAdapter,
-      functionName: "setName",
-      args: [target, name],
-    }),
-    value: 0n,
-  };
-});
-
 /** @internal Builds the plan of `Actions.primaryName.set`. */
 export const plan = Effect.fnUntraced(function* (
   client: Client,
@@ -146,8 +61,8 @@ export const plan = Effect.fnUntraced(function* (
   const self = isAddressEqual(target, signer);
   const call =
     coinType === ethCoinType
-      ? yield* ethReverseCall(client, target, self, name)
-      : yield* defaultReverseCall(client, target, self, name);
+      ? yield* ethPrimaryNameCall(client, target, self, name)
+      : yield* defaultPrimaryNameCall(client, target, self, name);
 
   return singleStepPlan(client, {
     operation: "primaryName.set",

@@ -1,0 +1,146 @@
+import { Effect } from "effect";
+
+import { Abis } from "@ensforge/contracts";
+import { encodeFunctionData, zeroHash, type Address } from "viem";
+
+import type { Client } from "../../../client/types.js";
+import { ConfigError } from "../../../errors/classes/ConfigError.js";
+import type { AnyError } from "../../../errors/types.js";
+import * as Action from "../../../internal/action/index.js";
+import { requireRegistrationContracts } from "../../../internal/registration/contracts.js";
+import { renewedNames } from "../../../internal/registration/events.js";
+import { parseEthNames } from "../../../internal/registration/labels.js";
+import {
+  paymentCalls,
+  paymentTokenAddress,
+  requirePaymentToken,
+} from "../../../internal/registration/payment.js";
+import { quoteRenewals, type RenewalQuote } from "../../../internal/registration/renewal.js";
+import { addressOf } from "../../../internal/write/signer.js";
+import { make as makePlan } from "../../../plan/make.js";
+import type { Plan } from "../../../plan/Plan.js";
+import type { Write } from "../../../Types.js";
+import type { renew as Promises, renewSync as SyncPromises } from "./index.js";
+
+/** The renew call of one route: `renew` for one name, `renewBatch` for several. */
+const renewCall = (
+  spender: Address,
+  quotes: readonly RenewalQuote[],
+  options: { readonly duration: bigint; readonly token: Address; readonly referrer: `0x${string}` },
+): Plan.Call => {
+  const data = quotes.map((quote) => ({
+    label: quote.label,
+    duration: options.duration,
+    referrer: options.referrer,
+  }));
+  const [single] = data;
+
+  return {
+    to: spender,
+    data:
+      data.length === 1 && single !== undefined
+        ? encodeFunctionData({
+            abi: Abis.v2.ethRegistrar,
+            functionName: "renew",
+            args: [single, options.token],
+          })
+        : encodeFunctionData({
+            abi: Abis.v2.ethRegistrar,
+            functionName: "renewBatch",
+            args: [data, options.token],
+          }),
+    value: 0n,
+  };
+};
+
+/** @internal Builds the plan of `Actions.registration.renew`. */
+export const plan = Effect.fnUntraced(function* (
+  client: Client,
+  options: Promises.Options & Pick<Write.Options, "account">,
+): Effect.fn.Return<Plan, AnyError> {
+  const signer = addressOf(options.account) ?? client.account;
+  if (signer === undefined) {
+    return yield* Effect.fail(new ConfigError({ code: "WALLET_NOT_CONFIGURED" }));
+  }
+
+  const contracts = yield* requireRegistrationContracts(client);
+  const names = yield* parseEthNames(options.names);
+  const token = yield* paymentTokenAddress(contracts, options.paymentToken);
+  const { quotes } = yield* Effect.all(
+    {
+      quotes: quoteRenewals(client, contracts, { names, duration: options.duration, token }),
+      accepted: requirePaymentToken(client, contracts, token),
+    },
+    { concurrency: "unbounded" },
+  );
+
+  // ENSv2 and ENSv1 names renew through different contracts, each pulling its own payment.
+  const routes = new Map<Address, RenewalQuote[]>();
+  for (const quote of quotes)
+    routes.set(quote.spender, [...(routes.get(quote.spender) ?? []), quote]);
+  const total = quotes.reduce((sum, quote) => sum + quote.amount, 0n);
+  const approvals = yield* Effect.forEach(
+    [...routes],
+    ([spender, group]) =>
+      paymentCalls(client, {
+        payer: signer,
+        token,
+        spender,
+        amount: group.reduce((sum, quote) => sum + quote.amount, 0n),
+        balanceRequired: total,
+      }),
+    { concurrency: "unbounded" },
+  );
+
+  const steps: Plan.Step[] = [];
+  if (approvals.flat().length > 0) {
+    steps.push({ id: "approve", description: "Approve payment", calls: approvals.flat() });
+  }
+  steps.push({
+    id: "renew",
+    description: "Renew",
+    calls: [...routes].map(([spender, group]) =>
+      renewCall(spender, group, {
+        duration: options.duration,
+        token,
+        referrer: options.referrer ?? zeroHash,
+      }),
+    ),
+  });
+
+  return makePlan({
+    operation: "registration.renew",
+    chainId: client.chain.id,
+    account: signer,
+    steps,
+    requirements: [{ kind: "balance", amount: total, token }],
+  });
+});
+
+const write = Action.write("registration.renew", plan, { contractKind: "registrar" });
+
+/** @internal Implementation of `Actions.registration.renew`. */
+export const renew = write.send;
+
+/** @internal Implementation of `Actions.registration.renewSync`. */
+export const renewSync = (
+  client: Client,
+  options: SyncPromises.Options,
+): Effect.Effect<SyncPromises.ReturnType, AnyError> =>
+  write.sendSync(client, options).pipe(
+    Effect.flatMap(
+      Effect.fnUntraced(function* (result) {
+        const contracts = yield* requireRegistrationContracts(client);
+        const renewed = yield* renewedNames(client, {
+          receipts: result.receipts,
+          registrar: contracts.registrar,
+          renewer: contracts.renewer,
+          baseRegistrar: client.deployment.v1?.contracts.baseRegistrar,
+        });
+        return { ...result, ...renewed };
+      }),
+    ),
+  );
+
+/** @internal `.prepare`, `.simulate` and `.estimateGas` of `Actions.registration.renew`. */
+export const renewMethods = write.methods;

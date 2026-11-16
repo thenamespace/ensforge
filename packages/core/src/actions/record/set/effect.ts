@@ -1,7 +1,6 @@
 import { Effect } from "effect";
 
-import { multicallResolverAbi } from "@ensforge/contracts/shared";
-import { encodeFunctionData, type Address, type Hex } from "viem";
+import type { Address } from "viem";
 
 import type { Client } from "../../../client/types.js";
 import { InvalidInputError } from "../../../errors/classes/InvalidInputError.js";
@@ -12,22 +11,12 @@ import { loadName } from "../../../internal/name/load.js";
 import { requestedResolver, setResolverCall } from "../../../internal/name/set-resolver.js";
 import { requireRegistered } from "../../../internal/name/write.js";
 import { setterKeying } from "../../../internal/records/setter-keying.js";
-import { encodeRecordWrites } from "../../../internal/records/write-profiles.js";
+import { encodeRecordWrites, resolverCall } from "../../../internal/records/write-profiles.js";
 import { addressOf } from "../../../internal/write/signer.js";
 import { make as makePlan } from "../../../plan/make.js";
 import type { Plan } from "../../../plan/Plan.js";
 import type { Write } from "../../../Types.js";
 import type { set as Promises } from "./index.js";
-
-/** One call on the resolver: the setter itself, or a `multicall` of several. */
-const resolverCall = (resolver: Address, calls: readonly Hex[]): Plan.Call => ({
-  to: resolver,
-  data:
-    calls.length === 1
-      ? (calls[0] as Hex)
-      : encodeFunctionData({ abi: multicallResolverAbi, functionName: "multicall", args: [calls] }),
-  value: 0n,
-});
 
 /** @internal Builds the plan of `Actions.record.set`. */
 export const plan = Effect.fnUntraced(function* (

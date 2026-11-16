@@ -1,0 +1,40 @@
+import { Effect } from "effect";
+
+import { InvalidInputError } from "../../errors/classes/InvalidInputError.js";
+import type { AnyError } from "../../errors/types.js";
+import { parseName } from "../name/normalize.js";
+import type { NameParts } from "../name/parts.js";
+
+/** A `.eth` second-level name and its label. */
+export type EthName = NameParts & { readonly label: string };
+
+/** Normalizes names that must be `.eth` second-level names; duplicates are dropped. */
+export const parseEthNames = (
+  names: string | readonly string[],
+): Effect.Effect<readonly EthName[], AnyError> =>
+  Effect.forEach(typeof names === "string" ? [names] : names, (name) =>
+    parseName(name).pipe(
+      Effect.flatMap((parts) =>
+        parts.isEth2ld && !parts.encodedLabel
+          ? Effect.succeed(parts)
+          : Effect.fail(
+              new InvalidInputError({
+                code: "INVALID_NAME",
+                input: name,
+                shortMessage: `${parts.name} is not a .eth second-level name.`,
+                hint: "Register subnames with subname actions; only names like `alice.eth` are sold.",
+              }),
+            ),
+      ),
+    ),
+  ).pipe(
+    Effect.flatMap((parsed) =>
+      parsed.length === 0
+        ? Effect.fail(new InvalidInputError({ code: "INVALID_NAME", field: "names", input: "[]" }))
+        : Effect.succeed([...new Map(parsed.map((parts) => [parts.name, parts])).values()]),
+    ),
+  );
+
+/** One `.eth` second-level name. */
+export const parseEthName = (name: string): Effect.Effect<EthName, AnyError> =>
+  parseEthNames(name).pipe(Effect.map((names) => names[0] as EthName));

@@ -3,4 +3,5 @@
 export * as name from "./name/index.js";
 export * as primaryName from "./primaryName/index.js";
 export * as record from "./record/index.js";
+export * as registration from "./registration/index.js";
 export * as resolver from "./resolver/index.js";
