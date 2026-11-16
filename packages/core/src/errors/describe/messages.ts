@@ -87,6 +87,10 @@ export const messages: { readonly [code in Code]: Template<code> } = {
     message: `${thisName(error)} is already registered.`,
     action: "Try a different name.",
   }),
+  NAME_NOT_REGISTERED: (error) => ({
+    title: "Name not registered",
+    message: `${thisName(error)} is not registered.`,
+  }),
   NAME_RESERVED: (error) => ({
     title: "Name reserved",
     message: `${thisName(error)} is reserved.`,

@@ -7,7 +7,7 @@ import type { Client } from "../../../client/types.js";
 import { NotFoundError } from "../../../errors/classes/NotFoundError.js";
 import type { AnyError } from "../../../errors/types.js";
 import * as Action from "../../../internal/action/index.js";
-import { normalizeName } from "../../../internal/name.js";
+import { normalizeName } from "../../../internal/name/normalize.js";
 import * as Rpc from "../../../internal/rpc/index.js";
 import { namehash } from "../../../utils/Name.js";
 import type { getText as Promises } from "./index.js";

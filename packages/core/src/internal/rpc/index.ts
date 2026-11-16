@@ -1,3 +1,4 @@
+export { blockTimestamp } from "./blockTimestamp.js";
 export { fromPromise } from "./fromPromise.js";
 export {
   readContract,

@@ -2,7 +2,97 @@
 
 import type { Client } from "../client/types.js";
 import type { Bound, BoundWrite } from "./bound.js";
+import * as name from "./name/index.js";
 import * as record from "./record/index.js";
+
+/** `name` actions bound to a client. */
+export type NameActions = {
+  readonly name: {
+    /** Reads the full state of a name across ENSv1 and ENSv2: where it lives, who owns it, its resolver, expiry and whether it can be registered or renewed. */
+    readonly get: Bound<typeof name.get>;
+    /** Recovers a label from its labelhash through the ENSv2 LabelStore. */
+    readonly getLabel: Bound<typeof name.getLabel>;
+    /** Resets the ENSv1 registry owner (manager) of an unwrapped `.eth` name, as its registrant. Resolves once the transaction is submitted. */
+    readonly reclaim: BoundWrite<typeof name.reclaim>;
+    /** Resets the ENSv1 registry owner (manager) of an unwrapped `.eth` name, as its registrant. Resolves once the receipt is in. */
+    readonly reclaimSync: Bound<typeof name.reclaimSync>;
+    /** Sets the ENSv1 manager (registry owner) of a name. Resolves once the transaction is submitted. */
+    readonly setManager: BoundWrite<typeof name.setManager>;
+    /** Sets the ENSv1 manager (registry owner) of a name. Resolves once the receipt is in. */
+    readonly setManagerSync: Bound<typeof name.setManagerSync>;
+    /** Sets the ENSv1 registry TTL of a name. Resolves once the transaction is submitted. */
+    readonly setTtl: BoundWrite<typeof name.setTtl>;
+    /** Sets the ENSv1 registry TTL of a name. Resolves once the receipt is in. */
+    readonly setTtlSync: Bound<typeof name.setTtlSync>;
+    /** Sends a name to another account and resolves once the transaction is submitted. */
+    readonly transfer: BoundWrite<typeof name.transfer>;
+    /** Sends a name to another account and resolves once the receipt is in. */
+    readonly transferSync: Bound<typeof name.transferSync>;
+  };
+};
+
+/**
+ * Adds the `name` actions to a client.
+ *
+ * @category decorators
+ * @since 1.0.0
+ */
+export const nameActions =
+  () =>
+  (client: Client<object>): NameActions => ({
+    name: {
+      get: (options) => name.get(client, options),
+      getLabel: (options) => name.getLabel(client, options),
+      reclaim: Object.assign(
+        (options: Parameters<typeof name.reclaim>[1]) => name.reclaim(client, options),
+        {
+          prepare: (options: Parameters<typeof name.reclaim.prepare>[1]) =>
+            name.reclaim.prepare(client, options),
+          simulate: (options: Parameters<typeof name.reclaim.simulate>[1]) =>
+            name.reclaim.simulate(client, options),
+          estimateGas: (options: Parameters<typeof name.reclaim.estimateGas>[1]) =>
+            name.reclaim.estimateGas(client, options),
+        },
+      ),
+      reclaimSync: (options) => name.reclaimSync(client, options),
+      setManager: Object.assign(
+        (options: Parameters<typeof name.setManager>[1]) => name.setManager(client, options),
+        {
+          prepare: (options: Parameters<typeof name.setManager.prepare>[1]) =>
+            name.setManager.prepare(client, options),
+          simulate: (options: Parameters<typeof name.setManager.simulate>[1]) =>
+            name.setManager.simulate(client, options),
+          estimateGas: (options: Parameters<typeof name.setManager.estimateGas>[1]) =>
+            name.setManager.estimateGas(client, options),
+        },
+      ),
+      setManagerSync: (options) => name.setManagerSync(client, options),
+      setTtl: Object.assign(
+        (options: Parameters<typeof name.setTtl>[1]) => name.setTtl(client, options),
+        {
+          prepare: (options: Parameters<typeof name.setTtl.prepare>[1]) =>
+            name.setTtl.prepare(client, options),
+          simulate: (options: Parameters<typeof name.setTtl.simulate>[1]) =>
+            name.setTtl.simulate(client, options),
+          estimateGas: (options: Parameters<typeof name.setTtl.estimateGas>[1]) =>
+            name.setTtl.estimateGas(client, options),
+        },
+      ),
+      setTtlSync: (options) => name.setTtlSync(client, options),
+      transfer: Object.assign(
+        (options: Parameters<typeof name.transfer>[1]) => name.transfer(client, options),
+        {
+          prepare: (options: Parameters<typeof name.transfer.prepare>[1]) =>
+            name.transfer.prepare(client, options),
+          simulate: (options: Parameters<typeof name.transfer.simulate>[1]) =>
+            name.transfer.simulate(client, options),
+          estimateGas: (options: Parameters<typeof name.transfer.estimateGas>[1]) =>
+            name.transfer.estimateGas(client, options),
+        },
+      ),
+      transferSync: (options) => name.transferSync(client, options),
+    },
+  });
 
 /** `record` actions bound to a client. */
 export type RecordActions = {
@@ -43,7 +133,7 @@ export const recordActions =
   });
 
 /** Every action group bound to a client. */
-export type EnsActions = RecordActions;
+export type EnsActions = NameActions & RecordActions;
 
 /**
  * Adds every ENS action group to a client.
@@ -60,5 +150,6 @@ export type EnsActions = RecordActions;
 export const ensActions =
   () =>
   (client: Client<object>): EnsActions => ({
+    ...nameActions()(client),
     ...recordActions()(client),
   });

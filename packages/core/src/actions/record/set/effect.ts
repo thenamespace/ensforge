@@ -8,7 +8,7 @@ import { InvalidInputError } from "../../../errors/classes/InvalidInputError.js"
 import { NotFoundError } from "../../../errors/classes/NotFoundError.js";
 import type { AnyError } from "../../../errors/types.js";
 import * as Action from "../../../internal/action/index.js";
-import { normalizeName } from "../../../internal/name.js";
+import { normalizeName } from "../../../internal/name/normalize.js";
 import * as Rpc from "../../../internal/rpc/index.js";
 import { addressOf } from "../../../internal/write/signer.js";
 import { make as makePlan } from "../../../plan/make.js";

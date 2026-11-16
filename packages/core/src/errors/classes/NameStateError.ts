@@ -6,6 +6,7 @@ const defaults: {
   ) => EnsforgeError.Defaults;
 } = {
   NAME_NOT_AVAILABLE: () => ({ shortMessage: "The name is already registered." }),
+  NAME_NOT_REGISTERED: () => ({ shortMessage: "The name is not registered." }),
   NAME_RESERVED: () => ({ shortMessage: "The name is reserved." }),
   NAME_EXPIRED: () => ({ shortMessage: "The name has expired." }),
   NAME_NOT_RENEWABLE: () => ({ shortMessage: "The name cannot be renewed." }),
@@ -38,6 +39,7 @@ export class NameStateError extends EnsforgeError<"NameStateError", NameStateErr
 export declare namespace NameStateError {
   type Code =
     | "NAME_NOT_AVAILABLE"
+    | "NAME_NOT_REGISTERED"
     | "NAME_RESERVED"
     | "NAME_EXPIRED"
     | "NAME_NOT_RENEWABLE"
