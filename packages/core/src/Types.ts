@@ -1,5 +1,6 @@
 import type { Account, Address, BlockTag, Hex, TransactionReceipt } from "viem";
 
+import type { Like } from "./client/types.js";
 import type { Plan } from "./plan/Plan.js";
 
 declare const requestValue: unique symbol;
@@ -104,6 +105,12 @@ export declare namespace Write {
     /** Milliseconds to wait for each receipt before failing with `RECEIPT_TIMEOUT`. */
     timeout?: number | undefined;
   };
+
+  /** A write's `.prepare`, `.simulate` or `.estimateGas`: options plus an optional `account`. */
+  type Method<options, value> = (
+    client: Like,
+    options: options & Pick<Options, "account">,
+  ) => Promise<value>;
 
   /** Returned by every write: resolves once every call is submitted. */
   type Result = {

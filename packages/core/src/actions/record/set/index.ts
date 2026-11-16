@@ -1,6 +1,7 @@
 import type { Like } from "../../../client/types.js";
 import type { AnyError } from "../../../errors/types.js";
 import * as Action from "../../../internal/action/index.js";
+import type { Plan } from "../../../plan/Plan.js";
 import type { Write } from "../../../Types.js";
 import * as Impl from "./effect.js";
 
@@ -73,14 +74,25 @@ export declare namespace set {
   type ErrorType = AnyError;
 }
 
+// Explicit types keep these declarations free of Effect types.
+
 /** Builds the plan without sending anything. */
-set.prepare = Action.promiseOf("record.set.prepare", Impl.setMethods.prepare);
+set.prepare = Action.promiseOf("record.set.prepare", Impl.setMethods.prepare) as Write.Method<
+  set.Options,
+  Plan
+>;
 
 /** Simulates the plan with `eth_call`, reporting each step. */
-set.simulate = Action.promiseOf("record.set.simulate", Impl.setMethods.simulate);
+set.simulate = Action.promiseOf("record.set.simulate", Impl.setMethods.simulate) as Write.Method<
+  set.Options,
+  Plan.Simulation
+>;
 
 /** Estimates the gas and ETH the plan needs. */
-set.estimateGas = Action.promiseOf("record.set.estimateGas", Impl.setMethods.estimateGas);
+set.estimateGas = Action.promiseOf(
+  "record.set.estimateGas",
+  Impl.setMethods.estimateGas,
+) as Write.Method<set.Options, Plan.Estimate>;
 
 /**
  * Writes text records of an ENS name and resolves once the receipt is in.
