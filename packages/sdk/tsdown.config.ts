@@ -14,7 +14,6 @@ export default defineConfig({
     indexer: "src/entrypoints/indexer.ts",
     migration: "src/entrypoints/migration.ts",
     permissions: "src/entrypoints/permissions.ts",
-    subnames: "src/entrypoints/subnames.ts",
     wagmi: "src/wagmi.ts",
     wrapping: "src/entrypoints/wrapping.ts",
   },

@@ -113,10 +113,6 @@
       "workspace-source": "./src/legacy/storage/browser.ts",
       "default": "./dist/legacy/storage/browser.js"
     },
-    "./legacy/subnames": {
-      "workspace-source": "./src/legacy/actions/subnames/index.ts",
-      "default": "./dist/legacy/subnames.js"
-    },
     "./legacy/wagmi": {
       "workspace-source": "./src/legacy/wagmi/index.ts",
       "default": "./dist/legacy/wagmi.js"
@@ -157,7 +153,6 @@
       "./legacy/permissions": "./dist/legacy/permissions.js",
       "./legacy/storage": "./dist/legacy/storage.js",
       "./legacy/storage/browser": "./dist/legacy/storage/browser.js",
-      "./legacy/subnames": "./dist/legacy/subnames.js",
       "./legacy/wagmi": "./dist/legacy/wagmi.js",
       "./legacy/wrapping": "./dist/legacy/wrapping.js",
       "./package.json": "./package.json"

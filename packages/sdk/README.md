@@ -6,10 +6,11 @@ A type-safe client for building ENS applications.
 
 - Config-bound actions with no repeated client arguments
 - Unified behavior across supported ENS deployments
-- Grouped APIs for migration, wrapping, subnames, DNS, and permissions
+- Grouped APIs for migration, wrapping, DNS, and permissions
 
 Name, record, resolver, primary-name and registration actions live in `@ensforge/core`
-(`ens.name.*`, `ens.record.*`, `ens.resolver.*`, `ens.primaryName.*`, `ens.registration.*`).
+(`ens.name.*`, `ens.record.*`, `ens.resolver.*`, `ens.primaryName.*`, `ens.registration.*`,
+`ens.subname.*`, `ens.registry.*`).
 
 - Batched reads and wallet-aware write workflows
 - Compatible with viem clients and Wagmi configs

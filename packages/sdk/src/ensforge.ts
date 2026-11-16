@@ -18,7 +18,6 @@ import {
   makeIndexerActions,
   makeMigrationActions,
   makePermissionsActions,
-  makeSubnameActions,
   makeWrappingActions,
   type BatchActions,
   type CapabilitiesActions,
@@ -27,7 +26,6 @@ import {
   type IndexerActions,
   type MigrationActions,
   type PermissionsActions,
-  type SubnameActions,
   type WrappingActions,
 } from "./groups/index.js";
 
@@ -42,7 +40,6 @@ export class Ensforge {
   readonly indexer: IndexerActions;
   readonly migration: MigrationActions;
   readonly permissions: PermissionsActions;
-  readonly subnames: SubnameActions;
   readonly wrapping: WrappingActions;
 
   constructor(parameters: CreateConfigParameters | EnsforgeConfig) {
@@ -73,7 +70,6 @@ export class Ensforge {
     this.indexer = makeIndexerActions(config);
     this.migration = makeMigrationActions(config);
     this.permissions = makePermissionsActions(config);
-    this.subnames = makeSubnameActions(config);
     this.wrapping = makeWrappingActions(config);
 
     Object.freeze(this);

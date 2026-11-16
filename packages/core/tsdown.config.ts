@@ -25,7 +25,6 @@ export default defineConfig({
     "legacy/permissions": "src/legacy/actions/permissions/index.ts",
     "legacy/storage": "src/legacy/storage/index.ts",
     "legacy/storage/browser": "src/legacy/storage/browser.ts",
-    "legacy/subnames": "src/legacy/actions/subnames/index.ts",
     "legacy/testing": "src/legacy/testing/index.ts",
     "legacy/wagmi": "src/legacy/wagmi/index.ts",
     "legacy/wrapping": "src/legacy/actions/wrapping/index.ts",

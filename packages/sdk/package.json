@@ -69,10 +69,6 @@
       "workspace-source": "./src/entrypoints/permissions.ts",
       "default": "./dist/permissions.js"
     },
-    "./subnames": {
-      "workspace-source": "./src/entrypoints/subnames.ts",
-      "default": "./dist/subnames.js"
-    },
     "./wagmi": {
       "workspace-source": "./src/wagmi.ts",
       "default": "./dist/wagmi.js"
@@ -98,7 +94,6 @@
       "./indexer": "./dist/indexer.js",
       "./migration": "./dist/migration.js",
       "./permissions": "./dist/permissions.js",
-      "./subnames": "./dist/subnames.js",
       "./wagmi": "./dist/wagmi.js",
       "./wrapping": "./dist/wrapping.js",
       "./package.json": "./package.json"
