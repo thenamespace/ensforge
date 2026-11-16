@@ -4,6 +4,8 @@ import type { UserConfig } from "tsdown";
 export default defineConfig({
   alias: { "#/": "./src/" },
   entry: {
+    actions: "src/actions/index.ts",
+    effect: "src/effect.ts",
     index: "src/index.ts",
     legacy: "src/legacy/index.ts",
     "legacy/batch": "src/legacy/actions/batch/index.ts",

@@ -33,6 +33,14 @@
       "workspace-source": "./src/index.ts",
       "default": "./dist/index.js"
     },
+    "./actions": {
+      "workspace-source": "./src/actions/index.ts",
+      "default": "./dist/actions.js"
+    },
+    "./effect": {
+      "workspace-source": "./src/effect.ts",
+      "default": "./dist/effect.js"
+    },
     "./legacy": {
       "workspace-source": "./src/legacy/index.ts",
       "default": "./dist/legacy.js"
@@ -153,6 +161,8 @@
     },
     "exports": {
       ".": "./dist/index.js",
+      "./actions": "./dist/actions.js",
+      "./effect": "./dist/effect.js",
       "./legacy": "./dist/legacy.js",
       "./legacy/batch": "./dist/legacy/batch.js",
       "./legacy/capabilities": "./dist/legacy/capabilities.js",
