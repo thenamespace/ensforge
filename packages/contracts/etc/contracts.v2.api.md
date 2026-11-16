@@ -642,6 +642,7 @@ const permissionedRegistryV2InterfaceAbi: Abi
   function unregister(uint256)
   function unsafeBatchTransfer(address,uint256[],bytes)
   function unsafeTransfer(address,uint256,bytes)
+function permissionedResolverResource(record: { readonly text: string; } | { readonly data: string; } | { readonly address: bigint; } | { readonly abi: bigint; } | { readonly interface: `0x${string}`; }) => bigint
 const permissionedResolverV2Abi: Abi
   constructor(address)
   error AddressEmptyCode(address)
