@@ -1,7 +1,6 @@
 import { Effect } from "effect";
 
-import { Abis } from "@ensforge/contracts";
-import { encodeFunctionData, type Address } from "viem";
+import type { Address } from "viem";
 
 import type { Client } from "../../../client/types.js";
 import { ConfigError } from "../../../errors/classes/ConfigError.js";
@@ -9,12 +8,12 @@ import { InvalidInputError } from "../../../errors/classes/InvalidInputError.js"
 import { UnsupportedError } from "../../../errors/classes/UnsupportedError.js";
 import type { AnyError } from "../../../errors/types.js";
 import * as Action from "../../../internal/action/index.js";
-import { deployProxy, randomSalt } from "../../../internal/factory/verifiable-proxy.js";
+import { randomSalt } from "../../../internal/factory/verifiable-proxy.js";
 import { loadName } from "../../../internal/name/load.js";
 import { parseName } from "../../../internal/name/normalize.js";
 import { setResolverCall } from "../../../internal/name/set-resolver.js";
 import { requireAddress, requireRegistered } from "../../../internal/name/write.js";
-import { encodeRecordWrites } from "../../../internal/records/write-profiles.js";
+import { deployPermissionedResolver } from "../../../internal/resolver/deploy.js";
 import { addressOf } from "../../../internal/write/signer.js";
 import { make as makePlan } from "../../../plan/make.js";
 import type { Plan } from "../../../plan/Plan.js";
@@ -22,12 +21,8 @@ import type { Write } from "../../../Types.js";
 import * as Role from "../../../utils/Role.js";
 import type { create as Promises } from "./index.js";
 
-// The owner gets every resolver role and its admin role, like a fresh ENS app resolver.
-const allRoles = Object.values(Role.resolver).reduce((bitmap, role) => bitmap | role, 0n);
-
-/** Grants for `initialize`: the owner first, then the extra grants. */
+/** The extra grants, validated; the owner's grant is added by `deployPermissionedResolver`. */
 const grantsOf = Effect.fnUntraced(function* (
-  owner: Address,
   grants: Promises.Options["grants"],
 ): Effect.fn.Return<{ account: Address; roleBitmap: bigint }[], AnyError> {
   const extra = yield* Effect.forEach(grants ?? [], (grant) =>
@@ -40,7 +35,7 @@ const grantsOf = Effect.fnUntraced(function* (
       return { account, roleBitmap };
     }),
   );
-  return [{ account: owner, roleBitmap: allRoles }, ...extra];
+  return extra;
 });
 
 /** @internal Builds the plan of `Actions.resolver.create`. */
@@ -72,26 +67,15 @@ export const plan = Effect.fnUntraced(function* (
 
   const owner =
     options.owner === undefined ? deployer : yield* requireAddress(options.owner, "owner");
-  const grants = yield* grantsOf(owner, options.grants);
+  const grants = yield* grantsOf(options.grants);
   const parts = options.name === undefined ? undefined : yield* parseName(options.name);
-  const records =
-    parts === undefined || options.records === undefined
-      ? []
-      : yield* Effect.try({
-          try: () => encodeRecordWrites("name", parts, options.records ?? {}),
-          catch: (error) => error as AnyError,
-        });
-
-  const deployment = yield* deployProxy(client, {
-    factory: v2.contracts.verifiableFactory,
-    implementation: v2.implementations.permissionedResolver,
+  const deployment = yield* deployPermissionedResolver(client, {
     deployer,
+    owner,
     salt: options.salt ?? randomSalt(),
-    data: encodeFunctionData({
-      abi: Abis.v2.permissionedResolver,
-      functionName: "initialize",
-      args: [grants, records],
-    }),
+    grants,
+    name: parts,
+    records: options.records,
   });
   const steps: Plan.Step[] = [
     { id: "deploy", description: "Create resolver", calls: [deployment.call] },

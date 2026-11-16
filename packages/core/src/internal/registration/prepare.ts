@@ -1,15 +1,7 @@
 import { Effect } from "effect";
 
 import { Abis } from "@ensforge/contracts";
-import {
-  encodeFunctionData,
-  isAddressEqual,
-  isHex,
-  zeroAddress,
-  zeroHash,
-  type Address,
-  type Hex,
-} from "viem";
+import { isAddressEqual, isHex, zeroAddress, zeroHash, type Address, type Hex } from "viem";
 import { getCode } from "viem/actions";
 
 import type { Client } from "../../client/types.js";
@@ -18,10 +10,9 @@ import { NameStateError } from "../../errors/classes/NameStateError.js";
 import { NotFoundError } from "../../errors/classes/NotFoundError.js";
 import type { AnyError } from "../../errors/types.js";
 import type { Plan } from "../../plan/Plan.js";
-import * as Role from "../../utils/Role.js";
-import { deployProxy } from "../factory/verifiable-proxy.js";
 import { requireAddress } from "../name/write.js";
-import { encodeRecordWrites, type RecordWrites } from "../records/write-profiles.js";
+import type { RecordWrites } from "../records/write-profiles.js";
+import { deployPermissionedResolver } from "../resolver/deploy.js";
 import * as Rpc from "../rpc/index.js";
 import { makeCommitment, randomSecret, resolverSalt } from "./commitment.js";
 import { requireRegistrationContracts, type RegistrationContracts } from "./contracts.js";
@@ -73,9 +64,6 @@ export type PreparedRegistration = {
   readonly maxCommitmentAge: bigint;
   readonly now: bigint;
 };
-
-// The owner gets every resolver role and its admin role on the resolver created for the name.
-const allResolverRoles = Object.values(Role.resolver).reduce((bitmap, role) => bitmap | role, 0n);
 
 const invalid = (field: string, input: unknown, shortMessage: string) =>
   new InvalidInputError({ code: "INVALID_RECORD_VALUE", field, input, shortMessage });
@@ -298,23 +286,12 @@ const prepareName = Effect.fnUntraced(function* (
   if (options.resolver === undefined) {
     // The resolver address must be known for the commitment, so it is a CREATE2 proxy whose
     // salt comes from the secret: a resumed registration recomputes the same address.
-    const records =
-      options.records === undefined
-        ? []
-        : yield* Effect.try({
-            try: () => encodeRecordWrites("name", name, options.records ?? {}),
-            catch: (error) => error as AnyError,
-          });
-    const deployment = yield* deployProxy(client, {
-      factory: contracts.resolverFactory,
-      implementation: contracts.resolverImplementation,
+    const deployment = yield* deployPermissionedResolver(client, {
       deployer: context.signer,
+      owner: options.owner,
       salt: resolverSalt(options.secret, name.label),
-      data: encodeFunctionData({
-        abi: Abis.v2.permissionedResolver,
-        functionName: "initialize",
-        args: [[{ account: options.owner, roleBitmap: allResolverRoles }], records],
-      }),
+      name,
+      records: options.records,
     });
     resolver = deployment.address;
     deploy = deployment.call;

@@ -6,8 +6,7 @@ import type { Client } from "../../../client/types.js";
 import { ConfigError } from "../../../errors/classes/ConfigError.js";
 import type { AnyError } from "../../../errors/types.js";
 import * as Action from "../../../internal/action/index.js";
-import { setterKeying } from "../../../internal/records/setter-keying.js";
-import { encodeRecordWrites, resolverCall } from "../../../internal/records/write-profiles.js";
+import { recordsCall } from "../../../internal/records/write-call.js";
 import { randomSecret } from "../../../internal/registration/commitment.js";
 import { requireRegistrationContracts } from "../../../internal/registration/contracts.js";
 import { registeredNames } from "../../../internal/registration/events.js";
@@ -34,14 +33,9 @@ const recordsStep = Effect.fnUntraced(function* (
   registration: PreparedRegistration,
   resolver: Address,
 ): Effect.fn.Return<Plan.Step, AnyError> {
-  const keying = yield* setterKeying(client, resolver);
-  const calls = yield* Effect.try({
-    try: () =>
-      registration.names.map((name) =>
-        resolverCall(resolver, encodeRecordWrites(keying, name, registration.records ?? {})),
-      ),
-    catch: (error) => error as AnyError,
-  });
+  const calls = yield* Effect.forEach(registration.names, (name) =>
+    recordsCall(client, resolver, name, registration.records ?? {}),
+  );
   return { id: "records", description: "Set records", calls };
 });
 
