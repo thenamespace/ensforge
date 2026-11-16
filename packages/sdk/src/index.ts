@@ -33,12 +33,10 @@ export { Ensforge } from "./ensforge.js";
 export type {
   HcaActions,
   BatchActions,
-  CapabilitiesActions,
   DnsActions,
   EventsActions,
   IndexerActions,
   MigrationActions,
-  PermissionsActions,
   WrappingActions,
 } from "./groups/index.js";
 export type {

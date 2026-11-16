@@ -5,7 +5,6 @@ export default defineConfig({
   alias: { "#/": "./src/" },
   entry: {
     batch: "src/entrypoints/batch.ts",
-    capabilities: "src/entrypoints/capabilities.ts",
     dns: "src/entrypoints/dns.ts",
     events: "src/entrypoints/events.ts",
     "hca/admin": "src/entrypoints/hca-admin.ts",
@@ -13,7 +12,6 @@ export default defineConfig({
     index: "src/index.ts",
     indexer: "src/entrypoints/indexer.ts",
     migration: "src/entrypoints/migration.ts",
-    permissions: "src/entrypoints/permissions.ts",
     wagmi: "src/wagmi.ts",
     wrapping: "src/entrypoints/wrapping.ts",
   },

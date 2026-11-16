@@ -49,10 +49,6 @@
       "workspace-source": "./src/legacy/actions/batch/index.ts",
       "default": "./dist/legacy/batch.js"
     },
-    "./legacy/capabilities": {
-      "workspace-source": "./src/legacy/actions/capabilities/index.ts",
-      "default": "./dist/legacy/capabilities.js"
-    },
     "./legacy/dns": {
       "workspace-source": "./src/legacy/actions/dns/index.ts",
       "default": "./dist/legacy/dns.js"
@@ -101,10 +97,6 @@
       "workspace-source": "./src/legacy/actions/migration/index.ts",
       "default": "./dist/legacy/migration.js"
     },
-    "./legacy/permissions": {
-      "workspace-source": "./src/legacy/actions/permissions/index.ts",
-      "default": "./dist/legacy/permissions.js"
-    },
     "./legacy/storage": {
       "workspace-source": "./src/legacy/storage/index.ts",
       "default": "./dist/legacy/storage.js"
@@ -137,7 +129,6 @@
       "./effect": "./dist/effect.js",
       "./legacy": "./dist/legacy.js",
       "./legacy/batch": "./dist/legacy/batch.js",
-      "./legacy/capabilities": "./dist/legacy/capabilities.js",
       "./legacy/dns": "./dist/legacy/dns.js",
       "./legacy/events": "./dist/legacy/events.js",
       "./legacy/hca": "./dist/legacy/hca.js",
@@ -150,7 +141,6 @@
       "./legacy/indexer/registries": "./dist/legacy/indexer/registries.js",
       "./legacy/indexer/resolvers": "./dist/legacy/indexer/resolvers.js",
       "./legacy/migration": "./dist/legacy/migration.js",
-      "./legacy/permissions": "./dist/legacy/permissions.js",
       "./legacy/storage": "./dist/legacy/storage.js",
       "./legacy/storage/browser": "./dist/legacy/storage/browser.js",
       "./legacy/wagmi": "./dist/legacy/wagmi.js",

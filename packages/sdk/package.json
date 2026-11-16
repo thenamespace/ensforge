@@ -37,10 +37,6 @@
       "workspace-source": "./src/entrypoints/batch.ts",
       "default": "./dist/batch.js"
     },
-    "./capabilities": {
-      "workspace-source": "./src/entrypoints/capabilities.ts",
-      "default": "./dist/capabilities.js"
-    },
     "./dns": {
       "workspace-source": "./src/entrypoints/dns.ts",
       "default": "./dist/dns.js"
@@ -65,10 +61,6 @@
       "workspace-source": "./src/entrypoints/migration.ts",
       "default": "./dist/migration.js"
     },
-    "./permissions": {
-      "workspace-source": "./src/entrypoints/permissions.ts",
-      "default": "./dist/permissions.js"
-    },
     "./wagmi": {
       "workspace-source": "./src/wagmi.ts",
       "default": "./dist/wagmi.js"
@@ -86,14 +78,12 @@
     "exports": {
       ".": "./dist/index.js",
       "./batch": "./dist/batch.js",
-      "./capabilities": "./dist/capabilities.js",
       "./dns": "./dist/dns.js",
       "./events": "./dist/events.js",
       "./hca": "./dist/hca.js",
       "./hca/admin": "./dist/hca/admin.js",
       "./indexer": "./dist/indexer.js",
       "./migration": "./dist/migration.js",
-      "./permissions": "./dist/permissions.js",
       "./wagmi": "./dist/wagmi.js",
       "./wrapping": "./dist/wrapping.js",
       "./package.json": "./package.json"

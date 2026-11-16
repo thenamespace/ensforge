@@ -1,10 +1,8 @@
 export * from "./batch.js";
-export * from "./capabilities.js";
 export * from "./dns.js";
 export * from "./events.js";
 export * from "./indexer.js";
 export * from "./migration.js";
-export * from "./permissions.js";
 export * from "./wrapping.js";
 export { useReadBatch, useReadBatchSettled } from "./generic.js";
 export { useInvalidate, type Invalidate } from "./use-cache.js";
