@@ -433,6 +433,7 @@ const migrationHelperV2Abi: Abi
   function isContractNamer(address) view returns (bool)
   function migrate((string,address,address,address)[],(string,address,address,address)[][],(string,address,address,address)[][],(bytes,(string,address,address,address)[][])[])
   function supportsInterface(bytes4) view returns (bool)
+function migrationUserRegistrySalt(parentNode: `0x${string}`) => bigint
 const ownedRegistryV2InterfaceAbi: Abi
   event ExpiryUpdated(uint256,uint64,address)
   event LabelRegistered(uint256,bytes32,string,address,uint64,address)
@@ -448,6 +449,7 @@ const ownedRegistryV2InterfaceAbi: Abi
   function getParent() view returns (address,string)
   function getResolver(string) view returns (address)
   function getSubregistry(string) view returns (address)
+function ownedResolverSalt(owner: `0x${string}`) => bigint
 const permissionedAddressSetV2Abi: Abi
   constructor(address)
   error EACCannotGrantRoles(uint256,uint256,address)
