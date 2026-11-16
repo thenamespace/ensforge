@@ -11,6 +11,13 @@ export default defineConfig({
   deps: { dts: { neverBundle: true } },
   exports: { devExports: "workspace-source" },
   unbundle: true,
+  // Unbundled output keeps each module's "use client" directive; the warning targets bundling.
+  inputOptions: {
+    onLog(level, log, handler) {
+      if (log.code === "MODULE_LEVEL_DIRECTIVE") return;
+      handler(level, log);
+    },
+  },
   publint: "ci-only",
   attw: {
     enabled: "ci-only",
