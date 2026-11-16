@@ -1,7 +1,9 @@
 import { Effect } from "effect";
 
-import { ethRegistrarControllerV1MakeCommitmentAbi } from "@ensforge/contracts/v1";
-import { ethRegistrarV2MakeCommitmentAbi } from "@ensforge/contracts/v2";
+import {
+  ethRegistrarControllerV1MakeCommitmentAbi,
+  ethRegistrarV2MakeCommitmentAbi,
+} from "@ensforge/contracts/internal";
 import { zeroAddress, zeroHash } from "viem";
 
 import { defineReadAction } from "../../../action/read-request.js";

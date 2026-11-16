@@ -1,4 +1,4 @@
-import type { HcaDeploymentProfile } from "@ensforge/contracts/deployments";
+import type { HcaDeploymentProfile } from "@ensforge/contracts/internal";
 import type { EnsAction, HcaError } from "@ensforge/core";
 import type {
   EnableHcaSessionParameters,

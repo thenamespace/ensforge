@@ -1,7 +1,9 @@
 import { Effect, Schema } from "effect";
 
-import { publicResolverV1SetABIAbi } from "@ensforge/contracts/v1";
-import { permissionedResolverV2SetABIAbi } from "@ensforge/contracts/v2";
+import {
+  publicResolverV1SetABIAbi,
+  permissionedResolverV2SetABIAbi,
+} from "@ensforge/contracts/internal";
 import { encode as encodeCbor } from "cborg";
 import { zlibSync } from "fflate";
 import { bytesToHex, encodeFunctionData, stringToBytes, stringToHex } from "viem";

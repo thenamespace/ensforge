@@ -1,6 +1,6 @@
 import { Effect } from "effect";
 
-import { erc20AllowanceAbi } from "@ensforge/contracts/shared";
+import { erc20AllowanceAbi } from "@ensforge/contracts/internal";
 import { keccak256, stringToHex } from "viem";
 
 import { defineExtendedAction } from "../../../action/action.js";

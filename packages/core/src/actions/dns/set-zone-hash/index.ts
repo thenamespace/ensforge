@@ -1,6 +1,6 @@
 import { Effect, Schema } from "effect";
 
-import { publicResolverV1SetZonehashAbi } from "@ensforge/contracts/v1";
+import { publicResolverV1SetZonehashAbi } from "@ensforge/contracts/internal";
 import { encodeFunctionData } from "viem";
 
 import { CodecError } from "../../../errors/codec-error.js";

@@ -7,8 +7,14 @@ const metadata = {
   provenance: Schema.optionalKey(
     Schema.Struct({
       repository: Schema.String,
-      ref: Schema.String,
+      release: Schema.String,
       commit: Schema.String,
+      builds: Schema.optionalKey(
+        Schema.Struct({
+          default: Schema.String,
+          overrides: Schema.Record(Schema.String, Schema.String),
+        }),
+      ),
       documentation: Schema.optionalKey(Schema.String),
     }),
   ),
@@ -49,6 +55,7 @@ const EnsV2PublicContractAddresses = Schema.Struct({
 
 const EnsV2ImplementationAddresses = Schema.Struct({
   universalResolver: EthereumAddress,
+  universalResolverV1: Schema.optionalKey(EthereumAddress),
   permissionedResolver: EthereumAddress,
   userRegistry: EthereumAddress,
   wrapperRegistry: EthereumAddress,
@@ -72,7 +79,24 @@ const EnsV2InfrastructureContractAddresses = Schema.Struct({
   rootBatchRegistrar: EthereumAddress,
 });
 
-const EnsV2ExperimentalHcaContractAddresses = Schema.Struct({
+const EnsV2DnsContractAddresses = Schema.Struct({
+  tldResolver: EthereumAddress,
+  aliasResolver: EthereumAddress,
+  txtResolver: EthereumAddress,
+  gatewayProvider: EthereumAddress,
+  temporaryRegistrar: Schema.optionalKey(EthereumAddress),
+});
+
+const EnsV2Capabilities = Schema.Struct({
+  resolutionErrorWrapping: Schema.Boolean,
+  wrapperRegistryInitializer: Schema.Literals(["explicit", "fuse-derived"]),
+  wrapperRegistryEmancipation: Schema.Literals(["static", "role-derived"]),
+  lockedMigrationRenewal: Schema.Literals(["renew-role", "max-expiry"]),
+  userRegistryUpgradeGate: Schema.Boolean,
+  hcaSameChainSourceRejected: Schema.Boolean,
+});
+
+const EnsV2HcaContractAddresses = Schema.Struct({
   ownerAndSessionValidator: EthereumAddress,
   upgradeSet: EthereumAddress,
   standaloneFactory: EthereumAddress,
@@ -95,8 +119,10 @@ const v2 = Schema.Struct({
   implementations: EnsV2ImplementationAddresses,
   migration: EnsV2MigrationContractAddresses,
   infrastructure: EnsV2InfrastructureContractAddresses,
-  experimental: Schema.optionalKey(Schema.Struct({ hca: EnsV2ExperimentalHcaContractAddresses })),
+  dns: Schema.optionalKey(EnsV2DnsContractAddresses),
+  hca: Schema.optionalKey(EnsV2HcaContractAddresses),
   testTokens: Schema.optionalKey(EnsV2TestTokenAddresses),
+  capabilities: EnsV2Capabilities,
 });
 
 const identity = {

@@ -4,11 +4,11 @@ import {
   baseRegistrarV1GetApprovedAbi,
   baseRegistrarV1IsApprovedForAllAbi,
   baseRegistrarV1OwnerOfAbi,
-  nameWrapperFuses,
   nameWrapperV1GetApprovedAbi,
   nameWrapperV1GetDataAbi,
   nameWrapperV1IsApprovedForAllAbi,
-} from "@ensforge/contracts/v1";
+} from "@ensforge/contracts/internal";
+import { nameWrapperFuses } from "@ensforge/contracts/v1";
 import { isAddressEqual, zeroAddress } from "viem";
 
 import { defineReadAction } from "../../../action/read-request.js";

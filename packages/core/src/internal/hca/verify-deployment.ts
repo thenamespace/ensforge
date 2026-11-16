@@ -3,13 +3,11 @@ import { Effect } from "effect";
 import {
   hcaImplementationRuntime,
   type HcaDeploymentProfile,
-} from "@ensforge/contracts/deployments";
-import {
   hcaValidatorV2WiringAbi,
   standaloneHcaFactoryV2DeploymentAbi,
   standaloneHcaV2InspectionAbi,
   verifiableFactoryV2ProxyLogicAbi,
-} from "@ensforge/contracts/v2";
+} from "@ensforge/contracts/internal";
 import {
   standaloneSingleOwnerHcaV2Abi,
   hcaAuthorizerV2Abi,

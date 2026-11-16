@@ -1,7 +1,10 @@
 import { Effect } from "effect";
 
-import { baseRegistrarV1AvailableAbi, ensRegistryV1OwnerAbi } from "@ensforge/contracts/v1";
-import { ethRegistrarV2IsAvailableAbi } from "@ensforge/contracts/v2";
+import {
+  baseRegistrarV1AvailableAbi,
+  ensRegistryV1OwnerAbi,
+  ethRegistrarV2IsAvailableAbi,
+} from "@ensforge/contracts/internal";
 import { isAddressEqual, zeroAddress } from "viem";
 
 import { defineReadAction } from "../../../action/read-request.js";

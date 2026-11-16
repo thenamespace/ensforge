@@ -1,6 +1,6 @@
 import { Effect } from "effect";
 
-import { standaloneHcaV2RevokeSessionsAbi } from "@ensforge/contracts/v2";
+import { standaloneHcaV2RevokeSessionsAbi } from "@ensforge/contracts/internal";
 import {
   encodeFunctionData,
   isAddressEqual,

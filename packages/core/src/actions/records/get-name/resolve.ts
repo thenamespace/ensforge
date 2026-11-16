@@ -1,6 +1,6 @@
 import { Effect } from "effect";
 
-import { nameResolverAbi } from "@ensforge/contracts/resolver-profiles";
+import { nameResolverAbi } from "@ensforge/contracts/shared";
 import { decodeFunctionResult, encodeFunctionData } from "viem";
 
 import { ContractError } from "../../../errors/contract-error.js";

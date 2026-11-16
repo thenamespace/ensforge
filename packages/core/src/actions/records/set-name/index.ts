@@ -1,7 +1,9 @@
 import { Effect } from "effect";
 
-import { publicResolverV1SetNameAbi } from "@ensforge/contracts/v1";
-import { permissionedResolverV2SetNameAbi } from "@ensforge/contracts/v2";
+import {
+  publicResolverV1SetNameAbi,
+  permissionedResolverV2SetNameAbi,
+} from "@ensforge/contracts/internal";
 import { encodeFunctionData } from "viem";
 
 import { ContractError } from "../../../errors/contract-error.js";

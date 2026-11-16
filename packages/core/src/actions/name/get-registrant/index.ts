@@ -1,6 +1,6 @@
 import { Effect, Result, Schema } from "effect";
 
-import { baseRegistrarV1OwnerOfAbi } from "@ensforge/contracts/v1";
+import { baseRegistrarV1OwnerOfAbi } from "@ensforge/contracts/internal";
 import { isAddressEqual, zeroAddress } from "viem";
 
 import { defineReadAction } from "../../../action/read-request.js";

@@ -1,4 +1,4 @@
-import type { HcaDeploymentProfile } from "@ensforge/contracts/deployments";
+import type { HcaDeploymentProfile } from "@ensforge/contracts/internal";
 import type { HcaExecutionPolicy } from "@ensforge/core/hca";
 import type { PimlicoClient } from "permissionless/clients/pimlico";
 import type { Address, Chain, Hex, SignableMessage } from "viem";

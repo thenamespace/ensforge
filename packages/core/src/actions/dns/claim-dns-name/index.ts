@@ -3,7 +3,7 @@ import { Effect, Schema } from "effect";
 import {
   dnsRegistrarV1ProveAndClaimAbi,
   dnsRegistrarV1ProveAndClaimWithResolverAbi,
-} from "@ensforge/contracts/v1";
+} from "@ensforge/contracts/internal";
 import { encodeFunctionData, zeroAddress } from "viem";
 
 import type { EnsWriteIntentPreparer } from "../../../action/write-intent.js";

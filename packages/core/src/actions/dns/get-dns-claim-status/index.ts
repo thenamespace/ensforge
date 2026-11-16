@@ -4,7 +4,7 @@ import {
   dnsRegistrarV1InceptionsAbi,
   ensRegistryV1OwnerAbi,
   ensRegistryV1ResolverAbi,
-} from "@ensforge/contracts/v1";
+} from "@ensforge/contracts/internal";
 import { isAddressEqual, zeroAddress } from "viem";
 
 import type { BlockParameters } from "../../../action/block.js";

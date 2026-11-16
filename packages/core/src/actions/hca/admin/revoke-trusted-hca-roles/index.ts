@@ -1,6 +1,6 @@
 import { Effect, Schema } from "effect";
 
-import { trustedHcaSetV2ManagementAbi } from "@ensforge/contracts/v2";
+import { trustedHcaSetV2ManagementAbi } from "@ensforge/contracts/internal";
 import { encodeFunctionData, type Address } from "viem";
 
 import { defineAction } from "../../../../action/action.js";
@@ -24,7 +24,7 @@ export const revokeTrustedHcaRoles = defineAction<
 >(
   Effect.fn("ensforge.revokeTrustedHcaRoles")(function* (config, parameters) {
     const profile = yield* resolveHcaProfile(config);
-    const address = yield* validateHcaAddress(profile.deployment.experimental?.hca.upgradeSet);
+    const address = yield* validateHcaAddress(profile.deployment.hca?.upgradeSet);
 
     const assignee = yield* validateHcaAddress(parameters.assignee);
     const roles = yield* validateRoleBitmap(parameters.roles);

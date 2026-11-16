@@ -1,6 +1,6 @@
 import { Effect, Schema } from "effect";
 
-import { abiResolverAbi } from "@ensforge/contracts/resolver-profiles";
+import { abiResolverAbi } from "@ensforge/contracts/shared";
 import { decode as decodeCbor } from "cborg";
 import { strFromU8, unzlibSync } from "fflate";
 import { bytesToString, decodeFunctionResult, encodeFunctionData, hexToBytes } from "viem";

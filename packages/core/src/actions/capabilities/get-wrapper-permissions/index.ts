@@ -1,21 +1,19 @@
 import { Effect } from "effect";
 
 import {
-  nameWrapperFuses,
   nameWrapperV1CanExtendSubnamesAbi,
   nameWrapperV1CanModifyNameAbi,
   nameWrapperV1GetApprovedAbi,
   nameWrapperV1GetDataAbi,
   nameWrapperV1IsApprovedForAllAbi,
   nameWrapperV1IsWrappedAbi,
-} from "@ensforge/contracts/v1";
-import {
   permissionedRegistryV2InterfaceGetSubregistryAbi,
-  registryInterfaceIds,
   wrapperRegistryV2InterfaceGetResourceAbi,
   wrapperRegistryV2InterfaceIsApprovedForAllAbi,
   wrapperRegistryV2InterfaceRolesAbi,
-} from "@ensforge/contracts/v2";
+} from "@ensforge/contracts/internal";
+import { nameWrapperFuses } from "@ensforge/contracts/v1";
+import { registryInterfaceIds } from "@ensforge/contracts/v2";
 import { isAddressEqual, zeroAddress } from "viem";
 
 import { defineReadAction } from "../../../action/read-request.js";

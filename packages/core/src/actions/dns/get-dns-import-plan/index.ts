@@ -1,6 +1,6 @@
 import { Effect } from "effect";
 
-import { dnsRegistrarV1OracleAbi } from "@ensforge/contracts/v1";
+import { dnsRegistrarV1OracleAbi } from "@ensforge/contracts/internal";
 
 import type { BlockParameters } from "../../../action/block.js";
 import { defineReadAction } from "../../../action/read-request.js";

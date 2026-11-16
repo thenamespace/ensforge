@@ -1,10 +1,10 @@
 import { Effect } from "effect";
 
+import { standardRentPriceOracleV2IsPaymentTokenAbi } from "@ensforge/contracts/internal";
 import {
   permissionedResolverV2Abi,
   enhancedAccessControlRoles,
   ethRegistrarV2Abi,
-  standardRentPriceOracleV2IsPaymentTokenAbi,
   verifiableFactoryV2Abi,
   defaultReverseRegistrarAdapterV2Abi,
 } from "@ensforge/contracts/v2";

@@ -1,6 +1,6 @@
 import { Effect, Schema } from "effect";
 
-import { addressResolverAbi, addrResolverAbi } from "@ensforge/contracts/resolver-profiles";
+import { addressResolverAbi, addrResolverAbi } from "@ensforge/contracts/shared";
 import { decodeFunctionResult, encodeFunctionData, zeroAddress, type Hex } from "viem";
 
 import { CodecError } from "../../../errors/codec-error.js";

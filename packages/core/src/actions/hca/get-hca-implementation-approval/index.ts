@@ -1,6 +1,6 @@
 import { Effect } from "effect";
 
-import { standaloneHcaFactoryV2DeploymentAbi } from "@ensforge/contracts/v2";
+import { standaloneHcaFactoryV2DeploymentAbi } from "@ensforge/contracts/internal";
 import { type Address } from "viem";
 
 import type { BlockParameters } from "../../../action/block.js";

@@ -1,6 +1,6 @@
 import { Effect, Schema } from "effect";
 
-import { pubkeyResolverAbi } from "@ensforge/contracts/resolver-profiles";
+import { pubkeyResolverAbi } from "@ensforge/contracts/shared";
 import { decodeFunctionResult, encodeFunctionData, zeroHash } from "viem";
 
 import { ContractError } from "../../../errors/contract-error.js";

@@ -1,6 +1,6 @@
 import { Effect } from "effect";
 
-import { permissionedResolverV2InterfaceHasRolesAbi } from "@ensforge/contracts/v2";
+import { permissionedResolverV2InterfaceHasRolesAbi } from "@ensforge/contracts/internal";
 import { toHex } from "viem";
 
 import { defineReadAction } from "../../../action/read-request.js";

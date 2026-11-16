@@ -1,6 +1,6 @@
 import { Effect } from "effect";
 
-import { ensRegistryV1SetTTLAbi, nameWrapperV1SetTTLAbi } from "@ensforge/contracts/v1";
+import { ensRegistryV1SetTTLAbi, nameWrapperV1SetTTLAbi } from "@ensforge/contracts/internal";
 import { encodeFunctionData } from "viem";
 
 import type { EnsWriteIntentPreparer } from "../../../action/write-intent.js";

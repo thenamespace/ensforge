@@ -31,13 +31,9 @@
       "workspace-source": "./src/index.ts",
       "default": "./dist/index.js"
     },
-    "./deployments": {
-      "workspace-source": "./src/deployments/index.ts",
-      "default": "./dist/deployments.js"
-    },
-    "./resolver-profiles": {
-      "workspace-source": "./src/shared/resolver-profiles/index.ts",
-      "default": "./dist/resolver-profiles.js"
+    "./internal": {
+      "workspace-source": "./src/internal.ts",
+      "default": "./dist/internal.js"
     },
     "./shared": {
       "workspace-source": "./src/shared/index.ts",
@@ -63,8 +59,7 @@
     },
     "exports": {
       ".": "./dist/index.js",
-      "./deployments": "./dist/deployments.js",
-      "./resolver-profiles": "./dist/resolver-profiles.js",
+      "./internal": "./dist/internal.js",
       "./shared": "./dist/shared.js",
       "./v1": "./dist/v1.js",
       "./v2": "./dist/v2.js",

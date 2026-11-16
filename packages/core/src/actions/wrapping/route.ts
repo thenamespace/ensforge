@@ -1,6 +1,6 @@
 import { Effect } from "effect";
 
-import { nameWrapperV1GetDataAbi } from "@ensforge/contracts/v1";
+import { nameWrapperV1GetDataAbi } from "@ensforge/contracts/internal";
 import { isAddressEqual, zeroAddress } from "viem";
 
 import type { BlockParameters } from "../../action/block.js";

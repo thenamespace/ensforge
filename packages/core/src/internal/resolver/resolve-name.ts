@@ -3,11 +3,9 @@ import { Effect } from "effect";
 import {
   universalResolverV1ResolveAbi,
   universalResolverV1ResolveWithResolverAbi,
-} from "@ensforge/contracts/v1";
-import {
   universalResolverV2ResolveAbi,
   universalResolverV2ResolveWithResolverAbi,
-} from "@ensforge/contracts/v2";
+} from "@ensforge/contracts/internal";
 import type { Address, Hex } from "viem";
 
 import { EthereumClient } from "../client/ethereum-client.js";

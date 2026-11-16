@@ -1,7 +1,9 @@
 import { Effect } from "effect";
 
-import type { HcaDeploymentProfile } from "@ensforge/contracts/deployments";
-import { hcaUpgradeGateV2ManagementAbi } from "@ensforge/contracts/v2";
+import {
+  type HcaDeploymentProfile,
+  hcaUpgradeGateV2ManagementAbi,
+} from "@ensforge/contracts/internal";
 
 import type { HcaGovernanceTarget } from "../../actions/hca/admin/types.js";
 import type { EnsforgeConfig } from "../../config/config.js";

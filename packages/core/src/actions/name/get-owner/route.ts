@@ -6,7 +6,7 @@ import {
   universalHelperV2FindExactOwnerAbi,
   universalHelperV2FindParentRegistryAbi,
   universalResolverV2FindResolverAbi,
-} from "@ensforge/contracts/v2";
+} from "@ensforge/contracts/internal";
 import { isAddressEqual, zeroAddress } from "viem";
 
 import type {

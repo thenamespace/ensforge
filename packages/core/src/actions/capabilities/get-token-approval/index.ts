@@ -4,7 +4,7 @@ import {
   baseRegistrarV1GetApprovedAbi,
   nameWrapperV1GetApprovedAbi,
   nameWrapperV1IsWrappedAbi,
-} from "@ensforge/contracts/v1";
+} from "@ensforge/contracts/internal";
 import { isAddressEqual, zeroAddress } from "viem";
 
 import { defineReadAction } from "../../../action/read-request.js";

@@ -1,11 +1,13 @@
 import { Effect } from "effect";
 
-import { erc20AllowanceAbi, erc20ApproveAbi } from "@ensforge/contracts/shared";
 import {
+  erc20AllowanceAbi,
+  erc20ApproveAbi,
   ethRegistrarControllerV1CommitAbi,
   ethRegistrarControllerV1RegisterAbi,
-} from "@ensforge/contracts/v1";
-import { ethRegistrarV2CommitAbi, ethRegistrarV2RegisterAbi } from "@ensforge/contracts/v2";
+  ethRegistrarV2CommitAbi,
+  ethRegistrarV2RegisterAbi,
+} from "@ensforge/contracts/internal";
 import { encodeFunctionData, zeroAddress, zeroHash } from "viem";
 
 import type { EnsWriteIntentPreparer } from "../../action/write-intent.js";

@@ -1,10 +1,7 @@
 import { Effect, Schema } from "effect";
 
-import {
-  enhancedAccessControlRoles,
-  registryRoles,
-  verifiableFactoryV2DeployProxyAbi,
-} from "@ensforge/contracts/v2";
+import { verifiableFactoryV2DeployProxyAbi } from "@ensforge/contracts/internal";
+import { enhancedAccessControlRoles, registryRoles } from "@ensforge/contracts/v2";
 import { decodeFunctionResult, keccak256, stringToHex, zeroAddress } from "viem";
 
 import { defineAction } from "../../../action/action.js";

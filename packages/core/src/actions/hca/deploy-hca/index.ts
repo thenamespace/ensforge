@@ -1,6 +1,6 @@
 import { Effect, Result } from "effect";
 
-import { standaloneHcaFactoryV2DeploymentAbi } from "@ensforge/contracts/v2";
+import { standaloneHcaFactoryV2DeploymentAbi } from "@ensforge/contracts/internal";
 import {
   parseEventLogs,
   encodeFunctionData,

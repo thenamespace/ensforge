@@ -1,6 +1,6 @@
 import { Effect } from "effect";
 
-import type { HcaDeploymentProfile } from "@ensforge/contracts/deployments";
+import type { HcaDeploymentProfile } from "@ensforge/contracts/internal";
 
 import type { BlockParameters } from "../../action/block.js";
 import type { EnsforgeConfig } from "../../config/config.js";

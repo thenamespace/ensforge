@@ -4,7 +4,7 @@ import {
   sepoliaHcaDeployment,
   hcaAccountGeneration,
   type HcaDeploymentProfile,
-} from "@ensforge/contracts/deployments";
+} from "@ensforge/contracts/internal";
 import { isAddressEqual, zeroAddress } from "viem";
 
 import { HcaSalt } from "../../actions/hca/types.js";

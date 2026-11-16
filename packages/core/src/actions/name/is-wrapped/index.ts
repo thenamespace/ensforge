@@ -1,11 +1,11 @@
 import { Effect } from "effect";
 
-import { erc165Abi } from "@ensforge/contracts/shared";
-import { nameWrapperV1IsWrappedAbi } from "@ensforge/contracts/v1";
 import {
+  nameWrapperV1IsWrappedAbi,
   permissionedRegistryV2InterfaceGetSubregistryAbi,
-  registryInterfaceIds,
-} from "@ensforge/contracts/v2";
+} from "@ensforge/contracts/internal";
+import { erc165Abi } from "@ensforge/contracts/shared";
+import { registryInterfaceIds } from "@ensforge/contracts/v2";
 import { isAddressEqual, zeroAddress } from "viem";
 
 import { defineReadAction } from "../../../action/read-request.js";

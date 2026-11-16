@@ -1,6 +1,6 @@
 import { Effect } from "effect";
 
-import { universalHelperV2FindExactOwnerAbi } from "@ensforge/contracts/v2";
+import { universalHelperV2FindExactOwnerAbi } from "@ensforge/contracts/internal";
 import { isAddressEqual, zeroAddress } from "viem";
 
 import type { EnsV2ConfigDeployment } from "../../../config/custom-network.js";

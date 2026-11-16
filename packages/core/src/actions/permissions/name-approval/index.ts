@@ -1,6 +1,6 @@
 import { Effect } from "effect";
 
-import { baseRegistrarV1ApproveAbi, nameWrapperV1ApproveAbi } from "@ensforge/contracts/v1";
+import { baseRegistrarV1ApproveAbi, nameWrapperV1ApproveAbi } from "@ensforge/contracts/internal";
 import { encodeFunctionData, zeroAddress } from "viem";
 
 import type { EnsWriteIntentPreparer } from "../../../action/write-intent.js";

@@ -1,14 +1,14 @@
 import type { Address } from "viem";
 
-import { sepoliaV2Deployment } from "./sepolia-v2.js";
-import type { EnsV2Deployment, EnsV2ExperimentalHcaContractAddresses } from "./types.js";
+import { sepoliaV2 } from "./sepolia-v2.js";
+import type { V2, V2Hca } from "./types.js";
 
 /** Account generation matched to the saved Sepolia compiler inputs, not branch-tip source. */
 export const hcaAccountGeneration = {
   id: "ens-standalone-hca-1.1.0-07e55a0",
   accountId: "ens-standalone-hca.1.1.0",
   rhinestoneAccountVersion: "ens-standalone-1.1.0",
-  artifactCommit: sepoliaV2Deployment.provenance.commit,
+  artifactCommit: "07e55a056f5b6a9c90119f501bdd05714e67dddd",
   sourceCommit: "07e55a056f5b6a9c90119f501bdd05714e67dddd",
   canonicalSalt: 0n,
   entryPoint: "0x0000000071727De22E5E9d8BAf0edAc6f37da032",
@@ -36,8 +36,8 @@ export interface HcaSourceFundingManifest {
 
 export interface HcaDeploymentProfile {
   readonly generation: typeof hcaAccountGeneration;
-  readonly deployment: EnsV2Deployment;
-  readonly contracts: EnsV2ExperimentalHcaContractAddresses;
+  readonly deployment: V2;
+  readonly contracts: V2Hca;
   readonly environment: "sepolia" | "devnet";
   readonly infrastructure: {
     readonly entryPoint: Address;
@@ -53,12 +53,12 @@ export interface HcaDeploymentProfile {
 /** Infrastructure verified against deployment artifacts and adapter constructor arguments. */
 export const sepoliaHcaDeployment = {
   generation: hcaAccountGeneration,
-  deployment: sepoliaV2Deployment,
+  deployment: sepoliaV2,
   contracts: {
-    standaloneFactory: sepoliaV2Deployment.experimental.hca.standaloneFactory,
-    standaloneImplementation: sepoliaV2Deployment.experimental.hca.standaloneImplementation,
-    ownerAndSessionValidator: sepoliaV2Deployment.experimental.hca.ownerAndSessionValidator,
-    upgradeSet: sepoliaV2Deployment.experimental.hca.upgradeSet,
+    standaloneFactory: sepoliaV2.hca.standaloneFactory,
+    standaloneImplementation: sepoliaV2.hca.standaloneImplementation,
+    ownerAndSessionValidator: sepoliaV2.hca.ownerAndSessionValidator,
+    upgradeSet: sepoliaV2.hca.upgradeSet,
   },
   environment: "sepolia",
   infrastructure: {
@@ -68,7 +68,7 @@ export const sepoliaHcaDeployment = {
     intentExecutorAdapter: "0xa5DAC04a6cCF0eb19cE091b6B400Fc4FCD13Da1e",
     gasRefundPaymaster: "0x1d7df6Ddc7328Ac827EB4D7f171C60AFB7f9A599",
     paymentToken: "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238",
-    secondaryPaymentToken: sepoliaV2Deployment.testTokens.usdc,
+    secondaryPaymentToken: sepoliaV2.testTokens.usdc,
   },
   sourceFunding: [],
 } as const satisfies HcaDeploymentProfile;

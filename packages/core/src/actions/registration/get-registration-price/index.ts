@@ -1,7 +1,9 @@
 import { Effect } from "effect";
 
-import { ethRegistrarControllerV1RentPriceAbi } from "@ensforge/contracts/v1";
-import { ethRegistrarV2GetRegisterPriceAbi } from "@ensforge/contracts/v2";
+import {
+  ethRegistrarControllerV1RentPriceAbi,
+  ethRegistrarV2GetRegisterPriceAbi,
+} from "@ensforge/contracts/internal";
 
 import { defineReadAction } from "../../../action/read-request.js";
 import type { EnsforgeConfig } from "../../../config/config.js";

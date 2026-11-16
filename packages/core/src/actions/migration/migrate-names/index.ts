@@ -3,7 +3,7 @@ import { Effect } from "effect";
 import {
   baseRegistrarV1IsApprovedForAllAbi,
   nameWrapperV1IsApprovedForAllAbi,
-} from "@ensforge/contracts/v1";
+} from "@ensforge/contracts/internal";
 import { isAddressEqual, keccak256, stringToHex } from "viem";
 
 import { defineAction } from "../../../action/action.js";

@@ -1,6 +1,6 @@
 import { Effect, Schema } from "effect";
 
-import { publicResolverV1SetPubkeyAbi } from "@ensforge/contracts/v1";
+import { publicResolverV1SetPubkeyAbi } from "@ensforge/contracts/internal";
 import { encodeFunctionData } from "viem";
 
 import { CodecError } from "../../../errors/codec-error.js";

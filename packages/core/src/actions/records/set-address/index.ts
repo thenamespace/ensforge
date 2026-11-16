@@ -1,7 +1,10 @@
 import { Effect } from "effect";
 
-import { publicResolverV1MulticallAbi, publicResolverV1SetAddrAbi } from "@ensforge/contracts/v1";
-import { permissionedResolverV2SetAddressAbi } from "@ensforge/contracts/v2";
+import {
+  publicResolverV1MulticallAbi,
+  publicResolverV1SetAddrAbi,
+  permissionedResolverV2SetAddressAbi,
+} from "@ensforge/contracts/internal";
 import { encodeFunctionData } from "viem";
 
 import { CodecError } from "../../../errors/codec-error.js";

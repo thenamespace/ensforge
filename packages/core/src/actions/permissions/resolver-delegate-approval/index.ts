@@ -1,6 +1,6 @@
 import { Effect } from "effect";
 
-import { publicResolverV1ApproveAbi } from "@ensforge/contracts/v1";
+import { publicResolverV1ApproveAbi } from "@ensforge/contracts/internal";
 import { encodeFunctionData, isAddressEqual } from "viem";
 
 import type { EnsWriteIntentPreparer } from "../../../action/write-intent.js";

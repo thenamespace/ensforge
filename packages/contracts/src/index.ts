@@ -1,4 +1,4 @@
-export * from "./deployments/index.js";
-export * from "./shared/index.js";
-export * from "./v1/index.js";
-export * from "./v2/index.js";
+export * as Abis from "./Abis.js";
+export * as Deployments from "./Deployments.js";
+export * as InterfaceIds from "./InterfaceIds.js";
+export * as Roles from "./Roles.js";

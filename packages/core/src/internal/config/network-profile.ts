@@ -1,21 +1,17 @@
-import {
-  mainnetV1Deployment,
-  sepoliaV1Deployment,
-  sepoliaV2Deployment,
-} from "@ensforge/contracts/deployments";
+import { Deployments } from "@ensforge/contracts";
 
 import type { EnsDeploymentProfile } from "../../config/config.js";
 import type { EnsNetwork } from "../../config/network.js";
 
 const mainnetProfile: EnsDeploymentProfile = Object.freeze({
   protocol: "v1",
-  v1: mainnetV1Deployment,
+  v1: Deployments.mainnet.v1,
 });
 
 const sepoliaProfile: EnsDeploymentProfile = Object.freeze({
   protocol: "v2",
-  v1: sepoliaV1Deployment,
-  v2: sepoliaV2Deployment,
+  v1: Deployments.sepolia.v1,
+  v2: Deployments.sepolia.v2,
 });
 
 const networkProfiles: Readonly<Record<EnsNetwork, EnsDeploymentProfile>> = Object.freeze({

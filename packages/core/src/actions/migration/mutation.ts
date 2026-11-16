@@ -5,11 +5,9 @@ import {
   baseRegistrarV1SetApprovalForAllAbi,
   nameWrapperV1SafeTransferFromAbi,
   nameWrapperV1SetApprovalForAllAbi,
-} from "@ensforge/contracts/v1";
-import {
   migrationHelperV2MigrateAbi,
   migrationHelperV2NameWrapperAbi,
-} from "@ensforge/contracts/v2";
+} from "@ensforge/contracts/internal";
 import { encodeAbiParameters, encodeFunctionData, isAddressEqual } from "viem";
 
 import {

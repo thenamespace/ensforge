@@ -1,6 +1,6 @@
 import { Effect } from "effect";
 
-import { verifiableFactoryV2ProxyLogicAbi } from "@ensforge/contracts/v2";
+import { verifiableFactoryV2ProxyLogicAbi } from "@ensforge/contracts/internal";
 import { concatHex, encodeAbiParameters, getCreate2Address, keccak256 } from "viem";
 
 import { defineAction, defineExtendedAction } from "../../../action/action.js";

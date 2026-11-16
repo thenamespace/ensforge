@@ -4,9 +4,8 @@ import type { UserConfig } from "tsdown";
 export default defineConfig({
   alias: { "#/": "./src/" },
   entry: {
-    deployments: "src/deployments/index.ts",
     index: "src/index.ts",
-    "resolver-profiles": "src/shared/resolver-profiles/index.ts",
+    internal: "src/internal.ts",
     shared: "src/shared/index.ts",
     v1: "src/v1/index.ts",
     v2: "src/v2/index.ts",

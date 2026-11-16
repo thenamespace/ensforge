@@ -1,7 +1,10 @@
 import { Effect } from "effect";
 
-import { baseRegistrarV1AvailableAbi } from "@ensforge/contracts/v1";
-import { ethRegistrarV2IsRenewableAbi, ethRenewerV1IsRenewableAbi } from "@ensforge/contracts/v2";
+import {
+  baseRegistrarV1AvailableAbi,
+  ethRegistrarV2IsRenewableAbi,
+  ethRenewerV1IsRenewableAbi,
+} from "@ensforge/contracts/internal";
 
 import { defineReadAction } from "../../../action/read-request.js";
 import type { EnsforgeConfig } from "../../../config/config.js";

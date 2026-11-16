@@ -1,13 +1,13 @@
 import { Effect } from "effect";
 
 import {
-  nameWrapperFuses,
   nameWrapperV1ExtendExpiryAbi,
   nameWrapperV1SetChildFusesAbi,
   nameWrapperV1SetFusesAbi,
   nameWrapperV1UnwrapAbi,
   nameWrapperV1UnwrapETH2LDAbi,
-} from "@ensforge/contracts/v1";
+} from "@ensforge/contracts/internal";
+import { nameWrapperFuses } from "@ensforge/contracts/v1";
 import { encodeFunctionData, type Address } from "viem";
 
 import type { EnsWriteIntentPreparer } from "../../action/write-intent.js";

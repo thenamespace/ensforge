@@ -1,4 +1,4 @@
-import type { HcaDeploymentProfile } from "@ensforge/contracts/deployments";
+import type { HcaDeploymentProfile } from "@ensforge/contracts/internal";
 import type { PublicClient, WalletClient } from "viem";
 
 import type { EnsDeploymentProfile, EnsforgeConfig } from "../config/config.js";

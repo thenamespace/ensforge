@@ -1,6 +1,6 @@
 import { Effect } from "effect";
 
-import { dnsRecordResolverAbi } from "@ensforge/contracts/resolver-profiles";
+import { dnsRecordResolverAbi } from "@ensforge/contracts/shared";
 import { decodeFunctionResult, encodeFunctionData, keccak256 } from "viem";
 
 import type { BlockParameters } from "../../../action/block.js";

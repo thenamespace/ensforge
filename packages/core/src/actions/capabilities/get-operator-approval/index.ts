@@ -6,11 +6,9 @@ import {
   nameWrapperV1IsApprovedForAllAbi,
   nameWrapperV1IsWrappedAbi,
   publicResolverV1IsApprovedForAllAbi,
-} from "@ensforge/contracts/v1";
-import {
   permissionedRegistryV2InterfaceIsApprovedForAllAbi,
-  registryInterfaceIds,
-} from "@ensforge/contracts/v2";
+} from "@ensforge/contracts/internal";
+import { registryInterfaceIds } from "@ensforge/contracts/v2";
 
 import { defineReadAction } from "../../../action/read-request.js";
 import type { EnsforgeConfig } from "../../../config/config.js";

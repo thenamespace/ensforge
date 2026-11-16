@@ -1,6 +1,6 @@
 import { Effect } from "effect";
 
-import { nameWrapperV1IsWrappedAbi } from "@ensforge/contracts/v1";
+import { nameWrapperV1IsWrappedAbi } from "@ensforge/contracts/internal";
 import { registryInterfaceIds } from "@ensforge/contracts/v2";
 
 import { defineReadAction } from "../../../action/read-request.js";

@@ -1,6 +1,6 @@
 import { Effect } from "effect";
 
-import { publicResolverV1IsApprovedForAbi } from "@ensforge/contracts/v1";
+import { publicResolverV1IsApprovedForAbi } from "@ensforge/contracts/internal";
 
 import { defineReadAction } from "../../../action/read-request.js";
 import type { EnsforgeConfig } from "../../../config/config.js";

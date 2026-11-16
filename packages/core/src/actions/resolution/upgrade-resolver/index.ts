@@ -4,9 +4,9 @@ import {
   permissionedResolverV2CanUpgradeFromAbi,
   permissionedResolverV2InterfaceHasRootRolesAbi,
   permissionedResolverV2UpgradeToAndCallAbi,
-  resolverRoles,
   verifiableFactoryV2VerifyContractAbi,
-} from "@ensforge/contracts/v2";
+} from "@ensforge/contracts/internal";
+import { resolverRoles } from "@ensforge/contracts/v2";
 import { encodeFunctionData, isAddressEqual, type Address } from "viem";
 
 import { defineExtendedAction } from "../../../action/action.js";

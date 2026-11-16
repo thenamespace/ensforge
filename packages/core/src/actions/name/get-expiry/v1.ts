@@ -1,6 +1,6 @@
 import { Effect } from "effect";
 
-import { getExpiryV1NameWrapperAbi, getExpiryV1RegistrarAbi } from "@ensforge/contracts/v1";
+import { getExpiryV1NameWrapperAbi, getExpiryV1RegistrarAbi } from "@ensforge/contracts/internal";
 
 import type { EnsV1ConfigDeployment } from "../../../config/custom-network.js";
 import { EthereumClient } from "../../../internal/client/ethereum-client.js";

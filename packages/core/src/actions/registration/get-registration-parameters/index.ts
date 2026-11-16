@@ -5,14 +5,12 @@ import {
   ethRegistrarControllerV1MinCommitmentAgeAbi,
   ethRegistrarControllerV1MinRegistrationDurationAbi,
   ethRegistrarControllerV1PricesAbi,
-} from "@ensforge/contracts/v1";
-import {
   ethRegistrarV2MaxCommitmentAgeAbi,
   ethRegistrarV2MinCommitmentAgeAbi,
   ethRegistrarV2MinRegisterDurationAbi,
   ethRegistrarV2MinRenewDurationAbi,
   ethRegistrarV2RentPriceOracleAbi,
-} from "@ensforge/contracts/v2";
+} from "@ensforge/contracts/internal";
 
 import type { BlockParameters } from "../../../action/block.js";
 import { defineReadAction } from "../../../action/read-request.js";

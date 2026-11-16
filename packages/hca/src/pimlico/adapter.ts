@@ -1,6 +1,6 @@
 import { Effect, Schema } from "effect";
 
-import { standaloneHcaV2UserOperationAbi } from "@ensforge/contracts/v2";
+import { standaloneHcaV2UserOperationAbi } from "@ensforge/contracts/internal";
 import { defineAction, HcaError, type EnsforgeConfig } from "@ensforge/core";
 import { HcaExecutionHash, type PreparedHcaCalls } from "@ensforge/core/hca";
 import { createSmartAccountClient } from "permissionless";

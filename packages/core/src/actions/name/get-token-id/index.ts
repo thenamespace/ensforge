@@ -1,6 +1,9 @@
 import { Effect } from "effect";
 
-import { baseRegistrarV1NameExpiresAbi, nameWrapperV1IsWrappedAbi } from "@ensforge/contracts/v1";
+import {
+  baseRegistrarV1NameExpiresAbi,
+  nameWrapperV1IsWrappedAbi,
+} from "@ensforge/contracts/internal";
 
 import { defineReadAction } from "../../../action/read-request.js";
 import type { EnsforgeConfig } from "../../../config/config.js";

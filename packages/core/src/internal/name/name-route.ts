@@ -1,11 +1,11 @@
 import { Effect } from "effect";
 
-import { universalResolverFindResolverAbi } from "@ensforge/contracts/shared";
 import {
   ethRenewerV1IsRenewableAbi,
   permissionedRegistryV2InterfaceGetStateAbi,
   universalHelperV2FindParentRegistryAbi,
-} from "@ensforge/contracts/v2";
+} from "@ensforge/contracts/internal";
+import { universalResolverFindResolverAbi } from "@ensforge/contracts/shared";
 import { isAddressEqual, zeroAddress } from "viem";
 
 import type { EnsV1ConfigDeployment, EnsV2ConfigDeployment } from "../../config/custom-network.js";

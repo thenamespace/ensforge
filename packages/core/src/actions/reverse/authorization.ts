@@ -1,7 +1,9 @@
 import { Effect, Option } from "effect";
 
-import { ensRegistryV1IsApprovedForAllAbi } from "@ensforge/contracts/v1";
-import { contractNamerV2InterfaceIsContractNamerAbi } from "@ensforge/contracts/v2";
+import {
+  ensRegistryV1IsApprovedForAllAbi,
+  contractNamerV2InterfaceIsContractNamerAbi,
+} from "@ensforge/contracts/internal";
 import { isAddressEqual, type Address } from "viem";
 
 import type { EnsforgeConfig } from "../../config/config.js";

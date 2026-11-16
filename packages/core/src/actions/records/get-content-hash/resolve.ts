@@ -1,6 +1,6 @@
 import { Effect, Schema } from "effect";
 
-import { contenthashResolverAbi } from "@ensforge/contracts/resolver-profiles";
+import { contenthashResolverAbi } from "@ensforge/contracts/shared";
 import { decodeFunctionResult, encodeFunctionData } from "viem";
 
 import { CodecError } from "../../../errors/codec-error.js";

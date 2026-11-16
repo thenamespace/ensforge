@@ -1,10 +1,10 @@
 import { Effect, Schema } from "effect";
 
 import {
-  enhancedAccessControlRoles,
   permissionedResolverInitializableV2InterfaceInitializeAbi,
   verifiableFactoryV2DeployProxyAbi,
-} from "@ensforge/contracts/v2";
+} from "@ensforge/contracts/internal";
+import { enhancedAccessControlRoles } from "@ensforge/contracts/v2";
 import { encodeFunctionData } from "viem";
 
 import { makeWriteIntent, type EnsWriteIntentPreparer } from "../../../action/write-intent.js";

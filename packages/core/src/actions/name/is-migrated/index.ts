@@ -1,6 +1,7 @@
 import { Effect } from "effect";
 
-import { permissionedRegistryV2InterfaceRolesAbi, registryRoles } from "@ensforge/contracts/v2";
+import { permissionedRegistryV2InterfaceRolesAbi } from "@ensforge/contracts/internal";
+import { registryRoles } from "@ensforge/contracts/v2";
 import { isAddressEqual, zeroAddress } from "viem";
 
 import { defineReadAction } from "../../../action/read-request.js";

@@ -6,13 +6,11 @@ import {
   nameWrapperV1ExtendExpiryAbi,
   nameWrapperV1SetResolverAbi,
   nameWrapperV1SetSubnodeOwnerAbi,
-} from "@ensforge/contracts/v1";
-import { permissionedRegistryV2InterfaceAbi } from "@ensforge/contracts/v2";
-import {
   permissionedRegistryV2InterfaceRenewAbi,
   permissionedRegistryV2InterfaceSetResolverAbi,
   permissionedRegistryV2InterfaceUnregisterAbi,
-} from "@ensforge/contracts/v2";
+} from "@ensforge/contracts/internal";
+import { permissionedRegistryV2InterfaceAbi } from "@ensforge/contracts/v2";
 import { encodeFunctionData, zeroAddress } from "viem";
 
 import type { EnsWriteIntentPreparer } from "../../action/write-intent.js";

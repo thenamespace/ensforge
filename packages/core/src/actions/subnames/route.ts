@@ -1,10 +1,11 @@
 import { Effect } from "effect";
 
-import { nameWrapperV1GetDataAbi, nameWrapperV1IsWrappedAbi } from "@ensforge/contracts/v1";
 import {
+  nameWrapperV1GetDataAbi,
+  nameWrapperV1IsWrappedAbi,
   permissionedRegistryV2InterfaceGetStateAbi,
   permissionedRegistryV2InterfaceGetSubregistryAbi,
-} from "@ensforge/contracts/v2";
+} from "@ensforge/contracts/internal";
 import { zeroAddress } from "viem";
 
 import type { EnsforgeConfig } from "../../config/config.js";

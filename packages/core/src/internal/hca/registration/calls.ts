@@ -1,6 +1,5 @@
+import { ethRegistrarV2CommitAbi, ethRegistrarV2RegisterAbi } from "@ensforge/contracts/internal";
 import {
-  ethRegistrarV2CommitAbi,
-  ethRegistrarV2RegisterAbi,
   permissionedResolverV2Abi,
   defaultReverseRegistrarAdapterV2Abi,
 } from "@ensforge/contracts/v2";

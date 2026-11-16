@@ -1,6 +1,6 @@
 import { Effect } from "effect";
 
-import { standaloneHcaV2AccountReadsAbi } from "@ensforge/contracts/v2";
+import { standaloneHcaV2AccountReadsAbi } from "@ensforge/contracts/internal";
 import { type Address } from "viem";
 
 import { defineReadAction } from "../../../action/read-request.js";

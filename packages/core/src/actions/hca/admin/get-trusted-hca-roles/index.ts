@@ -1,6 +1,6 @@
 import { Effect, Schema } from "effect";
 
-import { trustedHcaSetV2ManagementAbi } from "@ensforge/contracts/v2";
+import { trustedHcaSetV2ManagementAbi } from "@ensforge/contracts/internal";
 import type { Address } from "viem";
 
 import type { BlockParameters } from "../../../../action/block.js";
@@ -26,7 +26,7 @@ export const getTrustedHcaRoles = defineReadAction<
           message: "Role resource must be uint256",
         });
 
-      const address = yield* validateHcaAddress(profile.deployment.experimental?.hca.upgradeSet);
+      const address = yield* validateHcaAddress(profile.deployment.hca?.upgradeSet);
 
       return yield* hcaRpc(() =>
         config.publicClient.readContract({

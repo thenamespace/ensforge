@@ -1,6 +1,6 @@
 import { Effect } from "effect";
 
-import { ensRegistryV1TtlAbi } from "@ensforge/contracts/v1";
+import { ensRegistryV1TtlAbi } from "@ensforge/contracts/internal";
 
 import { defineReadAction } from "../../../action/read-request.js";
 import type { EnsforgeConfig } from "../../../config/config.js";

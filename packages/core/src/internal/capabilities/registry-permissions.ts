@@ -1,9 +1,7 @@
 import { Effect } from "effect";
 
-import {
-  permissionedRegistryV2InterfaceGetResourceAbi,
-  registryInterfaceIds,
-} from "@ensforge/contracts/v2";
+import { permissionedRegistryV2InterfaceGetResourceAbi } from "@ensforge/contracts/internal";
+import { registryInterfaceIds } from "@ensforge/contracts/v2";
 
 import { labelhash } from "../../names/hashes.js";
 import type { NormalizedName } from "../../schemas/name.js";

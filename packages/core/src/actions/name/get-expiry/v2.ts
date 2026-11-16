@@ -5,7 +5,7 @@ import {
   getExpiryV2GracePeriodAbi,
   getExpiryV2TemporalRegistryAbi,
   getExpiryV2UniversalResolverAbi,
-} from "@ensforge/contracts/v2";
+} from "@ensforge/contracts/internal";
 import { isAddressEqual, zeroAddress } from "viem";
 
 import type { EnsV2ConfigDeployment } from "../../../config/custom-network.js";

@@ -1,6 +1,6 @@
 import { Effect, Schema } from "effect";
 
-import { publicResolverV1SetDNSRecordsAbi } from "@ensforge/contracts/v1";
+import { publicResolverV1SetDNSRecordsAbi } from "@ensforge/contracts/internal";
 import { encodeFunctionData } from "viem";
 
 import { CodecError } from "../../../errors/codec-error.js";

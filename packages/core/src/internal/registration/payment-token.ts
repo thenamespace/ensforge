@@ -1,7 +1,10 @@
 import { Effect } from "effect";
 
-import { erc20DecimalsAbi, erc20SymbolAbi } from "@ensforge/contracts/shared";
-import { standardRentPriceOracleV2IsPaymentTokenAbi } from "@ensforge/contracts/v2";
+import {
+  erc20DecimalsAbi,
+  erc20SymbolAbi,
+  standardRentPriceOracleV2IsPaymentTokenAbi,
+} from "@ensforge/contracts/internal";
 
 import type { EthereumAddress } from "../../schemas/identity.js";
 import { EthereumClient } from "../client/ethereum-client.js";

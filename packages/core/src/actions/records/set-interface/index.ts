@@ -1,7 +1,9 @@
 import { Effect, Schema } from "effect";
 
-import { publicResolverV1SetInterfaceAbi } from "@ensforge/contracts/v1";
-import { permissionedResolverV2SetInterfaceAbi } from "@ensforge/contracts/v2";
+import {
+  publicResolverV1SetInterfaceAbi,
+  permissionedResolverV2SetInterfaceAbi,
+} from "@ensforge/contracts/internal";
 import { encodeFunctionData } from "viem";
 
 import { CodecError } from "../../../errors/codec-error.js";

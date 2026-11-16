@@ -1,8 +1,13 @@
 import { Effect } from "effect";
 
-import { erc20AllowanceAbi, erc20ApproveAbi } from "@ensforge/contracts/shared";
-import { bulkRenewalV1RenewAllAbi, ethRegistrarControllerV1RenewAbi } from "@ensforge/contracts/v1";
-import { ethRegistrarV2RenewAbi, ethRenewerV1RenewAbi } from "@ensforge/contracts/v2";
+import {
+  erc20AllowanceAbi,
+  erc20ApproveAbi,
+  bulkRenewalV1RenewAllAbi,
+  ethRegistrarControllerV1RenewAbi,
+  ethRegistrarV2RenewAbi,
+  ethRenewerV1RenewAbi,
+} from "@ensforge/contracts/internal";
 import { encodeFunctionData, zeroHash } from "viem";
 
 import {

@@ -10,7 +10,7 @@ import {
   nameResolverAbi,
   pubkeyResolverAbi,
   textResolverAbi,
-} from "@ensforge/contracts/resolver-profiles";
+} from "@ensforge/contracts/shared";
 import { decode as decodeCbor } from "cborg";
 import { strFromU8, unzlibSync } from "fflate";
 import {

@@ -3,14 +3,12 @@ import { Effect } from "effect";
 import {
   ensRegistryV1SetSubnodeRecordAbi,
   nameWrapperV1SetSubnodeRecordAbi,
-} from "@ensforge/contracts/v1";
-import {
   permissionedRegistryV2InterfaceRegisterAbi,
   permissionedRegistryV2InterfaceSetSubregistryAbi,
   userRegistryV2InitializeAbi,
   userRegistryV2SetParentAbi,
   verifiableFactoryV2DeployProxyAbi,
-} from "@ensforge/contracts/v2";
+} from "@ensforge/contracts/internal";
 import { encodeFunctionData } from "viem";
 
 import { makeWriteIntent, type EnsWriteIntentPreparer } from "../../action/write-intent.js";

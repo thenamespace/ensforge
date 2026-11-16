@@ -1,6 +1,6 @@
 import { Effect, Schema } from "effect";
 
-import { standaloneHcaV2AccountReadsAbi } from "@ensforge/contracts/v2";
+import { standaloneHcaV2AccountReadsAbi } from "@ensforge/contracts/internal";
 
 import { defineReadAction } from "../../../action/read-request.js";
 import { HcaError } from "../../../errors/hca-error.js";

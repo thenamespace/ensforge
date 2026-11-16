@@ -1,6 +1,6 @@
 import { Effect, Schema } from "effect";
 
-import { standaloneHcaV2ExecuteByOwnerAbi } from "@ensforge/contracts/v2";
+import { standaloneHcaV2ExecuteByOwnerAbi } from "@ensforge/contracts/internal";
 import { encodeAbiParameters, encodeFunctionData, isAddressEqual, keccak256 } from "viem";
 
 import { defineAction } from "../../../action/action.js";

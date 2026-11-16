@@ -1,6 +1,6 @@
 import { Effect } from "effect";
 
-import { nameWrapperV1SafeTransferFromAbi } from "@ensforge/contracts/v1";
+import { nameWrapperV1SafeTransferFromAbi } from "@ensforge/contracts/internal";
 import { permissionedRegistryV2InterfaceAbi } from "@ensforge/contracts/v2";
 import { encodeFunctionData } from "viem";
 

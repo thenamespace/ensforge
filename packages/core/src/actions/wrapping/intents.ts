@@ -4,7 +4,7 @@ import {
   baseRegistrarV1ApproveAbi,
   nameWrapperV1WrapAbi,
   nameWrapperV1WrapETH2LDAbi,
-} from "@ensforge/contracts/v1";
+} from "@ensforge/contracts/internal";
 import { encodeFunctionData } from "viem";
 
 import { makeWriteIntent, type EnsWriteIntentPreparer } from "../../action/write-intent.js";

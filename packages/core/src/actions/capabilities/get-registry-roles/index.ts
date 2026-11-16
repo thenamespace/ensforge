@@ -1,6 +1,6 @@
 import { Effect } from "effect";
 
-import { permissionedRegistryV2InterfaceRolesAbi } from "@ensforge/contracts/v2";
+import { permissionedRegistryV2InterfaceRolesAbi } from "@ensforge/contracts/internal";
 
 import { defineReadAction } from "../../../action/read-request.js";
 import type { EnsforgeConfig } from "../../../config/config.js";

@@ -1,13 +1,13 @@
 import { Effect, Result } from "effect";
 
-import { universalResolverFindResolverAbi } from "@ensforge/contracts/shared";
-import { getExpiryV1RegistrarAbi } from "@ensforge/contracts/v1";
 import {
+  getExpiryV1RegistrarAbi,
   getExpiryV2EthRegistryAbi,
   getExpiryV2GracePeriodAbi,
   getExpiryV2TemporalRegistryAbi,
   getExpiryV2UniversalResolverAbi,
-} from "@ensforge/contracts/v2";
+} from "@ensforge/contracts/internal";
+import { universalResolverFindResolverAbi } from "@ensforge/contracts/shared";
 import { isAddressEqual, zeroAddress } from "viem";
 
 import type {

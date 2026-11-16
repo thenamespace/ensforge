@@ -1,6 +1,6 @@
 import { Effect } from "effect";
 
-import { versionableResolverAbi } from "@ensforge/contracts/resolver-profiles";
+import { versionableResolverAbi } from "@ensforge/contracts/shared";
 
 import { defineReadAction } from "../../../action/read-request.js";
 import type { EnsforgeConfig } from "../../../config/config.js";

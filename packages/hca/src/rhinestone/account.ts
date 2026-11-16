@@ -1,5 +1,4 @@
-import { getHcaDeployment } from "@ensforge/contracts/deployments";
-import { verifiableFactoryV2ProxyLogicAbi } from "@ensforge/contracts/v2";
+import { getHcaDeployment, verifiableFactoryV2ProxyLogicAbi } from "@ensforge/contracts/internal";
 import { HcaError, type EnsforgeConfig } from "@ensforge/core";
 import { verifyHca } from "@ensforge/core/hca";
 import type { RhinestoneSDK, Session } from "@rhinestone/sdk";

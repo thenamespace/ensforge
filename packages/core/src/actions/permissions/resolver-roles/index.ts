@@ -1,9 +1,7 @@
 import { Effect } from "effect";
 
-import {
-  permissionedResolverV2Abi,
-  permissionedResolverV2RootRoleMutationAbi,
-} from "@ensforge/contracts/v2";
+import { permissionedResolverV2RootRoleMutationAbi } from "@ensforge/contracts/internal";
+import { permissionedResolverV2Abi } from "@ensforge/contracts/v2";
 import { encodeFunctionData } from "viem";
 
 import type { EnsWriteIntentPreparer } from "../../../action/write-intent.js";

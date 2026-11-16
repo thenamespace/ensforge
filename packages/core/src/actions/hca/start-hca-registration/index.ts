@@ -1,9 +1,7 @@
 import { Effect, Schema } from "effect";
 
-import {
-  enhancedAccessControlRoles,
-  permissionedResolverV2InterfaceHasRootRolesAbi,
-} from "@ensforge/contracts/v2";
+import { permissionedResolverV2InterfaceHasRootRolesAbi } from "@ensforge/contracts/internal";
+import { enhancedAccessControlRoles } from "@ensforge/contracts/v2";
 import { bytesToHex, zeroAddress, zeroHash } from "viem";
 
 import { defineAction } from "../../../action/action.js";

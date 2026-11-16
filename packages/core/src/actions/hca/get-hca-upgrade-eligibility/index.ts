@@ -1,6 +1,6 @@
 import { Effect } from "effect";
 
-import { standaloneHcaV2UpgradeAbi } from "@ensforge/contracts/v2";
+import { standaloneHcaV2UpgradeAbi } from "@ensforge/contracts/internal";
 import { permissionedAddressSetV2Abi } from "@ensforge/contracts/v2";
 import { zeroAddress, type Address } from "viem";
 

@@ -1,6 +1,6 @@
 import { Effect } from "effect";
 
-import { permissionedRegistryV2RoleMutationAbi } from "@ensforge/contracts/v2";
+import { permissionedRegistryV2RoleMutationAbi } from "@ensforge/contracts/internal";
 import { encodeFunctionData } from "viem";
 
 import type { EnsWriteIntentPreparer } from "../../../action/write-intent.js";

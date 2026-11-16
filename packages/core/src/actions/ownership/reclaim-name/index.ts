@@ -1,6 +1,6 @@
 import { Effect } from "effect";
 
-import { baseRegistrarV1ReclaimAbi } from "@ensforge/contracts/v1";
+import { baseRegistrarV1ReclaimAbi } from "@ensforge/contracts/internal";
 import { encodeFunctionData } from "viem";
 
 import type { EnsWriteIntentPreparer } from "../../../action/write-intent.js";

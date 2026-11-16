@@ -1,7 +1,10 @@
 import { Effect } from "effect";
 
-import { publicResolverV1MulticallAbi, publicResolverV1SetTextAbi } from "@ensforge/contracts/v1";
-import { permissionedResolverV2SetTextAbi } from "@ensforge/contracts/v2";
+import {
+  publicResolverV1MulticallAbi,
+  publicResolverV1SetTextAbi,
+  permissionedResolverV2SetTextAbi,
+} from "@ensforge/contracts/internal";
 import { encodeFunctionData } from "viem";
 
 import { ContractError } from "../../../errors/contract-error.js";

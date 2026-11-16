@@ -3,11 +3,9 @@ import { Effect } from "effect";
 import {
   publicResolverV1IsApprovedForAbi,
   publicResolverV1IsApprovedForAllAbi,
-} from "@ensforge/contracts/v1";
-import {
   permissionedResolverV2InterfaceHasRolesAbi,
   publicResolverV2CanModifyNameAbi,
-} from "@ensforge/contracts/v2";
+} from "@ensforge/contracts/internal";
 
 import { defineReadAction } from "../../../action/read-request.js";
 import type { EnsforgeConfig } from "../../../config/config.js";

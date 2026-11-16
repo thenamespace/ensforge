@@ -1,6 +1,6 @@
 import { Effect } from "effect";
 
-import { hcaUpgradeGateV2ManagementAbi } from "@ensforge/contracts/v2";
+import { hcaUpgradeGateV2ManagementAbi } from "@ensforge/contracts/internal";
 import { encodeFunctionData } from "viem";
 
 import { defineAction } from "../../../../action/action.js";

@@ -1,7 +1,9 @@
 import { Effect } from "effect";
 
-import { publicResolverV1SetContenthashAbi } from "@ensforge/contracts/v1";
-import { permissionedResolverV2SetContenthashAbi } from "@ensforge/contracts/v2";
+import {
+  publicResolverV1SetContenthashAbi,
+  permissionedResolverV2SetContenthashAbi,
+} from "@ensforge/contracts/internal";
 import { encodeFunctionData } from "viem";
 
 import { CodecError } from "../../../errors/codec-error.js";

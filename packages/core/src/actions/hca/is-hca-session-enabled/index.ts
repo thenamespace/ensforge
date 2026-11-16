@@ -1,6 +1,6 @@
 import { Effect, Schema } from "effect";
 
-import { hcaValidatorV2SessionsAbi } from "@ensforge/contracts/v2";
+import { hcaValidatorV2SessionsAbi } from "@ensforge/contracts/internal";
 import { type Hex } from "viem";
 
 import { defineReadAction } from "../../../action/read-request.js";

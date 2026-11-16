@@ -4,7 +4,7 @@ import {
   baseRegistrarV1OwnerOfAbi,
   ensRegistryV1OwnerAbi,
   nameWrapperV1OwnerOfAbi,
-} from "@ensforge/contracts/v1";
+} from "@ensforge/contracts/internal";
 import {
   BaseError,
   ContractFunctionRevertedError,

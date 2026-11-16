@@ -1,7 +1,9 @@
 import { Effect } from "effect";
 
-import { universalResolverV1ReverseAbi } from "@ensforge/contracts/v1";
-import { universalResolverV2ReverseAbi } from "@ensforge/contracts/v2";
+import {
+  universalResolverV1ReverseAbi,
+  universalResolverV2ReverseAbi,
+} from "@ensforge/contracts/internal";
 import type { Address, Hex } from "viem";
 
 import { EthereumClient } from "../client/ethereum-client.js";

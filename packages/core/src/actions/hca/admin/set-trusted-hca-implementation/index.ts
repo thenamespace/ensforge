@@ -1,6 +1,6 @@
 import { Effect } from "effect";
 
-import { trustedHcaSetV2ManagementAbi } from "@ensforge/contracts/v2";
+import { trustedHcaSetV2ManagementAbi } from "@ensforge/contracts/internal";
 import { encodeFunctionData, type Address } from "viem";
 
 import { defineAction } from "../../../../action/action.js";
@@ -18,7 +18,7 @@ export const setTrustedHcaImplementation = defineAction<
 >(
   Effect.fn("ensforge.setTrustedHcaImplementation")(function* (config, parameters) {
     const profile = yield* resolveHcaProfile(config);
-    const address = yield* validateHcaAddress(profile.deployment.experimental?.hca.upgradeSet);
+    const address = yield* validateHcaAddress(profile.deployment.hca?.upgradeSet);
 
     const implementation = yield* validateHcaAddress(parameters.implementation);
 

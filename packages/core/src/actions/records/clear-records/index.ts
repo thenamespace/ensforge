@@ -1,6 +1,6 @@
 import { Effect } from "effect";
 
-import { publicResolverV1ClearRecordsAbi } from "@ensforge/contracts/v1";
+import { publicResolverV1ClearRecordsAbi } from "@ensforge/contracts/internal";
 import { encodeFunctionData } from "viem";
 
 import { ContractError } from "../../../errors/contract-error.js";

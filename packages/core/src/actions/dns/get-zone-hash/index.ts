@@ -1,6 +1,6 @@
 import { Effect } from "effect";
 
-import { dnsZoneResolverAbi } from "@ensforge/contracts/resolver-profiles";
+import { dnsZoneResolverAbi } from "@ensforge/contracts/shared";
 import { decodeFunctionResult, encodeFunctionData } from "viem";
 
 import type { BlockParameters } from "../../../action/block.js";

@@ -4,8 +4,8 @@ import {
   reverseRegistrarV1DefaultResolverAbi,
   reverseRegistrarV1SetNameAbi,
   reverseRegistrarV1SetNameForAddrAbi,
-} from "@ensforge/contracts/v1";
-import { defaultReverseRegistrarAdapterV2SetNameAbi } from "@ensforge/contracts/v2";
+  defaultReverseRegistrarAdapterV2SetNameAbi,
+} from "@ensforge/contracts/internal";
 import { encodeFunctionData, isAddressEqual, type Address } from "viem";
 
 import type { EnsWriteIntentPreparer } from "../../action/write-intent.js";

@@ -3,7 +3,7 @@ import { Effect, Schema } from "effect";
 import {
   standaloneHcaV2ManagementAbi,
   standaloneHcaV2ExecuteByOwnerAbi,
-} from "@ensforge/contracts/v2";
+} from "@ensforge/contracts/internal";
 import { encodeFunctionData, type Address } from "viem";
 
 import { defineAction } from "../../../action/action.js";

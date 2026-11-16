@@ -1,6 +1,6 @@
 import { Effect } from "effect";
 
-import { verifiableFactoryV2VerifyContractAbi } from "@ensforge/contracts/v2";
+import { verifiableFactoryV2VerifyContractAbi } from "@ensforge/contracts/internal";
 import { isAddressEqual } from "viem";
 
 import { defineReadAction } from "../../../action/read-request.js";

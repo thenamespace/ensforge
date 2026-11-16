@@ -1,11 +1,11 @@
 import { Effect } from "effect";
 
 import {
-  nameWrapperFuses,
   nameWrapperV1GetDataAbi,
   nameWrapperV1IsWrappedAbi,
-} from "@ensforge/contracts/v1";
-import { universalHelperV2FindExactRegistryAbi } from "@ensforge/contracts/v2";
+  universalHelperV2FindExactRegistryAbi,
+} from "@ensforge/contracts/internal";
+import { nameWrapperFuses } from "@ensforge/contracts/v1";
 import { isAddressEqual, zeroAddress } from "viem";
 
 import { defineReadAction } from "../../../action/read-request.js";
