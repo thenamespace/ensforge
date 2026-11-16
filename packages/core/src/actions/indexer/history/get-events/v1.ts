@@ -67,9 +67,7 @@ export const v1SupportsEventFilter = (filter: EventFilter): boolean =>
     includesCategory(filter, registrationKinds) ||
     includesCategory(filter, resolverKinds));
 
-const decodePosition = (
-  position: string | null,
-): Effect.Effect<Position, IndexerPaginationError> =>
+const decodePosition = (position: string | null): Effect.Effect<Position, IndexerPaginationError> =>
   position === null
     ? Effect.succeed({ domain: 0, registration: 0, resolver: 0 })
     : Effect.try({
