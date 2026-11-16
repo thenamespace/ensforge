@@ -38,37 +38,41 @@ import { EnsforgeProvider } from "@ensforge/react";
 Use read hooks anywhere below the provider:
 
 ```tsx
-import { useResolver } from "@ensforge/react";
+import { useRegistrationPrice } from "@ensforge/react";
 
-function ResolverAddress({ name }: { name: string }) {
-  const resolver = useResolver({ name, atom: { swr: { staleTime: "1 minute" } } });
+const year = 365n * 24n * 60n * 60n;
 
-  if (resolver.isInitial) return <span>Loading…</span>;
-  if (resolver.isFailure) return <span>{resolver.error.message}</span>;
+function Price({ name }: { name: string }) {
+  const price = useRegistrationPrice({
+    name,
+    duration: year,
+    atom: { swr: { staleTime: "1 minute" } },
+  });
 
-  return <p>{resolver.data ?? "No resolver"}</p>;
+  if (price.isInitial) return <span>Loading…</span>;
+  if (price.isFailure) return <span>{price.error.message}</span>;
+  if (price.data?.status !== "available") return <span>Not available</span>;
+
+  return <p>{price.data.total.toString()} wei</p>;
 }
 ```
 
 Write hooks expose mutation state and Promise-based execution:
 
 ```tsx
-import { useSetResolver } from "@ensforge/react";
+import { useCommitName } from "@ensforge/react";
 
-const setResolver = useSetResolver();
+const commit = useCommitName();
 
-const update = () =>
-  setResolver.mutate({
-    name: "ens.eth",
-    resolver: "0x231b0Ee14048e9dCcD1d247744d114a4EB5E8E63",
-  });
+// `commitment` comes from useRegistrationCommitment.
+const start = () => commit.mutate({ commitment });
 ```
 
 Hook inputs are inferred automatically. When an action parameter type is needed explicitly, import
 it from the matching SDK group.
 
 ```ts
-import type { SetResolverParameters } from "@ensforge/sdk/resolution";
+import type { GetRegistrationPriceParameters } from "@ensforge/sdk/registration";
 ```
 
 An existing SDK instance can also be shared through the provider:

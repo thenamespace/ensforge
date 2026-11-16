@@ -40,8 +40,6 @@ export type {
   MigrationActions,
   PermissionsActions,
   RegistrationActions,
-  ResolutionActions,
-  ReverseActions,
   SubnameActions,
   WrappingActions,
 } from "./groups/index.js";

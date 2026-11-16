@@ -6,9 +6,10 @@ A type-safe client for building ENS applications.
 
 - Config-bound actions with no repeated client arguments
 - Unified behavior across supported ENS deployments
-- Grouped APIs for resolution, registration, migration, wrapping, DNS, and reverse records
+- Grouped APIs for registration, migration, wrapping, subnames, DNS, and permissions
 
-Name and record actions live in `@ensforge/core` (`ens.name.*`, `ens.record.*`).
+Name, record, resolver and primary-name actions live in `@ensforge/core` (`ens.name.*`,
+`ens.record.*`, `ens.resolver.*`, `ens.primaryName.*`).
 
 - Batched reads and wallet-aware write workflows
 - Compatible with viem clients and Wagmi configs
@@ -31,7 +32,8 @@ const sdk = new Ensforge({
   publicClient: createPublicClient({ chain: mainnet, transport: http() }),
 });
 
-const resolver = await sdk.resolution.getResolver({ name: "ens.eth" });
+const duration = 365n * 24n * 60n * 60n;
+const price = await sdk.registration.getRegistrationPrice({ name: "example.eth", duration });
 ```
 
 Actions are grouped by ENS capability:
@@ -39,23 +41,23 @@ Actions are grouped by ENS capability:
 ```ts
 const duration = 365n * 24n * 60n * 60n;
 
-const resolver = await sdk.resolution.getResolver({ name: "ens.eth" });
 const price = await sdk.registration.getRegistrationPrice({ name: "example.eth", duration });
+const renewal = await sdk.registration.getRenewalPrice({ name: "ens.eth", duration });
 ```
 
 Import action-specific types from the corresponding group entrypoint. This keeps editor type
 loading focused while method calls remain fully inferred.
 
 ```ts
-import type { GetResolverParameters } from "@ensforge/sdk/resolution";
+import type { GetRegistrationPriceParameters } from "@ensforge/sdk/registration";
 ```
 
 Compatible reads can be executed together:
 
 ```ts
 const profile = await sdk.batch.readBatch({
-  ens: sdk.resolution.getResolver.request({ name: "ens.eth" }),
-  nick: sdk.resolution.getResolver.request({ name: "nick.eth" }),
+  alice: sdk.registration.getRegistrationPrice.request({ name: "alice.eth", duration }),
+  bob: sdk.registration.getRegistrationPrice.request({ name: "bob.eth", duration }),
 });
 ```
 

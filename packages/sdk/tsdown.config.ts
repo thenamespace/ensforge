@@ -15,8 +15,6 @@ export default defineConfig({
     migration: "src/entrypoints/migration.ts",
     permissions: "src/entrypoints/permissions.ts",
     registration: "src/entrypoints/registration.ts",
-    resolution: "src/entrypoints/resolution.ts",
-    reverse: "src/entrypoints/reverse.ts",
     subnames: "src/entrypoints/subnames.ts",
     wagmi: "src/wagmi.ts",
     wrapping: "src/entrypoints/wrapping.ts",

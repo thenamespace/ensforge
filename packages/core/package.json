@@ -109,14 +109,6 @@
       "workspace-source": "./src/legacy/actions/registration/index.ts",
       "default": "./dist/legacy/registration.js"
     },
-    "./legacy/resolution": {
-      "workspace-source": "./src/legacy/actions/resolution/index.ts",
-      "default": "./dist/legacy/resolution.js"
-    },
-    "./legacy/reverse": {
-      "workspace-source": "./src/legacy/actions/reverse/index.ts",
-      "default": "./dist/legacy/reverse.js"
-    },
     "./legacy/storage": {
       "workspace-source": "./src/legacy/storage/index.ts",
       "default": "./dist/legacy/storage.js"
@@ -168,8 +160,6 @@
       "./legacy/migration": "./dist/legacy/migration.js",
       "./legacy/permissions": "./dist/legacy/permissions.js",
       "./legacy/registration": "./dist/legacy/registration.js",
-      "./legacy/resolution": "./dist/legacy/resolution.js",
-      "./legacy/reverse": "./dist/legacy/reverse.js",
       "./legacy/storage": "./dist/legacy/storage.js",
       "./legacy/storage/browser": "./dist/legacy/storage/browser.js",
       "./legacy/subnames": "./dist/legacy/subnames.js",

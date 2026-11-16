@@ -73,14 +73,6 @@
       "workspace-source": "./src/entrypoints/registration.ts",
       "default": "./dist/registration.js"
     },
-    "./resolution": {
-      "workspace-source": "./src/entrypoints/resolution.ts",
-      "default": "./dist/resolution.js"
-    },
-    "./reverse": {
-      "workspace-source": "./src/entrypoints/reverse.ts",
-      "default": "./dist/reverse.js"
-    },
     "./subnames": {
       "workspace-source": "./src/entrypoints/subnames.ts",
       "default": "./dist/subnames.js"
@@ -111,8 +103,6 @@
       "./migration": "./dist/migration.js",
       "./permissions": "./dist/permissions.js",
       "./registration": "./dist/registration.js",
-      "./resolution": "./dist/resolution.js",
-      "./reverse": "./dist/reverse.js",
       "./subnames": "./dist/subnames.js",
       "./wagmi": "./dist/wagmi.js",
       "./wrapping": "./dist/wrapping.js",
