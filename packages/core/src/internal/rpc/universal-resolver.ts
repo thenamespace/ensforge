@@ -1,13 +1,6 @@
 import { Effect } from "effect";
 
-import {
-  decodeFunctionResult,
-  encodeFunctionData,
-  parseAbi,
-  zeroAddress,
-  type Address,
-  type Hex,
-} from "viem";
+import { decodeFunctionResult, encodeFunctionData, parseAbi, type Address, type Hex } from "viem";
 import { call } from "viem/actions";
 
 import type { Client } from "../../client/types.js";
@@ -16,13 +9,11 @@ import type { Read } from "../../Types.js";
 import { dnsEncode } from "../../utils/Name.js";
 import { universalResolverOf } from "../deployment.js";
 import { fromPromise } from "./fromPromise.js";
-import { readContract } from "./readContract.js";
 
 // Only the entry points ensforge calls; errors are decoded separately against every ENS error.
 const universalResolverAbi = /* @__PURE__ */ parseAbi([
   "function resolve(bytes name, bytes data) view returns (bytes, address)",
   "function resolveWithGateways(bytes name, bytes data, string[] gateways) view returns (bytes, address)",
-  "function findResolver(bytes name) view returns (address resolver, bytes32 node, uint256 offset)",
 ]);
 
 /** Result of a Universal Resolver `resolve`. */
@@ -86,29 +77,3 @@ export const resolve = Effect.fnUntraced(function* (
     "blockNumber" | "blockTag" | "gatewayUrls"
   >,
 ) => Effect.Effect<Resolved, AnyError>;
-
-/** The resolver serving a name. */
-export type FoundResolver = {
-  readonly address: Address;
-  /** Whether the resolver is set on a parent and serves this name as a wildcard. */
-  readonly inherited: boolean;
-};
-
-/** Resolver of `name`, or `null` when neither it nor a parent has one. */
-export const findResolver = (
-  client: Client,
-  options: { readonly name: string } & Read.BlockOptions,
-): Effect.Effect<FoundResolver | null, AnyError> =>
-  readContract(client, {
-    address: universalResolverOf(client),
-    abi: universalResolverAbi,
-    functionName: "findResolver",
-    args: [dnsEncode(options.name)],
-    ...(options.blockNumber === undefined
-      ? { blockTag: options.blockTag }
-      : { blockNumber: options.blockNumber }),
-  }).pipe(
-    Effect.map(([address, , offset]) =>
-      address === zeroAddress ? null : { address, inherited: offset !== 0n },
-    ),
-  );
