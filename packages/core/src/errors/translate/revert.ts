@@ -1,5 +1,5 @@
 import { Abis } from "@ensforge/contracts";
-import { decodeErrorResult, type Address, type Hex } from "viem";
+import { decodeErrorResult, isHex, type Address, type Hex } from "viem";
 
 import { ContractRevertError } from "../classes/index.js";
 import type { EnsforgeError } from "../EnsforgeError.js";
@@ -12,8 +12,11 @@ export type Revert = {
   readonly data?: Hex | undefined;
 };
 
-// Resolution wraps errors at most a few levels deep; the bound stops malicious nesting.
-const maxDepth = 4;
+// Resolution and migration wrap errors a few levels deep; the bound stops malicious nesting.
+const maxDepth = 8;
+
+/** Prefix of `WrappedErrorLib`: NameWrapper-based contracts revert `Error("WrappedError::0x…")`. */
+const wrappedErrorPrefix = "WrappedError::0x";
 
 const decode = (data: Hex): Revert => {
   try {
@@ -39,6 +42,14 @@ export const fromRevert = (
 
   if (depth < maxDepth && errorName === "ResolverError") {
     return fromRevert({ data: args[0] as Hex }, context, depth + 1);
+  }
+
+  if (depth < maxDepth && errorName === "Error" && typeof args[0] === "string") {
+    const message = args[0];
+    const inner = message.slice(wrappedErrorPrefix.length - 2);
+    if (message.startsWith(wrappedErrorPrefix) && isHex(inner) && inner.length % 2 === 0) {
+      return fromRevert({ data: inner }, context, depth + 1);
+    }
   }
 
   if (depth < maxDepth && errorName === "ResolutionError") {

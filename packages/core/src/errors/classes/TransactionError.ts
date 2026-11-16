@@ -27,6 +27,8 @@ const defaults: {
  */
 export class TransactionError extends EnsforgeError<"TransactionError", TransactionError.Code> {
   readonly hash: Hex | undefined;
+  /** EIP-5792 bundle id, when the calls were sent as one batch; check it with `getCallsStatus`. */
+  readonly bundleId: string | undefined;
 
   constructor(options: TransactionError.Options) {
     super(
@@ -34,6 +36,7 @@ export class TransactionError extends EnsforgeError<"TransactionError", Transact
       withDefaults(defaults[options.code](options), options, options.code === "NONCE_CONFLICT"),
     );
     this.hash = options.hash;
+    this.bundleId = options.bundleId;
   }
 }
 
@@ -43,5 +46,8 @@ export declare namespace TransactionError {
     | "TRANSACTION_REPLACED"
     | "RECEIPT_TIMEOUT"
     | "NONCE_CONFLICT";
-  type Options = EnsforgeError.ClassOptions<Code> & { readonly hash?: Hex | undefined };
+  type Options = EnsforgeError.ClassOptions<Code> & {
+    readonly hash?: Hex | undefined;
+    readonly bundleId?: string | undefined;
+  };
 }
