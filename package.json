@@ -6,21 +6,17 @@
   "scripts": {
     "build": "turbo run build",
     "changeset": "changeset",
-    "check": "pnpm format:check && pnpm lint && turbo run typecheck build && pnpm check:sdk-types",
-    "check:sdk-types": "pnpm --filter @ensforge/sdk... build && node scripts/check-sdk-types.mjs",
+    "check": "pnpm format:check && pnpm lint && turbo run typecheck build",
     "dev": "turbo run dev",
     "format": "oxfmt --write .",
     "format:check": "oxfmt --check .",
-    "lint": "oxlint --deny-warnings scripts && turbo run lint",
+    "lint": "turbo run lint",
     "lint:fix": "oxlint --fix .",
     "pack:check": "turbo run pack:check",
     "prepare": "lefthook install",
     "release": "changeset publish",
-    "setup:sepolia-v2": "pnpm --filter @ensforge/sdk... build && node --env-file-if-exists=.env scripts/setup-sepolia-v2.mjs",
-    "setup:docs-sepolia": "pnpm --filter @ensforge/sdk... build && node --env-file-if-exists=.env scripts/setup-sepolia-v2.mjs --apply",
     "typecheck": "turbo run typecheck",
-    "version-packages": "changeset version",
-    "verify:sepolia-v2": "pnpm --filter @ensforge/contracts build && node --env-file-if-exists=.env scripts/verify-sepolia-v2.mjs"
+    "version-packages": "changeset version"
   },
   "devDependencies": {
     "@arethetypeswrong/cli": "0.18.5",

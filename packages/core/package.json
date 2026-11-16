@@ -182,15 +182,11 @@
   },
   "scripts": {
     "build": "tsdown",
-    "codegen:indexer": "graphql-codegen --config codegen.indexer.ts",
-    "codegen:indexer:check": "pnpm codegen:indexer && git diff --exit-code -- graphql/indexer src/internal/indexer/generated",
-    "codegen:indexer:watch": "graphql-codegen --config codegen.indexer.ts --watch",
     "dev": "tsdown --watch",
     "lint": "oxlint --deny-warnings .",
     "pack:check": "publint && attw --pack . --profile esm-only --exclude-entrypoints ./testing",
     "prepack": "pnpm build",
-    "schema:indexer:refresh": "node scripts/refresh-indexer-schemas.mjs",
-    "typecheck": "pnpm codegen:indexer:check && tsc --noEmit"
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@ensdomains/address-encoder": "catalog:",
@@ -200,10 +196,6 @@
     "fflate": "catalog:"
   },
   "devDependencies": {
-    "@effect/platform-node": "catalog:",
-    "@graphql-codegen/cli": "catalog:",
-    "@graphql-codegen/typescript-operations": "catalog:",
-    "graphql": "catalog:",
     "viem": "catalog:"
   },
   "peerDependencies": {
