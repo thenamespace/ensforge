@@ -36,6 +36,7 @@ const roleOf: Record<Exclude<RecordOperation["setRecord"], "pubkey">, bigint> = 
   name: Roles.resolver.setName,
   interface: Roles.resolver.setInterface,
   data: Roles.resolver.setData,
+  link: Roles.resolver.link,
 };
 
 const widening = (detail: string) =>

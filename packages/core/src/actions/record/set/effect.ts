@@ -1,10 +1,11 @@
 import { Effect } from "effect";
 
-import type { Address } from "viem";
+import { isAddressEqual, type Address } from "viem";
 
 import type { Client } from "../../../client/types.js";
 import { InvalidInputError } from "../../../errors/classes/InvalidInputError.js";
 import { NotFoundError } from "../../../errors/classes/NotFoundError.js";
+import { UnsupportedError } from "../../../errors/classes/UnsupportedError.js";
 import type { AnyError } from "../../../errors/types.js";
 import * as Action from "../../../internal/action/index.js";
 import { loadName } from "../../../internal/name/load.js";
@@ -30,20 +31,30 @@ export const plan = Effect.fnUntraced(function* (
   const loaded = yield* loadName(client, options.name);
   yield* requireRegistered(loaded);
 
-  const steps: Plan.Step[] = [];
   let resolver: Address;
+  let resolverChange: Plan.Call | undefined;
   if (options.resolver === undefined) {
     if (loaded.state.resolver === null) {
       return yield* Effect.fail(new NotFoundError({ code: "RESOLVER_NOT_FOUND" }));
     }
     resolver = loaded.state.resolver;
+    const current = resolver;
+    if (
+      (client.deployment.v1?.frozenPublicResolvers ?? []).some((a) => isAddressEqual(a, current))
+    ) {
+      return yield* Effect.fail(
+        new UnsupportedError({
+          code: "RESOLVER_PROFILE_UNSUPPORTED",
+          feature: "writing records",
+          shortMessage:
+            "The name's resolver is bound to the registry ENS replaced in 2020; its records cannot change.",
+          hint: "Pass `resolver` to write the records to a new resolver and switch to it.",
+        }),
+      );
+    }
   } else {
     resolver = yield* requestedResolver(client, loaded, options.resolver);
-    steps.push({
-      id: "resolver",
-      description: "Set resolver",
-      calls: [yield* setResolverCall(client, loaded, resolver)],
-    });
+    resolverChange = yield* setResolverCall(client, loaded, resolver);
   }
 
   const keying = yield* setterKeying(client, resolver);
@@ -51,11 +62,25 @@ export const plan = Effect.fnUntraced(function* (
     try: () => encodeRecordWrites(keying, loaded.data.parts, options),
     catch: (error) => error as AnyError,
   });
-  if (calls.length > 0) {
+
+  // Records go to the new resolver before the name points at it, so a failed or rejected write
+  // never leaves the name on an empty resolver. Neither resolver family authorizes record writes
+  // through the name's resolver pointer, so both fit in one step.
+  const steps: Plan.Step[] = [];
+  const stepCalls = [
+    ...(calls.length > 0 ? [resolverCall(resolver, calls)] : []),
+    ...(resolverChange === undefined ? [] : [resolverChange]),
+  ];
+  if (stepCalls.length > 0) {
     steps.push({
       id: "records",
-      description: "Set records",
-      calls: [resolverCall(resolver, calls)],
+      description:
+        resolverChange === undefined
+          ? "Set records"
+          : calls.length > 0
+            ? "Set records and resolver"
+            : "Set resolver",
+      calls: stepCalls,
     });
   }
 

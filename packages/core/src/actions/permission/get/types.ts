@@ -21,7 +21,9 @@ export type NameOperation =
 
 /**
  * A record on the name's resolver. `key` narrows keyed records: a text or data key, a coin
- * (symbol or coin type), an ABI content type or an interface ID; without it, any key.
+ * (symbol or coin type), an ABI content type or an interface ID; without it, any key. `link`
+ * replaces the name's whole record (clearing it, or linking it to another name's record); on a
+ * PermissionedResolver it needs the root `link` role.
  *
  * @category permissions
  * @since 1.0.0
@@ -35,7 +37,8 @@ export type RecordOperation = {
     | "pubkey"
     | "name"
     | "interface"
-    | "data";
+    | "data"
+    | "link";
   readonly key?: string | bigint | Hex | undefined;
 };
 

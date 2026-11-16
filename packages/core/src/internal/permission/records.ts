@@ -23,8 +23,7 @@ export const writeOperations = (writes: RecordWrites): RecordOperation[] => [
     key: key as Hex,
   })),
   ...Object.keys(writes.data ?? {}).map((key) => ({ setRecord: "data" as const, key })),
-  // Clearing touches every record; any-key text access stands for it.
-  ...(writes.clear === true ? [{ setRecord: "text" as const }] : []),
+  ...(writes.clear === true ? [{ setRecord: "link" as const }] : []),
 ];
 
 /** The record operations a `record.get`-style selection asks about, with their output paths. */

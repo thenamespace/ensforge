@@ -947,8 +947,9 @@ type Errors.PlanError.Code = 'PLAN_STALE' | 'PLAN_CHAIN_MISMATCH' | 'PLAN_ACCOUN
 type Errors.PlanError.Options = { readonly code: Code; readonly shortMessage?: string | undefined; readonly hint?: string | undefined; readonly details?: readonly string[] | undefined; readonly context?: Context | undefined; readonly cause?: unknown; }
 function Errors.setConfig(config: { readonly docsOrigin?: string; }) => void
 class Errors.TransactionError {
-  constructor(options: ClassOptions<Code> & { readonly hash?: `0x${string}` | undefined; }) => TransactionError
+  constructor(options: ClassOptions<Code> & { readonly hash?: `0x${string}` | undefined; readonly bundleId?: string | undefined; }) => TransactionError
   hash: `0x${string}` | undefined
+  bundleId: string | undefined
   code: 'TRANSACTION_REVERTED' | 'TRANSACTION_REPLACED' | 'RECEIPT_TIMEOUT' | 'NONCE_CONFLICT'
   ~ensforge/error: true
   _tag: 'TransactionError'
@@ -973,7 +974,7 @@ class Errors.TransactionError {
   ~effect/ErrorReporter/attributes: { readonly [x: string]: unknown; }
 }
 type Errors.TransactionError.Code = 'TRANSACTION_REVERTED' | 'TRANSACTION_REPLACED' | 'RECEIPT_TIMEOUT' | 'NONCE_CONFLICT'
-type Errors.TransactionError.Options = ClassOptions<Code> & { readonly hash?: `0x${string}` | undefined; }
+type Errors.TransactionError.Options = ClassOptions<Code> & { readonly hash?: `0x${string}` | undefined; readonly bundleId?: string | undefined; }
 class Errors.UnauthorizedError {
   constructor(options: ClassOptions<Code> & { readonly account?: `0x${string}` | undefined; readonly missingRoles?: readonly string[] | undefined; readonly roleBitmap?: bigint | undefined; readonly requirements?: readonly Requirement[] | undefined; }) => UnauthorizedError
   account: `0x${string}` | undefined

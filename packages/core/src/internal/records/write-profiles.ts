@@ -88,8 +88,22 @@ export const encodeRecordWrites = (
     calls.push(fn(Abis.v1.publicResolver));
 
   if (writes.clear === true) {
-    if (byName) throw unsupported("clearing all records");
-    node((abi) => encodeFunctionData({ abi, functionName: "clearRecords", args: [target.node] }));
+    // A PermissionedResolver has no `clearRecords`: linking the name to record 0 detaches it from
+    // its record (it then reads the resolver's default record), and the setters below allocate a
+    // fresh one.
+    calls.push(
+      byName
+        ? encodeFunctionData({
+            abi: Abis.v2.permissionedResolver,
+            functionName: "linkToRecord",
+            args: [target.dns, 0n],
+          })
+        : encodeFunctionData({
+            abi: Abis.v1.publicResolver,
+            functionName: "clearRecords",
+            args: [target.node],
+          }),
+    );
   }
 
   for (const [key, value] of Object.entries(writes.texts ?? {})) {
@@ -110,7 +124,14 @@ export const encodeRecordWrites = (
 
   for (const [key, value] of Object.entries(writes.addresses ?? {})) {
     const coinType = coinTypeOf(key);
-    const bytes = value === null ? "0x" : CoinType.encodeAddress(coinType, value);
+    // ENSv1 PublicResolvers store coin 60 as a 20-byte address and revert on empty bytes, so a
+    // deletion there writes the zero address; the PermissionedResolver accepts empty bytes.
+    const bytes =
+      value !== null
+        ? CoinType.encodeAddress(coinType, value)
+        : !byName && coinType === 60n
+          ? zeroAddress
+          : "0x";
     calls.push(
       byName
         ? encodeFunctionData({

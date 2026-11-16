@@ -45,6 +45,8 @@ export type PermissionFacts = {
         readonly delegate: boolean | undefined;
         /** PublicResolverV2 only serves names the NameWrapper knows. */
         readonly nameKnown: boolean;
+        /** Bound to the registry ENS replaced in 2020: its records can no longer change. */
+        readonly frozen: boolean;
       }
     | undefined;
 };
@@ -72,6 +74,7 @@ export const recordResource = (operation: RecordOperation): bigint => {
     case "contentHash":
     case "name":
     case "pubkey":
+    case "link":
       return 0n;
   }
 };
@@ -125,6 +128,14 @@ export const readPermissionFacts = Effect.fnUntraced(function* (
   const v2PublicResolver = isV2PublicResolver(client, resolver);
   const resolverOwner = resolverOwnerOf(client, loaded);
   const resources = [...new Set(records.map(recordResource))].filter((resource) => resource !== 0n);
+  // Frozen resolvers cannot be written, and the oldest burn all gas on unknown calls, which would
+  // sink the whole multicall: they are never probed.
+  const frozen =
+    resolver !== null &&
+    (client.deployment.v1?.frozenPublicResolvers ?? []).some((address) =>
+      isAddressEqual(address, resolver),
+    );
+  const probeResolver = resolver !== null && records.length > 0 && !frozen;
 
   const facts = yield* Effect.all(
     {
@@ -218,18 +229,22 @@ export const readPermissionFacts = Effect.fnUntraced(function* (
               functionName: "roles",
               args: [0n, account],
             }),
-      keying: resolver === null || records.length === 0 ? none : setterKeying(client, resolver),
-      resolverRootRoles:
+      keying:
         resolver === null || records.length === 0
           ? none
-          : read(client, {
-              address: resolver,
-              abi: Abis.v2.permissionedResolver,
-              functionName: "roles",
-              args: [0n, account],
-            }),
+          : frozen
+            ? Effect.succeed("node" as const)
+            : setterKeying(client, resolver),
+      resolverRootRoles: !probeResolver
+        ? none
+        : read(client, {
+            address: resolver,
+            abi: Abis.v2.permissionedResolver,
+            functionName: "roles",
+            args: [0n, account],
+          }),
       resolverResourceRoles: Effect.forEach(
-        resolver === null ? [] : resources,
+        probeResolver ? resources : [],
         (resource) =>
           read(client, {
             address: resolver as Address,
@@ -240,7 +255,7 @@ export const readPermissionFacts = Effect.fnUntraced(function* (
         { concurrency: "unbounded" },
       ),
       resolverOperator:
-        resolver === null || records.length === 0 || resolverOwner === null
+        !probeResolver || resolverOwner === null
           ? none
           : read(client, {
               address: resolver,
@@ -249,7 +264,7 @@ export const readPermissionFacts = Effect.fnUntraced(function* (
               args: [resolverOwner, account],
             }),
       resolverDelegate:
-        resolver === null || records.length === 0 || resolverOwner === null
+        !probeResolver || resolverOwner === null
           ? none
           : read(client, {
               address: resolver,
@@ -300,6 +315,7 @@ export const readPermissionFacts = Effect.fnUntraced(function* (
             nameKnown:
               !v2PublicResolver ||
               (facts.knownToWrapper !== undefined && facts.knownToWrapper !== "0x"),
+            frozen,
           },
   };
 });

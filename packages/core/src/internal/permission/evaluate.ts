@@ -231,6 +231,7 @@ const recordRoles: Record<
   name: "setName",
   interface: "setInterface",
   data: "setData",
+  link: "link",
 };
 
 /** Records: PermissionedResolver roles, or owner / operator / delegate on node-based resolvers. */
@@ -265,6 +266,13 @@ const evaluateRecord = (facts: PermissionFacts, operation: RecordOperation): Per
         );
   }
 
+  if (resolver.frozen) {
+    return blocked(
+      "unsupported",
+      "The resolver is bound to the registry ENS replaced in 2020; its records cannot change.",
+      resolver.address,
+    );
+  }
   if (!resolver.nameKnown) {
     return blocked(
       "unsupported",

@@ -1,7 +1,7 @@
 import { Abis } from "@ensforge/contracts";
 import { decodeErrorResult, isHex, type Address, type Hex } from "viem";
 
-import { ContractRevertError } from "../classes/index.js";
+import { ContractRevertError, UnsupportedError } from "../classes/index.js";
 import type { EnsforgeError } from "../EnsforgeError.js";
 import { revertMap } from "./revert-map.js";
 
@@ -41,6 +41,15 @@ export const fromRevert = (
   const { errorName, args = [] } = decoded;
 
   if (depth < maxDepth && errorName === "ResolverError") {
+    // A resolver that reverts without data does not implement the call (old resolvers lack newer
+    // profiles); reads treat that as a missing record.
+    if (args[0] === "0x") {
+      return new UnsupportedError({
+        code: "RESOLVER_PROFILE_UNSUPPORTED",
+        shortMessage: "The resolver reverted without a reason; it does not support this record.",
+        context,
+      });
+    }
     return fromRevert({ data: args[0] as Hex }, context, depth + 1);
   }
 

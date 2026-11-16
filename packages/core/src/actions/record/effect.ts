@@ -305,12 +305,15 @@ export declare namespace getText {
  * - Works with ENSv1 resolvers and the ENSv2 PermissionedResolver; the kind is detected on-chain.
  * - The records go to the resolver set on the name in its registry, never to a wildcard resolver
  *   inherited from a parent.
- * - `resolver` first points the name at another resolver, then writes the records there.
+ * - `resolver` writes the records to another resolver, then points the name at it, in one step:
+ *   a rejected write never leaves the name on an empty resolver.
  * - The plan is simulated before the wallet prompt, so permission errors surface first.
  *
  * **Gotchas**
  *
- * - The ENSv2 PermissionedResolver has no `pubkey` records and no `clear`.
+ * - The ENSv2 PermissionedResolver has no `pubkey` records. `clear` there links the name to record
+ *   0 (needs the root `link` role), so it reads the resolver's default record until new records
+ *   are written.
  * - Older resolvers lack newer profiles; the ENSv1 public resolver has no `data` records, so the
  *   simulation reverts.
  * - `resolver: "default"` (the ENSv1 public resolver) is for ENSv1 names only; ENSv2 names pass the
@@ -348,7 +351,7 @@ export declare namespace getText {
  *
  * @throws `Errors.InvalidInputError` (`INVALID_NAME`, `INVALID_ADDRESS`, `INVALID_COIN_TYPE`, `INVALID_CONTENT_HASH`, `INVALID_RECORD_VALUE`) for invalid input.
  * @throws `Errors.NotFoundError` (`RESOLVER_NOT_FOUND`) when the name has no resolver of its own.
- * @throws `Errors.UnsupportedError` (`RESOLVER_PROFILE_UNSUPPORTED`, `UNSUPPORTED_PROTOCOL`) for `pubkey` or `clear` on a PermissionedResolver, or `resolver: "default"` on an ENSv2 name.
+ * @throws `Errors.UnsupportedError` (`RESOLVER_PROFILE_UNSUPPORTED`, `UNSUPPORTED_PROTOCOL`) for `pubkey` on a PermissionedResolver, or `resolver: "default"` on an ENSv2 name.
  * @throws `Errors.NameStateError` (`NAME_EXPIRED`, `NAME_RESERVED`, `NAME_NOT_REGISTERED`) when the name is not registered.
  * @throws `Errors.UnauthorizedError` (`NOT_OWNER`, `MISSING_ROLES`) when the account may not edit records.
  * @throws `Errors.ConfigError` (`WALLET_NOT_CONFIGURED`) when the client has no wallet.

@@ -3,7 +3,7 @@ import {
   coinTypeToNameMap,
   getCoderByCoinType,
 } from "@ensdomains/address-encoder";
-import { bytesToHex, getAddress, hexToBytes, isAddress, type Hex } from "viem";
+import { bytesToHex, getAddress, hexToBytes, isAddress, zeroAddress, type Hex } from "viem";
 
 import { InvalidInputError } from "../errors/classes/InvalidInputError.js";
 
@@ -130,7 +130,8 @@ export const encodeAddress = (coinType: bigint, address: string): Hex => {
 };
 
 /**
- * Decodes the bytes of an ENS address record into a display address, or `null` when empty.
+ * Decodes the bytes of an ENS address record into a display address, or `null` when empty (or the
+ * zero address, for EVM coins).
  *
  * @throws `Errors.InvalidInputError` (`INVALID_COIN_TYPE`) when no codec exists for the coin.
  * @category records
@@ -138,7 +139,8 @@ export const encodeAddress = (coinType: bigint, address: string): Hex => {
  */
 export const decodeAddress = (coinType: bigint, data: Hex): string | null => {
   if (data === "0x") return null;
-  if (isEvm(coinType)) return getAddress(data);
+  // ENSv1 resolvers delete an ETH address by storing the zero address.
+  if (isEvm(coinType)) return data === zeroAddress ? null : getAddress(data);
 
   try {
     return getCoderByCoinType(Number(coinType)).encode(hexToBytes(data));

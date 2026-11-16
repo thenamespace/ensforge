@@ -61,6 +61,9 @@ const knownKind = (client: Client, resolver: Address): ResolverKind | undefined 
     [v2?.contracts.ensV2Resolver, "ens-v2-resolver"],
     [v2?.contracts.publicResolver, "public-resolver-v2"],
     [v1?.contracts.publicResolver, "public-resolver"],
+    ...[...(v1?.legacyPublicResolvers ?? []), ...(v1?.frozenPublicResolvers ?? [])].map(
+      (address) => [address, "public-resolver"] as const,
+    ),
     [v1?.contracts.offchainDnsResolver, "dns"],
     [v2?.dns?.tldResolver, "dns"],
     [v2?.dns?.legacyTldResolver, "dns"],
@@ -156,9 +159,14 @@ export const describeResolver = Effect.fnUntraced(function* (
           ? "extended"
           : "custom");
 
+  // Resolvers bound to the registry ENS replaced in 2020 can no longer be written.
+  const frozen = (client.deployment.v1?.frozenPublicResolvers ?? []).some((address) =>
+    isAddressEqual(address, resolver),
+  );
+
   return {
     kind,
-    authorization: authorizationOf[kind],
+    authorization: frozen ? "none" : authorizationOf[kind],
     profiles: kind === "permissioned-resolver" ? permissionedProfiles : profiles,
     version: version ?? null,
   };
