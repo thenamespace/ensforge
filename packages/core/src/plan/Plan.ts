@@ -53,7 +53,10 @@ export declare namespace Plan {
     /** Short description for progress UIs, e.g. "Set records". */
     readonly description: string;
     readonly calls: readonly Call[];
-    /** Wait before sending this step, e.g. the registration commitment age. */
+    /**
+     * Chain time to wait after the previous step is confirmed before sending this one, e.g. the
+     * registration commitment age.
+     */
     readonly waitFor?: { readonly seconds: bigint } | undefined;
   };
 

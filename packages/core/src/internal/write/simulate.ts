@@ -29,21 +29,29 @@ const simulateCall = (client: Client, account: Address | undefined, item: Plan.C
     { contract: item.to, account },
   );
 
-/** Simulates every simulatable call with `eth_call` and reports each step. */
+/** Simulates every call of one step against current state. */
+export const simulateStep = (
+  client: Client,
+  step: Plan.Step,
+  account: Address | undefined,
+): Effect.Effect<Plan.Simulation["steps"][number]> =>
+  Effect.forEach(step.calls, (item) => simulateCall(client, account, item), {
+    discard: true,
+  }).pipe(
+    Effect.match({
+      onFailure: (error: AnyError) => ({ id: step.id, ok: false, error }),
+      onSuccess: () => ({ id: step.id, ok: true }),
+    }),
+  );
+
+/** Simulates every simulatable step with `eth_call` and reports each step. */
 export const simulatePlan = Effect.fnUntraced(function* (
   client: Client,
   plan: Plan,
   account: Address | undefined,
 ): Effect.fn.Return<Plan.Simulation, never> {
   const steps = yield* Effect.forEach(simulatableSteps(plan), (step) =>
-    Effect.forEach(step.calls, (item) => simulateCall(client, account, item), {
-      discard: true,
-    }).pipe(
-      Effect.match({
-        onFailure: (error: AnyError) => ({ id: step.id, ok: false, error }),
-        onSuccess: () => ({ id: step.id, ok: true }),
-      }),
-    ),
+    simulateStep(client, step, account),
   );
 
   return { ok: steps.every((step) => step.ok), plan, steps };
