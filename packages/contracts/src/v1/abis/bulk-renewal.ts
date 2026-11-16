@@ -1,4 +1,8 @@
-/** Complete IBulkRenewal ABI from @ensdomains/ens-contracts v1.7.0. */
+/**
+ * Complete IBulkRenewal ABI from @ensdomains/ens-contracts v1.7.0.
+ *
+ * @since 1.0.0
+ */
 export const bulkRenewalV1InterfaceAbi = [
   {
     inputs: [
@@ -49,7 +53,11 @@ export const bulkRenewalV1InterfaceAbi = [
   },
 ] as const;
 
-/** Complete BulkRenewal ABI from @ensdomains/ens-contracts v1.7.0. */
+/**
+ * Complete BulkRenewal ABI from @ensdomains/ens-contracts v1.7.0.
+ *
+ * @since 1.0.0
+ */
 export const bulkRenewalV1Abi = [
   {
     inputs: [
@@ -143,7 +151,11 @@ export const bulkRenewalV1Abi = [
   },
 ] as const;
 
-/** Complete StaticBulkRenewal ABI from @ensdomains/ens-contracts v1.7.0. */
+/**
+ * Complete StaticBulkRenewal ABI from @ensdomains/ens-contracts v1.7.0.
+ *
+ * @since 1.0.0
+ */
 export const staticBulkRenewalV1Abi = [
   {
     inputs: [

@@ -1,4 +1,8 @@
-/** Migration receiver used when upgrading a wrapped V1 name. */
+/**
+ * Migration receiver used when upgrading a wrapped V1 name.
+ *
+ * @since 1.0.0
+ */
 export const nameWrapperUpgradeV1Abi = [
   {
     type: "function",

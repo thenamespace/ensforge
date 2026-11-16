@@ -1,4 +1,8 @@
-/** Complete IStandaloneHCAOwner ABI from ENSv2's experimental HCA layer. */
+/**
+ * Complete IStandaloneHCAOwner ABI from ENSv2's experimental HCA layer.
+ *
+ * @since 1.0.0
+ */
 export const standaloneHcaOwnerV2InterfaceAbi = [
   {
     inputs: [],

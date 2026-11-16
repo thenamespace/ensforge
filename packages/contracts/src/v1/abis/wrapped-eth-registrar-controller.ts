@@ -1,4 +1,8 @@
-/** Complete WrappedETHRegistrarController ABI from @ensdomains/ens-contracts v1.7.0. */
+/**
+ * Complete WrappedETHRegistrarController ABI from @ensdomains/ens-contracts v1.7.0.
+ *
+ * @since 1.0.0
+ */
 export const wrappedEthRegistrarControllerV1Abi = [
   {
     inputs: [

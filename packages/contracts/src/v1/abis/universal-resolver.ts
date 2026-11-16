@@ -1,6 +1,8 @@
 /**
  * Complete UniversalResolver ABI from @ensdomains/ens-contracts v1.7.0.
- * Source: contracts/universalResolver/UniversalResolver.sol
+ *
+ * @see https://github.com/ensdomains/ens-contracts/blob/v1.7.0/contracts/universalResolver/UniversalResolver.sol
+ * @since 1.0.0
  */
 export const universalResolverV1Abi = [
   {

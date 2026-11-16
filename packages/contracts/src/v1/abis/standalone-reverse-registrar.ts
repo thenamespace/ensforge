@@ -1,4 +1,8 @@
-/** Complete IStandaloneReverseRegistrar ABI from @ensdomains/ens-contracts v1.7.0. */
+/**
+ * Complete IStandaloneReverseRegistrar ABI from @ensdomains/ens-contracts v1.7.0.
+ *
+ * @since 1.0.0
+ */
 export const standaloneReverseRegistrarV1InterfaceAbi = [
   {
     anonymous: false,
@@ -40,7 +44,11 @@ export const standaloneReverseRegistrarV1InterfaceAbi = [
   },
 ] as const;
 
-/** Complete StandaloneReverseRegistrar ABI from @ensdomains/ens-contracts v1.7.0. */
+/**
+ * Complete StandaloneReverseRegistrar ABI from @ensdomains/ens-contracts v1.7.0.
+ *
+ * @since 1.0.0
+ */
 export const standaloneReverseRegistrarV1Abi = [
   {
     anonymous: false,

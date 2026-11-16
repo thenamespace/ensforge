@@ -1,3 +1,8 @@
+/**
+ * SECP256k1 public key resolver profile.
+ *
+ * @since 1.0.0
+ */
 export const pubkeyResolverAbi = [
   {
     type: "event",
@@ -21,4 +26,9 @@ export const pubkeyResolverAbi = [
   },
 ] as const;
 
+/**
+ * ERC-165 interface ID of {@link pubkeyResolverAbi}.
+ *
+ * @since 1.0.0
+ */
 export const pubkeyResolverInterfaceId = "0xc8690233" as const;

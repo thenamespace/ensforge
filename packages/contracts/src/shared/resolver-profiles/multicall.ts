@@ -1,4 +1,8 @@
-/** Resolver-native batching used for resolving multiple records for one name. */
+/**
+ * Resolver-native batching used for resolving multiple records for one name.
+ *
+ * @since 1.0.0
+ */
 export const multicallResolverAbi = [
   {
     type: "function",

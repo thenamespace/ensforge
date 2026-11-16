@@ -1,4 +1,8 @@
-/** Fuse values defined by INameWrapper in @ensdomains/ens-contracts v1.7.0. */
+/**
+ * Fuse values defined by INameWrapper in @ensdomains/ens-contracts v1.7.0.
+ *
+ * @since 1.0.0
+ */
 export const nameWrapperFuses = {
   canDoEverything: 0,
   cannotUnwrap: 1,
@@ -15,4 +19,9 @@ export const nameWrapperFuses = {
   userSettable: 0xfffdffff,
 } as const;
 
+/**
+ * A single fuse value from {@link nameWrapperFuses}.
+ *
+ * @since 1.0.0
+ */
 export type NameWrapperFuse = (typeof nameWrapperFuses)[keyof typeof nameWrapperFuses];

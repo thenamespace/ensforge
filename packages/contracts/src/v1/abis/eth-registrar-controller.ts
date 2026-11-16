@@ -1,4 +1,8 @@
-/** Complete IETHRegistrarController ABI from @ensdomains/ens-contracts v1.7.0. */
+/**
+ * Complete IETHRegistrarController ABI from @ensdomains/ens-contracts v1.7.0.
+ *
+ * @since 1.0.0
+ */
 export const ethRegistrarControllerV1InterfaceAbi = [
   {
     inputs: [
@@ -209,7 +213,11 @@ export const ethRegistrarControllerV1InterfaceAbi = [
   },
 ] as const;
 
-/** Complete ETHRegistrarController ABI from @ensdomains/ens-contracts v1.7.0. */
+/**
+ * Complete ETHRegistrarController ABI from @ensdomains/ens-contracts v1.7.0.
+ *
+ * @since 1.0.0
+ */
 export const ethRegistrarControllerV1Abi = [
   {
     inputs: [

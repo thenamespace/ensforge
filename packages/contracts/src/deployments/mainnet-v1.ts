@@ -1,7 +1,11 @@
-import type { EnsV1Deployment } from "./types.js";
+import type { V1 } from "./types.js";
 
-/** Current ENSv1 contracts on Ethereum mainnet. */
-export const mainnetV1Deployment = {
+/**
+ * ENSv1 on Ethereum mainnet at ens-contracts v1.7.0.
+ *
+ * @since 1.0.0
+ */
+export const mainnetV1 = {
   id: "mainnet-v1",
   chainId: 1,
   protocol: "v1",
@@ -24,8 +28,8 @@ export const mainnetV1Deployment = {
   },
   provenance: {
     repository: "https://github.com/ensdomains/ens-contracts",
-    ref: "v1.7.0",
+    release: "v1.7.0",
     commit: "9b034936a42f462fc04bc0a929a419ede5e18d59",
     documentation: "https://docs.ens.domains/learn/deployments/",
   },
-} as const satisfies EnsV1Deployment;
+} as const satisfies V1;

@@ -1,77 +1,51 @@
 # `@ensforge/contracts`
 
-Type-safe contract definitions and deployment metadata for ENS.
+ENS contract ABIs, deployment addresses and protocol constants for viem. No runtime dependencies
+beyond the `viem` peer.
 
-## Features
-
-- Versioned ENS contract ABIs organized by protocol
-- Function-focused ABI fragments for tree-shakable reads and writes
-- Mainnet and Sepolia deployment addresses with provenance
-- Reusable resolver profile ABIs
-- Shared interfaces, events, errors, and standards
-- Immutable TypeScript exports designed for viem
+- ENSv2 ABIs at [contracts-v2 v1.0.1](https://github.com/ensdomains/contracts-v2/tree/v1.0.1),
+  each the superset of the mainnet and Sepolia deployments.
+- ENSv1 ABIs at ens-contracts v1.7.0.
+- Mainnet and Sepolia profiles with every address, per-deployment behaviour flags and provenance.
+- Registry and resolver role bitmaps and ERC-165 interface IDs, verified against v1.0.1 source.
 
 ## Installation
 
 ```sh
-pnpm add @ensforge/contracts
+pnpm add @ensforge/contracts viem
 ```
 
-## Overview
+## Usage
 
 ```ts
-import { mainnetV1Deployment, sepoliaV2Deployment } from "@ensforge/contracts/deployments";
-import { textResolverAbi } from "@ensforge/contracts/resolver-profiles";
-import { ensRegistryV1Abi, ensRegistryV1OwnerAbi } from "@ensforge/contracts/v1";
-import { ethRegistrarV2Abi } from "@ensforge/contracts/v2";
+import { Abis, Deployments, InterfaceIds, Roles } from "@ensforge/contracts";
 
-const registryAddress = mainnetV1Deployment.contracts.registry;
-const registrarAddress = sepoliaV2Deployment.contracts.ethRegistrar;
-```
+const { v2 } = Deployments.mainnet;
 
-Use the ABIs directly with viem:
-
-```ts
-import { namehash } from "viem/ens";
-
-const owner = await publicClient.readContract({
-  address: mainnetV1Deployment.contracts.registry,
-  abi: ensRegistryV1OwnerAbi,
-  functionName: "owner",
-  args: [namehash("ens.eth")],
+const roles = await publicClient.readContract({
+  address: v2.contracts.ethRegistry,
+  abi: Abis.v2.permissionedRegistry,
+  functionName: "roles",
+  args: [resource, account],
 });
+const canRenew = (roles & Roles.registry.renew) !== 0n;
 ```
 
-Function fragments include the relevant custom errors so viem can decode contract reverts. Complete
-ABIs such as `ensRegistryV1Abi` remain available for advanced use and event processing.
+- `Abis.v1`, `Abis.v2` and `Abis.shared` are keyed by contract; interface ABIs live under
+  `Abis.v1.interfaces` and `Abis.v2.interfaces`.
+- `Deployments.mainnet` and `Deployments.sepolia` hold `{ v1, v2 }`. Use `Deployments.get({ chainId })`
+  to look a chain up and `Deployments.define(profile)` to validate a devnet or custom profile.
+- `v2.capabilities` records behaviour that differs between deployments of the same release, such
+  as `wrapperRegistryInitializer` (`"explicit"` on Sepolia, `"fuse-derived"` on mainnet).
+- `Roles` holds the registry and resolver role bits plus the `unemancipated` and `regeneration`
+  registry bitmaps. `InterfaceIds` holds registry, resolver and resolver-profile interface IDs.
 
-Package entrypoints include `deployments`, `resolver-profiles`, `shared`, `v1`, and `v2`.
+The same ABIs and constants are available as flat named exports from `@ensforge/contracts/v1`,
+`@ensforge/contracts/v2` and `@ensforge/contracts/shared` (e.g. `permissionedRegistryV2Abi`).
+`@ensforge/contracts/v2/experimental/hca` exports the hosted contract account ABIs.
 
-## Sepolia V2 snapshot
-
-Sepolia V2 addresses and ABIs follow the
-[deployment artifacts](https://github.com/ensdomains/contracts-v2/tree/07e55a056f5b6a9c90119f501bdd05714e67dddd/contracts/deployments/sepolia)
-at commit `07e55a056f5b6a9c90119f501bdd05714e67dddd`. Use the artifacts rather than branch-tip
-source. Run `pnpm verify:sepolia-v2` from the repository root to compare addresses and critical
-ABIs with this snapshot and check deployed code.
-
-Legacy upgrade-gate, trusted-set and DNS mirror batch registrar ABI exports are retained for
-compatibility, but are not contracts in the current deployment profile. The current profile uses
-`HCAUpgradeSet`, `RootBatchRegistrar` and `UniversalHelper`.
-
-## HCA deployment profile
-
-`getHcaDeployment(11155111)` and `sepoliaHcaDeployment` from `@ensforge/contracts/deployments`
-provide the pinned account generation, contract wiring and constructor-derived infrastructure.
-Other public chain IDs throw; local profiles come from test-env discovery. These are deployment
-capabilities, not proof of provider compatibility. Cross-chain funding remains disabled and its
-separate source manifest list is empty until verified.
-
-Focused HCA factory, account-inspection and validator-wiring fragments live in `src/v2/fragments/`
-and are exported from `@ensforge/contracts/v2`. Complete ABIs retain their existing experimental export.
-
-The upgrade set uses role-based access control. Reverse operations use
-`StandaloneHCAFactory.authorizedOwnerOf`; the active profile has no trusted-set dependency.
+`@ensforge/contracts/internal` holds minimal ABI fragments and HCA manifests used by other ensforge
+packages. It is not a public API and changes without notice.
 
 ## License
 

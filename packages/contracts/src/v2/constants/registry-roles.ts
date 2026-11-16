@@ -1,10 +1,20 @@
-/** EnhancedAccessControl base role masks from ENSv2. */
+/**
+ * EnhancedAccessControl masks covering every role and every admin role.
+ *
+ * @since 1.0.0
+ */
 export const enhancedAccessControlRoles = {
   allRoles: 0x1111111111111111111111111111111111111111111111111111111111111111n,
   adminRoles: 0x1111111111111111111111111111111100000000000000000000000000000000n,
 } as const;
 
-/** Registry role bitmaps from ENSv2 RegistryRolesLib. */
+/**
+ * Registry roles from contracts-v2 v1.0.1 `RegistryRolesLib`. Each role is one nybble; its admin
+ * role sits 128 bits higher.
+ *
+ * @see https://github.com/ensdomains/contracts-v2/blob/v1.0.1/contracts/src/registry/libraries/RegistryRolesLib.sol
+ * @since 1.0.0
+ */
 export const registryRoles = {
   registrar: 1n << 0n,
   registrarAdmin: 1n << 128n,
@@ -20,6 +30,7 @@ export const registryRoles = {
   setSubregistryAdmin: 1n << 148n,
   setResolver: 1n << 24n,
   setResolverAdmin: 1n << 152n,
+  canTransfer: 1n << 28n,
   canTransferAdmin: 1n << 156n,
   wasReserved: 1n << 32n,
   setUri: 1n << 36n,
@@ -30,4 +41,34 @@ export const registryRoles = {
   upgradeAdmin: 1n << 252n,
 } as const;
 
+/**
+ * A single registry role bit from {@link registryRoles}.
+ *
+ * @since 1.0.0
+ */
 export type RegistryRole = (typeof registryRoles)[keyof typeof registryRoles];
+
+const unemancipatedRegistryRoles =
+  registryRoles.canTransferAdmin |
+  registryRoles.setSubregistry |
+  registryRoles.setSubregistryAdmin |
+  registryRoles.setResolver |
+  registryRoles.setResolverAdmin |
+  registryRoles.unregister |
+  registryRoles.unregisterAdmin;
+
+/**
+ * Registry role sets from contracts-v2 v1.0.1 `RegistryRolesLib`.
+ *
+ * - `unemancipated`: holding any of these on a name, other than as its sole owner, means the name
+ *   is not emancipated. Excludes the renew and upgrade roles.
+ * - `regeneration`: changing any of these regenerates the name's token ID.
+ *
+ * Mainnet WrapperRegistry follows these sets; the Sepolia WrapperRegistry build predates them.
+ *
+ * @since 1.0.0
+ */
+export const registryRoleBitmaps = {
+  unemancipated: unemancipatedRegistryRoles,
+  regeneration: unemancipatedRegistryRoles | registryRoles.canTransfer,
+} as const;

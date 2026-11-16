@@ -1,4 +1,8 @@
-/** Complete DNSSEC ABI from @ensdomains/ens-contracts v1.7.0. */
+/**
+ * Complete DNSSEC ABI from @ensdomains/ens-contracts v1.7.0.
+ *
+ * @since 1.0.0
+ */
 export const dnssecOracleV1InterfaceAbi = [
   {
     anonymous: false,
@@ -130,7 +134,11 @@ export const dnssecOracleV1InterfaceAbi = [
   },
 ] as const;
 
-/** Complete DNSSECImpl ABI from @ensdomains/ens-contracts v1.7.0. */
+/**
+ * Complete DNSSECImpl ABI from @ensdomains/ens-contracts v1.7.0.
+ *
+ * @since 1.0.0
+ */
 export const dnssecOracleV1Abi = [
   {
     inputs: [

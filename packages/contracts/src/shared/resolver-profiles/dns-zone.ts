@@ -1,3 +1,8 @@
+/**
+ * DNS zone hash resolver profile.
+ *
+ * @since 1.0.0
+ */
 export const dnsZoneResolverAbi = [
   {
     type: "event",
@@ -18,4 +23,9 @@ export const dnsZoneResolverAbi = [
   },
 ] as const;
 
+/**
+ * ERC-165 interface ID of {@link dnsZoneResolverAbi}.
+ *
+ * @since 1.0.0
+ */
 export const dnsZoneResolverInterfaceId = "0x5c98042b" as const;

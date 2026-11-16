@@ -1,4 +1,8 @@
-/** ERC-165 interface detection. */
+/**
+ * ERC-165 interface detection.
+ *
+ * @since 1.0.0
+ */
 export const erc165Abi = [
   {
     type: "function",
@@ -9,4 +13,9 @@ export const erc165Abi = [
   },
 ] as const;
 
+/**
+ * ERC-165 interface ID of `supportsInterface(bytes4)`.
+ *
+ * @since 1.0.0
+ */
 export const erc165InterfaceId = "0x01ffc9a7" as const;

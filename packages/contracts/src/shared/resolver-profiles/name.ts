@@ -1,3 +1,8 @@
+/**
+ * ENSIP-3 reverse name resolver profile.
+ *
+ * @since 1.0.0
+ */
 export const nameResolverAbi = [
   {
     type: "event",
@@ -17,4 +22,9 @@ export const nameResolverAbi = [
   },
 ] as const;
 
+/**
+ * ERC-165 interface ID of {@link nameResolverAbi}.
+ *
+ * @since 1.0.0
+ */
 export const nameResolverInterfaceId = "0x691f3431" as const;

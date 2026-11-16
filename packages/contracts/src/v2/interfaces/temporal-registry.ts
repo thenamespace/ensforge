@@ -1,4 +1,9 @@
-/** ITemporalRegistry ABI from the pinned ENSv2 deployment source. */
+/**
+ * `ITemporalRegistry` interface ABI at contracts-v2 v1.0.1.
+ *
+ * @see https://github.com/ensdomains/contracts-v2/blob/v1.0.1/contracts/src/registry/interfaces/ITemporalRegistry.sol
+ * @since 1.0.0
+ */
 export const temporalRegistryV2InterfaceAbi = [
   {
     anonymous: false,
