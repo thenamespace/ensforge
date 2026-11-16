@@ -55,7 +55,7 @@
     "wagmi": "catalog:"
   },
   "engines": {
-    "node": ">=24"
+    "node": ">=26"
   },
-  "packageManager": "pnpm@11.10.0"
+  "packageManager": "pnpm@12.21.0"
 }
