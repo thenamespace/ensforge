@@ -1,4 +1,4 @@
-import { bytesToHex, hexToBigInt, type Hex } from "viem";
+import { bytesToHex, bytesToString, hexToBigInt, hexToBytes, type Hex } from "viem";
 import {
   labelhash as viemLabelhash,
   namehash as viemNamehash,
@@ -115,6 +115,41 @@ export const labelhash = (label: string): Hex => {
  * @since 1.0.0
  */
 export const dnsEncode = (name: string): Hex => bytesToHex(packetToBytes(normalize(name)));
+
+/**
+ * Name from its DNS wire-format encoding, as returned by ENSv2 registries and the Universal
+ * Resolver. The labels are returned as stored, without normalizing them.
+ *
+ * **Example** (Decoding a canonical name)
+ *
+ * ```ts
+ * import { Name } from "@ensforge/core"
+ *
+ * Name.dnsDecode(Name.dnsEncode("nick.eth")) // "nick.eth"
+ * ```
+ *
+ * @throws `Errors.InvalidInputError` (`INVALID_NAME`) when the bytes are not a DNS-encoded name.
+ * @category names
+ * @since 1.0.0
+ */
+export const dnsDecode = (data: Hex): string => {
+  const bytes = hexToBytes(data);
+  const labels: string[] = [];
+  let offset = 0;
+
+  while (offset < bytes.length) {
+    const length = bytes[offset] ?? 0;
+    if (length === 0) {
+      if (offset !== bytes.length - 1) break;
+      return labels.join(".");
+    }
+    const end = offset + 1 + length;
+    if (end > bytes.length) break;
+    labels.push(bytesToString(bytes.subarray(offset + 1, end)));
+    offset = end;
+  }
+  throw new InvalidInputError({ code: "INVALID_NAME", input: data, field: "DNS-encoded name" });
+};
 
 /**
  * Parts of a name.
