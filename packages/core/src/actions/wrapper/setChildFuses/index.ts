@@ -16,7 +16,8 @@ import * as Impl from "./effect.js";
  * **Details**
  *
  * - Sent by the owner of the wrapped parent.
- * - `expiry` only grows, and is capped at the parent's expiry.
+ * - `expiry` only grows, and is capped at the parent's expiry. Burning `parentCannotControl`
+ *   without `expiry` uses the parent's expiry, so the emancipated name does not expire at once.
  *
  * **Gotchas**
  *

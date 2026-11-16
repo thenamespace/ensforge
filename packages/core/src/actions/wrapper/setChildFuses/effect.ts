@@ -1,7 +1,7 @@
 import { Effect } from "effect";
 
 import { Abis } from "@ensforge/contracts";
-import { encodeFunctionData, maxUint64 } from "viem";
+import { encodeFunctionData, hexToBigInt, maxUint64 } from "viem";
 
 import type { Client } from "../../../client/types.js";
 import { InvalidInputError } from "../../../errors/classes/InvalidInputError.js";
@@ -15,9 +15,11 @@ import {
   requireV1Contracts,
   singleStepPlan,
 } from "../../../internal/name/write.js";
+import * as Rpc from "../../../internal/rpc/index.js";
 import { fuseMask } from "../../../internal/wrapper/fuses.js";
 import type { Plan } from "../../../plan/Plan.js";
 import type { Write } from "../../../Types.js";
+import * as Fuse from "../../../utils/Fuse.js";
 import { namehash } from "../../../utils/Name.js";
 import type { setChildFuses as Promises } from "./index.js";
 
@@ -61,6 +63,20 @@ export const plan = Effect.fnUntraced(function* (
     );
   }
   const fuses = yield* fuseMask(options.fuses ?? [], loaded.data.v1?.wrapper.fuses ?? 0, "parent");
+  const parentNode = namehash(parts.name.slice(parts.name.indexOf(".") + 1));
+
+  // Emancipating with the child's current expiry (often 0) would expire it at once; the parent's
+  // expiry is the longest the NameWrapper allows.
+  let expiry = options.expiry ?? 0n;
+  if (options.expiry === undefined && Fuse.has(fuses, "parentCannotControl")) {
+    const [, , parentExpiry] = yield* Rpc.readContract(client, {
+      address: contracts.nameWrapper,
+      abi: Abis.v1.nameWrapper,
+      functionName: "getData",
+      args: [hexToBigInt(parentNode)],
+    });
+    expiry = parentExpiry;
+  }
 
   return singleStepPlan(client, {
     operation: "wrapper.setChildFuses",
@@ -73,12 +89,7 @@ export const plan = Effect.fnUntraced(function* (
           abi: Abis.v1.nameWrapper,
           functionName: "setChildFuses",
           // An expiry below the current one keeps it; the NameWrapper caps it at the parent's.
-          args: [
-            namehash(parts.name.slice(parts.name.indexOf(".") + 1)),
-            parts.labelhash,
-            fuses,
-            options.expiry ?? 0n,
-          ],
+          args: [parentNode, parts.labelhash, fuses, expiry],
         }),
         value: 0n,
       },
