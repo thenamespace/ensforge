@@ -101,21 +101,9 @@
       "workspace-source": "./src/legacy/actions/migration/index.ts",
       "default": "./dist/legacy/migration.js"
     },
-    "./legacy/name": {
-      "workspace-source": "./src/legacy/actions/name/index.ts",
-      "default": "./dist/legacy/name.js"
-    },
-    "./legacy/ownership": {
-      "workspace-source": "./src/legacy/actions/ownership/index.ts",
-      "default": "./dist/legacy/ownership.js"
-    },
     "./legacy/permissions": {
       "workspace-source": "./src/legacy/actions/permissions/index.ts",
       "default": "./dist/legacy/permissions.js"
-    },
-    "./legacy/records": {
-      "workspace-source": "./src/legacy/actions/records/index.ts",
-      "default": "./dist/legacy/records.js"
     },
     "./legacy/registration": {
       "workspace-source": "./src/legacy/actions/registration/index.ts",
@@ -178,10 +166,7 @@
       "./legacy/indexer/registries": "./dist/legacy/indexer/registries.js",
       "./legacy/indexer/resolvers": "./dist/legacy/indexer/resolvers.js",
       "./legacy/migration": "./dist/legacy/migration.js",
-      "./legacy/name": "./dist/legacy/name.js",
-      "./legacy/ownership": "./dist/legacy/ownership.js",
       "./legacy/permissions": "./dist/legacy/permissions.js",
-      "./legacy/records": "./dist/legacy/records.js",
       "./legacy/registration": "./dist/legacy/registration.js",
       "./legacy/resolution": "./dist/legacy/resolution.js",
       "./legacy/reverse": "./dist/legacy/reverse.js",

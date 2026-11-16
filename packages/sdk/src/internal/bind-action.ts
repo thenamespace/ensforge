@@ -19,11 +19,6 @@ import type {
   EnsforgeConfig,
   EnsWriteAction,
   EnsWriteIntent,
-  GetRecordsAction,
-  GetRecordsError,
-  GetRecordsParameters,
-  GetRecordsResult,
-  GetRecordsSelection,
   ReadBatch,
   ReadBatchError,
   ReadBatchOptions,
@@ -76,19 +71,6 @@ export type BoundAction<Action extends Callable> =
         : Action extends EnsAction<infer Parameters, infer Success, infer Failure>
           ? BoundBaseAction<Parameters, Success, Failure>
           : never;
-
-export interface BoundGetRecordsAction {
-  <const Selection extends GetRecordsSelection>(
-    parameters: GetRecordsParameters<Selection>,
-    options?: Effect.RunOptions,
-  ): Promise<GetRecordsResult<Selection>>;
-
-  readonly effect: <const Selection extends GetRecordsSelection>(
-    parameters: GetRecordsParameters<Selection>,
-  ) => Effect.Effect<GetRecordsResult<Selection>, GetRecordsError>;
-
-  readonly request: GetRecordsAction["request"];
-}
 
 type ReadRequests = Readonly<Record<string, EnsReadRequest<unknown, unknown>>>;
 
@@ -176,7 +158,6 @@ export function bindAction(
   config: EnsforgeConfig,
   action: WatchHcaExecution,
 ): BoundWatchHcaExecution;
-export function bindAction(config: EnsforgeConfig, action: GetRecordsAction): BoundGetRecordsAction;
 export function bindAction(config: EnsforgeConfig, action: ReadBatch): BoundReadBatch;
 export function bindAction(config: EnsforgeConfig, action: ReadBatchSettled): BoundReadBatchSettled;
 export function bindAction(config: EnsforgeConfig, action: WatchEnsEvents): BoundWatchEnsEvents;

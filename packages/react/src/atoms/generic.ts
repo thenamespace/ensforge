@@ -6,12 +6,6 @@ import type {
   ReadBatchResult,
   ReadBatchSettledResult,
 } from "@ensforge/sdk/batch";
-import type {
-  GetRecordsError,
-  GetRecordsParameters,
-  GetRecordsResult,
-  GetRecordsSelection,
-} from "@ensforge/sdk/records";
 
 import type { EnsAtomOptions } from "../query/options.js";
 import { makeQueryAtom, type EnsAtom } from "./query.js";
@@ -22,21 +16,6 @@ export interface ReadBatchAtomParameters<Requests extends ReadRequests> {
   readonly options?: ReadBatchOptions;
   readonly requests: Requests;
 }
-
-const getRecordsAtomBase = makeQueryAtom<GetRecordsParameters, GetRecordsResult, GetRecordsError>(
-  "records",
-  (sdk) => sdk.records.getRecords,
-);
-
-export const getRecordsAtom = <const Selection extends GetRecordsSelection>(
-  sdk: Ensforge,
-  parameters: GetRecordsParameters<Selection>,
-  options?: EnsAtomOptions<GetRecordsError>,
-): EnsAtom<GetRecordsResult<Selection>, GetRecordsError> =>
-  getRecordsAtomBase(sdk, parameters, options) as EnsAtom<
-    GetRecordsResult<Selection>,
-    GetRecordsError
-  >;
 
 const readBatchAtomBase = makeQueryAtom<
   ReadBatchAtomParameters<ReadRequests>,

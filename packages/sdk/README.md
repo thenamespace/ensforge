@@ -6,7 +6,10 @@ A type-safe client for building ENS applications.
 
 - Config-bound actions with no repeated client arguments
 - Unified behavior across supported ENS deployments
-- Grouped APIs for names, records, registration, migration, wrapping, DNS, and reverse records
+- Grouped APIs for resolution, registration, migration, wrapping, DNS, and reverse records
+
+Name and record actions live in `@ensforge/core` (`ens.name.*`, `ens.record.*`).
+
 - Batched reads and wallet-aware write workflows
 - Compatible with viem clients and Wagmi configs
 
@@ -28,8 +31,7 @@ const sdk = new Ensforge({
   publicClient: createPublicClient({ chain: mainnet, transport: http() }),
 });
 
-const owner = await sdk.name.getOwner({ name: "ens.eth" });
-const avatar = await sdk.records.getAvatar({ name: "ens.eth" });
+const resolver = await sdk.resolution.getResolver({ name: "ens.eth" });
 ```
 
 Actions are grouped by ENS capability:
@@ -37,9 +39,7 @@ Actions are grouped by ENS capability:
 ```ts
 const duration = 365n * 24n * 60n * 60n;
 
-const state = await sdk.name.getNameState({ name: "ens.eth" });
 const resolver = await sdk.resolution.getResolver({ name: "ens.eth" });
-const text = await sdk.records.getText({ name: "ens.eth", key: "url" });
 const price = await sdk.registration.getRegistrationPrice({ name: "example.eth", duration });
 ```
 
@@ -47,17 +47,15 @@ Import action-specific types from the corresponding group entrypoint. This keeps
 loading focused while method calls remain fully inferred.
 
 ```ts
-import type { GetOwnerParameters } from "@ensforge/sdk/name";
-import type { SetTextParameters } from "@ensforge/sdk/records";
+import type { GetResolverParameters } from "@ensforge/sdk/resolution";
 ```
 
 Compatible reads can be executed together:
 
 ```ts
 const profile = await sdk.batch.readBatch({
-  owner: sdk.name.getOwner.request({ name: "ens.eth" }),
-  avatar: sdk.records.getAvatar.request({ name: "ens.eth" }),
-  url: sdk.records.getText.request({ name: "ens.eth", key: "url" }),
+  ens: sdk.resolution.getResolver.request({ name: "ens.eth" }),
+  nick: sdk.resolution.getResolver.request({ name: "nick.eth" }),
 });
 ```
 

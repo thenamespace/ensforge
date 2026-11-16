@@ -17,10 +17,7 @@ import {
   makeEventsActions,
   makeIndexerActions,
   makeMigrationActions,
-  makeNameActions,
-  makeOwnershipActions,
   makePermissionsActions,
-  makeRecordsActions,
   makeRegistrationActions,
   makeResolutionActions,
   makeReverseActions,
@@ -32,10 +29,7 @@ import {
   type EventsActions,
   type IndexerActions,
   type MigrationActions,
-  type NameActions,
-  type OwnershipActions,
   type PermissionsActions,
-  type RecordsActions,
   type RegistrationActions,
   type ResolutionActions,
   type ReverseActions,
@@ -53,10 +47,7 @@ export class Ensforge {
   readonly events: EventsActions;
   readonly indexer: IndexerActions;
   readonly migration: MigrationActions;
-  readonly name: NameActions;
-  readonly ownership: OwnershipActions;
   readonly permissions: PermissionsActions;
-  readonly records: RecordsActions;
   readonly registration: RegistrationActions;
   readonly resolution: ResolutionActions;
   readonly reverse: ReverseActions;
@@ -90,10 +81,7 @@ export class Ensforge {
     this.events = makeEventsActions(config);
     this.indexer = makeIndexerActions(config);
     this.migration = makeMigrationActions(config);
-    this.name = makeNameActions(config);
-    this.ownership = makeOwnershipActions(config);
     this.permissions = makePermissionsActions(config);
-    this.records = makeRecordsActions(config);
     this.registration = makeRegistrationActions(config);
     this.resolution = makeResolutionActions(config);
     this.reverse = makeReverseActions(config);

@@ -65,21 +65,9 @@
       "workspace-source": "./src/entrypoints/migration.ts",
       "default": "./dist/migration.js"
     },
-    "./name": {
-      "workspace-source": "./src/entrypoints/name.ts",
-      "default": "./dist/name.js"
-    },
-    "./ownership": {
-      "workspace-source": "./src/entrypoints/ownership.ts",
-      "default": "./dist/ownership.js"
-    },
     "./permissions": {
       "workspace-source": "./src/entrypoints/permissions.ts",
       "default": "./dist/permissions.js"
-    },
-    "./records": {
-      "workspace-source": "./src/entrypoints/records.ts",
-      "default": "./dist/records.js"
     },
     "./registration": {
       "workspace-source": "./src/entrypoints/registration.ts",
@@ -121,10 +109,7 @@
       "./hca/admin": "./dist/hca/admin.js",
       "./indexer": "./dist/indexer.js",
       "./migration": "./dist/migration.js",
-      "./name": "./dist/name.js",
-      "./ownership": "./dist/ownership.js",
       "./permissions": "./dist/permissions.js",
-      "./records": "./dist/records.js",
       "./registration": "./dist/registration.js",
       "./resolution": "./dist/resolution.js",
       "./reverse": "./dist/reverse.js",

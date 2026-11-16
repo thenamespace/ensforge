@@ -2,15 +2,8 @@
 
 import type { EnsReadRequest, RpcError } from "@ensforge/sdk";
 import type { ReadBatchError, ReadBatchResult, ReadBatchSettledResult } from "@ensforge/sdk/batch";
-import type {
-  GetRecordsError,
-  GetRecordsParameters,
-  GetRecordsResult,
-  GetRecordsSelection,
-} from "@ensforge/sdk/records";
 
 import {
-  getRecordsAtom,
   readBatchAtom,
   readBatchSettledAtom,
   type ReadBatchAtomParameters,
@@ -20,18 +13,6 @@ import type { EnsAtomResult } from "../query/result.js";
 import { useQueryAtom } from "./use-query.js";
 
 type ReadRequests = Readonly<Record<string, EnsReadRequest<unknown, unknown>>>;
-
-export const useRecords = <
-  const Selection extends GetRecordsSelection,
-  Selected = GetRecordsResult<Selection>,
->(
-  input: UseEnsAtomParameters<
-    GetRecordsParameters<Selection>,
-    GetRecordsResult<Selection>,
-    GetRecordsError,
-    Selected
-  >,
-): EnsAtomResult<Selected, GetRecordsError> => useQueryAtom(getRecordsAtom, input);
 
 export const useReadBatch = <
   const Requests extends ReadRequests,

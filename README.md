@@ -22,64 +22,32 @@ Type-safe tools for reading, writing, and building applications on ENS.
 
 ## Quick start
 
-Install the high-level SDK:
-
 ```sh
-pnpm add @ensforge/sdk effect@^4 viem
+pnpm add @ensforge/core effect@^4 viem
 ```
 
-Create a client and call any grouped action:
+Create a client, then call actions grouped by domain:
 
 ```ts
-import { Ensforge } from "@ensforge/sdk";
+import { Ensforge, ensActions } from "@ensforge/core";
 import { createPublicClient, http } from "viem";
 import { mainnet } from "viem/chains";
 
-const sdk = new Ensforge({
-  network: "mainnet",
-  publicClient: createPublicClient({
-    chain: mainnet,
-    transport: http(),
-  }),
-});
+const ens = Ensforge.create({
+  publicClient: createPublicClient({ chain: mainnet, transport: http() }),
+}).extend(ensActions());
 
-const owner = await sdk.name.getOwner({ name: "ens.eth" });
-const avatar = await sdk.records.getAvatar({ name: "ens.eth" });
+const name = await ens.name.get({ name: "nick.eth" });
+const profile = await ens.record.get({ name: "nick.eth", texts: ["url"], addresses: ["eth"] });
 ```
 
-Use `@ensforge/core` when you prefer standalone actions:
+Add a `walletClient` to write:
 
 ```ts
-import { createConfig, getAddress, getOwner, readBatch } from "@ensforge/core";
-import { createPublicClient, http } from "viem";
-import { mainnet } from "viem/chains";
-
-const publicClient = createPublicClient({ chain: mainnet, transport: http() });
-const config = createConfig({ network: "mainnet", publicClient });
-
-const profile = await readBatch(config, {
-  owner: getOwner.request({ name: "ens.eth" }),
-  address: getAddress.request({ name: "ens.eth" }),
-});
+await ens.record.set({ name: "alice.eth", texts: { url: "https://alice.dev" } });
 ```
 
-For React applications, pass an SDK instance or the same configuration to `EnsforgeProvider` and
-use typed hooks:
-
-```tsx
-import { EnsforgeProvider, useOwner } from "@ensforge/react";
-
-const Profile = () => {
-  const owner = useOwner({ name: "ens.eth" });
-  return <span>{owner.data?.owner}</span>;
-};
-
-const App = () => (
-  <EnsforgeProvider sdk={sdk}>
-    <Profile />
-  </EnsforgeProvider>
-);
-```
+Effect programs import the same actions from `@ensforge/core/effect`.
 
 ## Repository
 

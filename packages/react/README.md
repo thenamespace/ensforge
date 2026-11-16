@@ -38,39 +38,29 @@ import { EnsforgeProvider } from "@ensforge/react";
 Use read hooks anywhere below the provider:
 
 ```tsx
-import { useAvatar, useOwner } from "@ensforge/react";
+import { useResolver } from "@ensforge/react";
 
-function Profile({ name }: { name: string }) {
-  const owner = useOwner({ name });
-  const avatar = useAvatar({
-    name,
-    atom: { swr: { staleTime: "1 minute" } },
-  });
+function ResolverAddress({ name }: { name: string }) {
+  const resolver = useResolver({ name, atom: { swr: { staleTime: "1 minute" } } });
 
-  if (owner.isInitial || avatar.isInitial) return <span>Loading…</span>;
-  if (owner.isFailure) return <span>{owner.error.message}</span>;
+  if (resolver.isInitial) return <span>Loading…</span>;
+  if (resolver.isFailure) return <span>{resolver.error.message}</span>;
 
-  return (
-    <section>
-      {avatar.data?.status === "resolved" && <img src={avatar.data.uri} alt="" />}
-      <p>{owner.data?.owner}</p>
-    </section>
-  );
+  return <p>{resolver.data ?? "No resolver"}</p>;
 }
 ```
 
 Write hooks expose mutation state and Promise-based execution:
 
 ```tsx
-import { useSetText } from "@ensforge/react";
+import { useSetResolver } from "@ensforge/react";
 
-const setText = useSetText();
+const setResolver = useSetResolver();
 
-const updateUrl = () =>
-  setText.mutate({
+const update = () =>
+  setResolver.mutate({
     name: "ens.eth",
-    key: "url",
-    value: "https://ens.domains",
+    resolver: "0x231b0Ee14048e9dCcD1d247744d114a4EB5E8E63",
   });
 ```
 
@@ -78,7 +68,7 @@ Hook inputs are inferred automatically. When an action parameter type is needed 
 it from the matching SDK group.
 
 ```ts
-import type { SetTextParameters } from "@ensforge/sdk/records";
+import type { SetResolverParameters } from "@ensforge/sdk/resolution";
 ```
 
 An existing SDK instance can also be shared through the provider:
