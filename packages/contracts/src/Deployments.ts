@@ -32,7 +32,22 @@ import type {
   V2TestTokens,
 } from "./deployments/types.js";
 
-export type * from "./deployments/types.js";
+export type {
+  Status,
+  Provenance,
+  V1Contracts,
+  V1,
+  V2Contracts,
+  V2Implementations,
+  V2Migration,
+  V2Infrastructure,
+  V2Dns,
+  V2Hca,
+  V2TestTokens,
+  Capabilities,
+  V2,
+  Profile,
+} from "./deployments/types.js";
 
 /**
  * ENSv1 and ENSv2 on Ethereum mainnet.

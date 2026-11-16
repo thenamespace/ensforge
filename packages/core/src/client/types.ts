@@ -48,7 +48,15 @@ export type Config = {
  * @category client
  * @since 1.0.0
  */
-export type Client<actions extends object = {}> = actions & {
+export type Client<actions extends object = {}> = actions & ClientBase<actions>;
+
+/**
+ * Members every ensforge client has, whatever action groups it carries.
+ *
+ * @category client
+ * @since 1.0.0
+ */
+export interface ClientBase<actions extends object = {}> {
   readonly chain: { readonly id: number; readonly name: string };
   /** Default signer address, or `undefined` without a wallet. */
   readonly account: Address | undefined;
@@ -61,7 +69,7 @@ export type Client<actions extends object = {}> = actions & {
   readonly extend: <const added extends object>(
     decorator: (client: Client<actions>) => added,
   ) => Client<actions & added>;
-};
+}
 
 /**
  * Anything an action accepts: an ensforge client or a bare viem client.

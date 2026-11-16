@@ -37,6 +37,7 @@ export const revertAbi = /* @__PURE__ */ parseAbi([
   "error NameNotRenewable(string label)",
   "error NameRequiresMigration()",
   "error NotApprovedOperator(address nft, address owner)",
+  "error OffchainLookup(address sender, string[] urls, bytes callData, bytes4 callbackFunction, bytes extraData)",
   "error OperationProhibited(bytes32 node)",
   "error OwnableUnauthorizedAccount(address account)",
   "error ParentNotMigrated(bytes name)",

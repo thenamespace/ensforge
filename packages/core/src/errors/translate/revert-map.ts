@@ -2,6 +2,7 @@ import type { Address, Hex } from "viem";
 
 import {
   CommitmentError,
+  ConfigError,
   DnsError,
   GatewayError,
   InsufficientFundsError,
@@ -106,6 +107,8 @@ export const revertMap: Readonly<Record<string, Mapper>> = {
       details: message === undefined || message === "" ? [] : [`Gateway said: ${String(message)}`],
     }),
   InvalidOffchainLookup: () => new GatewayError({ code: "OFFCHAIN_LOOKUP_INVALID" }),
+  // Only surfaces as a revert when the client disables CCIP-Read; viem follows it otherwise.
+  OffchainLookup: () => new ConfigError({ code: "CCIP_READ_DISABLED" }),
   InvalidBatchGatewayResponse: () => new GatewayError({ code: "GATEWAY_RESPONSE_INVALID" }),
   UnsafeBatchGatewayResponse: () => new GatewayError({ code: "GATEWAY_RESPONSE_INVALID" }),
   NameNotLocked: () => new MigrationError({ code: "NAME_NOT_LOCKED" }),

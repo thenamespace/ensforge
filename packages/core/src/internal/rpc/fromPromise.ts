@@ -1,0 +1,15 @@
+import { Effect } from "effect";
+
+import type { EnsforgeError } from "../../errors/EnsforgeError.js";
+import { fromCause } from "../../errors/translate/fromCause.js";
+import type { AnyError } from "../../errors/types.js";
+
+/** Runs a viem call as an Effect whose failures are already ensforge errors. */
+export const fromPromise = <value>(
+  evaluate: (signal: AbortSignal) => Promise<value>,
+  context?: EnsforgeError.Context,
+): Effect.Effect<value, AnyError> =>
+  Effect.tryPromise({
+    try: evaluate,
+    catch: (cause) => fromCause(cause, context) as AnyError,
+  });
