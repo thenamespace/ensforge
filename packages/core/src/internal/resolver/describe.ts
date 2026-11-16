@@ -63,6 +63,7 @@ const knownKind = (client: Client, resolver: Address): ResolverKind | undefined 
     [v1?.contracts.publicResolver, "public-resolver"],
     [v1?.contracts.offchainDnsResolver, "dns"],
     [v2?.dns?.tldResolver, "dns"],
+    [v2?.dns?.legacyTldResolver, "dns"],
     [v2?.dns?.aliasResolver, "dns"],
     [v2?.dns?.txtResolver, "dns"],
   ];

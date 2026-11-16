@@ -39,6 +39,7 @@ const notOwner: Mapper = () => new UnauthorizedError({ code: "NOT_OWNER" });
 const notApproved: Mapper = () => new UnauthorizedError({ code: "NOT_APPROVED" });
 const transferDisallowed: Mapper = () => new UnauthorizedError({ code: "TRANSFER_DISALLOWED" });
 const nameNotAvailable: Mapper = () => new NameStateError({ code: "NAME_NOT_AVAILABLE" });
+const dnssecProofFailed: Mapper = () => new DnsError({ code: "DNSSEC_PROOF_FAILED" });
 
 // ENSv2 commitment errors carry (commitment, bound, now); ENSv1 errors carry only the commitment.
 const commitmentTooNew: Mapper = ([commitment, validFrom]) =>
@@ -146,4 +147,16 @@ export const revertMap: Readonly<Record<string, Mapper>> = {
   TLDNotPublic: () => new DnsError({ code: "TLD_NOT_PUBLIC" }),
   InvalidPublicSuffix: () => new DnsError({ code: "TLD_NOT_PUBLIC" }),
   StaleProof: () => new DnsError({ code: "PROOF_STALE" }),
+  NoOwnerRecordFound: () => new DnsError({ code: "DNS_RECORD_MISSING" }),
+  InvalidClass: dnssecProofFailed,
+  InvalidLabelCount: dnssecProofFailed,
+  InvalidProofType: dnssecProofFailed,
+  InvalidRRSet: dnssecProofFailed,
+  InvalidSignature: dnssecProofFailed,
+  InvalidSignerName: dnssecProofFailed,
+  NoMatchingProof: dnssecProofFailed,
+  ProofNameMismatch: dnssecProofFailed,
+  SignatureExpired: dnssecProofFailed,
+  SignatureNotValidYet: dnssecProofFailed,
+  SignatureTypeMismatch: dnssecProofFailed,
 };

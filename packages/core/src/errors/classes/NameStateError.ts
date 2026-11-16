@@ -12,6 +12,7 @@ const defaults: {
   NAME_NOT_RENEWABLE: () => ({ shortMessage: "The name cannot be renewed." }),
   NAME_LOCKED: () => ({ shortMessage: "The name is locked." }),
   NAME_NOT_WRAPPED: () => ({ shortMessage: "The name is not wrapped in the NameWrapper." }),
+  NAME_WRAPPED: () => ({ shortMessage: "The name is already wrapped in the NameWrapper." }),
   NAME_REQUIRES_MIGRATION: () => ({
     shortMessage: "The name must be migrated to ENSv2 first.",
     hint: "Use migration.migrate.",
@@ -45,6 +46,7 @@ export declare namespace NameStateError {
     | "NAME_NOT_RENEWABLE"
     | "NAME_LOCKED"
     | "NAME_NOT_WRAPPED"
+    | "NAME_WRAPPED"
     | "NAME_REQUIRES_MIGRATION"
     | "PARENT_NOT_MIGRATED"
     | "REGISTRY_NOT_EMANCIPATED";

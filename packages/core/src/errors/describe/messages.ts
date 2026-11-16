@@ -112,6 +112,10 @@ export const messages: { readonly [code in Code]: Template<code> } = {
     title: "Name not wrapped",
     message: `${thisName(error)} is not wrapped.`,
   }),
+  NAME_WRAPPED: (error) => ({
+    title: "Name already wrapped",
+    message: `${thisName(error)} is already wrapped.`,
+  }),
   NAME_REQUIRES_MIGRATION: (error) => ({
     title: "Upgrade required",
     message: `${thisName(error)} needs to be upgraded to the new ENS first.`,

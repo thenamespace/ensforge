@@ -3,6 +3,7 @@
 import type { Client } from "../client/types.js";
 import * as approval from "./approval/index.js";
 import type { Bound, BoundWrite } from "./bound.js";
+import * as dns from "./dns/index.js";
 import * as name from "./name/index.js";
 import * as permission from "./permission/index.js";
 import * as primaryName from "./primaryName/index.js";
@@ -12,6 +13,7 @@ import * as registry from "./registry/index.js";
 import * as resolver from "./resolver/index.js";
 import * as role from "./role/index.js";
 import * as subname from "./subname/index.js";
+import * as wrapper from "./wrapper/index.js";
 
 /** `approval` actions bound to a client. */
 export type ApprovalActions = {
@@ -88,6 +90,69 @@ export const approvalActions =
         },
       ),
       setTokenSync: (options) => approval.setTokenSync(client, options),
+    },
+  });
+
+/** `dns` actions bound to a client. */
+export type DnsActions = {
+  readonly dns: {
+    /** Imports a DNS name into ENS with a DNSSEC proof of its `_ens` TXT record. Resolves once the transaction is submitted. */
+    readonly claim: BoundWrite<typeof dns.claim>;
+    /** Imports a DNS name into ENS with a DNSSEC proof of its `_ens` TXT record. Resolves once the receipt is in. */
+    readonly claimSync: Bound<typeof dns.claimSync>;
+    /** Reads the gasless DNS resolver a DNS name sets in an `ENS1` TXT record. */
+    readonly getOffchainResolver: Bound<typeof dns.getOffchainResolver>;
+    /** Fetches the DNSSEC proof of a DNS name's `_ens` TXT record. */
+    readonly getProof: Bound<typeof dns.getProof>;
+    /** Reads DNS records and the zonehash a name stores on its resolver. */
+    readonly getRecords: Bound<typeof dns.getRecords>;
+    /** Reads whether a DNS name is imported into ENS, and what it needs to be. */
+    readonly getStatus: Bound<typeof dns.getStatus>;
+    /** Sets DNS records or the zonehash of a name on its public resolver. Resolves once the transaction is submitted. */
+    readonly setRecords: BoundWrite<typeof dns.setRecords>;
+    /** Sets DNS records or the zonehash of a name on its public resolver. Resolves once the receipt is in. */
+    readonly setRecordsSync: Bound<typeof dns.setRecordsSync>;
+  };
+};
+
+/**
+ * Adds the `dns` actions to a client.
+ *
+ * @category decorators
+ * @since 1.0.0
+ */
+export const dnsActions =
+  () =>
+  (client: Client<object>): DnsActions => ({
+    dns: {
+      claim: Object.assign(
+        (options: Parameters<typeof dns.claim>[1]) => dns.claim(client, options),
+        {
+          prepare: (options: Parameters<typeof dns.claim.prepare>[1]) =>
+            dns.claim.prepare(client, options),
+          simulate: (options: Parameters<typeof dns.claim.simulate>[1]) =>
+            dns.claim.simulate(client, options),
+          estimateGas: (options: Parameters<typeof dns.claim.estimateGas>[1]) =>
+            dns.claim.estimateGas(client, options),
+        },
+      ),
+      claimSync: (options) => dns.claimSync(client, options),
+      getOffchainResolver: (options) => dns.getOffchainResolver(client, options),
+      getProof: (options) => dns.getProof(client, options),
+      getRecords: (options) => dns.getRecords(client, options),
+      getStatus: (options) => dns.getStatus(client, options),
+      setRecords: Object.assign(
+        (options: Parameters<typeof dns.setRecords>[1]) => dns.setRecords(client, options),
+        {
+          prepare: (options: Parameters<typeof dns.setRecords.prepare>[1]) =>
+            dns.setRecords.prepare(client, options),
+          simulate: (options: Parameters<typeof dns.setRecords.simulate>[1]) =>
+            dns.setRecords.simulate(client, options),
+          estimateGas: (options: Parameters<typeof dns.setRecords.estimateGas>[1]) =>
+            dns.setRecords.estimateGas(client, options),
+        },
+      ),
+      setRecordsSync: (options) => dns.setRecordsSync(client, options),
     },
   });
 
@@ -693,8 +758,96 @@ export const subnameActions =
     },
   });
 
+/** `wrapper` actions bound to a client. */
+export type WrapperActions = {
+  readonly wrapper: {
+    /** Reads the NameWrapper owner, fuses and expiry of an ENSv1 name. */
+    readonly getFuses: Bound<typeof wrapper.getFuses>;
+    /** Burns fuses on, or extends, a wrapped ENSv1 subname as its parent's owner. Resolves once the transaction is submitted. */
+    readonly setChildFuses: BoundWrite<typeof wrapper.setChildFuses>;
+    /** Burns fuses on, or extends, a wrapped ENSv1 subname as its parent's owner. Resolves once the receipt is in. */
+    readonly setChildFusesSync: Bound<typeof wrapper.setChildFusesSync>;
+    /** Burns owner-controlled fuses on a wrapped ENSv1 name. Resolves once the transaction is submitted. */
+    readonly setFuses: BoundWrite<typeof wrapper.setFuses>;
+    /** Burns owner-controlled fuses on a wrapped ENSv1 name. Resolves once the receipt is in. */
+    readonly setFusesSync: Bound<typeof wrapper.setFusesSync>;
+    /** Unwraps an ENSv1 name from the NameWrapper. Resolves once the transaction is submitted. */
+    readonly unwrap: BoundWrite<typeof wrapper.unwrap>;
+    /** Unwraps an ENSv1 name from the NameWrapper. Resolves once the receipt is in. */
+    readonly unwrapSync: Bound<typeof wrapper.unwrapSync>;
+    /** Wraps an ENSv1 name in the NameWrapper. Resolves once the transaction is submitted. */
+    readonly wrap: BoundWrite<typeof wrapper.wrap>;
+    /** Wraps an ENSv1 name in the NameWrapper. Resolves once the receipt is in. */
+    readonly wrapSync: Bound<typeof wrapper.wrapSync>;
+  };
+};
+
+/**
+ * Adds the `wrapper` actions to a client.
+ *
+ * @category decorators
+ * @since 1.0.0
+ */
+export const wrapperActions =
+  () =>
+  (client: Client<object>): WrapperActions => ({
+    wrapper: {
+      getFuses: (options) => wrapper.getFuses(client, options),
+      setChildFuses: Object.assign(
+        (options: Parameters<typeof wrapper.setChildFuses>[1]) =>
+          wrapper.setChildFuses(client, options),
+        {
+          prepare: (options: Parameters<typeof wrapper.setChildFuses.prepare>[1]) =>
+            wrapper.setChildFuses.prepare(client, options),
+          simulate: (options: Parameters<typeof wrapper.setChildFuses.simulate>[1]) =>
+            wrapper.setChildFuses.simulate(client, options),
+          estimateGas: (options: Parameters<typeof wrapper.setChildFuses.estimateGas>[1]) =>
+            wrapper.setChildFuses.estimateGas(client, options),
+        },
+      ),
+      setChildFusesSync: (options) => wrapper.setChildFusesSync(client, options),
+      setFuses: Object.assign(
+        (options: Parameters<typeof wrapper.setFuses>[1]) => wrapper.setFuses(client, options),
+        {
+          prepare: (options: Parameters<typeof wrapper.setFuses.prepare>[1]) =>
+            wrapper.setFuses.prepare(client, options),
+          simulate: (options: Parameters<typeof wrapper.setFuses.simulate>[1]) =>
+            wrapper.setFuses.simulate(client, options),
+          estimateGas: (options: Parameters<typeof wrapper.setFuses.estimateGas>[1]) =>
+            wrapper.setFuses.estimateGas(client, options),
+        },
+      ),
+      setFusesSync: (options) => wrapper.setFusesSync(client, options),
+      unwrap: Object.assign(
+        (options: Parameters<typeof wrapper.unwrap>[1]) => wrapper.unwrap(client, options),
+        {
+          prepare: (options: Parameters<typeof wrapper.unwrap.prepare>[1]) =>
+            wrapper.unwrap.prepare(client, options),
+          simulate: (options: Parameters<typeof wrapper.unwrap.simulate>[1]) =>
+            wrapper.unwrap.simulate(client, options),
+          estimateGas: (options: Parameters<typeof wrapper.unwrap.estimateGas>[1]) =>
+            wrapper.unwrap.estimateGas(client, options),
+        },
+      ),
+      unwrapSync: (options) => wrapper.unwrapSync(client, options),
+      wrap: Object.assign(
+        (options: Parameters<typeof wrapper.wrap>[1]) => wrapper.wrap(client, options),
+        {
+          prepare: (options: Parameters<typeof wrapper.wrap.prepare>[1]) =>
+            wrapper.wrap.prepare(client, options),
+          simulate: (options: Parameters<typeof wrapper.wrap.simulate>[1]) =>
+            wrapper.wrap.simulate(client, options),
+          estimateGas: (options: Parameters<typeof wrapper.wrap.estimateGas>[1]) =>
+            wrapper.wrap.estimateGas(client, options),
+        },
+      ),
+      wrapSync: (options) => wrapper.wrapSync(client, options),
+    },
+  });
+
 /** Every action group bound to a client. */
 export type EnsActions = ApprovalActions &
+  DnsActions &
   NameActions &
   PermissionActions &
   PrimaryNameActions &
@@ -703,7 +856,8 @@ export type EnsActions = ApprovalActions &
   RegistryActions &
   ResolverActions &
   RoleActions &
-  SubnameActions;
+  SubnameActions &
+  WrapperActions;
 
 /**
  * Adds every ENS action group to a client.
@@ -721,6 +875,7 @@ export const ensActions =
   () =>
   (client: Client<object>): EnsActions => ({
     ...approvalActions()(client),
+    ...dnsActions()(client),
     ...nameActions()(client),
     ...permissionActions()(client),
     ...primaryNameActions()(client),
@@ -730,4 +885,5 @@ export const ensActions =
     ...resolverActions()(client),
     ...roleActions()(client),
     ...subnameActions()(client),
+    ...wrapperActions()(client),
   });
