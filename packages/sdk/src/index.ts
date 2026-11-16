@@ -39,7 +39,6 @@ export type {
   IndexerActions,
   MigrationActions,
   PermissionsActions,
-  RegistrationActions,
   SubnameActions,
   WrappingActions,
 } from "./groups/index.js";

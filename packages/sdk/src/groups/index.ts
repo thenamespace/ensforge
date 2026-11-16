@@ -5,7 +5,6 @@ export { makeEventsActions, type EventsActions } from "./events.js";
 export { makeIndexerActions, type IndexerActions } from "./indexer.js";
 export { makeMigrationActions, type MigrationActions } from "./migration.js";
 export { makePermissionsActions, type PermissionsActions } from "./permissions.js";
-export { makeRegistrationActions, type RegistrationActions } from "./registration.js";
 export { makeSubnameActions, type SubnameActions } from "./subnames.js";
 export { makeWrappingActions, type WrappingActions } from "./wrapping.js";
 export * from "./hca.js";

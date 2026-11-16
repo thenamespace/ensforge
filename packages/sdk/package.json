@@ -69,10 +69,6 @@
       "workspace-source": "./src/entrypoints/permissions.ts",
       "default": "./dist/permissions.js"
     },
-    "./registration": {
-      "workspace-source": "./src/entrypoints/registration.ts",
-      "default": "./dist/registration.js"
-    },
     "./subnames": {
       "workspace-source": "./src/entrypoints/subnames.ts",
       "default": "./dist/subnames.js"
@@ -102,7 +98,6 @@
       "./indexer": "./dist/indexer.js",
       "./migration": "./dist/migration.js",
       "./permissions": "./dist/permissions.js",
-      "./registration": "./dist/registration.js",
       "./subnames": "./dist/subnames.js",
       "./wagmi": "./dist/wagmi.js",
       "./wrapping": "./dist/wrapping.js",

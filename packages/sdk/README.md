@@ -6,10 +6,10 @@ A type-safe client for building ENS applications.
 
 - Config-bound actions with no repeated client arguments
 - Unified behavior across supported ENS deployments
-- Grouped APIs for registration, migration, wrapping, subnames, DNS, and permissions
+- Grouped APIs for migration, wrapping, subnames, DNS, and permissions
 
-Name, record, resolver and primary-name actions live in `@ensforge/core` (`ens.name.*`,
-`ens.record.*`, `ens.resolver.*`, `ens.primaryName.*`).
+Name, record, resolver, primary-name and registration actions live in `@ensforge/core`
+(`ens.name.*`, `ens.record.*`, `ens.resolver.*`, `ens.primaryName.*`, `ens.registration.*`).
 
 - Batched reads and wallet-aware write workflows
 - Compatible with viem clients and Wagmi configs
@@ -32,32 +32,29 @@ const sdk = new Ensforge({
   publicClient: createPublicClient({ chain: mainnet, transport: http() }),
 });
 
-const duration = 365n * 24n * 60n * 60n;
-const price = await sdk.registration.getRegistrationPrice({ name: "example.eth", duration });
+const fuses = await sdk.wrapping.getFuses({ name: "ens.eth" });
 ```
 
 Actions are grouped by ENS capability:
 
 ```ts
-const duration = 365n * 24n * 60n * 60n;
-
-const price = await sdk.registration.getRegistrationPrice({ name: "example.eth", duration });
-const renewal = await sdk.registration.getRenewalPrice({ name: "ens.eth", duration });
+const fuses = await sdk.wrapping.getFuses({ name: "ens.eth" });
+const expiry = await sdk.wrapping.getWrapperExpiry({ name: "ens.eth" });
 ```
 
 Import action-specific types from the corresponding group entrypoint. This keeps editor type
 loading focused while method calls remain fully inferred.
 
 ```ts
-import type { GetRegistrationPriceParameters } from "@ensforge/sdk/registration";
+import type { GetFusesParameters } from "@ensforge/sdk/wrapping";
 ```
 
 Compatible reads can be executed together:
 
 ```ts
 const profile = await sdk.batch.readBatch({
-  alice: sdk.registration.getRegistrationPrice.request({ name: "alice.eth", duration }),
-  bob: sdk.registration.getRegistrationPrice.request({ name: "bob.eth", duration }),
+  ens: sdk.wrapping.getFuses.request({ name: "ens.eth" }),
+  wallet: sdk.wrapping.getFuses.request({ name: "wallet.eth" }),
 });
 ```
 

@@ -23,7 +23,6 @@ export default defineConfig({
     "legacy/indexer/resolvers": "src/legacy/actions/indexer/resolvers/index.ts",
     "legacy/migration": "src/legacy/actions/migration/index.ts",
     "legacy/permissions": "src/legacy/actions/permissions/index.ts",
-    "legacy/registration": "src/legacy/actions/registration/index.ts",
     "legacy/storage": "src/legacy/storage/index.ts",
     "legacy/storage/browser": "src/legacy/storage/browser.ts",
     "legacy/subnames": "src/legacy/actions/subnames/index.ts",

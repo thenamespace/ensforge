@@ -38,41 +38,34 @@ import { EnsforgeProvider } from "@ensforge/react";
 Use read hooks anywhere below the provider:
 
 ```tsx
-import { useRegistrationPrice } from "@ensforge/react";
+import { useFuses } from "@ensforge/react";
 
-const year = 365n * 24n * 60n * 60n;
+function Fuses({ name }: { name: string }) {
+  const fuses = useFuses({ name, atom: { swr: { staleTime: "1 minute" } } });
 
-function Price({ name }: { name: string }) {
-  const price = useRegistrationPrice({
-    name,
-    duration: year,
-    atom: { swr: { staleTime: "1 minute" } },
-  });
+  if (fuses.isInitial) return <span>Loading…</span>;
+  if (fuses.isFailure) return <span>{fuses.error.message}</span>;
+  if (fuses.data?.supported !== true) return <span>Not wrapped</span>;
 
-  if (price.isInitial) return <span>Loading…</span>;
-  if (price.isFailure) return <span>{price.error.message}</span>;
-  if (price.data?.status !== "available") return <span>Not available</span>;
-
-  return <p>{price.data.total.toString()} wei</p>;
+  return <p>{fuses.data.active.join(", ")}</p>;
 }
 ```
 
 Write hooks expose mutation state and Promise-based execution:
 
 ```tsx
-import { useCommitName } from "@ensforge/react";
+import { useSetFuses } from "@ensforge/react";
 
-const commit = useCommitName();
+const setFuses = useSetFuses();
 
-// `commitment` comes from useRegistrationCommitment.
-const start = () => commit.mutate({ commitment });
+const lock = () => setFuses.mutate({ name: "alice.eth", fuses: ["cannotUnwrap"] });
 ```
 
 Hook inputs are inferred automatically. When an action parameter type is needed explicitly, import
 it from the matching SDK group.
 
 ```ts
-import type { GetRegistrationPriceParameters } from "@ensforge/sdk/registration";
+import type { SetFusesParameters } from "@ensforge/sdk/wrapping";
 ```
 
 An existing SDK instance can also be shared through the provider:

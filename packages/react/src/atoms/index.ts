@@ -5,7 +5,6 @@ export * from "./events.js";
 export * from "./indexer.js";
 export * from "./migration.js";
 export * from "./permissions.js";
-export * from "./registration.js";
 export * from "./subnames.js";
 export * from "./wrapping.js";
 export { readBatchAtom, readBatchSettledAtom, type ReadBatchAtomParameters } from "./generic.js";
