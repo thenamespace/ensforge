@@ -29,6 +29,8 @@ const dnsRecordResolverAbi: Abi
   function dnsRecord(bytes32,bytes32,uint16) view returns (bytes)
   function hasDNSRecords(bytes32,bytes32) view returns (bool)
 const dnsRecordResolverInterfaceId: '0xa8fa5682'
+const dnssecGatewayAbi: Abi
+  function resolve(bytes,uint16) view returns ((bytes,bytes)[])
 const dnsZoneResolverAbi: Abi
   event DNSZonehashChanged(bytes32,bytes,bytes)
   function zonehash(bytes32) view returns (bytes)

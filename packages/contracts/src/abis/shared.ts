@@ -10,6 +10,7 @@ export { contenthashResolverAbi as contenthashResolver } from "../shared/resolve
 export { dataResolverAbi as dataResolver } from "../shared/resolver-profiles/data.js";
 export { dnsRecordResolverAbi as dnsRecordResolver } from "../shared/resolver-profiles/dns-record.js";
 export { dnsZoneResolverAbi as dnsZoneResolver } from "../shared/resolver-profiles/dns-zone.js";
+export { dnssecGatewayAbi as dnssecGateway } from "../shared/dnssec-gateway.js";
 export { erc1155Abi as erc1155 } from "../shared/erc1155.js";
 export { erc165Abi as erc165 } from "../shared/erc165.js";
 export { erc20Abi as erc20 } from "../shared/erc20.js";

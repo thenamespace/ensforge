@@ -187,6 +187,11 @@ export interface V2Infrastructure {
 export interface V2Dns {
   /** Resolver for DNS top-level domains. */
   readonly tldResolver: Address;
+  /**
+   * An earlier DNSTLDResolver the root registry still points DNS TLDs at, when ENS has not
+   * switched over to `tldResolver` yet (mainnet, contracts-v2 v1.0.1).
+   */
+  readonly legacyTldResolver?: Address;
   /** Resolver mapping DNS names onto ENS names through TXT aliases. */
   readonly aliasResolver: Address;
   /** Resolver answering from `ENS1` TXT records. */

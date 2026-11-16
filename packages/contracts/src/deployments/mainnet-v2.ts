@@ -54,6 +54,9 @@ export const mainnetV2 = {
   },
   dns: {
     tldResolver: "0x6695327EE70F41151d2cBADC3ABBb6e4a58e739c",
+    // The root registry still resolves DNS TLDs through the original DNSTLDResolver, whose
+    // CCIP-Read callback reverts, so gasless DNS names do not resolve until ENS switches it.
+    legacyTldResolver: "0xaB48304A2520CE420E636AaCD48A8bb3e7e485Ee",
     aliasResolver: "0x13285e928c65beFd90904F77A68FE4e7D9a43882",
     txtResolver: "0xbB76e2ae1a61Ef91D095eC044ABf563e4C464E3E",
     gatewayProvider: "0xA646BCEE466D77669A087f3379640CB03aCA7c3D",

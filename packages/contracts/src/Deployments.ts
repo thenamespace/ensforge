@@ -217,7 +217,7 @@ const v2GroupKeys = {
   } satisfies Keys<V2Infrastructure>,
   dns: {
     required: ["tldResolver", "aliasResolver", "txtResolver", "gatewayProvider"],
-    optional: ["temporaryRegistrar"],
+    optional: ["temporaryRegistrar", "legacyTldResolver"],
   } satisfies Keys<V2Dns>,
   hca: {
     required: [
