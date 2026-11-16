@@ -18,10 +18,14 @@ import * as Impl from "./effect.js";
  *
  * **Details**
  *
- * - The plan: approve the token (if the allowance is short) → commit → wait the registrar's minimum
- *   commitment age on chain time → register (deploying each name's resolver) → records → primary name.
+ * - The plan: approve the token (if the allowance is short) with the commit → wait the registrar's
+ *   minimum commitment age on chain time → register (deploying each name's resolver) → records →
+ *   primary name.
+ * - The approval covers the quote plus 2%, since the price is charged at `register` and can drift
+ *   (e.g. a decaying premium); only the actual price is paid.
  * - Paid in ERC-20 (USDC by default); the registrar does not accept ETH.
- * - By default each name gets its own PermissionedResolver with `records` written at creation.
+ * - By default each name gets its own PermissionedResolver with `records` written at creation; its
+ *   ETH address defaults to the owner (`addresses: { eth: null }` leaves it unset).
  * - The result's `secret` resumes an interrupted registration: call again with the same options and `secret`.
  *
  * **Gotchas**
@@ -86,7 +90,9 @@ export declare namespace register {
     owner?: string | undefined;
     /**
      * Resolver for the names. By default each name gets its own PermissionedResolver, deployed in
-     * the same plan with `records` written at creation; `null` registers without a resolver.
+     * the same plan with `records` written at creation. `"owned"` uses the signer's shared
+     * PermissionedResolver (the ENS app's address), deployed once and reused; its roles cover
+     * every name on it. `null` registers without a resolver.
      */
     resolver?: string | null | undefined;
     /** Records for every name, written when its resolver is created (or right after registering). */
@@ -101,7 +107,7 @@ export declare namespace register {
     paymentToken?: PaymentToken | undefined;
     /** ENSv2 registry for the names' subnames. */
     subregistry?: string | undefined;
-    /** 32-byte referrer tag recorded by the registrar. */
+    /** Referrer recorded by the registrar: 32 bytes, or an address (left-padded). */
     referrer?: Hex | undefined;
     /** Secret from an earlier `commit` or `register`, to finish that registration. */
     secret?: Hex | undefined;

@@ -1,7 +1,8 @@
 import { Effect } from "effect";
 
 import { Abis } from "@ensforge/contracts";
-import { isAddressEqual, isHex, zeroAddress, zeroHash, type Address, type Hex } from "viem";
+import { ownedResolverSalt } from "@ensforge/contracts/v2";
+import { isAddressEqual, isHex, zeroAddress, type Address, type Hex } from "viem";
 import { getCode } from "viem/actions";
 
 import type { Client } from "../../client/types.js";
@@ -18,13 +19,17 @@ import { makeCommitment, randomSecret, resolverSalt } from "./commitment.js";
 import { requireRegistrationContracts, type RegistrationContracts } from "./contracts.js";
 import { parseEthNames, type EthName } from "./labels.js";
 import { paymentTokenAddress, requirePaymentToken, type PaymentTokenInput } from "./payment.js";
+import { referrerOf } from "./referrer.js";
 
 /** What `registration.commit` and `registration.register` take. */
 export type RegistrationInput = {
   readonly names: string | readonly string[];
   readonly duration: bigint;
   readonly owner?: string | undefined;
-  /** `undefined`: a new PermissionedResolver per name; `null`: none. */
+  /**
+   * `undefined`: a new PermissionedResolver per name; `"owned"`: the signer's shared one (the ENS
+   * app's address); `null`: none.
+   */
   readonly resolver?: string | null | undefined;
   readonly records?: Omit<RecordWrites, "clear" | "pubkey"> | undefined;
   readonly primaryName?: boolean | undefined;
@@ -58,7 +63,9 @@ export type PreparedRegistration = {
   readonly token: Address;
   readonly total: bigint;
   readonly records: Omit<RecordWrites, "clear" | "pubkey"> | undefined;
-  /** Explicit resolver given by the caller; records then need their own step. */
+  /** The shared `"owned"` resolver's deployment, when it does not exist yet. */
+  readonly ownedDeploy: Plan.Call | undefined;
+  /** Explicit (or shared) resolver; records then need their own step. */
   readonly explicitResolver: Address | undefined;
   readonly minCommitmentAge: bigint;
   readonly maxCommitmentAge: bigint;
@@ -77,7 +84,7 @@ const validateOptions = Effect.fnUntraced(function* (
   {
     owner: Address;
     subregistry: Address;
-    resolver: Address | null | undefined;
+    resolver: Address | "owned" | null | undefined;
     secret: Hex;
     records: Omit<RecordWrites, "clear" | "pubkey"> | undefined;
   },
@@ -89,16 +96,17 @@ const validateOptions = Effect.fnUntraced(function* (
       ? zeroAddress
       : yield* requireAddress(input.subregistry, "subregistry");
   const resolver =
-    input.resolver === undefined || input.resolver === null
+    input.resolver === undefined || input.resolver === null || input.resolver === "owned"
       ? input.resolver
       : yield* requireAddress(input.resolver, "resolver");
+  // The shared resolver's address comes from the deployer, which must be the owner it serves.
+  if (resolver === "owned" && !isAddressEqual(owner, signer)) {
+    return yield* Effect.fail(
+      invalid("resolver", "owned", "The shared resolver is only for names the signer owns."),
+    );
+  }
   if (input.secret !== undefined && !(isHex(input.secret) && input.secret.length === 66)) {
     return yield* Effect.fail(invalid("secret", input.secret, "The secret must be 32 bytes."));
-  }
-  if (input.referrer !== undefined && !(isHex(input.referrer) && input.referrer.length === 66)) {
-    return yield* Effect.fail(
-      invalid("referrer", input.referrer, "The referrer must be 32 bytes."),
-    );
   }
 
   let records = input.records;
@@ -133,7 +141,34 @@ const validateOptions = Effect.fnUntraced(function* (
     }
   }
 
+  // A resolver ensforge creates points the name at its owner unless the caller says otherwise.
+  const addresses = records?.addresses;
+  const managed = resolver === undefined || resolver === "owned";
+  if (managed && addresses?.["eth"] === undefined && addresses?.["60"] === undefined) {
+    records = { ...records, addresses: { ...addresses, eth: owner } };
+  }
+
   return { owner, subregistry, resolver, secret: input.secret ?? randomSecret(), records };
+});
+
+/** The signer's shared PermissionedResolver: its address, and its deployment when missing. */
+const ownedResolver = Effect.fnUntraced(function* (
+  client: Client,
+  signer: Address,
+): Effect.fn.Return<
+  { readonly address: Address; readonly deploy: Plan.Call | undefined },
+  AnyError
+> {
+  const deployment = yield* deployPermissionedResolver(client, {
+    deployer: signer,
+    owner: signer,
+    salt: ownedResolverSalt(signer),
+  });
+  const code = yield* Rpc.fromPromise(() =>
+    getCode(client.publicClient, { address: deployment.address }),
+  );
+  const exists = code !== undefined && code !== "0x";
+  return { address: deployment.address, deploy: exists ? undefined : deployment.call };
 });
 
 /**
@@ -148,9 +183,14 @@ export const prepareRegistration = Effect.fnUntraced(function* (
 ): Effect.fn.Return<PreparedRegistration, AnyError> {
   const contracts = yield* requireRegistrationContracts(client);
   const names = yield* parseEthNames(input.names);
-  const options = yield* validateOptions(input, signer, names);
+  const validated = yield* validateOptions(input, signer, names);
+  const owned = validated.resolver === "owned" ? yield* ownedResolver(client, signer) : undefined;
+  const options = {
+    ...validated,
+    resolver: validated.resolver === "owned" ? owned?.address : validated.resolver,
+  };
   const token = yield* paymentTokenAddress(contracts, input.paymentToken);
-  const referrer = input.referrer ?? zeroHash;
+  const referrer = yield* referrerOf(input.referrer);
 
   const registrar = { address: contracts.registrar, abi: Abis.v2.ethRegistrar } as const;
   const quotes = Effect.forEach(
@@ -253,6 +293,7 @@ export const prepareRegistration = Effect.fnUntraced(function* (
     token,
     total: prepared.reduce((sum, name) => sum + name.price.base + name.price.premium, 0n),
     records: options.records,
+    ownedDeploy: owned?.deploy,
     explicitResolver: options.resolver ?? undefined,
     minCommitmentAge,
     maxCommitmentAge,

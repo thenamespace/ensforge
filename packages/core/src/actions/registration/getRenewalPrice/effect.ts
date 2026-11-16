@@ -4,7 +4,7 @@ import type { Client } from "../../../client/types.js";
 import * as Action from "../../../internal/action/index.js";
 import { requireRegistrationContracts } from "../../../internal/registration/contracts.js";
 import { parseEthNames } from "../../../internal/registration/labels.js";
-import { acceptedTokenInfo, paymentTokenAddress } from "../../../internal/registration/payment.js";
+import { paymentTokenAddress, tokenInfo } from "../../../internal/registration/payment.js";
 import { quoteRenewals } from "../../../internal/registration/renewal.js";
 import type { getRenewalPrice as Promises } from "./index.js";
 
@@ -21,7 +21,8 @@ export const getRenewalPrice = Effect.fn("ensforge.registration.getRenewalPrice"
     const { quotes, info } = yield* Effect.all(
       {
         quotes: quoteRenewals(client, contracts, { ...options, names, token }),
-        info: acceptedTokenInfo(client, contracts, token),
+        // Each route's price check enforces its own oracle's payment tokens.
+        info: tokenInfo(client, token),
       },
       { concurrency: "unbounded" },
     );

@@ -33,8 +33,10 @@ const recordsStep = Effect.fnUntraced(function* (
   registration: PreparedRegistration,
   resolver: Address,
 ): Effect.fn.Return<Plan.Step, AnyError> {
+  // A shared resolver deployed in this plan is a PermissionedResolver that does not exist yet.
+  const keying = registration.ownedDeploy === undefined ? undefined : ("name" as const);
   const calls = yield* Effect.forEach(registration.names, (name) =>
-    recordsCall(client, resolver, name, registration.records ?? {}),
+    recordsCall(client, resolver, name, registration.records ?? {}, keying),
   );
   return { id: "records", description: "Set records", calls };
 });
@@ -52,33 +54,40 @@ export const plan = Effect.fnUntraced(function* (
 
   const registration = yield* prepareRegistration(client, options, signer);
   const toCommit = yield* pendingCommitments(registration);
+  // The registrar charges the price at `register`, which can drift from the quote (the premium
+  // decays, the oracle can change), so the approval leaves 2% headroom; the balance check stays
+  // exact.
   const approvals = yield* paymentCalls(client, {
     payer: signer,
     token: registration.token,
     spender: registration.contracts.registrar,
-    amount: registration.total,
+    amount: registration.total + registration.total / 50n,
+    balanceRequired: registration.total,
   });
 
+  // The approval rides with the commits, so a batching wallet asks once before the wait.
   const steps: Plan.Step[] = [];
-  if (approvals.length > 0) {
-    steps.push({ id: "approve", description: "Approve payment", calls: approvals });
-  }
   if (toCommit.length > 0) {
     steps.push({
       id: "commit",
-      description: "Commit to the names",
-      calls: toCommit.map((name) => commitCall(registration, name)),
+      description: approvals.length > 0 ? "Approve payment and commit" : "Commit to the names",
+      calls: [...approvals, ...toCommit.map((name) => commitCall(registration, name))],
     });
+  } else if (approvals.length > 0) {
+    steps.push({ id: "approve", description: "Approve payment", calls: approvals });
   }
   // The registrar accepts a commitment `MIN_COMMITMENT_AGE` after the block that recorded it;
   // one extra second keeps `register` out of the boundary block.
   steps.push({
     id: "register",
     description: "Register",
-    calls: registration.names.flatMap((name) => [
-      ...(name.deploy === undefined ? [] : [name.deploy]),
-      registerCall(registration, name),
-    ]),
+    calls: [
+      ...(registration.ownedDeploy === undefined ? [] : [registration.ownedDeploy]),
+      ...registration.names.flatMap((name) => [
+        ...(name.deploy === undefined ? [] : [name.deploy]),
+        registerCall(registration, name),
+      ]),
+    ],
     ...(toCommit.length > 0 ? { waitFor: { seconds: registration.minCommitmentAge + 1n } } : {}),
   });
   if (registration.explicitResolver !== undefined && registration.records !== undefined) {

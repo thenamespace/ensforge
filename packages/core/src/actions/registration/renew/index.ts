@@ -76,7 +76,7 @@ export declare namespace renew {
      * @default "usdc"
      */
     paymentToken?: PaymentToken | undefined;
-    /** 32-byte referrer tag recorded by the registrar. */
+    /** Referrer recorded by the registrar: 32 bytes, or an address (left-padded). */
     referrer?: Hex | undefined;
   };
   /** Submitted transaction hashes and the plan that produced them. */

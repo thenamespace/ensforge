@@ -1,7 +1,7 @@
 import { Effect } from "effect";
 
 import { Abis } from "@ensforge/contracts";
-import { encodeFunctionData, zeroHash, type Address } from "viem";
+import { encodeFunctionData, type Address } from "viem";
 
 import type { Client } from "../../../client/types.js";
 import { ConfigError } from "../../../errors/classes/ConfigError.js";
@@ -10,11 +10,8 @@ import * as Action from "../../../internal/action/index.js";
 import { requireRegistrationContracts } from "../../../internal/registration/contracts.js";
 import { renewedNames } from "../../../internal/registration/events.js";
 import { parseEthNames } from "../../../internal/registration/labels.js";
-import {
-  paymentCalls,
-  paymentTokenAddress,
-  requirePaymentToken,
-} from "../../../internal/registration/payment.js";
+import { paymentCalls, paymentTokenAddress } from "../../../internal/registration/payment.js";
+import { referrerOf } from "../../../internal/registration/referrer.js";
 import { quoteRenewals, type RenewalQuote } from "../../../internal/registration/renewal.js";
 import { addressOf } from "../../../internal/write/signer.js";
 import { make as makePlan } from "../../../plan/make.js";
@@ -53,6 +50,8 @@ const renewCall = (
   };
 };
 
+const renewBatchSize = 25;
+
 /** @internal Builds the plan of `Actions.registration.renew`. */
 export const plan = Effect.fnUntraced(function* (
   client: Client,
@@ -65,14 +64,14 @@ export const plan = Effect.fnUntraced(function* (
 
   const contracts = yield* requireRegistrationContracts(client);
   const names = yield* parseEthNames(options.names);
+  const referrer = yield* referrerOf(options.referrer);
   const token = yield* paymentTokenAddress(contracts, options.paymentToken);
-  const { quotes } = yield* Effect.all(
-    {
-      quotes: quoteRenewals(client, contracts, { names, duration: options.duration, token }),
-      accepted: requirePaymentToken(client, contracts, token),
-    },
-    { concurrency: "unbounded" },
-  );
+  // Each route's price check enforces its own oracle's payment tokens (`PaymentTokenNotSupported`).
+  const quotes = yield* quoteRenewals(client, contracts, {
+    names,
+    duration: options.duration,
+    token,
+  });
 
   // ENSv2 and ENSv1 names renew through different contracts, each pulling its own payment.
   const routes = new Map<Address, RenewalQuote[]>();
@@ -99,12 +98,15 @@ export const plan = Effect.fnUntraced(function* (
   steps.push({
     id: "renew",
     description: "Renew",
-    calls: [...routes].map(([spender, group]) =>
-      renewCall(spender, group, {
-        duration: options.duration,
-        token,
-        referrer: options.referrer ?? zeroHash,
-      }),
+    // At most 25 names per `renewBatch` call keeps each call's gas bounded.
+    calls: [...routes].flatMap(([spender, group]) =>
+      Array.from({ length: Math.ceil(group.length / renewBatchSize) }, (_, index) =>
+        renewCall(spender, group.slice(index * renewBatchSize, (index + 1) * renewBatchSize), {
+          duration: options.duration,
+          token,
+          referrer,
+        }),
+      ),
     ),
   });
 

@@ -398,10 +398,14 @@ export declare namespace isAvailable {
  *
  * **Details**
  *
- * - The plan: approve the token (if the allowance is short) → commit → wait the registrar's minimum
- *   commitment age on chain time → register (deploying each name's resolver) → records → primary name.
+ * - The plan: approve the token (if the allowance is short) with the commit → wait the registrar's
+ *   minimum commitment age on chain time → register (deploying each name's resolver) → records →
+ *   primary name.
+ * - The approval covers the quote plus 2%, since the price is charged at `register` and can drift
+ *   (e.g. a decaying premium); only the actual price is paid.
  * - Paid in ERC-20 (USDC by default); the registrar does not accept ETH.
- * - By default each name gets its own PermissionedResolver with `records` written at creation.
+ * - By default each name gets its own PermissionedResolver with `records` written at creation; its
+ *   ETH address defaults to the owner (`addresses: { eth: null }` leaves it unset).
  * - The result's `secret` resumes an interrupted registration: call again with the same options and `secret`.
  *
  * **Gotchas**
