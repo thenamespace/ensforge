@@ -15,7 +15,7 @@ import * as CoinType from "../../utils/CoinType.js";
 import * as ContentHash from "../../utils/ContentHash.js";
 import { nodeResolverWriteAbi, permissionedResolverWriteAbi } from "../abis/resolver.js";
 import { encodeAbiJson } from "./abi-record.js";
-import type { ResolverKind } from "./resolver-kind.js";
+import type { SetterKeying } from "./setter-keying.js";
 
 /** Records to write; `null` deletes one. */
 export type RecordWrites = {
@@ -77,11 +77,11 @@ const requireImplementer = (implementer: Address | null): Address => {
  * Throws `InvalidInputError` / `UnsupportedError` for invalid or unsupported writes.
  */
 export const encodeRecordWrites = (
-  kind: ResolverKind,
+  keying: SetterKeying,
   target: { readonly node: Hex; readonly dns: Hex },
   writes: RecordWrites,
 ): Hex[] => {
-  const byName = kind === "name";
+  const byName = keying === "name";
   const calls: Hex[] = [];
   const node = (fn: (abi: typeof nodeResolverWriteAbi) => Hex) =>
     calls.push(fn(nodeResolverWriteAbi));

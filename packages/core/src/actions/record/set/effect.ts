@@ -6,47 +6,18 @@ import { encodeFunctionData, type Address, type Hex } from "viem";
 import type { Client } from "../../../client/types.js";
 import { InvalidInputError } from "../../../errors/classes/InvalidInputError.js";
 import { NotFoundError } from "../../../errors/classes/NotFoundError.js";
-import { UnsupportedError } from "../../../errors/classes/UnsupportedError.js";
 import type { AnyError } from "../../../errors/types.js";
 import * as Action from "../../../internal/action/index.js";
-import { loadName, type LoadedName } from "../../../internal/name/load.js";
-import { setResolverCall } from "../../../internal/name/set-resolver.js";
-import {
-  requireAddress,
-  requireRegistered,
-  requireV1Contracts,
-} from "../../../internal/name/write.js";
-import { resolverKind } from "../../../internal/records/resolver-kind.js";
+import { loadName } from "../../../internal/name/load.js";
+import { requestedResolver, setResolverCall } from "../../../internal/name/set-resolver.js";
+import { requireRegistered } from "../../../internal/name/write.js";
+import { setterKeying } from "../../../internal/records/setter-keying.js";
 import { encodeRecordWrites } from "../../../internal/records/write-profiles.js";
 import { addressOf } from "../../../internal/write/signer.js";
 import { make as makePlan } from "../../../plan/make.js";
 import type { Plan } from "../../../plan/Plan.js";
 import type { Write } from "../../../Types.js";
 import type { set as Promises } from "./index.js";
-
-/**
- * The resolver `options.resolver` asks for. `"default"` is the ENSv1 public resolver: the ENSv2
- * PublicResolverV2 only authorizes names known to the NameWrapper, and ENSv2 names otherwise get
- * a PermissionedResolver of their own.
- */
-const requestedResolver = (
-  client: Client,
-  { state }: LoadedName,
-  resolver: Address | "default",
-): Effect.Effect<Address, AnyError> => {
-  if (resolver !== "default") return requireAddress(resolver, "resolver");
-  if (state.protocol === "v2") {
-    return Effect.fail(
-      new UnsupportedError({
-        code: "UNSUPPORTED_PROTOCOL",
-        protocol: "v2",
-        feature: "the default resolver",
-        hint: "Pass the address of a resolver, e.g. a PermissionedResolver deployed for the name.",
-      }),
-    );
-  }
-  return requireV1Contracts(client).pipe(Effect.map((contracts) => contracts.publicResolver));
-};
 
 /** One call on the resolver: the setter itself, or a `multicall` of several. */
 const resolverCall = (resolver: Address, calls: readonly Hex[]): Plan.Call => ({
@@ -84,9 +55,9 @@ export const plan = Effect.fnUntraced(function* (
     });
   }
 
-  const kind = yield* resolverKind(client, resolver);
+  const keying = yield* setterKeying(client, resolver);
   const calls = yield* Effect.try({
-    try: () => encodeRecordWrites(kind, loaded.data.parts, options),
+    try: () => encodeRecordWrites(keying, loaded.data.parts, options),
     catch: (error) => error as AnyError,
   });
   if (calls.length > 0) {
