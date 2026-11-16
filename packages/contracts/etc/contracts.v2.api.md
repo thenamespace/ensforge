@@ -842,7 +842,7 @@ const registryEventsV2InterfaceAbi: Abi
 type RegistryInterfaceId = '0x51f67f40' | '0x63560a8e' | '0xc18bd555' | '0xb844ab6c' | '0x6f537c72' | '0x91b3c037' | '0xf5586a0b'
 const registryInterfaceIds: { readonly registry: '0x51f67f40'; readonly ownedRegistry: '0x63560a8e'; readonly permissionedRegistry: '0xc18bd555'; readonly standardRegistry: '0xb844ab6c'; readonly temporalRegistry: '0x6f537c72'; readonly tokenizedRegistry: '0x91b3c037'; readonly wrapperRegistry: '0xf5586a0b'; }
 type RegistryRole = bigint
-const registryRoleBitmaps: { readonly unemancipated: bigint; readonly regeneration: bigint; }
+const registryRoleBitmaps: { readonly unemancipated: bigint; readonly regeneration: bigint; readonly registration: bigint; }
 const registryRoles: { readonly registrar: bigint; readonly registrarAdmin: bigint; readonly registerReserved: bigint; readonly registerReservedAdmin: bigint; readonly setParent: bigint; readonly setParentAdmin: bigint; readonly unregister: bigint; readonly unregisterAdmin: bigint; readonly renew: bigint; readonly renewAdmin: bigint; readonly setSubregistry: bigint; readonly setSubregistryAdmin: bigint; readonly setResolver: bigint; readonly setResolverAdmin: bigint; readonly canTransfer: bigint; readonly canTransferAdmin: bigint; readonly wasReserved: bigint; readonly setUri: bigint; readonly setUriAdmin: bigint; readonly canName: bigint; readonly canNameAdmin: bigint; readonly upgrade: bigint; readonly upgradeAdmin: bigint; }
 const registryUriRendererV2InterfaceAbi: Abi
   function renderURI(address,uint256) view returns (string)

@@ -63,6 +63,8 @@ const unemancipatedRegistryRoles =
  * - `unemancipated`: holding any of these on a name, other than as its sole owner, means the name
  *   is not emancipated. Excludes the renew and upgrade roles.
  * - `regeneration`: changing any of these regenerates the name's token ID.
+ * - `registration`: the roles ETHRegistrar grants a new `.eth` owner; a sensible default for
+ *   any new name an owner should control (resolver, subregistry, transfers).
  *
  * Mainnet WrapperRegistry follows these sets; the Sepolia WrapperRegistry build predates them.
  *
@@ -71,4 +73,10 @@ const unemancipatedRegistryRoles =
 export const registryRoleBitmaps = {
   unemancipated: unemancipatedRegistryRoles,
   regeneration: unemancipatedRegistryRoles | registryRoles.canTransfer,
+  registration:
+    registryRoles.setSubregistry |
+    registryRoles.setSubregistryAdmin |
+    registryRoles.setResolver |
+    registryRoles.setResolverAdmin |
+    registryRoles.canTransferAdmin,
 } as const;
