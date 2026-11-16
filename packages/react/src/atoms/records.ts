@@ -45,11 +45,6 @@ export const createSetAddressesMutationAtom = makeMutationAtom(
   (sdk) => sdk.records.setAddresses,
 );
 
-export const createSetAliasMutationAtom = makeMutationAtom(
-  "records",
-  (sdk) => sdk.records.setAlias,
-);
-
 export const createSetAvatarMutationAtom = makeMutationAtom(
   "records",
   (sdk) => sdk.records.setAvatar,

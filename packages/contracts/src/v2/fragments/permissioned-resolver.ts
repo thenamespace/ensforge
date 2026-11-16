@@ -603,29 +603,6 @@ const permissionedResolverV2InterfaceErrors = [
   },
 ] as const satisfies Abi;
 
-export const permissionedResolverV2InterfaceGetAliasAbi = [
-  ...permissionedResolverV2InterfaceErrors,
-  {
-    inputs: [
-      {
-        internalType: "bytes",
-        name: "fromName",
-        type: "bytes",
-      },
-    ],
-    name: "getAlias",
-    outputs: [
-      {
-        internalType: "bytes",
-        name: "toName",
-        type: "bytes",
-      },
-    ],
-    stateMutability: "view",
-    type: "function",
-  },
-] as const satisfies Abi;
-
 export const permissionedResolverV2InterfaceHasRolesAbi = [
   ...permissionedResolverV2InterfaceErrors,
   {
@@ -711,28 +688,6 @@ export const permissionedResolverV2InterfaceRolesAbi = [
       },
     ],
     stateMutability: "view",
-    type: "function",
-  },
-] as const satisfies Abi;
-
-export const permissionedResolverV2InterfaceSetAliasAbi = [
-  ...permissionedResolverV2InterfaceErrors,
-  {
-    inputs: [
-      {
-        internalType: "bytes",
-        name: "fromName",
-        type: "bytes",
-      },
-      {
-        internalType: "bytes",
-        name: "toName",
-        type: "bytes",
-      },
-    ],
-    name: "setAlias",
-    outputs: [],
-    stateMutability: "nonpayable",
     type: "function",
   },
 ] as const satisfies Abi;

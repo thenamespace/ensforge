@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  getAliasAtom,
   getResolverAtom,
   getResolverVersionAtom,
   predictResolverAddressAtom,
@@ -17,10 +16,6 @@ import {
 import { makeMutationHook } from "./use-mutation.js";
 import { makeQueryHook } from "./use-query.js";
 import { makeSuspenseQueryHook } from "./use-suspense-query.js";
-
-export const useAlias = makeQueryHook(getAliasAtom);
-
-export const useAliasSuspense = makeSuspenseQueryHook(getAliasAtom);
 
 export const useResolver = makeQueryHook(getResolverAtom);
 

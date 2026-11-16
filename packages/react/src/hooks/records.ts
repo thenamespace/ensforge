@@ -17,7 +17,6 @@ import {
   createSetAbiMutationAtom,
   createSetAddressMutationAtom,
   createSetAddressesMutationAtom,
-  createSetAliasMutationAtom,
   createSetAvatarMutationAtom,
   createSetContentHashMutationAtom,
   createSetDataMutationAtom,
@@ -85,8 +84,6 @@ export const useSetAbi = makeMutationHook(createSetAbiMutationAtom);
 export const useSetAddress = makeMutationHook(createSetAddressMutationAtom);
 
 export const useSetAddresses = makeMutationHook(createSetAddressesMutationAtom);
-
-export const useSetAlias = makeMutationHook(createSetAliasMutationAtom);
 
 export const useSetAvatar = makeMutationHook(createSetAvatarMutationAtom);
 

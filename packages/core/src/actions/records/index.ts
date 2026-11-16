@@ -6,12 +6,6 @@ export {
   type ClearRecordsResult,
 } from "./clear-records/index.js";
 export {
-  setAlias,
-  type SetAliasError,
-  type SetAliasParameters,
-  type SetAliasResult,
-} from "./set-alias/index.js";
-export {
   AddressResult,
   getAddress,
   getAddresses,

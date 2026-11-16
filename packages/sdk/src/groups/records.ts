@@ -16,7 +16,6 @@ import {
   setAbi,
   setAddress,
   setAddresses,
-  setAlias,
   setAvatar,
   setContentHash,
   setData,
@@ -53,7 +52,6 @@ export interface RecordsActions {
   readonly setAbi: BoundAction<typeof setAbi>;
   readonly setAddress: BoundAction<typeof setAddress>;
   readonly setAddresses: BoundAction<typeof setAddresses>;
-  readonly setAlias: BoundAction<typeof setAlias>;
   readonly setAvatar: BoundAction<typeof setAvatar>;
   readonly setContentHash: BoundAction<typeof setContentHash>;
   readonly setData: BoundAction<typeof setData>;
@@ -84,7 +82,6 @@ export const makeRecordsActions = (config: EnsforgeConfig): RecordsActions =>
     setAbi: bindAction(config, setAbi),
     setAddress: bindAction(config, setAddress),
     setAddresses: bindAction(config, setAddresses),
-    setAlias: bindAction(config, setAlias),
     setAvatar: bindAction(config, setAvatar),
     setContentHash: bindAction(config, setContentHash),
     setData: bindAction(config, setData),

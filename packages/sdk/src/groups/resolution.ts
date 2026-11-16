@@ -1,6 +1,5 @@
 import {
   createResolver,
-  getAlias,
   getOrCreateResolver,
   getResolver,
   getResolverVersion,
@@ -18,7 +17,6 @@ import { bindAction, type BoundAction } from "../internal/bind-action.js";
 
 export interface ResolutionActions {
   readonly createResolver: BoundAction<typeof createResolver>;
-  readonly getAlias: BoundAction<typeof getAlias>;
   readonly getOrCreateResolver: BoundAction<typeof getOrCreateResolver>;
   readonly getResolver: BoundAction<typeof getResolver>;
   readonly getResolverVersion: BoundAction<typeof getResolverVersion>;
@@ -34,7 +32,6 @@ export interface ResolutionActions {
 export const makeResolutionActions = (config: EnsforgeConfig): ResolutionActions =>
   Object.freeze({
     createResolver: bindAction(config, createResolver),
-    getAlias: bindAction(config, getAlias),
     getOrCreateResolver: bindAction(config, getOrCreateResolver),
     getResolver: bindAction(config, getResolver),
     getResolverVersion: bindAction(config, getResolverVersion),

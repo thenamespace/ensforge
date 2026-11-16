@@ -7,12 +7,6 @@ export {
   type CreateResolverResult,
 } from "./create-resolver/index.js";
 export {
-  AliasResult,
-  getAlias,
-  type GetAliasError,
-  type GetAliasParameters,
-} from "./get-alias/index.js";
-export {
   getOrCreateResolver,
   type GetOrCreateResolverError,
   type GetOrCreateResolverParameters,

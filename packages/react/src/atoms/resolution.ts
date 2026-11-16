@@ -1,8 +1,6 @@
 import { makeMutationAtom } from "./mutation.js";
 import { makeQueryAtom } from "./query.js";
 
-export const getAliasAtom = makeQueryAtom("resolution", (sdk) => sdk.resolution.getAlias);
-
 export const getResolverAtom = makeQueryAtom("resolution", (sdk) => sdk.resolution.getResolver);
 
 export const getResolverVersionAtom = makeQueryAtom(
