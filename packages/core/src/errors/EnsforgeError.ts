@@ -1,4 +1,4 @@
-import type { Address } from "viem";
+import type { Address, Hex } from "viem";
 
 import { version } from "../version.js";
 import { getConfig } from "./config.js";
@@ -152,6 +152,10 @@ export declare namespace EnsforgeError {
     readonly contractKind?: "registry" | "resolver" | "wrapper" | "registrar" | undefined;
     /** ENSv2 registry that wrapped the revert in `ResolutionError` (mainnet). */
     readonly registry?: Address | undefined;
+    /** The contract revert this error was translated from, when it came from one. */
+    readonly revert?:
+      | { readonly errorName: string | undefined; readonly data: Hex | undefined }
+      | undefined;
   };
 
   /** Constructor options shared by every error class. */

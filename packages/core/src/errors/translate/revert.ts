@@ -48,13 +48,15 @@ export const fromRevert = (
     });
   }
 
+  const revertContext = { ...context, revert: { errorName, data: decoded.data } };
   const mapper = errorName === undefined ? undefined : revertMap[errorName];
-  if (mapper !== undefined) return mapper(args, context);
+  if (mapper !== undefined) return mapper(args, revertContext).withContext(revertContext);
 
   return new ContractRevertError({
     code: "CONTRACT_REVERTED",
     errorName,
     args,
     data: decoded.data,
+    context: revertContext,
   });
 };

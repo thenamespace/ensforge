@@ -82,7 +82,8 @@ export const readContract = <
 
 /**
  * {@link readContract} that returns `undefined` when the call reverts, e.g. `ownerOf` on an
- * expired token. Network and configuration failures still fail.
+ * expired token, including reverts translated into a specific class (`NameNotRenewable` →
+ * `NameStateError`). Network and configuration failures still fail.
  */
 export const readContractOrUndefined = <
   const abi extends Abi,
@@ -96,7 +97,7 @@ export const readContractOrUndefined = <
 > =>
   readContract(client, parameters).pipe(
     Effect.catchIf(
-      (error: AnyError) => error._tag === "ContractRevertError",
+      (error: AnyError) => error.context.revert !== undefined,
       () => Effect.succeed(undefined),
     ),
   );

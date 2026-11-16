@@ -50,7 +50,12 @@ const simulateSequence = (
               result.data === "0x"
               ? new ContractRevertError({
                   code: "CONTRACT_REVERTED",
-                  context: { contract: calls[index]?.to, account },
+                  data: "0x",
+                  context: {
+                    contract: calls[index]?.to,
+                    account,
+                    revert: { errorName: undefined, data: "0x" },
+                  },
                 })
               : (fromCause(result.error, { contract: calls[index]?.to, account }) as AnyError),
         gas: result.gasUsed,
