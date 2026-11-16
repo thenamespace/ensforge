@@ -10,3 +10,6 @@ research/
 *.log
 *.tgz
 
+
+# codegen --check scratch output
+.codegen-check/

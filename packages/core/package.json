@@ -187,6 +187,8 @@
   },
   "scripts": {
     "build": "tsdown",
+    "codegen": "node scripts/codegen.mjs",
+    "codegen:check": "node scripts/codegen.mjs --check",
     "dev": "tsdown --watch",
     "lint": "oxlint --deny-warnings .",
     "pack:check": "publint && attw --pack . --profile esm-only --exclude-entrypoints ./legacy/testing",

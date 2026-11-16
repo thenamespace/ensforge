@@ -1,3 +1,5 @@
+export * as Actions from "./actions/index.js";
+export * from "./actions/decorators.js";
 export * as Ensforge from "./client/Ensforge.js";
 export * as Errors from "./errors/index.js";
 export { Plan } from "./plan/Plan.js";
