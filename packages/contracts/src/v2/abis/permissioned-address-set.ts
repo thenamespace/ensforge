@@ -1,5 +1,11 @@
-/** ABI from the pinned Sepolia deployment artifact. */
-export const registryUpgradeSetV2Abi = [
+/**
+ * Role-managed address set, deployed as `PublicResolverSet`, `RegistryUpgradeSet` and `HCAUpgradeSet`.
+ *
+ * Superset of the mainnet and Sepolia deployments at contracts-v2 v1.0.1.
+ *
+ * @see https://github.com/ensdomains/contracts-v2/blob/v1.0.1/contracts/src/utils/PermissionedAddressSet.sol
+ */
+export const permissionedAddressSetV2Abi = [
   {
     inputs: [
       {

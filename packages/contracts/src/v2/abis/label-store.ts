@@ -1,4 +1,10 @@
-/** ABI from the pinned Sepolia deployment artifact. */
+/**
+ * Store mapping label hashes to their plaintext labels.
+ *
+ * Superset of the mainnet and Sepolia deployments at contracts-v2 v1.0.1.
+ *
+ * @see https://github.com/ensdomains/contracts-v2/blob/v1.0.1/contracts/src/utils/LabelStore.sol
+ */
 export const labelStoreV2Abi = [
   {
     inputs: [

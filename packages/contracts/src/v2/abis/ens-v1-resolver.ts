@@ -1,4 +1,10 @@
-/** ABI from the pinned Sepolia deployment artifact. */
+/**
+ * Resolver that forwards resolution of unmigrated names to the ENSv1 registry.
+ *
+ * Superset of the mainnet and Sepolia deployments at contracts-v2 v1.0.1.
+ *
+ * @see https://github.com/ensdomains/contracts-v2/blob/v1.0.1/contracts/src/resolver/ENSV1Resolver.sol
+ */
 export const ensV1ResolverV2Abi = [
   {
     inputs: [

@@ -1,4 +1,10 @@
-/** ABI from the pinned Sepolia deployment artifact. */
+/**
+ * Universal Resolver implementation that resolves through ENSv2 with ENSv1 fallback.
+ *
+ * Superset of the mainnet and Sepolia deployments at contracts-v2 v1.0.1.
+ *
+ * @see https://github.com/ensdomains/contracts-v2/blob/v1.0.1/contracts/src/universalResolver/UniversalResolverV2.sol
+ */
 export const universalResolverV2Abi = [
   {
     inputs: [
@@ -67,6 +73,11 @@ export const universalResolverV2Abi = [
   {
     inputs: [],
     name: "InvalidBatchGatewayResponse",
+    type: "error",
+  },
+  {
+    inputs: [],
+    name: "InvalidOffchainLookup",
     type: "error",
   },
   {
@@ -162,6 +173,22 @@ export const universalResolverV2Abi = [
       },
     ],
     name: "PrimaryNameNotNormalized",
+    type: "error",
+  },
+  {
+    inputs: [
+      {
+        internalType: "contract IRegistry",
+        name: "registry",
+        type: "address",
+      },
+      {
+        internalType: "bytes",
+        name: "errorData",
+        type: "bytes",
+      },
+    ],
+    name: "ResolutionError",
     type: "error",
   },
   {

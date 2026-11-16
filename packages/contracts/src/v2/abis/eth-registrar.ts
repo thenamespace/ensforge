@@ -1,4 +1,10 @@
-/** ABI from the pinned Sepolia deployment artifact. */
+/**
+ * Commit-reveal registrar for second-level `.eth` names.
+ *
+ * Superset of the mainnet and Sepolia deployments at contracts-v2 v1.0.1.
+ *
+ * @see https://github.com/ensdomains/contracts-v2/blob/v1.0.1/contracts/src/registrar/ETHRegistrar.sol
+ */
 export const ethRegistrarV2Abi = [
   {
     inputs: [

@@ -1,7 +1,7 @@
 import { Effect } from "effect";
 
 import { standaloneHcaV2UpgradeAbi } from "@ensforge/contracts/v2";
-import { hcaUpgradeSetV2Abi } from "@ensforge/contracts/v2/experimental/hca";
+import { permissionedAddressSetV2Abi } from "@ensforge/contracts/v2";
 import { zeroAddress, type Address } from "viem";
 
 import { defineReadAction } from "../../../action/read-request.js";
@@ -35,7 +35,7 @@ export const getHcaUpgradeEligibility = defineReadAction<
       const targetApproved = yield* hcaRpc(() =>
         config.publicClient.readContract({
           address: currentGate,
-          abi: hcaUpgradeSetV2Abi,
+          abi: permissionedAddressSetV2Abi,
           functionName: "includes",
           args: [implementation],
           blockNumber,
@@ -89,7 +89,7 @@ export const getHcaUpgradeEligibility = defineReadAction<
           : yield* hcaRpc(() =>
               config.publicClient.readContract({
                 address: predecessorGate,
-                abi: hcaUpgradeSetV2Abi,
+                abi: permissionedAddressSetV2Abi,
                 functionName: "includes",
                 args: [account.currentImplementation],
                 blockNumber,

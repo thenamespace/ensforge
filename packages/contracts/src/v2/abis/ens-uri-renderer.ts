@@ -1,4 +1,10 @@
-/** ABI from the pinned Sepolia deployment artifact. */
+/**
+ * Static token URI renderer for registry tokens.
+ *
+ * Superset of the mainnet and Sepolia deployments at contracts-v2 v1.0.1.
+ *
+ * @see https://github.com/ensdomains/contracts-v2/blob/v1.0.1/contracts/src/registry/StaticURIRenderer.sol
+ */
 export const ensUriRendererV2Abi = [
   {
     inputs: [

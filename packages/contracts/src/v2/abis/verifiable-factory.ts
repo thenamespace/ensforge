@@ -1,4 +1,10 @@
-/** ABI from the pinned Sepolia deployment artifact. */
+/**
+ * Factory that deploys verifiable proxies for user registries and resolvers.
+ *
+ * Superset of the mainnet and Sepolia deployments at contracts-v2 v1.0.1.
+ *
+ * @see https://github.com/ensdomains/contracts-v2/blob/v1.0.1/contracts/lib/verifiable-factory/src/VerifiableFactory.sol
+ */
 export const verifiableFactoryV2Abi = [
   {
     inputs: [],

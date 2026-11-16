@@ -1,4 +1,10 @@
-/** ABI from the pinned Sepolia deployment artifact. */
+/**
+ * Migration controller for unlocked ENSv1 names.
+ *
+ * Superset of the mainnet and Sepolia deployments at contracts-v2 v1.0.1.
+ *
+ * @see https://github.com/ensdomains/contracts-v2/blob/v1.0.1/contracts/src/migration/UnlockedMigrationController.sol
+ */
 export const unlockedMigrationControllerV2Abi = [
   {
     inputs: [

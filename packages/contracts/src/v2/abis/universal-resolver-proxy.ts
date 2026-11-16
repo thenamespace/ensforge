@@ -1,5 +1,11 @@
-/** ABI from the pinned Sepolia deployment artifact. */
-export const managedUniversalResolverProxyV2Abi = [
+/**
+ * Upgradeable Universal Resolver proxy, deployed as the public `0xeeee…eeee` proxy and the ENS-managed proxy behind it.
+ *
+ * Superset of the mainnet and Sepolia deployments at contracts-v2 v1.0.1.
+ *
+ * @see https://github.com/ensdomains/contracts-v2/blob/v1.0.1/contracts/src/universalResolver/UpgradableUniversalResolverProxy.sol
+ */
+export const universalResolverProxyV2Abi = [
   {
     inputs: [
       {

@@ -1,6 +1,6 @@
 import { Effect } from "effect";
 
-import { hcaUpgradeSetV2Abi } from "@ensforge/contracts/v2/experimental/hca";
+import { permissionedAddressSetV2Abi } from "@ensforge/contracts/v2";
 import { encodeFunctionData, type Address } from "viem";
 
 import { defineAction } from "../../../../action/action.js";
@@ -37,7 +37,7 @@ export const setHcaUpgradeImplementationApproval = defineAction<
       to: address,
       value: 0n,
       data: encodeFunctionData({
-        abi: hcaUpgradeSetV2Abi,
+        abi: permissionedAddressSetV2Abi,
         functionName: "approve",
         args: [implementation, parameters.approved],
       }),

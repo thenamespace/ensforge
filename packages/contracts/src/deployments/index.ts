@@ -4,4 +4,3 @@ export * from "./sepolia-v2.js";
 export * from "./types.js";
 export * from "./hca.js";
 export * from "./hca-runtime.js";
-export * from "./hca-abi-coverage.js";

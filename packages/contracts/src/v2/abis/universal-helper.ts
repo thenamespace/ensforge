@@ -1,4 +1,10 @@
-/** ABI from the pinned Sepolia deployment artifact. */
+/**
+ * Read helper for batched ENSv2 lookups (registries, resolvers, names).
+ *
+ * Superset of the mainnet and Sepolia deployments at contracts-v2 v1.0.1.
+ *
+ * @see https://github.com/ensdomains/contracts-v2/blob/v1.0.1/contracts/src/universalResolver/UniversalHelper.sol
+ */
 export const universalHelperV2Abi = [
   {
     inputs: [
@@ -41,6 +47,22 @@ export const universalHelperV2Abi = [
       },
     ],
     name: "LabelIsTooLong",
+    type: "error",
+  },
+  {
+    inputs: [
+      {
+        internalType: "contract IRegistry",
+        name: "registry",
+        type: "address",
+      },
+      {
+        internalType: "bytes",
+        name: "errorData",
+        type: "bytes",
+      },
+    ],
+    name: "ResolutionError",
     type: "error",
   },
   {

@@ -1,12 +1,22 @@
-/** Legacy ABI. Not deployed by the current Sepolia profile. */
-/** Complete HCAUpgradeGate ABI from the experimental ENSv2 Sepolia HCA deployment. */
-export const hcaUpgradeGateV2Abi = [
+/**
+ * Gateway provider listing the CCIP-Read gateways that serve DNSSEC proofs.
+ *
+ * Superset of the mainnet and Sepolia deployments at contracts-v2 v1.0.1.
+ *
+ * @see https://github.com/ensdomains/contracts-v2/blob/v1.0.1/contracts/lib/ens-contracts/contracts/ccipRead/GatewayProvider.sol
+ */
+export const dnssecGatewayProviderV2Abi = [
   {
     inputs: [
       {
         internalType: "address",
-        name: "owner_",
+        name: "owner",
         type: "address",
+      },
+      {
+        internalType: "string[]",
+        name: "urls",
+        type: "string[]",
       },
     ],
     stateMutability: "nonpayable",
@@ -40,25 +50,6 @@ export const hcaUpgradeGateV2Abi = [
       {
         indexed: true,
         internalType: "address",
-        name: "implementation",
-        type: "address",
-      },
-      {
-        indexed: true,
-        internalType: "bool",
-        name: "approved",
-        type: "bool",
-      },
-    ],
-    name: "ImplementationApprovalChanged",
-    type: "event",
-  },
-  {
-    anonymous: false,
-    inputs: [
-      {
-        indexed: true,
-        internalType: "address",
         name: "previousOwner",
         type: "address",
       },
@@ -73,19 +64,13 @@ export const hcaUpgradeGateV2Abi = [
     type: "event",
   },
   {
-    inputs: [
-      {
-        internalType: "address",
-        name: "implementation",
-        type: "address",
-      },
-    ],
-    name: "approvedImplementations",
+    inputs: [],
+    name: "gateways",
     outputs: [
       {
-        internalType: "bool",
-        name: "approved",
-        type: "bool",
+        internalType: "string[]",
+        name: "",
+        type: "string[]",
       },
     ],
     stateMutability: "view",
@@ -114,17 +99,12 @@ export const hcaUpgradeGateV2Abi = [
   {
     inputs: [
       {
-        internalType: "address",
-        name: "implementation",
-        type: "address",
-      },
-      {
-        internalType: "bool",
-        name: "approved",
-        type: "bool",
+        internalType: "string[]",
+        name: "urls",
+        type: "string[]",
       },
     ],
-    name: "setImplementationApproval",
+    name: "setGateways",
     outputs: [],
     stateMutability: "nonpayable",
     type: "function",

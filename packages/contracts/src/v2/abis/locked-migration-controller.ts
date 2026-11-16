@@ -1,51 +1,11 @@
-/** ABI from the pinned Sepolia deployment artifact. */
+/**
+ * Migration controller for locked (fuse-burned) NameWrapper names. Behind a proxy on mainnet, so the ABI includes the proxy functions.
+ *
+ * Superset of the mainnet and Sepolia deployments at contracts-v2 v1.0.1.
+ *
+ * @see https://github.com/ensdomains/contracts-v2/blob/v1.0.1/contracts/src/migration/LockedMigrationController.sol
+ */
 export const lockedMigrationControllerV2Abi = [
-  {
-    inputs: [
-      {
-        internalType: "contract INameWrapper",
-        name: "nameWrapper",
-        type: "address",
-      },
-      {
-        internalType: "address",
-        name: "graveyard",
-        type: "address",
-      },
-      {
-        internalType: "contract IPermissionedRegistry",
-        name: "ethRegistry",
-        type: "address",
-      },
-      {
-        internalType: "contract VerifiableFactory",
-        name: "verifiableFactory",
-        type: "address",
-      },
-      {
-        internalType: "address",
-        name: "wrapperRegistryImpl",
-        type: "address",
-      },
-      {
-        internalType: "contract IAddressSet",
-        name: "publicResolverSet",
-        type: "address",
-      },
-      {
-        internalType: "address",
-        name: "publicResolver",
-        type: "address",
-      },
-      {
-        internalType: "contract IContractNamer",
-        name: "contractNamer",
-        type: "address",
-      },
-    ],
-    stateMutability: "nonpayable",
-    type: "constructor",
-  },
   {
     inputs: [
       {
@@ -396,5 +356,146 @@ export const lockedMigrationControllerV2Abi = [
     ],
     stateMutability: "view",
     type: "function",
+  },
+  {
+    anonymous: false,
+    inputs: [
+      {
+        indexed: true,
+        internalType: "address",
+        name: "previousOwner",
+        type: "address",
+      },
+      {
+        indexed: true,
+        internalType: "address",
+        name: "newOwner",
+        type: "address",
+      },
+    ],
+    name: "OwnershipTransferred",
+    type: "event",
+  },
+  {
+    anonymous: false,
+    inputs: [
+      {
+        indexed: true,
+        internalType: "address",
+        name: "previousImplementation",
+        type: "address",
+      },
+      {
+        indexed: true,
+        internalType: "address",
+        name: "newImplementation",
+        type: "address",
+      },
+    ],
+    name: "ProxyImplementationUpdated",
+    type: "event",
+  },
+  {
+    inputs: [],
+    name: "owner",
+    outputs: [
+      {
+        internalType: "address",
+        name: "",
+        type: "address",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "address",
+        name: "newOwner",
+        type: "address",
+      },
+    ],
+    name: "transferOwnership",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "address",
+        name: "newImplementation",
+        type: "address",
+      },
+    ],
+    name: "upgradeTo",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "address",
+        name: "newImplementation",
+        type: "address",
+      },
+      {
+        internalType: "bytes",
+        name: "data",
+        type: "bytes",
+      },
+    ],
+    name: "upgradeToAndCall",
+    outputs: [],
+    stateMutability: "payable",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "contract INameWrapper",
+        name: "nameWrapper",
+        type: "address",
+      },
+      {
+        internalType: "address",
+        name: "graveyard",
+        type: "address",
+      },
+      {
+        internalType: "contract IPermissionedRegistry",
+        name: "ethRegistry",
+        type: "address",
+      },
+      {
+        internalType: "contract VerifiableFactory",
+        name: "verifiableFactory",
+        type: "address",
+      },
+      {
+        internalType: "address",
+        name: "wrapperRegistryImpl",
+        type: "address",
+      },
+      {
+        internalType: "contract IAddressSet",
+        name: "publicResolverSet",
+        type: "address",
+      },
+      {
+        internalType: "address",
+        name: "publicResolver",
+        type: "address",
+      },
+      {
+        internalType: "contract IContractNamer",
+        name: "contractNamer",
+        type: "address",
+      },
+    ],
+    stateMutability: "nonpayable",
+    type: "constructor",
   },
 ] as const;

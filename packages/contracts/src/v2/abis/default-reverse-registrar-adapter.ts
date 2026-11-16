@@ -1,4 +1,10 @@
-/** ABI from the pinned Sepolia deployment artifact. */
+/**
+ * Adapter that sets the default (chain-independent) primary name for an account.
+ *
+ * Superset of the mainnet and Sepolia deployments at contracts-v2 v1.0.1.
+ *
+ * @see https://github.com/ensdomains/contracts-v2/blob/v1.0.1/contracts/src/reverse-registrar/DefaultReverseRegistrarAdapter.sol
+ */
 export const defaultReverseRegistrarAdapterV2Abi = [
   {
     inputs: [

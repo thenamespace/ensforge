@@ -1,4 +1,10 @@
-/** ABI from the pinned Sepolia deployment artifact. */
+/**
+ * Implementation of user-owned subname registries, deployed per name through the VerifiableFactory.
+ *
+ * Superset of the mainnet and Sepolia deployments at contracts-v2 v1.0.1.
+ *
+ * @see https://github.com/ensdomains/contracts-v2/blob/v1.0.1/contracts/src/registry/UserRegistry.sol
+ */
 export const userRegistryV2Abi = [
   {
     inputs: [
@@ -8,13 +14,23 @@ export const userRegistryV2Abi = [
         type: "address",
       },
       {
-        internalType: "contract IRegistryURIRenderer",
-        name: "uriRenderer",
+        internalType: "address",
+        name: "namer",
         type: "address",
       },
       {
-        internalType: "address",
-        name: "namer",
+        internalType: "contract IAddressSet",
+        name: "upgradeSet",
+        type: "address",
+      },
+      {
+        internalType: "address[]",
+        name: "upgradeable",
+        type: "address[]",
+      },
+      {
+        internalType: "contract IRegistryURIRenderer",
+        name: "uriRenderer",
         type: "address",
       },
     ],
@@ -397,6 +413,17 @@ export const userRegistryV2Abi = [
       },
     ],
     name: "UUPSUnsupportedProxiableUUID",
+    type: "error",
+  },
+  {
+    inputs: [
+      {
+        internalType: "address",
+        name: "implementation",
+        type: "address",
+      },
+    ],
+    name: "UpgradeTargetNotApproved",
     type: "error",
   },
   {
@@ -883,6 +910,19 @@ export const userRegistryV2Abi = [
   },
   {
     inputs: [],
+    name: "UPGRADE_SET",
+    outputs: [
+      {
+        internalType: "contract IAddressSet",
+        name: "",
+        type: "address",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [],
     name: "URI_RENDERER",
     outputs: [
       {
@@ -946,7 +986,7 @@ export const userRegistryV2Abi = [
     inputs: [
       {
         internalType: "address",
-        name: "",
+        name: "previousImplementation",
         type: "address",
       },
     ],
@@ -954,11 +994,11 @@ export const userRegistryV2Abi = [
     outputs: [
       {
         internalType: "bool",
-        name: "allowed",
+        name: "",
         type: "bool",
       },
     ],
-    stateMutability: "pure",
+    stateMutability: "view",
     type: "function",
   },
   {

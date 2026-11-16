@@ -1,4 +1,10 @@
-/** ABI from the pinned Sepolia deployment artifact. */
+/**
+ * Upgradeable contract that sets reverse names for ENSv2 contracts (proxy plus implementation ABI).
+ *
+ * Superset of the mainnet and Sepolia deployments at contracts-v2 v1.0.1.
+ *
+ * @see https://github.com/ensdomains/contracts-v2/blob/v1.0.1/contracts/src/utils/ContractNamer.sol
+ */
 export const contractNamerV2Abi = [
   {
     inputs: [

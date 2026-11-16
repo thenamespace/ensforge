@@ -1,6 +1,6 @@
 import { Effect } from "effect";
 
-import { hcaUpgradeSetV2Abi } from "@ensforge/contracts/v2/experimental/hca";
+import { permissionedAddressSetV2Abi } from "@ensforge/contracts/v2";
 import type { Address } from "viem";
 
 import type { BlockParameters } from "../../../action/block.js";
@@ -22,7 +22,7 @@ export const getHcaUpgradeImplementationApproval = defineReadAction<
       return yield* hcaRpc(() =>
         config.publicClient.readContract({
           address,
-          abi: hcaUpgradeSetV2Abi,
+          abi: permissionedAddressSetV2Abi,
           functionName: "includes",
           args: [implementation],
           blockNumber,

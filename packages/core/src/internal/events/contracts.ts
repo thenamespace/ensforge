@@ -7,7 +7,7 @@ import {
 } from "@ensforge/contracts/v1";
 import {
   ethRegistrarV2Abi,
-  ethRegistryV2Abi,
+  permissionedRegistryV2Abi,
   permissionedResolverV2Abi,
   publicResolverV2Abi,
   lockedMigrationControllerV2Abi,
@@ -72,7 +72,7 @@ export const getEnsEventContracts = (
       },
       {
         address: profile.v2.contracts.ethRegistry,
-        abi: ethRegistryV2Abi,
+        abi: permissionedRegistryV2Abi,
         protocol: "v2",
         kind: "registry",
       },

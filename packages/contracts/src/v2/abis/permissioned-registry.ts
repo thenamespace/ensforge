@@ -1,5 +1,11 @@
-/** ABI from the pinned Sepolia deployment artifact. */
-export const ethRegistryV2Abi = [
+/**
+ * Role-based registry, deployed as `RootRegistry` (top-level names) and `ETHRegistry` (`.eth` names).
+ *
+ * Superset of the mainnet and Sepolia deployments at contracts-v2 v1.0.1.
+ *
+ * @see https://github.com/ensdomains/contracts-v2/blob/v1.0.1/contracts/src/registry/PermissionedRegistry.sol
+ */
+export const permissionedRegistryV2Abi = [
   {
     inputs: [
       {
