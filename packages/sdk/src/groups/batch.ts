@@ -10,7 +10,7 @@ import {
   sendCalls,
   simulateCalls,
   type EnsforgeConfig,
-} from "@ensforge/core";
+} from "@ensforge/core/legacy";
 
 import {
   bindAction,

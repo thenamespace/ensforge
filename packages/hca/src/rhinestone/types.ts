@@ -1,11 +1,11 @@
 import type { HcaDeploymentProfile } from "@ensforge/contracts/internal";
-import type { EnsAction, HcaError } from "@ensforge/core";
+import type { EnsAction, HcaError } from "@ensforge/core/legacy";
 import type {
   EnableHcaSessionParameters,
   HcaSessionRefund,
   HcaSessionAuthorization,
   HcaExecutionPolicy,
-} from "@ensforge/core/hca";
+} from "@ensforge/core/legacy/hca";
 import type { RhinestoneSDK } from "@rhinestone/sdk";
 import type { Account, Chain, Hex } from "viem";
 

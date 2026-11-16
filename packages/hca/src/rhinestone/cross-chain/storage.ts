@@ -1,7 +1,7 @@
 import { Schema } from "effect";
 
-import { HcaError } from "@ensforge/core";
-import { scopeHcaStorage, type HcaStorage } from "@ensforge/core/hca";
+import { HcaError } from "@ensforge/core/legacy";
+import { scopeHcaStorage, type HcaStorage } from "@ensforge/core/legacy/hca";
 
 import { RhinestoneFundingRecord } from "./types.js";
 

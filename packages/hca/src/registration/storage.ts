@@ -1,11 +1,11 @@
 import { Schema } from "effect";
 
-import { HcaError } from "@ensforge/core";
+import { HcaError } from "@ensforge/core/legacy";
 import {
   HcaRegistrationOperation,
   scopeHcaStorage,
   type HcaRegistrationStorage,
-} from "@ensforge/core/hca";
+} from "@ensforge/core/legacy/hca";
 
 import { createMemoryHcaStorage } from "../storage.js";
 

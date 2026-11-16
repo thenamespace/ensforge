@@ -42,7 +42,7 @@ import {
   enableHcaSessionWithRefund,
   isHcaSessionEnabled,
   type EnsforgeConfig,
-} from "@ensforge/core";
+} from "@ensforge/core/legacy";
 
 import {
   bindAction,

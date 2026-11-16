@@ -1,4 +1,4 @@
-import { HcaError } from "@ensforge/core";
+import { HcaError } from "@ensforge/core/legacy";
 
 import type { ExecutionExtensions } from "./types.js";
 

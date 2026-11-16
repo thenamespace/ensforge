@@ -1,11 +1,11 @@
 import { Schema } from "effect";
 
-import { HcaError } from "@ensforge/core";
+import { HcaError } from "@ensforge/core/legacy";
 import {
   HcaExecutionIdentitySchema,
   HcaExecutionHash,
   HcaExecutionLocator,
-} from "@ensforge/core/hca";
+} from "@ensforge/core/legacy/hca";
 
 import type { ExecutionSubmission, SubmissionCodec } from "./types.js";
 

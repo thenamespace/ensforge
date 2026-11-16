@@ -1,7 +1,7 @@
 import { Effect } from "effect";
 
-import { defineAction, HcaError } from "@ensforge/core";
-import { enableHcaSession, enableHcaSessionWithRefund } from "@ensforge/core/hca";
+import { defineAction, HcaError } from "@ensforge/core/legacy";
+import { enableHcaSession, enableHcaSessionWithRefund } from "@ensforge/core/legacy/hca";
 import type { RhinestoneSDK } from "@rhinestone/sdk";
 
 import { createRhinestoneHca } from "./account.js";

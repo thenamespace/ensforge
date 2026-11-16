@@ -1,12 +1,12 @@
 import { Effect, Schema } from "effect";
 
 import { standaloneHcaV2SignatureAbi } from "@ensforge/contracts/internal";
-import { defineAction, HcaError, type EnsforgeConfig } from "@ensforge/core";
+import { defineAction, HcaError, type EnsforgeConfig } from "@ensforge/core/legacy";
 import {
   HcaExecutionHash,
   type PreparedHcaCalls,
   type HcaExecutionReview,
-} from "@ensforge/core/hca";
+} from "@ensforge/core/legacy/hca";
 import {
   RhinestoneSDK,
   type RhinestoneAccount,

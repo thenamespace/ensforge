@@ -1,6 +1,6 @@
 import { Clock, Effect } from "effect";
 
-import { defineAction, HcaError } from "@ensforge/core";
+import { defineAction, HcaError } from "@ensforge/core/legacy";
 
 import type { RhinestoneCrossChain } from "../types.js";
 

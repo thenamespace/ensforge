@@ -1,6 +1,6 @@
 import { getHcaDeployment, verifiableFactoryV2ProxyLogicAbi } from "@ensforge/contracts/internal";
-import { HcaError, type EnsforgeConfig } from "@ensforge/core";
-import { verifyHca } from "@ensforge/core/hca";
+import { HcaError, type EnsforgeConfig } from "@ensforge/core/legacy";
+import { verifyHca } from "@ensforge/core/legacy/hca";
 import type { RhinestoneSDK, Session } from "@rhinestone/sdk";
 import type { Address, Hex } from "viem";
 

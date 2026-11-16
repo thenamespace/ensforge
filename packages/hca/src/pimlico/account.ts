@@ -2,8 +2,8 @@ import {
   standaloneHcaFactoryV2DeploymentAbi,
   standaloneHcaV2UserOperationAbi,
 } from "@ensforge/contracts/internal";
-import { HcaError, type EnsforgeConfig } from "@ensforge/core";
-import type { PreparedHcaCalls } from "@ensforge/core/hca";
+import { HcaError, type EnsforgeConfig } from "@ensforge/core/legacy";
+import type { PreparedHcaCalls } from "@ensforge/core/legacy/hca";
 import { encodeAbiParameters, encodeFunctionData, padHex } from "viem";
 import {
   entryPoint07Abi,

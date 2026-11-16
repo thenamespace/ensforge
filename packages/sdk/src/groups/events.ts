@@ -1,4 +1,9 @@
-import { getEnsEvents, getNameHistory, watchEnsEvents, type EnsforgeConfig } from "@ensforge/core";
+import {
+  getEnsEvents,
+  getNameHistory,
+  watchEnsEvents,
+  type EnsforgeConfig,
+} from "@ensforge/core/legacy";
 
 import { bindAction, type BoundAction, type BoundWatchEnsEvents } from "../internal/bind-action.js";
 

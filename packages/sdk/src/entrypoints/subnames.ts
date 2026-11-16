@@ -1,3 +1,3 @@
-export type * from "@ensforge/core/subnames";
+export type * from "@ensforge/core/legacy/subnames";
 
 export type { SubnameActions } from "../groups/subnames.js";

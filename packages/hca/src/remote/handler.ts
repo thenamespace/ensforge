@@ -1,13 +1,13 @@
 import { Schema } from "effect";
 
-import { HcaError } from "@ensforge/core";
+import { HcaError } from "@ensforge/core/legacy";
 import {
   HcaRegistrationOperation,
   scopeHcaStorage,
   getHcaRegistration,
   resumeHcaRegistration,
   cancelHcaRegistration,
-} from "@ensforge/core/hca";
+} from "@ensforge/core/legacy/hca";
 
 import { HcaRemoteRequest, type HcaRemoteHandlerOptions, HcaRemoteProgressJson } from "./types.js";
 

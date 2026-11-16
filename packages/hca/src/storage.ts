@@ -1,5 +1,5 @@
-import { createMemoryWorkflowStorage } from "@ensforge/core";
-import type { HcaStorage } from "@ensforge/core/hca";
+import { createMemoryWorkflowStorage } from "@ensforge/core/legacy";
+import type { HcaStorage } from "@ensforge/core/legacy/hca";
 
 /** Preserve the legacy discriminator for existing HCA consumers. */
 export const createMemoryHcaStorage = (): HcaStorage => ({
@@ -7,4 +7,4 @@ export const createMemoryHcaStorage = (): HcaStorage => ({
   kind: "hca-storage",
 });
 
-export type { HcaStorage, HcaStoredRecord } from "@ensforge/core/hca";
+export type { HcaStorage, HcaStoredRecord } from "@ensforge/core/legacy/hca";

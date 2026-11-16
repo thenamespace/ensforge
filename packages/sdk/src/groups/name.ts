@@ -15,7 +15,7 @@ import {
   isReserved,
   isWrapped,
   type EnsforgeConfig,
-} from "@ensforge/core";
+} from "@ensforge/core/legacy";
 
 import { bindAction, type BoundAction } from "../internal/bind-action.js";
 

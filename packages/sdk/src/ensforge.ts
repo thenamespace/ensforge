@@ -3,8 +3,8 @@ import {
   EnsforgeConfigTypeId,
   type CreateConfigParameters,
   type EnsforgeConfig,
-} from "@ensforge/core";
-import { createMemoryWorkflowStorage } from "@ensforge/core/storage";
+} from "@ensforge/core/legacy";
+import { createMemoryWorkflowStorage } from "@ensforge/core/legacy/storage";
 
 import {
   makeBatchActions,

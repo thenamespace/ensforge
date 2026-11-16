@@ -1,4 +1,4 @@
-import type { EnsforgeConfig } from "@ensforge/core";
+import type { EnsforgeConfig } from "@ensforge/core/legacy";
 import {
   setHcaFactoryImplementationApproval,
   setHcaUpgradeImplementationApproval,
@@ -9,7 +9,7 @@ import {
   revokeTrustedHcaRoles,
   getHcaGovernanceOwner,
   getTrustedHcaRoles,
-} from "@ensforge/core/hca/admin";
+} from "@ensforge/core/legacy/hca/admin";
 
 import { bindAction, type BoundAction } from "../internal/bind-action.js";
 

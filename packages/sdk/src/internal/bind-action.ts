@@ -34,7 +34,7 @@ import type {
   WatchEnsEvents,
   WatchEnsEventsError,
   WatchEnsEventsParameters,
-} from "@ensforge/core";
+} from "@ensforge/core/legacy";
 
 type Callable = (...arguments_: never[]) => unknown;
 

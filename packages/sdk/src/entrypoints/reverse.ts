@@ -1,3 +1,3 @@
-export type * from "@ensforge/core/reverse";
+export type * from "@ensforge/core/legacy/reverse";
 
 export type { ReverseActions } from "../groups/reverse.js";

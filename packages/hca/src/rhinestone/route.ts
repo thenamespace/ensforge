@@ -1,6 +1,6 @@
 import { ethRegistrarV2Abi } from "@ensforge/contracts/v2";
-import { HcaError, type EnsforgeConfig } from "@ensforge/core";
-import type { HcaExecutionFee, PreparedHcaCalls } from "@ensforge/core/hca";
+import { HcaError, type EnsforgeConfig } from "@ensforge/core/legacy";
+import type { HcaExecutionFee, PreparedHcaCalls } from "@ensforge/core/legacy/hca";
 import type { PreparedTransactionData } from "@rhinestone/sdk";
 import { getTypedData } from "@rhinestone/sdk/dist/src/execution/singleChainOps";
 import { decodeFunctionData, erc20Abi, hashTypedData, zeroAddress } from "viem";

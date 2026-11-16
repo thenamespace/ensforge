@@ -33,114 +33,118 @@
       "workspace-source": "./src/index.ts",
       "default": "./dist/index.js"
     },
-    "./batch": {
-      "workspace-source": "./src/actions/batch/index.ts",
-      "default": "./dist/batch.js"
+    "./legacy": {
+      "workspace-source": "./src/legacy/index.ts",
+      "default": "./dist/legacy.js"
     },
-    "./capabilities": {
-      "workspace-source": "./src/actions/capabilities/index.ts",
-      "default": "./dist/capabilities.js"
+    "./legacy/batch": {
+      "workspace-source": "./src/legacy/actions/batch/index.ts",
+      "default": "./dist/legacy/batch.js"
     },
-    "./dns": {
-      "workspace-source": "./src/actions/dns/index.ts",
-      "default": "./dist/dns.js"
+    "./legacy/capabilities": {
+      "workspace-source": "./src/legacy/actions/capabilities/index.ts",
+      "default": "./dist/legacy/capabilities.js"
     },
-    "./events": {
-      "workspace-source": "./src/actions/events/index.ts",
-      "default": "./dist/events.js"
+    "./legacy/dns": {
+      "workspace-source": "./src/legacy/actions/dns/index.ts",
+      "default": "./dist/legacy/dns.js"
     },
-    "./hca": {
-      "workspace-source": "./src/actions/hca/index.ts",
-      "default": "./dist/hca.js"
+    "./legacy/events": {
+      "workspace-source": "./src/legacy/actions/events/index.ts",
+      "default": "./dist/legacy/events.js"
     },
-    "./hca/admin": {
-      "workspace-source": "./src/actions/hca/admin/index.ts",
-      "default": "./dist/hca/admin.js"
+    "./legacy/hca": {
+      "workspace-source": "./src/legacy/actions/hca/index.ts",
+      "default": "./dist/legacy/hca.js"
     },
-    "./indexer": {
-      "workspace-source": "./src/actions/indexer/index.ts",
-      "default": "./dist/indexer.js"
+    "./legacy/hca/admin": {
+      "workspace-source": "./src/legacy/actions/hca/admin/index.ts",
+      "default": "./dist/legacy/hca/admin.js"
     },
-    "./indexer/history": {
-      "workspace-source": "./src/actions/indexer/history/index.ts",
-      "default": "./dist/indexer/history.js"
+    "./legacy/indexer": {
+      "workspace-source": "./src/legacy/actions/indexer/index.ts",
+      "default": "./dist/legacy/indexer.js"
     },
-    "./indexer/names": {
-      "workspace-source": "./src/actions/indexer/names/index.ts",
-      "default": "./dist/indexer/names.js"
+    "./legacy/indexer/history": {
+      "workspace-source": "./src/legacy/actions/indexer/history/index.ts",
+      "default": "./dist/legacy/indexer/history.js"
     },
-    "./indexer/records": {
-      "workspace-source": "./src/actions/indexer/records/index.ts",
-      "default": "./dist/indexer/records.js"
+    "./legacy/indexer/names": {
+      "workspace-source": "./src/legacy/actions/indexer/names/index.ts",
+      "default": "./dist/legacy/indexer/names.js"
     },
-    "./indexer/registrations": {
-      "workspace-source": "./src/actions/indexer/registrations/index.ts",
-      "default": "./dist/indexer/registrations.js"
+    "./legacy/indexer/records": {
+      "workspace-source": "./src/legacy/actions/indexer/records/index.ts",
+      "default": "./dist/legacy/indexer/records.js"
     },
-    "./indexer/registries": {
-      "workspace-source": "./src/actions/indexer/registries/index.ts",
-      "default": "./dist/indexer/registries.js"
+    "./legacy/indexer/registrations": {
+      "workspace-source": "./src/legacy/actions/indexer/registrations/index.ts",
+      "default": "./dist/legacy/indexer/registrations.js"
     },
-    "./indexer/resolvers": {
-      "workspace-source": "./src/actions/indexer/resolvers/index.ts",
-      "default": "./dist/indexer/resolvers.js"
+    "./legacy/indexer/registries": {
+      "workspace-source": "./src/legacy/actions/indexer/registries/index.ts",
+      "default": "./dist/legacy/indexer/registries.js"
     },
-    "./migration": {
-      "workspace-source": "./src/actions/migration/index.ts",
-      "default": "./dist/migration.js"
+    "./legacy/indexer/resolvers": {
+      "workspace-source": "./src/legacy/actions/indexer/resolvers/index.ts",
+      "default": "./dist/legacy/indexer/resolvers.js"
     },
-    "./name": {
-      "workspace-source": "./src/actions/name/index.ts",
-      "default": "./dist/name.js"
+    "./legacy/migration": {
+      "workspace-source": "./src/legacy/actions/migration/index.ts",
+      "default": "./dist/legacy/migration.js"
     },
-    "./ownership": {
-      "workspace-source": "./src/actions/ownership/index.ts",
-      "default": "./dist/ownership.js"
+    "./legacy/name": {
+      "workspace-source": "./src/legacy/actions/name/index.ts",
+      "default": "./dist/legacy/name.js"
     },
-    "./permissions": {
-      "workspace-source": "./src/actions/permissions/index.ts",
-      "default": "./dist/permissions.js"
+    "./legacy/ownership": {
+      "workspace-source": "./src/legacy/actions/ownership/index.ts",
+      "default": "./dist/legacy/ownership.js"
     },
-    "./records": {
-      "workspace-source": "./src/actions/records/index.ts",
-      "default": "./dist/records.js"
+    "./legacy/permissions": {
+      "workspace-source": "./src/legacy/actions/permissions/index.ts",
+      "default": "./dist/legacy/permissions.js"
     },
-    "./registration": {
-      "workspace-source": "./src/actions/registration/index.ts",
-      "default": "./dist/registration.js"
+    "./legacy/records": {
+      "workspace-source": "./src/legacy/actions/records/index.ts",
+      "default": "./dist/legacy/records.js"
     },
-    "./resolution": {
-      "workspace-source": "./src/actions/resolution/index.ts",
-      "default": "./dist/resolution.js"
+    "./legacy/registration": {
+      "workspace-source": "./src/legacy/actions/registration/index.ts",
+      "default": "./dist/legacy/registration.js"
     },
-    "./reverse": {
-      "workspace-source": "./src/actions/reverse/index.ts",
-      "default": "./dist/reverse.js"
+    "./legacy/resolution": {
+      "workspace-source": "./src/legacy/actions/resolution/index.ts",
+      "default": "./dist/legacy/resolution.js"
     },
-    "./storage": {
-      "workspace-source": "./src/storage/index.ts",
-      "default": "./dist/storage.js"
+    "./legacy/reverse": {
+      "workspace-source": "./src/legacy/actions/reverse/index.ts",
+      "default": "./dist/legacy/reverse.js"
     },
-    "./storage/browser": {
-      "workspace-source": "./src/storage/browser.ts",
-      "default": "./dist/storage/browser.js"
+    "./legacy/storage": {
+      "workspace-source": "./src/legacy/storage/index.ts",
+      "default": "./dist/legacy/storage.js"
     },
-    "./subnames": {
-      "workspace-source": "./src/actions/subnames/index.ts",
-      "default": "./dist/subnames.js"
+    "./legacy/storage/browser": {
+      "workspace-source": "./src/legacy/storage/browser.ts",
+      "default": "./dist/legacy/storage/browser.js"
     },
-    "./wagmi": {
-      "workspace-source": "./src/wagmi/index.ts",
-      "default": "./dist/wagmi.js"
+    "./legacy/subnames": {
+      "workspace-source": "./src/legacy/actions/subnames/index.ts",
+      "default": "./dist/legacy/subnames.js"
     },
-    "./wrapping": {
-      "workspace-source": "./src/actions/wrapping/index.ts",
-      "default": "./dist/wrapping.js"
+    "./legacy/wagmi": {
+      "workspace-source": "./src/legacy/wagmi/index.ts",
+      "default": "./dist/legacy/wagmi.js"
+    },
+    "./legacy/wrapping": {
+      "workspace-source": "./src/legacy/actions/wrapping/index.ts",
+      "default": "./dist/legacy/wrapping.js"
     },
     "./package.json": "./package.json",
-    "./testing": {
-      "workspace-source": "./src/testing/index.ts",
-      "default": "./dist/testing.js"
+    "./legacy/testing": {
+      "workspace-source": "./src/legacy/testing/index.ts",
+      "default": "./dist/legacy/testing.js"
     }
   },
   "publishConfig": {
@@ -149,32 +153,33 @@
     },
     "exports": {
       ".": "./dist/index.js",
-      "./batch": "./dist/batch.js",
-      "./capabilities": "./dist/capabilities.js",
-      "./dns": "./dist/dns.js",
-      "./events": "./dist/events.js",
-      "./hca": "./dist/hca.js",
-      "./hca/admin": "./dist/hca/admin.js",
-      "./indexer": "./dist/indexer.js",
-      "./indexer/history": "./dist/indexer/history.js",
-      "./indexer/names": "./dist/indexer/names.js",
-      "./indexer/records": "./dist/indexer/records.js",
-      "./indexer/registrations": "./dist/indexer/registrations.js",
-      "./indexer/registries": "./dist/indexer/registries.js",
-      "./indexer/resolvers": "./dist/indexer/resolvers.js",
-      "./migration": "./dist/migration.js",
-      "./name": "./dist/name.js",
-      "./ownership": "./dist/ownership.js",
-      "./permissions": "./dist/permissions.js",
-      "./records": "./dist/records.js",
-      "./registration": "./dist/registration.js",
-      "./resolution": "./dist/resolution.js",
-      "./reverse": "./dist/reverse.js",
-      "./storage": "./dist/storage.js",
-      "./storage/browser": "./dist/storage/browser.js",
-      "./subnames": "./dist/subnames.js",
-      "./wagmi": "./dist/wagmi.js",
-      "./wrapping": "./dist/wrapping.js",
+      "./legacy": "./dist/legacy.js",
+      "./legacy/batch": "./dist/legacy/batch.js",
+      "./legacy/capabilities": "./dist/legacy/capabilities.js",
+      "./legacy/dns": "./dist/legacy/dns.js",
+      "./legacy/events": "./dist/legacy/events.js",
+      "./legacy/hca": "./dist/legacy/hca.js",
+      "./legacy/hca/admin": "./dist/legacy/hca/admin.js",
+      "./legacy/indexer": "./dist/legacy/indexer.js",
+      "./legacy/indexer/history": "./dist/legacy/indexer/history.js",
+      "./legacy/indexer/names": "./dist/legacy/indexer/names.js",
+      "./legacy/indexer/records": "./dist/legacy/indexer/records.js",
+      "./legacy/indexer/registrations": "./dist/legacy/indexer/registrations.js",
+      "./legacy/indexer/registries": "./dist/legacy/indexer/registries.js",
+      "./legacy/indexer/resolvers": "./dist/legacy/indexer/resolvers.js",
+      "./legacy/migration": "./dist/legacy/migration.js",
+      "./legacy/name": "./dist/legacy/name.js",
+      "./legacy/ownership": "./dist/legacy/ownership.js",
+      "./legacy/permissions": "./dist/legacy/permissions.js",
+      "./legacy/records": "./dist/legacy/records.js",
+      "./legacy/registration": "./dist/legacy/registration.js",
+      "./legacy/resolution": "./dist/legacy/resolution.js",
+      "./legacy/reverse": "./dist/legacy/reverse.js",
+      "./legacy/storage": "./dist/legacy/storage.js",
+      "./legacy/storage/browser": "./dist/legacy/storage/browser.js",
+      "./legacy/subnames": "./dist/legacy/subnames.js",
+      "./legacy/wagmi": "./dist/legacy/wagmi.js",
+      "./legacy/wrapping": "./dist/legacy/wrapping.js",
       "./package.json": "./package.json"
     },
     "access": "public",
@@ -184,7 +189,7 @@
     "build": "tsdown",
     "dev": "tsdown --watch",
     "lint": "oxlint --deny-warnings .",
-    "pack:check": "publint && attw --pack . --profile esm-only --exclude-entrypoints ./testing",
+    "pack:check": "publint && attw --pack . --profile esm-only --exclude-entrypoints ./legacy/testing",
     "prepack": "pnpm build",
     "typecheck": "tsc --noEmit"
   },

@@ -1,6 +1,6 @@
 import { Effect, Schema } from "effect";
 
-import { defineAction, HcaError } from "@ensforge/core";
+import { defineAction, HcaError } from "@ensforge/core/legacy";
 
 import { HcaRemoteProgressJson, type HcaRemoteProgress, type HcaRemoteRequest } from "./types.js";
 

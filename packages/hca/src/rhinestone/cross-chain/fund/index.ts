@@ -1,6 +1,6 @@
 import { Effect } from "effect";
 
-import { defineAction, HcaError } from "@ensforge/core";
+import { defineAction, HcaError } from "@ensforge/core/legacy";
 import { getPermit2Address } from "@rhinestone/sdk";
 import { erc20Abi, recoverAddress } from "viem";
 

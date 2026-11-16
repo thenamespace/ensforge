@@ -1,4 +1,4 @@
-import { HcaError, type EnsforgeConfig } from "@ensforge/core";
+import { HcaError, type EnsforgeConfig } from "@ensforge/core/legacy";
 import {
   getPermit2Address,
   type PreparedTransactionData,

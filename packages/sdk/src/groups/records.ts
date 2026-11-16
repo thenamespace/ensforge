@@ -26,7 +26,7 @@ import {
   setText,
   setTexts,
   type EnsforgeConfig,
-} from "@ensforge/core";
+} from "@ensforge/core/legacy";
 
 import {
   bindAction,

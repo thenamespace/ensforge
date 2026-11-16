@@ -27,7 +27,7 @@ export {
   type SimulationPolicy,
   type WriteOptions,
   type WriteError,
-} from "@ensforge/core";
+} from "@ensforge/core/legacy";
 
 export { Ensforge } from "./ensforge.js";
 export type {
@@ -64,19 +64,19 @@ export type {
   HcaExecutionStatus,
   VerifiedHcaAccount,
   PreparedHcaCalls,
-} from "@ensforge/core/hca";
+} from "@ensforge/core/legacy/hca";
 export {
   createMemoryWorkflowStorage,
   createIndexedDbWorkflowStorage,
   WorkflowError,
-} from "@ensforge/core";
+} from "@ensforge/core/legacy";
 export type {
   WorkflowStorage,
   WorkflowStoredRecord,
   WorkflowParameters,
   WorkflowProgress,
   WorkflowSnapshot,
-} from "@ensforge/core";
+} from "@ensforge/core/legacy";
 export type { WorkflowActions } from "./groups/workflows.js";
 
-export type { EnsAction } from "@ensforge/core";
+export type { EnsAction } from "@ensforge/core/legacy";

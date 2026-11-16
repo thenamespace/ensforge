@@ -1,6 +1,6 @@
 import { Clock, Effect, Schema } from "effect";
 
-import { HcaError, type EnsforgeConfig } from "@ensforge/core";
+import { HcaError, type EnsforgeConfig } from "@ensforge/core/legacy";
 import {
   verifyHca,
   prepareHcaCalls,
@@ -8,7 +8,7 @@ import {
   HcaExecutionIdentitySchema,
   type PreparedHcaCalls,
   type HcaExecutionIdentity,
-} from "@ensforge/core/hca";
+} from "@ensforge/core/legacy/hca";
 
 export const decode = <T>(schema: Schema.Codec<T, unknown>, value: unknown) =>
   Schema.decodeUnknownEffect(Schema.toType(schema), { onExcessProperty: "error" })(value).pipe(

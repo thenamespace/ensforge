@@ -6,7 +6,7 @@ export {
   HcaExecutionReview,
   HcaExecutionFee,
   HcaExecutionLocator,
-} from "@ensforge/core/hca";
+} from "@ensforge/core/legacy/hca";
 export {
   createMemoryHcaRegistrationStorage,
   serializeHcaRegistration,
@@ -16,7 +16,7 @@ export {
   HcaRegistrationOperation,
   HcaRegistrationLimits,
   HcaRegistrationProgress,
-} from "@ensforge/core/hca";
-export type { HcaRegistrationStorage, HcaRegistrationExecution } from "@ensforge/core/hca";
+} from "@ensforge/core/legacy/hca";
+export type { HcaRegistrationStorage, HcaRegistrationExecution } from "@ensforge/core/legacy/hca";
 
 export { createMemoryHcaStorage, type HcaStorage, type HcaStoredRecord } from "./storage.js";

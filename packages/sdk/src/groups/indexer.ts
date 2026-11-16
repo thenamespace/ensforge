@@ -1,4 +1,4 @@
-import type { EnsforgeConfig } from "@ensforge/core";
+import type { EnsforgeConfig } from "@ensforge/core/legacy";
 import {
   getDecodedName,
   getEvents,
@@ -23,7 +23,7 @@ import {
   getResolversForAddress,
   getSubnames,
   searchNames,
-} from "@ensforge/core/indexer";
+} from "@ensforge/core/legacy/indexer";
 
 import { bindAction, type BoundAction } from "../internal/bind-action.js";
 

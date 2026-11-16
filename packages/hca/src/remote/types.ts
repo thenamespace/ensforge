@@ -1,7 +1,7 @@
 import { Schema } from "effect";
 
-import { EthereumAddress, type EnsforgeConfig } from "@ensforge/core";
-import { HcaExecutionHash, type HcaRegistrationExecution } from "@ensforge/core/hca";
+import { EthereumAddress, type EnsforgeConfig } from "@ensforge/core/legacy";
+import { HcaExecutionHash, type HcaRegistrationExecution } from "@ensforge/core/legacy/hca";
 
 export const HcaRemoteRequest = Schema.Struct({
   action: Schema.Literals(["status", "resume", "cancel"]),

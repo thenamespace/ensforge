@@ -1,6 +1,6 @@
 import { Effect, Schema } from "effect";
 
-import { defineAction, HcaError } from "@ensforge/core";
+import { defineAction, HcaError } from "@ensforge/core/legacy";
 
 import { loadFunding, type FundingContext } from "../context.js";
 import { fundingStorage } from "../storage.js";

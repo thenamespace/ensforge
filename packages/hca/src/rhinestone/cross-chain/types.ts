@@ -1,7 +1,7 @@
 import { Schema } from "effect";
 
-import { EthereumAddress, type EnsAction, type HcaError } from "@ensforge/core";
-import { HcaExecutionHash, HcaSalt, type HcaStorage } from "@ensforge/core/hca";
+import { EthereumAddress, type EnsAction, type HcaError } from "@ensforge/core/legacy";
+import { HcaExecutionHash, HcaSalt, type HcaStorage } from "@ensforge/core/legacy/hca";
 import type { SettlementLayer } from "@rhinestone/sdk";
 import type { Account, Address, Chain, Hex, PublicClient } from "viem";
 

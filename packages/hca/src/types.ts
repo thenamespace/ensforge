@@ -1,6 +1,6 @@
 import type { Schema } from "effect";
 
-import type { EnsAction, HcaError } from "@ensforge/core";
+import type { EnsAction, HcaError } from "@ensforge/core/legacy";
 import type {
   HcaExecutionPolicy,
   ExecutionAdapter,
@@ -12,7 +12,7 @@ import type {
   HcaExecutionLocator,
   HcaExecutionCapabilities,
   HcaExecutionStatus,
-} from "@ensforge/core/hca";
+} from "@ensforge/core/legacy/hca";
 
 export interface VersionedExecution {
   readonly schemaVersion: 1;

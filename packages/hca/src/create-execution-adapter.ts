@@ -1,6 +1,6 @@
 import { Effect, Schema } from "effect";
 
-import { defineAction, HcaError } from "@ensforge/core";
+import { defineAction, HcaError } from "@ensforge/core/legacy";
 import {
   prepareHcaCalls,
   HcaExecutionOutcome,
@@ -9,7 +9,7 @@ import {
   HcaExecutionHash,
   type PreparedHcaCalls,
   type HcaExecutionStatus,
-} from "@ensforge/core/hca";
+} from "@ensforge/core/legacy/hca";
 
 import { createSubmissionPersistence } from "./persistence.js";
 import type {

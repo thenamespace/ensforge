@@ -1,3 +1,3 @@
-export type * from "@ensforge/core/permissions";
+export type * from "@ensforge/core/legacy/permissions";
 
 export type { PermissionsActions } from "../groups/permissions.js";

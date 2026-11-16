@@ -1,6 +1,6 @@
 import { Effect } from "effect";
 
-import { defineAction, HcaError } from "@ensforge/core";
+import { defineAction, HcaError } from "@ensforge/core/legacy";
 import { erc20Abi, parseEventLogs, TransactionReceiptNotFoundError } from "viem";
 
 import { loadFunding, type FundingContext } from "../context.js";
