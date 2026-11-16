@@ -1,17 +1,16 @@
+import { Abis } from "@ensforge/contracts";
 import {
   decodeFunctionResult,
   encodeFunctionData,
   isAddressEqual,
   zeroAddress,
   zeroHash,
-  type ContractFunctionName,
   type Hex,
 } from "viem";
 
 import type { Selection } from "../../actions/record/get/types.js";
 import * as CoinType from "../../utils/CoinType.js";
 import * as ContentHash from "../../utils/ContentHash.js";
-import { resolverReadAbi } from "../abis/resolver.js";
 import { allAbiContentTypes, decodeAbiRecord } from "./abi-record.js";
 
 /** ENSIP-19 default EVM coin type: the fallback address for EVM chains without their own record. */
@@ -26,8 +25,20 @@ type Read = {
 type Output = Record<string, Record<string, unknown> | unknown>;
 type Results = { readonly defaultAddress: Hex | undefined };
 
-const decode = (functionName: ContractFunctionName<typeof resolverReadAbi>, data: Hex): unknown =>
-  decodeFunctionResult({ abi: resolverReadAbi, functionName, data } as never);
+// One single-function ENSIP profile ABI per read, so overloads such as `addr` never get mixed up.
+const profileAbis = {
+  text: Abis.shared.textResolver,
+  addr: Abis.shared.addressResolver,
+  contenthash: Abis.shared.contenthashResolver,
+  ABI: Abis.shared.abiResolver,
+  pubkey: Abis.shared.pubkeyResolver,
+  name: Abis.shared.nameResolver,
+  interfaceImplementer: Abis.shared.interfaceResolver,
+  data: Abis.shared.dataResolver,
+} as const;
+
+const decode = (functionName: keyof typeof profileAbis, data: Hex): unknown =>
+  decodeFunctionResult({ abi: profileAbis[functionName], functionName, data } as never);
 
 const orNull = <value>(read: () => value): value | null => {
   try {
@@ -39,7 +50,11 @@ const orNull = <value>(read: () => value): value | null => {
 
 const textReads = (node: Hex, keys: readonly string[]): Read[] =>
   keys.map((key) => ({
-    call: encodeFunctionData({ abi: resolverReadAbi, functionName: "text", args: [node, key] }),
+    call: encodeFunctionData({
+      abi: Abis.shared.textResolver,
+      functionName: "text",
+      args: [node, key],
+    }),
     apply: (result, output) => {
       const value = result === undefined ? "" : (decode("text", result) as string);
       (output.texts as Record<string, unknown>)[key] = value === "" ? null : value;
@@ -58,7 +73,7 @@ const addressReads = (node: Hex, coins: readonly (string | bigint)[]): Read[] =>
     const usesDefault = CoinType.isEvm(coinType) && coinType !== 60n;
     return {
       call: encodeFunctionData({
-        abi: resolverReadAbi,
+        abi: Abis.shared.addressResolver,
         functionName: "addr",
         args: [node, coinType],
       }),
@@ -104,7 +119,7 @@ export const planRecordReads = (node: Hex, selection: Selection) => {
       "interfaces",
       (id) =>
         encodeFunctionData({
-          abi: resolverReadAbi,
+          abi: Abis.shared.interfaceResolver,
           functionName: "interfaceImplementer",
           args: [node, id as Hex],
         }),
@@ -117,7 +132,11 @@ export const planRecordReads = (node: Hex, selection: Selection) => {
       selection.data ?? [],
       "data",
       (key) =>
-        encodeFunctionData({ abi: resolverReadAbi, functionName: "data", args: [node, key] }),
+        encodeFunctionData({
+          abi: Abis.shared.dataResolver,
+          functionName: "data",
+          args: [node, key],
+        }),
       (result) => {
         const value = decode("data", result) as Hex;
         return value === "0x" ? null : value;
@@ -129,7 +148,11 @@ export const planRecordReads = (node: Hex, selection: Selection) => {
     reads.push(
       singleRead(
         "contentHash",
-        encodeFunctionData({ abi: resolverReadAbi, functionName: "contenthash", args: [node] }),
+        encodeFunctionData({
+          abi: Abis.shared.contenthashResolver,
+          functionName: "contenthash",
+          args: [node],
+        }),
         (result) => ContentHash.decode(decode("contenthash", result) as Hex),
       ),
     );
@@ -140,7 +163,7 @@ export const planRecordReads = (node: Hex, selection: Selection) => {
       singleRead(
         "abi",
         encodeFunctionData({
-          abi: resolverReadAbi,
+          abi: Abis.shared.abiResolver,
           functionName: "ABI",
           args: [node, contentTypes],
         }),
@@ -155,7 +178,11 @@ export const planRecordReads = (node: Hex, selection: Selection) => {
     reads.push(
       singleRead(
         "pubkey",
-        encodeFunctionData({ abi: resolverReadAbi, functionName: "pubkey", args: [node] }),
+        encodeFunctionData({
+          abi: Abis.shared.pubkeyResolver,
+          functionName: "pubkey",
+          args: [node],
+        }),
         (result) => {
           const [x, y] = decode("pubkey", result) as [Hex, Hex];
           return x === zeroHash && y === zeroHash ? null : { x, y };
@@ -167,7 +194,7 @@ export const planRecordReads = (node: Hex, selection: Selection) => {
     reads.push(
       singleRead(
         "nameRecord",
-        encodeFunctionData({ abi: resolverReadAbi, functionName: "name", args: [node] }),
+        encodeFunctionData({ abi: Abis.shared.nameResolver, functionName: "name", args: [node] }),
         (result) => {
           const value = decode("name", result) as string;
           return value === "" ? null : value;
@@ -182,7 +209,7 @@ export const planRecordReads = (node: Hex, selection: Selection) => {
     return CoinType.isEvm(coinType) && coinType !== 60n;
   });
   const defaultCall = encodeFunctionData({
-    abi: resolverReadAbi,
+    abi: Abis.shared.addressResolver,
     functionName: "addr",
     args: [node, defaultEvmCoinType],
   });

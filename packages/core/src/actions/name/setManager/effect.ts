@@ -1,11 +1,11 @@
 import { Effect } from "effect";
 
+import { Abis } from "@ensforge/contracts";
 import { encodeFunctionData, hexToBigInt, isAddressEqual } from "viem";
 
 import type { Client } from "../../../client/types.js";
 import { UnsupportedError } from "../../../errors/classes/UnsupportedError.js";
 import type { AnyError } from "../../../errors/types.js";
-import { baseRegistrarAbi, ensRegistryAbi } from "../../../internal/abis/v1.js";
 import * as Action from "../../../internal/action/index.js";
 import { loadName } from "../../../internal/name/load.js";
 import {
@@ -55,7 +55,7 @@ export const plan = Effect.fnUntraced(function* (
       ? {
           to: contracts.baseRegistrar,
           data: encodeFunctionData({
-            abi: baseRegistrarAbi,
+            abi: Abis.v1.baseRegistrar,
             functionName: "reclaim",
             args: [hexToBigInt(data.parts.labelhash), manager],
           }),
@@ -63,7 +63,7 @@ export const plan = Effect.fnUntraced(function* (
       : {
           to: contracts.registry,
           data: encodeFunctionData({
-            abi: ensRegistryAbi,
+            abi: Abis.v1.ensRegistry,
             functionName: "setOwner",
             args: [data.parts.node, manager],
           }),

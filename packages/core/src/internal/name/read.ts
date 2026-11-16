@@ -1,12 +1,11 @@
 import { Effect } from "effect";
 
+import { Abis } from "@ensforge/contracts";
 import { hexToBigInt, isAddressEqual, zeroAddress, type Address } from "viem";
 
 import type { Client } from "../../client/types.js";
 import type { AnyError } from "../../errors/types.js";
 import type { Read } from "../../Types.js";
-import { baseRegistrarAbi, ensRegistryAbi, nameWrapperAbi } from "../abis/v1.js";
-import { ethRegistrarAbi, permissionedRegistryAbi, universalHelperAbi } from "../abis/v2.js";
 import * as Rpc from "../rpc/index.js";
 import type { NameParts } from "./parts.js";
 
@@ -68,8 +67,12 @@ const readV1 = (client: Client, parts: NameParts, block: Read.BlockOptions) => {
       ? { blockTag: block.blockTag }
       : { blockNumber: block.blockNumber };
   const tokenId = hexToBigInt(parts.labelhash);
-  const registry = { address: contracts.registry, abi: ensRegistryAbi, ...at } as const;
-  const registrar = { address: contracts.baseRegistrar, abi: baseRegistrarAbi, ...at } as const;
+  const registry = { address: contracts.registry, abi: Abis.v1.ensRegistry, ...at } as const;
+  const registrar = {
+    address: contracts.baseRegistrar,
+    abi: Abis.v1.baseRegistrar,
+    ...at,
+  } as const;
 
   return Effect.all(
     {
@@ -86,7 +89,7 @@ const readV1 = (client: Client, parts: NameParts, block: Read.BlockOptions) => {
       ttl: Rpc.readContract(client, { ...registry, functionName: "ttl", args: [parts.node] }),
       wrapper: Rpc.readContract(client, {
         address: contracts.nameWrapper,
-        abi: nameWrapperAbi,
+        abi: Abis.v1.nameWrapper,
         functionName: "getData",
         args: [hexToBigInt(parts.node)],
         ...at,
@@ -136,7 +139,7 @@ const readV2 = Effect.fnUntraced(function* (
     {
       registry: Rpc.readContract(client, {
         address: contracts.universalHelper,
-        abi: universalHelperAbi,
+        abi: Abis.v2.universalHelper,
         functionName: "findParentRegistry",
         args: [parts.dns],
         ...at,
@@ -144,7 +147,7 @@ const readV2 = Effect.fnUntraced(function* (
       gracePeriod: parts.isEth2ld
         ? Rpc.readContract(client, {
             address: contracts.ethRegistrar,
-            abi: ethRegistrarAbi,
+            abi: Abis.v2.ethRegistrar,
             functionName: "GRACE_PERIOD",
             ...at,
           })
@@ -154,7 +157,7 @@ const readV2 = Effect.fnUntraced(function* (
   );
   if (isAddressEqual(registry, zeroAddress)) return undefined;
 
-  const parent = { address: registry, abi: permissionedRegistryAbi, ...at } as const;
+  const parent = { address: registry, abi: Abis.v2.permissionedRegistry, ...at } as const;
   const labelReads = parts.encodedLabel
     ? { resolver: Effect.succeed(undefined), subregistry: Effect.succeed(undefined) }
     : {

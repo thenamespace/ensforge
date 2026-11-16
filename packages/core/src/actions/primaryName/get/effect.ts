@@ -1,12 +1,12 @@
 import { Effect } from "effect";
 
+import { Abis } from "@ensforge/contracts";
 import { decodeFunctionResult, encodeFunctionData, type Address } from "viem";
 
 import type { Client } from "../../../client/types.js";
 import { InvalidInputError } from "../../../errors/classes/InvalidInputError.js";
 import { NotFoundError } from "../../../errors/classes/NotFoundError.js";
 import type { AnyError } from "../../../errors/types.js";
-import { resolverReadAbi } from "../../../internal/abis/resolver.js";
 import * as Action from "../../../internal/action/index.js";
 import { requireAddress } from "../../../internal/name/write.js";
 import { primaryNameCoinType, reverseName } from "../../../internal/reverse/coin.js";
@@ -34,13 +34,13 @@ const unverified = (
     ...options,
     name,
     data: encodeFunctionData({
-      abi: resolverReadAbi,
+      abi: Abis.shared.nameResolver,
       functionName: "name",
       args: [namehash(name)],
     }),
   }).pipe(
     Effect.map(({ data }) =>
-      decodeFunctionResult({ abi: resolverReadAbi, functionName: "name", data }),
+      decodeFunctionResult({ abi: Abis.shared.nameResolver, functionName: "name", data }),
     ),
   );
 };

@@ -1,5 +1,6 @@
 import { Effect } from "effect";
 
+import { Abis } from "@ensforge/contracts";
 import {
   encodeFunctionData,
   getAddress,
@@ -14,7 +15,6 @@ import type { Client } from "../../../client/types.js";
 import { InvalidInputError } from "../../../errors/classes/InvalidInputError.js";
 import { UnsupportedError } from "../../../errors/classes/UnsupportedError.js";
 import type { AnyError } from "../../../errors/types.js";
-import { permissionedResolverAdminAbi } from "../../../internal/abis/resolver.js";
 import * as Action from "../../../internal/action/index.js";
 import { loadName } from "../../../internal/name/load.js";
 import { requireAddress, singleStepPlan } from "../../../internal/name/write.js";
@@ -71,7 +71,7 @@ export const plan = Effect.fnUntraced(function* (
   // The proxy only checks ROLE_UPGRADE; the target declaring itself compatible is checked here.
   const approved = yield* Rpc.readContractOrUndefined(client, {
     address: target,
-    abi: permissionedResolverAdminAbi,
+    abi: Abis.v2.permissionedResolver,
     functionName: "canUpgradeFrom",
     args: [current],
   }).pipe(
@@ -93,7 +93,7 @@ export const plan = Effect.fnUntraced(function* (
       {
         to: resolver,
         data: encodeFunctionData({
-          abi: permissionedResolverAdminAbi,
+          abi: Abis.v2.permissionedResolver,
           functionName: "upgradeToAndCall",
           args: [target, "0x"],
         }),

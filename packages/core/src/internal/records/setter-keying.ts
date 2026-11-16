@@ -1,11 +1,10 @@
 import { Effect } from "effect";
 
-import { InterfaceIds } from "@ensforge/contracts";
+import { Abis, InterfaceIds } from "@ensforge/contracts";
 import type { Address } from "viem";
 
 import type { Client } from "../../client/types.js";
 import type { AnyError } from "../../errors/types.js";
-import { erc165Abi } from "../abis/resolver.js";
 import * as Rpc from "../rpc/index.js";
 
 /**
@@ -21,7 +20,7 @@ export const setterKeying = (
 ): Effect.Effect<SetterKeying, AnyError> =>
   Rpc.readContractOrUndefined(client, {
     address: resolver,
-    abi: erc165Abi,
+    abi: Abis.shared.erc165,
     functionName: "supportsInterface",
     args: [InterfaceIds.resolver.permissionedResolver],
   }).pipe(Effect.map((permissioned) => (permissioned === true ? "name" : "node")));

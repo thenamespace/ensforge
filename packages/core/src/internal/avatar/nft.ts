@@ -1,4 +1,4 @@
-import { getAddress, isAddress, parseAbi, toHex, type Address } from "viem";
+import { getAddress, isAddress, toHex, type Address } from "viem";
 
 /** An NFT avatar reference (ENSIP-12): `eip155:<chain>/<erc721|erc1155>:<contract>/<tokenId>`. */
 export type NftReference = {
@@ -7,11 +7,6 @@ export type NftReference = {
   readonly contract: Address;
   readonly tokenId: bigint;
 };
-
-export const nftAbi = /* @__PURE__ */ parseAbi([
-  "function tokenURI(uint256 tokenId) view returns (string)",
-  "function uri(uint256 id) view returns (string)",
-]);
 
 /** Parses an ENSIP-12 NFT avatar, or returns `undefined` when the value is not one. */
 export const parseNftReference = (value: string): NftReference | undefined => {

@@ -1,5 +1,6 @@
 import { Effect } from "effect";
 
+import { Abis } from "@ensforge/contracts";
 import { encodeFunctionData, isAddressEqual, type Address } from "viem";
 
 import type { Client } from "../../../client/types.js";
@@ -7,8 +8,6 @@ import { ConfigError } from "../../../errors/classes/ConfigError.js";
 import { NotFoundError } from "../../../errors/classes/NotFoundError.js";
 import { UnsupportedError } from "../../../errors/classes/UnsupportedError.js";
 import type { AnyError } from "../../../errors/types.js";
-import { defaultReverseRegistrarAbi, reverseRegistrarAbi } from "../../../internal/abis/v1.js";
-import { defaultReverseRegistrarAdapterAbi } from "../../../internal/abis/v2.js";
 import * as Action from "../../../internal/action/index.js";
 import { normalizeName } from "../../../internal/name/normalize.js";
 import {
@@ -60,7 +59,11 @@ const ethReverseCall = Effect.fnUntraced(function* (
   if (self) {
     return {
       to: registrar,
-      data: encodeFunctionData({ abi: reverseRegistrarAbi, functionName: "setName", args: [name] }),
+      data: encodeFunctionData({
+        abi: Abis.v1.reverseRegistrar,
+        functionName: "setName",
+        args: [name],
+      }),
       value: 0n,
     };
   }
@@ -69,13 +72,13 @@ const ethReverseCall = Effect.fnUntraced(function* (
   // for a contract, its Ownable owner.
   const resolver = yield* Rpc.readContract(client, {
     address: registrar,
-    abi: reverseRegistrarAbi,
+    abi: Abis.v1.reverseRegistrar,
     functionName: "defaultResolver",
   });
   return {
     to: registrar,
     data: encodeFunctionData({
-      abi: reverseRegistrarAbi,
+      abi: Abis.v1.reverseRegistrar,
       functionName: "setNameForAddr",
       args: [target, target, resolver, name],
     }),
@@ -94,7 +97,7 @@ const defaultReverseCall = Effect.fnUntraced(function* (
     return {
       to: (yield* requireV1Contracts(client)).defaultReverseRegistrar,
       data: encodeFunctionData({
-        abi: defaultReverseRegistrarAbi,
+        abi: Abis.v1.defaultReverseRegistrar,
         functionName: "setName",
         args: [name],
       }),
@@ -116,7 +119,7 @@ const defaultReverseCall = Effect.fnUntraced(function* (
   return {
     to: adapter,
     data: encodeFunctionData({
-      abi: defaultReverseRegistrarAdapterAbi,
+      abi: Abis.v2.defaultReverseRegistrarAdapter,
       functionName: "setName",
       args: [target, name],
     }),

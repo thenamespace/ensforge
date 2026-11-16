@@ -1,13 +1,12 @@
 import { Effect } from "effect";
 
+import { Abis } from "@ensforge/contracts";
 import { encodeFunctionData, type Address } from "viem";
 
 import type { Client } from "../../client/types.js";
 import { UnsupportedError } from "../../errors/classes/UnsupportedError.js";
 import type { AnyError } from "../../errors/types.js";
 import type { Plan } from "../../plan/Plan.js";
-import { ensRegistryAbi, nameWrapperAbi } from "../abis/v1.js";
-import { permissionedRegistryAbi } from "../abis/v2.js";
 import type { LoadedName } from "./load.js";
 import { requireAddress, requireV1Contracts } from "./write.js";
 
@@ -21,7 +20,7 @@ export const setResolverCall = (
     return Effect.succeed({
       to: state.registry as Address,
       data: encodeFunctionData({
-        abi: permissionedRegistryAbi,
+        abi: Abis.v2.permissionedRegistry,
         functionName: "setResolver",
         args: [state.tokenId as bigint, resolver],
       }),
@@ -35,7 +34,7 @@ export const setResolverCall = (
         ? {
             to: contracts.nameWrapper,
             data: encodeFunctionData({
-              abi: nameWrapperAbi,
+              abi: Abis.v1.nameWrapper,
               functionName: "setResolver",
               args: [data.parts.node, resolver],
             }),
@@ -44,7 +43,7 @@ export const setResolverCall = (
         : {
             to: contracts.registry,
             data: encodeFunctionData({
-              abi: ensRegistryAbi,
+              abi: Abis.v1.ensRegistry,
               functionName: "setResolver",
               args: [data.parts.node, resolver],
             }),

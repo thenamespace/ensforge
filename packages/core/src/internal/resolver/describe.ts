@@ -1,6 +1,6 @@
 import { Effect } from "effect";
 
-import { InterfaceIds } from "@ensforge/contracts";
+import { Abis, InterfaceIds } from "@ensforge/contracts";
 import { isAddressEqual, type Address, type Hex } from "viem";
 
 import type {
@@ -11,8 +11,6 @@ import type {
 import type { Client } from "../../client/types.js";
 import type { AnyError } from "../../errors/types.js";
 import type { Read } from "../../Types.js";
-import { erc165Abi, versionableResolverAbi } from "../abis/resolver.js";
-import { addressSetAbi } from "../abis/v2.js";
 import * as Rpc from "../rpc/index.js";
 
 const profileIds = {
@@ -107,7 +105,7 @@ export const describeResolver = Effect.fnUntraced(function* (
     unanswered(
       Rpc.readContractOrUndefined(client, {
         address: resolver,
-        abi: erc165Abi,
+        abi: Abis.shared.erc165,
         functionName: "supportsInterface",
         args: [interfaceId],
         ...at,
@@ -129,7 +127,7 @@ export const describeResolver = Effect.fnUntraced(function* (
           ? Effect.succeed(false)
           : Rpc.readContractOrUndefined(client, {
               address: publicResolverSet,
-              abi: addressSetAbi,
+              abi: Abis.v2.permissionedAddressSet,
               functionName: "includes",
               args: [resolver],
               ...at,
@@ -137,7 +135,7 @@ export const describeResolver = Effect.fnUntraced(function* (
       version: unanswered(
         Rpc.readContractOrUndefined(client, {
           address: resolver,
-          abi: versionableResolverAbi,
+          abi: Abis.shared.versionableResolver,
           functionName: "recordVersions",
           args: [node],
           ...at,

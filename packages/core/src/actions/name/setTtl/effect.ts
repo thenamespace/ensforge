@@ -1,11 +1,11 @@
 import { Effect } from "effect";
 
+import { Abis } from "@ensforge/contracts";
 import { encodeFunctionData, maxUint64 } from "viem";
 
 import type { Client } from "../../../client/types.js";
 import { InvalidInputError } from "../../../errors/classes/InvalidInputError.js";
 import type { AnyError } from "../../../errors/types.js";
-import { ensRegistryAbi, nameWrapperAbi } from "../../../internal/abis/v1.js";
 import * as Action from "../../../internal/action/index.js";
 import { loadName } from "../../../internal/name/load.js";
 import {
@@ -39,7 +39,7 @@ export const plan = Effect.fnUntraced(function* (
     ? {
         to: contracts.nameWrapper,
         data: encodeFunctionData({
-          abi: nameWrapperAbi,
+          abi: Abis.v1.nameWrapper,
           functionName: "setTTL",
           args: [node, options.ttl],
         }),
@@ -47,7 +47,7 @@ export const plan = Effect.fnUntraced(function* (
     : {
         to: contracts.registry,
         data: encodeFunctionData({
-          abi: ensRegistryAbi,
+          abi: Abis.v1.ensRegistry,
           functionName: "setTTL",
           args: [node, options.ttl],
         }),

@@ -1,8 +1,9 @@
 import { Effect } from "effect";
 
+import { Abis } from "@ensforge/contracts";
+
 import type { Client } from "../../../client/types.js";
 import { NotFoundError } from "../../../errors/classes/NotFoundError.js";
-import { permissionedResolverAdminAbi } from "../../../internal/abis/resolver.js";
 import * as Action from "../../../internal/action/index.js";
 import { loadName } from "../../../internal/name/load.js";
 import { requirePermissionedResolver } from "../../../internal/resolver/permissioned.js";
@@ -20,7 +21,7 @@ export const getLink = Effect.fn("ensforge.resolver.getLink")(
 
     const recordId = yield* Rpc.readContract(client, {
       address: resolver,
-      abi: permissionedResolverAdminAbi,
+      abi: Abis.v2.permissionedResolver,
       functionName: "getRecordId",
       args: [loaded.data.parts.node],
       ...(options.blockNumber === undefined

@@ -1,11 +1,11 @@
 import { Effect } from "effect";
 
+import { Abis } from "@ensforge/contracts";
 import { decodeFunctionResult, encodeFunctionData, type Address, type Hex } from "viem";
 
 import type { Client } from "../../client/types.js";
 import type { AnyError } from "../../errors/types.js";
 import type { Read } from "../../Types.js";
-import { resolverReadAbi } from "../abis/resolver.js";
 import * as Rpc from "../rpc/index.js";
 
 /** Results of resolving several record calls at once. */
@@ -40,7 +40,7 @@ export const resolveCalls = Effect.fnUntraced(function* (
   const data = single
     ? (options.calls[0] as Hex)
     : encodeFunctionData({
-        abi: resolverReadAbi,
+        abi: Abis.shared.multicallResolver,
         functionName: "multicall",
         args: [options.calls],
       });
@@ -57,7 +57,7 @@ export const resolveCalls = Effect.fnUntraced(function* (
   const results = single
     ? [resolved.data]
     : decodeFunctionResult({
-        abi: resolverReadAbi,
+        abi: Abis.shared.multicallResolver,
         functionName: "multicall",
         data: resolved.data,
       });

@@ -1,13 +1,12 @@
 import { Effect } from "effect";
 
+import { Abis } from "@ensforge/contracts";
 import type { Deployments } from "@ensforge/contracts";
 import { encodeFunctionData, hexToBigInt, type Address } from "viem";
 
 import type { Client } from "../../../client/types.js";
 import { UnsupportedError } from "../../../errors/classes/UnsupportedError.js";
 import type { AnyError } from "../../../errors/types.js";
-import { baseRegistrarAbi, ensRegistryAbi, nameWrapperAbi } from "../../../internal/abis/v1.js";
-import { permissionedRegistryAbi } from "../../../internal/abis/v2.js";
 import * as Action from "../../../internal/action/index.js";
 import { loadName, type LoadedName } from "../../../internal/name/load.js";
 import {
@@ -31,12 +30,12 @@ const v2Calls = ({ state }: LoadedName, to: Address, unsafe: boolean): Plan.Call
       registry,
       unsafe
         ? encodeFunctionData({
-            abi: permissionedRegistryAbi,
+            abi: Abis.v2.permissionedRegistry,
             functionName: "unsafeTransfer",
             args: [to, tokenId, "0x"],
           })
         : encodeFunctionData({
-            abi: permissionedRegistryAbi,
+            abi: Abis.v2.permissionedRegistry,
             functionName: "safeTransferFrom",
             args: [state.owner as Address, to, tokenId, 1n, "0x"],
           }),
@@ -57,7 +56,7 @@ const v1Calls = (
       call(
         contracts.nameWrapper,
         encodeFunctionData({
-          abi: nameWrapperAbi,
+          abi: Abis.v1.nameWrapper,
           functionName: "safeTransferFrom",
           args: [state.owner as Address, to, hexToBigInt(data.parts.node), 1n, "0x"],
         }),
@@ -70,7 +69,7 @@ const v1Calls = (
     const moveToken = call(
       contracts.baseRegistrar,
       encodeFunctionData({
-        abi: baseRegistrarAbi,
+        abi: Abis.v1.baseRegistrar,
         functionName: "safeTransferFrom",
         args: [state.registrant as Address, to, tokenId],
       }),
@@ -78,7 +77,11 @@ const v1Calls = (
     // Reclaim first: only the current registrant may point the registry owner (manager) at `to`.
     const reclaim = call(
       contracts.baseRegistrar,
-      encodeFunctionData({ abi: baseRegistrarAbi, functionName: "reclaim", args: [tokenId, to] }),
+      encodeFunctionData({
+        abi: Abis.v1.baseRegistrar,
+        functionName: "reclaim",
+        args: [tokenId, to],
+      }),
     );
     return Effect.succeed(role === "registrant" ? [moveToken] : [reclaim, moveToken]);
   }
@@ -96,7 +99,7 @@ const v1Calls = (
     call(
       contracts.registry,
       encodeFunctionData({
-        abi: ensRegistryAbi,
+        abi: Abis.v1.ensRegistry,
         functionName: "setOwner",
         args: [data.parts.node, to],
       }),

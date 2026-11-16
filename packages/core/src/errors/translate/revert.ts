@@ -1,8 +1,8 @@
+import { Abis } from "@ensforge/contracts";
 import { decodeErrorResult, type Address, type Hex } from "viem";
 
 import { ContractRevertError } from "../classes/index.js";
 import type { EnsforgeError } from "../EnsforgeError.js";
-import { revertAbi } from "./revert-abi.js";
 import { revertMap } from "./revert-map.js";
 
 /** A contract revert, decoded by viem or still raw. */
@@ -17,7 +17,7 @@ const maxDepth = 4;
 
 const decode = (data: Hex): Revert => {
   try {
-    const decoded = decodeErrorResult({ abi: revertAbi, data });
+    const decoded = decodeErrorResult({ abi: Abis.shared.errors, data });
     return { errorName: decoded.errorName, args: decoded.args, data };
   } catch {
     return { data };

@@ -1,5 +1,6 @@
 import { Effect } from "effect";
 
+import { Abis } from "@ensforge/contracts";
 import { encodeFunctionData, type Address } from "viem";
 
 import type { Client } from "../../../client/types.js";
@@ -7,7 +8,6 @@ import { ConfigError } from "../../../errors/classes/ConfigError.js";
 import { InvalidInputError } from "../../../errors/classes/InvalidInputError.js";
 import { UnsupportedError } from "../../../errors/classes/UnsupportedError.js";
 import type { AnyError } from "../../../errors/types.js";
-import { permissionedResolverAdminAbi } from "../../../internal/abis/resolver.js";
 import * as Action from "../../../internal/action/index.js";
 import { deployProxy, randomSalt } from "../../../internal/factory/verifiable-proxy.js";
 import { loadName } from "../../../internal/name/load.js";
@@ -88,7 +88,7 @@ export const plan = Effect.fnUntraced(function* (
     deployer,
     salt: options.salt ?? randomSalt(),
     data: encodeFunctionData({
-      abi: permissionedResolverAdminAbi,
+      abi: Abis.v2.permissionedResolver,
       functionName: "initialize",
       args: [grants, records],
     }),

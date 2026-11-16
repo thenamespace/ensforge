@@ -96,6 +96,26 @@ export const revertMap: Readonly<Record<string, Mapper>> = {
   CannotReduceExpiry: () => new InvalidInputError({ code: "INVALID_EXPIRY" }),
   CannotSetPastExpiry: () => new InvalidInputError({ code: "INVALID_EXPIRY" }),
   InsufficientValue: () => new InsufficientFundsError({ code: "INSUFFICIENT_ETH" }),
+  ERC20InsufficientBalance: ([, balance, needed]) =>
+    new InsufficientFundsError({
+      code: "INSUFFICIENT_TOKEN_BALANCE",
+      available: balance as bigint,
+      required: needed as bigint,
+    }),
+  ERC20InsufficientAllowance: ([, allowance, needed]) =>
+    new InsufficientFundsError({
+      code: "INSUFFICIENT_TOKEN_BALANCE",
+      available: allowance as bigint,
+      required: needed as bigint,
+      shortMessage: "The payment token allowance is too low.",
+      hint: "Approve the registrar to spend the token first; registration plans include this step.",
+    }),
+  NotValid: ([label]) =>
+    new InvalidInputError({
+      code: "INVALID_NAME",
+      input: label,
+      shortMessage: `"${String(label)}" cannot be registered (too short or not allowed).`,
+    }),
   PaymentTokenNotSupported: () => new UnsupportedError({ code: "PAYMENT_TOKEN_UNSUPPORTED" }),
   UpgradeTargetNotApproved: () => new UnsupportedError({ code: "UPGRADE_NOT_APPROVED" }),
   UnsupportedResolverProfile: () => new UnsupportedError({ code: "RESOLVER_PROFILE_UNSUPPORTED" }),

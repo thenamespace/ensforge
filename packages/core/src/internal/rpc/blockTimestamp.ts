@@ -1,6 +1,6 @@
 import { Effect } from "effect";
 
-import { parseAbi } from "viem";
+import { multicall3Abi } from "viem";
 import { getBlock } from "viem/actions";
 
 import type { Client } from "../../client/types.js";
@@ -8,10 +8,6 @@ import type { AnyError } from "../../errors/types.js";
 import type { Read } from "../../Types.js";
 import { fromPromise } from "./fromPromise.js";
 import { readContract } from "./readContract.js";
-
-const multicall3Abi = /* @__PURE__ */ parseAbi([
-  "function getCurrentBlockTimestamp() view returns (uint256)",
-]);
 
 /**
  * Timestamp of the block a read runs at. With Multicall3 it joins the same batch as the other

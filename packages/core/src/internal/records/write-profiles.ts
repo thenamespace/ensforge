@@ -1,3 +1,4 @@
+import { Abis } from "@ensforge/contracts";
 import {
   encodeFunctionData,
   isAddress,
@@ -13,7 +14,6 @@ import { InvalidInputError } from "../../errors/classes/InvalidInputError.js";
 import { UnsupportedError } from "../../errors/classes/UnsupportedError.js";
 import * as CoinType from "../../utils/CoinType.js";
 import * as ContentHash from "../../utils/ContentHash.js";
-import { nodeResolverWriteAbi, permissionedResolverWriteAbi } from "../abis/resolver.js";
 import { encodeAbiJson } from "./abi-record.js";
 import type { SetterKeying } from "./setter-keying.js";
 
@@ -83,8 +83,8 @@ export const encodeRecordWrites = (
 ): Hex[] => {
   const byName = keying === "name";
   const calls: Hex[] = [];
-  const node = (fn: (abi: typeof nodeResolverWriteAbi) => Hex) =>
-    calls.push(fn(nodeResolverWriteAbi));
+  const node = (fn: (abi: typeof Abis.v1.publicResolver) => Hex) =>
+    calls.push(fn(Abis.v1.publicResolver));
 
   if (writes.clear === true) {
     if (byName) throw unsupported("clearing all records");
@@ -95,12 +95,12 @@ export const encodeRecordWrites = (
     calls.push(
       byName
         ? encodeFunctionData({
-            abi: permissionedResolverWriteAbi,
+            abi: Abis.v2.permissionedResolver,
             functionName: "setText",
             args: [target.dns, key, value ?? ""],
           })
         : encodeFunctionData({
-            abi: nodeResolverWriteAbi,
+            abi: Abis.v1.publicResolver,
             functionName: "setText",
             args: [target.node, key, value ?? ""],
           }),
@@ -113,12 +113,12 @@ export const encodeRecordWrites = (
     calls.push(
       byName
         ? encodeFunctionData({
-            abi: permissionedResolverWriteAbi,
+            abi: Abis.v2.permissionedResolver,
             functionName: "setAddress",
             args: [target.dns, coinType, bytes],
           })
         : encodeFunctionData({
-            abi: nodeResolverWriteAbi,
+            abi: Abis.v1.publicResolver,
             functionName: "setAddr",
             args: [target.node, coinType, bytes],
           }),
@@ -130,12 +130,12 @@ export const encodeRecordWrites = (
     calls.push(
       byName
         ? encodeFunctionData({
-            abi: permissionedResolverWriteAbi,
+            abi: Abis.v2.permissionedResolver,
             functionName: "setContenthash",
             args: [target.dns, hash],
           })
         : encodeFunctionData({
-            abi: nodeResolverWriteAbi,
+            abi: Abis.v1.publicResolver,
             functionName: "setContenthash",
             args: [target.node, hash],
           }),
@@ -147,12 +147,12 @@ export const encodeRecordWrites = (
     calls.push(
       byName
         ? encodeFunctionData({
-            abi: permissionedResolverWriteAbi,
+            abi: Abis.v2.permissionedResolver,
             functionName: "setABI",
             args: [target.dns, contentType, data],
           })
         : encodeFunctionData({
-            abi: nodeResolverWriteAbi,
+            abi: Abis.v1.publicResolver,
             functionName: "setABI",
             args: [target.node, contentType, data],
           }),
@@ -172,12 +172,12 @@ export const encodeRecordWrites = (
     calls.push(
       byName
         ? encodeFunctionData({
-            abi: permissionedResolverWriteAbi,
+            abi: Abis.v2.permissionedResolver,
             functionName: "setName",
             args: [target.dns, value],
           })
         : encodeFunctionData({
-            abi: nodeResolverWriteAbi,
+            abi: Abis.v1.publicResolver,
             functionName: "setName",
             args: [target.node, value],
           }),
@@ -189,12 +189,12 @@ export const encodeRecordWrites = (
     calls.push(
       byName
         ? encodeFunctionData({
-            abi: permissionedResolverWriteAbi,
+            abi: Abis.v2.permissionedResolver,
             functionName: "setInterface",
             args: [target.dns, ...args],
           })
         : encodeFunctionData({
-            abi: nodeResolverWriteAbi,
+            abi: Abis.v1.publicResolver,
             functionName: "setInterface",
             args: [target.node, ...args],
           }),
@@ -205,12 +205,12 @@ export const encodeRecordWrites = (
     calls.push(
       byName
         ? encodeFunctionData({
-            abi: permissionedResolverWriteAbi,
+            abi: Abis.v2.permissionedResolver,
             functionName: "setData",
             args: [target.dns, key, value ?? "0x"],
           })
         : encodeFunctionData({
-            abi: nodeResolverWriteAbi,
+            abi: Abis.v1.publicResolver,
             functionName: "setData",
             args: [target.node, key, value ?? "0x"],
           }),

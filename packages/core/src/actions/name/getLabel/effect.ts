@@ -1,11 +1,11 @@
 import { Effect } from "effect";
 
+import { Abis } from "@ensforge/contracts";
 import { hexToBigInt, isHex } from "viem";
 
 import type { Client } from "../../../client/types.js";
 import { InvalidInputError } from "../../../errors/classes/InvalidInputError.js";
 import { UnsupportedError } from "../../../errors/classes/UnsupportedError.js";
-import { labelStoreAbi } from "../../../internal/abis/v2.js";
 import * as Action from "../../../internal/action/index.js";
 import * as Rpc from "../../../internal/rpc/index.js";
 import type { getLabel as Promises } from "./index.js";
@@ -34,7 +34,7 @@ export const getLabel = Effect.fn("ensforge.name.getLabel")(function* (
 
   const label = yield* Rpc.readContract(client, {
     address: labelStore,
-    abi: labelStoreAbi,
+    abi: Abis.v2.labelStore,
     functionName: "getLabel",
     args: [hexToBigInt(options.labelhash)],
     ...(options.blockNumber === undefined

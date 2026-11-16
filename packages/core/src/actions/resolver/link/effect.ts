@@ -1,11 +1,11 @@
 import { Effect } from "effect";
 
+import { Abis } from "@ensforge/contracts";
 import { encodeFunctionData } from "viem";
 
 import type { Client } from "../../../client/types.js";
 import { InvalidInputError } from "../../../errors/classes/InvalidInputError.js";
 import type { AnyError } from "../../../errors/types.js";
-import { permissionedResolverAdminAbi } from "../../../internal/abis/resolver.js";
 import * as Action from "../../../internal/action/index.js";
 import { loadName } from "../../../internal/name/load.js";
 import { parseName } from "../../../internal/name/normalize.js";
@@ -41,27 +41,27 @@ export const plan = Effect.fnUntraced(function* (
     const target = yield* parseName(options.to);
     const recordId = yield* Rpc.readContract(client, {
       address: resolver,
-      abi: permissionedResolverAdminAbi,
+      abi: Abis.v2.permissionedResolver,
       functionName: "getRecordId",
       args: [target.node],
     });
     if (recordId === 0n) return yield* Effect.fail(unknownTarget(options.to));
     data = encodeFunctionData({
-      abi: permissionedResolverAdminAbi,
+      abi: Abis.v2.permissionedResolver,
       functionName: "linkToNode",
       args: [source, target.node],
     });
   } else {
     const count = yield* Rpc.readContract(client, {
       address: resolver,
-      abi: permissionedResolverAdminAbi,
+      abi: Abis.v2.permissionedResolver,
       functionName: "getRecordCount",
     });
     if (options.to.recordId < 1n || options.to.recordId > count) {
       return yield* Effect.fail(unknownTarget(options.to.recordId));
     }
     data = encodeFunctionData({
-      abi: permissionedResolverAdminAbi,
+      abi: Abis.v2.permissionedResolver,
       functionName: "linkToRecord",
       args: [source, options.to.recordId],
     });

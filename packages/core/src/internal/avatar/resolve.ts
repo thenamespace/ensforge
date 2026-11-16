@@ -1,16 +1,12 @@
 import { Effect } from "effect";
 
+import { Abis } from "@ensforge/contracts";
+
 import type { Client } from "../../client/types.js";
 import { GatewayError } from "../../errors/classes/GatewayError.js";
 import type { AnyError } from "../../errors/types.js";
 import * as Rpc from "../rpc/index.js";
-import {
-  fillTokenId,
-  imageFromMetadata,
-  nftAbi,
-  parseNftReference,
-  type NftReference,
-} from "./nft.js";
+import { fillTokenId, imageFromMetadata, parseNftReference, type NftReference } from "./nft.js";
 import { toHttpUrl, type Gateways } from "./uri.js";
 
 const fetchJson = (url: string, timeout: number): Effect.Effect<unknown, AnyError> =>
@@ -31,13 +27,13 @@ const tokenUri = (client: Client, nft: NftReference): Effect.Effect<string, AnyE
   nft.standard === "erc721"
     ? Rpc.readContract(client, {
         address: nft.contract,
-        abi: nftAbi,
+        abi: Abis.shared.erc721,
         functionName: "tokenURI",
         args: [nft.tokenId],
       })
     : Rpc.readContract(client, {
         address: nft.contract,
-        abi: nftAbi,
+        abi: Abis.shared.erc1155,
         functionName: "uri",
         args: [nft.tokenId],
       });

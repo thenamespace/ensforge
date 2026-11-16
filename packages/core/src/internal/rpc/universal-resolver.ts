@@ -1,9 +1,9 @@
 import { Effect } from "effect";
 
+import { Abis } from "@ensforge/contracts";
 import {
   decodeFunctionResult,
   encodeFunctionData,
-  parseAbi,
   zeroAddress,
   type Address,
   type Hex,
@@ -17,15 +17,6 @@ import { dnsEncode } from "../../utils/Name.js";
 import { universalResolverOf } from "../deployment.js";
 import { fromPromise } from "./fromPromise.js";
 import { readContract } from "./readContract.js";
-
-// Only the entry points ensforge calls; errors are decoded separately against every ENS error.
-const universalResolverAbi = /* @__PURE__ */ parseAbi([
-  "function resolve(bytes name, bytes data) view returns (bytes, address)",
-  "function resolveWithGateways(bytes name, bytes data, string[] gateways) view returns (bytes, address)",
-  "function reverse(bytes lookupAddress, uint256 coinType) view returns (string, address, address)",
-  "function reverseWithGateways(bytes lookupAddress, uint256 coinType, string[] gateways) view returns (string, address, address)",
-  "function findResolver(bytes name) view returns (address resolver, bytes32 node, uint256 offset)",
-]);
 
 type CallOptions = Pick<Read.Options, "blockNumber" | "blockTag" | "gatewayUrls">;
 
@@ -80,12 +71,12 @@ export const resolve = (
   const callData =
     gateways.length === 0
       ? encodeFunctionData({
-          abi: universalResolverAbi,
+          abi: Abis.v2.universalResolver,
           functionName: "resolve",
           args: [name, options.data],
         })
       : encodeFunctionData({
-          abi: universalResolverAbi,
+          abi: Abis.v2.universalResolver,
           functionName: "resolveWithGateways",
           args: [name, options.data, gateways],
         });
@@ -93,7 +84,7 @@ export const resolve = (
   return callUniversalResolver(client, callData, "resolve", options).pipe(
     Effect.map((data) => {
       const [result, resolver] = decodeFunctionResult({
-        abi: universalResolverAbi,
+        abi: Abis.v2.universalResolver,
         functionName: "resolve",
         data,
       });
@@ -124,12 +115,12 @@ export const reverse = (
   const callData =
     gateways.length === 0
       ? encodeFunctionData({
-          abi: universalResolverAbi,
+          abi: Abis.v2.universalResolver,
           functionName: "reverse",
           args: [options.address, options.coinType],
         })
       : encodeFunctionData({
-          abi: universalResolverAbi,
+          abi: Abis.v2.universalResolver,
           functionName: "reverseWithGateways",
           args: [options.address, options.coinType, gateways],
         });
@@ -137,7 +128,7 @@ export const reverse = (
   return callUniversalResolver(client, callData, "reverse", options).pipe(
     Effect.map((data) => {
       const [name, resolver, reverseResolver] = decodeFunctionResult({
-        abi: universalResolverAbi,
+        abi: Abis.v2.universalResolver,
         functionName: "reverse",
         data,
       });
@@ -164,7 +155,7 @@ export const findResolver = (
 ): Effect.Effect<FoundResolver | null, AnyError> =>
   readContract(client, {
     address: universalResolverOf(client),
-    abi: universalResolverAbi,
+    abi: Abis.v2.universalResolver,
     functionName: "findResolver",
     args: [dnsEncode(options.name)],
     ...(options.blockNumber === undefined
