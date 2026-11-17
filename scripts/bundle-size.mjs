@@ -4,7 +4,8 @@
 //   node scripts/bundle-size.mjs --write   record the current sizes as budgets
 //
 // Each scenario is bundled from the package it imports (built `dist`, published exports), minified,
-// with viem external: apps already ship it. Sizes are gzipped bytes. Budgets allow 5% growth.
+// with viem external: apps already ship it. Sizes are the gzipped code loaded up front (lazily
+// imported codecs excluded). Budgets allow 5% growth.
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { gzipSync } from "node:zlib";
@@ -60,7 +61,18 @@ const measure = async ([name, [pkg, source]]) => {
     write: false,
     logLevel: "silent",
   });
-  return [name, gzipSync(result.output.map((chunk) => chunk.code ?? "").join("")).length];
+  // What an app loads up front: the entry and the chunks it imports statically. Codecs loaded on
+  // demand (dynamic imports) are left out.
+  const chunks = new Map(result.output.map((chunk) => [chunk.fileName, chunk]));
+  const initial = new Set();
+  const visit = (fileName) => {
+    const chunk = chunks.get(fileName);
+    if (chunk === undefined || initial.has(chunk)) return;
+    initial.add(chunk);
+    for (const imported of chunk.imports ?? []) visit(imported);
+  };
+  for (const chunk of result.output) if (chunk.isEntry) visit(chunk.fileName);
+  return [name, gzipSync([...initial].map((chunk) => chunk.code ?? "").join("")).length];
 };
 
 for (const [name, size] of await Promise.all(Object.entries(scenarios).map(measure))) {

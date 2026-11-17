@@ -6,7 +6,7 @@
   "scripts": {
     "build": "turbo run build",
     "changeset": "changeset",
-    "check": "pnpm format:check && pnpm lint && turbo run typecheck build verify && pnpm test",
+    "check": "pnpm format:check && pnpm lint && turbo run typecheck build verify && pnpm bundle:size && pnpm test",
     "dev": "turbo run dev",
     "format": "oxfmt --write .",
     "format:check": "oxfmt --check .",
@@ -20,7 +20,8 @@
     "test:unit": "vitest run --project \"*:unit\"",
     "typecheck": "turbo run typecheck",
     "verify": "turbo run verify",
-    "version-packages": "changeset version"
+    "version-packages": "changeset version",
+    "bundle:size": "node scripts/bundle-size.mjs"
   },
   "devDependencies": {
     "@arethetypeswrong/cli": "catalog:",
