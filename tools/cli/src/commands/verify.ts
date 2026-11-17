@@ -20,8 +20,7 @@ export const verify = Effect.fn("verify")(function* () {
   const fs = yield* FileSystem.FileSystem;
   const path = yield* Path.Path;
   const { config } = workspace;
-  const fixture = (name: string) =>
-    fs.exists(path.join(workspace.packageDir, "test/fixtures", name));
+  const fixture = (name: string) => fs.exists(path.join(workspace.packageDir, "verify", name));
 
   const checks = [
     ...(config.codegen === undefined ? [] : [codegen(true)]),

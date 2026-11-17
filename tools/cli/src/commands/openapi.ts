@@ -74,14 +74,14 @@ const missing = (id: Id, spec: Spec, fields: Readonly<Record<string, readonly st
 
 /**
  * Pins the OpenAPI contracts of the built-in indexers: `refresh` fetches them into
- * `test/fixtures/openapi`, `check` compares the SDK's built wire Schemas with the snapshots
+ * `verify/openapi`, `check` compares the SDK's built wire Schemas with the snapshots
  * (offline), `drift` with the live specs.
  */
 export const openapi = Effect.fn("openapi")(function* (mode: "check" | "drift" | "refresh") {
   const workspace = yield* Workspace;
   const fs = yield* FileSystem.FileSystem;
   const path = yield* Path.Path;
-  const folder = path.join(workspace.packageDir, "test/fixtures/openapi");
+  const folder = path.join(workspace.packageDir, "verify/openapi");
 
   if (mode === "refresh") {
     const metadata: Record<string, unknown> = {};

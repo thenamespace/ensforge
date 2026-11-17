@@ -21,7 +21,7 @@ const Config = Schema.Struct({
   effectFree: Schema.optionalKey(Schema.Array(Schema.String)),
   /** Generated action barrels and decorators. */
   codegen: Schema.optionalKey(Schema.Literals(["sdk", "extension"])),
-  /** Indexer OpenAPI snapshots under test/fixtures/openapi. */
+  /** Indexer OpenAPI snapshots under verify/openapi. */
   openapi: Schema.optionalKey(Schema.Boolean),
 });
 export type Config = typeof Config.Type;

@@ -26,9 +26,6 @@
   ],
   "type": "module",
   "sideEffects": false,
-  "imports": {
-    "#/*": "./src/*.ts"
-  },
   "exports": {
     ".": {
       "workspace-source": "./src/index.ts",
@@ -53,6 +50,9 @@
     "./wagmi": {
       "workspace-source": "./src/wagmi/index.ts",
       "default": "./dist/wagmi/index.js"
+    },
+    "./internal/*": {
+      "workspace-source": "./src/*.ts"
     },
     "./package.json": "./package.json"
   },
@@ -79,7 +79,7 @@
     "lint": "oxlint -c ../../.config/oxlint.config.ts --deny-warnings .",
     "pack:check": "publint && attw --pack . --profile esm-only",
     "prepack": "pnpm build",
-    "typecheck": "tsc --noEmit && tsc --noEmit -p test",
+    "typecheck": "tsc --noEmit",
     "verify": "ensforge-dev verify",
     "codegen": "ensforge-dev codegen",
     "openapi": "ensforge-dev openapi"
@@ -92,12 +92,9 @@
     "fflate": "catalog:"
   },
   "devDependencies": {
-    "@effect/vitest": "catalog:",
-    "@ensforge/test-harness": "workspace:*",
     "@ensforge/tools": "workspace:*",
     "viem": "catalog:",
-    "wagmi": "catalog:",
-    "wagmi-v2": "catalog:"
+    "wagmi": "catalog:"
   },
   "peerDependencies": {
     "effect": "^4.1.4",

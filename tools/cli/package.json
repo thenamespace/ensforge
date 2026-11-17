@@ -7,9 +7,14 @@
     "ensforge-dev": "./src/bin.ts"
   },
   "type": "module",
+  "exports": {
+    "./internal/*": {
+      "workspace-source": "./src/*.ts"
+    }
+  },
   "scripts": {
     "lint": "oxlint -c ../../.config/oxlint.config.ts --deny-warnings .",
-    "typecheck": "tsc --noEmit && tsc --noEmit -p test"
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@effect/platform-node": "catalog:",

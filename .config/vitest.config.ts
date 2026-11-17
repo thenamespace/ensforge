@@ -2,17 +2,19 @@ import { fileURLToPath } from "node:url";
 
 import { defineConfig } from "vitest/config";
 
-// Fast lanes (018): `<package>:unit` and `<package>:types`, network-free. Chain lanes
-// (integration, fuzz, services, fork, live) are added by phases 019–025.
+// Fast lanes: `<package>:unit` and `<package>:types` from `tests/unit/<package>`, network-free.
 const packages = ["contracts", "sdk", "hca", "react"] as const;
 
 const unit = (name: (typeof packages)[number]) => ({
   extends: true as const,
   test: {
     name: `${name}:unit`,
-    root: `packages/${name}`,
-    include: ["test/unit/**/*.test.ts"],
-    setupFiles: ["../../tests/harness/src/setup.ts"],
+    root: "tests/unit",
+    include: [`${name}/**/*.test.{ts,tsx}`],
+    exclude: [`${name}/types/**`],
+    setupFiles: ["../harness/src/setup.ts"],
+    // React hooks render in jsdom; files that check server rendering opt into `node` per file.
+    ...(name === "react" ? { environment: "jsdom" } : {}),
   },
 });
 
@@ -22,28 +24,16 @@ const wagmi2 = {
   resolve: { alias: [{ find: /^wagmi(\/.*)?$/, replacement: "wagmi-v2$1" }] },
   test: {
     name: "sdk-wagmi2:unit",
-    root: "packages/sdk",
-    include: ["test/unit/wagmi/**/*.test.ts"],
-    setupFiles: ["../../tests/harness/src/setup.ts"],
-  },
-};
-
-// React hooks render in jsdom; files that check server rendering opt into `node` per file.
-const reactUnit = {
-  extends: true as const,
-  test: {
-    name: "react:unit",
-    root: "packages/react",
-    include: ["test/unit/**/*.test.{ts,tsx}"],
-    environment: "jsdom",
-    setupFiles: ["../../tests/harness/src/setup.ts"],
+    root: "tests/unit",
+    include: ["sdk/wagmi/**/*.test.ts"],
+    setupFiles: ["../harness/src/setup.ts"],
   },
 };
 
 // The repository CLI (`ensforge-dev`); its link checks open real TypeScript projects.
 const tools = {
   extends: true as const,
-  test: { name: "tools:unit", root: "tools/cli", include: ["test/unit/**/*.test.ts"] },
+  test: { name: "tools:unit", root: "tests/unit", include: ["tools/**/*.test.ts"] },
 };
 
 // Chain lane: every profile on a local anvil (`pnpm test:chain`; needs Foundry, see
@@ -117,13 +107,13 @@ const types = (name: (typeof packages)[number]) => ({
   extends: true as const,
   test: {
     name: `${name}:types`,
-    root: `packages/${name}`,
+    root: "tests/unit",
     include: [],
     typecheck: {
       enabled: true,
       only: true,
-      include: ["test/types/**/*.test-d.ts"],
-      tsconfig: "test/tsconfig.json",
+      include: [`${name}/types/**/*.test-d.ts`],
+      tsconfig: "tsconfig.json",
     },
   },
 });
@@ -136,9 +126,7 @@ export default defineConfig({
   ssr: { resolve: { conditions: ["workspace-source"] } },
   test: {
     projects: [
-      ...packages.flatMap((name) =>
-        name === "react" ? [reactUnit, types(name)] : [unit(name), types(name)],
-      ),
+      ...packages.flatMap((name) => [unit(name), types(name)]),
       wagmi2,
       tools,
       devnet,

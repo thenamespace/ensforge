@@ -46,7 +46,7 @@ reads. `test/writes/cases.ts` holds one allowed case per write action, which
 `writes/conformance.test.ts` sends in every mode; `writes/access-matrix.test.ts` sends them as
 other accounts. `writes/errors.test.ts` asserts that each documented refusal is typed and comes
 before the wallet is asked, and `writes/reverts.test.ts` raises each contract error the SDK maps
-from a deployed contract. `packages/sdk/test/unit/conformance/throws-coverage.test.ts` and
+from a deployed contract. `tests/unit/sdk/conformance/throws-coverage.test.ts` and
 `revert-map.test.ts` fail when a documented code or mapped error has no such test and is not in
 their shrink-only lists.
 

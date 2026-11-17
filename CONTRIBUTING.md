@@ -86,9 +86,10 @@ Promise): the conformance suites, `reads/every-read.test.ts`, and tests of Promi
 such as `signal` or the `.request` builders `batch` takes. Wrap viem and other non-ensforge calls
 in `Effect.promise`.
 
-- Fast tests sit next to their package: `packages/<pkg>/test/unit/<area>/*.test.ts` and
-  `packages/<pkg>/test/types/*.test-d.ts`. They never touch the network and run on every pull
-  request (`pnpm test`).
+- Every test lives under `tests/`. Fast tests are in `tests/unit/<package>/<area>/*.test.ts`
+  and `tests/unit/<package>/types/*.test-d.ts`; they reach package internals through the
+  workspace-only `@ensforge/<package>/internal/*` export, never touch the network and run on every
+  pull request (`pnpm test`).
 - Suites that need a chain or services live in private packages under `tests/` and are run by
   maintainers and release CI. Shared setup, matchers, transports and arbitraries live in
   `tests/harness`.
@@ -102,7 +103,7 @@ in `Effect.promise`.
   catalog cases they cover (`meta: { cases: ["O08"] }`) and list them in
   `tests/fixtures/catalog/ledger.json`.
 - Every error code an action documents in `@throws` must be asserted by a test that names the
-  action (`packages/sdk/test/unit/conformance/throws-coverage.test.ts`, which lists the few still
+  action (`tests/unit/sdk/conformance/throws-coverage.test.ts`, which lists the few still
   open), and every contract error the SDK maps must be raised by a devnet contract in
   `tests/integration/test/writes/reverts.test.ts` (`revert-map.test.ts` lists the rest).
 

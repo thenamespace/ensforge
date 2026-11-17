@@ -1,0 +1,34 @@
+{
+  "name": "@ensforge/test-unit",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Network-free unit and type tests of every package (not published)",
+  "type": "module",
+  "scripts": {
+    "lint": "oxlint -c ../../.config/oxlint.config.ts --deny-warnings .",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@effect/atom-react": "catalog:",
+    "@effect/platform-node": "catalog:",
+    "@effect/vitest": "catalog:",
+    "@ensforge/contracts": "workspace:*",
+    "@ensforge/hca": "workspace:*",
+    "@ensforge/react": "workspace:*",
+    "@ensforge/sdk": "workspace:*",
+    "@ensforge/test-harness": "workspace:*",
+    "@ensforge/tools": "workspace:*",
+    "@testing-library/react": "catalog:",
+    "@types/node": "catalog:",
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
+    "effect": "catalog:",
+    "jsdom": "catalog:",
+    "react": "catalog:",
+    "react-dom": "catalog:",
+    "scheduler": "catalog:",
+    "viem": "catalog:",
+    "wagmi": "catalog:",
+    "wagmi-v2": "catalog:"
+  }
+}

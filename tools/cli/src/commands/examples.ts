@@ -7,7 +7,7 @@ import { TypeScript } from "../services/TypeScript.ts";
 import { Workspace } from "../services/Workspace.ts";
 
 /**
- * Type-checks every JSDoc example as users would paste it. `test/fixtures/example-globals.ts`
+ * Type-checks every JSDoc example as users would paste it. `verify/example-globals.ts`
  * declares the values examples assume the app already has (`ens`, `publicClient`, …).
  */
 export const examples = Effect.fn("examples")(function* () {
@@ -17,7 +17,7 @@ export const examples = Effect.fn("examples")(function* () {
   const path = yield* Path.Path;
   const src = path.join(workspace.packageDir, "src");
   const out = path.join(workspace.packageDir, "node_modules/.cache/examples");
-  const globals = path.join(workspace.packageDir, "test/fixtures/example-globals.ts");
+  const globals = path.join(workspace.packageDir, "verify/example-globals.ts");
 
   yield* fs.remove(out, { recursive: true, force: true });
   yield* fs.makeDirectory(out, { recursive: true });

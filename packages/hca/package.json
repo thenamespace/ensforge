@@ -25,9 +25,6 @@
   ],
   "type": "module",
   "sideEffects": false,
-  "imports": {
-    "#/*": "./src/*.ts"
-  },
   "exports": {
     ".": {
       "workspace-source": "./src/index.ts",
@@ -36,6 +33,9 @@
     "./effect": {
       "workspace-source": "./src/effect.ts",
       "default": "./dist/effect.js"
+    },
+    "./internal/*": {
+      "workspace-source": "./src/*.ts"
     },
     "./package.json": "./package.json"
   },
@@ -55,7 +55,7 @@
     "build": "ensforge-dev build",
     "dev": "ensforge-dev build --watch",
     "lint": "oxlint -c ../../.config/oxlint.config.ts --deny-warnings .",
-    "typecheck": "tsc --noEmit && tsc --noEmit -p test",
+    "typecheck": "tsc --noEmit",
     "pack:check": "publint && attw --pack . --profile esm-only",
     "prepack": "pnpm build",
     "verify": "ensforge-dev verify",
@@ -67,8 +67,6 @@
     "@ensforge/sdk": "workspace:*"
   },
   "devDependencies": {
-    "@effect/vitest": "catalog:",
-    "@ensforge/test-harness": "workspace:*",
     "@ensforge/tools": "workspace:*",
     "viem": "catalog:"
   },

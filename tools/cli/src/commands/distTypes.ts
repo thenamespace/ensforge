@@ -10,7 +10,7 @@ const importsOf = (text: string): string[] =>
 
 /**
  * Checks the built declarations: those reachable from the `effectFree` entries never import
- * `effect` (Promise users never need its types), and `test/fixtures/consumer.ts`, which imports the
+ * `effect` (Promise users never need its types), and `verify/consumer.ts`, which imports the
  * package by name, compiles against them with `exactOptionalPropertyTypes` on and off.
  */
 export const distTypes = Effect.fn("distTypes")(function* () {
@@ -39,7 +39,7 @@ export const distTypes = Effect.fn("distTypes")(function* () {
     }
   }
 
-  const consumer = path.join(workspace.packageDir, "test/fixtures/consumer.ts");
+  const consumer = path.join(workspace.packageDir, "verify/consumer.ts");
   const hasConsumer = yield* fs.exists(consumer);
   if (hasConsumer) {
     for (const exactOptionalPropertyTypes of [true, false]) {

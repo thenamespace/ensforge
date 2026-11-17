@@ -1,0 +1,22 @@
+{
+  "extends": "klarity/tsconfig/library",
+  "compilerOptions": {
+    "customConditions": ["workspace-source"],
+    "jsx": "react-jsx",
+    "noEmit": true,
+    "rootDir": ".",
+    "types": ["node"],
+    "erasableSyntaxOnly": true,
+    "noErrorTruncation": true,
+    "plugins": [
+      {
+        "name": "@effect/language-service",
+        "diagnosticSeverity": {
+          "experimentalApiUsage": "off",
+          "unstableApiUsage": "off"
+        }
+      }
+    ]
+  },
+  "include": ["./**/*.ts", "./**/*.tsx"]
+}

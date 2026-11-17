@@ -24,9 +24,6 @@
   ],
   "type": "module",
   "sideEffects": false,
-  "imports": {
-    "#/*": "./src/*.ts"
-  },
   "exports": {
     ".": {
       "workspace-source": "./src/index.ts",
@@ -47,6 +44,9 @@
     "./v2/experimental/hca": {
       "workspace-source": "./src/v2/experimental/hca/index.ts",
       "default": "./dist/v2/experimental/hca/index.js"
+    },
+    "./internal/*": {
+      "workspace-source": "./src/*.ts"
     },
     "./package.json": "./package.json"
   },
@@ -72,11 +72,10 @@
     "lint": "oxlint -c ../../.config/oxlint.config.ts --deny-warnings .",
     "pack:check": "publint && attw --pack . --profile esm-only",
     "prepack": "pnpm build",
-    "typecheck": "tsc --noEmit && tsc --noEmit -p test",
+    "typecheck": "tsc --noEmit",
     "verify": "ensforge-dev verify"
   },
   "devDependencies": {
-    "@effect/vitest": "catalog:",
     "@ensforge/tools": "workspace:*",
     "viem": "catalog:"
   },

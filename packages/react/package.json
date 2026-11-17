@@ -26,9 +26,6 @@
   ],
   "type": "module",
   "sideEffects": false,
-  "imports": {
-    "#/*": "./src/*.ts"
-  },
   "exports": {
     ".": {
       "workspace-source": "./src/index.ts",
@@ -41,6 +38,9 @@
     "./server": {
       "workspace-source": "./src/server/index.ts",
       "default": "./dist/server/index.js"
+    },
+    "./internal/*": {
+      "workspace-source": "./src/*.ts"
     },
     "./package.json": "./package.json"
   },
@@ -63,7 +63,7 @@
     "lint": "oxlint -c ../../.config/oxlint.config.ts --deny-warnings .",
     "pack:check": "publint && attw --pack . --profile esm-only",
     "prepack": "pnpm build",
-    "typecheck": "tsc --noEmit && tsc --noEmit -p test",
+    "typecheck": "tsc --noEmit",
     "api:report": "ensforge-dev api-report",
     "verify": "ensforge-dev verify"
   },
@@ -72,13 +72,9 @@
     "@ensforge/sdk": "workspace:*"
   },
   "devDependencies": {
-    "@effect/vitest": "catalog:",
-    "@ensforge/test-harness": "workspace:*",
     "@ensforge/tools": "workspace:*",
-    "@testing-library/react": "catalog:",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
-    "jsdom": "catalog:",
     "react": "catalog:",
     "react-dom": "catalog:",
     "scheduler": "catalog:",
