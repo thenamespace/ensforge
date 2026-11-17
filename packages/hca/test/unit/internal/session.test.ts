@@ -243,6 +243,19 @@ describe("sessionProblem", () => {
     ["usable", {}, {}, undefined],
     ["on another chain", { chainId: 1 }, {}, "chain"],
     ["expired", { terms: { ...session.terms, validUntil: 1 } }, {}, "expired"],
+    // Regression: expiry followed the local clock; the validator follows the block's timestamp.
+    [
+      "expired by chain time, before the local clock",
+      { terms: { ...session.terms, validUntil: 3_000_000_000 } },
+      { now: 3_000_000_001n },
+      "expired",
+    ],
+    [
+      "usable by chain time, after the local clock",
+      { terms: { ...session.terms, validUntil: 1_000_000_000 } },
+      { now: 999_999_999n },
+      undefined,
+    ],
     ["signed under another domain", { signingDomain: "hca" }, {}, "signing-domain"],
     ["revoked by a newer session nonce", {}, { sessionNonce: 1n }, "revoked"],
   ] as const)("reports a session that is %s", ([, change, world, expected]) =>

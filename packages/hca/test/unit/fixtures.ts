@@ -14,6 +14,7 @@ import {
   getAddress,
   getContractAddress,
   keccak256,
+  multicall3Abi,
   type Address,
 } from "viem";
 import { sepolia } from "viem/chains";
@@ -64,6 +65,8 @@ export type World = {
   readonly sessionNonce?: bigint;
   readonly stubs?: readonly ContractStub[];
   readonly deployment?: Deployments.Profile;
+  /** The latest block's timestamp. */
+  readonly now?: bigint;
 };
 
 export const makeClient = (world: World = {}, account: Address = owner) => {
@@ -71,6 +74,11 @@ export const makeClient = (world: World = {}, account: Address = owner) => {
     code: world.deployed === true ? [hcaAddress] : [],
     contracts: [
       ...(world.stubs ?? []),
+      {
+        address: sepolia.contracts.multicall3.address,
+        abi: multicall3Abi,
+        functions: { getCurrentBlockTimestamp: () => world.now ?? 1_800_000_000n },
+      },
       {
         address: v2.contracts.verifiableFactory,
         abi: Abis.v2.verifiableFactory,

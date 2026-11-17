@@ -112,7 +112,9 @@ export const sessionProblem = Effect.fnUntraced(function* (
   AnyError | HcaError
 > {
   if (session.chainId !== client.chain.id) return "chain" as const;
-  if (session.terms.validUntil * 1000 < Date.now()) return "expired" as const;
+  // The validator compares `validUntil` with the block's timestamp, not the local clock.
+  const now = yield* Rpc.blockTimestamp(client, {});
+  if (BigInt(session.terms.validUntil) < now) return "expired" as const;
   const domain = client.deployment.v2?.capabilities.hcaSessionDomain ?? "smart-session";
   if (session.signingDomain !== domain) return "signing-domain" as const;
   const account = yield* readAccount(client, { address: session.hca });
