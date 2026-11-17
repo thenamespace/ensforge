@@ -8,7 +8,7 @@ import type { getStatus as Promises } from "./index.js";
 /** @internal Implementation of `Actions.indexer.getStatus`. */
 export const getStatus = Effect.fn("ensforge.indexer.getStatus")(function* (
   client: Client,
-  _options: Promises.Options,
+  _options: Promises.Options = {},
 ): Effect.fn.Return<Promises.ReturnType, Promises.ErrorType> {
   return yield* callIndexer(client, "getStatus", {});
 }, Action.withContext("indexer.getStatus"));

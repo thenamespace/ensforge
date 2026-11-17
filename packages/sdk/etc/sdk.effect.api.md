@@ -119,7 +119,7 @@ function Actions.indexer.getNamesForAddress(client: ClientBase<{}>, options: Pic
 type Actions.indexer.getNamesForAddress.ErrorType = CommitmentError | ConfigError | ContractRevertError | DnsError | GatewayError | IndexerError | InsufficientFundsError | InternalError | InvalidInputError | MigrationError | NameStateError | NetworkError | NotFoundError | PlanError | TransactionError | UnauthorizedError | UnsupportedError | UserRejectedError | WalletError
 type Actions.indexer.getNamesForAddress.Options = Pick<Options, 'signal'> & Omit<GetNamesForAddress, 'address' | 'parent' | 'coinType'> & { address: string; coin?: Input | undefined; parent?: string | undefined; }
 type Actions.indexer.getNamesForAddress.ReturnType = Meta & { readonly items: readonly AddressName[]; readonly cursor: string | null; readonly hasMore: boolean; readonly totalCount: number | null; }
-function Actions.indexer.getNamespace(client: ClientBase<{}>, options: Pick<Options, 'signal' | 'strict'> & { namespace?: Namespace | undefined; }) => Effect<ReturnType, AnyError, never>
+function Actions.indexer.getNamespace(client: ClientBase<{}>, options?: Options | undefined) => Effect<ReturnType, AnyError, never>
 type Actions.indexer.getNamespace.ErrorType = CommitmentError | ConfigError | ContractRevertError | DnsError | GatewayError | IndexerError | InsufficientFundsError | InternalError | InvalidInputError | MigrationError | NameStateError | NetworkError | NotFoundError | PlanError | TransactionError | UnauthorizedError | UnsupportedError | UserRejectedError | WalletError
 type Actions.indexer.getNamespace.Options = Pick<Options, 'signal' | 'strict'> & { namespace?: Namespace | undefined; }
 type Actions.indexer.getNamespace.ReturnType = Result<NamespaceInfo> | null
@@ -159,7 +159,7 @@ function Actions.indexer.getResolvers(client: ClientBase<{}>, options: Pick<Opti
 type Actions.indexer.getResolvers.ErrorType = CommitmentError | ConfigError | ContractRevertError | DnsError | GatewayError | IndexerError | InsufficientFundsError | InternalError | InvalidInputError | MigrationError | NameStateError | NetworkError | NotFoundError | PlanError | TransactionError | UnauthorizedError | UnsupportedError | UserRejectedError | WalletError
 type Actions.indexer.getResolvers.Options = Pick<Options, 'signal'> & Omit<GetResolvers, 'roleHolder'> & { roleHolder: string; }
 type Actions.indexer.getResolvers.ReturnType = Meta & { readonly items: readonly RoleHolderResolver[]; readonly cursor: string | null; readonly hasMore: boolean; readonly totalCount: number | null; }
-function Actions.indexer.getStatus(client: ClientBase<{}>, _options: { signal?: AbortSignal | undefined; }) => Effect<IndexerStatus, AnyError, never>
+function Actions.indexer.getStatus(client: ClientBase<{}>, _options?: Options | undefined) => Effect<IndexerStatus, AnyError, never>
 type Actions.indexer.getStatus.ErrorType = CommitmentError | ConfigError | ContractRevertError | DnsError | GatewayError | IndexerError | InsufficientFundsError | InternalError | InvalidInputError | MigrationError | NameStateError | NetworkError | NotFoundError | PlanError | TransactionError | UnauthorizedError | UnsupportedError | UserRejectedError | WalletError
 type Actions.indexer.getStatus.Options = { signal?: AbortSignal | undefined; }
 type Actions.indexer.getStatus.ReturnType = { readonly status: 'ready' | 'degraded' | 'stale'; readonly chains: Readonly<Record<number, ChainStatus>>; readonly indexer: string; }

@@ -8,7 +8,7 @@ import type { getNamespace as Promises } from "./index.js";
 /** @internal Implementation of `Actions.indexer.getNamespace`. */
 export const getNamespace = Effect.fn("ensforge.indexer.getNamespace")(function* (
   client: Client,
-  options: Promises.Options,
+  options: Promises.Options = {},
 ): Effect.fn.Return<Promises.ReturnType, Promises.ErrorType> {
   const namespace = options.namespace ?? "ens";
   const result = yield* callIndexer(client, "getNamespace", { namespace });
