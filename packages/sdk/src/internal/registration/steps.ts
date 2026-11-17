@@ -25,7 +25,7 @@ export const pendingCommitments = (
         new CommitmentError({ code: "COMMITMENT_TOO_NEW", commitment: name.commitment, readyAt }),
       );
     }
-    if (registration.now > expiresAt) {
+    if (registration.now >= expiresAt) {
       return Effect.fail(
         new CommitmentError({ code: "COMMITMENT_TOO_OLD", commitment: name.commitment, expiresAt }),
       );

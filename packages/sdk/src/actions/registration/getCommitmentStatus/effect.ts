@@ -52,7 +52,7 @@ export const getCommitmentStatus = Effect.fn("ensforge.registration.getCommitmen
     }
     const readyAt = committedAt + minAge;
     const expiresAt = committedAt + maxAge;
-    const status = now < readyAt ? "pending" : now <= expiresAt ? "ready" : "expired";
+    const status = now < readyAt ? "pending" : now < expiresAt ? "ready" : "expired";
     return { status, committedAt, readyAt, expiresAt };
   },
   Action.withContext("registration.getCommitmentStatus", { contractKind: "registrar" }),
