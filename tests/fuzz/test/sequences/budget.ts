@@ -4,5 +4,5 @@ const configured = process.env["ENSFORGE_FUZZ_SEED"];
 
 export const seed =
   configured === "random" ? Math.floor(Math.random() * 2 ** 31) : Number(configured ?? 20_261_117);
-export const runs = Number(process.env["ENSFORGE_FUZZ_RUNS"] ?? 20);
+export const runs = Number(process.env["ENSFORGE_FUZZ_RUNS"] ?? 100);
 export const maxLength = Number(process.env["ENSFORGE_FUZZ_LENGTH"] ?? 30);

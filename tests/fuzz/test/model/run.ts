@@ -29,7 +29,9 @@ export const runSequence = (context: Context, commands: readonly Command[]) =>
           .run(context, model, command)
           .pipe(Effect.mapError(atStep(step, command)));
         model = { ...next, now: yield* chainTime(context.world) };
-        yield* invariants(context, model, command).pipe(Effect.mapError(atStep(step, command)));
+        yield* invariants(context, model, step, command).pipe(
+          Effect.mapError(atStep(step, command)),
+        );
       }
     }),
   );

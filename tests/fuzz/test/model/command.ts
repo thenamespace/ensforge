@@ -3,6 +3,7 @@ import { Effect, Schema } from "effect";
 import { Errors, type Plan, type Write } from "@ensforge/sdk";
 import { ensforge, passWaits } from "@ensforge/test-integration/support/chain";
 
+import { anyCode } from "./expect.ts";
 import type { Model } from "./model.ts";
 import type { ActorName, World } from "./world.ts";
 
@@ -112,7 +113,7 @@ export const send = Effect.fnUntraced(function* (
   }
   const allowed =
     "refused" in expected ? expected.refused : "either" in expected ? expected.either : [];
-  if (!outcome.ok && !allowed.includes(outcome.code)) {
+  if (!outcome.ok && !allowed.includes(outcome.code) && !allowed.includes(anyCode)) {
     return yield* new SequenceFailure({
       message: `${label} failed ${outcome.code}; expected ${allowed.join(" | ") || "success"}`,
     });

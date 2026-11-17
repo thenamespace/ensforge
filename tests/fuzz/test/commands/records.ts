@@ -2,9 +2,9 @@ import { Effect, Schema } from "effect";
 
 import { either, refused, send, succeeds, type CommandSpec } from "../model/command.ts";
 import { Index, stable } from "../model/expect.ts";
-import { isFree, pick, v1Status, v2Status, withV1, withV2 } from "../model/model.ts";
-import { actorNames } from "../model/world.ts";
-import { targetsOf } from "./names.ts";
+import { burned, isOperator, pick, targetOf, v1Status, withV1, withV2 } from "../model/model.ts";
+import { resyncV1 } from "../model/sync.ts";
+import { actorOf, targetsOf, v2Unregistered } from "./names.ts";
 
 export const SetText = Schema.Struct({
   kind: Schema.Literal("setText"),
@@ -12,51 +12,113 @@ export const SetText = Schema.Struct({
   actor: Index,
   value: Index,
 });
+/** Clears a name's resolver, or sets back the one it started with. */
+export const SetResolver = Schema.Struct({
+  kind: Schema.Literal("setResolver"),
+  name: Index,
+  actor: Index,
+  clear: Schema.Boolean,
+});
 
 export const setText: CommandSpec<typeof SetText.Type> = {
   run: (context, model, command) =>
     Effect.gen(function* () {
       const { world } = context;
-      const name = pick(targetsOf(world), command.name) as string;
-      const label = name.slice(0, -".eth".length);
-      const actorName = pick(actorNames, command.actor) as (typeof actorNames)[number];
-      const actor = world.actors[actorName];
+      const target = targetOf(model, world, pick(targetsOf(world), command.name) as string);
+      const actor = actorOf(world, command.actor);
       const url = `https://${command.value}.example`;
-      const isV1 = world.v1Names.includes(name);
       const expected = stable(model, (at) => {
-        if (isV1) {
-          const entry = at.v1[name];
-          const status = v1Status(at, world.constants, name);
+        if (target.protocol === "v1") {
+          const entry = at.v1[target.name];
+          const status = v1Status(at, world.constants, target.name);
           if (entry === undefined || status === "expired") return refused("NAME_EXPIRED");
           if (entry.resolver === null) return refused("RESOLVER_NOT_FOUND");
-          const allowed = actor === entry.manager;
           if (status === "grace") return either("NAME_EXPIRED", "NOT_OWNER", "NOT_APPROVED");
-          return allowed ? succeeds : refused("NOT_OWNER", "NOT_APPROVED", "MISSING_ROLES");
+          return actor.address === entry.manager
+            ? succeeds
+            : refused("NOT_OWNER", "NOT_APPROVED", "MISSING_ROLES");
         }
-        const entry = at.v2[label];
-        const status = v2Status(at, world.constants, label);
-        if (entry === undefined || isFree(status)) {
-          return refused("NAME_NOT_REGISTERED", "NAME_EXPIRED");
+        const entry = at.v2[target.label];
+        const unregistered = v2Unregistered(at, world, target.label);
+        if (entry === undefined || unregistered !== undefined) {
+          return unregistered ?? refused("NAME_NOT_REGISTERED");
         }
-        if (status !== "registered") return refused("NAME_EXPIRED");
         if (entry.resolver === null) return refused("RESOLVER_NOT_FOUND");
-        return actor === entry.recordsAdmin ? succeeds : refused("MISSING_ROLES", "NOT_OWNER");
+        if (entry.recordsAdmin === null)
+          return either("MISSING_ROLES", "NOT_OWNER", "NOT_APPROVED");
+        return actor.address === entry.recordsAdmin
+          ? succeeds
+          : refused("MISSING_ROLES", "NOT_OWNER");
       });
 
       const outcome = yield* send(
         context,
-        actorName,
+        actor.name,
         "record.set",
-        { name, texts: { url } },
+        { name: target.name, texts: { url } },
         expected,
       );
       if (!outcome.ok) return model;
 
-      if (isV1) {
-        const entry = model.v1[name];
-        return entry === undefined ? model : withV1(model, name, { ...entry, url });
+      if (target.protocol === "v1") {
+        return withV1(model, target.name, { ...target.entry, url });
       }
-      const entry = model.v2[label];
-      return entry === undefined ? model : withV2(model, label, { ...entry, url });
+      const entry = model.v2[target.label];
+      return entry === undefined ? model : withV2(model, target.label, { ...entry, url });
+    }),
+};
+
+export const setResolver: CommandSpec<typeof SetResolver.Type> = {
+  run: (context, model, command) =>
+    Effect.gen(function* () {
+      const { world } = context;
+      const target = targetOf(model, world, pick(targetsOf(world), command.name) as string);
+      const actor = actorOf(world, command.actor);
+      const own =
+        target.protocol === "v1" ? target.entry.ownResolver : model.v2[target.label]?.ownResolver;
+      const resolver = command.clear ? null : (own ?? null);
+      const expected = stable(model, (at) => {
+        if (target.protocol === "v1") {
+          const entry = at.v1[target.name];
+          const status = v1Status(at, world.constants, target.name);
+          if (entry === undefined || status === "expired") return refused("NAME_EXPIRED");
+          if (status === "grace") return either("NAME_EXPIRED", "NOT_OWNER", "NOT_APPROVED");
+          // A burned fuse blocks everyone, so it may be reported before the account.
+          if (burned(entry, "cannotSetResolver")) {
+            return actor.address === entry.manager
+              ? refused("FUSE_BURNED")
+              : refused("FUSE_BURNED", "NOT_OWNER", "NOT_APPROVED");
+          }
+          return actor.address === entry.manager ? succeeds : refused("NOT_OWNER", "NOT_APPROVED");
+        }
+        const entry = at.v2[target.label];
+        const unregistered = v2Unregistered(at, world, target.label);
+        if (entry === undefined || unregistered !== undefined) {
+          return unregistered ?? refused("NAME_NOT_REGISTERED");
+        }
+        if (actor.address === entry.owner || entry.delegates.includes(actor.address)) {
+          return succeeds;
+        }
+        // An operator's reach is left to the permission oracle.
+        return isOperator(at, entry.owner, actor.address)
+          ? either("MISSING_ROLES", "NOT_OWNER")
+          : refused("MISSING_ROLES", "NOT_OWNER");
+      });
+
+      const outcome = yield* send(
+        context,
+        actor.name,
+        "resolver.set",
+        { name: target.name, resolver },
+        expected,
+      );
+      if (!outcome.ok) return model;
+
+      if (target.protocol === "v1") {
+        if (!("ok" in expected)) return yield* resyncV1(world, model, target.name);
+        return withV1(model, target.name, { ...target.entry, resolver });
+      }
+      const entry = model.v2[target.label];
+      return entry === undefined ? model : withV2(model, target.label, { ...entry, resolver });
     }),
 };

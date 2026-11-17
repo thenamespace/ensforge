@@ -1,5 +1,7 @@
 import { Effect, Schema } from "effect";
 
+import type { Address } from "viem";
+
 import {
   either,
   refused,
@@ -9,9 +11,26 @@ import {
   type Expectation,
 } from "../model/command.ts";
 import { Index, stable } from "../model/expect.ts";
-import { isFree, pick, v1Status, v2Status, withV1, withV2, type Model } from "../model/model.ts";
+import {
+  burned,
+  isFree,
+  pick,
+  targetOf,
+  v1Status,
+  v2Status,
+  withV1,
+  withV2,
+  type Model,
+} from "../model/model.ts";
 import { resyncV1 } from "../model/sync.ts";
-import { actorNames, readV2, travelTo, v2Labels, type World } from "../model/world.ts";
+import {
+  actorNames,
+  readV2,
+  travelTo,
+  v2Labels,
+  type ActorName,
+  type World,
+} from "../model/world.ts";
 
 const year = 31_536_000n;
 
@@ -49,15 +68,28 @@ export const targetsOf = (world: World) => [
   ...world.v1Names,
 ];
 
-const labelOf = (name: string) => name.slice(0, -".eth".length);
+export const actorOf = (world: World, index: number) => {
+  const name = pick(actorNames, index) as ActorName;
+  return { name, address: world.actors[name] };
+};
+
+/** Refusals of a write on an ENSv2 name that is not registered now. */
+export const v2Unregistered = (
+  model: Model,
+  world: World,
+  label: string,
+): Expectation | undefined => {
+  const status = v2Status(model, world.constants, label);
+  if (isFree(status)) return refused("NAME_NOT_REGISTERED", "NAME_EXPIRED");
+  return status === "registered" ? undefined : refused("NAME_EXPIRED", "NAME_NOT_REGISTERED");
+};
 
 export const register: CommandSpec<typeof Register.Type> = {
   run: (context, model, command) =>
     Effect.gen(function* () {
       const { world } = context;
       const label = pick(v2Labels, command.name) as string;
-      const actorName = pick(actorNames, command.actor) as (typeof actorNames)[number];
-      const actor = world.actors[actorName];
+      const actor = actorOf(world, command.actor);
       const url = command.url ? `https://${label}.example/${model.now}` : null;
       const expected = stable(model, (at) =>
         isFree(v2Status(at, world.constants, label)) ? succeeds : refused("NAME_NOT_AVAILABLE"),
@@ -65,12 +97,15 @@ export const register: CommandSpec<typeof Register.Type> = {
 
       const outcome = yield* send(
         context,
-        actorName,
+        actor.name,
         "registration.register",
         {
           names: `${label}.eth`,
           duration: BigInt(command.years) * year,
-          records: { addresses: { eth: actor }, ...(url === null ? {} : { texts: { url } }) },
+          records: {
+            addresses: { eth: actor.address },
+            ...(url === null ? {} : { texts: { url } }),
+          },
         },
         expected,
       );
@@ -79,13 +114,16 @@ export const register: CommandSpec<typeof Register.Type> = {
       // The expiry and the deployed resolver are chosen by the chain.
       const entry = yield* readV2(world, label);
       return withV2(model, label, {
-        owner: actor,
+        owner: actor.address,
         expiry: entry.expiry,
         resolver: entry.resolver,
-        recordsAdmin: actor,
+        ownResolver: entry.resolver,
+        recordsAdmin: actor.address,
         url,
+        addr: actor.address,
         delegates: [],
         sub: null,
+        subregistryAdmin: null,
       });
     }),
 };
@@ -102,7 +140,7 @@ export const renew: CommandSpec<typeof Renew.Type> = {
 
       const outcome = yield* send(
         context,
-        pick(actorNames, command.actor) as (typeof actorNames)[number],
+        actorOf(world, command.actor).name,
         "registration.renew",
         { names: `${label}.eth`, duration },
         expected,
@@ -114,31 +152,29 @@ export const renew: CommandSpec<typeof Renew.Type> = {
     }),
 };
 
-const transferV2 = (
-  model: Model,
-  world: World,
-  label: string,
-  actor: string,
-  to: string,
-): Expectation =>
+const transferV2 = (model: Model, world: World, label: string, actor: Address, to: Address) =>
   stable(model, (at) => {
     const entry = at.v2[label];
-    const status = v2Status(at, world.constants, label);
-    if (entry === undefined || isFree(status)) {
-      return refused("NAME_NOT_REGISTERED", "NAME_EXPIRED");
+    const unregistered = v2Unregistered(at, world, label);
+    if (entry === undefined || unregistered !== undefined) {
+      return unregistered ?? refused("NAME_NOT_REGISTERED");
     }
-    if (status !== "registered") return refused("NAME_EXPIRED", "NAME_NOT_REGISTERED");
-    if (actor !== entry.owner) return refused("MISSING_ROLES", "NOT_OWNER", "NOT_APPROVED");
-    if (entry.delegates.length > 0) return refused("TRANSFER_DISALLOWED");
-    return to === entry.owner ? either() : succeeds;
+    const operator = at.operators[entry.owner]?.includes(actor) ?? false;
+    if (actor !== entry.owner && !operator) {
+      return refused("MISSING_ROLES", "NOT_OWNER", "NOT_APPROVED");
+    }
+    if (entry.delegates.some((delegate) => delegate !== to)) return refused("TRANSFER_DISALLOWED");
+    return to === entry.owner || entry.delegates.length > 0
+      ? either("TRANSFER_DISALLOWED")
+      : succeeds;
   });
 
 const transferV1 = (
   model: Model,
   world: World,
   name: string,
-  actor: string,
-  to: string,
+  actor: Address,
+  to: Address,
 ): Expectation =>
   stable(model, (at) => {
     const entry = at.v1[name];
@@ -149,6 +185,12 @@ const transferV1 = (
     // A transfer to the current holder may be a no-op the SDK accepts or declines.
     const same = to === entry.manager && (entry.wrapped || to === entry.registrant);
     if (entry.wrapped) {
+      // A burned fuse blocks everyone, so it may be reported before the account.
+      if (burned(entry, "cannotTransfer")) {
+        return actor === entry.manager
+          ? refused("FUSE_BURNED")
+          : refused("FUSE_BURNED", "NOT_OWNER", "NOT_APPROVED");
+      }
       if (actor !== entry.manager) return refused("NOT_OWNER", "NOT_APPROVED");
       return same ? either() : succeeds;
     }
@@ -163,30 +205,35 @@ export const transfer: CommandSpec<typeof Transfer.Type> = {
   run: (context, model, command) =>
     Effect.gen(function* () {
       const { world } = context;
-      const name = pick(targetsOf(world), command.name) as string;
-      const actorName = pick(actorNames, command.actor) as (typeof actorNames)[number];
-      const actor = world.actors[actorName];
-      const to = world.actors[pick(actorNames, command.to) as (typeof actorNames)[number]];
-      const isV1 = world.v1Names.includes(name);
-      const expected = isV1
-        ? transferV1(model, world, name, actor, to)
-        : transferV2(model, world, labelOf(name), actor, to);
+      const target = targetOf(model, world, pick(targetsOf(world), command.name) as string);
+      const actor = actorOf(world, command.actor);
+      const to = actorOf(world, command.to).address;
+      const expected =
+        target.protocol === "v1"
+          ? transferV1(model, world, target.name, actor.address, to)
+          : transferV2(model, world, target.label, actor.address, to);
 
-      const outcome = yield* send(context, actorName, "name.transfer", { name, to }, expected);
+      const outcome = yield* send(
+        context,
+        actor.name,
+        "name.transfer",
+        { name: target.name, to },
+        expected,
+      );
       if (!outcome.ok) return model;
 
-      if (isV1) {
-        const entry = model.v1[name];
+      if (target.protocol === "v1") {
         // Where the model does not decide, the chain's state is taken as the outcome.
-        if (entry === undefined || !("ok" in expected)) return yield* resyncV1(world, model, name);
+        if (!("ok" in expected)) return yield* resyncV1(world, model, target.name);
+        const { entry } = target;
         return withV1(
           model,
-          name,
+          target.name,
           entry.wrapped ? { ...entry, manager: to } : { ...entry, manager: to, registrant: to },
         );
       }
-      const entry = model.v2[labelOf(name)];
-      return entry === undefined ? model : withV2(model, labelOf(name), { ...entry, owner: to });
+      const entry = model.v2[target.label];
+      return entry === undefined ? model : withV2(model, target.label, { ...entry, owner: to });
     }),
 };
 
@@ -194,22 +241,20 @@ export const wait: CommandSpec<typeof Wait.Type> = {
   run: (context, model, command) =>
     Effect.gen(function* () {
       const { world } = context;
-      const name = pick(targetsOf(world), command.name) as string;
-      const v1 = model.v1[name];
-      const v2 = model.v2[labelOf(name)];
-      const expiry = world.v1Names.includes(name) ? v1?.expiry : v2?.expiry;
-      const grace = world.v1Names.includes(name)
-        ? world.constants.v1GracePeriod
-        : world.constants.gracePeriod;
+      const target = targetOf(model, world, pick(targetsOf(world), command.name) as string);
+      const expiry =
+        target.protocol === "v1" ? target.entry.expiry : model.v2[target.label]?.expiry;
+      const grace =
+        target.protocol === "v1" ? world.constants.v1GracePeriod : world.constants.gracePeriod;
       const boundary =
         command.boundary === "day" || expiry === undefined
           ? model.now + 86_400n
           : command.boundary === "expiry"
             ? expiry
             : expiry + grace;
-      const target = boundary + BigInt(command.offset);
+      const moment = boundary + BigInt(command.offset);
       // Time only moves forward; a boundary already passed becomes a day's wait.
-      const timestamp = target > model.now ? target : model.now + 86_400n;
+      const timestamp = moment > model.now ? moment : model.now + 86_400n;
 
       yield* travelTo(world, timestamp);
       return { ...model, now: timestamp };

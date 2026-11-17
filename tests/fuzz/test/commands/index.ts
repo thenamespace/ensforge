@@ -1,11 +1,29 @@
 import { Schema } from "effect";
 
 import type { CommandSpec } from "../model/command.ts";
+import { operator, Operator, role, Role } from "./access.ts";
+import { subname, Subname } from "./hierarchy.ts";
+import { migrate, Migrate } from "./migration.ts";
 import { register, Register, renew, Renew, transfer, Transfer, wait, Wait } from "./names.ts";
-import { SetText, setText } from "./records.ts";
+import { primary, Primary } from "./primary.ts";
+import { setResolver, SetResolver, SetText, setText } from "./records.ts";
+import { wrapper, Wrapper } from "./wrapper.ts";
 
 /** Every command a sequence can contain, as JSON data. */
-export const Command = Schema.Union([Register, Renew, Transfer, Wait, SetText]);
+export const Command = Schema.Union([
+  Register,
+  Renew,
+  Transfer,
+  Wait,
+  SetText,
+  SetResolver,
+  Role,
+  Operator,
+  Subname,
+  Wrapper,
+  Primary,
+  Migrate,
+]);
 export type Command = typeof Command.Type;
 
 const specs: { readonly [K in Command["kind"]]: CommandSpec<Extract<Command, { kind: K }>> } = {
@@ -14,6 +32,13 @@ const specs: { readonly [K in Command["kind"]]: CommandSpec<Extract<Command, { k
   transfer,
   wait,
   setText,
+  setResolver,
+  role,
+  operator,
+  subname,
+  wrapper,
+  primary,
+  migrate,
 };
 
 export const specOf = <C extends Command>(command: C) =>

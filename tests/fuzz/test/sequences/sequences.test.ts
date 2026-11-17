@@ -20,7 +20,7 @@ describe("random sequences", () => {
         const result = yield* Arbitrary.checkEffect(
           Arbitrary.array(Arbitrary.schema(Command), { minLength: 1, maxLength }),
           (commands) => Effect.as(runSequence(context, commands), true),
-          { seed, runs, size: maxLength, maxShrinks: 40 },
+          { seed, runs, size: maxLength, maxShrinks: 200 },
         );
 
         yield* Effect.logInfo(
