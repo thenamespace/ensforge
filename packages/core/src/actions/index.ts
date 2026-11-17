@@ -2,6 +2,7 @@
 
 export * as approval from "./approval/index.js";
 export * as dns from "./dns/index.js";
+export * as event from "./event/index.js";
 export * as migration from "./migration/index.js";
 export * as name from "./name/index.js";
 export * as permission from "./permission/index.js";
@@ -13,3 +14,4 @@ export * as resolver from "./resolver/index.js";
 export * as role from "./role/index.js";
 export * as subname from "./subname/index.js";
 export * as wrapper from "./wrapper/index.js";
+export { batch } from "../batch/index.js";

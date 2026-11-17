@@ -9,7 +9,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { discover } from "./discover.ts";
-import { decorators, domainBarrel, effectBarrel, treeBarrel } from "./render.ts";
+import { decorators, domainBarrel, effectBarrel, requestsTable, treeBarrel } from "./render.ts";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "../..");
 const check = process.argv.includes("--check");
@@ -24,6 +24,7 @@ const outputs = new Map<string, string>([
   ["src/actions/index.ts", treeBarrel(domains, "index")],
   ["src/actions/effect.ts", treeBarrel(domains, "effect")],
   ["src/actions/decorators.ts", decorators(domains)],
+  ["src/actions/requests.ts", requestsTable(domains)],
   ...domains.flatMap((entry): [string, string][] => [
     [`src/actions/${entry.domain}/index.ts`, domainBarrel(entry)],
     [`src/actions/${entry.domain}/effect.ts`, effectBarrel(entry)],

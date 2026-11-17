@@ -61,9 +61,26 @@ export const effectBarrel = ({ actions }: Domain): string => {
   return `${header}${imports.join("\n")}\n\n${actions.map(effectExport).join("\n\n")}\n`;
 };
 
-/** `actions/index.ts` or `actions/effect.ts`: one namespace per domain. */
+/** `actions/index.ts` or `actions/effect.ts`: one namespace per domain, plus `batch`. */
 export const treeBarrel = (domains: readonly Domain[], file: "index" | "effect"): string =>
-  `${header}${domains.map(({ domain }) => `export * as ${domain} from "./${domain}/${file}.js";`).join("\n")}\n`;
+  `${header}${domains.map(({ domain }) => `export * as ${domain} from "./${domain}/${file}.js";`).join("\n")}\nexport { batch } from "../batch/${file}.js";\n`;
+
+/** `actions/requests.ts`: the Effect implementation of every read with `.request`, by path. */
+export const requestsTable = (domains: readonly Domain[]): string => {
+  const reads = domains.flatMap(({ domain, actions }) =>
+    actions
+      .filter((action) => action.properties.includes("request"))
+      .map((action) => ({ domain, action })),
+  );
+  const imports = reads.map(
+    ({ domain, action }) =>
+      `import { ${action.name} as ${domain}${pascal(action.name)} } from "./${domain}/${action.folder}/effect.js";`,
+  );
+  const entries = reads.map(
+    ({ domain, action }) => `"${domain}.${action.name}": ${domain}${pascal(action.name)},`,
+  );
+  return `${header}import type { Effect } from "effect";\n\nimport type { Client } from "../client/types.js";\n${imports.join("\n")}\n\n/**\n * Read implementations by action path, for \`Actions.batch\`.\n *\n * @internal\n */\nexport const requests: Readonly<\n  Record<string, (client: Client, options: never) => Effect.Effect<unknown, unknown>>\n> = {\n${indent(entries.join("\n"), 2)}\n};\n`;
+};
 
 const decoratorBlock = ({ domain, actions }: Domain): string => {
   const typeName = `${pascal(domain)}Actions`;
@@ -100,18 +117,28 @@ const decoratorBlock = ({ domain, actions }: Domain): string => {
 /** `actions/decorators.ts`: one decorator per domain plus `ensActions()`. */
 export const decorators = (domains: readonly Domain[]): string => {
   const all = domains.map(({ domain }) => `${pascal(domain)}Actions`).join(" & ");
-  const spread = domains.map(({ domain }) => `...${domain}Actions()(client),`).join("\n");
+  const spread = [
+    ...domains.map(({ domain }) => `...${domain}Actions()(client),`),
+    "...batchActions()(client),",
+  ].join("\n");
 
   return [
     header,
+    `import { batch } from "../batch/index.js";`,
     `import type { Client } from "../client/types.js";`,
     `import type { Bound, BoundWrite } from "./bound.js";`,
     ...domains.map(({ domain }) => `import * as ${domain} from "./${domain}/index.js";`),
     "",
     domains.map(decoratorBlock).join("\n\n"),
     "",
+    "/** `batch` bound to a client. */",
+    "export type BatchActions = { readonly batch: batch.Bound };",
+    "",
+    "/**\n * Adds `batch` to a client.\n *\n * @category decorators\n * @since 1.0.0\n */",
+    "export const batchActions =\n  () =>\n  (client: Client<object>): BatchActions => ({\n    batch: (options) => batch(client, options),\n  });",
+    "",
     "/** Every action group bound to a client. */",
-    `export type EnsActions = ${all};`,
+    `export type EnsActions = ${all} & BatchActions;`,
     "",
     "/**\n * Adds every ENS action group to a client.\n *\n * **Example** (A client with every action)\n *\n * ```ts\n * const ens = Ensforge.create({ publicClient, walletClient }).extend(ensActions())\n * ```\n *\n * @category decorators\n * @since 1.0.0\n */",
     `export const ensActions =\n  () =>\n  (client: Client<object>): EnsActions => ({\n${indent(spread, 4)}\n  });`,

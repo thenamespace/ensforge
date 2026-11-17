@@ -20,7 +20,11 @@ const mergeGroups = (
         shortMessage: `"${group}" is reserved on the ensforge client and cannot be an action group.`,
       });
     }
-    merged[group] = Object.freeze({ ...merged[group], ...(actions as object) });
+    // A top-level action such as `batch` is a function; action groups merge by key.
+    merged[group] =
+      typeof actions === "function"
+        ? actions
+        : Object.freeze({ ...merged[group], ...(actions as object) });
   }
 
   return merged;

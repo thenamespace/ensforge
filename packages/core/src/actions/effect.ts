@@ -2,6 +2,7 @@
 
 export * as approval from "./approval/effect.js";
 export * as dns from "./dns/effect.js";
+export * as event from "./event/effect.js";
 export * as migration from "./migration/effect.js";
 export * as name from "./name/effect.js";
 export * as permission from "./permission/effect.js";
@@ -13,3 +14,4 @@ export * as resolver from "./resolver/effect.js";
 export * as role from "./role/effect.js";
 export * as subname from "./subname/effect.js";
 export * as wrapper from "./wrapper/effect.js";
+export { batch } from "../batch/effect.js";
