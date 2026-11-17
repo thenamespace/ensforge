@@ -137,6 +137,7 @@ export const ownershipV2: readonly Fixture[] = [
   },
   {
     id: "v2.subnames",
+    sepolia: true,
     cases: ["M:A18", "H24"],
     tags: { kind: "v2-native", state: "registered", depth: "3" },
     v2: true,
@@ -297,6 +298,7 @@ export const ownershipV2: readonly Fixture[] = [
   },
   {
     id: "v2.regenerated",
+    sepolia: true,
     cases: ["M:A25", "W24", "W25", "W36"],
     tags: { kind: "v2-native", state: "registered", token: "regenerated" },
     v2: true,

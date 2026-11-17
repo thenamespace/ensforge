@@ -305,6 +305,7 @@ export const resolvers: readonly Fixture[] = [
   },
   {
     id: "resolver.registry-reverts",
+    sepolia: true,
     cases: ["M:B16", "R19", "R20"],
     tags: { kind: "v2-native", resolver: "registry-reverts" },
     v2: true,

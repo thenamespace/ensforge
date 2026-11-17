@@ -99,7 +99,7 @@
     "status": "pending"
   },
   "L34": {
-    "status": "pending"
+    "na": "ENS app bulk-renew look-alike filter; ensforge does not filter user lists"
   },
   "H01": {
     "status": "pending"
@@ -882,7 +882,7 @@
     "status": "pending"
   },
   "T12": {
-    "status": "pending"
+    "na": "ENS app UI polling cadence; ensforge reads chain time on demand (T10)"
   },
   "T13": {
     "status": "pending"
@@ -942,7 +942,7 @@
     "status": "pending"
   },
   "D16": {
-    "status": "pending"
+    "na": "ENS app UI (an out-of-sync banner); the DNS and ENS owners are read through D-axis cases"
   },
   "D17": {
     "status": "pending"
@@ -1023,7 +1023,7 @@
     "status": "pending"
   },
   "A06": {
-    "status": "pending"
+    "na": "ENS app UI state (a disabled editor); the permission behind it is M:D2/M:D3"
   },
   "A07": {
     "status": "pending"

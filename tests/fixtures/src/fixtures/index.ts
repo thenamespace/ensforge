@@ -1,6 +1,8 @@
 import type { Fixture } from "../fixture.ts";
+import { accounts } from "./accounts.ts";
 import { dns } from "./dns.ts";
 import { hierarchy } from "./hierarchy.ts";
+import { migration } from "./migration.ts";
 import { ownershipV1 } from "./ownership-v1.ts";
 import { ownershipV2 } from "./ownership-v2.ts";
 import { primary } from "./primary.ts";
@@ -20,4 +22,6 @@ export const allFixtures: readonly Fixture[] = [
   ...hierarchy,
   ...dns,
   ...registration,
+  ...migration,
+  ...accounts,
 ];

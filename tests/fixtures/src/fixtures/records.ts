@@ -167,6 +167,7 @@ export const records: readonly Fixture[] = [
   ),
   {
     id: "records.v2",
+    sepolia: true,
     cases: ["M:B5", "K02", "K04", "K31", "K24", "K26"],
     tags: { kind: "v2-native", resolver: "permissioned", records: "full" },
     v2: true,
