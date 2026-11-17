@@ -3,11 +3,11 @@ import { Effect } from "effect";
 
 import { Actions as Requests } from "@ensforge/sdk";
 import { Actions } from "@ensforge/sdk/effect";
-import { Devnet } from "@ensforge/test-devnet";
 import { Fixtures } from "@ensforge/test-fixtures";
 import { expectFailure } from "@ensforge/test-harness";
 
-import { ensforge, onProfile } from "../support/chain.ts";
+import { Clients } from "../support/clients.ts";
+import { onProfile } from "../support/lane.ts";
 
 describe("batch", () => {
   for (const profile of ["v1-live", "mainnet-shaped"] as const) {
@@ -15,13 +15,13 @@ describe("batch", () => {
       it.effect("returns what each read returns on its own, failures included", () =>
         Effect.gen(function* () {
           const fixtures = yield* Fixtures;
-          const ens = ensforge(yield* Devnet);
+          const { reader } = yield* Clients;
           const name = fixtures.byId("records.v1").name;
           const address = String(fixtures.byId("primary.addr-reverse").facts["address"]);
           const missing = fixtures.byId("resolver.none").name;
 
           // Requests are plain data, built by the actions' `.request`.
-          const { results } = yield* Actions.batch(ens, {
+          const { results } = yield* Actions.batch(reader, {
             requests: {
               state: Requests.name.get.request({ name }),
               records: Requests.record.get.request({ name, texts: ["url"], addresses: ["eth"] }),
@@ -31,10 +31,10 @@ describe("batch", () => {
             },
           });
           const direct = yield* Effect.all({
-            state: Actions.name.get(ens, { name }),
-            records: Actions.record.get(ens, { name, texts: ["url"], addresses: ["eth"] }),
-            resolver: Actions.resolver.get(ens, { name }),
-            primary: Actions.primaryName.get(ens, { address }),
+            state: Actions.name.get(reader, { name }),
+            records: Actions.record.get(reader, { name, texts: ["url"], addresses: ["eth"] }),
+            resolver: Actions.resolver.get(reader, { name }),
+            primary: Actions.primaryName.get(reader, { address }),
           });
 
           for (const key of ["state", "records", "resolver", "primary"] as const) {
@@ -44,14 +44,14 @@ describe("batch", () => {
               key,
             );
           }
-          assert.strictEqual(results.strict.status, "failure");
-          assert.deepInclude((results.strict as { readonly error: unknown }).error as object, {
+          assert(results.strict.status === "failure");
+          assert.deepInclude(results.strict.error, {
             _tag: "NotFoundError",
             code: "RESOLVER_NOT_FOUND",
           });
 
           yield* expectFailure(
-            Actions.batch(ens, {
+            Actions.batch(reader, {
               requests: [
                 Requests.record.get.request({ name: missing, strict: true, texts: ["url"] }),
               ],

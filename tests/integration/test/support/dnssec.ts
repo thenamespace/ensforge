@@ -45,8 +45,6 @@ const record = (name: string, recordType: number, rdata: Uint8Array, dnsClass = 
     rdata,
   ]);
 
-const labelCount = (name: string) => name.split(".").filter((label) => label !== "").length;
-
 /**
  * One RRSet as `DNSSECImpl.verifyRRSet` takes it: the RRSIG's fields (without the signature),
  * then the records, signed by the root.
@@ -65,7 +63,7 @@ const signedSet = (options: {
     concatBytes([
       u16(options.covered),
       u8(algorithm),
-      u8(options.labels ?? labelCount(options.name)),
+      u8(options.labels ?? options.name.split(".").filter((label) => label !== "").length),
       u32(3600),
       u32(options.expiration),
       u32(options.inception),
@@ -92,11 +90,6 @@ const rootKeys = (window: { readonly inception: number; readonly expiration: num
     ],
     ...window,
   });
-
-const txt = (value: string) => {
-  const bytes = stringToBytes(value);
-  return concatBytes([u8(bytes.length), bytes]);
-};
 
 /** Ways to break the proven record set, to raise each of the oracle's errors. */
 export type Tampering = {
@@ -129,14 +122,16 @@ export const txtProof = (
     signedSet({
       name: owner,
       covered: tampered.covered ?? RecordType.txt,
-      records: texts.map((text, index) =>
-        record(
+      records: texts.map((text, index) => {
+        // TXT rdata is one length-prefixed character string per text.
+        const bytes = stringToBytes(text);
+        return record(
           tampered.recordNames?.[index] ?? owner,
           RecordType.txt,
-          txt(text),
+          concatBytes([u8(bytes.length), bytes]),
           tampered.dnsClass,
-        ),
-      ),
+        );
+      }),
       ...window,
       ...(tampered.expiration === undefined ? {} : { expiration: tampered.expiration }),
       ...(tampered.keyTag === undefined ? {} : { keyTag: tampered.keyTag }),

@@ -2,21 +2,10 @@ import { assert, describe } from "@effect/vitest";
 import { Effect } from "effect";
 
 import { Actions } from "@ensforge/sdk/effect";
-import { Devnet } from "@ensforge/test-devnet";
 import { Fixtures } from "@ensforge/test-fixtures";
 
-import { ensforge, onProfile } from "../support/chain.ts";
-
-/** Fixtures whose address has a verified primary name: the name each one reads. */
-const verified = {
-  "primary.addr-reverse": "rev-alice.eth",
-  "primary.default-reverse": "rev-bob.eth",
-  // `addr.reverse` takes priority over `default.reverse`.
-  "primary.both": "rev-carol.eth",
-  "primary.contract": "rev-contract.eth",
-  "primary.reverse-2017": "rev-2017.eth",
-  "primary.reverse-2020": "rev-2020.eth",
-} as const;
+import { Clients } from "../support/clients.ts";
+import { onProfile } from "../support/lane.ts";
 
 describe("primaryName.get", () => {
   // ENSv1 names verify through ENSv1 before the launch and through the ENSv1 bridge after it.
@@ -27,12 +16,20 @@ describe("primaryName.get", () => {
         () =>
           Effect.gen(function* () {
             const fixtures = yield* Fixtures;
-            const ens = ensforge(yield* Devnet);
+            const { reader } = yield* Clients;
 
-            for (const [id, name] of Object.entries(verified)) {
+            for (const [id, name] of Object.entries({
+              "primary.addr-reverse": "rev-alice.eth",
+              "primary.default-reverse": "rev-bob.eth",
+              // `addr.reverse` takes priority over `default.reverse`.
+              "primary.both": "rev-carol.eth",
+              "primary.contract": "rev-contract.eth",
+              "primary.reverse-2017": "rev-2017.eth",
+              "primary.reverse-2020": "rev-2020.eth",
+            })) {
               const address = String(fixtures.byId(id).facts["address"]);
-              assert.strictEqual(yield* Actions.primaryName.get(ens, { address }), name, id);
-              assert.isNull(yield* Actions.primaryName.get(ens, { address, coin: "base" }), id);
+              assert.strictEqual(yield* Actions.primaryName.get(reader, { address }), name, id);
+              assert.isNull(yield* Actions.primaryName.get(reader, { address, coin: "base" }), id);
             }
           }),
         { meta: { cases: ["M:C3", "P01", "P05", "P22", "M:D10"] } },
@@ -43,11 +40,11 @@ describe("primaryName.get", () => {
         () =>
           Effect.gen(function* () {
             const fixtures = yield* Fixtures;
-            const ens = ensforge(yield* Devnet);
+            const { reader } = yield* Clients;
             const read = (id: string, verify?: boolean) => {
               const address = String(fixtures.byId(id).facts["address"]);
               return Actions.primaryName.get(
-                ens,
+                reader,
                 verify === undefined ? { address } : { address, verify },
               );
             };

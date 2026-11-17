@@ -1,38 +1,15 @@
 import { assert, describe } from "@effect/vitest";
 import { Effect } from "effect";
 
+import { Abis } from "@ensforge/contracts";
 import { Actions } from "@ensforge/sdk/effect";
-import { Devnet, type DevnetInstance, type ProfileName } from "@ensforge/test-devnet";
+import { Devnet } from "@ensforge/test-devnet";
 import { Fixtures } from "@ensforge/test-fixtures";
 import { expectFailure } from "@ensforge/test-harness";
-import { encodeAbiParameters, encodeFunctionData, namehash, parseAbi, type Address } from "viem";
+import { encodeAbiParameters, encodeFunctionData, namehash, type Address } from "viem";
 
-import { ensforge, onProfile } from "../support/chain.ts";
-
-// The fixture resolvers answer `addr(bytes32)`; ensforge's record reads use other profiles.
-const addrCall = (name: string) =>
-  encodeFunctionData({
-    abi: parseAbi(["function addr(bytes32) view returns (address)"]),
-    args: [namehash(name)],
-  });
-const answer = (address: Address) => encodeAbiParameters([{ type: "address" }], [address]);
-
-/** Misbehaving resolvers: the error a strict read gives (a non-strict read gives nulls). */
-const misbehaving = {
-  "resolver.none": "RESOLVER_NOT_FOUND",
-  "resolver.eoa": "RESOLVER_NOT_FOUND",
-  "resolver.not-a-resolver": "RESOLVER_PROFILE_UNSUPPORTED",
-  "resolver.reverting": "RESOLVER_PROFILE_UNSUPPORTED",
-  "resolver.gas-burner": "RESOLVER_PROFILE_UNSUPPORTED",
-  "resolver.returndata-bomb": "RESOLVER_PROFILE_UNSUPPORTED",
-  "resolver.empty-answer": "RESOLVER_PROFILE_UNSUPPORTED",
-  "resolver.malformed-answer": "RESOLVER_PROFILE_UNSUPPORTED",
-  "resolver.unsupported-profile": "RESOLVER_PROFILE_UNSUPPORTED",
-} as const;
-
-/** After the launch the ENSv1 bridge serves premigrated ENSv1 names; before it, their own resolvers do. */
-const servedBy = (devnet: DevnetInstance, profile: ProfileName, own: unknown) =>
-  (profile === "mainnet-shaped" ? devnet.contracts["v2.ensV1Resolver"] : own) as Address;
+import { Clients } from "../support/clients.ts";
+import { onProfile } from "../support/lane.ts";
 
 describe("resolver reads", () => {
   for (const profile of ["v1-live", "mainnet-shaped"] as const) {
@@ -42,9 +19,8 @@ describe("resolver reads", () => {
         () =>
           Effect.gen(function* () {
             const fixtures = yield* Fixtures;
-            const devnet = yield* Devnet;
-            const ens = ensforge(devnet);
-            const resolverOf = (name: string) => Actions.resolver.get(ens, { name });
+            const { reader } = yield* Clients;
+            const resolverOf = (name: string) => Actions.resolver.get(reader, { name });
             const nameOf = (id: string) => fixtures.byId(id).name;
 
             assert.deepInclude(yield* resolverOf(nameOf("records.v1")), {
@@ -87,7 +63,7 @@ describe("resolver reads", () => {
             // The `eth` resolver is not extended, so it does not serve names below it.
             assert.isNull(yield* resolverOf(nameOf("resolver.none")));
             yield* expectFailure(
-              Actions.resolver.get(ens, { name: nameOf("resolver.none"), strict: true }),
+              Actions.resolver.get(reader, { name: nameOf("resolver.none"), strict: true }),
               { _tag: "NotFoundError", code: "RESOLVER_NOT_FOUND" },
             );
           }),
@@ -103,11 +79,22 @@ describe("resolver reads", () => {
         () =>
           Effect.gen(function* () {
             const fixtures = yield* Fixtures;
-            const ens = ensforge(yield* Devnet);
+            const { reader } = yield* Clients;
 
-            for (const [id, code] of Object.entries(misbehaving)) {
+            // The error a strict read gives; a non-strict read gives nulls.
+            for (const [id, code] of Object.entries({
+              "resolver.none": "RESOLVER_NOT_FOUND",
+              "resolver.eoa": "RESOLVER_NOT_FOUND",
+              "resolver.not-a-resolver": "RESOLVER_PROFILE_UNSUPPORTED",
+              "resolver.reverting": "RESOLVER_PROFILE_UNSUPPORTED",
+              "resolver.gas-burner": "RESOLVER_PROFILE_UNSUPPORTED",
+              "resolver.returndata-bomb": "RESOLVER_PROFILE_UNSUPPORTED",
+              "resolver.empty-answer": "RESOLVER_PROFILE_UNSUPPORTED",
+              "resolver.malformed-answer": "RESOLVER_PROFILE_UNSUPPORTED",
+              "resolver.unsupported-profile": "RESOLVER_PROFILE_UNSUPPORTED",
+            })) {
               const name = fixtures.byId(id).name;
-              const records = yield* Actions.record.get(ens, {
+              const records = yield* Actions.record.get(reader, {
                 name,
                 texts: ["url"],
                 addresses: ["eth", "btc"],
@@ -122,22 +109,25 @@ describe("resolver reads", () => {
                 code,
               };
               yield* expectFailure(
-                Actions.record.get(ens, { name, addresses: ["eth"], strict: true }),
+                Actions.record.get(reader, { name, addresses: ["eth"], strict: true }),
                 expected,
               );
               yield* expectFailure(
-                Actions.record.getAddress(ens, { name, strict: true }),
+                Actions.record.getAddress(reader, { name, strict: true }),
                 expected,
               );
               yield* expectFailure(
-                Actions.record.getText(ens, { name, key: "url", strict: true }),
+                Actions.record.getText(reader, { name, key: "url", strict: true }),
                 expected,
               );
               yield* expectFailure(
-                Actions.record.getContentHash(ens, { name, strict: true }),
+                Actions.record.getContentHash(reader, { name, strict: true }),
                 expected,
               );
-              yield* expectFailure(Actions.record.getAvatar(ens, { name, strict: true }), expected);
+              yield* expectFailure(
+                Actions.record.getAvatar(reader, { name, strict: true }),
+                expected,
+              );
             }
           }),
         {
@@ -168,14 +158,14 @@ describe("resolver reads", () => {
           Effect.gen(function* () {
             const fixtures = yield* Fixtures;
             const devnet = yield* Devnet;
-            const ens = ensforge(devnet);
+            const { reader } = yield* Clients;
             const name = fixtures.byId("resolver.no-erc165").name;
 
             assert.strictEqual(
-              yield* Actions.record.getAddress(ens, { name, strict: true }),
+              yield* Actions.record.getAddress(reader, { name, strict: true }),
               devnet.accounts.alice,
             );
-            const records = yield* Actions.record.get(ens, {
+            const records = yield* Actions.record.get(reader, {
               name,
               texts: ["url"],
               addresses: ["eth", "btc"],
@@ -195,25 +185,37 @@ describe("resolver reads", () => {
             const fixtures = yield* Fixtures;
             const devnet = yield* Devnet;
             const { accounts } = devnet;
-            const ens = ensforge(devnet);
+            const { reader } = yield* Clients;
             const wildcard = fixtures.byId("resolver.wildcard");
+            // The fixture resolvers answer `addr(bytes32)`; ensforge's record reads use other
+            // profiles.
             const resolve = (name: string) =>
-              Actions.resolver.resolve(ens, { name, data: addrCall(name) });
+              Actions.resolver.resolve(reader, {
+                name,
+                data: encodeFunctionData({
+                  abi: Abis.shared.addrResolver,
+                  functionName: "addr",
+                  args: [namehash(name)],
+                }),
+              });
 
-            // The parent's resolver is called with the child's own node.
-            const child = String(wildcard.facts["wildcardChild"]);
-            assert.deepStrictEqual(yield* resolve(child), {
-              data: answer(accounts.bob),
-              resolver: servedBy(devnet, profile, wildcard.facts["resolver"]),
+            // The parent's resolver is called with the child's own node. After the launch the
+            // ENSv1 bridge serves premigrated ENSv1 names; before it, their own resolvers do.
+            assert.deepStrictEqual(yield* resolve(String(wildcard.facts["wildcardChild"])), {
+              data: encodeAbiParameters([{ type: "address" }], [accounts.bob]),
+              resolver:
+                profile === "mainnet-shaped"
+                  ? devnet.contract("v2.ensV1Resolver")
+                  : (wildcard.facts["resolver"] as Address),
             });
             assert.strictEqual(
               (yield* resolve(String(wildcard.facts["exact"]))).data,
-              answer(accounts.carol),
+              encodeAbiParameters([{ type: "address" }], [accounts.carol]),
             );
             // A resolver without ERC-165 is still called (an old resolver).
             assert.strictEqual(
               (yield* resolve(fixtures.byId("resolver.no-erc165").name)).data,
-              answer(accounts.alice),
+              encodeAbiParameters([{ type: "address" }], [accounts.alice]),
             );
           }),
         { meta: { cases: ["M:B9", "R01", "R03", "R04", "R11", "H25"] } },
@@ -222,9 +224,10 @@ describe("resolver reads", () => {
       it.effect("links records only on PermissionedResolvers", () =>
         Effect.gen(function* () {
           const fixtures = yield* Fixtures;
-          const ens = ensforge(yield* Devnet);
+          const { reader } = yield* Clients;
+
           yield* expectFailure(
-            Actions.resolver.getLink(ens, { name: fixtures.byId("records.v1").name }),
+            Actions.resolver.getLink(reader, { name: fixtures.byId("records.v1").name }),
             { _tag: "UnsupportedError", code: "RESOLVER_PROFILE_UNSUPPORTED" },
           );
         }),
@@ -238,24 +241,24 @@ describe("resolver reads", () => {
       () =>
         Effect.gen(function* () {
           const fixtures = yield* Fixtures;
-          const ens = ensforge(yield* Devnet);
+          const { reader } = yield* Clients;
           const nameOf = (id: string) => fixtures.byId(id).name;
 
-          assert.deepInclude(yield* Actions.resolver.get(ens, { name: nameOf("records.v2") }), {
+          assert.deepInclude(yield* Actions.resolver.get(reader, { name: nameOf("records.v2") }), {
             kind: "permissioned-resolver",
             authorization: "roles",
           });
           assert.deepInclude(
-            yield* Actions.resolver.get(ens, {
+            yield* Actions.resolver.get(reader, {
               name: nameOf("resolver.public-resolver-v2.unknown"),
             }),
             { kind: "public-resolver-v2" },
           );
 
           const [target, linked, unlinked] = yield* Effect.all([
-            Actions.resolver.getLink(ens, { name: nameOf("records.v2") }),
-            Actions.resolver.getLink(ens, { name: nameOf("records.v2.linked") }),
-            Actions.resolver.getLink(ens, { name: nameOf("records.v2.default") }),
+            Actions.resolver.getLink(reader, { name: nameOf("records.v2") }),
+            Actions.resolver.getLink(reader, { name: nameOf("records.v2.linked") }),
+            Actions.resolver.getLink(reader, { name: nameOf("records.v2.default") }),
           ]);
           assert.strictEqual(linked?.recordId, target?.recordId);
           assert.isNull(unlinked);
@@ -268,10 +271,10 @@ describe("resolver reads", () => {
       () =>
         Effect.gen(function* () {
           const fixtures = yield* Fixtures;
-          const ens = ensforge(yield* Devnet);
+          const { reader } = yield* Clients;
           const servingOf = (id: string) =>
             Actions.resolver
-              .get(ens, { name: fixtures.byId(id).name })
+              .get(reader, { name: fixtures.byId(id).name })
               .pipe(Effect.map((resolver) => resolver?.serving));
 
           // Not premigrated: its ENSv1 resolver is kept but no longer resolves it.
@@ -287,9 +290,9 @@ describe("resolver reads", () => {
       () =>
         Effect.gen(function* () {
           const fixtures = yield* Fixtures;
-          const ens = ensforge(yield* Devnet);
+          const { reader } = yield* Clients;
           const name = fixtures.byId("resolver.registry-reverts").name;
-          yield* expectFailure(Actions.record.get(ens, { name, addresses: ["eth"] }), {
+          yield* expectFailure(Actions.record.get(reader, { name, addresses: ["eth"] }), {
             _tag: "GatewayError",
             code: "OFFCHAIN_LOOKUP_INVALID",
           });

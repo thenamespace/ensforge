@@ -1,7 +1,5 @@
 import type { Actions } from "@ensforge/sdk";
 import type { DevnetInstance, ProfileName } from "@ensforge/test-devnet";
-import type { FixtureEntry } from "@ensforge/test-fixtures";
-import type { Address } from "viem";
 
 type NameState = Actions.name.get.ReturnType;
 type NameKind = NameState["kind"];
@@ -16,38 +14,23 @@ export type Stage = "v1" | "greenfield" | "launched";
 export const stageOf = (profile: ProfileName): Stage =>
   profile === "v1-live" ? "v1" : profile === "v1-v2-greenfield" ? "greenfield" : "launched";
 
-/** A value that may differ per stage. */
-export type PerStage<A> = A | { readonly v1?: A; readonly greenfield?: A; readonly launched?: A };
+/** A fact that may differ per stage. */
+export type PerStage = boolean | Readonly<Record<Stage, boolean>>;
 
-export const atStage = <A>(value: PerStage<A>, stage: Stage): A =>
-  typeof value === "object" &&
-  value !== null &&
-  ("v1" in value || "greenfield" in value || "launched" in value)
-    ? ((value as Record<Stage, A>)[stage] as A)
-    : (value as A);
+export const atStage = (value: PerStage, stage: Stage): boolean =>
+  typeof value === "boolean" ? value : value[stage];
 
-/** An owner: a named devnet account, a fixture fact holding an address, or nobody. */
-export type Holder = keyof DevnetInstance["accounts"] | { readonly fact: string } | null;
-
-export const holder = (
-  devnet: DevnetInstance,
-  fixture: FixtureEntry,
-  value: Holder,
-): Address | null =>
-  value === null
-    ? null
-    : typeof value === "string"
-      ? devnet.accounts[value]
-      : (fixture.facts[value.fact] as Address);
+/** An owner: a named devnet account, or nobody. */
+export type Holder = keyof DevnetInstance["accounts"] | null;
 
 export type NameExpectation = {
   readonly cases: readonly string[];
   readonly kind: NameKind;
   readonly status: NameStatus;
   readonly owner: Holder;
-  readonly reachable: PerStage<boolean>;
-  readonly available: PerStage<boolean>;
-  readonly renewable: PerStage<boolean>;
+  readonly reachable: PerStage;
+  readonly available: PerStage;
+  readonly renewable: PerStage;
   readonly wrapped?: boolean;
   readonly migrated?: boolean;
 };
@@ -112,6 +95,7 @@ export const v1Sub = (
   renewable: false,
 });
 
+/** An ENSv2 `.eth` second-level name, native or migrated: registrable and renewable by status. */
 export const v2Eth = (
   cases: readonly string[],
   owner: Holder,
@@ -128,6 +112,7 @@ export const v2Eth = (
   renewable: live(status),
 });
 
+/** An ENSv2 name below a second-level name: held in its parent's registry, never renewed. */
 export const v2Sub = (cases: readonly string[], owner: Holder): NameExpectation => ({
   cases,
   kind: "v2-native",

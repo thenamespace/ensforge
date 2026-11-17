@@ -1,16 +1,16 @@
 import { assert, describe } from "@effect/vitest";
 import { Effect } from "effect";
 
+import { Duration } from "@ensforge/sdk";
 import { Actions } from "@ensforge/sdk/effect";
-import { Devnet, profileNames, type ProfileName } from "@ensforge/test-devnet";
+import { Devnet, profileNames } from "@ensforge/test-devnet";
 import { allFixtures, Fixtures, seededOn } from "@ensforge/test-fixtures";
 import { expectFailure } from "@ensforge/test-harness";
 import { labelhash, namehash } from "viem";
 
-import { ensforge, onProfile } from "../support/chain.ts";
+import { Clients } from "../support/clients.ts";
 import {
   atStage,
-  holder,
   premigrated,
   stageOf,
   unclaimed,
@@ -21,8 +21,7 @@ import {
   v2Sub,
   type NameExpectation,
 } from "../support/expect.ts";
-
-const days = (count: bigint) => count * 86_400n;
+import { onProfile } from "../support/lane.ts";
 
 /** What `name.get` must report for every fixture's name. */
 const expected: Readonly<Record<string, NameExpectation>> = {
@@ -141,7 +140,7 @@ const expected: Readonly<Record<string, NameExpectation>> = {
   "hierarchy.depth-33": v1Sub(["H13"], "alice"),
   "dns.imported": v1Sub(["M:C4"], "alice"),
   "dns.imported.wrapped": v1Sub(["D15"], "bob", "registered", "v1-wrapped"),
-  "dns.synced-tld": { ...v2Sub(["D17", "M:C2"], "owner") },
+  "dns.synced-tld": v2Sub(["D17", "M:C2"], "owner"),
   "registration.price.3cp": v2Eth([], "alice"),
   "registration.price.4cp": v2Eth([], "alice"),
   "registration.price.5cp": v2Eth([], "alice"),
@@ -158,36 +157,35 @@ const expected: Readonly<Record<string, NameExpectation>> = {
   "account.eip7702": v1Eth([], "alice"),
 };
 
-// A name whose parent registry reverts is a typed error, not a state.
-const unreadable = new Set(["resolver.registry-reverts"]);
-
-// `v2-only` knows no ENSv1: only names that live in ENSv2 there.
-const readOn = (profile: ProfileName) =>
-  allFixtures.filter(
-    (fixture) =>
-      seededOn(fixture, profile) &&
-      !unreadable.has(fixture.id) &&
-      (profile !== "v2-only" || fixture.tags["kind"] === "v2-native"),
-  );
-
 describe("name.get", () => {
   for (const profile of profileNames) {
     onProfile(profile)(profile, (it) => {
-      for (const definition of readOn(profile)) {
+      // A name whose parent registry reverts is a typed error, not a state; `v2-only` knows no
+      // ENSv1, so only names that live in ENSv2 are read there.
+      const definitions = allFixtures.filter(
+        (fixture) =>
+          seededOn(fixture, profile) &&
+          fixture.id !== "resolver.registry-reverts" &&
+          (profile !== "v2-only" || fixture.tags["kind"] === "v2-native"),
+      );
+
+      for (const definition of definitions) {
         const expectation = expected[definition.id];
         it.effect(
           definition.id,
           () =>
             Effect.gen(function* () {
-              if (expectation === undefined)
+              if (expectation === undefined) {
                 return assert.fail(`no expectation for ${definition.id}`);
-              const fixtures = yield* Fixtures;
-              const devnet = yield* Devnet;
-              const fixture = fixtures.byId(definition.id);
+              }
+              const fixture = (yield* Fixtures).byId(definition.id);
+              const { accounts } = yield* Devnet;
+              const { reader } = yield* Clients;
               const wanted =
                 fixture.facts["premigrated"] === true ? premigrated(expectation) : expectation;
               const stage = stageOf(profile);
-              const state = yield* Actions.name.get(ensforge(devnet), { name: fixture.name });
+
+              const state = yield* Actions.name.get(reader, { name: fixture.name });
 
               assert.deepStrictEqual(
                 {
@@ -203,7 +201,7 @@ describe("name.get", () => {
                 {
                   kind: wanted.kind,
                   status: wanted.status,
-                  owner: holder(devnet, fixture, wanted.owner),
+                  owner: wanted.owner === null ? null : accounts[wanted.owner],
                   wrapped: wanted.wrapped ?? false,
                   migrated: wanted.migrated ?? false,
                   reachable: atStage(wanted.reachable, stage),
@@ -224,29 +222,27 @@ describe("name.get", () => {
       () =>
         Effect.gen(function* () {
           const fixtures = yield* Fixtures;
-          const ens = ensforge(yield* Devnet);
           const { accounts } = yield* Devnet;
+          const { reader } = yield* Clients;
+          const plain = fixtures.byId("v1.unwrapped");
+          const expiry = BigInt(String(plain.facts["expiry"]));
 
-          const managed = yield* Actions.name.get(ens, {
+          const managed = yield* Actions.name.get(reader, {
             name: fixtures.byId("v1.unwrapped.manager").name,
           });
           assert.include(managed, { registrant: accounts.alice, manager: accounts.bob });
-          const transferred = yield* Actions.name.get(ens, {
+          const transferred = yield* Actions.name.get(reader, {
             name: fixtures.byId("v1.unwrapped.transferred").name,
           });
           assert.include(transferred, { registrant: accounts.bob, manager: accounts.alice });
-          const orphan = yield* Actions.name.get(ens, {
+          const orphan = yield* Actions.name.get(reader, {
             name: fixtures.byId("v1.unwrapped.registrar-only").name,
           });
           assert.include(orphan, { registrant: accounts.alice, manager: null, resolver: null });
 
-          const plain = fixtures.byId("v1.unwrapped");
-          const state = yield* Actions.name.get(ens, { name: plain.name });
-          assert.strictEqual(state.expiry, BigInt(String(plain.facts["expiry"])));
-          assert.strictEqual(
-            state.gracePeriodEnd,
-            BigInt(String(plain.facts["expiry"])) + days(90n),
-          );
+          const state = yield* Actions.name.get(reader, { name: plain.name });
+          assert.strictEqual(state.expiry, expiry);
+          assert.strictEqual(state.gracePeriodEnd, expiry + Duration.days(90));
           assert.strictEqual(state.tokenId, BigInt(labelhash("v1-plain")));
         }),
       { meta: { cases: ["M:A3", "O03", "O04"] } },
@@ -257,23 +253,21 @@ describe("name.get", () => {
       () =>
         Effect.gen(function* () {
           const fixtures = yield* Fixtures;
-          const ens = ensforge(yield* Devnet);
-
+          const { reader } = yield* Clients;
           const plain = fixtures.byId("v2.registered");
-          const state = yield* Actions.name.get(ens, { name: plain.name });
-          assert.strictEqual(state.expiry, BigInt(String(plain.facts["expiry"])));
-          assert.strictEqual(
-            state.gracePeriodEnd,
-            BigInt(String(plain.facts["expiry"])) + days(28n),
-          );
-
           const regenerated = fixtures.byId("v2.regenerated");
-          const current = yield* Actions.name.get(ens, { name: regenerated.name });
+          const deep = fixtures.byId("v2.subnames");
+          const expiry = BigInt(String(plain.facts["expiry"]));
+
+          const state = yield* Actions.name.get(reader, { name: plain.name });
+          assert.strictEqual(state.expiry, expiry);
+          assert.strictEqual(state.gracePeriodEnd, expiry + Duration.days(28));
+
+          const current = yield* Actions.name.get(reader, { name: regenerated.name });
           assert.strictEqual(current.tokenId, BigInt(String(regenerated.facts["tokenId"])));
           assert.strictEqual(current.resource, BigInt(String(regenerated.facts["resource"])));
 
-          const deep = fixtures.byId("v2.subnames");
-          const sub = yield* Actions.name.get(ens, { name: deep.name });
+          const sub = yield* Actions.name.get(reader, { name: deep.name });
           assert.strictEqual(sub.registry, deep.facts["registry"]);
         }),
       { meta: { cases: ["M:A25", "W24", "M:A18"] } },
@@ -283,10 +277,10 @@ describe("name.get", () => {
       "wrapped names report the wrapper's token and expiry",
       () =>
         Effect.gen(function* () {
-          const fixtures = yield* Fixtures;
-          const ens = ensforge(yield* Devnet);
-          const wrapped = fixtures.byId("v1.wrapped");
-          const state = yield* Actions.name.get(ens, { name: wrapped.name });
+          const wrapped = (yield* Fixtures).byId("v1.wrapped");
+          const { reader } = yield* Clients;
+
+          const state = yield* Actions.name.get(reader, { name: wrapped.name });
           assert.strictEqual(state.tokenId, BigInt(namehash(wrapped.name)));
           assert.strictEqual(state.expiry, BigInt(String(wrapped.facts["expiry"])));
         }),
@@ -298,13 +292,11 @@ describe("name.get", () => {
       () =>
         Effect.gen(function* () {
           const fixtures = yield* Fixtures;
-          const ens = ensforge(yield* Devnet);
+          const { reader } = yield* Clients;
+
           yield* expectFailure(
-            Actions.name.get(ens, { name: fixtures.byId("resolver.registry-reverts").name }),
-            {
-              _tag: "ContractRevertError",
-              code: "CONTRACT_REVERTED",
-            },
+            Actions.name.get(reader, { name: fixtures.byId("resolver.registry-reverts").name }),
+            { _tag: "ContractRevertError", code: "CONTRACT_REVERTED" },
           );
         }),
       { meta: { cases: ["M:B16"] } },
@@ -314,11 +306,12 @@ describe("name.get", () => {
       "normalizes input and rejects names that cannot be normalized",
       () =>
         Effect.gen(function* () {
-          const ens = ensforge(yield* Devnet);
-          const upper = yield* Actions.name.get(ens, { name: "V1-PLAIN.ETH" });
+          const { reader } = yield* Clients;
+
+          const upper = yield* Actions.name.get(reader, { name: "V1-PLAIN.ETH" });
           assert.strictEqual(upper.name, "v1-plain.eth");
           for (const name of ["a..eth", "", ".", "nick\u200c.eth"]) {
-            yield* expectFailure(Actions.name.get(ens, { name }), {
+            yield* expectFailure(Actions.name.get(reader, { name }), {
               _tag: "InvalidInputError",
               code: "INVALID_NAME",
             });
@@ -335,16 +328,16 @@ describe("name.getLabel", () => {
       "recovers ENSv2 labels from the LabelStore and leaves unknown ones null",
       () =>
         Effect.gen(function* () {
-          const ens = ensforge(yield* Devnet);
+          const { reader } = yield* Clients;
+
           assert.strictEqual(
-            yield* Actions.name.getLabel(ens, { labelhash: labelhash("v2-plain") }),
+            yield* Actions.name.getLabel(reader, { labelhash: labelhash("v2-plain") }),
             "v2-plain",
           );
-          assert.strictEqual(
-            yield* Actions.name.getLabel(ens, {
+          assert.isNull(
+            yield* Actions.name.getLabel(reader, {
               labelhash: labelhash("never revealed by ensforge"),
             }),
-            null,
           );
         }),
       { meta: { cases: ["H10", "M:C6"] } },

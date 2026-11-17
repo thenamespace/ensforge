@@ -1,45 +1,35 @@
 import { assert, describe } from "@effect/vitest";
 import { Effect } from "effect";
 
+import { Duration } from "@ensforge/sdk";
 import { Actions } from "@ensforge/sdk/effect";
-import { Devnet } from "@ensforge/test-devnet";
+import { Chain } from "@ensforge/test-devnet";
 import { Fixtures } from "@ensforge/test-fixtures";
 
-import { atTimestamp, ensforge, onProfile } from "../support/chain.ts";
+import { Clients } from "../support/clients.ts";
+import { onProfile } from "../support/lane.ts";
 
-const days = (count: bigint) => count * 86_400n;
+/** `name.get` at each offset from the fixture's expiry, reduced to the fields that change with time. */
+const timeline = Effect.fnUntraced(function* (fixtureId: string, offsets: readonly bigint[]) {
+  const fixture = (yield* Fixtures).byId(fixtureId);
+  const chain = yield* Chain;
+  const { reader } = yield* Clients;
+  const expiry = BigInt(String(fixture.facts["expiry"]));
 
-/** `name.get` at each offset from `expiry`, reduced to the fields that change with time. */
-const timeline = (fixtureId: string, offsets: readonly bigint[]) =>
-  Effect.gen(function* () {
-    const fixtures = yield* Fixtures;
-    const devnet = yield* Devnet;
-    const fixture = fixtures.byId(fixtureId);
-    const expiry = BigInt(String(fixture.facts["expiry"]));
-    const ens = ensforge(devnet);
-
-    return yield* Effect.forEach(offsets, (offset) =>
-      atTimestamp(
-        devnet,
-        expiry + offset,
-        Actions.name.get(ens, { name: fixture.name }).pipe(
-          Effect.map((state) => ({
-            status: state.status,
-            owner: state.owner === null ? null : "owner",
-            available: state.available,
-            renewable: state.renewable,
-          })),
-        ),
+  return yield* Effect.forEach(offsets, (offset) =>
+    chain.atTimestamp(
+      expiry + offset,
+      Actions.name.get(reader, { name: fixture.name }).pipe(
+        Effect.map((state) => ({
+          status: state.status,
+          owner: state.owner === null ? null : "owner",
+          available: state.available,
+          renewable: state.renewable,
+        })),
       ),
-    );
-  });
-
-const registered = {
-  status: "registered",
-  owner: "owner",
-  available: false,
-  renewable: true,
-} as const;
+    ),
+  );
+});
 
 describe("name.get over time", () => {
   // Before the launch ENSv1 registers and renews: BaseRegistrar's grace includes its last second.
@@ -48,18 +38,14 @@ describe("name.get over time", () => {
       "an ENSv1 .eth name expires at its expiry and is released one second after grace",
       () =>
         Effect.gen(function* () {
-          const grace = days(90n);
+          const grace = Duration.days(90);
+
           const states = yield* timeline("v1.unwrapped", [-1n, 0n, grace - 1n, grace, grace + 1n]);
 
           // The registrar token has no owner from its expiry on.
-          const inGrace = {
-            status: "grace",
-            owner: null,
-            available: false,
-            renewable: true,
-          } as const;
+          const inGrace = { status: "grace", owner: null, available: false, renewable: true };
           assert.deepStrictEqual(states, [
-            registered,
+            { status: "registered", owner: "owner", available: false, renewable: true },
             inGrace,
             inGrace,
             inGrace,
@@ -74,7 +60,8 @@ describe("name.get over time", () => {
       "a wrapped .eth name keeps its owner until one second after the wrapper expiry",
       () =>
         Effect.gen(function* () {
-          const grace = days(90n);
+          const grace = Duration.days(90);
+
           const states = yield* timeline("v1.wrapped", [grace, grace + 1n]);
 
           assert.deepStrictEqual(states, [
@@ -91,17 +78,13 @@ describe("name.get over time", () => {
       "an ENSv2 .eth name is in grace from its expiry and available at grace end",
       () =>
         Effect.gen(function* () {
-          const grace = days(28n);
+          const grace = Duration.days(28);
+
           const states = yield* timeline("v2.registered", [-1n, 0n, grace - 1n, grace]);
 
-          const inGrace = {
-            status: "grace",
-            owner: null,
-            available: false,
-            renewable: true,
-          } as const;
+          const inGrace = { status: "grace", owner: null, available: false, renewable: true };
           assert.deepStrictEqual(states, [
-            registered,
+            { status: "registered", owner: "owner", available: false, renewable: true },
             inGrace,
             inGrace,
             { status: "expired", owner: null, available: true, renewable: false },

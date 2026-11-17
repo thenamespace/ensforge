@@ -2,20 +2,20 @@ import { assert, describe } from "@effect/vitest";
 import { Effect } from "effect";
 
 import { Actions } from "@ensforge/sdk/effect";
-import { Devnet } from "@ensforge/test-devnet";
 import { Fixtures } from "@ensforge/test-fixtures";
 
-import { ensforge, onProfile } from "../support/chain.ts";
+import { Clients } from "../support/clients.ts";
+import { onProfile } from "../support/lane.ts";
 
 describe("event.get", () => {
   onProfile("v1-live")("v1-live", (it) => {
     it.effect("returns a name's history in chain order, filtered by type", () =>
       Effect.gen(function* () {
         const fixtures = yield* Fixtures;
-        const ens = ensforge(yield* Devnet);
+        const { reader } = yield* Clients;
         const name = fixtures.byId("v1.unwrapped").name;
 
-        const events = yield* Actions.event.get(ens, { name, fromBlock: 0n });
+        const events = yield* Actions.event.get(reader, { name, fromBlock: 0n });
         const order = events.map((event) => [event.blockNumber, event.logIndex] as const);
         assert.deepStrictEqual(
           order,
@@ -26,7 +26,7 @@ describe("event.get", () => {
           ["registration", "transfer", "resolver"],
         );
 
-        const resolvers = yield* Actions.event.get(ens, {
+        const resolvers = yield* Actions.event.get(reader, {
           name,
           fromBlock: 0n,
           types: ["resolver"],

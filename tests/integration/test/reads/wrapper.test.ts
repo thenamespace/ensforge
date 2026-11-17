@@ -5,16 +5,17 @@ import { Actions } from "@ensforge/sdk/effect";
 import { Devnet } from "@ensforge/test-devnet";
 import { Fixtures } from "@ensforge/test-fixtures";
 
-import { ensforge, onProfile } from "../support/chain.ts";
+import { Clients } from "../support/clients.ts";
+import { onProfile } from "../support/lane.ts";
 
 describe("wrapper.getFuses", () => {
   onProfile("mainnet-shaped")("mainnet-shaped", (it) => {
     it.effect("decodes the fuses burned on parents and children", () =>
       Effect.gen(function* () {
         const fixtures = yield* Fixtures;
-        const ens = ensforge(yield* Devnet);
+        const { reader } = yield* Clients;
         const fusesOf = (id: string) =>
-          Actions.wrapper.getFuses(ens, { name: fixtures.byId(id).name });
+          Actions.wrapper.getFuses(reader, { name: fixtures.byId(id).name });
 
         const locked = yield* fusesOf("v1.wrapped.locked.all");
         assert.deepStrictEqual(locked?.burned, {
@@ -46,9 +47,9 @@ describe("wrapper.getFuses", () => {
         Effect.gen(function* () {
           const fixtures = yield* Fixtures;
           const devnet = yield* Devnet;
-          const ens = ensforge(devnet);
+          const { reader } = yield* Clients;
           const fusesOf = (id: string) =>
-            Actions.wrapper.getFuses(ens, { name: fixtures.byId(id).name });
+            Actions.wrapper.getFuses(reader, { name: fixtures.byId(id).name });
 
           assert.isNull(yield* fusesOf("v1.wrapped.sub.expired-emancipated"));
           assert.isNull(yield* fusesOf("v1.wrapped.expired"));

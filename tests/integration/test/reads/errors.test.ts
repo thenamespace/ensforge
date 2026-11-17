@@ -1,20 +1,16 @@
 import { describe } from "@effect/vitest";
 import { Effect } from "effect";
 
+import { Duration } from "@ensforge/sdk";
 import { Actions } from "@ensforge/sdk/effect";
 import { Devnet } from "@ensforge/test-devnet";
 import { Fixtures } from "@ensforge/test-fixtures";
-import { expectFailure, type ExpectedError } from "@ensforge/test-harness";
+import { expectFailure } from "@ensforge/test-harness";
 
-import { ensforge, onProfile } from "../support/chain.ts";
+import { Clients } from "../support/clients.ts";
+import { onProfile } from "../support/lane.ts";
 
 // The documented errors of reads that only chain state can produce.
-
-const year = 31_536_000n;
-const stranger = "0x000000000000000000000000000000000000dEaD";
-
-const fails = <A, E>(read: Effect.Effect<A, E>, expected: ExpectedError) =>
-  Effect.asVoid(expectFailure(read, expected));
 
 describe("read errors", () => {
   onProfile("v1-live")("v1-live", (it) => {
@@ -22,20 +18,31 @@ describe("read errors", () => {
       Effect.gen(function* () {
         const fixtures = yield* Fixtures;
         const { accounts } = yield* Devnet;
-        const ens = ensforge(yield* Devnet);
+        const { reader } = yield* Clients;
         const name = fixtures.byId("resolver.none").name;
-        const noResolver: ExpectedError = { _tag: "NotFoundError", code: "RESOLVER_NOT_FOUND" };
+        const noResolver = { _tag: "NotFoundError", code: "RESOLVER_NOT_FOUND" } as const;
 
-        yield* fails(Actions.record.getText(ens, { name, key: "url", strict: true }), noResolver);
-        yield* fails(Actions.record.getAddress(ens, { name, strict: true }), noResolver);
-        yield* fails(Actions.record.getContentHash(ens, { name, strict: true }), noResolver);
-        yield* fails(Actions.record.getAvatar(ens, { name, strict: true }), noResolver);
-        yield* fails(
-          Actions.approval.getDelegate(ens, { name, delegate: accounts.bob }),
+        yield* expectFailure(
+          Actions.record.getText(reader, { name, key: "url", strict: true }),
           noResolver,
         );
-        yield* fails(
-          Actions.role.get(ens, { account: accounts.alice, target: "resolver", name, root: true }),
+        yield* expectFailure(Actions.record.getAddress(reader, { name, strict: true }), noResolver);
+        yield* expectFailure(
+          Actions.record.getContentHash(reader, { name, strict: true }),
+          noResolver,
+        );
+        yield* expectFailure(Actions.record.getAvatar(reader, { name, strict: true }), noResolver);
+        yield* expectFailure(
+          Actions.approval.getDelegate(reader, { name, delegate: accounts.bob }),
+          noResolver,
+        );
+        yield* expectFailure(
+          Actions.role.get(reader, {
+            account: accounts.alice,
+            target: "resolver",
+            name,
+            root: true,
+          }),
           noResolver,
         );
       }),
@@ -47,10 +54,10 @@ describe("read errors", () => {
     it.effect("address reads report a spoofed lookup behind a missing profile", () =>
       Effect.gen(function* () {
         const fixtures = yield* Fixtures;
-        const ens = ensforge(yield* Devnet);
+        const { reader } = yield* Clients;
         const name = fixtures.byId("resolver.spoofed-offchain-lookup").name;
 
-        yield* fails(Actions.record.getAddress(ens, { name }), {
+        yield* expectFailure(Actions.record.getAddress(reader, { name }), {
           _tag: "GatewayError",
           code: "GATEWAY_REQUEST_FAILED",
         });
@@ -59,13 +66,11 @@ describe("read errors", () => {
 
     it.effect("history scans past their request budget", () =>
       Effect.gen(function* () {
-        const ens = ensforge(yield* Devnet);
-        yield* fails(
-          Actions.event.get(ens, { name: "v1-plain.eth", fromBlock: 0n, maxRequests: 0 }),
-          {
-            _tag: "NetworkError",
-            code: "LOG_RANGE_TOO_LARGE",
-          },
+        const { reader } = yield* Clients;
+
+        yield* expectFailure(
+          Actions.event.get(reader, { name: "v1-plain.eth", fromBlock: 0n, maxRequests: 0 }),
+          { _tag: "NetworkError", code: "LOG_RANGE_TOO_LARGE" },
         );
       }),
     );
@@ -73,17 +78,23 @@ describe("read errors", () => {
     it.effect("strict primary names that are missing or do not match", () =>
       Effect.gen(function* () {
         const fixtures = yield* Fixtures;
-        const ens = ensforge(yield* Devnet);
+        const { reader } = yield* Clients;
         const mismatched = String(fixtures.byId("primary.mismatch").facts["address"]);
 
-        yield* fails(Actions.primaryName.get(ens, { address: stranger, strict: true }), {
-          _tag: "NotFoundError",
-          code: "PRIMARY_NAME_NOT_SET",
-        });
-        yield* fails(Actions.primaryName.get(ens, { address: mismatched, strict: true }), {
-          _tag: "NotFoundError",
-          code: "PRIMARY_NAME_MISMATCH",
-        });
+        yield* expectFailure(
+          Actions.primaryName.get(reader, {
+            address: "0x000000000000000000000000000000000000dEaD",
+            strict: true,
+          }),
+          { _tag: "NotFoundError", code: "PRIMARY_NAME_NOT_SET" },
+        );
+        yield* expectFailure(
+          Actions.primaryName.get(reader, { address: mismatched, strict: true }),
+          {
+            _tag: "NotFoundError",
+            code: "PRIMARY_NAME_MISMATCH",
+          },
+        );
       }),
     );
 
@@ -91,15 +102,15 @@ describe("read errors", () => {
       Effect.gen(function* () {
         const fixtures = yield* Fixtures;
         const { accounts } = yield* Devnet;
-        const ens = ensforge(yield* Devnet);
+        const { reader } = yield* Clients;
         const name = fixtures.byId("records.v1").name;
 
-        yield* fails(Actions.role.get(ens, { account: accounts.alice, target: "registry", name }), {
-          _tag: "UnsupportedError",
-          code: "UNSUPPORTED_PROTOCOL",
-        });
-        yield* fails(
-          Actions.permission.check(ens, {
+        yield* expectFailure(
+          Actions.role.get(reader, { account: accounts.alice, target: "registry", name }),
+          { _tag: "UnsupportedError", code: "UNSUPPORTED_PROTOCOL" },
+        );
+        yield* expectFailure(
+          Actions.permission.check(reader, {
             name,
             operation: { setRecord: "address", key: "nope" },
             account: accounts.alice,
@@ -113,60 +124,58 @@ describe("read errors", () => {
   onProfile("mainnet-shaped")("mainnet-shaped", (it) => {
     it.effect("prices with tokens and durations the registrar does not accept", () =>
       Effect.gen(function* () {
-        const ens = ensforge(yield* Devnet);
+        const { reader } = yield* Clients;
         const name = "qqqqq.eth";
+        const duration = Duration.years(1);
 
-        for (const paymentToken of ["0x1234", stranger]) {
-          const expected: ExpectedError =
-            paymentToken === stranger
-              ? { _tag: "UnsupportedError", code: "PAYMENT_TOKEN_UNSUPPORTED" }
-              : { _tag: "InvalidInputError", code: "INVALID_ADDRESS" };
-          yield* fails(
-            Actions.registration.getPrice(ens, { name, duration: year, paymentToken }),
+        for (const [paymentToken, expected] of [
+          ["0x1234", { _tag: "InvalidInputError", code: "INVALID_ADDRESS" }],
+          [
+            "0x000000000000000000000000000000000000dEaD",
+            { _tag: "UnsupportedError", code: "PAYMENT_TOKEN_UNSUPPORTED" },
+          ],
+        ] as const) {
+          yield* expectFailure(
+            Actions.registration.getPrice(reader, { name, duration, paymentToken }),
             expected,
           );
-          yield* fails(
-            Actions.registration.getRenewalPrice(ens, {
+          yield* expectFailure(
+            Actions.registration.getRenewalPrice(reader, {
               names: "v2-plain.eth",
-              duration: year,
+              duration,
               paymentToken,
             }),
             expected,
           );
         }
-        yield* fails(Actions.registration.getPrice(ens, { name, duration: 86_400n }), {
-          _tag: "InvalidInputError",
-          code: "DURATION_TOO_SHORT",
-        });
+        yield* expectFailure(
+          Actions.registration.getPrice(reader, { name, duration: Duration.days(1) }),
+          { _tag: "InvalidInputError", code: "DURATION_TOO_SHORT" },
+        );
       }),
     );
 
     it.effect("strict reads of registries, links and token approvals that do not exist", () =>
       Effect.gen(function* () {
         const fixtures = yield* Fixtures;
-        const ens = ensforge(yield* Devnet);
+        const { reader } = yield* Clients;
+        const registered = fixtures.byId("v2.registered").name;
 
-        yield* fails(
-          Actions.registry.get(ens, { name: fixtures.byId("v2.registered").name, strict: true }),
-          {
-            _tag: "NotFoundError",
-            code: "REGISTRY_NOT_FOUND",
-          },
-        );
-        yield* fails(
-          Actions.resolver.getLink(ens, {
+        yield* expectFailure(Actions.registry.get(reader, { name: registered, strict: true }), {
+          _tag: "NotFoundError",
+          code: "REGISTRY_NOT_FOUND",
+        });
+        yield* expectFailure(
+          Actions.resolver.getLink(reader, {
             name: fixtures.byId("records.v2.default").name,
             strict: true,
           }),
           { _tag: "NotFoundError", code: "RECORD_NOT_FOUND" },
         );
-        yield* fails(
-          Actions.approval.getToken(ens, { name: fixtures.byId("v2.registered").name }),
-          {
-            _tag: "UnsupportedError",
-            code: "UNSUPPORTED_PROTOCOL",
-          },
-        );
+        yield* expectFailure(Actions.approval.getToken(reader, { name: registered }), {
+          _tag: "UnsupportedError",
+          code: "UNSUPPORTED_PROTOCOL",
+        });
       }),
     );
 
@@ -175,13 +184,16 @@ describe("read errors", () => {
     it.effect("gateway failures fail address and text reads alike", () =>
       Effect.gen(function* () {
         const fixtures = yield* Fixtures;
-        const ens = ensforge(yield* Devnet);
+        const { reader } = yield* Clients;
         const name = fixtures.byId("resolver.offchain").name;
-        const failed: ExpectedError = { _tag: "GatewayError", code: "GATEWAY_REQUEST_FAILED" };
+        const failed = { _tag: "GatewayError", code: "GATEWAY_REQUEST_FAILED" } as const;
 
-        yield* fails(Actions.record.getText(ens, { name, key: "url" }), failed);
-        yield* fails(Actions.record.getAddress(ens, { name }), failed);
-        yield* fails(Actions.record.get(ens, { name, texts: ["url"], addresses: ["eth"] }), failed);
+        yield* expectFailure(Actions.record.getText(reader, { name, key: "url" }), failed);
+        yield* expectFailure(Actions.record.getAddress(reader, { name }), failed);
+        yield* expectFailure(
+          Actions.record.get(reader, { name, texts: ["url"], addresses: ["eth"] }),
+          failed,
+        );
       }),
     );
   });
@@ -189,8 +201,9 @@ describe("read errors", () => {
   onProfile("v2-only")("v2-only", (it) => {
     it.effect("NameWrapper reads where ENSv1 is not deployed", () =>
       Effect.gen(function* () {
-        const ens = ensforge(yield* Devnet);
-        yield* fails(Actions.wrapper.getFuses(ens, { name: "v2-plain.eth" }), {
+        const { reader } = yield* Clients;
+
+        yield* expectFailure(Actions.wrapper.getFuses(reader, { name: "v2-plain.eth" }), {
           _tag: "UnsupportedError",
           code: "UNSUPPORTED_ON_DEPLOYMENT",
         });

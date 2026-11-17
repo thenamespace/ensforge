@@ -5,7 +5,8 @@ import { Actions } from "@ensforge/sdk/effect";
 import { Devnet } from "@ensforge/test-devnet";
 import { Fixtures } from "@ensforge/test-fixtures";
 
-import { ensforge, onProfile } from "../support/chain.ts";
+import { Clients } from "../support/clients.ts";
+import { onProfile } from "../support/lane.ts";
 
 describe("access reads", () => {
   onProfile("v1-live")("v1-live", (it) => {
@@ -15,36 +16,36 @@ describe("access reads", () => {
         Effect.gen(function* () {
           const fixtures = yield* Fixtures;
           const { accounts } = yield* Devnet;
-          const ens = ensforge(yield* Devnet);
+          const { reader } = yield* Clients;
           const name = fixtures.byId("account.resolver-delegate").name;
+          const approved = fixtures.byId("v1.wrapped.approved");
 
-          const [operator, notOperator] = yield* Effect.all([
-            Actions.approval.getOperator(ens, {
+          const operators = yield* Effect.all([
+            Actions.approval.getOperator(reader, {
               owner: accounts.alice,
               operator: accounts.operator,
               contract: "registry",
             }),
-            Actions.approval.getOperator(ens, {
+            Actions.approval.getOperator(reader, {
               owner: accounts.bob,
               operator: accounts.operator,
               contract: "registry",
             }),
           ]);
-          assert.deepStrictEqual([operator, notOperator], [true, false]);
+          assert.deepStrictEqual(operators, [true, false]);
 
-          const [delegate, notDelegate] = yield* Effect.all([
-            Actions.approval.getDelegate(ens, { name, delegate: accounts.approved }),
-            Actions.approval.getDelegate(ens, { name, delegate: accounts.carol }),
+          const delegates = yield* Effect.all([
+            Actions.approval.getDelegate(reader, { name, delegate: accounts.approved }),
+            Actions.approval.getDelegate(reader, { name, delegate: accounts.carol }),
           ]);
-          assert.deepStrictEqual([delegate, notDelegate], [true, false]);
+          assert.deepStrictEqual(delegates, [true, false]);
 
-          const approved = fixtures.byId("v1.wrapped.approved");
           assert.strictEqual(
-            yield* Actions.approval.getToken(ens, { name: approved.name }),
+            yield* Actions.approval.getToken(reader, { name: approved.name }),
             approved.facts["approved"],
           );
           assert.isNull(
-            yield* Actions.approval.getToken(ens, { name: fixtures.byId("v1.wrapped").name }),
+            yield* Actions.approval.getToken(reader, { name: fixtures.byId("v1.wrapped").name }),
           );
         }),
       { meta: { cases: ["M:D4", "M:D6", "A01", "A02", "W12"] } },
@@ -56,26 +57,26 @@ describe("access reads", () => {
         Effect.gen(function* () {
           const fixtures = yield* Fixtures;
           const { accounts } = yield* Devnet;
-          const ens = ensforge(yield* Devnet);
+          const { reader } = yield* Clients;
           const plain = fixtures.byId("v1.unwrapped").name;
           const locked = fixtures.byId("v1.wrapped.locked.all").name;
 
           const [owner, stranger] = yield* Effect.all([
-            Actions.permission.get(ens, { name: plain, account: accounts.alice }),
-            Actions.permission.get(ens, { name: plain, account: accounts.user }),
+            Actions.permission.get(reader, { name: plain, account: accounts.alice }),
+            Actions.permission.get(reader, { name: plain, account: accounts.user }),
           ]);
           assert.deepInclude(owner.can, { transfer: true, setRecords: true, renew: true });
           // Anyone may renew a name; nothing else.
           assert.deepInclude(stranger.can, { transfer: false, setRecords: false, renew: true });
 
-          const fused = yield* Actions.permission.get(ens, {
+          const fused = yield* Actions.permission.get(reader, {
             name: locked,
             account: accounts.alice,
           });
           assert.deepInclude(fused.can, { transfer: false, setResolver: false, setRecords: true });
           assert.includeMembers([...fused.fuses], ["cannotTransfer", "cannotSetResolver"]);
 
-          const check = yield* Actions.permission.check(ens, {
+          const check = yield* Actions.permission.check(reader, {
             name: locked,
             operation: "transfer",
             account: accounts.alice,
@@ -94,19 +95,18 @@ describe("access reads", () => {
         Effect.gen(function* () {
           const fixtures = yield* Fixtures;
           const { accounts } = yield* Devnet;
-          const ens = ensforge(yield* Devnet);
+          const { reader } = yield* Clients;
           const delegated = fixtures.byId("v2.roles");
 
-          const roles = yield* Actions.role.get(ens, {
+          const roles = yield* Actions.role.get(reader, {
             account: String(delegated.facts["delegate"]),
             target: "registry",
             name: delegated.name,
           });
           assert.deepStrictEqual(roles.names, ["setResolver"]);
 
-          const operated = fixtures.byId("v2.operator").name;
-          const check = yield* Actions.permission.check(ens, {
-            name: operated,
+          const check = yield* Actions.permission.check(reader, {
+            name: fixtures.byId("v2.operator").name,
             operation: "transfer",
             account: accounts.alice,
           });

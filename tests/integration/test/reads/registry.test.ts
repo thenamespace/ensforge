@@ -1,15 +1,14 @@
 import { assert, describe } from "@effect/vitest";
 import { Effect } from "effect";
 
+import { Name } from "@ensforge/sdk";
 import { Actions } from "@ensforge/sdk/effect";
-import { Devnet } from "@ensforge/test-devnet";
 import { Fixtures } from "@ensforge/test-fixtures";
 import { expectFailure } from "@ensforge/test-harness";
 import type { Address } from "viem";
 
-import { ensforge, onProfile } from "../support/chain.ts";
-
-const parentOf = (name: string) => name.slice(name.indexOf(".") + 1);
+import { Clients } from "../support/clients.ts";
+import { onProfile } from "../support/lane.ts";
 
 describe("registry.get", () => {
   onProfile("mainnet-shaped")("mainnet-shaped", (it) => {
@@ -18,8 +17,8 @@ describe("registry.get", () => {
       () =>
         Effect.gen(function* () {
           const fixtures = yield* Fixtures;
-          const ens = ensforge(yield* Devnet);
-          const registryOf = (name: string) => Actions.registry.get(ens, { name });
+          const { reader } = yield* Clients;
+          const registryOf = (name: string) => Actions.registry.get(reader, { name });
 
           // The `.eth` registry is not a proxy: no implementation, nothing to upgrade.
           const eth = yield* registryOf("eth");
@@ -39,7 +38,7 @@ describe("registry.get", () => {
           // A name without a subregistry has no registry for children.
           assert.isNull(yield* registryOf(fixtures.byId("v2.registered").name));
 
-          yield* expectFailure(Actions.registry.get(ens, { name: "" }), {
+          yield* expectFailure(Actions.registry.get(reader, { name: "" }), {
             _tag: "InvalidInputError",
             code: "INVALID_NAME",
           });
@@ -52,10 +51,10 @@ describe("registry.get", () => {
       () =>
         Effect.gen(function* () {
           const fixtures = yield* Fixtures;
-          const ens = ensforge(yield* Devnet);
+          const { reader } = yield* Clients;
           const deep = fixtures.byId("v2.subnames");
 
-          const registry = yield* Actions.registry.get(ens, {
+          const registry = yield* Actions.registry.get(reader, {
             registry: String(deep.facts["registry"]),
           });
           assert.deepInclude(registry, {
@@ -72,17 +71,19 @@ describe("registry.get", () => {
       () =>
         Effect.gen(function* () {
           const fixtures = yield* Fixtures;
-          const ens = ensforge(yield* Devnet);
+          const { reader } = yield* Clients;
           const linked = fixtures.byId("v2.linked");
+          const parent = Name.parse(linked.name).parent ?? "";
+          const aliasParent = Name.parse(String(linked.facts["alias"])).parent ?? "";
 
           const [canonical, alias] = yield* Effect.all([
-            Actions.registry.get(ens, { name: parentOf(linked.name) }),
-            Actions.registry.get(ens, { name: parentOf(String(linked.facts["alias"])) }),
+            Actions.registry.get(reader, { name: parent }),
+            Actions.registry.get(reader, { name: aliasParent }),
           ]);
           assert.strictEqual(canonical?.address, linked.facts["registry"]);
           assert.strictEqual(alias?.address, linked.facts["registry"]);
           // The canonical name follows `setParent`; the other path is an alias.
-          assert.strictEqual(alias?.canonicalName, parentOf(linked.name));
+          assert.strictEqual(alias?.canonicalName, parent);
         }),
       { meta: { cases: ["O20"] } },
     );
@@ -92,12 +93,12 @@ describe("registry.get", () => {
       () =>
         Effect.gen(function* () {
           const fixtures = yield* Fixtures;
-          const ens = ensforge(yield* Devnet);
+          const { reader } = yield* Clients;
           const replaced = fixtures.byId("v2.replaced-subregistry");
 
           const [stale, current] = yield* Effect.all([
-            Actions.registry.get(ens, { registry: String(replaced.facts["staleRegistry"]) }),
-            Actions.registry.get(ens, { name: "v2-replaced.eth" }),
+            Actions.registry.get(reader, { registry: String(replaced.facts["staleRegistry"]) }),
+            Actions.registry.get(reader, { name: "v2-replaced.eth" }),
           ]);
           assert.isNull(stale?.canonicalName);
           assert.strictEqual(current?.address, replaced.facts["registry"]);

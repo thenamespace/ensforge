@@ -2,31 +2,32 @@ import { assert, describe } from "@effect/vitest";
 import { Effect } from "effect";
 
 import { Abis } from "@ensforge/contracts";
+import { Duration } from "@ensforge/sdk";
 import { Actions } from "@ensforge/sdk/effect";
-import { Devnet } from "@ensforge/test-devnet";
+import { Chain, Devnet } from "@ensforge/test-devnet";
 import { Fixtures } from "@ensforge/test-fixtures";
 import { expectFailure } from "@ensforge/test-harness";
-import { keccak256, toHex, type Address } from "viem";
+import { keccak256, toHex } from "viem";
 
-import { atTimestamp, ensforge, onProfile } from "../support/chain.ts";
-
-const day = 86_400n;
-const year = 365n * day;
+import { Clients } from "../support/clients.ts";
+import { onProfile } from "../support/lane.ts";
 
 describe("registration reads", () => {
   onProfile("mainnet-shaped")("mainnet-shaped", (it) => {
     it.effect("reports the deployment's registrar, renewer and windows", () =>
       Effect.gen(function* () {
         const devnet = yield* Devnet;
-        const parameters = yield* Actions.registration.getParameters(ensforge(devnet));
+        const { reader } = yield* Clients;
+
+        const parameters = yield* Actions.registration.getParameters(reader);
 
         assert.deepInclude(parameters, {
-          registrar: devnet.contracts["v2.ethRegistrar"] as Address,
-          renewer: devnet.contracts["v2.ethRenewerV1"] as Address,
+          registrar: devnet.contract("v2.ethRegistrar"),
+          renewer: devnet.contract("v2.ethRenewerV1"),
           minCommitmentAge: 60n,
-          maxCommitmentAge: day,
-          minDuration: 28n * day,
-          gracePeriod: 28n * day,
+          maxCommitmentAge: Duration.days(1),
+          minDuration: Duration.days(28),
+          gracePeriod: Duration.days(28),
         });
         assert.sameMembers(
           parameters.paymentTokens.map((token) => `${token.symbol}/${token.decimals}`),
@@ -41,7 +42,7 @@ describe("registration reads", () => {
       () =>
         Effect.gen(function* () {
           const fixtures = yield* Fixtures;
-          const ens = ensforge(yield* Devnet);
+          const { reader } = yield* Clients;
           const names = [
             ...new Set(
               fixtures.all
@@ -52,8 +53,8 @@ describe("registration reads", () => {
 
           const disagreements = yield* Effect.forEach(names, (name) =>
             Effect.all([
-              Actions.registration.isAvailable(ens, { name }),
-              Actions.name.get(ens, { name }),
+              Actions.registration.isAvailable(reader, { name }),
+              Actions.name.get(reader, { name }),
             ]).pipe(
               Effect.map(([available, state]) =>
                 available === state.available ? [] : [`${name}: ${available}`],
@@ -69,9 +70,9 @@ describe("registration reads", () => {
       "prices labels by code point and refuses labels below the minimum",
       () =>
         Effect.gen(function* () {
-          const ens = ensforge(yield* Devnet);
+          const { reader } = yield* Clients;
           const price = (name: string) =>
-            Actions.registration.getPrice(ens, { name, duration: year });
+            Actions.registration.getPrice(reader, { name, duration: Duration.years(1) });
 
           const [three, four, five, phoenix] = yield* Effect.all([
             price("qqq.eth"),
@@ -84,9 +85,9 @@ describe("registration reads", () => {
           assert.strictEqual(phoenix.base, three.base);
           assert.strictEqual(three.premium, 0n);
 
-          assert.isFalse(yield* Actions.registration.isAvailable(ens, { name: "qq.eth" }));
+          assert.isFalse(yield* Actions.registration.isAvailable(reader, { name: "qq.eth" }));
           yield* expectFailure(
-            Actions.registration.getPrice(ens, { name: "qq.eth", duration: year }),
+            Actions.registration.getPrice(reader, { name: "qq.eth", duration: Duration.years(1) }),
             {
               _tag: "InvalidInputError",
               code: "INVALID_NAME",
@@ -101,16 +102,20 @@ describe("registration reads", () => {
       () =>
         Effect.gen(function* () {
           const fixtures = yield* Fixtures;
-          const ens = ensforge(yield* Devnet);
+          const { reader } = yield* Clients;
           const released = fixtures.byId("registration.v2-premium");
-          const graceEnd = BigInt(String(released.facts["expiry"])) + 28n * day;
+          const graceEnd = BigInt(String(released.facts["expiry"])) + Duration.days(28);
           const priceAt = (at: bigint) =>
-            Actions.registration.getPrice(ens, { name: released.name, duration: year, at });
+            Actions.registration.getPrice(reader, {
+              name: released.name,
+              duration: Duration.years(1),
+              at,
+            });
 
           const [start, nextDay, after] = yield* Effect.all([
             priceAt(graceEnd),
-            priceAt(graceEnd + day),
-            priceAt(graceEnd + 21n * day),
+            priceAt(graceEnd + Duration.days(1)),
+            priceAt(graceEnd + Duration.days(21)),
           ]);
           assert.isTrue(start.premium > nextDay.premium && nextDay.premium > 0n);
           assert.strictEqual(after.premium, 0n);
@@ -123,9 +128,13 @@ describe("registration reads", () => {
       "converts prices to each token, rounding up",
       () =>
         Effect.gen(function* () {
-          const ens = ensforge(yield* Devnet);
+          const { reader } = yield* Clients;
           const priceIn = (paymentToken: "usdc" | "dai") =>
-            Actions.registration.getPrice(ens, { name: "qqqqq.eth", duration: year, paymentToken });
+            Actions.registration.getPrice(reader, {
+              name: "qqqqq.eth",
+              duration: Duration.years(1),
+              paymentToken,
+            });
           const [usdc, dai] = yield* Effect.all([priceIn("usdc"), priceIn("dai")]);
 
           assert.strictEqual(dai.token.symbol, "DAI");
@@ -139,9 +148,9 @@ describe("registration reads", () => {
       () =>
         Effect.gen(function* () {
           const fixtures = yield* Fixtures;
-          const ens = ensforge(yield* Devnet);
+          const { reader } = yield* Clients;
           const renewal = (names: string | readonly string[]) =>
-            Actions.registration.getRenewalPrice(ens, { names, duration: year });
+            Actions.registration.getRenewalPrice(reader, { names, duration: Duration.years(1) });
           const v2Name = fixtures.byId("v2.registered").name;
           const premigrated = fixtures.byId("v2.reserved").name;
 
@@ -173,11 +182,11 @@ describe("registration reads", () => {
       () =>
         Effect.gen(function* () {
           const fixtures = yield* Fixtures;
-          const ens = ensforge(yield* Devnet);
+          const { reader } = yield* Clients;
           const name = fixtures.byId("v2.registered").name;
           const amountFor = (years: bigint) =>
             Actions.registration
-              .getRenewalPrice(ens, { names: name, duration: years * year })
+              .getRenewalPrice(reader, { names: name, duration: Duration.years(years) })
               .pipe(Effect.map((price) => price.total));
 
           const [one, two, three, six] = yield* Effect.all([
@@ -202,35 +211,34 @@ describe("registration reads", () => {
       () =>
         Effect.gen(function* () {
           const devnet = yield* Devnet;
-          const ens = ensforge(devnet);
+          const chain = yield* Chain;
+          const { reader } = yield* Clients;
           const commitment = keccak256(toHex("integration commitment"));
-          const status = () => Actions.registration.getCommitmentStatus(ens, { commitment });
+          const commitmentStatus = Actions.registration.getCommitmentStatus(reader, { commitment });
 
-          assert.strictEqual((yield* status()).status, "unknown");
-          const { latest } = yield* Effect.promise(() =>
-            devnet.client.getBlock().then((block) => ({ latest: block.timestamp })),
-          );
+          assert.strictEqual((yield* commitmentStatus).status, "unknown");
 
           // Committed in a reverted block, so the shared devnet keeps no commitment.
-          const statuses = yield* atTimestamp(
-            devnet,
-            latest + 1n,
+          const statuses = yield* chain.atTimestamp(
+            (yield* chain.now) + 1n,
             Effect.gen(function* () {
-              yield* Effect.promise(async () => {
-                const hash = await devnet.client.writeContract({
-                  address: devnet.contracts["v2.ethRegistrar"] as Address,
-                  abi: Abis.v2.ethRegistrar,
-                  functionName: "commit",
-                  args: [commitment],
-                  account: devnet.accounts.alice,
-                  chain: devnet.chain,
-                });
-                await devnet.client.waitForTransactionReceipt({ hash });
+              yield* chain.write({
+                address: devnet.contract("v2.ethRegistrar"),
+                abi: Abis.v2.ethRegistrar,
+                functionName: "commit",
+                args: [commitment],
+                account: devnet.accounts.alice,
               });
-              const { committedAt } = yield* status();
+              const { committedAt } = yield* commitmentStatus;
               if (committedAt === null) return assert.fail("commitment not recorded");
-              return yield* Effect.forEach([59n, 60n, day - 1n, day], (age) =>
-                atTimestamp(devnet, committedAt + age, status().pipe(Effect.map((s) => s.status))),
+
+              return yield* Effect.forEach(
+                [59n, 60n, Duration.days(1) - 1n, Duration.days(1)],
+                (age) =>
+                  chain.atTimestamp(
+                    committedAt + age,
+                    Effect.map(commitmentStatus, (current) => current.status),
+                  ),
               );
             }),
           );
@@ -243,8 +251,9 @@ describe("registration reads", () => {
   onProfile("v1-live")("v1-live", (it) => {
     it.effect("fails with a typed error where ENSv2 is not deployed", () =>
       Effect.gen(function* () {
-        const ens = ensforge(yield* Devnet);
-        yield* expectFailure(Actions.registration.isAvailable(ens, { name: "v1-plain.eth" }), {
+        const { reader } = yield* Clients;
+
+        yield* expectFailure(Actions.registration.isAvailable(reader, { name: "v1-plain.eth" }), {
           _tag: "UnsupportedError",
           code: "UNSUPPORTED_ON_DEPLOYMENT",
         });
