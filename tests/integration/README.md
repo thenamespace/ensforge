@@ -14,15 +14,20 @@ onProfile("mainnet-shaped")("mainnet-shaped", (it) => {
       Effect.gen(function* () {
         const fixtures = yield* Fixtures;
         const ens = ensforge(yield* Devnet);
-        const state = yield* call(() => ens.name.get({ name: fixtures.byId("v2.grace").name }));
+        const state = yield* Actions.name.get(ens, { name: fixtures.byId("v2.grace").name });
       }),
     { meta: { cases: ["M:A15"] } },
   );
 });
 ```
 
+Call ensforge through `Actions` from `@ensforge/sdk/effect` and assert refusals with
+`expectFailure`; only the Promise conformance tests use the Promise API (see
+[CONTRIBUTING](../../CONTRIBUTING.md#tests)).
+
 - `test/support/chain.ts`: `onProfile` (one seeded devnet per file, real time), `ensforge` (a
-  client, optionally with an account, wallet, plan storage or CCIP-Read settings), `isolated` and
+  client, optionally with an account, wallet, plan storage, indexer or CCIP-Read settings),
+  `call` (a Promise call, for the conformance tests), `isolated` and
   `atTimestamp` (snapshot, act, revert), and `passWaits` (an `onStep` that moves time past a
   plan's waits, such as the commitment age).
 - `test/support/wallet.ts`: `testWallet`, an EIP-1193 wallet over an anvil account with EIP-5792

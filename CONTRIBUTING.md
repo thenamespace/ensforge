@@ -75,6 +75,17 @@ Tests use [`@effect/vitest`](https://github.com/Effect-TS/effect/tree/main/packa
 do not import `vitest` directly. `it.effect` runs Effect tests, `it.prop` / `it.effect.prop` run
 property tests from Schemas or `effect/Arbitrary`.
 
+Tests call ensforge through its Effect API: `yield* Actions.record.get(ens, options)` with
+`Actions` from `@ensforge/sdk/effect` (`@ensforge/hca/effect` for HCA), not
+`Effect.promise(() => ens.record.get(options))`. Failures then stay typed: assert them with
+`expectFailure(effect, { _tag, code })` from `@ensforge/test-harness`, settle them with
+`Effect.result`, and stop a running write by interrupting its fiber. A wrapped Promise turns every
+failure into a defect, which hides errors the Effect API leaks as defects. Only tests that compare
+the Promise forms with the Effect ones use the Promise API (`expectRejection` asserts a rejected
+Promise): the conformance suites, `reads/every-read.test.ts`, and tests of Promise-only features
+such as `signal` or the `.request` builders `batch` takes. Wrap viem and other non-ensforge calls
+in `Effect.promise`.
+
 - Fast tests sit next to their package: `packages/<pkg>/test/unit/<area>/*.test.ts` and
   `packages/<pkg>/test/types/*.test-d.ts`. They never touch the network and run on every pull
   request (`pnpm test`).

@@ -54,6 +54,14 @@ a blank line after every line.
 Defer HCA user documentation until the final documentation phase. Write it in `apps/docs`, not in
 package guides or action README files. Keep the existing research roadmap for implementation tracking.
 
+## Tests
+
+Tests call ensforge through its Effect API (`yield* Actions.record.get(ens, options)`, `Actions`
+from `@ensforge/sdk/effect` or `@ensforge/hca/effect`) and assert failures with `expectFailure`.
+Do not wrap the Promise API in `Effect.promise`; that is reserved for viem and other libraries,
+and the Promise API is only called by tests that compare it with the Effect API. See the Tests
+section of CONTRIBUTING.md.
+
 # Learning more about Effect
 
 This repository uses the Effect TypeScript library.
