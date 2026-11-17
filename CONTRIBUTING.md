@@ -5,9 +5,8 @@ documentation are welcome.
 
 ## Prerequisites
 
-- Node.js 24.18.0 or newer in the Node.js 24 release line
-- pnpm 11.10.0
-- Docker for contract integration tests
+- Node.js 26
+- pnpm 12
 
 The repository pins its Node.js version in `.node-version` and its package manager in
 `package.json`.
@@ -24,6 +23,10 @@ pnpm build
 Run `pnpm dev` while changing multiple packages so dependent packages continuously receive current
 declaration files.
 
+`pnpm install` patches TypeScript 7 with the [Effect language service](https://github.com/Effect-TS/tsgo),
+so `tsc` reports Effect diagnostics. In VS Code, install the TypeScript Native Preview extension;
+the workspace settings point it at the patched compiler.
+
 ## Repository structure
 
 ```text
@@ -32,6 +35,8 @@ packages/sdk/       Standalone ENS actions and Effect APIs
 packages/react/     Hooks, Effect Atom atoms and server rendering
 packages/hca/       Hosted Contract Account route and executors
 tests/harness/      Shared test harness for every test suite
+tools/cli/          ensforge-dev: builds, verify checks, codegen and bundle budgets
+.config/            Lint, format, test, turbo and commit configuration
 ```
 
 Keep changes within the package that owns the behavior. Shared public types belong with their domain
@@ -51,7 +56,7 @@ and each package's `verify`: generated code, JSDoc lint, API reports, published 
 consumer, OpenAPI snapshots and every JSDoc example. `pnpm pack:check` validates package metadata
 and exports. `pnpm check` also bundles typical imports and fails when one grows more than 5% over
 `.config/bundle-budgets.json`; after an intended change, record new sizes with
-`pnpm ensforge-dev bundle-size --write`.
+`pnpm bundle:size --write`.
 
 During development, run a focused package command when it provides a faster feedback loop:
 

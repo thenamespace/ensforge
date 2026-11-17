@@ -22,7 +22,12 @@ Use the Klarity presets already configured at the workspace root. Packages build
 `tsc` (`ensforge-dev build`, from `tools/cli`), which keeps `export * as` re-exports tree-shakeable; tsdown's
 unbundled output did not. Do not add Prettier, ESLint, Husky, lint-staged, tsup, or Rollup unless a
 demonstrated requirement cannot be met by the existing tools. Pin every external dependency in the
-pnpm catalog.
+pnpm catalog. Tool configs live in `.config/`; repository scripts are `ensforge-dev` commands in
+`tools/cli`, written with Effect.
+
+`tsc` is patched with the Effect language service (`@effect/tsgo`), so typecheck reports Effect
+diagnostics. Fix them in the code rather than silencing them; disable one with an
+`@effect-diagnostics-next-line` comment only when the flagged pattern is the point of the code.
 
 ## Readability
 
