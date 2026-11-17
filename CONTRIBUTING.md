@@ -96,7 +96,9 @@ in `Effect.promise`.
   every name state on it and holds the edge-case catalog and coverage ledger; `tests/integration`
   checks ensforge's reads and writes against them. `pnpm test:chain` runs the chain lane.
   `tests/fuzz` runs random operation sequences against a model, on-chain properties and a
-  comparison with viem and ensjs (`pnpm test:fuzz`, see its README). Tag tests with the
+  comparison with viem and ensjs (`pnpm test:fuzz`, see its README). `tests/services` runs
+  ensforge against bigname, alto and a paymaster in Docker, and the end-to-end journeys
+  (`pnpm test:services`, see its README). Tag tests with the
   catalog cases they cover (`meta: { cases: ["O08"] }`) and list them in
   `tests/fixtures/catalog/ledger.json`.
 - Every error code an action documents in `@throws` must be asserted by a test that names the
