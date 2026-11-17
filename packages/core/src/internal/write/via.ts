@@ -26,6 +26,19 @@ export const viaContext = Effect.fnUntraced(function* (
   };
 });
 
+/** The account a route runs the calls as, or `undefined` when it is the signer. */
+export const routeSender = (
+  client: Client,
+  via: Write.Via | undefined,
+  account: Address | undefined,
+): Effect.Effect<Address | undefined, AnyError> => {
+  const sender = via?.sender;
+  if (sender === undefined) return Effect.succeed(undefined);
+  return viaContext(client, account).pipe(
+    Effect.flatMap((context) => fromPromise(() => sender(context))),
+  );
+};
+
 /** The plan rewritten by the route, or as is without one. */
 export const routePlan = (
   client: Client,

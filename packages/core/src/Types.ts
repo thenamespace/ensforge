@@ -124,7 +124,15 @@ export declare namespace Write {
   type Via = {
     /** Shown in progress and errors, e.g. `hca`. */
     readonly id: string;
-    /** Rewrites the plan before it is simulated or sent; the plan's id stays the same. */
+    /**
+     * Account the plan's calls run as (`msg.sender`), when it is not the signer. Writes that deploy
+     * contracts or grant roles plan for it (e.g. migration through an HCA).
+     */
+    readonly sender?: ((context: Via.Context) => Promise<Address>) | undefined;
+    /**
+     * Rewrites the plan before it is simulated or sent; the plan's id stays the same. Steps marked
+     * `from: "signer"` must stay transactions of the signer.
+     */
     readonly prepare?: ((plan: Plan, context: Via.Context) => Promise<Plan>) | undefined;
     /** Sends one step and returns a reference to follow it, e.g. a UserOperation hash. */
     readonly send?: ((step: Plan.Step, context: Via.Context) => Promise<string>) | undefined;

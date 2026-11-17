@@ -180,7 +180,11 @@ export const planMigration = Effect.fnUntraced(function* (
   client: Client,
   input: MigrationInput,
   signer: Address,
+  sender: Address = signer,
 ): Effect.fn.Return<MigrationPlan, AnyError> {
+  // `sender` runs the calls (an HCA through `via`): it deploys, so addresses derive from it, and it
+  // needs roles on what it deploys to keep writing. The signer keeps holding the names.
+  const routed = !isAddressEqual(sender, signer);
   const v1 = client.deployment.v1?.contracts;
   const v2 = client.deployment.v2;
   if (v1 === undefined || v2 === undefined) {
@@ -271,7 +275,7 @@ export const planMigration = Effect.fnUntraced(function* (
           ? [{ account: status.manager, roleBitmap: managerRecordRoles }]
           : [];
       const deployment = yield* deployPermissionedResolver(client, {
-        deployer: signer,
+        deployer: sender,
         owner,
         salt: migrationResolverSalt(parts.node),
         grants,
@@ -295,9 +299,10 @@ export const planMigration = Effect.fnUntraced(function* (
         );
       }
       const deployment = yield* deployPermissionedResolver(client, {
-        deployer: signer,
+        deployer: sender,
         owner: signer,
-        salt: ownedResolverSalt(signer),
+        salt: ownedResolverSalt(sender),
+        ...(routed ? { grants: [{ account: sender, roleBitmap: managerRecordRoles }] } : {}),
       });
       resolver = deployment.address;
       if (owned === undefined) {
@@ -315,10 +320,10 @@ export const planMigration = Effect.fnUntraced(function* (
       // The controller swaps the ENSv1 public resolver for PublicResolverV2, which starts empty.
       resolver = v2.contracts.publicResolver;
       if (copied !== undefined) {
-        if (!isAddressEqual(owner, signer)) {
+        if (!isAddressEqual(owner, signer) || routed) {
           warnings.push({
             code: "RECORDS_NOT_COPIED",
-            message: `${status.name} gets PublicResolverV2; its new owner writes the records there after migrating.`,
+            message: `${status.name} gets PublicResolverV2; its owner writes the records there after migrating.`,
           });
         } else {
           afterRecords.push(yield* recordsCall(client, resolver, parts, copied, "node"));
@@ -363,7 +368,7 @@ export const planMigration = Effect.fnUntraced(function* (
         parent: { name: status.name, label: parts.label, node: parts.node },
         subnames,
         owner,
-        signer,
+        signer: sender,
         parentRegistry: v2.contracts.ethRegistry,
       });
       if (recreation.leftBehind.length > 0 && input.allowLeavingSubnames !== true) {
@@ -449,13 +454,19 @@ export const planMigration = Effect.fnUntraced(function* (
   }
 
   const steps: Plan.Step[] = [];
-  const chunked = (id: string, description: string, calls: readonly Plan.Call[]) => {
+  const chunked = (
+    id: string,
+    description: string,
+    calls: readonly Plan.Call[],
+    from?: "signer",
+  ) => {
     for (let index = 0; index < calls.length; index += maxCallsPerStep) {
       const part = index / maxCallsPerStep;
       steps.push({
         id: part === 0 ? id : `${id}-${part + 1}`,
         description,
         calls: calls.slice(index, index + maxCallsPerStep),
+        ...(from === undefined ? {} : { from }),
       });
     }
   };
@@ -474,7 +485,8 @@ export const planMigration = Effect.fnUntraced(function* (
     );
   }
   chunked("records-after", "Copy records to PublicResolverV2", afterRecords);
-  chunked("manager", "Restore ENSv1 managers", managers);
+  // The names' new holder grants the managers; a routed sender holds no roles on them.
+  chunked("manager", "Restore ENSv1 managers", managers, routed ? "signer" : undefined);
 
   return {
     steps,

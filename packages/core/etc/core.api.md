@@ -1235,7 +1235,7 @@ type Plan.Fee = { readonly kind: 'gas' | 'execution' | 'bridge'; readonly token:
 type Plan.Record = { readonly plan: Plan; readonly status: 'pending' | 'completed' | 'failed'; readonly submitted: Readonly<Record<string, readonly `0x${string}`[]>>; readonly bundles: Readonly<Record<string, string>>; readonly references?: Readonly<Record<string, string>> | undefined; readonly error?: string | undefined; readonly updatedAt: number; }
 type Plan.Requirement = { readonly kind: 'balance'; readonly amount: bigint; readonly token?: `0x${string}` | undefined; } | { readonly kind: 'approval'; readonly token: `0x${string}`; readonly spender: `0x${string}`; readonly amount: bigint; }
 type Plan.Simulation = { readonly ok: boolean; readonly plan: Plan; readonly steps: readonly { readonly id: string; readonly ok: boolean; readonly error?: AnyError | undefined; }[]; }
-type Plan.Step = { readonly id: string; readonly description: string; readonly calls: readonly Call[]; readonly waitFor?: { readonly seconds: bigint; } | undefined; }
+type Plan.Step = { readonly id: string; readonly description: string; readonly calls: readonly Call[]; readonly waitFor?: { readonly seconds: bigint; } | undefined; readonly from?: 'signer' | undefined; }
 type Plan.Storage = { readonly get: (id: string) => Promise<Record | undefined>; readonly set: (record: Record) => Promise<void>; readonly delete: (id: string) => Promise<void>; readonly list: () => Promise<readonly Record[]>; }
 type Plan.Warning = { readonly code: string; readonly message: string; }
 function planActions() => (client: Client<object>) => PlanActions

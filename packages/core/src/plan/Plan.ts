@@ -60,6 +60,8 @@ export declare namespace Plan {
      * registration commitment age.
      */
     readonly waitFor?: { readonly seconds: bigint } | undefined;
+    /** `signer`: the signer must send it itself, even through a route (e.g. a token approval). */
+    readonly from?: "signer" | undefined;
   };
 
   /** Something the account must have before the plan can succeed. */
