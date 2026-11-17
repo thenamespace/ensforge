@@ -6,16 +6,8 @@ import {
   UserRejectedError,
 } from "@ensforge/sdk/internal/errors/classes/index";
 import { describe as describeError } from "@ensforge/sdk/internal/errors/describe/describe";
-import type { Code } from "@ensforge/sdk/internal/errors/types";
 
 import { codes, errorsByCode, retryableCodes } from "../codes";
-
-const infoTags = new Set([
-  "UserRejectedError",
-  "NameStateError",
-  "NotFoundError",
-  "CommitmentError",
-]);
 
 describe("Errors.describe copy", () => {
   it.each(codes)("%s has a title and message", (code) => {
@@ -26,13 +18,14 @@ describe("Errors.describe copy", () => {
     assert.isAbove(description.message.length, 0);
     assert.strictEqual(description.code, code);
     assert.strictEqual(description.retryable, retryableCodes.has(code));
+    const info = ["UserRejectedError", "NameStateError", "NotFoundError", "CommitmentError"];
     assert.strictEqual(
       description.severity,
-      infoTags.has(error._tag) ? "info" : retryableCodes.has(code) ? "warning" : "error",
+      info.includes(error._tag) ? "info" : retryableCodes.has(code) ? "warning" : "error",
     );
   });
 
-  it.each(codes)("%s copy never leaks the developer message", (code: Code) => {
+  it.each(codes)("%s copy never leaks the developer message", (code) => {
     const error = errorsByCode[code]();
     const description = describeError(error);
 

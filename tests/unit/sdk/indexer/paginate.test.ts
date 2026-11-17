@@ -9,51 +9,59 @@ import { fakeBigname } from "@ensforge/test-harness/indexer/fake-bigname";
 
 import { clientWith } from "./client.js";
 
-const setup = () => {
+/** A client on the fake bigname, and the cursors its subname requests carried. */
+const bignameClient = () => {
   const fake = fakeBigname();
-  const client = clientWith(bigname({ url: fake.url, fetch: fake.fetch }));
+  const ens = clientWith(bigname({ url: fake.url, fetch: fake.fetch }));
   const cursors = () => fake.requestsTo("/names/{name}/subnames").map((r) => r.query.get("cursor"));
-  return { client, cursors };
+  return { ens, cursors };
 };
 
 const names = (pages: readonly { readonly items: readonly { readonly name: string }[] }[]) =>
   pages.flatMap((page) => page.items.map((item) => item.name));
 
+// `paginate` is the Promise API's async iterator; a stream drives it as `for await` would, and
+// taking fewer pages returns the iterator early, as `break` does.
 describe("paginate", () => {
-  it("follows cursors until the last page", async () => {
-    const { client, cursors } = setup();
-    const pages = [];
+  it.effect("follows cursors until the last page", () =>
+    Effect.gen(function* () {
+      const { ens, cursors } = bignameClient();
 
-    for await (const page of paginate(client.indexer.getSubnames, { name: "nick.eth", limit: 2 })) {
-      pages.push(page);
-    }
+      const pages = yield* Stream.runCollect(
+        Stream.fromAsyncIterable(
+          paginate(ens.indexer.getSubnames, { name: "nick.eth", limit: 2 }),
+          (cause) => cause,
+        ),
+      );
 
-    assert.deepStrictEqual(names(pages), ["alpha.nick.eth", "beta.nick.eth", "gamma.nick.eth"]);
-    assert.deepStrictEqual(cursors(), [null, "c2"]);
-  });
+      assert.deepStrictEqual(names(pages), ["alpha.nick.eth", "beta.nick.eth", "gamma.nick.eth"]);
+      assert.deepStrictEqual(cursors(), [null, "c2"]);
+    }),
+  );
 
-  it("starts from the given cursor and stops requesting on break", async () => {
-    const { client, cursors } = setup();
+  it.effect("starts from the given cursor and stops requesting on break", () =>
+    Effect.gen(function* () {
+      const { ens, cursors } = bignameClient();
 
-    for await (const page of paginate(client.indexer.getSubnames, {
-      name: "nick.eth",
-      limit: 1,
-      cursor: "c1",
-    })) {
-      assert.deepStrictEqual(names([page]), ["beta.nick.eth"]);
-      break;
-    }
+      const pages = yield* Stream.runCollect(
+        Stream.fromAsyncIterable(
+          paginate(ens.indexer.getSubnames, { name: "nick.eth", limit: 1, cursor: "c1" }),
+          (cause) => cause,
+        ).pipe(Stream.take(1)),
+      );
 
-    assert.deepStrictEqual(cursors(), ["c1"]);
-  });
+      assert.deepStrictEqual(names(pages), ["beta.nick.eth"]);
+      assert.deepStrictEqual(cursors(), ["c1"]);
+    }),
+  );
 });
 
 describe("Indexer.paginate", () => {
   it.effect("streams every page, and only the pages taken", () =>
     Effect.gen(function* () {
-      const { client, cursors } = setup();
+      const { ens, cursors } = bignameClient();
       const pages = streamPages((cursor) =>
-        Actions.indexer.getSubnames(client, { name: "nick.eth", limit: 1, cursor }),
+        Actions.indexer.getSubnames(ens, { name: "nick.eth", limit: 1, cursor }),
       );
 
       const all = yield* Stream.runCollect(pages);

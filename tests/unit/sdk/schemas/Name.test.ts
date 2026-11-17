@@ -4,14 +4,12 @@ import { Effect, Schema } from "effect";
 import * as Name from "@ensforge/sdk/internal/schemas/Name";
 import { Arbitraries } from "@ensforge/test-harness";
 
-const decode = Schema.decodeUnknownEffect(Name.Normalized);
-
 describe("Name.Normalized", () => {
   it.effect.each(["", "eth", "nick.eth", "名字.eth", `[${"ab".repeat(32)}].eth`])(
     "accepts %j",
     (input) =>
       Effect.gen(function* () {
-        assert.strictEqual(yield* decode(input), input);
+        assert.strictEqual(yield* Schema.decodeEffect(Name.Normalized)(input), input);
       }),
   );
 
@@ -22,7 +20,8 @@ describe("Name.Normalized", () => {
     ["nick.eth.", "Expected a valid ENS name"],
   ] as const)("rejects %j", ([input, message]) =>
     Effect.gen(function* () {
-      const error = yield* Effect.flip(decode(input));
+      const error = yield* Effect.flip(Schema.decodeEffect(Name.Normalized)(input));
+
       assert.include(error.message, message);
     }),
   );

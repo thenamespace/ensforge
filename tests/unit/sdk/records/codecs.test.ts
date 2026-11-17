@@ -3,6 +3,7 @@ import { Effect } from "effect";
 
 import { loadRecordCodecs } from "@ensforge/sdk/internal/internal/records/codecs";
 import { expectThrow } from "@ensforge/test-harness";
+import type { Hex } from "viem";
 
 const btc = 0n;
 const btcAddress = "1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa";
@@ -27,10 +28,7 @@ describe("loadRecordCodecs", () => {
       const address = "0x225f137127d9067788314bc7fcc1f36746a3c3B5";
 
       assert.strictEqual(codecs.encodeAddress(base, address), address.toLowerCase());
-      assert.strictEqual(
-        codecs.decodeAddress(base, address.toLowerCase() as `0x${string}`),
-        address,
-      );
+      assert.strictEqual(codecs.decodeAddress(base, address.toLowerCase() as Hex), address);
     }),
   );
 

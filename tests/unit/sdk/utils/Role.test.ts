@@ -5,8 +5,6 @@ import { Roles } from "@ensforge/contracts";
 import * as Role from "@ensforge/sdk/internal/utils/Role";
 import { expectThrow } from "@ensforge/test-harness";
 
-const invalidRoles = { _tag: "InvalidInputError", code: "INVALID_ROLES" };
-
 // Nybble indices from contracts-v2 v1.0.1 RegistryRolesLib and PermissionedResolverLib.
 const registryNybbles = {
   registrar: 0n,
@@ -88,8 +86,14 @@ describe("Role.from and Role.has", () => {
   });
 
   it.each(["", "nope", "setAddrAdminAdmin"])("rejects %j", (name) => {
-    expectThrow(() => Role.from([name as Role.Name]), invalidRoles);
-    expectThrow(() => Role.has(0n, name as Role.Name), invalidRoles);
+    expectThrow(() => Role.from([name as Role.Name]), {
+      _tag: "InvalidInputError",
+      code: "INVALID_ROLES",
+    });
+    expectThrow(() => Role.has(0n, name as Role.Name), {
+      _tag: "InvalidInputError",
+      code: "INVALID_ROLES",
+    });
   });
 });
 

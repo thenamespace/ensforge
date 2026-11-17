@@ -4,8 +4,6 @@ import * as Classes from "@ensforge/sdk/internal/errors/classes/index";
 
 import { codes, errorsByCode, retryableCodes } from "../codes";
 
-const account = "0x00000000000000000000000000000000000000a1" as const;
-
 describe("error class defaults", () => {
   it.each(codes)("%s has a summary, its tag as name, and its retry classification", (code) => {
     const error = errorsByCode[code]();
@@ -67,8 +65,12 @@ describe("error class copy that depends on options", () => {
 
   it.each([
     {
-      options: { account, missingRoles: ["setResolver", "renew"] },
-      shortMessage: `${account} is missing the roles this change needs.`,
+      options: {
+        account: "0x00000000000000000000000000000000000000a1" as const,
+        missingRoles: ["setResolver", "renew"],
+      },
+      shortMessage:
+        "0x00000000000000000000000000000000000000a1 is missing the roles this change needs.",
       details: ["Missing roles: setResolver, renew"],
     },
     {

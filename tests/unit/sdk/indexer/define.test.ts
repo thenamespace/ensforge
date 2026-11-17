@@ -7,27 +7,26 @@ import type { AnyError } from "@ensforge/sdk/internal/errors/types";
 import { defineIndexer } from "@ensforge/sdk/internal/indexer/define";
 import type { Context } from "@ensforge/sdk/internal/indexer/Indexer";
 import { define } from "@ensforge/sdk/internal/indexer/Indexer.effect";
-import { expectFailure, expectRejection } from "@ensforge/test-harness";
+import { expectFailure } from "@ensforge/test-harness";
 
 import { clientWith } from "./client.js";
-
-const invalid = { _tag: "IndexerError", code: "INDEXER_RESPONSE_INVALID" };
-const items = { items: [], cursor: null, hasMore: false, totalCount: null };
 
 describe("defineIndexer", () => {
   it.effect("fills missing metadata and always reports its own id", () =>
     Effect.gen(function* () {
-      const client = clientWith(
+      const empty = { items: [], cursor: null, hasMore: false, totalCount: null };
+      const ens = clientWith(
         defineIndexer({
           id: "in-house",
-          getSubnames: async () => ({ ...items, completeness: "partial", indexer: "spoofed" }),
+          getSubnames: () =>
+            Promise.resolve({ ...empty, completeness: "partial", indexer: "spoofed" }),
         }),
       );
 
-      const page = yield* Actions.indexer.getSubnames(client, { name: "nick.eth" });
+      const page = yield* Actions.indexer.getSubnames(ens, { name: "nick.eth" });
 
       assert.deepStrictEqual(page, {
-        ...items,
+        ...empty,
         asOf: null,
         snapshots: {},
         asOfToken: null,
@@ -42,10 +41,15 @@ describe("defineIndexer", () => {
 
   it.effect("adds no metadata to the status", () =>
     Effect.gen(function* () {
-      const client = clientWith(
-        defineIndexer({ id: "x", getStatus: async () => ({ status: "ready", chains: {} }) }),
+      const ens = clientWith(
+        defineIndexer({
+          id: "x",
+          getStatus: () => Promise.resolve({ status: "ready", chains: {} }),
+        }),
       );
-      const status = yield* Actions.indexer.getStatus(client, {});
+
+      const status = yield* Actions.indexer.getStatus(ens, {});
+
       assert.deepStrictEqual(status, { status: "ready", chains: {}, indexer: "x" });
     }),
   );
@@ -53,17 +57,17 @@ describe("defineIndexer", () => {
   it.effect("passes validated queries and the client's chain", () =>
     Effect.gen(function* () {
       const calls: [unknown, Context][] = [];
-      const client = clientWith(
+      const ens = clientWith(
         defineIndexer({
           id: "x",
-          getName: async (query, context) => {
+          getName: (query, context) => {
             calls.push([query, context]);
-            return null;
+            return Promise.resolve(null);
           },
         }),
       );
 
-      yield* Actions.indexer.getName(client, { name: "Jesse.Base.ETH" });
+      yield* Actions.indexer.getName(ens, { name: "Jesse.Base.ETH" });
 
       const [query, context] = calls[0] as [unknown, Context];
       assert.deepStrictEqual(query, { name: "jesse.base.eth", namespace: "basenames" });
@@ -75,7 +79,7 @@ describe("defineIndexer", () => {
   it.effect("aborts the adapter's signal when the call is interrupted", () =>
     Effect.gen(function* () {
       let signal: AbortSignal | undefined;
-      const client = clientWith(
+      const ens = clientWith(
         defineIndexer({
           id: "x",
           getName: (_, context) => {
@@ -85,7 +89,7 @@ describe("defineIndexer", () => {
         }),
       );
 
-      const fiber = yield* Effect.forkChild(Actions.indexer.getName(client, { name: "a.eth" }));
+      const fiber = yield* Effect.forkChild(Actions.indexer.getName(ens, { name: "a.eth" }));
       yield* Effect.yieldNow;
       yield* Fiber.interrupt(fiber);
 
@@ -95,35 +99,35 @@ describe("defineIndexer", () => {
 
   it.effect.each([
     ["getName", null, null],
-    ["getSubnames", null, invalid],
-    ["getSubnames", "page", invalid],
-    ["getSubnames", { items: "none" }, invalid],
-  ] as const)("%s answering %j", ([method, draft, expected]) =>
+    ["getSubnames", null, "INDEXER_RESPONSE_INVALID"],
+    ["getSubnames", "page", "INDEXER_RESPONSE_INVALID"],
+    ["getSubnames", { items: "none" }, "INDEXER_RESPONSE_INVALID"],
+  ] as const)("%s answering %j", ([method, draft, code]) =>
     Effect.gen(function* () {
-      const client = clientWith(defineIndexer({ id: "x", [method]: async () => draft } as never));
+      const ens = clientWith(
+        defineIndexer({ id: "x", [method]: () => Promise.resolve(draft) } as never),
+      );
       const call: Effect.Effect<unknown, AnyError> =
         method === "getName"
-          ? Actions.indexer.getName(client, { name: "a.eth" })
-          : Actions.indexer.getSubnames(client, { name: "a.eth" });
+          ? Actions.indexer.getName(ens, { name: "a.eth" })
+          : Actions.indexer.getSubnames(ens, { name: "a.eth" });
 
-      if (expected === null) assert.isNull(yield* call);
-      else yield* expectFailure(call, expected);
+      if (code === null) assert.isNull(yield* call);
+      else yield* expectFailure(call, { _tag: "IndexerError", code });
     }),
   );
 
   it.effect("reports a thrown error as INDEXER_UNAVAILABLE with the cause", () =>
     Effect.gen(function* () {
       const cause = new Error("socket hang up");
-      const client = clientWith(
+      const ens = clientWith(
         defineIndexer({
           id: "x",
-          getName: async () => {
-            throw cause;
-          },
+          getName: () => Promise.reject(cause),
         }),
       );
 
-      const error = yield* expectFailure(Actions.indexer.getName(client, { name: "a.eth" }), {
+      const error = yield* expectFailure(Actions.indexer.getName(ens, { name: "a.eth" }), {
         _tag: "IndexerError",
         code: "INDEXER_UNAVAILABLE",
       });
@@ -131,28 +135,26 @@ describe("defineIndexer", () => {
     }),
   );
 
-  it("keeps a thrown ensforge error, through the Promise API too", async () => {
-    const client = clientWith(
-      defineIndexer({
-        id: "x",
-        getName: async () => {
-          throw new IndexerError({ code: "INDEXER_BEHIND", source: "x" });
-        },
-      }),
-    );
+  it.effect("keeps a thrown ensforge error", () =>
+    Effect.gen(function* () {
+      const ens = clientWith(
+        defineIndexer({
+          id: "x",
+          getName: () => Promise.reject(new IndexerError({ code: "INDEXER_BEHIND", source: "x" })),
+        }),
+      );
 
-    await Effect.runPromise(
-      expectRejection(() => client.indexer.getName({ name: "a.eth" }), {
+      yield* expectFailure(Actions.indexer.getName(ens, { name: "a.eth" }), {
         _tag: "IndexerError",
         code: "INDEXER_BEHIND",
-      }),
-    );
-  });
+      });
+    }),
+  );
 
   it.effect("fails methods it does not implement with INDEXER_UNSUPPORTED", () =>
     Effect.gen(function* () {
-      const client = clientWith(defineIndexer({ id: "x" }));
-      const error = yield* expectFailure(Actions.indexer.getName(client, { name: "a.eth" }), {
+      const ens = clientWith(defineIndexer({ id: "x" }));
+      const error = yield* expectFailure(Actions.indexer.getName(ens, { name: "a.eth" }), {
         _tag: "IndexerError",
         code: "INDEXER_UNSUPPORTED",
       });
@@ -164,18 +166,19 @@ describe("defineIndexer", () => {
 describe("Indexer.define", () => {
   it.effect("completes Effect answers and keeps their failures", () =>
     Effect.gen(function* () {
-      const client = clientWith(
+      const ens = clientWith(
         define({
           id: "fx",
-          getSubnames: () => Effect.succeed(items),
+          getSubnames: () =>
+            Effect.succeed({ items: [], cursor: null, hasMore: false, totalCount: null }),
           getName: () => Effect.fail(new IndexerError({ code: "INDEXER_RATE_LIMITED" })),
         }),
       );
 
-      const page = yield* Actions.indexer.getSubnames(client, { name: "a.eth" });
+      const page = yield* Actions.indexer.getSubnames(ens, { name: "a.eth" });
 
       assert.deepStrictEqual([page.indexer, page.completeness], ["fx", "full"]);
-      yield* expectFailure(Actions.indexer.getName(client, { name: "a.eth" }), {
+      yield* expectFailure(Actions.indexer.getName(ens, { name: "a.eth" }), {
         _tag: "IndexerError",
         code: "INDEXER_RATE_LIMITED",
       });

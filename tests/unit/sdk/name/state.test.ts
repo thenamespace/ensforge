@@ -1,71 +1,250 @@
 import { assert, describe, it } from "@effect/vitest";
 
-import { classify } from "@ensforge/sdk/internal/internal/name/classify";
+import { classify, isMigrated } from "@ensforge/sdk/internal/internal/name/classify";
 import { nameParts } from "@ensforge/sdk/internal/internal/name/parts";
 import {
   RegistryStatus,
   type NameData,
+  type V1Data,
   type V2Data,
 } from "@ensforge/sdk/internal/internal/name/read";
 import { toNameState } from "@ensforge/sdk/internal/internal/name/state";
-import { zeroAddress, type Address } from "viem";
+import { maxUint64, zeroAddress, type Address } from "viem";
 
 const now = 1_800_000_000n;
 const day = 86_400n;
 const alice: Address = "0x00000000000000000000000000000000000a11ce";
 const registry: Address = "0x00000000000000000000000000000000000000e7";
 const nameWrapper: Address = "0x00000000000000000000000000000000000000ff";
+const graveyard: Address = "0x0000000000000000000000000000000000000dea";
+const v2Grace = 28n * day;
+const v1Grace = 90n * day;
 
-const v2Entry = (state: Partial<V2Data["state"]>): V2Data => ({
+/** An ENSv2 entry held by alice until a day from now, in a registry with a grace period. */
+const v2 = (
+  state: Partial<V2Data["state"]>,
+  options: { readonly grace?: boolean } = {},
+): V2Data => ({
   registry,
   state: {
-    status: RegistryStatus.available,
-    expiry: 0n,
-    latestOwner: zeroAddress,
+    status: RegistryStatus.registered,
+    expiry: now + day,
+    latestOwner: alice,
     tokenId: 1n,
     resource: 1n,
     ...state,
   },
   resolver: undefined,
   subregistry: undefined,
-  gracePeriod: 28n * day,
+  gracePeriod: options.grace === false ? undefined : v2Grace,
 });
 
-// A live, unwrapped ENSv1 `.eth` name, with or without an ENSv2 entry for its label.
-const v1Name = (v2: V2Data | undefined, expiry = now + 365n * day): NameData => ({
-  parts: nameParts("alice.eth"),
+/** An unwrapped ENSv1 .eth name registered to and managed by alice until a day from now. */
+const v1 = (overrides: Partial<V1Data> = {}): V1Data => ({
+  registry,
+  registryOwner: alice,
+  resolver: zeroAddress,
+  ttl: 0n,
+  wrapper: { owner: zeroAddress, fuses: 0, expiry: 0n },
+  registrar: { registrant: alice, expiry: now + day, gracePeriod: v1Grace },
+  ...overrides,
+});
+
+const data = (overrides: Partial<NameData>, name = "alice.eth"): NameData => ({
+  parts: nameParts(name),
   now,
-  v1: {
-    registry,
-    registryOwner: alice,
-    resolver: zeroAddress,
-    ttl: 0n,
-    wrapper: { owner: zeroAddress, fuses: 0, expiry: 0n },
-    registrar: { registrant: alice, expiry, gracePeriod: 90n * day },
-  },
-  v2,
+  v1: undefined,
+  v2: undefined,
   ownedAncestor: false,
+  ...overrides,
 });
 
-const stateOf = (data: NameData, v1Registers: boolean) =>
-  toNameState(data, classify(data, { nameWrapper }), { v1Registers });
+/** The state of `input`; `v1Registers` is true before the ENSv2 launch. */
+const stateOf = (input: NameData, v1Registers = false) =>
+  toNameState(input, classify(input, { nameWrapper, graveyard }), { v1Registers });
 
-describe("name state", () => {
+describe("ENSv2 name state", () => {
+  const expiry = now + day;
+  const at = (time: bigint) => stateOf(data({ now: time, v2: v2({ expiry }) }));
+
+  it("is registered until expiry, in grace until its end, then expired", () => {
+    assert.deepStrictEqual(
+      [expiry - 1n, expiry, expiry + v2Grace - 1n, expiry + v2Grace].map((time) => at(time).status),
+      ["registered", "grace", "grace", "expired"],
+    );
+  });
+
+  it("is held, renewable and not registrable only while registered or in grace", () => {
+    assert.include(at(expiry - 1n), {
+      owner: alice,
+      available: false,
+      renewable: true,
+      wrapped: false,
+      migrated: false,
+    });
+    assert.include(at(expiry), { owner: null, available: false, renewable: true });
+    assert.include(at(expiry + v2Grace), { owner: null, available: true, renewable: false });
+  });
+
   it("reports no owner for an ENSv2 name in grace or expired", () => {
-    for (const expiry of [now - day, now - 60n * day]) {
-      const data: NameData = {
-        ...v1Name(undefined),
-        v1: undefined,
-        v2: v2Entry({ expiry, latestOwner: alice }),
-      };
-      const state = stateOf(data, false);
+    // The registry reports the entry available once it lapses, but still names its last owner.
+    for (const lapsed of [now - day, now - 60n * day]) {
+      const state = stateOf(
+        data({ v2: v2({ status: RegistryStatus.available, expiry: lapsed, latestOwner: alice }) }),
+      );
       assert.strictEqual(state.owner, null, state.status);
     }
   });
 
-  it("after the launch, an unreserved ENSv1 name is registrable on ENSv2 and not renewable", () => {
-    const state = stateOf(v1Name(v2Entry({})), false);
-    assert.include(state, {
+  it("reports the expiry and the end of grace", () => {
+    assert.include(at(now), { expiry, gracePeriodEnd: expiry + v2Grace, protocol: "v2" });
+  });
+
+  it("has no expiry or grace when it never expires, or no grace outside .eth", () => {
+    assert.include(stateOf(data({ v2: v2({ expiry: maxUint64 }) })), {
+      status: "registered",
+      expiry: null,
+      gracePeriodEnd: null,
+    });
+    assert.include(stateOf(data({ v2: v2({ expiry }, { grace: false }) }, "sub.alice.eth")), {
+      gracePeriodEnd: null,
+      renewable: false,
+    });
+    assert.strictEqual(
+      stateOf(data({ now: expiry, v2: v2({ expiry }, { grace: false }) })).status,
+      "expired",
+    );
+  });
+
+  it("is reserved, neither registrable nor renewable, without an ENSv1 owner", () => {
+    const reserved = stateOf(
+      data({ v2: v2({ status: RegistryStatus.reserved, latestOwner: zeroAddress }) }),
+    );
+
+    assert.include(reserved, {
+      kind: "v2-reserved",
+      status: "reserved",
+      available: false,
+      renewable: false,
+    });
+  });
+
+  it("is migrated when its ENSv1 records went to the Graveyard", () => {
+    const migrated = stateOf(data({ v1: v1({ registryOwner: graveyard }), v2: v2({}) }));
+
+    assert.include(migrated, { kind: "v2-migrated", migrated: true, protocol: "v2" });
+    assert.include(stateOf(data({ v2: v2({}) })), { kind: "v2-native", migrated: false });
+  });
+});
+
+describe("ENSv1 name state", () => {
+  it("reports the registrant, manager, expiry and end of grace of an unwrapped .eth name", () => {
+    const expiry = now + day;
+
+    assert.include(stateOf(data({ v1: v1() })), {
+      kind: "v1-unwrapped",
+      protocol: "v1",
+      owner: alice,
+      manager: alice,
+      registrant: alice,
+      expiry,
+      gracePeriodEnd: expiry + v1Grace,
+      wrapped: false,
+      migrated: false,
+    });
+  });
+
+  it("follows ENSv1's inclusive window ends", () => {
+    const expiry = now + day;
+
+    assert.deepStrictEqual(
+      [expiry - 1n, expiry, expiry + v1Grace, expiry + v1Grace + 1n].map(
+        (time) => stateOf(data({ now: time, v1: v1() }), true).status,
+      ),
+      ["registered", "grace", "grace", "expired"],
+    );
+  });
+
+  it("before the launch, ENSv1 still renews its own names", () => {
+    assert.include(stateOf(data({ v1: v1() }), true), { available: false, renewable: true });
+  });
+
+  it("reports the wrapper owner and expiry of a wrapped name, without a manager", () => {
+    const wrapped = v1({
+      registryOwner: nameWrapper,
+      wrapper: { owner: alice, fuses: 0, expiry: now + 2n * day },
+      registrar: undefined,
+    });
+
+    assert.include(stateOf(data({ v1: wrapped }, "sub.alice.eth")), {
+      kind: "v1-wrapped",
+      owner: alice,
+      manager: null,
+      registrant: null,
+      wrapped: true,
+      expiry: now + 2n * day,
+      gracePeriodEnd: null,
+      renewable: false,
+    });
+  });
+
+  it("keeps a wrapped subname live through its wrapper expiry", () => {
+    const wrapped = v1({
+      registryOwner: nameWrapper,
+      wrapper: { owner: alice, fuses: 0, expiry: now },
+      registrar: undefined,
+    });
+
+    assert.include(stateOf(data({ v1: wrapped }, "sub.alice.eth"), true), {
+      status: "registered",
+      owner: alice,
+    });
+  });
+
+  it("never expires as an unwrapped subname, and is available once nobody owns it", () => {
+    const held = v1({ registryOwner: alice, registrar: undefined });
+    const released = v1({ registryOwner: zeroAddress, registrar: undefined });
+
+    assert.include(stateOf(data({ v1: held }, "sub.alice.eth"), true), {
+      status: "registered",
+      owner: alice,
+      expiry: null,
+      gracePeriodEnd: null,
+      available: false,
+      renewable: false,
+    });
+    assert.include(stateOf(data({ v1: released }, "sub.alice.eth"), true), {
+      kind: "available",
+      status: "available",
+      available: true,
+    });
+  });
+
+  it("is available, with no owner, when neither protocol has a record", () => {
+    assert.include(stateOf(data({})), {
+      kind: "available",
+      status: "available",
+      owner: null,
+      manager: null,
+      registrant: null,
+      expiry: null,
+      wrapped: false,
+      migrated: false,
+      available: true,
+      renewable: false,
+    });
+  });
+});
+
+describe("ENSv1 name state after the ENSv2 launch", () => {
+  it("an unreserved ENSv1 name is registrable on ENSv2 and not renewable", () => {
+    const unreserved = v2({
+      status: RegistryStatus.available,
+      expiry: 0n,
+      latestOwner: zeroAddress,
+    });
+
+    assert.include(stateOf(data({ v1: v1(), v2: unreserved })), {
       kind: "v1-unwrapped",
       status: "registered",
       available: true,
@@ -73,60 +252,53 @@ describe("name state", () => {
     });
   });
 
-  it("after the launch, a reserved ENSv1 name renews through its reservation", () => {
-    const state = stateOf(
-      v1Name(v2Entry({ status: RegistryStatus.reserved, expiry: now + 400n * day })),
-      false,
+  it("a reserved ENSv1 name renews through its reservation", () => {
+    const reserved = v2({
+      status: RegistryStatus.reserved,
+      expiry: now + 400n * day,
+      latestOwner: zeroAddress,
+    });
+
+    assert.include(stateOf(data({ v1: v1(), v2: reserved })), {
+      available: false,
+      renewable: true,
+    });
+  });
+
+  it("an expired ENSv1 subname is still available from its parent", () => {
+    const expired = v1({
+      registryOwner: nameWrapper,
+      wrapper: { owner: alice, fuses: 0, expiry: now - day },
+      registrar: undefined,
+    });
+
+    assert.include(stateOf(data({ v1: expired }, "sub.alice.eth")), {
+      status: "expired",
+      available: true,
+      renewable: false,
+    });
+  });
+});
+
+describe("isMigrated", () => {
+  it("recognises records held by the Graveyard, directly or through a NameWrapper token", () => {
+    assert.isTrue(isMigrated(v1({ registryOwner: graveyard }), graveyard, nameWrapper));
+    assert.isTrue(
+      isMigrated(
+        v1({ registryOwner: nameWrapper, wrapper: { owner: graveyard, fuses: 0, expiry: 0n } }),
+        graveyard,
+        nameWrapper,
+      ),
     );
-    assert.include(state, { available: false, renewable: true });
-  });
-
-  it("before the launch, ENSv1 still renews its own names", () => {
-    const state = stateOf(v1Name(undefined), true);
-    assert.include(state, { available: false, renewable: true });
-  });
-
-  it("after the launch, an expired ENSv1 subname is still available from its parent", () => {
-    const data: NameData = {
-      ...v1Name(undefined),
-      parts: nameParts("sub.alice.eth"),
-      v1: {
-        registry,
-        registryOwner: nameWrapper,
-        resolver: zeroAddress,
-        ttl: 0n,
-        wrapper: { owner: alice, fuses: 0, expiry: now - day },
-        registrar: undefined,
-      },
-    };
-    const state = stateOf(data, false);
-    assert.include(state, { status: "expired", available: true, renewable: false });
-  });
-
-  it("follows ENSv1's inclusive window ends", () => {
-    const expiry = now + day;
-    const grace = 90n * day;
-    const statusAt = (time: bigint) =>
-      stateOf({ ...v1Name(undefined, expiry), now: time }, true).status;
-    assert.deepStrictEqual(
-      [expiry - 1n, expiry, expiry + grace, expiry + grace + 1n].map(statusAt),
-      ["registered", "grace", "grace", "expired"],
+    assert.isFalse(
+      isMigrated(
+        v1({ registryOwner: nameWrapper, wrapper: { owner: alice, fuses: 0, expiry: 0n } }),
+        graveyard,
+        nameWrapper,
+      ),
     );
-  });
-
-  it("keeps a wrapped subname live through its wrapper expiry", () => {
-    const data: NameData = {
-      ...v1Name(undefined),
-      parts: nameParts("sub.alice.eth"),
-      v1: {
-        registry,
-        registryOwner: nameWrapper,
-        resolver: zeroAddress,
-        ttl: 0n,
-        wrapper: { owner: alice, fuses: 0, expiry: now },
-        registrar: undefined,
-      },
-    };
-    assert.include(stateOf(data, true), { status: "registered", owner: alice });
+    assert.isFalse(isMigrated(v1(), graveyard, nameWrapper));
+    assert.isFalse(isMigrated(v1({ registryOwner: graveyard }), undefined, nameWrapper));
+    assert.isFalse(isMigrated(undefined, graveyard, nameWrapper));
   });
 });

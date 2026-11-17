@@ -3,63 +3,50 @@ import { Effect } from "effect";
 
 import { Ensforge } from "@ensforge/sdk";
 import { scanLogs, type LogQuery } from "@ensforge/sdk/internal/internal/event/scan";
-import { expectFailure, scriptedTransport, type Script } from "@ensforge/test-harness";
-import {
-  createPublicClient,
-  hexToBigInt,
-  numberToHex,
-  type Address,
-  type Hex,
-  type Log,
-} from "viem";
+import { expectFailure, scriptedTransport } from "@ensforge/test-harness";
+import { createPublicClient, hexToBigInt, type Address, type Hex } from "viem";
 import { mainnet } from "viem/chains";
 
-import { eventBySignature, logOf, sampleArgs } from "./logs.js";
+import { eventBySignature, logOf, rpcLog, sampleArgs } from "./logs.js";
 
 type Filter = { readonly address: Address[]; readonly fromBlock: Hex; readonly toBlock: Hex };
 
 const emitter: Address = "0x00000000000000000000000000000000000000e1";
 const query: LogQuery = { address: [emitter], topics: [null] };
-const addrChanged = eventBySignature("AddrChanged(bytes32,address)");
+const logAt = (blockNumber: bigint, logIndex = 0) => {
+  const addrChanged = eventBySignature("AddrChanged(bytes32,address)");
+  return logOf(addrChanged, sampleArgs(addrChanged), { address: emitter, blockNumber, logIndex });
+};
 
-/** An RPC log as a node returns it, for a mined log built with viem. */
-const rpcLog = (log: Log) => ({
-  ...log,
-  blockNumber: numberToHex(log.blockNumber ?? 0n),
-  logIndex: numberToHex(log.logIndex ?? 0),
-  transactionIndex: numberToHex(log.transactionIndex ?? 0),
-});
-
-const logAt = (blockNumber: bigint, logIndex = 0) =>
-  logOf(addrChanged, sampleArgs(addrChanged), { address: emitter, blockNumber, logIndex });
-
-/** A client whose `eth_getLogs` answers from `answer`; returns the requested ranges. */
-const setup = (answer: (filter: Filter, from: bigint, to: bigint) => unknown) => {
+/** A client whose `eth_getLogs` answers from `answer`, recording the block ranges requested. */
+const ensAnswering = (answer: (from: bigint, to: bigint) => unknown) => {
   const ranges: [bigint, bigint][] = [];
-  const script: Script = ({ method, params }) => {
+  const { transport, calls } = scriptedTransport(({ method, params }) => {
     if (method !== "eth_getLogs") return undefined;
     const filter = params[0] as Filter;
     const from = hexToBigInt(filter.fromBlock);
     const to = hexToBigInt(filter.toBlock);
     ranges.push([from, to]);
-    return answer(filter, from, to);
-  };
-  const { transport, calls } = scriptedTransport(script);
-  // No transport retries, so each rejected range is requested once.
-  const publicClient = createPublicClient({
-    chain: mainnet,
-    transport: (options) => transport({ ...options, retryCount: 0 }),
+    return answer(from, to);
   });
-  const client = Ensforge.create({ publicClient });
-  return { client, ranges, calls };
+
+  // No transport retries, so each rejected range is requested once.
+  const ens = Ensforge.create({
+    publicClient: createPublicClient({
+      chain: mainnet,
+      transport: (options) => transport({ ...options, retryCount: 0 }),
+    }),
+  });
+  return { ens, ranges, calls };
 };
 
 describe("scanLogs", () => {
   it.effect("sends one request per query over the whole range", () =>
     Effect.gen(function* () {
-      const { client, ranges, calls } = setup(() => []);
+      const { ens, ranges, calls } = ensAnswering(() => []);
       const other: Address = "0x00000000000000000000000000000000000000e2";
-      yield* scanLogs(client, [query, { address: [other], topics: [null] }], {
+
+      yield* scanLogs(ens, [query, { address: [other], topics: [null] }], {
         fromBlock: 10n,
         toBlock: 20n,
       });
@@ -77,11 +64,13 @@ describe("scanLogs", () => {
 
   it.effect("skips queries without addresses", () =>
     Effect.gen(function* () {
-      const { client, calls } = setup(() => []);
-      const logs = yield* scanLogs(client, [{ address: [], topics: [null] }], {
+      const { ens, calls } = ensAnswering(() => []);
+
+      const logs = yield* scanLogs(ens, [{ address: [], topics: [null] }], {
         fromBlock: 0n,
         toBlock: 5n,
       });
+
       assert.deepStrictEqual(logs, []);
       assert.strictEqual(calls.length, 0);
     }),
@@ -90,11 +79,12 @@ describe("scanLogs", () => {
   it.effect("splits ranges the provider rejects and reuses the accepted span", () =>
     Effect.gen(function* () {
       // The provider accepts at most 4 blocks per request.
-      const { client, ranges } = setup((_, from, to) => {
+      const { ens, ranges } = ensAnswering((from, to) => {
         if (to - from + 1n > 4n) throw new Error("query exceeds max block range 4");
         return from === 0n ? [rpcLog(logAt(1n))] : [];
       });
-      const logs = yield* scanLogs(client, [query, query], { fromBlock: 0n, toBlock: 15n });
+
+      const logs = yield* scanLogs(ens, [query, query], { fromBlock: 0n, toBlock: 15n });
 
       // Each block is covered once per query; the second query starts at the accepted span.
       assert.deepStrictEqual(ranges, [
@@ -119,23 +109,27 @@ describe("scanLogs", () => {
 
   it.effect("fails with LOG_RANGE_TOO_LARGE past maxRequests", () =>
     Effect.gen(function* () {
-      const { client, ranges } = setup(() => {
+      const { ens, ranges } = ensAnswering(() => {
         throw new Error("block range too large");
       });
+
       yield* expectFailure(
-        scanLogs(client, [query], { fromBlock: 0n, toBlock: 1_000n }, { maxRequests: 5 }),
+        scanLogs(ens, [query], { fromBlock: 0n, toBlock: 1_000n }, { maxRequests: 5 }),
         { _tag: "NetworkError", code: "LOG_RANGE_TOO_LARGE" },
       );
+
       assert.strictEqual(ranges.length, 5);
     }),
   );
 
   it.effect("does not split on other errors", () =>
     Effect.gen(function* () {
-      const { client, ranges } = setup(() => {
+      const { ens, ranges } = ensAnswering(() => {
         throw new Error("upstream unavailable");
       });
-      const error = yield* Effect.flip(scanLogs(client, [query], { fromBlock: 0n, toBlock: 100n }));
+
+      const error = yield* Effect.flip(scanLogs(ens, [query], { fromBlock: 0n, toBlock: 100n }));
+
       assert.notStrictEqual(error.code, "LOG_RANGE_TOO_LARGE");
       assert.deepStrictEqual(ranges, [[0n, 100n]]);
     }),
@@ -147,8 +141,9 @@ describe("scanLogs", () => {
       const b = logAt(5n, 1);
       const c = logAt(3n, 7);
       let request = 0;
-      const { client } = setup(() => (request++ === 0 ? [a, b].map(rpcLog) : [c, a].map(rpcLog)));
-      const logs = yield* scanLogs(client, [query, query], { fromBlock: 0n, toBlock: 9n });
+      const { ens } = ensAnswering(() => (request++ === 0 ? [a, b] : [c, a]).map(rpcLog));
+
+      const logs = yield* scanLogs(ens, [query, query], { fromBlock: 0n, toBlock: 9n });
 
       assert.deepStrictEqual(
         logs.map((log) => [log.blockNumber, log.logIndex]),

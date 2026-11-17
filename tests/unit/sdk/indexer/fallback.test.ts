@@ -40,9 +40,6 @@ const adapter = (id: string, answer: Answer) => {
   return { indexer, seen, named };
 };
 
-const failing = (code: IndexerError.Code) => () =>
-  Effect.fail(new IndexerError({ code, source: "test" }));
-
 const subnames = (indexers: readonly ReturnType<typeof adapter>[], options = {}, cursor?: string) =>
   Actions.indexer.getSubnames(
     clientWith(
@@ -57,7 +54,9 @@ const subnames = (indexers: readonly ReturnType<typeof adapter>[], options = {},
 describe("fallback routing", () => {
   it.effect("answers from the first indexer that can, tagging its cursor", () =>
     Effect.gen(function* () {
-      const first = adapter("a", failing("INDEXER_UNAVAILABLE"));
+      const first = adapter("a", () =>
+        Effect.fail(new IndexerError({ code: "INDEXER_UNAVAILABLE" })),
+      );
       const second = adapter("b", () => Effect.succeed(page("next", "tok")));
 
       const answer = yield* subnames([first, second]);
@@ -87,7 +86,9 @@ describe("fallback routing", () => {
     Effect.gen(function* () {
       const second = adapter("b", () => Effect.succeed(page(null)));
 
-      const exit = yield* Effect.exit(subnames([adapter("a", failing(code)), second]));
+      const exit = yield* Effect.exit(
+        subnames([adapter("a", () => Effect.fail(new IndexerError({ code }))), second]),
+      );
 
       assert.strictEqual(exit._tag === "Success", movesOn);
       assert.strictEqual(second.seen.length, movesOn ? 1 : 0);
@@ -114,9 +115,21 @@ describe("fallback routing", () => {
       const on: FallbackReason[] = ["unavailable"];
       const second = adapter("b", () => Effect.succeed(page(null)));
 
-      yield* subnames([adapter("a", failing("INDEXER_UNAVAILABLE")), second], { on });
+      yield* subnames(
+        [
+          adapter("a", () => Effect.fail(new IndexerError({ code: "INDEXER_UNAVAILABLE" }))),
+          second,
+        ],
+        { on },
+      );
       yield* expectFailure(
-        subnames([adapter("a", failing("INDEXER_RATE_LIMITED")), second], { on }),
+        subnames(
+          [
+            adapter("a", () => Effect.fail(new IndexerError({ code: "INDEXER_RATE_LIMITED" }))),
+            second,
+          ],
+          { on },
+        ),
         { _tag: "IndexerError", code: "INDEXER_RATE_LIMITED" },
       );
       assert.strictEqual(second.seen.length, 1);
@@ -130,9 +143,9 @@ describe("fallback routing", () => {
         getStatus: () => Effect.succeed({ status: "ready", chains: {} }),
       });
       const second = adapter("b", () => Effect.succeed(page("x")));
-      const client = clientWith(fallback([statusOnly, second.indexer]));
+      const ens = clientWith(fallback([statusOnly, second.indexer]));
 
-      const answer = yield* Actions.indexer.getSubnames(client, { name: "nick.eth" });
+      const answer = yield* Actions.indexer.getSubnames(ens, { name: "nick.eth" });
 
       assert.strictEqual(answer.cursor, "f1:x");
     }),
@@ -144,13 +157,17 @@ describe("fallback routing", () => {
     [["INDEXER_UNSUPPORTED", "INDEXER_UNSUPPORTED"], "INDEXER_UNSUPPORTED"],
   ] as const)("when all fail with %j, reports %s", ([codes, expected]) =>
     Effect.gen(function* () {
-      const indexers = codes.map((code, index) => adapter(`i${index}`, failing(code)));
+      const indexers = codes.map((code, index) =>
+        adapter(`i${index}`, () => Effect.fail(new IndexerError({ code }))),
+      );
       yield* expectFailure(subnames(indexers), { _tag: "IndexerError", code: expected });
     }),
   );
 
   it("names itself after its indexers and rejects foreign values", () => {
-    const indexer = fallback([adapter("a", failing("INDEXER_UNAVAILABLE")).indexer]);
+    const indexer = fallback([
+      adapter("a", () => Effect.fail(new IndexerError({ code: "INDEXER_UNAVAILABLE" }))).indexer,
+    ]);
 
     assert.strictEqual(indexer.id, "fallback(a)");
     assert.throws(
@@ -161,8 +178,13 @@ describe("fallback routing", () => {
 
   it.effect("fails a method no indexer implements with INDEXER_UNSUPPORTED", () =>
     Effect.gen(function* () {
-      const client = clientWith(fallback([adapter("a", failing("INDEXER_UNAVAILABLE")).indexer]));
-      yield* expectFailure(Actions.indexer.getStatus(client, {}), {
+      const ens = clientWith(
+        fallback([
+          adapter("a", () => Effect.fail(new IndexerError({ code: "INDEXER_UNAVAILABLE" })))
+            .indexer,
+        ]),
+      );
+      yield* expectFailure(Actions.indexer.getStatus(ens, {}), {
         _tag: "IndexerError",
         code: "INDEXER_UNSUPPORTED",
       });
@@ -179,7 +201,7 @@ describe("fallback pinning", () => {
         const indexers = [0, 1, 2].map((index) =>
           adapter(`i${index}`, (query) =>
             index < issuer
-              ? failing("INDEXER_UNAVAILABLE")()
+              ? Effect.fail(new IndexerError({ code: "INDEXER_UNAVAILABLE" }))
               : Effect.succeed(page(query.cursor === undefined ? cursor : null)),
           ),
         );
@@ -198,7 +220,9 @@ describe("fallback pinning", () => {
 
   it.effect("does not fall back from a pinned indexer", () =>
     Effect.gen(function* () {
-      const first = adapter("a", failing("INDEXER_UNAVAILABLE"));
+      const first = adapter("a", () =>
+        Effect.fail(new IndexerError({ code: "INDEXER_UNAVAILABLE" })),
+      );
       const second = adapter("b", () => Effect.succeed(page(null)));
 
       yield* expectFailure(subnames([first, second], {}, "f0:c"), {
@@ -223,7 +247,9 @@ describe("fallback pinning", () => {
 
   it.effect("passes an untagged cursor through to every indexer in order", () =>
     Effect.gen(function* () {
-      const first = adapter("a", failing("INDEXER_UNSUPPORTED"));
+      const first = adapter("a", () =>
+        Effect.fail(new IndexerError({ code: "INDEXER_UNSUPPORTED" })),
+      );
       const second = adapter("b", () => Effect.succeed(page(null)));
 
       yield* subnames([first, second], {}, "raw");
@@ -234,11 +260,13 @@ describe("fallback pinning", () => {
 
   it.effect("pins snapshot tokens to their indexer", () =>
     Effect.gen(function* () {
-      const first = adapter("a", failing("INDEXER_UNAVAILABLE"));
+      const first = adapter("a", () =>
+        Effect.fail(new IndexerError({ code: "INDEXER_UNAVAILABLE" })),
+      );
       const second = adapter("b", () => Effect.succeed(page(null)));
-      const client = clientWith(fallback([first.indexer, second.indexer]));
+      const ens = clientWith(fallback([first.indexer, second.indexer]));
 
-      const answer = yield* Actions.indexer.getName(client, {
+      const answer = yield* Actions.indexer.getName(ens, {
         name: "nick.eth",
         at: { token: "f1:snap" },
       });
@@ -253,12 +281,16 @@ describe("fallback pinning", () => {
     Effect.gen(function* () {
       const inner = adapter("b", (query) => Effect.succeed(page(query.cursor ?? "c")));
       const nested = fallback([
-        fallback([adapter("a", failing("INDEXER_UNAVAILABLE")).indexer, inner.indexer]),
+        fallback([
+          adapter("a", () => Effect.fail(new IndexerError({ code: "INDEXER_UNAVAILABLE" })))
+            .indexer,
+          inner.indexer,
+        ]),
       ]);
-      const client = clientWith(nested);
+      const ens = clientWith(nested);
 
-      const first = yield* Actions.indexer.getSubnames(client, { name: "nick.eth" });
-      const second = yield* Actions.indexer.getSubnames(client, {
+      const first = yield* Actions.indexer.getSubnames(ens, { name: "nick.eth" });
+      const second = yield* Actions.indexer.getSubnames(ens, {
         name: "nick.eth",
         cursor: first.cursor ?? "",
       });

@@ -1,20 +1,20 @@
 import { assert, describe, it } from "@effect/vitest";
 
 import { Roles } from "@ensforge/contracts";
-import type {
-  Operation,
-  PermissionCheck,
-} from "@ensforge/sdk/internal/actions/permission/get/types";
+import type { Operation } from "@ensforge/sdk/internal/actions/permission/get/types";
 import { evaluate } from "@ensforge/sdk/internal/internal/permission/evaluate";
 import type { PermissionFacts } from "@ensforge/sdk/internal/internal/permission/facts";
 import * as Fuse from "@ensforge/sdk/internal/utils/Fuse";
-import { getAddress, type Address } from "viem";
+import type { Address } from "viem";
 
-const address = (n: number): Address => getAddress(`0x${n.toString(16).padStart(40, "0")}`);
-const [me, owner, registry, subregistry, resolver, wrapper, registrar, ensRegistry] = [
-  1, 2, 3, 4, 5, 6, 7, 8,
-].map(address) as [Address, Address, Address, Address, Address, Address, Address, Address];
-const contracts = { registry: ensRegistry, baseRegistrar: registrar, nameWrapper: wrapper };
+const me: Address = "0x0000000000000000000000000000000000000001";
+const owner: Address = "0x0000000000000000000000000000000000000002";
+const registry: Address = "0x0000000000000000000000000000000000000003";
+const subregistry: Address = "0x0000000000000000000000000000000000000004";
+const resolver: Address = "0x0000000000000000000000000000000000000005";
+const wrapper: Address = "0x0000000000000000000000000000000000000006";
+const registrar: Address = "0x0000000000000000000000000000000000000007";
+const ensRegistry: Address = "0x0000000000000000000000000000000000000008";
 
 type Overrides = {
   readonly protocol?: "v1" | "v2";
@@ -72,24 +72,26 @@ const factsOf = (o: Overrides = {}): PermissionFacts =>
     resolver: o.resolver,
   }) as unknown as PermissionFacts;
 
-/** What a check says, in one comparable line. */
-const summary = (check: PermissionCheck) =>
-  check.allowed === true
-    ? `allowed via ${check.via}`
-    : check.allowed === null
-      ? "unknown"
-      : `denied: ${check.missing
-          .map((requirement) =>
-            requirement.type === "blocked"
-              ? `blocked ${requirement.reason}`
-              : requirement.type === "roles"
-                ? `roles ${requirement.roles.join("+")} on ${requirement.contract}`
-                : `${requirement.type} ${"owner" in requirement ? requirement.owner : ""} on ${requirement.contract}`,
-          )
-          .join(", ")}`;
+/** What `evaluate` says about `operation`, in one comparable line. */
+const check = (overrides: Overrides, operation: Operation, withContracts = true) => {
+  const result = evaluate(
+    factsOf(overrides),
+    operation,
+    withContracts
+      ? { registry: ensRegistry, baseRegistrar: registrar, nameWrapper: wrapper }
+      : undefined,
+  );
+  if (result.allowed === true) return `allowed via ${result.via}`;
+  if (result.allowed === null) return "unknown";
 
-const check = (overrides: Overrides, operation: Operation, withContracts = true) =>
-  summary(evaluate(factsOf(overrides), operation, withContracts ? contracts : undefined));
+  const missing = result.missing.map((requirement) => {
+    if (requirement.type === "blocked") return `blocked ${requirement.reason}`;
+    if (requirement.type === "roles")
+      return `roles ${requirement.roles.join("+")} on ${requirement.contract}`;
+    return `${requirement.type} ${"owner" in requirement ? requirement.owner : ""} on ${requirement.contract}`;
+  });
+  return `denied: ${missing.join(", ")}`;
+};
 
 const permissioned = (roles: { root?: bigint; resource?: Map<bigint, bigint> } = {}) => ({
   address: resolver,

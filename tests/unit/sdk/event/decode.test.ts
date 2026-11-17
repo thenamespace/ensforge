@@ -2,14 +2,16 @@ import { assert, describe, it } from "@effect/vitest";
 import { Effect } from "effect";
 
 import { Deployments } from "@ensforge/contracts";
-import { Actions as PromiseActions, Ensforge } from "@ensforge/sdk";
+import { Ensforge } from "@ensforge/sdk";
 import { Actions } from "@ensforge/sdk/effect";
 import { noRpc, scriptedTransport } from "@ensforge/test-harness";
 import {
+  concatHex,
   createPublicClient,
   encodeAbiParameters,
   keccak256,
   pad,
+  stringToHex,
   toHex,
   type Address,
   type Hex,
@@ -18,7 +20,7 @@ import {
 import { mainnet } from "viem/chains";
 import { labelhash, namehash } from "viem/ens";
 
-import { dnsWire, eventBySignature, events, logOf, sampleArgs, signatureOf } from "./logs.js";
+import { eventBySignature, events, logOf, sampleArgs, signatureOf } from "./logs.js";
 
 const v1 = Deployments.mainnet.v1.contracts;
 const v2 = Deployments.mainnet.v2;
@@ -26,8 +28,6 @@ const stranger: Address = "0x00000000000000000000000000000000000000aa";
 
 const { transport, calls } = scriptedTransport(noRpc);
 const ens = Ensforge.create({ publicClient: createPublicClient({ chain: mainnet, transport }) });
-
-const decode = (logs: readonly Log[]) => Actions.event.decode(ens, { logs });
 
 /** The reported category of each event signature, per the `event.get` documentation. */
 const expected: Readonly<Record<string, readonly [type: string, action: string, v2Only: boolean]>> =
@@ -142,9 +142,9 @@ describe("event.decode categories", () => {
     Effect.gen(function* () {
       const event = eventBySignature(signature);
       const args = sampleArgs(event);
-      const [decoded, ...rest] = yield* decode([
-        logOf(event, args, { address: stranger, blockNumber: 42n, logIndex: 3 }),
-      ]);
+      const [decoded, ...rest] = yield* Actions.event.decode(ens, {
+        logs: [logOf(event, args, { address: stranger, blockNumber: 42n, logIndex: 3 })],
+      });
 
       assert.strictEqual(rest.length, 0);
       assert.isDefined(decoded);
@@ -163,7 +163,9 @@ describe("event.decode categories", () => {
     Effect.gen(function* () {
       const event = eventBySignature(signature);
       assert.deepStrictEqual(
-        yield* decode([logOf(event, sampleArgs(event), { address: stranger })]),
+        yield* Actions.event.decode(ens, {
+          logs: [logOf(event, sampleArgs(event), { address: stranger })],
+        }),
         [],
       );
     }),
@@ -194,18 +196,20 @@ describe("event.decode protocol", () => {
     ["an unknown contract (ENSv2-only event)", stranger, labelRegistered, "v2"],
   ] as const)("is decided by %s", ([, address, event, protocol]) =>
     Effect.gen(function* () {
-      const [decoded] = yield* decode([
-        logOf(event, sampleArgs(event), { address: address as Address }),
-      ]);
+      const [decoded] = yield* Actions.event.decode(ens, {
+        logs: [logOf(event, sampleArgs(event), { address: address as Address })],
+      });
       assert.strictEqual(decoded?.protocol, protocol);
     }),
   );
 
   it.effect("matches emitters case-insensitively", () =>
     Effect.gen(function* () {
-      const [decoded] = yield* decode([
-        logOf(newOwner, sampleArgs(newOwner), { address: v1.registry.toLowerCase() as Address }),
-      ]);
+      const [decoded] = yield* Actions.event.decode(ens, {
+        logs: [
+          logOf(newOwner, sampleArgs(newOwner), { address: v1.registry.toLowerCase() as Address }),
+        ],
+      });
       assert.strictEqual(decoded?.protocol, "v1");
     }),
   );
@@ -216,11 +220,6 @@ describe("event.decode names", () => {
     "LabelRegistered(uint256,bytes32,string,address,uint64,address)",
   );
   const labelReserved = eventBySignature("LabelReserved(uint256,bytes32,string,uint64,address)");
-  const withLabel = (event: typeof labelRegistered, label: string) => ({
-    ...sampleArgs(event),
-    label,
-    labelHash: labelhash(label),
-  });
 
   it.effect.each([
     ["the .eth registry", v2.contracts.ethRegistry, "alice.eth"],
@@ -228,10 +227,20 @@ describe("event.decode names", () => {
     ["another registry", stranger, null],
   ] as const)("LabelRegistered on %s names %j", ([, address, name]) =>
     Effect.gen(function* () {
-      const [registered, reserved] = yield* decode([
-        logOf(labelRegistered, withLabel(labelRegistered, "alice"), { address, logIndex: 0 }),
-        logOf(labelReserved, withLabel(labelReserved, "alice"), { address, logIndex: 1 }),
-      ]);
+      const [registered, reserved] = yield* Actions.event.decode(ens, {
+        logs: [
+          logOf(
+            labelRegistered,
+            { ...sampleArgs(labelRegistered), label: "alice", labelHash: labelhash("alice") },
+            { address, logIndex: 0 },
+          ),
+          logOf(
+            labelReserved,
+            { ...sampleArgs(labelReserved), label: "alice", labelHash: labelhash("alice") },
+            { address, logIndex: 1 },
+          ),
+        ],
+      });
       assert.strictEqual(registered?.name, name);
       assert.strictEqual(reserved?.name, name);
     }),
@@ -245,9 +254,9 @@ describe("event.decode names", () => {
   ])("%s spells the .eth label", (signature) =>
     Effect.gen(function* () {
       const event = eventBySignature(signature);
-      const [decoded] = yield* decode([
-        logOf(event, { ...sampleArgs(event), label: "bob" }, { address: stranger }),
-      ]);
+      const [decoded] = yield* Actions.event.decode(ens, {
+        logs: [logOf(event, { ...sampleArgs(event), label: "bob" }, { address: stranger })],
+      });
       assert.strictEqual(decoded?.name, "bob.eth");
     }),
   );
@@ -258,13 +267,15 @@ describe("event.decode names", () => {
   ])("legacy %s spells the .eth name", (signature) =>
     Effect.gen(function* () {
       const event = eventBySignature(signature);
-      const [decoded] = yield* decode([
-        logOf(
-          event,
-          { ...sampleArgs(event), name: "carol" },
-          { address: v1.ethRegistrarController },
-        ),
-      ]);
+      const [decoded] = yield* Actions.event.decode(ens, {
+        logs: [
+          logOf(
+            event,
+            { ...sampleArgs(event), name: "carol" },
+            { address: v1.ethRegistrarController },
+          ),
+        ],
+      });
       assert.strictEqual(decoded?.name, "carol.eth");
     }),
   );
@@ -272,9 +283,9 @@ describe("event.decode names", () => {
   it.effect("base registrar registrations carry no name", () =>
     Effect.gen(function* () {
       const event = eventBySignature("NameRegistered(uint256,address,uint256)");
-      const [decoded] = yield* decode([
-        logOf(event, sampleArgs(event), { address: v1.baseRegistrar }),
-      ]);
+      const [decoded] = yield* Actions.event.decode(ens, {
+        logs: [logOf(event, sampleArgs(event), { address: v1.baseRegistrar })],
+      });
       assert.strictEqual(decoded?.name, null);
     }),
   );
@@ -286,18 +297,32 @@ describe("event.decode names", () => {
   ] as const)("%s decodes its DNS-encoded name", ([signature, field]) =>
     Effect.gen(function* () {
       const event = eventBySignature(signature);
-      const [valid, malformed] = yield* decode([
-        logOf(
-          event,
-          { ...sampleArgs(event), [field]: dnsWire("pay.alice.eth") },
-          { address: stranger },
-        ),
-        logOf(
-          event,
-          { ...sampleArgs(event), [field]: "0x05616263" },
-          { address: stranger, logIndex: 1 },
-        ),
-      ]);
+      const [valid, malformed] = yield* Actions.event.decode(ens, {
+        logs: [
+          logOf(
+            event,
+            {
+              ...sampleArgs(event),
+              // DNS wire format (RFC 1035), written independently of the SDK's encoder.
+              [field]: concatHex([
+                "0x03",
+                stringToHex("pay"),
+                "0x05",
+                stringToHex("alice"),
+                "0x03",
+                stringToHex("eth"),
+                "0x00",
+              ]),
+            },
+            { address: stranger },
+          ),
+          logOf(
+            event,
+            { ...sampleArgs(event), [field]: "0x05616263" },
+            { address: stranger, logIndex: 1 },
+          ),
+        ],
+      });
       assert.strictEqual(valid?.name, "pay.alice.eth");
       assert.strictEqual(malformed?.name, null);
     }),
@@ -307,7 +332,9 @@ describe("event.decode names", () => {
     Effect.gen(function* () {
       const event = eventBySignature("AddrChanged(bytes32,address)");
       const node = namehash("alice.eth");
-      const [decoded] = yield* decode([logOf(event, { node, a: stranger }, { address: stranger })]);
+      const [decoded] = yield* Actions.event.decode(ens, {
+        logs: [logOf(event, { node, a: stranger }, { address: stranger })],
+      });
       assert.strictEqual(decoded?.node, node);
       assert.strictEqual(decoded?.name, null);
     }),
@@ -325,9 +352,9 @@ describe("event.decode migrations and transfers", () => {
   ] as const)("%s to the Graveyard is a migration", ([signature, override]) =>
     Effect.gen(function* () {
       const event = eventBySignature(signature);
-      const [decoded] = yield* decode([
-        logOf(event, { ...sampleArgs(event), ...override }, { address: stranger }),
-      ]);
+      const [decoded] = yield* Actions.event.decode(ens, {
+        logs: [logOf(event, { ...sampleArgs(event), ...override }, { address: stranger })],
+      });
       assert.strictEqual(decoded?.type, "migration");
       assert.strictEqual(decoded?.action, "migration_applied");
     }),
@@ -342,9 +369,11 @@ describe("event.decode migrations and transfers", () => {
       const event = eventBySignature(
         "LabelRegistered(uint256,bytes32,string,address,uint64,address)",
       );
-      const [decoded] = yield* decode([
-        logOf(event, { ...sampleArgs(event), sender }, { address: v2.contracts.ethRegistry }),
-      ]);
+      const [decoded] = yield* Actions.event.decode(ens, {
+        logs: [
+          logOf(event, { ...sampleArgs(event), sender }, { address: v2.contracts.ethRegistry }),
+        ],
+      });
       assert.strictEqual(decoded?.type, type);
     }),
   );
@@ -357,7 +386,9 @@ describe("event.decode skipping", () => {
   it.effect("skips logs that are not ENS events", () =>
     Effect.gen(function* () {
       assert.deepStrictEqual(
-        yield* decode([{ ...valid(), topics: [keccak256(toHex("Unknown(uint256)"))] }]),
+        yield* Actions.event.decode(ens, {
+          logs: [{ ...valid(), topics: [keccak256(toHex("Unknown(uint256)"))] }],
+        }),
         [],
       );
     }),
@@ -372,7 +403,7 @@ describe("event.decode skipping", () => {
         topics: [topic0 as Hex, from as Hex, to as Hex],
         data: encodeAbiParameters([{ type: "uint256" }], [5n]),
       };
-      assert.deepStrictEqual(yield* decode([erc20]), []);
+      assert.deepStrictEqual(yield* Actions.event.decode(ens, { logs: [erc20] }), []);
     }),
   );
 
@@ -380,14 +411,19 @@ describe("event.decode skipping", () => {
     Effect.gen(function* () {
       const event = eventBySignature("TextChanged(bytes32,string,string,string)");
       const log = logOf(event, sampleArgs(event), { address: stranger });
-      assert.deepStrictEqual(yield* decode([{ ...log, data: "0x1234" }]), []);
+      assert.deepStrictEqual(
+        yield* Actions.event.decode(ens, { logs: [{ ...log, data: "0x1234" }] }),
+        [],
+      );
     }),
   );
 
   it.effect("skips pending logs", () =>
     Effect.gen(function* () {
       assert.deepStrictEqual(
-        yield* decode([{ ...valid(), blockNumber: null } as unknown as Log]),
+        yield* Actions.event.decode(ens, {
+          logs: [{ ...valid(), blockNumber: null } as unknown as Log],
+        }),
         [],
       );
     }),
@@ -413,21 +449,6 @@ describe("event.decode skipping", () => {
   it.effect("returns nothing without logs", () =>
     Effect.gen(function* () {
       assert.deepStrictEqual(yield* Actions.event.decode(ens, {}), []);
-    }),
-  );
-});
-
-describe("event.decode in Effect", () => {
-  it.effect("matches the Promise action", () =>
-    Effect.gen(function* () {
-      const event = eventBySignature("NewResolver(bytes32,address)");
-      const logs = [logOf(event, sampleArgs(event), { address: v1.registry })];
-      const decoded = yield* Actions.event.decode(ens, { logs });
-      assert.deepStrictEqual(
-        decoded,
-        yield* Effect.promise(() => PromiseActions.event.decode(ens, { logs })),
-      );
-      assert.strictEqual(decoded[0]?.protocol, "v1");
     }),
   );
 });

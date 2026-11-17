@@ -3,8 +3,6 @@ import { assert, describe, it } from "@effect/vitest";
 import * as Duration from "@ensforge/sdk/internal/utils/Duration";
 import { expectThrow } from "@ensforge/test-harness";
 
-const invalidDuration = { _tag: "InvalidInputError", code: "INVALID_DURATION" };
-
 describe("Duration", () => {
   it.each([
     [0, 0n],
@@ -25,7 +23,7 @@ describe("Duration", () => {
   });
 
   it.each([-1, -1n, 1.5, 0.1, Number.NaN, Number.POSITIVE_INFINITY, 2 ** 53])("rejects %s", (n) => {
-    expectThrow(() => Duration.days(n), invalidDuration);
-    expectThrow(() => Duration.years(n), invalidDuration);
+    expectThrow(() => Duration.days(n), { _tag: "InvalidInputError", code: "INVALID_DURATION" });
+    expectThrow(() => Duration.years(n), { _tag: "InvalidInputError", code: "INVALID_DURATION" });
   });
 });

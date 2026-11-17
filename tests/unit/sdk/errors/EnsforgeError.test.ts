@@ -4,10 +4,9 @@ import { NameStateError, UnauthorizedError } from "@ensforge/sdk/internal/errors
 import { getConfig, setConfig } from "@ensforge/sdk/internal/errors/config";
 import { version } from "@ensforge/sdk/internal/version";
 
-const contract = "0x00000000000000000000000000000000000000c3";
-
 describe("EnsforgeError message", () => {
   it("renders summary, details, hint and the footer in order", () => {
+    const contract = "0x00000000000000000000000000000000000000c3";
     const error = new NameStateError({
       code: "NAME_EXPIRED",
       shortMessage: "Summary.",

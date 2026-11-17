@@ -4,6 +4,7 @@ import {
   encodeEventTopics,
   getAddress,
   keccak256,
+  numberToHex,
   toHex,
   type AbiEvent,
   type AbiParameter,
@@ -18,13 +19,11 @@ export const events = Abis.shared.events as readonly AbiEvent[];
 export const signatureOf = (event: AbiEvent): string =>
   `${event.name}(${event.inputs.map((input) => input.type).join(",")})`;
 
-const address = (seed: number): Address => getAddress(`0x${seed.toString(16).padStart(40, "0")}`);
-
 /** A fixed, valid value for each ABI type used by the ENS events. */
-export const sample = (input: AbiParameter, index: number): unknown => {
+const sample = (input: AbiParameter, index: number): unknown => {
   switch (input.type) {
     case "address":
-      return address(0xa000 + index);
+      return getAddress(`0x${(0xa000 + index).toString(16).padStart(40, "0")}`);
     case "bool":
       return true;
     case "bytes32":
@@ -82,16 +81,17 @@ export const logOf = (
 export const sampleArgs = (event: AbiEvent): Record<string, unknown> =>
   Object.fromEntries(event.inputs.map((input, index) => [input.name ?? "", sample(input, index)]));
 
-/** The variant of `name` whose signature is `signature`. */
+/** The event whose signature is `signature`, such as `NewOwner(bytes32,bytes32,address)`. */
 export const eventBySignature = (signature: string): AbiEvent => {
   const event = events.find((candidate) => signatureOf(candidate) === signature);
   if (event === undefined) throw new Error(`Unknown event ${signature}`);
   return event;
 };
 
-/** DNS wire encoding, written from RFC 1035 rather than the SDK. */
-export const dnsWire = (name: string): Hex => {
-  const bytes: number[] = [];
-  for (const label of name.split(".")) bytes.push(label.length, ...new TextEncoder().encode(label));
-  return toHex(new Uint8Array([...bytes, 0]));
-};
+/** A mined log as a node answers `eth_getLogs`, with its numbers hex-encoded. */
+export const rpcLog = (log: Log) => ({
+  ...log,
+  blockNumber: numberToHex(log.blockNumber ?? 0n),
+  logIndex: numberToHex(log.logIndex ?? 0),
+  transactionIndex: numberToHex(log.transactionIndex ?? 0),
+});

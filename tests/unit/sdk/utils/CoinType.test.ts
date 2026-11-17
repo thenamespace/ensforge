@@ -5,14 +5,8 @@ import * as CoinType from "@ensforge/sdk/internal/utils/CoinType";
 import { Arbitraries, expectThrow } from "@ensforge/test-harness";
 import { getAddress, keccak256, toHex } from "viem";
 
-const invalidCoinType = { _tag: "InvalidInputError", code: "INVALID_COIN_TYPE" };
-const invalidAddress = { _tag: "InvalidInputError", code: "INVALID_ADDRESS" };
 const base = 2_147_492_101n;
 const vitalik = "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045";
-
-const digest = Arbitrary.map(Arbitraries.uint(Number.MAX_SAFE_INTEGER), (seed) =>
-  keccak256(toHex(seed)),
-);
 
 describe("CoinType.fromChainId", () => {
   it.each([
@@ -28,7 +22,10 @@ describe("CoinType.fromChainId", () => {
   it.each([-1, 1.5, 0x8000_0000, Number.NaN, Number.POSITIVE_INFINITY, 2 ** 53])(
     "rejects chain %s",
     (chainId) => {
-      expectThrow(() => CoinType.fromChainId(chainId), invalidCoinType);
+      expectThrow(() => CoinType.fromChainId(chainId), {
+        _tag: "InvalidInputError",
+        code: "INVALID_COIN_TYPE",
+      });
     },
   );
 
@@ -59,7 +56,10 @@ describe("CoinType.from", () => {
   it.each(["", "nope", "60", -1n, { chainId: -1 }, { chainId: 0x8000_0000 }] as const)(
     "rejects %o",
     (input) => {
-      expectThrow(() => CoinType.from(input), invalidCoinType);
+      expectThrow(() => CoinType.from(input), {
+        _tag: "InvalidInputError",
+        code: "INVALID_COIN_TYPE",
+      });
     },
   );
 });
@@ -104,7 +104,10 @@ describe("CoinType EVM addresses", () => {
   it.each(["", "0x123", "nope", "1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa"])(
     "encodeAddress rejects %j",
     (address) => {
-      expectThrow(() => CoinType.encodeAddress(60n, address), invalidAddress);
+      expectThrow(() => CoinType.encodeAddress(60n, address), {
+        _tag: "InvalidInputError",
+        code: "INVALID_ADDRESS",
+      });
     },
   );
 
@@ -119,7 +122,10 @@ describe("CoinType EVM addresses", () => {
 
   it.prop(
     "decodeAddress inverts encodeAddress",
-    [digest, Arbitraries.uint(0x7fff_ffff)],
+    [
+      Arbitrary.map(Arbitraries.uint(Number.MAX_SAFE_INTEGER), (seed) => keccak256(toHex(seed))),
+      Arbitraries.uint(0x7fff_ffff),
+    ],
     ([hash, chainId]) => {
       const address = getAddress(hash.slice(0, 42));
       const coinType = CoinType.fromChainId(chainId);
@@ -133,7 +139,10 @@ describe("CoinType EVM addresses", () => {
   it.each(["0x1234", `0x${"00".repeat(12)}${"ab".repeat(20)}`] as const)(
     "decodeAddress rejects malformed EVM bytes %s with a typed error",
     (data) => {
-      expectThrow(() => CoinType.decodeAddress(60n, data), invalidAddress);
+      expectThrow(() => CoinType.decodeAddress(60n, data), {
+        _tag: "InvalidInputError",
+        code: "INVALID_ADDRESS",
+      });
     },
   );
 });
@@ -157,14 +166,23 @@ describe("CoinType non-EVM addresses", () => {
     [501n, "TYPE"],
     [123_456_789n, "anything"],
   ] as const)("encodeAddress for coin %s rejects %j", (coinType, address) => {
-    expectThrow(() => CoinType.encodeAddress(coinType, address), invalidAddress);
+    expectThrow(() => CoinType.encodeAddress(coinType, address), {
+      _tag: "InvalidInputError",
+      code: "INVALID_ADDRESS",
+    });
   });
 
   it("decodeAddress rejects coins without a codec", () => {
-    expectThrow(() => CoinType.decodeAddress(123_456_789n, "0x01"), invalidCoinType);
+    expectThrow(() => CoinType.decodeAddress(123_456_789n, "0x01"), {
+      _tag: "InvalidInputError",
+      code: "INVALID_COIN_TYPE",
+    });
   });
 
   it("decodeAddress rejects bytes the codec cannot read", () => {
-    expectThrow(() => CoinType.decodeAddress(0n, "0x010203"), invalidAddress);
+    expectThrow(() => CoinType.decodeAddress(0n, "0x010203"), {
+      _tag: "InvalidInputError",
+      code: "INVALID_ADDRESS",
+    });
   });
 });

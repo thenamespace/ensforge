@@ -4,8 +4,6 @@ import * as ContentHash from "@ensforge/sdk/internal/utils/ContentHash";
 import { expectThrow } from "@ensforge/test-harness";
 import { stringToHex } from "viem";
 
-const invalid = { _tag: "InvalidInputError", code: "INVALID_CONTENT_HASH" };
-
 // ENSIP-7 IPFS example; the CIDv1 form is the same multihash.
 const ipfsV0 = "QmRAQB6YaCyidP37UdDnjFY5vQuiBrcqdyoW1CuDgwxkD4";
 const ipfsV1 = "bafybeibj6lixxzqtsb45ysdjnupvqkufgdvzqbnvmhw2kf7cfkesy7r7d4";
@@ -36,7 +34,10 @@ describe("ContentHash.encode", () => {
     "ipfs://nope",
     "ar://!!",
   ])("rejects %j", (uri) => {
-    expectThrow(() => ContentHash.encode(uri), invalid);
+    expectThrow(() => ContentHash.encode(uri), {
+      _tag: "InvalidInputError",
+      code: "INVALID_CONTENT_HASH",
+    });
   });
 });
 
@@ -68,7 +69,10 @@ describe("ContentHash.decode", () => {
   });
 
   it.each(["0xff", "0x00", `0x90b2da05${"00".repeat(32)}`] as const)("rejects %s", (data) => {
-    expectThrow(() => ContentHash.decode(data), invalid);
+    expectThrow(() => ContentHash.decode(data), {
+      _tag: "InvalidInputError",
+      code: "INVALID_CONTENT_HASH",
+    });
   });
 });
 

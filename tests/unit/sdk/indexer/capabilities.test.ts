@@ -23,8 +23,6 @@ const probe = (fake: FakeIndexer, version = "/v1") =>
     cache: undefined,
   });
 
-const unsupported = { _tag: "IndexerError", code: "INDEXER_UNSUPPORTED" };
-
 describe("capabilities.serve", () => {
   it.effect("serves ENS on the client's chain when the indexer declares it", () =>
     Effect.gen(function* () {
@@ -35,13 +33,19 @@ describe("capabilities.serve", () => {
 
   it.effect("rejects ENS for a client on a chain the indexer does not declare", () =>
     Effect.gen(function* () {
-      const error = yield* expectFailure(probe(fakeBigname()).serve("ens", 11155111), unsupported);
+      const error = yield* expectFailure(probe(fakeBigname()).serve("ens", 11155111), {
+        _tag: "IndexerError",
+        code: "INDEXER_UNSUPPORTED",
+      });
       assert.include(error.shortMessage, "serves ENS on chain 1");
     }),
   );
 
   it.effect("rejects a namespace the indexer does not know", () =>
-    expectFailure(probe(fakeBigname()).serve("basenames", 1), unsupported),
+    expectFailure(probe(fakeBigname()).serve("basenames", 1), {
+      _tag: "IndexerError",
+      code: "INDEXER_UNSUPPORTED",
+    }),
   );
 
   it.effect("reads a namespace on its home chain (Basenames on Base)", () =>
@@ -63,7 +67,10 @@ describe("capabilities.serve", () => {
         }),
       );
 
-      const error = yield* expectFailure(probe(fake, "/v2").serve("basenames", 1), unsupported);
+      const error = yield* expectFailure(probe(fake, "/v2").serve("basenames", 1), {
+        _tag: "IndexerError",
+        code: "INDEXER_UNSUPPORTED",
+      });
       assert.include(error.shortMessage, "does not index basenames yet");
     }),
   );
@@ -75,7 +82,10 @@ describe("capabilities.serve", () => {
         const fake = fakeBigname({ without: ["/status", "/namespaces/{namespace}"] });
 
         assert.strictEqual(yield* probe(fake).serve("ens", 11155111), 11155111);
-        yield* expectFailure(probe(fake).serve("basenames", 11155111), unsupported);
+        yield* expectFailure(probe(fake).serve("basenames", 11155111), {
+          _tag: "IndexerError",
+          code: "INDEXER_UNSUPPORTED",
+        });
       }),
   );
 

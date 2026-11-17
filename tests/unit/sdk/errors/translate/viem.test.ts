@@ -30,7 +30,6 @@ import { mainnet } from "viem/chains";
 
 const url = "https://rpc.test";
 const contract = getAddress("0x00000000000000000000000000000000000000c3");
-const hash = `0x${"ab".repeat(32)}` as const;
 const notOwner = encodeErrorResult({ abi: Abis.shared.errors, errorName: "Unauthorised" });
 
 /** An error that viem does not export from its entry point, matched by name like any other. */
@@ -82,7 +81,7 @@ describe("fromViemError wallet errors", () => {
     { cause: new NonceTooLowError(), _tag: "TransactionError", code: "NONCE_CONFLICT" },
     { cause: new NonceTooHighError(), _tag: "TransactionError", code: "NONCE_CONFLICT" },
     {
-      cause: new WaitForTransactionReceiptTimeoutError({ hash }),
+      cause: new WaitForTransactionReceiptTimeoutError({ hash: `0x${"ab".repeat(32)}` }),
       _tag: "TransactionError",
       code: "RECEIPT_TIMEOUT",
     },

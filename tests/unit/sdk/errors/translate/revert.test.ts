@@ -2,7 +2,7 @@ import { assert, describe, it } from "@effect/vitest";
 
 import { Abis } from "@ensforge/contracts";
 import { fromRevert } from "@ensforge/sdk/internal/errors/translate/revert";
-import { encodeErrorResult, getAddress, type Hex } from "viem";
+import { encodeErrorResult, getAddress, parseAbi, type Hex } from "viem";
 
 const registry = getAddress("0x00000000000000000000000000000000000000e2");
 const nameNotAvailable = encodeErrorResult({
@@ -10,7 +10,6 @@ const nameNotAvailable = encodeErrorResult({
   errorName: "NameNotAvailable",
   args: ["nick.eth"],
 });
-const unknownSelector = "0xdeadbeef0000" as const;
 
 const resolverError = (inner: Hex): Hex =>
   encodeErrorResult({ abi: Abis.shared.errors, errorName: "ResolverError", args: [inner] });
@@ -24,13 +23,10 @@ const resolutionError = (inner: Hex): Hex =>
 
 const errorString = (message: string): Hex =>
   encodeErrorResult({
-    abi: [{ type: "error", name: "Error", inputs: [{ name: "message", type: "string" }] }],
+    abi: parseAbi(["error Error(string)"]),
     errorName: "Error",
     args: [message],
   });
-
-const nest = (depth: number, inner: Hex): Hex =>
-  depth === 0 ? inner : resolverError(nest(depth - 1, inner));
 
 describe("fromRevert unwrapping", () => {
   it.each([
@@ -59,7 +55,7 @@ describe("fromRevert unwrapping", () => {
   });
 
   it("ResolutionError keeps the registry on an unknown inner revert", () => {
-    const error = fromRevert({ data: resolutionError(unknownSelector) }, {});
+    const error = fromRevert({ data: resolutionError("0xdeadbeef0000") }, {});
 
     assert.strictEqual(error.code, "CONTRACT_REVERTED");
     assert.strictEqual(error.context.registry, registry);
@@ -74,14 +70,14 @@ describe("fromRevert unwrapping", () => {
   });
 
   it("unwraps eight levels of nesting", () => {
-    assert.strictEqual(
-      fromRevert({ data: nest(8, nameNotAvailable) }, {}).code,
-      "NAME_NOT_AVAILABLE",
-    );
+    const data = Array.from({ length: 8 }).reduce<Hex>(resolverError, nameNotAvailable);
+
+    assert.strictEqual(fromRevert({ data }, {}).code, "NAME_NOT_AVAILABLE");
   });
 
   it("stops at the ninth level instead of recursing further", () => {
-    const error = fromRevert({ data: nest(9, nameNotAvailable) }, {});
+    const data = Array.from({ length: 9 }).reduce<Hex>(resolverError, nameNotAvailable);
+    const error = fromRevert({ data }, {});
 
     assert.strictEqual(error.code, "CONTRACT_REVERTED");
     assert.strictEqual((error as { errorName?: string }).errorName, "ResolverError");
@@ -90,7 +86,11 @@ describe("fromRevert unwrapping", () => {
 
 describe("fromRevert fallthrough", () => {
   it.each([
-    { label: "an unknown selector", revert: { data: unknownSelector }, errorName: undefined },
+    {
+      label: "an unknown selector",
+      revert: { data: "0xdeadbeef0000" as const },
+      errorName: undefined,
+    },
     { label: "no data", revert: {}, errorName: undefined },
     { label: "a plain Error string", revert: { data: errorString("nope") }, errorName: "Error" },
     {

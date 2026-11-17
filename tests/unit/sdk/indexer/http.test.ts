@@ -2,7 +2,6 @@ import { assert, describe, it } from "@effect/vitest";
 import { Effect, Fiber } from "effect";
 import { TestClock } from "effect/testing";
 
-import type { IndexerError } from "@ensforge/sdk/internal/errors/classes/IndexerError";
 import {
   send,
   type HttpConfig,
@@ -22,7 +21,7 @@ const configOf = (fake: FakeIndexer, overrides: Partial<HttpConfig> = {}): HttpC
   ...overrides,
 });
 
-const status: HttpRequest = { route: "/status", path: "/status" };
+const statusRequest: HttpRequest = { route: "/status", path: "/status" };
 
 // Runs `effect` while moving the test clock in small steps, so retries waiting on a timer wake.
 const withClock = <A, E>(effect: Effect.Effect<A, E>, millis: number, step = 50) =>
@@ -38,7 +37,7 @@ describe("send: retries", () => {
       const fake = fakeBigname();
       fake.on("/status", reply.error(code));
 
-      yield* expectFailure(withClock(send(configOf(fake), status), 2_000), {
+      yield* expectFailure(withClock(send(configOf(fake), statusRequest), 2_000), {
         _tag: "IndexerError",
       });
       assert.strictEqual(fake.requests.length, 3);
@@ -50,7 +49,7 @@ describe("send: retries", () => {
       const fake = fakeBigname();
       fake.on("/status", reply.error(code));
 
-      yield* expectFailure(send(configOf(fake), status), { _tag: "IndexerError" });
+      yield* expectFailure(send(configOf(fake), statusRequest), { _tag: "IndexerError" });
       assert.strictEqual(fake.requests.length, 1);
     }),
   );
@@ -60,7 +59,7 @@ describe("send: retries", () => {
       const fake = fakeBigname();
       fake.once("/status", reply.error(503, "overloaded"), reply.network());
 
-      const body = yield* withClock(send(configOf(fake), status), 1_000);
+      const body = yield* withClock(send(configOf(fake), statusRequest), 1_000);
 
       assert.deepStrictEqual(
         fake.requests.map((request) => request.status),
@@ -74,7 +73,7 @@ describe("send: retries", () => {
     Effect.gen(function* () {
       const fake = fakeBigname();
       fake.on("/status", reply.error(503));
-      const fiber = yield* Effect.forkChild(Effect.exit(send(configOf(fake), status)));
+      const fiber = yield* Effect.forkChild(Effect.exit(send(configOf(fake), statusRequest)));
 
       yield* TestClock.adjust(249);
       assert.strictEqual(fake.requests.length, 1);
@@ -92,7 +91,7 @@ describe("send: retries", () => {
     Effect.gen(function* () {
       const fake = fakeBigname();
       fake.once("/status", reply.rateLimited("3"), reply.rateLimited("3600"));
-      const fiber = yield* Effect.forkChild(send(configOf(fake), status));
+      const fiber = yield* Effect.forkChild(send(configOf(fake), statusRequest));
 
       yield* TestClock.adjust(2_999);
       assert.strictEqual(fake.requests.length, 1);
@@ -111,7 +110,7 @@ describe("send: retries", () => {
       const fake = fakeBigname();
       // The test clock starts at 0: the date is 10 seconds after it.
       fake.once("/status", reply.rateLimited(new Date(10_000).toUTCString()));
-      const fiber = yield* Effect.forkChild(send(configOf(fake), status));
+      const fiber = yield* Effect.forkChild(send(configOf(fake), statusRequest));
 
       yield* TestClock.adjust(8_000);
       assert.strictEqual(fake.requests.length, 1);
@@ -125,7 +124,7 @@ describe("send: retries", () => {
     Effect.gen(function* () {
       const fake = fakeBigname();
       fake.once("/status", reply.rateLimited(header));
-      const fiber = yield* Effect.forkChild(send(configOf(fake), status));
+      const fiber = yield* Effect.forkChild(send(configOf(fake), statusRequest));
 
       yield* TestClock.adjust(250);
       yield* Fiber.join(fiber);
@@ -137,7 +136,9 @@ describe("send: retries", () => {
     Effect.gen(function* () {
       const fake = fakeBigname();
       fake.once("/status", reply.hang());
-      const fiber = yield* Effect.forkChild(send(configOf(fake, { timeout: 1_000 }), status));
+      const fiber = yield* Effect.forkChild(
+        send(configOf(fake, { timeout: 1_000 }), statusRequest),
+      );
 
       yield* TestClock.adjust(1_000);
       assert.isTrue(fake.requests[0]?.signal?.aborted);
@@ -153,7 +154,7 @@ describe("send: retries", () => {
       fake.on("/status", reply.hang());
 
       const error = yield* expectFailure(
-        withClock(send(configOf(fake, { timeout: 1_000, retryCount: 0 }), status), 1_000),
+        withClock(send(configOf(fake, { timeout: 1_000, retryCount: 0 }), statusRequest), 1_000),
         { _tag: "IndexerError", code: "INDEXER_UNAVAILABLE" },
       );
       assert.strictEqual(error.shortMessage, "The indexer did not answer in time.");
@@ -164,7 +165,7 @@ describe("send: retries", () => {
     Effect.gen(function* () {
       const fake = fakeBigname();
       fake.on("/status", reply.hang());
-      const fiber = yield* Effect.forkChild(send(configOf(fake), status));
+      const fiber = yield* Effect.forkChild(send(configOf(fake), statusRequest));
 
       yield* TestClock.adjust(10);
       yield* Fiber.interrupt(fiber);
@@ -194,10 +195,10 @@ describe("send: error mapping", () => {
       const fake = fakeBigname();
       fake.on("/status", reply.error(code, indexerCode, "upstream says no"));
 
-      const error = (yield* expectFailure(send(configOf(fake, { retryCount: 0 }), status), {
+      const error = yield* expectFailure(send(configOf(fake, { retryCount: 0 }), statusRequest), {
         _tag: "IndexerError",
         code: expected,
-      })) as IndexerError;
+      });
       assert.strictEqual(error.status, code);
       assert.strictEqual(error.indexerCode, indexerCode);
       assert.strictEqual(error.route, "/status");
@@ -219,7 +220,7 @@ describe("send: error mapping", () => {
         send(configOf(fake), { route: "/names/{name}", path: "/names/x.eth", resource: "x.eth" }),
         { _tag: "NotFoundError", code: "INDEXER_NOT_FOUND" },
       );
-      assert.strictEqual((error as unknown as { resource: string }).resource, "x.eth");
+      assert.strictEqual(error.resource, "x.eth");
       assert.strictEqual(fake.requests.length, 1);
     }),
   );
@@ -229,7 +230,7 @@ describe("send: error mapping", () => {
       const fake = fakeBigname();
       fake.on("/status", reply.text("<html>maintenance</html>"));
 
-      yield* expectFailure(send(configOf(fake), status), {
+      yield* expectFailure(send(configOf(fake), statusRequest), {
         _tag: "IndexerError",
         code: "INDEXER_RESPONSE_INVALID",
       });
@@ -242,7 +243,7 @@ describe("send: error mapping", () => {
       const fake = fakeBigname();
       fake.on("/status", reply.text("Bad Gateway", 502));
 
-      yield* expectFailure(send(configOf(fake, { retryCount: 0 }), status), {
+      yield* expectFailure(send(configOf(fake, { retryCount: 0 }), statusRequest), {
         _tag: "IndexerError",
         code: "INDEXER_UNAVAILABLE",
       });
@@ -254,7 +255,7 @@ describe("send: error mapping", () => {
       const fake = fakeBigname();
       fake.on("/status", reply.network("getaddrinfo ENOTFOUND"));
 
-      yield* expectFailure(send(configOf(fake, { retryCount: 0 }), status), {
+      yield* expectFailure(send(configOf(fake, { retryCount: 0 }), statusRequest), {
         _tag: "IndexerError",
         code: "INDEXER_UNAVAILABLE",
       });
@@ -315,8 +316,8 @@ describe("send: ETag cache", () => {
       const fake = fakeBigname({ etag: true });
       const config = configOf(fake, { cache: new Map() });
 
-      const first = yield* send(config, status);
-      const second = yield* send(config, status);
+      const first = yield* send(config, statusRequest);
+      const second = yield* send(config, statusRequest);
 
       assert.deepStrictEqual(second, first);
       assert.deepStrictEqual(
@@ -333,8 +334,8 @@ describe("send: ETag cache", () => {
       const lookup: HttpRequest = { route: "/lookup", path: "/lookup", body: { inputs: [] } };
       const cached = configOf(fake, { cache: new Map() });
 
-      yield* send(configOf(fake), status);
-      yield* send(configOf(fake), status);
+      yield* send(configOf(fake), statusRequest);
+      yield* send(configOf(fake), statusRequest);
       yield* send(cached, lookup);
       yield* send(cached, lookup);
 
