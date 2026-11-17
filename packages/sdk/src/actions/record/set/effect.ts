@@ -1,5 +1,6 @@
 import { Effect } from "effect";
 
+import { Abis, InterfaceIds } from "@ensforge/contracts";
 import { isAddressEqual, type Address } from "viem";
 
 import type { Client } from "../../../client/types.js";
@@ -19,6 +20,7 @@ import {
   recordWriteCodecs,
   resolverCall,
 } from "../../../internal/records/write-profiles.js";
+import * as Rpc from "../../../internal/rpc/index.js";
 import { addressOf } from "../../../internal/write/signer.js";
 import { make as makePlan } from "../../../plan/make.js";
 import type { Plan } from "../../../plan/Plan.js";
@@ -62,6 +64,21 @@ export const plan = Effect.fnUntraced(function* (
   }
 
   const keying = yield* setterKeying(client, resolver);
+  // Data records (ENSIP-24) are newer than most node-keyed resolvers, which revert without a
+  // reason on `setData`.
+  if (keying === "node" && Object.keys(options.data ?? {}).length > 0) {
+    const supported = yield* Rpc.readContractOrUndefined(client, {
+      address: resolver,
+      abi: Abis.shared.erc165,
+      functionName: "supportsInterface",
+      args: [InterfaceIds.resolverProfiles.data],
+    });
+    if (supported !== true) {
+      return yield* Effect.fail(
+        new UnsupportedError({ code: "RESOLVER_PROFILE_UNSUPPORTED", feature: "data records" }),
+      );
+    }
+  }
   const codecs = yield* recordWriteCodecs(options);
   const calls = yield* Effect.try({
     try: () => encodeRecordWrites(keying, loaded.data.parts, options, codecs),
