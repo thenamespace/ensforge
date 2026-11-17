@@ -28,7 +28,7 @@ export const get = Effect.fn("ensforge.permission.get")(function* (
 ): Effect.fn.Return<Promises.ReturnType, Promises.ErrorType> {
   const account = yield* checkedAccount(client, options.account);
   const loaded = yield* loadName(client, options.name, options);
-  const records = options.records === undefined ? [] : selectionOperations(options.records);
+  const records = options.records === undefined ? [] : yield* selectionOperations(options.records);
 
   // Any-key text access stands for "can edit records" in general.
   const checks = yield* checkLoaded(client, loaded, account, [

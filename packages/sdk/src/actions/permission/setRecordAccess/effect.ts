@@ -115,52 +115,54 @@ const permissionedCalls = (
     ]);
   }
 
-  const calls: Plan.Call[] = [];
-  for (const { operation } of selectionOperations(options.records)) {
-    if (operation.setRecord === "pubkey") {
-      return Effect.fail(
-        new UnsupportedError({
-          code: "RESOLVER_PROFILE_UNSUPPORTED",
-          feature: "public key records",
-        }),
-      );
+  return Effect.flatMap(selectionOperations(options.records), (operations) => {
+    const calls: Plan.Call[] = [];
+    for (const { operation } of operations) {
+      if (operation.setRecord === "pubkey") {
+        return Effect.fail(
+          new UnsupportedError({
+            code: "RESOLVER_PROFILE_UNSUPPORTED",
+            feature: "public key records",
+          }),
+        );
+      }
+      const role = roleOf[operation.setRecord];
+      // Content hash, name and "any ABI" records only exist at the root.
+      if (operation.key === undefined) {
+        calls.push(
+          call(
+            encodeFunctionData({
+              abi,
+              functionName: revoke ? "revokeRootRoles" : "grantRootRoles",
+              args: [role, grantee],
+            }),
+          ),
+        );
+      } else if (revoke) {
+        calls.push(
+          call(
+            encodeFunctionData({
+              abi,
+              functionName: "revokeRoles",
+              args: [recordResource(operation), role, grantee],
+            }),
+          ),
+        );
+      } else {
+        const keyed = operation as RecordOperation & { key: string | bigint | Hex };
+        calls.push(
+          call(
+            encodeFunctionData({
+              abi,
+              functionName: "grantSetterRoles",
+              args: [setterCall(loaded.data.parts.dns, keyed), grantee],
+            }),
+          ),
+        );
+      }
     }
-    const role = roleOf[operation.setRecord];
-    // Content hash, name and "any ABI" records only exist at the root.
-    if (operation.key === undefined) {
-      calls.push(
-        call(
-          encodeFunctionData({
-            abi,
-            functionName: revoke ? "revokeRootRoles" : "grantRootRoles",
-            args: [role, grantee],
-          }),
-        ),
-      );
-    } else if (revoke) {
-      calls.push(
-        call(
-          encodeFunctionData({
-            abi,
-            functionName: "revokeRoles",
-            args: [recordResource(operation), role, grantee],
-          }),
-        ),
-      );
-    } else {
-      const keyed = operation as RecordOperation & { key: string | bigint | Hex };
-      calls.push(
-        call(
-          encodeFunctionData({
-            abi,
-            functionName: "grantSetterRoles",
-            args: [setterCall(loaded.data.parts.dns, keyed), grantee],
-          }),
-        ),
-      );
-    }
-  }
-  return Effect.succeed(calls);
+    return Effect.succeed(calls);
+  });
 };
 
 /** @internal Builds the plan of `Actions.permission.setRecordAccess`. */

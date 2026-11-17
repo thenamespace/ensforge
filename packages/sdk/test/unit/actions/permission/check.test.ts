@@ -61,4 +61,18 @@ describe("permission.check", () => {
       );
     }),
   );
+
+  it.effect("permission.get fails with a typed error for a record coin that does not exist", () =>
+    Effect.gen(function* () {
+      const { ens } = clientFor({ name: "alice.eth" });
+      yield* expectFailure(
+        EffectActions.permission.get(ens, {
+          name: "alice.eth",
+          account: signer,
+          records: { addresses: ["nope"] },
+        }),
+        { _tag: "InvalidInputError", code: "INVALID_COIN_TYPE" },
+      );
+    }),
+  );
 });
