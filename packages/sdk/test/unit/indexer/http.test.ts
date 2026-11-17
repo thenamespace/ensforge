@@ -106,8 +106,8 @@ describe("send: retries", () => {
   it.effect("waits for Retry-After as an HTTP date", () =>
     Effect.gen(function* () {
       const fake = fakeBigname();
-      // HTTP dates have second precision, so the wait is between 9 and 10 seconds.
-      fake.once("/status", reply.rateLimited(new Date(Date.now() + 10_000).toUTCString()));
+      // The test clock starts at 0: the date is 10 seconds after it.
+      fake.once("/status", reply.rateLimited(new Date(10_000).toUTCString()));
       const fiber = yield* Effect.forkChild(send(configOf(fake), status));
 
       yield* TestClock.adjust(8_000);

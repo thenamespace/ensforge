@@ -1,4 +1,4 @@
-import { Effect } from "effect";
+import { Clock, Effect } from "effect";
 
 import { IndexerError } from "../../errors/classes/IndexerError.js";
 import type { NotFoundError } from "../../errors/classes/NotFoundError.js";
@@ -24,7 +24,8 @@ export const capabilities = (config: HttpConfig) => {
 
   // `undefined` when the server has no `/status` (a minimal compatible server): not checked.
   const indexedChains = Effect.gen(function* () {
-    if (chains !== undefined && Date.now() - chains.at < statusTtl) return chains.value;
+    const now = yield* Clock.currentTimeMillis;
+    if (chains !== undefined && now - chains.at < statusTtl) return chains.value;
 
     const route = "/status";
     const value = yield* send(config, { route, path: route }).pipe(
@@ -43,7 +44,7 @@ export const capabilities = (config: HttpConfig) => {
       ),
       Effect.catchTag("NotFoundError", () => Effect.succeed(undefined)),
     );
-    chains = { at: Date.now(), value };
+    chains = { at: now, value };
     return value;
   });
 
@@ -51,7 +52,8 @@ export const capabilities = (config: HttpConfig) => {
   const namespaceChains = (namespace: Namespace) =>
     Effect.gen(function* () {
       const cached = networks.get(namespace);
-      if (cached !== undefined && Date.now() - cached.at < namespaceTtl) return cached.value;
+      const now = yield* Clock.currentTimeMillis;
+      if (cached !== undefined && now - cached.at < namespaceTtl) return cached.value;
 
       const route = "/namespaces/{namespace}";
       const value = yield* send(config, { route, path: `/namespaces/${namespace}` }).pipe(
@@ -66,7 +68,7 @@ export const capabilities = (config: HttpConfig) => {
         }),
         Effect.catchTag("NotFoundError", () => Effect.succeed(undefined)),
       );
-      networks.set(namespace, { at: Date.now(), value });
+      networks.set(namespace, { at: now, value });
       return value;
     });
 

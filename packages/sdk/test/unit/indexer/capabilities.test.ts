@@ -1,5 +1,6 @@
-import { assert, describe, it, vi } from "@effect/vitest";
+import { assert, describe, it } from "@effect/vitest";
 import { Effect } from "effect";
+import { TestClock } from "effect/testing";
 
 import { expectFailure } from "@ensforge/test-harness";
 import {
@@ -117,9 +118,8 @@ describe("capabilities.serve", () => {
     }),
   );
 
-  it.effect("caches probes: /status for 5 minutes, /namespaces for an hour", () => {
-    const now = vi.spyOn(Date, "now").mockReturnValue(1_000_000);
-    return Effect.gen(function* () {
+  it.effect("caches probes: /status for 5 minutes, /namespaces for an hour", () =>
+    Effect.gen(function* () {
       const fake = fakeBigname();
       const serve = probe(fake).serve;
       const count = () => [
@@ -131,13 +131,13 @@ describe("capabilities.serve", () => {
       yield* serve("ens", 1);
       assert.deepStrictEqual(count(), [1, 1]);
 
-      now.mockReturnValue(1_000_000 + 5 * 60_000);
+      yield* TestClock.adjust("5 minutes");
       yield* serve("ens", 1);
       assert.deepStrictEqual(count(), [2, 1]);
 
-      now.mockReturnValue(1_000_000 + 60 * 60_000);
+      yield* TestClock.adjust("55 minutes");
       yield* serve("ens", 1);
       assert.deepStrictEqual(count(), [3, 2]);
-    }).pipe(Effect.ensuring(Effect.sync(() => now.mockRestore())));
-  });
+    }),
+  );
 });

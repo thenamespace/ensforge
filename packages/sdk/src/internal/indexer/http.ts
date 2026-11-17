@@ -1,4 +1,4 @@
-import { Effect, Predicate } from "effect";
+import { Clock, Effect, Predicate } from "effect";
 
 import { IndexerError } from "../../errors/classes/IndexerError.js";
 import { NotFoundError } from "../../errors/classes/NotFoundError.js";
@@ -77,10 +77,10 @@ const urlOf = (config: HttpConfig, request: HttpRequest): string => {
 };
 
 /** Seconds or an HTTP date, as `Retry-After` allows; `undefined` when absent or unusable. */
-const retryAfter = (header: string | null): number | undefined => {
+const retryAfter = (header: string | null, now: number): number | undefined => {
   if (header === null) return undefined;
   const seconds = Number(header);
-  const delay = Number.isFinite(seconds) ? seconds * 1000 : Date.parse(header) - Date.now();
+  const delay = Number.isFinite(seconds) ? seconds * 1000 : Date.parse(header) - now;
   return Number.isFinite(delay) && delay >= 0 ? Math.min(delay, maxRetryDelay) : undefined;
 };
 
@@ -127,55 +127,57 @@ const attempt = (config: HttpConfig, request: HttpRequest, url: string): Effect.
           fail("INDEXER_UNAVAILABLE", { shortMessage: "The indexer did not answer in time." }),
         ),
     }),
-    Effect.map(({ response, text }): Attempt => {
-      if (response.status === 304 && cached !== undefined) return { ok: true, body: cached.body };
+    Effect.flatMap(({ response, text }) =>
+      Effect.map(Clock.currentTimeMillis, (now): Attempt => {
+        if (response.status === 304 && cached !== undefined) return { ok: true, body: cached.body };
 
-      let body: unknown;
-      try {
-        body = text === "" ? undefined : JSON.parse(text);
-      } catch (cause) {
-        if (response.ok) {
-          return { ok: false, error: fail("INDEXER_RESPONSE_INVALID", { cause }) };
-        }
-      }
-
-      if (response.ok) {
-        const etag = response.headers.get("etag");
-        if (config.cache !== undefined && etag !== null && request.body === undefined) {
-          if (config.cache.size >= maxCacheEntries) {
-            const oldest = config.cache.keys().next().value;
-            if (oldest !== undefined) config.cache.delete(oldest);
+        let body: unknown;
+        try {
+          body = text === "" ? undefined : JSON.parse(text);
+        } catch (cause) {
+          if (response.ok) {
+            return { ok: false, error: fail("INDEXER_RESPONSE_INVALID", { cause }) };
           }
-          config.cache.set(url, { etag, body });
         }
-        return { ok: true, body };
-      }
 
-      const { code, message } = errorBody(body);
-      if (response.status === 404 || code === "not_found") {
-        return {
-          ok: false,
-          error: new NotFoundError({
-            code: "INDEXER_NOT_FOUND",
-            resource: request.resource,
+        if (response.ok) {
+          const etag = response.headers.get("etag");
+          if (config.cache !== undefined && etag !== null && request.body === undefined) {
+            if (config.cache.size >= maxCacheEntries) {
+              const oldest = config.cache.keys().next().value;
+              if (oldest !== undefined) config.cache.delete(oldest);
+            }
+            config.cache.set(url, { etag, body });
+          }
+          return { ok: true, body };
+        }
+
+        const { code, message } = errorBody(body);
+        if (response.status === 404 || code === "not_found") {
+          return {
+            ok: false,
+            error: new NotFoundError({
+              code: "INDEXER_NOT_FOUND",
+              resource: request.resource,
+              ...(message === undefined ? {} : { details: [message] }),
+            }),
+          };
+        }
+        const error = fail(
+          code === undefined
+            ? codeForStatus(response.status)
+            : (codes[code] ?? codeForStatus(response.status)),
+          {
+            indexerCode: code,
+            status: response.status,
             ...(message === undefined ? {} : { details: [message] }),
-          }),
-        };
-      }
-      const error = fail(
-        code === undefined
-          ? codeForStatus(response.status)
-          : (codes[code] ?? codeForStatus(response.status)),
-        {
-          indexerCode: code,
-          status: response.status,
-          ...(message === undefined ? {} : { details: [message] }),
-        },
-      );
-      return retryableStatus(response.status)
-        ? { ok: false, error, delay: retryAfter(response.headers.get("retry-after")) ?? -1 }
-        : { ok: false, error };
-    }),
+          },
+        );
+        return retryableStatus(response.status)
+          ? { ok: false, error, delay: retryAfter(response.headers.get("retry-after"), now) ?? -1 }
+          : { ok: false, error };
+      }),
+    ),
     // Network failures (DNS, reset, CORS) are retryable; the timeout error is already typed.
     Effect.catch((cause) =>
       Effect.succeed<Attempt>(
