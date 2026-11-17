@@ -11,13 +11,23 @@ import { DeployError, type ArtifactError } from "../errors.ts";
 /** anvil's default mnemonic: the devnet's accounts are anvil's prefunded ones. */
 const mnemonic = "test test test test test test test test test test test junk";
 
-/** Named devnet accounts (anvil indices 0–4), as in contracts-v2's devnet. */
+const account = (addressIndex: number) => mnemonicToAccount(mnemonic, { addressIndex }).address;
+
+/**
+ * Named devnet accounts: indices 0–4 as in contracts-v2's devnet (deployer, DAO stand-in, users,
+ * root name owner), 5–9 for fixtures.
+ */
 export const accounts = {
-  deployer: mnemonicToAccount(mnemonic, { addressIndex: 0 }).address,
-  owner: mnemonicToAccount(mnemonic, { addressIndex: 1 }).address,
-  user: mnemonicToAccount(mnemonic, { addressIndex: 2 }).address,
-  user2: mnemonicToAccount(mnemonic, { addressIndex: 3 }).address,
-  nameOwner: mnemonicToAccount(mnemonic, { addressIndex: 4 }).address,
+  deployer: account(0),
+  owner: account(1),
+  user: account(2),
+  user2: account(3),
+  nameOwner: account(4),
+  alice: account(5),
+  bob: account(6),
+  carol: account(7),
+  operator: account(8),
+  approved: account(9),
 } as const;
 
 export type AccountName = keyof typeof accounts;
@@ -47,6 +57,11 @@ export type Variant = {
 /** What a step can do: deploy, call and read contracts, and use anvil's cheat RPCs. */
 export type StepContext = {
   readonly network: Variant["network"];
+  /**
+   * The build clock: `now()` is the latest block's timestamp; `advance(seconds)` moves the next
+   * block forward, e.g. past a commitment age or an expiry.
+   */
+  readonly time: { readonly now: () => bigint; readonly advance: (seconds: bigint) => void };
   readonly accounts: typeof accounts;
   readonly address: (key: string) => Effect.Effect<Address, DeployError>;
   readonly deploy: (
@@ -154,6 +169,12 @@ export const runSteps = Effect.fn("runSteps")(function* (
 
     const context: StepContext = {
       network: variant.network,
+      time: {
+        now: () => next,
+        advance: (seconds) => {
+          next += seconds;
+        },
+      },
       accounts,
       address: (key) => resolve(key).pipe(Effect.map((deployed) => deployed.address)),
       deploy: (key, requested, args = [], options = {}) =>

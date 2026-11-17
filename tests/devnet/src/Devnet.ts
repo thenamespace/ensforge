@@ -6,13 +6,15 @@ import { defineChain, type Address, type Chain } from "viem";
 import { foundry } from "viem/chains";
 
 import { Anvil } from "./anvil/Anvil.ts";
-import { build } from "./build.ts";
+import { build, type Seed } from "./build.ts";
 import { devnetClient, type DevnetClient } from "./client.ts";
 import { accounts, type Ledger } from "./deploy/engine.ts";
 import { profiles, type ProfileName } from "./profiles/profiles.ts";
 
 export type DevnetOptions = {
   readonly profile: ProfileName;
+  /** Extra state on top of the profile, e.g. test fixtures. */
+  readonly seed?: Seed;
   /** Fixed port; a free one is picked when omitted. */
   readonly port?: number;
   /** `0.0.0.0` makes the chain reachable from containers (indexer, bundler). */
@@ -31,6 +33,8 @@ export type DevnetInstance = {
   readonly contracts: Readonly<Record<string, Address>>;
   /** The same contracts with the artifact each was deployed from. */
   readonly ledger: Ledger;
+  /** The seed's output, when started with one. */
+  readonly seed: unknown;
   /** Prefunded named accounts (anvil's default mnemonic). */
   readonly accounts: typeof accounts;
   /** viem test, public and wallet actions on this devnet (`snapshot`, `increaseTime`, …). */
@@ -42,7 +46,10 @@ export type DevnetInstance = {
  * chain clock continues from the build's last block, so tests see the same times on every run.
  */
 export const startDevnet = Effect.fn("startDevnet")(function* (options: DevnetOptions) {
-  const built = yield* build(options.profile);
+  const built = yield* build(
+    options.profile,
+    options.seed === undefined ? {} : { seed: options.seed },
+  );
   const anvil = yield* Anvil;
   const { rpcUrl } = yield* anvil.start({
     loadState: built.stateFile,
@@ -73,6 +80,7 @@ export const startDevnet = Effect.fn("startDevnet")(function* (options: DevnetOp
     deployments,
     contracts,
     ledger: built.ledger,
+    seed: built.seed,
     accounts,
     client: devnetClient(rpcUrl, chain),
   };
