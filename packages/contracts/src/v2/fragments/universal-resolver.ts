@@ -202,29 +202,6 @@ export const universalResolverV2FindExactRegistryAbi = [
   },
 ] as const satisfies Abi;
 
-export const universalResolverV2FindOwnerAbi = [
-  ...universalResolverV2Errors,
-  {
-    inputs: [
-      {
-        internalType: "bytes",
-        name: "name",
-        type: "bytes",
-      },
-    ],
-    name: "findOwner",
-    outputs: [
-      {
-        internalType: "address",
-        name: "",
-        type: "address",
-      },
-    ],
-    stateMutability: "view",
-    type: "function",
-  },
-] as const satisfies Abi;
-
 export const universalResolverV2FindParentRegistryAbi = [
   ...universalResolverV2Errors,
   {
@@ -341,28 +318,6 @@ export const universalResolverV2ReverseAbi = [
         name: "",
         type: "address",
       },
-      {
-        internalType: "address",
-        name: "",
-        type: "address",
-      },
-    ],
-    stateMutability: "view",
-    type: "function",
-  },
-] as const satisfies Abi;
-
-export const universalResolverV2InterfaceFindOwnerAbi = [
-  {
-    inputs: [
-      {
-        internalType: "bytes",
-        name: "name",
-        type: "bytes",
-      },
-    ],
-    name: "findOwner",
-    outputs: [
       {
         internalType: "address",
         name: "",
