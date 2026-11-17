@@ -87,9 +87,13 @@ const addressReads = (node: Hex, coins: readonly (string | bigint)[]): Read[] =>
         args: [node, coinType],
       }),
       apply: (result, output, results, codecs) => {
-        const own = decodeAddress(codecs, coinType, result);
+        // Only a coin without a record of its own uses the default; an explicit zero address
+        // is a record and blocks it.
+        const unset = result === undefined || decode("addr", result) === "0x";
         (output.addresses as Record<string, unknown>)[String(coin)] =
-          own ?? (usesDefault ? decodeAddress(codecs, coinType, results.defaultAddress) : null);
+          unset && usesDefault
+            ? decodeAddress(codecs, coinType, results.defaultAddress)
+            : decodeAddress(codecs, coinType, result);
       },
     };
   });
