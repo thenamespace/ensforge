@@ -7,8 +7,10 @@ import { getCode } from "viem/actions";
 
 import type { Client } from "../../client/types.js";
 import { InvalidInputError } from "../../errors/classes/InvalidInputError.js";
+import { MigrationError } from "../../errors/classes/MigrationError.js";
 import type { AnyError } from "../../errors/types.js";
 import type { Plan } from "../../plan/Plan.js";
+import { callIndexer } from "../indexer/call.js";
 import { loadName } from "../name/load.js";
 import { deployUserRegistry, rootRoles } from "../registry/deploy.js";
 import * as Rpc from "../rpc/index.js";
@@ -129,4 +131,55 @@ export const planRecreation = Effect.fnUntraced(function* (
     ],
     leftBehind,
   };
+});
+
+// Recreating more children than this in one migration is better done with an explicit list.
+const maxDiscovered = 500;
+
+/**
+ * The live direct subnames of `name`, from the client's indexer: `names` can be recreated,
+ * `unknown` have labels the indexer only knows by hash. `null` without an indexer or when the
+ * indexer does not know the name.
+ */
+export const discoverSubnames = Effect.fnUntraced(function* (
+  client: Client,
+  name: string,
+): Effect.fn.Return<
+  { readonly names: readonly string[]; readonly unknown: readonly string[] } | null,
+  AnyError
+> {
+  if (client.config.indexer === undefined) return null;
+
+  const names: string[] = [];
+  const unknown: string[] = [];
+  let cursor: string | undefined;
+  do {
+    const page = yield* callIndexer(client, "getSubnames", {
+      name,
+      namespace: "ens",
+      includeExpired: false,
+      limit: 200,
+      cursor,
+    }).pipe(Effect.catchTag("NotFoundError", () => Effect.succeed(null)));
+    if (page === null) return null;
+
+    for (const child of page.items) {
+      // Lists can include children that no longer exist (unregistered in the ENSv1 registry).
+      if (child.status !== "active" && child.status !== null) continue;
+      (child.name.includes("[") ? unknown : names).push(child.name);
+    }
+    if (names.length + unknown.length > maxDiscovered) {
+      return yield* Effect.fail(
+        new MigrationError({
+          code: "NOT_ELIGIBLE",
+          blockers: [`more than ${maxDiscovered} subnames`],
+          context: { name },
+          hint: "Pass the subnames to recreate in `subnames`, or `[]` to leave them behind.",
+        }),
+      );
+    }
+    cursor = page.hasMore ? (page.cursor ?? undefined) : undefined;
+  } while (cursor !== undefined);
+
+  return { names, unknown };
 });

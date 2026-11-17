@@ -19,7 +19,8 @@ import type { migrate as migrateTypes, migrateSync as migrateSyncTypes } from ".
  * - `blockers` are checked for `account` (the client's account by default).
  * - `resolver.plan` shows what {@link Actions.migration.migrate} does with the current
  *   resolver for the same `resolver` option.
- * - Records and subnames are not discovered yet; pass them to `migrate`.
+ * - With an indexer, `discovered` lists the records and subnames `migrate` carries over by
+ *   default (read at the latest block).
  *
  * **Example** (Checking a name)
  *
@@ -68,19 +69,20 @@ export declare namespace get {
  * **Details**
  *
  * - Plan: renew names in grace (with `renew`) → create each name's resolver with its records,
- *   and a UserRegistry for listed `subnames` → recreate the subnames → transfer the tokens to
+ *   and a UserRegistry for its subnames → recreate the subnames → transfer the tokens to
  *   the migration controllers (parents before locked children) → restore ENSv1 managers.
  * - Direct token transfers from the holder: no approvals are needed.
  * - By default a name on an ENS public resolver gets its own PermissionedResolver; custom
  *   resolvers are kept. `resolver: "owned"` uses the signer's shared resolver (the ENS app's).
- * - Records are those given per name; with `allowIncompleteRecords`, the common ones are
- *   read from the current resolver. Locked names follow their fuses (roles, resolver).
+ * - Records and subnames are those given per name; otherwise, with an indexer, every record key
+ *   it lists (values read on-chain) and the live direct subnames; without one,
+ *   `allowIncompleteRecords` copies the common records. Locked names follow their fuses.
  * - An interrupted migration can run again: existing resolvers and registries are reused.
  *
  * **Gotchas**
  *
- * - ENSv2 drops ENSv1 subnames that are not recreated (`subnames`), and records left on an
- *   ENSv1 public resolver become read-only. Pass every record to carry over.
+ * - ENSv2 drops ENSv1 subnames that are not recreated, and records left on an ENSv1 public
+ *   resolver become read-only. Without an indexer, pass every record and subname to carry over.
  * - Use {@link migrateSync} to also verify the migrated state.
  *
  * **Example** (Migrating a name with its profile)

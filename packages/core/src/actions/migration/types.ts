@@ -105,6 +105,24 @@ export type Status = {
 };
 
 /**
+ * What the client's indexer found to carry over when a name migrates.
+ *
+ * @category migration
+ * @since 1.0.0
+ */
+export type Discovery = {
+  /** Record keys copied to the new resolver, and keys that stay behind (ABIs, public keys…). */
+  readonly records: {
+    readonly keys: readonly string[];
+    readonly skipped: readonly string[];
+    /** `false` when the indexer could not list every key. */
+    readonly complete: boolean;
+  } | null;
+  /** Direct subnames recreated in the name's new UserRegistry; `null` for locked names. */
+  readonly subnames: readonly string[] | null;
+};
+
+/**
  * One name to migrate, with what to carry over.
  *
  * @category migration
@@ -115,13 +133,17 @@ export type NameInput =
   | {
       readonly name: string;
       /**
-       * Records to write on the name's new resolver: its full profile. Without them a name whose
-       * resolver holds records fails with `RECORDS_UNKNOWN` (or copies the common keys with
-       * `allowIncompleteRecords`).
+       * Records to write on the name's new resolver: its full profile. Without them the
+       * indexer's record inventory is copied (values read on-chain); without an indexer a name
+       * whose resolver holds records fails with `RECORDS_UNKNOWN` (or copies the common keys
+       * with `allowIncompleteRecords`).
        */
       readonly records?:
         | Omit<recordSet.Options, "name" | "resolver" | "clear" | "pubkey">
         | undefined;
-      /** Direct subnames to recreate in a new UserRegistry, by label or full name. */
+      /**
+       * Direct subnames to recreate in a new UserRegistry, by label or full name. Without them
+       * the indexer's live subnames are recreated; `[]` recreates none.
+       */
       readonly subnames?: readonly string[] | undefined;
     };

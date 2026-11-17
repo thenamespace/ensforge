@@ -2,7 +2,7 @@ import type { Like } from "../../../client/types.js";
 import type { AnyError } from "../../../errors/types.js";
 import * as Action from "../../../internal/action/index.js";
 import type { Read } from "../../../Types.js";
-import type { Status } from "../types.js";
+import type { Discovery, Status } from "../types.js";
 import * as Impl from "./effect.js";
 
 /**
@@ -19,7 +19,8 @@ import * as Impl from "./effect.js";
  * - `blockers` are checked for `account` (the client's account by default).
  * - `resolver.plan` shows what {@link Actions.migration.migrate} does with the current
  *   resolver for the same `resolver` option.
- * - Records and subnames are not discovered yet; pass them to `migrate`.
+ * - With an indexer, `discovered` lists the records and subnames `migrate` carries over by
+ *   default (read at the latest block).
  *
  * **Example** (Checking a name)
  *
@@ -67,7 +68,10 @@ export declare namespace get {
       resolver?: "new" | "owned" | "keep" | (string & {}) | undefined;
     };
   /** Route, blockers, holder, resolver plan and the ENSv2 state after migrating. */
-  type ReturnType = Status;
+  type ReturnType = Status & {
+    /** What the indexer found to carry over; `null` without an indexer or nothing to migrate. */
+    readonly discovered: Discovery | null;
+  };
   /** Errors {@link get} can fail with. */
   type ErrorType = AnyError;
 }

@@ -27,7 +27,7 @@ import { deployPermissionedResolver } from "../resolver/deploy.js";
 import * as Rpc from "../rpc/index.js";
 import { inspectMigration, type Inspection, type ResolverChoice } from "./inspect.js";
 import { recordsToCopy, type CopiedRecords } from "./records.js";
-import { planRecreation } from "./subnames.js";
+import { discoverSubnames, planRecreation } from "./subnames.js";
 
 /** What `migration.migrate` takes, besides the signer. */
 export type MigrationInput = {
@@ -263,7 +263,7 @@ export const planMigration = Effect.fnUntraced(function* (
         allowIncomplete: input.allowIncompleteRecords === true,
       });
       copied = copy.records;
-      if (copy.warning !== undefined) warnings.push(copy.warning);
+      warnings.push(...copy.warnings);
     }
     if (plan === "new") {
       const grants =
@@ -333,22 +333,35 @@ export const planMigration = Effect.fnUntraced(function* (
       resolver = zeroAddress;
     }
 
-    // Subnames: unlocked names recreate the listed children in a new UserRegistry.
+    // Subnames: unlocked names recreate their children (listed, or found by the indexer) in a
+    // new UserRegistry.
     let subregistry: Address = zeroAddress;
-    if (config?.subnames !== undefined && config.subnames.length > 0) {
-      if (locked) {
-        return yield* Effect.fail(
-          new InvalidInputError({
-            code: "INVALID_NAME",
-            field: "subnames",
-            input: status.name,
-            shortMessage: `${status.name} is locked: its subnames move into its WrapperRegistry on their own.`,
-          }),
-        );
+    let subnames = config?.subnames;
+    if (subnames !== undefined && subnames.length > 0 && locked) {
+      return yield* Effect.fail(
+        new InvalidInputError({
+          code: "INVALID_NAME",
+          field: "subnames",
+          input: status.name,
+          shortMessage: `${status.name} is locked: its subnames move into its WrapperRegistry on their own.`,
+        }),
+      );
+    }
+    const discovered =
+      subnames === undefined && !locked ? yield* discoverSubnames(client, status.name) : null;
+    if (discovered !== null) {
+      subnames = discovered.names;
+      if (discovered.unknown.length > 0) {
+        warnings.push({
+          code: "SUBNAMES_NOT_RECREATED",
+          message: `${discovered.unknown.length} subnames of ${status.name} have unknown labels and are not recreated; list them in \`subnames\` to include them.`,
+        });
       }
+    }
+    if (subnames !== undefined && subnames.length > 0) {
       const recreation = yield* planRecreation(client, {
         parent: { name: status.name, label: parts.label, node: parts.node },
-        subnames: config.subnames,
+        subnames,
         owner,
         signer,
         parentRegistry: v2.contracts.ethRegistry,
@@ -371,10 +384,10 @@ export const planMigration = Effect.fnUntraced(function* (
         deploys.push({ contract: "registry", address: subregistry });
       }
       registries.push(...recreation.calls);
-    } else if (!locked) {
+    } else if (!locked && discovered === null && subnames === undefined) {
       warnings.push({
         code: "SUBNAMES_NOT_RECREATED",
-        message: `Subnames of ${status.name} are not carried over unless listed in \`subnames\`.`,
+        message: `Subnames of ${status.name} are not carried over unless listed in \`subnames\` or found by an indexer.`,
       });
     }
 
