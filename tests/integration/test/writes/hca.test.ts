@@ -9,13 +9,14 @@ import { Fixtures } from "@ensforge/test-fixtures";
 import { expectFailure } from "@ensforge/test-harness";
 import { parseEther, type Address } from "viem";
 
-import { ensforge, isolated, onProfile, passWaits } from "../support/chain.ts";
+import { atTimestamp, ensforge, isolated, onProfile, passWaits } from "../support/chain.ts";
 import { ethEntry, mintUsdc, usdcOf } from "./support.ts";
 
 // Writes routed through the owner's Hosted Contract Account with the owner executor: the owner's
 // wallet sends `executeByOwner`, and the HCA is `msg.sender`.
 
 const label = (name: string) => name.slice(0, -".eth".length);
+const year = 31_536_000n;
 
 describe("HCA", () => {
   onProfile("mainnet-shaped")("mainnet-shaped", (it) => {
@@ -36,6 +37,13 @@ describe("HCA", () => {
             const account = yield* HcaActions.hca.verify(ens, {});
             assert.include(account, { address: predicted, owner: user, deployed: true });
             assert.deepStrictEqual(account.problems, []);
+
+            // Revoking the implementation for new deployments leaves deployed accounts certified.
+            yield* HcaActions.hcaAdmin.setDeploymentApprovalSync(
+              ensforge(devnet, { account: devnet.accounts.owner }),
+              { implementation: account.initialImplementation, approved: false },
+            );
+            assert.deepStrictEqual((yield* HcaActions.hca.verify(ens, {})).problems, []);
 
             yield* Effect.promise(() =>
               devnet.client.setBalance({ address: predicted, value: parseEther("2") }),
@@ -90,7 +98,7 @@ describe("HCA", () => {
           const { carol } = devnet.accounts;
           const ens = ensforge(devnet, { account: carol });
           const name = "hca-registered.eth";
-          const options = { names: name, duration: 31_536_000n, via: hca() };
+          const options = { names: name, duration: year, via: hca() };
 
           yield* isolated(
             devnet,
@@ -118,6 +126,32 @@ describe("HCA", () => {
             }),
           );
         }),
+    );
+
+    it.effect(
+      "refuses a name token sent to the HCA",
+      () =>
+        Effect.gen(function* () {
+          const fixtures = yield* Fixtures;
+          const devnet = yield* Devnet;
+          const { name, facts } = fixtures.byId("v2.registered");
+          const owner = facts["owner"] as Address;
+          const ens = ensforge(devnet, { account: owner });
+
+          yield* isolated(
+            devnet,
+            Effect.gen(function* () {
+              yield* HcaActions.hca.deploySync(ens, {});
+              const account = yield* HcaActions.hca.predictAddress(ens, {});
+              // Hosted Contract Accounts refuse name tokens.
+              yield* expectFailure(Actions.name.transferSync(ens, { name, to: account }), {
+                _tag: "UnauthorizedError",
+                code: "TRANSFER_DISALLOWED",
+              });
+            }),
+          );
+        }),
+      { meta: { cases: ["Z01"] } },
     );
 
     it.effect(
@@ -153,6 +187,33 @@ describe("HCA", () => {
                 { _tag: "HcaError", code: "HCA_ACTION_NOT_ALLOWED" },
               );
 
+              // A registration plan to the owner with the session's resolver is within the session;
+              // with a subregistry it is not.
+              const registration = { names: "session-name.eth", duration: year, resolver };
+              const plan = yield* Actions.registration.register.prepare(ens, registration);
+              assert.isTrue(
+                yield* HcaActions.hca.checkSessionCalls(ens, { session, calls: plan.calls }),
+              );
+              const withSubregistry = yield* Actions.registration.register.prepare(ens, {
+                ...registration,
+                subregistry: bob,
+              });
+              yield* expectFailure(
+                HcaActions.hca.checkSessionCalls(ens, { session, calls: withSubregistry.calls }),
+                { _tag: "HcaError", code: "HCA_ACTION_NOT_ALLOWED" },
+              );
+
+              yield* atTimestamp(
+                devnet,
+                BigInt(session.terms.validUntil) + 1n,
+                Effect.gen(function* () {
+                  assert.deepStrictEqual(yield* HcaActions.hca.getSession(ens, { session }), {
+                    valid: false,
+                    problem: "expired",
+                  });
+                }),
+              );
+
               yield* HcaActions.hca.revokeSessionsSync(ens, {});
               assert.deepStrictEqual(yield* HcaActions.hca.getSession(ens, { session }), {
                 valid: false,
@@ -161,7 +222,7 @@ describe("HCA", () => {
             }),
           );
         }),
-      { meta: { cases: ["Z05"] } },
+      { meta: { cases: ["Z02", "Z03", "Z05"] } },
     );
   });
 });
