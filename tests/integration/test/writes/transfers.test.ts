@@ -205,5 +205,23 @@ describe("transfers and managers", () => {
         }),
       { meta: { cases: ["M:B5"] } },
     );
+
+    // Regression: the refusal was one shared error, so every later one named the first call's name.
+    it.effect("names each refused handover's own name", () =>
+      Effect.gen(function* () {
+        const fixtures = yield* Fixtures;
+        const { accounts } = yield* Devnet;
+        const ens = (yield* Clients).make({ account: accounts.alice });
+
+        for (const id of ["records.v1", "v1.wrapped"]) {
+          const { name } = fixtures.byId(id);
+          const error = yield* expectFailure(
+            Actions.name.transfer(ens, { name, to: accounts.carol, records: "handover" }),
+            { _tag: "InvalidInputError", code: "INVALID_RECORD_VALUE" },
+          );
+          assert.strictEqual(error.context.name, name);
+        }
+      }),
+    );
   });
 });

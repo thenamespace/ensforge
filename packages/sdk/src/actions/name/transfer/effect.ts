@@ -113,13 +113,12 @@ const recordControl = Effect.fnUntraced(function* (
 > {
   const none = { before: [], after: [], warnings: [] };
   const resolver = loaded.state.resolver;
-  if (loaded.state.protocol !== "v2" || resolver === null || sender === undefined) {
-    return records === "handover" ? yield* Effect.fail(handoverUnavailable) : none;
-  }
-
-  const keying = yield* setterKeying(client, resolver);
+  // The sender's root roles on the name's ENSv2 PermissionedResolver; none on anything else.
   const roles =
-    keying === "name"
+    loaded.state.protocol === "v2" &&
+    resolver !== null &&
+    sender !== undefined &&
+    (yield* setterKeying(client, resolver)) === "name"
       ? yield* Rpc.readContract(client, {
           address: resolver,
           abi: Abis.v2.permissionedResolver,
@@ -127,7 +126,18 @@ const recordControl = Effect.fnUntraced(function* (
           args: [0n, sender],
         })
       : 0n;
-  if (roles === 0n) return records === "handover" ? yield* Effect.fail(handoverUnavailable) : none;
+  if (roles === 0n || resolver === null || sender === undefined) {
+    if (records === "keep") return none;
+    return yield* Effect.fail(
+      new InvalidInputError({
+        code: "INVALID_RECORD_VALUE",
+        field: "records",
+        input: "handover",
+        shortMessage:
+          "Nothing to hand over: the sender holds no roles on an ENSv2 PermissionedResolver for the name.",
+      }),
+    );
+  }
 
   if (records === "keep") {
     return {
@@ -175,14 +185,6 @@ const recordControl = Effect.fnUntraced(function* (
     after: [rolesCall("revokeRootRoles", sender)],
     warnings: [],
   };
-});
-
-const handoverUnavailable = new InvalidInputError({
-  code: "INVALID_RECORD_VALUE",
-  field: "records",
-  input: "handover",
-  shortMessage:
-    "Nothing to hand over: the sender holds no roles on an ENSv2 PermissionedResolver for the name.",
 });
 
 /** @internal Builds the plan of `Actions.name.transfer`. */
