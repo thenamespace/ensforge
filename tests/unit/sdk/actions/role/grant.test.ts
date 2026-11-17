@@ -4,14 +4,20 @@ import { Effect } from "effect";
 import { Abis, Roles } from "@ensforge/contracts";
 import { Actions } from "@ensforge/sdk/effect";
 import { expectFailure } from "@ensforge/test-harness";
-import { decodeFunctionData, getAddress } from "viem";
 import { labelhash } from "viem/ens";
 
-import { clientFor, other, resolverA, signer, v2Registry, type World } from "../world.js";
+import {
+  clientFor,
+  decodeCalls,
+  other,
+  resolverA,
+  signer,
+  v2Registry,
+  type World,
+} from "../world.js";
 
 const name = "alice.eth";
 const v2Name: World = { name, v2: { owner: signer, resolver: resolverA } };
-const grantee = getAddress(other);
 
 describe("role.grant.prepare", () => {
   it.effect.each([
@@ -20,21 +26,21 @@ describe("role.grant.prepare", () => {
       { name, roles: ["renew"] },
       v2Registry,
       "grantRoles",
-      [BigInt(labelhash("alice")), Roles.registry.renew, grantee],
+      [BigInt(labelhash("alice")), Roles.registry.renew, other],
     ],
     [
       "registry root roles",
       { name, root: true, roles: ["setResolver", "renew"] },
       v2Registry,
       "grantRootRoles",
-      [Roles.registry.setResolver | Roles.registry.renew, grantee],
+      [Roles.registry.setResolver | Roles.registry.renew, other],
     ],
     [
       "PermissionedResolver root roles on the name's resolver",
       { name, root: true, target: "resolver", roles: 3n },
       resolverA,
       "grantRootRoles",
-      [3n, grantee],
+      [3n, other],
     ],
   ] as const)("grants %s", ([, options, to, functionName, args]) =>
     Effect.gen(function* () {
@@ -46,13 +52,9 @@ describe("role.grant.prepare", () => {
         ...options,
       });
 
-      assert.strictEqual(plan.calls[0]?.to.toLowerCase(), to.toLowerCase());
-      const decoded = decodeFunctionData({
-        abi: Abis.v2.permissionedRegistry,
-        data: plan.calls[0]?.data ?? "0x",
-      });
-      assert.strictEqual(decoded.functionName, functionName);
-      assert.deepStrictEqual(decoded.args, args);
+      assert.deepStrictEqual(decodeCalls(plan.calls, Abis.v2.permissionedRegistry), [
+        [to, functionName, args],
+      ]);
       assert.deepStrictEqual(plan.warnings, []);
     }),
   );

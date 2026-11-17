@@ -2,7 +2,7 @@ import { assert, describe, it } from "@effect/vitest";
 import { assertDefined } from "@effect/vitest/utils";
 import { Effect } from "effect";
 
-import { Actions } from "@ensforge/sdk";
+import { Actions, Duration } from "@ensforge/sdk";
 import { Actions as EffectActions } from "@ensforge/sdk/effect";
 import * as Ensforge from "@ensforge/sdk/internal/client/Ensforge";
 import { expectFailure, expectRejection, noRpc, scriptedTransport } from "@ensforge/test-harness";
@@ -57,10 +57,10 @@ const otherOptions: Readonly<Record<string, object>> = {
   "name.transfer": { to: address },
   "permission.check": { operation: "setResolver" },
   "permission.setRecordAccess": { grantee: address },
-  "registration.commit": { duration: 31_536_000n },
-  "registration.getPrice": { duration: 31_536_000n },
-  "registration.register": { duration: 31_536_000n },
-  "registration.renew": { duration: 31_536_000n },
+  "registration.commit": { duration: Duration.years(1) },
+  "registration.getPrice": { duration: Duration.years(1) },
+  "registration.register": { duration: Duration.years(1) },
+  "registration.renew": { duration: Duration.years(1) },
   "resolver.resolve": { data: "0x3b3b57de" },
   "role.get": { account: address, target: "registry" },
   "role.grant": { grantee: address, roles: 1n, target: "registry" },
@@ -111,6 +111,7 @@ describe("invalid names fail before any RPC", () => {
           publicClient: createClient({ chain: mainnet, transport, account: address }),
         });
         const options = { name: invalidName, names: invalidName, ...otherOptions[base] };
+        assertDefined(effectFn);
 
         const rejected = yield* expectRejection(
           () => fn(ens, options) as Promise<unknown>,
@@ -120,8 +121,8 @@ describe("invalid names fail before any RPC", () => {
           (rejected as { context?: { operation?: string } }).context?.operation,
           path,
         );
-        assertDefined(effectFn);
         yield* expectFailure(effectFn(ens, options), invalid);
+
         const { prepare } = fn;
         if (prepare !== undefined) {
           yield* expectRejection(() => prepare(ens, options), invalid);

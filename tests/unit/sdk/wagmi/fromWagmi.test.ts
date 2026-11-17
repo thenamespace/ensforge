@@ -1,9 +1,9 @@
 import { assert, describe, it } from "@effect/vitest";
 import { Effect } from "effect";
 
-import { resolveSigner } from "@ensforge/sdk/internal/internal/write/signer";
+import { addressOf, resolveSigner } from "@ensforge/sdk/internal/internal/write/signer";
 import { fromWagmi } from "@ensforge/sdk/internal/wagmi/fromWagmi";
-import { expectFailure } from "@ensforge/test-harness";
+import { expectFailure, expectThrow } from "@ensforge/test-harness";
 import { custom, numberToHex, type Chain } from "viem";
 import { getBlockNumber } from "viem/actions";
 import { base, mainnet, sepolia } from "viem/chains";
@@ -14,9 +14,12 @@ import { mock } from "wagmi/connectors";
 const alice = "0x00000000000000000000000000000000000a11ce";
 const bob = "0x0000000000000000000000000000000000000b0b";
 
+// wagmi and viem's actions are Promise APIs, so the tests call them with `Effect.promise`.
+
+/** Every request the chains below receive. */
 const requests: { chainId: number; method: string }[] = [];
 
-// Answers the chain ID and block number, records every request, and fails loudly on the rest.
+/** Answers the chain ID and block number, records every request, and fails loudly on the rest. */
 const chainTransport = (chain: Chain) =>
   custom({
     request: async ({ method }: { method: string }) => {
@@ -69,13 +72,10 @@ describe("fromWagmi chain selection", () => {
     ["no configured chain has a deployment", [base], {}],
     ["the chosen chain has no wagmi transport", [mainnet], { chainId: sepolia.id }],
   ] as const)("fails with UNKNOWN_CHAIN when %s", (_, chains, options) => {
-    let error: unknown;
-    try {
-      fromWagmi(wagmiConfig(chains), options);
-    } catch (cause) {
-      error = cause;
-    }
-    assert.include(error, { _tag: "ConfigError", code: "UNKNOWN_CHAIN" });
+    expectThrow(() => fromWagmi(wagmiConfig(chains), options), {
+      _tag: "ConfigError",
+      code: "UNKNOWN_CHAIN",
+    });
   });
 });
 
@@ -92,7 +92,6 @@ describe("fromWagmi wallet", () => {
       const config = wagmiConfig([mainnet]);
       const ens = fromWagmi(config);
       yield* connectOn(config, mainnet.id);
-
       yield* connectOn(config, mainnet.id, 1);
       yield* Effect.promise(() => switchAccount(config, { connector: wallet(config, 0) }));
 
@@ -100,8 +99,8 @@ describe("fromWagmi wallet", () => {
       yield* Effect.promise(() => switchAccount(config, { connector: wallet(config, 1) }));
       const second = yield* resolveSigner(ens, undefined);
 
-      assert.strictEqual(addressOf(first.account), alice);
-      assert.strictEqual(addressOf(second.account), bob);
+      assert.strictEqual(addressOf(first.account)?.toLowerCase(), alice);
+      assert.strictEqual(addressOf(second.account)?.toLowerCase(), bob);
     }),
   );
 
@@ -128,6 +127,7 @@ describe("fromWagmi wallet", () => {
         code: "CHAIN_MISMATCH",
       });
       const connected = yield* Effect.promise(() => getConnectorClient(config));
+
       assert.strictEqual(connected.chain.id, sepolia.id);
     }),
   );
@@ -144,6 +144,3 @@ describe("fromWagmi wallet", () => {
     }),
   );
 });
-
-const addressOf = (account: string | { readonly address: string }) =>
-  (typeof account === "string" ? account : account.address).toLowerCase();

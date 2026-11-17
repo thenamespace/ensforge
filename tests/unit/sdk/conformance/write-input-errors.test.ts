@@ -1,8 +1,8 @@
 import { describe, it } from "@effect/vitest";
-import { Effect } from "effect";
+import type { Effect } from "effect";
 
 import { Deployments } from "@ensforge/contracts";
-import { Actions } from "@ensforge/sdk";
+import { Actions, Duration } from "@ensforge/sdk";
 import { Actions as EffectActions } from "@ensforge/sdk/effect";
 import * as Ensforge from "@ensforge/sdk/internal/client/Ensforge";
 import {
@@ -31,13 +31,11 @@ const client = (deployment?: Deployments.Profile) =>
     ...(deployment === undefined ? {} : { deployment }),
   });
 const v1Only: Deployments.Profile = { name: "mainnet", chainId: 1, v1: Deployments.mainnet.v1 };
-const v2Only: Deployments.Profile = { name: "mainnet", chainId: 1, v2: Deployments.mainnet.v2 };
 
 const invalidAddress: ExpectedError = { _tag: "InvalidInputError", code: "INVALID_ADDRESS" };
 const invalidValue: ExpectedError = { _tag: "InvalidInputError", code: "INVALID_RECORD_VALUE" };
 const invalidRoles: ExpectedError = { _tag: "InvalidInputError", code: "INVALID_ROLES" };
 const unsupported: ExpectedError = { _tag: "UnsupportedError", code: "UNSUPPORTED_ON_DEPLOYMENT" };
-const year = 31_536_000n;
 
 // Each case runs through the Promise and the Effect actions alike: both take the same arguments
 // (`paths.test.ts`), and the Effect form must fail with the typed error, never a defect.
@@ -69,11 +67,14 @@ const cases: readonly (readonly [string, Call, ExpectedError])[] = [
   [
     "approval.setOperator",
     (actions) =>
-      actions.approval.setOperator.prepare(client(v2Only), {
-        operator: account,
-        approved: true,
-        contract: "registrar",
-      }),
+      actions.approval.setOperator.prepare(
+        client({ name: "mainnet", chainId: 1, v2: Deployments.mainnet.v2 }),
+        {
+          operator: account,
+          approved: true,
+          contract: "registrar",
+        },
+      ),
     unsupported,
   ],
   [
@@ -110,19 +111,28 @@ const cases: readonly (readonly [string, Call, ExpectedError])[] = [
   [
     "registration.commit",
     (actions) =>
-      actions.registration.commit.prepare(client(v1Only), { names: name, duration: year }),
+      actions.registration.commit.prepare(client(v1Only), {
+        names: name,
+        duration: Duration.years(1),
+      }),
     unsupported,
   ],
   [
     "registration.register",
     (actions) =>
-      actions.registration.register.prepare(client(v1Only), { names: name, duration: year }),
+      actions.registration.register.prepare(client(v1Only), {
+        names: name,
+        duration: Duration.years(1),
+      }),
     unsupported,
   ],
   [
     "registration.renew",
     (actions) =>
-      actions.registration.renew.prepare(client(v1Only), { names: name, duration: year }),
+      actions.registration.renew.prepare(client(v1Only), {
+        names: name,
+        duration: Duration.years(1),
+      }),
     unsupported,
   ],
   [
@@ -195,6 +205,17 @@ const cases: readonly (readonly [string, Call, ExpectedError])[] = [
     invalidRoles,
   ],
   [
+    "role.grant",
+    (actions) =>
+      actions.role.grant.prepare(client(), {
+        grantee: account,
+        roles: -1n,
+        target: "registry",
+        name,
+      }),
+    invalidRoles,
+  ],
+  [
     "role.revoke",
     (actions) =>
       actions.role.revoke.prepare(client(), {
@@ -226,24 +247,14 @@ const cases: readonly (readonly [string, Call, ExpectedError])[] = [
       }),
     invalidValue,
   ],
-  [
-    "role.grant",
-    (actions) =>
-      actions.role.grant.prepare(client(), {
-        grantee: account,
-        roles: -1n,
-        target: "registry",
-        name,
-      }),
-    invalidRoles,
-  ],
 ];
 
 describe("write input errors", () => {
-  it.each(cases)("%s fails before reading the chain", (_, write, expected) =>
-    Effect.runPromise(Effect.asVoid(expectRejection(() => write(Actions), expected))),
+  it.effect.each(cases)("%s fails before reading the chain", ([, write, expected]) =>
+    expectRejection(() => write(Actions), expected),
   );
+
   it.effect.each(cases)("%s fails as an Effect with the same error", ([, write, expected]) =>
-    Effect.asVoid(expectFailure(asEffect(write), expected)),
+    expectFailure(asEffect(write), expected),
   );
 });

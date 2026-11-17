@@ -5,6 +5,8 @@ import { make } from "@ensforge/sdk/internal/plan/make";
 import type { Plan } from "@ensforge/sdk/internal/plan/Plan";
 import { localStorage, memoryStorage } from "@ensforge/sdk/internal/plan/storage";
 
+// Plan storage is a Promise interface that applications implement, so these tests call it as one.
+
 const record = (operation: string, status: Plan.Record["status"] = "pending"): Plan.Record => ({
   plan: make({
     operation,
@@ -41,22 +43,6 @@ const webStorage = () => {
   };
 };
 
-const exercise = (storage: Plan.Storage) =>
-  Effect.promise(async () => {
-    const first = record("registration.register");
-    const second = record("migration.migrate");
-    await storage.set(first);
-    await storage.set(second);
-    await storage.set({ ...first, status: "completed" });
-
-    const stored = await storage.get(first.plan.id);
-    const listed = await storage.list();
-    await storage.delete(second.plan.id);
-    await storage.delete("missing");
-
-    return { first, stored, listed, remaining: await storage.list() };
-  });
-
 describe.each([
   { label: "memoryStorage", create: memoryStorage },
   {
@@ -73,7 +59,18 @@ describe.each([
 
   it.effect("saves, overwrites by plan id, lists and deletes records with bigints intact", () =>
     Effect.gen(function* () {
-      const { first, stored, listed, remaining } = yield* exercise(create());
+      const storage = create();
+      const first = record("registration.register");
+      const second = record("migration.migrate");
+
+      yield* Effect.promise(() => storage.set(first));
+      yield* Effect.promise(() => storage.set(second));
+      yield* Effect.promise(() => storage.set({ ...first, status: "completed" }));
+      const stored = yield* Effect.promise(() => storage.get(first.plan.id));
+      const listed = yield* Effect.promise(() => storage.list());
+      yield* Effect.promise(() => storage.delete(second.plan.id));
+      yield* Effect.promise(() => storage.delete("missing"));
+      const remaining = yield* Effect.promise(() => storage.list());
 
       assert.deepStrictEqual(stored, { ...first, status: "completed" });
       assert.strictEqual(listed.length, 2);
@@ -83,8 +80,7 @@ describe.each([
 
   it.effect("returns undefined for an unknown id", () =>
     Effect.gen(function* () {
-      const storage = create();
-      const stored = yield* Effect.promise(() => storage.get("missing"));
+      const stored = yield* Effect.promise(() => create().get("missing"));
 
       assert.isUndefined(stored);
     }),
@@ -117,6 +113,7 @@ describe("localStorage", () => {
     Effect.gen(function* () {
       vi.stubGlobal("localStorage", undefined);
       const storage = localStorage();
+
       const calls: ReadonlyArray<() => Promise<unknown>> = [
         () => storage.get("x"),
         () => storage.set(record("record.set")),

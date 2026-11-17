@@ -1,8 +1,8 @@
 import { assert, describe, it } from "@effect/vitest";
 import { Effect } from "effect";
 
-import { Abis } from "@ensforge/contracts";
-import { Actions } from "@ensforge/sdk/effect";
+import { Abis, Deployments } from "@ensforge/contracts";
+import { Actions, Duration } from "@ensforge/sdk/effect";
 import * as Ensforge from "@ensforge/sdk/internal/client/Ensforge";
 import { expectFailure, scriptedTransport } from "@ensforge/test-harness";
 import { contractScript } from "@ensforge/test-harness/contracts-eth-call";
@@ -10,68 +10,67 @@ import {
   createPublicClient,
   decodeFunctionData,
   isAddressEqual,
-  pad,
+  numberToHex,
   zeroHash,
   type Abi,
   type Address,
 } from "viem";
 import { mainnet } from "viem/chains";
 
-import { deployment, other, signer, year } from "../world.js";
+import { other, signer } from "../world.js";
 
-const { ethRegistrar } = deployment.v2.contracts;
-const { ethRenewerV1 } = deployment.v2.migration;
-const { usdc } = deployment.v2.paymentTokens;
-const oracle = "0x00000000000000000000000000000000000000fe";
+const { ethRegistrar } = Deployments.mainnet.v2.contracts;
+const { ethRenewerV1 } = Deployments.mainnet.v2.migration;
+const { usdc } = Deployments.mainnet.v2.paymentTokens;
+const year = Duration.years(1);
 
-type Chain = {
+type Renewal = {
   /** Labels each renewal route accepts, with their price. */
   readonly v2: Readonly<Record<string, bigint>>;
   readonly v1: Readonly<Record<string, bigint>>;
-  readonly balance?: bigint;
-  readonly balanceOf?: (holder: string) => bigint;
-  readonly allowance?: (spender: string) => bigint;
+  /** The USDC balance of `holder` (default 10^12 for everyone). */
+  readonly balanceOf?: (holder: Address) => bigint;
+  readonly allowance?: (spender: Address) => bigint;
 };
 
+/** Scripted `isRenewable`/`getRenewPrice` of a renewal route accepting `prices`' labels. */
 const renewer = (prices: Readonly<Record<string, bigint>>) => ({
   isRenewable: ([label]: readonly unknown[]) => (label as string) in prices,
   getRenewPrice: ([label]: readonly unknown[]) => prices[label as string] ?? 0n,
 });
 
-const clientFor = (chain: Chain) => {
+/** A client whose ENSv2 registrar and ENSv1 renewer accept the given labels at their prices. */
+const clientFor = (renewal: Renewal) => {
   const { transport } = scriptedTransport(
     contractScript({
       contracts: [
         {
           address: ethRegistrar,
           abi: Abis.v2.ethRegistrar,
-          functions: { rentPriceOracle: () => oracle, ...renewer(chain.v2) },
+          functions: {
+            rentPriceOracle: () => "0x00000000000000000000000000000000000000fe",
+            ...renewer(renewal.v2),
+          },
         },
-        { address: ethRenewerV1, abi: Abis.v2.ethRegistrar, functions: renewer(chain.v1) },
+        { address: ethRenewerV1, abi: Abis.v2.ethRegistrar, functions: renewer(renewal.v1) },
         {
           address: usdc,
           abi: Abis.shared.erc20 as Abi,
           functions: {
-            balanceOf: ([holder]) =>
-              chain.balanceOf?.(holder as string) ?? chain.balance ?? 10n ** 12n,
-            allowance: ([, spender]) => chain.allowance?.(spender as string) ?? 0n,
+            balanceOf: ([holder]) => renewal.balanceOf?.(holder as Address) ?? 10n ** 12n,
+            allowance: ([, spender]) => renewal.allowance?.(spender as Address) ?? 0n,
           },
         },
       ],
     }),
   );
+
   return Ensforge.create({
     publicClient: createPublicClient({ chain: mainnet, transport }),
     account: signer,
     batch: { multicall: false },
   });
 };
-
-const decode = (data: `0x${string}`) =>
-  decodeFunctionData({ abi: Abis.v2.ethRegistrar, data }) as {
-    functionName: string;
-    args: readonly unknown[];
-  };
 
 describe("registration.renew.prepare", () => {
   it.effect("renews each name through the contract that accepts it, approving each spender", () =>
@@ -83,12 +82,13 @@ describe("registration.renew.prepare", () => {
         duration: year,
       });
 
+      const [approve, renew] = plan.steps;
       assert.deepStrictEqual(
         plan.steps.map((step) => step.id),
         ["approve", "renew"],
       );
       assert.deepStrictEqual(
-        (plan.steps[0]?.calls ?? []).map((call) => [
+        (approve?.calls ?? []).map((call) => [
           call.to,
           decodeFunctionData({ abi: Abis.shared.erc20, data: call.data }).args,
         ]),
@@ -97,23 +97,34 @@ describe("registration.renew.prepare", () => {
           [usdc, [ethRenewerV1, 18n]],
         ],
       );
-      const [v2Call, v1Call] = plan.steps[1]?.calls ?? [];
-      assert.strictEqual(v2Call?.to, ethRegistrar);
-      assert.deepStrictEqual(decode(v2Call?.data ?? "0x"), {
-        functionName: "renew",
-        args: [{ label: "alice", duration: year, referrer: zeroHash }, usdc],
-      });
-      assert.strictEqual(v1Call?.to, ethRenewerV1);
-      assert.deepStrictEqual(decode(v1Call?.data ?? "0x"), {
-        functionName: "renewBatch",
-        args: [
+      assert.deepStrictEqual(
+        (renew?.calls ?? []).map((call) => [
+          call.to,
+          decodeFunctionData({ abi: Abis.v2.ethRegistrar, data: call.data }),
+        ]),
+        [
           [
-            { label: "bob", duration: year, referrer: zeroHash },
-            { label: "carol", duration: year, referrer: zeroHash },
+            ethRegistrar,
+            {
+              functionName: "renew",
+              args: [{ label: "alice", duration: year, referrer: zeroHash }, usdc],
+            },
           ],
-          usdc,
+          [
+            ethRenewerV1,
+            {
+              functionName: "renewBatch",
+              args: [
+                [
+                  { label: "bob", duration: year, referrer: zeroHash },
+                  { label: "carol", duration: year, referrer: zeroHash },
+                ],
+                usdc,
+              ],
+            },
+          ],
         ],
-      });
+      );
       assert.deepStrictEqual(plan.requirements, [{ kind: "balance", amount: 23n, token: usdc }]);
     }),
   );
@@ -132,8 +143,16 @@ describe("registration.renew.prepare", () => {
         plan.steps.map((step) => step.id),
         ["renew"],
       );
-      const { args } = decode(plan.calls[0]?.data ?? "0x");
-      assert.strictEqual((args[0] as { referrer: string }).referrer, pad(other, { size: 32 }));
+      assert.deepStrictEqual(
+        decodeFunctionData({ abi: Abis.v2.ethRegistrar, data: plan.calls[0]?.data ?? "0x" }),
+        {
+          functionName: "renew",
+          args: [
+            { label: "alice", duration: year, referrer: numberToHex(BigInt(other), { size: 32 }) },
+            usdc,
+          ],
+        },
+      );
     }),
   );
 
@@ -141,13 +160,16 @@ describe("registration.renew.prepare", () => {
     ["no contract accepts the name", { v2: {}, v1: {} }, "NameStateError", "NAME_NOT_RENEWABLE"],
     [
       "the balance does not cover the total",
-      { v2: { alice: 5n }, v1: {}, balance: 4n },
+      { v2: { alice: 5n }, v1: {}, balanceOf: () => 4n },
       "InsufficientFundsError",
       "INSUFFICIENT_TOKEN_BALANCE",
     ],
-  ] as const)("fails before signing when %s", ([, chain, tag, code]) =>
+  ] as const)("fails before signing when %s", ([, renewal, tag, code]) =>
     expectFailure(
-      Actions.registration.renew.prepare(clientFor(chain), { names: "alice.eth", duration: year }),
+      Actions.registration.renew.prepare(clientFor(renewal), {
+        names: "alice.eth",
+        duration: year,
+      }),
       { _tag: tag, code },
     ),
   );
@@ -169,16 +191,19 @@ describe("registration.renew.prepare", () => {
       const ens = clientFor({
         v2: { alice: 5n },
         v1: {},
-        balanceOf: (holder) => (isAddressEqual(holder as Address, signer) ? 10n ** 12n : 0n),
+        balanceOf: (holder) => (isAddressEqual(holder, signer) ? 10n ** 12n : 0n),
       });
       const options = { names: "alice.eth", duration: year } as const;
-      const via = { id: "account", sender: async () => other };
 
       yield* Actions.registration.renew.prepare(ens, options);
-      yield* expectFailure(Actions.registration.renew.prepare(ens, { ...options, via }), {
-        _tag: "InsufficientFundsError",
-        code: "INSUFFICIENT_TOKEN_BALANCE",
-      });
+      yield* expectFailure(
+        Actions.registration.renew.prepare(ens, {
+          ...options,
+          // `sender` is the route's adapter boundary, a Promise by contract.
+          via: { id: "account", sender: async () => other },
+        }),
+        { _tag: "InsufficientFundsError", code: "INSUFFICIENT_TOKEN_BALANCE" },
+      );
     }),
   );
 });

@@ -8,7 +8,6 @@ import type { Address } from "viem";
 
 const alice = "0x00000000000000000000000000000000000000a1";
 const aliceChecksummed = "0x00000000000000000000000000000000000000A1";
-const bob = "0x00000000000000000000000000000000000000b2";
 const resolver = "0x00000000000000000000000000000000000000c3";
 
 const call = (data: `0x${string}`, value = 0n): Plan.Call => ({ to: resolver, data, value });
@@ -98,7 +97,7 @@ describe("Plan.merge", () => {
   });
 
   it.each<{ readonly label: string; readonly account: Address | undefined }>([
-    { label: "another account", account: bob },
+    { label: "another account", account: "0x00000000000000000000000000000000000000b2" },
     { label: "no account", account: undefined },
   ])("rejects a plan for $label", ({ account }) => {
     expectThrow(() => merge([recordsPlan, { ...registrationPlan, account }]), {

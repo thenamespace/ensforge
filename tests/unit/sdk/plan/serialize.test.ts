@@ -4,9 +4,7 @@ import type { Plan } from "@ensforge/sdk/internal/plan/Plan";
 import { deserialize, deserializeRecord, serialize } from "@ensforge/sdk/internal/plan/serialize";
 import { expectThrow } from "@ensforge/test-harness";
 
-import { plan } from "./arbitraries";
-
-const planInvalid = { _tag: "PlanError", code: "PLAN_INVALID" };
+import { plan } from "./arbitraries.js";
 
 const minimal: Plan = {
   id: "plan-1",
@@ -62,7 +60,10 @@ describe("Plan.deserialize invalid input", () => {
     { label: "steps that are not a list", text: '{"id":"x","steps":{}}' },
     { label: "a malformed bigint", text: '{"id":"x","steps":[],"chainId":{"~bigint":"1.5"}}' },
   ])("rejects $label with PLAN_INVALID and keeps the cause", ({ text }) => {
-    const error = expectThrow(() => deserialize(text), planInvalid) as { cause?: unknown };
+    const error = expectThrow(() => deserialize(text), {
+      _tag: "PlanError",
+      code: "PLAN_INVALID",
+    }) as { cause?: unknown };
 
     assert.instanceOf(error.cause, Error);
   });

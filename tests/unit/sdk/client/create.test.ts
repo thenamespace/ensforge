@@ -27,8 +27,8 @@ const devnet = Deployments.define({
 });
 
 const signer = privateKeyToAccount(`0x${"11".repeat(32)}`);
-const other = "0x225f137127d9067788314bc7fcc1f36746a3c3B5";
 
+/** A viem public client that must not be asked anything. */
 const publicClient = (chain: Chain = mainnet) => {
   const { transport, calls } = scriptedTransport(noRpc);
   return { client: createPublicClient({ chain, transport }), calls };
@@ -49,6 +49,7 @@ describe("Ensforge.create deployment resolution", () => {
 
   it("fails with UNKNOWN_CHAIN for a chain without a built-in deployment", () => {
     const { client } = publicClient(unknownChain);
+
     const error = expectThrow(() => Ensforge.create({ publicClient: client }), {
       _tag: "ConfigError",
       code: "UNKNOWN_CHAIN",
@@ -59,6 +60,7 @@ describe("Ensforge.create deployment resolution", () => {
 
   it("fails with UNKNOWN_CHAIN and a hint when the client has no chain", () => {
     const { transport } = scriptedTransport(noRpc);
+
     const error = expectThrow(
       () => Ensforge.create({ publicClient: createClient({ transport }) }),
       {
@@ -87,6 +89,7 @@ describe("Ensforge.create deployment resolution", () => {
 
   it("rejects a deployment for another chain with INVALID_DEPLOYMENT", () => {
     const { client } = publicClient(mainnet);
+
     expectThrow(() => Ensforge.create({ publicClient: client, deployment: devnet }), {
       _tag: "ConfigError",
       code: "INVALID_DEPLOYMENT",
@@ -96,6 +99,7 @@ describe("Ensforge.create deployment resolution", () => {
   it("rejects an invalid deployment with INVALID_DEPLOYMENT and keeps the cause", () => {
     const { client } = publicClient(unknownChain);
     const broken = { name: "devnet", chainId: 31337 } as Deployments.Profile;
+
     const error = expectThrow(() => Ensforge.create({ publicClient: client, deployment: broken }), {
       _tag: "ConfigError",
       code: "INVALID_DEPLOYMENT",
@@ -137,7 +141,7 @@ describe("Ensforge.create config", () => {
     assert.isTrue(Object.isFrozen(ens.chain));
     assert.isTrue(Object.isFrozen(ens.config));
     assert.throws(() => {
-      (ens as { account: unknown }).account = other;
+      (ens as { account: unknown }).account = signer.address;
     });
   });
 });
@@ -165,9 +169,11 @@ describe("Ensforge.create account", () => {
     const { client } = publicClient();
     const { transport } = scriptedTransport(noRpc);
     const walletClient = createWalletClient({ chain: mainnet, transport, account: signer });
-    const ens = Ensforge.create({ publicClient: client, walletClient, account: other });
+    const account = "0x225f137127d9067788314bc7fcc1f36746a3c3B5";
 
-    assert.strictEqual(ens.account, other);
+    const ens = Ensforge.create({ publicClient: client, walletClient, account });
+
+    assert.strictEqual(ens.account, account);
   });
 
   it("does not read a wallet getter's account at creation", () => {

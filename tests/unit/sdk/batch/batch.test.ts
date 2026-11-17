@@ -2,8 +2,8 @@ import { assert, describe, it } from "@effect/vitest";
 import { Effect } from "effect";
 
 import { Abis } from "@ensforge/contracts";
+import { Actions } from "@ensforge/sdk/effect";
 import { getOperator } from "@ensforge/sdk/internal/actions/approval/getOperator/index";
-import { batch as batchEffect } from "@ensforge/sdk/internal/batch/effect";
 import { batch } from "@ensforge/sdk/internal/batch/index";
 import { create } from "@ensforge/sdk/internal/client/create";
 import type { CreateOptions } from "@ensforge/sdk/internal/client/types";
@@ -26,25 +26,29 @@ const approved = getAddress("0x00000000000000000000000000000000000000a2");
 const stranger = getAddress("0x00000000000000000000000000000000000000a3");
 const reverting = getAddress("0x00000000000000000000000000000000000000a4");
 
-const isApproved = (result: boolean) =>
-  encodeFunctionResult({ abi: Abis.shared.erc1155, functionName: "isApprovedForAll", result });
+/** A client on a chain where `approved` is an operator of `owner` and asking about `reverting` reverts. */
+const clientFor = (options: Omit<CreateOptions, "publicClient"> = {}) => {
+  const { transport, calls } = scriptedTransport(
+    callScript(mainnet.contracts.multicall3.address, ({ to, data }) => {
+      if (to !== contract) return undefined;
 
-/** A chain where `approved` is an operator of `owner`, and asking about `reverting` reverts. */
-const chain = callScript(mainnet.contracts.multicall3.address, ({ to, data }) => {
-  if (to !== contract) return undefined;
-
-  const { args } = decodeFunctionData({ abi: Abis.shared.erc1155, data });
-  if (args[1] === reverting) {
-    return {
-      success: false,
-      returnData: encodeErrorResult({ abi: Abis.shared.errors, errorName: "Unauthorised" }),
-    };
-  }
-  return { success: true, returnData: isApproved(args[1] === approved) };
-});
-
-const setup = (options: Omit<CreateOptions, "publicClient"> = {}) => {
-  const { transport, calls } = scriptedTransport(chain);
+      const { args } = decodeFunctionData({ abi: Abis.shared.erc1155, data });
+      if (args[1] === reverting) {
+        return {
+          success: false,
+          returnData: encodeErrorResult({ abi: Abis.shared.errors, errorName: "Unauthorised" }),
+        };
+      }
+      return {
+        success: true,
+        returnData: encodeFunctionResult({
+          abi: Abis.shared.erc1155,
+          functionName: "isApprovedForAll",
+          result: args[1] === approved,
+        }),
+      };
+    }),
+  );
   const publicClient = createPublicClient({ chain: mainnet, transport });
   return { publicClient, ens: create({ publicClient, ...options }), calls };
 };
@@ -58,8 +62,9 @@ const operatorRequest = (operator: string, blockNumber?: bigint) =>
 describe("batch request shapes", () => {
   it.effect("answers a list as a tuple in one multicall", () =>
     Effect.gen(function* () {
-      const { ens, calls } = setup();
-      const { results } = yield* batchEffect(ens, {
+      const { ens, calls } = clientFor();
+
+      const { results } = yield* Actions.batch(ens, {
         requests: [operatorRequest(approved), operatorRequest(stranger), operatorRequest(approved)],
       });
 
@@ -74,8 +79,9 @@ describe("batch request shapes", () => {
 
   it.effect("answers a record under the same keys", () =>
     Effect.gen(function* () {
-      const { ens, calls } = setup();
-      const { results } = yield* batchEffect(ens, {
+      const { ens, calls } = clientFor();
+
+      const { results } = yield* Actions.batch(ens, {
         requests: { yes: operatorRequest(approved), no: operatorRequest(stranger) },
       });
 
@@ -91,8 +97,9 @@ describe("batch request shapes", () => {
 describe("batch RPC budget", () => {
   it.effect("groups reads per block", () =>
     Effect.gen(function* () {
-      const { ens, calls } = setup();
-      yield* batchEffect(ens, {
+      const { ens, calls } = clientFor();
+
+      yield* Actions.batch(ens, {
         requests: [
           operatorRequest(approved, 20_000_000n),
           operatorRequest(stranger, 20_000_000n),
@@ -107,8 +114,9 @@ describe("batch RPC budget", () => {
 
   it.effect("sends one call per read with multicall disabled", () =>
     Effect.gen(function* () {
-      const { ens, calls } = setup({ batch: { multicall: false } });
-      const { results } = yield* batchEffect(ens, {
+      const { ens, calls } = clientFor({ batch: { multicall: false } });
+
+      const { results } = yield* Actions.batch(ens, {
         requests: [operatorRequest(approved), operatorRequest(stranger)],
       });
 
@@ -124,16 +132,17 @@ describe("batch RPC budget", () => {
 describe("batch failure isolation", () => {
   it.effect("a reverting read fails alone with its translated error", () =>
     Effect.gen(function* () {
-      const { ens, calls } = setup();
-      const { results } = yield* batchEffect(ens, {
+      const { ens, calls } = clientFor();
+
+      const { results } = yield* Actions.batch(ens, {
         requests: [
           operatorRequest(approved),
           operatorRequest(reverting),
           operatorRequest(stranger),
         ],
       });
-      const [first, failed, last] = results;
 
+      const [first, failed, last] = results;
       assert.deepStrictEqual(first, { status: "success", result: true });
       assert.deepStrictEqual(last, { status: "success", result: false });
       assert.strictEqual(failed.status, "failure");
@@ -148,10 +157,11 @@ describe("batch failure isolation", () => {
 
   it.effect("invalid input fails before any RPC", () =>
     Effect.gen(function* () {
-      const { ens, calls } = setup();
-      const { results } = yield* batchEffect(ens, { requests: [operatorRequest("0xnope")] });
-      const [failed] = results;
+      const { ens, calls } = clientFor();
 
+      const { results } = yield* Actions.batch(ens, { requests: [operatorRequest("0xnope")] });
+
+      const [failed] = results;
       assert.strictEqual(failed.status, "failure");
       if (failed.status === "failure") assert.strictEqual(failed.error.code, "INVALID_ADDRESS");
       assert.strictEqual(ethCalls(calls), 0);
@@ -160,11 +170,14 @@ describe("batch failure isolation", () => {
 
   it.effect("a request that is not a batchable read fails alone", () =>
     Effect.gen(function* () {
-      const { ens } = setup();
+      const { ens } = clientFor();
       const write: Request<never, AnyError> = { path: "record.set", options: {} };
-      const { results } = yield* batchEffect(ens, { requests: [write, operatorRequest(approved)] });
-      const [failed, succeeded] = results;
 
+      const { results } = yield* Actions.batch(ens, {
+        requests: [write, operatorRequest(approved)],
+      });
+
+      const [failed, succeeded] = results;
       assert.deepStrictEqual(succeeded, { status: "success", result: true });
       assert.strictEqual(failed.status, "failure");
       if (failed.status === "failure") {
@@ -178,11 +191,13 @@ describe("batch failure isolation", () => {
 
   it.effect("a failed multicall fails every read in it with the same error", () =>
     Effect.gen(function* () {
+      // Every eth_call returns empty data, as from an address without code.
       const { transport, calls } = scriptedTransport(({ method }) =>
         method === "eth_call" ? "0x" : undefined,
       );
       const ens = create({ publicClient: createPublicClient({ chain: mainnet, transport }) });
-      const { results } = yield* batchEffect(ens, {
+
+      const { results } = yield* Actions.batch(ens, {
         requests: [operatorRequest(approved), operatorRequest(stranger)],
       });
 
@@ -198,8 +213,9 @@ describe("batch failure isolation", () => {
 describe("batch with allowFailure: false", () => {
   it.effect("returns plain values", () =>
     Effect.gen(function* () {
-      const { ens } = setup();
-      const { results } = yield* batchEffect(ens, {
+      const { ens } = clientFor();
+
+      const { results } = yield* Actions.batch(ens, {
         requests: [operatorRequest(approved), operatorRequest(stranger)],
         allowFailure: false,
       });
@@ -210,9 +226,10 @@ describe("batch with allowFailure: false", () => {
 
   it.effect("rejects with the failing read's error", () =>
     Effect.gen(function* () {
-      const { ens } = setup();
+      const { ens } = clientFor();
+
       yield* expectFailure(
-        batchEffect(ens, {
+        Actions.batch(ens, {
           requests: [operatorRequest(approved), operatorRequest(reverting)],
           allowFailure: false,
         }),
@@ -222,10 +239,12 @@ describe("batch with allowFailure: false", () => {
   );
 });
 
+// `signal` is the Promise API's cancellation (the Effect API interrupts instead), so this test
+// calls the Promise form.
 describe("batch cancellation", () => {
   it.effect("rejects with the abort reason", () =>
     Effect.gen(function* () {
-      const { publicClient } = setup();
+      const { publicClient } = clientFor();
       // The caller's own controller is what `signal` is for.
       // @effect-diagnostics-next-line abortControllerInEffect:off
       const controller = new AbortController();

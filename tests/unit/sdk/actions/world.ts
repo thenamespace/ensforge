@@ -1,4 +1,5 @@
 import { Abis, Deployments, InterfaceIds } from "@ensforge/contracts";
+import { Duration, Name } from "@ensforge/sdk/effect";
 import * as Ensforge from "@ensforge/sdk/internal/client/Ensforge";
 import type { Plan } from "@ensforge/sdk/internal/plan/Plan";
 import { scriptedTransport } from "@ensforge/test-harness";
@@ -8,6 +9,7 @@ import {
   decodeFunctionData,
   getAddress,
   hexToBigInt,
+  isAddressEqual,
   multicall3Abi,
   zeroAddress,
   type Abi,
@@ -15,25 +17,21 @@ import {
   type Hex,
 } from "viem";
 import { mainnet } from "viem/chains";
-import { labelhash, namehash, packetToBytes } from "viem/ens";
-import { bytesToHex, hexToBytes } from "viem/utils";
+import { namehash } from "viem/ens";
 
 // A mainnet "chain" answered from scripted contract state, so write planners can be exercised
 // route by route without a node. Names absent from the world are unregistered everywhere.
+// Addresses are checksummed, as the SDK and viem return them.
 
-export const deployment = Deployments.mainnet;
-export const v1 = deployment.v1.contracts;
-export const v2 = deployment.v2.contracts;
-
-export const signer: Address = "0x00000000000000000000000000000000000a11ce";
-export const other: Address = "0x0000000000000000000000000000000000000b0b";
-export const resolverA: Address = "0x00000000000000000000000000000000000000a1";
+/** The account the client signs with. */
+export const signer = getAddress("0x00000000000000000000000000000000000a11ce");
+export const other = getAddress("0x0000000000000000000000000000000000000b0b");
+/** A resolver every world deploys; it supports no interface unless the world says so. */
+export const resolverA = getAddress("0x00000000000000000000000000000000000000a1");
 /** The ENSv2 registry every top-level ENSv2 name lives in. */
-export const v2Registry: Address = "0x00000000000000000000000000000000000000e7";
-
+export const v2Registry = getAddress("0x00000000000000000000000000000000000000e7");
+/** The chain's current time, in seconds. */
 export const now = 1_800_000_000n;
-export const year = 31_536_000n;
-const gracePeriod = 7_776_000n;
 
 export type V1Name = {
   readonly owner: Address;
@@ -78,28 +76,6 @@ export type World = Entry & {
   readonly v1Only?: boolean | undefined;
 };
 
-export const dnsEncode = (name: string): Hex => bytesToHex(packetToBytes(name));
-
-const dnsDecode = (dns: Hex): string => {
-  const bytes = hexToBytes(dns);
-  const labels: string[] = [];
-  for (let offset = 0; bytes[offset] !== 0; offset += (bytes[offset] ?? 0) + 1) {
-    labels.push(
-      new TextDecoder().decode(bytes.slice(offset + 1, offset + 1 + (bytes[offset] ?? 0))),
-    );
-  }
-  return labels.join(".");
-};
-
-const same = (a: unknown, b: unknown) => String(a).toLowerCase() === String(b).toLowerCase();
-
-const is2ld = (name: string) => name.split(".").length === 2 && name.endsWith(".eth");
-
-const labelId = (name: string) => BigInt(labelhash(name.split(".")[0] ?? ""));
-
-const registryOwner = (name: V1Name | undefined) =>
-  name === undefined ? zeroAddress : name.wrapper !== undefined ? v1.nameWrapper : name.owner;
-
 /** A plan's calls as `[to, functionName, args]`, decoded with `abi` (ABIs may be concatenated). */
 export const decodeCalls = (calls: readonly Plan.Call[], abi: Abi) =>
   calls.map(({ to, data }) => {
@@ -107,36 +83,54 @@ export const decodeCalls = (calls: readonly Plan.Call[], abi: Abi) =>
     return [getAddress(to), functionName, args ?? []] as const;
   });
 
+const v1 = Deployments.mainnet.v1.contracts;
+const v2 = Deployments.mainnet.v2.contracts;
+const gracePeriod = 7_776_000n;
+const defaultExpiry = now + Duration.years(1);
+
+const includes = (addresses: readonly Address[] | undefined, address: Address) =>
+  (addresses ?? []).some((listed) => isAddressEqual(listed, address));
+
 const stubs = (world: World): ContractStub[] => {
   const entries = new Map<string, Entry>([
     ...Object.entries(world.names ?? {}),
     [world.name, { v1: world.v1, v2: world.v2 }],
   ]);
   const names = [...entries.keys()];
-  const byNode = (node: unknown) => names.find((name) => same(namehash(name), node));
-  const byToken = (id: unknown) => names.find((name) => is2ld(name) && labelId(name) === id);
+  const byNode = (node: unknown) => names.find((name) => namehash(name) === node);
   const v1Of = (name: string | undefined) =>
     name === undefined ? undefined : entries.get(name)?.v1;
+  const registryOwner = (state: V1Name | undefined) =>
+    state === undefined ? zeroAddress : state.wrapper !== undefined ? v1.nameWrapper : state.owner;
+  const byToken = (id: unknown) =>
+    names.find((name) => {
+      const { is2ld, tld } = Name.parse(name);
+      return is2ld && tld === "eth" && Name.toTokenId(name) === id;
+    });
 
   // ENSv2: a name lives in its parent's subregistry, or in `v2Registry` when it is a TLD child.
   const parentRegistry = (name: string): Address | undefined => {
-    const parent = name.slice(name.indexOf(".") + 1);
-    if (!parent.includes(".")) return v2Registry;
+    const { parent } = Name.parse(name);
+    if (parent === null || !parent.includes(".")) return v2Registry;
     return entries.get(parent)?.v2?.subregistry;
   };
   const inRegistry = (registry: Address, id: bigint, protocol: "v1" | "v2" = "v2") =>
-    names.find(
-      (name) =>
+    names.find((name) => {
+      const parent = parentRegistry(name);
+      return (
         entries.get(name)?.[protocol] !== undefined &&
-        same(parentRegistry(name), registry) &&
-        labelId(name) === id,
-    );
+        parent !== undefined &&
+        isAddressEqual(parent, registry) &&
+        Name.toTokenId(name) === id
+      );
+    });
   const registryStub = (registry: Address): ContractStub => {
     const v2Of = (id: bigint) => {
       const name = inRegistry(registry, id);
       const state = name === undefined ? undefined : entries.get(name)?.v2;
       return state === undefined ? undefined : { name, v2: state };
     };
+
     return {
       address: registry,
       abi: Abis.v2.userRegistry as Abi,
@@ -147,25 +141,26 @@ const stubs = (world: World): ContractStub[] => {
           const legacy = inRegistry(registry, id as bigint, "v1") !== undefined;
           return {
             status: found === undefined ? (legacy ? 1 : 0) : (found.v2.status ?? 2),
-            expiry: found === undefined ? 0n : (found.v2.expiry ?? now + year),
+            expiry: found === undefined ? 0n : (found.v2.expiry ?? defaultExpiry),
             latestOwner: found?.v2.owner ?? zeroAddress,
             tokenId: found?.v2.tokenId ?? (id as bigint),
             resource: 1n,
           };
         },
-        getResolver: ([label]) =>
-          v2Of(BigInt(labelhash(label as string)))?.v2.resolver ?? zeroAddress,
+        getResolver: ([label]) => v2Of(Name.toTokenId(label as string))?.v2.resolver ?? zeroAddress,
         getSubregistry: ([label]) =>
-          v2Of(BigInt(labelhash(label as string)))?.v2.subregistry ?? zeroAddress,
+          v2Of(Name.toTokenId(label as string))?.v2.subregistry ?? zeroAddress,
         roles: ([, account]) =>
           names
             .map((name) => entries.get(name)?.v2)
-            .find((state) => state !== undefined && same(state.owner, account))?.roles ?? 0n,
+            .find((state) => state !== undefined && isAddressEqual(state.owner, account as Address))
+            ?.roles ?? 0n,
         isOnlyAssignee: ([id]) => v2Of(id as bigint)?.v2.onlyAssignee ?? true,
         isApprovedForAll: () => false,
       },
     };
   };
+
   const registries = [
     v2Registry,
     ...names.flatMap((name) => entries.get(name)?.v2?.subregistry ?? []),
@@ -211,12 +206,12 @@ const stubs = (world: World): ContractStub[] => {
       abi: Abis.v1.baseRegistrar,
       functions: {
         ownerOf: ([id]) => {
-          const name = v1Of(byToken(id));
-          return name?.registrant ?? registryOwner(name);
+          const state = v1Of(byToken(id));
+          return state?.registrant ?? registryOwner(state);
         },
         nameExpires: ([id]) => {
-          const name = v1Of(byToken(id));
-          return name === undefined ? 0n : (name.expiry ?? now + year);
+          const state = v1Of(byToken(id));
+          return state === undefined ? 0n : (state.expiry ?? defaultExpiry);
         },
         GRACE_PERIOD: () => gracePeriod,
       },
@@ -225,7 +220,7 @@ const stubs = (world: World): ContractStub[] => {
       address: v2.universalHelper,
       abi: Abis.v2.universalHelper,
       functions: {
-        findParentRegistry: ([dns]) => parentRegistry(dnsDecode(dns as Hex)) ?? zeroAddress,
+        findParentRegistry: ([dns]) => parentRegistry(Name.dnsDecode(dns as Hex)) ?? zeroAddress,
         findNearestOwner: () => [zeroAddress, 0n],
       },
     },
@@ -241,7 +236,7 @@ const stubs = (world: World): ContractStub[] => {
     },
     ...registries.map(registryStub),
     {
-      address: deployment.v2.migration.publicResolverSet,
+      address: Deployments.mainnet.v2.migration.publicResolverSet,
       abi: Abis.v2.permissionedAddressSet as Abi,
       functions: { includes: () => false },
     },
@@ -251,7 +246,7 @@ const stubs = (world: World): ContractStub[] => {
       functions: {
         findResolver: ([dns]) => [
           world.found?.resolver ?? zeroAddress,
-          namehash(dnsDecode(dns as Hex)),
+          namehash(Name.dnsDecode(dns as Hex)),
           world.found?.offset ?? 0n,
         ],
       },
@@ -261,24 +256,22 @@ const stubs = (world: World): ContractStub[] => {
       abi: [...Abis.shared.erc165, ...Abis.shared.versionableResolver] as Abi,
       functions: {
         supportsInterface: ([id]) =>
-          (world.permissioned ?? []).some((p) => same(p, address)) ||
-          (id === InterfaceIds.resolverProfiles.extended &&
-            (world.extended ?? []).some((e) => same(e, address))),
+          includes(world.permissioned, address) ||
+          (id === InterfaceIds.resolverProfiles.extended && includes(world.extended, address)),
         recordVersions: () => 0n,
       },
     })),
   ];
 };
 
-/** An ensforge client on mainnet whose reads see `world`; `calls` records every request. */
+/** An ensforge client on mainnet, signing as `signer`, whose reads see `world`; `calls` records every request. */
 export const clientFor = (world: World) => {
   const { transport, calls } = scriptedTransport(contractScript({ contracts: stubs(world) }));
+  const { name, chainId, v1: deploymentV1 } = Deployments.mainnet;
   const ens = Ensforge.create({
     publicClient: createPublicClient({ chain: mainnet, transport }),
     account: signer,
-    ...(world.v1Only === true
-      ? { deployment: { name: deployment.name, chainId: deployment.chainId, v1: deployment.v1 } }
-      : {}),
+    ...(world.v1Only === true ? { deployment: { name, chainId, v1: deploymentV1 } } : {}),
     // One eth_call per read keeps the script simple; batching is not under test here.
     batch: { multicall: false },
   });

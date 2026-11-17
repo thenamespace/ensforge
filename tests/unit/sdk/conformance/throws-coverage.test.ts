@@ -45,6 +45,14 @@ const readActions = Object.entries(Actions as unknown as Record<string, Record<s
       .map(([name]) => ({ domain, name, path: `${domain}.${name}` })),
   );
 
+const writeActions = Object.entries(Actions as unknown as Record<string, Record<string, unknown>>)
+  .filter(([domain]) => domain !== "batch")
+  .flatMap(([domain, group]) =>
+    Object.entries(group)
+      .filter(([, action]) => (action as { readonly prepare?: unknown }).prepare !== undefined)
+      .map(([name]) => ({ domain, name, path: `${domain}.${name}` })),
+  );
+
 const documentedCodes = (domain: string, name: string): readonly string[] => {
   const source = readFileSync(new URL(`${domain}/${name}/index.ts`, actionsFolder), "utf8");
   return [
@@ -58,14 +66,6 @@ const documentedCodes = (domain: string, name: string): readonly string[] => {
     ),
   ];
 };
-
-const writeActions = Object.entries(Actions as unknown as Record<string, Record<string, unknown>>)
-  .filter(([domain]) => domain !== "batch")
-  .flatMap(([domain, group]) =>
-    Object.entries(group)
-      .filter(([, action]) => (action as { readonly prepare?: unknown }).prepare !== undefined)
-      .map(([name]) => ({ domain, name, path: `${domain}.${name}` })),
-  );
 
 const missingCodes = (
   actions: readonly { domain: string; name: string; path: string }[],

@@ -1,35 +1,16 @@
 import { assert, describe, it } from "@effect/vitest";
 import { Effect } from "effect";
 
-import { Abis } from "@ensforge/contracts";
-import { Actions } from "@ensforge/sdk/effect";
+import { Abis, Deployments } from "@ensforge/contracts";
+import { Actions, Name } from "@ensforge/sdk/effect";
 import { expectFailure } from "@ensforge/test-harness";
-import { decodeFunctionData, getAddress, zeroAddress, type Abi, type Hex } from "viem";
+import { decodeFunctionData, getAddress, zeroAddress } from "viem";
 import { namehash } from "viem/ens";
 
-import {
-  clientFor,
-  decodeCalls,
-  deployment,
-  dnsEncode,
-  resolverA,
-  signer,
-  v2Registry,
-} from "../world.js";
+import { clientFor, decodeCalls, resolverA, signer, v2Registry } from "../world.js";
 
 const name = "alice.eth";
 const node = namehash(name);
-const resolver = getAddress(resolverA);
-
-/** The setters inside a resolver `multicall`. */
-const setters = (data: Hex | undefined, abi: Abi) => {
-  const [inner] = decodeFunctionData({ abi: Abis.shared.multicallResolver, data: data ?? "0x" })
-    .args as readonly [readonly Hex[]];
-  return inner.map((call) => {
-    const { functionName, args } = decodeFunctionData({ abi, data: call });
-    return [functionName, args];
-  });
-};
 
 describe("record.set.prepare", () => {
   it.effect("keys ENSv1 setters by node, in one multicall on the name's own resolver", () =>
@@ -47,17 +28,22 @@ describe("record.set.prepare", () => {
         plan.steps.map((step) => [step.description, step.calls.length]),
         [["Set records", 1]],
       );
+      const [multicall] = plan.calls;
+      const [setters = []] = decodeFunctionData({
+        abi: Abis.shared.multicallResolver,
+        data: multicall?.data ?? "0x",
+      }).args;
+      assert.strictEqual(getAddress(multicall?.to ?? "0x"), resolverA);
       assert.deepStrictEqual(
-        plan.calls.map((call) => getAddress(call.to)),
-        [resolver],
+        setters.map((data) => decodeFunctionData({ abi: Abis.v1.publicResolver, data })),
+        [
+          { functionName: "clearRecords", args: [node] },
+          { functionName: "setText", args: [node, "url", "https://alice.dev"] },
+          { functionName: "setText", args: [node, "avatar", ""] },
+          // ENSv1 resolvers revert on empty coin-60 bytes, so deleting writes the zero address.
+          { functionName: "setAddr", args: [node, 60n, zeroAddress] },
+        ],
       );
-      assert.deepStrictEqual(setters(plan.calls[0]?.data, Abis.v1.publicResolver), [
-        ["clearRecords", [node]],
-        ["setText", [node, "url", "https://alice.dev"]],
-        ["setText", [node, "avatar", ""]],
-        // ENSv1 resolvers revert on empty coin-60 bytes, so deleting writes the zero address.
-        ["setAddr", [node, 60n, zeroAddress]],
-      ]);
     }),
   );
 
@@ -76,12 +62,19 @@ describe("record.set.prepare", () => {
         addresses: { eth: null },
       });
 
-      const dns = dnsEncode(name);
-      assert.deepStrictEqual(setters(plan.calls[0]?.data, Abis.v2.permissionedResolver), [
-        ["linkToRecord", [dns, 0n]],
-        ["setText", [dns, "url", "https://alice.dev"]],
-        ["setAddress", [dns, 60n, "0x"]],
-      ]);
+      const dns = Name.dnsEncode(name);
+      const [setters = []] = decodeFunctionData({
+        abi: Abis.shared.multicallResolver,
+        data: plan.calls[0]?.data ?? "0x",
+      }).args;
+      assert.deepStrictEqual(
+        setters.map((data) => decodeFunctionData({ abi: Abis.v2.permissionedResolver, data })),
+        [
+          { functionName: "linkToRecord", args: [dns, 0n] },
+          { functionName: "setText", args: [dns, "url", "https://alice.dev"] },
+          { functionName: "setAddress", args: [dns, 60n, "0x"] },
+        ],
+      );
     }),
   );
 
@@ -102,8 +95,8 @@ describe("record.set.prepare", () => {
       assert.deepStrictEqual(
         decodeCalls(plan.calls, [...Abis.v1.publicResolver, ...Abis.v2.permissionedRegistry]),
         [
-          [resolver, "setText", [node, "url", "x"]],
-          [getAddress(v2Registry), "setResolver", [7n, resolver]],
+          [resolverA, "setText", [node, "url", "x"]],
+          [v2Registry, "setResolver", [7n, resolverA]],
         ],
       );
     }),
@@ -118,7 +111,7 @@ describe("record.set.prepare", () => {
     ],
     [
       "the resolver is bound to the registry replaced in 2020",
-      { name, v1: { owner: signer, resolver: deployment.v1.frozenPublicResolvers[0] } },
+      { name, v1: { owner: signer, resolver: Deployments.mainnet.v1.frozenPublicResolvers[0] } },
       { texts: { url: "x" } },
       { _tag: "UnsupportedError", code: "RESOLVER_PROFILE_UNSUPPORTED" },
     ],

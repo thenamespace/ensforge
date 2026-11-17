@@ -8,9 +8,6 @@ import { scriptedTransport } from "@ensforge/test-harness";
 import { createPublicClient } from "viem";
 import { mainnet } from "viem/chains";
 
-const account = "0x00000000000000000000000000000000000a11ce";
-const target = "0x00000000000000000000000000000000000000c0";
-
 describe("estimatePlan", () => {
   // A plan's estimate is what its calls are sent with, so a wallet that sends it does not run out.
   it.effect("adds the headroom the calls are sent with to each call's estimate", () =>
@@ -21,6 +18,8 @@ describe("estimatePlan", () => {
       const client = Ensforge.create({
         publicClient: createPublicClient({ chain: mainnet, transport }),
       });
+      const account = "0x00000000000000000000000000000000000a11ce";
+      const target = "0x00000000000000000000000000000000000000c0";
       const plan = makePlan({
         operation: "test.op",
         chainId: mainnet.id,

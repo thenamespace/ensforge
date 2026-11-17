@@ -1,8 +1,8 @@
 import { assert, describe, it } from "@effect/vitest";
 import { Effect } from "effect";
 
-import { Actions, Ensforge, type Plan } from "@ensforge/sdk";
-import { Actions as EffectActions } from "@ensforge/sdk/effect";
+import { Actions as PromiseActions, Ensforge, type Plan } from "@ensforge/sdk";
+import { Actions } from "@ensforge/sdk/effect";
 import { expectFailure, expectRejection, noRpc, scriptedTransport } from "@ensforge/test-harness";
 import { createClient, createPublicClient, createWalletClient, type Chain } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
@@ -23,29 +23,29 @@ const emptyPlan = (chainId: number): Plan => ({
   deploys: [],
 });
 
+/** A public client that must not be asked anything. */
 const publicClient = (chain: Chain = mainnet) => {
   const { transport, calls } = scriptedTransport(noRpc);
   return { client: createPublicClient({ chain, transport }), calls };
 };
 
+// The first case also checks the Promise form; the signer is resolved the same way for both.
 describe("write signer resolution", () => {
   it.effect("fails with WALLET_NOT_CONFIGURED without a wallet", () =>
     Effect.gen(function* () {
       const { client, calls } = publicClient();
       const ens = Ensforge.create({ publicClient: client });
 
-      yield* expectRejection(() => Actions.plan.send(ens, { plan: emptyPlan(1) }), {
+      yield* expectRejection(() => PromiseActions.plan.send(ens, { plan: emptyPlan(1) }), {
         _tag: "ConfigError",
         code: "WALLET_NOT_CONFIGURED",
       });
-      const error = yield* expectFailure(EffectActions.plan.send(ens, { plan: emptyPlan(1) }), {
+      const error = yield* expectFailure(Actions.plan.send(ens, { plan: emptyPlan(1) }), {
         _tag: "ConfigError",
         code: "WALLET_NOT_CONFIGURED",
       });
-      assert.strictEqual(
-        (error as { context: { operation?: string } }).context.operation,
-        "plan.send",
-      );
+
+      assert.strictEqual(error.context.operation, "plan.send");
       assert.lengthOf(calls, 0);
     }),
   );
@@ -55,7 +55,7 @@ describe("write signer resolution", () => {
       const { client } = publicClient();
       const ens = Ensforge.create({ publicClient: client, walletClient: async () => undefined });
 
-      yield* expectRejection(() => Actions.plan.sendSync(ens, { plan: emptyPlan(1) }), {
+      yield* expectFailure(Actions.plan.sendSync(ens, { plan: emptyPlan(1) }), {
         _tag: "ConfigError",
         code: "WALLET_NOT_CONFIGURED",
       });
@@ -69,10 +69,11 @@ describe("write signer resolution", () => {
       const walletClient = createWalletClient({ chain: mainnet, transport });
       const ens = Ensforge.create({ publicClient: client, walletClient });
 
-      yield* expectRejection(() => Actions.plan.send(ens, { plan: emptyPlan(1) }), {
+      yield* expectFailure(Actions.plan.send(ens, { plan: emptyPlan(1) }), {
         _tag: "WalletError",
         code: "ACCOUNT_NOT_FOUND",
       });
+
       assert.lengthOf(calls, 0);
     }),
   );
@@ -84,10 +85,11 @@ describe("write signer resolution", () => {
       const walletClient = createWalletClient({ chain: sepolia, transport, account: signer });
       const ens = Ensforge.create({ publicClient: client, walletClient });
 
-      const error = (yield* expectRejection(() => Actions.plan.send(ens, { plan: emptyPlan(1) }), {
+      const error = yield* expectFailure(Actions.plan.send(ens, { plan: emptyPlan(1) }), {
         _tag: "WalletError",
         code: "CHAIN_MISMATCH",
-      })) as { readonly expectedChainId?: number; readonly actualChainId?: number };
+      });
+
       assert.strictEqual(error.expectedChainId, 1);
       assert.strictEqual(error.actualChainId, sepolia.id);
     }),
@@ -101,10 +103,11 @@ describe("write signer resolution", () => {
       const walletClient = createClient({ transport, account: signer });
       const ens = Ensforge.create({ publicClient: client, walletClient });
 
-      const error = (yield* expectRejection(
-        () => Actions.plan.send(ens, { plan: emptyPlan(sepolia.id) }),
-        { _tag: "WalletError", code: "CHAIN_MISMATCH" },
-      )) as { readonly expectedChainId?: number; readonly actualChainId?: number };
+      const error = yield* expectFailure(Actions.plan.send(ens, { plan: emptyPlan(sepolia.id) }), {
+        _tag: "WalletError",
+        code: "CHAIN_MISMATCH",
+      });
+
       assert.strictEqual(error.expectedChainId, sepolia.id);
       assert.strictEqual(error.actualChainId, 1);
       assert.deepStrictEqual(
@@ -119,7 +122,7 @@ describe("write signer resolution", () => {
       const { client } = publicClient();
       const ens = Ensforge.create({ publicClient: client });
 
-      yield* expectRejection(() => Actions.plan.send(ens, { plan: emptyPlan(sepolia.id) }), {
+      yield* expectFailure(Actions.plan.send(ens, { plan: emptyPlan(sepolia.id) }), {
         _tag: "PlanError",
         code: "PLAN_CHAIN_MISMATCH",
       });
@@ -132,7 +135,8 @@ describe("write signer resolution", () => {
       const ens = Ensforge.create({ publicClient: client });
       const plan = emptyPlan(1);
 
-      const prepared = yield* Effect.promise(() => Actions.plan.send.prepare(ens, { plan }));
+      const prepared = yield* Actions.plan.send.prepare(ens, { plan });
+
       assert.deepStrictEqual(prepared, plan);
       assert.lengthOf(calls, 0);
     }),

@@ -7,29 +7,25 @@ import { expectFailure } from "@ensforge/test-harness";
 
 import { clientFor, other, signer } from "../world.js";
 
-const transfer = (onlyAssignee: boolean) => {
-  const { ens } = clientFor({
-    name: "alice.eth",
-    v2: { owner: signer, roles: Roles.registry.canTransferAdmin, onlyAssignee },
-  });
-  return Actions.permission.check(ens, {
-    name: "alice.eth",
-    operation: "transfer",
-    account: signer,
-  });
-};
-
 describe("permission.check", () => {
   // contracts-v2 refuses a safe transfer while others hold the name's unemancipated roles
   // (TransferUnsafeWithMultipleAssignees), which `name.transfer` sends by default.
   it.effect("blocks an ENSv2 transfer while other accounts hold roles on the name", () =>
     Effect.gen(function* () {
-      assert.isTrue((yield* transfer(true)).allowed);
+      const [alone, shared] = yield* Effect.forEach([true, false], (onlyAssignee) =>
+        Actions.permission.check(
+          clientFor({
+            name: "alice.eth",
+            v2: { owner: signer, roles: Roles.registry.canTransferAdmin, onlyAssignee },
+          }).ens,
+          { name: "alice.eth", operation: "transfer", account: signer },
+        ),
+      );
 
-      const shared = yield* transfer(false);
-      assert.isFalse(shared.allowed);
+      assert.isTrue(alone?.allowed);
+      assert.isFalse(shared?.allowed);
       assert.deepStrictEqual(
-        shared.missing.map((requirement) => requirement.type === "blocked" && requirement.reason),
+        shared?.missing.map((requirement) => requirement.type === "blocked" && requirement.reason),
         ["transfer-disallowed"],
       );
     }),
@@ -41,11 +37,13 @@ describe("permission.check", () => {
         name: "alice.eth",
         v2: { owner: signer, roles: Roles.registry.canTransferAdmin },
       });
+
       const check = yield* Actions.permission.check(ens, {
         name: "alice.eth",
         operation: "transfer",
         account: other,
       });
+
       assert.isFalse(check.allowed);
     }),
   );
@@ -54,6 +52,7 @@ describe("permission.check", () => {
   it.effect("fails with a typed error for an address record key that is not a coin", () =>
     Effect.gen(function* () {
       const { ens } = clientFor({ name: "alice.eth" });
+
       yield* expectFailure(
         Actions.permission.check(ens, {
           name: "alice.eth",
@@ -64,10 +63,13 @@ describe("permission.check", () => {
       );
     }),
   );
+});
 
-  it.effect("permission.get fails with a typed error for a record coin that does not exist", () =>
+describe("permission.get", () => {
+  it.effect("fails with a typed error for a record coin that does not exist", () =>
     Effect.gen(function* () {
       const { ens } = clientFor({ name: "alice.eth" });
+
       yield* expectFailure(
         Actions.permission.get(ens, {
           name: "alice.eth",

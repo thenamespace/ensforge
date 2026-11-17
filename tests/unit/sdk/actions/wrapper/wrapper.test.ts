@@ -1,26 +1,21 @@
 import { assert, describe, it } from "@effect/vitest";
 import { Effect } from "effect";
 
-import { Abis } from "@ensforge/contracts";
-import { Actions } from "@ensforge/sdk/effect";
+import { Abis, Deployments } from "@ensforge/contracts";
+import { nameWrapperFuses as fuses } from "@ensforge/contracts/v1";
+import { Actions, Name } from "@ensforge/sdk/effect";
 import { expectFailure } from "@ensforge/test-harness";
-import { decodeAbiParameters, decodeFunctionData, getAddress, type Hex } from "viem";
+import { decodeAbiParameters, decodeFunctionData, parseAbiParameters, type Hex } from "viem";
 import { labelhash, namehash } from "viem/ens";
 
-import { clientFor, dnsEncode, now, other, signer, v1, type World } from "../world.js";
+import { clientFor, now, other, signer, type World } from "../world.js";
 
-// NameWrapper fuse bits (ens-contracts INameWrapper.sol), the oracle for fuse masks.
-const CANNOT_UNWRAP = 1;
-const CANNOT_BURN_FUSES = 2;
-const CANNOT_SET_RESOLVER = 8;
-const PARENT_CANNOT_CONTROL = 1 << 16;
+const { baseRegistrar, nameWrapper } = Deployments.mainnet.v1.contracts;
 
-const wrapped = (name: string, fuses: number): World => ({
+const wrapped = (name: string, burned: number): World => ({
   name,
-  v1: { owner: signer, wrapper: { owner: signer, fuses, expiry: now + 1000n } },
+  v1: { owner: signer, wrapper: { owner: signer, fuses: burned, expiry: now + 1000n } },
 });
-
-const decode = (data: Hex) => decodeFunctionData({ abi: Abis.v1.nameWrapper, data });
 
 describe("wrapper.wrap.prepare", () => {
   it.effect(
@@ -34,27 +29,29 @@ describe("wrapper.wrap.prepare", () => {
           fuses: ["cannotUnwrap"],
         });
 
-        assert.deepStrictEqual(
-          plan.steps.map((step) => step.id),
-          ["wrap"],
-        );
         const [call] = plan.calls;
-        assert.strictEqual(call?.to, v1.baseRegistrar);
         const { functionName, args } = decodeFunctionData({
           abi: Abis.v1.baseRegistrar,
           data: call?.data ?? "0x",
         });
+        assert.deepStrictEqual(
+          plan.steps.map((step) => step.id),
+          ["wrap"],
+        );
+        assert.strictEqual(call?.to, baseRegistrar);
         assert.strictEqual(functionName, "safeTransferFrom");
         assert.deepStrictEqual(args?.slice(0, 3), [
-          getAddress(signer),
-          v1.nameWrapper,
+          signer,
+          nameWrapper,
           BigInt(labelhash("alice")),
         ]);
-        const [label, owner, fuses] = decodeAbiParameters(
-          [{ type: "string" }, { type: "address" }, { type: "uint16" }, { type: "address" }],
-          args?.[3] as Hex,
+        assert.deepStrictEqual(
+          decodeAbiParameters(
+            parseAbiParameters("string, address, uint16, address"),
+            args?.[3] as Hex,
+          ).slice(0, 3),
+          ["alice", signer, fuses.cannotUnwrap],
         );
-        assert.deepStrictEqual([label, owner, fuses], ["alice", getAddress(signer), CANNOT_UNWRAP]);
       }),
   );
 
@@ -64,24 +61,23 @@ describe("wrapper.wrap.prepare", () => {
   ] as const)("%s", ([, approved, steps]) =>
     Effect.gen(function* () {
       const name = "pay.alice.eth";
-      const { ens } = clientFor({
-        name,
-        v1: { owner: signer },
-        approvedForAll: approved,
-      });
+      const { ens } = clientFor({ name, v1: { owner: signer }, approvedForAll: approved });
 
       const plan = yield* Actions.wrapper.wrap.prepare(ens, { name });
 
+      const wrap = plan.calls.at(-1);
       assert.deepStrictEqual(
         plan.steps.map((step) => step.id),
         [...steps],
       );
-      const wrap = plan.calls.at(-1);
-      assert.strictEqual(wrap?.to, v1.nameWrapper);
-      assert.deepStrictEqual(decode(wrap?.data ?? "0x").args?.slice(0, 2), [
-        dnsEncode(name),
-        getAddress(signer),
-      ]);
+      assert.strictEqual(wrap?.to, nameWrapper);
+      assert.deepStrictEqual(
+        decodeFunctionData({ abi: Abis.v1.nameWrapper, data: wrap?.data ?? "0x" }).args?.slice(
+          0,
+          2,
+        ),
+        [Name.dnsEncode(name), signer],
+      );
     }),
   );
 
@@ -109,37 +105,38 @@ describe("wrapper.wrap.prepare", () => {
       "INVALID_RECORD_VALUE",
     ],
   ] as const)("refuses %s", ([, world, options, tag, code]) =>
-    Effect.gen(function* () {
-      const { ens } = clientFor(world);
-      yield* expectFailure(Actions.wrapper.wrap.prepare(ens, { name: world.name, ...options }), {
-        _tag: tag,
-        code,
-      });
-    }),
+    expectFailure(
+      Actions.wrapper.wrap.prepare(clientFor(world).ens, { name: world.name, ...options }),
+      { _tag: tag, code },
+    ),
   );
 });
 
 describe("wrapper.setFuses.prepare", () => {
   it.effect("burns the requested owner fuses on the node", () =>
     Effect.gen(function* () {
-      const { ens } = clientFor(wrapped("alice.eth", PARENT_CANNOT_CONTROL));
+      const { ens } = clientFor(wrapped("alice.eth", fuses.parentCannotControl));
 
       const plan = yield* Actions.wrapper.setFuses.prepare(ens, {
         name: "alice.eth",
         fuses: ["cannotUnwrap", "cannotSetResolver"],
       });
 
-      assert.strictEqual(plan.calls[0]?.to, v1.nameWrapper);
-      const { functionName, args } = decode(plan.calls[0]?.data ?? "0x");
-      assert.strictEqual(functionName, "setFuses");
-      assert.deepStrictEqual(args, [namehash("alice.eth"), CANNOT_UNWRAP | CANNOT_SET_RESOLVER]);
+      assert.strictEqual(plan.calls[0]?.to, nameWrapper);
+      assert.deepStrictEqual(
+        decodeFunctionData({ abi: Abis.v1.nameWrapper, data: plan.calls[0]?.data ?? "0x" }),
+        {
+          functionName: "setFuses",
+          args: [namehash("alice.eth"), fuses.cannotUnwrap | fuses.cannotSetResolver],
+        },
+      );
     }),
   );
 
   it.effect.each([
     [
       "cannotBurnFuses is burned",
-      wrapped("alice.eth", PARENT_CANNOT_CONTROL | CANNOT_UNWRAP | CANNOT_BURN_FUSES),
+      wrapped("alice.eth", fuses.parentCannotControl | fuses.cannotUnwrap | fuses.cannotBurnFuses),
       "UnauthorizedError",
       "FUSE_BURNED",
     ],
@@ -186,11 +183,9 @@ describe("wrapper.unwrap.prepare", () => {
 
       const plan = yield* Actions.wrapper.unwrap.prepare(ens, { name });
 
-      const decoded = decode(plan.calls[0]?.data ?? "0x");
-      assert.strictEqual(decoded.functionName, functionName);
-      assert.deepStrictEqual<readonly unknown[] | undefined>(
-        decoded.args,
-        args.map((arg) => (arg === signer ? getAddress(signer) : arg)),
+      assert.deepStrictEqual(
+        decodeFunctionData({ abi: Abis.v1.nameWrapper, data: plan.calls[0]?.data ?? "0x" }),
+        { functionName, args },
       );
     }),
   );
@@ -198,7 +193,7 @@ describe("wrapper.unwrap.prepare", () => {
   it.effect("refuses once cannotUnwrap is burned", () =>
     expectFailure(
       Actions.wrapper.unwrap.prepare(
-        clientFor(wrapped("alice.eth", PARENT_CANNOT_CONTROL | CANNOT_UNWRAP)).ens,
+        clientFor(wrapped("alice.eth", fuses.parentCannotControl | fuses.cannotUnwrap)).ens,
         { name: "alice.eth", owner: other },
       ),
       { _tag: "UnauthorizedError", code: "FUSE_BURNED" },

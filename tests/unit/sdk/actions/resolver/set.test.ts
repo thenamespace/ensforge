@@ -1,34 +1,34 @@
 import { assert, describe, it } from "@effect/vitest";
 import { Effect } from "effect";
 
-import { Abis } from "@ensforge/contracts";
+import { Abis, Deployments } from "@ensforge/contracts";
 import { Actions } from "@ensforge/sdk/effect";
 import { expectFailure } from "@ensforge/test-harness";
-import { getAddress, zeroAddress } from "viem";
+import { zeroAddress } from "viem";
 import { namehash } from "viem/ens";
 
-import { clientFor, decodeCalls, now, other, resolverA, signer, v1, v2Registry } from "../world.js";
+import { clientFor, decodeCalls, now, other, resolverA, signer, v2Registry } from "../world.js";
 
 const name = "alice.eth";
 const node = namehash(name);
-const resolver = getAddress(resolverA);
+const v1 = Deployments.mainnet.v1.contracts;
 const abis = [...Abis.v1.ensRegistry, ...Abis.v1.nameWrapper, ...Abis.v2.permissionedRegistry];
 
 describe("resolver.set.prepare", () => {
   // Where the call goes depends on where the name lives.
   it.effect.each([
-    ["ENSv1 unwrapped → registry", { name, v1: { owner: signer } }, v1.registry, [node, resolver]],
+    ["ENSv1 unwrapped → registry", { name, v1: { owner: signer } }, v1.registry, [node, resolverA]],
     [
       "ENSv1 wrapped → NameWrapper",
       { name, v1: { owner: signer, wrapper: { owner: signer, fuses: 0, expiry: now + 1000n } } },
       v1.nameWrapper,
-      [node, resolver],
+      [node, resolverA],
     ],
     [
       "ENSv2 → parent registry, by token ID",
       { name, v2: { owner: signer, tokenId: 42n } },
-      getAddress(v2Registry),
-      [42n, resolver],
+      v2Registry,
+      [42n, resolverA],
     ],
   ] as const)("routes %s", ([, world, to, args]) =>
     Effect.gen(function* () {

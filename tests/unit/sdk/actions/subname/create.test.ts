@@ -1,18 +1,26 @@
 import { assert, describe, it } from "@effect/vitest";
 import { Effect } from "effect";
 
-import { Abis, Roles } from "@ensforge/contracts";
+import { Abis, Deployments, Roles } from "@ensforge/contracts";
 import { Actions } from "@ensforge/sdk/effect";
 import { expectFailure } from "@ensforge/test-harness";
-import { decodeFunctionData, getAddress, maxUint64, type Abi } from "viem";
+import { getAddress, maxUint64, zeroAddress } from "viem";
 import { labelhash, namehash } from "viem/ens";
 
-import { clientFor, now, other, resolverA, signer, v1, type Entry, type World } from "../world.js";
+import {
+  clientFor,
+  decodeCalls,
+  now,
+  other,
+  resolverA,
+  signer,
+  type Entry,
+  type World,
+} from "../world.js";
 
 const child = "pay.alice.eth";
-const subregistry = "0x00000000000000000000000000000000000000c5";
-const owner = getAddress(other);
-const resolver = getAddress(resolverA);
+const subregistry = getAddress("0x00000000000000000000000000000000000000c5");
+const { registry, nameWrapper } = Deployments.mainnet.v1.contracts;
 
 const parentV1: Entry = { v1: { owner: signer } };
 const parentWrapped: Entry = {
@@ -31,50 +39,47 @@ describe("subname.create.prepare", () => {
     [
       "ENSv1 parent → registry setSubnodeRecord",
       parentV1,
-      v1.registry,
-      Abis.v1.ensRegistry,
-      [namehash("alice.eth"), labelhash("pay"), owner, resolver, 0n],
+      registry,
+      "setSubnodeRecord",
+      [namehash("alice.eth"), labelhash("pay"), other, resolverA, 0n],
     ],
     [
       "wrapped parent → NameWrapper setSubnodeRecord with fuses and expiry",
       parentWrapped,
-      v1.nameWrapper,
-      Abis.v1.nameWrapper,
-      [namehash("alice.eth"), "pay", owner, resolver, 0n, 0, 0n],
+      nameWrapper,
+      "setSubnodeRecord",
+      [namehash("alice.eth"), "pay", other, resolverA, 0n, 0, 0n],
     ],
     [
       "ENSv2 parent → register in its subregistry with the registration roles",
       parentV2,
       subregistry,
-      Abis.v2.userRegistry,
-      [
-        "pay",
-        owner,
-        "0x0000000000000000000000000000000000000000",
-        resolver,
-        Roles.registryBitmaps.registration,
-        maxUint64,
-      ],
+      "register",
+      ["pay", other, zeroAddress, resolverA, Roles.registryBitmaps.registration, maxUint64],
     ],
-  ] as const)("routes an %s", ([, parent, to, abi, args]) =>
+  ] as const)("routes an %s", ([, parent, to, functionName, args]) =>
     Effect.gen(function* () {
       const { ens } = clientFor(under(parent));
 
-      const plan = yield* Actions.subname.create.prepare(ens, { name: child, owner, resolver });
+      const plan = yield* Actions.subname.create.prepare(ens, {
+        name: child,
+        owner: other,
+        resolver: resolverA,
+      });
 
       assert.deepStrictEqual(
         plan.steps.map((step) => [step.id, step.description]),
         [["create", "Create subname"]],
       );
       assert.deepStrictEqual(plan.deploys, []);
-      const [call] = plan.calls;
-      assert.strictEqual(call?.to.toLowerCase(), to.toLowerCase());
-      const decoded = decodeFunctionData({ abi: abi as Abi, data: call?.data ?? "0x" });
-      assert.strictEqual(
-        decoded.functionName,
-        abi === Abis.v2.userRegistry ? "register" : "setSubnodeRecord",
+      assert.deepStrictEqual(
+        decodeCalls(plan.calls, [
+          ...Abis.v1.ensRegistry,
+          ...Abis.v1.nameWrapper,
+          ...Abis.v2.userRegistry,
+        ]),
+        [[to, functionName, args]],
       );
-      assert.deepStrictEqual(decoded.args, args);
     }),
   );
 
@@ -84,7 +89,7 @@ describe("subname.create.prepare", () => {
 
       const plan = yield* Actions.subname.create.prepare(ens, {
         name: child,
-        resolver,
+        resolver: resolverA,
         records: { texts: { url: "x" } },
       });
 
@@ -92,12 +97,9 @@ describe("subname.create.prepare", () => {
         plan.steps.map((step) => step.id),
         ["create", "records"],
       );
-      const records = plan.steps[1]?.calls[0] ?? { to: "0x", data: "0x" };
-      assert.strictEqual(records.to, resolver);
-      assert.deepStrictEqual(
-        decodeFunctionData({ abi: Abis.v1.publicResolver, data: records.data }).args,
-        [namehash(child), "url", "x"],
-      );
+      assert.deepStrictEqual(decodeCalls(plan.steps[1]?.calls ?? [], Abis.v1.publicResolver), [
+        [resolverA, "setText", [namehash(child), "url", "x"]],
+      ]);
     }),
   );
 
@@ -107,7 +109,7 @@ describe("subname.create.prepare", () => {
 
       const plan = yield* Actions.subname.create.prepare(ens, {
         name: child,
-        resolver,
+        resolver: resolverA,
         upsert: true,
       });
 
@@ -150,7 +152,7 @@ describe("subname.create.prepare", () => {
     expectFailure(
       Actions.subname.create.prepare(clientFor(world).ens, {
         name: world.name,
-        resolver,
+        resolver: resolverA,
         ...options,
       }),
       { _tag: tag, code },

@@ -7,11 +7,7 @@ import { expectFailure, expectThrow, noRpc, scriptedTransport } from "@ensforge/
 import { createPublicClient, defineChain } from "viem";
 import { mainnet } from "viem/chains";
 
-const reserved = { _tag: "ConfigError", code: "INVALID_ACTION_GROUP" };
-
-const first = () => "first";
-const second = () => "second";
-
+/** A viem public client that must not be asked anything. */
 const makeClient = () => {
   const { transport } = scriptedTransport(noRpc);
   return createPublicClient({ chain: mainnet, transport });
@@ -30,8 +26,8 @@ describe("Client.extend", () => {
 
   it("merges groups by key, later actions winning", () => {
     const ens = Ensforge.create({ publicClient: makeClient() })
-      .extend(() => ({ tools: { a: first, b: first } }))
-      .extend(() => ({ tools: { b: second, c: second } }));
+      .extend(() => ({ tools: { a: () => "first", b: () => "first" } }))
+      .extend(() => ({ tools: { b: () => "second", c: () => "second" } }));
 
     assert.strictEqual(ens.tools.a(), "first");
     assert.strictEqual(ens.tools.b(), "second");
@@ -51,7 +47,11 @@ describe("Client.extend", () => {
     "rejects the reserved group %j",
     (group) => {
       const base = Ensforge.create({ publicClient: makeClient() });
-      expectThrow(() => base.extend(() => ({ [group]: {} })), reserved);
+
+      expectThrow(() => base.extend(() => ({ [group]: {} })), {
+        _tag: "ConfigError",
+        code: "INVALID_ACTION_GROUP",
+      });
     },
   );
 
@@ -71,6 +71,7 @@ describe("Client.extend", () => {
 describe("Ensforge.from and Ensforge.is", () => {
   it("wraps a bare viem client once and reuses it", () => {
     const client = makeClient();
+
     const ens = Ensforge.from(client);
 
     assert.isTrue(Ensforge.is(ens));
@@ -98,6 +99,7 @@ describe("Ensforge.layer", () => {
   it.effect("provides the client as a service", () =>
     Effect.gen(function* () {
       const publicClient = makeClient();
+
       const ens = yield* EffectEnsforge.Ensforge.pipe(
         Effect.provide(EffectEnsforge.layer({ publicClient })),
       );
@@ -116,13 +118,15 @@ describe("Ensforge.layer", () => {
         nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
         rpcUrls: { default: { http: ["http://localhost:8545"] } },
       });
-      const program = EffectEnsforge.Ensforge.pipe(
-        Effect.provide(
-          EffectEnsforge.layer({ publicClient: createPublicClient({ chain, transport }) }),
-        ),
-      );
 
-      yield* expectFailure(program, { _tag: "ConfigError", code: "UNKNOWN_CHAIN" });
+      yield* expectFailure(
+        EffectEnsforge.Ensforge.pipe(
+          Effect.provide(
+            EffectEnsforge.layer({ publicClient: createPublicClient({ chain, transport }) }),
+          ),
+        ),
+        { _tag: "ConfigError", code: "UNKNOWN_CHAIN" },
+      );
     }),
   );
 });

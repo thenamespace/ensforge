@@ -13,11 +13,6 @@ import {
 
 declare const ens: Ensforge.Client<IndexerActions>;
 
-// The loader's parameter needs an annotation: a context-sensitive callback is not inferred from
-// the options argument.
-const load = (options: Actions.indexer.getSubnames.Options) =>
-  Actions.indexer.getSubnames(ens, options);
-
 describe("paginate", () => {
   it("yields pages of the bound action's items", () => {
     const pages = paginate(ens.indexer.getSubnames, { name: "ens.eth", limit: 200 });
@@ -28,9 +23,12 @@ describe("paginate", () => {
   });
 
   it("works with a standalone action", () => {
-    const pages = paginate(load, {
-      name: "ens.eth",
-    });
+    // The loader's parameter needs an annotation: a context-sensitive callback is not inferred
+    // from the options argument.
+    const pages = paginate(
+      (options: Actions.indexer.getSubnames.Options) => Actions.indexer.getSubnames(ens, options),
+      { name: "ens.eth" },
+    );
     expectTypeOf(pages).toEqualTypeOf<AsyncGenerator<Page<Subname>, void, undefined>>();
   });
 

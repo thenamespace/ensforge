@@ -1,5 +1,5 @@
 import { describe, it } from "@effect/vitest";
-import { Effect } from "effect";
+import type { Effect } from "effect";
 
 import { Deployments } from "@ensforge/contracts";
 import { Actions } from "@ensforge/sdk";
@@ -30,22 +30,9 @@ const client = (deployment?: Deployments.Profile) =>
     ...(deployment === undefined ? {} : { deployment }),
   });
 
-const mainnetV1Only: Deployments.Profile = {
-  name: "mainnet",
-  chainId: 1,
-  v1: Deployments.mainnet.v1,
-};
-const mainnetV2Only: Deployments.Profile = {
-  name: "mainnet",
-  chainId: 1,
-  v2: Deployments.mainnet.v2,
-};
-
 const invalidAddress: ExpectedError = { _tag: "InvalidInputError", code: "INVALID_ADDRESS" };
 const invalidCoin: ExpectedError = { _tag: "InvalidInputError", code: "INVALID_COIN_TYPE" };
 const invalidValue: ExpectedError = { _tag: "InvalidInputError", code: "INVALID_RECORD_VALUE" };
-const noWallet: ExpectedError = { _tag: "ConfigError", code: "WALLET_NOT_CONFIGURED" };
-const unsupported: ExpectedError = { _tag: "UnsupportedError", code: "UNSUPPORTED_ON_DEPLOYMENT" };
 
 // Each case runs through the Promise and the Effect actions alike: both take the same arguments
 // (`paths.test.ts`), and the Effect form must fail with the typed error, never a defect.
@@ -73,14 +60,18 @@ const cases: readonly (readonly [string, Call, ExpectedError])[] = [
   [
     "permission.check",
     (actions) => actions.permission.check(client(), { name, operation: "transfer" }),
-    noWallet,
+    { _tag: "ConfigError", code: "WALLET_NOT_CONFIGURED" },
   ],
   [
     "permission.get",
     (actions) => actions.permission.get(client(), { name, account: badAddress }),
     invalidAddress,
   ],
-  ["permission.get", (actions) => actions.permission.get(client(), { name }), noWallet],
+  [
+    "permission.get",
+    (actions) => actions.permission.get(client(), { name }),
+    { _tag: "ConfigError", code: "WALLET_NOT_CONFIGURED" },
+  ],
   ["plan.list", (actions) => actions.plan.list(client(), { account: badAddress }), invalidAddress],
   [
     "primaryName.get",
@@ -135,27 +126,33 @@ const cases: readonly (readonly [string, Call, ExpectedError])[] = [
   [
     "name.getLabel",
     (actions) =>
-      actions.name.getLabel(client(mainnetV1Only), { labelhash: `0x${"00".repeat(32)}` }),
-    unsupported,
+      actions.name.getLabel(client({ name: "mainnet", chainId: 1, v1: Deployments.mainnet.v1 }), {
+        labelhash: `0x${"00".repeat(32)}`,
+      }),
+    { _tag: "UnsupportedError", code: "UNSUPPORTED_ON_DEPLOYMENT" },
   ],
   [
     "approval.getOperator",
     (actions) =>
-      actions.approval.getOperator(client(mainnetV2Only), {
-        owner: address,
-        operator: address,
-        contract: "registrar",
-      }),
-    unsupported,
+      actions.approval.getOperator(
+        client({ name: "mainnet", chainId: 1, v2: Deployments.mainnet.v2 }),
+        {
+          owner: address,
+          operator: address,
+          contract: "registrar",
+        },
+      ),
+    { _tag: "UnsupportedError", code: "UNSUPPORTED_ON_DEPLOYMENT" },
   ],
 ];
 
 describe("read input errors", () => {
-  it.each(cases)("%s fails before reading the chain", (_, read, expected) =>
-    Effect.runPromise(Effect.asVoid(expectRejection(() => read(Actions), expected))),
+  it.effect.each(cases)("%s fails before reading the chain", ([, read, expected]) =>
+    expectRejection(() => read(Actions), expected),
   );
+
   it.effect.each(cases)("%s fails as an Effect with the same error", ([, read, expected]) =>
-    Effect.asVoid(expectFailure(asEffect(read), expected)),
+    expectFailure(asEffect(read), expected),
   );
 });
 
@@ -191,22 +188,16 @@ const indexerReads = [
 ] as const;
 
 describe("indexer reads", () => {
-  it.each(indexerReads)("%s fails without a configured indexer", (path) => {
+  it.effect.each(indexerReads)("%s fails without a configured indexer", (path) => {
     const read = Actions.indexer[path.slice("indexer.".length) as keyof typeof Actions.indexer] as (
       client: unknown,
       options: unknown,
     ) => Promise<unknown>;
-    return Effect.runPromise(
-      Effect.asVoid(
-        // `getPermissions` takes exactly one subject.
-        expectRejection(
-          () => read(client(), path === "indexer.getPermissions" ? { name } : indexerOptions),
-          {
-            _tag: "ConfigError",
-            code: "INDEXER_NOT_CONFIGURED",
-          },
-        ),
-      ),
+
+    // `getPermissions` takes exactly one subject.
+    return expectRejection(
+      () => read(client(), path === "indexer.getPermissions" ? { name } : indexerOptions),
+      { _tag: "ConfigError", code: "INDEXER_NOT_CONFIGURED" },
     );
   });
 });
