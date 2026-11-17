@@ -10,7 +10,7 @@ const unit = (name: (typeof packages)[number]) => ({
     name: `${name}:unit`,
     root: `packages/${name}`,
     include: ["test/unit/**/*.test.ts"],
-    setupFiles: ["../test-env/src/setup.ts"],
+    setupFiles: ["../../tests/harness/src/setup.ts"],
   },
 });
 

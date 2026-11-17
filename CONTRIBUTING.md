@@ -32,8 +32,8 @@ packages/contracts/ ENS ABIs, fragments, interfaces, and deployments
 packages/sdk/       Standalone ENS actions and Effect APIs
 packages/react/     Providers, hooks, atoms, and cache APIs
 packages/hca/       Hidden Contract Account route and executors
-packages/test-env/  Private deterministic ENS integration environment
 packages/template/  Starter for new packages
+tests/harness/      Shared test harness for every test suite
 ```
 
 Keep changes within the package that owns the behavior. Shared public types belong with their domain
@@ -55,54 +55,24 @@ package metadata, exports, and clean consumer installations.
 During development, run a focused package command when it provides a faster feedback loop:
 
 ```sh
-pnpm --filter @ensforge/sdk test
+pnpm vitest --project sdk:unit
 pnpm --filter @ensforge/sdk typecheck
-pnpm --filter @ensforge/react test:watch
-pnpm --filter @ensforge/docs dev
 ```
 
-## Contract integration tests
+## Tests
 
-Integration tests run against a pinned Docker image containing deterministic ENSv1 and ENSv2 Anvil
-deployments. Docker must be running locally.
+Tests use [`@effect/vitest`](https://github.com/Effect-TS/effect/tree/main/packages/vitest) only;
+do not import `vitest` directly. `it.effect` runs Effect tests, `it.prop` / `it.effect.prop` run
+property tests from Schemas or `effect/Arbitrary`.
 
-```sh
-pnpm build:devnet
-pnpm test:integration
-```
+- Fast tests sit next to their package: `packages/<pkg>/test/unit/<area>/*.test.ts` and
+  `packages/<pkg>/test/types/*.test-d.ts`. They never touch the network and run on every pull
+  request (`pnpm test`).
+- Suites that need a chain or services live in private packages under `tests/` and are run by
+  maintainers and release CI. Shared setup, matchers, transports and arbitraries live in
+  `tests/harness`.
 
-The test environment starts once for the suite, seeds its fixtures, and resets chain state between
-tests. Local runs use the pinned local image by default. CI pulls a prebuilt image. To reuse a
-published image locally, authenticate with GHCR if needed and set `ENSFORGE_TEST_IMAGE` to its
-digest. See [test environment setup](packages/test-env/README.md).
-
-Live read-only smoke suites verify the public deployments separately. They require provider URLs and
-never submit transactions. The commands automatically load a root `.env` file when present:
-
-```sh
-ENSFORGE_MAINNET_RPC_URL=https://… pnpm test:live:mainnet
-ENSFORGE_SEPOLIA_RPC_URL=https://… pnpm test:live:sepolia
-```
-
-The indexer smoke tests use the public defaults. To avoid community endpoint rate limits, override
-them with authenticated or dedicated endpoints when available:
-
-```bash
-ENSFORGE_MAINNET_V1_SUBGRAPH_URL=https://…
-ENSFORGE_SEPOLIA_V1_INDEXER_URL=https://…
-ENSFORGE_SEPOLIA_V2_INDEXER_URL=https://…
-```
-
-`ENSFORGE_MAINNET_V1_INDEXER_URL` remains supported as a compatibility alias.
-
-The Sepolia suite uses `ENSFORGE_SEPOLIA_V2_NAME` when set and otherwise reads the public
-configured fixture tree. Follow the [Sepolia deployment guide](https://ensforge.com/core/guides/sepolia-deployment)
-when creating your own fixtures. `pnpm setup:sepolia-v2` previews the setup; `pnpm setup:docs-sepolia`
-applies it and sends transactions. Use a dedicated test wallet and never commit its keys.
-
-When adding an action, cover domain logic with focused unit tests and contract behavior with an
-integration test when the behavior depends on deployed bytecode or chain state. Use `@effect/vitest`
-for Effect-based tests and preserve the existing test folder conventions.
+Property tests use a fixed seed; reproduce a failure with `ENSFORGE_TEST_SEED=<seed> pnpm test`.
 
 ## Documentation
 

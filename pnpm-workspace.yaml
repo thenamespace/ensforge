@@ -1,5 +1,6 @@
 packages:
   - "packages/*"
+  - "tests/*"
 
 catalog:
   "@effect/atom-react": "4.1.4"

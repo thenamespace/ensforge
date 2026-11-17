@@ -1,8 +1,8 @@
 {
-  "name": "@ensforge/test-env",
+  "name": "@ensforge/test-harness",
   "version": "0.0.0",
   "private": true,
-  "description": "Shared test harness for ensforge packages (not published)",
+  "description": "Shared test harness for ensforge test suites (not published)",
   "type": "module",
   "exports": {
     ".": "./src/index.ts",

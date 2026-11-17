@@ -54,8 +54,9 @@ The monorepo also contains private development packages:
 
 ```text
 packages/
-  test-env/    Private deterministic ENS integration environment
   template/    Starter for future packages
+tests/
+  harness/     Shared test harness (setup, matchers, transports, arbitraries)
 ```
 
 ## Development
