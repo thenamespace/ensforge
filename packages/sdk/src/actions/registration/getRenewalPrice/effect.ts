@@ -14,8 +14,8 @@ export const getRenewalPrice = Effect.fn("ensforge.registration.getRenewalPrice"
     client: Client,
     options: Promises.Options,
   ): Effect.fn.Return<Promises.ReturnType, Promises.ErrorType> {
-    const contracts = yield* requireRegistrationContracts(client);
     const names = yield* parseEthNames(options.names);
+    const contracts = yield* requireRegistrationContracts(client);
     const token = yield* paymentTokenAddress(contracts, options.paymentToken);
 
     const { quotes, info } = yield* Effect.all(

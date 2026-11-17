@@ -15,8 +15,8 @@ export const isAvailable = Effect.fn("ensforge.registration.isAvailable")(
     client: Client,
     options: Promises.Options,
   ): Effect.fn.Return<Promises.ReturnType, Promises.ErrorType> {
-    const contracts = yield* requireRegistrationContracts(client);
     const { label } = yield* parseEthName(options.name);
+    const contracts = yield* requireRegistrationContracts(client);
     const at =
       options.blockNumber === undefined
         ? { blockTag: options.blockTag }

@@ -18,8 +18,8 @@ export const getPrice = Effect.fn("ensforge.registration.getPrice")(
     client: Client,
     options: Promises.Options,
   ): Effect.fn.Return<Promises.ReturnType, Promises.ErrorType> {
-    const contracts = yield* requireRegistrationContracts(client);
     const { label, labelhash } = yield* parseEthName(options.name);
+    const contracts = yield* requireRegistrationContracts(client);
     const token = yield* paymentTokenAddress(contracts, options.paymentToken);
     const at =
       options.blockNumber === undefined

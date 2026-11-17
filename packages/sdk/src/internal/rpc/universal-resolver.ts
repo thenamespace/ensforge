@@ -153,15 +153,19 @@ export const findResolver = (
   client: Client,
   options: { readonly name: string } & Read.BlockOptions,
 ): Effect.Effect<FoundResolver | null, AnyError> =>
-  readContract(client, {
-    address: universalResolverOf(client),
-    abi: Abis.v2.universalResolver,
-    functionName: "findResolver",
-    args: [dnsEncode(options.name)],
-    ...(options.blockNumber === undefined
-      ? { blockTag: options.blockTag }
-      : { blockNumber: options.blockNumber }),
-  }).pipe(
+  // `dnsEncode` throws `INVALID_NAME`; inside the Effect it is a typed failure, not a defect.
+  Effect.try({ try: () => dnsEncode(options.name), catch: (error) => error as AnyError }).pipe(
+    Effect.flatMap((dns) =>
+      readContract(client, {
+        address: universalResolverOf(client),
+        abi: Abis.v2.universalResolver,
+        functionName: "findResolver",
+        args: [dns],
+        ...(options.blockNumber === undefined
+          ? { blockTag: options.blockTag }
+          : { blockNumber: options.blockNumber }),
+      }),
+    ),
     Effect.map(([address, , offset]) =>
       address === zeroAddress ? null : { address, inherited: offset !== 0n },
     ),

@@ -9,6 +9,7 @@ import { knownContracts } from "../../../internal/event/classify.js";
 import { decodeLogs } from "../../../internal/event/decode.js";
 import { nameLogs } from "../../../internal/event/sources.js";
 import { loadName } from "../../../internal/name/load.js";
+import { parseName } from "../../../internal/name/normalize.js";
 import { fromPromise } from "../../../internal/rpc/fromPromise.js";
 import type { get as Promises } from "./index.js";
 
@@ -17,6 +18,8 @@ export const get = Effect.fn("ensforge.event.get")(function* (
   client: Client,
   options: Promises.Options,
 ): Effect.fn.Return<Promises.ReturnType, Promises.ErrorType> {
+  // Validate the name before reading the head block.
+  yield* parseName(options.name);
   const toBlock =
     options.toBlock === undefined || options.toBlock === "latest"
       ? yield* fromPromise(() => getBlockNumber(client.publicClient, { cacheTime: 0 }))

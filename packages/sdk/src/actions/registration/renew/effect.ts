@@ -62,8 +62,8 @@ export const plan = Effect.fnUntraced(function* (
     return yield* Effect.fail(new ConfigError({ code: "WALLET_NOT_CONFIGURED" }));
   }
 
-  const contracts = yield* requireRegistrationContracts(client);
   const names = yield* parseEthNames(options.names);
+  const contracts = yield* requireRegistrationContracts(client);
   const referrer = yield* referrerOf(options.referrer);
   const token = yield* paymentTokenAddress(contracts, options.paymentToken);
   // Each route's price check enforces its own oracle's payment tokens (`PaymentTokenNotSupported`).

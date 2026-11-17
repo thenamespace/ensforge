@@ -181,8 +181,8 @@ export const prepareRegistration = Effect.fnUntraced(function* (
   input: RegistrationInput,
   signer: Address,
 ): Effect.fn.Return<PreparedRegistration, AnyError> {
-  const contracts = yield* requireRegistrationContracts(client);
   const names = yield* parseEthNames(input.names);
+  const contracts = yield* requireRegistrationContracts(client);
   const validated = yield* validateOptions(input, signer, names);
   const owned = validated.resolver === "owned" ? yield* ownedResolver(client, signer) : undefined;
   const options = {
