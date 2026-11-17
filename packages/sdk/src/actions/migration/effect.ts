@@ -45,6 +45,7 @@ import type { migrate as migrateTypes, migrateSync as migrateSyncTypes } from ".
  * ```
  *
  * @throws `Errors.InvalidInputError` (`INVALID_NAME`, `INVALID_ADDRESS`) for invalid input.
+ * @throws `Errors.UnsupportedError` (`UNSUPPORTED_ON_DEPLOYMENT`) where ENSv2 is not deployed.
  * @throws `Errors.NetworkError` when the RPC request fails.
  *
  * @see {@link Actions.migration.migrate} to migrate it
@@ -109,6 +110,7 @@ export declare namespace get {
  *
  * @throws `Errors.InvalidInputError` (`INVALID_NAME`, `INVALID_ADDRESS`, `INVALID_RECORD_VALUE`) for invalid input.
  * @throws `Errors.MigrationError` (`NOT_ELIGIBLE`, `ALREADY_MIGRATED`, `RECORDS_UNKNOWN`) when a name cannot migrate as asked.
+ * @throws `Errors.UnsupportedError` (`UNSUPPORTED_ON_DEPLOYMENT`) where ENSv2 is not deployed.
  * @throws `Errors.UnauthorizedError` (`NOT_OWNER`, `FUSE_BURNED`) when the account may not move a token.
  * @throws `Errors.UserRejectedError` when the user rejects the request.
  *
@@ -160,6 +162,7 @@ export declare namespace migrate {
  *
  * @throws `Errors.InvalidInputError` (`INVALID_NAME`, `INVALID_ADDRESS`, `INVALID_RECORD_VALUE`) for invalid input.
  * @throws `Errors.MigrationError` (`NOT_ELIGIBLE`, `ALREADY_MIGRATED`, `RECORDS_UNKNOWN`) when a name cannot migrate as asked.
+ * @throws `Errors.UnsupportedError` (`UNSUPPORTED_ON_DEPLOYMENT`) where ENSv2 is not deployed.
  * @throws `Errors.UnauthorizedError` (`NOT_OWNER`, `FUSE_BURNED`) when the account may not move a token.
  * @throws `Errors.TransactionError` (`TRANSACTION_REVERTED`, `RECEIPT_TIMEOUT`) when confirmation fails.
  * @throws `Errors.MigrationError` (`VERIFICATION_FAILED`) when a migrated name's ENSv2 state differs from the plan.
