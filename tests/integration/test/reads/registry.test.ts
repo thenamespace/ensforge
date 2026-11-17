@@ -20,7 +20,10 @@ describe("registry.get", () => {
           const ens = ensforge(yield* Devnet);
           const registryOf = (name: string) => call(() => ens.registry.get({ name }));
 
-          assert.deepInclude(yield* registryOf("eth"), { kind: "eth", canonicalName: "eth" });
+          // The `.eth` registry is not a proxy: no implementation, nothing to upgrade.
+          const eth = yield* registryOf("eth");
+          assert.deepInclude(eth, { kind: "eth", canonicalName: "eth", implementation: null });
+          assert.strictEqual(eth?.upgrade.blocker, "not-upgradeable");
           assert.deepInclude(yield* registryOf("v2-parent.eth"), {
             kind: "user",
             canonicalName: "v2-parent.eth",
