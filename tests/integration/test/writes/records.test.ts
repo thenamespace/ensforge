@@ -136,6 +136,75 @@ describe("record writes", () => {
     }
 
     it.effect(
+      "links a name to another's records, and unlinks it",
+      () =>
+        Effect.gen(function* () {
+          const fixtures = yield* Fixtures;
+          const devnet = yield* Devnet;
+          const ens = ensforge(devnet, { account: devnet.accounts.bob });
+          const linked = fixtures.byId("records.v2.linked").name;
+          const target = fixtures.byId("records.v2").name;
+          const url = () => call(() => ens.record.getText({ name: linked, key: "url" }));
+
+          yield* isolated(
+            devnet,
+            Effect.gen(function* () {
+              // Clearing a linked name gives it an empty record of its own (`linkToRecord(name, 0)`).
+              yield* call(() => ens.record.setSync({ name: linked, clear: true }));
+              assert.isNull(yield* call(() => ens.resolver.getLink({ name: linked })));
+              assert.isNull(yield* url());
+
+              yield* call(() => ens.resolver.linkSync({ name: linked, to: target }));
+              assert.strictEqual(yield* url(), "https://ensforge.com");
+            }),
+          );
+        }),
+      { meta: { cases: ["R22", "M:B7"] } },
+    );
+
+    it.effect(
+      "creates a resolver with records and points a name at it",
+      () =>
+        Effect.gen(function* () {
+          const fixtures = yield* Fixtures;
+          const devnet = yield* Devnet;
+          const ens = ensforge(devnet, { account: devnet.accounts.alice });
+          const name = fixtures.byId("v2.registered").name;
+
+          yield* isolated(
+            devnet,
+            Effect.gen(function* () {
+              const { resolver } = yield* call(() =>
+                ens.resolver.createSync({
+                  name,
+                  records: {
+                    texts: { url: "https://created.example" },
+                    data: { "eth.ens.example": "0x1234" },
+                  },
+                }),
+              );
+              yield* call(() => ens.resolver.setSync({ name, resolver }));
+
+              assert.strictEqual(
+                (yield* call(() => ens.resolver.get({ name })))?.address,
+                resolver,
+              );
+              assert.deepInclude(
+                yield* call(() =>
+                  ens.record.get({ name, texts: ["url"], data: ["eth.ens.example"] }),
+                ),
+                {
+                  texts: { url: "https://created.example" },
+                  data: { "eth.ens.example": "0x1234" },
+                },
+              );
+            }),
+          );
+        }),
+      { meta: { cases: ["K31", "M:B5"] } },
+    );
+
+    it.effect(
       "clears every record of a name",
       () =>
         Effect.gen(function* () {

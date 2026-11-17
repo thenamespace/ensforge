@@ -558,7 +558,8 @@
   "R22": {
     "tests": [
       "tests/integration/test/reads/records.test.ts > reads default and linked records",
-      "tests/integration/test/reads/resolver.test.ts > describes ENSv2 resolvers and their record links"
+      "tests/integration/test/reads/resolver.test.ts > describes ENSv2 resolvers and their record links",
+      "tests/integration/test/writes/records.test.ts > links a name to another's records, and unlinks it"
     ]
   },
   "R23": {
@@ -780,7 +781,8 @@
   },
   "K31": {
     "tests": [
-      "tests/integration/test/reads/records.test.ts > reads a PermissionedResolver, where a zero address is a record"
+      "tests/integration/test/reads/records.test.ts > reads a PermissionedResolver, where a zero address is a record",
+      "tests/integration/test/writes/records.test.ts > creates a resolver with records and points a name at it"
     ]
   },
   "K32": {
@@ -1479,7 +1481,8 @@
       "tests/integration/test/reads/records.test.ts > reads a PermissionedResolver, where a zero address is a record",
       "tests/integration/test/reads/resolver.test.ts > describes ENSv2 resolvers and their record links",
       "tests/integration/test/writes/access-matrix.test.ts > record.set as ENSv2 owner",
-      "tests/integration/test/writes/access-matrix.test.ts > record.set as ENSv2 stranger"
+      "tests/integration/test/writes/access-matrix.test.ts > record.set as ENSv2 stranger",
+      "tests/integration/test/writes/records.test.ts > creates a resolver with records and points a name at it"
     ]
   },
   "M:B6": {
@@ -1493,7 +1496,8 @@
   "M:B7": {
     "tests": [
       "tests/integration/test/reads/records.test.ts > reads default and linked records",
-      "tests/integration/test/reads/resolver.test.ts > describes ENSv2 resolvers and their record links"
+      "tests/integration/test/reads/resolver.test.ts > describes ENSv2 resolvers and their record links",
+      "tests/integration/test/writes/records.test.ts > links a name to another's records, and unlinks it"
     ]
   },
   "M:B8": {
