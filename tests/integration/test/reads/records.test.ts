@@ -1,7 +1,7 @@
 import { assert, describe } from "@effect/vitest";
 import { Effect } from "effect";
 
-import { Devnet } from "@ensforge/test-devnet";
+import { avatarImage, Devnet } from "@ensforge/test-devnet";
 import { Fixtures } from "@ensforge/test-fixtures";
 import { expectRejection } from "@ensforge/test-harness";
 import { stringToHex } from "viem";
@@ -171,9 +171,12 @@ describe("record reads", () => {
               /^data:image\/svg\+xml/u,
             );
             assert.isNull(yield* avatarOf("records.avatar.unknown-scheme"));
+            // NFTs count only when the name's ETH address holds them (ENSIP-12).
+            assert.strictEqual(yield* avatarOf("records.avatar.erc721-owned"), avatarImage);
+            assert.strictEqual(yield* avatarOf("records.avatar.erc1155"), avatarImage);
             assert.isNull(yield* avatarOf("records.avatar.erc721-not-owned"));
           }),
-        { meta: { cases: ["K33", "K34", "K36", "K38"] } },
+        { meta: { cases: ["K33", "K34", "K35", "K36", "K38"] } },
       );
     });
   }

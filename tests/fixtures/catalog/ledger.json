@@ -789,7 +789,9 @@
     ]
   },
   "K35": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/records.test.ts > returns avatars it can use and ignores the rest"
+    ]
   },
   "K36": {
     "tests": [
