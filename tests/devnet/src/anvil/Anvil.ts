@@ -18,6 +18,8 @@ export type AnvilOptions = {
   readonly timestamp?: bigint;
   /** Saved chain state to start from (`anvil --load-state`). */
   readonly loadState?: string;
+  /** EIP-155 chain id; anvil's 31337 when omitted. */
+  readonly chainId?: number;
 };
 
 export type AnvilInstance = { readonly rpcUrl: string; readonly port: number };
@@ -75,6 +77,7 @@ export class Anvil extends Context.Service<
           noMining: options.mining === false ? true : undefined,
           timestamp: options.timestamp,
           loadState: options.loadState,
+          chainId: options.chainId,
         });
         yield* Effect.acquireRelease(
           Effect.tryPromise({

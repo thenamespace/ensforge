@@ -19,6 +19,11 @@ export type DevnetOptions = {
   readonly port?: number;
   /** `0.0.0.0` makes the chain reachable from containers (indexer, bundler). */
   readonly host?: string;
+  /**
+   * EIP-155 chain id, anvil's 31337 by default. Services that only index known chains (bigname)
+   * need the devnet to answer as one of them, e.g. Sepolia's 11155111.
+   */
+  readonly chainId?: number;
 };
 
 /** A running devnet: anvil loaded with a built profile. */
@@ -55,9 +60,24 @@ export const startDevnet = Effect.fn("startDevnet")(function* (options: DevnetOp
     loadState: built.stateFile,
     ...(options.port === undefined ? {} : { port: options.port }),
     ...(options.host === undefined ? {} : { host: options.host }),
+    ...(options.chainId === undefined ? {} : { chainId: options.chainId }),
   });
 
-  const deployments = profiles[options.profile].deployments(built.ledger);
+  const profileDeployments = profiles[options.profile].deployments(built.ledger);
+  // The deployment and each protocol in it name the chain they live on.
+  const deployments =
+    options.chainId === undefined
+      ? profileDeployments
+      : {
+          ...profileDeployments,
+          chainId: options.chainId,
+          ...(profileDeployments.v1 === undefined
+            ? {}
+            : { v1: { ...profileDeployments.v1, chainId: options.chainId } }),
+          ...(profileDeployments.v2 === undefined
+            ? {}
+            : { v2: { ...profileDeployments.v2, chainId: options.chainId } }),
+        };
   const contracts = Object.fromEntries(
     [...built.ledger].map(([key, deployed]) => [key, deployed.address]),
   );
@@ -65,6 +85,7 @@ export const startDevnet = Effect.fn("startDevnet")(function* (options: DevnetOp
     deployments.v2?.contracts.universalResolver ?? deployments.v1?.contracts.universalResolver;
   const chain = defineChain({
     ...foundry,
+    ...(options.chainId === undefined ? {} : { id: options.chainId }),
     contracts: {
       multicall3: { address: contracts["canonical.multicall3"] as Address },
       ...(universalResolver === undefined

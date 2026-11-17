@@ -1,7 +1,7 @@
 import { NodeServices } from "@effect/platform-node";
 import { Context, Effect, Layer } from "effect";
 
-import { Devnet, type ProfileName } from "@ensforge/test-devnet";
+import { Devnet, type DevnetOptions, type ProfileName } from "@ensforge/test-devnet";
 
 import type { FixtureEntry, Manifest, Tags } from "./fixture.ts";
 import { fixtureSeed, sourcesKey } from "./seed.ts";
@@ -52,12 +52,12 @@ const api = (manifest: Manifest): FixturesApi => {
 export class Fixtures extends Context.Service<Fixtures, FixturesApi>()(
   "@ensforge/test-fixtures/Fixtures",
 ) {
-  static readonly layer = (options: { readonly profile: ProfileName }) => {
+  static readonly layer = (
+    options: { readonly profile: ProfileName } & Pick<DevnetOptions, "host" | "chainId">,
+  ) => {
     const devnet = Layer.unwrap(
       sourcesKey().pipe(
-        Effect.map((key) =>
-          Devnet.layer({ profile: options.profile, seed: fixtureSeed(options.profile, key) }),
-        ),
+        Effect.map((key) => Devnet.layer({ ...options, seed: fixtureSeed(options.profile, key) })),
         Effect.provide(NodeServices.layer),
       ),
     );
