@@ -76,10 +76,12 @@ export const scanLogs = Effect.fnUntraced(function* (
   const logs: Log[] = [];
   for (const query of queries) {
     if (query.address.length === 0) continue;
-    // Later chunks start at the span the provider accepted, so splits are found only once.
-    for (let from = range.fromBlock; from <= range.toBlock; from += span) {
+    // Later chunks use the span the provider accepted, so splits are found only once. Each chunk
+    // starts after the previous one, whose range may be wider than the span split down within it.
+    for (let from = range.fromBlock; from <= range.toBlock;) {
       const to = from + span - 1n < range.toBlock ? from + span - 1n : range.toBlock;
       logs.push(...(yield* scan(query, from, to)));
+      from = to + 1n;
     }
   }
 
