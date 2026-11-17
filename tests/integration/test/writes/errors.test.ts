@@ -760,6 +760,56 @@ const refusals: readonly Refusal[] = [
     options: (f, d) => ({ name: at("v1.wrapped")(f), to: d.accounts.carol }),
     expected: unauthorized("NOT_OWNER"),
   },
+  // DNS records on public resolvers.
+  {
+    label: "nothing to write",
+    path: "dns.setRecords",
+    account: "alice",
+    options: (f) => ({ name: at("records.v1")(f) }),
+    expected: invalid("INVALID_RECORD_VALUE"),
+  },
+  {
+    label: "an expired name",
+    path: "dns.setRecords",
+    account: "alice",
+    options: (f) => ({ name: at("v1.unwrapped.expired")(f), zonehash: null }),
+    expected: nameState("NAME_EXPIRED"),
+  },
+  {
+    label: "a reserved name",
+    path: "dns.setRecords",
+    account: "alice",
+    options: (f) => ({ name: at("v2.unregistered.renewed")(f), zonehash: null }),
+    expected: nameState("NAME_RESERVED"),
+  },
+  {
+    label: "an unregistered name",
+    path: "dns.setRecords",
+    account: "alice",
+    options: () => ({ name: unregistered, zonehash: null }),
+    expected: nameState("NAME_NOT_REGISTERED"),
+  },
+  {
+    label: "a name without a resolver",
+    path: "dns.setRecords",
+    account: "alice",
+    options: (f) => ({ name: at("resolver.none")(f), zonehash: null }),
+    expected: notFound("RESOLVER_NOT_FOUND"),
+  },
+  {
+    label: "a resolver without DNS records",
+    path: "dns.setRecords",
+    account: "bob",
+    options: (f) => ({ name: at("records.v2")(f), zonehash: null }),
+    expected: unsupported("RESOLVER_PROFILE_UNSUPPORTED"),
+  },
+  {
+    label: "a stranger",
+    path: "dns.setRecords",
+    account: "user",
+    options: (f) => ({ name: at("records.v1")(f), zonehash: null }),
+    expected: unauthorized("NOT_OWNER"),
+  },
   // Payment and migration.
   {
     label: "an account without funds",
