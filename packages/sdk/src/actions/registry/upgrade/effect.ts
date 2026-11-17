@@ -38,7 +38,7 @@ export const plan = Effect.fnUntraced(function* (
   // A custom target is checked by the registry itself during the upgrade; the latest one is
   // checked here so the reason is clear before signing.
   const blocker =
-    target === null
+    target === null || info.implementation === null
       ? "not-upgradeable"
       : options.implementation === undefined
         ? info.upgrade.blocker

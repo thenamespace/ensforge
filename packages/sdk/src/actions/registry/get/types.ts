@@ -36,8 +36,8 @@ export type RegistryUpgradeBlocker =
 export type RegistryInfo = {
   readonly address: Address;
   readonly kind: RegistryKind;
-  /** Current implementation behind the proxy. */
-  readonly implementation: Address;
+  /** Current implementation behind the proxy; `null` when the registry is not a proxy. */
+  readonly implementation: Address | null;
   /** The registry above it and the label it sits under, as set with `setParent`. */
   readonly parent: { readonly registry: Address; readonly label: string } | null;
   /** Name whose children this registry holds, e.g. `nick.eth`; `null` when not reachable. */

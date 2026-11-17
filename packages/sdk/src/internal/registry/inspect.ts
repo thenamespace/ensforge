@@ -76,7 +76,9 @@ export const inspectRegistry = Effect.fnUntraced(function* (
     { concurrency: "unbounded" },
   );
 
-  const implementation = getAddress(sliceHex(read.word ?? zeroHash, 12));
+  // An empty ERC-1967 slot: the registry is not a proxy.
+  const slot = getAddress(sliceHex(read.word ?? zeroHash, 12));
+  const implementation = isAddressEqual(slot, zeroAddress) ? null : slot;
   const kind: RegistryKind =
     v2 !== undefined && isAddressEqual(address, v2.contracts.rootRegistry)
       ? "root"
@@ -96,7 +98,7 @@ export const inspectRegistry = Effect.fnUntraced(function* (
   const emancipated = read.emancipated === true;
 
   let blocker: RegistryInfo["upgrade"]["blocker"] = null;
-  if (latest === null) blocker = "not-upgradeable";
+  if (latest === null || implementation === null) blocker = "not-upgradeable";
   else if (isAddressEqual(latest, implementation)) blocker = "up-to-date";
   else {
     const { accepts, listed } = yield* Effect.all(
