@@ -512,12 +512,14 @@
   },
   "R13": {
     "tests": [
-      "tests/integration/test/reads/resolver.test.ts > reads misbehaving resolvers as missing records, and fails strict reads with a typed error"
+      "tests/integration/test/reads/resolver.test.ts > reads misbehaving resolvers as missing records, and fails strict reads with a typed error",
+      "tests/integration/test/reads/resolver.test.ts > describes each generation and kind of resolver"
     ]
   },
   "R14": {
     "tests": [
-      "tests/integration/test/reads/resolver.test.ts > reads misbehaving resolvers as missing records, and fails strict reads with a typed error"
+      "tests/integration/test/reads/resolver.test.ts > reads misbehaving resolvers as missing records, and fails strict reads with a typed error",
+      "tests/integration/test/reads/resolver.test.ts > describes each generation and kind of resolver"
     ]
   },
   "R15": {

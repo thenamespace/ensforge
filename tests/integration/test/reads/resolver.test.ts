@@ -61,7 +61,13 @@ describe("resolver reads", () => {
               kind: "public-resolver",
               authorization: "none",
             });
-            for (const id of ["resolver.eoa", "resolver.no-erc165"]) {
+            // A gas burner and a returndata bomb are checked within EIP-165's gas bound.
+            for (const id of [
+              "resolver.eoa",
+              "resolver.no-erc165",
+              "resolver.gas-burner",
+              "resolver.returndata-bomb",
+            ]) {
               assert.deepInclude(yield* resolverOf(nameOf(id)), {
                 kind: "custom",
                 inherited: false,
@@ -85,7 +91,11 @@ describe("resolver reads", () => {
               { _tag: "NotFoundError", code: "RESOLVER_NOT_FOUND" },
             );
           }),
-        { meta: { cases: ["M:B2", "M:B9", "M:B13", "M:B14", "R02", "R05", "R11", "R12"] } },
+        {
+          meta: {
+            cases: ["M:B2", "M:B9", "M:B13", "M:B14", "R02", "R05", "R11", "R12", "R13", "R14"],
+          },
+        },
       );
 
       it.effect(
