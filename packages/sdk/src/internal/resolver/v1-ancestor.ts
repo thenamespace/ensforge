@@ -1,12 +1,13 @@
 import { Effect } from "effect";
 
 import { Abis } from "@ensforge/contracts";
-import { isAddressEqual, zeroAddress, type Address } from "viem";
+import { isAddressEqual, type Address } from "viem";
 
 import type { Client } from "../../client/types.js";
 import type { AnyError } from "../../errors/types.js";
 import type { Read } from "../../Types.js";
 import { namehash } from "../../utils/Name.js";
+import { nonZeroAddress } from "../address.js";
 import * as Rpc from "../rpc/index.js";
 
 /**
@@ -45,7 +46,8 @@ export const nearestV1AncestorResolver = (
     Effect.map((resolvers) => {
       const address = resolvers.find(
         (resolver) =>
-          resolver !== zeroAddress && (loop === undefined || !isAddressEqual(resolver, loop)),
+          nonZeroAddress(resolver) !== null &&
+          (loop === undefined || !isAddressEqual(resolver, loop)),
       );
       return address === undefined ? null : { address, inherited: true as const };
     }),

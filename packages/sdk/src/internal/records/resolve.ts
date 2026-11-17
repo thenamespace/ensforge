@@ -22,12 +22,6 @@ export type Resolved = {
 const noRecordCodes = new Set(["RESOLVER_NOT_FOUND", "RESOLVER_PROFILE_UNSUPPORTED"]);
 
 /**
- * A successful result is ABI-encoded data: non-empty and 32-byte aligned. A failed call returns
- * revert data, which starts with a 4-byte selector (as ensjs checks too).
- */
-const isResult = (data: Hex): boolean => data !== "0x" && (data.length - 2) % 64 === 0;
-
-/**
  * Resolves several resolver calls for one name in a single Universal Resolver request, as
  * `resolve(name, multicall(calls))`. One call is sent as-is.
  */
@@ -64,7 +58,11 @@ export const resolveCalls = Effect.fnUntraced(function* (
         data: resolved.data,
       });
 
-  const answered = results.map((result) => (isResult(result) ? result : undefined));
+  // A successful result is ABI-encoded data: non-empty and 32-byte aligned. A failed call returns
+  // revert data, which starts with a 4-byte selector (as ensjs checks too).
+  const answered = results.map((result) =>
+    result !== "0x" && (result.length - 2) % 64 === 0 ? result : undefined,
+  );
   // When no call is answered, the read ends as a single call would, with the most telling failure
   // (a gateway failure, no reachable resolver) over a missing profile; a missing resolver or
   // profile is an error only for strict reads.

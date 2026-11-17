@@ -1,7 +1,7 @@
 import { Effect } from "effect";
 
 import { Abis } from "@ensforge/contracts";
-import { bytesToHex, keccak256, type Hex } from "viem";
+import { bytesToHex, keccak256 } from "viem";
 import { packetToBytes } from "viem/ens";
 
 import type { Client } from "../../../client/types.js";
@@ -9,9 +9,6 @@ import * as Action from "../../../internal/action/index.js";
 import { loadName } from "../../../internal/name/load.js";
 import * as Rpc from "../../../internal/rpc/index.js";
 import type { getRecords as Promises } from "./index.js";
-
-const orNull = (data: Hex | undefined): Hex | null =>
-  data === undefined || data === "0x" ? null : data;
 
 /** @internal Implementation of `Actions.dns.getRecords`. */
 export const getRecords = Effect.fn("ensforge.dns.getRecords")(function* (
@@ -34,7 +31,7 @@ export const getRecords = Effect.fn("ensforge.dns.getRecords")(function* (
   }
 
   const { node } = loaded.data.parts;
-  // Resolvers without the DNS profiles revert; their records read as missing.
+  // Resolvers without the DNS profiles revert, and empty bytes are no record: both read as missing.
   const { zonehash, records } = yield* Effect.all(
     {
       zonehash: Rpc.readContractOrUndefined(client, {
@@ -59,7 +56,11 @@ export const getRecords = Effect.fn("ensforge.dns.getRecords")(function* (
             ],
             ...block,
           }).pipe(
-            Effect.map((data) => ({ name: query.name, type: query.type, data: orNull(data) })),
+            Effect.map((data) => ({
+              name: query.name,
+              type: query.type,
+              data: data === undefined || data === "0x" ? null : data,
+            })),
           ),
         { concurrency: "unbounded" },
       ),
@@ -67,5 +68,9 @@ export const getRecords = Effect.fn("ensforge.dns.getRecords")(function* (
     { concurrency: "unbounded" },
   );
 
-  return { resolver, zonehash: orNull(zonehash), records };
+  return {
+    resolver,
+    zonehash: zonehash === undefined || zonehash === "0x" ? null : zonehash,
+    records,
+  };
 }, Action.withContext("dns.getRecords"));

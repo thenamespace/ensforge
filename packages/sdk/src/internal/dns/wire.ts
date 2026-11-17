@@ -4,7 +4,7 @@ import { bytesToString, hexToBytes, type Hex } from "viem";
 export const RecordType = { txt: 16 } as const;
 
 /** One resource record in DNS wire format. */
-export type ResourceRecord = {
+type ResourceRecord = {
   readonly name: string;
   readonly type: number;
   readonly data: Uint8Array;

@@ -3,6 +3,7 @@ import {
   encodeFunctionData,
   isAddress,
   isHex,
+  stringToHex,
   zeroAddress,
   zeroHash,
   type Abi,
@@ -14,7 +15,6 @@ import { InvalidInputError } from "../../errors/classes/InvalidInputError.js";
 import { UnsupportedError } from "../../errors/classes/UnsupportedError.js";
 import type { Plan } from "../../plan/Plan.js";
 import * as CoinType from "../../utils/CoinType.js";
-import { encodeAbiJson } from "./abi-record.js";
 import { loadRecordCodecs, type RecordCodecs } from "./codecs.js";
 import type { SetterKeying } from "./setter-keying.js";
 
@@ -33,44 +33,8 @@ export type RecordWrites = {
   readonly clear?: boolean | undefined;
 };
 
-const unsupported = (feature: string) =>
-  new UnsupportedError({
-    code: "RESOLVER_PROFILE_UNSUPPORTED",
-    feature,
-    shortMessage: `The PermissionedResolver does not support ${feature}.`,
-  });
-
 /** Coin by symbol (`btc`) or decimal coin type (`2147492101`). */
 const coinTypeOf = (key: string): bigint => (/^\d+$/.test(key) ? BigInt(key) : CoinType.from(key));
-
-const abiContentTypes = new Set([1n, 2n, 4n, 8n]);
-
-// Only JSON (content type 1) is encoded from an `Abi`; other content types take raw bytes.
-const abiPayload = (abi: NonNullable<RecordWrites["abi"]>): { contentType: bigint; data: Hex } => {
-  const contentType = abi.contentType ?? 1n;
-  const encodable = abi.value === null || isHex(abi.value) || contentType === 1n;
-  if (!abiContentTypes.has(contentType) || !encodable) {
-    throw new InvalidInputError({
-      code: "INVALID_RECORD_VALUE",
-      field: "abi.contentType",
-      input: contentType,
-    });
-  }
-
-  if (abi.value === null) return { contentType, data: "0x" };
-  return { contentType, data: isHex(abi.value) ? abi.value : encodeAbiJson(abi.value) };
-};
-
-const requireInterfaceId = (id: string): Hex => {
-  if (isHex(id) && id.length === 10) return id;
-  throw new InvalidInputError({ code: "INVALID_RECORD_VALUE", field: "interfaces", input: id });
-};
-
-const requireImplementer = (implementer: Address | null): Address => {
-  if (implementer === null) return zeroAddress;
-  if (isAddress(implementer)) return implementer;
-  throw new InvalidInputError({ code: "INVALID_ADDRESS", field: "interfaces", input: implementer });
-};
 
 /**
  * The codecs `encodeRecordWrites` needs for `writes`: their coins' address codecs and, when a
@@ -102,8 +66,6 @@ export const encodeRecordWrites = (
 ): Hex[] => {
   const byName = keying === "name";
   const calls: Hex[] = [];
-  const node = (fn: (abi: typeof Abis.v1.publicResolver) => Hex) =>
-    calls.push(fn(Abis.v1.publicResolver));
 
   if (writes.clear === true) {
     // A PermissionedResolver has no `clearRecords`: linking the name to record 0 detaches it from
@@ -190,7 +152,19 @@ export const encodeRecordWrites = (
   }
 
   if (writes.abi !== undefined) {
-    const { contentType, data } = abiPayload(writes.abi);
+    // Only JSON (content type 1) is encoded from an `Abi`; other content types take raw bytes.
+    const { value } = writes.abi;
+    const contentType = writes.abi.contentType ?? 1n;
+    const encodable = value === null || isHex(value) || contentType === 1n;
+    if (![1n, 2n, 4n, 8n].includes(contentType) || !encodable) {
+      throw new InvalidInputError({
+        code: "INVALID_RECORD_VALUE",
+        field: "abi.contentType",
+        input: contentType,
+      });
+    }
+
+    const data = value === null ? "0x" : isHex(value) ? value : stringToHex(JSON.stringify(value));
     calls.push(
       byName
         ? encodeFunctionData({
@@ -207,10 +181,20 @@ export const encodeRecordWrites = (
   }
 
   if (writes.pubkey !== undefined) {
-    if (byName) throw unsupported("public key records");
+    if (byName) {
+      throw new UnsupportedError({
+        code: "RESOLVER_PROFILE_UNSUPPORTED",
+        feature: "public key records",
+        shortMessage: "The PermissionedResolver does not support public key records.",
+      });
+    }
     const { x, y } = writes.pubkey ?? { x: zeroHash, y: zeroHash };
-    node((abi) =>
-      encodeFunctionData({ abi, functionName: "setPubkey", args: [target.node, x, y] }),
+    calls.push(
+      encodeFunctionData({
+        abi: Abis.v1.publicResolver,
+        functionName: "setPubkey",
+        args: [target.node, x, y],
+      }),
     );
   }
 
@@ -232,7 +216,17 @@ export const encodeRecordWrites = (
   }
 
   for (const [id, implementer] of Object.entries(writes.interfaces ?? {})) {
-    const args = [requireInterfaceId(id), requireImplementer(implementer)] as const;
+    if (!isHex(id) || id.length !== 10) {
+      throw new InvalidInputError({ code: "INVALID_RECORD_VALUE", field: "interfaces", input: id });
+    }
+    if (implementer !== null && !isAddress(implementer)) {
+      throw new InvalidInputError({
+        code: "INVALID_ADDRESS",
+        field: "interfaces",
+        input: implementer,
+      });
+    }
+    const args = [id, implementer ?? zeroAddress] as const;
     calls.push(
       byName
         ? encodeFunctionData({

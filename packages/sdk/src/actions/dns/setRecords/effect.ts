@@ -18,14 +18,6 @@ import type { Plan } from "../../../plan/Plan.js";
 import type { Write } from "../../../Types.js";
 import type { setRecords as Promises } from "./index.js";
 
-const invalidHex = (field: string, input: unknown) =>
-  new InvalidInputError({
-    code: "INVALID_RECORD_VALUE",
-    field,
-    input,
-    shortMessage: `\`${field}\` must be hex bytes.`,
-  });
-
 /** @internal Builds the plan of `Actions.dns.setRecords`. */
 export const plan = Effect.fnUntraced(function* (
   client: Client,
@@ -33,10 +25,24 @@ export const plan = Effect.fnUntraced(function* (
 ): Effect.fn.Return<Plan, AnyError> {
   const { records, zonehash } = options;
   if (records !== undefined && !isHex(records)) {
-    return yield* Effect.fail(invalidHex("records", records));
+    return yield* Effect.fail(
+      new InvalidInputError({
+        code: "INVALID_RECORD_VALUE",
+        field: "records",
+        input: records,
+        shortMessage: "`records` must be hex bytes.",
+      }),
+    );
   }
   if (zonehash !== undefined && zonehash !== null && !isHex(zonehash)) {
-    return yield* Effect.fail(invalidHex("zonehash", zonehash));
+    return yield* Effect.fail(
+      new InvalidInputError({
+        code: "INVALID_RECORD_VALUE",
+        field: "zonehash",
+        input: zonehash,
+        shortMessage: "`zonehash` must be hex bytes.",
+      }),
+    );
   }
   if (records === undefined && zonehash === undefined) {
     return yield* Effect.fail(

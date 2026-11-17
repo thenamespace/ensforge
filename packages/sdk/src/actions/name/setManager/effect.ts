@@ -1,12 +1,13 @@
 import { Effect } from "effect";
 
 import { Abis } from "@ensforge/contracts";
-import { encodeFunctionData, hexToBigInt, isAddressEqual } from "viem";
+import { encodeFunctionData, hexToBigInt } from "viem";
 
 import type { Client } from "../../../client/types.js";
 import { UnsupportedError } from "../../../errors/classes/UnsupportedError.js";
 import type { AnyError } from "../../../errors/types.js";
 import * as Action from "../../../internal/action/index.js";
+import { sameAddress } from "../../../internal/address.js";
 import { loadName } from "../../../internal/name/load.js";
 import {
   requireAddress,
@@ -47,9 +48,8 @@ export const plan = Effect.fnUntraced(function* (
   const account = addressOf(options.account) ?? client.account;
   const actsAsManager =
     account !== undefined &&
-    state.manager !== null &&
-    isAddressEqual(account, state.manager) &&
-    (state.registrant === null || !isAddressEqual(account, state.registrant));
+    sameAddress(state.manager, account) &&
+    !sameAddress(state.registrant, account);
 
   const target =
     data.parts.isEth2ld && !actsAsManager

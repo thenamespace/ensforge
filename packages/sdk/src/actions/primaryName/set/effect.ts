@@ -7,6 +7,7 @@ import { ConfigError } from "../../../errors/classes/ConfigError.js";
 import { NotFoundError } from "../../../errors/classes/NotFoundError.js";
 import type { AnyError } from "../../../errors/types.js";
 import * as Action from "../../../internal/action/index.js";
+import { sameAddress } from "../../../internal/address.js";
 import { normalizeName } from "../../../internal/name/normalize.js";
 import { requireAddress } from "../../../internal/name/write.js";
 import { defaultEvmCoinType } from "../../../internal/records/read-profiles.js";
@@ -32,11 +33,8 @@ const forwardMatch = Effect.fnUntraced(function* (
 ): Effect.fn.Return<readonly Plan.Warning[], AnyError> {
   const coins = coinType === ethCoinType ? [ethCoinType] : [coinType, ethCoinType];
   const records = yield* readRecords(client, { name, selection: { addresses: coins } });
-  const resolved = records.addresses as Record<string, string | null>;
-  const matches = (coin: bigint) => {
-    const value = resolved[String(coin)];
-    return value !== null && value !== undefined && isAddressEqual(value as Address, address);
-  };
+  const resolved = records.addresses as Record<string, Address | null>;
+  const matches = (coin: bigint) => sameAddress(resolved[String(coin)], address);
 
   if (matches(coinType)) return [];
   if (coinType !== ethCoinType && matches(ethCoinType)) {

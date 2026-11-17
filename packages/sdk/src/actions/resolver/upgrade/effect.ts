@@ -1,14 +1,7 @@
 import { Effect } from "effect";
 
 import { Abis } from "@ensforge/contracts";
-import {
-  encodeFunctionData,
-  getAddress,
-  isAddressEqual,
-  sliceHex,
-  zeroHash,
-  type Address,
-} from "viem";
+import { encodeFunctionData, getAddress, isAddressEqual, sliceHex, zeroHash } from "viem";
 import { getStorageAt } from "viem/actions";
 
 import type { Client } from "../../../client/types.js";
@@ -23,17 +16,6 @@ import * as Rpc from "../../../internal/rpc/index.js";
 import type { Plan } from "../../../plan/Plan.js";
 import type { Write } from "../../../Types.js";
 import type { upgrade as Promises } from "./index.js";
-
-// ERC-1967 implementation slot: bytes32(uint256(keccak256("eip1967.proxy.implementation")) - 1).
-const implementationSlot = "0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc";
-
-const currentImplementation = (client: Client, proxy: Address): Effect.Effect<Address, AnyError> =>
-  Rpc.fromPromise(
-    () => getStorageAt(client.publicClient, { address: proxy, slot: implementationSlot }),
-    {
-      contract: proxy,
-    },
-  ).pipe(Effect.map((word) => getAddress(sliceHex(word ?? zeroHash, 12))));
 
 /** @internal Builds the plan of `Actions.resolver.upgrade`. */
 export const plan = Effect.fnUntraced(function* (
@@ -57,7 +39,16 @@ export const plan = Effect.fnUntraced(function* (
     "upgrades",
   );
 
-  const current = yield* currentImplementation(client, resolver);
+  // ERC-1967 implementation slot: bytes32(uint256(keccak256("eip1967.proxy.implementation")) - 1).
+  const word = yield* Rpc.fromPromise(
+    () =>
+      getStorageAt(client.publicClient, {
+        address: resolver,
+        slot: "0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc",
+      }),
+    { contract: resolver },
+  );
+  const current = getAddress(sliceHex(word ?? zeroHash, 12));
   if (isAddressEqual(current, target)) {
     return yield* Effect.fail(
       new InvalidInputError({
@@ -68,6 +59,7 @@ export const plan = Effect.fnUntraced(function* (
       }),
     );
   }
+
   // The proxy only checks ROLE_UPGRADE; the target declaring itself compatible is checked here.
   const approved = yield* Rpc.readContractOrUndefined(client, {
     address: target,

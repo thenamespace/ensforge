@@ -1,16 +1,9 @@
 import { Abis } from "@ensforge/contracts";
-import {
-  decodeFunctionResult,
-  encodeFunctionData,
-  isAddressEqual,
-  zeroAddress,
-  zeroHash,
-  type Hex,
-} from "viem";
+import { decodeFunctionResult, encodeFunctionData, zeroHash, type Address, type Hex } from "viem";
 
 import type { Selection } from "../../actions/record/get/types.js";
 import * as CoinType from "../../utils/CoinType.js";
-import { allAbiContentTypes } from "./abi-record.js";
+import { nonZeroAddress } from "../address.js";
 import { loadRecordCodecs, type RecordCodecs } from "./codecs.js";
 
 /** ENSIP-19 default EVM coin type: the fallback address for EVM chains without their own record. */
@@ -82,12 +75,12 @@ const decodeAddress = (
 
 const decodeLegacyEth = (codecs: RecordCodecs, result: Hex | undefined): string | null => {
   if (result === undefined) return null;
-  const address = orNull(() =>
-    decodeFunctionResult({ abi: Abis.shared.addrResolver, functionName: "addr", data: result }),
+  const address = nonZeroAddress(
+    orNull(() =>
+      decodeFunctionResult({ abi: Abis.shared.addrResolver, functionName: "addr", data: result }),
+    ),
   );
-  return address === null || isAddressEqual(address, zeroAddress)
-    ? null
-    : orNull(() => codecs.decodeAddress(60n, address));
+  return address === null ? null : orNull(() => codecs.decodeAddress(60n, address));
 };
 
 const addressReads = (node: Hex, coins: readonly (string | bigint)[]): Read[] =>
@@ -157,10 +150,7 @@ export const planRecordReads = (node: Hex, selection: Selection) => {
           functionName: "interfaceImplementer",
           args: [node, id as Hex],
         }),
-      (result) => {
-        const implementer = decode("interfaceImplementer", result) as Hex;
-        return isAddressEqual(implementer, zeroAddress) ? null : implementer;
-      },
+      (result) => nonZeroAddress(decode("interfaceImplementer", result) as Address),
     ),
     ...keyedReads(
       selection.data ?? [],
@@ -193,7 +183,8 @@ export const planRecordReads = (node: Hex, selection: Selection) => {
     );
   }
   if (selection.abi !== undefined) {
-    const contentTypes = selection.abi === true ? allAbiContentTypes : selection.abi.contentTypes;
+    // ENSIP-4 content types 1 JSON, 2 zlib-compressed JSON, 4 CBOR and 8 URI; all by default.
+    const contentTypes = selection.abi === true ? 1n | 2n | 4n | 8n : selection.abi.contentTypes;
     reads.push(
       singleRead(
         "abi",

@@ -1,12 +1,4 @@
-import { stringToHex, type Abi, type Hex } from "viem";
-
-/**
- * ABI record content types (ENSIP-4): 1 JSON, 2 zlib-compressed JSON, 4 CBOR, 8 URI.
- *
- * @category records
- * @since 1.0.0
- */
-export type AbiContentType = 1n | 2n | 4n | 8n;
+import type { Abi, Hex } from "viem";
 
 /**
  * A decoded ABI record.
@@ -23,9 +15,3 @@ export type AbiRecord = {
   /** Raw record bytes. */
   readonly data: Hex;
 };
-
-/** Every content type, the default `contentTypes` mask for reads. */
-export const allAbiContentTypes = 1n | 2n | 4n | 8n;
-
-/** Encodes an ABI as a JSON (content type 1) record payload. */
-export const encodeAbiJson = (abi: Abi): Hex => stringToHex(JSON.stringify(abi));

@@ -17,12 +17,9 @@ export type AddressCoder = {
   readonly decode: (address: string) => Uint8Array;
 };
 
-const ethCoinType = 60n;
-const evmNamespace = 0x8000_0000n;
-
 /** Whether a coin type is an EVM chain (ETH, or ENSIP-11's `0x80000000 | chainId`). */
 export const isEvmCoinType = (coinType: bigint): boolean =>
-  coinType === ethCoinType || coinType >= evmNamespace;
+  coinType === 60n || coinType >= 0x8000_0000n;
 
 /**
  * An address as address-record bytes. EVM addresses are 20 raw bytes for any EVM coin type;
@@ -60,16 +57,14 @@ export const decodeAddressWith = (
 ): string | null => {
   if (data === "0x") return null;
 
-  const malformed = (cause?: unknown) =>
-    new InvalidInputError({
-      code: "INVALID_ADDRESS",
-      input: data,
-      field: `coin ${coinType}`,
-      cause,
-    });
-
   if (isEvmCoinType(coinType)) {
-    if (!isHex(data) || size(data) !== 20) throw malformed();
+    if (!isHex(data) || size(data) !== 20) {
+      throw new InvalidInputError({
+        code: "INVALID_ADDRESS",
+        input: data,
+        field: `coin ${coinType}`,
+      });
+    }
     // ENSv1 resolvers delete an ETH address by storing the zero address.
     return data === zeroAddress ? null : getAddress(data);
   }
@@ -79,6 +74,11 @@ export const decodeAddressWith = (
   try {
     return coder.encode(hexToBytes(data));
   } catch (cause) {
-    throw malformed(cause);
+    throw new InvalidInputError({
+      code: "INVALID_ADDRESS",
+      input: data,
+      field: `coin ${coinType}`,
+      cause,
+    });
   }
 };

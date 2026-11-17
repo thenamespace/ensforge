@@ -22,27 +22,12 @@ import type { Plan } from "../../../plan/Plan.js";
 import type { Write } from "../../../Types.js";
 import type { create as Promises } from "./index.js";
 
-/** The extra grants, validated; the owner's grant is added by `deployPermissionedResolver`. */
-const grantsOf = Effect.fnUntraced(function* (
-  grants: Promises.Options["grants"],
-): Effect.fn.Return<{ account: Address; roleBitmap: bigint }[], AnyError> {
-  const extra = yield* Effect.forEach(grants ?? [], (grant) =>
-    Effect.gen(function* () {
-      const account = yield* requireAddress(grant.account, "grants.account");
-      const roleBitmap = yield* roleBitmapOf(grant.roles);
-      return { account, roleBitmap };
-    }),
-  );
-  return extra;
-});
-
 /** @internal Builds the plan of `Actions.resolver.create`. */
 export const plan = Effect.fnUntraced(function* (
   client: Client,
   options: Promises.Options & Pick<Write.Options, "account">,
 ): Effect.fn.Return<Plan, AnyError> {
-  const v2 = client.deployment.v2;
-  if (v2 === undefined) {
+  if (client.deployment.v2 === undefined) {
     return yield* Effect.fail(
       new UnsupportedError({ code: "UNSUPPORTED_ON_DEPLOYMENT", feature: "PermissionedResolver" }),
     );
@@ -65,7 +50,14 @@ export const plan = Effect.fnUntraced(function* (
 
   const owner =
     options.owner === undefined ? deployer : yield* requireAddress(options.owner, "owner");
-  const grants = yield* grantsOf(options.grants);
+  // The owner's grant is added by `deployPermissionedResolver`.
+  const grants = yield* Effect.forEach(options.grants ?? [], (grant) =>
+    Effect.gen(function* () {
+      const account = yield* requireAddress(grant.account, "grants.account");
+      const roleBitmap = yield* roleBitmapOf(grant.roles);
+      return { account, roleBitmap };
+    }),
+  );
   const parts = options.name === undefined ? undefined : yield* parseName(options.name);
   const deployment = yield* deployPermissionedResolver(client, {
     deployer,

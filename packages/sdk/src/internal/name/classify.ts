@@ -1,10 +1,8 @@
-import { isAddressEqual, zeroAddress, type Address } from "viem";
+import { isAddressEqual, type Address } from "viem";
 
 import type { NameKind } from "../../actions/name/get/types.js";
+import { nonZeroAddress } from "../address.js";
 import { RegistryStatus, type NameData, type V1Data } from "./read.js";
-
-const isSet = (address: Address | undefined): address is Address =>
-  address !== undefined && !isAddressEqual(address, zeroAddress);
 
 /** Whether the ENSv1 records were retired to the Graveyard by migration (directly, or via a locked NameWrapper token). */
 export const isMigrated = (
@@ -20,13 +18,6 @@ export const isMigrated = (
     isAddressEqual(v1.wrapper.owner, graveyard)
   );
 };
-
-/** Whether ENSv1 has any record of the name (an owner, or a `.eth` registration). */
-const hasV1Record = (v1: V1Data | undefined): v1 is V1Data =>
-  v1 !== undefined && (isSet(v1.registryOwner) || (v1.registrar?.expiry ?? 0n) > 0n);
-
-const v1Kind = (v1: V1Data, nameWrapper: Address): NameKind =>
-  isAddressEqual(v1.registryOwner, nameWrapper) ? "v1-wrapped" : "v1-unwrapped";
 
 /**
  * Which protocol holds a name, and how.
@@ -48,14 +39,20 @@ export const classify = (
   if (
     state !== undefined &&
     (state.status === RegistryStatus.registered ||
-      (state.status === RegistryStatus.available && isSet(state.latestOwner)))
+      (state.status === RegistryStatus.available && nonZeroAddress(state.latestOwner) !== null))
   ) {
     return migrated ? "v2-migrated" : "v2-native";
   }
 
+  // ENSv1 has a record of the name when it has an owner or a `.eth` registration.
   const v1 = migrated ? undefined : data.v1;
-  if (hasV1Record(v1) && deployment.nameWrapper !== undefined)
-    return v1Kind(v1, deployment.nameWrapper);
+  if (
+    v1 !== undefined &&
+    deployment.nameWrapper !== undefined &&
+    (nonZeroAddress(v1.registryOwner) !== null || (v1.registrar?.expiry ?? 0n) > 0n)
+  ) {
+    return isAddressEqual(v1.registryOwner, deployment.nameWrapper) ? "v1-wrapped" : "v1-unwrapped";
+  }
   if (state?.status === RegistryStatus.reserved) return "v2-reserved";
   return "available";
 };

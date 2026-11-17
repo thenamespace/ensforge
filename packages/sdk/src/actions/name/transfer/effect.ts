@@ -28,28 +28,6 @@ import type { transfer as Promises } from "./index.js";
 
 const call = (to: Address, data: `0x${string}`): Plan.Call => ({ to, data, value: 0n });
 
-const v2Calls = ({ state }: LoadedName, to: Address, unsafe: boolean): Plan.Call[] => {
-  const registry = state.registry as Address;
-  const tokenId = state.tokenId as bigint;
-
-  return [
-    call(
-      registry,
-      unsafe
-        ? encodeFunctionData({
-            abi: Abis.v2.permissionedRegistry,
-            functionName: "unsafeTransfer",
-            args: [to, tokenId, "0x"],
-          })
-        : encodeFunctionData({
-            abi: Abis.v2.permissionedRegistry,
-            functionName: "safeTransferFrom",
-            args: [state.owner as Address, to, tokenId, 1n, "0x"],
-          }),
-    ),
-  ];
-};
-
 const v1Calls = (
   contracts: Deployments.V1Contracts,
   loaded: LoadedName,
@@ -216,9 +194,26 @@ export const plan = Effect.fnUntraced(function* (
   const loaded = yield* loadName(client, options.name);
   yield* requireRegistered(loaded);
 
+  const { state } = loaded;
+  const tokenId = state.tokenId as bigint;
   const calls =
-    loaded.state.protocol === "v2"
-      ? v2Calls(loaded, to, options.unsafe ?? false)
+    state.protocol === "v2"
+      ? [
+          call(
+            state.registry as Address,
+            options.unsafe
+              ? encodeFunctionData({
+                  abi: Abis.v2.permissionedRegistry,
+                  functionName: "unsafeTransfer",
+                  args: [to, tokenId, "0x"],
+                })
+              : encodeFunctionData({
+                  abi: Abis.v2.permissionedRegistry,
+                  functionName: "safeTransferFrom",
+                  args: [state.owner as Address, to, tokenId, 1n, "0x"],
+                }),
+          ),
+        ]
       : yield* v1Calls(yield* requireV1Contracts(client), loaded, to, options.role ?? "owner");
   const sender = addressOf(options.account) ?? client.account;
   const control = yield* recordControl(client, loaded, sender, to, options.records ?? "keep");

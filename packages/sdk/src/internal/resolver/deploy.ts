@@ -16,12 +16,6 @@ import {
   type RecordWrites,
 } from "../records/write-profiles.js";
 
-/** Every PermissionedResolver role and its admin role: what a resolver's owner gets. */
-export const allResolverRoles = Object.values(Role.resolver).reduce(
-  (bitmap, role) => bitmap | role,
-  0n,
-);
-
 /**
  * The deployment of an ENSv2 PermissionedResolver at a CREATE2 address: `owner` gets every role
  * (plus `grants`), and `records` for `name` are written during `initialize`, when role checks do
@@ -46,7 +40,7 @@ export const deployPermissionedResolver = Effect.fnUntraced(function* (
   }
 
   const { name, records } = options;
-  const calls =
+  const recordCalls =
     name === undefined || records === undefined
       ? []
       : yield* recordWriteCodecs(records).pipe(
@@ -66,8 +60,15 @@ export const deployPermissionedResolver = Effect.fnUntraced(function* (
       abi: Abis.v2.permissionedResolver,
       functionName: "initialize",
       args: [
-        [{ account: options.owner, roleBitmap: allResolverRoles }, ...(options.grants ?? [])],
-        calls,
+        [
+          // The owner gets every PermissionedResolver role and its admin role.
+          {
+            account: options.owner,
+            roleBitmap: Object.values(Role.resolver).reduce((bitmap, role) => bitmap | role, 0n),
+          },
+          ...(options.grants ?? []),
+        ],
+        recordCalls,
       ],
     }),
   });

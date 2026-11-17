@@ -1,11 +1,11 @@
 import { Effect } from "effect";
 
 import { Abis } from "@ensforge/contracts";
-import { isAddressEqual, zeroAddress } from "viem";
 
 import type { ImportAction, Proof, Status } from "../../actions/dns/types.js";
 import type { Client } from "../../client/types.js";
 import type { AnyError } from "../../errors/types.js";
+import { nonZeroAddress, sameAddress } from "../address.js";
 import type { NameParts } from "../name/parts.js";
 import { requireV1Contracts } from "../name/write.js";
 import * as Rpc from "../rpc/index.js";
@@ -21,12 +21,12 @@ export const readDnsStatus = Effect.fnUntraced(function* (
   urls: readonly string[] | undefined,
 ): Effect.fn.Return<{ readonly status: Status; readonly proof: Proof }, AnyError> {
   const contracts = yield* requireV1Contracts(client);
-  const { proof, owner, inception } = yield* Effect.all(
+  const { proof, registryOwner, inception } = yield* Effect.all(
     {
       proof: gatewayUrls(client, urls).pipe(
         Effect.flatMap((resolved) => fetchTxtProof(client, `_ens.${parts.name}`, resolved)),
       ),
-      owner: Rpc.readContract(client, {
+      registryOwner: Rpc.readContract(client, {
         address: contracts.registry,
         abi: Abis.v1.ensRegistry,
         functionName: "owner",
@@ -43,14 +43,14 @@ export const readDnsStatus = Effect.fnUntraced(function* (
   );
   const proofValid = yield* verifiesOnChain(client, contracts.dnssecOracle, proof);
 
-  const imported = !isAddressEqual(owner, zeroAddress);
+  const owner = nonZeroAddress(registryOwner);
   const dnsOwner = ownerFromTxt(proof.txt);
   const action: ImportAction =
     dnsOwner === null
       ? "set-txt-record"
       : !proofValid
         ? "proof-invalid"
-        : imported && isAddressEqual(owner, dnsOwner)
+        : sameAddress(owner, dnsOwner)
           ? "none"
           : "claim";
 
@@ -58,8 +58,8 @@ export const readDnsStatus = Effect.fnUntraced(function* (
     proof,
     status: {
       name: parts.name,
-      imported,
-      owner: imported ? owner : null,
+      imported: owner !== null,
+      owner,
       dnsOwner,
       proofValid,
       importedInception: inception === 0 ? null : inception,

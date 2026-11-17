@@ -8,19 +8,12 @@ import { InvalidInputError } from "../../../errors/classes/InvalidInputError.js"
 import { NotFoundError } from "../../../errors/classes/NotFoundError.js";
 import type { AnyError } from "../../../errors/types.js";
 import * as Action from "../../../internal/action/index.js";
+import { normalizeName } from "../../../internal/name/normalize.js";
 import { requireAddress } from "../../../internal/name/write.js";
 import { primaryNameCoinType, reverseName } from "../../../internal/reverse/coin.js";
 import * as Rpc from "../../../internal/rpc/index.js";
-import { namehash, normalize } from "../../../utils/Name.js";
+import { namehash } from "../../../utils/Name.js";
 import type { get as Promises } from "./index.js";
-
-const isNormalized = (name: string): boolean => {
-  try {
-    return normalize(name) === name;
-  } catch {
-    return false;
-  }
-};
 
 /** The raw `name` record of the address's reverse name, without forward verification. */
 const unverified = (
@@ -81,7 +74,11 @@ export const get = Effect.fn("ensforge.primaryName.get")(
         : null;
     }
     // The Universal Resolver returns the stored text; names that are not normalized are unsafe to show.
-    if (!isNormalized(name)) {
+    const normalized = yield* normalizeName(name).pipe(
+      Effect.map((normalizedName) => normalizedName === name),
+      Effect.orElseSucceed(() => false),
+    );
+    if (!normalized) {
       return strict
         ? yield* Effect.fail(
             new InvalidInputError({ code: "INVALID_NAME", input: name, field: "primary name" }),

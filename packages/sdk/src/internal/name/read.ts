@@ -1,11 +1,12 @@
 import { Effect } from "effect";
 
 import { Abis } from "@ensforge/contracts";
-import { hexToBigInt, isAddressEqual, zeroAddress, type Address } from "viem";
+import { hexToBigInt, type Address } from "viem";
 
 import type { Client } from "../../client/types.js";
 import type { AnyError } from "../../errors/types.js";
 import type { Read } from "../../Types.js";
+import { nonZeroAddress } from "../address.js";
 import * as Rpc from "../rpc/index.js";
 import type { NameParts } from "./parts.js";
 
@@ -63,14 +64,10 @@ export type NameData = {
   readonly ownedAncestor: boolean;
 };
 
-const readV1 = (client: Client, parts: NameParts, block: Read.BlockOptions) => {
+const readV1 = (client: Client, parts: NameParts, at: Read.BlockOptions) => {
   const contracts = client.deployment.v1?.contracts;
   if (contracts === undefined) return Effect.undefined;
 
-  const at =
-    block.blockNumber === undefined
-      ? { blockTag: block.blockTag }
-      : { blockNumber: block.blockNumber };
   const tokenId = hexToBigInt(parts.labelhash);
   const registry = { address: contracts.registry, abi: Abis.v1.ensRegistry, ...at } as const;
   const registrar = {
@@ -131,15 +128,11 @@ const readV1 = (client: Client, parts: NameParts, block: Read.BlockOptions) => {
 const readV2 = Effect.fnUntraced(function* (
   client: Client,
   parts: NameParts,
-  block: Read.BlockOptions,
+  at: Read.BlockOptions,
 ) {
   const contracts = client.deployment.v2?.contracts;
   if (contracts === undefined) return undefined;
 
-  const at =
-    block.blockNumber === undefined
-      ? { blockTag: block.blockTag }
-      : { blockNumber: block.blockNumber };
   // At blocks before ENSv2 was deployed its contracts have no code: the name has no ENSv2 data.
   const found = yield* Effect.all(
     {
@@ -166,7 +159,7 @@ const readV2 = Effect.fnUntraced(function* (
       () => Effect.undefined,
     ),
   );
-  if (found === undefined || isAddressEqual(found.registry, zeroAddress)) return undefined;
+  if (found === undefined || nonZeroAddress(found.registry) === null) return undefined;
   const { registry, gracePeriod } = found;
 
   const parent = { address: registry, abi: Abis.v2.permissionedRegistry, ...at } as const;
@@ -203,7 +196,7 @@ const readV2 = Effect.fnUntraced(function* (
 const readOwnedAncestor = (
   client: Client,
   parts: NameParts,
-  block: Read.BlockOptions,
+  at: Read.BlockOptions,
 ): Effect.Effect<boolean, AnyError> => {
   const helper = client.deployment.v2?.contracts.universalHelper;
   const labels = parts.name.split(".");
@@ -214,32 +207,24 @@ const readOwnedAncestor = (
     abi: Abis.v2.universalHelper,
     functionName: "findNearestOwner",
     args: [parts.dns],
-    ...(block.blockNumber === undefined
-      ? { blockTag: block.blockTag }
-      : { blockNumber: block.blockNumber }),
+    ...at,
   }).pipe(
     Effect.map((nearest) => {
       if (nearest === undefined) return false;
       const [owner, offset] = nearest;
-      if (isAddressEqual(owner, zeroAddress) || offset === 0n) return false;
-      // The owner belongs to the ancestor starting at `offset`; it counts when that ancestor is
-      // below the TLD (TLD owners hold reserved ENSv1 names too).
-      const ancestorLabels = parts.name.slice(byteOffsetToCharIndex(parts.name, offset)).split(".");
-      return ancestorLabels.length >= 2;
+      if (nonZeroAddress(owner) === null || offset === 0n) return false;
+
+      // The owner belongs to the ancestor whose DNS encoding starts at byte `offset`; it counts
+      // when that ancestor is below the TLD (TLD owners hold reserved ENSv1 names too).
+      let bytes = 0n;
+      let start = 0;
+      while (start < labels.length && bytes < offset) {
+        bytes += BigInt(new TextEncoder().encode(labels[start]).length + 1);
+        start += 1;
+      }
+      return labels.length - start >= 2;
     }),
   );
-};
-
-/** The character index in `name` of the label that starts at DNS-encoded byte `offset`. */
-const byteOffsetToCharIndex = (name: string, offset: bigint): number => {
-  let bytes = 0;
-  let chars = 0;
-  for (const label of name.split(".")) {
-    if (BigInt(bytes) >= offset) break;
-    bytes += new TextEncoder().encode(label).length + 1;
-    chars += label.length + 1;
-  }
-  return chars;
 };
 
 /**
@@ -250,13 +235,20 @@ export const readName = (
   client: Client,
   parts: NameParts,
   block: Read.BlockOptions,
-): Effect.Effect<NameData, AnyError> =>
-  Effect.all(
+): Effect.Effect<NameData, AnyError> => {
+  // Only the block fields: `block` may be a whole options object.
+  const at =
+    block.blockNumber === undefined
+      ? { blockTag: block.blockTag }
+      : { blockNumber: block.blockNumber };
+
+  return Effect.all(
     {
-      now: Rpc.blockTimestamp(client, block),
-      v1: readV1(client, parts, block),
-      v2: readV2(client, parts, block),
-      ownedAncestor: readOwnedAncestor(client, parts, block),
+      now: Rpc.blockTimestamp(client, at),
+      v1: readV1(client, parts, at),
+      v2: readV2(client, parts, at),
+      ownedAncestor: readOwnedAncestor(client, parts, at),
     },
     { concurrency: "unbounded" },
   ).pipe(Effect.map(({ now, v1, v2, ownedAncestor }) => ({ parts, now, v1, v2, ownedAncestor })));
+};

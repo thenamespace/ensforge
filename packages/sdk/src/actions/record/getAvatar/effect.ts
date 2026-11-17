@@ -8,8 +8,6 @@ import { resolveAvatar } from "../../../internal/avatar/resolve.js";
 import { readSingleRecord } from "../../../internal/records/single.js";
 import type { getAvatar as Promises } from "./index.js";
 
-const defaultTimeout = 10_000;
-
 /** @internal Implementation of `Actions.record.getAvatar`. */
 export const getAvatar = Effect.fn("ensforge.record.getAvatar")(
   function* (
@@ -30,7 +28,7 @@ export const getAvatar = Effect.fn("ensforge.record.getAvatar")(
 
     const resolved = resolveAvatar(client, record.avatar, {
       gateways: options.gateways ?? {},
-      timeout: options.timeout ?? defaultTimeout,
+      timeout: options.timeout ?? 10_000,
       owner: record.owner,
     });
     // Without `strict`, an avatar that cannot be loaded (dead gateway, bad metadata) is `null`.

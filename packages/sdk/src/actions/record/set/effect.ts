@@ -40,14 +40,12 @@ export const plan = Effect.fnUntraced(function* (
   let resolver: Address;
   let resolverChange: Plan.Call | undefined;
   if (options.resolver === undefined) {
-    if (loaded.state.resolver === null) {
+    const current = loaded.state.resolver;
+    if (current === null) {
       return yield* Effect.fail(new NotFoundError({ code: "RESOLVER_NOT_FOUND" }));
     }
-    resolver = loaded.state.resolver;
-    const current = resolver;
-    if (
-      (client.deployment.v1?.frozenPublicResolvers ?? []).some((a) => isAddressEqual(a, current))
-    ) {
+    const frozen = client.deployment.v1?.frozenPublicResolvers ?? [];
+    if (frozen.some((address) => isAddressEqual(address, current))) {
       return yield* Effect.fail(
         new UnsupportedError({
           code: "RESOLVER_PROFILE_UNSUPPORTED",
@@ -58,6 +56,7 @@ export const plan = Effect.fnUntraced(function* (
         }),
       );
     }
+    resolver = current;
   } else {
     resolver = yield* requestedResolver(client, loaded, options.resolver);
     resolverChange = yield* setResolverCall(client, loaded, resolver);
@@ -79,6 +78,7 @@ export const plan = Effect.fnUntraced(function* (
       );
     }
   }
+
   const codecs = yield* recordWriteCodecs(options);
   const calls = yield* Effect.try({
     try: () => encodeRecordWrites(keying, loaded.data.parts, options, codecs),
@@ -88,25 +88,11 @@ export const plan = Effect.fnUntraced(function* (
   // Records go to the new resolver before the name points at it, so a failed or rejected write
   // never leaves the name on an empty resolver. Neither resolver family authorizes record writes
   // through the name's resolver pointer, so both fit in one step.
-  const steps: Plan.Step[] = [];
   const stepCalls = [
     ...(calls.length > 0 ? [resolverCall(resolver, calls)] : []),
     ...(resolverChange === undefined ? [] : [resolverChange]),
   ];
-  if (stepCalls.length > 0) {
-    steps.push({
-      id: "records",
-      description:
-        resolverChange === undefined
-          ? "Set records"
-          : calls.length > 0
-            ? "Set records and resolver"
-            : "Set resolver",
-      calls: stepCalls,
-    });
-  }
-
-  if (steps.length === 0) {
+  if (stepCalls.length === 0) {
     return yield* Effect.fail(
       new InvalidInputError({
         code: "INVALID_RECORD_VALUE",
@@ -116,11 +102,23 @@ export const plan = Effect.fnUntraced(function* (
       }),
     );
   }
+
   return makePlan({
     operation: "record.set",
     chainId: client.chain.id,
     account: addressOf(options.account) ?? client.account,
-    steps,
+    steps: [
+      {
+        id: "records",
+        description:
+          resolverChange === undefined
+            ? "Set records"
+            : calls.length > 0
+              ? "Set records and resolver"
+              : "Set resolver",
+        calls: stepCalls,
+      },
+    ],
   });
 });
 

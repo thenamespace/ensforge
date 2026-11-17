@@ -1,15 +1,8 @@
-import { hexToBigInt, isAddressEqual, maxUint64, zeroAddress } from "viem";
+import { hexToBigInt, maxUint64 } from "viem";
 
 import type { NameKind, NameState, NameStatus } from "../../actions/name/get/types.js";
 import { nonZeroAddress } from "../address.js";
 import { RegistryStatus, type NameData, type V1Data, type V2Data } from "./read.js";
-
-/** Status of an ENSv2 registration that ends at `expiry`, with an optional grace period after it. */
-const timedStatus = (now: bigint, expiry: bigint, gracePeriod: bigint | undefined): NameStatus => {
-  if (now < expiry) return "registered";
-  if (gracePeriod !== undefined && now < expiry + gracePeriod) return "grace";
-  return "expired";
-};
 
 // ENSv1 counts the last second of a window as inside it: BaseRegistrar renews and withholds a
 // name through `expiry + GRACE_PERIOD`, and NameWrapper expires a token only once `expiry < now`.
@@ -34,7 +27,7 @@ const v2Registers = (now: bigint, v2: V2Data): boolean =>
 const v2RenewsForV1 = (now: bigint, v2: V2Data): boolean =>
   v2.state.status === RegistryStatus.reserved ||
   (v2.state.status === RegistryStatus.available &&
-    isAddressEqual(v2.state.latestOwner, zeroAddress) &&
+    nonZeroAddress(v2.state.latestOwner) === null &&
     now - v2.state.expiry < (v2.gracePeriod ?? 0n));
 
 /** How the deployment registers and renews `.eth` names. */
@@ -53,9 +46,11 @@ const fromV2 = (
   const status: NameStatus =
     kind === "v2-reserved"
       ? "reserved"
-      : neverExpires
+      : neverExpires || data.now < state.expiry
         ? "registered"
-        : timedStatus(data.now, state.expiry, v2.gracePeriod);
+        : v2.gracePeriod !== undefined && data.now < state.expiry + v2.gracePeriod
+          ? "grace"
+          : "expired";
 
   return {
     protocol: "v2",
