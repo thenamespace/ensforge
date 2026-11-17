@@ -95,3 +95,11 @@ describe("Write.Via", () => {
     ens.record.getText({ name: "a.eth", key: "url", via });
   });
 });
+
+describe("Actions.x.y.request", () => {
+  it("takes no options when the action's options are optional", () => {
+    Actions.indexer.getStatus.request();
+    // @ts-expect-error required options stay required
+    Actions.record.getText.request();
+  });
+});

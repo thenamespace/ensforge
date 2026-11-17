@@ -7,5 +7,6 @@ import type { Implementation } from "./promise.js";
  */
 export const request =
   <options, value, error>(path: string, _implementation: Implementation<options, value, error>) =>
-  (options: options): Request<value, error> =>
-    Object.freeze({ path, options });
+  // Options stay optional for actions whose options are (`indexer.getStatus`).
+  (...[options]: undefined extends options ? [options?] : [options]): Request<value, error> =>
+    Object.freeze({ path, options: options ?? {} });
