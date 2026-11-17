@@ -171,5 +171,107 @@ layer(Services.layer({ profile: "mainnet-shaped" }), { excludeTestServices: true
         }),
       { meta: { cases: ["I19"] } },
     );
+
+    it.effect(
+      "does not follow CCIP-Read when it verifies records on-chain",
+      () =>
+        Effect.gen(function* () {
+          const services = yield* Services;
+          const devnet = yield* Devnet;
+          const fixtures = yield* Fixtures;
+          const ens = ensforge(devnet, { indexer: bigname({ url: services.indexerUrl }) }).extend(
+            indexerActions(),
+          );
+          const records = yield* Effect.promise(() =>
+            ens.indexer.getRecords({
+              name: fixtures.byId("resolver.offchain").name,
+              keys: ["addr:60"],
+              source: "verified",
+            }),
+          );
+          // bigname documents `offchain_lookup_required`; v0.14.11 reports the OffchainLookup as a
+          // revert. Either way it answers no value and never calls the gateway.
+          assert.deepStrictEqual(records?.answers["addr:60"], {
+            status: "failed",
+            value: null,
+            reason: "resolver_call_reverted",
+          });
+          assert.strictEqual(records?.origin, "verified");
+        }),
+      { meta: { cases: ["I14"] } },
+    );
+
+    it.effect(
+      "serves an alias path only on the name route",
+      () =>
+        Effect.gen(function* () {
+          const services = yield* Services;
+          const devnet = yield* Devnet;
+          const fixtures = yield* Fixtures;
+          const ens = ensforge(devnet, { indexer: bigname({ url: services.indexerUrl }) }).extend(
+            indexerActions(),
+          );
+          const linked = fixtures.byId("v2.linked");
+          const alias = String(linked.facts["alias"]);
+
+          // One registry under two names: the alias reads as the same registration, but only
+          // the name route walks alias paths.
+          const canonical = yield* Effect.promise(() => ens.indexer.getName({ name: linked.name }));
+          const aliased = yield* Effect.promise(() => ens.indexer.getName({ name: alias }));
+          assert.strictEqual(aliased?.name, alias);
+          assert.strictEqual(aliased?.registrationId, canonical?.registrationId);
+          const looked = yield* Effect.promise(() =>
+            ens.indexer.lookup({ inputs: [linked.name, alias] }),
+          );
+          assert.deepStrictEqual(
+            looked.results.map((result) => result.status),
+            ["ok", "notFound"],
+          );
+        }),
+      { meta: { cases: ["I09"] } },
+    );
+
+    it.effect(
+      "leaves expired and released subnames out when asked",
+      () =>
+        Effect.gen(function* () {
+          const services = yield* Services;
+          const devnet = yield* Devnet;
+          const fixtures = yield* Fixtures;
+          const ens = ensforge(devnet, { indexer: bigname({ url: services.indexerUrl }) }).extend(
+            indexerActions(),
+          );
+          const subnames = (parent: string, includeExpired: boolean) =>
+            Effect.promise(() => ens.indexer.getSubnames({ name: parent, includeExpired })).pipe(
+              Effect.map((page) => page.items.map((item) => item.name).toSorted()),
+            );
+          const wrapped = fixtures.byId("v1.wrapped.sub.expired").name;
+          const emancipated = fixtures.byId("v1.wrapped.sub.expired-emancipated").name;
+          const parent = wrapped.split(".").slice(1).join(".");
+
+          // By expiry, not status: bigname still calls the parent-controlled child active.
+          const all = yield* subnames(parent, true);
+          const live = yield* subnames(parent, false);
+          assert.includeMembers(all, [wrapped, emancipated]);
+          assert.deepStrictEqual(
+            live,
+            all.filter((name) => name !== wrapped && name !== emancipated),
+          );
+
+          // A child whose ENSv1 owner was cleared stays listed, as `unregistered`.
+          const deleted = fixtures.byId("v1.subname.deleted").name;
+          const cleared = yield* Effect.promise(() =>
+            ens.indexer.getSubnames({
+              name: deleted.split(".").slice(1).join("."),
+              includeExpired: false,
+            }),
+          );
+          assert.deepStrictEqual(
+            cleared.items.map((item) => [item.name, item.status]),
+            [[deleted, "unregistered"]],
+          );
+        }),
+      { meta: { cases: ["I18"] } },
+    );
   },
 );

@@ -1249,7 +1249,9 @@
     "status": "pending"
   },
   "M12": {
-    "status": "pending"
+    "tests": [
+      "tests/services/test/indexer/writes.test.ts > bigname after ensforge writes > finds the records a migration copies, and the subnames it cannot recreate"
+    ]
   },
   "M13": {
     "status": "pending"
@@ -1258,7 +1260,9 @@
     "status": "pending"
   },
   "M15": {
-    "status": "pending"
+    "tests": [
+      "tests/services/test/indexer/writes.test.ts > bigname after ensforge writes > finds the records a migration copies, and the subnames it cannot recreate"
+    ]
   },
   "M16": {
     "status": "pending"
@@ -1339,64 +1343,84 @@
     "status": "pending"
   },
   "I01": {
-    "status": "pending"
+    "tests": [
+      "tests/services/test/indexer/fixtures.test.ts > bigname against the chain > indexes every fixture name as the chain holds it",
+      "tests/services/test/indexer/writes.test.ts > bigname after ensforge writes > indexes a registration with records and a primary name"
+    ]
   },
   "I02": {
-    "status": "pending"
+    "tests": [
+      "tests/services/test/indexer/writes.test.ts > bigname after ensforge writes > follows subnames as they are created and removed, page by page"
+    ]
   },
   "I03": {
-    "status": "pending"
+    "na": "bigname's lapsed registrations are not part of ensforge's indexer model: `IndexedName` describes the current registration"
   },
   "I04": {
-    "status": "pending"
+    "na": "bigname's own bookkeeping; ensforge maps the fields it serves unchanged (SDK unit tests on recorded answers), and the services lane compares them with the chain (I19)"
   },
   "I05": {
-    "status": "pending"
+    "na": "bigname's own bookkeeping; ensforge maps the fields it serves unchanged (SDK unit tests on recorded answers), and the services lane compares them with the chain (I19)"
   },
   "I06": {
-    "status": "pending"
+    "na": "bigname's own bookkeeping; ensforge maps the fields it serves unchanged (SDK unit tests on recorded answers), and the services lane compares them with the chain (I19)"
   },
   "I07": {
-    "status": "pending"
+    "na": "Label healing is bigname's; ensforge pages with bigname's cursors and shows each page's `displayName` as served"
   },
   "I08": {
-    "status": "pending"
+    "tests": [
+      "tests/services/test/indexer/writes.test.ts > bigname after ensforge writes > follows role grants and transfers"
+    ]
   },
   "I09": {
-    "status": "pending"
+    "tests": [
+      "tests/services/test/indexer/fixtures.test.ts > bigname against the chain > serves an alias path only on the name route"
+    ]
   },
   "I10": {
-    "status": "pending"
+    "na": "Needs a migrated WrapperRegistry falling back to ENSv1 behind an alias; ensforge maps the 404 to `NotFoundError` like any other (SDK unit tests)"
   },
   "I11": {
-    "status": "pending"
+    "na": "ensforge passes `completeness`, `unsupportedReason` and `unsupportedFields` through (SDK unit tests); which paths bigname leaves unprojected is bigname's"
   },
   "I12": {
-    "status": "pending"
+    "tests": [
+      "tests/services/test/indexer/writes.test.ts > bigname after ensforge writes > drops a name's records when its resolver changes"
+    ]
   },
   "I13": {
-    "status": "pending"
+    "na": "ensforge passes `completeness`, `unsupportedReason` and `unsupportedFields` through (SDK unit tests); which resolvers bigname marks unsupported is bigname's"
   },
   "I14": {
-    "status": "pending"
+    "tests": [
+      "tests/services/test/indexer/fixtures.test.ts > bigname against the chain > does not follow CCIP-Read when it verifies records on-chain"
+    ]
   },
   "I15": {
-    "status": "pending"
+    "na": "The devnet does not reorg; ensforge maps bigname's 409 and 503 answers to `INDEXER_REQUEST_REJECTED` and `INDEXER_BEHIND` (SDK unit tests)"
   },
   "I16": {
-    "status": "pending"
+    "tests": [
+      "tests/services/test/indexer/writes.test.ts > bigname after ensforge writes > follows subnames as they are created and removed, page by page"
+    ]
   },
   "I17": {
-    "status": "pending"
+    "na": "ensforge's collection queries take no `at` (their types refuse it), so they never send one"
   },
   "I18": {
-    "status": "pending"
+    "tests": [
+      "tests/services/test/indexer/fixtures.test.ts > bigname against the chain > leaves expired and released subnames out when asked"
+    ]
   },
   "I19": {
-    "status": "pending"
+    "tests": [
+      "tests/services/test/indexer/fixtures.test.ts > bigname against the chain > indexes every fixture name as the chain holds it",
+      "tests/services/test/indexer/fixtures.test.ts > bigname against the chain > indexes every fixture's records as its resolver answers them"
+    ]
   },
   "I20": {
-    "status": "pending"
+    "na": "About upstream documentation; ensforge decodes events from the contracts' ABIs, which its event tests check"
   },
   "M:A1": {
     "status": "pending"
