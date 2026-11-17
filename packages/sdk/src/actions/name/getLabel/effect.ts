@@ -7,6 +7,7 @@ import type { Client } from "../../../client/types.js";
 import { InvalidInputError } from "../../../errors/classes/InvalidInputError.js";
 import { UnsupportedError } from "../../../errors/classes/UnsupportedError.js";
 import * as Action from "../../../internal/action/index.js";
+import { blockAt } from "../../../internal/rpc/block.js";
 import * as Rpc from "../../../internal/rpc/index.js";
 import type { getLabel as Promises } from "./index.js";
 
@@ -37,9 +38,7 @@ export const getLabel = Effect.fn("ensforge.name.getLabel")(function* (
     abi: Abis.v2.labelStore,
     functionName: "getLabel",
     args: [hexToBigInt(options.labelhash)],
-    ...(options.blockNumber === undefined
-      ? { blockTag: options.blockTag }
-      : { blockNumber: options.blockNumber }),
+    ...blockAt(options),
   });
 
   return label === "" ? null : label;

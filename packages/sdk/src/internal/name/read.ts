@@ -7,6 +7,7 @@ import type { Client } from "../../client/types.js";
 import type { AnyError } from "../../errors/types.js";
 import type { Read } from "../../Types.js";
 import { nonZeroAddress } from "../address.js";
+import { blockAt } from "../rpc/block.js";
 import * as Rpc from "../rpc/index.js";
 import type { NameParts } from "./parts.js";
 
@@ -236,11 +237,7 @@ export const readName = (
   parts: NameParts,
   block: Read.BlockOptions,
 ): Effect.Effect<NameData, AnyError> => {
-  // Only the block fields: `block` may be a whole options object.
-  const at =
-    block.blockNumber === undefined
-      ? { blockTag: block.blockTag }
-      : { blockNumber: block.blockNumber };
+  const at = blockAt(block);
 
   return Effect.all(
     {

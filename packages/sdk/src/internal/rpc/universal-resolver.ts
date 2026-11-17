@@ -15,6 +15,7 @@ import type { AnyError } from "../../errors/types.js";
 import type { Read } from "../../Types.js";
 import { dnsEncode } from "../../utils/Name.js";
 import { universalResolverOf } from "../deployment.js";
+import { blockAt } from "./block.js";
 import { fromPromise } from "./fromPromise.js";
 import { readContract } from "./readContract.js";
 
@@ -161,9 +162,7 @@ export const findResolver = (
         abi: Abis.v2.universalResolver,
         functionName: "findResolver",
         args: [dns],
-        ...(options.blockNumber === undefined
-          ? { blockTag: options.blockTag }
-          : { blockNumber: options.blockNumber }),
+        ...blockAt(options),
       }),
     ),
     Effect.map(([address, , offset]) =>

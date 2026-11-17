@@ -14,6 +14,7 @@ import type { AnyError } from "../../errors/types.js";
 import type { Read } from "../../Types.js";
 import { dnsDecode } from "../../utils/Name.js";
 import { nonZeroAddress } from "../address.js";
+import { blockAt } from "../rpc/block.js";
 import * as Rpc from "../rpc/index.js";
 
 // ERC-1967 implementation slot: bytes32(uint256(keccak256("eip1967.proxy.implementation")) - 1).
@@ -33,10 +34,7 @@ export const inspectRegistry = Effect.fnUntraced(function* (
   options: { readonly account?: Address | undefined } & Read.BlockOptions = {},
 ): Effect.fn.Return<RegistryInfo, AnyError> {
   const v2 = client.deployment.v2;
-  const at =
-    options.blockNumber === undefined
-      ? { blockTag: options.blockTag }
-      : { blockNumber: options.blockNumber };
+  const at = blockAt(options);
   const registry = { address, abi: Abis.v2.userRegistry, ...at } as const;
 
   const read = yield* Effect.all(

@@ -13,6 +13,7 @@ import * as Role from "../../utils/Role.js";
 import { nonZeroAddress, sameAddress } from "../address.js";
 import { loadName, type LoadedName } from "../name/load.js";
 import { RegistryStatus } from "../name/read.js";
+import { blockAt } from "../rpc/block.js";
 import * as Rpc from "../rpc/index.js";
 
 /** How the caller wants each name's resolver handled; `undefined` picks per name. */
@@ -67,10 +68,7 @@ export const inspectMigration = Effect.fnUntraced(function* (
     readonly resolver?: ResolverChoice;
   } & Read.BlockOptions,
 ): Effect.fn.Return<Inspection, AnyError> {
-  const at =
-    options.blockNumber === undefined
-      ? { blockTag: options.blockTag }
-      : { blockNumber: options.blockNumber };
+  const at = blockAt(options);
   const loaded = yield* loadName(client, name, at);
   const { kind, state, data } = loaded;
   const v1 = data.v1;

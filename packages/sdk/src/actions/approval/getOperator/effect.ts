@@ -6,6 +6,7 @@ import type { Client } from "../../../client/types.js";
 import * as Action from "../../../internal/action/index.js";
 import { approvalContract } from "../../../internal/approval/contract.js";
 import { requireAddress } from "../../../internal/name/write.js";
+import { blockAt } from "../../../internal/rpc/block.js";
 import * as Rpc from "../../../internal/rpc/index.js";
 import type { getOperator as Promises } from "./index.js";
 
@@ -24,8 +25,6 @@ export const getOperator = Effect.fn("ensforge.approval.getOperator")(function* 
     abi: Abis.shared.erc1155,
     functionName: "isApprovedForAll",
     args: [owner, operator],
-    ...(options.blockNumber === undefined
-      ? { blockTag: options.blockTag }
-      : { blockNumber: options.blockNumber }),
+    ...blockAt(options),
   });
 }, Action.withContext("approval.getOperator"));

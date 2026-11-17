@@ -6,6 +6,7 @@ import type { Client } from "../../../client/types.js";
 import * as Action from "../../../internal/action/index.js";
 import { requireAddress } from "../../../internal/name/write.js";
 import { resolveRoleTarget } from "../../../internal/role/target.js";
+import { blockAt } from "../../../internal/rpc/block.js";
 import * as Rpc from "../../../internal/rpc/index.js";
 import * as Role from "../../../utils/Role.js";
 import type { get as Promises } from "./index.js";
@@ -18,10 +19,7 @@ export const get = Effect.fn("ensforge.role.get")(
   ): Effect.fn.Return<Promises.ReturnType, Promises.ErrorType> {
     const account = yield* requireAddress(options.account, "account");
     const { contract, resource } = yield* resolveRoleTarget(client, options);
-    const at =
-      options.blockNumber === undefined
-        ? { blockTag: options.blockTag }
-        : { blockNumber: options.blockNumber };
+    const at = blockAt(options);
     const read = (on: bigint) =>
       Rpc.readContract(client, {
         address: contract,

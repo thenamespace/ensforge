@@ -8,6 +8,7 @@ import type { Client } from "../../client/types.js";
 import { NameStateError } from "../../errors/classes/NameStateError.js";
 import type { AnyError } from "../../errors/types.js";
 import type { Read } from "../../Types.js";
+import { blockAt } from "../rpc/block.js";
 import * as Rpc from "../rpc/index.js";
 import type { RegistrationContracts } from "./contracts.js";
 import type { EthName } from "./labels.js";
@@ -35,10 +36,7 @@ export const quoteRenewals = Effect.fnUntraced(function* (
     readonly token: Address;
   } & Read.BlockOptions,
 ): Effect.fn.Return<readonly RenewalQuote[], AnyError> {
-  const at =
-    options.blockNumber === undefined
-      ? { blockTag: options.blockTag }
-      : { blockNumber: options.blockNumber };
+  const at = blockAt(options);
   const ask = (address: Address, label: string) =>
     Effect.all(
       {

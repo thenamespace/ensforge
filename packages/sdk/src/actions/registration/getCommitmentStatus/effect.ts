@@ -7,6 +7,7 @@ import type { Client } from "../../../client/types.js";
 import { InvalidInputError } from "../../../errors/classes/InvalidInputError.js";
 import * as Action from "../../../internal/action/index.js";
 import { requireRegistrationContracts } from "../../../internal/registration/contracts.js";
+import { blockAt } from "../../../internal/rpc/block.js";
 import * as Rpc from "../../../internal/rpc/index.js";
 import type { getCommitmentStatus as Promises } from "./index.js";
 
@@ -27,10 +28,7 @@ export const getCommitmentStatus = Effect.fn("ensforge.registration.getCommitmen
     }
 
     const contracts = yield* requireRegistrationContracts(client);
-    const at =
-      options.blockNumber === undefined
-        ? { blockTag: options.blockTag }
-        : { blockNumber: options.blockNumber };
+    const at = blockAt(options);
     const registrar = { address: contracts.registrar, abi: Abis.v2.ethRegistrar, ...at } as const;
     const { committedAt, minAge, maxAge, now } = yield* Effect.all(
       {

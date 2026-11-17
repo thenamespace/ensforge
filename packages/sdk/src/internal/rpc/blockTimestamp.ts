@@ -6,6 +6,7 @@ import { getBlock } from "viem/actions";
 import type { Client } from "../../client/types.js";
 import type { AnyError } from "../../errors/types.js";
 import type { Read } from "../../Types.js";
+import { blockAt } from "./block.js";
 import { fromPromise } from "./fromPromise.js";
 import { readContract } from "./readContract.js";
 
@@ -18,10 +19,7 @@ export const blockTimestamp = (
   block: Read.BlockOptions,
 ): Effect.Effect<bigint, AnyError> => {
   const multicall3 = client.publicClient.chain?.contracts?.multicall3?.address;
-  const at =
-    block.blockNumber === undefined
-      ? { blockTag: block.blockTag }
-      : { blockNumber: block.blockNumber };
+  const at = blockAt(block);
 
   if (multicall3 !== undefined) {
     return readContract(client, {

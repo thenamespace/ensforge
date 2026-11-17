@@ -7,6 +7,7 @@ import { NotFoundError } from "../../../errors/classes/NotFoundError.js";
 import * as Action from "../../../internal/action/index.js";
 import { loadName } from "../../../internal/name/load.js";
 import { requirePermissionedResolver } from "../../../internal/resolver/permissioned.js";
+import { blockAt } from "../../../internal/rpc/block.js";
 import * as Rpc from "../../../internal/rpc/index.js";
 import type { getLink as Promises } from "./index.js";
 
@@ -24,9 +25,7 @@ export const getLink = Effect.fn("ensforge.resolver.getLink")(
       abi: Abis.v2.permissionedResolver,
       functionName: "getRecordId",
       args: [loaded.data.parts.node],
-      ...(options.blockNumber === undefined
-        ? { blockTag: options.blockTag }
-        : { blockNumber: options.blockNumber }),
+      ...blockAt(options),
     });
 
     // Record ID 0 means the name has never had records on this resolver.

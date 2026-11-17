@@ -11,6 +11,7 @@ import type {
 import type { Client } from "../../client/types.js";
 import type { AnyError } from "../../errors/types.js";
 import type { Read } from "../../Types.js";
+import { blockAt } from "../rpc/block.js";
 import * as Rpc from "../rpc/index.js";
 
 const profileIds = {
@@ -107,10 +108,7 @@ export const describeResolver = Effect.fnUntraced(function* (
   },
   AnyError
 > {
-  const at =
-    block.blockNumber === undefined
-      ? { blockTag: block.blockTag }
-      : { blockNumber: block.blockNumber };
+  const at = blockAt(block);
   const publicResolverSet = client.deployment.v2?.migration.publicResolverSet;
 
   const supports = (interfaceId: Hex, gas: bigint | undefined) =>

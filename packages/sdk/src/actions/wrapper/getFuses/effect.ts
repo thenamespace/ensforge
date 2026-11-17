@@ -8,6 +8,7 @@ import * as Action from "../../../internal/action/index.js";
 import { nonZeroAddress } from "../../../internal/address.js";
 import { parseName } from "../../../internal/name/normalize.js";
 import { requireV1Contracts } from "../../../internal/name/write.js";
+import { blockAt } from "../../../internal/rpc/block.js";
 import * as Rpc from "../../../internal/rpc/index.js";
 import * as Fuse from "../../../utils/Fuse.js";
 import type { getFuses as Promises } from "./index.js";
@@ -26,9 +27,7 @@ export const getFuses = Effect.fn("ensforge.wrapper.getFuses")(function* (
     abi: Abis.v1.nameWrapper,
     functionName: "getData",
     args: [hexToBigInt(parts.node)],
-    ...(options.blockNumber === undefined
-      ? { blockTag: options.blockTag }
-      : { blockNumber: options.blockNumber }),
+    ...blockAt(options),
   });
   if (nonZeroAddress(owner) === null) return null;
 

@@ -7,6 +7,7 @@ import type { Client } from "../../../client/types.js";
 import * as Action from "../../../internal/action/index.js";
 import { requireRegistrationContracts } from "../../../internal/registration/contracts.js";
 import { tokenInfo } from "../../../internal/registration/payment.js";
+import { blockAt } from "../../../internal/rpc/block.js";
 import * as Rpc from "../../../internal/rpc/index.js";
 import type { getParameters as Promises } from "./index.js";
 
@@ -17,10 +18,7 @@ export const getParameters = Effect.fn("ensforge.registration.getParameters")(
     options: Promises.Options = {},
   ): Effect.fn.Return<Promises.ReturnType, Promises.ErrorType> {
     const contracts = yield* requireRegistrationContracts(client);
-    const at =
-      options.blockNumber === undefined
-        ? { blockTag: options.blockTag }
-        : { blockNumber: options.blockNumber };
+    const at = blockAt(options);
     const registrar = { address: contracts.registrar, abi: Abis.v2.ethRegistrar, ...at } as const;
     const listed: readonly Address[] = Object.values(contracts.paymentTokens ?? {});
 

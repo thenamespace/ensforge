@@ -9,6 +9,7 @@ import * as Action from "../../../internal/action/index.js";
 import { requireRegistrationContracts } from "../../../internal/registration/contracts.js";
 import { parseEthName } from "../../../internal/registration/labels.js";
 import { acceptedTokenInfo, paymentTokenAddress } from "../../../internal/registration/payment.js";
+import { blockAt } from "../../../internal/rpc/block.js";
 import * as Rpc from "../../../internal/rpc/index.js";
 import type { getPrice as Promises } from "./index.js";
 
@@ -21,10 +22,7 @@ export const getPrice = Effect.fn("ensforge.registration.getPrice")(
     const { label, labelhash } = yield* parseEthName(options.name);
     const contracts = yield* requireRegistrationContracts(client);
     const token = yield* paymentTokenAddress(contracts, options.paymentToken);
-    const at =
-      options.blockNumber === undefined
-        ? { blockTag: options.blockTag }
-        : { blockNumber: options.blockNumber };
+    const at = blockAt(options);
 
     const { state, gracePeriod, minDuration, now, info } = yield* Effect.all(
       {

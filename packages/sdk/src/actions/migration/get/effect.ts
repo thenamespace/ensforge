@@ -6,6 +6,7 @@ import { inspectMigration, type ResolverChoice } from "../../../internal/migrati
 import { recordInventory } from "../../../internal/migration/records.js";
 import { discoverSubnames } from "../../../internal/migration/subnames.js";
 import { requireAddress } from "../../../internal/name/write.js";
+import { blockAt } from "../../../internal/rpc/block.js";
 import type { get as Promises } from "./index.js";
 
 /** @internal Implementation of `Actions.migration.get`. */
@@ -25,9 +26,7 @@ export const get = Effect.fn("ensforge.migration.get")(function* (
   const { status } = yield* inspectMigration(client, options.name, {
     account,
     resolver,
-    ...(options.blockNumber === undefined
-      ? { blockTag: options.blockTag }
-      : { blockNumber: options.blockNumber }),
+    ...blockAt(options),
   });
   if (status.status === "migrated" || status.status === "not-required") {
     return { ...status, discovered: null };

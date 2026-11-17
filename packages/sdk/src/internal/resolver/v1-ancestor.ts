@@ -8,6 +8,7 @@ import type { AnyError } from "../../errors/types.js";
 import type { Read } from "../../Types.js";
 import { namehash } from "../../utils/Name.js";
 import { nonZeroAddress } from "../address.js";
+import { blockAt } from "../rpc/block.js";
 import * as Rpc from "../rpc/index.js";
 
 /**
@@ -27,10 +28,7 @@ export const nearestV1AncestorResolver = (
 
   const labels = name.split(".");
   const ancestors = labels.slice(1).map((_, index) => labels.slice(index + 1).join("."));
-  const at =
-    block.blockNumber === undefined
-      ? { blockTag: block.blockTag }
-      : { blockNumber: block.blockNumber };
+  const at = blockAt(block);
   return Effect.forEach(
     ancestors,
     (ancestor) =>

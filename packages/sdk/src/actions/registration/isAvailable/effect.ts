@@ -6,6 +6,7 @@ import type { Client } from "../../../client/types.js";
 import * as Action from "../../../internal/action/index.js";
 import { requireRegistrationContracts } from "../../../internal/registration/contracts.js";
 import { parseEthName } from "../../../internal/registration/labels.js";
+import { blockAt } from "../../../internal/rpc/block.js";
 import * as Rpc from "../../../internal/rpc/index.js";
 import type { isAvailable as Promises } from "./index.js";
 
@@ -17,10 +18,7 @@ export const isAvailable = Effect.fn("ensforge.registration.isAvailable")(
   ): Effect.fn.Return<Promises.ReturnType, Promises.ErrorType> {
     const { label } = yield* parseEthName(options.name);
     const contracts = yield* requireRegistrationContracts(client);
-    const at =
-      options.blockNumber === undefined
-        ? { blockTag: options.blockTag }
-        : { blockNumber: options.blockNumber };
+    const at = blockAt(options);
 
     // The registrar answers for every name, including expired ENSv1 names; the oracle rejects
     // labels that cannot be sold at all (too short).
