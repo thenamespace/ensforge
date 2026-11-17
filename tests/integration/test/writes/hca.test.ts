@@ -20,43 +20,48 @@ const year = 31_536_000n;
 
 describe("HCA", () => {
   onProfile("mainnet-shaped")("mainnet-shaped", (it) => {
-    it.effect("deploys the owner's HCA once and executes calls from it", () =>
-      Effect.gen(function* () {
-        const devnet = yield* Devnet;
-        // An account the fixtures gave no HCA.
-        const { user, bob } = devnet.accounts;
-        const ens = ensforge(devnet, { account: user });
+    it.effect(
+      "deploys the owner's HCA once and executes calls from it",
+      () =>
+        Effect.gen(function* () {
+          const devnet = yield* Devnet;
+          // An account the fixtures gave no HCA.
+          const { user, bob } = devnet.accounts;
+          const ens = ensforge(devnet, { account: user });
 
-        yield* isolated(
-          devnet,
-          Effect.gen(function* () {
-            const predicted = yield* HcaActions.hca.predictAddress(ens, {});
-            assert.isFalse((yield* HcaActions.hca.get(ens, {})).deployed);
+          yield* isolated(
+            devnet,
+            Effect.gen(function* () {
+              const predicted = yield* HcaActions.hca.predictAddress(ens, {});
+              assert.isFalse((yield* HcaActions.hca.get(ens, {})).deployed);
 
-            yield* HcaActions.hca.deploySync(ens, {});
-            const account = yield* HcaActions.hca.verify(ens, {});
-            assert.include(account, { address: predicted, owner: user, deployed: true });
-            assert.deepStrictEqual(account.problems, []);
+              yield* HcaActions.hca.deploySync(ens, {});
+              const account = yield* HcaActions.hca.verify(ens, {});
+              assert.include(account, { address: predicted, owner: user, deployed: true });
+              assert.deepStrictEqual(account.problems, []);
 
-            // Revoking the implementation for new deployments leaves deployed accounts certified.
-            yield* HcaActions.hcaAdmin.setDeploymentApprovalSync(
-              ensforge(devnet, { account: devnet.accounts.owner }),
-              { implementation: account.initialImplementation, approved: false },
-            );
-            assert.deepStrictEqual((yield* HcaActions.hca.verify(ens, {})).problems, []);
+              // Revoking the implementation for new deployments leaves deployed accounts certified.
+              yield* HcaActions.hcaAdmin.setDeploymentApprovalSync(
+                ensforge(devnet, { account: devnet.accounts.owner }),
+                { implementation: account.initialImplementation, approved: false },
+              );
+              assert.deepStrictEqual((yield* HcaActions.hca.verify(ens, {})).problems, []);
 
-            yield* Effect.promise(() =>
-              devnet.client.setBalance({ address: predicted, value: parseEther("2") }),
-            );
-            const before = yield* Effect.promise(() => devnet.client.getBalance({ address: bob }));
-            yield* HcaActions.hca.executeSync(ens, {
-              calls: [{ to: bob, value: parseEther("1"), data: "0x" }],
-            });
-            const after = yield* Effect.promise(() => devnet.client.getBalance({ address: bob }));
-            assert.strictEqual(after - before, parseEther("1"));
-          }),
-        );
-      }),
+              yield* Effect.promise(() =>
+                devnet.client.setBalance({ address: predicted, value: parseEther("2") }),
+              );
+              const before = yield* Effect.promise(() =>
+                devnet.client.getBalance({ address: bob }),
+              );
+              yield* HcaActions.hca.executeSync(ens, {
+                calls: [{ to: bob, value: parseEther("1"), data: "0x" }],
+              });
+              const after = yield* Effect.promise(() => devnet.client.getBalance({ address: bob }));
+              assert.strictEqual(after - before, parseEther("1"));
+            }),
+          );
+        }),
+      { meta: { cases: ["Z04"] } },
     );
 
     it.effect("migrates several names in one execution", () =>
@@ -222,7 +227,7 @@ describe("HCA", () => {
             }),
           );
         }),
-      { meta: { cases: ["Z02", "Z03", "Z05"] } },
+      { meta: { cases: ["Z02", "Z05"] } },
     );
   });
 });

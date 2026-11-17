@@ -1310,22 +1310,30 @@
     "status": "pending"
   },
   "Z01": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/writes/hca.test.ts > HCA > mainnet-shaped > refuses a name token sent to the HCA"
+    ]
   },
   "Z02": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/writes/hca.test.ts > HCA > mainnet-shaped > authorizes a session, checks its calls, and revokes it"
+    ]
   },
   "Z03": {
     "status": "pending"
   },
   "Z04": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/writes/hca.test.ts > HCA > mainnet-shaped > deploys the owner's HCA once and executes calls from it"
+    ]
   },
   "Z05": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/writes/hca.test.ts > HCA > mainnet-shaped > authorizes a session, checks its calls, and revokes it"
+    ]
   },
   "Z06": {
-    "status": "pending"
+    "na": "ensforge never builds delegatecall executions: `hca.execute` and the route encode batch call mode only"
   },
   "F01": {
     "status": "pending"
