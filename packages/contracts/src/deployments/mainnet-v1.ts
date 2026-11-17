@@ -1,7 +1,11 @@
 import type { V1 } from "./types.js";
 
 /**
- * ENSv1 on Ethereum mainnet at ens-contracts v1.7.0.
+ * ENSv1 on Ethereum mainnet at ens-contracts v1.7.0, kept for compatibility and migration.
+ *
+ * Since the ENSv2 cutover, ENSv1 controllers no longer register or renew `.eth` names (the
+ * BaseRegistrar belongs to ENSv2's `ETHRenewerV1`) and the NameWrapper has no owner. The controller
+ * addresses remain for reading past registrations.
  *
  * @since 1.0.0
  */
@@ -9,7 +13,7 @@ export const mainnetV1 = {
   id: "mainnet-v1",
   chainId: 1,
   protocol: "v1",
-  status: "active",
+  status: "legacy",
   contracts: {
     registry: "0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e",
     baseRegistrar: "0x57f1887a8BF19b14fC0dF6Fd9B2acc9Af147eA85",
