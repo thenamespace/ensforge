@@ -38,10 +38,10 @@ const callUniversalResolver = (
 
   return fromPromise(
     () =>
-      call(client.publicClient, {
+      // viem reads `ccipRead` from the client, not from the call.
+      call(ccipRead === false ? { ...client.publicClient, ccipRead: false } : client.publicClient, {
         to: universalResolver,
         data,
-        ...(ccipRead === false ? { ccipRead: false as const } : {}),
         ...(options.blockNumber === undefined
           ? { blockTag: options.blockTag ?? client.config.blockTag }
           : { blockNumber: options.blockNumber }),
