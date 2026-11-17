@@ -21,28 +21,6 @@ import {
 } from "./transport.js";
 import { routeOutcome, sendThroughRoute, viaContext } from "./via.js";
 
-/** MetaMask's limit; other wallets accept more, which `maxBundleCalls` allows. */
-const defaultMaxBundleCalls = 10;
-
-/** A record for a plan that has not sent anything yet. */
-export const freshRecord = (plan: Plan): Plan.Record => ({
-  plan,
-  status: "pending",
-  submitted: {},
-  bundles: {},
-  references: {},
-  updatedAt: Date.now(),
-});
-
-/** Whether every one of `hashes` is known to the chain (mined or in the mempool). */
-const known = (client: Client, hashes: readonly Hex[]) =>
-  Effect.forEach(hashes, (hash) =>
-    fromPromise(() => getTransaction(client.publicClient, { hash })).pipe(
-      Effect.as(true),
-      Effect.orElseSucceed(() => false),
-    ),
-  ).pipe(Effect.map((found) => found.length > 0 && found.every(Boolean)));
-
 /**
  * Sends the steps of a plan in order, simulating first unless disabled, and saves progress to the
  * client's plan storage after every submission so `plan.resume` can continue it.
@@ -72,17 +50,26 @@ export const sendPlan = Effect.fnUntraced(function* (
   const simulate = options.simulate ?? client.config.simulate;
   const account = addressOf(signer.account);
   const mode = options.mode ?? "auto";
-  const maxBundleCalls = options.maxBundleCalls ?? defaultMaxBundleCalls;
+  // MetaMask's limit; other wallets accept more, which `maxBundleCalls` allows.
+  const maxBundleCalls = options.maxBundleCalls ?? 10;
   const emit = (event: Plan.Event) => options.onStep?.(event);
   const route = options.via?.send === undefined ? undefined : options.via;
   const routeContext = route === undefined ? undefined : yield* viaContext(client, account);
+
   // Steps sent through a route are only known to that route; sending them again from the wallet
   // would execute them twice.
   if (route === undefined && Object.keys(resumed?.references ?? {}).length > 0) {
     return yield* Effect.fail(new PlanError({ code: "PLAN_ROUTE_REQUIRED" }));
   }
 
-  let record = resumed ?? freshRecord(plan);
+  let record: Plan.Record = resumed ?? {
+    plan,
+    status: "pending",
+    submitted: {},
+    bundles: {},
+    references: {},
+    updatedAt: Date.now(),
+  };
   // Saving is best effort: storage that is unavailable (server rendering) must not stop a write.
   const save = (update: Partial<Plan.Record>) => {
     record = { ...record, ...update, updatedAt: Date.now() };
@@ -95,6 +82,7 @@ export const sendPlan = Effect.fnUntraced(function* (
     const failed = simulation.steps.find((step) => !step.ok);
     if (failed?.error !== undefined) return yield* Effect.fail(failed.error);
   }
+
   const simulatedUpFront = resumed === undefined ? simulatableSteps(plan).length : 0;
   yield* save({ status: "pending" });
 
@@ -162,6 +150,7 @@ export const sendPlan = Effect.fnUntraced(function* (
           group.push(next);
         }
       }
+
       const merged: Plan.Step = {
         id: group.map((member) => member.id).join("+"),
         description: group.map((member) => member.description).join(", "),
@@ -254,7 +243,14 @@ const recordedHashes = Effect.fnUntraced(function* (
 ): Effect.fn.Return<readonly Hex[] | undefined, AnyError> {
   const submitted = record.submitted[step.id];
   if (submitted !== undefined && submitted.length > 0) {
-    return (yield* known(client, submitted)) ? submitted : undefined;
+    // Each transaction must still be known to the chain, mined or in the mempool.
+    const known = yield* Effect.forEach(submitted, (hash) =>
+      fromPromise(() => getTransaction(client.publicClient, { hash })).pipe(
+        Effect.as(true),
+        Effect.orElseSucceed(() => false),
+      ),
+    );
+    return known.every(Boolean) ? submitted : undefined;
   }
 
   // Sent through a route: ask it; a failure before landing sends the step again.

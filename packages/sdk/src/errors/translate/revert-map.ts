@@ -58,7 +58,7 @@ const commitmentTooOld: Mapper = ([commitment, validTo]) =>
 
 /**
  * Contract error name → ensforge error. `ResolverError` and `ResolutionError` are unwrapped before
- * this table is consulted. Domain phases add rows as they port actions.
+ * this table is consulted.
  */
 export const revertMap: Readonly<Record<string, Mapper>> = {
   EACUnauthorizedAccountRoles: missingRoles,

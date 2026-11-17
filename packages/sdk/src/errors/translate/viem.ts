@@ -43,14 +43,6 @@ const causeChain = (cause: unknown): readonly ViemErrorLike[] => {
 const find = (chain: readonly ViemErrorLike[], ...names: readonly string[]) =>
   chain.find((error) => error.name !== undefined && names.includes(error.name));
 
-/** Contract call details viem attaches to `ContractFunctionExecutionError`. */
-const callContext = (chain: readonly ViemErrorLike[]): EnsforgeError.Context => {
-  const execution = find(chain, "ContractFunctionExecutionError");
-  if (execution === undefined) return {};
-
-  return { contract: execution.contractAddress, functionName: execution.functionName };
-};
-
 const fromContractError = (
   chain: readonly ViemErrorLike[],
   context: EnsforgeError.Context,
@@ -163,7 +155,12 @@ export const fromViemError = (
   outer: EnsforgeError.Context = {},
 ): EnsforgeError | undefined => {
   const chain = causeChain(cause);
-  const context = { ...outer, ...callContext(chain) };
+  // viem attaches the contract call to `ContractFunctionExecutionError`.
+  const execution = find(chain, "ContractFunctionExecutionError");
+  const context =
+    execution === undefined
+      ? outer
+      : { ...outer, contract: execution.contractAddress, functionName: execution.functionName };
   const translated =
     fromWalletError(chain) ??
     fromContractError(chain, context) ??

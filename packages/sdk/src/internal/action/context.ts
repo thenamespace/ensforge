@@ -4,6 +4,7 @@ import type { Account, Address } from "viem";
 
 import type { Client } from "../../client/types.js";
 import type { EnsforgeError } from "../../errors/EnsforgeError.js";
+import { addressOf } from "../write/signer.js";
 
 type ContextOptions = {
   readonly name?: unknown;
@@ -23,7 +24,7 @@ export const contextOf = (
     ...extra,
     operation: path,
     name: typeof name === "string" ? name : undefined,
-    account: (typeof account === "object" ? account.address : account) ?? client.account,
+    account: addressOf(account) ?? client.account,
     chainId: client.chain.id,
   };
 };

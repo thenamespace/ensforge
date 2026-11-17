@@ -11,14 +11,6 @@ import { InvalidInputError } from "../errors/classes/InvalidInputError.js";
 /** `[<64 hex>]`: a label known only by its labelhash, e.g. from an indexer. */
 const encodedLabelPattern = /^\[[0-9a-f]{64}\]$/;
 
-const normalizeLabel = (label: string): string => {
-  if (encodedLabelPattern.test(label)) return label;
-
-  const normalized = viemNormalize(label);
-  if (normalized === "" || normalized.includes(".")) throw new Error("empty or composite label");
-  return normalized;
-};
-
 /**
  * Normalizes an ENS name (ENSIP-15).
  *
@@ -100,8 +92,12 @@ export const namehash = (name: string): Hex => viemNamehash(normalize(name));
  * @since 1.0.0
  */
 export const labelhash = (label: string): Hex => {
+  if (encodedLabelPattern.test(label)) return viemLabelhash(label);
+
   try {
-    return viemLabelhash(normalizeLabel(label));
+    const normalized = viemNormalize(label);
+    if (normalized === "" || normalized.includes(".")) throw new Error("empty or composite label");
+    return viemLabelhash(normalized);
   } catch (cause) {
     throw new InvalidInputError({ code: "INVALID_NAME", input: label, cause });
   }

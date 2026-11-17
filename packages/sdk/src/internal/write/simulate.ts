@@ -1,7 +1,7 @@
 import { Effect } from "effect";
 
 import type { Address } from "viem";
-import { call, estimateGas as viemEstimateGas, simulateCalls } from "viem/actions";
+import { call as viemCall, estimateGas as viemEstimateGas, simulateCalls } from "viem/actions";
 
 import type { Client } from "../../client/types.js";
 import { ContractRevertError } from "../../errors/classes/ContractRevertError.js";
@@ -37,7 +37,7 @@ const simulateSequence = (
     () =>
       simulateCalls(client.publicClient, {
         ...(account === undefined ? {} : { account }),
-        calls: calls.map((item) => ({ to: item.to, data: item.data, value: item.value })),
+        calls: calls.map((call) => ({ to: call.to, data: call.data, value: call.value })),
       }),
     { account },
   ).pipe(
@@ -70,16 +70,16 @@ const simulateEach = (
   account: Address | undefined,
   calls: readonly Plan.Call[],
 ): Effect.Effect<readonly CallOutcome[]> =>
-  Effect.forEach(calls, (item) =>
+  Effect.forEach(calls, (call) =>
     fromPromise(
       () =>
-        call(client.publicClient, {
-          to: item.to,
-          data: item.data,
-          value: item.value,
+        viemCall(client.publicClient, {
+          to: call.to,
+          data: call.data,
+          value: call.value,
           ...(account === undefined ? {} : { account }),
         }),
-      { contract: item.to, account },
+      { contract: call.to, account },
     ).pipe(
       Effect.match({
         onFailure: (error): CallOutcome => ({ error, gas: undefined }),
@@ -160,22 +160,22 @@ export const estimatePlan = Effect.fnUntraced(function* (
 
   const gas =
     simulated?.map((outcome) => outcome.gas ?? 0n) ??
-    (yield* Effect.forEach(calls, (item) =>
+    (yield* Effect.forEach(calls, (call) =>
       fromPromise(
         () =>
           viemEstimateGas(client.publicClient, {
-            to: item.to,
-            data: item.data,
-            value: item.value,
+            to: call.to,
+            data: call.data,
+            value: call.value,
             ...(account === undefined ? {} : { account }),
           }),
-        { contract: item.to, account },
+        { contract: call.to, account },
       ),
     ));
 
   return {
     plan,
     gas: gas.reduce((total, value) => total + withHeadroom(value), 0n),
-    value: plan.calls.reduce((total, item) => total + item.value, 0n),
+    value: plan.calls.reduce((total, call) => total + call.value, 0n),
   };
 });

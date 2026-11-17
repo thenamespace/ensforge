@@ -116,20 +116,29 @@ export const write = <options, error extends EnsforgeError>(
     withContext(`${path}.estimateGas`, extra),
   );
 
+  // Shared by `send` and `sendSync`: an opaque revert becomes the explainer's error.
+  const sendPlanned = Effect.fnUntraced(function* (
+    client: Client,
+    options: options & Write.SyncOptions,
+    confirmLast: boolean,
+  ): Effect.fn.Return<Write.Result, error | AnyError> {
+    const plan = yield* planned(client, options);
+    const signer = yield* resolveSigner(client, options.account);
+    return yield* sendPlan(client, plan, signer, { ...options, confirmLast }).pipe(
+      Effect.catch((error: AnyError) =>
+        explained(client, options, addressOf(signer.account), explain, error).pipe(
+          Effect.flatMap(Effect.fail),
+        ),
+      ),
+    );
+  });
+
   const send = Effect.fn(`ensforge.${path}`)(
     function* (
       client: Client,
       options: options & Write.Options,
     ): Effect.fn.Return<Write.Result, error | AnyError> {
-      const plan = yield* planned(client, options);
-      const signer = yield* resolveSigner(client, options.account);
-      return yield* sendPlan(client, plan, signer, options).pipe(
-        Effect.catch((error: AnyError) =>
-          explained(client, options, addressOf(signer.account), explain, error).pipe(
-            Effect.flatMap(Effect.fail),
-          ),
-        ),
-      );
+      return yield* sendPlanned(client, options, false);
     },
     withContext(path, extra),
   );
@@ -139,15 +148,7 @@ export const write = <options, error extends EnsforgeError>(
       client: Client,
       options: options & Write.SyncOptions,
     ): Effect.fn.Return<Write.SyncResult, error | AnyError> {
-      const plan = yield* planned(client, options);
-      const signer = yield* resolveSigner(client, options.account);
-      const result = yield* sendPlan(client, plan, signer, { ...options, confirmLast: true }).pipe(
-        Effect.catch((error: AnyError) =>
-          explained(client, options, addressOf(signer.account), explain, error).pipe(
-            Effect.flatMap(Effect.fail),
-          ),
-        ),
-      );
+      const result = yield* sendPlanned(client, options, true);
       return yield* waitForReceipts(client, result, options);
     },
     withContext(`${path}Sync`, extra),

@@ -29,9 +29,6 @@ const coderOf = (coinType: bigint): AddressCoder | undefined => {
   }
 };
 
-const invalid = (input: unknown, cause?: unknown) =>
-  new InvalidInputError({ code: "INVALID_COIN_TYPE", input, cause });
-
 /**
  * What identifies a coin: a symbol (`"btc"`), an EVM chain (`{ chainId: 8453 }`) or a numeric
  * coin type.
@@ -50,7 +47,7 @@ export type Input = string | bigint | { readonly chainId: number };
  */
 export const fromChainId = (chainId: number): bigint => {
   if (!Number.isSafeInteger(chainId) || chainId < 0 || BigInt(chainId) >= evmNamespace) {
-    throw invalid(chainId);
+    throw new InvalidInputError({ code: "INVALID_COIN_TYPE", input: chainId });
   }
   return chainId === 1 ? ethCoinType : evmNamespace | BigInt(chainId);
 };
@@ -73,13 +70,13 @@ export const fromChainId = (chainId: number): bigint => {
  */
 export const from = (input: Input): bigint => {
   if (typeof input === "bigint") {
-    if (input < 0n) throw invalid(input);
+    if (input < 0n) throw new InvalidInputError({ code: "INVALID_COIN_TYPE", input });
     return input;
   }
   if (typeof input === "object") return fromChainId(input.chainId);
 
   const coinType = (coinNameToTypeMap as Readonly<Record<string, number>>)[input.toLowerCase()];
-  if (coinType === undefined) throw invalid(input);
+  if (coinType === undefined) throw new InvalidInputError({ code: "INVALID_COIN_TYPE", input });
   return BigInt(coinType);
 };
 

@@ -27,11 +27,9 @@ export const supportsAtomicBatch = (signer: Signer, chainId: number): Effect.Eff
   fromPromise(() =>
     getCapabilities(signer.walletClient, { account: signer.account, chainId }),
   ).pipe(
-    Effect.map((capabilities) => {
-      // `ready` means the wallet would first ask the user to upgrade the account (EIP-7702);
-      // `auto` does not trigger that prompt, `mode: "batch"` still does.
-      return capabilities.atomic?.status === "supported";
-    }),
+    // `ready` means the wallet would first ask the user to upgrade the account (EIP-7702);
+    // `auto` does not trigger that prompt, `mode: "batch"` still does.
+    Effect.map((capabilities) => capabilities.atomic?.status === "supported"),
     // Wallets without EIP-5792 reject the request; they get sequential transactions.
     Effect.orElseSucceed(() => false),
   );
@@ -46,22 +44,21 @@ export const sendSequential = Effect.fnUntraced(function* (
   signer: Signer,
   step: Plan.Step,
 ) {
+  const account = addressOf(signer.account);
   const hashes: Hex[] = [];
-  for (const item of step.calls) {
+
+  for (const call of step.calls) {
     const previous = hashes.at(-1);
     if (previous !== undefined) yield* receiptsOf(client, [previous]);
-    const context = {
-      contract: item.to,
-      account: addressOf(signer.account),
-      chainId: client.chain.id,
-    };
+
+    const context = { contract: call.to, account, chainId: client.chain.id };
     const estimate = yield* fromPromise(
       () =>
         estimateGas(client.publicClient, {
-          account: addressOf(signer.account),
-          to: item.to,
-          data: item.data,
-          value: item.value,
+          account,
+          to: call.to,
+          data: call.data,
+          value: call.value,
         }),
       context,
     );
@@ -70,9 +67,9 @@ export const sendSequential = Effect.fnUntraced(function* (
         sendTransaction(signer.walletClient, {
           account: signer.account,
           chain: signer.walletClient.chain ?? null,
-          to: item.to,
-          data: item.data,
-          value: item.value,
+          to: call.to,
+          data: call.data,
+          value: call.value,
           gas: withHeadroom(estimate),
         }),
       context,
@@ -81,9 +78,6 @@ export const sendSequential = Effect.fnUntraced(function* (
   }
   return hashes;
 });
-
-/** How long to wait for a bundle when the caller sets no `timeout`: it has no hash to check later. */
-const defaultBundleTimeout = 300_000;
 
 /**
  * Sends a step as one EIP-5792 bundle and waits for it to settle. A bundle has no transaction
@@ -103,7 +97,7 @@ export const sendBatch = Effect.fnUntraced(function* (
       sendCalls(signer.walletClient, {
         account: signer.account,
         ...(signer.walletClient.chain === undefined ? {} : { chain: signer.walletClient.chain }),
-        calls: step.calls.map((item) => ({ to: item.to, data: item.data, value: item.value })),
+        calls: step.calls.map((call) => ({ to: call.to, data: call.data, value: call.value })),
         forceAtomic: true,
         ...(paymaster === undefined
           ? {}
@@ -123,7 +117,8 @@ export const sendBatch = Effect.fnUntraced(function* (
     try: () =>
       waitForCallsStatus(signer.walletClient, {
         id,
-        timeout: timeout ?? defaultBundleTimeout,
+        // Without a `timeout`, five minutes: a bundle has no hash to check on later.
+        timeout: timeout ?? 300_000,
         status: ({ statusCode, receipts }) =>
           statusCode >= 300 || (statusCode >= 200 && (receipts?.length ?? 0) > 0),
       }),

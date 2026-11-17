@@ -41,9 +41,6 @@ export type Decoded = {
   readonly uri: string;
 };
 
-const protocolOf = (codec: Codec): Protocol | undefined =>
-  (Object.keys(schemes) as Protocol[]).find((protocol) => schemes[protocol] === codec);
-
 /**
  * Encodes a content URI as the bytes stored in an ENS `contenthash` record (ENSIP-7).
  *
@@ -88,7 +85,9 @@ export const decode = (data: Hex): Decoded | null => {
 
   try {
     const codec = getCodec(data.slice(2));
-    const protocol = codec === undefined ? undefined : protocolOf(codec);
+    const protocol = (Object.keys(schemes) as Protocol[]).find(
+      (scheme) => schemes[scheme] === codec,
+    );
     if (protocol === undefined) throw new Error(`unsupported codec ${String(codec)}`);
 
     const value = decodeContentHash(data.slice(2));

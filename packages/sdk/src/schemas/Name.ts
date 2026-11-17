@@ -4,14 +4,6 @@ import { normalize } from "../utils/Name.js";
 
 export * from "../utils/Name.js";
 
-const isNormalized = Schema.makeFilter<string>((value) => {
-  try {
-    return normalize(value) === value || "Expected an ENSIP-15 normalized ENS name";
-  } catch {
-    return "Expected a valid ENS name";
-  }
-});
-
 /**
  * An ENS name that is already normalized (ENSIP-15). Encoded `[labelhash]` labels are accepted.
  *
@@ -28,7 +20,15 @@ const isNormalized = Schema.makeFilter<string>((value) => {
  * @since 1.0.0
  */
 export const Normalized = Schema.String.pipe(
-  Schema.check(isNormalized),
+  Schema.check(
+    Schema.makeFilter<string>((value) => {
+      try {
+        return normalize(value) === value || "Expected an ENSIP-15 normalized ENS name";
+      } catch {
+        return "Expected a valid ENS name";
+      }
+    }),
+  ),
   Schema.brand("ens/NormalizedName"),
 );
 

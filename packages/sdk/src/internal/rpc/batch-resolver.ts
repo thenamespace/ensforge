@@ -26,9 +26,7 @@ export class ContractRead extends Request.Class<
   never
 > {}
 
-const blockKey = (read: ContractRead): string =>
-  read.blockNumber === undefined ? `tag:${read.blockTag}` : `number:${read.blockNumber}`;
-
+/** Splits reads into chunks of at most `batchSize` calldata bytes; a larger read goes alone. */
 const chunk = <entry extends { readonly request: ContractRead }>(
   entries: readonly entry[],
   batchSize: number,
@@ -54,7 +52,10 @@ const chunk = <entry extends { readonly request: ContractRead }>(
 
 const makeResolver = (client: Client, batchSize: number, wait: number) =>
   RequestResolver.makeGrouped<ContractRead, string>({
-    key: ({ request }) => blockKey(request),
+    key: ({ request }) =>
+      request.blockNumber === undefined
+        ? `tag:${request.blockTag}`
+        : `number:${request.blockNumber}`,
     resolver: Effect.fnUntraced(function* (entries) {
       const [first] = entries;
       const block =

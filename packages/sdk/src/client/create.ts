@@ -1,7 +1,7 @@
 import { Deployments } from "@ensforge/contracts";
-import type { Account, Address } from "viem";
 
 import { ConfigError } from "../errors/classes/ConfigError.js";
+import { addressOf } from "../internal/write/signer.js";
 import { resolveConfig } from "./config.js";
 import { build } from "./extend.js";
 import type { State } from "./state.js";
@@ -40,9 +40,6 @@ const resolveWallet = (options: CreateOptions): State["getWalletClient"] => {
   if (publicClient.account !== undefined) return async () => publicClient;
   return async () => undefined;
 };
-
-const addressOf = (account: Account | Address | undefined): Address | undefined =>
-  typeof account === "object" ? account.address : account;
 
 /**
  * Creates an ensforge client from viem clients.

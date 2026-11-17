@@ -35,11 +35,6 @@ const expected = new Set<AnyError["_tag"]>([
   "CommitmentError",
 ]);
 
-const severityOf = (error: AnyError): Description["severity"] => {
-  if (expected.has(error._tag)) return "info";
-  return error.retryable ? "warning" : "error";
-};
-
 /**
  * Turns any thrown value into a title, message and suggested action that are safe to show users.
  *
@@ -90,6 +85,6 @@ export const describe = (value: unknown, options: DescribeOptions = {}): Descrip
     ...override?.(error),
     code: error.code,
     retryable: error.retryable,
-    severity: severityOf(error),
+    severity: expected.has(error._tag) ? "info" : error.retryable ? "warning" : "error",
   };
 };

@@ -1,17 +1,15 @@
 import { Effect } from "effect";
 
-import { isAddressEqual, isHash } from "viem";
+import { isHash } from "viem";
 import { getTransaction } from "viem/actions";
 
 import type { Client } from "../../../client/types.js";
 import { InvalidInputError } from "../../../errors/classes/InvalidInputError.js";
 import * as Action from "../../../internal/action/index.js";
+import { sameAddress } from "../../../internal/address.js";
 import { requireRecord } from "../../../internal/plan/records.js";
 import { fromPromise } from "../../../internal/rpc/fromPromise.js";
 import type { reconcile as Promises } from "./index.js";
-
-const invalid = (field: string, input: unknown, shortMessage: string) =>
-  new InvalidInputError({ code: "INVALID_RECORD_VALUE", field, input, shortMessage });
 
 /** @internal Implementation of `Actions.plan.reconcile`. */
 export const reconcile = Effect.fn("ensforge.plan.reconcile")(function* (
@@ -19,13 +17,25 @@ export const reconcile = Effect.fn("ensforge.plan.reconcile")(function* (
   options: Promises.Options,
 ): Effect.fn.Return<Promises.ReturnType, Promises.ErrorType> {
   if (!isHash(options.hash)) {
-    return yield* Effect.fail(invalid("hash", options.hash, "The hash must be 32 bytes."));
+    return yield* Effect.fail(
+      new InvalidInputError({
+        code: "INVALID_RECORD_VALUE",
+        field: "hash",
+        input: options.hash,
+        shortMessage: "The hash must be 32 bytes.",
+      }),
+    );
   }
   const record = yield* requireRecord(client, options.id);
   const step = record.plan.steps.find((candidate) => candidate.id === options.step);
   if (step === undefined) {
     return yield* Effect.fail(
-      invalid("step", options.step, `The plan has no step ${options.step}.`),
+      new InvalidInputError({
+        code: "INVALID_RECORD_VALUE",
+        field: "step",
+        input: options.step,
+        shortMessage: `The plan has no step ${options.step}.`,
+      }),
     );
   }
 
@@ -35,16 +45,16 @@ export const reconcile = Effect.fn("ensforge.plan.reconcile")(function* (
     getTransaction(client.publicClient, { hash: options.hash }),
   );
   const plausible =
-    (record.plan.account !== undefined && isAddressEqual(transaction.from, record.plan.account)) ||
-    (transaction.to !== null &&
-      step.calls.some((call) => isAddressEqual(call.to, transaction.to as `0x${string}`)));
+    sameAddress(record.plan.account, transaction.from) ||
+    step.calls.some((call) => sameAddress(transaction.to, call.to));
   if (!plausible) {
     return yield* Effect.fail(
-      invalid(
-        "hash",
-        options.hash,
-        "The transaction is not from the plan's account or to the step's contracts.",
-      ),
+      new InvalidInputError({
+        code: "INVALID_RECORD_VALUE",
+        field: "hash",
+        input: options.hash,
+        shortMessage: "The transaction is not from the plan's account or to the step's contracts.",
+      }),
     );
   }
 

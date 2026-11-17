@@ -54,8 +54,6 @@ export const routePlan = (
   );
 };
 
-const pollInterval = "2 seconds";
-
 /**
  * Follows a step sent through a route until it is mined. `undefined` when it failed before
  * landing (it can be sent again); a failure with transactions fails the write.
@@ -81,7 +79,7 @@ export const routeOutcome = Effect.fnUntraced(function* (
         }),
       );
     }
-    yield* Effect.sleep(pollInterval);
+    yield* Effect.sleep("2 seconds");
   }
 });
 
