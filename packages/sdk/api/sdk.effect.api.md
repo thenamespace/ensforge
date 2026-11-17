@@ -1370,8 +1370,8 @@ function Name.namehash(name: string) => `0x${string}`
 function Name.normalize(name: string) => string
 const Name.Normalized: brand<String, 'ens/NormalizedName'>
 type Name.Normalized = string & Brand<'ens/NormalizedName'>
-function Name.parse(name: string) => { readonly labels: readonly string[]; readonly tld: string; readonly parent: string | null; readonly is2ld: boolean; readonly isSubname: boolean; }
-type Name.Parsed = { readonly labels: readonly string[]; readonly tld: string; readonly parent: string | null; readonly is2ld: boolean; readonly isSubname: boolean; }
+function Name.parse(name: string) => { readonly labels: readonly string[]; readonly label: string; readonly tld: string; readonly parent: string | null; readonly is2ld: boolean; readonly isSubname: boolean; }
+type Name.Parsed = { readonly labels: readonly string[]; readonly label: string; readonly tld: string; readonly parent: string | null; readonly is2ld: boolean; readonly isSubname: boolean; }
 function Name.toTokenId(name: string) => bigint
 const Plan: { readonly merge: (plans: readonly [Plan, ...Plan[]]) => Plan; readonly serialize: (value: Plan | Record) => string; readonly deserialize: (text: string) => Plan; readonly memoryStorage: () => Storage; readonly localStorage: (key?: string | undefined) => Storage; }
 interface Plan {

@@ -1433,8 +1433,8 @@ function Name.isValid(name: string) => boolean
 function Name.labelhash(label: string) => `0x${string}`
 function Name.namehash(name: string) => `0x${string}`
 function Name.normalize(name: string) => string
-function Name.parse(name: string) => { readonly labels: readonly string[]; readonly tld: string; readonly parent: string | null; readonly is2ld: boolean; readonly isSubname: boolean; }
-type Name.Parsed = { readonly labels: readonly string[]; readonly tld: string; readonly parent: string | null; readonly is2ld: boolean; readonly isSubname: boolean; }
+function Name.parse(name: string) => { readonly labels: readonly string[]; readonly label: string; readonly tld: string; readonly parent: string | null; readonly is2ld: boolean; readonly isSubname: boolean; }
+type Name.Parsed = { readonly labels: readonly string[]; readonly label: string; readonly tld: string; readonly parent: string | null; readonly is2ld: boolean; readonly isSubname: boolean; }
 function Name.toTokenId(name: string) => bigint
 function nameActions() => (client: Client<object>) => NameActions
 type NameActions = { readonly name: { readonly get: Bound<typeof get>; readonly getLabel: Bound<typeof getLabel>; readonly reclaim: BoundWrite<typeof reclaim>; readonly reclaimSync: Bound<typeof reclaimSync>; readonly setManager: BoundWrite<typeof setManager>; readonly setManagerSync: Bound<typeof setManagerSync>; readonly setTtl: BoundWrite<typeof setTtl>; readonly setTtlSync: Bound<typeof setTtlSync>; readonly transfer: BoundWrite<typeof transfer>; readonly transferSync: Bound<typeof transferSync>; }; }

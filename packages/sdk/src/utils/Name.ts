@@ -160,6 +160,8 @@ export const dnsDecode = (data: Hex): string => {
 export type Parsed = {
   /** Normalized labels, leftmost first. */
   readonly labels: readonly string[];
+  /** Leftmost label, e.g. `nick` for `nick.eth`. Empty for the root name. */
+  readonly label: string;
   /** Top-level domain, e.g. `eth`. Empty for the root name. */
   readonly tld: string;
   /** Parent name, or `null` for top-level names and the root. */
@@ -179,7 +181,7 @@ export type Parsed = {
  * import { Name } from "@ensforge/sdk"
  *
  * Name.parse("pay.nick.eth")
- * // { labels: ["pay", "nick", "eth"], tld: "eth", parent: "nick.eth", is2ld: false, isSubname: true }
+ * // { labels: ["pay", "nick", "eth"], label: "pay", tld: "eth", parent: "nick.eth", is2ld: false, isSubname: true }
  * ```
  *
  * @throws `Errors.InvalidInputError` (`INVALID_NAME`) when the name cannot be normalized.
@@ -192,6 +194,7 @@ export const parse = (name: string): Parsed => {
 
   return {
     labels,
+    label: labels[0] ?? "",
     tld: labels.at(-1) ?? "",
     parent: labels.length > 1 ? labels.slice(1).join(".") : null,
     is2ld: labels.length === 2,
@@ -224,7 +227,4 @@ export const fromLabelhash = (hash: Hex): string => `[${hash.slice(2).toLowerCas
  * @category names
  * @since 1.0.0
  */
-export const toTokenId = (name: string): bigint => {
-  const [label = ""] = parse(name).labels;
-  return hexToBigInt(labelhash(label));
-};
+export const toTokenId = (name: string): bigint => hexToBigInt(labelhash(parse(name).label));

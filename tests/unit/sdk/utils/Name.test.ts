@@ -50,16 +50,27 @@ describe("Name DNS encoding", () => {
 
 describe("Name.parse", () => {
   it.each([
-    ["", { labels: [], tld: "", parent: null, is2ld: false, isSubname: false }],
-    ["eth", { labels: ["eth"], tld: "eth", parent: null, is2ld: false, isSubname: false }],
+    ["", { labels: [], label: "", tld: "", parent: null, is2ld: false, isSubname: false }],
+    [
+      "eth",
+      { labels: ["eth"], label: "eth", tld: "eth", parent: null, is2ld: false, isSubname: false },
+    ],
     [
       "Nick.eth",
-      { labels: ["nick", "eth"], tld: "eth", parent: "eth", is2ld: true, isSubname: false },
+      {
+        labels: ["nick", "eth"],
+        label: "nick",
+        tld: "eth",
+        parent: "eth",
+        is2ld: true,
+        isSubname: false,
+      },
     ],
     [
       "pay.nick.eth",
       {
         labels: ["pay", "nick", "eth"],
+        label: "pay",
         tld: "eth",
         parent: "nick.eth",
         is2ld: false,
