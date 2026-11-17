@@ -20,6 +20,8 @@ export type V1Registration = {
    */
   readonly controller?: "current" | "wrapped" | "legacy";
   readonly fuses?: number;
+  /** Current controller only: 1 sets the registrant's `addr.reverse`, 2 its `default.reverse`. */
+  readonly reverseRecord?: number;
 };
 
 /**
@@ -42,7 +44,7 @@ export const registerV1 = Effect.fnUntraced(function* (c: StepContext, options: 
         secret,
         resolver,
         data: [],
-        reverseRecord: 0,
+        reverseRecord: options.reverseRecord ?? 0,
         referrer: zeroHash,
       };
       const commitment = yield* c.read<`0x${string}`>(

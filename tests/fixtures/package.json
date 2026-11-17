@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@effect/platform-node": "catalog:",
+    "@ensdomains/content-hash": "catalog:",
     "@ensforge/contracts": "workspace:*",
     "@ensforge/test-devnet": "workspace:*",
     "effect": "catalog:",

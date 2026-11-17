@@ -529,6 +529,9 @@ importers:
       '@effect/platform-node':
         specifier: 'catalog:'
         version: 4.1.4(bufferutil@4.1.0)(effect@4.1.4)(redis@6.3.1)(utf-8-validate@5.0.10)
+      '@ensdomains/content-hash':
+        specifier: 'catalog:'
+        version: 3.2.0
       '@ensforge/contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
