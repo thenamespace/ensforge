@@ -72,4 +72,21 @@ describe("resolver.get", () => {
       }
     }),
   );
+
+  it.effect("tells whether resolution reaches a name's own resolver", () =>
+    Effect.gen(function* () {
+      const name = { name: "alice.eth", v1: { owner: signer, resolver: resolverA } } as const;
+      const reached = clientFor({ ...name, found: { resolver: resolverA, offset: 0n } });
+      const unreached = clientFor(name);
+
+      assert.deepInclude(
+        yield* Effect.promise(() => Actions.resolver.get(reached.ens, { name: name.name })),
+        { address: getAddress(resolverA), serving: true },
+      );
+      assert.deepInclude(
+        yield* Effect.promise(() => Actions.resolver.get(unreached.ens, { name: name.name })),
+        { address: getAddress(resolverA), serving: false },
+      );
+    }),
+  );
 });

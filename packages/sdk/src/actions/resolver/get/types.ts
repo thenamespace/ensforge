@@ -71,6 +71,12 @@ export type ResolverInfo = {
    * wildcard resolver, or the ENSv1 bridge). Records cannot be written for the name there.
    */
   readonly inherited: boolean;
+  /**
+   * Whether resolving the name reaches this resolver. `false` for a name's own resolver that
+   * resolution no longer uses, e.g. an ENSv1 name ENSv2 holds no reservation for after the
+   * launch: its records are kept there but do not resolve.
+   */
+  readonly serving: boolean;
   readonly kind: ResolverKind;
   readonly authorization: ResolverAuthorization;
   readonly profiles: ResolverProfiles;

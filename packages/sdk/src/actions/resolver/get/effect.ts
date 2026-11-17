@@ -35,11 +35,9 @@ export const get = Effect.fn("ensforge.resolver.get")(
     // ENSv2 sends premigrated ENSv1 names to the ENSv1 bridge, which resolves them from the ENSv1
     // registry: describe the ENSv1 resolver it uses, as before the launch.
     const bridge = client.deployment.v2?.migration.ensV1Resolver;
-    const bridged =
-      own === null &&
-      found !== null &&
-      bridge !== undefined &&
-      isAddressEqual(found.address, bridge);
+    const viaBridge =
+      found !== null && bridge !== undefined && isAddressEqual(found.address, bridge);
+    const bridged = own === null && viaBridge;
     const served = bridged
       ? yield* nearestV1AncestorResolver(client, loaded.data.parts.name, options)
       : found;
@@ -51,7 +49,9 @@ export const get = Effect.fn("ensforge.resolver.get")(
     if (own === null && served?.inherited === true && !description.profiles.extended) {
       return yield* notFound;
     }
-    return { address, inherited: own === null, ...description };
+    const serving =
+      own === null || viaBridge || (found !== null && isAddressEqual(found.address, own));
+    return { address, inherited: own === null, serving, ...description };
   },
   Action.withContext("resolver.get", { contractKind: "resolver" }),
 );
