@@ -33,6 +33,3 @@ overrides:
 
 minimumReleaseAgeExclude:
   - viem@2.56.0
-
-patchedDependencies:
-  "@rhinestone/sdk@1.8.0": packages/hca/patches/rhinestone-sdk-1.8.0.patch

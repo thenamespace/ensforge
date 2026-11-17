@@ -1,115 +1,119 @@
-import type { Schema } from "effect";
+import type { HcaSessionTerms } from "@ensforge/contracts/v2/experimental/hca";
+import type { Plan, Write } from "@ensforge/core";
+import type { Address, Hex } from "viem";
 
-import type { EnsAction, HcaError } from "@ensforge/core/legacy";
-import type {
-  HcaExecutionPolicy,
-  ExecutionAdapter,
-  PreparedHcaCalls,
-  PreparedHcaExecution,
-  AuthorizedHcaExecution,
-  HcaAdapterSubmission,
-  HcaExecutionReview,
-  HcaExecutionLocator,
-  HcaExecutionCapabilities,
-  HcaExecutionStatus,
-} from "@ensforge/core/legacy/hca";
+/**
+ * A reason an address is not a usable HCA of its owner (HCA.md's checks).
+ *
+ * @category hca
+ * @since 1.0.0
+ */
+export type HcaProblem =
+  | "address-mismatch"
+  | "owner-unavailable"
+  | "owner-mismatch"
+  | "unknown-account"
+  | "untrusted-implementation"
+  | "not-certified";
 
-export interface VersionedExecution {
-  readonly schemaVersion: 1;
-  /** Stable, public, credential-free configuration digest. */
-  readonly configurationFingerprint: `0x${string}`;
-}
+/**
+ * An ENS Hosted Contract Account, deployed or predicted.
+ *
+ * @category hca
+ * @since 1.0.0
+ */
+export type HcaAccount = {
+  readonly address: Address;
+  /** The immutable owner (the wallet); `null` when it cannot be read. */
+  readonly owner: Address | null;
+  readonly deployed: boolean;
+  /** Owner the factory certified for this account. */
+  readonly authorizedOwner: Address | null;
+  /** `accountId()`, e.g. `ens-standalone-hca.1.1.0`. */
+  readonly accountId: string | null;
+  /** Current implementation; `null` before deployment. */
+  readonly implementation: Address | null;
+  /** Implementation the address derives from; it never changes. */
+  readonly initialImplementation: Address;
+  /** Increments with `revokeSessions`, invalidating every session approval. */
+  readonly sessionNonce: bigint;
+  /** DAO set of implementations this account may upgrade to. */
+  readonly upgradeSet: Address;
+  /** Failed checks; empty for a usable (or not yet deployed) HCA. */
+  readonly problems: readonly HcaProblem[];
+};
 
-export interface PreparedExecution<P> extends PreparedHcaExecution<P>, VersionedExecution {
-  readonly review: HcaExecutionReview;
-}
-
-export interface AuthorizedExecution<A> extends AuthorizedHcaExecution<A>, VersionedExecution {
-  readonly review: HcaExecutionReview;
-}
-
-export interface ExecutionSubmission<S> extends HcaAdapterSubmission<S>, VersionedExecution {
-  readonly locator: HcaExecutionLocator;
-}
-
-export interface SubmissionCodec<S> {
-  readonly version: number;
-  /** Whitelist tracking fields only; never include credentials, signers or signed operations. */
-  readonly schema: Schema.Codec<S, unknown>;
-}
-
-export interface ExecutionExtensions {
-  readonly sessions?: object;
-  readonly crossChain?: object;
-  readonly sponsorship?: object;
-  readonly recovery?: object;
-  readonly cancellation?: object;
-  readonly lookup?: object;
-}
-
-export type ExecutionOutcome =
-  | { readonly status: "cancelled" | "expired"; readonly reason: string }
-  | { readonly status: "pending" | "unknown" }
-  | {
-      readonly status: "succeeded" | "failed";
-      readonly receipts: Extract<HcaExecutionStatus, { receipts: unknown }>["receipts"];
-    };
-
-export interface ExecutionAdapterDefinition<
-  P,
-  A,
-  S,
-  Extensions extends ExecutionExtensions = Record<never, never>,
-> {
-  readonly id: string;
+/**
+ * A session the HCA owner approved: a key that may register names and edit one resolver's
+ * records through Rhinestone without further prompts. Store it; it holds no secret.
+ *
+ * @category hca
+ * @since 1.0.0
+ */
+export type HcaSession = {
   readonly chainId: number;
-  readonly profileId: string;
-  /** Stable across restarts for the same public configuration. Never hash credentials. */
-  readonly configurationFingerprint: `0x${string}`;
-  readonly capabilities: HcaExecutionCapabilities;
-  readonly extensions?: Extensions;
-  readonly policy?: HcaExecutionPolicy;
-  readonly schemas: {
-    readonly prepared: Schema.Codec<P, unknown>;
-    readonly authorized: Schema.Codec<A, unknown>;
-  };
-  readonly submission: SubmissionCodec<S>;
-  readonly supports: ExecutionAdapter["supports"];
-  readonly prepare: EnsAction<
-    PreparedHcaCalls,
-    { readonly payload: P; readonly review: HcaExecutionReview },
-    HcaError
-  >;
-  readonly authorize: EnsAction<PreparedExecution<P>, A, HcaError>;
-  readonly submit: EnsAction<
-    AuthorizedExecution<A>,
-    { readonly reference: string; readonly locator: HcaExecutionLocator; readonly payload: S },
-    HcaError
-  >;
-  readonly getStatus: EnsAction<ExecutionSubmission<S>, ExecutionOutcome, HcaError>;
-}
+  readonly hca: Address;
+  readonly owner: Address;
+  /** Public address of the session key; the key itself stays with the app. */
+  readonly sessionKey: Address;
+  readonly terms: HcaSessionTerms;
+  readonly permissionId: Hex;
+  /** This chain's session digest. */
+  readonly sessionDigest: Hex;
+  /** Every chain and digest the owner signed, this chain first. */
+  readonly chains: readonly { readonly chainId: number; readonly sessionDigest: Hex }[];
+  /** The owner's signature over the multi-chain approval. */
+  readonly ownerSignature: Hex;
+  /** EIP-712 domain the approval was signed under. */
+  readonly signingDomain: "smart-session" | "hca";
+};
 
-export interface TypedExecutionAdapter<
-  P,
-  A,
-  S,
-  Extensions extends ExecutionExtensions = Record<never, never>,
-> extends ExecutionAdapter<P, A, S> {
-  readonly configurationFingerprint: `0x${string}`;
-  readonly capabilities: HcaExecutionCapabilities;
-  readonly extensions: Extensions;
-  readonly prepare: EnsAction<PreparedHcaCalls, PreparedExecution<P>, HcaError>;
-  readonly authorize: EnsAction<PreparedExecution<P>, AuthorizedExecution<A>, HcaError>;
-  readonly submit: EnsAction<AuthorizedExecution<A>, ExecutionSubmission<S>, HcaError>;
-  readonly getStatus: EnsAction<ExecutionSubmission<S>, HcaExecutionStatus<S>, HcaError>;
-  readonly serializeSubmission: (submission: ExecutionSubmission<S>) => string;
-  readonly restoreSubmission: (
-    serialized: string,
-    expected: {
-      readonly chainId: number;
-      readonly hca: `0x${string}`;
-      readonly profileId: string;
-      readonly planFingerprint: `0x${string}`;
-    },
-  ) => ExecutionSubmission<S>;
-}
+/**
+ * What an executor is asked to run: owner-authorized (or session-authorized) calls from the HCA.
+ *
+ * @category executors
+ * @since 1.0.0
+ */
+export type ExecutionRequest = {
+  readonly chainId: number;
+  readonly hca: Address;
+  readonly owner: Address;
+  readonly deployed: boolean;
+  readonly calls: readonly Plan.Call[];
+  readonly session?: HcaSession | undefined;
+  readonly description: string;
+};
+
+/**
+ * Runs HCA executions: the owner's wallet (`owner()`), an ERC-4337 bundler (`bundler()`,
+ * `pimlico()`), Rhinestone intents (`rhinestone()`), or your own (`defineExecutor`).
+ *
+ * @category executors
+ * @since 1.0.0
+ */
+export type Executor = {
+  readonly id: string;
+  readonly capabilities: {
+    /** Runs session-authorized executions (no owner prompt). */
+    readonly sessions: boolean;
+    /** Can run without the owner holding native gas. */
+    readonly sponsorship: boolean;
+    /** Deploys the HCA on first use, without a separate transaction. */
+    readonly deploys: boolean;
+  };
+  /**
+   * Sends one execution and returns a reference to follow it. Omitted for `owner()`, whose
+   * executions are ordinary wallet transactions.
+   */
+  readonly send?:
+    | ((request: ExecutionRequest, context: Write.Via.Context) => Promise<string>)
+    | undefined;
+  /** Where a sent execution is. */
+  readonly status?:
+    | ((reference: string, context: Write.Via.Context) => Promise<Write.Via.Status>)
+    | undefined;
+  /** Fees the executor will charge for a request, shown on the plan before sending. */
+  readonly quote?:
+    | ((request: ExecutionRequest, context: Write.Via.Context) => Promise<readonly Plan.Fee[]>)
+    | undefined;
+};
