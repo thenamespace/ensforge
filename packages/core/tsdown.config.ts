@@ -10,8 +10,6 @@ export default defineConfig({
     extension: "src/extension.ts",
     index: "src/index.ts",
     legacy: "src/legacy/index.ts",
-    "legacy/hca": "src/legacy/actions/hca/index.ts",
-    "legacy/hca/admin": "src/legacy/actions/hca/admin/index.ts",
     "legacy/storage": "src/legacy/storage/index.ts",
     "legacy/storage/browser": "src/legacy/storage/browser.ts",
     "legacy/testing": "src/legacy/testing/index.ts",

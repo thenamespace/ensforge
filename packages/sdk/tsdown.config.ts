@@ -4,8 +4,6 @@ import type { UserConfig } from "tsdown";
 export default defineConfig({
   alias: { "#/": "./src/" },
   entry: {
-    "hca/admin": "src/entrypoints/hca-admin.ts",
-    hca: "src/entrypoints/hca.ts",
     index: "src/index.ts",
     wagmi: "src/wagmi.ts",
   },

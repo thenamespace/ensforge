@@ -9,7 +9,7 @@ import type { EnsforgeServiceValues } from "../services/context.js";
 import { makeServicesContext } from "../services/context.js";
 import type { WalletClientResolver } from "../services/wallet-client.js";
 import { attachConfigContext } from "./context.js";
-import { freezeDeployment, resolveNetwork } from "./resolve-network.js";
+import { resolveNetwork } from "./resolve-network.js";
 import { validateClientChain, validateDeployments } from "./validation.js";
 
 interface ConfigClients {
@@ -59,9 +59,6 @@ export const createConfigFromClients = (
       gateways,
       ...(parameters.storage === undefined ? {} : { storage: parameters.storage }),
       deployments,
-      ...(parameters.hca === undefined
-        ? {}
-        : { hca: freezeDeployment(structuredClone(parameters.hca)) }),
       ...(clients.walletClient === undefined ? {} : { walletClient: clients.walletClient }),
     },
     makeServicesContext(serviceValues),

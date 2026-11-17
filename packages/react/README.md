@@ -35,37 +35,8 @@ import { EnsforgeProvider } from "@ensforge/react";
 </EnsforgeProvider>;
 ```
 
-Use read hooks anywhere below the provider:
-
-```tsx
-import { useHcaOwner } from "@ensforge/react";
-
-function HcaOwner({ hca }: { hca: `0x${string}` }) {
-  const owner = useHcaOwner({ hca, atom: { swr: { staleTime: "1 minute" } } });
-
-  if (owner.isInitial) return <span>Loading…</span>;
-  if (owner.isFailure) return <span>{owner.error.message}</span>;
-
-  return <p>Owned by {owner.data}</p>;
-}
-```
-
-Write hooks expose mutation state and Promise-based execution:
-
-```tsx
-import { useDeployHca } from "@ensforge/react";
-
-const deployHca = useDeployHca();
-
-const deploy = (owner: `0x${string}`) => deployHca.mutate({ owner });
-```
-
-Hook inputs are inferred automatically. When an action parameter type is needed explicitly, import
-it from the matching SDK group.
-
-```ts
-import type { HcaReadParameters } from "@ensforge/sdk/hca";
-```
+Per-action hooks are being rebuilt on the `@ensforge/core` 1.0 actions (`ens.name.*`,
+`ens.record.*`, …); `makeQueryHook` and `makeMutationHook` build hooks from atoms meanwhile.
 
 An existing SDK instance can also be shared through the provider:
 

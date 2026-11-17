@@ -30,20 +30,6 @@ export {
 } from "@ensforge/core/legacy";
 
 export { Ensforge } from "./ensforge.js";
-export type { HcaActions } from "./groups/index.js";
-export type {
-  BoundAction,
-  BoundExecuteHcaCalls,
-  BoundWatchHcaExecution,
-  BoundNoParametersAction,
-} from "./internal/bind-action.js";
-export type {
-  ExecutionAdapter,
-  HcaExecutionSubmission,
-  HcaExecutionStatus,
-  VerifiedHcaAccount,
-  PreparedHcaCalls,
-} from "@ensforge/core/legacy/hca";
 export {
   createMemoryWorkflowStorage,
   createIndexedDbWorkflowStorage,

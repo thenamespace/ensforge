@@ -53,14 +53,6 @@
       "workspace-source": "./src/legacy/index.ts",
       "default": "./dist/legacy.js"
     },
-    "./legacy/hca": {
-      "workspace-source": "./src/legacy/actions/hca/index.ts",
-      "default": "./dist/legacy/hca.js"
-    },
-    "./legacy/hca/admin": {
-      "workspace-source": "./src/legacy/actions/hca/admin/index.ts",
-      "default": "./dist/legacy/hca/admin.js"
-    },
     "./legacy/storage": {
       "workspace-source": "./src/legacy/storage/index.ts",
       "default": "./dist/legacy/storage.js"
@@ -90,8 +82,6 @@
       "./extension": "./dist/extension.js",
       "./indexer": "./dist/indexer.js",
       "./legacy": "./dist/legacy.js",
-      "./legacy/hca": "./dist/legacy/hca.js",
-      "./legacy/hca/admin": "./dist/legacy/hca/admin.js",
       "./legacy/storage": "./dist/legacy/storage.js",
       "./legacy/storage/browser": "./dist/legacy/storage/browser.js",
       "./legacy/wagmi": "./dist/legacy/wagmi.js",

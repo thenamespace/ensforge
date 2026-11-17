@@ -6,13 +6,12 @@ A type-safe client for building ENS applications.
 
 - Config-bound actions with no repeated client arguments
 - Unified behavior across supported ENS deployments
-- Grouped APIs for HCA accounts
 
 Name, record, resolver, primary-name and registration actions live in `@ensforge/core`
 (`ens.name.*`, `ens.record.*`, `ens.resolver.*`, `ens.primaryName.*`, `ens.registration.*`,
 `ens.subname.*`, `ens.registry.*`, `ens.permission.*`, `ens.role.*`, `ens.approval.*`,
 `ens.wrapper.*`, `ens.dns.*`, `ens.migration.*`), and indexer reads in
-`@ensforge/core/indexer` (`ens.indexer.*`).
+`@ensforge/core/indexer` (`ens.indexer.*`). HCA accounts live in `@ensforge/hca`.
 
 - Batched reads and wallet-aware write workflows
 - Compatible with viem clients and Wagmi configs
@@ -35,7 +34,7 @@ const sdk = new Ensforge({
   publicClient: createPublicClient({ chain: mainnet, transport: http() }),
 });
 
-const entryPoint = await sdk.hca.getHcaEntryPoint({ hca: "0x…" });
+sdk.config.chainId; // 1
 ```
 
 Use an existing Wagmi config instead of supplying viem clients:

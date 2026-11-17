@@ -1,4 +1,3 @@
-import type { HcaDeploymentProfile } from "@ensforge/contracts/internal";
 import type { PublicClient, WalletClient } from "viem";
 
 import type { EnsProtocol } from "../schemas/protocol.js";
@@ -31,7 +30,6 @@ export type EnsDeploymentProfile =
 
 export interface SharedCreateConfigParameters {
   readonly storage?: WorkflowStorage;
-  readonly hca?: HcaDeploymentProfile;
   readonly network: EnsNetwork | CustomEnsNetwork;
   readonly reads?: ReadOptions;
   readonly writes?: WriteOptions;
@@ -52,7 +50,6 @@ export type EnsRuntimeChainId = number;
 /** Immutable, single-network configuration consumed by every ensforge action. */
 export interface EnsforgeConfig {
   readonly storage?: WorkflowStorage;
-  readonly hca?: HcaDeploymentProfile;
   readonly [EnsforgeConfigTypeId]: typeof EnsforgeConfigTypeId;
   readonly network: EnsNetworkId;
   readonly chainId: number;

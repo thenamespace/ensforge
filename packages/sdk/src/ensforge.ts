@@ -6,11 +6,8 @@ import {
 } from "@ensforge/core/legacy";
 import { createMemoryWorkflowStorage } from "@ensforge/core/legacy/storage";
 
-import { makeHcaActions, type HcaActions } from "./groups/index.js";
-
 export class Ensforge {
   readonly config: EnsforgeConfig;
-  readonly hca: HcaActions;
 
   constructor(parameters: CreateConfigParameters | EnsforgeConfig) {
     const storage = parameters.storage ?? createMemoryWorkflowStorage();
@@ -31,7 +28,6 @@ export class Ensforge {
     }
 
     this.config = config;
-    this.hca = makeHcaActions(config);
 
     Object.freeze(this);
   }

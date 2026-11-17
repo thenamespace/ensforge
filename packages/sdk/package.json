@@ -33,14 +33,6 @@
       "workspace-source": "./src/index.ts",
       "default": "./dist/index.js"
     },
-    "./hca": {
-      "workspace-source": "./src/entrypoints/hca.ts",
-      "default": "./dist/hca.js"
-    },
-    "./hca/admin": {
-      "workspace-source": "./src/entrypoints/hca-admin.ts",
-      "default": "./dist/hca/admin.js"
-    },
     "./wagmi": {
       "workspace-source": "./src/wagmi.ts",
       "default": "./dist/wagmi.js"
@@ -53,8 +45,6 @@
     },
     "exports": {
       ".": "./dist/index.js",
-      "./hca": "./dist/hca.js",
-      "./hca/admin": "./dist/hca/admin.js",
       "./wagmi": "./dist/wagmi.js",
       "./package.json": "./package.json"
     },
