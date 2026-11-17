@@ -263,7 +263,7 @@ const linearPremiumPriceOracleV1Abi: Abi
   function usdOracle() view returns (address)
 const linearPremiumPriceOracleV1InterfaceAbi: Abi
   function timeUntilPremium(uint256,uint256) view returns (uint256)
-type NameWrapperFuse = 0 | 2 | 16 | 4 | 1 | 8 | 32 | 64 | 65536 | 131072 | 262144 | 4294901760 | 4294836223
+type NameWrapperFuse = 0 | 1 | 2 | 4 | 8 | 16 | 32 | 64 | 65536 | 131072 | 262144 | 4294836223 | 4294901760
 const nameWrapperFuses: { readonly canDoEverything: 0; readonly cannotUnwrap: 1; readonly cannotBurnFuses: 2; readonly cannotTransfer: 4; readonly cannotSetResolver: 8; readonly cannotSetTtl: 16; readonly cannotCreateSubdomain: 32; readonly cannotApprove: 64; readonly parentCannotControl: 65536; readonly isDotEth: 131072; readonly canExtendExpiry: 262144; readonly parentControlled: 4294901760; readonly userSettable: 4294836223; }
 const nameWrapperUpgradeV1Abi: Abi
   function wrapFromUpgrade(bytes,address,uint32,uint64,address,bytes)

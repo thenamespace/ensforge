@@ -10,10 +10,10 @@ type ActionValue = ReturnType<action> extends Promise<infer value> ? value : Ret
 function ensAtom<action extends Action>(client: ClientBase<{}>, action: action, options: Parameters<action>[1], freshness?: Freshness | undefined) => Atom<AsyncResult<ActionValue<action>, ActionError<action>>>
 function ensPagesAtom<action extends PageAction>(client: ClientBase<{}>, action: action, options: { [P in Exclude<keyof ActionOptions<action>, 'cursor'>]: ActionOptions<action>[P]; }) => Writable<PullResult<ActionValue<action>, ActionError<action>>, void>
 function ensWriteAtom<action extends Action>(client: ClientBase<{}>, action: action) => { readonly run: AtomResultFn<ActionOptions<action>, ActionValue<action>, ActionError<action>>; readonly steps: Writable<readonly Event[], readonly Event[]>; }
-type Freshness = { readonly staleTime?: Input | undefined; readonly idleTTL?: Input | 'forever' | undefined; readonly refetchInterval?: Input | undefined; readonly refreshOnWindowFocus?: boolean | undefined; }
+type Freshness = { readonly staleTime?: Input | undefined; readonly idleTTL?: 'forever' | Input | undefined; readonly refetchInterval?: Input | undefined; readonly refreshOnWindowFocus?: boolean | undefined; }
 function invalidate(registry: AtomRegistry, client: ClientBase<{}>, subjects: { readonly names?: readonly string[]; readonly addresses?: readonly string[]; }) => void
 function optionsKey(options: unknown) => string
-type PageAction = ((client: ClientBase<{}>, options: never) => unknown) & { readonly path: string; } & ((client: never, options: never) => Promise<{ readonly items: readonly unknown[]; readonly cursor: string | null; }> | Effect<{ readonly items: readonly unknown[]; readonly cursor: string | null; }, unknown, never>)
+type PageAction = ((client: ClientBase<{}>, options: never) => unknown) & { readonly path: string; } & ((client: never, options: never) => Effect<{ readonly items: readonly unknown[]; readonly cursor: string | null; }, unknown, never> | Promise<{ readonly items: readonly unknown[]; readonly cursor: string | null; }>)
 type PagesAtom = Writable<PullResult<page, error>, void>
 type ReadAtom = Atom<AsyncResult<value, error>>
 function readKey(client: ClientBase<{}>, action: ((client: ClientBase<{}>, options: never) => unknown) & { readonly path: string; }, options: unknown) => string

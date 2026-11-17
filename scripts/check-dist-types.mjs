@@ -6,10 +6,10 @@
 //    so Promise users never need Effect's types.
 // 2. The --consumer file, which imports the package by name, compiles against the built
 //    declarations with `exactOptionalPropertyTypes` both on and off.
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
 
-import ts from "typescript";
+import { runTsc } from "./lib/typescript.mjs";
 
 const args = process.argv.slice(2);
 const consumerIndex = args.indexOf("--consumer");
@@ -46,29 +46,32 @@ for (const entry of effectFree) {
 }
 
 if (consumer !== undefined) {
+  const folder = join(packageFolder, "node_modules/.cache/check-dist-types");
+  mkdirSync(folder, { recursive: true });
+
   for (const exactOptionalPropertyTypes of [true, false]) {
-    const program = ts.createProgram([join(packageFolder, consumer)], {
-      module: ts.ModuleKind.ESNext,
-      moduleResolution: ts.ModuleResolutionKind.Bundler,
-      target: ts.ScriptTarget.ES2022,
-      lib: ["lib.es2022.d.ts", "lib.dom.d.ts"],
-      types: [],
-      strict: true,
-      exactOptionalPropertyTypes,
-      skipLibCheck: true,
-      noEmit: true,
-    });
-    const diagnostics = ts.getPreEmitDiagnostics(program);
-    if (diagnostics.length > 0) {
+    const config = join(folder, `tsconfig.${exactOptionalPropertyTypes}.json`);
+    writeFileSync(
+      config,
+      JSON.stringify({
+        compilerOptions: {
+          module: "esnext",
+          moduleResolution: "bundler",
+          target: "es2022",
+          lib: ["es2022", "dom"],
+          types: [],
+          strict: true,
+          exactOptionalPropertyTypes,
+          skipLibCheck: true,
+          noEmit: true,
+        },
+        files: [join(packageFolder, consumer)],
+      }),
+    );
+    const result = runTsc(["-p", config, "--pretty", "false"], { cwd: packageFolder });
+    if (result.status !== 0) {
       problems.push(
-        `consumer (exactOptionalPropertyTypes: ${exactOptionalPropertyTypes}):\n${ts.formatDiagnostics(
-          diagnostics,
-          {
-            getCanonicalFileName: (name) => name,
-            getCurrentDirectory: () => packageFolder,
-            getNewLine: () => "\n",
-          },
-        )}`,
+        `consumer (exactOptionalPropertyTypes: ${exactOptionalPropertyTypes}):\n${result.output}`,
       );
     }
   }

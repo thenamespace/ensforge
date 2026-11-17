@@ -83,7 +83,7 @@
     "pack:check": "publint && attw --pack . --profile esm-only",
     "prepack": "pnpm build",
     "typecheck": "tsc --noEmit && tsc --noEmit -p scripts && tsc --noEmit -p test",
-    "verify": "pnpm codegen:check && node ../../scripts/lint-jsdoc.mjs src/index.ts src/effect.ts src/indexer/index.ts src/wagmi/index.ts && node ../../scripts/api-report.mjs --check index effect indexer wagmi && node ../../scripts/check-dist-types.mjs index actions indexer wagmi --consumer scripts/fixtures/consumer.ts && node scripts/indexer-openapi.ts check && typedoc && node ../../scripts/check-examples.mjs scripts/fixtures/example-globals.ts"
+    "verify": "pnpm codegen:check && node ../../scripts/lint-jsdoc.mjs src/index.ts src/effect.ts src/indexer/index.ts src/wagmi/index.ts && node ../../scripts/api-report.mjs --check index effect indexer wagmi && node ../../scripts/check-dist-types.mjs index actions indexer wagmi --consumer scripts/fixtures/consumer.ts && node scripts/indexer-openapi.ts check && node ../../tools/typedoc/run.mjs && node ../../scripts/check-examples.mjs scripts/fixtures/example-globals.ts"
   },
   "dependencies": {
     "@ensdomains/address-encoder": "catalog:",
@@ -95,6 +95,7 @@
   "devDependencies": {
     "@effect/vitest": "catalog:",
     "@ensforge/test-harness": "workspace:*",
+    "@ensforge/tool-typedoc": "workspace:*",
     "viem": "catalog:",
     "wagmi": "catalog:",
     "wagmi-v2": "npm:wagmi@2.19.5"

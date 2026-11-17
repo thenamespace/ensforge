@@ -2337,11 +2337,11 @@ const Abis.v2.wrapperRegistry: Abi
 interface Deployments.Capabilities {
   resolutionErrorWrapping: boolean
   wrapperRegistryInitializer: 'explicit' | 'fuse-derived'
-  wrapperRegistryEmancipation: 'static' | 'role-derived'
-  lockedMigrationRenewal: 'renew-role' | 'max-expiry'
+  wrapperRegistryEmancipation: 'role-derived' | 'static'
+  lockedMigrationRenewal: 'max-expiry' | 'renew-role'
   userRegistryUpgradeGate: boolean
   hcaSameChainSourceRejected: boolean
-  hcaSessionDomain: 'smart-session' | 'hca'
+  hcaSessionDomain: 'hca' | 'smart-session'
   hcaContractOwners: boolean
 }
 function Deployments.define<const profile extends Profile>(profile: profile) => profile
@@ -2371,12 +2371,12 @@ interface Deployments.Provenance {
   documentation?: string
 }
 const Deployments.sepolia: { readonly name: 'sepolia'; readonly chainId: 11155111; readonly v1: { readonly id: 'sepolia-v1'; readonly chainId: 11155111; readonly protocol: 'v1'; readonly status: 'legacy'; readonly contracts: { readonly registry: '0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e'; readonly baseRegistrar: '0x57f1887a8BF19b14fC0dF6Fd9B2acc9Af147eA85'; readonly ethRegistrarController: '0xfb3cE5D01e0f33f41DbB39035dB9745962F1f968'; readonly bulkRenewal: '0x6394b694a8C0DC716e447802E568F0Fb2c4E0965'; readonly priceOracle: '0x6810DbCE73C67506f785A225F818b30D8f209AAb'; readonly nameWrapper: '0x0635513f179D50A207757E05759CbD106d7dFcE8'; readonly publicResolver: '0xE99638b40E4Fff0129D56f03b55b6bbC4BBE49b5'; readonly universalResolver: '0xeEeEEEeE14D718C2B47D9923Deab1335E144EeEe'; readonly reverseRegistrar: '0xA0a1AbcDAe1a2a4A2EF8e9113Ff0e02DD81DC0C6'; readonly defaultReverseRegistrar: '0x4F382928805ba0e23B30cFB75fC9E848e82DFD47'; readonly dnsRegistrar: '0x5a07C75Ae469Bf3ee2657B588e8E6ABAC6741b4f'; readonly dnssecOracle: '0xe62E4b6cE018Ad6e916fcC24545e20a33b9d8653'; readonly offchainDnsResolver: '0x179Be112b24Ad4cFC392eF8924DfA08C20Ad8583'; }; readonly legacyPublicResolvers: readonly ['0x8948458626811dd0c23EB25Cc74291247077cC51', '0x8FADE66B79cC9f707aB26799354482EB93a5B7dD', '0x0CeEC524b2807841739D3B5E161F5bf1430FFA48']; readonly provenance: { readonly repository: 'https://github.com/ensdomains/ens-contracts'; readonly release: 'v1.7.0'; readonly commit: '9b034936a42f462fc04bc0a929a419ede5e18d59'; readonly documentation: 'https://docs.ens.domains/learn/deployments/'; }; }; readonly v2: { readonly id: 'sepolia-v2'; readonly chainId: 11155111; readonly protocol: 'v2'; readonly status: 'active'; readonly contracts: { readonly universalResolver: '0xeEeEEEeE14D718C2B47D9923Deab1335E144EeEe'; readonly universalHelper: '0xd453e5Bdb62CC3beA84341B1e306319C8Ffd7DFe'; readonly rootRegistry: '0xB458D6a3a77919449d03e7A6903C26827c1eC43f'; readonly ethRegistry: '0xD4eBcbBdF463C9c45784603Db0dDD499BC44A8B4'; readonly ethRegistrar: '0xf633e7FC17e2bbE0D0965D18ec1821dcB754a3d3'; readonly rentPriceOracle: '0x8196665D4ca7488B6474a9EC8E7d2719FB42263A'; readonly ensV2Resolver: '0x1cF3989ED3E5EC3cB1d731fC3777323813b61aCf'; readonly publicResolver: '0xdC4a563d00F5c3012b699794eB9e13A561Be386F'; readonly verifiableFactory: '0xDa70306C98E97eCe36F997a21368e53298572991'; readonly labelStore: '0xed8246FF02203a4d4cb262bD78bEAA7408A57cAE'; readonly contractNamer: '0x606f2453484f4Fa85b6E5FDB0E0bf777064bf9F3'; readonly reverseRegistrarAdapter: '0x56Bce5E727FAa9D237341Bb5B9E8a03D5919779d'; readonly defaultReverseRegistrarAdapter: '0x36f97328e843e37520cbF530e9402791c2754066'; }; readonly implementations: { readonly universalResolver: '0x24E1D8e068620B647CA097f961A61055f4f42D72'; readonly permissionedResolver: '0x115eb53F0c60696633855F90b138178Fb40b2b2C'; readonly userRegistry: '0x0822d199699f0a9D378617817a1439663234a126'; readonly wrapperRegistry: '0xBe768b63E5fBBFBB0Ae97E9064E0002dF8001880'; readonly contractNamer: '0x4b8263BE7c522d8Fb3FBcA1F74B9C6e083B8D3e4'; }; readonly migration: { readonly ensV1Resolver: '0x322B7581cA210a69c6D0e0D7c88a7688D2789Cb0'; readonly ethRenewerV1: '0xf2ece44980778966b8a0FccB3A9E339440f6e045'; readonly unlockedMigrationController: '0x2a35B94DF22cc7354570be2284655E2CDC0e64A2'; readonly lockedMigrationController: '0x6029a063d69b09D23c52a754a90E4FE43aDac3A8'; readonly migrationHelper: '0xA8F86EE5cdD28703bd876F3a8c10B1DE70f36899'; readonly graveyard: '0xB58A90a39D13CcE1D0E192B5da5c47640855B04D'; readonly publicResolverSet: '0x5B2bd5208dac31905106d8e5a4973Ae1Cd7414F2'; readonly registryUpgradeSet: '0xF0a6f68c28603bDF2881Ca17476Ee477C72cD2fE'; }; readonly infrastructure: { readonly ensUriRenderer: '0x4D7f0349DfFB8e7BeD9fFBA1B9e45f7ECBD4f0f8'; readonly boxedEnsUriRenderer: '0x0f5B101b6Fc626b9b210bB5E70f60F3dd9cA0d96'; readonly managedUniversalResolverProxy: '0x6d80F2172CFdEc5730fE683860C33d26fC42e6F1'; readonly batchRegistrar: '0x4A4c8B7CDAB6B19dc2CdB417cdB53a2ccBaf5322'; readonly rootBatchRegistrar: '0x4CDEDc6B514A6bc9B64854DfE2D6849D5B1369a6'; }; readonly dns: { readonly tldResolver: '0x0c9F5E9AE61165140b49919F0dF13C0a6642e80d'; readonly aliasResolver: '0xe30c9374929De41b71b6fb999B945553F2194c5F'; readonly txtResolver: '0x00263173B7De91594Eb4140Ad8dD3a723B8e4EB3'; readonly gatewayProvider: '0xd542a53982FDd0c456F02c5a54734c06073fA915'; }; readonly hca: { readonly ownerAndSessionValidator: '0x4bF641590ab18E31B9F8789A3417A2620f860466'; readonly upgradeSet: '0xCde956D6E2949Bc25a4273F93E0db6f68A1a6f34'; readonly standaloneFactory: '0x6Bad0176236e97b346B5Dd13BCc8325B931EE8ab'; readonly standaloneImplementation: '0xC940e5C5bF263C0e097054AECf73826769A72CEE'; readonly entryPoint: '0x0000000071727De22E5E9d8BAf0edAc6f37da032'; readonly intentExecutor: '0x00000000005aD9ce1f5035FD62CA96CEf16AdAAF'; readonly gasRefundPaymaster: '0x1d7df6Ddc7328Ac827EB4D7f171C60AFB7f9A599'; }; readonly paymentTokens: { readonly dai: '0xF6faC8A58a0BE13b9197f27C41B73162Fe32572b'; readonly usdc: '0x240b0316Df57887DBBE58b586508b19e633a14aa'; }; readonly capabilities: { readonly resolutionErrorWrapping: false; readonly wrapperRegistryInitializer: 'explicit'; readonly wrapperRegistryEmancipation: 'static'; readonly lockedMigrationRenewal: 'renew-role'; readonly userRegistryUpgradeGate: true; readonly hcaSameChainSourceRejected: false; readonly hcaSessionDomain: 'smart-session'; readonly hcaContractOwners: false; }; readonly provenance: { readonly repository: 'https://github.com/ensdomains/contracts-v2'; readonly release: 'v1.0.1'; readonly commit: '5026725d2a927f84de3a3a34b5bfe6cb92ae7cbb'; readonly builds: { readonly default: 'solc-0_8_25-b30e6dc9a03b37f6a0b89af5d02a73d3993944f7'; readonly overrides: { readonly HCAOwnerAndSessionValidator: 'solc-0_8_27-5e229574866dd7aad4c35188fd51d13486a8e622'; readonly StandaloneHCAFactory: 'solc-0_8_27-e51afd5290c127e6778adf213718f69c7a91a1b5'; readonly StandaloneHCAImplementation: 'solc-0_8_27-e9867f9d994faa61c5e062d8239de208c0f758a7'; readonly UserRegistryImpl: 'solc-0_8_25-f617a676c95a9ce4b7e0ea01d7d2b3ad9a3b9e05'; readonly WrapperRegistryImpl: 'solc-0_8_25-16de2606e983b3868bbbce69be4591c8163e397e'; }; }; readonly documentation: 'https://docs.ens.domains/learn/deployments/'; }; }; }
-type Deployments.Status = 'active' | 'legacy' | 'beta'
+type Deployments.Status = 'active' | 'beta' | 'legacy'
 interface Deployments.V1 {
   id: string
   chainId: number
   protocol: 'v1'
-  status: 'active' | 'legacy' | 'beta'
+  status: 'active' | 'beta' | 'legacy'
   contracts: V1Contracts
   legacyPublicResolvers?: readonly `0x${string}`[]
   frozenPublicResolvers?: readonly `0x${string}`[]
@@ -2402,7 +2402,7 @@ interface Deployments.V2 {
   id: string
   chainId: number
   protocol: 'v2'
-  status: 'active' | 'legacy' | 'beta'
+  status: 'active' | 'beta' | 'legacy'
   contracts: V2Contracts
   implementations: V2Implementations
   migration: V2Migration
@@ -2476,9 +2476,9 @@ interface Deployments.V2PaymentTokens {
 }
 const InterfaceIds.erc165: '0x01ffc9a7'
 const InterfaceIds.registry: { readonly registry: '0x51f67f40'; readonly ownedRegistry: '0x63560a8e'; readonly permissionedRegistry: '0xc18bd555'; readonly standardRegistry: '0xb844ab6c'; readonly temporalRegistry: '0x6f537c72'; readonly tokenizedRegistry: '0x91b3c037'; readonly wrapperRegistry: '0xf5586a0b'; }
-type InterfaceIds.RegistryInterfaceId = '0x51f67f40' | '0x63560a8e' | '0xc18bd555' | '0xb844ab6c' | '0x6f537c72' | '0x91b3c037' | '0xf5586a0b'
+type InterfaceIds.RegistryInterfaceId = '0x51f67f40' | '0x63560a8e' | '0x6f537c72' | '0x91b3c037' | '0xb844ab6c' | '0xc18bd555' | '0xf5586a0b'
 const InterfaceIds.resolver: { readonly permissionedResolver: '0x8c2427cc'; readonly permissionedResolverInitializable: '0x33cc44a0'; }
-type InterfaceIds.ResolverInterfaceId = '0x8c2427cc' | '0x33cc44a0'
+type InterfaceIds.ResolverInterfaceId = '0x33cc44a0' | '0x8c2427cc'
 const InterfaceIds.resolverProfiles.abi: '0x2203ab56'
 const InterfaceIds.resolverProfiles.addr: '0x3b3b57de'
 const InterfaceIds.resolverProfiles.address: '0xf1cb7e06'

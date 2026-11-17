@@ -1,7 +1,9 @@
-import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
+import { existsSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 
-import ts from "typescript";
+import * as ts from "typescript/unstable/ast";
+
+import { openProject, type Project } from "../../../../scripts/lib/typescript.mjs";
 
 /** Names an action group may not use: they are top-level members of the client. */
 const reserved = new Set(["chain", "account", "deployment", "publicClient", "config", "extend"]);
@@ -29,11 +31,8 @@ export type Domain = {
 export const isWrite = (action: Action): boolean =>
   writeMethods.every((method) => action.properties.includes(method));
 
-const parse = (file: string): ts.SourceFile =>
-  ts.createSourceFile(file, readFileSync(file, "utf8"), ts.ScriptTarget.Latest, true);
-
-const isExported = (node: ts.HasModifiers): boolean =>
-  ts.getModifiers(node)?.some((modifier) => modifier.kind === ts.SyntaxKind.ExportKeyword) ?? false;
+const isExported = (node: { readonly modifiers?: readonly ts.Node[] | undefined }): boolean =>
+  node.modifiers?.some((modifier) => modifier.kind === ts.SyntaxKind.ExportKeyword) ?? false;
 
 const leadingJsDoc = (node: ts.Node, source: ts.SourceFile): string => {
   const last = (ts.getLeadingCommentRanges(source.text, node.getFullStart()) ?? []).at(-1);
@@ -47,8 +46,8 @@ const directories = (folder: string): string[] =>
     .toSorted();
 
 /** Exported functions of an action's index.ts, with the properties assigned to them. */
-const readActions = (file: string, folder: string): Action[] => {
-  const source = parse(file);
+const readActions = (project: Project, file: string, folder: string): Action[] => {
+  const source = project.sourceFile(file);
   const actions = new Map<
     string,
     { name: string; folder: string; jsdoc: string; properties: string[]; types: string[] }
@@ -95,13 +94,15 @@ const readActions = (file: string, folder: string): Action[] => {
 };
 
 /** Exported value names of an action's effect.ts. */
-const readEffectExports = (file: string): Set<string> =>
+const readEffectExports = (project: Project, file: string): Set<string> =>
   new Set(
-    parse(file).statements.flatMap((statement) =>
-      ts.isVariableStatement(statement) && isExported(statement)
-        ? statement.declarationList.declarations.map((declaration) => declaration.name.getText())
-        : [],
-    ),
+    project
+      .sourceFile(file)
+      .statements.flatMap((statement) =>
+        ts.isVariableStatement(statement) && isExported(statement)
+          ? statement.declarationList.declarations.map((declaration) => declaration.name.getText())
+          : [],
+      ),
   );
 
 /**
@@ -110,6 +111,15 @@ const readEffectExports = (file: string): Set<string> =>
  */
 export const discover = (actionsDir: string): { domains: Domain[]; problems: string[] } => {
   const problems: string[] = [];
+  const files = directories(actionsDir).flatMap((domain) =>
+    directories(join(actionsDir, domain)).flatMap((folder) =>
+      ["index.ts", "effect.ts"]
+        .map((name) => join(actionsDir, domain, folder, name))
+        .filter((file) => existsSync(file)),
+    ),
+  );
+  // The package folder: the project keeps its scratch config in its node_modules/.cache.
+  const project = openProject(join(actionsDir, "../.."), files);
 
   const domains = directories(actionsDir).map((domain) => {
     if (reserved.has(domain)) problems.push(`domain "${domain}" uses a reserved client name`);
@@ -122,8 +132,8 @@ export const discover = (actionsDir: string): { domains: Domain[]; problems: str
         return [];
       }
 
-      const effectExports = readEffectExports(effectFile);
-      const found = readActions(promiseFile, folder);
+      const effectExports = readEffectExports(project, effectFile);
+      const found = readActions(project, promiseFile, folder);
       for (const action of found) {
         if (!effectExports.has(action.name))
           problems.push(`${domain}/${folder}: effect.ts does not export ${action.name}`);
@@ -136,6 +146,7 @@ export const discover = (actionsDir: string): { domains: Domain[]; problems: str
 
     return { domain, actions };
   });
+  project.close();
 
   return { domains, problems };
 };

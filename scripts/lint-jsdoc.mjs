@@ -14,18 +14,24 @@
 //    - at least one `@throws` naming a real `Errors.<Class>`;
 //    - `@since` (semver), `@stability` (stable|unstable|experimental) and `@category`;
 //    - JSDoc on every namespace type and every member of `Options`.
-import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { existsSync, readdirSync } from "node:fs";
 import { dirname, join, relative } from "node:path";
 
-import ts from "typescript";
+import * as ts from "typescript/unstable/ast";
+
+import { openProject } from "./lib/typescript.mjs";
 
 const entries = process.argv.slice(2);
 const packageFolder = process.cwd();
 const problems = [];
 const sections = new Set(["**When to use**", "**Details**", "**Gotchas**"]);
 
-const parse = (file) =>
-  ts.createSourceFile(file, readFileSync(file, "utf8"), ts.ScriptTarget.Latest, true);
+// Every source file, parsed once by one TypeScript program.
+const sourceFiles = readdirSync(join(packageFolder, "src"), { recursive: true })
+  .filter((path) => /\.tsx?$/.test(path))
+  .map((path) => join(packageFolder, "src", path));
+const project = openProject(packageFolder, sourceFiles);
+const parse = (file) => project.sourceFile(file);
 const isExported = (node) =>
   node.modifiers?.some((modifier) => modifier.kind === ts.SyntaxKind.ExportKeyword) ?? false;
 const report = (file, message) => problems.push(`${relative(packageFolder, file)}: ${message}`);
@@ -187,7 +193,7 @@ const checkAction = (file, statement, namespace, source) => {
       : [options.type, ...(ts.isIntersectionTypeNode(options.type) ? options.type.types : [])];
   for (const literal of literals.filter(ts.isTypeLiteralNode)) {
     for (const member of literal.members) {
-      if (ts.getJSDocCommentsAndTags(member).length === 0)
+      if ((member.jsDoc ?? []).length === 0)
         fail(`Options.${member.name.getText(source)} has no JSDoc`);
     }
   }
@@ -232,6 +238,8 @@ for (const file of actionFiles) {
     checkAction(file, statement, namespace, source);
   }
 }
+
+project.close();
 
 if (problems.length > 0) {
   console.error(problems.join("\n"));

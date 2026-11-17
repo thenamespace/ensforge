@@ -842,7 +842,7 @@ const registryEventsV2InterfaceAbi: Abi
   event SubregistryUpdated(uint256,address,address)
   event TokenRegenerated(uint256,uint256)
   event URIUpdated(string,address,address)
-type RegistryInterfaceId = '0x51f67f40' | '0x63560a8e' | '0xc18bd555' | '0xb844ab6c' | '0x6f537c72' | '0x91b3c037' | '0xf5586a0b'
+type RegistryInterfaceId = '0x51f67f40' | '0x63560a8e' | '0x6f537c72' | '0x91b3c037' | '0xb844ab6c' | '0xc18bd555' | '0xf5586a0b'
 const registryInterfaceIds: { readonly registry: '0x51f67f40'; readonly ownedRegistry: '0x63560a8e'; readonly permissionedRegistry: '0xc18bd555'; readonly standardRegistry: '0xb844ab6c'; readonly temporalRegistry: '0x6f537c72'; readonly tokenizedRegistry: '0x91b3c037'; readonly wrapperRegistry: '0xf5586a0b'; }
 type RegistryRole = bigint
 const registryRoleBitmaps: { readonly unemancipated: bigint; readonly regeneration: bigint; readonly registration: bigint; }
@@ -869,7 +869,7 @@ const rentPriceOracleV2InterfaceAbi: Abi
   function getRegisterPrice(string,uint64,uint64,address) view returns (uint256,uint256)
   function getRenewPrice(string,uint64,uint64,address) view returns (uint256)
   function isPaymentToken(address) view returns (bool)
-type ResolverInterfaceId = '0x8c2427cc' | '0x33cc44a0'
+type ResolverInterfaceId = '0x33cc44a0' | '0x8c2427cc'
 const resolverInterfaceIds: { readonly permissionedResolver: '0x8c2427cc'; readonly permissionedResolverInitializable: '0x33cc44a0'; }
 type ResolverRole = bigint
 const resolverRoles: { readonly setAddr: bigint; readonly setAddrAdmin: bigint; readonly setText: bigint; readonly setTextAdmin: bigint; readonly setContenthash: bigint; readonly setContenthashAdmin: bigint; readonly setAbi: bigint; readonly setAbiAdmin: bigint; readonly setInterface: bigint; readonly setInterfaceAdmin: bigint; readonly setName: bigint; readonly setNameAdmin: bigint; readonly link: bigint; readonly linkAdmin: bigint; readonly setData: bigint; readonly setDataAdmin: bigint; readonly canName: bigint; readonly canNameAdmin: bigint; readonly upgrade: bigint; readonly upgradeAdmin: bigint; }

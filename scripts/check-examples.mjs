@@ -6,9 +6,10 @@
 // its imports stay at the top and the rest runs inside an async generator, so both `await` and
 // Effect's `yield*` type-check. `<globals.ts>` declares the free identifiers examples share
 // (`ens`, `publicClient`, …).
-import { execFileSync } from "node:child_process";
 import { mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { join, relative, resolve } from "node:path";
+
+import { runTsc } from "./lib/typescript.mjs";
 
 const [globalsArgument] = process.argv.slice(2);
 if (globalsArgument === undefined) {
@@ -90,14 +91,13 @@ writeFileSync(
   }),
 );
 
-try {
-  execFileSync("npx", ["tsc", "-p", join(outFolder, "tsconfig.json"), "--pretty", "false"], {
-    cwd: packageFolder,
-    stdio: "pipe",
-  });
+const result = runTsc(["-p", join(outFolder, "tsconfig.json"), "--pretty", "false"], {
+  cwd: packageFolder,
+});
+if (result.status === 0) {
   console.log(`examples: ok (${origins.size} examples)`);
-} catch (error) {
-  const output = String(error.stdout);
+} else {
+  const { output } = result;
   const failing = new Set(output.match(/[\w.-]+__\d+\.tsx?/g) ?? []);
   console.error(output);
   console.error(`examples: ${failing.size} of ${origins.size} examples fail to type-check`);

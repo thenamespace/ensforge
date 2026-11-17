@@ -11,7 +11,10 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 
-import ts from "typescript";
+import { SyntaxKind } from "typescript/unstable/ast";
+import { NodeBuilderFlags, SignatureKind, SymbolFlags } from "typescript/unstable/sync";
+
+import { openProject } from "./lib/typescript.mjs";
 
 const args = process.argv.slice(2);
 const check = args.includes("--check");
@@ -19,11 +22,14 @@ const entries = args.filter((arg) => arg !== "--check");
 const packageFolder = process.cwd();
 const packageName = JSON.parse(readFileSync(join(packageFolder, "package.json"), "utf8")).name;
 
-const flags =
-  ts.TypeFormatFlags.NoTruncation |
-  ts.TypeFormatFlags.InTypeAlias |
-  ts.TypeFormatFlags.UseSingleQuotesForStringLiteralType |
-  ts.TypeFormatFlags.WriteArrowStyleSignature;
+// TypeFormatFlags (TypeScript 7 does not export the enum): NoTruncation | InTypeAlias |
+// UseSingleQuotesForStringLiteralType | WriteArrowStyleSignature.
+const flags = 1 | 8_388_608 | 268_435_456 | 262_144;
+const signatureFlags =
+  NodeBuilderFlags.NoTruncation |
+  NodeBuilderFlags.InTypeAlias |
+  NodeBuilderFlags.UseSingleQuotesForStringLiteralType |
+  NodeBuilderFlags.IgnoreErrors;
 
 const isAbi = (value) =>
   Array.isArray(value) &&
@@ -50,8 +56,8 @@ const formatItem = (item) => {
 };
 
 const isNamespace = (symbol) =>
-  (symbol.flags & (ts.SymbolFlags.ValueModule | ts.SymbolFlags.NamespaceModule)) !== 0 &&
-  !(symbol.flags & (ts.SymbolFlags.Function | ts.SymbolFlags.Class | ts.SymbolFlags.Variable));
+  (symbol.flags & (SymbolFlags.ValueModule | SymbolFlags.NamespaceModule)) !== 0 &&
+  !(symbol.flags & (SymbolFlags.Function | SymbolFlags.Class | SymbolFlags.Variable));
 
 const valueAt = (module, path) => path.split(".").reduce((value, key) => value?.[key], module);
 
@@ -61,31 +67,36 @@ const reportOf = async (entry) => {
   const file = existsSync(flat) ? flat : join(packageFolder, "dist", entry, "index.d.ts");
   // ABIs print as one signature per line instead of their (huge) literal type.
   const runtime = await import(pathToFileURL(file.replace(/\.d\.ts$/, ".js")).href);
-  const program = ts.createProgram([file], {
-    module: ts.ModuleKind.ESNext,
-    moduleResolution: ts.ModuleResolutionKind.Bundler,
-    target: ts.ScriptTarget.ES2022,
-    strict: true,
-    exactOptionalPropertyTypes: true,
-    skipLibCheck: true,
-    noEmit: true,
-  });
-  const checker = program.getTypeChecker();
+  const project = openProject(packageFolder, [file]);
+  const { checker, program } = project;
+  const source = project.sourceFile(file);
   const lines = [];
   const seen = new Set();
 
   const resolve = (symbol) =>
-    symbol.flags & ts.SymbolFlags.Alias ? checker.getAliasedSymbol(symbol) : symbol;
-  const location = (symbol) => symbol.declarations?.[0] ?? program.getSourceFile(file);
+    symbol.flags & SymbolFlags.Alias ? checker.getAliasedSymbol(symbol) : symbol;
+  const location = () => source;
+  // `(…) => …`, as TypeScript 6's signatureToString printed it.
+  const signatureText = (signature) =>
+    project
+      .print(
+        checker.signatureToSignatureDeclaration(
+          signature,
+          SyntaxKind.FunctionType,
+          undefined,
+          signatureFlags,
+        ),
+      )
+      .replaceAll(/\s*\n\s*/g, " ");
 
   const describeType = (path, symbol) => {
     const type = checker.getDeclaredTypeOfSymbol(symbol);
-    if (symbol.flags & ts.SymbolFlags.Interface) {
+    if (symbol.flags & SymbolFlags.Interface) {
       const members = checker
         .getPropertiesOfType(type)
         .map(
           (member) =>
-            `  ${member.name}${member.flags & ts.SymbolFlags.Optional ? "?" : ""}: ${checker.typeToString(checker.getTypeOfSymbolAtLocation(member, location(symbol)), undefined, flags)}`,
+            `  ${member.name}${member.flags & SymbolFlags.Optional ? "?" : ""}: ${checker.typeToString(checker.getTypeOfSymbolAtLocation(member, location(symbol)), undefined, flags)}`,
         );
       lines.push(`interface ${path} {`, ...members, "}");
       return;
@@ -95,7 +106,7 @@ const reportOf = async (entry) => {
 
   const describeValue = (path, symbol) => {
     const type = checker.getTypeOfSymbolAtLocation(symbol, location(symbol));
-    if (symbol.flags & ts.SymbolFlags.Class) {
+    if (symbol.flags & SymbolFlags.Class) {
       const instance = checker.getDeclaredTypeOfSymbol(symbol);
       const members = checker
         .getPropertiesOfType(instance)
@@ -104,11 +115,9 @@ const reportOf = async (entry) => {
           (member) =>
             `  ${member.name}: ${checker.typeToString(checker.getTypeOfSymbolAtLocation(member, location(symbol)), undefined, flags)}`,
         );
-      const constructors = type
-        .getConstructSignatures()
-        .map(
-          (signature) => `  constructor${checker.signatureToString(signature, undefined, flags)}`,
-        );
+      const constructors = checker
+        .getSignaturesOfType(type, SignatureKind.Construct)
+        .map((signature) => `  constructor${signatureText(signature)}`);
       lines.push(`class ${path} {`, ...constructors, ...members, "}");
       return;
     }
@@ -119,16 +128,15 @@ const reportOf = async (entry) => {
       return;
     }
 
-    const signatures = type.getCallSignatures();
+    const signatures = checker.getSignaturesOfType(type, SignatureKind.Call);
     if (signatures.length === 0) {
       lines.push(`const ${path}: ${checker.typeToString(type, undefined, flags)}`);
       return;
     }
-    for (const signature of signatures)
-      lines.push(`function ${path}${checker.signatureToString(signature, undefined, flags)}`);
+    for (const signature of signatures) lines.push(`function ${path}${signatureText(signature)}`);
     // Function properties such as `set.prepare`; expando assignments are walked as exports instead.
     for (const property of checker.getPropertiesOfType(type)) {
-      if (symbol.exports?.has(property.escapedName)) continue;
+      if (symbol.getExports().has(property.escapedName)) continue;
       lines.push(
         `const ${path}.${property.name}: ${checker.typeToString(checker.getTypeOfSymbolAtLocation(property, location(symbol)), undefined, flags)}`,
       );
@@ -150,28 +158,27 @@ const reportOf = async (entry) => {
         continue;
       }
 
-      if (symbol.flags & (ts.SymbolFlags.Function | ts.SymbolFlags.Class | ts.SymbolFlags.Variable))
+      if (symbol.flags & (SymbolFlags.Function | SymbolFlags.Class | SymbolFlags.Variable))
         describeValue(path, symbol);
-      if (symbol.flags & (ts.SymbolFlags.Interface | ts.SymbolFlags.TypeAlias))
+      if (symbol.flags & (SymbolFlags.Interface | SymbolFlags.TypeAlias))
         describeType(path, symbol);
       // Type-only namespaces merged with values (e.g. `getText.Options`).
-      if (symbol.flags & ts.SymbolFlags.NamespaceModule && symbol.exports !== undefined)
-        walk(path, symbol.exports.values());
+      if (symbol.flags & SymbolFlags.NamespaceModule) walk(path, symbol.getExports().values());
     }
   };
 
-  const source = program.getSourceFile(file);
-  const diagnostics = ts.getPreEmitDiagnostics(program);
-  if (source === undefined || diagnostics.length > 0) {
-    throw new Error(`${entry}: ${ts.formatDiagnostics(diagnostics, ts.createCompilerHost({}))}`);
+  const diagnostics = [...program.getSyntacticDiagnostics(), ...program.getSemanticDiagnostics()];
+  if (diagnostics.length > 0) {
+    throw new Error(`${entry}: ${diagnostics.map((diagnostic) => diagnostic.text).join("\n")}`);
   }
   walk("", checker.getExportsOfModule(checker.getSymbolAtLocation(source)));
+  project.close();
 
   // Types outside the entry's scope print as `import("/abs/path").Name`; keep only the name.
   // Unique-symbol keys print with a compiler-internal id (`__@name@123`) that changes between runs.
   const text = lines
     .join("\n")
-    .replaceAll(/import\("[^"]+"\)\./g, "")
+    .replaceAll(/import\((["'])[^"']+\1\)\./g, "")
     .replaceAll(/__@(\w+)@\d+/g, "[$1]");
 
   return `# API report: ${packageName}${entry === "index" ? "" : `/${entry}`}\n\n<!-- Generated by scripts/api-report.mjs. Review changes; do not edit. -->\n\n\`\`\`ts\n${text}\n\`\`\`\n`;
