@@ -260,7 +260,8 @@
     "tests": [
       "tests/integration/test/reads/migration.test.ts > reports each name's route, blockers and state after migrating",
       "tests/integration/test/reads/name.test.ts > v2.reserved",
-      "tests/integration/test/reads/registration.test.ts > prices renewals through the contract that renews each name"
+      "tests/integration/test/reads/registration.test.ts > prices renewals through the contract that renews each name",
+      "tests/integration/test/writes/renewal.test.ts > renews a premigrated ENSv1 name through ETHRenewerV1"
     ]
   },
   "O19": {
@@ -972,7 +973,7 @@
     "status": "pending"
   },
   "G10": {
-    "status": "pending"
+    "tests": ["tests/integration/test/writes/renewal.test.ts > renews a name listed twice once"]
   },
   "G11": {
     "status": "pending"
@@ -980,7 +981,8 @@
   "G12": {
     "tests": [
       "tests/integration/test/reads/name.test.ts > registration.v1-renewed-by-renewer",
-      "tests/integration/test/reads/registration.test.ts > prices renewals through the contract that renews each name"
+      "tests/integration/test/reads/registration.test.ts > prices renewals through the contract that renews each name",
+      "tests/integration/test/writes/renewal.test.ts > renews a premigrated ENSv1 name through ETHRenewerV1"
     ]
   },
   "G13": {
@@ -1026,7 +1028,9 @@
     "status": "pending"
   },
   "G24": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/writes/renewal.test.ts > renews an ENSv2 name for anyone who pays, in grace from its old expiry"
+    ]
   },
   "G25": {
     "tests": [
@@ -1087,7 +1091,10 @@
     "status": "pending"
   },
   "T09": {
-    "tests": ["tests/integration/test/reads/name.test.ts > registration.v2-renewed-in-grace"]
+    "tests": [
+      "tests/integration/test/reads/name.test.ts > registration.v2-renewed-in-grace",
+      "tests/integration/test/writes/renewal.test.ts > renews an ENSv2 name for anyone who pays, in grace from its old expiry"
+    ]
   },
   "T10": {
     "tests": [
@@ -1409,7 +1416,10 @@
     ]
   },
   "M:A15": {
-    "tests": ["tests/integration/test/reads/name.test.ts > v2.grace"]
+    "tests": [
+      "tests/integration/test/reads/name.test.ts > v2.grace",
+      "tests/integration/test/writes/renewal.test.ts > renews an ENSv2 name for anyone who pays, in grace from its old expiry"
+    ]
   },
   "M:A16": {
     "tests": ["tests/integration/test/reads/name.test.ts > v2.expired"]
