@@ -134,3 +134,9 @@ export declare namespace upgradeSync {
   /** Errors {@link upgradeSync} can fail with. */
   type ErrorType = Errors.AnyError | HcaError;
 }
+
+/** Path of the action, e.g. for cache keys. */
+upgrade.path = "hca.upgrade" as const;
+
+/** Path of the action, e.g. for cache keys. */
+upgradeSync.path = "hca.upgradeSync" as const;

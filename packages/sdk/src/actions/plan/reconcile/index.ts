@@ -72,3 +72,6 @@ export declare namespace reconcile {
 
 /** Builds a deferred read for `Actions.batch`. */
 reconcile.request = Action.request("plan.reconcile", Impl.reconcile);
+
+/** Path of the action, e.g. for cache keys. */
+reconcile.path = "plan.reconcile" as const;

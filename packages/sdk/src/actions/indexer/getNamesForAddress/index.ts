@@ -80,3 +80,6 @@ export declare namespace getNamesForAddress {
 
 /** Builds a deferred read for `Actions.batch`. */
 getNamesForAddress.request = Action.request("indexer.getNamesForAddress", Impl.getNamesForAddress);
+
+/** Path of the action, e.g. for cache keys. */
+getNamesForAddress.path = "indexer.getNamesForAddress" as const;

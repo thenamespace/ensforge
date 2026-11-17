@@ -146,3 +146,9 @@ export declare namespace setOperatorSync {
   /** Errors {@link setOperatorSync} can fail with. */
   type ErrorType = AnyError;
 }
+
+/** Path of the action, e.g. for cache keys. */
+setOperator.path = "approval.setOperator" as const;
+
+/** Path of the action, e.g. for cache keys. */
+setOperatorSync.path = "approval.setOperatorSync" as const;

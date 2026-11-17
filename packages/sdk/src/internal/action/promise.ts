@@ -38,7 +38,12 @@ export const promise = <options, value, error>(
 };
 
 /** Binds a path and an implementation into a Promise function, e.g. for `fn.prepare`. */
-export const promiseOf =
-  <options, value, error>(path: string, implementation: Implementation<options, value, error>) =>
-  (client: Like, options: options): Promise<value> =>
-    promise(path, implementation, client, options);
+export const promiseOf = <options, value, error>(
+  path: string,
+  implementation: Implementation<options, value, error>,
+) =>
+  Object.assign(
+    (client: Like, options: options): Promise<value> =>
+      promise(path, implementation, client, options),
+    { path },
+  );

@@ -146,3 +146,9 @@ export declare namespace setTtlSync {
   /** Errors {@link setTtlSync} can fail with. */
   type ErrorType = AnyError;
 }
+
+/** Path of the action, e.g. for cache keys. */
+setTtl.path = "name.setTtl" as const;
+
+/** Path of the action, e.g. for cache keys. */
+setTtlSync.path = "name.setTtlSync" as const;

@@ -76,3 +76,6 @@ export declare namespace getPrimaryName {
 
 /** Builds a deferred read for `Actions.batch`. */
 getPrimaryName.request = Action.request("indexer.getPrimaryName", Impl.getPrimaryName);
+
+/** Path of the action, e.g. for cache keys. */
+getPrimaryName.path = "indexer.getPrimaryName" as const;

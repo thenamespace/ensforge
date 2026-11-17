@@ -64,3 +64,6 @@ export declare namespace getNamespace {
 
 /** Builds a deferred read for `Actions.batch`. */
 getNamespace.request = Action.request("indexer.getNamespace", Impl.getNamespace);
+
+/** Path of the action, e.g. for cache keys. */
+getNamespace.path = "indexer.getNamespace" as const;

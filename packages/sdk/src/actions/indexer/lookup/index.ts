@@ -67,3 +67,6 @@ export declare namespace lookup {
 
 /** Builds a deferred read for `Actions.batch`. */
 lookup.request = Action.request("indexer.lookup", Impl.lookup);
+
+/** Path of the action, e.g. for cache keys. */
+lookup.path = "indexer.lookup" as const;

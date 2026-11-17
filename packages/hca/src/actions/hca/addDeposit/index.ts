@@ -142,3 +142,9 @@ export declare namespace addDepositSync {
   /** Errors {@link addDepositSync} can fail with. */
   type ErrorType = Errors.AnyError | HcaError;
 }
+
+/** Path of the action, e.g. for cache keys. */
+addDeposit.path = "hca.addDeposit" as const;
+
+/** Path of the action, e.g. for cache keys. */
+addDepositSync.path = "hca.addDepositSync" as const;

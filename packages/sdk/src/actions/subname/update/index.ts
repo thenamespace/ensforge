@@ -152,3 +152,9 @@ export declare namespace updateSync {
   /** Errors {@link updateSync} can fail with. */
   type ErrorType = AnyError;
 }
+
+/** Path of the action, e.g. for cache keys. */
+update.path = "subname.update" as const;
+
+/** Path of the action, e.g. for cache keys. */
+updateSync.path = "subname.updateSync" as const;

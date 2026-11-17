@@ -155,3 +155,9 @@ export declare namespace setChildFusesSync {
   /** Errors {@link setChildFusesSync} can fail with. */
   type ErrorType = AnyError;
 }
+
+/** Path of the action, e.g. for cache keys. */
+setChildFuses.path = "wrapper.setChildFuses" as const;
+
+/** Path of the action, e.g. for cache keys. */
+setChildFusesSync.path = "wrapper.setChildFusesSync" as const;

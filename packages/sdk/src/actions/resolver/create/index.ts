@@ -174,3 +174,9 @@ export declare namespace createSync {
   /** Errors {@link createSync} can fail with. */
   type ErrorType = AnyError;
 }
+
+/** Path of the action, e.g. for cache keys. */
+create.path = "resolver.create" as const;
+
+/** Path of the action, e.g. for cache keys. */
+createSync.path = "resolver.createSync" as const;

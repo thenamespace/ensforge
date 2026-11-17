@@ -68,3 +68,6 @@ export declare namespace get {
   /** Errors {@link get} can fail with. */
   type ErrorType = Errors.AnyError | HcaError;
 }
+
+/** Path of the action, e.g. for cache keys. */
+get.path = "hca.get" as const;

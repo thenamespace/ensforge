@@ -176,3 +176,9 @@ export declare namespace transferSync {
   /** Errors {@link transferSync} can fail with. */
   type ErrorType = AnyError;
 }
+
+/** Path of the action, e.g. for cache keys. */
+transfer.path = "name.transfer" as const;
+
+/** Path of the action, e.g. for cache keys. */
+transferSync.path = "name.transferSync" as const;

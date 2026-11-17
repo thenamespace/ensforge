@@ -151,3 +151,9 @@ export declare namespace removeSync {
   /** Errors {@link removeSync} can fail with. */
   type ErrorType = AnyError;
 }
+
+/** Path of the action, e.g. for cache keys. */
+remove.path = "subname.remove" as const;
+
+/** Path of the action, e.g. for cache keys. */
+removeSync.path = "subname.removeSync" as const;

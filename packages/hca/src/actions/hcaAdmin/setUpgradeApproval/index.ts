@@ -139,3 +139,9 @@ export declare namespace setUpgradeApprovalSync {
   /** Errors {@link setUpgradeApprovalSync} can fail with. */
   type ErrorType = Errors.AnyError | HcaError;
 }
+
+/** Path of the action, e.g. for cache keys. */
+setUpgradeApproval.path = "hcaAdmin.setUpgradeApproval" as const;
+
+/** Path of the action, e.g. for cache keys. */
+setUpgradeApprovalSync.path = "hcaAdmin.setUpgradeApprovalSync" as const;

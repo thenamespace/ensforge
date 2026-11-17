@@ -147,3 +147,9 @@ export declare namespace linkSync {
   /** Errors {@link linkSync} can fail with. */
   type ErrorType = AnyError;
 }
+
+/** Path of the action, e.g. for cache keys. */
+link.path = "resolver.link" as const;
+
+/** Path of the action, e.g. for cache keys. */
+linkSync.path = "resolver.linkSync" as const;

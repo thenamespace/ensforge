@@ -72,3 +72,6 @@ export declare namespace getContentHash {
 
 /** Builds a deferred read for `Actions.batch`. */
 getContentHash.request = Action.request("record.getContentHash", Impl.getContentHash);
+
+/** Path of the action, e.g. for cache keys. */
+getContentHash.path = "record.getContentHash" as const;

@@ -52,7 +52,7 @@ import type { migrate as migrateTypes, migrateSync as migrateSyncTypes } from ".
  * @category reading
  * @since 1.0.0
  */
-export const get = getImpl.get;
+export const get = /* @__PURE__ */ Object.assign(getImpl.get, { path: "migration.get" as const });
 export declare namespace get {
   type Options = getTypes.Options;
   type ReturnType = getTypes.ReturnType;
@@ -117,9 +117,10 @@ export declare namespace get {
  * @category writing
  * @since 1.0.0
  */
-export const migrate = Object.assign(
+export const migrate = /* @__PURE__ */ Object.assign(
   (...args: Parameters<typeof migrateImpl.migrate>) => migrateImpl.migrate(...args),
   migrateImpl.migrateMethods,
+  { path: "migration.migrate" as const },
 );
 export declare namespace migrate {
   type Options = migrateTypes.Options;
@@ -168,7 +169,9 @@ export declare namespace migrate {
  * @category writing
  * @since 1.0.0
  */
-export const migrateSync = migrateImpl.migrateSync;
+export const migrateSync = /* @__PURE__ */ Object.assign(migrateImpl.migrateSync, {
+  path: "migration.migrateSync" as const,
+});
 export declare namespace migrateSync {
   type Options = migrateSyncTypes.Options;
   type ReturnType = migrateSyncTypes.ReturnType;

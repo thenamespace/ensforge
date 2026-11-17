@@ -42,12 +42,19 @@ export const executeSync = (client: Client, options: Promises.Options & Write.Sy
 
 /** @internal `.prepare`, `.simulate` and `.estimateGas` of `Actions.hca.execute`. */
 export const executeMethods = {
-  prepare: (client: Client, options: Promises.Options & Pick<Write.Options, "account" | "via">) =>
-    write.methods.prepare(client, routed(options)),
-  simulate: (client: Client, options: Promises.Options & Pick<Write.Options, "account" | "via">) =>
-    write.methods.simulate(client, routed(options)),
-  estimateGas: (
-    client: Client,
-    options: Promises.Options & Pick<Write.Options, "account" | "via">,
-  ) => write.methods.estimateGas(client, routed(options)),
+  prepare: Object.assign(
+    (client: Client, options: Promises.Options & Pick<Write.Options, "account" | "via">) =>
+      write.methods.prepare(client, routed(options)),
+    { path: write.methods.prepare.path },
+  ),
+  simulate: Object.assign(
+    (client: Client, options: Promises.Options & Pick<Write.Options, "account" | "via">) =>
+      write.methods.simulate(client, routed(options)),
+    { path: write.methods.simulate.path },
+  ),
+  estimateGas: Object.assign(
+    (client: Client, options: Promises.Options & Pick<Write.Options, "account" | "via">) =>
+      write.methods.estimateGas(client, routed(options)),
+    { path: write.methods.estimateGas.path },
+  ),
 };

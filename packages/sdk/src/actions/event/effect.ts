@@ -51,7 +51,9 @@ import type { watch as watchTypes } from "./watch/index.js";
  * @category reading
  * @since 1.0.0
  */
-export const decode = decodeImpl.decode;
+export const decode = /* @__PURE__ */ Object.assign(decodeImpl.decode, {
+  path: "event.decode" as const,
+});
 export declare namespace decode {
   type Options = decodeTypes.Options;
   type ReturnType = decodeTypes.ReturnType;
@@ -105,7 +107,7 @@ export declare namespace decode {
  * @category reading
  * @since 1.0.0
  */
-export const get = getImpl.get;
+export const get = /* @__PURE__ */ Object.assign(getImpl.get, { path: "event.get" as const });
 export declare namespace get {
   type Options = getTypes.Options;
   type ReturnType = getTypes.ReturnType;
@@ -154,7 +156,9 @@ export declare namespace get {
  * @category reading
  * @since 1.0.0
  */
-export const watch = watchImpl.watch;
+export const watch = /* @__PURE__ */ Object.assign(watchImpl.watch, {
+  path: "event.watch" as const,
+});
 export declare namespace watch {
   type Options = watchTypes.Options;
   type ReturnType = watchTypes.ReturnType;

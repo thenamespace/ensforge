@@ -66,3 +66,6 @@ export declare namespace list {
 
 /** Builds a deferred read for `Actions.batch`. */
 list.request = Action.request("plan.list", Impl.list);
+
+/** Path of the action, e.g. for cache keys. */
+list.path = "plan.list" as const;

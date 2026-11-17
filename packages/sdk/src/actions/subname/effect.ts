@@ -64,9 +64,10 @@ import type { update as updateTypes, updateSync as updateSyncTypes } from "./upd
  * @category writing
  * @since 1.0.0
  */
-export const create = Object.assign(
+export const create = /* @__PURE__ */ Object.assign(
   (...args: Parameters<typeof createImpl.create>) => createImpl.create(...args),
   createImpl.createMethods,
+  { path: "subname.create" as const },
 );
 export declare namespace create {
   type Options = createTypes.Options;
@@ -115,7 +116,9 @@ export declare namespace create {
  * @category writing
  * @since 1.0.0
  */
-export const createSync = createImpl.createSync;
+export const createSync = /* @__PURE__ */ Object.assign(createImpl.createSync, {
+  path: "subname.createSync" as const,
+});
 export declare namespace createSync {
   type Options = createSyncTypes.Options;
   type ReturnType = createSyncTypes.ReturnType;
@@ -174,9 +177,10 @@ export declare namespace createSync {
  * @category writing
  * @since 1.0.0
  */
-export const remove = Object.assign(
+export const remove = /* @__PURE__ */ Object.assign(
   (...args: Parameters<typeof removeImpl.remove>) => removeImpl.remove(...args),
   removeImpl.removeMethods,
+  { path: "subname.remove" as const },
 );
 export declare namespace remove {
   type Options = removeTypes.Options;
@@ -224,7 +228,9 @@ export declare namespace remove {
  * @category writing
  * @since 1.0.0
  */
-export const removeSync = removeImpl.removeSync;
+export const removeSync = /* @__PURE__ */ Object.assign(removeImpl.removeSync, {
+  path: "subname.removeSync" as const,
+});
 export declare namespace removeSync {
   type Options = removeSyncTypes.Options;
   type ReturnType = removeSyncTypes.ReturnType;
@@ -278,9 +284,10 @@ export declare namespace removeSync {
  * @category writing
  * @since 1.0.0
  */
-export const update = Object.assign(
+export const update = /* @__PURE__ */ Object.assign(
   (...args: Parameters<typeof updateImpl.update>) => updateImpl.update(...args),
   updateImpl.updateMethods,
+  { path: "subname.update" as const },
 );
 export declare namespace update {
   type Options = updateTypes.Options;
@@ -328,7 +335,9 @@ export declare namespace update {
  * @category writing
  * @since 1.0.0
  */
-export const updateSync = updateImpl.updateSync;
+export const updateSync = /* @__PURE__ */ Object.assign(updateImpl.updateSync, {
+  path: "subname.updateSync" as const,
+});
 export declare namespace updateSync {
   type Options = updateSyncTypes.Options;
   type ReturnType = updateSyncTypes.ReturnType;

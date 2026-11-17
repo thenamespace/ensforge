@@ -125,3 +125,9 @@ export declare namespace resumeSync {
   /** Errors {@link resumeSync} can fail with. */
   type ErrorType = AnyError;
 }
+
+/** Path of the action, e.g. for cache keys. */
+resume.path = "plan.resume" as const;
+
+/** Path of the action, e.g. for cache keys. */
+resumeSync.path = "plan.resumeSync" as const;

@@ -76,3 +76,6 @@ export declare namespace getRegistryLabels {
 
 /** Builds a deferred read for `Actions.batch`. */
 getRegistryLabels.request = Action.request("indexer.getRegistryLabels", Impl.getRegistryLabels);
+
+/** Path of the action, e.g. for cache keys. */
+getRegistryLabels.path = "indexer.getRegistryLabels" as const;

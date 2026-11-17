@@ -154,3 +154,9 @@ export declare namespace grantSync {
   /** Errors {@link grantSync} can fail with. */
   type ErrorType = AnyError;
 }
+
+/** Path of the action, e.g. for cache keys. */
+grant.path = "role.grant" as const;
+
+/** Path of the action, e.g. for cache keys. */
+grantSync.path = "role.grantSync" as const;

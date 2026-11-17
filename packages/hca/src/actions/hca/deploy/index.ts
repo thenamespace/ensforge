@@ -131,3 +131,9 @@ export declare namespace deploySync {
   /** Errors {@link deploySync} can fail with. */
   type ErrorType = Errors.AnyError | HcaError;
 }
+
+/** Path of the action, e.g. for cache keys. */
+deploy.path = "hca.deploy" as const;
+
+/** Path of the action, e.g. for cache keys. */
+deploySync.path = "hca.deploySync" as const;

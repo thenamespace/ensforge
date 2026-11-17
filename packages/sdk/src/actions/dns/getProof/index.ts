@@ -69,3 +69,6 @@ export declare namespace getProof {
 
 /** Builds a deferred read for `Actions.batch`. */
 getProof.request = Action.request("dns.getProof", Impl.getProof);
+
+/** Path of the action, e.g. for cache keys. */
+getProof.path = "dns.getProof" as const;

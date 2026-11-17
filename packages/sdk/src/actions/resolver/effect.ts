@@ -69,9 +69,10 @@ import type { upgrade as upgradeTypes, upgradeSync as upgradeSyncTypes } from ".
  * @category writing
  * @since 1.0.0
  */
-export const create = Object.assign(
+export const create = /* @__PURE__ */ Object.assign(
   (...args: Parameters<typeof createImpl.create>) => createImpl.create(...args),
   createImpl.createMethods,
+  { path: "resolver.create" as const },
 );
 export declare namespace create {
   type Options = createTypes.Options;
@@ -120,7 +121,9 @@ export declare namespace create {
  * @category writing
  * @since 1.0.0
  */
-export const createSync = createImpl.createSync;
+export const createSync = /* @__PURE__ */ Object.assign(createImpl.createSync, {
+  path: "resolver.createSync" as const,
+});
 export declare namespace createSync {
   type Options = createSyncTypes.Options;
   type ReturnType = createSyncTypes.ReturnType;
@@ -181,7 +184,7 @@ export declare namespace createSync {
  * @category reading
  * @since 1.0.0
  */
-export const get = getImpl.get;
+export const get = /* @__PURE__ */ Object.assign(getImpl.get, { path: "resolver.get" as const });
 export declare namespace get {
   type Options = getTypes.Options;
   type ReturnType = getTypes.ReturnType;
@@ -238,7 +241,9 @@ export declare namespace get {
  * @category reading
  * @since 1.0.0
  */
-export const getLink = getLinkImpl.getLink;
+export const getLink = /* @__PURE__ */ Object.assign(getLinkImpl.getLink, {
+  path: "resolver.getLink" as const,
+});
 export declare namespace getLink {
   type Options = getLinkTypes.Options;
   type ReturnType = getLinkTypes.ReturnType;
@@ -293,9 +298,10 @@ export declare namespace getLink {
  * @category writing
  * @since 1.0.0
  */
-export const link = Object.assign(
+export const link = /* @__PURE__ */ Object.assign(
   (...args: Parameters<typeof linkImpl.link>) => linkImpl.link(...args),
   linkImpl.linkMethods,
+  { path: "resolver.link" as const },
 );
 export declare namespace link {
   type Options = linkTypes.Options;
@@ -344,7 +350,9 @@ export declare namespace link {
  * @category writing
  * @since 1.0.0
  */
-export const linkSync = linkImpl.linkSync;
+export const linkSync = /* @__PURE__ */ Object.assign(linkImpl.linkSync, {
+  path: "resolver.linkSync" as const,
+});
 export declare namespace linkSync {
   type Options = linkSyncTypes.Options;
   type ReturnType = linkSyncTypes.ReturnType;
@@ -403,7 +411,9 @@ export declare namespace linkSync {
  * @category reading
  * @since 1.0.0
  */
-export const resolve = resolveImpl.resolve;
+export const resolve = /* @__PURE__ */ Object.assign(resolveImpl.resolve, {
+  path: "resolver.resolve" as const,
+});
 export declare namespace resolve {
   type Options = resolveTypes.Options;
   type ReturnType = resolveTypes.ReturnType;
@@ -461,9 +471,10 @@ export declare namespace resolve {
  * @category writing
  * @since 1.0.0
  */
-export const set = Object.assign(
+export const set = /* @__PURE__ */ Object.assign(
   (...args: Parameters<typeof setImpl.set>) => setImpl.set(...args),
   setImpl.setMethods,
+  { path: "resolver.set" as const },
 );
 export declare namespace set {
   type Options = setTypes.Options;
@@ -511,7 +522,9 @@ export declare namespace set {
  * @category writing
  * @since 1.0.0
  */
-export const setSync = setImpl.setSync;
+export const setSync = /* @__PURE__ */ Object.assign(setImpl.setSync, {
+  path: "resolver.setSync" as const,
+});
 export declare namespace setSync {
   type Options = setSyncTypes.Options;
   type ReturnType = setSyncTypes.ReturnType;
@@ -564,9 +577,10 @@ export declare namespace setSync {
  * @category writing
  * @since 1.0.0
  */
-export const upgrade = Object.assign(
+export const upgrade = /* @__PURE__ */ Object.assign(
   (...args: Parameters<typeof upgradeImpl.upgrade>) => upgradeImpl.upgrade(...args),
   upgradeImpl.upgradeMethods,
+  { path: "resolver.upgrade" as const },
 );
 export declare namespace upgrade {
   type Options = upgradeTypes.Options;
@@ -614,7 +628,9 @@ export declare namespace upgrade {
  * @category writing
  * @since 1.0.0
  */
-export const upgradeSync = upgradeImpl.upgradeSync;
+export const upgradeSync = /* @__PURE__ */ Object.assign(upgradeImpl.upgradeSync, {
+  path: "resolver.upgradeSync" as const,
+});
 export declare namespace upgradeSync {
   type Options = upgradeSyncTypes.Options;
   type ReturnType = upgradeSyncTypes.ReturnType;

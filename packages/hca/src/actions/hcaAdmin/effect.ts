@@ -69,7 +69,9 @@ import type {
  * @category hca-admin
  * @since 1.0.0
  */
-export const getGovernance = getGovernanceImpl.getGovernance;
+export const getGovernance = /* @__PURE__ */ Object.assign(getGovernanceImpl.getGovernance, {
+  path: "hcaAdmin.getGovernance" as const,
+});
 export declare namespace getGovernance {
   type Options = getGovernanceTypes.Options;
   type ReturnType = getGovernanceTypes.ReturnType;
@@ -112,10 +114,11 @@ export declare namespace getGovernance {
  * @category hca-admin
  * @since 1.0.0
  */
-export const grantUpgradeSetRoles = Object.assign(
+export const grantUpgradeSetRoles = /* @__PURE__ */ Object.assign(
   (...args: Parameters<typeof grantUpgradeSetRolesImpl.grantUpgradeSetRoles>) =>
     grantUpgradeSetRolesImpl.grantUpgradeSetRoles(...args),
   grantUpgradeSetRolesImpl.grantUpgradeSetRolesMethods,
+  { path: "hcaAdmin.grantUpgradeSetRoles" as const },
 );
 export declare namespace grantUpgradeSetRoles {
   type Options = grantUpgradeSetRolesTypes.Options;
@@ -161,7 +164,10 @@ export declare namespace grantUpgradeSetRoles {
  * @category hca-admin
  * @since 1.0.0
  */
-export const grantUpgradeSetRolesSync = grantUpgradeSetRolesImpl.grantUpgradeSetRolesSync;
+export const grantUpgradeSetRolesSync = /* @__PURE__ */ Object.assign(
+  grantUpgradeSetRolesImpl.grantUpgradeSetRolesSync,
+  { path: "hcaAdmin.grantUpgradeSetRolesSync" as const },
+);
 export declare namespace grantUpgradeSetRolesSync {
   type Options = grantUpgradeSetRolesSyncTypes.Options;
   type ReturnType = grantUpgradeSetRolesSyncTypes.ReturnType;
@@ -203,10 +209,11 @@ export declare namespace grantUpgradeSetRolesSync {
  * @category hca-admin
  * @since 1.0.0
  */
-export const renounceGovernance = Object.assign(
+export const renounceGovernance = /* @__PURE__ */ Object.assign(
   (...args: Parameters<typeof renounceGovernanceImpl.renounceGovernance>) =>
     renounceGovernanceImpl.renounceGovernance(...args),
   renounceGovernanceImpl.renounceGovernanceMethods,
+  { path: "hcaAdmin.renounceGovernance" as const },
 );
 export declare namespace renounceGovernance {
   type Options = renounceGovernanceTypes.Options;
@@ -251,7 +258,10 @@ export declare namespace renounceGovernance {
  * @category hca-admin
  * @since 1.0.0
  */
-export const renounceGovernanceSync = renounceGovernanceImpl.renounceGovernanceSync;
+export const renounceGovernanceSync = /* @__PURE__ */ Object.assign(
+  renounceGovernanceImpl.renounceGovernanceSync,
+  { path: "hcaAdmin.renounceGovernanceSync" as const },
+);
 export declare namespace renounceGovernanceSync {
   type Options = renounceGovernanceSyncTypes.Options;
   type ReturnType = renounceGovernanceSyncTypes.ReturnType;
@@ -294,10 +304,11 @@ export declare namespace renounceGovernanceSync {
  * @category hca-admin
  * @since 1.0.0
  */
-export const revokeUpgradeSetRoles = Object.assign(
+export const revokeUpgradeSetRoles = /* @__PURE__ */ Object.assign(
   (...args: Parameters<typeof revokeUpgradeSetRolesImpl.revokeUpgradeSetRoles>) =>
     revokeUpgradeSetRolesImpl.revokeUpgradeSetRoles(...args),
   revokeUpgradeSetRolesImpl.revokeUpgradeSetRolesMethods,
+  { path: "hcaAdmin.revokeUpgradeSetRoles" as const },
 );
 export declare namespace revokeUpgradeSetRoles {
   type Options = revokeUpgradeSetRolesTypes.Options;
@@ -343,7 +354,10 @@ export declare namespace revokeUpgradeSetRoles {
  * @category hca-admin
  * @since 1.0.0
  */
-export const revokeUpgradeSetRolesSync = revokeUpgradeSetRolesImpl.revokeUpgradeSetRolesSync;
+export const revokeUpgradeSetRolesSync = /* @__PURE__ */ Object.assign(
+  revokeUpgradeSetRolesImpl.revokeUpgradeSetRolesSync,
+  { path: "hcaAdmin.revokeUpgradeSetRolesSync" as const },
+);
 export declare namespace revokeUpgradeSetRolesSync {
   type Options = revokeUpgradeSetRolesSyncTypes.Options;
   type ReturnType = revokeUpgradeSetRolesSyncTypes.ReturnType;
@@ -386,10 +400,11 @@ export declare namespace revokeUpgradeSetRolesSync {
  * @category hca-admin
  * @since 1.0.0
  */
-export const setDeploymentApproval = Object.assign(
+export const setDeploymentApproval = /* @__PURE__ */ Object.assign(
   (...args: Parameters<typeof setDeploymentApprovalImpl.setDeploymentApproval>) =>
     setDeploymentApprovalImpl.setDeploymentApproval(...args),
   setDeploymentApprovalImpl.setDeploymentApprovalMethods,
+  { path: "hcaAdmin.setDeploymentApproval" as const },
 );
 export declare namespace setDeploymentApproval {
   type Options = setDeploymentApprovalTypes.Options;
@@ -435,7 +450,10 @@ export declare namespace setDeploymentApproval {
  * @category hca-admin
  * @since 1.0.0
  */
-export const setDeploymentApprovalSync = setDeploymentApprovalImpl.setDeploymentApprovalSync;
+export const setDeploymentApprovalSync = /* @__PURE__ */ Object.assign(
+  setDeploymentApprovalImpl.setDeploymentApprovalSync,
+  { path: "hcaAdmin.setDeploymentApprovalSync" as const },
+);
 export declare namespace setDeploymentApprovalSync {
   type Options = setDeploymentApprovalSyncTypes.Options;
   type ReturnType = setDeploymentApprovalSyncTypes.ReturnType;
@@ -478,10 +496,11 @@ export declare namespace setDeploymentApprovalSync {
  * @category hca-admin
  * @since 1.0.0
  */
-export const setUpgradeApproval = Object.assign(
+export const setUpgradeApproval = /* @__PURE__ */ Object.assign(
   (...args: Parameters<typeof setUpgradeApprovalImpl.setUpgradeApproval>) =>
     setUpgradeApprovalImpl.setUpgradeApproval(...args),
   setUpgradeApprovalImpl.setUpgradeApprovalMethods,
+  { path: "hcaAdmin.setUpgradeApproval" as const },
 );
 export declare namespace setUpgradeApproval {
   type Options = setUpgradeApprovalTypes.Options;
@@ -527,7 +546,10 @@ export declare namespace setUpgradeApproval {
  * @category hca-admin
  * @since 1.0.0
  */
-export const setUpgradeApprovalSync = setUpgradeApprovalImpl.setUpgradeApprovalSync;
+export const setUpgradeApprovalSync = /* @__PURE__ */ Object.assign(
+  setUpgradeApprovalImpl.setUpgradeApprovalSync,
+  { path: "hcaAdmin.setUpgradeApprovalSync" as const },
+);
 export declare namespace setUpgradeApprovalSync {
   type Options = setUpgradeApprovalSyncTypes.Options;
   type ReturnType = setUpgradeApprovalSyncTypes.ReturnType;
@@ -570,10 +592,11 @@ export declare namespace setUpgradeApprovalSync {
  * @category hca-admin
  * @since 1.0.0
  */
-export const transferGovernance = Object.assign(
+export const transferGovernance = /* @__PURE__ */ Object.assign(
   (...args: Parameters<typeof transferGovernanceImpl.transferGovernance>) =>
     transferGovernanceImpl.transferGovernance(...args),
   transferGovernanceImpl.transferGovernanceMethods,
+  { path: "hcaAdmin.transferGovernance" as const },
 );
 export declare namespace transferGovernance {
   type Options = transferGovernanceTypes.Options;
@@ -619,7 +642,10 @@ export declare namespace transferGovernance {
  * @category hca-admin
  * @since 1.0.0
  */
-export const transferGovernanceSync = transferGovernanceImpl.transferGovernanceSync;
+export const transferGovernanceSync = /* @__PURE__ */ Object.assign(
+  transferGovernanceImpl.transferGovernanceSync,
+  { path: "hcaAdmin.transferGovernanceSync" as const },
+);
 export declare namespace transferGovernanceSync {
   type Options = transferGovernanceSyncTypes.Options;
   type ReturnType = transferGovernanceSyncTypes.ReturnType;

@@ -70,3 +70,6 @@ export declare namespace verify {
   /** Errors {@link verify} can fail with. */
   type ErrorType = Errors.AnyError | HcaError;
 }
+
+/** Path of the action, e.g. for cache keys. */
+verify.path = "hca.verify" as const;

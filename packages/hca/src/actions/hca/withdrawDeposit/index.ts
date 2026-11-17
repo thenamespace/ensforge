@@ -134,3 +134,9 @@ export declare namespace withdrawDepositSync {
   /** Errors {@link withdrawDepositSync} can fail with. */
   type ErrorType = Errors.AnyError | HcaError;
 }
+
+/** Path of the action, e.g. for cache keys. */
+withdrawDeposit.path = "hca.withdrawDeposit" as const;
+
+/** Path of the action, e.g. for cache keys. */
+withdrawDepositSync.path = "hca.withdrawDepositSync" as const;

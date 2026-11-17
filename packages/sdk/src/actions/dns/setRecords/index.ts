@@ -153,3 +153,9 @@ export declare namespace setRecordsSync {
   /** Errors {@link setRecordsSync} can fail with. */
   type ErrorType = AnyError;
 }
+
+/** Path of the action, e.g. for cache keys. */
+setRecords.path = "dns.setRecords" as const;
+
+/** Path of the action, e.g. for cache keys. */
+setRecordsSync.path = "dns.setRecordsSync" as const;

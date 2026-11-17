@@ -56,7 +56,9 @@ import type {
  * @category reading
  * @since 1.0.0
  */
-export const check = checkImpl.check;
+export const check = /* @__PURE__ */ Object.assign(checkImpl.check, {
+  path: "permission.check" as const,
+});
 export declare namespace check {
   type Options = checkTypes.Options;
   type ReturnType = checkTypes.ReturnType;
@@ -112,7 +114,7 @@ export declare namespace check {
  * @category reading
  * @since 1.0.0
  */
-export const get = getImpl.get;
+export const get = /* @__PURE__ */ Object.assign(getImpl.get, { path: "permission.get" as const });
 export declare namespace get {
   type Options = getTypes.Options;
   type ReturnType = getTypes.ReturnType;
@@ -172,10 +174,11 @@ export declare namespace get {
  * @category writing
  * @since 1.0.0
  */
-export const setRecordAccess = Object.assign(
+export const setRecordAccess = /* @__PURE__ */ Object.assign(
   (...args: Parameters<typeof setRecordAccessImpl.setRecordAccess>) =>
     setRecordAccessImpl.setRecordAccess(...args),
   setRecordAccessImpl.setRecordAccessMethods,
+  { path: "permission.setRecordAccess" as const },
 );
 export declare namespace setRecordAccess {
   type Options = setRecordAccessTypes.Options;
@@ -223,7 +226,10 @@ export declare namespace setRecordAccess {
  * @category writing
  * @since 1.0.0
  */
-export const setRecordAccessSync = setRecordAccessImpl.setRecordAccessSync;
+export const setRecordAccessSync = /* @__PURE__ */ Object.assign(
+  setRecordAccessImpl.setRecordAccessSync,
+  { path: "permission.setRecordAccessSync" as const },
+);
 export declare namespace setRecordAccessSync {
   type Options = setRecordAccessSyncTypes.Options;
   type ReturnType = setRecordAccessSyncTypes.ReturnType;

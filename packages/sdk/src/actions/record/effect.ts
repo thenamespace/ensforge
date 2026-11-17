@@ -65,7 +65,7 @@ import type { set as setTypes, setSync as setSyncTypes } from "./set/index.js";
  * @category reading
  * @since 1.0.0
  */
-export const get = getImpl.get;
+export const get = /* @__PURE__ */ Object.assign(getImpl.get, { path: "record.get" as const });
 export declare namespace get {
   type Options = getTypes.Options;
   type ReturnType = getTypes.ReturnType;
@@ -118,7 +118,9 @@ export declare namespace get {
  * @category reading
  * @since 1.0.0
  */
-export const getAddress = getAddressImpl.getAddress;
+export const getAddress = /* @__PURE__ */ Object.assign(getAddressImpl.getAddress, {
+  path: "record.getAddress" as const,
+});
 export declare namespace getAddress {
   type Options = getAddressTypes.Options;
   type ReturnType = getAddressTypes.ReturnType;
@@ -176,7 +178,9 @@ export declare namespace getAddress {
  * @category reading
  * @since 1.0.0
  */
-export const getAvatar = getAvatarImpl.getAvatar;
+export const getAvatar = /* @__PURE__ */ Object.assign(getAvatarImpl.getAvatar, {
+  path: "record.getAvatar" as const,
+});
 export declare namespace getAvatar {
   type Options = getAvatarTypes.Options;
   type ReturnType = getAvatarTypes.ReturnType;
@@ -229,7 +233,9 @@ export declare namespace getAvatar {
  * @category reading
  * @since 1.0.0
  */
-export const getContentHash = getContentHashImpl.getContentHash;
+export const getContentHash = /* @__PURE__ */ Object.assign(getContentHashImpl.getContentHash, {
+  path: "record.getContentHash" as const,
+});
 export declare namespace getContentHash {
   type Options = getContentHashTypes.Options;
   type ReturnType = getContentHashTypes.ReturnType;
@@ -283,7 +289,9 @@ export declare namespace getContentHash {
  * @category reading
  * @since 1.0.0
  */
-export const getText = getTextImpl.getText;
+export const getText = /* @__PURE__ */ Object.assign(getTextImpl.getText, {
+  path: "record.getText" as const,
+});
 export declare namespace getText {
   type Options = getTextTypes.Options;
   type ReturnType = getTextTypes.ReturnType;
@@ -362,9 +370,10 @@ export declare namespace getText {
  * @category writing
  * @since 1.0.0
  */
-export const set = Object.assign(
+export const set = /* @__PURE__ */ Object.assign(
   (...args: Parameters<typeof setImpl.set>) => setImpl.set(...args),
   setImpl.setMethods,
+  { path: "record.set" as const },
 );
 export declare namespace set {
   type Options = setTypes.Options;
@@ -413,7 +422,9 @@ export declare namespace set {
  * @category writing
  * @since 1.0.0
  */
-export const setSync = setImpl.setSync;
+export const setSync = /* @__PURE__ */ Object.assign(setImpl.setSync, {
+  path: "record.setSync" as const,
+});
 export declare namespace setSync {
   type Options = setSyncTypes.Options;
   type ReturnType = setSyncTypes.ReturnType;

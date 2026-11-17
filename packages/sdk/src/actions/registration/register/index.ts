@@ -203,3 +203,9 @@ export declare namespace registerSync {
   /** Errors {@link registerSync} can fail with. */
   type ErrorType = AnyError;
 }
+
+/** Path of the action, e.g. for cache keys. */
+register.path = "registration.register" as const;
+
+/** Path of the action, e.g. for cache keys. */
+registerSync.path = "registration.registerSync" as const;

@@ -71,9 +71,10 @@ import type { renew as renewTypes, renewSync as renewSyncTypes } from "./renew/i
  * @category writing
  * @since 1.0.0
  */
-export const commit = Object.assign(
+export const commit = /* @__PURE__ */ Object.assign(
   (...args: Parameters<typeof commitImpl.commit>) => commitImpl.commit(...args),
   commitImpl.commitMethods,
+  { path: "registration.commit" as const },
 );
 export declare namespace commit {
   type Options = commitTypes.Options;
@@ -122,7 +123,9 @@ export declare namespace commit {
  * @category writing
  * @since 1.0.0
  */
-export const commitSync = commitImpl.commitSync;
+export const commitSync = /* @__PURE__ */ Object.assign(commitImpl.commitSync, {
+  path: "registration.commitSync" as const,
+});
 export declare namespace commitSync {
   type Options = commitSyncTypes.Options;
   type ReturnType = commitSyncTypes.ReturnType;
@@ -172,7 +175,10 @@ export declare namespace commitSync {
  * @category reading
  * @since 1.0.0
  */
-export const getCommitmentStatus = getCommitmentStatusImpl.getCommitmentStatus;
+export const getCommitmentStatus = /* @__PURE__ */ Object.assign(
+  getCommitmentStatusImpl.getCommitmentStatus,
+  { path: "registration.getCommitmentStatus" as const },
+);
 export declare namespace getCommitmentStatus {
   type Options = getCommitmentStatusTypes.Options;
   type ReturnType = getCommitmentStatusTypes.ReturnType;
@@ -218,7 +224,9 @@ export declare namespace getCommitmentStatus {
  * @category reading
  * @since 1.0.0
  */
-export const getParameters = getParametersImpl.getParameters;
+export const getParameters = /* @__PURE__ */ Object.assign(getParametersImpl.getParameters, {
+  path: "registration.getParameters" as const,
+});
 export declare namespace getParameters {
   type Options = getParametersTypes.Options;
   type ReturnType = getParametersTypes.ReturnType;
@@ -278,7 +286,9 @@ export declare namespace getParameters {
  * @category reading
  * @since 1.0.0
  */
-export const getPrice = getPriceImpl.getPrice;
+export const getPrice = /* @__PURE__ */ Object.assign(getPriceImpl.getPrice, {
+  path: "registration.getPrice" as const,
+});
 export declare namespace getPrice {
   type Options = getPriceTypes.Options;
   type ReturnType = getPriceTypes.ReturnType;
@@ -330,7 +340,9 @@ export declare namespace getPrice {
  * @category reading
  * @since 1.0.0
  */
-export const getRenewalPrice = getRenewalPriceImpl.getRenewalPrice;
+export const getRenewalPrice = /* @__PURE__ */ Object.assign(getRenewalPriceImpl.getRenewalPrice, {
+  path: "registration.getRenewalPrice" as const,
+});
 export declare namespace getRenewalPrice {
   type Options = getRenewalPriceTypes.Options;
   type ReturnType = getRenewalPriceTypes.ReturnType;
@@ -382,7 +394,9 @@ export declare namespace getRenewalPrice {
  * @category reading
  * @since 1.0.0
  */
-export const isAvailable = isAvailableImpl.isAvailable;
+export const isAvailable = /* @__PURE__ */ Object.assign(isAvailableImpl.isAvailable, {
+  path: "registration.isAvailable" as const,
+});
 export declare namespace isAvailable {
   type Options = isAvailableTypes.Options;
   type ReturnType = isAvailableTypes.ReturnType;
@@ -448,9 +462,10 @@ export declare namespace isAvailable {
  * @category writing
  * @since 1.0.0
  */
-export const register = Object.assign(
+export const register = /* @__PURE__ */ Object.assign(
   (...args: Parameters<typeof registerImpl.register>) => registerImpl.register(...args),
   registerImpl.registerMethods,
+  { path: "registration.register" as const },
 );
 export declare namespace register {
   type Options = registerTypes.Options;
@@ -500,7 +515,9 @@ export declare namespace register {
  * @category writing
  * @since 1.0.0
  */
-export const registerSync = registerImpl.registerSync;
+export const registerSync = /* @__PURE__ */ Object.assign(registerImpl.registerSync, {
+  path: "registration.registerSync" as const,
+});
 export declare namespace registerSync {
   type Options = registerSyncTypes.Options;
   type ReturnType = registerSyncTypes.ReturnType;
@@ -555,9 +572,10 @@ export declare namespace registerSync {
  * @category writing
  * @since 1.0.0
  */
-export const renew = Object.assign(
+export const renew = /* @__PURE__ */ Object.assign(
   (...args: Parameters<typeof renewImpl.renew>) => renewImpl.renew(...args),
   renewImpl.renewMethods,
+  { path: "registration.renew" as const },
 );
 export declare namespace renew {
   type Options = renewTypes.Options;
@@ -606,7 +624,9 @@ export declare namespace renew {
  * @category writing
  * @since 1.0.0
  */
-export const renewSync = renewImpl.renewSync;
+export const renewSync = /* @__PURE__ */ Object.assign(renewImpl.renewSync, {
+  path: "registration.renewSync" as const,
+});
 export declare namespace renewSync {
   type Options = renewSyncTypes.Options;
   type ReturnType = renewSyncTypes.ReturnType;

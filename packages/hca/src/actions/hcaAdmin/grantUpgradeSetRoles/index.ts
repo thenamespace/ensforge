@@ -144,3 +144,9 @@ export declare namespace grantUpgradeSetRolesSync {
   /** Errors {@link grantUpgradeSetRolesSync} can fail with. */
   type ErrorType = Errors.AnyError | HcaError;
 }
+
+/** Path of the action, e.g. for cache keys. */
+grantUpgradeSetRoles.path = "hcaAdmin.grantUpgradeSetRoles" as const;
+
+/** Path of the action, e.g. for cache keys. */
+grantUpgradeSetRolesSync.path = "hcaAdmin.grantUpgradeSetRolesSync" as const;

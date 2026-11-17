@@ -96,3 +96,6 @@ export declare namespace getPrice {
 
 /** Builds a deferred read for `Actions.batch`. */
 getPrice.request = Action.request("registration.getPrice", Impl.getPrice);
+
+/** Path of the action, e.g. for cache keys. */
+getPrice.path = "registration.getPrice" as const;

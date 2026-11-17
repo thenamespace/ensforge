@@ -74,3 +74,6 @@ export declare namespace getFuses {
 
 /** Builds a deferred read for `Actions.batch`. */
 getFuses.request = Action.request("wrapper.getFuses", Impl.getFuses);
+
+/** Path of the action, e.g. for cache keys. */
+getFuses.path = "wrapper.getFuses" as const;

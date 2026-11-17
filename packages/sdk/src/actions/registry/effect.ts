@@ -57,9 +57,10 @@ import type { upgrade as upgradeTypes, upgradeSync as upgradeSyncTypes } from ".
  * @category writing
  * @since 1.0.0
  */
-export const attach = Object.assign(
+export const attach = /* @__PURE__ */ Object.assign(
   (...args: Parameters<typeof attachImpl.attach>) => attachImpl.attach(...args),
   attachImpl.attachMethods,
+  { path: "registry.attach" as const },
 );
 export declare namespace attach {
   type Options = attachTypes.Options;
@@ -107,7 +108,9 @@ export declare namespace attach {
  * @category writing
  * @since 1.0.0
  */
-export const attachSync = attachImpl.attachSync;
+export const attachSync = /* @__PURE__ */ Object.assign(attachImpl.attachSync, {
+  path: "registry.attachSync" as const,
+});
 export declare namespace attachSync {
   type Options = attachSyncTypes.Options;
   type ReturnType = attachSyncTypes.ReturnType;
@@ -162,9 +165,10 @@ export declare namespace attachSync {
  * @category writing
  * @since 1.0.0
  */
-export const deploy = Object.assign(
+export const deploy = /* @__PURE__ */ Object.assign(
   (...args: Parameters<typeof deployImpl.deploy>) => deployImpl.deploy(...args),
   deployImpl.deployMethods,
+  { path: "registry.deploy" as const },
 );
 export declare namespace deploy {
   type Options = deployTypes.Options;
@@ -212,7 +216,9 @@ export declare namespace deploy {
  * @category writing
  * @since 1.0.0
  */
-export const deploySync = deployImpl.deploySync;
+export const deploySync = /* @__PURE__ */ Object.assign(deployImpl.deploySync, {
+  path: "registry.deploySync" as const,
+});
 export declare namespace deploySync {
   type Options = deploySyncTypes.Options;
   type ReturnType = deploySyncTypes.ReturnType;
@@ -270,7 +276,7 @@ export declare namespace deploySync {
  * @category reading
  * @since 1.0.0
  */
-export const get = getImpl.get;
+export const get = /* @__PURE__ */ Object.assign(getImpl.get, { path: "registry.get" as const });
 export declare namespace get {
   type Options = getTypes.Options;
   type ReturnType = getTypes.ReturnType;
@@ -321,9 +327,10 @@ export declare namespace get {
  * @category writing
  * @since 1.0.0
  */
-export const setUri = Object.assign(
+export const setUri = /* @__PURE__ */ Object.assign(
   (...args: Parameters<typeof setUriImpl.setUri>) => setUriImpl.setUri(...args),
   setUriImpl.setUriMethods,
+  { path: "registry.setUri" as const },
 );
 export declare namespace setUri {
   type Options = setUriTypes.Options;
@@ -370,7 +377,9 @@ export declare namespace setUri {
  * @category writing
  * @since 1.0.0
  */
-export const setUriSync = setUriImpl.setUriSync;
+export const setUriSync = /* @__PURE__ */ Object.assign(setUriImpl.setUriSync, {
+  path: "registry.setUriSync" as const,
+});
 export declare namespace setUriSync {
   type Options = setUriSyncTypes.Options;
   type ReturnType = setUriSyncTypes.ReturnType;
@@ -424,9 +433,10 @@ export declare namespace setUriSync {
  * @category writing
  * @since 1.0.0
  */
-export const upgrade = Object.assign(
+export const upgrade = /* @__PURE__ */ Object.assign(
   (...args: Parameters<typeof upgradeImpl.upgrade>) => upgradeImpl.upgrade(...args),
   upgradeImpl.upgradeMethods,
+  { path: "registry.upgrade" as const },
 );
 export declare namespace upgrade {
   type Options = upgradeTypes.Options;
@@ -475,7 +485,9 @@ export declare namespace upgrade {
  * @category writing
  * @since 1.0.0
  */
-export const upgradeSync = upgradeImpl.upgradeSync;
+export const upgradeSync = /* @__PURE__ */ Object.assign(upgradeImpl.upgradeSync, {
+  path: "registry.upgradeSync" as const,
+});
 export declare namespace upgradeSync {
   type Options = upgradeSyncTypes.Options;
   type ReturnType = upgradeSyncTypes.ReturnType;

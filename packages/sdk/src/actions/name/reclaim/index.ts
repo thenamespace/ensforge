@@ -150,3 +150,9 @@ export declare namespace reclaimSync {
   /** Errors {@link reclaimSync} can fail with. */
   type ErrorType = AnyError;
 }
+
+/** Path of the action, e.g. for cache keys. */
+reclaim.path = "name.reclaim" as const;
+
+/** Path of the action, e.g. for cache keys. */
+reclaimSync.path = "name.reclaimSync" as const;

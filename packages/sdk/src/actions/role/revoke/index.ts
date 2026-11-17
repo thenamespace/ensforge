@@ -153,3 +153,9 @@ export declare namespace revokeSync {
   /** Errors {@link revokeSync} can fail with. */
   type ErrorType = AnyError;
 }
+
+/** Path of the action, e.g. for cache keys. */
+revoke.path = "role.revoke" as const;
+
+/** Path of the action, e.g. for cache keys. */
+revokeSync.path = "role.revokeSync" as const;

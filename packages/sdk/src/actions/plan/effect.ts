@@ -53,7 +53,7 @@ import type { send as sendTypes, sendSync as sendSyncTypes } from "./send/index.
  * @category reading
  * @since 1.0.0
  */
-export const get = getImpl.get;
+export const get = /* @__PURE__ */ Object.assign(getImpl.get, { path: "plan.get" as const });
 export declare namespace get {
   type Options = getTypes.Options;
   type ReturnType = getTypes.ReturnType;
@@ -102,7 +102,7 @@ export declare namespace get {
  * @category reading
  * @since 1.0.0
  */
-export const list = listImpl.list;
+export const list = /* @__PURE__ */ Object.assign(listImpl.list, { path: "plan.list" as const });
 export declare namespace list {
   type Options = listTypes.Options;
   type ReturnType = listTypes.ReturnType;
@@ -153,7 +153,9 @@ export declare namespace list {
  * @category reading
  * @since 1.0.0
  */
-export const reconcile = reconcileImpl.reconcile;
+export const reconcile = /* @__PURE__ */ Object.assign(reconcileImpl.reconcile, {
+  path: "plan.reconcile" as const,
+});
 export declare namespace reconcile {
   type Options = reconcileTypes.Options;
   type ReturnType = reconcileTypes.ReturnType;
@@ -210,7 +212,9 @@ export declare namespace reconcile {
  * @category writing
  * @since 1.0.0
  */
-export const resume = resumeImpl.resume;
+export const resume = /* @__PURE__ */ Object.assign(resumeImpl.resume, {
+  path: "plan.resume" as const,
+});
 export declare namespace resume {
   type Options = resumeTypes.Options;
   type ReturnType = resumeTypes.ReturnType;
@@ -254,7 +258,9 @@ export declare namespace resume {
  * @category writing
  * @since 1.0.0
  */
-export const resumeSync = resumeImpl.resumeSync;
+export const resumeSync = /* @__PURE__ */ Object.assign(resumeImpl.resumeSync, {
+  path: "plan.resumeSync" as const,
+});
 export declare namespace resumeSync {
   type Options = resumeSyncTypes.Options;
   type ReturnType = resumeSyncTypes.ReturnType;
@@ -309,9 +315,10 @@ export declare namespace resumeSync {
  * @category writing
  * @since 1.0.0
  */
-export const send = Object.assign(
+export const send = /* @__PURE__ */ Object.assign(
   (...args: Parameters<typeof sendImpl.send>) => sendImpl.send(...args),
   sendImpl.sendMethods,
+  { path: "plan.send" as const },
 );
 export declare namespace send {
   type Options = sendTypes.Options;
@@ -359,7 +366,9 @@ export declare namespace send {
  * @category writing
  * @since 1.0.0
  */
-export const sendSync = sendImpl.sendSync;
+export const sendSync = /* @__PURE__ */ Object.assign(sendImpl.sendSync, {
+  path: "plan.sendSync" as const,
+});
 export declare namespace sendSync {
   type Options = sendSyncTypes.Options;
   type ReturnType = sendSyncTypes.ReturnType;

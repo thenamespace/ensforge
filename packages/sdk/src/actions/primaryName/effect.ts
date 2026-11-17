@@ -55,7 +55,7 @@ import type { set as setTypes, setSync as setSyncTypes } from "./set/index.js";
  * @category reading
  * @since 1.0.0
  */
-export const get = getImpl.get;
+export const get = /* @__PURE__ */ Object.assign(getImpl.get, { path: "primaryName.get" as const });
 export declare namespace get {
   type Options = getTypes.Options;
   type ReturnType = getTypes.ReturnType;
@@ -119,9 +119,10 @@ export declare namespace get {
  * @category writing
  * @since 1.0.0
  */
-export const set = Object.assign(
+export const set = /* @__PURE__ */ Object.assign(
   (...args: Parameters<typeof setImpl.set>) => setImpl.set(...args),
   setImpl.setMethods,
+  { path: "primaryName.set" as const },
 );
 export declare namespace set {
   type Options = setTypes.Options;
@@ -169,7 +170,9 @@ export declare namespace set {
  * @category writing
  * @since 1.0.0
  */
-export const setSync = setImpl.setSync;
+export const setSync = /* @__PURE__ */ Object.assign(setImpl.setSync, {
+  path: "primaryName.setSync" as const,
+});
 export declare namespace setSync {
   type Options = setSyncTypes.Options;
   type ReturnType = setSyncTypes.ReturnType;

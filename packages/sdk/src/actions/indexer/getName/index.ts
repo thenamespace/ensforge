@@ -77,3 +77,6 @@ export declare namespace getName {
 
 /** Builds a deferred read for `Actions.batch`. */
 getName.request = Action.request("indexer.getName", Impl.getName);
+
+/** Path of the action, e.g. for cache keys. */
+getName.path = "indexer.getName" as const;

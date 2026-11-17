@@ -154,3 +154,9 @@ export declare namespace claimSync {
   /** Errors {@link claimSync} can fail with. */
   type ErrorType = AnyError;
 }
+
+/** Path of the action, e.g. for cache keys. */
+claim.path = "dns.claim" as const;
+
+/** Path of the action, e.g. for cache keys. */
+claimSync.path = "dns.claimSync" as const;

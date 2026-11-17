@@ -60,11 +60,12 @@ export const domainBarrel = ({ actions }: Domain): string => {
   return `${header}${lines.join("\n")}\n`;
 };
 
-const effectExport = (action: Action): string => {
+const effectExport = (domain: string, action: Action): string => {
   const impl = `${action.folder}Impl`;
+  const path = `{ path: "${domain}.${action.name}" as const }`;
   const value = isWrite(action)
-    ? `Object.assign(\n  (...args: Parameters<typeof ${impl}.${action.name}>) => ${impl}.${action.name}(...args),\n  ${impl}.${action.name}Methods,\n)`
-    : `${impl}.${action.name}`;
+    ? `/* @__PURE__ */ Object.assign(\n  (...args: Parameters<typeof ${impl}.${action.name}>) => ${impl}.${action.name}(...args),\n  ${impl}.${action.name}Methods,\n  ${path},\n)`
+    : `/* @__PURE__ */ Object.assign(${impl}.${action.name}, ${path})`;
 
   return [
     action.jsdoc,
@@ -78,7 +79,7 @@ const effectExport = (action: Action): string => {
 };
 
 /** `actions/<domain>/effect.ts`: the Effect mirror, with the Promise action's docs and types. */
-export const effectBarrel = ({ actions }: Domain): string => {
+export const effectBarrel = ({ domain, actions }: Domain): string => {
   const folders = [...new Set(actions.map((action) => action.folder))];
   const imports = folders.flatMap((folder) => {
     const names = actions.filter((action) => action.folder === folder).map((action) => action.name);
@@ -88,7 +89,7 @@ export const effectBarrel = ({ actions }: Domain): string => {
     ];
   });
 
-  return `${header}${imports.join("\n")}\n\n${actions.map(effectExport).join("\n\n")}\n`;
+  return `${header}${imports.join("\n")}\n\n${actions.map((action) => effectExport(domain, action)).join("\n\n")}\n`;
 };
 
 /** `actions/index.ts` or `actions/effect.ts`: one namespace per domain, plus `batch` in the sdk. */

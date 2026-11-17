@@ -70,3 +70,6 @@ export declare namespace checkSessionCalls {
   /** Errors {@link checkSessionCalls} can fail with. */
   type ErrorType = Errors.AnyError | HcaError;
 }
+
+/** Path of the action, e.g. for cache keys. */
+checkSessionCalls.path = "hca.checkSessionCalls" as const;

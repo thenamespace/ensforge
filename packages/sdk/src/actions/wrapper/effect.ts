@@ -60,7 +60,9 @@ import type { wrap as wrapTypes, wrapSync as wrapSyncTypes } from "./wrap/index.
  * @category reading
  * @since 1.0.0
  */
-export const getFuses = getFusesImpl.getFuses;
+export const getFuses = /* @__PURE__ */ Object.assign(getFusesImpl.getFuses, {
+  path: "wrapper.getFuses" as const,
+});
 export declare namespace getFuses {
   type Options = getFusesTypes.Options;
   type ReturnType = getFusesTypes.ReturnType;
@@ -118,10 +120,11 @@ export declare namespace getFuses {
  * @category writing
  * @since 1.0.0
  */
-export const setChildFuses = Object.assign(
+export const setChildFuses = /* @__PURE__ */ Object.assign(
   (...args: Parameters<typeof setChildFusesImpl.setChildFuses>) =>
     setChildFusesImpl.setChildFuses(...args),
   setChildFusesImpl.setChildFusesMethods,
+  { path: "wrapper.setChildFuses" as const },
 );
 export declare namespace setChildFuses {
   type Options = setChildFusesTypes.Options;
@@ -169,7 +172,10 @@ export declare namespace setChildFuses {
  * @category writing
  * @since 1.0.0
  */
-export const setChildFusesSync = setChildFusesImpl.setChildFusesSync;
+export const setChildFusesSync = /* @__PURE__ */ Object.assign(
+  setChildFusesImpl.setChildFusesSync,
+  { path: "wrapper.setChildFusesSync" as const },
+);
 export declare namespace setChildFusesSync {
   type Options = setChildFusesSyncTypes.Options;
   type ReturnType = setChildFusesSyncTypes.ReturnType;
@@ -226,9 +232,10 @@ export declare namespace setChildFusesSync {
  * @category writing
  * @since 1.0.0
  */
-export const setFuses = Object.assign(
+export const setFuses = /* @__PURE__ */ Object.assign(
   (...args: Parameters<typeof setFusesImpl.setFuses>) => setFusesImpl.setFuses(...args),
   setFusesImpl.setFusesMethods,
+  { path: "wrapper.setFuses" as const },
 );
 export declare namespace setFuses {
   type Options = setFusesTypes.Options;
@@ -276,7 +283,9 @@ export declare namespace setFuses {
  * @category writing
  * @since 1.0.0
  */
-export const setFusesSync = setFusesImpl.setFusesSync;
+export const setFusesSync = /* @__PURE__ */ Object.assign(setFusesImpl.setFusesSync, {
+  path: "wrapper.setFusesSync" as const,
+});
 export declare namespace setFusesSync {
   type Options = setFusesSyncTypes.Options;
   type ReturnType = setFusesSyncTypes.ReturnType;
@@ -329,9 +338,10 @@ export declare namespace setFusesSync {
  * @category writing
  * @since 1.0.0
  */
-export const unwrap = Object.assign(
+export const unwrap = /* @__PURE__ */ Object.assign(
   (...args: Parameters<typeof unwrapImpl.unwrap>) => unwrapImpl.unwrap(...args),
   unwrapImpl.unwrapMethods,
+  { path: "wrapper.unwrap" as const },
 );
 export declare namespace unwrap {
   type Options = unwrapTypes.Options;
@@ -379,7 +389,9 @@ export declare namespace unwrap {
  * @category writing
  * @since 1.0.0
  */
-export const unwrapSync = unwrapImpl.unwrapSync;
+export const unwrapSync = /* @__PURE__ */ Object.assign(unwrapImpl.unwrapSync, {
+  path: "wrapper.unwrapSync" as const,
+});
 export declare namespace unwrapSync {
   type Options = unwrapSyncTypes.Options;
   type ReturnType = unwrapSyncTypes.ReturnType;
@@ -437,9 +449,10 @@ export declare namespace unwrapSync {
  * @category writing
  * @since 1.0.0
  */
-export const wrap = Object.assign(
+export const wrap = /* @__PURE__ */ Object.assign(
   (...args: Parameters<typeof wrapImpl.wrap>) => wrapImpl.wrap(...args),
   wrapImpl.wrapMethods,
+  { path: "wrapper.wrap" as const },
 );
 export declare namespace wrap {
   type Options = wrapTypes.Options;
@@ -487,7 +500,9 @@ export declare namespace wrap {
  * @category writing
  * @since 1.0.0
  */
-export const wrapSync = wrapImpl.wrapSync;
+export const wrapSync = /* @__PURE__ */ Object.assign(wrapImpl.wrapSync, {
+  path: "wrapper.wrapSync" as const,
+});
 export declare namespace wrapSync {
   type Options = wrapSyncTypes.Options;
   type ReturnType = wrapSyncTypes.ReturnType;

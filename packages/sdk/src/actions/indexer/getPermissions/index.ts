@@ -85,3 +85,6 @@ export declare namespace getPermissions {
 
 /** Builds a deferred read for `Actions.batch`. */
 getPermissions.request = Action.request("indexer.getPermissions", Impl.getPermissions);
+
+/** Path of the action, e.g. for cache keys. */
+getPermissions.path = "indexer.getPermissions" as const;

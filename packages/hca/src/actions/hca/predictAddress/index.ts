@@ -63,3 +63,6 @@ export declare namespace predictAddress {
   /** Errors {@link predictAddress} can fail with. */
   type ErrorType = Errors.AnyError | HcaError;
 }
+
+/** Path of the action, e.g. for cache keys. */
+predictAddress.path = "hca.predictAddress" as const;

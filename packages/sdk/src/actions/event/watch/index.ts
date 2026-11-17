@@ -69,3 +69,6 @@ export declare namespace watch {
   /** Errors {@link watch} can fail with. */
   type ErrorType = AnyError;
 }
+
+/** Path of the action, e.g. for cache keys. */
+watch.path = "event.watch" as const;

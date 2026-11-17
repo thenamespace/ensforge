@@ -134,3 +134,9 @@ export declare namespace revokeSessionsSync {
   /** Errors {@link revokeSessionsSync} can fail with. */
   type ErrorType = Errors.AnyError | HcaError;
 }
+
+/** Path of the action, e.g. for cache keys. */
+revokeSessions.path = "hca.revokeSessions" as const;
+
+/** Path of the action, e.g. for cache keys. */
+revokeSessionsSync.path = "hca.revokeSessionsSync" as const;

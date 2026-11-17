@@ -153,3 +153,9 @@ export declare namespace attachSync {
   /** Errors {@link attachSync} can fail with. */
   type ErrorType = AnyError;
 }
+
+/** Path of the action, e.g. for cache keys. */
+attach.path = "registry.attach" as const;
+
+/** Path of the action, e.g. for cache keys. */
+attachSync.path = "registry.attachSync" as const;

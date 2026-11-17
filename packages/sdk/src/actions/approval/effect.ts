@@ -67,7 +67,9 @@ import type {
  * @category reading
  * @since 1.0.0
  */
-export const getDelegate = getDelegateImpl.getDelegate;
+export const getDelegate = /* @__PURE__ */ Object.assign(getDelegateImpl.getDelegate, {
+  path: "approval.getDelegate" as const,
+});
 export declare namespace getDelegate {
   type Options = getDelegateTypes.Options;
   type ReturnType = getDelegateTypes.ReturnType;
@@ -118,7 +120,9 @@ export declare namespace getDelegate {
  * @category reading
  * @since 1.0.0
  */
-export const getOperator = getOperatorImpl.getOperator;
+export const getOperator = /* @__PURE__ */ Object.assign(getOperatorImpl.getOperator, {
+  path: "approval.getOperator" as const,
+});
 export declare namespace getOperator {
   type Options = getOperatorTypes.Options;
   type ReturnType = getOperatorTypes.ReturnType;
@@ -168,7 +172,9 @@ export declare namespace getOperator {
  * @category reading
  * @since 1.0.0
  */
-export const getToken = getTokenImpl.getToken;
+export const getToken = /* @__PURE__ */ Object.assign(getTokenImpl.getToken, {
+  path: "approval.getToken" as const,
+});
 export declare namespace getToken {
   type Options = getTokenTypes.Options;
   type ReturnType = getTokenTypes.ReturnType;
@@ -219,9 +225,10 @@ export declare namespace getToken {
  * @category writing
  * @since 1.0.0
  */
-export const setDelegate = Object.assign(
+export const setDelegate = /* @__PURE__ */ Object.assign(
   (...args: Parameters<typeof setDelegateImpl.setDelegate>) => setDelegateImpl.setDelegate(...args),
   setDelegateImpl.setDelegateMethods,
+  { path: "approval.setDelegate" as const },
 );
 export declare namespace setDelegate {
   type Options = setDelegateTypes.Options;
@@ -268,7 +275,9 @@ export declare namespace setDelegate {
  * @category writing
  * @since 1.0.0
  */
-export const setDelegateSync = setDelegateImpl.setDelegateSync;
+export const setDelegateSync = /* @__PURE__ */ Object.assign(setDelegateImpl.setDelegateSync, {
+  path: "approval.setDelegateSync" as const,
+});
 export declare namespace setDelegateSync {
   type Options = setDelegateSyncTypes.Options;
   type ReturnType = setDelegateSyncTypes.ReturnType;
@@ -319,9 +328,10 @@ export declare namespace setDelegateSync {
  * @category writing
  * @since 1.0.0
  */
-export const setOperator = Object.assign(
+export const setOperator = /* @__PURE__ */ Object.assign(
   (...args: Parameters<typeof setOperatorImpl.setOperator>) => setOperatorImpl.setOperator(...args),
   setOperatorImpl.setOperatorMethods,
+  { path: "approval.setOperator" as const },
 );
 export declare namespace setOperator {
   type Options = setOperatorTypes.Options;
@@ -367,7 +377,9 @@ export declare namespace setOperator {
  * @category writing
  * @since 1.0.0
  */
-export const setOperatorSync = setOperatorImpl.setOperatorSync;
+export const setOperatorSync = /* @__PURE__ */ Object.assign(setOperatorImpl.setOperatorSync, {
+  path: "approval.setOperatorSync" as const,
+});
 export declare namespace setOperatorSync {
   type Options = setOperatorSyncTypes.Options;
   type ReturnType = setOperatorSyncTypes.ReturnType;
@@ -420,9 +432,10 @@ export declare namespace setOperatorSync {
  * @category writing
  * @since 1.0.0
  */
-export const setToken = Object.assign(
+export const setToken = /* @__PURE__ */ Object.assign(
   (...args: Parameters<typeof setTokenImpl.setToken>) => setTokenImpl.setToken(...args),
   setTokenImpl.setTokenMethods,
+  { path: "approval.setToken" as const },
 );
 export declare namespace setToken {
   type Options = setTokenTypes.Options;
@@ -470,7 +483,9 @@ export declare namespace setToken {
  * @category writing
  * @since 1.0.0
  */
-export const setTokenSync = setTokenImpl.setTokenSync;
+export const setTokenSync = /* @__PURE__ */ Object.assign(setTokenImpl.setTokenSync, {
+  path: "approval.setTokenSync" as const,
+});
 export declare namespace setTokenSync {
   type Options = setTokenSyncTypes.Options;
   type ReturnType = setTokenSyncTypes.ReturnType;

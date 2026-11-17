@@ -161,3 +161,9 @@ export declare namespace renewSync {
   /** Errors {@link renewSync} can fail with. */
   type ErrorType = AnyError;
 }
+
+/** Path of the action, e.g. for cache keys. */
+renew.path = "registration.renew" as const;
+
+/** Path of the action, e.g. for cache keys. */
+renewSync.path = "registration.renewSync" as const;

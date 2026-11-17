@@ -75,3 +75,6 @@ export declare namespace getLink {
 
 /** Builds a deferred read for `Actions.batch`. */
 getLink.request = Action.request("resolver.getLink", Impl.getLink);
+
+/** Path of the action, e.g. for cache keys. */
+getLink.path = "resolver.getLink" as const;

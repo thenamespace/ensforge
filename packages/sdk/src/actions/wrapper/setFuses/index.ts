@@ -152,3 +152,9 @@ export declare namespace setFusesSync {
   /** Errors {@link setFusesSync} can fail with. */
   type ErrorType = AnyError;
 }
+
+/** Path of the action, e.g. for cache keys. */
+setFuses.path = "wrapper.setFuses" as const;
+
+/** Path of the action, e.g. for cache keys. */
+setFusesSync.path = "wrapper.setFusesSync" as const;

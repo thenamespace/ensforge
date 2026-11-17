@@ -74,3 +74,6 @@ export declare namespace getParameters {
 
 /** Builds a deferred read for `Actions.batch`. */
 getParameters.request = Action.request("registration.getParameters", Impl.getParameters);
+
+/** Path of the action, e.g. for cache keys. */
+getParameters.path = "registration.getParameters" as const;

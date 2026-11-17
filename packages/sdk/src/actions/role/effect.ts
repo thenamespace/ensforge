@@ -54,7 +54,7 @@ import type { revoke as revokeTypes, revokeSync as revokeSyncTypes } from "./rev
  * @category reading
  * @since 1.0.0
  */
-export const get = getImpl.get;
+export const get = /* @__PURE__ */ Object.assign(getImpl.get, { path: "role.get" as const });
 export declare namespace get {
   type Options = getTypes.Options;
   type ReturnType = getTypes.ReturnType;
@@ -108,9 +108,10 @@ export declare namespace get {
  * @category writing
  * @since 1.0.0
  */
-export const grant = Object.assign(
+export const grant = /* @__PURE__ */ Object.assign(
   (...args: Parameters<typeof grantImpl.grant>) => grantImpl.grant(...args),
   grantImpl.grantMethods,
+  { path: "role.grant" as const },
 );
 export declare namespace grant {
   type Options = grantTypes.Options;
@@ -158,7 +159,9 @@ export declare namespace grant {
  * @category writing
  * @since 1.0.0
  */
-export const grantSync = grantImpl.grantSync;
+export const grantSync = /* @__PURE__ */ Object.assign(grantImpl.grantSync, {
+  path: "role.grantSync" as const,
+});
 export declare namespace grantSync {
   type Options = grantSyncTypes.Options;
   type ReturnType = grantSyncTypes.ReturnType;
@@ -209,9 +212,10 @@ export declare namespace grantSync {
  * @category writing
  * @since 1.0.0
  */
-export const revoke = Object.assign(
+export const revoke = /* @__PURE__ */ Object.assign(
   (...args: Parameters<typeof revokeImpl.revoke>) => revokeImpl.revoke(...args),
   revokeImpl.revokeMethods,
+  { path: "role.revoke" as const },
 );
 export declare namespace revoke {
   type Options = revokeTypes.Options;
@@ -258,7 +262,9 @@ export declare namespace revoke {
  * @category writing
  * @since 1.0.0
  */
-export const revokeSync = revokeImpl.revokeSync;
+export const revokeSync = /* @__PURE__ */ Object.assign(revokeImpl.revokeSync, {
+  path: "role.revokeSync" as const,
+});
 export declare namespace revokeSync {
   type Options = revokeSyncTypes.Options;
   type ReturnType = revokeSyncTypes.ReturnType;

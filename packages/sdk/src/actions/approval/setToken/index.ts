@@ -147,3 +147,9 @@ export declare namespace setTokenSync {
   /** Errors {@link setTokenSync} can fail with. */
   type ErrorType = AnyError;
 }
+
+/** Path of the action, e.g. for cache keys. */
+setToken.path = "approval.setToken" as const;
+
+/** Path of the action, e.g. for cache keys. */
+setTokenSync.path = "approval.setTokenSync" as const;

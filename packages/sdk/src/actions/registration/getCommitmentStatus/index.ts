@@ -84,3 +84,6 @@ getCommitmentStatus.request = Action.request(
   "registration.getCommitmentStatus",
   Impl.getCommitmentStatus,
 );
+
+/** Path of the action, e.g. for cache keys. */
+getCommitmentStatus.path = "registration.getCommitmentStatus" as const;

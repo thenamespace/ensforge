@@ -83,3 +83,6 @@ export declare namespace getRecords {
 
 /** Builds a deferred read for `Actions.batch`. */
 getRecords.request = Action.request("indexer.getRecords", Impl.getRecords);
+
+/** Path of the action, e.g. for cache keys. */
+getRecords.path = "indexer.getRecords" as const;

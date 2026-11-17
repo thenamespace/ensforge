@@ -144,3 +144,9 @@ export declare namespace setDeploymentApprovalSync {
   /** Errors {@link setDeploymentApprovalSync} can fail with. */
   type ErrorType = Errors.AnyError | HcaError;
 }
+
+/** Path of the action, e.g. for cache keys. */
+setDeploymentApproval.path = "hcaAdmin.setDeploymentApproval" as const;
+
+/** Path of the action, e.g. for cache keys. */
+setDeploymentApprovalSync.path = "hcaAdmin.setDeploymentApprovalSync" as const;

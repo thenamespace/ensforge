@@ -71,7 +71,7 @@ import type {
  * @category reading
  * @since 1.0.0
  */
-export const get = getImpl.get;
+export const get = /* @__PURE__ */ Object.assign(getImpl.get, { path: "name.get" as const });
 export declare namespace get {
   type Options = getTypes.Options;
   type ReturnType = getTypes.ReturnType;
@@ -120,7 +120,9 @@ export declare namespace get {
  * @category reading
  * @since 1.0.0
  */
-export const getLabel = getLabelImpl.getLabel;
+export const getLabel = /* @__PURE__ */ Object.assign(getLabelImpl.getLabel, {
+  path: "name.getLabel" as const,
+});
 export declare namespace getLabel {
   type Options = getLabelTypes.Options;
   type ReturnType = getLabelTypes.ReturnType;
@@ -172,9 +174,10 @@ export declare namespace getLabel {
  * @category writing
  * @since 1.0.0
  */
-export const reclaim = Object.assign(
+export const reclaim = /* @__PURE__ */ Object.assign(
   (...args: Parameters<typeof reclaimImpl.reclaim>) => reclaimImpl.reclaim(...args),
   reclaimImpl.reclaimMethods,
+  { path: "name.reclaim" as const },
 );
 export declare namespace reclaim {
   type Options = reclaimTypes.Options;
@@ -222,7 +225,9 @@ export declare namespace reclaim {
  * @category writing
  * @since 1.0.0
  */
-export const reclaimSync = reclaimImpl.reclaimSync;
+export const reclaimSync = /* @__PURE__ */ Object.assign(reclaimImpl.reclaimSync, {
+  path: "name.reclaimSync" as const,
+});
 export declare namespace reclaimSync {
   type Options = reclaimSyncTypes.Options;
   type ReturnType = reclaimSyncTypes.ReturnType;
@@ -276,9 +281,10 @@ export declare namespace reclaimSync {
  * @category writing
  * @since 1.0.0
  */
-export const setManager = Object.assign(
+export const setManager = /* @__PURE__ */ Object.assign(
   (...args: Parameters<typeof setManagerImpl.setManager>) => setManagerImpl.setManager(...args),
   setManagerImpl.setManagerMethods,
+  { path: "name.setManager" as const },
 );
 export declare namespace setManager {
   type Options = setManagerTypes.Options;
@@ -326,7 +332,9 @@ export declare namespace setManager {
  * @category writing
  * @since 1.0.0
  */
-export const setManagerSync = setManagerImpl.setManagerSync;
+export const setManagerSync = /* @__PURE__ */ Object.assign(setManagerImpl.setManagerSync, {
+  path: "name.setManagerSync" as const,
+});
 export declare namespace setManagerSync {
   type Options = setManagerSyncTypes.Options;
   type ReturnType = setManagerSyncTypes.ReturnType;
@@ -378,9 +386,10 @@ export declare namespace setManagerSync {
  * @category writing
  * @since 1.0.0
  */
-export const setTtl = Object.assign(
+export const setTtl = /* @__PURE__ */ Object.assign(
   (...args: Parameters<typeof setTtlImpl.setTtl>) => setTtlImpl.setTtl(...args),
   setTtlImpl.setTtlMethods,
+  { path: "name.setTtl" as const },
 );
 export declare namespace setTtl {
   type Options = setTtlTypes.Options;
@@ -428,7 +437,9 @@ export declare namespace setTtl {
  * @category writing
  * @since 1.0.0
  */
-export const setTtlSync = setTtlImpl.setTtlSync;
+export const setTtlSync = /* @__PURE__ */ Object.assign(setTtlImpl.setTtlSync, {
+  path: "name.setTtlSync" as const,
+});
 export declare namespace setTtlSync {
   type Options = setTtlSyncTypes.Options;
   type ReturnType = setTtlSyncTypes.ReturnType;
@@ -493,9 +504,10 @@ export declare namespace setTtlSync {
  * @category writing
  * @since 1.0.0
  */
-export const transfer = Object.assign(
+export const transfer = /* @__PURE__ */ Object.assign(
   (...args: Parameters<typeof transferImpl.transfer>) => transferImpl.transfer(...args),
   transferImpl.transferMethods,
+  { path: "name.transfer" as const },
 );
 export declare namespace transfer {
   type Options = transferTypes.Options;
@@ -541,7 +553,9 @@ export declare namespace transfer {
  * @category writing
  * @since 1.0.0
  */
-export const transferSync = transferImpl.transferSync;
+export const transferSync = /* @__PURE__ */ Object.assign(transferImpl.transferSync, {
+  path: "name.transferSync" as const,
+});
 export declare namespace transferSync {
   type Options = transferSyncTypes.Options;
   type ReturnType = transferSyncTypes.ReturnType;

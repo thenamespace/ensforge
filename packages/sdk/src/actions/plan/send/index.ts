@@ -144,3 +144,9 @@ export declare namespace sendSync {
   /** Errors {@link sendSync} can fail with. */
   type ErrorType = AnyError;
 }
+
+/** Path of the action, e.g. for cache keys. */
+send.path = "plan.send" as const;
+
+/** Path of the action, e.g. for cache keys. */
+sendSync.path = "plan.sendSync" as const;

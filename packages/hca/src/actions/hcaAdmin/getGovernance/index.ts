@@ -64,3 +64,6 @@ export declare namespace getGovernance {
   /** Errors {@link getGovernance} can fail with. */
   type ErrorType = Errors.AnyError | HcaError;
 }
+
+/** Path of the action, e.g. for cache keys. */
+getGovernance.path = "hcaAdmin.getGovernance" as const;

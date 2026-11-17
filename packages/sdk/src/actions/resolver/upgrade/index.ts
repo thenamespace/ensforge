@@ -151,3 +151,9 @@ export declare namespace upgradeSync {
   /** Errors {@link upgradeSync} can fail with. */
   type ErrorType = AnyError;
 }
+
+/** Path of the action, e.g. for cache keys. */
+upgrade.path = "resolver.upgrade" as const;
+
+/** Path of the action, e.g. for cache keys. */
+upgradeSync.path = "resolver.upgradeSync" as const;

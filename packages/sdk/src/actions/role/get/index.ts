@@ -90,3 +90,6 @@ export declare namespace get {
 
 /** Builds a deferred read for `Actions.batch`. */
 get.request = Action.request("role.get", Impl.get);
+
+/** Path of the action, e.g. for cache keys. */
+get.path = "role.get" as const;

@@ -83,7 +83,9 @@ import type { search as searchTypes } from "./search/index.js";
  * @category indexer
  * @since 1.0.0
  */
-export const getEvents = getEventsImpl.getEvents;
+export const getEvents = /* @__PURE__ */ Object.assign(getEventsImpl.getEvents, {
+  path: "indexer.getEvents" as const,
+});
 export declare namespace getEvents {
   type Options = getEventsTypes.Options;
   type ReturnType = getEventsTypes.ReturnType;
@@ -139,7 +141,9 @@ export declare namespace getEvents {
  * @category indexer
  * @since 1.0.0
  */
-export const getHistory = getHistoryImpl.getHistory;
+export const getHistory = /* @__PURE__ */ Object.assign(getHistoryImpl.getHistory, {
+  path: "indexer.getHistory" as const,
+});
 export declare namespace getHistory {
   type Options = getHistoryTypes.Options;
   type ReturnType = getHistoryTypes.ReturnType;
@@ -194,7 +198,9 @@ export declare namespace getHistory {
  * @category indexer
  * @since 1.0.0
  */
-export const getName = getNameImpl.getName;
+export const getName = /* @__PURE__ */ Object.assign(getNameImpl.getName, {
+  path: "indexer.getName" as const,
+});
 export declare namespace getName {
   type Options = getNameTypes.Options;
   type ReturnType = getNameTypes.ReturnType;
@@ -245,7 +251,10 @@ export declare namespace getName {
  * @category indexer
  * @since 1.0.0
  */
-export const getNamesByExpiry = getNamesByExpiryImpl.getNamesByExpiry;
+export const getNamesByExpiry = /* @__PURE__ */ Object.assign(
+  getNamesByExpiryImpl.getNamesByExpiry,
+  { path: "indexer.getNamesByExpiry" as const },
+);
 export declare namespace getNamesByExpiry {
   type Options = getNamesByExpiryTypes.Options;
   type ReturnType = getNamesByExpiryTypes.ReturnType;
@@ -299,7 +308,10 @@ export declare namespace getNamesByExpiry {
  * @category indexer
  * @since 1.0.0
  */
-export const getNamesForAddress = getNamesForAddressImpl.getNamesForAddress;
+export const getNamesForAddress = /* @__PURE__ */ Object.assign(
+  getNamesForAddressImpl.getNamesForAddress,
+  { path: "indexer.getNamesForAddress" as const },
+);
 export declare namespace getNamesForAddress {
   type Options = getNamesForAddressTypes.Options;
   type ReturnType = getNamesForAddressTypes.ReturnType;
@@ -344,7 +356,9 @@ export declare namespace getNamesForAddress {
  * @category indexer
  * @since 1.0.0
  */
-export const getNamespace = getNamespaceImpl.getNamespace;
+export const getNamespace = /* @__PURE__ */ Object.assign(getNamespaceImpl.getNamespace, {
+  path: "indexer.getNamespace" as const,
+});
 export declare namespace getNamespace {
   type Options = getNamespaceTypes.Options;
   type ReturnType = getNamespaceTypes.ReturnType;
@@ -398,7 +412,9 @@ export declare namespace getNamespace {
  * @category indexer
  * @since 1.0.0
  */
-export const getPermissions = getPermissionsImpl.getPermissions;
+export const getPermissions = /* @__PURE__ */ Object.assign(getPermissionsImpl.getPermissions, {
+  path: "indexer.getPermissions" as const,
+});
 export declare namespace getPermissions {
   type Options = getPermissionsTypes.Options;
   type ReturnType = getPermissionsTypes.ReturnType;
@@ -450,7 +466,9 @@ export declare namespace getPermissions {
  * @category indexer
  * @since 1.0.0
  */
-export const getPrimaryName = getPrimaryNameImpl.getPrimaryName;
+export const getPrimaryName = /* @__PURE__ */ Object.assign(getPrimaryNameImpl.getPrimaryName, {
+  path: "indexer.getPrimaryName" as const,
+});
 export declare namespace getPrimaryName {
   type Options = getPrimaryNameTypes.Options;
   type ReturnType = getPrimaryNameTypes.ReturnType;
@@ -506,7 +524,9 @@ export declare namespace getPrimaryName {
  * @category indexer
  * @since 1.0.0
  */
-export const getRecords = getRecordsImpl.getRecords;
+export const getRecords = /* @__PURE__ */ Object.assign(getRecordsImpl.getRecords, {
+  path: "indexer.getRecords" as const,
+});
 export declare namespace getRecords {
   type Options = getRecordsTypes.Options;
   type ReturnType = getRecordsTypes.ReturnType;
@@ -557,7 +577,9 @@ export declare namespace getRecords {
  * @category indexer
  * @since 1.0.0
  */
-export const getRegistry = getRegistryImpl.getRegistry;
+export const getRegistry = /* @__PURE__ */ Object.assign(getRegistryImpl.getRegistry, {
+  path: "indexer.getRegistry" as const,
+});
 export declare namespace getRegistry {
   type Options = getRegistryTypes.Options;
   type ReturnType = getRegistryTypes.ReturnType;
@@ -606,7 +628,10 @@ export declare namespace getRegistry {
  * @category indexer
  * @since 1.0.0
  */
-export const getRegistryLabels = getRegistryLabelsImpl.getRegistryLabels;
+export const getRegistryLabels = /* @__PURE__ */ Object.assign(
+  getRegistryLabelsImpl.getRegistryLabels,
+  { path: "indexer.getRegistryLabels" as const },
+);
 export declare namespace getRegistryLabels {
   type Options = getRegistryLabelsTypes.Options;
   type ReturnType = getRegistryLabelsTypes.ReturnType;
@@ -658,7 +683,9 @@ export declare namespace getRegistryLabels {
  * @category indexer
  * @since 1.0.0
  */
-export const getResolver = getResolverImpl.getResolver;
+export const getResolver = /* @__PURE__ */ Object.assign(getResolverImpl.getResolver, {
+  path: "indexer.getResolver" as const,
+});
 export declare namespace getResolver {
   type Options = getResolverTypes.Options;
   type ReturnType = getResolverTypes.ReturnType;
@@ -707,7 +734,10 @@ export declare namespace getResolver {
  * @category indexer
  * @since 1.0.0
  */
-export const getResolverLinks = getResolverLinksImpl.getResolverLinks;
+export const getResolverLinks = /* @__PURE__ */ Object.assign(
+  getResolverLinksImpl.getResolverLinks,
+  { path: "indexer.getResolverLinks" as const },
+);
 export declare namespace getResolverLinks {
   type Options = getResolverLinksTypes.Options;
   type ReturnType = getResolverLinksTypes.ReturnType;
@@ -757,7 +787,10 @@ export declare namespace getResolverLinks {
  * @category indexer
  * @since 1.0.0
  */
-export const getResolverRoles = getResolverRolesImpl.getResolverRoles;
+export const getResolverRoles = /* @__PURE__ */ Object.assign(
+  getResolverRolesImpl.getResolverRoles,
+  { path: "indexer.getResolverRoles" as const },
+);
 export declare namespace getResolverRoles {
   type Options = getResolverRolesTypes.Options;
   type ReturnType = getResolverRolesTypes.ReturnType;
@@ -806,7 +839,9 @@ export declare namespace getResolverRoles {
  * @category indexer
  * @since 1.0.0
  */
-export const getResolvers = getResolversImpl.getResolvers;
+export const getResolvers = /* @__PURE__ */ Object.assign(getResolversImpl.getResolvers, {
+  path: "indexer.getResolvers" as const,
+});
 export declare namespace getResolvers {
   type Options = getResolversTypes.Options;
   type ReturnType = getResolversTypes.ReturnType;
@@ -855,7 +890,9 @@ export declare namespace getResolvers {
  * @category indexer
  * @since 1.0.0
  */
-export const getStatus = getStatusImpl.getStatus;
+export const getStatus = /* @__PURE__ */ Object.assign(getStatusImpl.getStatus, {
+  path: "indexer.getStatus" as const,
+});
 export declare namespace getStatus {
   type Options = getStatusTypes.Options;
   type ReturnType = getStatusTypes.ReturnType;
@@ -908,7 +945,9 @@ export declare namespace getStatus {
  * @category indexer
  * @since 1.0.0
  */
-export const getSubnames = getSubnamesImpl.getSubnames;
+export const getSubnames = /* @__PURE__ */ Object.assign(getSubnamesImpl.getSubnames, {
+  path: "indexer.getSubnames" as const,
+});
 export declare namespace getSubnames {
   type Options = getSubnamesTypes.Options;
   type ReturnType = getSubnamesTypes.ReturnType;
@@ -961,7 +1000,9 @@ export declare namespace getSubnames {
  * @category indexer
  * @since 1.0.0
  */
-export const lookup = lookupImpl.lookup;
+export const lookup = /* @__PURE__ */ Object.assign(lookupImpl.lookup, {
+  path: "indexer.lookup" as const,
+});
 export declare namespace lookup {
   type Options = lookupTypes.Options;
   type ReturnType = lookupTypes.ReturnType;
@@ -1011,7 +1052,9 @@ export declare namespace lookup {
  * @category indexer
  * @since 1.0.0
  */
-export const search = searchImpl.search;
+export const search = /* @__PURE__ */ Object.assign(searchImpl.search, {
+  path: "indexer.search" as const,
+});
 export declare namespace search {
   type Options = searchTypes.Options;
   type ReturnType = searchTypes.ReturnType;

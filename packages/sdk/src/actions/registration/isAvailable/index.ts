@@ -71,3 +71,6 @@ export declare namespace isAvailable {
 
 /** Builds a deferred read for `Actions.batch`. */
 isAvailable.request = Action.request("registration.isAvailable", Impl.isAvailable);
+
+/** Path of the action, e.g. for cache keys. */
+isAvailable.path = "registration.isAvailable" as const;

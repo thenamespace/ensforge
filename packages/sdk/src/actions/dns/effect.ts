@@ -67,9 +67,10 @@ import type {
  * @category writing
  * @since 1.0.0
  */
-export const claim = Object.assign(
+export const claim = /* @__PURE__ */ Object.assign(
   (...args: Parameters<typeof claimImpl.claim>) => claimImpl.claim(...args),
   claimImpl.claimMethods,
+  { path: "dns.claim" as const },
 );
 export declare namespace claim {
   type Options = claimTypes.Options;
@@ -117,7 +118,9 @@ export declare namespace claim {
  * @category writing
  * @since 1.0.0
  */
-export const claimSync = claimImpl.claimSync;
+export const claimSync = /* @__PURE__ */ Object.assign(claimImpl.claimSync, {
+  path: "dns.claimSync" as const,
+});
 export declare namespace claimSync {
   type Options = claimSyncTypes.Options;
   type ReturnType = claimSyncTypes.ReturnType;
@@ -169,7 +172,10 @@ export declare namespace claimSync {
  * @category reading
  * @since 1.0.0
  */
-export const getOffchainResolver = getOffchainResolverImpl.getOffchainResolver;
+export const getOffchainResolver = /* @__PURE__ */ Object.assign(
+  getOffchainResolverImpl.getOffchainResolver,
+  { path: "dns.getOffchainResolver" as const },
+);
 export declare namespace getOffchainResolver {
   type Options = getOffchainResolverTypes.Options;
   type ReturnType = getOffchainResolverTypes.ReturnType;
@@ -220,7 +226,9 @@ export declare namespace getOffchainResolver {
  * @category reading
  * @since 1.0.0
  */
-export const getProof = getProofImpl.getProof;
+export const getProof = /* @__PURE__ */ Object.assign(getProofImpl.getProof, {
+  path: "dns.getProof" as const,
+});
 export declare namespace getProof {
   type Options = getProofTypes.Options;
   type ReturnType = getProofTypes.ReturnType;
@@ -270,7 +278,9 @@ export declare namespace getProof {
  * @category reading
  * @since 1.0.0
  */
-export const getRecords = getRecordsImpl.getRecords;
+export const getRecords = /* @__PURE__ */ Object.assign(getRecordsImpl.getRecords, {
+  path: "dns.getRecords" as const,
+});
 export declare namespace getRecords {
   type Options = getRecordsTypes.Options;
   type ReturnType = getRecordsTypes.ReturnType;
@@ -324,7 +334,9 @@ export declare namespace getRecords {
  * @category reading
  * @since 1.0.0
  */
-export const getStatus = getStatusImpl.getStatus;
+export const getStatus = /* @__PURE__ */ Object.assign(getStatusImpl.getStatus, {
+  path: "dns.getStatus" as const,
+});
 export declare namespace getStatus {
   type Options = getStatusTypes.Options;
   type ReturnType = getStatusTypes.ReturnType;
@@ -378,9 +390,10 @@ export declare namespace getStatus {
  * @category writing
  * @since 1.0.0
  */
-export const setRecords = Object.assign(
+export const setRecords = /* @__PURE__ */ Object.assign(
   (...args: Parameters<typeof setRecordsImpl.setRecords>) => setRecordsImpl.setRecords(...args),
   setRecordsImpl.setRecordsMethods,
+  { path: "dns.setRecords" as const },
 );
 export declare namespace setRecords {
   type Options = setRecordsTypes.Options;
@@ -429,7 +442,9 @@ export declare namespace setRecords {
  * @category writing
  * @since 1.0.0
  */
-export const setRecordsSync = setRecordsImpl.setRecordsSync;
+export const setRecordsSync = /* @__PURE__ */ Object.assign(setRecordsImpl.setRecordsSync, {
+  path: "dns.setRecordsSync" as const,
+});
 export declare namespace setRecordsSync {
   type Options = setRecordsSyncTypes.Options;
   type ReturnType = setRecordsSyncTypes.ReturnType;

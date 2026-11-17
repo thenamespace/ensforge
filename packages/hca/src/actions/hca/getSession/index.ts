@@ -66,3 +66,6 @@ export declare namespace getSession {
   /** Errors {@link getSession} can fail with. */
   type ErrorType = Errors.AnyError | HcaError;
 }
+
+/** Path of the action, e.g. for cache keys. */
+getSession.path = "hca.getSession" as const;

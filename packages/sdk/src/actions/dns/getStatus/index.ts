@@ -72,3 +72,6 @@ export declare namespace getStatus {
 
 /** Builds a deferred read for `Actions.batch`. */
 getStatus.request = Action.request("dns.getStatus", Impl.getStatus);
+
+/** Path of the action, e.g. for cache keys. */
+getStatus.path = "dns.getStatus" as const;

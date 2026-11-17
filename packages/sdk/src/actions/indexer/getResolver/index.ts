@@ -76,3 +76,6 @@ export declare namespace getResolver {
 
 /** Builds a deferred read for `Actions.batch`. */
 getResolver.request = Action.request("indexer.getResolver", Impl.getResolver);
+
+/** Path of the action, e.g. for cache keys. */
+getResolver.path = "indexer.getResolver" as const;

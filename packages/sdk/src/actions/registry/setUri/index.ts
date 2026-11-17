@@ -144,3 +144,9 @@ export declare namespace setUriSync {
   /** Errors {@link setUriSync} can fail with. */
   type ErrorType = AnyError;
 }
+
+/** Path of the action, e.g. for cache keys. */
+setUri.path = "registry.setUri" as const;
+
+/** Path of the action, e.g. for cache keys. */
+setUriSync.path = "registry.setUriSync" as const;

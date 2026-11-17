@@ -79,3 +79,6 @@ export declare namespace getDelegate {
 
 /** Builds a deferred read for `Actions.batch`. */
 getDelegate.request = Action.request("approval.getDelegate", Impl.getDelegate);
+
+/** Path of the action, e.g. for cache keys. */
+getDelegate.path = "approval.getDelegate" as const;

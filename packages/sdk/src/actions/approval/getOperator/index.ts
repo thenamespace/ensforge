@@ -75,3 +75,6 @@ export declare namespace getOperator {
 
 /** Builds a deferred read for `Actions.batch`. */
 getOperator.request = Action.request("approval.getOperator", Impl.getOperator);
+
+/** Path of the action, e.g. for cache keys. */
+getOperator.path = "approval.getOperator" as const;

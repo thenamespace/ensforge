@@ -94,3 +94,6 @@ export declare namespace getHistory {
 
 /** Builds a deferred read for `Actions.batch`. */
 getHistory.request = Action.request("indexer.getHistory", Impl.getHistory);
+
+/** Path of the action, e.g. for cache keys. */
+getHistory.path = "indexer.getHistory" as const;

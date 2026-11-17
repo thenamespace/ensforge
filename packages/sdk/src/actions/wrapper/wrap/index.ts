@@ -154,3 +154,9 @@ export declare namespace wrapSync {
   /** Errors {@link wrapSync} can fail with. */
   type ErrorType = AnyError;
 }
+
+/** Path of the action, e.g. for cache keys. */
+wrap.path = "wrapper.wrap" as const;
+
+/** Path of the action, e.g. for cache keys. */
+wrapSync.path = "wrapper.wrapSync" as const;

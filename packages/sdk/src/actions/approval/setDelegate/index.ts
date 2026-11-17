@@ -146,3 +146,9 @@ export declare namespace setDelegateSync {
   /** Errors {@link setDelegateSync} can fail with. */
   type ErrorType = AnyError;
 }
+
+/** Path of the action, e.g. for cache keys. */
+setDelegate.path = "approval.setDelegate" as const;
+
+/** Path of the action, e.g. for cache keys. */
+setDelegateSync.path = "approval.setDelegateSync" as const;

@@ -88,3 +88,6 @@ export declare namespace getRenewalPrice {
 
 /** Builds a deferred read for `Actions.batch`. */
 getRenewalPrice.request = Action.request("registration.getRenewalPrice", Impl.getRenewalPrice);
+
+/** Path of the action, e.g. for cache keys. */
+getRenewalPrice.path = "registration.getRenewalPrice" as const;

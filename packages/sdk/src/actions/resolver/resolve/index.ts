@@ -78,3 +78,6 @@ export declare namespace resolve {
 
 /** Builds a deferred read for `Actions.batch`. */
 resolve.request = Action.request("resolver.resolve", Impl.resolve);
+
+/** Path of the action, e.g. for cache keys. */
+resolve.path = "resolver.resolve" as const;

@@ -174,10 +174,13 @@ export declare namespace Write {
   };
 
   /** A write's `.prepare`, `.simulate` or `.estimateGas`: options plus `account` and `via`. */
-  type Method<options, value> = (
+  type Method<options, value> = ((
     client: Like,
     options: options & Pick<Options, "account" | "via">,
-  ) => Promise<value>;
+  ) => Promise<value>) & {
+    /** Path of the method, e.g. `record.set.prepare`. */
+    readonly path: string;
+  };
 
   /** Returned by every write: resolves once every call is submitted. */
   type Result = {

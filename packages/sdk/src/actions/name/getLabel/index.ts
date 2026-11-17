@@ -67,3 +67,6 @@ export declare namespace getLabel {
 
 /** Builds a deferred read for `Actions.batch`. */
 getLabel.request = Action.request("name.getLabel", Impl.getLabel);
+
+/** Path of the action, e.g. for cache keys. */
+getLabel.path = "name.getLabel" as const;

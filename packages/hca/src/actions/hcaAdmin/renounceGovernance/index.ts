@@ -132,3 +132,9 @@ export declare namespace renounceGovernanceSync {
   /** Errors {@link renounceGovernanceSync} can fail with. */
   type ErrorType = Errors.AnyError | HcaError;
 }
+
+/** Path of the action, e.g. for cache keys. */
+renounceGovernance.path = "hcaAdmin.renounceGovernance" as const;
+
+/** Path of the action, e.g. for cache keys. */
+renounceGovernanceSync.path = "hcaAdmin.renounceGovernanceSync" as const;

@@ -72,3 +72,6 @@ export declare namespace getNamesByExpiry {
 
 /** Builds a deferred read for `Actions.batch`. */
 getNamesByExpiry.request = Action.request("indexer.getNamesByExpiry", Impl.getNamesByExpiry);
+
+/** Path of the action, e.g. for cache keys. */
+getNamesByExpiry.path = "indexer.getNamesByExpiry" as const;

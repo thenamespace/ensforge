@@ -64,3 +64,6 @@ export declare namespace search {
 
 /** Builds a deferred read for `Actions.batch`. */
 search.request = Action.request("indexer.search", Impl.search);
+
+/** Path of the action, e.g. for cache keys. */
+search.path = "indexer.search" as const;

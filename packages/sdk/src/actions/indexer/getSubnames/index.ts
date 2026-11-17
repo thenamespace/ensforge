@@ -78,3 +78,6 @@ export declare namespace getSubnames {
 
 /** Builds a deferred read for `Actions.batch`. */
 getSubnames.request = Action.request("indexer.getSubnames", Impl.getSubnames);
+
+/** Path of the action, e.g. for cache keys. */
+getSubnames.path = "indexer.getSubnames" as const;

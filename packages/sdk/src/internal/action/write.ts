@@ -149,5 +149,14 @@ export const write = <options, error extends EnsforgeError>(
     withContext(`${path}Sync`, extra),
   );
 
-  return { send, sendSync, methods: { prepare, simulate, estimateGas } };
+  // Paths name each Effect for cache keys (e.g. React's), alongside the Promise actions' own.
+  return {
+    send,
+    sendSync,
+    methods: {
+      prepare: Object.assign(prepare, { path: `${path}.prepare` }),
+      simulate: Object.assign(simulate, { path: `${path}.simulate` }),
+      estimateGas: Object.assign(estimateGas, { path: `${path}.estimateGas` }),
+    },
+  };
 };

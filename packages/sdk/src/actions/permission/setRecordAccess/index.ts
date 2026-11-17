@@ -170,3 +170,9 @@ export declare namespace setRecordAccessSync {
   /** Errors {@link setRecordAccessSync} can fail with. */
   type ErrorType = AnyError;
 }
+
+/** Path of the action, e.g. for cache keys. */
+setRecordAccess.path = "permission.setRecordAccess" as const;
+
+/** Path of the action, e.g. for cache keys. */
+setRecordAccessSync.path = "permission.setRecordAccessSync" as const;

@@ -148,3 +148,9 @@ export declare namespace setManagerSync {
   /** Errors {@link setManagerSync} can fail with. */
   type ErrorType = AnyError;
 }
+
+/** Path of the action, e.g. for cache keys. */
+setManager.path = "name.setManager" as const;
+
+/** Path of the action, e.g. for cache keys. */
+setManagerSync.path = "name.setManagerSync" as const;

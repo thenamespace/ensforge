@@ -180,3 +180,9 @@ export declare namespace migrateSync {
   /** Errors {@link migrateSync} can fail with. */
   type ErrorType = AnyError;
 }
+
+/** Path of the action, e.g. for cache keys. */
+migrate.path = "migration.migrate" as const;
+
+/** Path of the action, e.g. for cache keys. */
+migrateSync.path = "migration.migrateSync" as const;

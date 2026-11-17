@@ -71,3 +71,6 @@ export declare namespace getText {
 
 /** Builds a deferred read for `Actions.batch`. */
 getText.request = Action.request("record.getText", Impl.getText);
+
+/** Path of the action, e.g. for cache keys. */
+getText.path = "record.getText" as const;

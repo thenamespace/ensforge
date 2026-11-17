@@ -144,3 +144,9 @@ export declare namespace revokeUpgradeSetRolesSync {
   /** Errors {@link revokeUpgradeSetRolesSync} can fail with. */
   type ErrorType = Errors.AnyError | HcaError;
 }
+
+/** Path of the action, e.g. for cache keys. */
+revokeUpgradeSetRoles.path = "hcaAdmin.revokeUpgradeSetRoles" as const;
+
+/** Path of the action, e.g. for cache keys. */
+revokeUpgradeSetRolesSync.path = "hcaAdmin.revokeUpgradeSetRolesSync" as const;

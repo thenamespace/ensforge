@@ -155,3 +155,9 @@ export declare namespace commitSync {
   /** Errors {@link commitSync} can fail with. */
   type ErrorType = AnyError;
 }
+
+/** Path of the action, e.g. for cache keys. */
+commit.path = "registration.commit" as const;
+
+/** Path of the action, e.g. for cache keys. */
+commitSync.path = "registration.commitSync" as const;

@@ -75,3 +75,6 @@ export declare namespace getEvents {
 
 /** Builds a deferred read for `Actions.batch`. */
 getEvents.request = Action.request("indexer.getEvents", Impl.getEvents);
+
+/** Path of the action, e.g. for cache keys. */
+getEvents.path = "indexer.getEvents" as const;

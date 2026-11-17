@@ -88,3 +88,6 @@ export declare namespace getAddress {
 
 /** Builds a deferred read for `Actions.batch`. */
 getAddress.request = Action.request("record.getAddress", Impl.getAddress);
+
+/** Path of the action, e.g. for cache keys. */
+getAddress.path = "record.getAddress" as const;

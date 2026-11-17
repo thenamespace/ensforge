@@ -68,3 +68,6 @@ export declare namespace getToken {
 
 /** Builds a deferred read for `Actions.batch`. */
 getToken.request = Action.request("approval.getToken", Impl.getToken);
+
+/** Path of the action, e.g. for cache keys. */
+getToken.path = "approval.getToken" as const;

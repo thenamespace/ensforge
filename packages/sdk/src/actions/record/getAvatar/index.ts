@@ -82,3 +82,6 @@ export declare namespace getAvatar {
 
 /** Builds a deferred read for `Actions.batch`. */
 getAvatar.request = Action.request("record.getAvatar", Impl.getAvatar);
+
+/** Path of the action, e.g. for cache keys. */
+getAvatar.path = "record.getAvatar" as const;

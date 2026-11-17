@@ -78,3 +78,6 @@ export declare namespace check {
 
 /** Builds a deferred read for `Actions.batch`. */
 check.request = Action.request("permission.check", Impl.check);
+
+/** Path of the action, e.g. for cache keys. */
+check.path = "permission.check" as const;

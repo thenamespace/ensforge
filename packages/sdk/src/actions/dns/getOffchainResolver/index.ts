@@ -73,3 +73,6 @@ export declare namespace getOffchainResolver {
 
 /** Builds a deferred read for `Actions.batch`. */
 getOffchainResolver.request = Action.request("dns.getOffchainResolver", Impl.getOffchainResolver);
+
+/** Path of the action, e.g. for cache keys. */
+getOffchainResolver.path = "dns.getOffchainResolver" as const;

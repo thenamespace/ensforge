@@ -86,3 +86,6 @@ export declare namespace authorizeSession {
   /** Errors {@link authorizeSession} can fail with. */
   type ErrorType = Errors.AnyError | HcaError;
 }
+
+/** Path of the action, e.g. for cache keys. */
+authorizeSession.path = "hca.authorizeSession" as const;

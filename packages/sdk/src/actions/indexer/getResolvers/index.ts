@@ -70,3 +70,6 @@ export declare namespace getResolvers {
 
 /** Builds a deferred read for `Actions.batch`. */
 getResolvers.request = Action.request("indexer.getResolvers", Impl.getResolvers);
+
+/** Path of the action, e.g. for cache keys. */
+getResolvers.path = "indexer.getResolvers" as const;

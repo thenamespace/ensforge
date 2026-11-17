@@ -147,3 +147,9 @@ export declare namespace unwrapSync {
   /** Errors {@link unwrapSync} can fail with. */
   type ErrorType = AnyError;
 }
+
+/** Path of the action, e.g. for cache keys. */
+unwrap.path = "wrapper.unwrap" as const;
+
+/** Path of the action, e.g. for cache keys. */
+unwrapSync.path = "wrapper.unwrapSync" as const;

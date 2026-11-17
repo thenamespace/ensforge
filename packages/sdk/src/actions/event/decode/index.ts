@@ -70,3 +70,6 @@ export declare namespace decode {
 
 /** Builds a deferred read for `Actions.batch`. */
 decode.request = Action.request("event.decode", Impl.decode);
+
+/** Path of the action, e.g. for cache keys. */
+decode.path = "event.decode" as const;

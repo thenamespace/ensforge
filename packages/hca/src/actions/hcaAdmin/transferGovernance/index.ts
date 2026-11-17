@@ -137,3 +137,9 @@ export declare namespace transferGovernanceSync {
   /** Errors {@link transferGovernanceSync} can fail with. */
   type ErrorType = Errors.AnyError | HcaError;
 }
+
+/** Path of the action, e.g. for cache keys. */
+transferGovernance.path = "hcaAdmin.transferGovernance" as const;
+
+/** Path of the action, e.g. for cache keys. */
+transferGovernanceSync.path = "hcaAdmin.transferGovernanceSync" as const;

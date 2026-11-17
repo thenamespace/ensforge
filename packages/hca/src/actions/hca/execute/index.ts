@@ -142,3 +142,9 @@ export declare namespace executeSync {
   /** Errors {@link executeSync} can fail with. */
   type ErrorType = Errors.AnyError | HcaError;
 }
+
+/** Path of the action, e.g. for cache keys. */
+execute.path = "hca.execute" as const;
+
+/** Path of the action, e.g. for cache keys. */
+executeSync.path = "hca.executeSync" as const;

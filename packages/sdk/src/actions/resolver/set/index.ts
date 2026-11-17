@@ -150,3 +150,9 @@ export declare namespace setSync {
   /** Errors {@link setSync} can fail with. */
   type ErrorType = AnyError;
 }
+
+/** Path of the action, e.g. for cache keys. */
+set.path = "resolver.set" as const;
+
+/** Path of the action, e.g. for cache keys. */
+setSync.path = "resolver.setSync" as const;

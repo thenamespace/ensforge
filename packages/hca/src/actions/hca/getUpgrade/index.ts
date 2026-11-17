@@ -72,3 +72,6 @@ export declare namespace getUpgrade {
   /** Errors {@link getUpgrade} can fail with. */
   type ErrorType = Errors.AnyError | HcaError;
 }
+
+/** Path of the action, e.g. for cache keys. */
+getUpgrade.path = "hca.getUpgrade" as const;

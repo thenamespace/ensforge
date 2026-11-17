@@ -78,9 +78,10 @@ import type {
  * @category hca
  * @since 1.0.0
  */
-export const addDeposit = Object.assign(
+export const addDeposit = /* @__PURE__ */ Object.assign(
   (...args: Parameters<typeof addDepositImpl.addDeposit>) => addDepositImpl.addDeposit(...args),
   addDepositImpl.addDepositMethods,
+  { path: "hca.addDeposit" as const },
 );
 export declare namespace addDeposit {
   type Options = addDepositTypes.Options;
@@ -130,7 +131,9 @@ export declare namespace addDeposit {
  * @category hca
  * @since 1.0.0
  */
-export const addDepositSync = addDepositImpl.addDepositSync;
+export const addDepositSync = /* @__PURE__ */ Object.assign(addDepositImpl.addDepositSync, {
+  path: "hca.addDepositSync" as const,
+});
 export declare namespace addDepositSync {
   type Options = addDepositSyncTypes.Options;
   type ReturnType = addDepositSyncTypes.ReturnType;
@@ -184,7 +187,10 @@ export declare namespace addDepositSync {
  * @category hca
  * @since 1.0.0
  */
-export const authorizeSession = authorizeSessionImpl.authorizeSession;
+export const authorizeSession = /* @__PURE__ */ Object.assign(
+  authorizeSessionImpl.authorizeSession,
+  { path: "hca.authorizeSession" as const },
+);
 export declare namespace authorizeSession {
   type Options = authorizeSessionTypes.Options;
   type ReturnType = authorizeSessionTypes.ReturnType;
@@ -235,7 +241,10 @@ export declare namespace authorizeSession {
  * @category hca
  * @since 1.0.0
  */
-export const checkSessionCalls = checkSessionCallsImpl.checkSessionCalls;
+export const checkSessionCalls = /* @__PURE__ */ Object.assign(
+  checkSessionCallsImpl.checkSessionCalls,
+  { path: "hca.checkSessionCalls" as const },
+);
 export declare namespace checkSessionCalls {
   type Options = checkSessionCallsTypes.Options;
   type ReturnType = checkSessionCallsTypes.ReturnType;
@@ -281,9 +290,10 @@ export declare namespace checkSessionCalls {
  * @category hca
  * @since 1.0.0
  */
-export const deploy = Object.assign(
+export const deploy = /* @__PURE__ */ Object.assign(
   (...args: Parameters<typeof deployImpl.deploy>) => deployImpl.deploy(...args),
   deployImpl.deployMethods,
+  { path: "hca.deploy" as const },
 );
 export declare namespace deploy {
   type Options = deployTypes.Options;
@@ -328,7 +338,9 @@ export declare namespace deploy {
  * @category hca
  * @since 1.0.0
  */
-export const deploySync = deployImpl.deploySync;
+export const deploySync = /* @__PURE__ */ Object.assign(deployImpl.deploySync, {
+  path: "hca.deploySync" as const,
+});
 export declare namespace deploySync {
   type Options = deploySyncTypes.Options;
   type ReturnType = deploySyncTypes.ReturnType;
@@ -376,9 +388,10 @@ export declare namespace deploySync {
  * @category hca
  * @since 1.0.0
  */
-export const execute = Object.assign(
+export const execute = /* @__PURE__ */ Object.assign(
   (...args: Parameters<typeof executeImpl.execute>) => executeImpl.execute(...args),
   executeImpl.executeMethods,
+  { path: "hca.execute" as const },
 );
 export declare namespace execute {
   type Options = executeTypes.Options;
@@ -424,7 +437,9 @@ export declare namespace execute {
  * @category hca
  * @since 1.0.0
  */
-export const executeSync = executeImpl.executeSync;
+export const executeSync = /* @__PURE__ */ Object.assign(executeImpl.executeSync, {
+  path: "hca.executeSync" as const,
+});
 export declare namespace executeSync {
   type Options = executeSyncTypes.Options;
   type ReturnType = executeSyncTypes.ReturnType;
@@ -473,7 +488,7 @@ export declare namespace executeSync {
  * @category hca
  * @since 1.0.0
  */
-export const get = getImpl.get;
+export const get = /* @__PURE__ */ Object.assign(getImpl.get, { path: "hca.get" as const });
 export declare namespace get {
   type Options = getTypes.Options;
   type ReturnType = getTypes.ReturnType;
@@ -516,7 +531,9 @@ export declare namespace get {
  * @category hca
  * @since 1.0.0
  */
-export const getDeposit = getDepositImpl.getDeposit;
+export const getDeposit = /* @__PURE__ */ Object.assign(getDepositImpl.getDeposit, {
+  path: "hca.getDeposit" as const,
+});
 export declare namespace getDeposit {
   type Options = getDepositTypes.Options;
   type ReturnType = getDepositTypes.ReturnType;
@@ -563,7 +580,9 @@ export declare namespace getDeposit {
  * @category hca
  * @since 1.0.0
  */
-export const getSession = getSessionImpl.getSession;
+export const getSession = /* @__PURE__ */ Object.assign(getSessionImpl.getSession, {
+  path: "hca.getSession" as const,
+});
 export declare namespace getSession {
   type Options = getSessionTypes.Options;
   type ReturnType = getSessionTypes.ReturnType;
@@ -606,7 +625,9 @@ export declare namespace getSession {
  * @category hca
  * @since 1.0.0
  */
-export const getUpgrade = getUpgradeImpl.getUpgrade;
+export const getUpgrade = /* @__PURE__ */ Object.assign(getUpgradeImpl.getUpgrade, {
+  path: "hca.getUpgrade" as const,
+});
 export declare namespace getUpgrade {
   type Options = getUpgradeTypes.Options;
   type ReturnType = getUpgradeTypes.ReturnType;
@@ -649,7 +670,9 @@ export declare namespace getUpgrade {
  * @category hca
  * @since 1.0.0
  */
-export const predictAddress = predictAddressImpl.predictAddress;
+export const predictAddress = /* @__PURE__ */ Object.assign(predictAddressImpl.predictAddress, {
+  path: "hca.predictAddress" as const,
+});
 export declare namespace predictAddress {
   type Options = predictAddressTypes.Options;
   type ReturnType = predictAddressTypes.ReturnType;
@@ -697,10 +720,11 @@ export declare namespace predictAddress {
  * @category hca
  * @since 1.0.0
  */
-export const revokeSessions = Object.assign(
+export const revokeSessions = /* @__PURE__ */ Object.assign(
   (...args: Parameters<typeof revokeSessionsImpl.revokeSessions>) =>
     revokeSessionsImpl.revokeSessions(...args),
   revokeSessionsImpl.revokeSessionsMethods,
+  { path: "hca.revokeSessions" as const },
 );
 export declare namespace revokeSessions {
   type Options = revokeSessionsTypes.Options;
@@ -746,7 +770,10 @@ export declare namespace revokeSessions {
  * @category hca
  * @since 1.0.0
  */
-export const revokeSessionsSync = revokeSessionsImpl.revokeSessionsSync;
+export const revokeSessionsSync = /* @__PURE__ */ Object.assign(
+  revokeSessionsImpl.revokeSessionsSync,
+  { path: "hca.revokeSessionsSync" as const },
+);
 export declare namespace revokeSessionsSync {
   type Options = revokeSessionsSyncTypes.Options;
   type ReturnType = revokeSessionsSyncTypes.ReturnType;
@@ -790,9 +817,10 @@ export declare namespace revokeSessionsSync {
  * @category hca
  * @since 1.0.0
  */
-export const upgrade = Object.assign(
+export const upgrade = /* @__PURE__ */ Object.assign(
   (...args: Parameters<typeof upgradeImpl.upgrade>) => upgradeImpl.upgrade(...args),
   upgradeImpl.upgradeMethods,
+  { path: "hca.upgrade" as const },
 );
 export declare namespace upgrade {
   type Options = upgradeTypes.Options;
@@ -839,7 +867,9 @@ export declare namespace upgrade {
  * @category hca
  * @since 1.0.0
  */
-export const upgradeSync = upgradeImpl.upgradeSync;
+export const upgradeSync = /* @__PURE__ */ Object.assign(upgradeImpl.upgradeSync, {
+  path: "hca.upgradeSync" as const,
+});
 export declare namespace upgradeSync {
   type Options = upgradeSyncTypes.Options;
   type ReturnType = upgradeSyncTypes.ReturnType;
@@ -890,7 +920,9 @@ export declare namespace upgradeSync {
  * @category hca
  * @since 1.0.0
  */
-export const verify = verifyImpl.verify;
+export const verify = /* @__PURE__ */ Object.assign(verifyImpl.verify, {
+  path: "hca.verify" as const,
+});
 export declare namespace verify {
   type Options = verifyTypes.Options;
   type ReturnType = verifyTypes.ReturnType;
@@ -933,10 +965,11 @@ export declare namespace verify {
  * @category hca
  * @since 1.0.0
  */
-export const withdrawDeposit = Object.assign(
+export const withdrawDeposit = /* @__PURE__ */ Object.assign(
   (...args: Parameters<typeof withdrawDepositImpl.withdrawDeposit>) =>
     withdrawDepositImpl.withdrawDeposit(...args),
   withdrawDepositImpl.withdrawDepositMethods,
+  { path: "hca.withdrawDeposit" as const },
 );
 export declare namespace withdrawDeposit {
   type Options = withdrawDepositTypes.Options;
@@ -982,7 +1015,10 @@ export declare namespace withdrawDeposit {
  * @category hca
  * @since 1.0.0
  */
-export const withdrawDepositSync = withdrawDepositImpl.withdrawDepositSync;
+export const withdrawDepositSync = /* @__PURE__ */ Object.assign(
+  withdrawDepositImpl.withdrawDepositSync,
+  { path: "hca.withdrawDepositSync" as const },
+);
 export declare namespace withdrawDepositSync {
   type Options = withdrawDepositSyncTypes.Options;
   type ReturnType = withdrawDepositSyncTypes.ReturnType;
