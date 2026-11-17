@@ -21,6 +21,8 @@ export type ClientOptions = {
   /** The account's wallet; the devnet's unlocked account by default. */
   readonly wallet?: TestWallet | undefined;
   readonly ccipRead?: false | { readonly gatewayUrls?: readonly string[] } | undefined;
+  /** Where plans are saved; shared between clients to resume across them. */
+  readonly storage?: Plan.Storage | undefined;
 };
 
 /** An ensforge client on the devnet. */
@@ -32,6 +34,7 @@ export const ensforge = (devnet: DevnetInstance, options: ClientOptions = {}) =>
     publicClient,
     deployment: devnet.deployments,
     ...(options.ccipRead === undefined ? {} : { ccipRead: options.ccipRead }),
+    ...(options.storage === undefined ? {} : { storage: options.storage }),
     ...(options.account === undefined
       ? {}
       : {

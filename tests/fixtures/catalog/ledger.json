@@ -1040,7 +1040,9 @@
   },
   "G20": {
     "tests": [
-      "tests/integration/test/writes/registration.test.ts > registers from an earlier commitment only inside its window"
+      "tests/integration/test/writes/registration.test.ts > registers from an earlier commitment only inside its window",
+      "tests/integration/test/writes/plans.test.ts > resumes an interrupted registration without committing again",
+      "tests/integration/test/writes/plans.test.ts > confirms a submitted step on resume, and sends a dropped one again"
     ]
   },
   "G21": {
@@ -1146,7 +1148,9 @@
     "status": "pending"
   },
   "T16": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/writes/plans.test.ts > re-validates a plan prepared before its name changed"
+    ]
   },
   "D01": {
     "status": "pending"
@@ -1770,7 +1774,9 @@
     ]
   },
   "M:E5": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/writes/plans.test.ts > re-validates a plan prepared before its name changed"
+    ]
   },
   "M:F1": {
     "status": "pending"

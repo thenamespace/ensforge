@@ -15,6 +15,8 @@ export type WalletOptions = {
   readonly atomic?: boolean | undefined;
   /** Reject every signing request, as a user who clicks "reject". */
   readonly reject?: boolean | undefined;
+  /** Sign this many requests, then reject the rest (an interrupted plan). */
+  readonly rejectAfter?: number | undefined;
 };
 
 /** A wallet for `account` on the devnet, and the JSON-RPC methods it has been asked for. */
@@ -64,7 +66,11 @@ export const testWallet = (
 
   const request = (async ({ method, params }: { method: string; params?: unknown }) => {
     methods.push(method);
-    if (options.reject === true && signing.has(method)) {
+    const signed = methods.filter((asked) => signing.has(asked)).length;
+    const refused =
+      options.reject === true ||
+      (options.rejectAfter !== undefined && signed > options.rejectAfter);
+    if (refused && signing.has(method)) {
       throw Object.assign(new Error("User rejected the request."), { code: 4001 });
     }
     const args = (params ?? []) as readonly unknown[];
