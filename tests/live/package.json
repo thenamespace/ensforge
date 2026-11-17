@@ -1,0 +1,24 @@
+{
+  "name": "@ensforge/test-live",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Read-only checks of ensforge against mainnet and Sepolia (not published)",
+  "type": "module",
+  "exports": {
+    "./support/*": "./test/support/*.ts"
+  },
+  "scripts": {
+    "lint": "oxlint -c ../../.config/oxlint.config.ts --deny-warnings .",
+    "typecheck": "tsc --noEmit -p test"
+  },
+  "devDependencies": {
+    "@effect/vitest": "catalog:",
+    "@ensforge/contracts": "workspace:*",
+    "@ensforge/sdk": "workspace:*",
+    "@ensforge/test-devnet": "workspace:*",
+    "@ensforge/test-harness": "workspace:*",
+    "@types/node": "catalog:",
+    "effect": "catalog:",
+    "viem": "catalog:"
+  }
+}

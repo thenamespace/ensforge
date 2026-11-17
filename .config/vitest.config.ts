@@ -117,6 +117,20 @@ const fork = {
   },
 };
 
+// Read-only checks against mainnet and Sepolia (`pnpm test:live`; needs RPCs in .env). One file at
+// a time, and every request throttled, keeps the RPC under its rate limit.
+const live = {
+  extends: true as const,
+  test: {
+    name: "live",
+    root: "tests/live",
+    include: ["test/**/*.test.ts"],
+    testTimeout: 600_000,
+    hookTimeout: 120_000,
+    fileParallelism: false,
+  },
+};
+
 const types = (name: (typeof packages)[number]) => ({
   extends: true as const,
   test: {
@@ -150,6 +164,7 @@ export default defineConfig({
       fuzz,
       services,
       fork,
+      live,
     ],
     passWithNoTests: true,
   },
