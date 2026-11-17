@@ -127,11 +127,13 @@ const fromV1 = (
 };
 
 // Once ENSv2 exists, its registrar can register a `.eth` label it holds no reservation for, and
-// after the launch ENSv1 names renew only through that reservation.
+// after the launch ENSv1 `.eth` names renew only through that reservation. The launch retires
+// only ENSv1's `.eth` registrar: parents still create subnames in ENSv1.
 const v1Flags = (data: NameData, status: NameStatus, registration: Registration) => {
-  const own = registration.v1Registers
-    ? flags(status, data.parts.isEth2ld)
-    : { available: false, renewable: false };
+  const own =
+    registration.v1Registers || !data.parts.isEth2ld
+      ? flags(status, data.parts.isEth2ld)
+      : { available: false, renewable: false };
   const v2 = data.parts.isEth2ld ? data.v2 : undefined;
   return {
     available: own.available || (v2 !== undefined && v2Registers(data.now, v2)),

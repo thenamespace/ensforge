@@ -82,4 +82,21 @@ describe("name state", () => {
     const state = stateOf(v1Name(undefined), true);
     assert.include(state, { available: false, renewable: true });
   });
+
+  it("after the launch, an expired ENSv1 subname is still available from its parent", () => {
+    const data: NameData = {
+      ...v1Name(undefined),
+      parts: nameParts("sub.alice.eth"),
+      v1: {
+        registry,
+        registryOwner: nameWrapper,
+        resolver: zeroAddress,
+        ttl: 0n,
+        wrapper: { owner: alice, fuses: 0, expiry: now - day },
+        registrar: undefined,
+      },
+    };
+    const state = stateOf(data, false);
+    assert.include(state, { status: "expired", available: true, renewable: false });
+  });
 });
