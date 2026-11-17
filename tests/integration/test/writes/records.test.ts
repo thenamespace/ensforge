@@ -3,6 +3,7 @@ import { Effect } from "effect";
 
 import { Abis } from "@ensforge/contracts";
 import { Name } from "@ensforge/sdk";
+import { Actions } from "@ensforge/sdk/effect";
 import { Devnet, type DevnetInstance } from "@ensforge/test-devnet";
 import { Fixtures } from "@ensforge/test-fixtures";
 import {
@@ -17,7 +18,7 @@ import {
   type Hex,
 } from "viem";
 
-import { call, ensforge, isolated, onProfile } from "../support/chain.ts";
+import { ensforge, isolated, onProfile } from "../support/chain.ts";
 
 const taproot = {
   text: "bc1p0xlxvlhemja6c4dqv22uapctqupfhlxm9h8z3k2e72q4k9hcz7vqzk5jj0",
@@ -80,27 +81,25 @@ describe("record writes", () => {
             yield* isolated(
               devnet,
               Effect.gen(function* () {
-                yield* call(() =>
-                  ens.record.setSync({
-                    name,
-                    texts: {
-                      url: "https://lifecycle.example",
-                      unicode: "Ünïcødé 👋",
-                      [agentKey]: "agent-2",
-                    },
-                    addresses: {
-                      eth: accounts.carol,
-                      btc: taproot.text,
-                      [String(base)]: accounts.user,
-                      // An explicit zero address is a value, not a deletion.
-                      [String(polygon)]: zeroAddress,
-                    },
-                    contentHash: ipfs,
-                    abi: { contentType: 1n, value: [] },
-                    interfaces: { "0x01ffc9a7": accounts.carol },
-                  }),
-                );
-                const resolver = (yield* call(() => ens.resolver.get({ name })))?.address;
+                yield* Actions.record.setSync(ens, {
+                  name,
+                  texts: {
+                    url: "https://lifecycle.example",
+                    unicode: "Ünïcødé 👋",
+                    [agentKey]: "agent-2",
+                  },
+                  addresses: {
+                    eth: accounts.carol,
+                    btc: taproot.text,
+                    [String(base)]: accounts.user,
+                    // An explicit zero address is a value, not a deletion.
+                    [String(polygon)]: zeroAddress,
+                  },
+                  contentHash: ipfs,
+                  abi: { contentType: 1n, value: [] },
+                  interfaces: { "0x01ffc9a7": accounts.carol },
+                });
+                const resolver = (yield* Actions.resolver.get(ens, { name }))?.address;
                 if (resolver === undefined) return assert.fail("no resolver");
 
                 const extended = id === "records.v2";
@@ -117,13 +116,15 @@ describe("record writes", () => {
                 });
                 assert.deepStrictEqual(raw.abi, [1n, stringToHex("[]")]);
                 assert.strictEqual(
-                  (yield* call(() => ens.record.getContentHash({ name })))?.uri,
+                  (yield* Actions.record.getContentHash(ens, { name }))?.uri,
                   ipfs,
                 );
 
-                yield* call(() =>
-                  ens.record.setSync({ name, texts: { url: null }, addresses: { btc: null } }),
-                );
+                yield* Actions.record.setSync(ens, {
+                  name,
+                  texts: { url: null },
+                  addresses: { btc: null },
+                });
                 assert.deepInclude(yield* stored(devnet, resolver, name, extended), {
                   url: "",
                   btc: "0x",
@@ -144,17 +145,17 @@ describe("record writes", () => {
           const ens = ensforge(devnet, { account: devnet.accounts.bob });
           const linked = fixtures.byId("records.v2.linked").name;
           const target = fixtures.byId("records.v2").name;
-          const url = () => call(() => ens.record.getText({ name: linked, key: "url" }));
+          const url = () => Actions.record.getText(ens, { name: linked, key: "url" });
 
           yield* isolated(
             devnet,
             Effect.gen(function* () {
               // Clearing a linked name gives it an empty record of its own (`linkToRecord(name, 0)`).
-              yield* call(() => ens.record.setSync({ name: linked, clear: true }));
-              assert.isNull(yield* call(() => ens.resolver.getLink({ name: linked })));
+              yield* Actions.record.setSync(ens, { name: linked, clear: true });
+              assert.isNull(yield* Actions.resolver.getLink(ens, { name: linked }));
               assert.isNull(yield* url());
 
-              yield* call(() => ens.resolver.linkSync({ name: linked, to: target }));
+              yield* Actions.resolver.linkSync(ens, { name: linked, to: target });
               assert.strictEqual(yield* url(), "https://ensforge.com");
             }),
           );
@@ -174,25 +175,18 @@ describe("record writes", () => {
           yield* isolated(
             devnet,
             Effect.gen(function* () {
-              const { resolver } = yield* call(() =>
-                ens.resolver.createSync({
-                  name,
-                  records: {
-                    texts: { url: "https://created.example" },
-                    data: { "eth.ens.example": "0x1234" },
-                  },
-                }),
-              );
-              yield* call(() => ens.resolver.setSync({ name, resolver }));
+              const { resolver } = yield* Actions.resolver.createSync(ens, {
+                name,
+                records: {
+                  texts: { url: "https://created.example" },
+                  data: { "eth.ens.example": "0x1234" },
+                },
+              });
+              yield* Actions.resolver.setSync(ens, { name, resolver });
 
-              assert.strictEqual(
-                (yield* call(() => ens.resolver.get({ name })))?.address,
-                resolver,
-              );
+              assert.strictEqual((yield* Actions.resolver.get(ens, { name }))?.address, resolver);
               assert.deepInclude(
-                yield* call(() =>
-                  ens.record.get({ name, texts: ["url"], data: ["eth.ens.example"] }),
-                ),
+                yield* Actions.record.get(ens, { name, texts: ["url"], data: ["eth.ens.example"] }),
                 {
                   texts: { url: "https://created.example" },
                   data: { "eth.ens.example": "0x1234" },
@@ -216,15 +210,13 @@ describe("record writes", () => {
           yield* isolated(
             devnet,
             Effect.gen(function* () {
-              yield* call(() => ens.record.setSync({ name, clear: true }));
-              const records = yield* call(() =>
-                ens.record.get({
-                  name,
-                  texts: ["url", "description"],
-                  addresses: ["eth", "btc"],
-                  contentHash: true,
-                }),
-              );
+              yield* Actions.record.setSync(ens, { name, clear: true });
+              const records = yield* Actions.record.get(ens, {
+                name,
+                texts: ["url", "description"],
+                addresses: ["eth", "btc"],
+                contentHash: true,
+              });
               assert.deepInclude(records, {
                 texts: { url: null, description: null },
                 addresses: { eth: null, btc: null },
@@ -250,7 +242,7 @@ describe("record writes", () => {
             resolver: "default",
           } as const;
 
-          const plan = yield* call(() => ens.record.set.prepare(options));
+          const plan = yield* Actions.record.set.prepare(ens, options);
           const calls = plan.steps.flatMap((step) => step.calls);
           const setResolver = toFunctionSelector("setResolver(bytes32,address)");
           const pointed = calls.findIndex((item) => item.data.startsWith(setResolver));
@@ -259,9 +251,9 @@ describe("record writes", () => {
           yield* isolated(
             devnet,
             Effect.gen(function* () {
-              yield* call(() => ens.record.setSync(options));
+              yield* Actions.record.setSync(ens, options);
               assert.strictEqual(
-                yield* call(() => ens.record.getText({ name, key: "url" })),
+                yield* Actions.record.getText(ens, { name, key: "url" }),
                 "https://moved.example",
               );
             }),

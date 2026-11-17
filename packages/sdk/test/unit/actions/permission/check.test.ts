@@ -2,8 +2,7 @@ import { assert, describe, it } from "@effect/vitest";
 import { Effect } from "effect";
 
 import { Roles } from "@ensforge/contracts";
-import { Actions } from "@ensforge/sdk";
-import { Actions as EffectActions } from "@ensforge/sdk/effect";
+import { Actions } from "@ensforge/sdk/effect";
 import { expectFailure } from "@ensforge/test-harness";
 
 import { clientFor, other, signer } from "../world.js";
@@ -13,9 +12,11 @@ const transfer = (onlyAssignee: boolean) => {
     name: "alice.eth",
     v2: { owner: signer, roles: Roles.registry.canTransferAdmin, onlyAssignee },
   });
-  return Effect.promise(() =>
-    Actions.permission.check(ens, { name: "alice.eth", operation: "transfer", account: signer }),
-  );
+  return Actions.permission.check(ens, {
+    name: "alice.eth",
+    operation: "transfer",
+    account: signer,
+  });
 };
 
 describe("permission.check", () => {
@@ -40,9 +41,11 @@ describe("permission.check", () => {
         name: "alice.eth",
         v2: { owner: signer, roles: Roles.registry.canTransferAdmin },
       });
-      const check = yield* Effect.promise(() =>
-        Actions.permission.check(ens, { name: "alice.eth", operation: "transfer", account: other }),
-      );
+      const check = yield* Actions.permission.check(ens, {
+        name: "alice.eth",
+        operation: "transfer",
+        account: other,
+      });
       assert.isFalse(check.allowed);
     }),
   );
@@ -52,7 +55,7 @@ describe("permission.check", () => {
     Effect.gen(function* () {
       const { ens } = clientFor({ name: "alice.eth" });
       yield* expectFailure(
-        EffectActions.permission.check(ens, {
+        Actions.permission.check(ens, {
           name: "alice.eth",
           operation: { setRecord: "address", key: "nope" },
           account: signer,
@@ -66,7 +69,7 @@ describe("permission.check", () => {
     Effect.gen(function* () {
       const { ens } = clientFor({ name: "alice.eth" });
       yield* expectFailure(
-        EffectActions.permission.get(ens, {
+        Actions.permission.get(ens, {
           name: "alice.eth",
           account: signer,
           records: { addresses: ["nope"] },

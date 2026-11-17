@@ -3,12 +3,13 @@ import { Effect } from "effect";
 
 import { Abis } from "@ensforge/contracts";
 import { nameWrapperFuses as fuse } from "@ensforge/contracts/v1";
+import { Actions } from "@ensforge/sdk/effect";
 import { Devnet } from "@ensforge/test-devnet";
 import { Fixtures } from "@ensforge/test-fixtures";
-import { expectRejection } from "@ensforge/test-harness";
+import { expectFailure } from "@ensforge/test-harness";
 import { zeroAddress, type Address } from "viem";
 
-import { call, ensforge, isolated, onProfile } from "../support/chain.ts";
+import { ensforge, isolated, onProfile } from "../support/chain.ts";
 import { v1Owners } from "./support.ts";
 
 describe("subnames, wrapper and registries", () => {
@@ -26,11 +27,11 @@ describe("subnames, wrapper and registries", () => {
           yield* isolated(
             devnet,
             Effect.gen(function* () {
-              yield* call(() => ens.subname.createSync({ name: child }));
+              yield* Actions.subname.createSync(ens, { name: child });
               assert.strictEqual((yield* v1Owners(devnet, child)).registry, alice);
-              yield* call(() => ens.subname.updateSync({ name: child, owner: carol }));
+              yield* Actions.subname.updateSync(ens, { name: child, owner: carol });
               assert.strictEqual((yield* v1Owners(devnet, child)).registry, carol);
-              yield* call(() => ens.subname.removeSync({ name: child }));
+              yield* Actions.subname.removeSync(ens, { name: child });
               assert.strictEqual((yield* v1Owners(devnet, child)).registry, zeroAddress);
             }),
           );
@@ -54,33 +55,31 @@ describe("subnames, wrapper and registries", () => {
           yield* isolated(
             devnet,
             Effect.gen(function* () {
-              yield* call(() => ens.subname.updateSync({ name: controlled, owner: carol }));
+              yield* Actions.subname.updateSync(ens, { name: controlled, owner: carol });
               assert.strictEqual((yield* v1Owners(devnet, controlled)).wrapped?.[0], carol);
             }),
           );
           // An emancipated child cannot be taken back.
-          yield* expectRejection(
-            () => ens.subname.remove({ name: fixtures.byId("v1.wrapped.sub.emancipated").name }),
+          yield* expectFailure(
+            Actions.subname.remove(ens, { name: fixtures.byId("v1.wrapped.sub.emancipated").name }),
             {
               _tag: "UnauthorizedError",
               code: "FUSE_BURNED",
             },
           );
           // Emancipating a child needs a locked parent (W02).
-          yield* expectRejection(
-            () =>
-              ens.subname.create({
-                name: `new.${fixtures.byId("v1.wrapped").name}`,
-                fuses: ["parentCannotControl"],
-              }),
+          yield* expectFailure(
+            Actions.subname.create(ens, {
+              name: `new.${fixtures.byId("v1.wrapped").name}`,
+              fuses: ["parentCannotControl"],
+            }),
             { _tag: "UnauthorizedError", code: "FUSE_BURNED" },
           );
           // CANNOT_CREATE_SUBDOMAIN on the parent.
-          yield* expectRejection(
-            () =>
-              ens.subname.create({
-                name: `x.${fixtures.byId("v1.wrapped.locked.cannot-create-subdomain").name}`,
-              }),
+          yield* expectFailure(
+            Actions.subname.create(ens, {
+              name: `x.${fixtures.byId("v1.wrapped.locked.cannot-create-subdomain").name}`,
+            }),
             { _tag: "UnauthorizedError", code: "FUSE_BURNED" },
           );
           // A locked parent emancipates its new child.
@@ -89,13 +88,11 @@ describe("subnames, wrapper and registries", () => {
             devnet,
             Effect.gen(function* () {
               const child = `free.${locked}`;
-              yield* call(() =>
-                ens.subname.createSync({
-                  name: child,
-                  owner: carol,
-                  fuses: ["parentCannotControl"],
-                }),
-              );
+              yield* Actions.subname.createSync(ens, {
+                name: child,
+                owner: carol,
+                fuses: ["parentCannotControl"],
+              });
               assert.strictEqual(
                 (yield* fusesOf(child)) & fuse.parentCannotControl,
                 fuse.parentCannotControl,
@@ -121,7 +118,7 @@ describe("subnames, wrapper and registries", () => {
           yield* isolated(
             devnet,
             Effect.gen(function* () {
-              yield* call(() => ens.wrapper.wrapSync({ name: plain, fuses: ["cannotUnwrap"] }));
+              yield* Actions.wrapper.wrapSync(ens, { name: plain, fuses: ["cannotUnwrap"] });
               const { wrapped } = yield* v1Owners(devnet, plain);
               assert.strictEqual(wrapped?.[0], alice);
               assert.strictEqual(
@@ -134,7 +131,7 @@ describe("subnames, wrapper and registries", () => {
           yield* isolated(
             devnet,
             Effect.gen(function* () {
-              yield* call(() => ens.wrapper.unwrapSync({ name: wrappedName }));
+              yield* Actions.wrapper.unwrapSync(ens, { name: wrappedName });
               assert.strictEqual((yield* v1Owners(devnet, wrappedName)).registry, alice);
             }),
           );
@@ -142,25 +139,22 @@ describe("subnames, wrapper and registries", () => {
           yield* isolated(
             devnet,
             Effect.gen(function* () {
-              yield* call(() =>
-                ens.wrapper.setFusesSync({ name: locked, fuses: ["cannotTransfer"] }),
-              );
+              yield* Actions.wrapper.setFusesSync(ens, { name: locked, fuses: ["cannotTransfer"] });
               assert.strictEqual(
                 (yield* fusesOf(locked)) & fuse.cannotTransfer,
                 fuse.cannotTransfer,
               );
             }),
           );
-          yield* expectRejection(() => ens.wrapper.unwrap({ name: locked }), {
+          yield* expectFailure(Actions.wrapper.unwrap(ens, { name: locked }), {
             _tag: "UnauthorizedError",
             code: "FUSE_BURNED",
           });
-          yield* expectRejection(
-            () =>
-              ens.wrapper.setFuses({
-                name: fixtures.byId("v1.wrapped.locked.cannot-burn-fuses").name,
-                fuses: ["cannotTransfer"],
-              }),
+          yield* expectFailure(
+            Actions.wrapper.setFuses(ens, {
+              name: fixtures.byId("v1.wrapped.locked.cannot-burn-fuses").name,
+              fuses: ["cannotTransfer"],
+            }),
             { _tag: "UnauthorizedError", code: "FUSE_BURNED" },
           );
         }),
@@ -183,20 +177,20 @@ describe("subnames, wrapper and registries", () => {
             devnet,
             Effect.gen(function* () {
               // Renewing the parent through ETHRenewerV1 extends its wrapper expiry too.
-              yield* call(() =>
-                ens.registration.renewSync({ names: parent, duration: 31_536_000n }),
-              );
+              yield* Actions.registration.renewSync(ens, { names: parent, duration: 31_536_000n });
               const before = yield* expiryOf(child);
               const limit = yield* expiryOf(parent);
               assert.isTrue(limit > before + 86_400n, "the parent outlives the child");
 
-              yield* call(() =>
-                ens.wrapper.setChildFusesSync({ name: child, expiry: before + 86_400n }),
-              );
+              yield* Actions.wrapper.setChildFusesSync(ens, {
+                name: child,
+                expiry: before + 86_400n,
+              });
               assert.strictEqual(yield* expiryOf(child), before + 86_400n);
-              yield* call(() =>
-                ens.wrapper.setChildFusesSync({ name: child, expiry: limit + 86_400n }),
-              );
+              yield* Actions.wrapper.setChildFusesSync(ens, {
+                name: child,
+                expiry: limit + 86_400n,
+              });
               assert.strictEqual(yield* expiryOf(child), limit);
             }),
           );
@@ -217,14 +211,15 @@ describe("subnames, wrapper and registries", () => {
           yield* isolated(
             devnet,
             Effect.gen(function* () {
-              const { plan } = yield* call(() =>
-                ens.subname.createSync({ name: `kid.${parent}`, owner: carol }),
-              );
+              const { plan } = yield* Actions.subname.createSync(ens, {
+                name: `kid.${parent}`,
+                owner: carol,
+              });
               assert.deepStrictEqual(
                 plan.steps.map((step) => step.id),
                 ["deploy", "create"],
               );
-              const registry = (yield* call(() => ens.registry.get({ name: parent })))?.address;
+              const registry = (yield* Actions.registry.get(ens, { name: parent }))?.address;
               if (registry === undefined) return assert.fail("no registry");
               const owner = yield* Effect.promise(() =>
                 devnet.client.readContract({
@@ -236,9 +231,9 @@ describe("subnames, wrapper and registries", () => {
               );
               assert.strictEqual(owner, carol);
 
-              yield* call(() => ens.subname.removeSync({ name: `kid.${parent}` }));
+              yield* Actions.subname.removeSync(ens, { name: `kid.${parent}` });
               assert.strictEqual(
-                (yield* call(() => ens.name.get({ name: `kid.${parent}` }))).status,
+                (yield* Actions.name.get(ens, { name: `kid.${parent}` })).status,
                 "available",
               );
             }),
@@ -259,8 +254,8 @@ describe("subnames, wrapper and registries", () => {
           yield* isolated(
             devnet,
             Effect.gen(function* () {
-              const { registry } = yield* call(() => ens.registry.deploySync({ attachTo: name }));
-              const attached = yield* call(() => ens.registry.get({ name }));
+              const { registry } = yield* Actions.registry.deploySync(ens, { attachTo: name });
+              const attached = yield* Actions.registry.get(ens, { name });
               assert.deepInclude(attached, {
                 address: registry as Address,
                 kind: "user",

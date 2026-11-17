@@ -3,12 +3,13 @@ import { Effect } from "effect";
 
 import { Abis, Roles } from "@ensforge/contracts";
 import { Plan } from "@ensforge/sdk";
+import { Actions } from "@ensforge/sdk/effect";
 import { Devnet, type DevnetInstance } from "@ensforge/test-devnet";
 import { Fixtures, type FixturesApi } from "@ensforge/test-fixtures";
-import { expectRejection, type ExpectedError } from "@ensforge/test-harness";
+import { type ExpectedError, expectFailure } from "@ensforge/test-harness";
 import { parseGwei, type Address } from "viem";
 
-import { call, ensforge, isolated, onProfile, passWaits } from "../support/chain.ts";
+import { ensforge, isolated, onProfile, passWaits, type SyncAction } from "../support/chain.ts";
 import { testWallet } from "../support/wallet.ts";
 
 type AccountName = "alice" | "bob" | "carol" | "user";
@@ -865,21 +866,17 @@ describe("write refusals", () => {
           const account = devnet.accounts[refusal.account];
           const wallet = testWallet(devnet, account);
           const [domain = "", name = ""] = refusal.path.split(".");
-          const group =
-            (
-              ensforge(devnet, { account, wallet }) as unknown as Record<
-                string,
-                Record<string, (o: unknown) => Promise<unknown>>
-              >
-            )[domain] ?? {};
-          const sync = group[`${name}Sync`];
+          const sync = (Actions as unknown as Record<string, Record<string, SyncAction>>)[domain]?.[
+            `${name}Sync`
+          ];
           if (sync === undefined) return assert.fail(`${refusal.path} has no Sync form`);
+          const client = ensforge(devnet, { account, wallet });
 
           yield* isolated(
             devnet,
             Effect.gen(function* () {
-              yield* expectRejection(
-                () => sync({ ...refusal.options(fixtures, devnet), onStep: passWaits(devnet) }),
+              yield* expectFailure(
+                sync(client, { ...refusal.options(fixtures, devnet), onStep: passWaits(devnet) }),
                 refusal.expected,
               );
               assert.isFalse(wallet.prompted(), "refused before the wallet was asked");
@@ -897,13 +894,13 @@ describe("write refusals", () => {
         yield* isolated(
           devnet,
           Effect.gen(function* () {
-            const { secret, readyAt } = yield* call(() => ens.registration.commitSync(options));
+            const { secret, readyAt } = yield* Actions.registration.commitSync(ens, options);
             // Until it is ready the commitment reads as too new; once ready, it must not be redone.
             yield* Effect.promise(async () => {
               await devnet.client.setNextBlockTimestamp({ timestamp: readyAt });
               await devnet.client.mine({ blocks: 1 });
             });
-            yield* expectRejection(() => ens.registration.commit({ ...options, secret }), {
+            yield* expectFailure(Actions.registration.commit(ens, { ...options, secret }), {
               _tag: "CommitmentError",
               code: "COMMITMENT_EXISTS",
             });
@@ -916,14 +913,15 @@ describe("write refusals", () => {
       Effect.gen(function* () {
         const fixtures = yield* Fixtures;
         const devnet = yield* Devnet;
-        const plan = yield* call(() =>
-          ensforge(devnet, { account: devnet.accounts.bob }).record.set.prepare({
+        const plan = yield* Actions.record.set.prepare(
+          ensforge(devnet, { account: devnet.accounts.bob }),
+          {
             name: fixtures.byId("records.v2").name,
             texts: { url: "x" },
-          }),
+          },
         );
-        yield* expectRejection(
-          () => ensforge(devnet, { account: devnet.accounts.carol }).plan.send({ plan }),
+        yield* expectFailure(
+          Actions.plan.send(ensforge(devnet, { account: devnet.accounts.carol }), { plan }),
           {
             _tag: "PlanError",
             code: "PLAN_ACCOUNT_MISMATCH",
@@ -937,9 +935,10 @@ describe("write refusals", () => {
         const fixtures = yield* Fixtures;
         const devnet = yield* Devnet;
         const ens = ensforge(devnet, { account: devnet.accounts.bob });
-        const plan = yield* call(() =>
-          ens.record.set.prepare({ name: fixtures.byId("records.v2").name, texts: { url: "x" } }),
-        );
+        const plan = yield* Actions.record.set.prepare(ens, {
+          name: fixtures.byId("records.v2").name,
+          texts: { url: "x" },
+        });
         // A call the resolver has no function for reverts with empty data.
         const [step] = plan.steps;
         const [first] = step?.calls ?? [];
@@ -948,7 +947,7 @@ describe("write refusals", () => {
           ...plan,
           steps: [{ ...step, calls: [{ ...first, data: "0xdeadbeef" as const }] }],
         };
-        yield* expectRejection(() => ens.plan.send({ plan: garbled }), {
+        yield* expectFailure(Actions.plan.send(ens, { plan: garbled }), {
           _tag: "ContractRevertError",
           code: "CONTRACT_REVERTED",
         });
@@ -965,9 +964,10 @@ describe("write refusals", () => {
         yield* isolated(
           devnet,
           Effect.gen(function* () {
-            const { hash, plan } = yield* call(() =>
-              ens.record.setSync({ name: fixtures.byId("records.v2").name, texts: { url: "x" } }),
-            );
+            const { hash, plan } = yield* Actions.record.setSync(ens, {
+              name: fixtures.byId("records.v2").name,
+              texts: { url: "x" },
+            });
             const { id } = plan;
             const step = plan.steps[0]?.id ?? "";
             // Neither from bob nor to the step's resolver.
@@ -980,15 +980,15 @@ describe("write refusals", () => {
               }),
             );
 
-            yield* expectRejection(() => ens.plan.reconcile({ id: "unknown", step, hash }), {
+            yield* expectFailure(Actions.plan.reconcile(ens, { id: "unknown", step, hash }), {
               _tag: "NotFoundError",
               code: "PLAN_NOT_FOUND",
             });
-            yield* expectRejection(() => ens.plan.reconcile({ id, step: "unknown", hash }), {
+            yield* expectFailure(Actions.plan.reconcile(ens, { id, step: "unknown", hash }), {
               _tag: "InvalidInputError",
               code: "INVALID_RECORD_VALUE",
             });
-            yield* expectRejection(() => ens.plan.reconcile({ id, step, hash: unrelated }), {
+            yield* expectFailure(Actions.plan.reconcile(ens, { id, step, hash: unrelated }), {
               _tag: "InvalidInputError",
               code: "INVALID_RECORD_VALUE",
             });
@@ -1029,16 +1029,15 @@ describe("send failures", () => {
           Effect.gen(function* () {
             // Carol's write passes simulation; the owner's revoke, paid more, is mined before it.
             yield* Effect.promise(() => devnet.client.setAutomine(false));
-            yield* expectRejection(
-              () =>
-                ensforge(devnet, { account: carol }).resolver.setSync({
-                  name,
-                  resolver: stranger,
-                  onStep: (event) => {
-                    if (event.status === "submitted")
-                      void revokeFirst(devnet, BigInt(String(facts["tokenId"])), carol);
-                  },
-                }),
+            yield* expectFailure(
+              Actions.resolver.setSync(ensforge(devnet, { account: carol }), {
+                name,
+                resolver: stranger,
+                onStep: (event) => {
+                  if (event.status === "submitted")
+                    void revokeFirst(devnet, BigInt(String(facts["tokenId"])), carol);
+                },
+              }),
               { _tag: "TransactionError", code: "TRANSACTION_REVERTED" },
             );
             yield* Effect.promise(() => devnet.client.setAutomine(true));
@@ -1056,13 +1055,12 @@ describe("send failures", () => {
           devnet,
           Effect.gen(function* () {
             yield* Effect.promise(() => devnet.client.setAutomine(false));
-            yield* expectRejection(
-              () =>
-                ensforge(devnet, { account: devnet.accounts.bob }).record.setSync({
-                  name: fixtures.byId("records.v2").name,
-                  texts: { url: "x" },
-                  timeout: 300,
-                }),
+            yield* expectFailure(
+              Actions.record.setSync(ensforge(devnet, { account: devnet.accounts.bob }), {
+                name: fixtures.byId("records.v2").name,
+                texts: { url: "x" },
+                timeout: 300,
+              }),
               { _tag: "TransactionError", code: "RECEIPT_TIMEOUT" },
             );
             yield* Effect.promise(() => devnet.client.setAutomine(true));

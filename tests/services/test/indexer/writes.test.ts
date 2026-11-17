@@ -1,10 +1,11 @@
 import { assert, layer } from "@effect/vitest";
 import { Effect } from "effect";
 
-import { bigname, indexerActions } from "@ensforge/sdk/indexer";
+import { Actions } from "@ensforge/sdk/effect";
+import { bigname } from "@ensforge/sdk/indexer";
 import { Devnet, type DevnetInstance } from "@ensforge/test-devnet";
 import { Fixtures } from "@ensforge/test-fixtures";
-import { call, ensforge, passWaits } from "@ensforge/test-integration/support/chain";
+import { ensforge, passWaits } from "@ensforge/test-integration/support/chain";
 import { labelhash, type Address } from "viem";
 
 import { Services, type ServicesApi } from "../stack/stack.ts";
@@ -18,16 +19,14 @@ const client = (devnet: DevnetInstance, services: ServicesApi, account?: Address
   ensforge(devnet, {
     indexer: bigname({ url: services.indexerUrl }),
     ...(account === undefined ? {} : { account }),
-  }).extend(indexerActions());
+  });
 
 const register = (devnet: DevnetInstance, services: ServicesApi, name: string, owner: Address) =>
-  call(() =>
-    client(devnet, services, owner).registration.registerSync({
-      names: name,
-      duration: year,
-      onStep: passWaits(devnet),
-    }),
-  );
+  Actions.registration.registerSync(client(devnet, services, owner), {
+    names: name,
+    duration: year,
+    onStep: passWaits(devnet),
+  });
 
 layer(Services.layer({ profile: "mainnet-shaped" }), { excludeTestServices: true })(
   "bigname after ensforge writes",
@@ -42,27 +41,26 @@ layer(Services.layer({ profile: "mainnet-shaped" }), { excludeTestServices: true
           const name = "indexed-new.eth";
           const ens = client(devnet, services, carol);
 
-          const result = yield* call(() =>
-            ens.registration.registerSync({
-              names: name,
-              duration: year,
-              records: { texts: { url: "https://carol.example" }, addresses: { eth: carol } },
-              primaryName: true,
-              onStep: passWaits(devnet),
-            }),
-          );
+          const result = yield* Actions.registration.registerSync(ens, {
+            names: name,
+            duration: year,
+            records: { texts: { url: "https://carol.example" }, addresses: { eth: carol } },
+            primaryName: true,
+            onStep: passWaits(devnet),
+          });
           yield* services.waitForIndexed();
 
-          const indexed = yield* call(() => ens.indexer.getName({ name }));
+          const indexed = yield* Actions.indexer.getName(ens, { name });
           assert.include(indexed, { status: "active", owner: carol, authority: "ensV2" });
           assert.strictEqual(indexed?.expiresAt, result.names[0]?.expiry);
-          const records = yield* call(() => ens.indexer.getRecords({ name }));
+          const records = yield* Actions.indexer.getRecords(ens, { name });
           assert.strictEqual(records?.texts["url"], "https://carol.example");
-          const primary = yield* call(() => ens.indexer.getPrimaryName({ address: carol }));
+          const primary = yield* Actions.indexer.getPrimaryName(ens, { address: carol });
           assert.strictEqual(primary.name, name);
-          const owned = yield* call(() =>
-            ens.indexer.getNamesForAddress({ address: carol, relation: "owner" }),
-          );
+          const owned = yield* Actions.indexer.getNamesForAddress(ens, {
+            address: carol,
+            relation: "owner",
+          });
           assert.include(
             owned.items.map((entry) => entry.name),
             name,
@@ -84,24 +82,26 @@ layer(Services.layer({ profile: "mainnet-shaped" }), { excludeTestServices: true
 
           yield* register(devnet, services, parent, carol);
           for (const child of children) {
-            yield* call(() => ens.subname.createSync({ name: child }));
+            yield* Actions.subname.createSync(ens, { name: child });
           }
-          yield* call(() => ens.subname.removeSync({ name: `b.${parent}` }));
+          yield* Actions.subname.removeSync(ens, { name: `b.${parent}` });
           yield* services.waitForIndexed();
 
           // One row a page: the cursors walk every child once.
           const listed: string[] = [];
           let cursor: string | undefined;
           do {
-            const page = yield* call(() =>
-              ens.indexer.getSubnames({ name: parent, limit: 1, ...(cursor ? { cursor } : {}) }),
-            );
+            const page = yield* Actions.indexer.getSubnames(ens, {
+              name: parent,
+              limit: 1,
+              ...(cursor ? { cursor } : {}),
+            });
             listed.push(...page.items.map((item) => item.name));
             cursor = page.hasMore ? (page.cursor ?? undefined) : undefined;
           } while (cursor !== undefined);
           // An unregistered child leaves the list at once; its name reads as released.
           assert.deepStrictEqual(listed.toSorted(), [`a.${parent}`, `c.${parent}`]);
-          const removed = yield* call(() => ens.indexer.getName({ name: `b.${parent}` }));
+          const removed = yield* Actions.indexer.getName(ens, { name: `b.${parent}` });
           assert.strictEqual(removed?.status, "released");
         }),
       { meta: { cases: ["I02", "I16"] } },
@@ -119,26 +119,29 @@ layer(Services.layer({ profile: "mainnet-shaped" }), { excludeTestServices: true
 
           yield* register(devnet, services, name, carol);
           yield* services.waitForIndexed();
-          const before = yield* call(() => ens.indexer.getName({ name }));
-          yield* call(() =>
-            ens.role.grantSync({ grantee: bob, roles: ["setResolver"], target: "registry", name }),
-          );
+          const before = yield* Actions.indexer.getName(ens, { name });
+          yield* Actions.role.grantSync(ens, {
+            grantee: bob,
+            roles: ["setResolver"],
+            target: "registry",
+            name,
+          });
           yield* services.waitForIndexed();
 
           // Granting roles regenerates the ENSv2 token; the registration stays the same.
-          const after = yield* call(() => ens.indexer.getName({ name }));
+          const after = yield* Actions.indexer.getName(ens, { name });
           assert.strictEqual(after?.registrationId, before?.registrationId);
           assert.notStrictEqual(after?.tokenId, before?.tokenId);
-          const permissions = yield* call(() => ens.indexer.getPermissions({ name }));
+          const permissions = yield* Actions.indexer.getPermissions(ens, { name });
           assert.include(
             permissions.items.filter((row) => row.address === bob).flatMap((row) => row.powers),
             "set_resolver",
           );
 
-          yield* call(() => ens.name.transferSync({ name, to: bob, unsafe: true }));
+          yield* Actions.name.transferSync(ens, { name, to: bob, unsafe: true });
           yield* services.waitForIndexed();
-          assert.strictEqual((yield* call(() => ens.indexer.getName({ name })))?.owner, bob);
-          const history = yield* call(() => ens.indexer.getHistory({ name }));
+          assert.strictEqual((yield* Actions.indexer.getName(ens, { name }))?.owner, bob);
+          const history = yield* Actions.indexer.getHistory(ens, { name });
           assert.isAbove(history.items.length, 1);
         }),
       { meta: { cases: ["I08"] } },
@@ -155,17 +158,17 @@ layer(Services.layer({ profile: "mainnet-shaped" }), { excludeTestServices: true
           const ens = client(devnet, services, carol);
 
           yield* register(devnet, services, name, carol);
-          yield* call(() => ens.record.setSync({ name, texts: { url: "https://old.example" } }));
+          yield* Actions.record.setSync(ens, { name, texts: { url: "https://old.example" } });
           yield* services.waitForIndexed();
           assert.strictEqual(
-            (yield* call(() => ens.indexer.getRecords({ name })))?.texts["url"],
+            (yield* Actions.indexer.getRecords(ens, { name }))?.texts["url"],
             "https://old.example",
           );
 
-          const { resolver } = yield* call(() => ens.resolver.createSync({}));
-          yield* call(() => ens.resolver.setSync({ name, resolver }));
+          const { resolver } = yield* Actions.resolver.createSync(ens, {});
+          yield* Actions.resolver.setSync(ens, { name, resolver });
           yield* services.waitForIndexed();
-          const records = yield* call(() => ens.indexer.getRecords({ name }));
+          const records = yield* Actions.indexer.getRecords(ens, { name });
           assert.deepInclude(records?.resolver, { address: resolver });
           assert.isUndefined(records?.texts["url"]);
         }),
@@ -184,17 +187,21 @@ layer(Services.layer({ profile: "mainnet-shaped" }), { excludeTestServices: true
           const child = `kid.${name}`;
           const ens = client(devnet, services, alice);
 
-          yield* call(() => ens.subname.createSync({ name: child }));
+          yield* Actions.subname.createSync(ens, { name: child });
           yield* services.waitForIndexed();
 
           // Without an indexer nothing is discovered; bigname lists every key and the child.
-          const unindexed = yield* call(() =>
-            ensforge(devnet).migration.get({ name, account: alice, resolver: "new" }),
-          );
+          const unindexed = yield* Actions.migration.get(ensforge(devnet), {
+            name,
+            account: alice,
+            resolver: "new",
+          });
           assert.isNull(unindexed.discovered);
-          const status = yield* call(() =>
-            ens.migration.get({ name, account: alice, resolver: "new" }),
-          );
+          const status = yield* Actions.migration.get(ens, {
+            name,
+            account: alice,
+            resolver: "new",
+          });
           assert.includeMembers(
             [...(status.discovered?.records?.keys ?? [])],
             ["text:url", "text:unicode", "addr:0", "contenthash"],
@@ -209,15 +216,17 @@ layer(Services.layer({ profile: "mainnet-shaped" }), { excludeTestServices: true
             addresses: ["btc"],
             contentHash: true,
           } as const;
-          const before = yield* call(() => ens.record.get({ name, ...profile }));
-          const migrated = yield* call(() =>
-            ens.migration.migrateSync({ names: name, resolver: "new", onStep: passWaits(devnet) }),
-          );
+          const before = yield* Actions.record.get(ens, { name, ...profile });
+          const migrated = yield* Actions.migration.migrateSync(ens, {
+            names: name,
+            resolver: "new",
+            onStep: passWaits(devnet),
+          });
           assert.include(
             migrated.plan.warnings.map((warning) => warning.code),
             "SUBNAMES_NOT_RECREATED",
           );
-          const after = yield* call(() => ens.record.get({ name, ...profile }));
+          const after = yield* Actions.record.get(ens, { name, ...profile });
           assert.notStrictEqual(after.resolver, before.resolver);
           assert.deepStrictEqual({ ...after, resolver: null }, { ...before, resolver: null });
         }),

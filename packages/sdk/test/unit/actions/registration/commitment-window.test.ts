@@ -2,7 +2,7 @@ import { assert, describe, it } from "@effect/vitest";
 import { Effect } from "effect";
 
 import { Abis } from "@ensforge/contracts";
-import { Actions } from "@ensforge/sdk";
+import { Actions } from "@ensforge/sdk/effect";
 import { scriptedTransport } from "@ensforge/test-harness";
 import { contractScript } from "@ensforge/test-harness/contracts-eth-call";
 import { createPublicClient, keccak256, multicall3Abi, toHex } from "viem";
@@ -45,17 +45,21 @@ const statusAt = (timestamp: bigint) => {
     publicClient: createPublicClient({ chain: mainnet, transport }),
     batch: { multicall: false },
   });
-  return Actions.registration.getCommitmentStatus(ens, { commitment }).then((s) => s.status);
+  return Actions.registration
+    .getCommitmentStatus(ens, { commitment })
+    .pipe(Effect.map(({ status }) => status));
 };
 
 describe("registration.getCommitmentStatus", () => {
   // ETHRegistrar accepts a commitment while `readyAt <= now < expiresAt`.
-  it("follows the registrar's window at its boundaries", async () => {
-    const statuses = await Promise.all(
-      [minAge - 1n, minAge, maxAge - 1n, maxAge].map((age) => statusAt(committedAt + age)),
-    );
-    assert.deepStrictEqual(statuses, ["pending", "ready", "ready", "expired"]);
-  });
+  it.effect("follows the registrar's window at its boundaries", () =>
+    Effect.gen(function* () {
+      const statuses = yield* Effect.forEach([minAge - 1n, minAge, maxAge - 1n, maxAge], (age) =>
+        statusAt(committedAt + age),
+      );
+      assert.deepStrictEqual(statuses, ["pending", "ready", "ready", "expired"]);
+    }),
+  );
 });
 
 // Only the fields the commitment check reads.

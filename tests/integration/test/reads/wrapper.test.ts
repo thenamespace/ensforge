@@ -1,10 +1,11 @@
 import { assert, describe } from "@effect/vitest";
 import { Effect } from "effect";
 
+import { Actions } from "@ensforge/sdk/effect";
 import { Devnet } from "@ensforge/test-devnet";
 import { Fixtures } from "@ensforge/test-fixtures";
 
-import { call, ensforge, onProfile } from "../support/chain.ts";
+import { ensforge, onProfile } from "../support/chain.ts";
 
 describe("wrapper.getFuses", () => {
   onProfile("mainnet-shaped")("mainnet-shaped", (it) => {
@@ -13,7 +14,7 @@ describe("wrapper.getFuses", () => {
         const fixtures = yield* Fixtures;
         const ens = ensforge(yield* Devnet);
         const fusesOf = (id: string) =>
-          call(() => ens.wrapper.getFuses({ name: fixtures.byId(id).name }));
+          Actions.wrapper.getFuses(ens, { name: fixtures.byId(id).name });
 
         const locked = yield* fusesOf("v1.wrapped.locked.all");
         assert.deepStrictEqual(locked?.burned, {
@@ -47,7 +48,7 @@ describe("wrapper.getFuses", () => {
           const devnet = yield* Devnet;
           const ens = ensforge(devnet);
           const fusesOf = (id: string) =>
-            call(() => ens.wrapper.getFuses({ name: fixtures.byId(id).name }));
+            Actions.wrapper.getFuses(ens, { name: fixtures.byId(id).name });
 
           assert.isNull(yield* fusesOf("v1.wrapped.sub.expired-emancipated"));
           assert.isNull(yield* fusesOf("v1.wrapped.expired"));

@@ -2,7 +2,7 @@ import { assert, describe, it } from "@effect/vitest";
 import { Effect } from "effect";
 
 import { Abis } from "@ensforge/contracts";
-import { expectRejection, scriptedTransport, type RecordedCall } from "@ensforge/test-harness";
+import { expectFailure, scriptedTransport, type RecordedCall } from "@ensforge/test-harness";
 import { callScript } from "@ensforge/test-harness/multicall";
 import {
   createPublicClient,
@@ -199,13 +199,11 @@ describe("batch failure isolation", () => {
 describe("batch with allowFailure: false", () => {
   it.effect("returns plain values", () =>
     Effect.gen(function* () {
-      const { publicClient } = setup();
-      const { results } = yield* Effect.promise(() =>
-        batch(publicClient, {
-          requests: [operatorRequest(approved), operatorRequest(stranger)],
-          allowFailure: false,
-        }),
-      );
+      const { ens } = setup();
+      const { results } = yield* batchEffect(ens, {
+        requests: [operatorRequest(approved), operatorRequest(stranger)],
+        allowFailure: false,
+      });
 
       assert.deepStrictEqual(results, [true, false]);
     }),
@@ -213,13 +211,12 @@ describe("batch with allowFailure: false", () => {
 
   it.effect("rejects with the failing read's error", () =>
     Effect.gen(function* () {
-      const { publicClient } = setup();
-      yield* expectRejection(
-        () =>
-          batch(publicClient, {
-            requests: [operatorRequest(approved), operatorRequest(reverting)],
-            allowFailure: false,
-          }),
+      const { ens } = setup();
+      yield* expectFailure(
+        batchEffect(ens, {
+          requests: [operatorRequest(approved), operatorRequest(reverting)],
+          allowFailure: false,
+        }),
         { _tag: "UnauthorizedError", code: "NOT_OWNER" },
       );
     }),

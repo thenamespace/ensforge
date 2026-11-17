@@ -1,12 +1,13 @@
 import { assert, describe } from "@effect/vitest";
 import { Effect } from "effect";
 
+import { Actions } from "@ensforge/sdk/effect";
 import { Devnet, profileNames, type ProfileName } from "@ensforge/test-devnet";
 import { allFixtures, Fixtures, seededOn } from "@ensforge/test-fixtures";
-import { expectRejection } from "@ensforge/test-harness";
+import { expectFailure } from "@ensforge/test-harness";
 import { labelhash, namehash } from "viem";
 
-import { call, ensforge, onProfile } from "../support/chain.ts";
+import { ensforge, onProfile } from "../support/chain.ts";
 import {
   atStage,
   holder,
@@ -186,7 +187,7 @@ describe("name.get", () => {
               const wanted =
                 fixture.facts["premigrated"] === true ? premigrated(expectation) : expectation;
               const stage = stageOf(profile);
-              const state = yield* call(() => ensforge(devnet).name.get({ name: fixture.name }));
+              const state = yield* Actions.name.get(ensforge(devnet), { name: fixture.name });
 
               assert.deepStrictEqual(
                 {
@@ -226,21 +227,21 @@ describe("name.get", () => {
           const ens = ensforge(yield* Devnet);
           const { accounts } = yield* Devnet;
 
-          const managed = yield* call(() =>
-            ens.name.get({ name: fixtures.byId("v1.unwrapped.manager").name }),
-          );
+          const managed = yield* Actions.name.get(ens, {
+            name: fixtures.byId("v1.unwrapped.manager").name,
+          });
           assert.include(managed, { registrant: accounts.alice, manager: accounts.bob });
-          const transferred = yield* call(() =>
-            ens.name.get({ name: fixtures.byId("v1.unwrapped.transferred").name }),
-          );
+          const transferred = yield* Actions.name.get(ens, {
+            name: fixtures.byId("v1.unwrapped.transferred").name,
+          });
           assert.include(transferred, { registrant: accounts.bob, manager: accounts.alice });
-          const orphan = yield* call(() =>
-            ens.name.get({ name: fixtures.byId("v1.unwrapped.registrar-only").name }),
-          );
+          const orphan = yield* Actions.name.get(ens, {
+            name: fixtures.byId("v1.unwrapped.registrar-only").name,
+          });
           assert.include(orphan, { registrant: accounts.alice, manager: null, resolver: null });
 
           const plain = fixtures.byId("v1.unwrapped");
-          const state = yield* call(() => ens.name.get({ name: plain.name }));
+          const state = yield* Actions.name.get(ens, { name: plain.name });
           assert.strictEqual(state.expiry, BigInt(String(plain.facts["expiry"])));
           assert.strictEqual(
             state.gracePeriodEnd,
@@ -259,7 +260,7 @@ describe("name.get", () => {
           const ens = ensforge(yield* Devnet);
 
           const plain = fixtures.byId("v2.registered");
-          const state = yield* call(() => ens.name.get({ name: plain.name }));
+          const state = yield* Actions.name.get(ens, { name: plain.name });
           assert.strictEqual(state.expiry, BigInt(String(plain.facts["expiry"])));
           assert.strictEqual(
             state.gracePeriodEnd,
@@ -267,12 +268,12 @@ describe("name.get", () => {
           );
 
           const regenerated = fixtures.byId("v2.regenerated");
-          const current = yield* call(() => ens.name.get({ name: regenerated.name }));
+          const current = yield* Actions.name.get(ens, { name: regenerated.name });
           assert.strictEqual(current.tokenId, BigInt(String(regenerated.facts["tokenId"])));
           assert.strictEqual(current.resource, BigInt(String(regenerated.facts["resource"])));
 
           const deep = fixtures.byId("v2.subnames");
-          const sub = yield* call(() => ens.name.get({ name: deep.name }));
+          const sub = yield* Actions.name.get(ens, { name: deep.name });
           assert.strictEqual(sub.registry, deep.facts["registry"]);
         }),
       { meta: { cases: ["M:A25", "W24", "M:A18"] } },
@@ -285,7 +286,7 @@ describe("name.get", () => {
           const fixtures = yield* Fixtures;
           const ens = ensforge(yield* Devnet);
           const wrapped = fixtures.byId("v1.wrapped");
-          const state = yield* call(() => ens.name.get({ name: wrapped.name }));
+          const state = yield* Actions.name.get(ens, { name: wrapped.name });
           assert.strictEqual(state.tokenId, BigInt(namehash(wrapped.name)));
           assert.strictEqual(state.expiry, BigInt(String(wrapped.facts["expiry"])));
         }),
@@ -298,8 +299,8 @@ describe("name.get", () => {
         Effect.gen(function* () {
           const fixtures = yield* Fixtures;
           const ens = ensforge(yield* Devnet);
-          yield* expectRejection(
-            () => ens.name.get({ name: fixtures.byId("resolver.registry-reverts").name }),
+          yield* expectFailure(
+            Actions.name.get(ens, { name: fixtures.byId("resolver.registry-reverts").name }),
             {
               _tag: "ContractRevertError",
               code: "CONTRACT_REVERTED",
@@ -314,10 +315,10 @@ describe("name.get", () => {
       () =>
         Effect.gen(function* () {
           const ens = ensforge(yield* Devnet);
-          const upper = yield* call(() => ens.name.get({ name: "V1-PLAIN.ETH" }));
+          const upper = yield* Actions.name.get(ens, { name: "V1-PLAIN.ETH" });
           assert.strictEqual(upper.name, "v1-plain.eth");
           for (const name of ["a..eth", "", ".", "nick\u200c.eth"]) {
-            yield* expectRejection(() => ens.name.get({ name }), {
+            yield* expectFailure(Actions.name.get(ens, { name }), {
               _tag: "InvalidInputError",
               code: "INVALID_NAME",
             });
@@ -336,13 +337,13 @@ describe("name.getLabel", () => {
         Effect.gen(function* () {
           const ens = ensforge(yield* Devnet);
           assert.strictEqual(
-            yield* call(() => ens.name.getLabel({ labelhash: labelhash("v2-plain") })),
+            yield* Actions.name.getLabel(ens, { labelhash: labelhash("v2-plain") }),
             "v2-plain",
           );
           assert.strictEqual(
-            yield* call(() =>
-              ens.name.getLabel({ labelhash: labelhash("never revealed by ensforge") }),
-            ),
+            yield* Actions.name.getLabel(ens, {
+              labelhash: labelhash("never revealed by ensforge"),
+            }),
             null,
           );
         }),

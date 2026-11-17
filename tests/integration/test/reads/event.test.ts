@@ -1,10 +1,11 @@
 import { assert, describe } from "@effect/vitest";
 import { Effect } from "effect";
 
+import { Actions } from "@ensforge/sdk/effect";
 import { Devnet } from "@ensforge/test-devnet";
 import { Fixtures } from "@ensforge/test-fixtures";
 
-import { call, ensforge, onProfile } from "../support/chain.ts";
+import { ensforge, onProfile } from "../support/chain.ts";
 
 describe("event.get", () => {
   onProfile("v1-live")("v1-live", (it) => {
@@ -14,7 +15,7 @@ describe("event.get", () => {
         const ens = ensforge(yield* Devnet);
         const name = fixtures.byId("v1.unwrapped").name;
 
-        const events = yield* call(() => ens.event.get({ name, fromBlock: 0n }));
+        const events = yield* Actions.event.get(ens, { name, fromBlock: 0n });
         const order = events.map((event) => [event.blockNumber, event.logIndex] as const);
         assert.deepStrictEqual(
           order,
@@ -25,9 +26,11 @@ describe("event.get", () => {
           ["registration", "transfer", "resolver"],
         );
 
-        const resolvers = yield* call(() =>
-          ens.event.get({ name, fromBlock: 0n, types: ["resolver"] }),
-        );
+        const resolvers = yield* Actions.event.get(ens, {
+          name,
+          fromBlock: 0n,
+          types: ["resolver"],
+        });
         assert.isAbove(resolvers.length, 0);
         assert.isTrue(resolvers.every((event) => event.type === "resolver"));
       }),

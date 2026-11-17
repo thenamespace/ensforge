@@ -2,12 +2,13 @@ import { assert, describe } from "@effect/vitest";
 import { Effect } from "effect";
 
 import { Abis } from "@ensforge/contracts";
+import { Actions } from "@ensforge/sdk/effect";
 import { Devnet } from "@ensforge/test-devnet";
 import { Fixtures } from "@ensforge/test-fixtures";
-import { expectRejection } from "@ensforge/test-harness";
+import { expectFailure } from "@ensforge/test-harness";
 import { keccak256, toHex, type Address } from "viem";
 
-import { atTimestamp, call, ensforge, onProfile } from "../support/chain.ts";
+import { atTimestamp, ensforge, onProfile } from "../support/chain.ts";
 
 const day = 86_400n;
 const year = 365n * day;
@@ -17,7 +18,7 @@ describe("registration reads", () => {
     it.effect("reports the deployment's registrar, renewer and windows", () =>
       Effect.gen(function* () {
         const devnet = yield* Devnet;
-        const parameters = yield* call(() => ensforge(devnet).registration.getParameters());
+        const parameters = yield* Actions.registration.getParameters(ensforge(devnet));
 
         assert.deepInclude(parameters, {
           registrar: devnet.contracts["v2.ethRegistrar"] as Address,
@@ -51,8 +52,8 @@ describe("registration reads", () => {
 
           const disagreements = yield* Effect.forEach(names, (name) =>
             Effect.all([
-              call(() => ens.registration.isAvailable({ name })),
-              call(() => ens.name.get({ name })),
+              Actions.registration.isAvailable(ens, { name }),
+              Actions.name.get(ens, { name }),
             ]).pipe(
               Effect.map(([available, state]) =>
                 available === state.available ? [] : [`${name}: ${available}`],
@@ -70,7 +71,7 @@ describe("registration reads", () => {
         Effect.gen(function* () {
           const ens = ensforge(yield* Devnet);
           const price = (name: string) =>
-            call(() => ens.registration.getPrice({ name, duration: year }));
+            Actions.registration.getPrice(ens, { name, duration: year });
 
           const [three, four, five, phoenix] = yield* Effect.all([
             price("qqq.eth"),
@@ -83,9 +84,9 @@ describe("registration reads", () => {
           assert.strictEqual(phoenix.base, three.base);
           assert.strictEqual(three.premium, 0n);
 
-          assert.isFalse(yield* call(() => ens.registration.isAvailable({ name: "qq.eth" })));
-          yield* expectRejection(
-            () => ens.registration.getPrice({ name: "qq.eth", duration: year }),
+          assert.isFalse(yield* Actions.registration.isAvailable(ens, { name: "qq.eth" }));
+          yield* expectFailure(
+            Actions.registration.getPrice(ens, { name: "qq.eth", duration: year }),
             {
               _tag: "InvalidInputError",
               code: "INVALID_NAME",
@@ -104,7 +105,7 @@ describe("registration reads", () => {
           const released = fixtures.byId("registration.v2-premium");
           const graceEnd = BigInt(String(released.facts["expiry"])) + 28n * day;
           const priceAt = (at: bigint) =>
-            call(() => ens.registration.getPrice({ name: released.name, duration: year, at }));
+            Actions.registration.getPrice(ens, { name: released.name, duration: year, at });
 
           const [start, nextDay, after] = yield* Effect.all([
             priceAt(graceEnd),
@@ -124,9 +125,7 @@ describe("registration reads", () => {
         Effect.gen(function* () {
           const ens = ensforge(yield* Devnet);
           const priceIn = (paymentToken: "usdc" | "dai") =>
-            call(() =>
-              ens.registration.getPrice({ name: "qqqqq.eth", duration: year, paymentToken }),
-            );
+            Actions.registration.getPrice(ens, { name: "qqqqq.eth", duration: year, paymentToken });
           const [usdc, dai] = yield* Effect.all([priceIn("usdc"), priceIn("dai")]);
 
           assert.strictEqual(dai.token.symbol, "DAI");
@@ -142,11 +141,11 @@ describe("registration reads", () => {
           const fixtures = yield* Fixtures;
           const ens = ensforge(yield* Devnet);
           const renewal = (names: string | readonly string[]) =>
-            ens.registration.getRenewalPrice({ names, duration: year });
+            Actions.registration.getRenewalPrice(ens, { names, duration: year });
           const v2Name = fixtures.byId("v2.registered").name;
           const premigrated = fixtures.byId("v2.reserved").name;
 
-          const both = yield* call(() => renewal([v2Name, premigrated]));
+          const both = yield* renewal([v2Name, premigrated]);
           assert.deepStrictEqual(
             both.items.map((item) => [item.name, item.route]),
             [
@@ -160,7 +159,7 @@ describe("registration reads", () => {
           );
 
           for (const id of ["v1.unwrapped", "v2.expired"]) {
-            yield* expectRejection(() => renewal(fixtures.byId(id).name), {
+            yield* expectFailure(renewal(fixtures.byId(id).name), {
               _tag: "NameStateError",
               code: "NAME_NOT_RENEWABLE",
             });
@@ -177,9 +176,9 @@ describe("registration reads", () => {
           const ens = ensforge(yield* Devnet);
           const name = fixtures.byId("v2.registered").name;
           const amountFor = (years: bigint) =>
-            call(() =>
-              ens.registration.getRenewalPrice({ names: name, duration: years * year }),
-            ).pipe(Effect.map((price) => price.total));
+            Actions.registration
+              .getRenewalPrice(ens, { names: name, duration: years * year })
+              .pipe(Effect.map((price) => price.total));
 
           const [one, two, three, six] = yield* Effect.all([
             amountFor(1n),
@@ -205,7 +204,7 @@ describe("registration reads", () => {
           const devnet = yield* Devnet;
           const ens = ensforge(devnet);
           const commitment = keccak256(toHex("integration commitment"));
-          const status = () => call(() => ens.registration.getCommitmentStatus({ commitment }));
+          const status = () => Actions.registration.getCommitmentStatus(ens, { commitment });
 
           assert.strictEqual((yield* status()).status, "unknown");
           const { latest } = yield* Effect.promise(() =>
@@ -245,7 +244,7 @@ describe("registration reads", () => {
     it.effect("fails with a typed error where ENSv2 is not deployed", () =>
       Effect.gen(function* () {
         const ens = ensforge(yield* Devnet);
-        yield* expectRejection(() => ens.registration.isAvailable({ name: "v1-plain.eth" }), {
+        yield* expectFailure(Actions.registration.isAvailable(ens, { name: "v1-plain.eth" }), {
           _tag: "UnsupportedError",
           code: "UNSUPPORTED_ON_DEPLOYMENT",
         });

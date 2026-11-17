@@ -1,10 +1,11 @@
 import { assert, describe } from "@effect/vitest";
 import { Effect } from "effect";
 
+import { Actions } from "@ensforge/sdk/effect";
 import { Devnet } from "@ensforge/test-devnet";
 import { Fixtures } from "@ensforge/test-fixtures";
 
-import { atTimestamp, call, ensforge, onProfile } from "../support/chain.ts";
+import { atTimestamp, ensforge, onProfile } from "../support/chain.ts";
 
 const days = (count: bigint) => count * 86_400n;
 
@@ -21,7 +22,7 @@ const timeline = (fixtureId: string, offsets: readonly bigint[]) =>
       atTimestamp(
         devnet,
         expiry + offset,
-        call(() => ens.name.get({ name: fixture.name })).pipe(
+        Actions.name.get(ens, { name: fixture.name }).pipe(
           Effect.map((state) => ({
             status: state.status,
             owner: state.owner === null ? null : "owner",

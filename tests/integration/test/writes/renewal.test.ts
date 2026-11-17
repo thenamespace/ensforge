@@ -2,12 +2,13 @@ import { assert, describe } from "@effect/vitest";
 import { Effect } from "effect";
 
 import { Abis } from "@ensforge/contracts";
+import { Actions } from "@ensforge/sdk/effect";
 import { Devnet } from "@ensforge/test-devnet";
 import { Fixtures } from "@ensforge/test-fixtures";
-import { expectRejection } from "@ensforge/test-harness";
+import { expectFailure } from "@ensforge/test-harness";
 import { labelhash, type Address } from "viem";
 
-import { call, ensforge, isolated, onProfile } from "../support/chain.ts";
+import { ensforge, isolated, onProfile } from "../support/chain.ts";
 import { ethEntry } from "./support.ts";
 
 const year = 31_536_000n;
@@ -30,12 +31,14 @@ describe("renewal", () => {
               devnet,
               Effect.gen(function* () {
                 const before = yield* ethEntry(devnet, labelOf(name));
-                const quote = yield* call(() =>
-                  ens.registration.getRenewalPrice({ names: name, duration: year }),
-                );
-                const result = yield* call(() =>
-                  ens.registration.renewSync({ names: name, duration: year }),
-                );
+                const quote = yield* Actions.registration.getRenewalPrice(ens, {
+                  names: name,
+                  duration: year,
+                });
+                const result = yield* Actions.registration.renewSync(ens, {
+                  names: name,
+                  duration: year,
+                });
                 const after = yield* ethEntry(devnet, labelOf(name));
 
                 assert.strictEqual(after.expiry, before.expiry + year, id);
@@ -71,9 +74,10 @@ describe("renewal", () => {
             devnet,
             Effect.gen(function* () {
               const before = yield* expires();
-              const { plan } = yield* call(() =>
-                ens.registration.renewSync({ names: name, duration: year }),
-              );
+              const { plan } = yield* Actions.registration.renewSync(ens, {
+                names: name,
+                duration: year,
+              });
               assert.isTrue(
                 plan.calls.some(
                   (item) =>
@@ -100,12 +104,14 @@ describe("renewal", () => {
             devnet,
             Effect.gen(function* () {
               const before = yield* ethEntry(devnet, labelOf(name));
-              const once = yield* call(() =>
-                ens.registration.getRenewalPrice({ names: name, duration: year }),
-              );
-              const result = yield* call(() =>
-                ens.registration.renewSync({ names: [name, name], duration: year }),
-              );
+              const once = yield* Actions.registration.getRenewalPrice(ens, {
+                names: name,
+                duration: year,
+              });
+              const result = yield* Actions.registration.renewSync(ens, {
+                names: [name, name],
+                duration: year,
+              });
               // On chain the durations would stack; ensforge drops the duplicate.
               assert.strictEqual(
                 (yield* ethEntry(devnet, labelOf(name))).expiry,
@@ -124,8 +130,8 @@ describe("renewal", () => {
         const devnet = yield* Devnet;
         const ens = ensforge(devnet, { account: devnet.accounts.alice });
         for (const id of ["v2.expired", "v1.unwrapped"]) {
-          yield* expectRejection(
-            () => ens.registration.renew({ names: fixtures.byId(id).name, duration: year }),
+          yield* expectFailure(
+            Actions.registration.renew(ens, { names: fixtures.byId(id).name, duration: year }),
             { _tag: "NameStateError", code: "NAME_NOT_RENEWABLE" },
           );
         }

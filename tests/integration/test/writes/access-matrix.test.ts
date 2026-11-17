@@ -1,11 +1,12 @@
 import { assert, describe } from "@effect/vitest";
 import { Effect } from "effect";
 
+import { Actions } from "@ensforge/sdk/effect";
 import { Devnet, type DevnetInstance, type ProfileName } from "@ensforge/test-devnet";
 import { Fixtures, type FixturesApi } from "@ensforge/test-fixtures";
-import { expectRejection, type ExpectedError } from "@ensforge/test-harness";
+import { expectFailure, type ExpectedError } from "@ensforge/test-harness";
 
-import { call, ensforge, isolated, onProfile, passWaits } from "../support/chain.ts";
+import { ensforge, isolated, onProfile, passWaits, type SyncAction } from "../support/chain.ts";
 import { testWallet } from "../support/wallet.ts";
 
 type AccountName = keyof DevnetInstance["accounts"];
@@ -290,29 +291,25 @@ describe("access matrix", () => {
               const account = devnet.accounts[row.account];
               const wallet = testWallet(devnet, account);
               const [domain = "", name = ""] = row.path.split(".");
-              const group =
-                (
-                  ensforge(devnet, { account, wallet }) as unknown as Record<
-                    string,
-                    Record<string, (o: unknown) => Promise<unknown>>
-                  >
-                )[domain] ?? {};
-              const sync = group[`${name}Sync`];
+              const sync = (Actions as unknown as Record<string, Record<string, SyncAction>>)[
+                domain
+              ]?.[`${name}Sync`];
               if (sync === undefined) return assert.fail(`${row.path} has no Sync form`);
+              const client = ensforge(devnet, { account, wallet });
               const options = { ...row.options(fixtures, devnet), onStep: passWaits(devnet) };
 
               yield* isolated(
                 devnet,
                 Effect.gen(function* () {
                   if (row.expected === "allowed") {
-                    const { receipts } = (yield* call(() => sync(options))) as {
+                    const { receipts } = (yield* sync(client, options)) as {
                       readonly receipts: readonly { readonly status: string }[];
                     };
                     assert.isTrue(receipts.every(({ status }) => status === "success"));
                     return;
                   }
                   const { missingRoles, ...expected } = row.expected;
-                  const error = (yield* expectRejection(() => sync(options), expected)) as {
+                  const error = (yield* expectFailure(sync(client, options), expected)) as {
                     readonly missingRoles?: readonly string[];
                   };
                   if (missingRoles !== undefined)

@@ -2,8 +2,8 @@ import { describe, it } from "@effect/vitest";
 import { Effect } from "effect";
 
 import { Abis } from "@ensforge/contracts";
-import { Actions } from "@ensforge/sdk";
-import { expectRejection, scriptedTransport } from "@ensforge/test-harness";
+import { Actions } from "@ensforge/sdk/effect";
+import { expectFailure, scriptedTransport } from "@ensforge/test-harness";
 import {
   createPublicClient,
   encodeErrorResult,
@@ -43,13 +43,10 @@ describe("resolver.resolve", () => {
         batch: { multicall: false },
       });
 
-      yield* expectRejection(
-        () => Actions.resolver.resolve(ens, { name: "nick.eth", data: addrCall }),
-        {
-          _tag: "ConfigError",
-          code: "CCIP_READ_DISABLED",
-        },
-      );
+      yield* expectFailure(Actions.resolver.resolve(ens, { name: "nick.eth", data: addrCall }), {
+        _tag: "ConfigError",
+        code: "CCIP_READ_DISABLED",
+      });
     }),
   );
 });

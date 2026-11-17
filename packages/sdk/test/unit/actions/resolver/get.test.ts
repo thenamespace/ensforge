@@ -1,8 +1,8 @@
 import { assert, describe, it } from "@effect/vitest";
 import { Effect } from "effect";
 
-import { Actions } from "@ensforge/sdk";
-import { expectRejection } from "@ensforge/test-harness";
+import { Actions } from "@ensforge/sdk/effect";
+import { expectFailure } from "@ensforge/test-harness";
 import { getAddress } from "viem";
 
 import { clientFor, deployment, resolverA, signer } from "../world.js";
@@ -23,9 +23,7 @@ describe("resolver.get", () => {
         extended: [parentResolver],
       });
 
-      const resolver = yield* Effect.promise(() =>
-        Actions.resolver.get(ens, { name: subname.name }),
-      );
+      const resolver = yield* Actions.resolver.get(ens, { name: subname.name });
       assert.deepInclude(resolver, { address: parentResolver, inherited: true, kind: "extended" });
     }),
   );
@@ -35,11 +33,11 @@ describe("resolver.get", () => {
     Effect.gen(function* () {
       const { ens } = clientFor({ ...subname, found: { resolver: resolverA, offset: 4n } });
 
-      assert.isNull(yield* Effect.promise(() => Actions.resolver.get(ens, { name: subname.name })));
-      yield* expectRejection(
-        () => Actions.resolver.get(ens, { name: subname.name, strict: true }),
-        { _tag: "NotFoundError", code: "RESOLVER_NOT_FOUND" },
-      );
+      assert.isNull(yield* Actions.resolver.get(ens, { name: subname.name }));
+      yield* expectFailure(Actions.resolver.get(ens, { name: subname.name, strict: true }), {
+        _tag: "NotFoundError",
+        code: "RESOLVER_NOT_FOUND",
+      });
     }),
   );
 
@@ -61,14 +59,12 @@ describe("resolver.get", () => {
         extended: [deployment.v2.contracts.ensV2Resolver],
       });
 
-      assert.deepInclude(
-        yield* Effect.promise(() => Actions.resolver.get(served.ens, { name: subname.name })),
-        { address: parentResolver, inherited: true },
-      );
+      assert.deepInclude(yield* Actions.resolver.get(served.ens, { name: subname.name }), {
+        address: parentResolver,
+        inherited: true,
+      });
       for (const { ens } of [unserved, looping]) {
-        assert.isNull(
-          yield* Effect.promise(() => Actions.resolver.get(ens, { name: subname.name })),
-        );
+        assert.isNull(yield* Actions.resolver.get(ens, { name: subname.name }));
       }
     }),
   );
@@ -79,14 +75,14 @@ describe("resolver.get", () => {
       const reached = clientFor({ ...name, found: { resolver: resolverA, offset: 0n } });
       const unreached = clientFor(name);
 
-      assert.deepInclude(
-        yield* Effect.promise(() => Actions.resolver.get(reached.ens, { name: name.name })),
-        { address: getAddress(resolverA), serving: true },
-      );
-      assert.deepInclude(
-        yield* Effect.promise(() => Actions.resolver.get(unreached.ens, { name: name.name })),
-        { address: getAddress(resolverA), serving: false },
-      );
+      assert.deepInclude(yield* Actions.resolver.get(reached.ens, { name: name.name }), {
+        address: getAddress(resolverA),
+        serving: true,
+      });
+      assert.deepInclude(yield* Actions.resolver.get(unreached.ens, { name: name.name }), {
+        address: getAddress(resolverA),
+        serving: false,
+      });
     }),
   );
 });

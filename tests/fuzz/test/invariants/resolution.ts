@@ -1,6 +1,6 @@
 import { Effect } from "effect";
 
-import { Errors } from "@ensforge/sdk";
+import { Actions } from "@ensforge/sdk/effect";
 import { getEnsText } from "viem/actions";
 
 import { targetsOf } from "../commands/names.ts";
@@ -20,11 +20,9 @@ export const resolutionAgrees = Effect.fnUntraced(function* (
 ) {
   const { world } = context;
   const name = choose(targetsOf(world));
-  const ensforge = yield* Effect.promise(() =>
-    context.reader.record.getText({ name, key: "url" }).then(
-      (url) => url,
-      (error: unknown) => (Errors.is(error) ? `error ${error.code}` : `untyped ${String(error)}`),
-    ),
+  const ensforge = yield* Actions.record.getText(context.reader, { name, key: "url" }).pipe(
+    Effect.catch((error) => Effect.succeed(`error ${error.code}`)),
+    Effect.catchDefect((defect) => Effect.succeed(`untyped ${String(defect)}`)),
   );
   const viem = yield* Effect.promise(() =>
     getEnsText(world.devnet.client, { name, key: "url" }).then(

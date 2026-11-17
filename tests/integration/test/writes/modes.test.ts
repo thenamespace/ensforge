@@ -1,10 +1,11 @@
 import { assert, describe } from "@effect/vitest";
 import { Effect } from "effect";
 
+import { Actions } from "@ensforge/sdk/effect";
 import { Devnet } from "@ensforge/test-devnet";
 import { Fixtures } from "@ensforge/test-fixtures";
 
-import { call, ensforge, isolated, onProfile } from "../support/chain.ts";
+import { ensforge, isolated, onProfile } from "../support/chain.ts";
 import { testWallet } from "../support/wallet.ts";
 
 describe("write send modes", () => {
@@ -21,13 +22,11 @@ describe("write send modes", () => {
         yield* isolated(
           devnet,
           Effect.gen(function* () {
-            const { receipt } = yield* call(() =>
-              ens.record.setSync({
-                name,
-                texts: { url: "https://bob.example" },
-                account: accounts.bob,
-              }),
-            );
+            const { receipt } = yield* Actions.record.setSync(ens, {
+              name,
+              texts: { url: "https://bob.example" },
+              account: accounts.bob,
+            });
             assert.strictEqual(receipt.from.toLowerCase(), accounts.bob.toLowerCase());
           }),
         );
@@ -51,7 +50,7 @@ describe("write send modes", () => {
             Effect.gen(function* () {
               const wallet = testWallet(devnet, alice, { atomic });
               const ens = ensforge(devnet, { account: alice, wallet });
-              const result = yield* call(() => ens.record.setSync({ ...options, ...extra }));
+              const result = yield* Actions.record.setSync(ens, { ...options, ...extra });
               return {
                 result,
                 sendCalls: wallet.methods.filter((m) => m === "wallet_sendCalls").length,
@@ -90,9 +89,7 @@ describe("write send modes", () => {
             Effect.gen(function* () {
               const wallet = testWallet(devnet, carol, { atomic: true });
               const ens = ensforge(devnet, { account: carol, wallet });
-              const result = yield* call(() =>
-                ens.registration.renewSync({ ...options, ...extra }),
-              );
+              const result = yield* Actions.registration.renewSync(ens, { ...options, ...extra });
               assert.strictEqual(result.hashes.length, 3);
               const count = (method: string) => wallet.methods.filter((m) => m === method).length;
               return [count("wallet_sendCalls"), count("eth_sendTransaction")];

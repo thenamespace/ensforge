@@ -1,12 +1,13 @@
 import { assert, describe } from "@effect/vitest";
 import { Effect } from "effect";
 
+import { Actions } from "@ensforge/sdk/effect";
 import { Devnet } from "@ensforge/test-devnet";
 import { Fixtures } from "@ensforge/test-fixtures";
-import { expectRejection } from "@ensforge/test-harness";
+import { expectFailure } from "@ensforge/test-harness";
 import type { Address } from "viem";
 
-import { call, ensforge, isolated, onProfile, passWaits } from "../support/chain.ts";
+import { ensforge, isolated, onProfile, passWaits } from "../support/chain.ts";
 import { testWallet } from "../support/wallet.ts";
 import { ethEntry, v1Owners } from "./support.ts";
 
@@ -33,19 +34,17 @@ describe("migration", () => {
               devnet,
               Effect.gen(function* () {
                 assert.strictEqual(
-                  (yield* call(() => ens.migration.get({ name, account: alice }))).route,
+                  (yield* Actions.migration.get(ens, { name, account: alice })).route,
                   route,
                 );
-                yield* call(() =>
-                  ens.migration.migrateSync({
-                    names: name,
-                    resolver: "keep",
-                    onStep: passWaits(devnet),
-                  }),
-                );
+                yield* Actions.migration.migrateSync(ens, {
+                  names: name,
+                  resolver: "keep",
+                  onStep: passWaits(devnet),
+                });
 
                 assert.strictEqual((yield* ethEntry(devnet, label(name))).owner, alice, id);
-                assert.deepInclude(yield* call(() => ens.name.get({ name })), {
+                assert.deepInclude(yield* Actions.name.get(ens, { name }), {
                   kind: "v2-migrated",
                   migrated: true,
                 });
@@ -70,19 +69,14 @@ describe("migration", () => {
           yield* isolated(
             devnet,
             Effect.gen(function* () {
-              yield* call(() =>
-                ensforge(devnet, { account: alice }).migration.migrateSync({
-                  names: locked,
-                  resolver: "keep",
-                  onStep: passWaits(devnet),
-                }),
-              );
-              assert.deepInclude(
-                yield* call(() => ensforge(devnet).registry.get({ name: locked })),
-                {
-                  kind: "wrapper",
-                },
-              );
+              yield* Actions.migration.migrateSync(ensforge(devnet, { account: alice }), {
+                names: locked,
+                resolver: "keep",
+                onStep: passWaits(devnet),
+              });
+              assert.deepInclude(yield* Actions.registry.get(ensforge(devnet), { name: locked }), {
+                kind: "wrapper",
+              });
             }),
           );
 
@@ -92,11 +86,11 @@ describe("migration", () => {
             devnet,
             Effect.gen(function* () {
               assert.strictEqual(
-                (yield* call(() => owner.migration.get({ name: child, account: bob }))).route,
+                (yield* Actions.migration.get(owner, { name: child, account: bob })).route,
                 "locked-child",
               );
-              yield* call(() => owner.migration.migrateSync({ names: child, resolver: "keep" }));
-              assert.deepInclude(yield* call(() => owner.name.get({ name: child })), {
+              yield* Actions.migration.migrateSync(owner, { names: child, resolver: "keep" });
+              assert.deepInclude(yield* Actions.name.get(owner, { name: child }), {
                 kind: "v2-migrated",
                 owner: bob,
               });
@@ -119,21 +113,17 @@ describe("migration", () => {
           yield* isolated(
             devnet,
             Effect.gen(function* () {
-              const before = yield* call(() =>
-                ens.record.getText({ name: withRecords, key: "url" }),
-              );
-              yield* call(() =>
-                ens.migration.migrateSync({
-                  names: withRecords,
-                  resolver: "new",
-                  allowIncompleteRecords: true,
-                  onStep: passWaits(devnet),
-                }),
-              );
-              const resolver = yield* call(() => ens.resolver.get({ name: withRecords }));
+              const before = yield* Actions.record.getText(ens, { name: withRecords, key: "url" });
+              yield* Actions.migration.migrateSync(ens, {
+                names: withRecords,
+                resolver: "new",
+                allowIncompleteRecords: true,
+                onStep: passWaits(devnet),
+              });
+              const resolver = yield* Actions.resolver.get(ens, { name: withRecords });
               assert.strictEqual(resolver?.kind, "permissioned-resolver");
               assert.strictEqual(
-                yield* call(() => ens.record.getText({ name: withRecords, key: "url" })),
+                yield* Actions.record.getText(ens, { name: withRecords, key: "url" }),
                 before,
               );
             }),
@@ -144,28 +134,28 @@ describe("migration", () => {
           yield* isolated(
             devnet,
             Effect.gen(function* () {
-              const { plan } = yield* call(() =>
-                ens.migration.migrateSync({
-                  names: managed,
-                  resolver: "keep",
-                  preserveManager: true,
-                  onStep: passWaits(devnet),
-                }),
-              );
+              const { plan } = yield* Actions.migration.migrateSync(ens, {
+                names: managed,
+                resolver: "keep",
+                preserveManager: true,
+                onStep: passWaits(devnet),
+              });
               assert.deepStrictEqual(
                 plan.steps.map((step) => step.id),
                 ["migrate", "manager"],
               );
-              const roles = yield* call(() =>
-                ens.role.get({ account: bob, target: "registry", name: managed }),
-              );
+              const roles = yield* Actions.role.get(ens, {
+                account: bob,
+                target: "registry",
+                name: managed,
+              });
               assert.include([...roles.names], "setResolver");
             }),
           );
 
           const inGrace = fixtures.byId("v1.unwrapped.grace").name;
-          yield* expectRejection(
-            () => ens.migration.migrate({ names: inGrace, resolver: "keep" }),
+          yield* expectFailure(
+            Actions.migration.migrate(ens, { names: inGrace, resolver: "keep" }),
             {
               _tag: "MigrationError",
               code: "NOT_ELIGIBLE",
@@ -174,20 +164,18 @@ describe("migration", () => {
           yield* isolated(
             devnet,
             Effect.gen(function* () {
-              const { plan } = yield* call(() =>
-                ens.migration.migrateSync({
-                  names: inGrace,
-                  resolver: "keep",
-                  renew: { duration: 31_536_000n },
-                  onStep: passWaits(devnet),
-                }),
-              );
+              const { plan } = yield* Actions.migration.migrateSync(ens, {
+                names: inGrace,
+                resolver: "keep",
+                renew: { duration: 31_536_000n },
+                onStep: passWaits(devnet),
+              });
               assert.deepStrictEqual(
                 plan.steps.map((step) => step.id),
                 ["renew", "migrate"],
               );
               assert.strictEqual(
-                (yield* call(() => ens.name.get({ name: inGrace }))).kind,
+                (yield* Actions.name.get(ens, { name: inGrace })).kind,
                 "v2-migrated",
               );
             }),
@@ -212,12 +200,11 @@ describe("migration", () => {
           for (const [holder, name, blocker] of blocked) {
             const account = devnet.accounts[holder];
             const wallet = testWallet(devnet, account);
-            const error = (yield* expectRejection(
-              () =>
-                ensforge(devnet, { account, wallet }).migration.migrate({
-                  names: name,
-                  resolver: "keep",
-                }),
+            const error = (yield* expectFailure(
+              Actions.migration.migrate(ensforge(devnet, { account, wallet }), {
+                names: name,
+                resolver: "keep",
+              }),
               { _tag: "MigrationError", code: "NOT_ELIGIBLE" },
             )) as { readonly blockers?: readonly string[] };
             assert.include([...(error.blockers ?? [])], blocker, name);

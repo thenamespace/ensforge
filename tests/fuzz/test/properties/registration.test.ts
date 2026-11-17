@@ -2,6 +2,7 @@ import { describe } from "@effect/vitest";
 import { Arbitrary, Effect, Schema } from "effect";
 
 import { Abis } from "@ensforge/contracts";
+import { Actions } from "@ensforge/sdk/effect";
 import { Devnet } from "@ensforge/test-devnet";
 import { Arbitraries } from "@ensforge/test-harness";
 import { ensforge, onProfile } from "@ensforge/test-integration/support/chain";
@@ -46,15 +47,13 @@ describe("registration plans against the contracts", () => {
 
           yield* holds(registrations, (input) =>
             Effect.gen(function* () {
-              const plan = yield* Effect.promise(() =>
-                ens.registration.register.prepare({
-                  names: `${input.label}.eth`,
-                  duration: input.years * year,
-                  owner: input.owner,
-                  secret: input.secret,
-                  referrer: input.referrer,
-                }),
-              );
+              const plan = yield* Actions.registration.register.prepare(ens, {
+                names: `${input.label}.eth`,
+                duration: input.years * year,
+                owner: input.owner,
+                secret: input.secret,
+                referrer: input.referrer,
+              });
               const calls = plan.steps
                 .flatMap((step) => step.calls)
                 .map((call) => ({

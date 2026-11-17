@@ -1,7 +1,7 @@
 import { assert, describe, it } from "@effect/vitest";
 import { Effect } from "effect";
 
-import { expectFailure, expectRejection } from "@ensforge/test-harness";
+import { expectFailure } from "@ensforge/test-harness";
 import {
   fakeBigname,
   fakeGoldsky,
@@ -13,8 +13,8 @@ import { jesse } from "@ensforge/test-harness/indexer/fixtures/goldsky";
 import type { Route } from "@ensforge/test-harness/indexer/routes";
 import { sepolia } from "viem/chains";
 
-import * as EffectActions from "#/actions/effect";
-import * as Actions from "#/actions/indexer/index";
+import * as Actions from "#/actions/effect";
+import * as PromiseActions from "#/actions/indexer/index";
 import { bigname } from "#/indexer/bigname";
 import { fallback } from "#/indexer/fallback";
 import { goldsky } from "#/indexer/goldsky";
@@ -36,19 +36,19 @@ const lastTo = (fake: FakeIndexer, route: Route) => {
 
 describe("indexer actions against bigname", () => {
   // One call per action through the bound client: the route it hits, a query it sends, and what it reads back.
-  it.each<
+  it.effect.each<
     [
       string,
       Route,
-      (client: Client) => Promise<unknown>,
+      (client: Client) => Effect.Effect<unknown, unknown>,
       (answer: never, fake: FakeIndexer) => void,
     ]
   >([
     [
       "getName",
       "/names/{name}",
-      (client) => client.indexer.getName({ name: "Nick.eth", source: "verified" }),
-      (name: Awaited<ReturnType<typeof Actions.getName>>, fake) => {
+      (client) => Actions.indexer.getName(client, { name: "Nick.eth", source: "verified" }),
+      (name: Actions.indexer.getName.ReturnType, fake) => {
         assert.strictEqual(name?.owner, addresses.nick);
         assert.strictEqual(name?.asOfToken, "snap_21000000");
         assert.strictEqual(name?.asOf?.blockNumber, 21_000_000n);
@@ -59,12 +59,12 @@ describe("indexer actions against bigname", () => {
       "getNamesForAddress",
       "/addresses/{address}/names",
       (client) =>
-        client.indexer.getNamesForAddress({
+        Actions.indexer.getNamesForAddress(client, {
           address: addresses.nick.toLowerCase(),
           relation: "resolvesTo",
           coin: "evm",
         }),
-      (page: Awaited<ReturnType<typeof Actions.getNamesForAddress>>, fake) => {
+      (page: Actions.indexer.getNamesForAddress.ReturnType, fake) => {
         const request = lastTo(fake, "/addresses/{address}/names");
         assert.strictEqual(request?.params.address, addresses.nick);
         assert.strictEqual(request?.query.get("coin_type"), "evm");
@@ -74,8 +74,9 @@ describe("indexer actions against bigname", () => {
     [
       "getSubnames",
       "/names/{name}/subnames",
-      (client) => client.indexer.getSubnames({ name: "nick.eth", limit: 2, includeTotal: true }),
-      (page: Awaited<ReturnType<typeof Actions.getSubnames>>) => {
+      (client) =>
+        Actions.indexer.getSubnames(client, { name: "nick.eth", limit: 2, includeTotal: true }),
+      (page: Actions.indexer.getSubnames.ReturnType) => {
         assert.deepStrictEqual(
           [page.items.length, page.cursor, page.hasMore, page.totalCount],
           [2, "c2", true, 3],
@@ -86,8 +87,8 @@ describe("indexer actions against bigname", () => {
     [
       "getHistory",
       "/names/{name}/history",
-      (client) => client.indexer.getHistory({ name: "nick.eth", recordKey: "avatar" }),
-      (page: Awaited<ReturnType<typeof Actions.getHistory>>, fake) => {
+      (client) => Actions.indexer.getHistory(client, { name: "nick.eth", recordKey: "avatar" }),
+      (page: Actions.indexer.getHistory.ReturnType, fake) => {
         assert.strictEqual(
           lastTo(fake, "/names/{name}/history")?.query.get("record_key"),
           "avatar",
@@ -99,8 +100,8 @@ describe("indexer actions against bigname", () => {
     [
       "getEvents",
       "/events",
-      (client) => client.indexer.getEvents({ name: "NICK.eth", types: ["registration"] }),
-      (page: Awaited<ReturnType<typeof Actions.getEvents>>, fake) => {
+      (client) => Actions.indexer.getEvents(client, { name: "NICK.eth", types: ["registration"] }),
+      (page: Actions.indexer.getEvents.ReturnType, fake) => {
         assert.strictEqual(lastTo(fake, "/events")?.query.get("name"), "nick.eth");
         assert.deepStrictEqual(
           page.items.map((event) => event.name),
@@ -111,8 +112,8 @@ describe("indexer actions against bigname", () => {
     [
       "search",
       "/search",
-      (client) => client.indexer.search({ query: "  ALPHA ", match: "contains" }),
-      (page: Awaited<ReturnType<typeof Actions.search>>) => {
+      (client) => Actions.indexer.search(client, { query: "  ALPHA ", match: "contains" }),
+      (page: Actions.indexer.search.ReturnType) => {
         assert.deepStrictEqual(
           page.items.map((item) => item.name),
           ["alpha.nick.eth"],
@@ -122,8 +123,9 @@ describe("indexer actions against bigname", () => {
     [
       "lookup",
       "/lookup",
-      (client) => client.indexer.lookup({ inputs: ["nick.eth", addresses.nick, "nobody.eth"] }),
-      (answer: Awaited<ReturnType<typeof Actions.lookup>>, fake) => {
+      (client) =>
+        Actions.indexer.lookup(client, { inputs: ["nick.eth", addresses.nick, "nobody.eth"] }),
+      (answer: Actions.indexer.lookup.ReturnType, fake) => {
         assert.deepStrictEqual(lastTo(fake, "/lookup")?.body, {
           inputs: [{ name: "nick.eth" }, { address: addresses.nick }, { name: "nobody.eth" }],
         });
@@ -142,13 +144,13 @@ describe("indexer actions against bigname", () => {
       "getNamesByExpiry",
       "/names",
       (client) =>
-        client.indexer.getNamesByExpiry({
+        Actions.indexer.getNamesByExpiry(client, {
           windows: [
             { after: 0n, before: 10n },
             { after: 10n, before: 20n },
           ],
         }),
-      (page: Awaited<ReturnType<typeof Actions.getNamesByExpiry>>, fake) => {
+      (page: Actions.indexer.getNamesByExpiry.ReturnType, fake) => {
         const request = lastTo(fake, "/names");
         assert.deepStrictEqual(request?.query.getAll("expires_window"), ["0..10", "10..20"]);
         assert.strictEqual(request?.query.get("namespace"), "ens");
@@ -161,8 +163,8 @@ describe("indexer actions against bigname", () => {
     [
       "getPrimaryName",
       "/addresses/{address}/primary-name",
-      (client) => client.indexer.getPrimaryName({ address: addresses.nick, coin: "ETH" }),
-      (primary: Awaited<ReturnType<typeof Actions.getPrimaryName>>, fake) => {
+      (client) => Actions.indexer.getPrimaryName(client, { address: addresses.nick, coin: "ETH" }),
+      (primary: Actions.indexer.getPrimaryName.ReturnType, fake) => {
         assert.strictEqual(
           lastTo(fake, "/addresses/{address}/primary-name")?.query.get("coin_type"),
           "60",
@@ -173,8 +175,8 @@ describe("indexer actions against bigname", () => {
     [
       "getRecords",
       "/names/{name}/records",
-      (client) => client.indexer.getRecords({ name: "nick.eth", keys: ["avatar", "url"] }),
-      (records: Awaited<ReturnType<typeof Actions.getRecords>>, fake) => {
+      (client) => Actions.indexer.getRecords(client, { name: "nick.eth", keys: ["avatar", "url"] }),
+      (records: Actions.indexer.getRecords.ReturnType, fake) => {
         const request = lastTo(fake, "/names/{name}/records");
         assert.strictEqual(request?.query.get("keys"), "text:avatar,text:url");
         assert.strictEqual(request?.query.get("include"), "inventory");
@@ -185,8 +187,9 @@ describe("indexer actions against bigname", () => {
     [
       "getPermissions",
       "/permissions",
-      (client) => client.indexer.getPermissions({ name: "nick.eth", includeLineage: true }),
-      (page: Awaited<ReturnType<typeof Actions.getPermissions>>) => {
+      (client) =>
+        Actions.indexer.getPermissions(client, { name: "nick.eth", includeLineage: true }),
+      (page: Actions.indexer.getPermissions.ReturnType) => {
         assert.deepStrictEqual(page.items[0]?.powers, ["set_resolver", "admin_renew"]);
       },
     ],
@@ -194,11 +197,11 @@ describe("indexer actions against bigname", () => {
       "getRegistry",
       "/registries/{chain_id}/{address}",
       (client) =>
-        client.indexer.getRegistry({
+        Actions.indexer.getRegistry(client, {
           address: addresses.registry.toLowerCase(),
           includeCounts: true,
         }),
-      (registry: Awaited<ReturnType<typeof Actions.getRegistry>>, fake) => {
+      (registry: Actions.indexer.getRegistry.ReturnType, fake) => {
         const request = lastTo(fake, "/registries/{chain_id}/{address}");
         assert.deepStrictEqual(request?.params, { chain_id: "1", address: addresses.registry });
         assert.strictEqual(request?.query.get("include"), "counts");
@@ -209,8 +212,11 @@ describe("indexer actions against bigname", () => {
       "getRegistryLabels",
       "/registries/{chain_id}/{address}/labels",
       (client) =>
-        client.indexer.getRegistryLabels({ address: addresses.registry, owner: addresses.nick }),
-      (page: Awaited<ReturnType<typeof Actions.getRegistryLabels>>) => {
+        Actions.indexer.getRegistryLabels(client, {
+          address: addresses.registry,
+          owner: addresses.nick,
+        }),
+      (page: Actions.indexer.getRegistryLabels.ReturnType) => {
         assert.deepStrictEqual(
           page.items.map((label) => [label.authority, label.roleHolderCount]),
           [
@@ -224,8 +230,8 @@ describe("indexer actions against bigname", () => {
     [
       "getResolver",
       "/resolvers/{chain_id}/{address}",
-      (client) => client.indexer.getResolver({ address: addresses.resolverV2 }),
-      (resolver: Awaited<ReturnType<typeof Actions.getResolver>>) => {
+      (client) => Actions.indexer.getResolver(client, { address: addresses.resolverV2 }),
+      (resolver: Actions.indexer.getResolver.ReturnType) => {
         assert.deepStrictEqual(
           [resolver?.names, resolver?.cursor, resolver?.hasMore],
           [["nick.eth"], "c1", true],
@@ -239,8 +245,8 @@ describe("indexer actions against bigname", () => {
     [
       "getResolverLinks",
       "/resolvers/{chain_id}/{address}/links",
-      (client) => client.indexer.getResolverLinks({ address: addresses.resolverV2 }),
-      (page: Awaited<ReturnType<typeof Actions.getResolverLinks>>) => {
+      (client) => Actions.indexer.getResolverLinks(client, { address: addresses.resolverV2 }),
+      (page: Actions.indexer.getResolverLinks.ReturnType) => {
         assert.deepStrictEqual(
           page.items.map((link) => [link.name, link.isDefault, link.blockNumber]),
           [
@@ -253,8 +259,9 @@ describe("indexer actions against bigname", () => {
     [
       "getResolverRoles",
       "/resolvers/{chain_id}/{address}/roles",
-      (client) => client.indexer.getResolverRoles({ address: addresses.resolverV2, chainId: 10 }),
-      (page: Awaited<ReturnType<typeof Actions.getResolverRoles>>, fake) => {
+      (client) =>
+        Actions.indexer.getResolverRoles(client, { address: addresses.resolverV2, chainId: 10 }),
+      (page: Actions.indexer.getResolverRoles.ReturnType, fake) => {
         assert.strictEqual(
           lastTo(fake, "/resolvers/{chain_id}/{address}/roles")?.params.chain_id,
           "10",
@@ -265,8 +272,9 @@ describe("indexer actions against bigname", () => {
     [
       "getResolvers",
       "/resolvers",
-      (client) => client.indexer.getResolvers({ roleHolder: addresses.nick.toLowerCase() }),
-      (page: Awaited<ReturnType<typeof Actions.getResolvers>>, fake) => {
+      (client) =>
+        Actions.indexer.getResolvers(client, { roleHolder: addresses.nick.toLowerCase() }),
+      (page: Actions.indexer.getResolvers.ReturnType, fake) => {
         assert.strictEqual(lastTo(fake, "/resolvers")?.query.get("role_holder"), addresses.nick);
         assert.strictEqual(page.items[0]?.address, addresses.resolverV2);
       },
@@ -274,8 +282,8 @@ describe("indexer actions against bigname", () => {
     [
       "getNamespace",
       "/namespaces/{namespace}",
-      (client) => client.indexer.getNamespace({}),
-      (info: Awaited<ReturnType<typeof Actions.getNamespace>>) => {
+      (client) => Actions.indexer.getNamespace(client, {}),
+      (info: Actions.indexer.getNamespace.ReturnType) => {
         assert.strictEqual(info?.networks[0]?.protocol, "ensV1");
         assert.strictEqual(info?.capabilities.history, "partial");
       },
@@ -283,41 +291,43 @@ describe("indexer actions against bigname", () => {
     [
       "getStatus",
       "/status",
-      (client) => client.indexer.getStatus({}),
-      (status: Awaited<ReturnType<typeof Actions.getStatus>>) => {
+      (client) => Actions.indexer.getStatus(client, {}),
+      (status: Actions.indexer.getStatus.ReturnType) => {
         assert.strictEqual(status.indexer, "bigname");
         assert.strictEqual(status.chains[1]?.indexed, 21_000_000n);
       },
     ],
-  ])("%s calls %s", async (_, route, call, check) => {
-    const { fake, client } = setup();
+  ])("%s calls %s", ([, route, call, check]) =>
+    Effect.gen(function* () {
+      const { fake, client } = setup();
 
-    const answer = await call(client);
+      const answer = yield* call(client);
 
-    assert.isDefined(lastTo(fake, route));
-    check(answer as never, fake);
-  });
+      assert.isDefined(lastTo(fake, route));
+      check(answer as never, fake);
+    }),
+  );
 
-  it("probes the indexer once, then sends only queries", async () => {
-    const { fake, client } = setup();
+  it.effect("probes the indexer once, then sends only queries", () =>
+    Effect.gen(function* () {
+      const { fake, client } = setup();
 
-    await client.indexer.getName({ name: "nick.eth" });
-    await client.indexer.getSubnames({ name: "nick.eth" });
+      yield* Actions.indexer.getName(client, { name: "nick.eth" });
+      yield* Actions.indexer.getSubnames(client, { name: "nick.eth" });
 
-    assert.deepStrictEqual(
-      fake.requests.map((request) => request.route),
-      ["/namespaces/{namespace}", "/status", "/names/{name}", "/names/{name}/subnames"],
-    );
-  });
+      assert.deepStrictEqual(
+        fake.requests.map((request) => request.route),
+        ["/namespaces/{namespace}", "/status", "/names/{name}", "/names/{name}/subnames"],
+      );
+    }),
+  );
 
   it("reads a name through the standalone and Effect forms alike", async () => {
     const { client } = setup();
 
     const bound = await client.indexer.getName({ name: "nick.eth" });
-    const standalone = await Actions.getName(client, { name: "nick.eth" });
-    const effect = await Effect.runPromise(
-      EffectActions.indexer.getName(client, { name: "nick.eth" }),
-    );
+    const standalone = await PromiseActions.getName(client, { name: "nick.eth" });
+    const effect = await Effect.runPromise(Actions.indexer.getName(client, { name: "nick.eth" }));
 
     assert.deepStrictEqual(standalone, bound);
     assert.deepStrictEqual(effect, bound);
@@ -329,14 +339,14 @@ describe("indexer actions against bigname", () => {
       const { client } = setup();
       const unknown = "0x000000000000000000000000000000000000dEaD";
 
-      assert.isNull(yield* EffectActions.indexer.getName(client, { name: "nobody.eth" }));
-      assert.isNull(yield* EffectActions.indexer.getRecords(client, { name: "nobody.eth" }));
-      assert.isNull(yield* EffectActions.indexer.getRegistry(client, { address: unknown }));
-      assert.isNull(yield* EffectActions.indexer.getResolver(client, { address: unknown }));
-      assert.isNull(yield* EffectActions.indexer.getNamespace(client, { namespace: "basenames" }));
+      assert.isNull(yield* Actions.indexer.getName(client, { name: "nobody.eth" }));
+      assert.isNull(yield* Actions.indexer.getRecords(client, { name: "nobody.eth" }));
+      assert.isNull(yield* Actions.indexer.getRegistry(client, { address: unknown }));
+      assert.isNull(yield* Actions.indexer.getResolver(client, { address: unknown }));
+      assert.isNull(yield* Actions.indexer.getNamespace(client, { namespace: "basenames" }));
 
       const error = yield* expectFailure(
-        EffectActions.indexer.getName(client, { name: "nobody.eth", strict: true }),
+        Actions.indexer.getName(client, { name: "nobody.eth", strict: true }),
         { _tag: "NotFoundError", code: "INDEXER_NOT_FOUND" },
       );
       assert.strictEqual((error as unknown as { resource: string }).resource, "nobody.eth");
@@ -346,39 +356,47 @@ describe("indexer actions against bigname", () => {
   it.effect("lists of unknown subjects fail with INDEXER_NOT_FOUND", () =>
     Effect.gen(function* () {
       const { client } = setup();
-      yield* expectFailure(EffectActions.indexer.getSubnames(client, { name: "nobody.eth" }), {
+      yield* expectFailure(Actions.indexer.getSubnames(client, { name: "nobody.eth" }), {
         _tag: "NotFoundError",
         code: "INDEXER_NOT_FOUND",
       });
     }),
   );
 
-  it("reads records on a given resolver", async () => {
-    const { fake, client } = setup();
+  it.effect("reads records on a given resolver", () =>
+    Effect.gen(function* () {
+      const { fake, client } = setup();
 
-    await client.indexer.getRecords({
-      name: "nick.eth",
-      resolver: { address: addresses.resolverV2.toLowerCase() },
-    });
+      yield* Actions.indexer.getRecords(client, {
+        name: "nick.eth",
+        resolver: { address: addresses.resolverV2.toLowerCase() },
+      });
 
-    const request = lastTo(fake, "/resolvers/{chain_id}/{address}/records");
-    assert.deepStrictEqual(request?.params, { chain_id: "1", address: addresses.resolverV2 });
-    assert.strictEqual(request?.query.get("name"), "nick.eth");
-  });
+      const request = lastTo(fake, "/resolvers/{chain_id}/{address}/records");
+      assert.deepStrictEqual(request?.params, { chain_id: "1", address: addresses.resolverV2 });
+      assert.strictEqual(request?.query.get("name"), "nick.eth");
+    }),
+  );
 
-  it("reads history for an address and snapshot reads with a token", async () => {
-    const { fake, client } = setup();
+  it.effect("reads history for an address and snapshot reads with a token", () =>
+    Effect.gen(function* () {
+      const { fake, client } = setup();
 
-    const page = await client.indexer.getHistory({ address: addresses.nick });
-    await client.indexer.getName({ name: "nick.eth", at: { token: "snap_1" }, finality: "safe" });
+      const page = yield* Actions.indexer.getHistory(client, { address: addresses.nick });
+      yield* Actions.indexer.getName(client, {
+        name: "nick.eth",
+        at: { token: "snap_1" },
+        finality: "safe",
+      });
 
-    assert.strictEqual(page.items.length, 2);
-    const request = lastTo(fake, "/names/{name}");
-    assert.deepStrictEqual(
-      [request?.query.get("at"), request?.query.get("finality")],
-      ["snap_1", "safe"],
-    );
-  });
+      assert.strictEqual(page.items.length, 2);
+      const request = lastTo(fake, "/names/{name}");
+      assert.deepStrictEqual(
+        [request?.query.get("at"), request?.query.get("finality")],
+        ["snap_1", "safe"],
+      );
+    }),
+  );
 
   it.effect("fails with a typed error when an answer does not decode or map", () =>
     Effect.gen(function* () {
@@ -386,11 +404,11 @@ describe("indexer actions against bigname", () => {
       fake.on("/names/{name}", reply.envelope({ data: { ...nick, owner: "0x1234" } }));
       fake.on("/names/{name}/subnames", reply.envelope({ data: [{ name: "a.nick.eth" }] }));
 
-      yield* expectFailure(EffectActions.indexer.getName(client, { name: "nick.eth" }), {
+      yield* expectFailure(Actions.indexer.getName(client, { name: "nick.eth" }), {
         _tag: "IndexerError",
         code: "INDEXER_RESPONSE_INVALID",
       });
-      yield* expectFailure(EffectActions.indexer.getSubnames(client, { name: "nick.eth" }), {
+      yield* expectFailure(Actions.indexer.getSubnames(client, { name: "nick.eth" }), {
         _tag: "IndexerError",
         code: "INDEXER_RESPONSE_INVALID",
       });
@@ -402,45 +420,45 @@ describe("indexer action input", () => {
   it.effect.each([
     [
       "getName with the root",
-      (client: Client) => EffectActions.indexer.getName(client, { name: "" }),
+      (client: Client) => Actions.indexer.getName(client, { name: "" }),
       "INVALID_NAME",
     ],
     [
       "getName with an invalid name",
-      (client: Client) => EffectActions.indexer.getName(client, { name: "a..eth" }),
+      (client: Client) => Actions.indexer.getName(client, { name: "a..eth" }),
       "INVALID_NAME",
     ],
     [
       "getPrimaryName with a bad address",
-      (client: Client) => EffectActions.indexer.getPrimaryName(client, { address: "0x12" }),
+      (client: Client) => Actions.indexer.getPrimaryName(client, { address: "0x12" }),
       "INVALID_ADDRESS",
     ],
     [
       "indexer.getPrimaryName with an unknown coin",
       (client: Client) =>
-        EffectActions.indexer.getPrimaryName(client, { address: addresses.nick, coin: "nope" }),
+        Actions.indexer.getPrimaryName(client, { address: addresses.nick, coin: "nope" }),
       "INVALID_COIN_TYPE",
     ],
     [
       "indexer.getNamesForAddress with an unknown coin",
       (client: Client) =>
-        EffectActions.indexer.getNamesForAddress(client, { address: addresses.nick, coin: "nope" }),
+        Actions.indexer.getNamesForAddress(client, { address: addresses.nick, coin: "nope" }),
       "INVALID_COIN_TYPE",
     ],
     [
       "search with a blank query",
-      (client: Client) => EffectActions.indexer.search(client, { query: "  " }),
+      (client: Client) => Actions.indexer.search(client, { query: "  " }),
       "INVALID_RECORD_VALUE",
     ],
     [
       "lookup without inputs",
-      (client: Client) => EffectActions.indexer.lookup(client, { inputs: [] }),
+      (client: Client) => Actions.indexer.lookup(client, { inputs: [] }),
       "INVALID_RECORD_VALUE",
     ],
     [
       "lookup with 1,001 inputs",
       (client: Client) =>
-        EffectActions.indexer.lookup(client, {
+        Actions.indexer.lookup(client, {
           inputs: Array.from({ length: 1001 }, () => "a.eth"),
         }),
       "INVALID_RECORD_VALUE",
@@ -448,12 +466,12 @@ describe("indexer action input", () => {
     [
       "getPermissions with two subjects",
       (client: Client) =>
-        EffectActions.indexer.getPermissions(client, { name: "a.eth", address: addresses.nick }),
+        Actions.indexer.getPermissions(client, { name: "a.eth", address: addresses.nick }),
       "INVALID_RECORD_VALUE",
     ],
     [
       "getPermissions without a subject",
-      (client: Client) => EffectActions.indexer.getPermissions(client, {}),
+      (client: Client) => Actions.indexer.getPermissions(client, {}),
       "INVALID_RECORD_VALUE",
     ],
   ] as const)("rejects %s before any request", ([, call, code]) =>
@@ -476,15 +494,17 @@ const goldskySetup = () => {
 };
 
 describe("indexer actions against Goldsky", () => {
-  it("reads Basenames from Base, at Base's snapshot", async () => {
-    const { client } = goldskySetup();
+  it.effect("reads Basenames from Base, at Base's snapshot", () =>
+    Effect.gen(function* () {
+      const { client } = goldskySetup();
 
-    const name = await client.indexer.getName({ name: "jesse.base.eth" });
+      const name = yield* Actions.indexer.getName(client, { name: "jesse.base.eth" });
 
-    assert.strictEqual(name?.namespace, "basenames");
-    assert.strictEqual(name?.owner, jesse);
-    assert.strictEqual(name?.asOf?.chainId, 8453);
-  });
+      assert.strictEqual(name?.namespace, "basenames");
+      assert.strictEqual(name?.owner, jesse);
+      assert.strictEqual(name?.asOf?.chainId, 8453);
+    }),
+  );
 
   it.effect.each([
     { label: "a snapshot", options: { at: { token: "t" } } },
@@ -493,10 +513,10 @@ describe("indexer actions against Goldsky", () => {
     Effect.gen(function* () {
       const { fake, client } = goldskySetup();
 
-      yield* expectFailure(
-        EffectActions.indexer.getName(client, { name: "nick.eth", ...options }),
-        { _tag: "IndexerError", code: "INDEXER_UNSUPPORTED" },
-      );
+      yield* expectFailure(Actions.indexer.getName(client, { name: "nick.eth", ...options }), {
+        _tag: "IndexerError",
+        code: "INDEXER_UNSUPPORTED",
+      });
       assert.lengthOf(fake.requests, 0);
     }),
   );
@@ -504,10 +524,10 @@ describe("indexer actions against Goldsky", () => {
   it.effect("does not serve getResolvers", () =>
     Effect.gen(function* () {
       const { client } = goldskySetup();
-      yield* expectFailure(
-        EffectActions.indexer.getResolvers(client, { roleHolder: addresses.nick }),
-        { _tag: "IndexerError", code: "INDEXER_UNSUPPORTED" },
-      );
+      yield* expectFailure(Actions.indexer.getResolvers(client, { roleHolder: addresses.nick }), {
+        _tag: "IndexerError",
+        code: "INDEXER_UNSUPPORTED",
+      });
     }),
   );
 });
@@ -519,12 +539,9 @@ describe("bigname before the role-holder route (v0.13)", () => {
       const old = fakeBigname({ without: ["/resolvers"] });
       const current = fakeBigname();
       yield* expectFailure(
-        EffectActions.indexer.getResolvers(
-          clientWith(bigname({ url: old.url, fetch: old.fetch })),
-          {
-            roleHolder: addresses.nick,
-          },
-        ),
+        Actions.indexer.getResolvers(clientWith(bigname({ url: old.url, fetch: old.fetch })), {
+          roleHolder: addresses.nick,
+        }),
         { _tag: "IndexerError", code: "INDEXER_UNSUPPORTED" },
       );
 
@@ -534,7 +551,7 @@ describe("bigname before the role-holder route (v0.13)", () => {
           bigname({ url: current.url, fetch: current.fetch }),
         ]),
       );
-      const page = yield* EffectActions.indexer.getResolvers(client, {
+      const page = yield* Actions.indexer.getResolvers(client, {
         roleHolder: addresses.nick,
       });
       assert.strictEqual(page.items[0]?.address, addresses.resolverV2);
@@ -543,74 +560,74 @@ describe("bigname before the role-holder route (v0.13)", () => {
 });
 
 describe("bigname and Goldsky together", () => {
-  it("sends Basenames to Goldsky and ENS to bigname", async () => {
-    const big = fakeBigname();
-    const gold = fakeGoldsky();
-    const client = clientWith(
-      fallback([
-        bigname({ url: big.url, fetch: big.fetch }),
-        goldsky({ url: gold.url, fetch: gold.fetch }),
-      ]),
-    );
+  it.effect("sends Basenames to Goldsky and ENS to bigname", () =>
+    Effect.gen(function* () {
+      const big = fakeBigname();
+      const gold = fakeGoldsky();
+      const client = clientWith(
+        fallback([
+          bigname({ url: big.url, fetch: big.fetch }),
+          goldsky({ url: gold.url, fetch: gold.fetch }),
+        ]),
+      );
 
-    const basename = await client.indexer.getName({ name: "jesse.base.eth" });
-    const ens = await client.indexer.getName({ name: "nick.eth" });
+      const basename = yield* Actions.indexer.getName(client, { name: "jesse.base.eth" });
+      const ens = yield* Actions.indexer.getName(client, { name: "nick.eth" });
 
-    assert.strictEqual(basename?.indexer, "goldsky");
-    assert.strictEqual(ens?.indexer, "bigname");
-    assert.deepStrictEqual(
-      big.requestsTo("/names/{name}").map((request) => request.params.name),
-      ["nick.eth"],
-    );
-    assert.deepStrictEqual(
-      gold.requestsTo("/names/{name}").map((request) => request.params.name),
-      ["jesse.base.eth"],
-    );
-  });
+      assert.strictEqual(basename?.indexer, "goldsky");
+      assert.strictEqual(ens?.indexer, "bigname");
+      assert.deepStrictEqual(
+        big.requestsTo("/names/{name}").map((request) => request.params.name),
+        ["nick.eth"],
+      );
+      assert.deepStrictEqual(
+        gold.requestsTo("/names/{name}").map((request) => request.params.name),
+        ["jesse.base.eth"],
+      );
+    }),
+  );
 
-  it("moves to Goldsky when bigname is down, and keeps paging there", async () => {
-    const big = fakeBigname();
-    const gold = fakeGoldsky();
-    big.on("*", reply.error(503, "overloaded"));
-    const client = clientWith(
-      fallback([
-        bigname({ url: big.url, fetch: big.fetch, retryCount: 0 }),
-        goldsky({ url: gold.url, fetch: gold.fetch }),
-      ]),
-    );
+  it.effect("moves to Goldsky when bigname is down, and keeps paging there", () =>
+    Effect.gen(function* () {
+      const big = fakeBigname();
+      const gold = fakeGoldsky();
+      big.on("*", reply.error(503, "overloaded"));
+      const client = clientWith(
+        fallback([
+          bigname({ url: big.url, fetch: big.fetch, retryCount: 0 }),
+          goldsky({ url: gold.url, fetch: gold.fetch }),
+        ]),
+      );
 
-    const first = await client.indexer.getSubnames({ name: "nick.eth", limit: 2 });
-    const second = await client.indexer.getSubnames({
-      name: "nick.eth",
-      cursor: first.cursor ?? "",
-    });
+      const first = yield* Actions.indexer.getSubnames(client, { name: "nick.eth", limit: 2 });
+      const second = yield* Actions.indexer.getSubnames(client, {
+        name: "nick.eth",
+        cursor: first.cursor ?? "",
+      });
 
-    assert.strictEqual(first.cursor, "f1:c2");
-    assert.strictEqual(second.indexer, "goldsky");
-    assert.strictEqual(gold.requestsTo("/names/{name}/subnames")[1]?.query.get("cursor"), "c2");
-    assert.lengthOf(big.requests, 1);
-  });
+      assert.strictEqual(first.cursor, "f1:c2");
+      assert.strictEqual(second.indexer, "goldsky");
+      assert.strictEqual(gold.requestsTo("/names/{name}/subnames")[1]?.query.get("cursor"), "c2");
+      assert.lengthOf(big.requests, 1);
+    }),
+  );
 
-  it("rejects a client on a chain the indexer does not serve", async () => {
+  it.effect("rejects a client on a chain the indexer does not serve", () => {
     const { fake } = setup();
     const client = clientWith(bigname({ url: fake.url, fetch: fake.fetch }), sepolia);
 
-    await Effect.runPromise(
-      expectRejection(() => client.indexer.getName({ name: "nick.eth" }), {
-        _tag: "IndexerError",
-        code: "INDEXER_UNSUPPORTED",
-      }),
-    );
+    return expectFailure(Actions.indexer.getName(client, { name: "nick.eth" }), {
+      _tag: "IndexerError",
+      code: "INDEXER_UNSUPPORTED",
+    });
   });
 
-  it("has no public host for other chains without a url", async () => {
+  it.effect("has no public host for other chains without a url", () => {
     const client = clientWith(goldsky(), sepolia);
 
-    await Effect.runPromise(
-      expectRejection(() => client.indexer.getStatus({}), {
-        _tag: "IndexerError",
-        code: "INDEXER_UNSUPPORTED",
-      }),
-    );
+    return expectFailure(Actions.indexer.getStatus(client, {}), {
+      _tag: "IndexerError",
+      code: "INDEXER_UNSUPPORTED",
+    });
   });
 });

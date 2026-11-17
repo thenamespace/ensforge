@@ -1,7 +1,9 @@
 import { Effect } from "effect";
 
+import { Errors } from "@ensforge/sdk";
+
 import type { Command } from "../commands/index.ts";
-import type { Context } from "../model/command.ts";
+import { SequenceFailure, type Context } from "../model/command.ts";
 import { nearBoundary } from "../model/expect.ts";
 import type { Model } from "../model/model.ts";
 import { librariesAgree } from "./differential.ts";
@@ -22,4 +24,9 @@ export const invariants = (context: Context, model: Model, step: number, command
     if (nearBoundary(model, context.world)) return;
     yield* permissionOracle(context, choose);
     yield* migrationPredicts(context, choose);
-  });
+  }).pipe(
+    // A read that fails is a finding like a mismatch, so it is shrunk and reported.
+    Effect.catchIf(Errors.is, (error) =>
+      Effect.fail(new SequenceFailure({ message: `read failed: ${error.code}` })),
+    ),
+  );

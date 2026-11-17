@@ -1,6 +1,7 @@
 import { Effect } from "effect";
 
 import { Errors, type Plan } from "@ensforge/sdk";
+import { Actions } from "@ensforge/sdk/effect";
 
 import { SequenceFailure, type Context } from "../model/command.ts";
 import { actorNames } from "../model/world.ts";
@@ -16,7 +17,7 @@ export const migrationPredicts = Effect.fnUntraced(function* (
   const actor = choose(actorNames);
   const account = world.actors[actor];
 
-  const info = yield* Effect.promise(() => context.reader.migration.get({ name, account }));
+  const info = yield* Actions.migration.get(context.reader, { name, account });
   const migrate = context.as[actor].migration.migrate as unknown as {
     readonly simulate: (options: object) => Promise<Plan.Simulation>;
   };

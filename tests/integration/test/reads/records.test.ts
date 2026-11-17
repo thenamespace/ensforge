@@ -1,12 +1,13 @@
 import { assert, describe } from "@effect/vitest";
 import { Effect } from "effect";
 
+import { Actions } from "@ensforge/sdk/effect";
 import { avatarImage, Devnet } from "@ensforge/test-devnet";
 import { Fixtures } from "@ensforge/test-fixtures";
-import { expectRejection } from "@ensforge/test-harness";
+import { expectFailure } from "@ensforge/test-harness";
 import { stringToHex } from "viem";
 
-import { call, ensforge, onProfile } from "../support/chain.ts";
+import { ensforge, onProfile } from "../support/chain.ts";
 
 // Results are keyed by the coin as given: these read back as "2147483785" and "2147483648".
 const polygon = 0x8000_0089n;
@@ -34,17 +35,15 @@ describe("record reads", () => {
             const { accounts } = yield* Devnet;
             const ens = ensforge(yield* Devnet);
 
-            const records = yield* call(() =>
-              ens.record.get({
-                name: fixtures.byId("records.v1").name,
-                texts: [...Object.keys(texts), "missing"] as readonly string[],
-                addresses: ["eth", "btc", "base", polygon, "op"],
-                contentHash: true,
-                abi: true,
-                pubkey: true,
-                interfaces: ["0x01ffc9a7", "0x12345678"],
-              }),
-            );
+            const records = yield* Actions.record.get(ens, {
+              name: fixtures.byId("records.v1").name,
+              texts: [...Object.keys(texts), "missing"] as readonly string[],
+              addresses: ["eth", "btc", "base", polygon, "op"],
+              contentHash: true,
+              abi: true,
+              pubkey: true,
+              interfaces: ["0x01ffc9a7", "0x12345678"],
+            });
             assert.deepStrictEqual(records.texts, { ...texts, missing: null });
             assert.deepStrictEqual(records.addresses, {
               eth: accounts.alice,
@@ -89,12 +88,10 @@ describe("record reads", () => {
           Effect.gen(function* () {
             const fixtures = yield* Fixtures;
             const ens = ensforge(yield* Devnet);
-            const records = yield* call(() =>
-              ens.record.get({
-                name: fixtures.byId("records.avatar.https").name,
-                addresses: [defaultEvm, "op"],
-              }),
-            );
+            const records = yield* Actions.record.get(ens, {
+              name: fixtures.byId("records.avatar.https").name,
+              addresses: [defaultEvm, "op"],
+            });
             assert.deepStrictEqual(records.addresses, { "2147483648": null, op: null });
           }),
         { meta: { cases: ["K05"] } },
@@ -109,23 +106,24 @@ describe("record reads", () => {
             const nameOf = (id: string) => fixtures.byId(id).name;
 
             assert.strictEqual(
-              yield* call(() =>
-                ens.record.getAddress({ name: nameOf("records.btc-taproot"), coin: "btc" }),
-              ),
+              yield* Actions.record.getAddress(ens, {
+                name: nameOf("records.btc-taproot"),
+                coin: "btc",
+              }),
               "bc1p0xlxvlhemja6c4dqv22uapctqupfhlxm9h8z3k2e72q4k9hcz7vqzk5jj0",
             );
             const decoded = yield* Effect.forEach(["ipns", "swarm", "onion3", "arweave"], (codec) =>
-              call(() =>
-                ens.record.getContentHash({ name: nameOf(`records.contenthash.${codec}`) }),
-              ).pipe(Effect.map((hash) => hash?.protocol)),
+              Actions.record
+                .getContentHash(ens, { name: nameOf(`records.contenthash.${codec}`) })
+                .pipe(Effect.map((hash) => hash?.protocol)),
             );
             assert.deepStrictEqual(decoded, ["ipns", "bzz", "onion3", "ar"]);
 
             // An unknown codec is no content hash: null, or a typed error when strict.
             const unknown = nameOf("records.contenthash.unknown");
-            assert.isNull(yield* call(() => ens.record.getContentHash({ name: unknown })));
-            yield* expectRejection(
-              () => ens.record.getContentHash({ name: unknown, strict: true }),
+            assert.isNull(yield* Actions.record.getContentHash(ens, { name: unknown }));
+            yield* expectFailure(
+              Actions.record.getContentHash(ens, { name: unknown, strict: true }),
               {
                 _tag: "NotFoundError",
                 code: "RECORD_NOT_FOUND",
@@ -141,12 +139,10 @@ describe("record reads", () => {
           Effect.gen(function* () {
             const fixtures = yield* Fixtures;
             const ens = ensforge(yield* Devnet);
-            const text = yield* call(() =>
-              ens.record.getText({
-                name: fixtures.byId("records.huge-text").name,
-                key: "description",
-              }),
-            );
+            const text = yield* Actions.record.getText(ens, {
+              name: fixtures.byId("records.huge-text").name,
+              key: "description",
+            });
             assert.strictEqual(text?.length, 24_000);
           }),
         { meta: { cases: ["K19"] } },
@@ -159,7 +155,7 @@ describe("record reads", () => {
             const fixtures = yield* Fixtures;
             const ens = ensforge(yield* Devnet);
             const avatarOf = (id: string) =>
-              call(() => ens.record.getAvatar({ name: fixtures.byId(id).name }));
+              Actions.record.getAvatar(ens, { name: fixtures.byId(id).name });
 
             assert.strictEqual(
               yield* avatarOf("records.avatar.https"),
@@ -190,15 +186,13 @@ describe("record reads", () => {
           const { accounts } = yield* Devnet;
           const ens = ensforge(yield* Devnet);
 
-          const records = yield* call(() =>
-            ens.record.get({
-              name: fixtures.byId("records.v2").name,
-              texts: Object.keys(texts) as readonly string[],
-              addresses: ["eth", "btc", "base", polygon],
-              data: ["eth.ens.example", "missing"],
-              abi: { contentTypes: 1n << 255n },
-            }),
-          );
+          const records = yield* Actions.record.get(ens, {
+            name: fixtures.byId("records.v2").name,
+            texts: Object.keys(texts) as readonly string[],
+            addresses: ["eth", "btc", "base", polygon],
+            data: ["eth.ens.example", "missing"],
+            abi: { contentTypes: 1n << 255n },
+          });
           assert.deepStrictEqual(records.texts, texts);
           assert.deepStrictEqual(records.addresses, {
             eth: accounts.bob,
@@ -222,7 +216,7 @@ describe("record reads", () => {
           const fixtures = yield* Fixtures;
           const ens = ensforge(yield* Devnet);
           const urlOf = (id: string) =>
-            call(() => ens.record.getText({ name: fixtures.byId(id).name, key: "url" }));
+            Actions.record.getText(ens, { name: fixtures.byId(id).name, key: "url" });
 
           assert.strictEqual(yield* urlOf("records.v2.default"), "https://default.example");
           assert.strictEqual(yield* urlOf("records.v2.linked"), texts.url);

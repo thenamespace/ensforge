@@ -1,6 +1,7 @@
 import { Effect } from "effect";
 
 import { Errors, type Plan } from "@ensforge/sdk";
+import { Actions } from "@ensforge/sdk/effect";
 
 import { targetsOf } from "../commands/names.ts";
 import { SequenceFailure, type Client, type Context } from "../model/command.ts";
@@ -58,9 +59,7 @@ export const permissionOracle = Effect.fnUntraced(function* (
   const { operation, path, options } = choose(operations);
   const account = world.actors[actor];
 
-  const check = yield* Effect.promise(() =>
-    context.reader.permission.check({ name, operation, account }),
-  );
+  const check = yield* Actions.permission.check(context.reader, { name, operation, account });
   // `null`: the engine cannot tell (e.g. an unknown resolver); nothing to compare.
   if (check.allowed === null) return;
   const simulated = yield* Effect.promise(() =>

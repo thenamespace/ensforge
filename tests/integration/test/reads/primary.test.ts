@@ -1,10 +1,11 @@
 import { assert, describe } from "@effect/vitest";
 import { Effect } from "effect";
 
+import { Actions } from "@ensforge/sdk/effect";
 import { Devnet } from "@ensforge/test-devnet";
 import { Fixtures } from "@ensforge/test-fixtures";
 
-import { call, ensforge, onProfile } from "../support/chain.ts";
+import { ensforge, onProfile } from "../support/chain.ts";
 
 /** Fixtures whose address has a verified primary name: the name each one reads. */
 const verified = {
@@ -30,8 +31,8 @@ describe("primaryName.get", () => {
 
             for (const [id, name] of Object.entries(verified)) {
               const address = String(fixtures.byId(id).facts["address"]);
-              assert.strictEqual(yield* call(() => ens.primaryName.get({ address })), name, id);
-              assert.isNull(yield* call(() => ens.primaryName.get({ address, coin: "base" })), id);
+              assert.strictEqual(yield* Actions.primaryName.get(ens, { address }), name, id);
+              assert.isNull(yield* Actions.primaryName.get(ens, { address, coin: "base" }), id);
             }
           }),
         { meta: { cases: ["M:C3", "P01", "P05", "P22", "M:D10"] } },
@@ -45,8 +46,9 @@ describe("primaryName.get", () => {
             const ens = ensforge(yield* Devnet);
             const read = (id: string, verify?: boolean) => {
               const address = String(fixtures.byId(id).facts["address"]);
-              return call(() =>
-                ens.primaryName.get(verify === undefined ? { address } : { address, verify }),
+              return Actions.primaryName.get(
+                ens,
+                verify === undefined ? { address } : { address, verify },
               );
             };
 

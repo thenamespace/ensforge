@@ -1,7 +1,6 @@
 import { describe, it } from "@effect/vitest";
-import { Effect } from "effect";
 
-import { expectRejection } from "@ensforge/test-harness";
+import { expectFailure } from "@ensforge/test-harness";
 
 import { verifyMigration } from "#/internal/migration/verify";
 
@@ -12,19 +11,16 @@ import { clientFor, other, resolverA, signer } from "../world.js";
 describe("migration.migrate verification", () => {
   it.effect("fails VERIFICATION_FAILED when a name's ENSv2 state differs from the plan", () => {
     const { ens } = clientFor({ name: "alice.eth", v1: { owner: signer, resolver: resolverA } });
-    return expectRejection(
-      () =>
-        Effect.runPromise(
-          verifyMigration(ens, [
-            {
-              name: "alice.eth",
-              owner: other,
-              resolver: resolverA,
-              subregistry: null,
-              records: undefined,
-            },
-          ]),
-        ),
+    return expectFailure(
+      verifyMigration(ens, [
+        {
+          name: "alice.eth",
+          owner: other,
+          resolver: resolverA,
+          subregistry: null,
+          records: undefined,
+        },
+      ]),
       { _tag: "MigrationError", code: "VERIFICATION_FAILED" },
     );
   });

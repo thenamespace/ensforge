@@ -2,6 +2,7 @@ import { assert, describe } from "@effect/vitest";
 import { Effect } from "effect";
 
 import { Abis, Roles } from "@ensforge/contracts";
+import { Actions } from "@ensforge/sdk/effect";
 import { Devnet, type DevnetInstance } from "@ensforge/test-devnet";
 import { Fixtures } from "@ensforge/test-fixtures";
 import {
@@ -97,9 +98,7 @@ describe("contract errors", () => {
         // A child in a user registry: its expiry is set there, and never lowered.
         const child = fixtures.byId("v2.subnames").name;
         const [childLabel = "", ...rest] = child.split(".");
-        const subregistry = yield* Effect.promise(() =>
-          ensforge(devnet).registry.get({ name: rest.join(".") }),
-        );
+        const subregistry = yield* Actions.registry.get(ensforge(devnet), { name: rest.join(".") });
         if (subregistry === null) return assert.fail(`${child} has no parent registry`);
         const childToken = yield* Effect.promise(
           () =>

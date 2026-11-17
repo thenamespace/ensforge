@@ -1,8 +1,8 @@
 import { assert, layer } from "@effect/vitest";
-import { Effect } from "effect";
+import { Effect, Result } from "effect";
 
-import { CoinType, ContentHash, Errors } from "@ensforge/sdk";
-import { bigname, indexerActions } from "@ensforge/sdk/indexer";
+import { Actions, CoinType, ContentHash } from "@ensforge/sdk/effect";
+import { bigname } from "@ensforge/sdk/indexer";
 import { Devnet } from "@ensforge/test-devnet";
 import { Fixtures } from "@ensforge/test-fixtures";
 import { ensforge } from "@ensforge/test-integration/support/chain";
@@ -40,33 +40,29 @@ layer(Services.layer({ profile: "mainnet-shaped" }), { excludeTestServices: true
           const services = yield* Services;
           const devnet = yield* Devnet;
           const fixtures = yield* Fixtures;
-          const ens = ensforge(devnet, { indexer: bigname({ url: services.indexerUrl }) }).extend(
-            indexerActions(),
-          );
+          const ens = ensforge(devnet, { indexer: bigname({ url: services.indexerUrl }) });
           const found: string[] = [];
 
           for (const fixture of fixtures.all) {
             const { name } = fixture;
-            const indexed = yield* Effect.promise(() =>
-              ens.indexer.getName({ name }).catch((error: unknown) => ({ error })),
-            );
-            if (indexed !== null && "error" in indexed) {
-              found.push(
-                `${fixture.id}: indexer error ${String((indexed.error as Error).message).split("\n")[0]}`,
-              );
+            const answer = yield* Effect.result(Actions.indexer.getName(ens, { name }));
+            if (Result.isFailure(answer)) {
+              found.push(`${fixture.id}: indexer error ${answer.failure.code}`);
               continue;
             }
+            const indexed = answer.success;
             const block = indexed?.asOf?.blockNumber;
-            const state = yield* Effect.promise(() =>
-              ens.name
-                .get({ name, ...(block === undefined ? {} : { blockNumber: block }) })
-                .catch((error: unknown) => ({ error })),
+            const read = yield* Effect.result(
+              Actions.name.get(ens, {
+                name,
+                ...(block === undefined ? {} : { blockNumber: block }),
+              }),
             );
-            if ("error" in state) {
-              const code = Errors.is(state.error) ? state.error.code : String(state.error);
-              found.push(`${fixture.id}: chain error ${code}`);
+            if (Result.isFailure(read)) {
+              found.push(`${fixture.id}: chain error ${read.failure.code}`);
               continue;
             }
+            const state = read.success;
             if (indexed === null) {
               if (state.status !== "available") found.push(`${fixture.id}: not indexed`);
               continue;
@@ -103,17 +99,16 @@ layer(Services.layer({ profile: "mainnet-shaped" }), { excludeTestServices: true
           const services = yield* Services;
           const devnet = yield* Devnet;
           const fixtures = yield* Fixtures;
-          const ens = ensforge(devnet, { indexer: bigname({ url: services.indexerUrl }) }).extend(
-            indexerActions(),
-          );
+          const ens = ensforge(devnet, { indexer: bigname({ url: services.indexerUrl }) });
           const found: string[] = [];
           let compared = 0;
 
           for (const fixture of fixtures.all) {
             const { name } = fixture;
-            const indexed = yield* Effect.promise(() =>
-              ens.indexer.getRecords({ name }).catch(() => null),
-            );
+            // Names bigname cannot answer for are compared by the name test above.
+            const indexed = yield* Actions.indexer
+              .getRecords(ens, { name })
+              .pipe(Effect.orElseSucceed(() => null));
             if (indexed === null || indexed.inventory === null) continue;
             const texts = Object.keys(indexed.texts);
             const coins = Object.keys(indexed.addresses).map(BigInt);
@@ -124,21 +119,20 @@ layer(Services.layer({ profile: "mainnet-shaped" }), { excludeTestServices: true
               indexed.contentHash === null ? null : ContentHash.decode(indexed.contentHash),
             ).pipe(Effect.orElseSucceed(() => undefined));
             const block = indexed.asOf?.blockNumber;
-            const chain = yield* Effect.promise(() =>
-              ens.record
-                .get({
-                  name,
-                  texts,
-                  addresses: coins,
-                  ...(contentHash === undefined ? {} : { contentHash: true as const }),
-                  ...(block === undefined ? {} : { blockNumber: block }),
-                })
-                .catch(() => null),
+            const read = yield* Effect.result(
+              Actions.record.get(ens, {
+                name,
+                texts,
+                addresses: coins,
+                ...(contentHash === undefined ? {} : { contentHash: true as const }),
+                ...(block === undefined ? {} : { blockNumber: block }),
+              }),
             );
-            if (chain === null) {
-              found.push(`${fixture.id}: chain error`);
+            if (Result.isFailure(read)) {
+              found.push(`${fixture.id}: chain error ${read.failure.code}`);
               continue;
             }
+            const chain = read.success;
             compared += 1;
             for (const key of texts) {
               const value = (chain.texts as Record<string, string | null>)[key] ?? null;
@@ -179,16 +173,12 @@ layer(Services.layer({ profile: "mainnet-shaped" }), { excludeTestServices: true
           const services = yield* Services;
           const devnet = yield* Devnet;
           const fixtures = yield* Fixtures;
-          const ens = ensforge(devnet, { indexer: bigname({ url: services.indexerUrl }) }).extend(
-            indexerActions(),
-          );
-          const records = yield* Effect.promise(() =>
-            ens.indexer.getRecords({
-              name: fixtures.byId("resolver.offchain").name,
-              keys: ["addr:60"],
-              source: "verified",
-            }),
-          );
+          const ens = ensforge(devnet, { indexer: bigname({ url: services.indexerUrl }) });
+          const records = yield* Actions.indexer.getRecords(ens, {
+            name: fixtures.byId("resolver.offchain").name,
+            keys: ["addr:60"],
+            source: "verified",
+          });
           // bigname documents `offchain_lookup_required`; v0.14.11 reports the OffchainLookup as a
           // revert. Either way it answers no value and never calls the gateway.
           assert.deepStrictEqual(records?.answers["addr:60"], {
@@ -208,21 +198,17 @@ layer(Services.layer({ profile: "mainnet-shaped" }), { excludeTestServices: true
           const services = yield* Services;
           const devnet = yield* Devnet;
           const fixtures = yield* Fixtures;
-          const ens = ensforge(devnet, { indexer: bigname({ url: services.indexerUrl }) }).extend(
-            indexerActions(),
-          );
+          const ens = ensforge(devnet, { indexer: bigname({ url: services.indexerUrl }) });
           const linked = fixtures.byId("v2.linked");
           const alias = String(linked.facts["alias"]);
 
           // One registry under two names: the alias reads as the same registration, but only
           // the name route walks alias paths.
-          const canonical = yield* Effect.promise(() => ens.indexer.getName({ name: linked.name }));
-          const aliased = yield* Effect.promise(() => ens.indexer.getName({ name: alias }));
+          const canonical = yield* Actions.indexer.getName(ens, { name: linked.name });
+          const aliased = yield* Actions.indexer.getName(ens, { name: alias });
           assert.strictEqual(aliased?.name, alias);
           assert.strictEqual(aliased?.registrationId, canonical?.registrationId);
-          const looked = yield* Effect.promise(() =>
-            ens.indexer.lookup({ inputs: [linked.name, alias] }),
-          );
+          const looked = yield* Actions.indexer.lookup(ens, { inputs: [linked.name, alias] });
           assert.deepStrictEqual(
             looked.results.map((result) => result.status),
             ["ok", "notFound"],
@@ -238,13 +224,11 @@ layer(Services.layer({ profile: "mainnet-shaped" }), { excludeTestServices: true
           const services = yield* Services;
           const devnet = yield* Devnet;
           const fixtures = yield* Fixtures;
-          const ens = ensforge(devnet, { indexer: bigname({ url: services.indexerUrl }) }).extend(
-            indexerActions(),
-          );
+          const ens = ensforge(devnet, { indexer: bigname({ url: services.indexerUrl }) });
           const subnames = (parent: string, includeExpired: boolean) =>
-            Effect.promise(() => ens.indexer.getSubnames({ name: parent, includeExpired })).pipe(
-              Effect.map((page) => page.items.map((item) => item.name).toSorted()),
-            );
+            Actions.indexer
+              .getSubnames(ens, { name: parent, includeExpired })
+              .pipe(Effect.map((page) => page.items.map((item) => item.name).toSorted()));
           const wrapped = fixtures.byId("v1.wrapped.sub.expired").name;
           const emancipated = fixtures.byId("v1.wrapped.sub.expired-emancipated").name;
           const parent = wrapped.split(".").slice(1).join(".");
@@ -260,12 +244,10 @@ layer(Services.layer({ profile: "mainnet-shaped" }), { excludeTestServices: true
 
           // A child whose ENSv1 owner was cleared stays listed, as `unregistered`.
           const deleted = fixtures.byId("v1.subname.deleted").name;
-          const cleared = yield* Effect.promise(() =>
-            ens.indexer.getSubnames({
-              name: deleted.split(".").slice(1).join("."),
-              includeExpired: false,
-            }),
-          );
+          const cleared = yield* Actions.indexer.getSubnames(ens, {
+            name: deleted.split(".").slice(1).join("."),
+            includeExpired: false,
+          });
           assert.deepStrictEqual(
             cleared.items.map((item) => [item.name, item.status]),
             [[deleted, "unregistered"]],

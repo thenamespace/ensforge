@@ -2,6 +2,7 @@ import { assert, describe, layer } from "@effect/vitest";
 import { Effect, Fiber, Schedule } from "effect";
 
 import { Ensforge, ensActions } from "@ensforge/sdk";
+import { Actions } from "@ensforge/sdk/effect";
 import {
   createPublicClient,
   createWalletClient,
@@ -53,14 +54,14 @@ describe("devnet profiles", () => {
         const devnet = yield* Devnet;
         const { ens } = clientsOf(devnet);
 
-        const eth = yield* Effect.promise(() => ens.name.get({ name: "eth" }));
+        const eth = yield* Actions.name.get(ens, { name: "eth" });
         assert.strictEqual(eth.protocol, "v2");
         assert.strictEqual(eth.owner, devnet.accounts.nameOwner);
         assert.strictEqual(eth.subregistry, devnet.deployments.v2?.contracts.ethRegistry);
 
-        const available = yield* Effect.promise(() =>
-          ens.registration.isAvailable({ name: "devnet-smoke.eth" }),
-        );
+        const available = yield* Actions.registration.isAvailable(ens, {
+          name: "devnet-smoke.eth",
+        });
         assert.isTrue(available);
       }),
     );
@@ -88,14 +89,12 @@ describe("devnet profiles", () => {
         );
 
         const clock = yield* advanceChainTime(devnet);
-        yield* Effect.promise(() =>
-          ens.registration.registerSync({
-            names: "resolved.eth",
-            duration: 31_536_000n,
-            paymentToken: "usdc",
-            records: { addresses: { eth: devnet.accounts.user2 } },
-          }),
-        );
+        yield* Actions.registration.registerSync(ens, {
+          names: "resolved.eth",
+          duration: 31_536_000n,
+          paymentToken: "usdc",
+          records: { addresses: { eth: devnet.accounts.user2 } },
+        });
         yield* Fiber.interrupt(clock);
 
         // ENSv1's Universal Resolver goes through the `.eth` resolver, which is ENSv2Resolver.
@@ -106,9 +105,7 @@ describe("devnet profiles", () => {
           }),
         );
         assert.strictEqual(resolved, devnet.accounts.user2);
-        const viaProfile = yield* Effect.promise(() =>
-          ens.record.getAddress({ name: "resolved.eth" }),
-        );
+        const viaProfile = yield* Actions.record.getAddress(ens, { name: "resolved.eth" });
         assert.strictEqual(viaProfile, devnet.accounts.user2);
       }),
     );
@@ -120,7 +117,7 @@ describe("devnet profiles", () => {
         const devnet = yield* Devnet;
         const { ens } = clientsOf(devnet);
 
-        const eth = yield* Effect.promise(() => ens.name.get({ name: "eth" }));
+        const eth = yield* Actions.name.get(ens, { name: "eth" });
         assert.strictEqual(eth.protocol, "v1");
         assert.strictEqual(eth.owner, devnet.contracts["v1.baseRegistrar"]);
       }),
@@ -134,11 +131,11 @@ describe("devnet profiles", () => {
         const { ens } = clientsOf(devnet);
 
         assert.isFalse(devnet.deployments.v2?.capabilities.resolutionErrorWrapping);
-        const eth = yield* Effect.promise(() => ens.name.get({ name: "eth" }));
+        const eth = yield* Actions.name.get(ens, { name: "eth" });
         assert.strictEqual(eth.protocol, "v2");
-        const available = yield* Effect.promise(() =>
-          ens.registration.isAvailable({ name: "sepolia-smoke.eth" }),
-        );
+        const available = yield* Actions.registration.isAvailable(ens, {
+          name: "sepolia-smoke.eth",
+        });
         assert.isTrue(available);
       }),
     );
@@ -151,7 +148,7 @@ describe("devnet profiles", () => {
         const { ens } = clientsOf(devnet);
 
         assert.isUndefined(devnet.deployments.v1);
-        const eth = yield* Effect.promise(() => ens.name.get({ name: "eth" }));
+        const eth = yield* Actions.name.get(ens, { name: "eth" });
         assert.strictEqual(eth.protocol, "v2");
       }),
     );

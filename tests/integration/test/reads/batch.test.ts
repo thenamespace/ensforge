@@ -1,12 +1,13 @@
 import { assert, describe } from "@effect/vitest";
 import { Effect } from "effect";
 
-import { Actions } from "@ensforge/sdk";
+import { Actions as Requests } from "@ensforge/sdk";
+import { Actions } from "@ensforge/sdk/effect";
 import { Devnet } from "@ensforge/test-devnet";
 import { Fixtures } from "@ensforge/test-fixtures";
-import { expectRejection } from "@ensforge/test-harness";
+import { expectFailure } from "@ensforge/test-harness";
 
-import { call, ensforge, onProfile } from "../support/chain.ts";
+import { ensforge, onProfile } from "../support/chain.ts";
 
 describe("batch", () => {
   for (const profile of ["v1-live", "mainnet-shaped"] as const) {
@@ -19,22 +20,21 @@ describe("batch", () => {
           const address = String(fixtures.byId("primary.addr-reverse").facts["address"]);
           const missing = fixtures.byId("resolver.none").name;
 
-          const { results } = yield* call(() =>
-            Actions.batch(ens, {
-              requests: {
-                state: Actions.name.get.request({ name }),
-                records: Actions.record.get.request({ name, texts: ["url"], addresses: ["eth"] }),
-                resolver: Actions.resolver.get.request({ name }),
-                primary: Actions.primaryName.get.request({ address }),
-                strict: Actions.record.get.request({ name: missing, texts: ["url"], strict: true }),
-              },
-            }),
-          );
+          // Requests are plain data, built by the actions' `.request`.
+          const { results } = yield* Actions.batch(ens, {
+            requests: {
+              state: Requests.name.get.request({ name }),
+              records: Requests.record.get.request({ name, texts: ["url"], addresses: ["eth"] }),
+              resolver: Requests.resolver.get.request({ name }),
+              primary: Requests.primaryName.get.request({ address }),
+              strict: Requests.record.get.request({ name: missing, texts: ["url"], strict: true }),
+            },
+          });
           const direct = yield* Effect.all({
-            state: call(() => ens.name.get({ name })),
-            records: call(() => ens.record.get({ name, texts: ["url"], addresses: ["eth"] })),
-            resolver: call(() => ens.resolver.get({ name })),
-            primary: call(() => ens.primaryName.get({ address })),
+            state: Actions.name.get(ens, { name }),
+            records: Actions.record.get(ens, { name, texts: ["url"], addresses: ["eth"] }),
+            resolver: Actions.resolver.get(ens, { name }),
+            primary: Actions.primaryName.get(ens, { address }),
           });
 
           for (const key of ["state", "records", "resolver", "primary"] as const) {
@@ -50,14 +50,13 @@ describe("batch", () => {
             code: "RESOLVER_NOT_FOUND",
           });
 
-          yield* expectRejection(
-            () =>
-              Actions.batch(ens, {
-                requests: [
-                  Actions.record.get.request({ name: missing, strict: true, texts: ["url"] }),
-                ],
-                allowFailure: false,
-              }),
+          yield* expectFailure(
+            Actions.batch(ens, {
+              requests: [
+                Requests.record.get.request({ name: missing, strict: true, texts: ["url"] }),
+              ],
+              allowFailure: false,
+            }),
             { _tag: "NotFoundError", code: "RESOLVER_NOT_FOUND" },
           );
         }),

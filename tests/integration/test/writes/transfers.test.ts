@@ -1,11 +1,12 @@
 import { assert, describe } from "@effect/vitest";
 import { Effect } from "effect";
 
+import { Actions } from "@ensforge/sdk/effect";
 import { Devnet } from "@ensforge/test-devnet";
 import { Fixtures } from "@ensforge/test-fixtures";
-import { expectRejection } from "@ensforge/test-harness";
+import { expectFailure } from "@ensforge/test-harness";
 
-import { call, ensforge, isolated, onProfile } from "../support/chain.ts";
+import { ensforge, isolated, onProfile } from "../support/chain.ts";
 import { ethEntry, v1Owners } from "./support.ts";
 
 describe("transfers and managers", () => {
@@ -25,7 +26,7 @@ describe("transfers and managers", () => {
             devnet,
             Effect.gen(function* () {
               // `owner` (the default) moves the registrar token and the manager.
-              yield* call(() => ens.name.transferSync({ name: unwrapped, to: carol }));
+              yield* Actions.name.transferSync(ens, { name: unwrapped, to: carol });
               assert.deepInclude(yield* v1Owners(devnet, unwrapped), {
                 registry: carol,
                 registrant: carol,
@@ -35,9 +36,11 @@ describe("transfers and managers", () => {
           yield* isolated(
             devnet,
             Effect.gen(function* () {
-              yield* call(() =>
-                ens.name.transferSync({ name: unwrapped, to: carol, role: "registrant" }),
-              );
+              yield* Actions.name.transferSync(ens, {
+                name: unwrapped,
+                to: carol,
+                role: "registrant",
+              });
               assert.deepInclude(yield* v1Owners(devnet, unwrapped), {
                 registry: alice,
                 registrant: carol,
@@ -47,16 +50,15 @@ describe("transfers and managers", () => {
           yield* isolated(
             devnet,
             Effect.gen(function* () {
-              yield* call(() => ens.name.transferSync({ name: wrapped, to: carol }));
+              yield* Actions.name.transferSync(ens, { name: wrapped, to: carol });
               assert.strictEqual((yield* v1Owners(devnet, wrapped)).wrapped?.[0], carol);
             }),
           );
-          yield* expectRejection(
-            () =>
-              ens.name.transfer({
-                name: fixtures.byId("v1.wrapped.locked.cannot-transfer").name,
-                to: carol,
-              }),
+          yield* expectFailure(
+            Actions.name.transfer(ens, {
+              name: fixtures.byId("v1.wrapped.locked.cannot-transfer").name,
+              to: carol,
+            }),
             { _tag: "UnauthorizedError", code: "FUSE_BURNED" },
           );
         }),
@@ -77,9 +79,9 @@ describe("transfers and managers", () => {
           yield* isolated(
             devnet,
             Effect.gen(function* () {
-              yield* call(() => ens.name.setManagerSync({ name, manager: carol }));
+              yield* Actions.name.setManagerSync(ens, { name, manager: carol });
               assert.strictEqual((yield* v1Owners(devnet, name)).registry, carol);
-              yield* call(() => ens.name.reclaimSync({ name }));
+              yield* Actions.name.reclaimSync(ens, { name });
               assert.strictEqual((yield* v1Owners(devnet, name)).registry, alice);
             }),
           );
@@ -100,25 +102,24 @@ describe("transfers and managers", () => {
           yield* isolated(
             devnet,
             Effect.gen(function* () {
-              yield* call(() =>
-                ens.name.transferSync({ name: fixtures.byId("v2.registered").name, to: carol }),
-              );
+              yield* Actions.name.transferSync(ens, {
+                name: fixtures.byId("v2.registered").name,
+                to: carol,
+              });
               assert.strictEqual((yield* ethEntry(devnet, label("v2.registered"))).owner, carol);
             }),
           );
 
           // Another account holds a role: a safe transfer would leave it in place (GHSA-hvjh).
           const delegated = fixtures.byId("v2.roles").name;
-          yield* expectRejection(() => ens.name.transfer({ name: delegated, to: carol }), {
+          yield* expectFailure(Actions.name.transfer(ens, { name: delegated, to: carol }), {
             _tag: "UnauthorizedError",
             code: "TRANSFER_DISALLOWED",
           });
           yield* isolated(
             devnet,
             Effect.gen(function* () {
-              yield* call(() =>
-                ens.name.transferSync({ name: delegated, to: carol, unsafe: true }),
-              );
+              yield* Actions.name.transferSync(ens, { name: delegated, to: carol, unsafe: true });
               assert.strictEqual((yield* ethEntry(devnet, label("v2.roles"))).owner, carol);
             }),
           );
@@ -138,12 +139,10 @@ describe("transfers and managers", () => {
           yield* isolated(
             devnet,
             Effect.gen(function* () {
-              yield* call(() =>
-                ensforge(devnet, { account: operator }).name.transferSync({
-                  name: operated,
-                  to: user,
-                }),
-              );
+              yield* Actions.name.transferSync(ensforge(devnet, { account: operator }), {
+                name: operated,
+                to: user,
+              });
               assert.strictEqual(
                 (yield* ethEntry(devnet, operated.slice(0, -".eth".length))).owner,
                 user,
@@ -167,43 +166,39 @@ describe("transfers and managers", () => {
           yield* isolated(
             devnet,
             Effect.gen(function* () {
-              const { resolver } = yield* call(() =>
-                sender.resolver.createSync({
-                  name,
-                  records: { texts: { url: "https://alice.example" } },
-                }),
-              );
-              yield* call(() => sender.resolver.setSync({ name, resolver }));
-              yield* call(() => sender.name.transferSync({ name, to: carol, records: "handover" }));
+              const { resolver } = yield* Actions.resolver.createSync(sender, {
+                name,
+                records: { texts: { url: "https://alice.example" } },
+              });
+              yield* Actions.resolver.setSync(sender, { name, resolver });
+              yield* Actions.name.transferSync(sender, { name, to: carol, records: "handover" });
 
               const recipient = ensforge(devnet, { account: carol });
-              yield* call(() =>
-                recipient.record.setSync({ name, texts: { url: "https://carol.example" } }),
-              );
+              yield* Actions.record.setSync(recipient, {
+                name,
+                texts: { url: "https://carol.example" },
+              });
               assert.strictEqual(
-                yield* call(() => recipient.record.getText({ name, key: "url" })),
+                yield* Actions.record.getText(recipient, { name, key: "url" }),
                 "https://carol.example",
               );
-              const former = yield* call(() =>
-                sender.permission.check({
-                  name,
-                  operation: { setRecord: "text", key: "url" },
-                  account: alice,
-                }),
-              );
+              const former = yield* Actions.permission.check(sender, {
+                name,
+                operation: { setRecord: "text", key: "url" },
+                account: alice,
+              });
               assert.isFalse(former.allowed);
             }),
           );
 
           // Bob's resolver holds the records of several names; handing it over would give them all.
-          yield* expectRejection(
-            () =>
-              ensforge(devnet, { account: bob }).name.transfer({
-                name: fixtures.byId("records.v2").name,
-                to: carol,
-                records: "handover",
-                unsafe: true,
-              }),
+          yield* expectFailure(
+            Actions.name.transfer(ensforge(devnet, { account: bob }), {
+              name: fixtures.byId("records.v2").name,
+              to: carol,
+              records: "handover",
+              unsafe: true,
+            }),
             { _tag: "InvalidInputError", code: "INVALID_RECORD_VALUE" },
           );
         }),

@@ -2,8 +2,8 @@ import { assert, describe, it } from "@effect/vitest";
 import { Effect } from "effect";
 
 import { Abis, Roles } from "@ensforge/contracts";
-import { Actions } from "@ensforge/sdk";
-import { expectRejection } from "@ensforge/test-harness";
+import { Actions } from "@ensforge/sdk/effect";
+import { expectFailure } from "@ensforge/test-harness";
 import { decodeFunctionData, getAddress } from "viem";
 import { labelhash } from "viem/ens";
 
@@ -14,7 +14,7 @@ const v2Name: World = { name, v2: { owner: signer, resolver: resolverA } };
 const grantee = getAddress(other);
 
 describe("role.grant.prepare", () => {
-  it.each([
+  it.effect.each([
     [
       "a name's registry roles by label ID",
       { name, roles: ["renew"] },
@@ -36,45 +36,48 @@ describe("role.grant.prepare", () => {
       "grantRootRoles",
       [3n, grantee],
     ],
-  ] as const)("grants %s", async (_, options, to, functionName, args) => {
-    const { ens } = clientFor(v2Name);
-
-    const plan = await Actions.role.grant.prepare(ens, {
-      target: "registry",
-      grantee: other,
-      ...options,
-    });
-
-    assert.strictEqual(plan.calls[0]?.to.toLowerCase(), to.toLowerCase());
-    const decoded = decodeFunctionData({
-      abi: Abis.v2.permissionedRegistry,
-      data: plan.calls[0]?.data ?? "0x",
-    });
-    assert.strictEqual(decoded.functionName, functionName);
-    assert.deepStrictEqual(decoded.args, args);
-    assert.deepStrictEqual(plan.warnings, []);
-  });
-
-  it.each([["canTransfer"], ["setResolver"]] as const)(
-    "warns that %s on a name regenerates its token ID",
-    async (role) => {
+  ] as const)("grants %s", ([, options, to, functionName, args]) =>
+    Effect.gen(function* () {
       const { ens } = clientFor(v2Name);
 
-      const plan = await Actions.role.grant.prepare(ens, {
-        name,
+      const plan = yield* Actions.role.grant.prepare(ens, {
         target: "registry",
         grantee: other,
-        roles: [role],
+        ...options,
       });
 
-      assert.deepStrictEqual(
-        plan.warnings.map((warning) => warning.code),
-        ["TOKEN_ID_REGENERATED"],
-      );
-    },
+      assert.strictEqual(plan.calls[0]?.to.toLowerCase(), to.toLowerCase());
+      const decoded = decodeFunctionData({
+        abi: Abis.v2.permissionedRegistry,
+        data: plan.calls[0]?.data ?? "0x",
+      });
+      assert.strictEqual(decoded.functionName, functionName);
+      assert.deepStrictEqual(decoded.args, args);
+      assert.deepStrictEqual(plan.warnings, []);
+    }),
   );
 
-  it.each([
+  it.effect.each([["canTransfer"], ["setResolver"]] as const)(
+    "warns that %s on a name regenerates its token ID",
+    ([role]) =>
+      Effect.gen(function* () {
+        const { ens } = clientFor(v2Name);
+
+        const plan = yield* Actions.role.grant.prepare(ens, {
+          name,
+          target: "registry",
+          grantee: other,
+          roles: [role],
+        });
+
+        assert.deepStrictEqual(
+          plan.warnings.map((warning) => warning.code),
+          ["TOKEN_ID_REGENERATED"],
+        );
+      }),
+  );
+
+  it.effect.each([
     [
       "registry roles on an ENSv1 name",
       { name, v1: { owner: signer } },
@@ -103,19 +106,14 @@ describe("role.grant.prepare", () => {
       "InvalidInputError",
       undefined,
     ],
-  ] as const)("rejects %s", (_, world, options, tag, code) =>
-    Effect.runPromise(
-      Effect.asVoid(
-        expectRejection(
-          () =>
-            Actions.role.grant.prepare(clientFor(world).ens, {
-              grantee: other,
-              roles: ["setResolver"],
-              ...(options as { target: "registry" }),
-            }),
-          { _tag: tag, code },
-        ),
-      ),
+  ] as const)("rejects %s", ([, world, options, tag, code]) =>
+    expectFailure(
+      Actions.role.grant.prepare(clientFor(world).ens, {
+        grantee: other,
+        roles: ["setResolver"],
+        ...(options as { target: "registry" }),
+      }),
+      { _tag: tag, code },
     ),
   );
 });

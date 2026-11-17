@@ -1,9 +1,10 @@
 import { assert, describe } from "@effect/vitest";
 import { Effect } from "effect";
 
+import { Actions } from "@ensforge/sdk/effect";
 import { Devnet, type DevnetInstance } from "@ensforge/test-devnet";
 import { Fixtures } from "@ensforge/test-fixtures";
-import { expectRejection } from "@ensforge/test-harness";
+import { expectFailure } from "@ensforge/test-harness";
 import {
   encodeAbiParameters,
   encodeErrorResult,
@@ -14,7 +15,7 @@ import {
   type Hex,
 } from "viem";
 
-import { call, ensforge, isolated, onProfile } from "../support/chain.ts";
+import { ensforge, isolated, onProfile } from "../support/chain.ts";
 import { gateway, type GatewayAnswer } from "../support/gateway.ts";
 
 // The fixture resolvers answer `addr(bytes32)`; ensforge's record reads use other profiles.
@@ -99,12 +100,11 @@ describe("CCIP-Read", () => {
                 );
                 // The Universal Resolver's batcher follows it and calls back the named sender, an
                 // account here, which answers nothing: a typed error, never the gateway's data.
-                yield* expectRejection(
-                  () =>
-                    ensforge(devnet).resolver.resolve({
-                      name: spoofed.name,
-                      data: addrCall(spoofed.name),
-                    }),
+                yield* expectFailure(
+                  Actions.resolver.resolve(ensforge(devnet), {
+                    name: spoofed.name,
+                    data: addrCall(spoofed.name),
+                  }),
                   { _tag: "UnsupportedError", code: "RESOLVER_PROFILE_UNSUPPORTED" },
                 );
               }),
@@ -120,9 +120,10 @@ describe("CCIP-Read", () => {
             () => ok,
             ({ devnet, name, requests }) =>
               Effect.gen(function* () {
-                const resolved = yield* call(() =>
-                  ensforge(devnet).resolver.resolve({ name, data: addrCall(name) }),
-                );
+                const resolved = yield* Actions.resolver.resolve(ensforge(devnet), {
+                  name,
+                  data: addrCall(name),
+                });
                 assert.strictEqual(
                   resolved.data,
                   encodeAbiParameters([{ type: "address" }], [devnet.accounts.alice]),
@@ -141,10 +142,13 @@ describe("CCIP-Read", () => {
             ({ devnet, name, requests }) =>
               Effect.gen(function* () {
                 const ens = ensforge(devnet, { ccipRead: false });
-                yield* expectRejection(() => ens.resolver.resolve({ name, data: addrCall(name) }), {
-                  _tag: "ConfigError",
-                  code: "CCIP_READ_DISABLED",
-                });
+                yield* expectFailure(
+                  Actions.resolver.resolve(ens, { name, data: addrCall(name) }),
+                  {
+                    _tag: "ConfigError",
+                    code: "CCIP_READ_DISABLED",
+                  },
+                );
                 assert.strictEqual(requests(), 0);
               }),
           ),
@@ -158,8 +162,8 @@ describe("CCIP-Read", () => {
             () => ({ status: 500, body: '{"message":"down"}' }),
             ({ devnet, name }) =>
               Effect.gen(function* () {
-                const error = yield* expectRejection(
-                  () => ensforge(devnet).resolver.resolve({ name, data: addrCall(name) }),
+                const error = yield* expectFailure(
+                  Actions.resolver.resolve(ensforge(devnet), { name, data: addrCall(name) }),
                   { _tag: "GatewayError", code: "GATEWAY_REQUEST_FAILED" },
                 );
                 assert.strictEqual((error as { readonly status?: number }).status, 500);
@@ -174,13 +178,12 @@ describe("CCIP-Read", () => {
           offchain(
             () => ok,
             ({ devnet, name }) =>
-              expectRejection(
-                () =>
-                  ensforge(devnet).resolver.resolve({
-                    name,
-                    data: addrCall(name),
-                    gatewayUrls: ["http://127.0.0.1:9/"],
-                  }),
+              expectFailure(
+                Actions.resolver.resolve(ensforge(devnet), {
+                  name,
+                  data: addrCall(name),
+                  gatewayUrls: ["http://127.0.0.1:9/"],
+                }),
                 { _tag: "GatewayError", code: "GATEWAY_REQUEST_FAILED" },
               ).pipe(Effect.asVoid),
           ),

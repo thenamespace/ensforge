@@ -1,12 +1,13 @@
 import { assert, describe } from "@effect/vitest";
 import { Effect } from "effect";
 
+import { Actions } from "@ensforge/sdk/effect";
 import { Devnet } from "@ensforge/test-devnet";
 import { Fixtures } from "@ensforge/test-fixtures";
-import { expectRejection } from "@ensforge/test-harness";
+import { expectFailure } from "@ensforge/test-harness";
 import { pad, toHex } from "viem";
 
-import { atTimestamp, call, ensforge, isolated, onProfile, passWaits } from "../support/chain.ts";
+import { atTimestamp, ensforge, isolated, onProfile, passWaits } from "../support/chain.ts";
 import { ethEntry, usdcOf } from "./support.ts";
 
 const year = 31_536_000n;
@@ -25,17 +26,16 @@ describe("registration", () => {
           yield* isolated(
             devnet,
             Effect.gen(function* () {
-              const quote = yield* call(() =>
-                ens.registration.getPrice({ name: "qqqqq.eth", duration: year }),
-              );
+              const quote = yield* Actions.registration.getPrice(ens, {
+                name: "qqqqq.eth",
+                duration: year,
+              });
               const before = yield* usdcOf(devnet, carol);
-              const result = yield* call(() =>
-                ens.registration.registerSync({
-                  names: "qqqqq.eth",
-                  duration: year,
-                  onStep: passWaits(devnet),
-                }),
-              );
+              const result = yield* Actions.registration.registerSync(ens, {
+                names: "qqqqq.eth",
+                duration: year,
+                onStep: passWaits(devnet),
+              });
               const entry = yield* ethEntry(devnet, "qqqqq");
 
               assert.strictEqual(entry.owner, carol);
@@ -59,18 +59,18 @@ describe("registration", () => {
           yield* isolated(
             devnet,
             Effect.gen(function* () {
-              const { secret, readyAt } = yield* call(() => ens.registration.commitSync(options));
-              yield* expectRejection(() => ens.registration.registerSync({ ...options, secret }), {
+              const { secret, readyAt } = yield* Actions.registration.commitSync(ens, options);
+              yield* expectFailure(Actions.registration.registerSync(ens, { ...options, secret }), {
                 _tag: "CommitmentError",
                 code: "COMMITMENT_TOO_NEW",
               });
-              const parameters = yield* call(() => ens.registration.getParameters());
+              const parameters = yield* Actions.registration.getParameters(ens);
               const expiresAt = readyAt - parameters.minCommitmentAge + parameters.maxCommitmentAge;
 
               yield* atTimestamp(
                 devnet,
                 expiresAt,
-                expectRejection(() => ens.registration.registerSync({ ...options, secret }), {
+                expectFailure(Actions.registration.registerSync(ens, { ...options, secret }), {
                   _tag: "CommitmentError",
                   code: "COMMITMENT_TOO_OLD",
                 }),
@@ -79,9 +79,10 @@ describe("registration", () => {
                 devnet,
                 readyAt,
                 Effect.gen(function* () {
-                  const result = yield* call(() =>
-                    ens.registration.registerSync({ ...options, secret }),
-                  );
+                  const result = yield* Actions.registration.registerSync(ens, {
+                    ...options,
+                    secret,
+                  });
                   // Only the reveal is left to send.
                   assert.deepStrictEqual(
                     result.plan.steps.map((step) => step.id),
@@ -108,9 +109,11 @@ describe("registration", () => {
           const ens = ensforge(devnet, { account: alice });
           const referrer = pad(toHex("ensforge"), { dir: "right" });
 
-          const plan = yield* call(() =>
-            ens.registration.register.prepare({ names: "qqqqq.eth", duration: year, referrer }),
-          );
+          const plan = yield* Actions.registration.register.prepare(ens, {
+            names: "qqqqq.eth",
+            duration: year,
+            referrer,
+          });
           assert.isTrue(
             plan.steps.some((step) =>
               step.calls.some((item) => item.data.includes(referrer.slice(2))),
@@ -121,21 +124,19 @@ describe("registration", () => {
           yield* isolated(
             devnet,
             Effect.gen(function* () {
-              yield* call(() =>
-                ens.registration.registerSync({
-                  names: "qqqqq.eth",
-                  duration: year,
-                  records: { texts: { url: "https://new.example" }, addresses: { eth: alice } },
-                  primaryName: true,
-                  onStep: passWaits(devnet),
-                }),
-              );
+              yield* Actions.registration.registerSync(ens, {
+                names: "qqqqq.eth",
+                duration: year,
+                records: { texts: { url: "https://new.example" }, addresses: { eth: alice } },
+                primaryName: true,
+                onStep: passWaits(devnet),
+              });
               assert.strictEqual(
-                yield* call(() => ens.record.getText({ name: "qqqqq.eth", key: "url" })),
+                yield* Actions.record.getText(ens, { name: "qqqqq.eth", key: "url" }),
                 "https://new.example",
               );
               assert.strictEqual(
-                yield* call(() => ens.primaryName.get({ address: alice })),
+                yield* Actions.primaryName.get(ens, { address: alice }),
                 "qqqqq.eth",
               );
             }),
@@ -156,11 +157,13 @@ describe("registration", () => {
             devnet,
             Effect.gen(function* () {
               const quotes = yield* Effect.forEach(names, (name) =>
-                call(() => ens.registration.getPrice({ name, duration: year })),
+                Actions.registration.getPrice(ens, { name, duration: year }),
               );
-              const result = yield* call(() =>
-                ens.registration.registerSync({ names, duration: year, onStep: passWaits(devnet) }),
-              );
+              const result = yield* Actions.registration.registerSync(ens, {
+                names,
+                duration: year,
+                onStep: passWaits(devnet),
+              });
               assert.deepStrictEqual(
                 result.names.map(({ name }) => name),
                 names,
@@ -191,19 +194,19 @@ describe("registration", () => {
           yield* isolated(
             devnet,
             Effect.gen(function* () {
-              yield* call(() =>
-                ens.registration.registerSync({
-                  names: expired.name,
-                  duration: year,
-                  onStep: passWaits(devnet),
-                }),
-              );
+              yield* Actions.registration.registerSync(ens, {
+                names: expired.name,
+                duration: year,
+                onStep: passWaits(devnet),
+              });
               const entry = yield* ethEntry(devnet, expired.name.slice(0, -".eth".length));
               assert.strictEqual(entry.owner, bob);
               assert.notStrictEqual(entry.tokenId, BigInt(String(expired.facts["tokenId"])));
-              const former = yield* call(() =>
-                ens.role.get({ account: alice, target: "registry", name: expired.name }),
-              );
+              const former = yield* Actions.role.get(ens, {
+                account: alice,
+                target: "registry",
+                name: expired.name,
+              });
               assert.deepStrictEqual(former.names, []);
             }),
           );
@@ -223,17 +226,16 @@ describe("registration", () => {
           yield* isolated(
             devnet,
             Effect.gen(function* () {
-              const quote = yield* call(() =>
-                ens.registration.getPrice({ name: released, duration: year }),
-              );
+              const quote = yield* Actions.registration.getPrice(ens, {
+                name: released,
+                duration: year,
+              });
               assert.isTrue(quote.premium > 0n);
-              const result = yield* call(() =>
-                ens.registration.registerSync({
-                  names: released,
-                  duration: year,
-                  onStep: passWaits(devnet),
-                }),
-              );
+              const result = yield* Actions.registration.registerSync(ens, {
+                names: released,
+                duration: year,
+                onStep: passWaits(devnet),
+              });
               // The premium decays every second between the quote and the reveal.
               assert.isTrue(result.paid > quote.base && result.paid <= quote.total);
             }),
@@ -248,23 +250,22 @@ describe("registration", () => {
         const devnet = yield* Devnet;
         const ens = ensforge(devnet, { account: devnet.accounts.alice });
 
-        yield* expectRejection(
-          () =>
-            ens.registration.register({
-              names: fixtures.byId("v2.registered").name,
-              duration: year,
-            }),
+        yield* expectFailure(
+          Actions.registration.register(ens, {
+            names: fixtures.byId("v2.registered").name,
+            duration: year,
+          }),
           { _tag: "NameStateError", code: "NAME_NOT_AVAILABLE" },
         );
-        yield* expectRejection(
-          () => ens.registration.register({ names: "qqqqq.eth", duration: 86_400n }),
+        yield* expectFailure(
+          Actions.registration.register(ens, { names: "qqqqq.eth", duration: 86_400n }),
           {
             _tag: "InvalidInputError",
             code: "DURATION_TOO_SHORT",
           },
         );
-        yield* expectRejection(
-          () => ens.registration.register({ names: "qq.eth", duration: year }),
+        yield* expectFailure(
+          Actions.registration.register(ens, { names: "qq.eth", duration: year }),
           {
             _tag: "InvalidInputError",
             code: "INVALID_NAME",

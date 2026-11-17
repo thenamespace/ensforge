@@ -1,7 +1,7 @@
 import { layer } from "@effect/vitest";
 import { Effect } from "effect";
 
-import { Ensforge, ensActions, type Plan } from "@ensforge/sdk";
+import { Ensforge, ensActions, type Errors, type Plan } from "@ensforge/sdk";
 import type { Indexer } from "@ensforge/sdk/indexer";
 import type { DevnetInstance, ProfileName } from "@ensforge/test-devnet";
 import { Fixtures } from "@ensforge/test-fixtures";
@@ -52,7 +52,13 @@ export const ensforge = (devnet: DevnetInstance, options: ClientOptions = {}) =>
   }).extend(ensActions());
 };
 
-/** Runs an ensforge Promise call inside a test. */
+/** A `…Sync` write of the Effect actions, looked up by its path (`record.setSync`). */
+export type SyncAction = (
+  client: ReturnType<typeof ensforge>,
+  options: unknown,
+) => Effect.Effect<unknown, Errors.AnyError>;
+
+/** Runs an ensforge Promise call, for the tests that compare the Promise API with the Effect API. */
 export const call = <A>(promise: () => Promise<A>) => Effect.promise(promise);
 
 /** Runs `effect` and then reverts the chain, so a test can write without changing the devnet. */

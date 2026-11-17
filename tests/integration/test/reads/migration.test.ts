@@ -1,11 +1,12 @@
 import { assert, describe } from "@effect/vitest";
 import { Effect } from "effect";
 
+import { Actions } from "@ensforge/sdk/effect";
 import { Devnet } from "@ensforge/test-devnet";
 import { Fixtures } from "@ensforge/test-fixtures";
-import { expectRejection } from "@ensforge/test-harness";
+import { expectFailure } from "@ensforge/test-harness";
 
-import { call, ensforge, onProfile } from "../support/chain.ts";
+import { ensforge, onProfile } from "../support/chain.ts";
 
 describe("migration.get", () => {
   onProfile("mainnet-shaped")("mainnet-shaped", (it) => {
@@ -17,9 +18,7 @@ describe("migration.get", () => {
           const { accounts } = yield* Devnet;
           const ens = ensforge(yield* Devnet);
           const statusOf = (id: string) =>
-            call(() =>
-              ens.migration.get({ name: fixtures.byId(id).name, account: accounts.alice }),
-            );
+            Actions.migration.get(ens, { name: fixtures.byId(id).name, account: accounts.alice });
 
           const premigrated = fixtures.byId("v2.reserved");
           const reservedUntil = BigInt(String(premigrated.facts["reservedUntil"]));
@@ -62,7 +61,7 @@ describe("migration.get", () => {
     it.effect("fails where ENSv2 is not deployed", () =>
       Effect.gen(function* () {
         const ens = ensforge(yield* Devnet);
-        yield* expectRejection(() => ens.migration.get({ name: "v1-plain.eth" }), {
+        yield* expectFailure(Actions.migration.get(ens, { name: "v1-plain.eth" }), {
           _tag: "UnsupportedError",
           code: "UNSUPPORTED_ON_DEPLOYMENT",
         });

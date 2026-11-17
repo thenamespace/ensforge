@@ -1,12 +1,13 @@
 import { assert, describe } from "@effect/vitest";
 import { Effect } from "effect";
 
+import { Actions } from "@ensforge/sdk/effect";
 import { Devnet } from "@ensforge/test-devnet";
 import { Fixtures } from "@ensforge/test-fixtures";
-import { expectRejection } from "@ensforge/test-harness";
+import { expectFailure } from "@ensforge/test-harness";
 import type { Address } from "viem";
 
-import { call, ensforge, onProfile } from "../support/chain.ts";
+import { ensforge, onProfile } from "../support/chain.ts";
 
 const parentOf = (name: string) => name.slice(name.indexOf(".") + 1);
 
@@ -18,7 +19,7 @@ describe("registry.get", () => {
         Effect.gen(function* () {
           const fixtures = yield* Fixtures;
           const ens = ensforge(yield* Devnet);
-          const registryOf = (name: string) => call(() => ens.registry.get({ name }));
+          const registryOf = (name: string) => Actions.registry.get(ens, { name });
 
           // The `.eth` registry is not a proxy: no implementation, nothing to upgrade.
           const eth = yield* registryOf("eth");
@@ -38,7 +39,7 @@ describe("registry.get", () => {
           // A name without a subregistry has no registry for children.
           assert.isNull(yield* registryOf(fixtures.byId("v2.registered").name));
 
-          yield* expectRejection(() => ens.registry.get({ name: "" }), {
+          yield* expectFailure(Actions.registry.get(ens, { name: "" }), {
             _tag: "InvalidInputError",
             code: "INVALID_NAME",
           });
@@ -54,9 +55,9 @@ describe("registry.get", () => {
           const ens = ensforge(yield* Devnet);
           const deep = fixtures.byId("v2.subnames");
 
-          const registry = yield* call(() =>
-            ens.registry.get({ registry: String(deep.facts["registry"]) }),
-          );
+          const registry = yield* Actions.registry.get(ens, {
+            registry: String(deep.facts["registry"]),
+          });
           assert.deepInclude(registry, {
             kind: "user",
             canonicalName: "sub.v2-parent.eth",
@@ -75,8 +76,8 @@ describe("registry.get", () => {
           const linked = fixtures.byId("v2.linked");
 
           const [canonical, alias] = yield* Effect.all([
-            call(() => ens.registry.get({ name: parentOf(linked.name) })),
-            call(() => ens.registry.get({ name: parentOf(String(linked.facts["alias"])) })),
+            Actions.registry.get(ens, { name: parentOf(linked.name) }),
+            Actions.registry.get(ens, { name: parentOf(String(linked.facts["alias"])) }),
           ]);
           assert.strictEqual(canonical?.address, linked.facts["registry"]);
           assert.strictEqual(alias?.address, linked.facts["registry"]);
@@ -95,8 +96,8 @@ describe("registry.get", () => {
           const replaced = fixtures.byId("v2.replaced-subregistry");
 
           const [stale, current] = yield* Effect.all([
-            call(() => ens.registry.get({ registry: String(replaced.facts["staleRegistry"]) })),
-            call(() => ens.registry.get({ name: "v2-replaced.eth" })),
+            Actions.registry.get(ens, { registry: String(replaced.facts["staleRegistry"]) }),
+            Actions.registry.get(ens, { name: "v2-replaced.eth" }),
           ]);
           assert.isNull(stale?.canonicalName);
           assert.strictEqual(current?.address, replaced.facts["registry"]);
