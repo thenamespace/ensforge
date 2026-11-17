@@ -1,3 +1,5 @@
+import { Predicate } from "effect";
+
 import { isAddressEqual, isHex, type Address, type Hex } from "viem";
 
 import type { EventAction, EventType } from "../../actions/event/types.js";
@@ -93,29 +95,31 @@ export type KnownContracts = {
   readonly suffixes: readonly { readonly registry: Address; readonly suffix: string }[];
 };
 
-const defined = (addresses: readonly (Address | undefined)[]): Address[] =>
-  addresses.filter((address): address is Address => address !== undefined);
-
 /** The deployment's ENS contracts, for classifying events by their emitter. */
 export const knownContracts = (client: Client): KnownContracts => {
   const v1 = client.deployment.v1;
   const v2 = client.deployment.v2;
   return {
-    v1: defined([
+    v1: [
       ...Object.values(v1?.contracts ?? {}),
       ...(v1?.legacyPublicResolvers ?? []),
       ...(v1?.frozenPublicResolvers ?? []),
-    ]),
-    v2: defined([...Object.values(v2?.contracts ?? {}), ...Object.values(v2?.migration ?? {})]),
+    ].filter(Predicate.isNotUndefined),
+    v2: [...Object.values(v2?.contracts ?? {}), ...Object.values(v2?.migration ?? {})].filter(
+      Predicate.isNotUndefined,
+    ),
     graveyard: v2?.migration.graveyard,
-    migrationControllers: defined([
+    migrationControllers: [
       v2?.migration.unlockedMigrationController,
       v2?.migration.lockedMigrationController,
-    ]),
-    suffixes: [
-      ...(v2 === undefined ? [] : [{ registry: v2.contracts.ethRegistry, suffix: ".eth" }]),
-      ...(v2 === undefined ? [] : [{ registry: v2.contracts.rootRegistry, suffix: "" }]),
-    ],
+    ].filter(Predicate.isNotUndefined),
+    suffixes:
+      v2 === undefined
+        ? []
+        : [
+            { registry: v2.contracts.ethRegistry, suffix: ".eth" },
+            { registry: v2.contracts.rootRegistry, suffix: "" },
+          ],
   };
 };
 

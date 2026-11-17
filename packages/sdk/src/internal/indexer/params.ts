@@ -6,9 +6,6 @@ import type { QueryValue } from "./http.js";
 
 type Params = Readonly<Record<string, QueryValue>>;
 
-const snake = (value: string): string =>
-  value.replace(/[A-Z]/g, (char) => `_${char.toLowerCase()}`);
-
 /** Unix seconds as the decimal string the indexer takes. */
 const seconds = (value: bigint | Date | undefined): string | undefined =>
   value === undefined
@@ -19,7 +16,11 @@ const seconds = (value: bigint | Date | undefined): string | undefined =>
 
 /** One value or several, in the indexer's snake_case (`roleHolder` → `role_holder`). */
 const snakeList = <value extends string>(value: value | readonly value[] | undefined) =>
-  value === undefined ? undefined : (typeof value === "string" ? [value] : value).map(snake);
+  value === undefined
+    ? undefined
+    : (typeof value === "string" ? [value] : value).map((entry) =>
+        entry.replace(/[A-Z]/g, (char) => `_${char.toLowerCase()}`),
+      );
 
 const sortKeys: Readonly<Record<string, string>> = {
   name: "name",

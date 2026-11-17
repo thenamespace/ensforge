@@ -40,11 +40,6 @@ type Envelope = {
   readonly page?: (typeof Wire.Page)["Type"] | null | undefined;
 };
 
-const baseUrlOf = (url: string, version: string): string => {
-  const trimmed = url.replace(/\/+$/, "");
-  return /\/v\d+$/.test(trimmed) ? trimmed : `${trimmed}${version}`;
-};
-
 /** Not found as `null`, for single-resource reads. */
 const orNull = <value, error>(effect: Effect.Effect<value, error | NotFoundError>) =>
   Effect.catchTag(effect as Effect.Effect<value, NotFoundError>, "NotFoundError", () =>
@@ -73,9 +68,11 @@ export const restIndexer = (options: RestOptions): Implementation => {
         }),
       );
     }
+    // A URL that already ends with a version path is used as is.
+    const trimmed = url.replace(/\/+$/, "");
     const config: HttpConfig = {
       id,
-      baseUrl: baseUrlOf(url, options.version),
+      baseUrl: /\/v\d+$/.test(trimmed) ? trimmed : `${trimmed}${options.version}`,
       headers: options.headers ?? {},
       fetch: options.fetch ?? globalThis.fetch.bind(globalThis),
       timeout: options.timeout ?? 15_000,
@@ -105,17 +102,19 @@ export const restIndexer = (options: RestOptions): Implementation => {
    * served (its chain indexed); every query checks that the indexer serves ENS on the client's
    * chain.
    */
-  const prepare = (context: CallContext, namespace: Namespace | undefined) =>
-    Effect.gen(function* () {
-      const config = yield* configFor(context.chainId);
-      const probe = probes.get(context.chainId) as ReturnType<typeof capabilities>;
-      const ensChain = yield* probe.serve("ens", context.chainId);
-      const chainId =
-        namespace === undefined || namespace === "ens"
-          ? ensChain
-          : yield* probe.serve(namespace, context.chainId);
-      return { config, chainId };
-    });
+  const prepare = Effect.fnUntraced(function* (
+    context: CallContext,
+    namespace: Namespace | undefined,
+  ) {
+    const config = yield* configFor(context.chainId);
+    const probe = probes.get(context.chainId) as ReturnType<typeof capabilities>;
+    const ensChain = yield* probe.serve("ens", context.chainId);
+    const chainId =
+      namespace === undefined || namespace === "ens"
+        ? ensChain
+        : yield* probe.serve(namespace, context.chainId);
+    return { config, chainId };
+  });
 
   const get = <S extends Schema.Constraint & { readonly DecodingServices: never }>(
     config: HttpConfig,
@@ -136,340 +135,316 @@ export const restIndexer = (options: RestOptions): Implementation => {
 
   const pageOf = <item>(
     route: string,
-    envelope: Envelope,
-    rows: readonly unknown[],
+    envelope: Envelope & { readonly data: readonly unknown[] },
     toItem: (row: never) => item,
     chainId: number,
   ) =>
     mapped(route, () =>
       Convert.page(
         envelope,
-        rows.map((row) => toItem(row as never)),
+        envelope.data.map((row) => toItem(row as never)),
         chainId,
         id,
       ),
     );
 
   const methods: Implementation["methods"] = {
-    getName: (query, context) =>
-      Effect.gen(function* () {
-        yield* checkSnapshot(query);
-        const { config, chainId } = yield* prepare(context, query.namespace);
-        const route = "/names/{name}";
-        const envelope = yield* get(config, Wire.envelope(Wire.NameRecord), {
-          route,
-          path: `/names/${encodeURIComponent(query.name)}`,
-          query: { namespace: query.namespace, source: query.source, ...Params.snapshot(query) },
-          resource: query.name,
-        });
-        return yield* mapped(route, () => ({
-          ...Convert.detail(envelope.data),
-          ...Convert.meta(envelope.meta, chainId, id),
-        }));
-      }).pipe(orNull),
+    getName: Effect.fnUntraced(function* (query, context) {
+      yield* checkSnapshot(query);
+      const { config, chainId } = yield* prepare(context, query.namespace);
+      const route = "/names/{name}";
+      const envelope = yield* get(config, Wire.envelope(Wire.NameRecord), {
+        route,
+        path: `/names/${encodeURIComponent(query.name)}`,
+        query: { namespace: query.namespace, source: query.source, ...Params.snapshot(query) },
+        resource: query.name,
+      });
+      return yield* mapped(route, () => ({
+        ...Convert.detail(envelope.data),
+        ...Convert.meta(envelope.meta, chainId, id),
+      }));
+    }, orNull),
 
-    getNamesForAddress: (query, context) =>
-      Effect.gen(function* () {
-        const { config, chainId } = yield* prepare(context, query.namespace);
-        const route = "/addresses/{address}/names";
-        const envelope = yield* get(config, Wire.envelope(Schema.Array(Wire.AddressName)), {
-          route,
-          path: `/addresses/${query.address}/names`,
-          query: Params.addressNames(query),
-          resource: query.address,
-        });
-        return yield* pageOf(route, envelope, envelope.data, Convert.addressName, chainId);
-      }),
+    getNamesForAddress: Effect.fnUntraced(function* (query, context) {
+      const { config, chainId } = yield* prepare(context, query.namespace);
+      const route = "/addresses/{address}/names";
+      const envelope = yield* get(config, Wire.envelope(Schema.Array(Wire.AddressName)), {
+        route,
+        path: `/addresses/${query.address}/names`,
+        query: Params.addressNames(query),
+        resource: query.address,
+      });
+      return yield* pageOf(route, envelope, Convert.addressName, chainId);
+    }),
 
-    getSubnames: (query, context) =>
-      Effect.gen(function* () {
-        const { config, chainId } = yield* prepare(context, query.namespace);
-        const route = "/names/{name}/subnames";
-        const envelope = yield* get(config, Wire.envelope(Schema.Array(Wire.Subname)), {
-          route,
-          path: `/names/${encodeURIComponent(query.name)}/subnames`,
-          query: Params.subnames(query),
-          resource: query.name,
-        });
-        return yield* pageOf(route, envelope, envelope.data, Convert.subname, chainId);
-      }),
+    getSubnames: Effect.fnUntraced(function* (query, context) {
+      const { config, chainId } = yield* prepare(context, query.namespace);
+      const route = "/names/{name}/subnames";
+      const envelope = yield* get(config, Wire.envelope(Schema.Array(Wire.Subname)), {
+        route,
+        path: `/names/${encodeURIComponent(query.name)}/subnames`,
+        query: Params.subnames(query),
+        resource: query.name,
+      });
+      return yield* pageOf(route, envelope, Convert.subname, chainId);
+    }),
 
-    getHistory: (query, context) =>
-      Effect.gen(function* () {
-        const { config, chainId } = yield* prepare(context, query.namespace);
-        const byName = query.name !== undefined;
-        const route = byName ? "/names/{name}/history" : "/addresses/{address}/history";
-        const envelope = yield* get(config, Wire.envelope(Schema.Array(Wire.HistoryEvent)), {
-          route,
-          path: byName
-            ? `/names/${encodeURIComponent(query.name)}/history`
-            : `/addresses/${query.address}/history`,
-          query: Params.history(query),
-          resource: query.name ?? query.address,
-        });
-        return yield* pageOf(route, envelope, envelope.data, Convert.event, chainId);
-      }),
+    getHistory: Effect.fnUntraced(function* (query, context) {
+      const { config, chainId } = yield* prepare(context, query.namespace);
+      const byName = query.name !== undefined;
+      const route = byName ? "/names/{name}/history" : "/addresses/{address}/history";
+      const envelope = yield* get(config, Wire.envelope(Schema.Array(Wire.HistoryEvent)), {
+        route,
+        path: byName
+          ? `/names/${encodeURIComponent(query.name)}/history`
+          : `/addresses/${query.address}/history`,
+        query: Params.history(query),
+        resource: query.name ?? query.address,
+      });
+      return yield* pageOf(route, envelope, Convert.event, chainId);
+    }),
 
-    getEvents: (query, context) =>
-      Effect.gen(function* () {
-        const { config, chainId } = yield* prepare(context, query.namespace);
-        const route = "/events";
-        const envelope = yield* get(config, Wire.envelope(Schema.Array(Wire.HistoryEvent)), {
-          route,
-          path: route,
-          query: Params.events(query),
-        });
-        return yield* pageOf(
-          route,
-          envelope,
-          envelope.data,
-          (row: (typeof Wire.HistoryEvent)["Type"]) => Convert.event(row, query.name),
-          chainId,
-        );
-      }),
+    getEvents: Effect.fnUntraced(function* (query, context) {
+      const { config, chainId } = yield* prepare(context, query.namespace);
+      const route = "/events";
+      const envelope = yield* get(config, Wire.envelope(Schema.Array(Wire.HistoryEvent)), {
+        route,
+        path: route,
+        query: Params.events(query),
+      });
+      return yield* pageOf(
+        route,
+        envelope,
+        (row: (typeof Wire.HistoryEvent)["Type"]) => Convert.event(row, query.name),
+        chainId,
+      );
+    }),
 
-    search: (query, context) =>
-      Effect.gen(function* () {
-        const { config, chainId } = yield* prepare(context, query.namespace);
-        const route = "/search";
-        const envelope = yield* get(config, Wire.envelope(Schema.Array(Wire.SearchName)), {
-          route,
-          path: route,
-          query: {
-            q: query.query,
-            match: query.match,
-            namespace: query.namespace,
-            ...Params.paging(query),
-          },
-        });
-        return yield* pageOf(route, envelope, envelope.data, Convert.name, chainId);
-      }),
+    search: Effect.fnUntraced(function* (query, context) {
+      const { config, chainId } = yield* prepare(context, query.namespace);
+      const route = "/search";
+      const envelope = yield* get(config, Wire.envelope(Schema.Array(Wire.SearchName)), {
+        route,
+        path: route,
+        query: {
+          q: query.query,
+          match: query.match,
+          namespace: query.namespace,
+          ...Params.paging(query),
+        },
+      });
+      return yield* pageOf(route, envelope, Convert.name, chainId);
+    }),
 
-    lookup: (query, context) =>
-      Effect.gen(function* () {
-        const { config, chainId } = yield* prepare(context, query.namespace);
-        const route = "/lookup";
-        const envelope = yield* get(config, Wire.envelope(Schema.Array(Wire.LookupResult)), {
-          route,
-          path: route,
-          body: Params.lookup(query),
-        });
-        return yield* mapped(route, () => ({
-          results: envelope.data.map(Convert.lookupResult),
-          ...Convert.meta(envelope.meta, chainId, id),
-        }));
-      }),
+    lookup: Effect.fnUntraced(function* (query, context) {
+      const { config, chainId } = yield* prepare(context, query.namespace);
+      const route = "/lookup";
+      const envelope = yield* get(config, Wire.envelope(Schema.Array(Wire.LookupResult)), {
+        route,
+        path: route,
+        body: Params.lookup(query),
+      });
+      return yield* mapped(route, () => ({
+        results: envelope.data.map(Convert.lookupResult),
+        ...Convert.meta(envelope.meta, chainId, id),
+      }));
+    }),
 
-    getNamesByExpiry: (query, context) =>
-      Effect.gen(function* () {
-        const { config, chainId } = yield* prepare(context, query.namespace);
-        const route = "/names";
-        const envelope = yield* get(config, Wire.envelope(Schema.Array(Wire.SearchName)), {
-          route,
-          path: route,
-          query: Params.expiry(query),
-          repeat: ["expires_window", "grace_ends_window"],
-        });
-        return yield* pageOf(route, envelope, envelope.data, Convert.expiringName, chainId);
-      }),
+    getNamesByExpiry: Effect.fnUntraced(function* (query, context) {
+      const { config, chainId } = yield* prepare(context, query.namespace);
+      const route = "/names";
+      const envelope = yield* get(config, Wire.envelope(Schema.Array(Wire.SearchName)), {
+        route,
+        path: route,
+        query: Params.expiry(query),
+        repeat: ["expires_window", "grace_ends_window"],
+      });
+      return yield* pageOf(route, envelope, Convert.expiringName, chainId);
+    }),
 
-    getPrimaryName: (query, context) =>
-      Effect.gen(function* () {
-        const { config, chainId } = yield* prepare(context, query.namespace);
-        const route = "/addresses/{address}/primary-name";
-        const envelope = yield* get(config, Wire.envelope(Wire.PrimaryName), {
-          route,
-          path: `/addresses/${query.address}/primary-name`,
-          query: {
-            coin_type: query.coinType,
-            namespace: query.namespace,
-            source: query.source,
-          },
-          resource: query.address,
-        });
-        return yield* mapped(route, () => ({
-          ...Convert.primaryName(envelope.data),
-          ...Convert.meta(envelope.meta, chainId, id),
-        }));
-      }),
+    getPrimaryName: Effect.fnUntraced(function* (query, context) {
+      const { config, chainId } = yield* prepare(context, query.namespace);
+      const route = "/addresses/{address}/primary-name";
+      const envelope = yield* get(config, Wire.envelope(Wire.PrimaryName), {
+        route,
+        path: `/addresses/${query.address}/primary-name`,
+        query: {
+          coin_type: query.coinType,
+          namespace: query.namespace,
+          source: query.source,
+        },
+        resource: query.address,
+      });
+      return yield* mapped(route, () => ({
+        ...Convert.primaryName(envelope.data),
+        ...Convert.meta(envelope.meta, chainId, id),
+      }));
+    }),
 
-    getRecords: (query, context) =>
-      Effect.gen(function* () {
-        yield* checkSnapshot(query);
-        const { config, chainId } = yield* prepare(context, query.namespace);
-        const route =
+    getRecords: Effect.fnUntraced(function* (query, context) {
+      yield* checkSnapshot(query);
+      const { config, chainId } = yield* prepare(context, query.namespace);
+      const route =
+        query.resolver === undefined
+          ? "/names/{name}/records"
+          : "/resolvers/{chain_id}/{address}/records";
+      const envelope = yield* get(config, Wire.envelope(Wire.NameRecords), {
+        route,
+        path:
           query.resolver === undefined
-            ? "/names/{name}/records"
-            : "/resolvers/{chain_id}/{address}/records";
-        const envelope = yield* get(config, Wire.envelope(Wire.NameRecords), {
-          route,
-          path:
-            query.resolver === undefined
-              ? `/names/${encodeURIComponent(query.name)}/records`
-              : `/resolvers/${query.resolver.chainId}/${query.resolver.address}/records`,
-          query: Params.records(query),
-          resource: query.name,
-        });
-        return yield* mapped(route, () => ({
-          ...Convert.records(envelope.data),
-          ...Convert.meta(envelope.meta, chainId, id),
-        }));
-      }).pipe(orNull),
+            ? `/names/${encodeURIComponent(query.name)}/records`
+            : `/resolvers/${query.resolver.chainId}/${query.resolver.address}/records`,
+        query: Params.records(query),
+        resource: query.name,
+      });
+      return yield* mapped(route, () => ({
+        ...Convert.records(envelope.data),
+        ...Convert.meta(envelope.meta, chainId, id),
+      }));
+    }, orNull),
 
-    getPermissions: (query, context) =>
-      Effect.gen(function* () {
-        const { config, chainId } = yield* prepare(context, query.namespace);
-        const route = "/permissions";
-        const envelope = yield* get(config, Wire.envelope(Schema.Array(Wire.PermissionRow)), {
-          route,
-          path: route,
-          query: Params.permissions(query),
-        });
-        return yield* pageOf(route, envelope, envelope.data, Convert.permission, chainId);
-      }),
+    getPermissions: Effect.fnUntraced(function* (query, context) {
+      const { config, chainId } = yield* prepare(context, query.namespace);
+      const route = "/permissions";
+      const envelope = yield* get(config, Wire.envelope(Schema.Array(Wire.PermissionRow)), {
+        route,
+        path: route,
+        query: Params.permissions(query),
+      });
+      return yield* pageOf(route, envelope, Convert.permission, chainId);
+    }),
 
-    getRegistry: (query, context) =>
-      Effect.gen(function* () {
-        yield* checkSnapshot(query);
-        const { config } = yield* prepare(context, undefined);
-        const route = "/registries/{chain_id}/{address}";
-        const envelope = yield* get(config, Wire.envelope(Wire.RegistryOverview), {
-          route,
-          path: `/registries/${query.chainId}/${query.address}`,
-          query: {
-            include: query.includeCounts === true ? ["counts"] : undefined,
-            ...Params.snapshot(query),
-          },
-          resource: query.address,
-        });
-        return yield* mapped(route, () => ({
-          ...Convert.registry(envelope.data),
-          ...Convert.meta(envelope.meta, query.chainId, id),
-        }));
-      }).pipe(orNull),
+    getRegistry: Effect.fnUntraced(function* (query, context) {
+      yield* checkSnapshot(query);
+      const { config } = yield* prepare(context, undefined);
+      const route = "/registries/{chain_id}/{address}";
+      const envelope = yield* get(config, Wire.envelope(Wire.RegistryOverview), {
+        route,
+        path: `/registries/${query.chainId}/${query.address}`,
+        query: {
+          include: query.includeCounts === true ? ["counts"] : undefined,
+          ...Params.snapshot(query),
+        },
+        resource: query.address,
+      });
+      return yield* mapped(route, () => ({
+        ...Convert.registry(envelope.data),
+        ...Convert.meta(envelope.meta, query.chainId, id),
+      }));
+    }, orNull),
 
-    getRegistryLabels: (query, context) =>
-      Effect.gen(function* () {
-        const { config } = yield* prepare(context, undefined);
-        const route = "/registries/{chain_id}/{address}/labels";
-        const envelope = yield* get(config, Wire.envelope(Schema.Array(Wire.RegistryLabel)), {
-          route,
-          path: `/registries/${query.chainId}/${query.address}/labels`,
-          query: { owner: query.owner, exclude_owner: query.excludeOwner, ...Params.paging(query) },
-          resource: query.address,
-        });
-        return yield* pageOf(route, envelope, envelope.data, Convert.registryLabel, query.chainId);
-      }),
+    getRegistryLabels: Effect.fnUntraced(function* (query, context) {
+      const { config } = yield* prepare(context, undefined);
+      const route = "/registries/{chain_id}/{address}/labels";
+      const envelope = yield* get(config, Wire.envelope(Schema.Array(Wire.RegistryLabel)), {
+        route,
+        path: `/registries/${query.chainId}/${query.address}/labels`,
+        query: { owner: query.owner, exclude_owner: query.excludeOwner, ...Params.paging(query) },
+        resource: query.address,
+      });
+      return yield* pageOf(route, envelope, Convert.registryLabel, query.chainId);
+    }),
 
-    getResolver: (query, context) =>
-      Effect.gen(function* () {
-        yield* checkSnapshot(query);
-        const { config } = yield* prepare(context, undefined);
-        const route = "/resolvers/{chain_id}/{address}";
-        const envelope = yield* get(config, Wire.envelope(Wire.ResolverOverview), {
-          route,
-          path: `/resolvers/${query.chainId}/${query.address}`,
-          query: { ...Params.snapshot(query), ...Params.paging(query) },
-          resource: query.address,
-        });
-        return yield* mapped(route, () => ({
-          ...Convert.resolver(envelope.data),
-          ...Convert.meta(envelope.meta, query.chainId, id),
-        }));
-      }).pipe(orNull),
+    getResolver: Effect.fnUntraced(function* (query, context) {
+      yield* checkSnapshot(query);
+      const { config } = yield* prepare(context, undefined);
+      const route = "/resolvers/{chain_id}/{address}";
+      const envelope = yield* get(config, Wire.envelope(Wire.ResolverOverview), {
+        route,
+        path: `/resolvers/${query.chainId}/${query.address}`,
+        query: { ...Params.snapshot(query), ...Params.paging(query) },
+        resource: query.address,
+      });
+      return yield* mapped(route, () => ({
+        ...Convert.resolver(envelope.data),
+        ...Convert.meta(envelope.meta, query.chainId, id),
+      }));
+    }, orNull),
 
-    getResolverLinks: (query, context) =>
-      Effect.gen(function* () {
-        yield* checkSnapshot(query);
-        const { config } = yield* prepare(context, undefined);
-        const route = "/resolvers/{chain_id}/{address}/links";
-        const envelope = yield* get(config, Wire.envelope(Schema.Array(Wire.ResolverLink)), {
-          route,
-          path: `/resolvers/${query.chainId}/${query.address}/links`,
-          query: { ...Params.snapshot(query), ...Params.paging(query) },
-          resource: query.address,
-        });
-        return yield* pageOf(route, envelope, envelope.data, Convert.resolverLink, query.chainId);
-      }),
+    getResolverLinks: Effect.fnUntraced(function* (query, context) {
+      yield* checkSnapshot(query);
+      const { config } = yield* prepare(context, undefined);
+      const route = "/resolvers/{chain_id}/{address}/links";
+      const envelope = yield* get(config, Wire.envelope(Schema.Array(Wire.ResolverLink)), {
+        route,
+        path: `/resolvers/${query.chainId}/${query.address}/links`,
+        query: { ...Params.snapshot(query), ...Params.paging(query) },
+        resource: query.address,
+      });
+      return yield* pageOf(route, envelope, Convert.resolverLink, query.chainId);
+    }),
 
-    getResolverRoles: (query, context) =>
-      Effect.gen(function* () {
-        yield* checkSnapshot(query);
-        const { config } = yield* prepare(context, undefined);
-        const route = "/resolvers/{chain_id}/{address}/roles";
-        const envelope = yield* get(config, Wire.envelope(Schema.Array(Wire.ResolverRole)), {
-          route,
-          path: `/resolvers/${query.chainId}/${query.address}/roles`,
-          query: { ...Params.snapshot(query), ...Params.paging(query) },
-          resource: query.address,
-        });
-        return yield* pageOf(route, envelope, envelope.data, Convert.resolverRole, query.chainId);
-      }),
+    getResolverRoles: Effect.fnUntraced(function* (query, context) {
+      yield* checkSnapshot(query);
+      const { config } = yield* prepare(context, undefined);
+      const route = "/resolvers/{chain_id}/{address}/roles";
+      const envelope = yield* get(config, Wire.envelope(Schema.Array(Wire.ResolverRole)), {
+        route,
+        path: `/resolvers/${query.chainId}/${query.address}/roles`,
+        query: { ...Params.snapshot(query), ...Params.paging(query) },
+        resource: query.address,
+      });
+      return yield* pageOf(route, envelope, Convert.resolverRole, query.chainId);
+    }),
 
     ...(features.resolversByRoleHolder
       ? {
-          getResolvers: (query: Query.GetResolvers, context: CallContext) =>
-            Effect.gen(function* () {
-              const { config, chainId } = yield* prepare(context, undefined);
-              const route = "/resolvers";
-              const envelope = yield* get(
-                config,
-                Wire.envelope(Schema.Array(Wire.RoleHolderResolver)),
-                {
-                  route,
-                  path: route,
-                  query: {
-                    role_holder: query.roleHolder,
-                    chain_id: query.chainId,
-                    ...Params.paging(query),
-                  },
-                },
-              ).pipe(
-                // A list route answers an empty page for no matches; a 404 means the server
-                // predates the route (bigname before v0.14), so it does not support the query.
-                Effect.catchTag("NotFoundError", () =>
-                  Effect.fail(
-                    new IndexerError({
-                      code: "INDEXER_UNSUPPORTED",
-                      source: id,
-                      shortMessage: `${id} does not serve resolvers by role holder (GET ${route}).`,
-                    }),
-                  ),
-                ),
-              );
-              return yield* pageOf(
+          getResolvers: Effect.fnUntraced(function* (
+            query: Query.GetResolvers,
+            context: CallContext,
+          ) {
+            const { config, chainId } = yield* prepare(context, undefined);
+            const route = "/resolvers";
+            const envelope = yield* get(
+              config,
+              Wire.envelope(Schema.Array(Wire.RoleHolderResolver)),
+              {
                 route,
-                envelope,
-                envelope.data,
-                Convert.roleHolderResolver,
-                chainId,
-              );
-            }),
+                path: route,
+                query: {
+                  role_holder: query.roleHolder,
+                  chain_id: query.chainId,
+                  ...Params.paging(query),
+                },
+              },
+            ).pipe(
+              // A list route answers an empty page for no matches; a 404 means the server
+              // predates the route (bigname before v0.14), so it does not support the query.
+              Effect.catchTag("NotFoundError", () =>
+                Effect.fail(
+                  new IndexerError({
+                    code: "INDEXER_UNSUPPORTED",
+                    source: id,
+                    shortMessage: `${id} does not serve resolvers by role holder (GET ${route}).`,
+                  }),
+                ),
+              ),
+            );
+            return yield* pageOf(route, envelope, Convert.roleHolderResolver, chainId);
+          }),
         }
       : {}),
 
-    getNamespace: (query, context) =>
-      Effect.gen(function* () {
-        const config = yield* configFor(context.chainId);
-        const route = "/namespaces/{namespace}";
-        const envelope = yield* get(config, Wire.envelope(Wire.Namespace), {
-          route,
-          path: `/namespaces/${query.namespace}`,
-          resource: query.namespace,
-        });
-        return yield* mapped(route, () => ({
-          ...Convert.namespace(envelope.data),
-          ...Convert.meta(envelope.meta, context.chainId, id),
-        }));
-      }).pipe(orNull),
+    getNamespace: Effect.fnUntraced(function* (query, context) {
+      const config = yield* configFor(context.chainId);
+      const route = "/namespaces/{namespace}";
+      const envelope = yield* get(config, Wire.envelope(Wire.Namespace), {
+        route,
+        path: `/namespaces/${query.namespace}`,
+        resource: query.namespace,
+      });
+      return yield* mapped(route, () => ({
+        ...Convert.namespace(envelope.data),
+        ...Convert.meta(envelope.meta, context.chainId, id),
+      }));
+    }, orNull),
 
-    getStatus: (_query, context) =>
-      Effect.gen(function* () {
-        const config = yield* configFor(context.chainId);
-        const route = "/status";
-        const envelope = yield* get(config, Wire.envelope(Wire.StatusData), { route, path: route });
-        return yield* mapped(route, () => Convert.status(envelope.data, id));
-      }),
+    getStatus: Effect.fnUntraced(function* (_query, context) {
+      const config = yield* configFor(context.chainId);
+      const route = "/status";
+      const envelope = yield* get(config, Wire.envelope(Wire.StatusData), { route, path: route });
+      return yield* mapped(route, () => Convert.status(envelope.data, id));
+    }),
   };
 
   return { id, methods };

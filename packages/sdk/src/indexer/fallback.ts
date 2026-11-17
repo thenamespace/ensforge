@@ -141,46 +141,45 @@ export const fallback = (
         : run(query, context).pipe(Effect.map((answer) => tagged(index, answer)));
     };
 
-    methods[method] = (query: Query, context: CallContext) =>
-      Effect.gen(function* () {
-        const pin = pinned(query);
-        if (pin !== undefined) {
-          // A tagged cursor is unreadable by the other indexers, so never fall through with it.
-          const answer = ask(pin.index, pin.query, context);
-          if (answer === undefined) {
-            return yield* Effect.fail(
-              new IndexerError({
-                code: "INDEXER_UNSUPPORTED",
-                source: id,
-                shortMessage: `The cursor or snapshot token was issued by indexer ${pin.index}, which cannot serve ${method}.`,
-              }),
-            );
-          }
-          return yield* answer;
-        }
-
-        let failure: AnyError | undefined;
-        for (let index = 0; index < implementations.length; index += 1) {
-          const answer = ask(index, query, context);
-          if (answer === undefined) continue;
-
-          const outcome = yield* answer.pipe(
-            Effect.map((value) => ({ ok: true as const, value })),
-            Effect.catch((error: AnyError) => {
-              const reason = error._tag === "IndexerError" ? reasons[error.code] : undefined;
-              return reason !== undefined && moveOn.has(reason)
-                ? Effect.succeed({ ok: false as const, error })
-                : Effect.fail(error);
+    methods[method] = Effect.fnUntraced(function* (query: Query, context: CallContext) {
+      const pin = pinned(query);
+      if (pin !== undefined) {
+        // A tagged cursor is unreadable by the other indexers, so never fall through with it.
+        const answer = ask(pin.index, pin.query, context);
+        if (answer === undefined) {
+          return yield* Effect.fail(
+            new IndexerError({
+              code: "INDEXER_UNSUPPORTED",
+              source: id,
+              shortMessage: `The cursor or snapshot token was issued by indexer ${pin.index}, which cannot serve ${method}.`,
             }),
           );
-          if (outcome.ok) return outcome.value;
-          // An indexer that could not serve the query explains less than one that failed.
-          if (failure === undefined || outcome.error.code !== "INDEXER_UNSUPPORTED") {
-            failure = outcome.error;
-          }
         }
-        return yield* Effect.fail(failure as AnyError);
-      });
+        return yield* answer;
+      }
+
+      let failure: AnyError | undefined;
+      for (let index = 0; index < implementations.length; index += 1) {
+        const answer = ask(index, query, context);
+        if (answer === undefined) continue;
+
+        const outcome = yield* answer.pipe(
+          Effect.map((value) => ({ ok: true as const, value })),
+          Effect.catch((error: AnyError) => {
+            const reason = error._tag === "IndexerError" ? reasons[error.code] : undefined;
+            return reason !== undefined && moveOn.has(reason)
+              ? Effect.succeed({ ok: false as const, error })
+              : Effect.fail(error);
+          }),
+        );
+        if (outcome.ok) return outcome.value;
+        // An indexer that could not serve the query explains less than one that failed.
+        if (failure === undefined || outcome.error.code !== "INDEXER_UNSUPPORTED") {
+          failure = outcome.error;
+        }
+      }
+      return yield* Effect.fail(failure as AnyError);
+    });
   }
 
   return makeIndexer({ id, methods: methods as Implementation["methods"] });

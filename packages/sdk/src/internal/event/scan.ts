@@ -20,9 +20,6 @@ export type BlockRange = { readonly fromBlock: bigint; readonly toBlock: bigint 
 // 10000 results" or "up to a 10 block range"; any of them means "split and retry".
 const rangeError = /range|limit|too many|more than|exceed|max.*block|block.*max|10000|-32005/i;
 
-const isRangeError = (error: AnyError): boolean =>
-  rangeError.test(`${error.shortMessage} ${String((error.cause as Error | undefined)?.message)}`);
-
 /**
  * Fetches the logs matching `queries` over `range`, splitting ranges the provider rejects and
  * remembering the largest span that worked. Fails with `LOG_RANGE_TOO_LARGE` once
@@ -38,34 +35,34 @@ export const scanLogs = Effect.fnUntraced(function* (
   let requests = 0;
   let span = range.toBlock - range.fromBlock + 1n;
 
-  const fetch = (query: LogQuery, from: bigint, to: bigint) =>
-    fromPromise(
-      () =>
-        client.publicClient.request({
-          method: "eth_getLogs",
-          params: [
-            {
-              address: [...query.address],
-              topics: query.topics.map((topic) =>
-                topic === null ? null : typeof topic === "string" ? topic : [...topic],
-              ),
-              fromBlock: numberToHex(from),
-              toBlock: numberToHex(to),
-            },
-          ],
-        } as never) as Promise<RpcLog[]>,
-    );
-
-  const scan = (query: LogQuery, from: bigint, to: bigint): Effect.Effect<Log[], AnyError> =>
-    Effect.gen(function* () {
+  const scan: (query: LogQuery, from: bigint, to: bigint) => Effect.Effect<Log[], AnyError> =
+    Effect.fnUntraced(function* (query: LogQuery, from: bigint, to: bigint) {
       if (++requests > maxRequests) {
         return yield* Effect.fail(new NetworkError({ code: "LOG_RANGE_TOO_LARGE" }));
       }
-      const result = yield* Effect.result(fetch(query, from, to));
+      const result = yield* Effect.result(
+        fromPromise(
+          () =>
+            client.publicClient.request({
+              method: "eth_getLogs",
+              params: [
+                {
+                  address: [...query.address],
+                  topics: query.topics.map((topic) =>
+                    topic === null ? null : typeof topic === "string" ? topic : [...topic],
+                  ),
+                  fromBlock: numberToHex(from),
+                  toBlock: numberToHex(to),
+                },
+              ],
+            } as never) as Promise<RpcLog[]>,
+        ),
+      );
       if (result._tag === "Success") return result.success.map((log) => formatLog(log));
 
       const error = result.failure;
-      if (to === from || !isRangeError(error)) return yield* Effect.fail(error);
+      const message = `${error.shortMessage} ${String((error.cause as Error | undefined)?.message)}`;
+      if (to === from || !rangeError.test(message)) return yield* Effect.fail(error);
       const middle = from + (to - from) / 2n;
       span = middle - from + 1n;
       const left = yield* scan(query, from, middle);

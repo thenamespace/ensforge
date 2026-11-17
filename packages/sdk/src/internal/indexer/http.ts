@@ -34,9 +34,6 @@ export type HttpRequest = {
   readonly resource?: string | undefined;
 };
 
-const maxCacheEntries = 500;
-const maxRetryDelay = 30_000;
-
 // bigname's error codes (shared by every bigname-compatible server).
 const codes: Readonly<Record<string, IndexerError.Code>> = {
   stale: "INDEXER_BEHIND",
@@ -56,9 +53,6 @@ const codeForStatus = (status: number): IndexerError.Code =>
       ? "INDEXER_UNAVAILABLE"
       : "INDEXER_REQUEST_REJECTED";
 
-const retryableStatus = (status: number): boolean =>
-  status === 408 || status === 429 || status === 502 || status === 503 || status === 504;
-
 const urlOf = (config: HttpConfig, request: HttpRequest): string => {
   const params = new URLSearchParams();
   for (const [key, value] of Object.entries(request.query ?? {})) {
@@ -76,12 +70,15 @@ const urlOf = (config: HttpConfig, request: HttpRequest): string => {
   return `${config.baseUrl}${request.path}${search === "" ? "" : `?${search}`}`;
 };
 
-/** Seconds or an HTTP date, as `Retry-After` allows; `undefined` when absent or unusable. */
+/**
+ * Seconds or an HTTP date, as `Retry-After` allows, capped at 30 seconds; `undefined` when absent
+ * or unusable.
+ */
 const retryAfter = (header: string | null, now: number): number | undefined => {
   if (header === null) return undefined;
   const seconds = Number(header);
   const delay = Number.isFinite(seconds) ? seconds * 1000 : Date.parse(header) - now;
-  return Number.isFinite(delay) && delay >= 0 ? Math.min(delay, maxRetryDelay) : undefined;
+  return Number.isFinite(delay) && delay >= 0 ? Math.min(delay, 30_000) : undefined;
 };
 
 type Attempt =
@@ -145,7 +142,8 @@ const attempt = (config: HttpConfig, request: HttpRequest, url: string): Effect.
         if (response.ok) {
           const etag = response.headers.get("etag");
           if (config.cache !== undefined && etag !== null && request.body === undefined) {
-            if (config.cache.size >= maxCacheEntries) {
+            // At most 500 entries; the oldest goes first.
+            if (config.cache.size >= 500) {
               const oldest = config.cache.keys().next().value;
               if (oldest !== undefined) config.cache.delete(oldest);
             }
@@ -166,16 +164,14 @@ const attempt = (config: HttpConfig, request: HttpRequest, url: string): Effect.
           };
         }
         const error = fail(
-          code === undefined
-            ? codeForStatus(response.status)
-            : (codes[code] ?? codeForStatus(response.status)),
+          (code === undefined ? undefined : codes[code]) ?? codeForStatus(response.status),
           {
             indexerCode: code,
             status: response.status,
             ...(message === undefined ? {} : { details: [message] }),
           },
         );
-        return retryableStatus(response.status)
+        return [408, 429, 502, 503, 504].includes(response.status)
           ? { ok: false, error, delay: retryAfter(response.headers.get("retry-after"), now) ?? -1 }
           : { ok: false, error };
       }),

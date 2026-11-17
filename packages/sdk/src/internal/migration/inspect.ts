@@ -1,7 +1,7 @@
 import { Effect } from "effect";
 
 import { Abis, Roles } from "@ensforge/contracts";
-import { hexToBigInt, isAddressEqual, maxUint64, zeroAddress, type Address } from "viem";
+import { hexToBigInt, isAddressEqual, maxUint64, type Address } from "viem";
 
 import type { Blocker, ResolverPlan, Route, Status } from "../../actions/migration/types.js";
 import type { Client } from "../../client/types.js";
@@ -10,7 +10,7 @@ import type { AnyError } from "../../errors/types.js";
 import type { Read } from "../../Types.js";
 import * as Fuse from "../../utils/Fuse.js";
 import * as Role from "../../utils/Role.js";
-import { nonZeroAddress } from "../address.js";
+import { nonZeroAddress, sameAddress } from "../address.js";
 import { loadName, type LoadedName } from "../name/load.js";
 import { RegistryStatus } from "../name/read.js";
 import * as Rpc from "../rpc/index.js";
@@ -36,9 +36,6 @@ const lockedFuseRoles = (fuses: number): bigint => {
   return roles;
 };
 
-const isEmancipated = (fuses: number) =>
-  Fuse.has(fuses, "parentCannotControl") && !Fuse.has(fuses, "isDotEth");
-
 /** The route of an ENSv1 `.eth` name or subname, or `null` with the blocker that explains it. */
 const routeOf = (
   loaded: LoadedName,
@@ -51,7 +48,8 @@ const routeOf = (
       ? { route: "wrapped-locked" }
       : { route: "wrapped-unlocked" };
   }
-  if (kind === "v1-wrapped" && (Fuse.has(fuses, "cannotUnwrap") || isEmancipated(fuses))) {
+  const emancipated = Fuse.has(fuses, "parentCannotControl") && !Fuse.has(fuses, "isDotEth");
+  if (kind === "v1-wrapped" && (Fuse.has(fuses, "cannotUnwrap") || emancipated)) {
     return { route: "locked-child" };
   }
   return { route: null, blocker: "unlocked-child" };
@@ -82,7 +80,19 @@ export const inspectMigration = Effect.fnUntraced(function* (
   const isEth = state.name === "eth" || state.name.endsWith(".eth");
 
   const unmigratable = (status: Status["status"], blockers: readonly Blocker[] = []) => ({
-    status: emptyStatus(state.name, status, blockers),
+    status: {
+      name: state.name,
+      status,
+      route: null,
+      blockers,
+      owner: null,
+      manager: null,
+      fuses: null,
+      expiry: null,
+      reservationExpiry: null,
+      resolver: { current: null, plan: "none" },
+      after: { registry: null, subregistry: null, expiry: null, roles: [] },
+    } satisfies Status,
     loaded,
     fuses,
     publicResolver: false,
@@ -148,7 +158,7 @@ export const inspectMigration = Effect.fnUntraced(function* (
     owner !== null &&
     !isAddressEqual(owner, account) &&
     reads.operator !== true &&
-    !(approved !== null && isAddressEqual(approved, account))
+    !sameAddress(approved, account)
   ) {
     blockers.push("not-owner");
   }
@@ -178,8 +188,15 @@ export const inspectMigration = Effect.fnUntraced(function* (
     listed: reads.listed,
     lockedResolver: locked && Fuse.has(fuses, "cannotSetResolver"),
   });
-  if (plan === "keep" && locked && Fuse.has(fuses, "cannotSetResolver") && !reads.listed) {
-    if (resolver !== null && options.resolver !== "keep") blockers.push("locked-resolver");
+  if (
+    plan === "keep" &&
+    locked &&
+    Fuse.has(fuses, "cannotSetResolver") &&
+    !reads.listed &&
+    resolver !== null &&
+    options.resolver !== "keep"
+  ) {
+    blockers.push("locked-resolver");
   }
 
   const renewRole = v2.capabilities.lockedMigrationRenewal === "renew-role";
@@ -212,7 +229,7 @@ export const inspectMigration = Effect.fnUntraced(function* (
         v1 !== undefined &&
         state.registrant !== null &&
         !isAddressEqual(v1.registryOwner, state.registrant) &&
-        !isAddressEqual(v1.registryOwner, zeroAddress)
+        nonZeroAddress(v1.registryOwner) !== null
           ? v1.registryOwner
           : null,
       fuses: kind === "v1-wrapped" ? Fuse.decode(fuses) : null,
@@ -250,21 +267,3 @@ const resolverPlan = (
   // Custom resolvers (gateways, wildcards, their own permissions) stay; public ones would freeze.
   return context.publicResolver ? "new" : "keep";
 };
-
-const emptyStatus = (
-  name: string,
-  status: Status["status"],
-  blockers: readonly Blocker[],
-): Status => ({
-  name,
-  status,
-  route: null,
-  blockers,
-  owner: null,
-  manager: null,
-  fuses: null,
-  expiry: null,
-  reservationExpiry: null,
-  resolver: { current: null, plan: "none" },
-  after: { registry: null, subregistry: null, expiry: null, roles: [] },
-});

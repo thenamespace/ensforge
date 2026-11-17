@@ -1,16 +1,17 @@
 import { Effect } from "effect";
 
-import { isAddressEqual, type Address } from "viem";
+import type { Address } from "viem";
 
 import type { Client } from "../../client/types.js";
 import { MigrationError } from "../../errors/classes/MigrationError.js";
 import type { AnyError } from "../../errors/types.js";
+import { sameAddress } from "../address.js";
 import { loadName } from "../name/load.js";
 import { readRecords } from "../records/read.js";
 import type { Expectation } from "./plan.js";
 
 const same = (actual: Address | null, expected: Address | null) =>
-  expected === null || (actual !== null && isAddressEqual(actual, expected));
+  expected === null || sameAddress(actual, expected);
 
 /** The differences between a migrated name's ENSv2 state and what the plan expected. */
 const differences = Effect.fnUntraced(function* (

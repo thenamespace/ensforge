@@ -6,7 +6,6 @@ import {
   numberToHex,
   pad,
   toEventSelector,
-  zeroAddress,
   type Address,
   type Hex,
   type Log,
@@ -15,6 +14,7 @@ import {
 import type { Client } from "../../client/types.js";
 import type { AnyError } from "../../errors/types.js";
 import { namehash } from "../../utils/Name.js";
+import { nonZeroAddress } from "../address.js";
 import type { LoadedName } from "../name/load.js";
 import * as Rpc from "../rpc/index.js";
 import { scanLogs, type BlockRange, type LogQuery } from "./scan.js";
@@ -54,11 +54,9 @@ const word = (value: bigint): Hex => numberToHex(value, { size: 32 });
 /** ENSv2 token ids drop their low 32 bits (the version) to compare across regenerations. */
 const canonical = (id: bigint): bigint => id ^ (id & 0xffffffffn);
 
+/** The addresses that are set: neither missing nor the zero address. */
 const known = (addresses: readonly (Address | null | undefined)[]): Address[] =>
-  addresses.filter(
-    (address): address is Address =>
-      address !== null && address !== undefined && !isAddressEqual(address, zeroAddress),
-  );
+  addresses.flatMap((address) => nonZeroAddress(address) ?? []);
 
 /** ENSv1 queries: registry, `.eth` registrar and controllers, NameWrapper, resolver, DNS. */
 const v1Queries = (client: Client, loaded: LoadedName): LogQuery[] => {
@@ -126,7 +124,7 @@ const v2Logs = Effect.fnUntraced(function* (
     { address: subregistry, topics: [topics("ParentUpdated", "RegistryCreated", "Upgraded")] },
   ]);
 
-  const ids = new Set<bigint>([hexToId(parts.labelhash)]);
+  const ids = new Set<bigint>([BigInt(parts.labelhash)]);
   if (state.tokenId !== null) ids.add(state.tokenId);
   const recordIds = new Set<Hex>();
   const linked = topics("Linked")[0];
@@ -204,25 +202,20 @@ const v2Logs = Effect.fnUntraced(function* (
   ]);
 
   const canonicalIds = new Set([...ids].map(canonical));
-  const transfers = topics("TransferSingle", "TransferBatch");
   return [
     ...first,
     ...regenerated,
-    // Unfiltered transfer scans keep only this name's tokens.
+    // Unfiltered transfer scans keep only this name's tokens. TransferSingle data is (id, value);
+    // TransferBatch data holds dynamic arrays, so every word is checked.
     ...second.filter(
-      (log) => !transfers.includes(log.topics[0] as Hex) || transfersToken(log, canonicalIds),
+      (log) =>
+        !transferTopics.includes(log.topics[0] as Hex) ||
+        (log.data.slice(2).match(/.{64}/g) ?? []).some((part) =>
+          canonicalIds.has(canonical(BigInt(`0x${part}`))),
+        ),
     ),
   ];
 });
-
-const hexToId = (hex: Hex): bigint => BigInt(hex);
-
-/** Whether an ERC-1155 transfer log moves one of `ids` (by canonical id). */
-const transfersToken = (log: Log, ids: ReadonlySet<bigint>): boolean => {
-  // TransferSingle data: (id, value); TransferBatch data: dynamic arrays, checked by scanning.
-  const words = (log.data.slice(2).match(/.{64}/g) ?? []).map((part) => BigInt(`0x${part}`));
-  return words.some((value) => ids.has(canonical(value)));
-};
 
 /** Every ENS log about `loaded`'s name in `range`, across ENSv1 and ENSv2. */
 export const nameLogs = Effect.fnUntraced(function* (

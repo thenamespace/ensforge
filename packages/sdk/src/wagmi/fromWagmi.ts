@@ -27,10 +27,6 @@ const chainIdOf = (config: WagmiConfig, options: fromWagmi.Options): number => {
   return chainId;
 };
 
-// wagmi 2 and 3 both throw this when no wallet is connected; it means "no wallet", not a failure.
-const isNotConnected = (cause: unknown): boolean =>
-  (cause as { readonly name?: unknown } | null)?.name === "ConnectorNotConnectedError";
-
 /**
  * Creates an ensforge client from a wagmi config: reads use wagmi's client for the ENS chain, and
  * writes use whichever wallet is connected when they run.
@@ -99,7 +95,10 @@ export const fromWagmi = (config: WagmiConfig, options: fromWagmi.Options = {}):
       await switchChain(config, { chainId });
       return await getConnectorClient(config, { chainId });
     } catch (cause) {
-      if (isNotConnected(cause)) return undefined;
+      // wagmi 2 and 3 both throw this without a connected wallet: no wallet, not a failure.
+      if ((cause as { readonly name?: unknown } | null)?.name === "ConnectorNotConnectedError") {
+        return undefined;
+      }
       throw cause;
     }
   };

@@ -21,7 +21,7 @@ const camel = (key: string): string =>
   key.replace(/_([a-z0-9])/g, (_, char: string) => char.toUpperCase());
 
 /** snake_case keys to camelCase, recursively; values are kept. */
-export const camelize = (value: unknown): unknown => {
+const camelize = (value: unknown): unknown => {
   if (Array.isArray(value)) return value.map(camelize);
   if (value === null || typeof value !== "object") return value;
   return Object.fromEntries(
@@ -49,8 +49,6 @@ const answerStatus = (value: string): T.AnswerStatus =>
     ["ok", "notFound", "invalidName", "mismatch", "unsupported", "stale", "failed"],
     camel(value),
   ) ?? "failed";
-
-const relation = (value: string): T.Relation => camel(value) as T.Relation;
 
 /** The answer's metadata; `chainId` picks `asOf` among the chains it read. */
 export const meta = (
@@ -167,7 +165,7 @@ export const detail = (wire: Of<typeof Wire.NameRecord>): T.IndexedNameDetail =>
 
 export const addressName = (wire: Of<typeof Wire.AddressName>): T.AddressName => ({
   ...name(wire),
-  relations: (wire.relations ?? []).map(relation),
+  relations: (wire.relations ?? []).map((relation) => camel(relation) as T.Relation),
   isPrimary: wire.is_primary ?? false,
   migratedAt: big(wire.migrated_at),
   recordCount: wire.record_count ?? null,

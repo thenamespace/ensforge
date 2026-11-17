@@ -28,9 +28,6 @@ export type Recreation = {
   readonly leftBehind: readonly LeftBehind[];
 };
 
-const childName = (input: string, parent: string): string =>
-  input.includes(".") ? input : `${input}.${parent}`;
-
 /**
  * Plans the UserRegistry for `parent`'s `subnames` (labels or full names): each direct child
  * keeps its ENSv1 holder and resolver, with every role and no expiry, as the ENS app recreates
@@ -52,7 +49,10 @@ export const planRecreation = Effect.fnUntraced(function* (
   },
 ): Effect.fn.Return<Recreation, AnyError> {
   const { parent } = options;
-  const names = options.subnames.map((input) => childName(input.toLowerCase(), parent.name));
+  const names = options.subnames.map((input) => {
+    const lowered = input.toLowerCase();
+    return lowered.includes(".") ? lowered : `${lowered}.${parent.name}`;
+  });
   for (const name of names) {
     if (
       name.split(".").length !== parent.name.split(".").length + 1 ||

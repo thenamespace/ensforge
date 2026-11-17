@@ -22,6 +22,7 @@ import { MigrationError } from "../../errors/classes/MigrationError.js";
 import { UnsupportedError } from "../../errors/classes/UnsupportedError.js";
 import type { AnyError } from "../../errors/types.js";
 import type { Plan } from "../../plan/Plan.js";
+import { nonZeroAddress } from "../address.js";
 import { requireAddress } from "../name/write.js";
 import { recordsCall } from "../records/write-call.js";
 import { deployPermissionedResolver } from "../resolver/deploy.js";
@@ -79,6 +80,26 @@ type MigrationData = {
   readonly resolver: Address;
 };
 
+/** One name's token transfer; `depth` orders locked children after their parents. */
+type Move = {
+  readonly depth: number;
+  readonly holder: Address;
+  readonly status: Status;
+  readonly data: MigrationData;
+  readonly node: Hex;
+  readonly target: Address;
+};
+
+/** The record setter roles an ENSv1 manager gets on the name's new resolver (no admin roles). */
+const managerRecordRoles =
+  Roles.resolver.setAddr |
+  Roles.resolver.setText |
+  Roles.resolver.setContenthash |
+  Roles.resolver.setAbi |
+  Roles.resolver.setInterface |
+  Roles.resolver.setName |
+  Roles.resolver.setData;
+
 // Steps stay well inside a block's gas limit; a migration transfer costs about 200k gas.
 const maxCallsPerStep = 30;
 
@@ -94,7 +115,6 @@ const migrationResolverSalt = (node: Hex): bigint =>
     ),
   );
 
-const nameOf = (input: NameInput): string => (typeof input === "string" ? input : input.name);
 const parentOf = (name: string): string => name.slice(name.indexOf(".") + 1);
 
 const deployed = (client: Client, address: Address) =>
@@ -116,7 +136,7 @@ const inspectAll = Effect.fnUntraced(function* (
   AnyError
 > {
   const inspect = (input: NameInput) =>
-    inspectMigration(client, nameOf(input), {
+    inspectMigration(client, typeof input === "string" ? input : input.name, {
       account: options.signer,
       resolver: options.resolver,
     }).pipe(Effect.map((inspection) => ({ input, inspection })));
@@ -224,14 +244,7 @@ export const planMigration = Effect.fnUntraced(function* (
   const deploys: Plan.Deployment[] = [];
   const warnings: Plan.Warning[] = [];
   const expectations: Expectation[] = [];
-  const moves: {
-    readonly depth: number;
-    readonly holder: Address;
-    readonly status: Status;
-    readonly data: MigrationData;
-    readonly node: Hex;
-    readonly target: Address;
-  }[] = [];
+  const moves: Move[] = [];
   /** WrapperRegistry each locked name migrating here gets, for its children. */
   const wrapperRegistries = new Map<
     string,
@@ -450,8 +463,8 @@ export const planMigration = Effect.fnUntraced(function* (
     expectations.push({
       name: status.name,
       owner,
-      resolver: plan === "keep" && locked ? null : resolver === zeroAddress ? null : resolver,
-      subregistry: locked ? null : subregistry === zeroAddress ? null : subregistry,
+      resolver: plan === "keep" && locked ? null : nonZeroAddress(resolver),
+      subregistry: locked ? null : nonZeroAddress(subregistry),
       records: copied,
     });
   }
@@ -502,32 +515,16 @@ export const planMigration = Effect.fnUntraced(function* (
   };
 });
 
-/** The record setter roles an ENSv1 manager gets on the name's new resolver (no admin roles). */
-const managerRecordRoles =
-  Roles.resolver.setAddr |
-  Roles.resolver.setText |
-  Roles.resolver.setContenthash |
-  Roles.resolver.setAbi |
-  Roles.resolver.setInterface |
-  Roles.resolver.setName |
-  Roles.resolver.setData;
-
 /**
  * The token transfers that migrate `moves`: one ERC-721 transfer per unwrapped name, and one
  * ERC-1155 transfer (batched per holder and receiver) for wrapped names.
  */
 const transferCalls = (
   v1: { readonly baseRegistrar: Address; readonly nameWrapper: Address },
-  moves: readonly {
-    readonly holder: Address;
-    readonly status: Status;
-    readonly node: Hex;
-    readonly target: Address;
-    readonly data: MigrationData;
-  }[],
+  moves: readonly Move[],
 ): Plan.Call[] => {
   const calls: Plan.Call[] = [];
-  const wrapped = new Map<string, typeof moves>();
+  const wrapped = new Map<string, readonly Move[]>();
   for (const move of moves) {
     const { holder } = move;
     if (move.status.route === "unwrapped") {
