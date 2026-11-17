@@ -1,15 +1,16 @@
 import { assert, describe } from "@effect/vitest";
 import { Effect } from "effect";
 
+import type { Errors } from "@ensforge/sdk";
 import { Actions } from "@ensforge/sdk/effect";
-import { Devnet, type DevnetInstance, type ProfileName } from "@ensforge/test-devnet";
+import { Chain, Devnet, type AccountName, type ProfileName } from "@ensforge/test-devnet";
 import { Fixtures, type FixturesApi } from "@ensforge/test-fixtures";
 import { expectFailure, type ExpectedError } from "@ensforge/test-harness";
 
-import { ensforge, isolated, onProfile, passWaits, type SyncAction } from "../support/chain.ts";
-import { testWallet } from "../support/wallet.ts";
+import { Clients, type Client } from "../support/clients.ts";
+import { onProfile } from "../support/lane.ts";
+import { Wallets } from "../support/wallets.ts";
 
-type AccountName = keyof DevnetInstance["accounts"];
 type Refusal = ExpectedError & { readonly missingRoles?: readonly string[] };
 
 /** One write as one account: allowed, or refused before the wallet is asked to sign. */
@@ -17,17 +18,12 @@ type Row = {
   readonly label: string;
   readonly path: string;
   readonly account: AccountName;
-  readonly options: (fixtures: FixturesApi, devnet: DevnetInstance) => Record<string, unknown>;
+  readonly options: (fixtures: FixturesApi, devnet: Devnet["Service"]) => Record<string, unknown>;
   readonly expected: "allowed" | Refusal;
   readonly cases: readonly string[];
 };
 
 const notOwner: Refusal = { _tag: "UnauthorizedError", code: "NOT_OWNER" };
-const missing = (...roles: string[]): Refusal => ({
-  _tag: "UnauthorizedError",
-  code: "MISSING_ROLES",
-  missingRoles: roles,
-});
 const text =
   (id: string, key = "url") =>
   (fixtures: FixturesApi) => ({
@@ -133,7 +129,7 @@ const rows: Readonly<Record<ProfileName, readonly Row[]>> = {
       path: "record.set",
       account: "user",
       options: text("records.v2"),
-      expected: missing("setText"),
+      expected: { _tag: "UnauthorizedError", code: "MISSING_ROLES", missingRoles: ["setText"] },
       cases: ["M:B5"],
     },
     {
@@ -149,7 +145,7 @@ const rows: Readonly<Record<ProfileName, readonly Row[]>> = {
       path: "record.set",
       account: "carol",
       options: text("records.v2.partial-roles", "description"),
-      expected: missing("setText"),
+      expected: { _tag: "UnauthorizedError", code: "MISSING_ROLES", missingRoles: ["setText"] },
       cases: ["M:B6", "M:D7"],
     },
     {
@@ -160,7 +156,7 @@ const rows: Readonly<Record<ProfileName, readonly Row[]>> = {
         name: fixtures.byId("records.v2.partial-roles").name,
         addresses: { eth: devnet.accounts.carol },
       }),
-      expected: missing("setAddr"),
+      expected: { _tag: "UnauthorizedError", code: "MISSING_ROLES", missingRoles: ["setAddr"] },
       cases: ["M:B6"],
     },
     {
@@ -288,32 +284,42 @@ describe("access matrix", () => {
             Effect.gen(function* () {
               const fixtures = yield* Fixtures;
               const devnet = yield* Devnet;
+              const chain = yield* Chain;
+              const clients = yield* Clients;
               const account = devnet.accounts[row.account];
-              const wallet = testWallet(devnet, account);
-              const [domain = "", name = ""] = row.path.split(".");
-              const sync = (Actions as unknown as Record<string, Record<string, SyncAction>>)[
-                domain
-              ]?.[`${name}Sync`];
+              const wallet = (yield* Wallets).make(account);
+              const ens = clients.make({ account, wallet });
+              const [domain = "", action = ""] = row.path.split(".");
+              const sync = (
+                Actions as unknown as Record<
+                  string,
+                  Record<
+                    string,
+                    (ens: Client, options: unknown) => Effect.Effect<unknown, Errors.AnyError>
+                  >
+                >
+              )[domain]?.[`${action}Sync`];
               if (sync === undefined) return assert.fail(`${row.path} has no Sync form`);
-              const client = ensforge(devnet, { account, wallet });
-              const options = { ...row.options(fixtures, devnet), onStep: passWaits(devnet) };
+              const options = { ...row.options(fixtures, devnet), onStep: chain.passWaits };
 
-              yield* isolated(
-                devnet,
+              yield* chain.isolated(
                 Effect.gen(function* () {
                   if (row.expected === "allowed") {
-                    const { receipts } = (yield* sync(client, options)) as {
+                    const { receipts } = (yield* sync(ens, options)) as {
                       readonly receipts: readonly { readonly status: string }[];
                     };
                     assert.isTrue(receipts.every(({ status }) => status === "success"));
                     return;
                   }
+
                   const { missingRoles, ...expected } = row.expected;
-                  const error = (yield* expectFailure(sync(client, options), expected)) as {
-                    readonly missingRoles?: readonly string[];
-                  };
-                  if (missingRoles !== undefined)
-                    assert.deepStrictEqual(error.missingRoles, missingRoles);
+                  const error = yield* expectFailure(sync(ens, options), expected);
+                  if (missingRoles !== undefined) {
+                    assert.deepStrictEqual(
+                      "missingRoles" in error && error.missingRoles,
+                      missingRoles,
+                    );
+                  }
                   // Refused before the wallet was asked to sign anything.
                   assert.isFalse(wallet.prompted());
                 }),

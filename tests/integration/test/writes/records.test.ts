@@ -2,9 +2,9 @@ import { assert, describe } from "@effect/vitest";
 import { Effect } from "effect";
 
 import { Abis } from "@ensforge/contracts";
-import { Name } from "@ensforge/sdk";
+import { CoinType, Name } from "@ensforge/sdk";
 import { Actions } from "@ensforge/sdk/effect";
-import { Devnet, type DevnetInstance } from "@ensforge/test-devnet";
+import { Chain, Devnet } from "@ensforge/test-devnet";
 import { Fixtures } from "@ensforge/test-fixtures";
 import {
   decodeFunctionResult,
@@ -18,49 +18,8 @@ import {
   type Hex,
 } from "viem";
 
-import { ensforge, isolated, onProfile } from "../support/chain.ts";
-
-const taproot = {
-  text: "bc1p0xlxvlhemja6c4dqv22uapctqupfhlxm9h8z3k2e72q4k9hcz7vqzk5jj0",
-  bytes: "0x512079be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
-} as const;
-const agentKey = "agent-registration[0x0000000000000000000000000000000000000001][1]";
-const ipfs = "ipfs://bafybeibj6lixxzqtsb45ysdjnupvqkufgdvzqbnvmhw2kf7cfkesy7r7d4";
-const base = 0x8000_2105n;
-const polygon = 0x8000_0089n;
-
-/**
- * What a resolver stores for `name`, asked of the resolver itself. A PermissionedResolver answers
- * only through ENSIP-10 `resolve(name, data)`; the others answer node-keyed calls too.
- */
-const stored = (devnet: DevnetInstance, resolver: Address, name: string, extended: boolean) => {
-  const node = namehash(name);
-  const read = <A>(abi: Abi, functionName: string, args: readonly unknown[]) => {
-    const data = encodeFunctionData({ abi, functionName, args: [node, ...args] } as never);
-    return Effect.promise(async () => {
-      const answer = extended
-        ? await devnet.client.readContract({
-            address: resolver,
-            abi: Abis.shared.extendedResolver,
-            functionName: "resolve",
-            args: [Name.dnsEncode(name), data],
-          })
-        : ((await devnet.client.call({ to: resolver, data })).data ?? "0x");
-      return decodeFunctionResult({ abi, functionName, data: answer } as never) as A;
-    });
-  };
-  return Effect.all({
-    url: read<string>(Abis.shared.textResolver, "text", ["url"]),
-    unicode: read<string>(Abis.shared.textResolver, "text", ["unicode"]),
-    agent: read<string>(Abis.shared.textResolver, "text", [agentKey]),
-    eth: read<Hex>(Abis.shared.addressResolver, "addr", [60n]),
-    btc: read<Hex>(Abis.shared.addressResolver, "addr", [0n]),
-    base: read<Hex>(Abis.shared.addressResolver, "addr", [base]),
-    polygon: read<Hex>(Abis.shared.addressResolver, "addr", [polygon]),
-    abi: read<readonly [bigint, Hex]>(Abis.shared.abiResolver, "ABI", [1n]),
-    interface: read<Address>(Abis.shared.interfaceResolver, "interfaceImplementer", ["0x01ffc9a7"]),
-  });
-};
+import { Clients } from "../support/clients.ts";
+import { onProfile } from "../support/lane.ts";
 
 describe("record writes", () => {
   onProfile("mainnet-shaped")("mainnet-shaped", (it) => {
@@ -73,13 +32,16 @@ describe("record writes", () => {
         () =>
           Effect.gen(function* () {
             const fixtures = yield* Fixtures;
-            const devnet = yield* Devnet;
-            const { accounts } = devnet;
+            const { accounts } = yield* Devnet;
+            const chain = yield* Chain;
             const name = fixtures.byId(id).name;
-            const ens = ensforge(devnet, { account: accounts[holder] });
+            const ens = (yield* Clients).make({ account: accounts[holder] });
+            const agentKey = "agent-registration[0x0000000000000000000000000000000000000001][1]";
+            const ipfs = "ipfs://bafybeibj6lixxzqtsb45ysdjnupvqkufgdvzqbnvmhw2kf7cfkesy7r7d4";
+            const base = CoinType.fromChainId(8453);
+            const polygon = CoinType.fromChainId(137);
 
-            yield* isolated(
-              devnet,
+            yield* chain.isolated(
               Effect.gen(function* () {
                 yield* Actions.record.setSync(ens, {
                   name,
@@ -90,7 +52,7 @@ describe("record writes", () => {
                   },
                   addresses: {
                     eth: accounts.carol,
-                    btc: taproot.text,
+                    btc: "bc1p0xlxvlhemja6c4dqv22uapctqupfhlxm9h8z3k2e72q4k9hcz7vqzk5jj0",
                     [String(base)]: accounts.user,
                     // An explicit zero address is a value, not a deletion.
                     [String(polygon)]: zeroAddress,
@@ -102,14 +64,51 @@ describe("record writes", () => {
                 const resolver = (yield* Actions.resolver.get(ens, { name }))?.address;
                 if (resolver === undefined) return assert.fail("no resolver");
 
-                const extended = id === "records.v2";
-                const raw = yield* stored(devnet, resolver, name, extended);
+                // What the resolver stores, asked of the resolver itself. A PermissionedResolver
+                // answers only through ENSIP-10 `resolve(name, data)`; the others answer
+                // node-keyed calls too.
+                const ask = <A>(abi: Abi, functionName: string, args: readonly unknown[]) => {
+                  const data = encodeFunctionData({
+                    abi,
+                    functionName,
+                    args: [namehash(name), ...args],
+                  } as never);
+                  const answer =
+                    id === "records.v2"
+                      ? chain.read({
+                          address: resolver,
+                          abi: Abis.shared.extendedResolver,
+                          functionName: "resolve",
+                          args: [Name.dnsEncode(name), data],
+                        })
+                      : Effect.map(chain.call({ to: resolver, data }), (call) => call.data ?? "0x");
+                  return Effect.map(
+                    answer,
+                    (result) =>
+                      decodeFunctionResult({ abi, functionName, data: result } as never) as A,
+                  );
+                };
+                const stored = Effect.all({
+                  url: ask<string>(Abis.shared.textResolver, "text", ["url"]),
+                  unicode: ask<string>(Abis.shared.textResolver, "text", ["unicode"]),
+                  agent: ask<string>(Abis.shared.textResolver, "text", [agentKey]),
+                  eth: ask<Hex>(Abis.shared.addressResolver, "addr", [60n]),
+                  btc: ask<Hex>(Abis.shared.addressResolver, "addr", [0n]),
+                  base: ask<Hex>(Abis.shared.addressResolver, "addr", [base]),
+                  polygon: ask<Hex>(Abis.shared.addressResolver, "addr", [polygon]),
+                  abi: ask<readonly [bigint, Hex]>(Abis.shared.abiResolver, "ABI", [1n]),
+                  interface: ask<Address>(Abis.shared.interfaceResolver, "interfaceImplementer", [
+                    "0x01ffc9a7",
+                  ]),
+                });
+
+                const raw = yield* stored;
                 assert.deepInclude(raw, {
                   url: "https://lifecycle.example",
                   unicode: "Ünïcødé 👋",
                   agent: "agent-2",
                   eth: accounts.carol.toLowerCase() as Hex,
-                  btc: taproot.bytes,
+                  btc: "0x512079be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
                   base: accounts.user.toLowerCase() as Hex,
                   polygon: zeroAddress,
                   interface: accounts.carol,
@@ -125,10 +124,7 @@ describe("record writes", () => {
                   texts: { url: null },
                   addresses: { btc: null },
                 });
-                assert.deepInclude(yield* stored(devnet, resolver, name, extended), {
-                  url: "",
-                  btc: "0x",
-                });
+                assert.deepInclude(yield* stored, { url: "", btc: "0x" });
               }),
             );
           }),
@@ -141,22 +137,22 @@ describe("record writes", () => {
       () =>
         Effect.gen(function* () {
           const fixtures = yield* Fixtures;
-          const devnet = yield* Devnet;
-          const ens = ensforge(devnet, { account: devnet.accounts.bob });
+          const { accounts } = yield* Devnet;
+          const chain = yield* Chain;
+          const ens = (yield* Clients).make({ account: accounts.bob });
           const linked = fixtures.byId("records.v2.linked").name;
           const target = fixtures.byId("records.v2").name;
-          const url = () => Actions.record.getText(ens, { name: linked, key: "url" });
+          const url = Actions.record.getText(ens, { name: linked, key: "url" });
 
-          yield* isolated(
-            devnet,
+          yield* chain.isolated(
             Effect.gen(function* () {
               // Clearing a linked name gives it an empty record of its own (`linkToRecord(name, 0)`).
               yield* Actions.record.setSync(ens, { name: linked, clear: true });
               assert.isNull(yield* Actions.resolver.getLink(ens, { name: linked }));
-              assert.isNull(yield* url());
+              assert.isNull(yield* url);
 
               yield* Actions.resolver.linkSync(ens, { name: linked, to: target });
-              assert.strictEqual(yield* url(), "https://ensforge.com");
+              assert.strictEqual(yield* url, "https://ensforge.com");
             }),
           );
         }),
@@ -168,12 +164,12 @@ describe("record writes", () => {
       () =>
         Effect.gen(function* () {
           const fixtures = yield* Fixtures;
-          const devnet = yield* Devnet;
-          const ens = ensforge(devnet, { account: devnet.accounts.alice });
+          const { accounts } = yield* Devnet;
+          const chain = yield* Chain;
+          const ens = (yield* Clients).make({ account: accounts.alice });
           const name = fixtures.byId("v2.registered").name;
 
-          yield* isolated(
-            devnet,
+          yield* chain.isolated(
             Effect.gen(function* () {
               const { resolver } = yield* Actions.resolver.createSync(ens, {
                 name,
@@ -203,14 +199,15 @@ describe("record writes", () => {
       () =>
         Effect.gen(function* () {
           const fixtures = yield* Fixtures;
-          const devnet = yield* Devnet;
-          const ens = ensforge(devnet, { account: devnet.accounts.alice });
+          const { accounts } = yield* Devnet;
+          const chain = yield* Chain;
+          const ens = (yield* Clients).make({ account: accounts.alice });
           const name = fixtures.byId("records.v1").name;
 
-          yield* isolated(
-            devnet,
+          yield* chain.isolated(
             Effect.gen(function* () {
               yield* Actions.record.setSync(ens, { name, clear: true });
+
               const records = yield* Actions.record.get(ens, {
                 name,
                 texts: ["url", "description"],
@@ -233,8 +230,9 @@ describe("record writes", () => {
       () =>
         Effect.gen(function* () {
           const fixtures = yield* Fixtures;
-          const devnet = yield* Devnet;
-          const ens = ensforge(devnet, { account: devnet.accounts.alice });
+          const { accounts } = yield* Devnet;
+          const chain = yield* Chain;
+          const ens = (yield* Clients).make({ account: accounts.alice });
           const name = fixtures.byId("records.v1").name;
           const options = {
             name,
@@ -248,10 +246,10 @@ describe("record writes", () => {
           const pointed = calls.findIndex((item) => item.data.startsWith(setResolver));
           assert.isAbove(pointed, 0, "records first, then setResolver");
 
-          yield* isolated(
-            devnet,
+          yield* chain.isolated(
             Effect.gen(function* () {
               yield* Actions.record.setSync(ens, options);
+
               assert.strictEqual(
                 yield* Actions.record.getText(ens, { name, key: "url" }),
                 "https://moved.example",

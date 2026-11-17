@@ -3,11 +3,12 @@ import { Effect } from "effect";
 
 import { Abis, Roles } from "@ensforge/contracts";
 import { Actions } from "@ensforge/sdk/effect";
-import { Devnet } from "@ensforge/test-devnet";
+import { Chain, Devnet } from "@ensforge/test-devnet";
 import { Fixtures } from "@ensforge/test-fixtures";
 import { hexToBigInt, namehash, zeroAddress, type Address } from "viem";
 
-import { ensforge, isolated, onProfile } from "../support/chain.ts";
+import { Clients } from "../support/clients.ts";
+import { onProfile } from "../support/lane.ts";
 
 describe("access writes", () => {
   onProfile("mainnet-shaped")("mainnet-shaped", (it) => {
@@ -16,16 +17,16 @@ describe("access writes", () => {
       () =>
         Effect.gen(function* () {
           const fixtures = yield* Fixtures;
-          const devnet = yield* Devnet;
-          const { alice } = devnet.accounts;
-          const ens = ensforge(devnet, { account: alice });
+          const { alice } = (yield* Devnet).accounts;
+          const chain = yield* Chain;
+          const ens = (yield* Clients).make({ account: alice });
           const name = fixtures.byId("records.v1").name;
 
-          yield* isolated(
-            devnet,
+          yield* chain.isolated(
             Effect.gen(function* () {
               yield* Actions.primaryName.setSync(ens, { name });
               assert.strictEqual(yield* Actions.primaryName.get(ens, { address: alice }), name);
+
               yield* Actions.primaryName.setSync(ens, { name: null });
               assert.isNull(yield* Actions.primaryName.get(ens, { address: alice, verify: false }));
             }),
@@ -41,27 +42,24 @@ describe("access writes", () => {
           const fixtures = yield* Fixtures;
           const devnet = yield* Devnet;
           const { alice, carol } = devnet.accounts;
-          const ens = ensforge(devnet, { account: alice });
-          const read = <A>(
-            address: Address,
-            abi: readonly unknown[],
-            functionName: string,
-            args: readonly unknown[],
-          ) =>
-            Effect.promise(
-              () =>
-                devnet.client.readContract({
-                  address,
-                  abi: abi as never,
-                  functionName: functionName as never,
-                  args: args as never,
-                }) as Promise<A>,
-            );
+          const chain = yield* Chain;
+          const ens = (yield* Clients).make({ account: alice });
           const wrapped = fixtures.byId("v1.wrapped").name;
           const records = fixtures.byId("records.v1");
+          const registryApproves = chain.read({
+            address: devnet.contract("v1.registry"),
+            abi: Abis.v1.ensRegistry,
+            functionName: "isApprovedForAll",
+            args: [alice, carol],
+          });
+          const tokenApproved = chain.read({
+            address: devnet.contract("v1.nameWrapper"),
+            abi: Abis.v1.nameWrapper,
+            functionName: "getApproved",
+            args: [hexToBigInt(namehash(wrapped))],
+          });
 
-          yield* isolated(
-            devnet,
+          yield* chain.isolated(
             Effect.gen(function* () {
               yield* Actions.approval.setOperatorSync(ens, {
                 operator: carol,
@@ -75,30 +73,15 @@ describe("access writes", () => {
                 approved: true,
               });
 
+              assert.isTrue(yield* registryApproves);
+              assert.strictEqual(yield* tokenApproved, carol);
               assert.isTrue(
-                yield* read<boolean>(
-                  devnet.contracts["v1.registry"] as Address,
-                  Abis.v1.ensRegistry,
-                  "isApprovedForAll",
-                  [alice, carol],
-                ),
-              );
-              assert.strictEqual(
-                yield* read<Address>(
-                  devnet.contracts["v1.nameWrapper"] as Address,
-                  Abis.v1.nameWrapper,
-                  "getApproved",
-                  [hexToBigInt(namehash(wrapped))],
-                ),
-                carol,
-              );
-              assert.isTrue(
-                yield* read<boolean>(
-                  records.facts["resolver"] as Address,
-                  Abis.v1.publicResolver,
-                  "isApprovedFor",
-                  [alice, namehash(records.name), carol],
-                ),
+                yield* chain.read({
+                  address: records.facts["resolver"] as Address,
+                  abi: Abis.v1.publicResolver,
+                  functionName: "isApprovedFor",
+                  args: [alice, namehash(records.name), carol],
+                }),
               );
 
               yield* Actions.approval.setOperatorSync(ens, {
@@ -107,23 +90,9 @@ describe("access writes", () => {
                 contract: "registry",
               });
               yield* Actions.approval.setTokenSync(ens, { name: wrapped, to: null });
-              assert.isFalse(
-                yield* read<boolean>(
-                  devnet.contracts["v1.registry"] as Address,
-                  Abis.v1.ensRegistry,
-                  "isApprovedForAll",
-                  [alice, carol],
-                ),
-              );
-              assert.strictEqual(
-                yield* read<Address>(
-                  devnet.contracts["v1.nameWrapper"] as Address,
-                  Abis.v1.nameWrapper,
-                  "getApproved",
-                  [hexToBigInt(namehash(wrapped))],
-                ),
-                zeroAddress,
-              );
+
+              assert.isFalse(yield* registryApproves);
+              assert.strictEqual(yield* tokenApproved, zeroAddress);
             }),
           );
         }),
@@ -135,26 +104,23 @@ describe("access writes", () => {
       () =>
         Effect.gen(function* () {
           const fixtures = yield* Fixtures;
-          const devnet = yield* Devnet;
-          const { alice, carol } = devnet.accounts;
-          const ens = ensforge(devnet, { account: alice });
+          const { alice, carol } = (yield* Devnet).accounts;
+          const chain = yield* Chain;
+          const ens = (yield* Clients).make({ account: alice });
           const name = fixtures.byId("v2.registered").name;
-          const holds = (account: Address) =>
-            Actions.role.get(ens, { account, target: "registry", name }).pipe(
-              Effect.flatMap((roles) =>
-                Effect.promise(() =>
-                  devnet.client.readContract({
-                    address: roles.contract,
-                    abi: Abis.v2.permissionedRegistry,
-                    functionName: "hasRoles",
-                    args: [roles.resource, Roles.registry.setResolver, account],
-                  }),
-                ),
-              ),
-            );
+          // Read from the registry itself, not through ensforge.
+          const carolHolds = Effect.flatMap(
+            Actions.role.get(ens, { account: carol, target: "registry", name }),
+            (roles) =>
+              chain.read({
+                address: roles.contract,
+                abi: Abis.v2.permissionedRegistry,
+                functionName: "hasRoles",
+                args: [roles.resource, Roles.registry.setResolver, carol],
+              }),
+          );
 
-          yield* isolated(
-            devnet,
+          yield* chain.isolated(
             Effect.gen(function* () {
               yield* Actions.role.grantSync(ens, {
                 grantee: carol,
@@ -162,14 +128,15 @@ describe("access writes", () => {
                 target: "registry",
                 name,
               });
-              assert.isTrue(yield* holds(carol));
+              assert.isTrue(yield* carolHolds);
+
               yield* Actions.role.revokeSync(ens, {
                 holder: carol,
                 roles: ["setResolver"],
                 target: "registry",
                 name,
               });
-              assert.isFalse(yield* holds(carol));
+              assert.isFalse(yield* carolHolds);
             }),
           );
         }),
@@ -181,14 +148,14 @@ describe("access writes", () => {
       () =>
         Effect.gen(function* () {
           const fixtures = yield* Fixtures;
-          const devnet = yield* Devnet;
-          const { bob, carol } = devnet.accounts;
+          const { bob, carol } = (yield* Devnet).accounts;
+          const chain = yield* Chain;
+          const clients = yield* Clients;
           const name = fixtures.byId("records.v2").name;
-          const owner = ensforge(devnet, { account: bob });
-          const grantee = ensforge(devnet, { account: carol });
+          const owner = clients.make({ account: bob });
+          const grantee = clients.make({ account: carol });
 
-          yield* isolated(
-            devnet,
+          yield* chain.isolated(
             Effect.gen(function* () {
               yield* Actions.permission.setRecordAccessSync(owner, {
                 name,

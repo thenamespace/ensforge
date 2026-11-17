@@ -3,20 +3,19 @@ import { Effect } from "effect";
 
 import { hca } from "@ensforge/hca";
 import { Actions as HcaActions } from "@ensforge/hca/effect";
+import { Duration } from "@ensforge/sdk";
 import { Actions } from "@ensforge/sdk/effect";
-import { Devnet } from "@ensforge/test-devnet";
+import { Chain, Devnet } from "@ensforge/test-devnet";
 import { Fixtures } from "@ensforge/test-fixtures";
 import { expectFailure } from "@ensforge/test-harness";
 import { parseEther, type Address } from "viem";
 
-import { atTimestamp, ensforge, isolated, onProfile, passWaits } from "../support/chain.ts";
-import { ethEntry, mintUsdc, usdcOf } from "./support.ts";
+import { Clients } from "../support/clients.ts";
+import { ethEntry, mintUsdc, usdcOf } from "../support/contracts.ts";
+import { onProfile } from "../support/lane.ts";
 
 // Writes routed through the owner's Hosted Contract Account with the owner executor: the owner's
 // wallet sends `executeByOwner`, and the HCA is `msg.sender`.
-
-const label = (name: string) => name.slice(0, -".eth".length);
-const year = 31_536_000n;
 
 describe("HCA", () => {
   onProfile("mainnet-shaped")("mainnet-shaped", (it) => {
@@ -24,40 +23,35 @@ describe("HCA", () => {
       "deploys the owner's HCA once and executes calls from it",
       () =>
         Effect.gen(function* () {
-          const devnet = yield* Devnet;
+          const { accounts } = yield* Devnet;
+          const chain = yield* Chain;
+          const clients = yield* Clients;
           // An account the fixtures gave no HCA.
-          const { user, bob } = devnet.accounts;
-          const ens = ensforge(devnet, { account: user });
+          const ens = clients.make({ account: accounts.user });
 
-          yield* isolated(
-            devnet,
+          yield* chain.isolated(
             Effect.gen(function* () {
               const predicted = yield* HcaActions.hca.predictAddress(ens, {});
               assert.isFalse((yield* HcaActions.hca.get(ens, {})).deployed);
 
               yield* HcaActions.hca.deploySync(ens, {});
               const account = yield* HcaActions.hca.verify(ens, {});
-              assert.include(account, { address: predicted, owner: user, deployed: true });
+              assert.include(account, { address: predicted, owner: accounts.user, deployed: true });
               assert.deepStrictEqual(account.problems, []);
 
               // Revoking the implementation for new deployments leaves deployed accounts certified.
               yield* HcaActions.hcaAdmin.setDeploymentApprovalSync(
-                ensforge(devnet, { account: devnet.accounts.owner }),
+                clients.make({ account: accounts.owner }),
                 { implementation: account.initialImplementation, approved: false },
               );
               assert.deepStrictEqual((yield* HcaActions.hca.verify(ens, {})).problems, []);
 
-              yield* Effect.promise(() =>
-                devnet.client.setBalance({ address: predicted, value: parseEther("2") }),
-              );
-              const before = yield* Effect.promise(() =>
-                devnet.client.getBalance({ address: bob }),
-              );
+              yield* chain.setBalance(predicted, parseEther("2"));
+              const before = yield* chain.balance(accounts.bob);
               yield* HcaActions.hca.executeSync(ens, {
-                calls: [{ to: bob, value: parseEther("1"), data: "0x" }],
+                calls: [{ to: accounts.bob, value: parseEther("1"), data: "0x" }],
               });
-              const after = yield* Effect.promise(() => devnet.client.getBalance({ address: bob }));
-              assert.strictEqual(after - before, parseEther("1"));
+              assert.strictEqual((yield* chain.balance(accounts.bob)) - before, parseEther("1"));
             }),
           );
         }),
@@ -66,28 +60,29 @@ describe("HCA", () => {
 
     it.effect("migrates several names in one execution", () =>
       Effect.gen(function* () {
+        const { accounts } = yield* Devnet;
+        const chain = yield* Chain;
+        const clients = yield* Clients;
         const fixtures = yield* Fixtures;
-        const devnet = yield* Devnet;
-        const { alice } = devnet.accounts;
-        const ens = ensforge(devnet, { account: alice });
+        const ens = clients.make({ account: accounts.alice });
         const names = [fixtures.byId("v2.reserved").name, fixtures.byId("v1.wrapped").name];
 
-        yield* isolated(
-          devnet,
+        yield* chain.isolated(
           Effect.gen(function* () {
             const result = yield* Actions.migration.migrateSync(ens, {
               names,
               resolver: "keep",
               via: hca(),
-              onStep: passWaits(devnet),
+              onStep: chain.passWaits,
             });
+
             // The HCA's deployment and the token approvals, then one execution for both names.
             assert.deepStrictEqual(
               result.plan.steps.map((step) => step.id),
               ["hca-setup", "migrate"],
             );
             for (const name of names) {
-              assert.strictEqual((yield* ethEntry(devnet, label(name))).owner, alice, name);
+              assert.strictEqual((yield* ethEntry(name)).owner, accounts.alice, name);
               assert.isTrue((yield* Actions.name.get(ens, { name })).migrated, name);
             }
           }),
@@ -99,14 +94,14 @@ describe("HCA", () => {
       "registers a name for the owner, paid by the HCA, with the owner's primary name",
       () =>
         Effect.gen(function* () {
-          const devnet = yield* Devnet;
-          const { carol } = devnet.accounts;
-          const ens = ensforge(devnet, { account: carol });
+          const { accounts } = yield* Devnet;
+          const chain = yield* Chain;
+          const clients = yield* Clients;
+          const ens = clients.make({ account: accounts.carol });
           const name = "hca-registered.eth";
-          const options = { names: name, duration: year, via: hca() };
+          const options = { names: name, duration: Duration.years(1), via: hca() };
 
-          yield* isolated(
-            devnet,
+          yield* chain.isolated(
             Effect.gen(function* () {
               // The HCA sends `register`, so it pays; without funds it is refused before sending.
               const account = yield* HcaActions.hca.predictAddress(ens, {});
@@ -115,19 +110,22 @@ describe("HCA", () => {
                 code: "INSUFFICIENT_TOKEN_BALANCE",
               });
 
-              yield* mintUsdc(devnet, account, 1_000_000_000n);
-              const before = yield* usdcOf(devnet, account);
+              yield* mintUsdc(account, 1_000_000_000n);
+              const before = yield* usdcOf(account);
               const result = yield* Actions.registration.registerSync(ens, {
                 ...options,
                 primaryName: true,
-                onStep: passWaits(devnet),
+                onStep: chain.passWaits,
               });
 
-              assert.strictEqual((yield* ethEntry(devnet, label(name))).owner, carol);
-              assert.strictEqual(before - (yield* usdcOf(devnet, account)), result.paid);
+              assert.strictEqual((yield* ethEntry(name)).owner, accounts.carol);
+              assert.strictEqual(before - (yield* usdcOf(account)), result.paid);
               // The reverse record is the owner's, so the owner sets it.
               assert.deepInclude(result.plan.steps.at(-1), { id: "primaryName", from: "signer" });
-              assert.strictEqual(yield* Actions.primaryName.get(ens, { address: carol }), name);
+              assert.strictEqual(
+                yield* Actions.primaryName.get(ens, { address: accounts.carol }),
+                name,
+              );
             }),
           );
         }),
@@ -137,14 +135,12 @@ describe("HCA", () => {
       "refuses a name token sent to the HCA",
       () =>
         Effect.gen(function* () {
-          const fixtures = yield* Fixtures;
-          const devnet = yield* Devnet;
-          const { name, facts } = fixtures.byId("v2.registered");
-          const owner = facts["owner"] as Address;
-          const ens = ensforge(devnet, { account: owner });
+          const chain = yield* Chain;
+          const clients = yield* Clients;
+          const { name, facts } = (yield* Fixtures).byId("v2.registered");
+          const ens = clients.make({ account: facts["owner"] as Address });
 
-          yield* isolated(
-            devnet,
+          yield* chain.isolated(
             Effect.gen(function* () {
               yield* HcaActions.hca.deploySync(ens, {});
               const account = yield* HcaActions.hca.predictAddress(ens, {});
@@ -164,19 +160,19 @@ describe("HCA", () => {
       () =>
         Effect.gen(function* () {
           const devnet = yield* Devnet;
-          const { alice, bob } = devnet.accounts;
-          const ens = ensforge(devnet, { account: alice });
-          const resolver = devnet.contracts["v2.publicResolver"] as Address;
+          const chain = yield* Chain;
+          const clients = yield* Clients;
+          const { bob } = devnet.accounts;
+          const ens = clients.make({ account: devnet.accounts.alice });
+          const resolver = devnet.contract("v2.publicResolver");
 
-          yield* isolated(
-            devnet,
+          yield* chain.isolated(
             Effect.gen(function* () {
               yield* HcaActions.hca.deploySync(ens, {});
-              const block = yield* Effect.promise(() => devnet.client.getBlock());
               const session = yield* HcaActions.hca.authorizeSession(ens, {
                 sessionKey: bob,
                 resolver,
-                validUntil: Number(block.timestamp) + 3600,
+                validUntil: Number(yield* chain.now) + 3600,
               });
               assert.deepStrictEqual(yield* HcaActions.hca.getSession(ens, { session }), {
                 valid: true,
@@ -194,7 +190,11 @@ describe("HCA", () => {
 
               // A registration plan to the owner with the session's resolver is within the session;
               // with a subregistry it is not.
-              const registration = { names: "session-name.eth", duration: year, resolver };
+              const registration = {
+                names: "session-name.eth",
+                duration: Duration.years(1),
+                resolver,
+              };
               const plan = yield* Actions.registration.register.prepare(ens, registration);
               assert.isTrue(
                 yield* HcaActions.hca.checkSessionCalls(ens, { session, calls: plan.calls }),
@@ -208,8 +208,7 @@ describe("HCA", () => {
                 { _tag: "HcaError", code: "HCA_ACTION_NOT_ALLOWED" },
               );
 
-              yield* atTimestamp(
-                devnet,
+              yield* chain.atTimestamp(
                 BigInt(session.terms.validUntil) + 1n,
                 Effect.gen(function* () {
                   assert.deepStrictEqual(yield* HcaActions.hca.getSession(ens, { session }), {

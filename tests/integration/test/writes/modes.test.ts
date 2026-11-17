@@ -1,33 +1,35 @@
 import { assert, describe } from "@effect/vitest";
 import { Effect } from "effect";
 
+import { Duration } from "@ensforge/sdk";
 import { Actions } from "@ensforge/sdk/effect";
-import { Devnet } from "@ensforge/test-devnet";
+import { Chain, Devnet } from "@ensforge/test-devnet";
 import { Fixtures } from "@ensforge/test-fixtures";
+import { isAddressEqual } from "viem";
 
-import { ensforge, isolated, onProfile } from "../support/chain.ts";
-import { testWallet } from "../support/wallet.ts";
+import { Clients } from "../support/clients.ts";
+import { onProfile } from "../support/lane.ts";
+import { Wallets } from "../support/wallets.ts";
 
 describe("write send modes", () => {
   onProfile("mainnet-shaped")("mainnet-shaped", (it) => {
     it.effect("signs as the account a write names, not the client's", () =>
       Effect.gen(function* () {
         const fixtures = yield* Fixtures;
-        const devnet = yield* Devnet;
-        const { accounts } = devnet;
+        const { accounts } = yield* Devnet;
+        const chain = yield* Chain;
+        const clients = yield* Clients;
         // The client signs as alice; bob owns the records.
-        const ens = ensforge(devnet, { account: accounts.alice });
-        const name = fixtures.byId("records.v2").name;
+        const ens = clients.make({ account: accounts.alice });
 
-        yield* isolated(
-          devnet,
+        yield* chain.isolated(
           Effect.gen(function* () {
             const { receipt } = yield* Actions.record.setSync(ens, {
-              name,
+              name: fixtures.byId("records.v2").name,
               texts: { url: "https://bob.example" },
               account: accounts.bob,
             });
-            assert.strictEqual(receipt.from.toLowerCase(), accounts.bob.toLowerCase());
+            assert.isTrue(isAddressEqual(receipt.from, accounts.bob));
           }),
         );
       }),
@@ -37,24 +39,23 @@ describe("write send modes", () => {
     it.effect("bundles a step's calls when the wallet supports atomic batches", () =>
       Effect.gen(function* () {
         const fixtures = yield* Fixtures;
-        const devnet = yield* Devnet;
-        const alice = devnet.accounts.alice;
+        const { accounts } = yield* Devnet;
+        const chain = yield* Chain;
+        const clients = yield* Clients;
+        const wallets = yield* Wallets;
         const options = {
           name: fixtures.byId("records.v1").name,
           texts: { url: "https://moved.example" },
           resolver: "default",
         } as const;
-        const sendWith = (atomic: boolean, extra: Record<string, unknown> = {}) =>
-          isolated(
-            devnet,
+        const sendWith = (atomic: boolean, maxBundleCalls?: number) =>
+          chain.isolated(
             Effect.gen(function* () {
-              const wallet = testWallet(devnet, alice, { atomic });
-              const ens = ensforge(devnet, { account: alice, wallet });
-              const result = yield* Actions.record.setSync(ens, { ...options, ...extra });
-              return {
-                result,
-                sendCalls: wallet.methods.filter((m) => m === "wallet_sendCalls").length,
-              };
+              const wallet = wallets.make(accounts.alice, { atomic });
+              const ens = clients.make({ account: accounts.alice, wallet });
+              const result = yield* Actions.record.setSync(ens, { ...options, maxBundleCalls });
+              const sendCalls = wallet.methods.filter((method) => method === "wallet_sendCalls");
+              return { result, sendCalls: sendCalls.length };
             }),
           );
 
@@ -69,7 +70,7 @@ describe("write send modes", () => {
         assert.strictEqual(sequential.result.hashes.length, 2);
 
         // A step's calls stay together whatever the limit: they must not land apart.
-        assert.deepInclude(yield* sendWith(true, { maxBundleCalls: 1 }), { sendCalls: 1 });
+        assert.deepInclude(yield* sendWith(true, 1), { sendCalls: 1 });
       }),
     );
 
@@ -77,29 +78,34 @@ describe("write send modes", () => {
     it.effect("joins consecutive steps in one bundle up to maxBundleCalls", () =>
       Effect.gen(function* () {
         const fixtures = yield* Fixtures;
-        const devnet = yield* Devnet;
-        const carol = devnet.accounts.carol;
+        const { accounts } = yield* Devnet;
+        const chain = yield* Chain;
+        const clients = yield* Clients;
+        const wallets = yield* Wallets;
         const options = {
           names: [fixtures.byId("v2.registered").name, fixtures.byId("v2.reserved").name],
-          duration: 31_536_000n,
+          duration: Duration.years(1),
         };
-        const bundlesFor = (extra: Record<string, unknown>) =>
-          isolated(
-            devnet,
+        // [bundles, plain transactions]
+        const sendsWith = (maxBundleCalls?: number) =>
+          chain.isolated(
             Effect.gen(function* () {
-              const wallet = testWallet(devnet, carol, { atomic: true });
-              const ens = ensforge(devnet, { account: carol, wallet });
-              const result = yield* Actions.registration.renewSync(ens, { ...options, ...extra });
+              const wallet = wallets.make(accounts.carol, { atomic: true });
+              const ens = clients.make({ account: accounts.carol, wallet });
+              const result = yield* Actions.registration.renewSync(ens, {
+                ...options,
+                maxBundleCalls,
+              });
               assert.strictEqual(result.hashes.length, 3);
+
               const count = (method: string) => wallet.methods.filter((m) => m === method).length;
               return [count("wallet_sendCalls"), count("eth_sendTransaction")];
             }),
           );
 
-        // [bundles, plain transactions]
-        assert.deepStrictEqual(yield* bundlesFor({}), [1, 0]);
+        assert.deepStrictEqual(yield* sendsWith(), [1, 0]);
         // Over the limit, the one-call approval goes alone, as a plain transaction.
-        assert.deepStrictEqual(yield* bundlesFor({ maxBundleCalls: 2 }), [1, 1]);
+        assert.deepStrictEqual(yield* sendsWith(2), [1, 1]);
       }),
     );
   });

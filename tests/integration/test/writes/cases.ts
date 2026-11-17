@@ -1,7 +1,6 @@
-import type { DevnetInstance } from "@ensforge/test-devnet";
+import { Duration } from "@ensforge/sdk";
+import type { AccountName, Devnet } from "@ensforge/test-devnet";
 import type { FixturesApi } from "@ensforge/test-fixtures";
-
-type AccountName = keyof DevnetInstance["accounts"];
 
 /** One write as an account that may make it, on `mainnet-shaped`. */
 export type WriteCase = {
@@ -9,14 +8,11 @@ export type WriteCase = {
   readonly options: Readonly<Record<string, unknown>>;
 };
 
-const year = 31_536_000n;
-
 /** An allowed call of every write, from the seeded fixtures. */
 export const writeCases = (
   fixtures: FixturesApi,
-  devnet: DevnetInstance,
+  { accounts }: Devnet["Service"],
 ): Readonly<Record<string, WriteCase>> => {
-  const { accounts } = devnet;
   const nameOf = (id: string) => fixtures.byId(id).name;
   const fact = (id: string, key: string) => String(fixtures.byId(id).facts[key]);
   return {
@@ -55,11 +51,17 @@ export const writeCases = (
       account: "bob",
       options: { name: nameOf("records.v2"), texts: { url: "https://w.example" } },
     },
-    "registration.commit": { account: "alice", options: { names: "qqqqq.eth", duration: year } },
-    "registration.register": { account: "alice", options: { names: "qqqqq.eth", duration: year } },
+    "registration.commit": {
+      account: "alice",
+      options: { names: "qqqqq.eth", duration: Duration.years(1) },
+    },
+    "registration.register": {
+      account: "alice",
+      options: { names: "qqqqq.eth", duration: Duration.years(1) },
+    },
     "registration.renew": {
       account: "alice",
-      options: { names: nameOf("v2.registered"), duration: year },
+      options: { names: nameOf("v2.registered"), duration: Duration.years(1) },
     },
     "registry.attach": {
       account: "alice",

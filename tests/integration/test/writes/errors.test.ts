@@ -2,32 +2,29 @@ import { assert, describe } from "@effect/vitest";
 import { Effect } from "effect";
 
 import { Abis, Roles } from "@ensforge/contracts";
-import { Plan } from "@ensforge/sdk";
+import { Duration, Plan, type Errors } from "@ensforge/sdk";
 import { Actions } from "@ensforge/sdk/effect";
-import { Devnet, type DevnetInstance } from "@ensforge/test-devnet";
+import { Chain, Devnet, type AccountName } from "@ensforge/test-devnet";
 import { Fixtures, type FixturesApi } from "@ensforge/test-fixtures";
 import { type ExpectedError, expectFailure } from "@ensforge/test-harness";
-import { parseGwei, type Address } from "viem";
+import { parseGwei } from "viem";
 
-import { ensforge, isolated, onProfile, passWaits, type SyncAction } from "../support/chain.ts";
-import { testWallet } from "../support/wallet.ts";
-
-type AccountName = "alice" | "bob" | "carol" | "user";
+import { Clients, type Client } from "../support/clients.ts";
+import { onProfile } from "../support/lane.ts";
+import { Wallets } from "../support/wallets.ts";
 
 /** A write that must be refused, typed, before the wallet is asked to sign. */
 type Refusal = {
   readonly label: string;
   readonly path: string;
   readonly account: AccountName;
-  readonly options: (fixtures: FixturesApi, devnet: DevnetInstance) => Record<string, unknown>;
+  readonly options: (fixtures: FixturesApi, devnet: Devnet["Service"]) => Record<string, unknown>;
   readonly expected: ExpectedError;
 };
 
-const year = 31_536_000n;
 const bad = "0x1234";
 const stranger = "0x000000000000000000000000000000000000dEaD";
 const unregistered = "nothing-here.eth";
-const at = (id: string) => (fixtures: FixturesApi) => fixtures.byId(id).name;
 const err = (_tag: string, code: string): ExpectedError => ({ _tag, code });
 
 const nameState = (code: string) => err("NameStateError", code);
@@ -42,84 +39,88 @@ const refusals: readonly Refusal[] = [
     label: "a bad owner",
     path: "name.reclaim",
     account: "alice",
-    options: (f) => ({ name: at("records.v1")(f), owner: bad }),
+    options: (f) => ({ name: f.byId("records.v1").name, owner: bad }),
     expected: invalid("INVALID_ADDRESS"),
   },
   {
     label: "an unknown coin",
     path: "record.set",
     account: "alice",
-    options: (f, d) => ({ name: at("records.v1")(f), addresses: { nope: d.accounts.alice } }),
+    options: (f, d) => ({ name: f.byId("records.v1").name, addresses: { nope: d.accounts.alice } }),
     expected: invalid("INVALID_COIN_TYPE"),
   },
   {
     label: "an unknown content hash",
     path: "record.set",
     account: "alice",
-    options: (f) => ({ name: at("records.v1")(f), contentHash: "nope://x" }),
+    options: (f) => ({ name: f.byId("records.v1").name, contentHash: "nope://x" }),
     expected: invalid("INVALID_CONTENT_HASH"),
   },
   {
     label: "a bad owner",
     path: "registration.commit",
     account: "alice",
-    options: () => ({ names: "qqqqq.eth", duration: year, owner: bad }),
+    options: () => ({ names: "qqqqq.eth", duration: Duration.years(1), owner: bad }),
     expected: invalid("INVALID_ADDRESS"),
   },
   {
     label: "a bad referrer",
     path: "registration.commit",
     account: "alice",
-    options: () => ({ names: "qqqqq.eth", duration: year, referrer: "0x12" }),
+    options: () => ({ names: "qqqqq.eth", duration: Duration.years(1), referrer: "0x12" }),
     expected: invalid("INVALID_RECORD_VALUE"),
   },
   {
     label: "a bad owner",
     path: "registration.register",
     account: "alice",
-    options: () => ({ names: "qqqqq.eth", duration: year, owner: bad }),
+    options: () => ({ names: "qqqqq.eth", duration: Duration.years(1), owner: bad }),
     expected: invalid("INVALID_ADDRESS"),
   },
   {
     label: "a bad referrer",
     path: "registration.register",
     account: "alice",
-    options: () => ({ names: "qqqqq.eth", duration: year, referrer: "0x12" }),
+    options: () => ({ names: "qqqqq.eth", duration: Duration.years(1), referrer: "0x12" }),
     expected: invalid("INVALID_RECORD_VALUE"),
   },
   {
     label: "a bad payment token",
     path: "registration.renew",
     account: "alice",
-    options: (f) => ({ names: at("v2.registered")(f), duration: year, paymentToken: bad }),
+    options: (f) => ({
+      names: f.byId("v2.registered").name,
+      duration: Duration.years(1),
+      paymentToken: bad,
+    }),
     expected: invalid("INVALID_ADDRESS"),
   },
   {
     label: "a bad registry",
     path: "registry.attach",
     account: "alice",
-    options: (f) => ({ name: at("v2.registered")(f), registry: bad }),
+    options: (f) => ({ name: f.byId("v2.registered").name, registry: bad }),
     expected: invalid("INVALID_ADDRESS"),
   },
   {
     label: "a negative record id",
     path: "resolver.link",
     account: "bob",
-    options: (f) => ({ name: at("records.v2.linked")(f), to: { recordId: -1n } }),
+    options: (f) => ({ name: f.byId("records.v2.linked").name, to: { recordId: -1n } }),
     expected: invalid("INVALID_RECORD_VALUE"),
   },
   {
     label: "a bad owner",
     path: "subname.create",
     account: "alice",
-    options: (f) => ({ name: `x.${at("v2.registered")(f)}`, owner: bad }),
+    options: (f) => ({ name: `x.${f.byId("v2.registered").name}`, owner: bad }),
     expected: invalid("INVALID_ADDRESS"),
   },
   {
     label: "roles beyond uint256",
     path: "subname.create",
     account: "alice",
-    options: (f) => ({ name: `x.${at("v2.registered")(f)}`, roles: 1n << 300n }),
+    options: (f) => ({ name: `x.${f.byId("v2.registered").name}`, roles: 1n << 300n }),
     expected: invalid("INVALID_ROLES"),
   },
   {
@@ -127,7 +128,7 @@ const refusals: readonly Refusal[] = [
     path: "permission.setRecordAccess",
     account: "bob",
     options: (f, d) => ({
-      name: at("records.v2")(f),
+      name: f.byId("records.v2").name,
       grantee: d.accounts.carol,
       records: { addresses: ["nope"] },
     }),
@@ -138,7 +139,7 @@ const refusals: readonly Refusal[] = [
     label: "an expired name",
     path: "approval.setToken",
     account: "alice",
-    options: (f, d) => ({ name: at("v1.wrapped.expired")(f), to: d.accounts.carol }),
+    options: (f, d) => ({ name: f.byId("v1.wrapped.expired").name, to: d.accounts.carol }),
     expected: nameState("NAME_EXPIRED"),
   },
   {
@@ -152,14 +153,14 @@ const refusals: readonly Refusal[] = [
     label: "an expired name",
     path: "name.reclaim",
     account: "alice",
-    options: (f) => ({ name: at("v1.unwrapped.expired")(f) }),
+    options: (f) => ({ name: f.byId("v1.unwrapped.expired").name }),
     expected: nameState("NAME_EXPIRED"),
   },
   {
     label: "a reserved name",
     path: "name.reclaim",
     account: "alice",
-    options: (f) => ({ name: at("v2.unregistered.renewed")(f) }),
+    options: (f) => ({ name: f.byId("v2.unregistered.renewed").name }),
     expected: nameState("NAME_RESERVED"),
   },
   {
@@ -173,14 +174,17 @@ const refusals: readonly Refusal[] = [
     label: "an expired name",
     path: "name.setManager",
     account: "alice",
-    options: (f, d) => ({ name: at("v1.unwrapped.expired")(f), manager: d.accounts.carol }),
+    options: (f, d) => ({ name: f.byId("v1.unwrapped.expired").name, manager: d.accounts.carol }),
     expected: nameState("NAME_EXPIRED"),
   },
   {
     label: "a reserved name",
     path: "name.setManager",
     account: "alice",
-    options: (f, d) => ({ name: at("v2.unregistered.renewed")(f), manager: d.accounts.carol }),
+    options: (f, d) => ({
+      name: f.byId("v2.unregistered.renewed").name,
+      manager: d.accounts.carol,
+    }),
     expected: nameState("NAME_RESERVED"),
   },
   {
@@ -194,14 +198,14 @@ const refusals: readonly Refusal[] = [
     label: "an expired name",
     path: "name.setTtl",
     account: "alice",
-    options: (f) => ({ name: at("v1.unwrapped.expired")(f), ttl: 60n }),
+    options: (f) => ({ name: f.byId("v1.unwrapped.expired").name, ttl: 60n }),
     expected: nameState("NAME_EXPIRED"),
   },
   {
     label: "a reserved name",
     path: "name.setTtl",
     account: "alice",
-    options: (f) => ({ name: at("v2.unregistered.renewed")(f), ttl: 60n }),
+    options: (f) => ({ name: f.byId("v2.unregistered.renewed").name, ttl: 60n }),
     expected: nameState("NAME_RESERVED"),
   },
   {
@@ -215,14 +219,14 @@ const refusals: readonly Refusal[] = [
     label: "an expired name",
     path: "name.transfer",
     account: "alice",
-    options: (f, d) => ({ name: at("v2.expired")(f), to: d.accounts.carol }),
+    options: (f, d) => ({ name: f.byId("v2.expired").name, to: d.accounts.carol }),
     expected: nameState("NAME_EXPIRED"),
   },
   {
     label: "a reserved name",
     path: "name.transfer",
     account: "alice",
-    options: (f, d) => ({ name: at("v2.unregistered.renewed")(f), to: d.accounts.carol }),
+    options: (f, d) => ({ name: f.byId("v2.unregistered.renewed").name, to: d.accounts.carol }),
     expected: nameState("NAME_RESERVED"),
   },
   {
@@ -236,7 +240,7 @@ const refusals: readonly Refusal[] = [
     label: "a reserved name",
     path: "record.set",
     account: "alice",
-    options: (f) => ({ name: at("v2.unregistered.renewed")(f), texts: { url: "x" } }),
+    options: (f) => ({ name: f.byId("v2.unregistered.renewed").name, texts: { url: "x" } }),
     expected: nameState("NAME_RESERVED"),
   },
   {
@@ -257,21 +261,21 @@ const refusals: readonly Refusal[] = [
     label: "an expired name",
     path: "registry.attach",
     account: "alice",
-    options: (f) => ({ name: at("v2.expired")(f), registry: null }),
+    options: (f) => ({ name: f.byId("v2.expired").name, registry: null }),
     expected: nameState("NAME_EXPIRED"),
   },
   {
     label: "an expired name",
     path: "resolver.create",
     account: "alice",
-    options: (f) => ({ name: at("v2.expired")(f) }),
+    options: (f) => ({ name: f.byId("v2.expired").name }),
     expected: nameState("NAME_EXPIRED"),
   },
   {
     label: "a reserved name",
     path: "resolver.create",
     account: "alice",
-    options: (f) => ({ name: at("v2.unregistered.renewed")(f) }),
+    options: (f) => ({ name: f.byId("v2.unregistered.renewed").name }),
     expected: nameState("NAME_RESERVED"),
   },
   {
@@ -285,28 +289,28 @@ const refusals: readonly Refusal[] = [
     label: "an expired name",
     path: "resolver.link",
     account: "alice",
-    options: (f) => ({ name: at("v2.expired")(f), to: at("records.v2")(f) }),
+    options: (f) => ({ name: f.byId("v2.expired").name, to: f.byId("records.v2").name }),
     expected: nameState("NAME_EXPIRED"),
   },
   {
     label: "an expired parent",
     path: "subname.create",
     account: "alice",
-    options: (f) => ({ name: `x.${at("v2.expired")(f)}` }),
+    options: (f) => ({ name: `x.${f.byId("v2.expired").name}` }),
     expected: nameState("NAME_EXPIRED"),
   },
   {
     label: "an expired parent",
     path: "subname.remove",
     account: "alice",
-    options: (f) => ({ name: `x.${at("v2.expired")(f)}` }),
+    options: (f) => ({ name: `x.${f.byId("v2.expired").name}` }),
     expected: nameState("NAME_EXPIRED"),
   },
   {
     label: "an unregistered child",
     path: "subname.remove",
     account: "alice",
-    options: (f) => ({ name: `nope.${at("records.v1")(f)}` }),
+    options: (f) => ({ name: `nope.${f.byId("records.v1").name}` }),
     expected: nameState("NAME_NOT_REGISTERED"),
   },
   // The other protocol.
@@ -314,49 +318,53 @@ const refusals: readonly Refusal[] = [
     label: "an ENSv2 name",
     path: "approval.setToken",
     account: "alice",
-    options: (f, d) => ({ name: at("v2.registered")(f), to: d.accounts.carol }),
+    options: (f, d) => ({ name: f.byId("v2.registered").name, to: d.accounts.carol }),
     expected: unsupported("UNSUPPORTED_PROTOCOL"),
   },
   {
     label: "an ENSv2 name",
     path: "name.reclaim",
     account: "alice",
-    options: (f) => ({ name: at("v2.registered")(f) }),
+    options: (f) => ({ name: f.byId("v2.registered").name }),
     expected: unsupported("UNSUPPORTED_PROTOCOL"),
   },
   {
     label: "an ENSv2 name",
     path: "name.setManager",
     account: "alice",
-    options: (f, d) => ({ name: at("v2.registered")(f), manager: d.accounts.carol }),
+    options: (f, d) => ({ name: f.byId("v2.registered").name, manager: d.accounts.carol }),
     expected: unsupported("UNSUPPORTED_PROTOCOL"),
   },
   {
     label: "an ENSv2 name",
     path: "name.setTtl",
     account: "alice",
-    options: (f) => ({ name: at("v2.registered")(f), ttl: 60n }),
+    options: (f) => ({ name: f.byId("v2.registered").name, ttl: 60n }),
     expected: unsupported("UNSUPPORTED_PROTOCOL"),
   },
   {
     label: "the registrant of a subname",
     path: "name.transfer",
     account: "bob",
-    options: (f, d) => ({ name: at("v1.subname")(f), to: d.accounts.carol, role: "registrant" }),
+    options: (f, d) => ({
+      name: f.byId("v1.subname").name,
+      to: d.accounts.carol,
+      role: "registrant",
+    }),
     expected: unsupported("UNSUPPORTED_PROTOCOL"),
   },
   {
     label: "an ENSv1 name",
     path: "registry.attach",
     account: "alice",
-    options: (f) => ({ name: at("records.v1")(f), registry: null }),
+    options: (f) => ({ name: f.byId("records.v1").name, registry: null }),
     expected: unsupported("UNSUPPORTED_PROTOCOL"),
   },
   {
     label: "an ENSv1 name",
     path: "registry.deploy",
     account: "alice",
-    options: (f) => ({ attachTo: at("records.v1")(f) }),
+    options: (f) => ({ attachTo: f.byId("records.v1").name }),
     expected: unsupported("UNSUPPORTED_PROTOCOL"),
   },
   {
@@ -367,7 +375,7 @@ const refusals: readonly Refusal[] = [
       holder: d.accounts.carol,
       roles: ["setResolver"],
       target: "registry",
-      name: at("records.v1")(f),
+      name: f.byId("records.v1").name,
     }),
     expected: unsupported("UNSUPPORTED_PROTOCOL"),
   },
@@ -376,7 +384,7 @@ const refusals: readonly Refusal[] = [
     label: "a name without a resolver",
     path: "permission.setRecordAccess",
     account: "alice",
-    options: (f, d) => ({ name: at("v2.registered")(f), grantee: d.accounts.carol }),
+    options: (f, d) => ({ name: f.byId("v2.registered").name, grantee: d.accounts.carol }),
     expected: notFound("RESOLVER_NOT_FOUND"),
   },
   {
@@ -384,7 +392,7 @@ const refusals: readonly Refusal[] = [
     path: "approval.setDelegate",
     account: "alice",
     options: (f, d) => ({
-      name: at("resolver.none")(f),
+      name: f.byId("resolver.none").name,
       delegate: d.accounts.carol,
       approved: true,
     }),
@@ -394,49 +402,49 @@ const refusals: readonly Refusal[] = [
     label: "a name without a resolver",
     path: "resolver.link",
     account: "alice",
-    options: (f) => ({ name: at("v2.registered")(f), to: at("records.v2")(f) }),
+    options: (f) => ({ name: f.byId("v2.registered").name, to: f.byId("records.v2").name }),
     expected: notFound("RESOLVER_NOT_FOUND"),
   },
   {
     label: "a name without a resolver",
     path: "resolver.upgrade",
     account: "alice",
-    options: (f) => ({ name: at("v2.registered")(f) }),
+    options: (f) => ({ name: f.byId("v2.registered").name }),
     expected: notFound("RESOLVER_NOT_FOUND"),
   },
   {
     label: "a name without a registry",
     path: "registry.setUri",
     account: "alice",
-    options: (f) => ({ name: at("v2.registered")(f), uri: "x" }),
+    options: (f) => ({ name: f.byId("v2.registered").name, uri: "x" }),
     expected: notFound("REGISTRY_NOT_FOUND"),
   },
   {
     label: "a name without a registry",
     path: "registry.upgrade",
     account: "alice",
-    options: (f) => ({ name: at("v2.registered")(f) }),
+    options: (f) => ({ name: f.byId("v2.registered").name }),
     expected: notFound("REGISTRY_NOT_FOUND"),
   },
   {
     label: "a PublicResolver",
     path: "resolver.link",
     account: "alice",
-    options: (f) => ({ name: at("records.v1")(f), to: at("records.v2")(f) }),
+    options: (f) => ({ name: f.byId("records.v1").name, to: f.byId("records.v2").name }),
     expected: unsupported("RESOLVER_PROFILE_UNSUPPORTED"),
   },
   {
     label: "a PublicResolver",
     path: "resolver.upgrade",
     account: "alice",
-    options: (f) => ({ name: at("records.v1")(f) }),
+    options: (f) => ({ name: f.byId("records.v1").name }),
     expected: unsupported("RESOLVER_PROFILE_UNSUPPORTED"),
   },
   {
     label: "data on a resolver without data records",
     path: "record.set",
     account: "alice",
-    options: (f) => ({ name: at("records.v1")(f), data: { key: "0x12" } }),
+    options: (f) => ({ name: f.byId("records.v1").name, data: { key: "0x12" } }),
     expected: unsupported("RESOLVER_PROFILE_UNSUPPORTED"),
   },
   {
@@ -450,7 +458,7 @@ const refusals: readonly Refusal[] = [
     label: "a target that refuses the resolver",
     path: "resolver.upgrade",
     account: "bob",
-    options: (f) => ({ name: at("records.v2")(f), implementation: stranger }),
+    options: (f) => ({ name: f.byId("records.v2").name, implementation: stranger }),
     expected: unsupported("UPGRADE_NOT_APPROVED"),
   },
   // Authorization.
@@ -458,42 +466,42 @@ const refusals: readonly Refusal[] = [
     label: "a stranger",
     path: "name.reclaim",
     account: "user",
-    options: (f) => ({ name: at("records.v1")(f) }),
+    options: (f) => ({ name: f.byId("records.v1").name }),
     expected: unauthorized("NOT_OWNER"),
   },
   {
     label: "a stranger",
     path: "name.setManager",
     account: "user",
-    options: (f, d) => ({ name: at("records.v1")(f), manager: d.accounts.carol }),
+    options: (f, d) => ({ name: f.byId("records.v1").name, manager: d.accounts.carol }),
     expected: unauthorized("NOT_OWNER"),
   },
   {
     label: "a stranger",
     path: "name.setTtl",
     account: "user",
-    options: (f) => ({ name: at("records.v1")(f), ttl: 60n }),
+    options: (f) => ({ name: f.byId("records.v1").name, ttl: 60n }),
     expected: unauthorized("NOT_OWNER"),
   },
   {
     label: "a burned CANNOT_SET_TTL",
     path: "name.setTtl",
     account: "alice",
-    options: (f) => ({ name: at("v1.wrapped.locked.cannot-set-ttl")(f), ttl: 60n }),
+    options: (f) => ({ name: f.byId("v1.wrapped.locked.cannot-set-ttl").name, ttl: 60n }),
     expected: unauthorized("FUSE_BURNED"),
   },
   {
     label: "a stranger",
     path: "registry.attach",
     account: "user",
-    options: (f) => ({ name: at("v2.registered")(f), registry: null }),
+    options: (f) => ({ name: f.byId("v2.registered").name, registry: null }),
     expected: unauthorized("MISSING_ROLES"),
   },
   {
     label: "a stranger",
     path: "registry.deploy",
     account: "user",
-    options: (f) => ({ attachTo: at("v2.registered")(f) }),
+    options: (f) => ({ attachTo: f.byId("v2.registered").name }),
     expected: unauthorized("MISSING_ROLES"),
   },
   {
@@ -514,21 +522,21 @@ const refusals: readonly Refusal[] = [
     label: "a stranger's ENSv1 name",
     path: "resolver.create",
     account: "user",
-    options: (f) => ({ name: at("records.v1")(f) }),
+    options: (f) => ({ name: f.byId("records.v1").name }),
     expected: unauthorized("NOT_OWNER"),
   },
   {
     label: "a stranger's ENSv2 name",
     path: "resolver.create",
     account: "user",
-    options: (f) => ({ name: at("v2.registered")(f) }),
+    options: (f) => ({ name: f.byId("v2.registered").name }),
     expected: unauthorized("MISSING_ROLES"),
   },
   {
     label: "a stranger",
     path: "resolver.link",
     account: "user",
-    options: (f) => ({ name: at("records.v2.linked")(f), to: at("records.v2")(f) }),
+    options: (f) => ({ name: f.byId("records.v2.linked").name, to: f.byId("records.v2").name }),
     expected: unauthorized("MISSING_ROLES"),
   },
   {
@@ -539,7 +547,7 @@ const refusals: readonly Refusal[] = [
       holder: String(f.byId("v2.roles").facts["delegate"]),
       roles: ["setResolver"],
       target: "registry",
-      name: at("v2.roles")(f),
+      name: f.byId("v2.roles").name,
     }),
     expected: unauthorized("CANNOT_GRANT_ROLES"),
   },
@@ -547,28 +555,28 @@ const refusals: readonly Refusal[] = [
     label: "a stranger in ENSv2",
     path: "subname.create",
     account: "user",
-    options: (f) => ({ name: `x.${at("v2.registered")(f)}` }),
+    options: (f) => ({ name: `x.${f.byId("v2.registered").name}` }),
     expected: unauthorized("MISSING_ROLES"),
   },
   {
     label: "a stranger in ENSv1",
     path: "subname.create",
     account: "user",
-    options: (f) => ({ name: `x.${at("records.v1")(f)}` }),
+    options: (f) => ({ name: `x.${f.byId("records.v1").name}` }),
     expected: unauthorized("NOT_OWNER"),
   },
   {
     label: "a stranger in ENSv2",
     path: "subname.remove",
     account: "user",
-    options: (f) => ({ name: at("v2.subnames")(f) }),
+    options: (f) => ({ name: f.byId("v2.subnames").name }),
     expected: unauthorized("MISSING_ROLES"),
   },
   {
     label: "a stranger in ENSv1",
     path: "subname.remove",
     account: "user",
-    options: (f) => ({ name: at("v1.subname")(f) }),
+    options: (f) => ({ name: f.byId("v1.subname").name }),
     expected: unauthorized("NOT_OWNER"),
   },
   // The NameWrapper and subname updates.
@@ -576,14 +584,14 @@ const refusals: readonly Refusal[] = [
     label: "a bad owner",
     path: "wrapper.wrap",
     account: "alice",
-    options: (f) => ({ name: at("records.v1")(f), owner: bad }),
+    options: (f) => ({ name: f.byId("records.v1").name, owner: bad }),
     expected: invalid("INVALID_ADDRESS"),
   },
   {
     label: "an expired name",
     path: "wrapper.wrap",
     account: "alice",
-    options: (f) => ({ name: at("v1.unwrapped.expired")(f) }),
+    options: (f) => ({ name: f.byId("v1.unwrapped.expired").name }),
     expected: nameState("NAME_EXPIRED"),
   },
   {
@@ -597,21 +605,21 @@ const refusals: readonly Refusal[] = [
     label: "a stranger",
     path: "wrapper.wrap",
     account: "user",
-    options: (f) => ({ name: at("records.v1")(f) }),
+    options: (f) => ({ name: f.byId("records.v1").name }),
     expected: unauthorized("NOT_OWNER"),
   },
   {
     label: "a bad owner",
     path: "wrapper.unwrap",
     account: "alice",
-    options: (f) => ({ name: at("v1.wrapped")(f), owner: bad }),
+    options: (f) => ({ name: f.byId("v1.wrapped").name, owner: bad }),
     expected: invalid("INVALID_ADDRESS"),
   },
   {
     label: "an expired name",
     path: "wrapper.unwrap",
     account: "alice",
-    options: (f) => ({ name: at("v1.wrapped.expired")(f) }),
+    options: (f) => ({ name: f.byId("v1.wrapped.expired").name }),
     expected: nameState("NAME_EXPIRED"),
   },
   {
@@ -625,14 +633,14 @@ const refusals: readonly Refusal[] = [
     label: "a stranger",
     path: "wrapper.unwrap",
     account: "user",
-    options: (f) => ({ name: at("v1.wrapped")(f) }),
+    options: (f) => ({ name: f.byId("v1.wrapped").name }),
     expected: unauthorized("NOT_OWNER"),
   },
   {
     label: "an expired name",
     path: "wrapper.setFuses",
     account: "alice",
-    options: (f) => ({ name: at("v1.wrapped.expired")(f), fuses: ["cannotUnwrap"] }),
+    options: (f) => ({ name: f.byId("v1.wrapped.expired").name, fuses: ["cannotUnwrap"] }),
     expected: nameState("NAME_EXPIRED"),
   },
   {
@@ -646,119 +654,119 @@ const refusals: readonly Refusal[] = [
     label: "a stranger",
     path: "wrapper.setFuses",
     account: "user",
-    options: (f) => ({ name: at("v1.wrapped")(f), fuses: ["cannotUnwrap"] }),
+    options: (f) => ({ name: f.byId("v1.wrapped").name, fuses: ["cannotUnwrap"] }),
     expected: unauthorized("NOT_OWNER"),
   },
   {
     label: "an unknown fuse",
     path: "wrapper.setChildFuses",
     account: "alice",
-    options: (f) => ({ name: at("v1.wrapped.sub")(f), fuses: ["nope"] }),
+    options: (f) => ({ name: f.byId("v1.wrapped.sub").name, fuses: ["nope"] }),
     expected: invalid("INVALID_RECORD_VALUE"),
   },
   {
     label: "an expiry beyond uint64",
     path: "wrapper.setChildFuses",
     account: "alice",
-    options: (f) => ({ name: at("v1.wrapped.sub")(f), expiry: 1n << 64n }),
+    options: (f) => ({ name: f.byId("v1.wrapped.sub").name, expiry: 1n << 64n }),
     expected: invalid("INVALID_EXPIRY"),
   },
   {
     label: "an expired name",
     path: "wrapper.setChildFuses",
     account: "alice",
-    options: (f) => ({ name: at("v1.wrapped.expired")(f), fuses: ["parentCannotControl"] }),
+    options: (f) => ({ name: f.byId("v1.wrapped.expired").name, fuses: ["parentCannotControl"] }),
     expected: nameState("NAME_EXPIRED"),
   },
   {
     label: "an unregistered child",
     path: "wrapper.setChildFuses",
     account: "alice",
-    options: (f) => ({ name: `nope.${at("v1.wrapped")(f)}`, fuses: ["parentCannotControl"] }),
+    options: (f) => ({ name: `nope.${f.byId("v1.wrapped").name}`, fuses: ["parentCannotControl"] }),
     expected: nameState("NAME_NOT_REGISTERED"),
   },
   {
     label: "an ENSv2 name",
     path: "wrapper.setChildFuses",
     account: "alice",
-    options: (f) => ({ name: at("v2.subnames")(f), fuses: ["parentCannotControl"] }),
+    options: (f) => ({ name: f.byId("v2.subnames").name, fuses: ["parentCannotControl"] }),
     expected: unsupported("UNSUPPORTED_PROTOCOL"),
   },
   {
     label: "a stranger",
     path: "wrapper.setChildFuses",
     account: "user",
-    options: (f) => ({ name: at("v1.wrapped.sub")(f), fuses: ["parentCannotControl"] }),
+    options: (f) => ({ name: f.byId("v1.wrapped.sub").name, fuses: ["parentCannotControl"] }),
     expected: unauthorized("NOT_OWNER"),
   },
   {
     label: "a bad owner",
     path: "subname.update",
     account: "alice",
-    options: (f) => ({ name: at("v1.subname")(f), owner: bad }),
+    options: (f) => ({ name: f.byId("v1.subname").name, owner: bad }),
     expected: invalid("INVALID_ADDRESS"),
   },
   {
     label: "nothing to change",
     path: "subname.update",
     account: "alice",
-    options: (f) => ({ name: at("v1.subname")(f) }),
+    options: (f) => ({ name: f.byId("v1.subname").name }),
     expected: invalid("INVALID_RECORD_VALUE"),
   },
   {
     label: "an earlier ENSv2 expiry",
     path: "subname.update",
     account: "alice",
-    options: (f) => ({ name: at("v2.subnames")(f), expiry: 1n }),
+    options: (f) => ({ name: f.byId("v2.subnames").name, expiry: 1n }),
     expected: invalid("INVALID_EXPIRY"),
   },
   {
     label: "an unregistered child",
     path: "subname.update",
     account: "alice",
-    options: (f, d) => ({ name: `nope.${at("records.v1")(f)}`, owner: d.accounts.carol }),
+    options: (f, d) => ({ name: `nope.${f.byId("records.v1").name}`, owner: d.accounts.carol }),
     expected: nameState("NAME_NOT_REGISTERED"),
   },
   {
     label: "an expired parent",
     path: "subname.update",
     account: "alice",
-    options: (f) => ({ name: `x.${at("v2.expired")(f)}`, resolver: stranger }),
+    options: (f) => ({ name: `x.${f.byId("v2.expired").name}`, resolver: stranger }),
     expected: nameState("NAME_EXPIRED"),
   },
   {
     label: "an ENSv2 owner change",
     path: "subname.update",
     account: "alice",
-    options: (f, d) => ({ name: at("v2.subnames")(f), owner: d.accounts.carol }),
+    options: (f, d) => ({ name: f.byId("v2.subnames").name, owner: d.accounts.carol }),
     expected: unsupported("UNSUPPORTED_PROTOCOL"),
   },
   {
     label: "a stranger in ENSv2",
     path: "subname.update",
     account: "user",
-    options: (f) => ({ name: at("v2.subnames")(f), resolver: stranger }),
+    options: (f) => ({ name: f.byId("v2.subnames").name, resolver: stranger }),
     expected: unauthorized("MISSING_ROLES"),
   },
   {
     label: "a stranger in ENSv1",
     path: "subname.update",
     account: "user",
-    options: (f, d) => ({ name: at("v1.subname")(f), owner: d.accounts.carol }),
+    options: (f, d) => ({ name: f.byId("v1.subname").name, owner: d.accounts.carol }),
     expected: unauthorized("NOT_OWNER"),
   },
   {
     label: "an unwrapped child",
     path: "wrapper.setChildFuses",
     account: "alice",
-    options: (f) => ({ name: at("v1.subname")(f), fuses: ["parentCannotControl"] }),
+    options: (f) => ({ name: f.byId("v1.subname").name, fuses: ["parentCannotControl"] }),
     expected: nameState("NAME_NOT_WRAPPED"),
   },
   {
     label: "a stranger on a wrapped name",
     path: "name.transfer",
     account: "bob",
-    options: (f, d) => ({ name: at("v1.wrapped")(f), to: d.accounts.carol }),
+    options: (f, d) => ({ name: f.byId("v1.wrapped").name, to: d.accounts.carol }),
     expected: unauthorized("NOT_OWNER"),
   },
   // DNS records on public resolvers.
@@ -766,21 +774,21 @@ const refusals: readonly Refusal[] = [
     label: "nothing to write",
     path: "dns.setRecords",
     account: "alice",
-    options: (f) => ({ name: at("records.v1")(f) }),
+    options: (f) => ({ name: f.byId("records.v1").name }),
     expected: invalid("INVALID_RECORD_VALUE"),
   },
   {
     label: "an expired name",
     path: "dns.setRecords",
     account: "alice",
-    options: (f) => ({ name: at("v1.unwrapped.expired")(f), zonehash: null }),
+    options: (f) => ({ name: f.byId("v1.unwrapped.expired").name, zonehash: null }),
     expected: nameState("NAME_EXPIRED"),
   },
   {
     label: "a reserved name",
     path: "dns.setRecords",
     account: "alice",
-    options: (f) => ({ name: at("v2.unregistered.renewed")(f), zonehash: null }),
+    options: (f) => ({ name: f.byId("v2.unregistered.renewed").name, zonehash: null }),
     expected: nameState("NAME_RESERVED"),
   },
   {
@@ -794,21 +802,21 @@ const refusals: readonly Refusal[] = [
     label: "a name without a resolver",
     path: "dns.setRecords",
     account: "alice",
-    options: (f) => ({ name: at("resolver.none")(f), zonehash: null }),
+    options: (f) => ({ name: f.byId("resolver.none").name, zonehash: null }),
     expected: notFound("RESOLVER_NOT_FOUND"),
   },
   {
     label: "a resolver without DNS records",
     path: "dns.setRecords",
     account: "bob",
-    options: (f) => ({ name: at("records.v2")(f), zonehash: null }),
+    options: (f) => ({ name: f.byId("records.v2").name, zonehash: null }),
     expected: unsupported("RESOLVER_PROFILE_UNSUPPORTED"),
   },
   {
     label: "a stranger",
     path: "dns.setRecords",
     account: "user",
-    options: (f) => ({ name: at("records.v1")(f), zonehash: null }),
+    options: (f) => ({ name: f.byId("records.v1").name, zonehash: null }),
     expected: unauthorized("NOT_OWNER"),
   },
   // Payment and migration.
@@ -816,42 +824,46 @@ const refusals: readonly Refusal[] = [
     label: "an account without funds",
     path: "registration.register",
     account: "user",
-    options: () => ({ names: "qqqqq.eth", duration: year }),
+    options: () => ({ names: "qqqqq.eth", duration: Duration.years(1) }),
     expected: err("InsufficientFundsError", "INSUFFICIENT_TOKEN_BALANCE"),
   },
   {
     label: "a token the registrar refuses",
     path: "registration.register",
     account: "alice",
-    options: () => ({ names: "qqqqq.eth", duration: year, paymentToken: stranger }),
+    options: () => ({ names: "qqqqq.eth", duration: Duration.years(1), paymentToken: stranger }),
     expected: unsupported("PAYMENT_TOKEN_UNSUPPORTED"),
   },
   {
     label: "a token the registrar refuses",
     path: "registration.commit",
     account: "alice",
-    options: () => ({ names: "qqqqq.eth", duration: year, paymentToken: stranger }),
+    options: () => ({ names: "qqqqq.eth", duration: Duration.years(1), paymentToken: stranger }),
     expected: unsupported("PAYMENT_TOKEN_UNSUPPORTED"),
   },
   {
     label: "a token the registrar refuses",
     path: "registration.renew",
     account: "alice",
-    options: (f) => ({ names: at("v2.registered")(f), duration: year, paymentToken: stranger }),
+    options: (f) => ({
+      names: f.byId("v2.registered").name,
+      duration: Duration.years(1),
+      paymentToken: stranger,
+    }),
     expected: unsupported("PAYMENT_TOKEN_UNSUPPORTED"),
   },
   {
     label: "a migrated name",
     path: "migration.migrate",
     account: "alice",
-    options: (f) => ({ names: at("migration.unwrapped")(f), resolver: "keep" }),
+    options: (f) => ({ names: f.byId("migration.unwrapped").name, resolver: "keep" }),
     expected: err("MigrationError", "ALREADY_MIGRATED"),
   },
   {
     label: "records it cannot see",
     path: "migration.migrate",
     account: "alice",
-    options: (f) => ({ names: at("v2.reserved")(f), resolver: "new" }),
+    options: (f) => ({ names: f.byId("v2.reserved").name, resolver: "new" }),
     expected: err("MigrationError", "RECORDS_UNKNOWN"),
   },
 ];
@@ -863,20 +875,27 @@ describe("write refusals", () => {
         Effect.gen(function* () {
           const fixtures = yield* Fixtures;
           const devnet = yield* Devnet;
+          const chain = yield* Chain;
+          const clients = yield* Clients;
           const account = devnet.accounts[refusal.account];
-          const wallet = testWallet(devnet, account);
-          const [domain = "", name = ""] = refusal.path.split(".");
-          const sync = (Actions as unknown as Record<string, Record<string, SyncAction>>)[domain]?.[
-            `${name}Sync`
-          ];
+          const wallet = (yield* Wallets).make(account);
+          const ens = clients.make({ account, wallet });
+          const [domain = "", action = ""] = refusal.path.split(".");
+          const sync = (
+            Actions as unknown as Record<
+              string,
+              Record<
+                string,
+                (ens: Client, options: unknown) => Effect.Effect<unknown, Errors.AnyError>
+              >
+            >
+          )[domain]?.[`${action}Sync`];
           if (sync === undefined) return assert.fail(`${refusal.path} has no Sync form`);
-          const client = ensforge(devnet, { account, wallet });
 
-          yield* isolated(
-            devnet,
+          yield* chain.isolated(
             Effect.gen(function* () {
               yield* expectFailure(
-                sync(client, { ...refusal.options(fixtures, devnet), onStep: passWaits(devnet) }),
+                sync(ens, { ...refusal.options(fixtures, devnet), onStep: chain.passWaits }),
                 refusal.expected,
               );
               assert.isFalse(wallet.prompted(), "refused before the wallet was asked");
@@ -889,17 +908,17 @@ describe("write refusals", () => {
     it.effect("registration.commit refuses a commitment already made", () =>
       Effect.gen(function* () {
         const devnet = yield* Devnet;
-        const ens = ensforge(devnet, { account: devnet.accounts.alice });
-        const options = { names: "qqqqq.eth", duration: year } as const;
-        yield* isolated(
-          devnet,
+        const chain = yield* Chain;
+        const ens = (yield* Clients).make({ account: devnet.accounts.alice });
+        const options = { names: "qqqqq.eth", duration: Duration.years(1) } as const;
+
+        yield* chain.isolated(
           Effect.gen(function* () {
             const { secret, readyAt } = yield* Actions.registration.commitSync(ens, options);
             // Until it is ready the commitment reads as too new; once ready, it must not be redone.
-            yield* Effect.promise(async () => {
-              await devnet.client.setNextBlockTimestamp({ timestamp: readyAt });
-              await devnet.client.mine({ blocks: 1 });
-            });
+            yield* chain.setNextBlockTimestamp(readyAt);
+            yield* chain.mine();
+
             yield* expectFailure(Actions.registration.commit(ens, { ...options, secret }), {
               _tag: "CommitmentError",
               code: "COMMITMENT_EXISTS",
@@ -912,20 +931,16 @@ describe("write refusals", () => {
     it.effect("plan.send refuses a plan prepared for another account", () =>
       Effect.gen(function* () {
         const fixtures = yield* Fixtures;
-        const devnet = yield* Devnet;
-        const plan = yield* Actions.record.set.prepare(
-          ensforge(devnet, { account: devnet.accounts.bob }),
-          {
-            name: fixtures.byId("records.v2").name,
-            texts: { url: "x" },
-          },
-        );
+        const { accounts } = yield* Devnet;
+        const clients = yield* Clients;
+
+        const plan = yield* Actions.record.set.prepare(clients.make({ account: accounts.bob }), {
+          name: fixtures.byId("records.v2").name,
+          texts: { url: "x" },
+        });
         yield* expectFailure(
-          Actions.plan.send(ensforge(devnet, { account: devnet.accounts.carol }), { plan }),
-          {
-            _tag: "PlanError",
-            code: "PLAN_ACCOUNT_MISMATCH",
-          },
+          Actions.plan.send(clients.make({ account: accounts.carol }), { plan }),
+          { _tag: "PlanError", code: "PLAN_ACCOUNT_MISMATCH" },
         );
       }),
     );
@@ -933,12 +948,13 @@ describe("write refusals", () => {
     it.effect("plan.send fails CONTRACT_REVERTED for a step that reverts without a reason", () =>
       Effect.gen(function* () {
         const fixtures = yield* Fixtures;
-        const devnet = yield* Devnet;
-        const ens = ensforge(devnet, { account: devnet.accounts.bob });
+        const { accounts } = yield* Devnet;
+        const ens = (yield* Clients).make({ account: accounts.bob });
         const plan = yield* Actions.record.set.prepare(ens, {
           name: fixtures.byId("records.v2").name,
           texts: { url: "x" },
         });
+
         // A call the resolver has no function for reverts with empty data.
         const [step] = plan.steps;
         const [first] = step?.calls ?? [];
@@ -958,11 +974,11 @@ describe("write refusals", () => {
       Effect.gen(function* () {
         const fixtures = yield* Fixtures;
         const devnet = yield* Devnet;
-        const { bob, carol, user } = devnet.accounts;
-        const ens = ensforge(devnet, { account: bob, storage: Plan.memoryStorage() });
+        const { accounts } = devnet;
+        const chain = yield* Chain;
+        const ens = (yield* Clients).make({ account: accounts.bob, storage: Plan.memoryStorage() });
 
-        yield* isolated(
-          devnet,
+        yield* chain.isolated(
           Effect.gen(function* () {
             const { hash, plan } = yield* Actions.record.setSync(ens, {
               name: fixtures.byId("records.v2").name,
@@ -971,14 +987,12 @@ describe("write refusals", () => {
             const { id } = plan;
             const step = plan.steps[0]?.id ?? "";
             // Neither from bob nor to the step's resolver.
-            const unrelated = yield* Effect.promise(() =>
-              devnet.client.sendTransaction({
-                account: carol,
-                chain: devnet.chain,
-                to: user,
-                value: 1n,
-              }),
-            );
+            const unrelated = yield* chain.send({
+              account: accounts.carol,
+              chain: devnet.chain,
+              to: accounts.user,
+              value: 1n,
+            });
 
             yield* expectFailure(Actions.plan.reconcile(ens, { id: "unknown", step, hash }), {
               _tag: "NotFoundError",
@@ -988,31 +1002,16 @@ describe("write refusals", () => {
               _tag: "InvalidInputError",
               code: "INVALID_RECORD_VALUE",
             });
-            yield* expectFailure(Actions.plan.reconcile(ens, { id, step, hash: unrelated }), {
-              _tag: "InvalidInputError",
-              code: "INVALID_RECORD_VALUE",
-            });
+            yield* expectFailure(
+              Actions.plan.reconcile(ens, { id, step, hash: unrelated.transactionHash }),
+              { _tag: "InvalidInputError", code: "INVALID_RECORD_VALUE" },
+            );
           }),
         );
       }),
     );
   });
 });
-
-/** Alice revokes `holder`'s resolver role, paying more than a pending write so it is mined first. */
-const revokeFirst = (devnet: DevnetInstance, tokenId: bigint, holder: Address) =>
-  devnet.client
-    .writeContract({
-      account: devnet.accounts.alice,
-      chain: devnet.chain,
-      address: devnet.contracts["v2.ethRegistry"] as Address,
-      abi: Abis.v2.permissionedRegistry,
-      functionName: "revokeRoles",
-      args: [tokenId, Roles.registry.setResolver, holder],
-      maxFeePerGas: parseGwei("1000"),
-      maxPriorityFeePerGas: parseGwei("100"),
-    })
-    .then(() => devnet.client.mine({ blocks: 1 }));
 
 describe("send failures", () => {
   onProfile("mainnet-shaped")("mainnet-shaped", (it) => {
@@ -1021,26 +1020,42 @@ describe("send failures", () => {
       Effect.gen(function* () {
         const fixtures = yield* Fixtures;
         const devnet = yield* Devnet;
-        const { carol } = devnet.accounts;
+        const chain = yield* Chain;
+        const clients = yield* Clients;
+        const context = yield* Effect.context<never>();
+        const { carol, alice } = devnet.accounts;
         const { name, facts } = fixtures.byId("v2.roles");
+        const registry = {
+          address: devnet.contract("v2.ethRegistry"),
+          abi: Abis.v2.permissionedRegistry,
+        };
 
-        yield* isolated(
-          devnet,
+        // The owner revokes carol's resolver role while her write waits in the pool, paying more
+        // so it is mined first.
+        const revokeFirst = chain
+          .submit({
+            ...registry,
+            account: alice,
+            functionName: "revokeRoles",
+            args: [BigInt(String(facts["tokenId"])), Roles.registry.setResolver, carol],
+            maxFeePerGas: parseGwei("1000"),
+            maxPriorityFeePerGas: parseGwei("100"),
+          })
+          .pipe(Effect.andThen(chain.mine()));
+
+        yield* chain.isolated(
           Effect.gen(function* () {
-            // Carol's write passes simulation; the owner's revoke, paid more, is mined before it.
-            yield* Effect.promise(() => devnet.client.setAutomine(false));
+            yield* chain.setAutomine(false);
             yield* expectFailure(
-              Actions.resolver.setSync(ensforge(devnet, { account: carol }), {
+              Actions.resolver.setSync(clients.make({ account: carol }), {
                 name,
                 resolver: stranger,
                 onStep: (event) => {
-                  if (event.status === "submitted")
-                    void revokeFirst(devnet, BigInt(String(facts["tokenId"])), carol);
+                  if (event.status === "submitted") Effect.runForkWith(context)(revokeFirst);
                 },
               }),
               { _tag: "TransactionError", code: "TRANSACTION_REVERTED" },
-            );
-            yield* Effect.promise(() => devnet.client.setAutomine(true));
+            ).pipe(Effect.ensuring(Effect.orDie(chain.setAutomine(true))));
           }),
         );
       }),
@@ -1049,21 +1064,21 @@ describe("send failures", () => {
     it.effect("fails typed when a receipt does not come in time", () =>
       Effect.gen(function* () {
         const fixtures = yield* Fixtures;
-        const devnet = yield* Devnet;
+        const { accounts } = yield* Devnet;
+        const chain = yield* Chain;
+        const ens = (yield* Clients).make({ account: accounts.bob });
 
-        yield* isolated(
-          devnet,
+        yield* chain.isolated(
           Effect.gen(function* () {
-            yield* Effect.promise(() => devnet.client.setAutomine(false));
+            yield* chain.setAutomine(false);
             yield* expectFailure(
-              Actions.record.setSync(ensforge(devnet, { account: devnet.accounts.bob }), {
+              Actions.record.setSync(ens, {
                 name: fixtures.byId("records.v2").name,
                 texts: { url: "x" },
                 timeout: 300,
               }),
               { _tag: "TransactionError", code: "RECEIPT_TIMEOUT" },
-            );
-            yield* Effect.promise(() => devnet.client.setAutomine(true));
+            ).pipe(Effect.ensuring(Effect.orDie(chain.setAutomine(true))));
           }),
         );
       }),

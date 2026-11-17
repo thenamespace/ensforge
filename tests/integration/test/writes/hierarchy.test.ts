@@ -3,14 +3,16 @@ import { Effect } from "effect";
 
 import { Abis } from "@ensforge/contracts";
 import { nameWrapperFuses as fuse } from "@ensforge/contracts/v1";
+import { Duration, Name } from "@ensforge/sdk";
 import { Actions } from "@ensforge/sdk/effect";
-import { Devnet } from "@ensforge/test-devnet";
+import { Chain, Devnet } from "@ensforge/test-devnet";
 import { Fixtures } from "@ensforge/test-fixtures";
 import { expectFailure } from "@ensforge/test-harness";
 import { zeroAddress, type Address } from "viem";
 
-import { ensforge, isolated, onProfile } from "../support/chain.ts";
-import { v1Owners } from "./support.ts";
+import { Clients } from "../support/clients.ts";
+import { v1Owners } from "../support/contracts.ts";
+import { onProfile } from "../support/lane.ts";
 
 describe("subnames, wrapper and registries", () => {
   onProfile("mainnet-shaped")("mainnet-shaped", (it) => {
@@ -19,20 +21,21 @@ describe("subnames, wrapper and registries", () => {
       () =>
         Effect.gen(function* () {
           const fixtures = yield* Fixtures;
-          const devnet = yield* Devnet;
-          const { alice, carol } = devnet.accounts;
-          const ens = ensforge(devnet, { account: alice });
+          const { accounts } = yield* Devnet;
+          const chain = yield* Chain;
+          const clients = yield* Clients;
+          const { alice, carol } = accounts;
+          const ens = clients.make({ account: alice });
           const child = `new.${fixtures.byId("records.v1").name}`;
 
-          yield* isolated(
-            devnet,
+          yield* chain.isolated(
             Effect.gen(function* () {
               yield* Actions.subname.createSync(ens, { name: child });
-              assert.strictEqual((yield* v1Owners(devnet, child)).registry, alice);
+              assert.strictEqual((yield* v1Owners(child)).registry, alice);
               yield* Actions.subname.updateSync(ens, { name: child, owner: carol });
-              assert.strictEqual((yield* v1Owners(devnet, child)).registry, carol);
+              assert.strictEqual((yield* v1Owners(child)).registry, carol);
               yield* Actions.subname.removeSync(ens, { name: child });
-              assert.strictEqual((yield* v1Owners(devnet, child)).registry, zeroAddress);
+              assert.strictEqual((yield* v1Owners(child)).registry, zeroAddress);
             }),
           );
         }),
@@ -44,19 +47,18 @@ describe("subnames, wrapper and registries", () => {
       () =>
         Effect.gen(function* () {
           const fixtures = yield* Fixtures;
-          const devnet = yield* Devnet;
-          const { alice, carol } = devnet.accounts;
-          const ens = ensforge(devnet, { account: alice });
-          const fusesOf = (name: string) =>
-            v1Owners(devnet, name).pipe(Effect.map(({ wrapped }) => wrapped?.[1] ?? 0));
+          const { accounts } = yield* Devnet;
+          const chain = yield* Chain;
+          const clients = yield* Clients;
+          const { alice, carol } = accounts;
+          const ens = clients.make({ account: alice });
 
           // A parent-controlled child changes hands at its parent's word.
           const controlled = fixtures.byId("v1.wrapped.sub").name;
-          yield* isolated(
-            devnet,
+          yield* chain.isolated(
             Effect.gen(function* () {
               yield* Actions.subname.updateSync(ens, { name: controlled, owner: carol });
-              assert.strictEqual((yield* v1Owners(devnet, controlled)).wrapped?.[0], carol);
+              assert.strictEqual((yield* v1Owners(controlled)).wrapped?.[0], carol);
             }),
           );
           // An emancipated child cannot be taken back.
@@ -84,8 +86,7 @@ describe("subnames, wrapper and registries", () => {
           );
           // A locked parent emancipates its new child.
           const locked = fixtures.byId("v1.wrapped.locked").name;
-          yield* isolated(
-            devnet,
+          yield* chain.isolated(
             Effect.gen(function* () {
               const child = `free.${locked}`;
               yield* Actions.subname.createSync(ens, {
@@ -94,7 +95,7 @@ describe("subnames, wrapper and registries", () => {
                 fuses: ["parentCannotControl"],
               });
               assert.strictEqual(
-                (yield* fusesOf(child)) & fuse.parentCannotControl,
+                ((yield* v1Owners(child)).wrapped?.[1] ?? 0) & fuse.parentCannotControl,
                 fuse.parentCannotControl,
               );
             }),
@@ -108,18 +109,17 @@ describe("subnames, wrapper and registries", () => {
       () =>
         Effect.gen(function* () {
           const fixtures = yield* Fixtures;
-          const devnet = yield* Devnet;
-          const { alice } = devnet.accounts;
-          const ens = ensforge(devnet, { account: alice });
-          const fusesOf = (name: string) =>
-            v1Owners(devnet, name).pipe(Effect.map(({ wrapped }) => wrapped?.[1] ?? 0));
+          const { accounts } = yield* Devnet;
+          const chain = yield* Chain;
+          const clients = yield* Clients;
+          const { alice } = accounts;
+          const ens = clients.make({ account: alice });
 
           const plain = fixtures.byId("records.v1").name;
-          yield* isolated(
-            devnet,
+          yield* chain.isolated(
             Effect.gen(function* () {
               yield* Actions.wrapper.wrapSync(ens, { name: plain, fuses: ["cannotUnwrap"] });
-              const { wrapped } = yield* v1Owners(devnet, plain);
+              const { wrapped } = yield* v1Owners(plain);
               assert.strictEqual(wrapped?.[0], alice);
               assert.strictEqual(
                 (wrapped?.[1] ?? 0) & (fuse.cannotUnwrap | fuse.parentCannotControl),
@@ -128,20 +128,18 @@ describe("subnames, wrapper and registries", () => {
             }),
           );
           const wrappedName = fixtures.byId("v1.wrapped").name;
-          yield* isolated(
-            devnet,
+          yield* chain.isolated(
             Effect.gen(function* () {
               yield* Actions.wrapper.unwrapSync(ens, { name: wrappedName });
-              assert.strictEqual((yield* v1Owners(devnet, wrappedName)).registry, alice);
+              assert.strictEqual((yield* v1Owners(wrappedName)).registry, alice);
             }),
           );
           const locked = fixtures.byId("v1.wrapped.locked").name;
-          yield* isolated(
-            devnet,
+          yield* chain.isolated(
             Effect.gen(function* () {
               yield* Actions.wrapper.setFusesSync(ens, { name: locked, fuses: ["cannotTransfer"] });
               assert.strictEqual(
-                (yield* fusesOf(locked)) & fuse.cannotTransfer,
+                ((yield* v1Owners(locked)).wrapped?.[1] ?? 0) & fuse.cannotTransfer,
                 fuse.cannotTransfer,
               );
             }),
@@ -166,32 +164,35 @@ describe("subnames, wrapper and registries", () => {
       () =>
         Effect.gen(function* () {
           const fixtures = yield* Fixtures;
-          const devnet = yield* Devnet;
-          const ens = ensforge(devnet, { account: devnet.accounts.alice });
+          const { accounts } = yield* Devnet;
+          const chain = yield* Chain;
+          const clients = yield* Clients;
+          const ens = clients.make({ account: accounts.alice });
           const child = fixtures.byId("v1.wrapped.sub.emancipated").name;
-          const parent = child.slice(child.indexOf(".") + 1);
-          const expiryOf = (name: string) =>
-            v1Owners(devnet, name).pipe(Effect.map(({ wrapped }) => wrapped?.[2] ?? 0n));
+          const parent = Name.parse(child).parent ?? assert.fail("a subname has a parent");
 
-          yield* isolated(
-            devnet,
+          yield* chain.isolated(
             Effect.gen(function* () {
               // Renewing the parent through ETHRenewerV1 extends its wrapper expiry too.
-              yield* Actions.registration.renewSync(ens, { names: parent, duration: 31_536_000n });
-              const before = yield* expiryOf(child);
-              const limit = yield* expiryOf(parent);
-              assert.isTrue(limit > before + 86_400n, "the parent outlives the child");
+              yield* Actions.registration.renewSync(ens, {
+                names: parent,
+                duration: Duration.years(1),
+              });
+              const before = (yield* v1Owners(child)).wrapped?.[2] ?? 0n;
+              const limit = (yield* v1Owners(parent)).wrapped?.[2] ?? 0n;
+              assert.isTrue(limit > before + Duration.days(1), "the parent outlives the child");
 
               yield* Actions.wrapper.setChildFusesSync(ens, {
                 name: child,
-                expiry: before + 86_400n,
+                expiry: before + Duration.days(1),
               });
-              assert.strictEqual(yield* expiryOf(child), before + 86_400n);
+              assert.strictEqual((yield* v1Owners(child)).wrapped?.[2], before + Duration.days(1));
+
               yield* Actions.wrapper.setChildFusesSync(ens, {
                 name: child,
-                expiry: limit + 86_400n,
+                expiry: limit + Duration.days(1),
               });
-              assert.strictEqual(yield* expiryOf(child), limit);
+              assert.strictEqual((yield* v1Owners(child)).wrapped?.[2], limit);
             }),
           );
         }),
@@ -203,13 +204,14 @@ describe("subnames, wrapper and registries", () => {
       () =>
         Effect.gen(function* () {
           const fixtures = yield* Fixtures;
-          const devnet = yield* Devnet;
-          const { alice, carol } = devnet.accounts;
-          const ens = ensforge(devnet, { account: alice });
+          const { accounts } = yield* Devnet;
+          const chain = yield* Chain;
+          const clients = yield* Clients;
+          const { alice, carol } = accounts;
+          const ens = clients.make({ account: alice });
           const parent = fixtures.byId("v2.registered").name;
 
-          yield* isolated(
-            devnet,
+          yield* chain.isolated(
             Effect.gen(function* () {
               const { plan } = yield* Actions.subname.createSync(ens, {
                 name: `kid.${parent}`,
@@ -221,14 +223,12 @@ describe("subnames, wrapper and registries", () => {
               );
               const registry = (yield* Actions.registry.get(ens, { name: parent }))?.address;
               if (registry === undefined) return assert.fail("no registry");
-              const owner = yield* Effect.promise(() =>
-                devnet.client.readContract({
-                  address: registry,
-                  abi: Abis.v2.permissionedRegistry,
-                  functionName: "findOwner",
-                  args: ["kid"],
-                }),
-              );
+              const owner = yield* chain.read({
+                address: registry,
+                abi: Abis.v2.permissionedRegistry,
+                functionName: "findOwner",
+                args: ["kid"],
+              });
               assert.strictEqual(owner, carol);
 
               yield* Actions.subname.removeSync(ens, { name: `kid.${parent}` });
@@ -247,12 +247,13 @@ describe("subnames, wrapper and registries", () => {
       () =>
         Effect.gen(function* () {
           const fixtures = yield* Fixtures;
-          const devnet = yield* Devnet;
-          const ens = ensforge(devnet, { account: devnet.accounts.alice });
+          const { accounts } = yield* Devnet;
+          const chain = yield* Chain;
+          const clients = yield* Clients;
+          const ens = clients.make({ account: accounts.alice });
           const name = fixtures.byId("v2.registered").name;
 
-          yield* isolated(
-            devnet,
+          yield* chain.isolated(
             Effect.gen(function* () {
               const { registry } = yield* Actions.registry.deploySync(ens, { attachTo: name });
               const attached = yield* Actions.registry.get(ens, { name });

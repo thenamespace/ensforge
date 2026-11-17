@@ -3,13 +3,15 @@ import { Effect } from "effect";
 
 import { Abis, Roles } from "@ensforge/contracts";
 import { Actions as HcaActions } from "@ensforge/hca/effect";
+import { Duration, Name } from "@ensforge/sdk";
 import { Actions, type Errors } from "@ensforge/sdk/effect";
-import { Devnet, type DevnetInstance } from "@ensforge/test-devnet";
+import { Chain, Devnet } from "@ensforge/test-devnet";
 import { Fixtures } from "@ensforge/test-fixtures";
 import {
   bytesToHex,
   decodeErrorResult,
   encodeFunctionData,
+  erc20Abi,
   keccak256,
   namehash,
   toHex,
@@ -22,14 +24,14 @@ import {
 } from "viem";
 import { packetToBytes } from "viem/ens";
 
-import { ensforge, isolated, onProfile } from "../support/chain.ts";
+import { Clients } from "../support/clients.ts";
+import { ethEntry } from "../support/contracts.ts";
 import { ownerText, RecordType, txtProof, type Tampering } from "../support/dnssec.ts";
-import { ethEntry } from "./support.ts";
+import { onProfile } from "../support/lane.ts";
 
 // Each contract error the SDK maps (`revertMap`) is raised here by a deployed contract, so the
 // mapping matches what the contracts really revert with. `revert-map.test.ts` lists the rest.
 
-const year = 31_536_000n;
 const stranger = "0x000000000000000000000000000000000000dEaD";
 
 type Call = {
@@ -41,35 +43,24 @@ type Call = {
 };
 
 /** The name of the ENS error `call` reverts with. */
-const revertOf = (devnet: DevnetInstance, { from, to, abi, functionName, args }: Call) =>
-  Effect.promise(() =>
-    devnet.client
-      .call({ account: from, to, data: encodeFunctionData({ abi, functionName, args } as never) })
-      .then(
-        () => "no revert",
-        (error: BaseError) => {
-          const reverted = error.walk(
-            (cause) => typeof (cause as { data?: unknown }).data === "string",
-          ) as { readonly data: Hex } | null;
-          return reverted === null
-            ? "no revert data"
-            : decodeErrorResult({ abi: Abis.shared.errors, data: reverted.data }).errorName;
-        },
-      ),
-  );
+const revertOf = Effect.fnUntraced(function* ({ from, to, abi, functionName, args }: Call) {
+  const chain = yield* Chain;
+  const data = encodeFunctionData({ abi, functionName, args } as never);
 
-const write = (devnet: DevnetInstance, { from, to, abi, functionName, args }: Call) =>
-  Effect.promise(async () => {
-    const hash = await devnet.client.writeContract({
-      account: from,
-      chain: devnet.chain,
-      address: to,
-      abi,
-      functionName,
-      args,
-    } as never);
-    await devnet.client.waitForTransactionReceipt({ hash });
-  });
+  return yield* chain.call({ account: from, to, data }).pipe(
+    Effect.match({
+      onSuccess: () => "no revert",
+      onFailure: (error) => {
+        const reverted = (error.cause as BaseError).walk(
+          (cause) => typeof (cause as { data?: unknown }).data === "string",
+        ) as { readonly data: Hex } | null;
+        return reverted === null
+          ? "no revert data"
+          : decodeErrorResult({ abi: Abis.shared.errors, data: reverted.data }).errorName;
+      },
+    }),
+  );
+});
 
 /** The contract error an ensforge call failed with, from its error context. */
 const revertName = <A>(effect: Effect.Effect<A, Errors.AnyError>) =>
@@ -88,37 +79,31 @@ describe("contract errors", () => {
       Effect.gen(function* () {
         const fixtures = yield* Fixtures;
         const devnet = yield* Devnet;
+        const chain = yield* Chain;
+        const { reader } = yield* Clients;
         const { alice, carol, user } = devnet.accounts;
-        const tokenOf = (id: string) =>
-          Effect.map(
-            ethEntry(devnet, fixtures.byId(id).name.slice(0, -".eth".length)),
-            (entry) => entry.tokenId,
-          );
-        const registered = yield* tokenOf("v2.registered");
-        const delegated = yield* tokenOf("v2.roles");
-        const expired = yield* tokenOf("v2.expired");
+        const registered = (yield* ethEntry(fixtures.byId("v2.registered").name)).tokenId;
+        const delegated = (yield* ethEntry(fixtures.byId("v2.roles").name)).tokenId;
+        const expired = (yield* ethEntry(fixtures.byId("v2.expired").name)).tokenId;
+
         // A child in a user registry: its expiry is set there, and never lowered.
-        const child = fixtures.byId("v2.subnames").name;
-        const [childLabel = "", ...rest] = child.split(".");
-        const subregistry = yield* Actions.registry.get(ensforge(devnet), { name: rest.join(".") });
-        if (subregistry === null) return assert.fail(`${child} has no parent registry`);
-        const childToken = yield* Effect.promise(
-          () =>
-            devnet.client.readContract({
-              address: subregistry.address,
-              abi: Abis.v2.permissionedRegistry,
-              functionName: "findTokenId",
-              args: [childLabel],
-            }) as Promise<bigint>,
-        );
+        const child = Name.parse(fixtures.byId("v2.subnames").name);
+        const subregistry = yield* Actions.registry.get(reader, {
+          name: child.parent ?? assert.fail("a subname has a parent"),
+        });
+        if (subregistry === null) return assert.fail(`${child.parent} has no registry`);
+        const childToken = yield* chain.read({
+          address: subregistry.address,
+          abi: Abis.v2.permissionedRegistry,
+          functionName: "findTokenId",
+          args: [child.label],
+        });
+
         const registry = {
-          to: devnet.contracts["v2.ethRegistry"] as Address,
+          to: devnet.contract("v2.ethRegistry"),
           abi: Abis.v2.permissionedRegistry as Abi,
         };
-        const wrapper = {
-          to: devnet.contracts["v1.nameWrapper"] as Address,
-          abi: Abis.v1.nameWrapper as Abi,
-        };
+        const wrapper = { to: devnet.contract("v1.nameWrapper"), abi: Abis.v1.nameWrapper as Abi };
         const transfer = (from: Address, owner: Address, token: bigint) => ({
           ...registry,
           from,
@@ -177,7 +162,7 @@ describe("contract errors", () => {
         };
 
         for (const [error, call] of Object.entries(cases)) {
-          assert.strictEqual(yield* revertOf(devnet, call), error);
+          assert.strictEqual(yield* revertOf(call), error);
         }
       }),
     );
@@ -186,14 +171,15 @@ describe("contract errors", () => {
       Effect.gen(function* () {
         const fixtures = yield* Fixtures;
         const devnet = yield* Devnet;
+        const chain = yield* Chain;
         const { alice, user } = devnet.accounts;
         const registrar = {
-          to: devnet.contracts["v2.ethRegistrar"] as Address,
+          to: devnet.contract("v2.ethRegistrar"),
           abi: Abis.v2.ethRegistrar as Abi,
         };
-        const usdc = devnet.contracts["v2.usdc"] as Address;
+        const usdc = devnet.contract("v2.usdc");
         const secret = keccak256(toHex("reverts"));
-        const taken = fixtures.byId("v2.registered").name.slice(0, -".eth".length);
+        const taken = Name.parse(fixtures.byId("v2.registered").name).label;
         const register = (
           from: Address,
           label: string,
@@ -208,33 +194,35 @@ describe("contract errors", () => {
             secret,
             zeroAddress,
             zeroAddress,
-            options.duration ?? year,
+            options.duration ?? Duration.years(1),
             options.token ?? usdc,
             zeroHash,
           ],
         });
-        const commitmentOf = (label: string, duration = year) =>
-          Effect.promise(
-            () =>
-              devnet.client.readContract({
-                ...registrar,
-                address: registrar.to,
-                functionName: "makeCommitment",
-                args: [label, alice, secret, zeroAddress, zeroAddress, duration, zeroHash],
-              }) as Promise<Hex>,
-          );
-        const commit = (commitment: Hex) =>
-          write(devnet, { ...registrar, from: alice, functionName: "commit", args: [commitment] });
+        const commit = Effect.fnUntraced(function* (label: string, duration = Duration.years(1)) {
+          const commitment = yield* chain.read({
+            address: registrar.to,
+            abi: Abis.v2.ethRegistrar,
+            functionName: "makeCommitment",
+            args: [label, alice, secret, zeroAddress, zeroAddress, duration, zeroHash],
+          });
+          yield* chain.write({
+            address: registrar.to,
+            abi: Abis.v2.ethRegistrar,
+            functionName: "commit",
+            args: [commitment],
+            account: alice,
+          });
+          return commitment;
+        });
 
-        yield* isolated(
-          devnet,
+        yield* chain.isolated(
           Effect.gen(function* () {
-            const plain = yield* commitmentOf("qqqqq");
-            yield* commit(plain);
-            yield* commit(yield* commitmentOf("rrrrr", 1n));
-            yield* commit(yield* commitmentOf(taken));
+            const plain = yield* commit("qqqqq");
+            yield* commit("rrrrr", 1n);
+            yield* commit(taken);
             assert.strictEqual(
-              yield* revertOf(devnet, {
+              yield* revertOf({
                 ...registrar,
                 from: alice,
                 functionName: "commit",
@@ -242,48 +230,38 @@ describe("contract errors", () => {
               }),
               "UnexpiredCommitmentExists",
             );
-            assert.strictEqual(
-              yield* revertOf(devnet, register(alice, "qqqqq")),
-              "CommitmentTooNew",
-            );
+            assert.strictEqual(yield* revertOf(register(alice, "qqqqq")), "CommitmentTooNew");
 
-            yield* Effect.promise(async () => {
-              await devnet.client.increaseTime({ seconds: 120 });
-              await devnet.client.mine({ blocks: 1 });
-            });
+            yield* chain.increaseTime(120);
+            yield* chain.mine();
             assert.strictEqual(
-              yield* revertOf(devnet, register(user, "qqqqq")),
+              yield* revertOf(register(user, "qqqqq")),
               "ERC20InsufficientAllowance",
             );
-            yield* write(devnet, {
-              from: user,
-              to: usdc,
-              abi: Abis.shared.erc20 as Abi,
+            yield* chain.write({
+              address: usdc,
+              abi: erc20Abi,
               functionName: "approve",
               args: [registrar.to, 10n ** 30n],
+              account: user,
             });
             assert.strictEqual(
-              yield* revertOf(devnet, register(user, "qqqqq")),
+              yield* revertOf(register(user, "qqqqq")),
               "ERC20InsufficientBalance",
             );
             assert.strictEqual(
-              yield* revertOf(devnet, register(alice, "qqqqq", { token: stranger })),
+              yield* revertOf(register(alice, "qqqqq", { token: stranger })),
               "PaymentTokenNotSupported",
             );
             assert.strictEqual(
-              yield* revertOf(devnet, register(alice, "rrrrr", { duration: 1n })),
+              yield* revertOf(register(alice, "rrrrr", { duration: 1n })),
               "DurationTooShort",
             );
-            assert.strictEqual(yield* revertOf(devnet, register(alice, taken)), "NameNotAvailable");
+            assert.strictEqual(yield* revertOf(register(alice, taken)), "NameNotAvailable");
 
-            yield* Effect.promise(async () => {
-              await devnet.client.increaseTime({ seconds: 8 * 86_400 });
-              await devnet.client.mine({ blocks: 1 });
-            });
-            assert.strictEqual(
-              yield* revertOf(devnet, register(alice, "qqqqq")),
-              "CommitmentTooOld",
-            );
+            yield* chain.increaseTime(Number(Duration.days(8)));
+            yield* chain.mine();
+            assert.strictEqual(yield* revertOf(register(alice, "qqqqq")), "CommitmentTooOld");
           }),
         );
       }),
@@ -292,20 +270,21 @@ describe("contract errors", () => {
     it.effect("come from the DNSSEC oracle and the DNS registrars", () =>
       Effect.gen(function* () {
         const devnet = yield* Devnet;
+        const chain = yield* Chain;
         const { alice } = devnet.accounts;
-        const at = Number((yield* Effect.promise(() => devnet.client.getBlock())).timestamp);
+        const at = Number(yield* chain.now);
         const name = "reverts-dns.com";
         const owner = [ownerText(alice)];
         const proof = (tampered: Tampering = {}, inception = at - 60) =>
           txtProof(name, owner, inception, tampered);
         const oracle = {
-          to: devnet.contracts["v1.dnssecOracle"] as Address,
+          to: devnet.contract("v1.dnssecOracle"),
           abi: Abis.v1.dnssecOracle as Abi,
           from: alice,
           functionName: "verifyRRSet",
         };
         const registrar = {
-          to: devnet.contracts["v1.dnsRegistrar"] as Address,
+          to: devnet.contract("v1.dnsRegistrar"),
           abi: Abis.v1.dnsRegistrar as Abi,
           from: alice,
           functionName: "proveAndClaim",
@@ -342,7 +321,7 @@ describe("contract errors", () => {
             txtProof("reverts-dns.test", owner, at - 60),
           ),
           TLDNotPublic: {
-            to: devnet.contracts["v2.temporaryDnsRegistrar"] as Address,
+            to: devnet.contract("v2.temporaryDnsRegistrar"),
             abi: Abis.v2.temporaryDnsRegistrar as Abi,
             from: alice,
             functionName: "syncTLD",
@@ -350,18 +329,20 @@ describe("contract errors", () => {
           },
         };
         for (const [error, call] of Object.entries(cases)) {
-          assert.strictEqual(yield* revertOf(devnet, call), error, error);
+          assert.strictEqual(yield* revertOf(call), error, error);
         }
 
         // DNSRegistrar takes no proof older than the one it imported.
-        yield* isolated(
-          devnet,
+        yield* chain.isolated(
           Effect.gen(function* () {
-            yield* write(devnet, claim(name, proof()));
-            assert.strictEqual(
-              yield* revertOf(devnet, claim(name, proof({}, at - 3600))),
-              "StaleProof",
-            );
+            yield* chain.write({
+              address: registrar.to,
+              abi: Abis.v1.dnsRegistrar,
+              functionName: "proveAndClaim",
+              args: [bytesToHex(packetToBytes(name)), proof()],
+              account: alice,
+            });
+            assert.strictEqual(yield* revertOf(claim(name, proof({}, at - 3600))), "StaleProof");
           }),
         );
       }),
@@ -370,10 +351,11 @@ describe("contract errors", () => {
     it.effect("come from the Universal Resolver, through ensforge's reads", () =>
       Effect.gen(function* () {
         const fixtures = yield* Fixtures;
-        const devnet = yield* Devnet;
+        const clients = yield* Clients;
+
         assert.strictEqual(
           yield* revertName(
-            Actions.record.getText(ensforge(devnet), {
+            Actions.record.getText(clients.reader, {
               name: fixtures.byId("resolver.none").name,
               key: "url",
               strict: true,
@@ -383,7 +365,7 @@ describe("contract errors", () => {
         );
         assert.strictEqual(
           yield* revertName(
-            Actions.record.getText(ensforge(devnet, { ccipRead: false }), {
+            Actions.record.getText(clients.make({ ccipRead: false }), {
               name: fixtures.byId("resolver.offchain").name,
               key: "url",
             }),
@@ -395,13 +377,12 @@ describe("contract errors", () => {
 
     it.effect("come from the HCA", () =>
       Effect.gen(function* () {
-        const fixtures = yield* Fixtures;
-        const devnet = yield* Devnet;
-        const { name, facts } = fixtures.byId("v2.registered");
-        const ens = ensforge(devnet, { account: facts["owner"] as Address });
+        const chain = yield* Chain;
+        const clients = yield* Clients;
+        const { name, facts } = (yield* Fixtures).byId("v2.registered");
+        const ens = clients.make({ account: facts["owner"] as Address });
 
-        yield* isolated(
-          devnet,
+        yield* chain.isolated(
           Effect.gen(function* () {
             yield* HcaActions.hca.deploySync(ens, {});
             const account = yield* HcaActions.hca.predictAddress(ens, {});

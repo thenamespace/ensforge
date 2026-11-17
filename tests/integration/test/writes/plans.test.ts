@@ -1,35 +1,21 @@
 import { assert, describe } from "@effect/vitest";
-import { Deferred, Effect, Fiber } from "effect";
+import { Deferred, Effect, Exit, Fiber } from "effect";
 
-import { Plan, type Write } from "@ensforge/sdk";
+import { Duration, Plan, type Write } from "@ensforge/sdk";
 import { Actions } from "@ensforge/sdk/effect";
-import { Devnet, type DevnetInstance } from "@ensforge/test-devnet";
+import { Chain, Devnet } from "@ensforge/test-devnet";
 import { Fixtures } from "@ensforge/test-fixtures";
 import { expectFailure } from "@ensforge/test-harness";
 import type { Hex } from "viem";
 
-import { ensforge, isolated, onProfile, passWaits } from "../support/chain.ts";
-import { testWallet, type WalletOptions } from "../support/wallet.ts";
-import { ethEntry } from "./support.ts";
-
-const year = 31_536_000n;
-const registration = { names: "qqqqq.eth", duration: year } as const;
-
-const sends = (methods: readonly string[]) =>
-  methods.filter((method) => method === "eth_sendTransaction").length;
-
-/** Alice's client on `storage`, with a test wallet. */
-const alice = (devnet: DevnetInstance, storage: Plan.Storage, wallet: WalletOptions = {}) => {
-  const signer = testWallet(devnet, devnet.accounts.alice, wallet);
-  return {
-    ens: ensforge(devnet, { account: devnet.accounts.alice, wallet: signer, storage }),
-    wallet: signer,
-  };
-};
+import { Clients, type Client } from "../support/clients.ts";
+import { ethEntry } from "../support/contracts.ts";
+import { onProfile } from "../support/lane.ts";
+import { Wallets } from "../support/wallets.ts";
 
 /** The id of the one saved plan that did not complete (an interrupted plan is `failed`). */
-const unfinishedId = (devnet: DevnetInstance, storage: Plan.Storage) =>
-  Actions.plan.list(alice(devnet, storage).ens, {}).pipe(
+const unfinishedId = (ens: Client) =>
+  Actions.plan.list(ens, {}).pipe(
     Effect.map((records) => {
       const unfinished = records.filter((record) => record.status !== "completed");
       assert.strictEqual(unfinished.length, 1);
@@ -43,33 +29,40 @@ describe("plan runtime", () => {
       "resumes an interrupted registration without committing again",
       () =>
         Effect.gen(function* () {
-          const devnet = yield* Devnet;
+          const { accounts } = yield* Devnet;
+          const chain = yield* Chain;
+          const clients = yield* Clients;
+          const wallets = yield* Wallets;
           const storage = Plan.memoryStorage();
+          const options = { names: "qqqqq.eth", duration: Duration.years(1) } as const;
 
-          yield* isolated(
-            devnet,
+          yield* chain.isolated(
             Effect.gen(function* () {
               // The user signs the commit, then closes the reveal's prompt.
-              const first = alice(devnet, storage, { rejectAfter: 1 });
+              const first = clients.make({
+                account: accounts.alice,
+                wallet: wallets.make(accounts.alice, { rejectAfter: 1 }),
+                storage,
+              });
               yield* expectFailure(
-                Actions.registration.registerSync(first.ens, {
-                  ...registration,
-                  onStep: passWaits(devnet),
-                }),
+                Actions.registration.registerSync(first, { ...options, onStep: chain.passWaits }),
                 { _tag: "UserRejectedError", code: "USER_REJECTED" },
               );
-              const id = yield* unfinishedId(devnet, storage);
-              const record = yield* Actions.plan.get(first.ens, { id });
+              const id = yield* unfinishedId(first);
+              const record = yield* Actions.plan.get(first, { id });
               assert.deepStrictEqual(Object.keys(record?.submitted ?? {}), ["commit"]);
 
-              const second = alice(devnet, storage);
-              yield* Actions.plan.resumeSync(second.ens, { id, onStep: passWaits(devnet) });
-              assert.strictEqual(sends(second.wallet.methods), 2, "approve and register only");
-              assert.strictEqual((yield* ethEntry(devnet, "qqqqq")).owner, devnet.accounts.alice);
+              const wallet = wallets.make(accounts.alice);
+              const second = clients.make({ account: accounts.alice, wallet, storage });
+              yield* Actions.plan.resumeSync(second, { id, onStep: chain.passWaits });
+
               assert.strictEqual(
-                (yield* Actions.plan.get(second.ens, { id }))?.status,
-                "completed",
+                wallet.methods.filter((method) => method === "eth_sendTransaction").length,
+                2,
+                "approve and register only",
               );
+              assert.strictEqual((yield* ethEntry("qqqqq.eth")).owner, accounts.alice);
+              assert.strictEqual((yield* Actions.plan.get(second, { id }))?.status, "completed");
             }),
           );
         }),
@@ -80,20 +73,27 @@ describe("plan runtime", () => {
       "confirms a submitted step on resume, and sends a dropped one again",
       () =>
         Effect.gen(function* () {
-          const devnet = yield* Devnet;
+          const { accounts } = yield* Devnet;
+          const chain = yield* Chain;
+          const clients = yield* Clients;
+          const wallets = yield* Wallets;
 
           for (const dropped of [false, true]) {
             const storage = Plan.memoryStorage();
-            yield* isolated(
-              devnet,
+            yield* chain.isolated(
               Effect.gen(function* () {
                 // The commit is submitted but never mined before the process stops.
-                yield* Effect.promise(() => devnet.client.setAutomine(false));
+                yield* chain.setAutomine(false);
                 const submitted = yield* Deferred.make<Hex | undefined>();
-                const first = alice(devnet, storage);
+                const first = clients.make({
+                  account: accounts.alice,
+                  wallet: wallets.make(accounts.alice),
+                  storage,
+                });
                 const run = yield* Effect.forkChild(
-                  Actions.registration.registerSync(first.ens, {
-                    ...registration,
+                  Actions.registration.registerSync(first, {
+                    names: "qqqqq.eth",
+                    duration: Duration.years(1),
                     onStep: (event) => {
                       if (event.status === "submitted") {
                         Deferred.doneUnsafe(submitted, Effect.succeed(event.hashes?.[0]));
@@ -104,20 +104,21 @@ describe("plan runtime", () => {
                 const commit = yield* Deferred.await(submitted);
                 yield* Fiber.interrupt(run);
                 if (commit === undefined) return assert.fail("the commit was not submitted");
-                if (dropped)
-                  yield* Effect.promise(() => devnet.client.dropTransaction({ hash: commit }));
-                yield* Effect.promise(() => devnet.client.setAutomine(true));
+                if (dropped) yield* chain.dropTransaction(commit);
+                yield* chain.setAutomine(true);
 
-                const id = yield* unfinishedId(devnet, storage);
-                const second = alice(devnet, storage);
-                yield* Actions.plan.resumeSync(second.ens, { id, onStep: passWaits(devnet) });
+                const id = yield* unfinishedId(first);
+                const wallet = wallets.make(accounts.alice);
+                const second = clients.make({ account: accounts.alice, wallet, storage });
+                yield* Actions.plan.resumeSync(second, { id, onStep: chain.passWaits });
+
                 // approve + register, and the commit again only when it was dropped.
                 assert.strictEqual(
-                  sends(second.wallet.methods),
+                  wallet.methods.filter((method) => method === "eth_sendTransaction").length,
                   dropped ? 3 : 2,
                   `dropped: ${dropped}`,
                 );
-                assert.strictEqual((yield* ethEntry(devnet, "qqqqq")).owner, devnet.accounts.alice);
+                assert.strictEqual((yield* ethEntry("qqqqq.eth")).owner, accounts.alice);
               }),
             );
           }
@@ -127,60 +128,62 @@ describe("plan runtime", () => {
 
     it.effect("records a transaction the user replaced, and resumes from it", () =>
       Effect.gen(function* () {
-        const devnet = yield* Devnet;
+        const { accounts } = yield* Devnet;
+        const chain = yield* Chain;
+        const clients = yield* Clients;
+        const wallets = yield* Wallets;
         const storage = Plan.memoryStorage();
 
-        yield* isolated(
-          devnet,
+        yield* chain.isolated(
           Effect.gen(function* () {
-            yield* Effect.promise(() => devnet.client.setAutomine(false));
-            // @effect-diagnostics-next-line abortControllerInEffect:off
-            const controller = new AbortController();
-            let commit: Hex | undefined;
-            const first = alice(devnet, storage);
-            yield* Effect.promise(() =>
-              first.ens.registration
-                .registerSync({
-                  ...registration,
-                  signal: controller.signal,
-                  onStep: (event) => {
-                    if (event.status !== "submitted") return;
-                    commit = event.hashes?.[0];
-                    controller.abort();
-                  },
-                })
-                .catch(() => undefined),
-            );
-            if (commit === undefined) return assert.fail("the commit was not submitted");
-            // The user's wallet sped the commit up: same call, new transaction.
-            const original = yield* Effect.promise(() =>
-              devnet.client.getTransaction({ hash: commit as Hex }),
-            );
-            yield* Effect.promise(() => devnet.client.dropTransaction({ hash: commit as Hex }));
-            yield* Effect.promise(() => devnet.client.setAutomine(true));
-            const replacement = yield* Effect.promise(() =>
-              devnet.client.sendTransaction({
-                account: devnet.accounts.alice,
-                chain: devnet.chain,
-                to: original.to ?? undefined,
-                data: original.input,
+            yield* chain.setAutomine(false);
+            const submitted = yield* Deferred.make<Hex | undefined>();
+            const first = clients.make({
+              account: accounts.alice,
+              wallet: wallets.make(accounts.alice),
+              storage,
+            });
+            const run = yield* Effect.forkChild(
+              Actions.registration.registerSync(first, {
+                names: "qqqqq.eth",
+                duration: Duration.years(1),
+                onStep: (event) => {
+                  if (event.status === "submitted") {
+                    Deferred.doneUnsafe(submitted, Effect.succeed(event.hashes?.[0]));
+                  }
+                },
               }),
             );
-            yield* Effect.promise(() =>
-              devnet.client.waitForTransactionReceipt({ hash: replacement }),
-            );
+            const commit = yield* Deferred.await(submitted);
+            yield* Fiber.interrupt(run);
+            if (commit === undefined) return assert.fail("the commit was not submitted");
 
-            const id = yield* unfinishedId(devnet, storage);
-            const reconciled = yield* Actions.plan.reconcile(first.ens, {
+            // The user's wallet sped the commit up: same call, new transaction.
+            const original = yield* chain.transaction(commit);
+            yield* chain.dropTransaction(commit);
+            yield* chain.setAutomine(true);
+            const replacement = yield* chain.send({
+              account: accounts.alice,
+              chain: null,
+              to: original.to,
+              data: original.input,
+            });
+
+            const id = yield* unfinishedId(first);
+            const reconciled = yield* Actions.plan.reconcile(first, {
               id,
               step: "commit",
-              hash: replacement,
+              hash: replacement.transactionHash,
             });
-            assert.deepStrictEqual(reconciled.submitted["commit"], [replacement]);
+            assert.deepStrictEqual(reconciled.submitted["commit"], [replacement.transactionHash]);
 
-            const second = alice(devnet, storage);
-            yield* Actions.plan.resumeSync(second.ens, { id, onStep: passWaits(devnet) });
-            assert.strictEqual(sends(second.wallet.methods), 2);
+            const wallet = wallets.make(accounts.alice);
+            const second = clients.make({ account: accounts.alice, wallet, storage });
+            yield* Actions.plan.resumeSync(second, { id, onStep: chain.passWaits });
+            assert.strictEqual(
+              wallet.methods.filter((method) => method === "eth_sendTransaction").length,
+              2,
+            );
           }),
         );
       }),
@@ -190,23 +193,26 @@ describe("plan runtime", () => {
       "re-validates a plan prepared before its name changed",
       () =>
         Effect.gen(function* () {
-          const fixtures = yield* Fixtures;
-          const devnet = yield* Devnet;
-          const { carol, user } = devnet.accounts;
-          const name = fixtures.byId("v2.registered").name;
-          const storage = Plan.memoryStorage();
+          const { accounts } = yield* Devnet;
+          const chain = yield* Chain;
+          const clients = yield* Clients;
+          const wallets = yield* Wallets;
+          const { name } = (yield* Fixtures).byId("v2.registered");
+          const wallet = wallets.make(accounts.alice);
+          const ens = clients.make({ account: accounts.alice, wallet });
 
-          yield* isolated(
-            devnet,
+          yield* chain.isolated(
             Effect.gen(function* () {
-              const { ens, wallet } = alice(devnet, storage);
-              const plan = yield* Actions.name.transfer.prepare(ens, { name, to: carol });
+              const plan = yield* Actions.name.transfer.prepare(ens, { name, to: accounts.carol });
               // The name moves on before the prepared plan is sent.
-              yield* Actions.name.transferSync(ens, { name, to: user });
-              const before = sends(wallet.methods);
+              yield* Actions.name.transferSync(ens, { name, to: accounts.user });
+              const sent = wallet.methods.length;
 
               yield* expectFailure(Actions.plan.send(ens, { plan }), { _tag: "UnauthorizedError" });
-              assert.strictEqual(sends(wallet.methods), before, "nothing sent");
+              assert.isFalse(
+                wallet.methods.slice(sent).includes("eth_sendTransaction"),
+                "nothing sent",
+              );
             }),
           );
         }),
@@ -215,21 +221,23 @@ describe("plan runtime", () => {
 
     it.effect("reports each step as it waits, is submitted and is confirmed", () =>
       Effect.gen(function* () {
-        const devnet = yield* Devnet;
-        const storage = Plan.memoryStorage();
+        const { accounts } = yield* Devnet;
+        const chain = yield* Chain;
+        const clients = yield* Clients;
+        const ens = clients.make({ account: accounts.alice });
 
-        yield* isolated(
-          devnet,
+        yield* chain.isolated(
           Effect.gen(function* () {
             const events: string[] = [];
-            const advance = passWaits(devnet);
-            yield* Actions.registration.registerSync(alice(devnet, storage).ens, {
-              ...registration,
+            yield* Actions.registration.registerSync(ens, {
+              names: "qqqqq.eth",
+              duration: Duration.years(1),
               onStep: (event) => {
                 events.push(`${event.step.id}:${event.status}`);
-                advance(event);
+                chain.passWaits(event);
               },
             });
+
             assert.deepStrictEqual(events, [
               "commit:submitted",
               "commit:confirmed",
@@ -244,53 +252,63 @@ describe("plan runtime", () => {
 
     it.effect("resumes a routed plan only through its route", () =>
       Effect.gen(function* () {
-        const devnet = yield* Devnet;
-        const storage = Plan.memoryStorage();
+        const { accounts } = yield* Devnet;
+        const chain = yield* Chain;
+        const clients = yield* Clients;
+        const ens = clients.make({ account: accounts.alice, storage: Plan.memoryStorage() });
+        const options = { names: "qqqqq.eth", duration: Duration.years(1) } as const;
 
-        // A route that sends each step's calls as the signer's transactions; it can go down.
+        const run = Effect.runPromiseWith(yield* Effect.context<never>());
+
+        // A route that sends each step's calls as the signer's own transactions, each mined before
+        // the next; it can go down. Routes are called through Promises, the SDK's adapter boundary.
         let down = false;
         const route: Write.Via = {
           id: "test-route",
-          send: async (step) => {
-            if (down && step.id === "register") throw new Error("route down");
-            // Each call is mined before the next, as the signer's own transactions would be.
-            const hashes = await step.calls.reduce<Promise<readonly Hex[]>>(async (sent, item) => {
-              const done = await sent;
-              const hash = await devnet.client.sendTransaction({
-                account: devnet.accounts.alice,
-                chain: devnet.chain,
-                to: item.to,
-                data: item.data,
-                value: item.value,
-              });
-              await devnet.client.waitForTransactionReceipt({ hash });
-              return [...done, hash];
-            }, Promise.resolve([]));
-            const last = hashes.at(-1);
-            if (last === undefined) throw new Error("empty step");
-            return last;
-          },
-          status: async (reference) => {
-            const receipt = await devnet.client.waitForTransactionReceipt({
-              hash: reference as Hex,
-            });
-            return receipt.status === "success"
-              ? { status: "success", hashes: [receipt.transactionHash] }
-              : { status: "failed", reason: "reverted" };
-          },
+          send: (step) =>
+            run(
+              Effect.gen(function* () {
+                if (down && step.id === "register") return yield* Effect.die("route down");
+                const receipts = yield* Effect.forEach(step.calls, (call) =>
+                  chain.send({
+                    account: accounts.alice,
+                    chain: null,
+                    to: call.to,
+                    data: call.data,
+                    value: call.value,
+                  }),
+                );
+                const last = receipts.at(-1);
+                if (last === undefined) return yield* Effect.die("empty step");
+                return last.transactionHash;
+              }),
+            ),
+          status: (reference) =>
+            run(
+              chain
+                .receipt(reference as Hex)
+                .pipe(
+                  Effect.map((receipt) =>
+                    receipt.status === "success"
+                      ? { status: "success" as const, hashes: [receipt.transactionHash] }
+                      : { status: "failed" as const, reason: "reverted" },
+                  ),
+                ),
+            ),
         };
 
-        yield* isolated(
-          devnet,
+        yield* chain.isolated(
           Effect.gen(function* () {
-            const { ens } = alice(devnet, storage);
             down = true;
-            yield* Effect.promise(() =>
-              ens.registration
-                .registerSync({ ...registration, via: route, onStep: passWaits(devnet) })
-                .catch(() => undefined),
+            const failed = yield* Effect.exit(
+              Actions.registration.registerSync(ens, {
+                ...options,
+                via: route,
+                onStep: chain.passWaits,
+              }),
             );
-            const id = yield* unfinishedId(devnet, storage);
+            assert.isTrue(Exit.isFailure(failed));
+            const id = yield* unfinishedId(ens);
 
             // Sent through the route, the commit is only known to it.
             yield* expectFailure(Actions.plan.resume(ens, { id }), {
@@ -298,8 +316,8 @@ describe("plan runtime", () => {
               code: "PLAN_ROUTE_REQUIRED",
             });
             down = false;
-            yield* Actions.plan.resumeSync(ens, { id, via: route, onStep: passWaits(devnet) });
-            assert.strictEqual((yield* ethEntry(devnet, "qqqqq")).owner, devnet.accounts.alice);
+            yield* Actions.plan.resumeSync(ens, { id, via: route, onStep: chain.passWaits });
+            assert.strictEqual((yield* ethEntry("qqqqq.eth")).owner, accounts.alice);
           }),
         );
       }),

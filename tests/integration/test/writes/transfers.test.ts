@@ -2,12 +2,13 @@ import { assert, describe } from "@effect/vitest";
 import { Effect } from "effect";
 
 import { Actions } from "@ensforge/sdk/effect";
-import { Devnet } from "@ensforge/test-devnet";
+import { Chain, Devnet } from "@ensforge/test-devnet";
 import { Fixtures } from "@ensforge/test-fixtures";
 import { expectFailure } from "@ensforge/test-harness";
 
-import { ensforge, isolated, onProfile } from "../support/chain.ts";
-import { ethEntry, v1Owners } from "./support.ts";
+import { Clients } from "../support/clients.ts";
+import { ethEntry, v1Owners } from "../support/contracts.ts";
+import { onProfile } from "../support/lane.ts";
 
 describe("transfers and managers", () => {
   onProfile("mainnet-shaped")("mainnet-shaped", (it) => {
@@ -16,44 +17,44 @@ describe("transfers and managers", () => {
       () =>
         Effect.gen(function* () {
           const fixtures = yield* Fixtures;
-          const devnet = yield* Devnet;
-          const { alice, carol } = devnet.accounts;
-          const ens = ensforge(devnet, { account: alice });
+          const { accounts } = yield* Devnet;
+          const chain = yield* Chain;
+          const clients = yield* Clients;
+          const { alice, carol } = accounts;
+          const ens = clients.make({ account: alice });
           const unwrapped = fixtures.byId("records.v1").name;
           const wrapped = fixtures.byId("v1.wrapped").name;
 
-          yield* isolated(
-            devnet,
+          // `owner` (the default) moves the registrar token and the manager.
+          yield* chain.isolated(
             Effect.gen(function* () {
-              // `owner` (the default) moves the registrar token and the manager.
               yield* Actions.name.transferSync(ens, { name: unwrapped, to: carol });
-              assert.deepInclude(yield* v1Owners(devnet, unwrapped), {
+              assert.deepInclude(yield* v1Owners(unwrapped), {
                 registry: carol,
                 registrant: carol,
               });
             }),
           );
-          yield* isolated(
-            devnet,
+          yield* chain.isolated(
             Effect.gen(function* () {
               yield* Actions.name.transferSync(ens, {
                 name: unwrapped,
                 to: carol,
                 role: "registrant",
               });
-              assert.deepInclude(yield* v1Owners(devnet, unwrapped), {
+              assert.deepInclude(yield* v1Owners(unwrapped), {
                 registry: alice,
                 registrant: carol,
               });
             }),
           );
-          yield* isolated(
-            devnet,
+          yield* chain.isolated(
             Effect.gen(function* () {
               yield* Actions.name.transferSync(ens, { name: wrapped, to: carol });
-              assert.strictEqual((yield* v1Owners(devnet, wrapped)).wrapped?.[0], carol);
+              assert.strictEqual((yield* v1Owners(wrapped)).wrapped?.[0], carol);
             }),
           );
+
           yield* expectFailure(
             Actions.name.transfer(ens, {
               name: fixtures.byId("v1.wrapped.locked.cannot-transfer").name,
@@ -69,20 +70,20 @@ describe("transfers and managers", () => {
       "sets and reclaims the ENSv1 manager",
       () =>
         Effect.gen(function* () {
-          const fixtures = yield* Fixtures;
-          const devnet = yield* Devnet;
-          const { alice, carol } = devnet.accounts;
-          const ens = ensforge(devnet, { account: alice });
+          const { accounts } = yield* Devnet;
+          const chain = yield* Chain;
+          const clients = yield* Clients;
+          const ens = clients.make({ account: accounts.alice });
           // Alice holds the token; bob manages the name.
-          const name = fixtures.byId("v1.unwrapped.manager").name;
+          const { name } = (yield* Fixtures).byId("v1.unwrapped.manager");
 
-          yield* isolated(
-            devnet,
+          yield* chain.isolated(
             Effect.gen(function* () {
-              yield* Actions.name.setManagerSync(ens, { name, manager: carol });
-              assert.strictEqual((yield* v1Owners(devnet, name)).registry, carol);
+              yield* Actions.name.setManagerSync(ens, { name, manager: accounts.carol });
+              assert.strictEqual((yield* v1Owners(name)).registry, accounts.carol);
+
               yield* Actions.name.reclaimSync(ens, { name });
-              assert.strictEqual((yield* v1Owners(devnet, name)).registry, alice);
+              assert.strictEqual((yield* v1Owners(name)).registry, accounts.alice);
             }),
           );
         }),
@@ -94,33 +95,36 @@ describe("transfers and managers", () => {
       () =>
         Effect.gen(function* () {
           const fixtures = yield* Fixtures;
-          const devnet = yield* Devnet;
-          const { alice, carol } = devnet.accounts;
-          const ens = ensforge(devnet, { account: alice });
-          const label = (id: string) => fixtures.byId(id).name.slice(0, -".eth".length);
+          const { accounts } = yield* Devnet;
+          const chain = yield* Chain;
+          const clients = yield* Clients;
+          const ens = clients.make({ account: accounts.alice });
+          const registered = fixtures.byId("v2.registered").name;
+          const delegated = fixtures.byId("v2.roles").name;
 
-          yield* isolated(
-            devnet,
+          yield* chain.isolated(
             Effect.gen(function* () {
-              yield* Actions.name.transferSync(ens, {
-                name: fixtures.byId("v2.registered").name,
-                to: carol,
-              });
-              assert.strictEqual((yield* ethEntry(devnet, label("v2.registered"))).owner, carol);
+              yield* Actions.name.transferSync(ens, { name: registered, to: accounts.carol });
+              assert.strictEqual((yield* ethEntry(registered)).owner, accounts.carol);
             }),
           );
 
           // Another account holds a role: a safe transfer would leave it in place (GHSA-hvjh).
-          const delegated = fixtures.byId("v2.roles").name;
-          yield* expectFailure(Actions.name.transfer(ens, { name: delegated, to: carol }), {
-            _tag: "UnauthorizedError",
-            code: "TRANSFER_DISALLOWED",
-          });
-          yield* isolated(
-            devnet,
+          yield* expectFailure(
+            Actions.name.transfer(ens, { name: delegated, to: accounts.carol }),
+            {
+              _tag: "UnauthorizedError",
+              code: "TRANSFER_DISALLOWED",
+            },
+          );
+          yield* chain.isolated(
             Effect.gen(function* () {
-              yield* Actions.name.transferSync(ens, { name: delegated, to: carol, unsafe: true });
-              assert.strictEqual((yield* ethEntry(devnet, label("v2.roles"))).owner, carol);
+              yield* Actions.name.transferSync(ens, {
+                name: delegated,
+                to: accounts.carol,
+                unsafe: true,
+              });
+              assert.strictEqual((yield* ethEntry(delegated)).owner, accounts.carol);
             }),
           );
         }),
@@ -131,22 +135,18 @@ describe("transfers and managers", () => {
       "lets an approved operator transfer an ENSv2 name",
       () =>
         Effect.gen(function* () {
-          const fixtures = yield* Fixtures;
-          const devnet = yield* Devnet;
-          const { operator, user } = devnet.accounts;
-          const operated = fixtures.byId("v2.operator").name;
+          const { accounts } = yield* Devnet;
+          const chain = yield* Chain;
+          const clients = yield* Clients;
+          const { name } = (yield* Fixtures).byId("v2.operator");
 
-          yield* isolated(
-            devnet,
+          yield* chain.isolated(
             Effect.gen(function* () {
-              yield* Actions.name.transferSync(ensforge(devnet, { account: operator }), {
-                name: operated,
-                to: user,
+              yield* Actions.name.transferSync(clients.make({ account: accounts.operator }), {
+                name,
+                to: accounts.user,
               });
-              assert.strictEqual(
-                (yield* ethEntry(devnet, operated.slice(0, -".eth".length))).owner,
-                user,
-              );
+              assert.strictEqual((yield* ethEntry(name)).owner, accounts.user);
             }),
           );
         }),
@@ -158,13 +158,14 @@ describe("transfers and managers", () => {
       () =>
         Effect.gen(function* () {
           const fixtures = yield* Fixtures;
-          const devnet = yield* Devnet;
-          const { alice, bob, carol } = devnet.accounts;
+          const { accounts } = yield* Devnet;
+          const chain = yield* Chain;
+          const clients = yield* Clients;
+          const { alice, bob, carol } = accounts;
           const name = fixtures.byId("v2.registered").name;
-          const sender = ensforge(devnet, { account: alice });
+          const sender = clients.make({ account: alice });
 
-          yield* isolated(
-            devnet,
+          yield* chain.isolated(
             Effect.gen(function* () {
               const { resolver } = yield* Actions.resolver.createSync(sender, {
                 name,
@@ -173,7 +174,7 @@ describe("transfers and managers", () => {
               yield* Actions.resolver.setSync(sender, { name, resolver });
               yield* Actions.name.transferSync(sender, { name, to: carol, records: "handover" });
 
-              const recipient = ensforge(devnet, { account: carol });
+              const recipient = clients.make({ account: carol });
               yield* Actions.record.setSync(recipient, {
                 name,
                 texts: { url: "https://carol.example" },
@@ -193,7 +194,7 @@ describe("transfers and managers", () => {
 
           // Bob's resolver holds the records of several names; handing it over would give them all.
           yield* expectFailure(
-            Actions.name.transfer(ensforge(devnet, { account: bob }), {
+            Actions.name.transfer(clients.make({ account: bob }), {
               name: fixtures.byId("records.v2").name,
               to: carol,
               records: "handover",
