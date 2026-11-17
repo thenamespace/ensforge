@@ -462,7 +462,7 @@ const Actions.registration.registerSync.path: 'registration.registerSync'
 type Actions.registration.registerSync.ErrorType = CommitmentError | ConfigError | ContractRevertError | DnsError | GatewayError | IndexerError | InsufficientFundsError | InternalError | InvalidInputError | MigrationError | NameStateError | NetworkError | NotFoundError | PlanError | TransactionError | UnauthorizedError | UnsupportedError | UserRejectedError | WalletError
 type Actions.registration.registerSync.Options = register.Options & Write.Options & { confirmations?: number | undefined; timeout?: number | undefined; }
 type Actions.registration.registerSync.ReturnType = Result & { readonly receipt: TransactionReceipt; readonly receipts: readonly TransactionReceipt[]; } & { readonly secret: `0x${string}`; readonly names: readonly { readonly name: string; readonly tokenId: bigint; readonly expiry: bigint; }[]; readonly paid: bigint; }
-function Actions.registration.renew(client: ClientBase<{}>, options: renew.Options & Write.Options) => Effect<Result, AnyError, never>
+function Actions.registration.renew(client: ClientBase<{}>, options: renew.Options & Pick<Options, 'account' | 'via'> & Write.Options) => Effect<Result, AnyError, never>
 const Actions.registration.renew.prepare: ((client: ClientBase<{}>, options: Options & Pick<Options, 'account' | 'via'>) => Effect<Plan, AnyError, never>) & { path: string; }
 const Actions.registration.renew.simulate: ((client: ClientBase<{}>, options: Options & Pick<Options, 'account' | 'via'>) => Effect<Simulation, AnyError, never>) & { path: string; }
 const Actions.registration.renew.estimateGas: ((client: ClientBase<{}>, options: Options & Pick<Options, 'account' | 'via'>) => Effect<Estimate, AnyError, never>) & { path: string; }
