@@ -4,6 +4,7 @@ import { Abis } from "@ensforge/contracts";
 import {
   isAddressEqual,
   numberToHex,
+  pad,
   toEventSelector,
   zeroAddress,
   type Address,
@@ -15,6 +16,7 @@ import type { Client } from "../../client/types.js";
 import type { AnyError } from "../../errors/types.js";
 import { namehash } from "../../utils/Name.js";
 import type { LoadedName } from "../name/load.js";
+import * as Rpc from "../rpc/index.js";
 import { scanLogs, type BlockRange, type LogQuery } from "./scan.js";
 
 /** Topic 0 of every variant of the named events. */
@@ -150,12 +152,37 @@ const v2Logs = Effect.fnUntraced(function* (
     if (ids.size === before) break;
   }
 
+  // The record id the resolver uses now, for record events whose `Linked` predates the range.
+  const current =
+    resolver[0] === undefined
+      ? undefined
+      : yield* Rpc.readContractOrUndefined(client, {
+          address: resolver[0],
+          abi: Abis.v2.permissionedResolver,
+          functionName: "getRecordId",
+          args: [parts.node],
+          blockNumber: range.toBlock,
+        });
+  if (current !== undefined && current !== 0n) recordIds.add(word(current));
+
   const idTopics = [...ids].map(word);
   const registrars = known([v2.contracts.ethRegistrar, v2.migration.ethRenewerV1]);
-  // `.eth` and top-level registries are busy; transfers are only scanned in user registries.
-  const quiet =
-    !isAddressEqual(registry, v2.contracts.ethRegistry) &&
-    !isAddressEqual(registry, v2.contracts.rootRegistry);
+  // Transfers have no indexed token id. The `.eth` and root registries are busy: past a short
+  // range (a watch, a recent window) only transfers to or from the current owner are scanned.
+  const busy =
+    isAddressEqual(registry, v2.contracts.ethRegistry) ||
+    isAddressEqual(registry, v2.contracts.rootRegistry);
+  const owner = state.owner === null ? undefined : (pad(state.owner, { size: 32 }) as Hex);
+  const transferTopics = topics("TransferSingle", "TransferBatch");
+  const transferQueries: LogQuery[] =
+    !busy || range.toBlock - range.fromBlock <= 5_000n
+      ? [{ address: [registry], topics: [transferTopics] }]
+      : owner === undefined
+        ? []
+        : [
+            { address: [registry], topics: [transferTopics, null, owner] },
+            { address: [registry], topics: [transferTopics, null, null, owner] },
+          ];
   const second = yield* scan([
     {
       address: [registry],
@@ -173,9 +200,7 @@ const v2Logs = Effect.fnUntraced(function* (
     ...(recordIds.size === 0
       ? []
       : [{ address: resolver, topics: [recordKeyedResolverEvents, [...recordIds]] }]),
-    ...(quiet
-      ? [{ address: [registry], topics: [topics("TransferSingle", "TransferBatch")] }]
-      : []),
+    ...transferQueries,
   ]);
 
   const canonicalIds = new Set([...ids].map(canonical));
