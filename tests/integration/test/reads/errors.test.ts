@@ -143,6 +143,21 @@ describe("read errors", () => {
         });
       }),
     );
+
+    // The fixture's gateway cannot be reached here. An address read asks two calls in one
+    // request; their failure must surface like a text read's single call does.
+    it.effect("gateway failures fail address and text reads alike", () =>
+      Effect.gen(function* () {
+        const fixtures = yield* Fixtures;
+        const ens = ensforge(yield* Devnet);
+        const name = fixtures.byId("resolver.offchain").name;
+        const failed: ExpectedError = { _tag: "GatewayError", code: "GATEWAY_REQUEST_FAILED" };
+
+        yield* fails(() => ens.record.getText({ name, key: "url" }), failed);
+        yield* fails(() => ens.record.getAddress({ name }), failed);
+        yield* fails(() => ens.record.get({ name, texts: ["url"], addresses: ["eth"] }), failed);
+      }),
+    );
   });
 
   onProfile("v2-only")("v2-only", (it) => {

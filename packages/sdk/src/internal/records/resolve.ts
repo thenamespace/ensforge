@@ -65,19 +65,20 @@ export const resolveCalls = Effect.fnUntraced(function* (
       });
 
   const answered = results.map((result) => (isResult(result) ? result : undefined));
-  // When no call is answered, a strict read fails as a single call would: with the error the
-  // first call reverted with (e.g. no reachable resolver), or as a missing profile.
-  if (options.strict && !single && answered.every((result) => result === undefined)) {
+  // When no call is answered, the read ends as a single call would: with the error the first
+  // call failed with (a gateway failure, no reachable resolver), where a missing resolver or
+  // profile is an error only for strict reads.
+  if (!single && answered.every((result) => result === undefined)) {
     const first = results[0];
-    const error =
+    const failure =
       first === undefined || first === "0x"
         ? undefined
         : (fromRevert({ data: first }, { contract: resolved.resolver }) as AnyError);
-    return yield* Effect.fail(
-      error === undefined || error._tag === "ContractRevertError"
+    const error =
+      failure === undefined || failure._tag === "ContractRevertError"
         ? new UnsupportedError({ code: "RESOLVER_PROFILE_UNSUPPORTED" })
-        : error,
-    );
+        : failure;
+    if (options.strict || !noRecordCodes.has(error.code)) return yield* Effect.fail(error);
   }
   return { resolver: resolved.resolver, results: answered };
 });
