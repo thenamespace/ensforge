@@ -5,6 +5,7 @@
   "keywords": [
     "abi",
     "contracts",
+    "deployments",
     "ens",
     "ethereum",
     "typescript",
@@ -80,5 +81,8 @@
   },
   "peerDependencies": {
     "viem": "^2.57.0"
+  },
+  "engines": {
+    "node": ">=20.19"
   }
 }

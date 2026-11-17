@@ -4,6 +4,7 @@
   "description": "Effect Atom hooks and atoms for ENS in React",
   "keywords": [
     "effect",
+    "effect-atom",
     "ens",
     "ethereum",
     "hooks",
@@ -88,5 +89,8 @@
     "react": "^19.0.0",
     "scheduler": ">=0.25.0 <0.29.0",
     "viem": "^2.57.0"
+  },
+  "engines": {
+    "node": ">=20.19"
   }
 }

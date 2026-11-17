@@ -3,6 +3,7 @@
   "version": "0.6.1",
   "description": "Type-safe actions and utilities for ENS",
   "keywords": [
+    "effect",
     "ens",
     "ethereum",
     "name-service",
@@ -107,5 +108,8 @@
     "wagmi": {
       "optional": true
     }
+  },
+  "engines": {
+    "node": ">=20.19"
   }
 }

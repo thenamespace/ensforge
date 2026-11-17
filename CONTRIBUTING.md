@@ -30,7 +30,7 @@ declaration files.
 packages/contracts/ ENS ABIs, interfaces, roles and deployments
 packages/sdk/       Standalone ENS actions and Effect APIs
 packages/react/     Hooks, Effect Atom atoms and server rendering
-packages/hca/       Hidden Contract Account route and executors
+packages/hca/       Hosted Contract Account route and executors
 tests/harness/      Shared test harness for every test suite
 ```
 

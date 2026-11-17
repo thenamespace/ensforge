@@ -3,14 +3,14 @@
   "version": "0.6.1",
   "description": "ENS Hosted Contract Accounts: one-transaction writes, sessions and gasless execution",
   "keywords": [
+    "account-abstraction",
+    "effect",
     "ens",
     "ethereum",
-    "name-service",
-    "sdk",
+    "hca",
+    "sessions",
     "typescript",
-    "viem",
-    "wagmi",
-    "web3"
+    "viem"
   ],
   "homepage": "https://ensforge.com",
   "bugs": "https://github.com/thenamespace/ensforge/issues",
@@ -75,5 +75,8 @@
   "peerDependencies": {
     "effect": "^4.1.4",
     "viem": "^2.57.0"
+  },
+  "engines": {
+    "node": ">=20.19"
   }
 }
