@@ -17,6 +17,9 @@ const erc1155BatchReceived = toFunctionSelector(
  * (`DummyShapeshiftResolver` responses, `TestNameWrapperReentrancy`) deploy their own from the same
  * artifacts.
  */
+/** The image of `mock.avatarToken`'s tokens. */
+export const avatarImage = "https://ensforge.com/nft.png";
+
 export const mockSteps: readonly Step[] = [
   step("mocks.resolvers", (c) =>
     Effect.gen(function* () {
@@ -38,6 +41,12 @@ export const mockSteps: readonly Step[] = [
         yield* c.deploy(key, "mocks/HostileContract");
         if (mode !== 0) yield* c.write(key, "setMode", [mode]);
       }
+
+      // A token for NFT avatars, whose metadata is a `data:` URL with an image.
+      yield* c.deploy("mock.avatarToken", "mocks/AvatarToken");
+      yield* c.write("mock.avatarToken", "setMetadata", [
+        `data:application/json;base64,${Buffer.from(JSON.stringify({ image: avatarImage })).toString("base64")}`,
+      ]);
     }),
   ),
 

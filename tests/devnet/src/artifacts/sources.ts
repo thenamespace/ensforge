@@ -297,6 +297,11 @@ export const sources = {
     file: "HostileContract.sol",
     contract: "HostileContract",
   },
+  "mocks/AvatarToken": {
+    kind: "local",
+    file: "AvatarToken.sol",
+    contract: "AvatarToken",
+  },
 
   // Canonical singletons, placed at their mainnet addresses.
   "canonical/Multicall3": {
