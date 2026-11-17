@@ -753,6 +753,13 @@ const refusals: readonly Refusal[] = [
     options: (f) => ({ name: at("v1.subname")(f), fuses: ["parentCannotControl"] }),
     expected: nameState("NAME_NOT_WRAPPED"),
   },
+  {
+    label: "a stranger on a wrapped name",
+    path: "name.transfer",
+    account: "bob",
+    options: (f, d) => ({ name: at("v1.wrapped")(f), to: d.accounts.carol }),
+    expected: unauthorized("NOT_OWNER"),
+  },
   // Payment and migration.
   {
     label: "an account without funds",

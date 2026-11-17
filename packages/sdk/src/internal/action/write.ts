@@ -31,8 +31,10 @@ export type Explainer<options> = (
   account: Address,
 ) => Effect.Effect<AnyError | undefined, AnyError>;
 
+// An unmapped `require` string decodes as `Error(string)`: it names no ENS error either.
 const isOpaqueRevert = (error: AnyError): boolean =>
-  error._tag === "ContractRevertError" && error.context.revert?.errorName === undefined;
+  error._tag === "ContractRevertError" &&
+  (error.context.revert?.errorName === undefined || error.context.revert.errorName === "Error");
 
 /** Replaces an opaque revert with the explainer's error, keeping the revert as its cause. */
 const explained = <options>(
