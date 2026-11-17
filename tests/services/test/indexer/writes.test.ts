@@ -3,8 +3,9 @@ import { Effect } from "effect";
 
 import { bigname, indexerActions } from "@ensforge/sdk/indexer";
 import { Devnet, type DevnetInstance } from "@ensforge/test-devnet";
+import { Fixtures } from "@ensforge/test-fixtures";
 import { call, ensforge, passWaits } from "@ensforge/test-integration/support/chain";
-import type { Address } from "viem";
+import { labelhash, type Address } from "viem";
 
 import { Services, type ServicesApi } from "../stack/stack.ts";
 
@@ -169,6 +170,58 @@ layer(Services.layer({ profile: "mainnet-shaped" }), { excludeTestServices: true
           assert.isUndefined(records?.texts["url"]);
         }),
       { meta: { cases: ["I12"] } },
+    );
+
+    it.effect(
+      "finds the records a migration copies, and the subnames it cannot recreate",
+      () =>
+        Effect.gen(function* () {
+          const services = yield* Services;
+          const devnet = yield* Devnet;
+          const fixtures = yield* Fixtures;
+          const { alice } = devnet.accounts;
+          const name = fixtures.byId("records.v1").name;
+          const child = `kid.${name}`;
+          const ens = client(devnet, services, alice);
+
+          yield* call(() => ens.subname.createSync({ name: child }));
+          yield* services.waitForIndexed();
+
+          // Without an indexer nothing is discovered; bigname lists every key and the child.
+          const unindexed = yield* call(() =>
+            ensforge(devnet).migration.get({ name, account: alice, resolver: "new" }),
+          );
+          assert.isNull(unindexed.discovered);
+          const status = yield* call(() =>
+            ens.migration.get({ name, account: alice, resolver: "new" }),
+          );
+          assert.includeMembers(
+            [...(status.discovered?.records?.keys ?? [])],
+            ["text:url", "text:unicode", "addr:0", "contenthash"],
+          );
+          // The ENSv1 registry stores only the child's labelhash: bigname knows it by hash.
+          const hashed = `[${labelhash("kid").slice(2)}].${name}`;
+          assert.deepStrictEqual(status.discovered?.subnames, [hashed]);
+
+          // No `allowIncompleteRecords`: the inventory is complete enough to copy from.
+          const profile = {
+            texts: ["url", "unicode"],
+            addresses: ["btc"],
+            contentHash: true,
+          } as const;
+          const before = yield* call(() => ens.record.get({ name, ...profile }));
+          const migrated = yield* call(() =>
+            ens.migration.migrateSync({ names: name, resolver: "new", onStep: passWaits(devnet) }),
+          );
+          assert.include(
+            migrated.plan.warnings.map((warning) => warning.code),
+            "SUBNAMES_NOT_RECREATED",
+          );
+          const after = yield* call(() => ens.record.get({ name, ...profile }));
+          assert.notStrictEqual(after.resolver, before.resolver);
+          assert.deepStrictEqual({ ...after, resolver: null }, { ...before, resolver: null });
+        }),
+      { meta: { cases: ["M12", "M15"] } },
     );
   },
 );
