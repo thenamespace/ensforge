@@ -6,3 +6,4 @@ export * from "./erc721.js";
 export * from "./resolver-profiles/index.js";
 export * from "./universal-resolver.js";
 export * from "./errors.js";
+export * from "./events.js";

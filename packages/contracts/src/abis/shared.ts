@@ -15,6 +15,7 @@ export { erc1155Abi as erc1155 } from "../shared/erc1155.js";
 export { erc165Abi as erc165 } from "../shared/erc165.js";
 export { erc20Abi as erc20 } from "../shared/erc20.js";
 export { ensErrorsAbi as errors } from "../shared/errors.js";
+export { ensEventsAbi as events } from "../shared/events.js";
 export { erc721Abi as erc721 } from "../shared/erc721.js";
 export { extendedDnsResolverAbi as extendedDnsResolver } from "../shared/resolver-profiles/extended-resolver.js";
 export { extendedResolverAbi as extendedResolver } from "../shared/resolver-profiles/extended-resolver.js";
