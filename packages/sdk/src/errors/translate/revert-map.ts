@@ -188,4 +188,11 @@ export const requireMap: Readonly<Record<string, Mapper>> = {
   // contract) its Ownable owner.
   "ReverseRegistrar: Caller is not a controller or authorised by address or the address itself":
     notApproved,
+  // viem's local batch gateway answers a failed gateway request without an HTTP status as
+  // `Error(shortMessage)` of the viem error.
+  "HTTP request failed.": () => new GatewayError({ code: "GATEWAY_REQUEST_FAILED" }),
+  "The request took too long to respond.": () =>
+    new GatewayError({ code: "GATEWAY_REQUEST_FAILED" }),
+  "Offchain gateway response is malformed. Response data must be a hex value.": () =>
+    new GatewayError({ code: "GATEWAY_RESPONSE_INVALID" }),
 };

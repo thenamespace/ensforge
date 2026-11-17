@@ -376,3 +376,18 @@ describe("ENSv1 require messages", () => {
     assert.include(error, { _tag: "ContractRevertError", code: "CONTRACT_REVERTED" });
   });
 });
+
+describe("batch gateway failures", () => {
+  // viem's local batch gateway encodes these failed requests as `Error(string)`.
+  it.each([
+    ["HTTP request failed.", "GATEWAY_REQUEST_FAILED"],
+    ["The request took too long to respond.", "GATEWAY_REQUEST_FAILED"],
+    [
+      "Offchain gateway response is malformed. Response data must be a hex value.",
+      "GATEWAY_RESPONSE_INVALID",
+    ],
+  ])("%s → %s", (message, code) => {
+    const error = fromRevert({ data: requireRevert(message) }, {});
+    assert.include(error, { _tag: "GatewayError", code });
+  });
+});
