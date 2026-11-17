@@ -1,10 +1,10 @@
 import { Effect } from "effect";
 
 import { Abis } from "@ensforge/contracts";
-import { isAddressEqual, zeroAddress } from "viem";
 
 import type { Client } from "../../../client/types.js";
 import * as Action from "../../../internal/action/index.js";
+import { nonZeroAddress } from "../../../internal/address.js";
 import { approvableToken } from "../../../internal/approval/token.js";
 import { loadName } from "../../../internal/name/load.js";
 import * as Rpc from "../../../internal/rpc/index.js";
@@ -23,5 +23,5 @@ export const getToken = Effect.fn("ensforge.approval.getToken")(function* (
     functionName: "getApproved",
     args: [token.tokenId],
   });
-  return approved === undefined || isAddressEqual(approved, zeroAddress) ? null : approved;
+  return nonZeroAddress(approved);
 }, Action.withContext("approval.getToken"));

@@ -1,7 +1,7 @@
 import { Effect } from "effect";
 
 import { Abis, Roles } from "@ensforge/contracts";
-import { encodeFunctionData, type Address, type Hex } from "viem";
+import { encodeFunctionData, zeroAddress, type Address, type Hex } from "viem";
 
 import type { Client } from "../../../client/types.js";
 import { InvalidInputError } from "../../../errors/classes/InvalidInputError.js";
@@ -12,41 +12,12 @@ import * as Action from "../../../internal/action/index.js";
 import { loadName, type LoadedName } from "../../../internal/name/load.js";
 import { requireAddress, singleStepPlan } from "../../../internal/name/write.js";
 import { recordResource } from "../../../internal/permission/facts.js";
-import { selectionOperations } from "../../../internal/permission/records.js";
+import { recordRoles, selectionOperations } from "../../../internal/permission/records.js";
 import { setterKeying } from "../../../internal/records/setter-keying.js";
 import type { Plan } from "../../../plan/Plan.js";
 import type { Write } from "../../../Types.js";
 import type { RecordOperation } from "../get/types.js";
 import type { setRecordAccess as Promises } from "./index.js";
-
-const allSetterRoles =
-  Roles.resolver.setAddr |
-  Roles.resolver.setText |
-  Roles.resolver.setContenthash |
-  Roles.resolver.setAbi |
-  Roles.resolver.setInterface |
-  Roles.resolver.setName |
-  Roles.resolver.setData;
-
-const roleOf: Record<Exclude<RecordOperation["setRecord"], "pubkey">, bigint> = {
-  text: Roles.resolver.setText,
-  address: Roles.resolver.setAddr,
-  contentHash: Roles.resolver.setContenthash,
-  abi: Roles.resolver.setAbi,
-  name: Roles.resolver.setName,
-  interface: Roles.resolver.setInterface,
-  data: Roles.resolver.setData,
-  link: Roles.resolver.link,
-};
-
-const widening = (detail: string) =>
-  new InvalidInputError({
-    code: "INVALID_RECORD_VALUE",
-    field: "allowScopeWidening",
-    input: false,
-    shortMessage: detail,
-    hint: "Pass `allowScopeWidening: true` to confirm.",
-  });
 
 /**
  * The setter call `grantSetterRoles` decodes into the resource and role of one keyed record.
@@ -83,18 +54,18 @@ const setterCall = (dns: Hex, operation: RecordOperation & { key: string | bigin
       return encodeFunctionData({
         abi,
         functionName: "setInterface",
-        args: [dns, operation.key as Hex, "0x0000000000000000000000000000000000000000"],
+        args: [dns, operation.key as Hex, zeroAddress],
       });
   }
 };
 
 /** PermissionedResolver: exact setter roles per record, or every setter role at the root. */
-const permissionedCalls = (
+const permissionedCalls = Effect.fnUntraced(function* (
   resolver: Address,
   loaded: LoadedName,
   options: Promises.Options,
   grantee: Address,
-): Effect.Effect<Plan.Call[], AnyError> => {
+): Effect.fn.Return<Plan.Call[], AnyError> {
   const abi = Abis.v2.permissionedResolver;
   const call = (data: Hex): Plan.Call => ({ to: resolver, data, value: 0n });
   const revoke = options.revoke === true;
@@ -102,68 +73,83 @@ const permissionedCalls = (
   if (options.records === undefined || options.records === "all") {
     // Root roles cover every record of every name on this resolver.
     if (options.allowScopeWidening !== true && !revoke) {
-      return Effect.fail(widening("Access to all records applies to every name on this resolver."));
+      return yield* Effect.fail(
+        new InvalidInputError({
+          code: "INVALID_RECORD_VALUE",
+          field: "allowScopeWidening",
+          input: false,
+          shortMessage: "Access to all records applies to every name on this resolver.",
+          hint: "Pass `allowScopeWidening: true` to confirm.",
+        }),
+      );
     }
-    return Effect.succeed([
+    const setterRoles =
+      Roles.resolver.setAddr |
+      Roles.resolver.setText |
+      Roles.resolver.setContenthash |
+      Roles.resolver.setAbi |
+      Roles.resolver.setInterface |
+      Roles.resolver.setName |
+      Roles.resolver.setData;
+    return [
       call(
         encodeFunctionData({
           abi,
           functionName: revoke ? "revokeRootRoles" : "grantRootRoles",
-          args: [allSetterRoles, grantee],
+          args: [setterRoles, grantee],
         }),
       ),
-    ]);
+    ];
   }
 
-  return Effect.flatMap(selectionOperations(options.records), (operations) => {
-    const calls: Plan.Call[] = [];
-    for (const { operation } of operations) {
-      if (operation.setRecord === "pubkey") {
-        return Effect.fail(
-          new UnsupportedError({
-            code: "RESOLVER_PROFILE_UNSUPPORTED",
-            feature: "public key records",
-          }),
-        );
-      }
-      const role = roleOf[operation.setRecord];
-      // Content hash, name and "any ABI" records only exist at the root.
-      if (operation.key === undefined) {
-        calls.push(
-          call(
-            encodeFunctionData({
-              abi,
-              functionName: revoke ? "revokeRootRoles" : "grantRootRoles",
-              args: [role, grantee],
-            }),
-          ),
-        );
-      } else if (revoke) {
-        calls.push(
-          call(
-            encodeFunctionData({
-              abi,
-              functionName: "revokeRoles",
-              args: [recordResource(operation), role, grantee],
-            }),
-          ),
-        );
-      } else {
-        const keyed = operation as RecordOperation & { key: string | bigint | Hex };
-        calls.push(
-          call(
-            encodeFunctionData({
-              abi,
-              functionName: "grantSetterRoles",
-              args: [setterCall(loaded.data.parts.dns, keyed), grantee],
-            }),
-          ),
-        );
-      }
+  const operations = yield* selectionOperations(options.records);
+  const calls: Plan.Call[] = [];
+  for (const { operation } of operations) {
+    if (operation.setRecord === "pubkey") {
+      return yield* Effect.fail(
+        new UnsupportedError({
+          code: "RESOLVER_PROFILE_UNSUPPORTED",
+          feature: "public key records",
+        }),
+      );
     }
-    return Effect.succeed(calls);
-  });
-};
+    const role = Roles.resolver[recordRoles[operation.setRecord]];
+    // Content hash, name and "any ABI" records only exist at the root.
+    if (operation.key === undefined) {
+      calls.push(
+        call(
+          encodeFunctionData({
+            abi,
+            functionName: revoke ? "revokeRootRoles" : "grantRootRoles",
+            args: [role, grantee],
+          }),
+        ),
+      );
+    } else if (revoke) {
+      calls.push(
+        call(
+          encodeFunctionData({
+            abi,
+            functionName: "revokeRoles",
+            args: [recordResource(operation), role, grantee],
+          }),
+        ),
+      );
+    } else {
+      const keyed = operation as RecordOperation & { key: string | bigint | Hex };
+      calls.push(
+        call(
+          encodeFunctionData({
+            abi,
+            functionName: "grantSetterRoles",
+            args: [setterCall(loaded.data.parts.dns, keyed), grantee],
+          }),
+        ),
+      );
+    }
+  }
+  return calls;
+});
 
 /** @internal Builds the plan of `Actions.permission.setRecordAccess`. */
 export const plan = Effect.fnUntraced(function* (
@@ -173,8 +159,9 @@ export const plan = Effect.fnUntraced(function* (
   const grantee = yield* requireAddress(options.grantee, "grantee");
   const loaded = yield* loadName(client, options.name);
   const resolver = loaded.state.resolver;
-  if (resolver === null)
+  if (resolver === null) {
     return yield* Effect.fail(new NotFoundError({ code: "RESOLVER_NOT_FOUND" }));
+  }
 
   let calls: Plan.Call[];
   if ((yield* setterKeying(client, resolver)) === "name") {
@@ -183,7 +170,13 @@ export const plan = Effect.fnUntraced(function* (
     // A PublicResolver delegate can write every record of the name.
     if (options.allowScopeWidening !== true && options.revoke !== true) {
       return yield* Effect.fail(
-        widening("A PublicResolver delegate can edit every record of the name."),
+        new InvalidInputError({
+          code: "INVALID_RECORD_VALUE",
+          field: "allowScopeWidening",
+          input: false,
+          shortMessage: "A PublicResolver delegate can edit every record of the name.",
+          hint: "Pass `allowScopeWidening: true` to confirm.",
+        }),
       );
     }
     calls = [

@@ -3,6 +3,7 @@ import { Effect } from "effect";
 import { Abis } from "@ensforge/contracts";
 import { encodeFunctionData, type Address } from "viem";
 
+import type { PaymentToken, TokenInfo } from "../../actions/registration/types.js";
 import type { Client } from "../../client/types.js";
 import { InsufficientFundsError } from "../../errors/classes/InsufficientFundsError.js";
 import { InvalidInputError } from "../../errors/classes/InvalidInputError.js";
@@ -13,20 +14,10 @@ import { requireAddress } from "../name/write.js";
 import * as Rpc from "../rpc/index.js";
 import type { RegistrationContracts } from "./contracts.js";
 
-/** A payment token: a symbol listed in the deployment, or any ERC-20 address. */
-export type PaymentTokenInput = "usdc" | "dai" | (string & {});
-
-/** ERC-20 metadata returned with prices. */
-export type TokenInfo = {
-  readonly address: Address;
-  readonly symbol: string;
-  readonly decimals: number;
-};
-
 /** The address of `input` (USDC by default); no RPC, so its checks can join a batch. */
 export const paymentTokenAddress = (
   contracts: RegistrationContracts,
-  input: PaymentTokenInput | undefined,
+  input: PaymentToken | undefined,
 ): Effect.Effect<Address, AnyError> => {
   const symbol = input ?? "usdc";
   if (symbol !== "usdc" && symbol !== "dai") return requireAddress(symbol, "paymentToken");

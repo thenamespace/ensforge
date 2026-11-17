@@ -2,13 +2,13 @@ import { Effect } from "effect";
 
 import { Abis, Roles } from "@ensforge/contracts";
 import { permissionedResolverResource } from "@ensforge/contracts/v2";
-import { hexToBigInt, isAddressEqual, type Address } from "viem";
+import { hexToBigInt, type Address } from "viem";
 
 import type { RecordOperation } from "../../actions/permission/get/types.js";
 import type { Client } from "../../client/types.js";
 import type { AnyError } from "../../errors/types.js";
 import * as CoinType from "../../utils/CoinType.js";
-import { nonZeroAddress } from "../address.js";
+import { nonZeroAddress, sameAddress } from "../address.js";
 import type { LoadedName } from "../name/load.js";
 import { setterKeying } from "../records/setter-keying.js";
 import * as Rpc from "../rpc/index.js";
@@ -81,9 +81,7 @@ export const recordResource = (operation: RecordOperation): bigint => {
 
 const isV2PublicResolver = (client: Client, resolver: Address | null): boolean => {
   const v2 = client.deployment.v2;
-  return (
-    resolver !== null && v2 !== undefined && isAddressEqual(resolver, v2.contracts.publicResolver)
-  );
+  return v2 !== undefined && sameAddress(resolver, v2.contracts.publicResolver);
 };
 
 /**
@@ -92,12 +90,11 @@ const isV2PublicResolver = (client: Client, resolver: Address | null): boolean =
  * owner, through the NameWrapper for wrapped names.
  */
 export const resolverOwnerOf = (client: Client, { state, data }: LoadedName): Address | null => {
+  if (isV2PublicResolver(client, state.resolver)) return state.owner;
+
   const nameWrapper = client.deployment.v1?.contracts.nameWrapper;
   const registryOwner = nonZeroAddress(data.v1?.registryOwner);
-  if (isV2PublicResolver(client, state.resolver)) return state.owner;
-  return registryOwner !== null &&
-    nameWrapper !== undefined &&
-    isAddressEqual(registryOwner, nameWrapper)
+  return nameWrapper !== undefined && sameAddress(registryOwner, nameWrapper)
     ? nonZeroAddress(data.v1?.wrapper.owner)
     : registryOwner;
 };
@@ -134,11 +131,9 @@ export const readPermissionFacts = Effect.fnUntraced(function* (
   });
   // Frozen resolvers cannot be written, and the oldest burn all gas on unknown calls, which would
   // sink the whole multicall: they are never probed.
-  const frozen =
-    resolver !== null &&
-    (client.deployment.v1?.frozenPublicResolvers ?? []).some((address) =>
-      isAddressEqual(address, resolver),
-    );
+  const frozen = (client.deployment.v1?.frozenPublicResolvers ?? []).some((address) =>
+    sameAddress(resolver, address),
+  );
   const probeResolver = resolver !== null && records.length > 0 && !frozen;
 
   const facts = yield* Effect.all(

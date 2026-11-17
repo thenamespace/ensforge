@@ -51,8 +51,6 @@ const renewCall = (
   };
 };
 
-const renewBatchSize = 25;
-
 /** @internal Builds the plan of `Actions.registration.renew`. */
 export const plan = Effect.fnUntraced(function* (
   client: Client,
@@ -78,10 +76,11 @@ export const plan = Effect.fnUntraced(function* (
 
   // ENSv2 and ENSv1 names renew through different contracts, each pulling its own payment.
   const routes = new Map<Address, RenewalQuote[]>();
-  for (const quote of quotes)
+  for (const quote of quotes) {
     routes.set(quote.spender, [...(routes.get(quote.spender) ?? []), quote]);
+  }
   const total = quotes.reduce((sum, quote) => sum + quote.amount, 0n);
-  const approvals = yield* Effect.forEach(
+  const approvals = (yield* Effect.forEach(
     [...routes],
     ([spender, group]) =>
       paymentCalls(client, {
@@ -92,19 +91,19 @@ export const plan = Effect.fnUntraced(function* (
         balanceRequired: total,
       }),
     { concurrency: "unbounded" },
-  );
+  )).flat();
 
   const steps: Plan.Step[] = [];
-  if (approvals.flat().length > 0) {
-    steps.push({ id: "approve", description: "Approve payment", calls: approvals.flat() });
+  if (approvals.length > 0) {
+    steps.push({ id: "approve", description: "Approve payment", calls: approvals });
   }
   steps.push({
     id: "renew",
     description: "Renew",
     // At most 25 names per `renewBatch` call keeps each call's gas bounded.
     calls: [...routes].flatMap(([spender, group]) =>
-      Array.from({ length: Math.ceil(group.length / renewBatchSize) }, (_, index) =>
-        renewCall(spender, group.slice(index * renewBatchSize, (index + 1) * renewBatchSize), {
+      Array.from({ length: Math.ceil(group.length / 25) }, (_, index) =>
+        renewCall(spender, group.slice(index * 25, (index + 1) * 25), {
           duration: options.duration,
           token,
           referrer,

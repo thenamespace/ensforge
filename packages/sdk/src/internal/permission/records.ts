@@ -1,5 +1,6 @@
 import { Effect } from "effect";
 
+import type { Roles } from "@ensforge/contracts";
 import type { Hex } from "viem";
 
 import type { RecordOperation } from "../../actions/permission/get/types.js";
@@ -7,6 +8,21 @@ import type { Selection } from "../../actions/record/get/types.js";
 import type { AnyError } from "../../errors/types.js";
 import * as CoinType from "../../utils/CoinType.js";
 import type { RecordWrites } from "../records/write-profiles.js";
+
+/** The PermissionedResolver role each record needs; public keys are not stored there. */
+export const recordRoles: Record<
+  Exclude<RecordOperation["setRecord"], "pubkey">,
+  keyof typeof Roles.resolver
+> = {
+  text: "setText",
+  address: "setAddr",
+  contentHash: "setContenthash",
+  abi: "setAbi",
+  name: "setName",
+  interface: "setInterface",
+  data: "setData",
+  link: "link",
+};
 
 /** The record operations a `record.set` write performs. */
 export const writeOperations = (writes: RecordWrites): RecordOperation[] => [

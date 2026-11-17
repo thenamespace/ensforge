@@ -26,9 +26,6 @@ import type { Write } from "../../../Types.js";
 import * as Fuse from "../../../utils/Fuse.js";
 import type { create as Promises } from "./index.js";
 
-const invalid = (field: string, input: unknown, shortMessage: string) =>
-  new InvalidInputError({ code: "INVALID_RECORD_VALUE", field, input, shortMessage });
-
 /** The resolver the child gets, and the deployment when ensforge creates it. */
 const childResolver = Effect.fnUntraced(function* (
   client: Client,
@@ -43,14 +40,22 @@ const childResolver = Effect.fnUntraced(function* (
   const { resolver, records } = options;
   if (resolver === null) {
     if (records !== undefined) {
-      return yield* Effect.fail(invalid("records", null, "Records need a resolver."));
+      return yield* Effect.fail(
+        new InvalidInputError({
+          code: "INVALID_RECORD_VALUE",
+          field: "records",
+          input: null,
+          shortMessage: "Records need a resolver.",
+        }),
+      );
     }
     return { address: zeroAddress, records: false };
   }
   if (resolver === "parent") {
     const address = subname.parent.state.resolver;
-    if (address === null)
+    if (address === null) {
       return yield* Effect.fail(new NotFoundError({ code: "RESOLVER_NOT_FOUND" }));
+    }
     return { address, records: records !== undefined };
   }
   if (resolver !== undefined) {
@@ -250,8 +255,9 @@ export const plan = Effect.fnUntraced(function* (
     });
     // Deployments come first, in one step: the attach and register calls need the code.
     const deployCalls = [v2.deployRegistry, resolver.deploy].filter((call) => call !== undefined);
-    if (deployCalls.length > 0)
+    if (deployCalls.length > 0) {
       steps.push({ id: "deploy", description: "Deploy contracts", calls: deployCalls });
+    }
     steps.push(...v2.steps);
     if (v2.registry !== undefined) deploys.push({ contract: "registry", address: v2.registry });
   } else {
@@ -262,8 +268,9 @@ export const plan = Effect.fnUntraced(function* (
       calls: [...(resolver.deploy === undefined ? [] : [resolver.deploy]), call],
     });
   }
-  if (resolver.deploy !== undefined)
+  if (resolver.deploy !== undefined) {
     deploys.push({ contract: "resolver", address: resolver.address });
+  }
 
   // Records on an existing resolver are written once the child exists.
   if (resolver.records && options.records !== undefined) {

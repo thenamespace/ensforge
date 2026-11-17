@@ -1,10 +1,11 @@
 import { Effect } from "effect";
 
 import { Abis } from "@ensforge/contracts";
-import { hexToBigInt, isAddressEqual, zeroAddress } from "viem";
+import { hexToBigInt } from "viem";
 
 import type { Client } from "../../../client/types.js";
 import * as Action from "../../../internal/action/index.js";
+import { nonZeroAddress } from "../../../internal/address.js";
 import { parseName } from "../../../internal/name/normalize.js";
 import { requireV1Contracts } from "../../../internal/name/write.js";
 import * as Rpc from "../../../internal/rpc/index.js";
@@ -29,7 +30,7 @@ export const getFuses = Effect.fn("ensforge.wrapper.getFuses")(function* (
       ? { blockTag: options.blockTag }
       : { blockNumber: options.blockNumber }),
   });
-  if (isAddressEqual(owner, zeroAddress)) return null;
+  if (nonZeroAddress(owner) === null) return null;
 
   return { owner, fuses, burned: Fuse.decode(fuses), expiry };
 }, Action.withContext("wrapper.getFuses"));

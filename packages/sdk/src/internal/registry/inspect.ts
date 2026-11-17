@@ -1,10 +1,14 @@
 import { Effect } from "effect";
 
 import { Abis, InterfaceIds, Roles } from "@ensforge/contracts";
-import { getAddress, isAddressEqual, sliceHex, zeroAddress, zeroHash, type Address } from "viem";
+import { getAddress, isAddressEqual, sliceHex, zeroHash, type Address } from "viem";
 import { getStorageAt } from "viem/actions";
 
-import type { RegistryInfo, RegistryKind } from "../../actions/registry/get/types.js";
+import type {
+  RegistryInfo,
+  RegistryKind,
+  RegistryUpgradeBlocker,
+} from "../../actions/registry/get/types.js";
 import type { Client } from "../../client/types.js";
 import type { AnyError } from "../../errors/types.js";
 import type { Read } from "../../Types.js";
@@ -75,8 +79,7 @@ export const inspectRegistry = Effect.fnUntraced(function* (
   );
 
   // An empty ERC-1967 slot: the registry is not a proxy.
-  const slot = getAddress(sliceHex(read.word ?? zeroHash, 12));
-  const implementation = isAddressEqual(slot, zeroAddress) ? null : slot;
+  const implementation = nonZeroAddress(getAddress(sliceHex(read.word ?? zeroHash, 12)));
   const kind: RegistryKind =
     v2 !== undefined && isAddressEqual(address, v2.contracts.rootRegistry)
       ? "root"
@@ -94,8 +97,9 @@ export const inspectRegistry = Effect.fnUntraced(function* (
         ? (v2?.implementations.wrapperRegistry ?? null)
         : null;
   const emancipated = read.emancipated === true;
+  const upgradeSet = nonZeroAddress(read.upgradeSet);
 
-  let blocker: RegistryInfo["upgrade"]["blocker"] = null;
+  let blocker: RegistryUpgradeBlocker | null = null;
   if (latest === null || implementation === null) blocker = "not-upgradeable";
   else if (isAddressEqual(latest, implementation)) blocker = "up-to-date";
   else {
@@ -109,12 +113,10 @@ export const inspectRegistry = Effect.fnUntraced(function* (
           ...at,
         }),
         listed:
-          !emancipated ||
-          read.upgradeSet === undefined ||
-          isAddressEqual(read.upgradeSet, zeroAddress)
+          !emancipated || upgradeSet === null
             ? Effect.undefined
             : Rpc.readContractOrUndefined(client, {
-                address: read.upgradeSet,
+                address: upgradeSet,
                 abi: Abis.v2.permissionedAddressSet,
                 functionName: "includes",
                 args: [latest],
@@ -134,7 +136,7 @@ export const inspectRegistry = Effect.fnUntraced(function* (
     kind,
     implementation,
     parent:
-      read.parent === undefined || isAddressEqual(read.parent[0], zeroAddress)
+      read.parent === undefined || nonZeroAddress(read.parent[0]) === null
         ? null
         : { registry: read.parent[0], label: read.parent[1] },
     canonicalName: canonical === "" ? null : canonical,

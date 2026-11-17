@@ -1,6 +1,6 @@
 import { Effect } from "effect";
 
-import { isAddressEqual, type Address } from "viem";
+import { isAddressEqual } from "viem";
 
 import type { Client } from "../../../client/types.js";
 import { ConfigError } from "../../../errors/classes/ConfigError.js";
@@ -11,10 +11,7 @@ import { randomSecret } from "../../../internal/registration/commitment.js";
 import { requireRegistrationContracts } from "../../../internal/registration/contracts.js";
 import { registeredNames } from "../../../internal/registration/events.js";
 import { paymentCalls } from "../../../internal/registration/payment.js";
-import {
-  prepareRegistration,
-  type PreparedRegistration,
-} from "../../../internal/registration/prepare.js";
+import { prepareRegistration } from "../../../internal/registration/prepare.js";
 import {
   commitCall,
   pendingCommitments,
@@ -27,20 +24,6 @@ import { make as makePlan } from "../../../plan/make.js";
 import type { Plan } from "../../../plan/Plan.js";
 import type { Write } from "../../../Types.js";
 import type { register as Promises, registerSync as SyncPromises } from "./index.js";
-
-/** Records for names that use a resolver the caller passed: written after registration. */
-const recordsStep = Effect.fnUntraced(function* (
-  client: Client,
-  registration: PreparedRegistration,
-  resolver: Address,
-): Effect.fn.Return<Plan.Step, AnyError> {
-  // A shared resolver deployed in this plan is a PermissionedResolver that does not exist yet.
-  const keying = registration.ownedDeploy === undefined ? undefined : ("name" as const);
-  const calls = yield* Effect.forEach(registration.names, (name) =>
-    recordsCall(client, resolver, name, registration.records ?? {}, keying),
-  );
-  return { id: "records", description: "Set records", calls };
-});
 
 /** @internal Builds the plan of `Actions.registration.register`. */
 export const plan = Effect.fnUntraced(function* (
@@ -80,8 +63,6 @@ export const plan = Effect.fnUntraced(function* (
   } else if (approvals.length > 0) {
     steps.push({ id: "approve", description: "Approve payment", calls: approvals });
   }
-  // The registrar accepts a commitment `MIN_COMMITMENT_AGE` after the block that recorded it;
-  // one extra second keeps `register` out of the boundary block.
   // The signer's shared resolver gets its address from the signer, so the signer deploys it.
   if (routed && registration.ownedDeploy !== undefined) {
     steps.push({
@@ -101,12 +82,23 @@ export const plan = Effect.fnUntraced(function* (
         registerCall(registration, name),
       ]),
     ],
+    // The registrar accepts a commitment `MIN_COMMITMENT_AGE` after the block that recorded it;
+    // one extra second keeps `register` out of the boundary block.
     ...(toCommit.length > 0 ? { waitFor: { seconds: registration.minCommitmentAge + 1n } } : {}),
   });
   // Records on the owner's resolver and the owner's reverse record are the signer's to write.
-  if (registration.explicitResolver !== undefined && registration.records !== undefined) {
-    const records = yield* recordsStep(client, registration, registration.explicitResolver);
-    steps.push(routed ? { ...records, from: "signer" } : records);
+  const { explicitResolver, records } = registration;
+  if (explicitResolver !== undefined && records !== undefined) {
+    // A shared resolver deployed in this plan is a PermissionedResolver that does not exist yet.
+    const keying = registration.ownedDeploy === undefined ? undefined : ("name" as const);
+    steps.push({
+      id: "records",
+      description: "Set records",
+      calls: yield* Effect.forEach(registration.names, (name) =>
+        recordsCall(client, explicitResolver, name, records, keying),
+      ),
+      ...(routed ? { from: "signer" as const } : {}),
+    });
   }
   // `prepareRegistration` allows a primary name only for exactly one name owned by the signer.
   const [first] = registration.names;

@@ -12,6 +12,7 @@ import type { UnauthorizedError } from "../../errors/classes/UnauthorizedError.j
 import * as Fuse from "../../utils/Fuse.js";
 import { sameAddress } from "../address.js";
 import { recordResource, type PermissionFacts } from "./facts.js";
+import { recordRoles } from "./records.js";
 
 type Requirement = UnauthorizedError.Requirement;
 
@@ -63,15 +64,25 @@ const byOwner = (
     ? deny([{ type: "owner", contract, owner }], contract)
     : allow(authority, contract);
 
+/** Allowed when `held` includes `role`, otherwise missing `name` on `resource` of `contract`. */
+const byRole = (
+  held: bigint,
+  role: bigint,
+  name: string,
+  contract: Address,
+  resource: bigint,
+): PermissionCheck =>
+  (held & role) === role
+    ? allow("roles", contract, resource)
+    : deny([{ type: "roles", contract, resource, roles: [name] }], contract, resource);
+
 /** ENSv2: roles on the registry holding the name; transfers follow the ERC-1155 rules. */
 const evaluateV2 = (facts: PermissionFacts, operation: NameOperation): PermissionCheck => {
   const { state, data } = facts.loaded;
   const registry = state.registry as Address;
   const resource = state.resource ?? 0n;
   const role = (name: keyof typeof Roles.registry): PermissionCheck =>
-    (facts.v2.roles & Roles.registry[name]) === Roles.registry[name]
-      ? allow("roles", registry, resource)
-      : deny([{ type: "roles", contract: registry, resource, roles: [name] }], registry, resource);
+    byRole(facts.v2.roles, Roles.registry[name], name, registry, resource);
 
   switch (operation) {
     case "transfer": {
@@ -104,26 +115,26 @@ const evaluateV2 = (facts: PermissionFacts, operation: NameOperation): Permissio
       const subregistry = state.subregistry;
       // Without a subregistry, a new one is attached first (subname.create does it).
       if (subregistry === null || facts.v2.subregistryRoles === null) return role("setSubregistry");
-      return (facts.v2.subregistryRoles & Roles.registry.registrar) === Roles.registry.registrar
-        ? allow("roles", subregistry, 0n)
-        : deny(
-            [{ type: "roles", contract: subregistry, resource: 0n, roles: ["registrar"] }],
-            subregistry,
-            0n,
-          );
+      return byRole(
+        facts.v2.subregistryRoles,
+        Roles.registry.registrar,
+        "registrar",
+        subregistry,
+        0n,
+      );
     }
     case "removeSubname": {
       const subregistry = state.subregistry;
       if (subregistry === null || facts.v2.subregistryRoles === null) {
         return blocked("unsupported", "The name has no subregistry, so no subnames.");
       }
-      return (facts.v2.subregistryRoles & Roles.registry.unregister) === Roles.registry.unregister
-        ? allow("roles", subregistry, 0n)
-        : deny(
-            [{ type: "roles", contract: subregistry, resource: 0n, roles: ["unregister"] }],
-            subregistry,
-            0n,
-          );
+      return byRole(
+        facts.v2.subregistryRoles,
+        Roles.registry.unregister,
+        "unregister",
+        subregistry,
+        0n,
+      );
     }
     case "renew":
       return data.parts.isEth2ld ? allow("anyone", null) : role("renew");
@@ -226,20 +237,6 @@ const evaluateUnwrapped = (
   }
 };
 
-const recordRoles: Record<
-  Exclude<RecordOperation["setRecord"], "pubkey">,
-  keyof typeof Roles.resolver
-> = {
-  text: "setText",
-  address: "setAddr",
-  contentHash: "setContenthash",
-  abi: "setAbi",
-  name: "setName",
-  interface: "setInterface",
-  data: "setData",
-  link: "link",
-};
-
 /** Records: PermissionedResolver roles, or owner / operator / delegate on node-based resolvers. */
 const evaluateRecord = (facts: PermissionFacts, operation: RecordOperation): PermissionCheck => {
   const resolver = facts.resolver;
@@ -253,23 +250,10 @@ const evaluateRecord = (facts: PermissionFacts, operation: RecordOperation): Per
         resolver.address,
       );
     }
-    const role = Roles.resolver[recordRoles[operation.setRecord]];
+    const name = recordRoles[operation.setRecord];
     const resource = recordResource(operation);
     const held = resolver.rootRoles | (resolver.resourceRoles.get(resource) ?? 0n);
-    return (held & role) === role
-      ? allow("roles", resolver.address, resource)
-      : deny(
-          [
-            {
-              type: "roles",
-              contract: resolver.address,
-              resource,
-              roles: [recordRoles[operation.setRecord]],
-            },
-          ],
-          resolver.address,
-          resource,
-        );
+    return byRole(held, Roles.resolver[name], name, resolver.address, resource);
   }
 
   if (resolver.frozen) {
@@ -318,8 +302,9 @@ export const evaluate = (
 
   if (typeof operation !== "string") return evaluateRecord(facts, operation);
   if (state.protocol === "v2") return evaluateV2(facts, operation);
-  if (contracts === undefined)
+  if (contracts === undefined) {
     return blocked("unsupported", "The deployment has no ENSv1 contracts.");
+  }
   return state.wrapped
     ? evaluateWrapped(facts, operation, contracts.nameWrapper)
     : evaluateUnwrapped(facts, operation, contracts);

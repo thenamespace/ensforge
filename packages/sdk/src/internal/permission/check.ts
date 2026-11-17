@@ -35,21 +35,12 @@ export const checkName = Effect.fnUntraced(function* (
   return yield* checkLoaded(client, yield* loadName(client, name), account, operations);
 });
 
-const codeOf = (check: PermissionCheck): UnauthorizedError.Code => {
-  const [first] = check.missing;
-  if (first?.type === "roles") return "MISSING_ROLES";
-  if (first?.type === "blocked") {
-    return first.reason === "fuse" ? "FUSE_BURNED" : "TRANSFER_DISALLOWED";
-  }
-  return "NOT_OWNER";
-};
-
 /**
  * An `UnauthorizedError` for the first operation the account may not perform, or `undefined`
  * when the engine finds no permission problem (the failure has another cause). Name status and
  * unsupported operations are left to the original error.
  */
-export const explainDenied = (
+const explainDenied = (
   checks: readonly PermissionCheck[],
   account: Address,
 ): UnauthorizedError | undefined => {
@@ -64,8 +55,16 @@ export const explainDenied = (
   );
   if (denied === undefined) return undefined;
 
+  const [first] = denied.missing;
   return new UnauthorizedError({
-    code: codeOf(denied),
+    code:
+      first?.type === "roles"
+        ? "MISSING_ROLES"
+        : first?.type === "blocked"
+          ? first.reason === "fuse"
+            ? "FUSE_BURNED"
+            : "TRANSFER_DISALLOWED"
+          : "NOT_OWNER",
     account,
     missingRoles: denied.missing.flatMap((requirement) =>
       requirement.type === "roles" ? requirement.roles : [],

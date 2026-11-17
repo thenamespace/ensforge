@@ -5,8 +5,8 @@ import type { AnyError } from "../../errors/types.js";
 import { parseName } from "../name/normalize.js";
 import type { NameParts } from "../name/parts.js";
 
-/** A `.eth` second-level name and its label. */
-export type EthName = NameParts & { readonly label: string };
+/** A `.eth` second-level name. */
+export type EthName = NameParts;
 
 /** Normalizes names that must be `.eth` second-level names; duplicates are dropped. */
 export const parseEthNames = (

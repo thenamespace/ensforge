@@ -45,32 +45,31 @@ export const plan = Effect.fnUntraced(function* (
     target !== null &&
     current !== null &&
     !isAddressEqual(target, current);
-  const checked =
-    custom && target !== null && current !== null
-      ? yield* Effect.all(
-          {
-            authorized: Rpc.readContractOrUndefined(client, {
-              address: registry,
-              abi: Abis.v2.userRegistry,
-              functionName: "hasRootRoles",
-              args: [Roles.registry.upgrade, signer],
-            }),
-            accepts: Rpc.readContractOrUndefined(client, {
-              address: target,
-              abi: Abis.v2.userRegistry,
-              functionName: "canUpgradeFrom",
-              args: [current],
-            }).pipe(
-              // An address without code is no implementation either.
-              Effect.catchIf(
-                (error) => error.code === "CONTRACT_NOT_DEPLOYED",
-                () => Effect.undefined,
-              ),
+  const checked = custom
+    ? yield* Effect.all(
+        {
+          authorized: Rpc.readContractOrUndefined(client, {
+            address: registry,
+            abi: Abis.v2.userRegistry,
+            functionName: "hasRootRoles",
+            args: [Roles.registry.upgrade, signer],
+          }),
+          accepts: Rpc.readContractOrUndefined(client, {
+            address: target,
+            abi: Abis.v2.userRegistry,
+            functionName: "canUpgradeFrom",
+            args: [current],
+          }).pipe(
+            // An address without code is no implementation either.
+            Effect.catchIf(
+              (error) => error.code === "CONTRACT_NOT_DEPLOYED",
+              () => Effect.undefined,
             ),
-          },
-          { concurrency: "unbounded" },
-        )
-      : undefined;
+          ),
+        },
+        { concurrency: "unbounded" },
+      )
+    : undefined;
   const blocker =
     target === null || current === null
       ? "not-upgradeable"

@@ -1,12 +1,11 @@
 import { Effect } from "effect";
 
 import { Abis } from "@ensforge/contracts";
-import { encodeFunctionData, hexToBigInt } from "viem";
+import { encodeFunctionData } from "viem";
 
 import { CommitmentError } from "../../errors/classes/CommitmentError.js";
 import type { AnyError } from "../../errors/types.js";
 import type { Plan } from "../../plan/Plan.js";
-import type { EthName } from "./labels.js";
 import type { PreparedName, PreparedRegistration } from "./prepare.js";
 
 /**
@@ -67,6 +66,3 @@ export const registerCall = (
   }),
   value: 0n,
 });
-
-/** The token ID of a `.eth` name in the ETHRegistry. */
-export const tokenIdOf = (name: EthName): bigint => hexToBigInt(name.labelhash);

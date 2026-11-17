@@ -3,6 +3,7 @@ import { Effect } from "effect";
 import { Abis } from "@ensforge/contracts";
 import type { Address } from "viem";
 
+import type { RenewalRoute } from "../../actions/registration/types.js";
 import type { Client } from "../../client/types.js";
 import { NameStateError } from "../../errors/classes/NameStateError.js";
 import type { AnyError } from "../../errors/types.js";
@@ -10,9 +11,6 @@ import type { Read } from "../../Types.js";
 import * as Rpc from "../rpc/index.js";
 import type { RegistrationContracts } from "./contracts.js";
 import type { EthName } from "./labels.js";
-
-/** Which contract renews a name: the ENSv2 registrar, or the ENSv1 renewer for v1 names. */
-export type RenewalRoute = "v2-registrar" | "v1-renewer";
 
 /** The price of renewing one name, and who to pay. */
 export type RenewalQuote = {

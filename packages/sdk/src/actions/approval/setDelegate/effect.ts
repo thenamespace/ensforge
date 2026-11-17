@@ -1,7 +1,7 @@
 import { Effect } from "effect";
 
 import { Abis } from "@ensforge/contracts";
-import { encodeFunctionData, isAddressEqual } from "viem";
+import { encodeFunctionData } from "viem";
 
 import type { Client } from "../../../client/types.js";
 import { NotFoundError } from "../../../errors/classes/NotFoundError.js";
@@ -9,6 +9,7 @@ import { UnauthorizedError } from "../../../errors/classes/UnauthorizedError.js"
 import { UnsupportedError } from "../../../errors/classes/UnsupportedError.js";
 import type { AnyError } from "../../../errors/types.js";
 import * as Action from "../../../internal/action/index.js";
+import { sameAddress } from "../../../internal/address.js";
 import { loadName } from "../../../internal/name/load.js";
 import { requireAddress, singleStepPlan } from "../../../internal/name/write.js";
 import { resolverOwnerOf } from "../../../internal/permission/facts.js";
@@ -44,7 +45,7 @@ export const plan = Effect.fnUntraced(function* (
   // owner's: anyone else's approval would change nothing.
   const signer = addressOf(options.account) ?? client.account;
   const owner = resolverOwnerOf(client, loaded);
-  if (signer !== undefined && (owner === null || !isAddressEqual(signer, owner))) {
+  if (signer !== undefined && !sameAddress(owner, signer)) {
     return yield* Effect.fail(
       new UnauthorizedError({
         code: "NOT_OWNER",

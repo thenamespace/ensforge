@@ -5,12 +5,14 @@ import { ownedResolverSalt } from "@ensforge/contracts/v2";
 import { isAddressEqual, isHex, zeroAddress, type Address, type Hex } from "viem";
 import { getCode } from "viem/actions";
 
+import type { PaymentToken } from "../../actions/registration/types.js";
 import type { Client } from "../../client/types.js";
 import { InvalidInputError } from "../../errors/classes/InvalidInputError.js";
 import { NameStateError } from "../../errors/classes/NameStateError.js";
 import { NotFoundError } from "../../errors/classes/NotFoundError.js";
 import type { AnyError } from "../../errors/types.js";
 import type { Plan } from "../../plan/Plan.js";
+import { sameAddress } from "../address.js";
 import { requireAddress } from "../name/write.js";
 import type { RecordWrites } from "../records/write-profiles.js";
 import { deployPermissionedResolver } from "../resolver/deploy.js";
@@ -18,7 +20,7 @@ import * as Rpc from "../rpc/index.js";
 import { makeCommitment, randomSecret, resolverSalt } from "./commitment.js";
 import { requireRegistrationContracts, type RegistrationContracts } from "./contracts.js";
 import { parseEthNames, type EthName } from "./labels.js";
-import { paymentTokenAddress, requirePaymentToken, type PaymentTokenInput } from "./payment.js";
+import { paymentTokenAddress, requirePaymentToken } from "./payment.js";
 import { referrerOf } from "./referrer.js";
 
 /** What `registration.commit` and `registration.register` take. */
@@ -33,7 +35,7 @@ export type RegistrationInput = {
   readonly resolver?: string | null | undefined;
   readonly records?: Omit<RecordWrites, "clear" | "pubkey"> | undefined;
   readonly primaryName?: boolean | undefined;
-  readonly paymentToken?: PaymentTokenInput | undefined;
+  readonly paymentToken?: PaymentToken | undefined;
   readonly subregistry?: string | undefined;
   readonly referrer?: Hex | undefined;
   readonly secret?: Hex | undefined;
@@ -128,7 +130,7 @@ const validateOptions = Effect.fnUntraced(function* (
       );
     }
     const eth = records?.addresses?.["eth"] ?? records?.addresses?.["60"];
-    if (eth !== undefined && (eth === null || !isAddressEqual(eth as Address, owner))) {
+    if (eth !== undefined && !sameAddress(eth as Address | null, owner)) {
       return yield* Effect.fail(
         new NotFoundError({
           code: "PRIMARY_NAME_MISMATCH",
