@@ -76,10 +76,12 @@
     "lint": "oxlint --deny-warnings .",
     "pack:check": "publint && attw --pack . --profile esm-only",
     "prepack": "pnpm build",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p test",
     "verify": "node ../../scripts/lint-jsdoc.mjs src/index.ts src/v1/index.ts src/v2/index.ts src/shared/index.ts src/v2/experimental/hca/index.ts && node ../../scripts/api-report.mjs --check index v1 v2 shared v2/experimental/hca && typedoc"
   },
   "devDependencies": {
+    "@effect/vitest": "catalog:",
+    "@ensforge/test-harness": "workspace:*",
     "viem": "catalog:"
   },
   "peerDependencies": {

@@ -9,9 +9,14 @@ export default defineConfig({
   },
   overrides: [
     {
-      // The 0.x suites define helpers inside tests. Revisit when the test system is rewritten.
-      files: ["**/test/**"],
-      rules: { "unicorn/consistent-function-scoping": "off" },
+      // Tests run through @effect/vitest only (it re-exports vitest's API).
+      files: ["**/test/**", "tests/**"],
+      rules: {
+        "no-restricted-imports": [
+          "error",
+          { paths: [{ name: "vitest", message: "Import from @effect/vitest instead." }] },
+        ],
+      },
     },
   ],
 });

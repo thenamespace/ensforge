@@ -100,7 +100,7 @@
     "lint": "oxlint --deny-warnings .",
     "pack:check": "publint && attw --pack . --profile esm-only --exclude-entrypoints ./legacy/testing",
     "prepack": "pnpm build",
-    "typecheck": "tsc --noEmit && tsc --noEmit -p scripts",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p scripts && tsc --noEmit -p test",
     "verify": "pnpm codegen:check && node ../../scripts/lint-jsdoc.mjs src/index.ts src/effect.ts src/indexer/index.ts && node ../../scripts/api-report.mjs --check index effect indexer && node ../../scripts/check-dist-types.mjs index actions indexer --consumer scripts/fixtures/consumer.ts && node scripts/indexer-openapi.ts check && typedoc"
   },
   "dependencies": {
@@ -111,6 +111,8 @@
     "fflate": "catalog:"
   },
   "devDependencies": {
+    "@effect/vitest": "catalog:",
+    "@ensforge/test-harness": "workspace:*",
     "viem": "catalog:"
   },
   "peerDependencies": {
