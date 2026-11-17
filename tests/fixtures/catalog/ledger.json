@@ -605,7 +605,9 @@
     "na": "viem's CCIP-Read client (EIP-3668 HTTP transport and local batch gateway), tested upstream; ensforge only passes gateway settings through"
   },
   "X05": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/ccip.test.ts > never answers from an off-chain lookup that names another contract as its sender"
+    ]
   },
   "X06": {
     "na": "viem's CCIP-Read client (EIP-3668 HTTP transport and local batch gateway), tested upstream; ensforge only passes gateway settings through"
@@ -1487,7 +1489,9 @@
     ]
   },
   "M:B12": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/ccip.test.ts > never answers from an off-chain lookup that names another contract as its sender"
+    ]
   },
   "M:B13": {
     "tests": [

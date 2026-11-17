@@ -6,6 +6,7 @@ import { Fixtures } from "@ensforge/test-fixtures";
 import { expectRejection } from "@ensforge/test-harness";
 import {
   encodeAbiParameters,
+  encodeErrorResult,
   encodeFunctionData,
   namehash,
   parseAbi,
@@ -25,21 +26,26 @@ const addrCall = (name: string): Hex =>
 
 const ok: GatewayAnswer = { status: 200, body: '{"data":"0x"}' };
 
-/** Points the off-chain fixture resolver's `OffchainLookup` at `url` (the mock's data URL is not HTTP). */
-const lookupAt = (devnet: DevnetInstance, resolver: Address, url: string) =>
+/** Calls a setter of a fixture's mock resolver, e.g. `function setRevertURL(string)`. */
+const configure = (
+  devnet: DevnetInstance,
+  resolver: Address,
+  setter: string,
+  args: readonly unknown[],
+) =>
   Effect.promise(async () => {
+    const abi = parseAbi([setter]);
     const hash = await devnet.client.writeContract({
       address: resolver,
-      abi: parseAbi(["function setRevertURL(string)"]),
-      functionName: "setRevertURL",
-      args: [url],
+      abi,
+      functionName: (abi[0] as { readonly name: string }).name,
+      args,
       account: devnet.accounts.deployer,
       chain: devnet.chain,
-    });
+    } as never);
     await devnet.client.waitForTransactionReceipt({ hash });
   });
 
-/** Runs `use` with the off-chain fixture resolver looking up at a gateway answering `answer`. */
 const offchain = (
   answer: () => GatewayAnswer,
   use: (context: {
@@ -56,15 +62,57 @@ const offchain = (
 
     yield* isolated(
       devnet,
-      lookupAt(devnet, fixture.facts["resolver"] as Address, served.url).pipe(
-        Effect.andThen(use({ devnet, name: fixture.name, requests: served.requests })),
-      ),
+      // The mock's own `data:` URL is not HTTP, which viem requires.
+      configure(devnet, fixture.facts["resolver"] as Address, "function setRevertURL(string)", [
+        served.url,
+      ]).pipe(Effect.andThen(use({ devnet, name: fixture.name, requests: served.requests }))),
     );
   }).pipe(Effect.scoped);
 
 describe("CCIP-Read", () => {
   for (const profile of ["v1-live", "mainnet-shaped"] as const) {
     onProfile(profile)(profile, (it) => {
+      it.effect(
+        "never answers from an off-chain lookup that names another contract as its sender",
+        () =>
+          Effect.gen(function* () {
+            const fixtures = yield* Fixtures;
+            const devnet = yield* Devnet;
+            const spoofed = fixtures.byId("resolver.spoofed-offchain-lookup");
+            const served = yield* gateway(() => ok);
+            const lookup = encodeErrorResult({
+              abi: parseAbi([
+                "error OffchainLookup(address sender, string[] urls, bytes callData, bytes4 callbackFunction, bytes extraData)",
+              ]),
+              errorName: "OffchainLookup",
+              args: [devnet.accounts.bob, [served.url], "0x", "0x00000000", "0x"],
+            });
+
+            yield* isolated(
+              devnet,
+              Effect.gen(function* () {
+                yield* configure(
+                  devnet,
+                  spoofed.facts["resolver"] as Address,
+                  "function setResponse(bytes,bytes)",
+                  [addrCall(spoofed.name), lookup],
+                );
+                // The Universal Resolver's batcher follows it and calls back the named sender, an
+                // account here, which answers nothing: a typed error, never the gateway's data.
+                yield* expectRejection(
+                  () =>
+                    ensforge(devnet).resolver.resolve({
+                      name: spoofed.name,
+                      data: addrCall(spoofed.name),
+                    }),
+                  { _tag: "UnsupportedError", code: "RESOLVER_PROFILE_UNSUPPORTED" },
+                );
+              }),
+            );
+          }).pipe(Effect.scoped),
+        { meta: { cases: ["M:B12", "X05"] } },
+      );
+
       it.effect(
         "follows an off-chain lookup through the resolver's gateway",
         () =>

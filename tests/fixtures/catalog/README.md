@@ -42,3 +42,12 @@ Verified on chain while seeding (the self-checks failed until these were encoded
   the ETHRegistrar refuses to register it until grace ends (T05).
 - ETHRenewerV1 renews only ENSv1 names ENSv2 reserved for them (premigrated), or reserved ones in
   ENSv2 grace; an ENSv1 name without a reservation cannot be renewed after the launch (G12).
+
+Verified by the integration reads (`tests/integration`):
+
+- A spoofed `OffchainLookup` (sender ≠ resolver, M:B12/X05) is not rejected by the Universal
+  Resolver: its batcher follows it and calls back the named sender. ensforge never answers from it
+  (the callback's result decides, here a typed error).
+- After the launch, ENSv1 names resolve through the ENSv1 bridge only while ENSv2 holds a
+  reservation for them; the bridge reverts `UnreachableName` for a name without a usable ENSv1
+  resolver, and an ENSv2 resolver on `eth` in ENSv1 loops back (O19, O30).
