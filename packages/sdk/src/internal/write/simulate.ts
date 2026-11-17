@@ -9,6 +9,7 @@ import { fromCause } from "../../errors/translate/fromCause.js";
 import type { AnyError } from "../../errors/types.js";
 import type { Plan } from "../../plan/Plan.js";
 import { fromPromise } from "../rpc/fromPromise.js";
+import { withHeadroom } from "./gas.js";
 
 /**
  * Steps that can run against current state: everything before the first wait. Later steps depend
@@ -139,7 +140,8 @@ export const simulatePlan = Effect.fnUntraced(function* (
 
 /**
  * Sums the gas and ETH of every simulatable call. Gas comes from the in-order simulation when
- * the RPC supports it, so calls that depend on earlier ones are estimated correctly.
+ * the RPC supports it, so calls that depend on earlier ones are estimated correctly, and each
+ * call gets the headroom the SDK sends it with.
  */
 export const estimatePlan = Effect.fnUntraced(function* (
   client: Client,
@@ -173,7 +175,7 @@ export const estimatePlan = Effect.fnUntraced(function* (
 
   return {
     plan,
-    gas: gas.reduce((total, value) => total + value, 0n),
+    gas: gas.reduce((total, value) => total + withHeadroom(value), 0n),
     value: plan.calls.reduce((total, item) => total + item.value, 0n),
   };
 });

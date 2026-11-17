@@ -18,6 +18,7 @@ import type { AnyError } from "../../errors/types.js";
 import type { Plan } from "../../plan/Plan.js";
 import type { Write } from "../../Types.js";
 import { fromPromise } from "../rpc/fromPromise.js";
+import { withHeadroom } from "./gas.js";
 import { receiptsOf } from "./receipts.js";
 import { addressOf, type Signer } from "./signer.js";
 
@@ -54,8 +55,6 @@ export const sendSequential = Effect.fnUntraced(function* (
       account: addressOf(signer.account),
       chainId: client.chain.id,
     };
-    // Wallets often send exactly their estimate, and some costs change by the second (an ENSv2
-    // premium decays), so a call can run out of gas one block later; a fifth more covers it.
     const estimate = yield* fromPromise(
       () =>
         estimateGas(client.publicClient, {
@@ -74,7 +73,7 @@ export const sendSequential = Effect.fnUntraced(function* (
           to: item.to,
           data: item.data,
           value: item.value,
-          gas: (estimate * 6n) / 5n,
+          gas: withHeadroom(estimate),
         }),
       context,
     );

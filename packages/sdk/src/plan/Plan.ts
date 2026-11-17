@@ -107,7 +107,7 @@ export declare namespace Plan {
   /** Gas and ETH a plan needs. */
   type Estimate = {
     readonly plan: Plan;
-    /** Total gas across all calls. */
+    /** Total gas limit across all calls: each call's estimate and the fifth more it is sent with. */
     readonly gas: bigint;
     /** Total ETH sent across all calls. */
     readonly value: bigint;
