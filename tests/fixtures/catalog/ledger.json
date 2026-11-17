@@ -199,13 +199,16 @@
   "O03": {
     "tests": [
       "tests/integration/test/reads/name.test.ts > registrant, manager and expiry of ENSv1 names",
-      "tests/integration/test/reads/name.test.ts > v1.unwrapped.transferred"
+      "tests/integration/test/reads/name.test.ts > v1.unwrapped.transferred",
+      "tests/integration/test/writes/transfers.test.ts > transfers each ENSv1 role it is asked to",
+      "tests/integration/test/writes/transfers.test.ts > sets and reclaims the ENSv1 manager"
     ]
   },
   "O04": {
     "tests": [
       "tests/integration/test/reads/name.test.ts > registrant, manager and expiry of ENSv1 names",
-      "tests/integration/test/reads/name.test.ts > v1.unwrapped.registrar-only"
+      "tests/integration/test/reads/name.test.ts > v1.unwrapped.registrar-only",
+      "tests/integration/test/writes/transfers.test.ts > sets and reclaims the ENSv1 manager"
     ]
   },
   "O05": {
@@ -1363,13 +1366,17 @@
     "status": "pending"
   },
   "M:A2": {
-    "tests": ["tests/integration/test/reads/name.test.ts > v1.unwrapped"]
+    "tests": [
+      "tests/integration/test/reads/name.test.ts > v1.unwrapped",
+      "tests/integration/test/writes/transfers.test.ts > transfers each ENSv1 role it is asked to"
+    ]
   },
   "M:A3": {
     "tests": [
       "tests/integration/test/reads/name.test.ts > registrant, manager and expiry of ENSv1 names",
       "tests/integration/test/reads/name.test.ts > v1.unwrapped.manager",
-      "tests/integration/test/writes/access-matrix.test.ts > record.set as registrant, not manager"
+      "tests/integration/test/writes/access-matrix.test.ts > record.set as registrant, not manager",
+      "tests/integration/test/writes/transfers.test.ts > sets and reclaims the ENSv1 manager"
     ]
   },
   "M:A4": {
@@ -1385,13 +1392,15 @@
     "tests": [
       "tests/integration/test/reads/name.test.ts > wrapped names report the wrapper's token and expiry",
       "tests/integration/test/reads/name.test.ts > v1.wrapped",
-      "tests/integration/test/writes/access-matrix.test.ts > record.set as wrapped owner"
+      "tests/integration/test/writes/access-matrix.test.ts > record.set as wrapped owner",
+      "tests/integration/test/writes/transfers.test.ts > transfers each ENSv1 role it is asked to"
     ]
   },
   "M:A8": {
     "tests": [
       "tests/integration/test/reads/access.test.ts > reports what an account may do, and why not",
-      "tests/integration/test/reads/name.test.ts > v1.wrapped.locked"
+      "tests/integration/test/reads/name.test.ts > v1.wrapped.locked",
+      "tests/integration/test/writes/transfers.test.ts > transfers each ENSv1 role it is asked to"
     ]
   },
   "M:A9": {
@@ -1412,7 +1421,8 @@
   "M:A14": {
     "tests": [
       "tests/integration/test/reads/name.test.ts > v2.registered",
-      "tests/integration/test/writes/registration.test.ts > registers a name through commit, wait and reveal, paying the quote"
+      "tests/integration/test/writes/registration.test.ts > registers a name through commit, wait and reveal, paying the quote",
+      "tests/integration/test/writes/transfers.test.ts > transfers ENSv2 names, safely only when nobody else holds roles"
     ]
   },
   "M:A15": {
@@ -1472,7 +1482,8 @@
       "tests/integration/test/reads/name.test.ts > v2.roles",
       "tests/integration/test/writes/access-matrix.test.ts > role.grant as role grant by stranger",
       "tests/integration/test/writes/access-matrix.test.ts > name.transfer as resolver role, transfer",
-      "tests/integration/test/writes/access.test.ts > grants and revokes ENSv2 roles"
+      "tests/integration/test/writes/access.test.ts > grants and revokes ENSv2 roles",
+      "tests/integration/test/writes/transfers.test.ts > transfers ENSv2 names, safely only when nobody else holds roles"
     ]
   },
   "M:A25": {
@@ -1512,7 +1523,8 @@
       "tests/integration/test/reads/resolver.test.ts > describes ENSv2 resolvers and their record links",
       "tests/integration/test/writes/access-matrix.test.ts > record.set as ENSv2 owner",
       "tests/integration/test/writes/access-matrix.test.ts > record.set as ENSv2 stranger",
-      "tests/integration/test/writes/records.test.ts > creates a resolver with records and points a name at it"
+      "tests/integration/test/writes/records.test.ts > creates a resolver with records and points a name at it",
+      "tests/integration/test/writes/transfers.test.ts > hands record access over with an ENSv2 name, unless the resolver serves other names"
     ]
   },
   "M:B6": {
@@ -1639,7 +1651,8 @@
     "tests": [
       "tests/integration/test/reads/access.test.ts > reads ENSv1 operators, resolver delegates and token approvals",
       "tests/integration/test/writes/access-matrix.test.ts > record.set as registry operator",
-      "tests/integration/test/writes/access.test.ts > grants and revokes ENSv1 operators, token approvals and delegates"
+      "tests/integration/test/writes/access.test.ts > grants and revokes ENSv1 operators, token approvals and delegates",
+      "tests/integration/test/writes/transfers.test.ts > lets an approved operator transfer an ENSv2 name"
     ]
   },
   "M:D5": {
