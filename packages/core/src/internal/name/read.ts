@@ -140,7 +140,8 @@ const readV2 = Effect.fnUntraced(function* (
     block.blockNumber === undefined
       ? { blockTag: block.blockTag }
       : { blockNumber: block.blockNumber };
-  const { registry, gracePeriod } = yield* Effect.all(
+  // At blocks before ENSv2 was deployed its contracts have no code: the name has no ENSv2 data.
+  const found = yield* Effect.all(
     {
       registry: Rpc.readContract(client, {
         address: contracts.universalHelper,
@@ -159,8 +160,14 @@ const readV2 = Effect.fnUntraced(function* (
         : Effect.succeed(undefined),
     },
     { concurrency: "unbounded" },
+  ).pipe(
+    Effect.catchIf(
+      (error: AnyError) => error._tag === "ConfigError" && error.code === "CONTRACT_NOT_DEPLOYED",
+      () => Effect.succeed(undefined),
+    ),
   );
-  if (isAddressEqual(registry, zeroAddress)) return undefined;
+  if (found === undefined || isAddressEqual(found.registry, zeroAddress)) return undefined;
+  const { registry, gracePeriod } = found;
 
   const parent = { address: registry, abi: Abis.v2.permissionedRegistry, ...at } as const;
   const labelReads = parts.encodedLabel
