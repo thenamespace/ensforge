@@ -53,6 +53,13 @@ export const v1Deployment = (
       dnssecOracle: at("v1.dnssecOracle"),
       offchainDnsResolver: at("v1.offchainDnsResolver"),
     },
+    // Newest first, as in ensforge's mainnet profile (which also lists the 2023 resolver).
+    legacyPublicResolvers: [at("legacy.publicResolver2020Feb"), at("legacy.publicResolver2020Jan")],
+    frozenPublicResolvers: [
+      at("legacy.publicResolver2019"),
+      at("legacy.publicResolver2017"),
+      at("legacy.publicResolver2018"),
+    ],
   };
 };
 

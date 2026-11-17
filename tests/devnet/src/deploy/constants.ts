@@ -87,6 +87,7 @@ export const ethResolverInterfaces = {
   nameWrapper: "0x019a38fe",
   wrappedEthRegistrarController: "0x612e8c09",
   ethRegistrarController: "0xe4f37f79",
+  legacyEthRegistrarController: "0x018fac06",
 } as const;
 
 /** DNS top-level domains the devnet treats as public suffixes, as contracts-v2's local devnet. */

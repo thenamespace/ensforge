@@ -35,10 +35,11 @@ export type Source =
   /** Our own contracts under `tests/devnet/contracts`, compiled with solc 0.8.27. */
   | { readonly kind: "local"; readonly file: string; readonly contract: string }
   /**
-   * Mainnet runtime code at `address`, placed at the same address with `anvil_setCode`; for
-   * contracts other software expects at canonical addresses. Needs `ENSFORGE_MAINNET_RPC_URL`.
+   * Mainnet runtime code at `address`, placed at the same address with `anvil_setCode`: canonical
+   * singletons, and old ENS generations no source reproduces. `abi` names an artifact whose ABI
+   * covers the code's functions. Needs `ENSFORGE_MAINNET_RPC_URL`.
    */
-  | { readonly kind: "runtime"; readonly address: `0x${string}` };
+  | { readonly kind: "runtime"; readonly address: `0x${string}`; readonly abi?: string };
 
 const v1Deployment = (name: string): Source => ({
   kind: "deployment",
@@ -53,11 +54,13 @@ const v2Deployment = (file: string): Source => ({
 });
 
 // contracts-v2's default mainnet build: v2 sources plus its pinned ens-contracts and test mocks.
+const defaultV2BuildInfo =
+  "contracts/deployments/mainnet/build-info/solc-0_8_25-b30e6dc9a03b37f6a0b89af5d02a73d3993944f7.json";
+
 const v2Build = (contract: string): Source => ({
   kind: "build",
   repository: "contracts-v2",
-  buildInfo:
-    "contracts/deployments/mainnet/build-info/solc-0_8_25-b30e6dc9a03b37f6a0b89af5d02a73d3993944f7.json",
+  buildInfo: defaultV2BuildInfo,
   contract,
 });
 
@@ -106,6 +109,66 @@ export const sources = {
   "v1/BatchGatewayProvider": v1Deployment("BatchGatewayProvider"),
   "v1/UniversalResolver": v1Deployment("UniversalResolver"),
   "v1/MigrationHelper": v1Deployment("MigrationHelper"),
+  // The 2020 controller that registered unwrapped names until the NameWrapper (recompiled by
+  // ens-contracts; behaviour-equivalent to mainnet's 0x283A…).
+  "v1/LegacyETHRegistrarController": {
+    kind: "deployment",
+    repository: "ens-contracts",
+    file: "deployments/archive/ETHRegistrarController_mainnet_9380471.sol/ETHRegistrarController_mainnet_9380471.json",
+  },
+
+  // Older ENSv1 generations still observable on mainnet, at their mainnet addresses. Their
+  // configuration is plain storage, so they work anywhere once the registries they name exist.
+  "legacy/ENSRegistryOld": {
+    kind: "runtime",
+    address: "0x314159265dd8dbb310642f98f50c066173c1259b",
+    abi: "v1/ENSRegistry",
+  },
+  "legacy/PublicResolver2017": {
+    kind: "runtime",
+    address: "0x1da022710dF5002339274AaDEe8D58218e9D6AB5",
+    abi: "v1/PublicResolver",
+  },
+  "legacy/PublicResolver2018": {
+    kind: "runtime",
+    address: "0x5FfC014343cd971B7eb70732021E26C35B744cc4",
+    abi: "v1/PublicResolver",
+  },
+  "legacy/PublicResolver2019": {
+    kind: "runtime",
+    address: "0x226159d592E2b063810a10Ebf6dcbADA94Ed68b8",
+    abi: "v1/PublicResolver",
+  },
+  "legacy/PublicResolver2020Jan": {
+    kind: "runtime",
+    address: "0xDaaF96c344f63131acadD0Ea35170E7892d3dfBA",
+    abi: "v1/PublicResolver",
+  },
+  "legacy/PublicResolver2020Feb": {
+    kind: "runtime",
+    address: "0x4976fb03C32e5B8cfe2b6cCB31c09Ba78EBaBa41",
+    abi: "v1/PublicResolver",
+  },
+  "legacy/ReverseRegistrar2017": {
+    kind: "runtime",
+    address: "0x9062C0A6Dbd6108336BcBe4593a3D1cE05512069",
+    abi: "v1/ReverseRegistrar",
+  },
+  "legacy/DefaultReverseResolver2017": {
+    kind: "runtime",
+    address: "0x5fBb459C49BB06083C33109fA4f14810eC2Cf358",
+    abi: "v1/PublicResolver",
+  },
+  "legacy/ReverseRegistrar2020": {
+    kind: "runtime",
+    address: "0x084b1c3C81545d370f3634392De611CaaBFf8148",
+    abi: "v1/ReverseRegistrar",
+  },
+  "legacy/DefaultReverseResolver2020": {
+    kind: "runtime",
+    address: "0xA2C122BE93b0074270ebeE7f6b7292C7deB45047",
+    abi: "v1/PublicResolver",
+  },
 
   // ENSv2 at contracts-v2 v1.0.1: the live mainnet build of each contract (some in `mainnet-adhoc`).
   "v2/ContractNamerImplementation": v2Deployment("mainnet/ContractNamer_Implementation.json"),
@@ -170,6 +233,56 @@ export const sources = {
       "project/test/mocks/MockRegistrationIntentExecutor.sol":
         "contracts/test/mocks/MockRegistrationIntentExecutor.sol",
     },
+  },
+
+  // Behaviour mocks from the pinned ENS test suites, for states no real contract is in.
+  "mocks/DummyShapeshiftResolver": v2Build(
+    `${ensContracts}/universalResolver/mocks/DummyShapeshiftResolver.sol:DummyShapeshiftResolver`,
+  ),
+  "mocks/MockOffchainResolver": v2Build(
+    `${ensContracts}/test/mocks/MockOffchainResolver.sol:MockOffchainResolver`,
+  ),
+  "mocks/DummyExtendedDNSSECResolver": v2Build(
+    `${ensContracts}/dnsregistrar/mocks/DummyExtendedDNSSECResolver.sol:DummyExtendedDNSSECResolver`,
+  ),
+  "mocks/DummyNonCCIPAwareResolver": v2Build(
+    `${ensContracts}/dnsregistrar/mocks/DummyNonCCIPAwareResolver.sol:DummyNonCCIPAwareResolver`,
+  ),
+  "mocks/DummyLegacyTextResolver": v2Build(
+    `${ensContracts}/dnsregistrar/mocks/DummyLegacyTextResolver.sol:DummyLegacyTextResolver`,
+  ),
+  "mocks/MockSmartContractWallet": v2Build(
+    `${ensContracts}/test/mocks/MockSmartContractWallet.sol:MockSmartContractWallet`,
+  ),
+  "mocks/MockERC6492WalletFactory": v2Build(
+    `${ensContracts}/test/mocks/MockERC6492WalletFactory.sol:MockERC6492WalletFactory`,
+  ),
+  "mocks/ERC1155ReceiverMock": v2Build(
+    `${ensContracts}/wrapper/mocks/ERC1155ReceiverMock.sol:ERC1155ReceiverMock`,
+  ),
+  "mocks/TestNameWrapperReentrancy": v2Build(
+    `${ensContracts}/wrapper/test/TestNameWrapperReentrancy.sol:TestNameWrapperReentrancy`,
+  ),
+  "mocks/NameGriefer": v2Build(`${ensContracts}/wrapper/test/NameGriefer.sol:NameGriefer`),
+  "mocks/MockOwnable": v2Build(`${ensContracts}/test/mocks/MockOwnable.sol:MockOwnable`),
+  "mocks/MockERC20Blacklist": v2Build("project/test/mocks/MockERC20.sol:MockERC20Blacklist"),
+  "mocks/MockERC20VoidReturn": v2Build("project/test/mocks/MockERC20.sol:MockERC20VoidReturn"),
+  "mocks/MockERC20FalseReturn": v2Build("project/test/mocks/MockERC20.sol:MockERC20FalseReturn"),
+  // Not in the mainnet build; compiled on it from the v1.0.1 tree.
+  "mocks/MockRevertingRegistry": {
+    kind: "build",
+    repository: "contracts-v2",
+    buildInfo: defaultV2BuildInfo,
+    contract: "project/test/mocks/MockRevertingRegistry.sol:MockRevertingRegistry",
+    add: {
+      "project/test/mocks/MockRevertingRegistry.sol":
+        "contracts/test/mocks/MockRevertingRegistry.sol",
+    },
+  },
+  "mocks/HostileContract": {
+    kind: "local",
+    file: "HostileContract.sol",
+    contract: "HostileContract",
   },
 
   // Canonical singletons, placed at their mainnet addresses.

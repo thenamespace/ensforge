@@ -41,24 +41,32 @@ export class Anvil extends Context.Service<
       const spawner = yield* ChildProcessSpawner.ChildProcessSpawner;
       const fs = yield* FileSystem.FileSystem;
 
-      const pinned = (yield* fs
-        .readFileString(`${packageDir}foundry-version`)
-        .pipe(Effect.mapError((cause) => new AnvilError({ message: String(cause) })))).trim();
-      const installHint = `install it with \`foundryup --install ${pinned}\``;
+      // Checked on the first start, so commands that never run anvil do not need it.
+      const checkVersion = yield* Effect.cached(
+        Effect.gen(function* () {
+          const pinned = (yield* fs
+            .readFileString(`${packageDir}foundry-version`)
+            .pipe(Effect.mapError((cause) => new AnvilError({ message: String(cause) })))).trim();
+          const installHint = `install it with \`foundryup --install ${pinned}\``;
 
-      const version = yield* spawner.spawn(ChildProcess.make("anvil", ["--version"])).pipe(
-        Effect.flatMap((handle) => handle.stdout.pipe(Stream.decodeText(), Stream.mkString)),
-        Effect.scoped,
-        Effect.mapError(() => new AnvilError({ message: `anvil is not on PATH; ${installHint}` })),
+          const version = yield* spawner.spawn(ChildProcess.make("anvil", ["--version"])).pipe(
+            Effect.flatMap((handle) => handle.stdout.pipe(Stream.decodeText(), Stream.mkString)),
+            Effect.scoped,
+            Effect.mapError(
+              () => new AnvilError({ message: `anvil is not on PATH; ${installHint}` }),
+            ),
+          );
+          const found = /Version: (\S+)/.exec(version)?.[1];
+          if (found !== pinned) {
+            return yield* new AnvilError({
+              message: `found anvil ${found}, need ${pinned}; ${installHint}`,
+            });
+          }
+        }),
       );
-      const found = /Version: (\S+)/.exec(version)?.[1];
-      if (found !== pinned) {
-        return yield* new AnvilError({
-          message: `found anvil ${found}, need ${pinned}; ${installHint}`,
-        });
-      }
 
       const start = Effect.fn("Anvil.start")(function* (options: AnvilOptions = {}) {
+        yield* checkVersion;
         const port = options.port ?? (yield* Effect.promise(() => getPort()));
         const instance = Instance.anvil({
           port,

@@ -210,7 +210,11 @@ export const deriveAll = Effect.fn("deriveAll")(function* () {
           message: `no code at ${source.address}`,
         });
       }
-      derived.set(name, { abi: [], bytecode: code, source });
+      const abi = source.abi === undefined ? [] : derived.get(source.abi as ArtifactName)?.abi;
+      if (abi === undefined) {
+        return yield* new ArtifactError({ artifact: name, message: `no artifact ${source.abi}` });
+      }
+      derived.set(name, { abi, bytecode: code, source });
     }
   }
 

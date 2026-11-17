@@ -3,6 +3,7 @@ import { Deployments } from "@ensforge/contracts";
 import { cutoverSteps } from "../deploy/cutover.ts";
 import type { Ledger, Step } from "../deploy/engine.ts";
 import { canonicalSteps, hcaSteps } from "../deploy/hca.ts";
+import { mockSteps } from "../deploy/mocks.ts";
 import { v1Steps } from "../deploy/v1.ts";
 import { v2ResolutionSteps, v2Steps } from "../deploy/v2.ts";
 import { mainnetCapabilities, v1Deployment, v2Deployment } from "./deployments.ts";
@@ -17,8 +18,10 @@ export type ProfileDefinition = {
   readonly deployments: (ledger: Ledger) => Deployments.Profile;
 };
 
-const greenfield = [...canonicalSteps, ...v1Steps, ...v2Steps, ...hcaSteps, ...v2ResolutionSteps];
-const mainnetShaped = [...greenfield, ...cutoverSteps];
+const v1Only = [...canonicalSteps, ...v1Steps, ...mockSteps];
+const ensV2 = [...canonicalSteps, ...v1Steps, ...v2Steps, ...hcaSteps, ...v2ResolutionSteps];
+const greenfield = [...ensV2, ...mockSteps];
+const mainnetShaped = [...ensV2, ...cutoverSteps, ...mockSteps];
 
 const profile = (deployments: Omit<Deployments.Profile, "name" | "chainId">) =>
   Deployments.define({ name: "devnet", chainId, ...deployments });
@@ -27,7 +30,7 @@ export const profiles = {
   "v1-live": {
     description:
       "ENSv1 before the ENSv2 launch: controllers register, the NameWrapper has an owner",
-    steps: [...canonicalSteps, ...v1Steps],
+    steps: v1Only,
     deployments: (ledger) => profile({ v1: v1Deployment(ledger, chainId, "active") }),
   },
   "v1-v2-greenfield": {

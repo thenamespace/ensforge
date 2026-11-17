@@ -1,6 +1,6 @@
 import { Effect } from "effect";
 
-import { labelhash, namehash, zeroHash } from "viem";
+import { labelhash, namehash, numberToHex, pad, zeroHash, type Address } from "viem";
 
 import {
   dnsEncode,
@@ -9,7 +9,12 @@ import {
   ethLabelhash,
   ethResolverInterfaces,
 } from "./constants.ts";
-import { step, type Step } from "./engine.ts";
+import { step, type Step, type StepContext } from "./engine.ts";
+
+const setSlot = (c: StepContext, address: Address, slot: bigint, value: Address) =>
+  c.cheat((client) =>
+    client.setStorageAt({ address, index: numberToHex(slot, { size: 32 }), value: pad(value) }),
+  );
 
 /**
  * ENSv1 at ens-contracts v1.7.0, following its deploy scripts with the `legacy`, `use_root` and
@@ -17,11 +22,58 @@ import { step, type Step } from "./engine.ts";
  * DAO. Mainnet-only choices (Chainlink price feed, no BulkRenewal interface) follow mainnet.
  */
 export const v1Steps: readonly Step[] = [
+  // The registry ENS replaced in 2020 (mainnet's LLL code): names on it stay readable through the
+  // fallback, and the oldest resolvers and reverse registrar still authorize against it. Its root
+  // stays with the owner so fixtures can create names there.
   step("v1.registry", (c) =>
     Effect.gen(function* () {
-      // The registry ENS replaced in 2020; names created on it stay readable through the fallback.
-      const legacy = yield* c.deploy("v1.legacyRegistry", "v1/ENSRegistry");
-      yield* c.deploy("v1.registry", "v1/ENSRegistryWithFallback", [legacy]);
+      const legacy = yield* c.place("v1.legacyRegistry", "legacy/ENSRegistryOld");
+      // The LLL registry keeps a node's owner at slot `node + 0x20`.
+      yield* setSlot(c, legacy, 0x20n, c.accounts.owner);
+      // Placed code has no storage: each contract's registry (and default resolver) slots are set
+      // as on mainnet.
+      const defaultReverseResolver = yield* c.place(
+        "legacy.defaultReverseResolver2017",
+        "legacy/DefaultReverseResolver2017",
+      );
+      yield* setSlot(c, defaultReverseResolver, 0n, legacy);
+      const reverseRegistrar = yield* c.place(
+        "legacy.reverseRegistrar2017",
+        "legacy/ReverseRegistrar2017",
+      );
+      yield* setSlot(c, reverseRegistrar, 0n, legacy);
+      yield* setSlot(c, reverseRegistrar, 1n, defaultReverseResolver);
+      yield* c.write(
+        "v1.legacyRegistry",
+        "setSubnodeOwner",
+        [zeroHash, labelhash("reverse"), c.accounts.owner],
+        {
+          from: "owner",
+        },
+      );
+      yield* c.write(
+        "v1.legacyRegistry",
+        "setSubnodeOwner",
+        [namehash("reverse"), labelhash("addr"), reverseRegistrar],
+        { from: "owner" },
+      );
+      // Bound to the old registry: records readable, writable only by old-registry owners.
+      for (const [key, artifact, slot] of [
+        ["legacy.publicResolver2017", "legacy/PublicResolver2017", 0n],
+        ["legacy.publicResolver2018", "legacy/PublicResolver2018", 0n],
+        ["legacy.publicResolver2019", "legacy/PublicResolver2019", 7n],
+      ] as const) {
+        yield* setSlot(c, yield* c.place(key, artifact), slot, legacy);
+      }
+
+      const registry = yield* c.deploy("v1.registry", "v1/ENSRegistryWithFallback", [legacy]);
+      // The 2020 resolvers keep their registry at slot 10.
+      for (const [key, artifact] of [
+        ["legacy.publicResolver2020Jan", "legacy/PublicResolver2020Jan"],
+        ["legacy.publicResolver2020Feb", "legacy/PublicResolver2020Feb"],
+      ] as const) {
+        yield* setSlot(c, yield* c.place(key, artifact), 10n, registry);
+      }
     }),
   ),
 
@@ -49,13 +101,33 @@ export const v1Steps: readonly Step[] = [
   step("v1.reverseRegistrar", (c) =>
     Effect.gen(function* () {
       const registry = yield* c.address("v1.registry");
+      // As on mainnet, the 2020 reverse registrar owns `addr.reverse` first; the current one's
+      // constructor claims its reverse name from it.
+      const reverseRegistrar2020 = yield* c.place(
+        "legacy.reverseRegistrar2020",
+        "legacy/ReverseRegistrar2020",
+      );
+      const defaultReverseResolver2020 = yield* c.place(
+        "legacy.defaultReverseResolver2020",
+        "legacy/DefaultReverseResolver2020",
+      );
+      yield* setSlot(c, defaultReverseResolver2020, 0n, registry);
+      yield* setSlot(c, reverseRegistrar2020, 0n, registry);
+      yield* setSlot(c, reverseRegistrar2020, 1n, defaultReverseResolver2020);
+      yield* c.write("v1.root", "setSubnodeOwner", [labelhash("reverse"), c.accounts.owner], {
+        from: "owner",
+      });
+      yield* c.write(
+        "v1.registry",
+        "setSubnodeOwner",
+        [namehash("reverse"), labelhash("addr"), reverseRegistrar2020],
+        { from: "owner" },
+      );
+
       const reverseRegistrar = yield* c.deploy("v1.reverseRegistrar", "v1/ReverseRegistrar", [
         registry,
       ]);
       yield* c.write("v1.reverseRegistrar", "transferOwnership", [c.accounts.owner]);
-      yield* c.write("v1.root", "setSubnodeOwner", [labelhash("reverse"), c.accounts.owner], {
-        from: "owner",
-      });
       yield* c.write(
         "v1.registry",
         "setSubnodeOwner",
@@ -103,6 +175,27 @@ export const v1Steps: readonly Step[] = [
         100_000_000_000_000_000_000_000_000n,
         21n,
       ]);
+    }),
+  ),
+
+  // Registered unwrapped names from 2020 until the NameWrapper; still a registrar controller
+  // until the ENSv2 launch. Mainnet keeps commitments for up to 7 days.
+  step("v1.legacyEthRegistrarController", (c) =>
+    Effect.gen(function* () {
+      const controller = yield* c.deploy(
+        "v1.legacyEthRegistrarController",
+        "v1/LegacyETHRegistrarController",
+        [yield* c.address("v1.baseRegistrar"), yield* c.address("v1.priceOracle"), 60n, 604_800n],
+      );
+      yield* c.write("v1.registrarSecurityController", "addRegistrarController", [controller], {
+        from: "owner",
+      });
+      yield* c.write(
+        "v1.ethOwnedResolver",
+        "setInterface",
+        [namehash("eth"), ethResolverInterfaces.legacyEthRegistrarController, controller],
+        { from: "owner" },
+      );
     }),
   ),
 

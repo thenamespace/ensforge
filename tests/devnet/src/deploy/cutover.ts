@@ -16,6 +16,7 @@ export const cutoverSteps: readonly Step[] = [
       // No ENSv1 path registers `.eth` names any more; the wrapped controller registers through
       // the NameWrapper.
       for (const controller of [
+        "v1.legacyEthRegistrarController",
         "v1.ethRegistrarController",
         "v1.wrappedEthRegistrarController",
         "v1.nameWrapper",
