@@ -1,5 +1,6 @@
 import type { Address } from "viem";
 
+import { toNames } from "../../utils/Role.js";
 import { EnsforgeError, withDefaults } from "../EnsforgeError.js";
 
 const who = (o: UnauthorizedError.Options): string => o.account ?? "The account";
@@ -59,6 +60,31 @@ export class UnauthorizedError extends EnsforgeError<"UnauthorizedError", Unauth
     this.missingRoles = options.missingRoles ?? [];
     this.roleBitmap = options.roleBitmap;
     this.requirements = options.requirements ?? [];
+  }
+
+  /**
+   * Reverts are often translated before the contract kind is known; role names are decoded from
+   * `roleBitmap` once context names it.
+   *
+   * @internal
+   */
+  override withContext(context: EnsforgeError.Context | undefined): this {
+    const kind = this.context.contractKind ?? context?.contractKind;
+    if (
+      this.missingRoles.length === 0 &&
+      this.roleBitmap !== undefined &&
+      (kind === "registry" || kind === "resolver")
+    ) {
+      const names = toNames(this.roleBitmap, kind);
+      (this as { missingRoles: readonly string[] }).missingRoles = names;
+      if (this.code === "MISSING_ROLES" && names.length > 0) {
+        (this as { details: readonly string[] }).details = [
+          ...this.details,
+          `Missing roles: ${names.join(", ")}`,
+        ];
+      }
+    }
+    return super.withContext(context);
   }
 }
 

@@ -12,7 +12,7 @@ import { sendPlan } from "../write/send.js";
 import { addressOf, resolveSigner } from "../write/signer.js";
 import { estimatePlan, simulatePlan } from "../write/simulate.js";
 import { routePlan } from "../write/via.js";
-import { withContext } from "./context.js";
+import { contextOf, withContext } from "./context.js";
 
 /** Builds the plan of a write action from its options. */
 export type Planner<options, error> = (
@@ -89,11 +89,13 @@ export const write = <options, error extends EnsforgeError>(
       const plan = yield* planned(client, options);
       const account = addressOf(options.account) ?? client.account;
       const simulation = yield* simulatePlan(client, plan, account);
+      // Step errors are values, not failures, so they get the action's context here.
+      const context = contextOf(`${path}.simulate`, client, options, extra);
       const steps = yield* Effect.forEach(simulation.steps, (step) =>
         step.error === undefined
           ? Effect.succeed(step)
           : explained(client, options, account, explain, step.error).pipe(
-              Effect.map((error) => ({ ...step, error })),
+              Effect.map((error) => ({ ...step, error: error.withContext(context) })),
             ),
       );
       return { ...simulation, steps };
