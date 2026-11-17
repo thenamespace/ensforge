@@ -1,14 +1,14 @@
 {
   "name": "@ensforge/react",
   "version": "0.6.1",
-  "description": "Reactive React hooks for ENS",
+  "description": "Effect Atom hooks and atoms for ENS in React",
   "keywords": [
+    "effect",
     "ens",
     "ethereum",
     "hooks",
     "react",
-    "sdk",
-    "typescript",
+    "ssr",
     "viem",
     "wagmi"
   ],
@@ -37,9 +37,9 @@
       "workspace-source": "./src/atoms/index.ts",
       "default": "./dist/atoms.js"
     },
-    "./cache": {
-      "workspace-source": "./src/cache/index.ts",
-      "default": "./dist/cache.js"
+    "./server": {
+      "workspace-source": "./src/server/index.ts",
+      "default": "./dist/server.js"
     },
     "./package.json": "./package.json"
   },
@@ -50,7 +50,7 @@
     "exports": {
       ".": "./dist/index.js",
       "./atoms": "./dist/atoms.js",
-      "./cache": "./dist/cache.js",
+      "./server": "./dist/server.js",
       "./package.json": "./package.json"
     },
     "access": "public",
@@ -62,15 +62,19 @@
     "lint": "oxlint --deny-warnings .",
     "pack:check": "publint && attw --pack . --profile esm-only",
     "prepack": "pnpm build",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit && tsc --noEmit -p test"
   },
   "dependencies": {
     "@effect/atom-react": "catalog:",
     "@ensforge/sdk": "workspace:*"
   },
   "devDependencies": {
+    "@effect/vitest": "catalog:",
+    "@ensforge/test-harness": "workspace:*",
+    "@testing-library/react": "16.3.3",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
+    "jsdom": "30.1.3",
     "react": "catalog:",
     "react-dom": "catalog:",
     "scheduler": "catalog:",
@@ -78,9 +82,8 @@
   },
   "peerDependencies": {
     "effect": "^4.1.4",
-    "react": "^19.2.0",
+    "react": "^19.0.0",
     "scheduler": ">=0.25.0 <0.29.0",
-    "viem": "^2.57.0",
-    "wagmi": "^3.7.0"
+    "viem": "^2.57.0"
   }
 }

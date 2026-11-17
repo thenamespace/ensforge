@@ -6,7 +6,7 @@ export default defineConfig({
   entry: {
     index: "src/index.ts",
     atoms: "src/atoms/index.ts",
-    cache: "src/cache/index.ts",
+    server: "src/server/index.ts",
   },
   deps: { dts: { neverBundle: true } },
   exports: { devExports: "workspace-source" },

@@ -2,7 +2,7 @@ import { defineConfig } from "vitest/config";
 
 // Fast lanes (018): `<package>:unit` and `<package>:types`, network-free. Chain lanes
 // (integration, fuzz, services, fork, live) are added by phases 019–025.
-const packages = ["contracts", "sdk", "hca"] as const;
+const packages = ["contracts", "sdk", "hca", "react"] as const;
 
 const unit = (name: (typeof packages)[number]) => ({
   extends: true as const,
@@ -22,6 +22,18 @@ const wagmi2 = {
     name: "sdk-wagmi2:unit",
     root: "packages/sdk",
     include: ["test/unit/wagmi/**/*.test.ts"],
+    setupFiles: ["../../tests/harness/src/setup.ts"],
+  },
+};
+
+// React hooks render in jsdom; files that check server rendering opt into `node` per file.
+const reactUnit = {
+  extends: true as const,
+  test: {
+    name: "react:unit",
+    root: "packages/react",
+    include: ["test/unit/**/*.test.{ts,tsx}"],
+    environment: "jsdom",
     setupFiles: ["../../tests/harness/src/setup.ts"],
   },
 };
@@ -46,7 +58,12 @@ export default defineConfig({
   resolve: { conditions: ["workspace-source"] },
   ssr: { resolve: { conditions: ["workspace-source"] } },
   test: {
-    projects: [...packages.flatMap((name) => [unit(name), types(name)]), wagmi2],
+    projects: [
+      ...packages.flatMap((name) =>
+        name === "react" ? [reactUnit, types(name)] : [unit(name), types(name)],
+      ),
+      wagmi2,
+    ],
     passWithNoTests: true,
   },
 });
