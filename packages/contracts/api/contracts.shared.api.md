@@ -125,6 +125,7 @@ const ensErrorsAbi: Abi
   error NameRequiresMigration()
   error NameRequiresPreimage()
   error NoMatchingProof(bytes)
+  error NoNFTAllowed()
   error NoOwnerRecordFound()
   error NormalizationChangedName(bytes,bytes,address)
   error NoSuffixMatch(bytes,bytes)
