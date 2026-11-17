@@ -115,7 +115,12 @@ export const waitForChainTime = Effect.fnUntraced(function* (client: Client, tim
   for (;;) {
     const block = yield* fromPromise(() => getBlock(client.publicClient, { blockTag: "latest" }));
     if (block.timestamp >= timestamp) return;
-    yield* Effect.sleep(Duration.seconds(Math.max(1, Number(timestamp - block.timestamp))));
+    // Chain time can run ahead of wall time (devnets, forks), so check again at least every
+    // polling interval instead of sleeping the whole difference.
+    const remaining = Duration.seconds(Math.max(1, Number(timestamp - block.timestamp)));
+    yield* Effect.sleep(
+      Duration.min(remaining, Duration.millis(client.publicClient.pollingInterval)),
+    );
   }
 });
 
