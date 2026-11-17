@@ -182,6 +182,8 @@ export const revertMap: Readonly<Record<string, Mapper>> = {
 export const requireMap: Readonly<Record<string, Mapper>> = {
   // NameWrapper.approve: only the token holder or an operator may approve.
   "ERC721: approve caller is not token owner or approved for all": notOwner,
+  // BaseRegistrar transfers, including wrapping a .eth name by sending its token.
+  "ERC721: caller is not token owner or approved": notOwner,
   // ReverseRegistrar.setNameForAddr: the address itself, its operator, a controller, or (for a
   // contract) its Ownable owner.
   "ReverseRegistrar: Caller is not a controller or authorised by address or the address itself":

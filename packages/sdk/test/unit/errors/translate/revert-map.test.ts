@@ -295,6 +295,7 @@ const requireRevert = (message: string): Hex =>
 describe("ENSv1 require messages", () => {
   it.each([
     ["ERC721: approve caller is not token owner or approved for all", "NOT_OWNER"],
+    ["ERC721: caller is not token owner or approved", "NOT_OWNER"],
     [
       "ReverseRegistrar: Caller is not a controller or authorised by address or the address itself",
       "NOT_APPROVED",
