@@ -81,12 +81,13 @@ property tests from Schemas or `effect/Arbitrary`.
   `tests/harness`.
 - `tests/devnet` deploys ENS on a local anvil (Foundry, see its README); `tests/fixtures` seeds
   every name state on it and holds the edge-case catalog and coverage ledger; `tests/integration`
-  checks ensforge's reads against them. `pnpm test:chain` runs the chain lane. Tag tests with the
+  checks ensforge's reads and writes against them. `pnpm test:chain` runs the chain lane. Tag tests with the
   catalog cases they cover (`meta: { cases: ["O08"] }`) and list them in
   `tests/fixtures/catalog/ledger.json`.
-- Every error code a read action documents in `@throws` must be asserted by a test that names the
+- Every error code an action documents in `@throws` must be asserted by a test that names the
   action (`packages/sdk/test/unit/conformance/throws-coverage.test.ts`, which lists the few still
-  open).
+  open), and every contract error the SDK maps must be raised by a devnet contract in
+  `tests/integration/test/writes/reverts.test.ts` (`revert-map.test.ts` lists the rest).
 
 Property tests use a fixed seed; reproduce a failure with `ENSFORGE_TEST_SEED=<seed> pnpm test`.
 
