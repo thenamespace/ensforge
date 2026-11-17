@@ -32,13 +32,14 @@ layer(Devnet.layer({ profile: "mainnet-shaped" }), { excludeTestServices: true }
   it.effect("…", () =>
     Effect.gen(function* () {
       const devnet = yield* Devnet;
-      // devnet.deployments → Ensforge.create({ deployment }); devnet.client → viem test actions
+      // devnet.deployments → Ensforge.create({ deployment }); devnet.contract("v1.registry")
     }),
   );
 });
 ```
 
-Chain tests run on real time, hence `excludeTestServices`. `pnpm test:chain` runs this lane; it
+Chain tests run on real time, hence `excludeTestServices`. `Chain.layer` (provided on top of
+`Devnet.layer`) gives reads, writes, time and snapshots as Effects. `pnpm test:chain` runs this lane; it
 is not part of `pnpm test`.
 
 ## Commands

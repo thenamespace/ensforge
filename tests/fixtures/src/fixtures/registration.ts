@@ -9,8 +9,6 @@ import { fundUsdc, registerV2 } from "../builders/v2.ts";
 import type { Fixture } from "../fixture.ts";
 import { days, durations } from "./durations.ts";
 
-const year = days(365n);
-
 /** Price tiers by code point, a v2 premium, and renewals in grace through both renewers. */
 export const registration: readonly Fixture[] = [
   ...(
@@ -27,7 +25,7 @@ export const registration: readonly Fixture[] = [
     tags: { kind: "v2-native", state: "registered", price: `${[...label].length}cp` },
     v2: true,
     postlaunch: (c) =>
-      registerV2(c, { label, owner: c.accounts.alice, duration: durations.active }).pipe(
+      registerV2({ label, owner: c.accounts.alice, duration: durations.active }).pipe(
         Effect.map((name) => ({ ...name, codePoints: [...label].length })),
       ),
     check: (c, facts) =>
@@ -43,7 +41,7 @@ export const registration: readonly Fixture[] = [
     tags: { kind: "v2-native", state: "premium" },
     v2: true,
     postlaunch: (c) =>
-      registerV2(c, {
+      registerV2({
         label: "v2-premium",
         owner: c.accounts.alice,
         duration: durations.v2Premium,
@@ -53,7 +51,7 @@ export const registration: readonly Fixture[] = [
         const [, premium] = yield* c.read<readonly [bigint, bigint]>(
           "v2.ethRegistrar",
           "getRegisterPrice",
-          ["v2-premium", year, yield* c.address("v2.usdc")],
+          ["v2-premium", days(365n), yield* c.address("v2.usdc")],
         );
         yield* expectState("registration.v2-premium", "premium > 0", premium > 0n, true);
       }),
@@ -65,24 +63,24 @@ export const registration: readonly Fixture[] = [
     v2: true,
     // Renewed during grace: the new expiry counts from the old one, not from now.
     postlaunch: (c) =>
-      registerV2(c, {
+      registerV2({
         label: "v2-late-renewal",
         owner: c.accounts.alice,
         duration: durations.v2Grace,
       }).pipe(Effect.map((name) => ({ name: name.name, firstExpiry: name.expiry }))),
     afterTime: (c) =>
       Effect.gen(function* () {
-        yield* fundUsdc(c, c.accounts.alice);
+        yield* fundUsdc(c.accounts.alice);
         yield* c.write(
           "v2.ethRegistrar",
           "renew",
           [
-            { label: "v2-late-renewal", duration: year, referrer: zeroHash },
+            { label: "v2-late-renewal", duration: days(365n), referrer: zeroHash },
             yield* c.address("v2.usdc"),
           ],
           { from: c.accounts.alice },
         );
-        return { renewedBy: year };
+        return { renewedBy: days(365n) };
       }),
     check: (c, facts) =>
       Effect.gen(function* () {
@@ -91,7 +89,7 @@ export const registration: readonly Fixture[] = [
           "registration.v2-renewed-in-grace",
           "expiry",
           expiry,
-          BigInt(String(facts["firstExpiry"])) + year,
+          BigInt(String(facts["firstExpiry"])) + days(365n),
         );
       }),
   },
@@ -105,7 +103,7 @@ export const registration: readonly Fixture[] = [
     // renews only names ENSv2 reserved for them (premigration).
     prelaunch: (c) =>
       Effect.gen(function* () {
-        const name = yield* registerV1(c, {
+        const name = yield* registerV1({
           label: "v1-renewed",
           owner: c.accounts.alice,
           duration: durations.v1Grace,
@@ -122,17 +120,17 @@ export const registration: readonly Fixture[] = [
       Effect.gen(function* () {
         const renewer = yield* c.address("v2.ethRenewerV1");
         const usdc = yield* c.address("v2.usdc");
-        yield* fundUsdc(c, c.accounts.alice);
+        yield* fundUsdc(c.accounts.alice);
         yield* c.write([usdc, "v2/MockERC20"], "approve", [renewer, maxUint256], {
           from: c.accounts.alice,
         });
         yield* c.write(
           "v2.ethRenewerV1",
           "renew",
-          [{ label: "v1-renewed", duration: year, referrer: zeroHash }, usdc],
+          [{ label: "v1-renewed", duration: days(365n), referrer: zeroHash }, usdc],
           { from: c.accounts.alice },
         );
-        return { renewedBy: year };
+        return { renewedBy: days(365n) };
       }),
     check: (c, facts) =>
       Effect.gen(function* () {
@@ -143,7 +141,7 @@ export const registration: readonly Fixture[] = [
           "registration.v1-renewed-by-renewer",
           "expiry",
           expiry,
-          BigInt(String(facts["firstExpiry"])) + year,
+          BigInt(String(facts["firstExpiry"])) + days(365n),
         );
       }),
   },

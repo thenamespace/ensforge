@@ -11,15 +11,15 @@ const erc1155BatchReceived = toFunctionSelector(
   "onERC1155BatchReceived(address,address,uint256[],uint256[],bytes)",
 );
 
+/** The image of `mock.avatarToken`'s tokens. */
+export const avatarImage = "https://ensforge.com/nft.png";
+
 /**
  * One instance of each behaviour mock that needs no per-name setup: misbehaving resolvers,
  * registries, wallets, receivers and tokens. Fixtures that need a configured or name-bound mock
  * (`DummyShapeshiftResolver` responses, `TestNameWrapperReentrancy`) deploy their own from the same
  * artifacts.
  */
-/** The image of `mock.avatarToken`'s tokens. */
-export const avatarImage = "https://ensforge.com/nft.png";
-
 export const mockSteps: readonly Step[] = [
   step("mocks.resolvers", (c) =>
     Effect.gen(function* () {

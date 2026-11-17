@@ -1,4 +1,4 @@
-import { Effect, type FileSystem } from "effect";
+import { Context, Effect, type FileSystem } from "effect";
 
 import { getAddress, type Address, type Hash, type TransactionReceipt } from "viem";
 import { mnemonicToAccount } from "viem/accounts";
@@ -93,11 +93,19 @@ export type StepContext = {
   ) => Effect.Effect<A, DeployError>;
 };
 
+/**
+ * The context of the step being run, for builders that steps share: they read it with
+ * `yield* CurrentStep` instead of taking it as an argument.
+ */
+export class CurrentStep extends Context.Service<CurrentStep, StepContext>()(
+  "@ensforge/test-devnet/CurrentStep",
+) {}
+
 export type Step = {
   readonly id: string;
   readonly run: (
     context: StepContext,
-  ) => Effect.Effect<void, DeployError | ArtifactError, FileSystem.FileSystem>;
+  ) => Effect.Effect<void, DeployError | ArtifactError, FileSystem.FileSystem | CurrentStep>;
 };
 
 export const step = (id: string, run: Step["run"]): Step => ({ id, run });
@@ -240,7 +248,7 @@ export const runSteps = Effect.fn("runSteps")(function* (
     };
 
     yield* Effect.logDebug(`step ${id}`);
-    yield* run(context);
+    yield* run(context).pipe(Effect.provideService(CurrentStep, context));
   }
 
   return ledger;

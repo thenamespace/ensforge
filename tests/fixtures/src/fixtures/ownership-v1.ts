@@ -5,10 +5,8 @@ import { labelhash, namehash, zeroAddress, type Address } from "viem";
 import { expectState } from "../builders/check.ts";
 import { labelId } from "../builders/names.ts";
 import { oldRegistryName, registerV1, v1Subname } from "../builders/v1.ts";
-import type { Facts, Fixture } from "../fixture.ts";
+import type { Fixture } from "../fixture.ts";
 import { days, durations } from "./durations.ts";
-
-const address = (facts: Facts, key: string) => facts[key] as Address;
 
 /** ENSv1 ownership: registrant vs manager, subnames, expiry states and the 2017 registry. */
 export const ownershipV1: readonly Fixture[] = [
@@ -18,7 +16,7 @@ export const ownershipV1: readonly Fixture[] = [
     tags: { kind: "v1-unwrapped", state: "registered" },
     unreserved: true,
     prelaunch: (c) =>
-      registerV1(c, {
+      registerV1({
         label: "v1-plain",
         owner: c.accounts.alice,
         duration: durations.active,
@@ -37,7 +35,7 @@ export const ownershipV1: readonly Fixture[] = [
     tags: { kind: "v1-unwrapped", state: "registered", roles: "registrant-not-manager" },
     prelaunch: (c) =>
       Effect.gen(function* () {
-        const name = yield* registerV1(c, {
+        const name = yield* registerV1({
           label: "v1-managed",
           owner: c.accounts.alice,
           duration: durations.active,
@@ -50,14 +48,9 @@ export const ownershipV1: readonly Fixture[] = [
     check: (c, facts) =>
       Effect.gen(function* () {
         const manager = yield* c.read("v1.registry", "owner", [facts["node"]]);
-        yield* expectState("v1.unwrapped.manager", "manager", manager, address(facts, "manager"));
+        yield* expectState("v1.unwrapped.manager", "manager", manager, facts["manager"]);
         const registrant = yield* c.read("v1.baseRegistrar", "ownerOf", [labelId("v1-managed")]);
-        yield* expectState(
-          "v1.unwrapped.manager",
-          "registrant",
-          registrant,
-          address(facts, "registrant"),
-        );
+        yield* expectState("v1.unwrapped.manager", "registrant", registrant, facts["registrant"]);
       }),
   },
   {
@@ -66,7 +59,7 @@ export const ownershipV1: readonly Fixture[] = [
     tags: { kind: "v1-unwrapped", state: "registered", roles: "transferred-without-reclaim" },
     prelaunch: (c) =>
       Effect.gen(function* () {
-        const name = yield* registerV1(c, {
+        const name = yield* registerV1({
           label: "v1-handoff",
           owner: c.accounts.alice,
           duration: durations.active,
@@ -131,7 +124,7 @@ export const ownershipV1: readonly Fixture[] = [
     cases: ["M:A2"],
     tags: { kind: "v1-unwrapped", state: "registered", controller: "2020" },
     prelaunch: (c) =>
-      registerV1(c, {
+      registerV1({
         label: "v1-legacy",
         owner: c.accounts.alice,
         duration: durations.active,
@@ -154,7 +147,7 @@ export const ownershipV1: readonly Fixture[] = [
     id,
     cases,
     tags: { kind: "v1-unwrapped", state },
-    prelaunch: (c) => registerV1(c, { label, owner: c.accounts.alice, duration }),
+    prelaunch: (c) => registerV1({ label, owner: c.accounts.alice, duration }),
     check: (c, facts) =>
       Effect.gen(function* () {
         const now = c.time.now();
@@ -178,18 +171,18 @@ export const ownershipV1: readonly Fixture[] = [
     tags: { kind: "v1-unwrapped", state: "registered", depth: "3" },
     prelaunch: (c) =>
       Effect.gen(function* () {
-        const parent = yield* registerV1(c, {
+        const parent = yield* registerV1({
           label: "v1-parent",
           owner: c.accounts.alice,
           duration: durations.active,
         });
-        yield* v1Subname(c, {
+        yield* v1Subname({
           parent: parent.name,
           label: "sub",
           parentOwner: c.accounts.alice,
           owner: c.accounts.alice,
         });
-        const deep = yield* v1Subname(c, {
+        const deep = yield* v1Subname({
           parent: `sub.${parent.name}`,
           label: "deep",
           parentOwner: c.accounts.alice,
@@ -209,12 +202,12 @@ export const ownershipV1: readonly Fixture[] = [
     tags: { kind: "v1-unwrapped", state: "deleted" },
     prelaunch: (c) =>
       Effect.gen(function* () {
-        const parent = yield* registerV1(c, {
+        const parent = yield* registerV1({
           label: "v1-cleared",
           owner: c.accounts.alice,
           duration: durations.active,
         });
-        const sub = yield* v1Subname(c, {
+        const sub = yield* v1Subname({
           parent: parent.name,
           label: "gone",
           parentOwner: c.accounts.alice,
@@ -235,12 +228,7 @@ export const ownershipV1: readonly Fixture[] = [
         const exists = yield* c.read("v1.registry", "recordExists", [node]);
         yield* expectState("v1.subname.deleted", "record exists", exists, true);
         const resolver = yield* c.read("v1.registry", "resolver", [node]);
-        yield* expectState(
-          "v1.subname.deleted",
-          "resolver kept",
-          resolver,
-          address(facts, "resolver"),
-        );
+        yield* expectState("v1.subname.deleted", "resolver kept", resolver, facts["resolver"]);
       }),
   },
   {
@@ -250,7 +238,7 @@ export const ownershipV1: readonly Fixture[] = [
     prelaunch: (c) =>
       Effect.gen(function* () {
         const resolver = yield* c.address("legacy.publicResolver2017");
-        const name = yield* oldRegistryName(c, {
+        const name = yield* oldRegistryName({
           label: "relic",
           owner: c.accounts.alice,
           resolver,
@@ -259,9 +247,7 @@ export const ownershipV1: readonly Fixture[] = [
           [resolver, "legacy/PublicResolver2017"],
           "setAddr",
           [name.node, c.accounts.alice],
-          {
-            from: c.accounts.alice,
-          },
+          { from: c.accounts.alice },
         );
         return { ...name, owner: c.accounts.alice, resolver };
       }),
@@ -281,7 +267,7 @@ export const ownershipV1: readonly Fixture[] = [
     prelaunch: (c) =>
       Effect.gen(function* () {
         const resolver = yield* c.address("legacy.publicResolver2018");
-        const name = yield* oldRegistryName(c, {
+        const name = yield* oldRegistryName({
           label: "moved",
           owner: c.accounts.alice,
           resolver,
@@ -294,9 +280,7 @@ export const ownershipV1: readonly Fixture[] = [
           "v1.registry",
           "setSubnodeOwner",
           [namehash("test"), labelhash("moved"), c.accounts.bob],
-          {
-            from: c.accounts.owner,
-          },
+          { from: c.accounts.owner },
         );
         return {
           ...name,

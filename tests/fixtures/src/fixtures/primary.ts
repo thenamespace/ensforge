@@ -6,22 +6,14 @@ import { labelhash, namehash, type Address } from "viem";
 import { expectState } from "../builders/check.ts";
 import { setV1Records } from "../builders/records.ts";
 import { registerV1 } from "../builders/v1.ts";
-import type { Fixture } from "../fixture.ts";
+import type { Facts, Fixture } from "../fixture.ts";
 import { durations } from "./durations.ts";
 import { coins } from "./values.ts";
 
-const reverseNode = (address: Address) =>
-  namehash(`${address.slice(2).toLowerCase()}.addr.reverse`);
-
 /** A forward name `label.eth` whose ETH address is `address`. */
-const forward = Effect.fnUntraced(function* (
-  c: StepContext,
-  label: string,
-  owner: Address,
-  address: Address,
-) {
-  const name = yield* registerV1(c, { label, owner, duration: durations.active });
-  yield* setV1Records(c, {
+const forward = Effect.fnUntraced(function* (label: string, owner: Address, address: Address) {
+  const name = yield* registerV1({ label, owner, duration: durations.active });
+  yield* setV1Records({
     resolver: name.resolver,
     node: name.node,
     from: owner,
@@ -30,22 +22,16 @@ const forward = Effect.fnUntraced(function* (
   return name.name;
 });
 
-// The `addr.reverse` name of `address`, through whichever resolver its reverse node has (the
-// registry falls back to the 2017 registry for nodes it never wrote).
-const reverseName = (c: StepContext, address: Address) =>
+// Reads the `addr.reverse` name of the fixture's `address` through whichever resolver its reverse
+// node has (the registry falls back to the 2017 registry for nodes it never wrote).
+const checkReverse = (id: string) => (c: StepContext, facts: Facts) =>
   Effect.gen(function* () {
-    const node = reverseNode(address);
+    const address = facts["address"] as Address;
+    const node = namehash(`${address.slice(2).toLowerCase()}.addr.reverse`);
     const resolver = yield* c.read<Address>("v1.registry", "resolver", [node]);
-    return yield* c.read<string>([resolver, "v1/PublicResolver"], "name", [node]);
+    const name = yield* c.read<string>([resolver, "v1/PublicResolver"], "name", [node]);
+    yield* expectState(id, "addr.reverse name", name, facts["reverseName"]);
   });
-
-const checkReverse =
-  (id: string, account: (c: StepContext) => Address) =>
-  (c: StepContext, facts: Record<string, unknown>) =>
-    Effect.gen(function* () {
-      const name = yield* reverseName(c, account(c));
-      yield* expectState(id, "addr.reverse name", name, facts["reverseName"]);
-    });
 
 /** Primary names through every reverse generation, plus mismatching and contract ones. */
 export const primary: readonly Fixture[] = [
@@ -55,11 +41,11 @@ export const primary: readonly Fixture[] = [
     tags: { kind: "primary", reverse: "addr.reverse" },
     prelaunch: (c) =>
       Effect.gen(function* () {
-        const name = yield* forward(c, "rev-alice", c.accounts.alice, c.accounts.alice);
+        const name = yield* forward("rev-alice", c.accounts.alice, c.accounts.alice);
         yield* c.write("v1.reverseRegistrar", "setName", [name], { from: c.accounts.alice });
         return { name, address: c.accounts.alice, reverseName: name };
       }),
-    check: checkReverse("primary.addr-reverse", (c) => c.accounts.alice),
+    check: checkReverse("primary.addr-reverse"),
   },
   {
     id: "primary.default-reverse",
@@ -67,7 +53,7 @@ export const primary: readonly Fixture[] = [
     tags: { kind: "primary", reverse: "default.reverse" },
     prelaunch: (c) =>
       Effect.gen(function* () {
-        const name = yield* forward(c, "rev-bob", c.accounts.bob, c.accounts.bob);
+        const name = yield* forward("rev-bob", c.accounts.bob, c.accounts.bob);
         yield* c.write("v1.defaultReverseRegistrar", "setName", [name], { from: c.accounts.bob });
         return { name, address: c.accounts.bob, defaultName: name };
       }),
@@ -89,15 +75,15 @@ export const primary: readonly Fixture[] = [
     // `addr.reverse` takes priority over `default.reverse`.
     prelaunch: (c) =>
       Effect.gen(function* () {
-        const name = yield* forward(c, "rev-carol", c.accounts.carol, c.accounts.carol);
-        const fallback = yield* forward(c, "rev-carol-default", c.accounts.carol, c.accounts.carol);
+        const name = yield* forward("rev-carol", c.accounts.carol, c.accounts.carol);
+        const fallback = yield* forward("rev-carol-default", c.accounts.carol, c.accounts.carol);
         yield* c.write("v1.reverseRegistrar", "setName", [name], { from: c.accounts.carol });
         yield* c.write("v1.defaultReverseRegistrar", "setName", [fallback], {
           from: c.accounts.carol,
         });
         return { name, address: c.accounts.carol, reverseName: name, defaultName: fallback };
       }),
-    check: checkReverse("primary.both", (c) => c.accounts.carol),
+    check: checkReverse("primary.both"),
   },
   {
     id: "primary.mismatch",
@@ -111,7 +97,7 @@ export const primary: readonly Fixture[] = [
         });
         return { name: "v1-plain.eth", address: c.accounts.operator, reverseName: "v1-plain.eth" };
       }),
-    check: checkReverse("primary.mismatch", (c) => c.accounts.operator),
+    check: checkReverse("primary.mismatch"),
   },
   {
     id: "primary.not-normalized",
@@ -119,7 +105,7 @@ export const primary: readonly Fixture[] = [
     tags: { kind: "primary", reverse: "addr.reverse", forward: "not-normalized" },
     prelaunch: (c) =>
       Effect.gen(function* () {
-        yield* forward(c, "rev-approved", c.accounts.approved, c.accounts.approved);
+        yield* forward("rev-approved", c.accounts.approved, c.accounts.approved);
         yield* c.write("v1.reverseRegistrar", "setName", ["Rev-Approved.eth"], {
           from: c.accounts.approved,
         });
@@ -129,7 +115,7 @@ export const primary: readonly Fixture[] = [
           reverseName: "Rev-Approved.eth",
         };
       }),
-    check: checkReverse("primary.not-normalized", (c) => c.accounts.approved),
+    check: checkReverse("primary.not-normalized"),
   },
   {
     id: "primary.contract",
@@ -139,7 +125,7 @@ export const primary: readonly Fixture[] = [
     prelaunch: (c) =>
       Effect.gen(function* () {
         const contract = yield* c.address("mock.ownable");
-        const name = yield* forward(c, "rev-contract", c.accounts.user, contract);
+        const name = yield* forward("rev-contract", c.accounts.user, contract);
         yield* c.write(
           "v1.reverseRegistrar",
           "setNameForAddr",
@@ -148,11 +134,7 @@ export const primary: readonly Fixture[] = [
         );
         return { name, address: contract, reverseName: name };
       }),
-    check: (c, facts) =>
-      Effect.gen(function* () {
-        const name = yield* reverseName(c, facts["address"] as Address);
-        yield* expectState("primary.contract", "addr.reverse name", name, facts["reverseName"]);
-      }),
+    check: checkReverse("primary.contract"),
   },
   {
     id: "primary.reverse-2017",
@@ -162,13 +144,13 @@ export const primary: readonly Fixture[] = [
     // registry falls back to it for this reverse node.
     prelaunch: (c) =>
       Effect.gen(function* () {
-        const name = yield* forward(c, "rev-2017", c.accounts.user2, c.accounts.user2);
+        const name = yield* forward("rev-2017", c.accounts.user2, c.accounts.user2);
         yield* c.write("legacy.reverseRegistrar2017", "setName", [name], {
           from: c.accounts.user2,
         });
         return { name, address: c.accounts.user2, reverseName: name };
       }),
-    check: checkReverse("primary.reverse-2017", (c) => c.accounts.user2),
+    check: checkReverse("primary.reverse-2017"),
   },
   {
     id: "primary.reverse-2020",
@@ -178,7 +160,7 @@ export const primary: readonly Fixture[] = [
     // before 2023, then returns it.
     prelaunch: (c) =>
       Effect.gen(function* () {
-        const name = yield* forward(c, "rev-2020", c.accounts.user, c.accounts.user);
+        const name = yield* forward("rev-2020", c.accounts.user, c.accounts.user);
         const owner = { from: c.accounts.owner } as const;
         const setAddrReverse = (registrar: Address) =>
           c.write(
@@ -192,7 +174,7 @@ export const primary: readonly Fixture[] = [
         yield* setAddrReverse(yield* c.address("v1.reverseRegistrar"));
         return { name, address: c.accounts.user, reverseName: name };
       }),
-    check: checkReverse("primary.reverse-2020", (c) => c.accounts.user),
+    check: checkReverse("primary.reverse-2020"),
   },
   {
     id: "primary.at-registration",
@@ -200,7 +182,7 @@ export const primary: readonly Fixture[] = [
     tags: { kind: "primary", reverse: "addr.reverse", source: "registration" },
     prelaunch: (c) =>
       Effect.gen(function* () {
-        const name = yield* registerV1(c, {
+        const name = yield* registerV1({
           label: "rev-registered",
           owner: c.accounts.nameOwner,
           duration: durations.active,
@@ -208,6 +190,6 @@ export const primary: readonly Fixture[] = [
         });
         return { name: name.name, address: c.accounts.nameOwner, reverseName: name.name };
       }),
-    check: checkReverse("primary.at-registration", (c) => c.accounts.nameOwner),
+    check: checkReverse("primary.at-registration"),
   },
 ];

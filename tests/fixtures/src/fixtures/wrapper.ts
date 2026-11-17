@@ -1,21 +1,25 @@
 import { Effect } from "effect";
 
 import { nameWrapperFuses as fuse } from "@ensforge/contracts/v1";
-import type { StepContext } from "@ensforge/test-devnet";
-import { hexToBigInt, labelhash, namehash, type Address } from "viem";
+import { CurrentStep } from "@ensforge/test-devnet";
+import { hexToBigInt, labelhash, namehash, zeroAddress, type Address } from "viem";
 
 import { expectState } from "../builders/check.ts";
 import { labelId } from "../builders/names.ts";
 import { registerV1, v1Subname, wrapName, wrappedSubname } from "../builders/v1.ts";
-import type { Facts, Fixture } from "../fixture.ts";
+import type { Fixture } from "../fixture.ts";
 import { days, durations } from "./durations.ts";
 
-const getData = (c: StepContext, name: string) =>
-  c
-    .read<readonly [Address, number, bigint]>("v1.nameWrapper", "getData", [
-      hexToBigInt(namehash(name)),
-    ])
-    .pipe(Effect.map(([owner, fuses, expiry]) => ({ owner, fuses, expiry })));
+/** The NameWrapper's `getData` for `name`. */
+const wrapperData = Effect.fnUntraced(function* (name: string) {
+  const c = yield* CurrentStep;
+  const [owner, fuses, expiry] = yield* c.read<readonly [Address, number, bigint]>(
+    "v1.nameWrapper",
+    "getData",
+    [hexToBigInt(namehash(name))],
+  );
+  return { owner, fuses, expiry };
+});
 
 // The NameWrapper adds these to every wrapped `.eth` second-level name.
 const eth2ldFuses = fuse.parentCannotControl | fuse.isDotEth;
@@ -32,7 +36,7 @@ const wrappedEth = (
   tags: { kind: "v1-wrapped", state: "registered", ...tags },
   prelaunch: (c) =>
     Effect.gen(function* () {
-      const name = yield* registerV1(c, {
+      const name = yield* registerV1({
         label,
         owner: c.accounts.alice,
         duration: durations.active,
@@ -40,12 +44,12 @@ const wrappedEth = (
         fuses: ownerFuses,
       });
       // The wrapper's own expiry: the registrar's plus the 90-day grace period.
-      const data = yield* getData(c, name.name);
+      const data = yield* wrapperData(name.name);
       return { ...name, wrapperExpiry: data.expiry };
     }),
   check: (c, facts) =>
     Effect.gen(function* () {
-      const data = yield* getData(c, String(facts["name"]));
+      const data = yield* wrapperData(String(facts["name"]));
       yield* expectState(id, "owner", data.owner, c.accounts.alice);
       yield* expectState(id, "fuses", data.fuses, ownerFuses | eth2ldFuses);
     }),
@@ -53,11 +57,9 @@ const wrappedEth = (
 
 const locked = fuse.cannotUnwrap;
 
-// A locked parent for wrapped subnames: children can be emancipated only under a locked parent.
+// The locked parent (`v1.wrapped.locked`) of the wrapped subnames: children can be emancipated
+// only under a locked parent.
 const parent = "w-parent.eth";
-const parentFixture: Fixture = {
-  ...wrappedEth("v1.wrapped.locked", "w-parent", locked, ["M:A8"], { fuses: "CU" }),
-};
 
 const subname = (
   id: string,
@@ -72,8 +74,8 @@ const subname = (
   tags: { kind: "v1-wrapped", ...tags },
   prelaunch: (c) =>
     Effect.gen(function* () {
-      const parentData = yield* getData(c, parent);
-      const sub = yield* wrappedSubname(c, {
+      const parentData = yield* wrapperData(parent);
+      const sub = yield* wrappedSubname({
         parent,
         label,
         parentOwner: c.accounts.alice,
@@ -82,7 +84,7 @@ const subname = (
         // A short expiry passes during the build's clock jump while the parent stays registered.
         expiry: expiry === "parent" ? parentData.expiry : c.time.now() + days(1n),
       });
-      const data = yield* getData(c, sub.name);
+      const data = yield* wrapperData(sub.name);
       return {
         name: sub.name,
         parent,
@@ -93,27 +95,20 @@ const subname = (
     }),
   check: (c, facts) =>
     Effect.gen(function* () {
-      const data = yield* getData(c, String(facts["name"]));
+      const data = yield* wrapperData(String(facts["name"]));
       const expired = data.expiry < c.time.now();
       yield* expectState(id, "expired", expired, expiry === "short");
       // Expiry clears an emancipated name's owner; a parent-controlled one keeps it (W09).
       const ownerCleared = expired && (childFuses & fuse.parentCannotControl) !== 0;
-      yield* expectState(
-        id,
-        "owner",
-        data.owner,
-        ownerCleared ? fuseOwnerWhenExpired : c.accounts.bob,
-      );
+      yield* expectState(id, "owner", data.owner, ownerCleared ? zeroAddress : c.accounts.bob);
       yield* expectState(id, "fuses", data.fuses, expired ? 0 : childFuses);
     }),
 });
 
-const fuseOwnerWhenExpired = "0x0000000000000000000000000000000000000000";
-
 /** The NameWrapper's states: fuses, subnames, approvals, expiry and desync, mixed trees. */
 export const wrapper: readonly Fixture[] = [
   wrappedEth("v1.wrapped", "w-plain", 0, ["M:A7", "W16", "T03"], { fuses: "none" }),
-  parentFixture,
+  wrappedEth("v1.wrapped.locked", "w-parent", locked, ["M:A8"], { fuses: "CU" }),
   ...(
     [
       ["cannot-transfer", fuse.cannotTransfer, "CT", ["M:A8", "M08", "W30"]],
@@ -144,7 +139,7 @@ export const wrapper: readonly Fixture[] = [
     tags: { kind: "v1-wrapped", state: "registered", approval: "token-approved" },
     prelaunch: (c) =>
       Effect.gen(function* () {
-        const name = yield* registerV1(c, {
+        const name = yield* registerV1({
           label: "w-approved",
           owner: c.accounts.alice,
           duration: durations.active,
@@ -170,7 +165,7 @@ export const wrapper: readonly Fixture[] = [
     // The approval is set first, then frozen by burning CANNOT_APPROVE.
     prelaunch: (c) =>
       Effect.gen(function* () {
-        const name = yield* registerV1(c, {
+        const name = yield* registerV1({
           label: "w-frozen-approval",
           owner: c.accounts.alice,
           duration: durations.active,
@@ -195,7 +190,7 @@ export const wrapper: readonly Fixture[] = [
           approved,
           c.accounts.approved,
         );
-        const data = yield* getData(c, String(facts["name"]));
+        const data = yield* wrapperData(String(facts["name"]));
         yield* expectState(
           "v1.wrapped.locked.cannot-approve",
           "fuses",
@@ -255,7 +250,7 @@ export const wrapper: readonly Fixture[] = [
     cases: ["M:A13", "W07"],
     tags: { kind: "v1-wrapped", state: "grace" },
     prelaunch: (c) =>
-      registerV1(c, {
+      registerV1({
         label: "w-grace",
         owner: c.accounts.alice,
         duration: durations.v1Grace,
@@ -264,7 +259,7 @@ export const wrapper: readonly Fixture[] = [
     // In the registrar's grace period the wrapper token still exists (wrapper expiry = + 90 days).
     check: (c, facts) =>
       Effect.gen(function* () {
-        const data = yield* getData(c, String(facts["name"]));
+        const data = yield* wrapperData(String(facts["name"]));
         yield* expectState("v1.wrapped.grace", "wrapper owner", data.owner, c.accounts.alice);
         const registrarExpiry = yield* c.read<bigint>("v1.baseRegistrar", "nameExpires", [
           labelId("w-grace"),
@@ -282,7 +277,7 @@ export const wrapper: readonly Fixture[] = [
     cases: ["W08", "W21"],
     tags: { kind: "v1-wrapped", state: "expired" },
     prelaunch: (c) =>
-      registerV1(c, {
+      registerV1({
         label: "w-expired",
         owner: c.accounts.alice,
         duration: durations.expired,
@@ -291,8 +286,8 @@ export const wrapper: readonly Fixture[] = [
       }),
     check: (c, facts) =>
       Effect.gen(function* () {
-        const data = yield* getData(c, String(facts["name"]));
-        yield* expectState("v1.wrapped.expired", "owner", data.owner, fuseOwnerWhenExpired);
+        const data = yield* wrapperData(String(facts["name"]));
+        yield* expectState("v1.wrapped.expired", "owner", data.owner, zeroAddress);
         yield* expectState("v1.wrapped.expired", "fuses", data.fuses, 0);
       }),
   },
@@ -303,7 +298,7 @@ export const wrapper: readonly Fixture[] = [
     // Renewed through the 2020 controller, which extends the registrar but not the wrapper.
     prelaunch: (c) =>
       Effect.gen(function* () {
-        const name = yield* registerV1(c, {
+        const name = yield* registerV1({
           label: "w-desynced",
           owner: c.accounts.alice,
           duration: durations.expired,
@@ -325,7 +320,7 @@ export const wrapper: readonly Fixture[] = [
         const registrarExpiry = yield* c.read<bigint>("v1.baseRegistrar", "nameExpires", [
           labelId("w-desynced"),
         ]);
-        const data = yield* getData(c, name.name);
+        const data = yield* wrapperData(name.name);
         return { name: name.name, registrarExpiry, wrapperExpiry: data.expiry };
       }),
     check: (c, facts) =>
@@ -350,23 +345,23 @@ export const wrapper: readonly Fixture[] = [
     tags: { kind: "v1-wrapped", state: "registered", parent: "unwrapped" },
     prelaunch: (c) =>
       Effect.gen(function* () {
-        const parentName = yield* registerV1(c, {
+        const parentName = yield* registerV1({
           label: "w-loose-parent",
           owner: c.accounts.alice,
           duration: durations.active,
         });
-        const sub = yield* v1Subname(c, {
+        const sub = yield* v1Subname({
           parent: parentName.name,
           label: "wrapped",
           parentOwner: c.accounts.alice,
           owner: c.accounts.bob,
         });
-        yield* wrapName(c, { name: sub.name, owner: c.accounts.bob });
+        yield* wrapName({ name: sub.name, owner: c.accounts.bob });
         return { name: sub.name, parent: parentName.name, owner: c.accounts.bob };
       }),
     check: (c, facts) =>
       Effect.gen(function* () {
-        const data = yield* getData(c, String(facts["name"]));
+        const data = yield* wrapperData(String(facts["name"]));
         yield* expectState(
           "v1.wrapped.sub.unwrapped-parent",
           "wrapper owner",
@@ -391,14 +386,14 @@ export const wrapper: readonly Fixture[] = [
     // Created wrapped under a wrapped parent, then unwrapped by its owner.
     prelaunch: (c) =>
       Effect.gen(function* () {
-        const parentName = yield* registerV1(c, {
+        const parentName = yield* registerV1({
           label: "w-tight-parent",
           owner: c.accounts.alice,
           duration: durations.active,
           controller: "wrapped",
         });
-        const parentData = yield* getData(c, parentName.name);
-        const sub = yield* wrappedSubname(c, {
+        const parentData = yield* wrapperData(parentName.name);
+        const sub = yield* wrappedSubname({
           parent: parentName.name,
           label: "plain",
           parentOwner: c.accounts.alice,
@@ -432,14 +427,14 @@ export const wrapper: readonly Fixture[] = [
     // Needs ENSv1 registration after the wrapped name lapsed: only before the ENSv2 launch.
     unlaunched: true,
     prelaunch: (c) =>
-      registerV1(c, {
+      registerV1({
         label: "w-reclaimed",
         owner: c.accounts.alice,
         duration: durations.expired,
         controller: "wrapped",
       }),
     afterTime: (c) =>
-      registerV1(c, {
+      registerV1({
         label: "w-reclaimed",
         owner: c.accounts.bob,
         duration: durations.active,
@@ -450,7 +445,7 @@ export const wrapper: readonly Fixture[] = [
           staleWrapperOwner: c.accounts.alice,
         })),
       ),
-    check: (c, facts: Facts) =>
+    check: (c, facts) =>
       Effect.gen(function* () {
         const registrant = yield* c.read("v1.baseRegistrar", "ownerOf", [labelId("w-reclaimed")]);
         yield* expectState("v1.wrapped.implicit-unwrap", "registrant", registrant, c.accounts.bob);

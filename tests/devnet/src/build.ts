@@ -63,32 +63,32 @@ const buildKey = Effect.fn("buildKey")(function* (profile: ProfileName) {
   return hash.digest("hex").slice(0, 16);
 });
 
-const read = <A>(action: () => Promise<A>) =>
-  Effect.tryPromise({
-    try: action,
-    catch: (cause) => new DeployError({ step: "dump", message: String(cause) }),
-  });
-
-// A seed's prelaunch steps go right before the ENSv2 launch, or last when there is none.
-const withSeed = (steps: readonly Step[], seed: ReturnType<Seed["create"]>): readonly Step[] => {
-  const launch = steps.findIndex((step) => step.id.startsWith("cutover"));
-  const split = launch === -1 ? steps.length : launch;
-  return [...steps.slice(0, split), ...seed.prelaunch, ...steps.slice(split), ...seed.postlaunch];
-};
-
 const buildFresh = Effect.fn("buildFresh")(function* (profile: ProfileName, seed?: Seed) {
   const anvil = yield* Anvil;
   const { rpcUrl } = yield* anvil.start({ mining: false, timestamp: genesisTimestamp });
   const definition: ProfileDefinition = profiles[profile];
   const seeded = seed?.create();
-  const steps = seeded === undefined ? definition.steps : withSeed(definition.steps, seeded);
+  // A seed's prelaunch steps go right before the ENSv2 launch, or last when there is none.
+  const launch = definition.steps.findIndex((step) => step.id.startsWith("cutover"));
+  const split = launch === -1 ? definition.steps.length : launch;
+  const steps =
+    seeded === undefined
+      ? definition.steps
+      : [
+          ...definition.steps.slice(0, split),
+          ...seeded.prelaunch,
+          ...definition.steps.slice(split),
+          ...seeded.postlaunch,
+        ];
   const ledger = yield* runSteps(rpcUrl, steps, definition.variant);
 
   const client = devnetClient(rpcUrl);
-  // `dumpState` returns the `--dump-state` JSON, gzipped and hex-encoded.
-  const dump = yield* read(() => client.dumpState());
-  const block = yield* read(() => client.getBlock());
+  const { dump, block } = yield* Effect.tryPromise({
+    try: async () => ({ dump: await client.dumpState(), block: await client.getBlock() }),
+    catch: (cause) => new DeployError({ step: "dump", message: String(cause) }),
+  });
   return {
+    // `dumpState` returns the `--dump-state` JSON, gzipped and hex-encoded.
     state: gunzipSync(Buffer.from(dump.slice(2), "hex")).toString("utf8"),
     ledger,
     timestamp: BigInt(block.timestamp),

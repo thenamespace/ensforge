@@ -40,19 +40,11 @@ const require = createRequire(import.meta.url);
 
 type Remapping = { readonly context: string; readonly prefix: string; readonly target: string };
 
-const parseRemapping = (remapping: string): Remapping => {
-  const [left = "", target = ""] = remapping.split("=");
-  const [context, prefix] = left.includes(":") ? left.split(":") : ["", left];
-  return { context: context ?? "", prefix: prefix ?? "", target };
-};
-
-const dirname = (file: string) => file.slice(0, file.lastIndexOf("/"));
-
 // Resolves an import the way solc does: relative paths against the importing file, others through
 // the longest matching remapping whose context contains the importing file.
 const resolveImport = (from: string, path: string, remappings: readonly Remapping[]): string => {
   if (path.startsWith("./") || path.startsWith("../")) {
-    const parts = dirname(from).split("/");
+    const parts = from.slice(0, from.lastIndexOf("/")).split("/");
     for (const segment of path.split("/")) {
       if (segment === "..") parts.pop();
       else if (segment !== ".") parts.push(segment);
@@ -72,7 +64,13 @@ const resolveImport = (from: string, path: string, remappings: readonly Remappin
  * compiling them alone gives the same bytecode, and keeps solc-js within its memory.
  */
 const importClosure = (input: StandardJsonInput, roots: readonly string[]): StandardJsonInput => {
-  const remappings = ((input.settings["remappings"] ?? []) as string[]).map(parseRemapping);
+  const remappings = ((input.settings["remappings"] ?? []) as string[]).map(
+    (remapping): Remapping => {
+      const [left = "", target = ""] = remapping.split("=");
+      const [context = "", prefix = ""] = left.includes(":") ? left.split(":") : ["", left];
+      return { context, prefix, target };
+    },
+  );
   const included = new Set<string>();
   const pending = [...roots];
   while (pending.length > 0) {
@@ -98,42 +96,46 @@ const importClosure = (input: StandardJsonInput, roots: readonly string[]): Stan
  * and ABI are generated; the metadata hash does not depend on the output selection, so the
  * bytecode matches the original build.
  */
-export const compile = (
+export const compile = Effect.fnUntraced(function* (
   version: CompilerVersion,
   input: StandardJsonInput,
   contracts: readonly string[],
-): Effect.Effect<Readonly<Record<string, Compiled>>, ArtifactError> => {
-  const fail = (message: string) => new ArtifactError({ artifact: contracts.join(", "), message });
-  return Effect.gen(function* () {
-    const solc = require(compilers[version]) as Solc;
-    if (!solc.version().startsWith(`${version}+`)) {
-      return yield* fail(`expected solc ${version}, loaded ${solc.version()}`);
-    }
+) {
+  const artifact = contracts.join(", ");
+  const solc = require(compilers[version]) as Solc;
+  if (!solc.version().startsWith(`${version}+`)) {
+    return yield* new ArtifactError({
+      artifact,
+      message: `expected solc ${version}, loaded ${solc.version()}`,
+    });
+  }
 
-    const outputSelection: Record<string, Record<string, string[]>> = {};
-    for (const contract of contracts) {
-      const [file = "", name = ""] = contract.split(":");
-      (outputSelection[file] ??= {})[name] = ["abi", "evm.bytecode.object"];
-    }
-    const pruned = importClosure(input, Object.keys(outputSelection));
-    const output = JSON.parse(
-      solc.compile(
-        JSON.stringify({ ...pruned, settings: { ...pruned.settings, outputSelection } }),
-      ),
-    ) as Output;
+  const outputSelection: Record<string, Record<string, string[]>> = {};
+  for (const contract of contracts) {
+    const [file = "", name = ""] = contract.split(":");
+    (outputSelection[file] ??= {})[name] = ["abi", "evm.bytecode.object"];
+  }
+  const pruned = importClosure(input, Object.keys(outputSelection));
+  const output = JSON.parse(
+    solc.compile(JSON.stringify({ ...pruned, settings: { ...pruned.settings, outputSelection } })),
+  ) as Output;
 
-    const errors = (output.errors ?? []).filter((error) => error.severity === "error");
-    if (errors.length > 0) {
-      return yield* fail(errors.map((error) => error.formattedMessage).join("\n"));
-    }
+  const errors = (output.errors ?? []).filter((error) => error.severity === "error");
+  if (errors.length > 0) {
+    return yield* new ArtifactError({
+      artifact,
+      message: errors.map((error) => error.formattedMessage).join("\n"),
+    });
+  }
 
-    const compiled: Record<string, Compiled> = {};
-    for (const contract of contracts) {
-      const [file = "", name = ""] = contract.split(":");
-      const result = output.contracts?.[file]?.[name];
-      if (result === undefined) return yield* fail(`${contract} is not in the output`);
-      compiled[contract] = { abi: result.abi, bytecode: `0x${result.evm.bytecode.object}` };
+  const compiled: Record<string, Compiled> = {};
+  for (const contract of contracts) {
+    const [file = "", name = ""] = contract.split(":");
+    const result = output.contracts?.[file]?.[name];
+    if (result === undefined) {
+      return yield* new ArtifactError({ artifact, message: `${contract} is not in the output` });
     }
-    return compiled;
-  });
-};
+    compiled[contract] = { abi: result.abi, bytecode: `0x${result.evm.bytecode.object}` };
+  }
+  return compiled as Readonly<Record<string, Compiled>>;
+});

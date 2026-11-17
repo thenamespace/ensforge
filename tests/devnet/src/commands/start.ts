@@ -2,7 +2,7 @@ import { Console, Effect, FileSystem, Option } from "effect";
 import { Argument, Command, Flag } from "effect/cli";
 
 import { build } from "../build.ts";
-import { startDevnet } from "../Devnet.ts";
+import { Devnet, startDevnet } from "../Devnet.ts";
 import { VerifyFailed } from "../errors.ts";
 import { chainId, profileNames, profiles } from "../profiles/profiles.ts";
 import { verify } from "../verify.ts";
@@ -74,7 +74,7 @@ export const verifyCommand = Command.make(
     Effect.forEach(selected.length > 0 ? selected : profileNames, (profile) =>
       Effect.gen(function* () {
         const devnet = yield* startDevnet({ profile });
-        const problems = yield* verify(devnet);
+        const problems = yield* verify().pipe(Effect.provideService(Devnet, devnet));
         if (problems.length > 0) return yield* new VerifyFailed({ profile, problems });
         yield* Console.log(`${profile}: ok`);
       }).pipe(Effect.scoped),

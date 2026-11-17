@@ -200,9 +200,7 @@ export const v2Steps: readonly Step[] = [
         "v2.publicResolverSet",
         "approve",
         [yield* c.address("v1.publicResolver"), true],
-        {
-          from: "owner",
-        },
+        { from: "owner" },
       );
     }),
   ),

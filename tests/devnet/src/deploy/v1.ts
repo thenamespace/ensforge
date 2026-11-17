@@ -1,6 +1,6 @@
 import { Effect } from "effect";
 
-import { labelhash, namehash, numberToHex, pad, zeroHash, type Address } from "viem";
+import { labelhash, namehash, numberToHex, pad, zeroAddress, zeroHash, type Address } from "viem";
 
 import {
   dnsEncode,
@@ -47,9 +47,7 @@ export const v1Steps: readonly Step[] = [
         "v1.legacyRegistry",
         "setSubnodeOwner",
         [zeroHash, labelhash("reverse"), c.accounts.owner],
-        {
-          from: "owner",
-        },
+        { from: "owner" },
       );
       yield* c.write(
         "v1.legacyRegistry",
@@ -90,9 +88,7 @@ export const v1Steps: readonly Step[] = [
       yield* c.write("v1.registry", "setOwner", [zeroHash, root]);
       yield* c.write("v1.root", "transferOwnership", [c.accounts.owner]);
       yield* c.write("v1.root", "setController", [c.accounts.owner, true], { from: "owner" });
-      yield* c.write("v1.root", "setController", [rootSecurityController, true], {
-        from: "owner",
-      });
+      yield* c.write("v1.root", "setController", [rootSecurityController, true], { from: "owner" });
     }),
   ),
 
@@ -242,9 +238,7 @@ export const v1Steps: readonly Step[] = [
       yield* c.write("v1.registrarSecurityController", "addRegistrarController", [controller], {
         from: "owner",
       });
-      yield* c.write("v1.reverseRegistrar", "setController", [controller, true], {
-        from: "owner",
-      });
+      yield* c.write("v1.reverseRegistrar", "setController", [controller, true], { from: "owner" });
       yield* c.write(
         "v1.ethOwnedResolver",
         "setInterface",
@@ -274,9 +268,7 @@ export const v1Steps: readonly Step[] = [
       yield* c.write("v1.registrarSecurityController", "addRegistrarController", [controller], {
         from: "owner",
       });
-      yield* c.write("v1.reverseRegistrar", "setController", [controller, true], {
-        from: "owner",
-      });
+      yield* c.write("v1.reverseRegistrar", "setController", [controller, true], { from: "owner" });
       yield* c.write("v1.defaultReverseRegistrar", "setController", [controller, true], {
         from: "owner",
       });
@@ -365,7 +357,7 @@ export const v1Steps: readonly Step[] = [
       });
 
       const dnsRegistrar = yield* c.deploy("v1.dnsRegistrar", "v1/DNSRegistrar", [
-        "0x0000000000000000000000000000000000000000",
+        zeroAddress,
         offchainResolver,
         dnssec,
         suffixes,

@@ -1,6 +1,12 @@
 import type { Effect, FileSystem } from "effect";
 
-import type { ArtifactError, DeployError, ProfileName, StepContext } from "@ensforge/test-devnet";
+import type {
+  ArtifactError,
+  CurrentStep,
+  DeployError,
+  ProfileName,
+  StepContext,
+} from "@ensforge/test-devnet";
 import type { Hex } from "viem";
 
 /** JSON-safe facts a fixture records: addresses, expiries (decimal strings), expected values. */
@@ -15,7 +21,7 @@ export type RawFacts = Readonly<Record<string, string | number | boolean | bigin
 type Phase = (
   context: StepContext,
   facts: Facts,
-) => Effect.Effect<RawFacts, DeployError | ArtifactError, FileSystem.FileSystem>;
+) => Effect.Effect<RawFacts, DeployError | ArtifactError, FileSystem.FileSystem | CurrentStep>;
 
 /**
  * One seeded name state. Phases run in build order: `prelaunch` before the ENSv2 launch (ENSv1
@@ -44,7 +50,7 @@ export type Fixture = {
   readonly check: (
     context: StepContext,
     facts: Facts,
-  ) => Effect.Effect<void, DeployError | ArtifactError, FileSystem.FileSystem>;
+  ) => Effect.Effect<void, DeployError | ArtifactError, FileSystem.FileSystem | CurrentStep>;
 };
 
 /** A seeded fixture as tests see it. */

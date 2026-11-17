@@ -1,6 +1,6 @@
 import { Effect } from "effect";
 
-import type { StepContext } from "@ensforge/test-devnet";
+import { CurrentStep } from "@ensforge/test-devnet";
 import { hexToBigInt, labelhash, namehash, type Address } from "viem";
 
 import { expectState } from "../builders/check.ts";
@@ -14,7 +14,8 @@ import { coins } from "./values.ts";
  * the registrar, owner of `com`, sets the record. Proof verification itself is tested with real
  * proofs (D11, D12).
  */
-const imported = Effect.fnUntraced(function* (c: StepContext, label: string, owner: Address) {
+const imported = Effect.fnUntraced(function* (label: string, owner: Address) {
+  const c = yield* CurrentStep;
   const registrar = yield* c.address("v1.dnsRegistrar");
   const resolver = yield* c.address("v1.publicResolver");
   yield* c.cheat(async (client) => {
@@ -25,13 +26,12 @@ const imported = Effect.fnUntraced(function* (c: StepContext, label: string, own
     "v1.registry",
     "setSubnodeRecord",
     [namehash("com"), labelhash(label), owner, resolver, 0n],
-    {
-      from: registrar,
-    },
+    { from: registrar },
   );
   yield* c.cheat((client) => client.stopImpersonatingAccount({ address: registrar }));
+
   const name = `${label}.com`;
-  yield* setV1Records(c, {
+  yield* setV1Records({
     resolver,
     node: namehash(name),
     from: owner,
@@ -46,7 +46,7 @@ export const dns: readonly Fixture[] = [
     id: "dns.imported",
     cases: ["M:C4", "D07", "D08"],
     tags: { kind: "dns", state: "imported", cheat: "impersonation" },
-    prelaunch: (c) => imported(c, "imported", c.accounts.alice),
+    prelaunch: (c) => imported("imported", c.accounts.alice),
     check: (c, facts) =>
       Effect.gen(function* () {
         const owner = yield* c.read("v1.registry", "owner", [namehash(String(facts["name"]))]);
@@ -59,8 +59,8 @@ export const dns: readonly Fixture[] = [
     tags: { kind: "dns", state: "imported", wrapped: "true", cheat: "impersonation" },
     prelaunch: (c) =>
       Effect.gen(function* () {
-        const name = yield* imported(c, "wrapped-dns", c.accounts.bob);
-        yield* wrapName(c, { name: name.name, owner: c.accounts.bob });
+        const name = yield* imported("wrapped-dns", c.accounts.bob);
+        yield* wrapName({ name: name.name, owner: c.accounts.bob });
         return name;
       }),
     // A non-`.eth` name wrapped without a parent setting it has wrapper expiry 0.

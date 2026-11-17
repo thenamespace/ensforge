@@ -2,7 +2,7 @@ import { Effect } from "effect";
 
 import { Roles } from "@ensforge/contracts";
 import { nameWrapperFuses as fuse } from "@ensforge/contracts/v1";
-import type { StepContext } from "@ensforge/test-devnet";
+import { CurrentStep, type StepContext } from "@ensforge/test-devnet";
 import { encodeAbiParameters, hexToBigInt, zeroAddress, type Address } from "viem";
 
 import { expectState } from "../builders/check.ts";
@@ -29,11 +29,13 @@ const migrationData = (label: string, owner: Address, resolver: Address) =>
   );
 
 // Premigration (mainnet phase 2) reserves the name on ENSv2; migration then claims it.
-const registerAndReserve = Effect.fnUntraced(function* (
-  c: StepContext,
-  options: { readonly label: string; readonly wrapped?: boolean; readonly fuses?: number },
-) {
-  const name = yield* registerV1(c, {
+const registerAndReserve = Effect.fnUntraced(function* (options: {
+  readonly label: string;
+  readonly wrapped?: boolean;
+  readonly fuses?: number;
+}) {
+  const c = yield* CurrentStep;
+  const name = yield* registerV1({
     label: options.label,
     owner: c.accounts.alice,
     duration: durations.active,
@@ -52,14 +54,13 @@ const registerAndReserve = Effect.fnUntraced(function* (
 
 const checkMigrated = (id: string, label: string) => (c: StepContext) =>
   Effect.gen(function* () {
-    const registry = yield* c.address("v2.ethRegistry");
-    const status = yield* c.read([registry, "v2/ETHRegistry"], "getStatus", [labelId(label)]);
+    const status = yield* c.read("v2.ethRegistry", "getStatus", [labelId(label)]);
     yield* expectState(id, "status", status, 2);
-    const owner = yield* c.read([registry, "v2/ETHRegistry"], "findOwner", [label]);
+    const owner = yield* c.read("v2.ethRegistry", "findOwner", [label]);
     yield* expectState(id, "owner", owner, c.accounts.alice);
     // Migrated names carry the "was reserved" role.
-    const tokenId = yield* c.read<bigint>([registry, "v2/ETHRegistry"], "findTokenId", [label]);
-    const marked = yield* c.read([registry, "v2/ETHRegistry"], "hasRoles", [
+    const tokenId = yield* c.read<bigint>("v2.ethRegistry", "findTokenId", [label]);
+    const marked = yield* c.read("v2.ethRegistry", "hasRoles", [
       tokenId,
       Roles.registry.wasReserved,
       c.accounts.alice,
@@ -76,7 +77,7 @@ export const migration: readonly Fixture[] = [
     v2: true,
     launched: true,
     sepolia: true,
-    prelaunch: (c) => registerAndReserve(c, { label: "m-unwrapped" }),
+    prelaunch: () => registerAndReserve({ label: "m-unwrapped" }),
     postlaunch: (c, facts) =>
       Effect.gen(function* () {
         yield* c.write(
@@ -101,7 +102,7 @@ export const migration: readonly Fixture[] = [
     v2: true,
     launched: true,
     sepolia: true,
-    prelaunch: (c) => registerAndReserve(c, { label: "m-wrapped", wrapped: true }),
+    prelaunch: () => registerAndReserve({ label: "m-wrapped", wrapped: true }),
     postlaunch: (c, facts) =>
       Effect.gen(function* () {
         yield* c.write(
@@ -132,7 +133,7 @@ export const migration: readonly Fixture[] = [
     // resolving through ENSv1 under the parent's new WrapperRegistry.
     prelaunch: (c) =>
       Effect.gen(function* () {
-        const name = yield* registerAndReserve(c, {
+        const name = yield* registerAndReserve({
           label: "m-locked",
           wrapped: true,
           fuses: fuse.cannotUnwrap | fuse.cannotSetResolver,
@@ -142,7 +143,7 @@ export const migration: readonly Fixture[] = [
           "getData",
           [hexToBigInt(name.node)],
         );
-        const child = yield* wrappedSubname(c, {
+        const child = yield* wrappedSubname({
           parent: name.name,
           label: "child",
           parentOwner: c.accounts.alice,
@@ -166,11 +167,9 @@ export const migration: readonly Fixture[] = [
           ],
           { from: c.accounts.alice },
         );
-        const subregistry = yield* c.read<Address>(
-          [yield* c.address("v2.ethRegistry"), "v2/ETHRegistry"],
-          "getSubregistry",
-          ["m-locked"],
-        );
+        const subregistry = yield* c.read<Address>("v2.ethRegistry", "getSubregistry", [
+          "m-locked",
+        ]);
         return { owner: c.accounts.alice, wrapperRegistry: subregistry };
       }),
     check: (c, facts) =>

@@ -7,8 +7,6 @@ import { labelId } from "./builders/names.ts";
 import type { Facts, Fixture } from "./fixture.ts";
 import { days } from "./fixtures/durations.ts";
 
-const grace = days(90n);
-
 // The BatchRegistrar's limit per call is gas, not a count; chunks keep each call small.
 const chunkSize = 25;
 
@@ -31,14 +29,19 @@ export const premigration = (selected: readonly Fixture[], facts: Map<string, Fa
         ...new Set(selected.map((fixture) => String(facts.get(fixture.id)?.["name"]))),
       ].filter((name) => /^[^.]+\.eth$/u.test(name) && !excluded.has(name));
 
-      const reservations: { readonly name: string; readonly expiry: bigint }[] = [];
+      const reservations: {
+        readonly name: string;
+        readonly label: string;
+        readonly expiry: bigint;
+      }[] = [];
       for (const name of names) {
         const label = name.slice(0, -".eth".length);
         const expiry = yield* c.read<bigint>("v1.baseRegistrar", "nameExpires", [labelId(label)]);
-        if (expiry === 0n || expiry + grace <= now) continue;
+        // Registered or in the 90-day grace period.
+        if (expiry === 0n || expiry + days(90n) <= now) continue;
         const status = yield* c.read<number>("v2.ethRegistry", "getStatus", [labelId(label)]);
         if (status !== 0) continue;
-        reservations.push({ name, expiry: expiry + 1n + days(62n) });
+        reservations.push({ name, label, expiry: expiry + 1n + days(62n) });
       }
 
       const resolver = yield* c.address("v2.ensV1Resolver");
@@ -47,7 +50,7 @@ export const premigration = (selected: readonly Fixture[], facts: Map<string, Fa
         yield* c.write("v2.batchRegistrar", "batchRegister", [
           zeroAddress,
           resolver,
-          chunk.map(({ name }) => name.slice(0, -".eth".length)),
+          chunk.map(({ label }) => label),
           chunk.map(({ expiry }) => expiry),
         ]);
       }

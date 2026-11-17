@@ -2,11 +2,10 @@ import { Effect, type FileSystem } from "effect";
 
 import { Abis, Roles } from "@ensforge/contracts";
 import { permissionedResolverResource } from "@ensforge/contracts/v2";
-import type { StepContext } from "@ensforge/test-devnet";
+import { CurrentStep, dnsEncode, type StepContext } from "@ensforge/test-devnet";
 import { encodeFunctionData, namehash, stringToHex, zeroAddress, type Address } from "viem";
 
 import { expectState } from "../builders/check.ts";
-import { dnsEncode } from "../builders/names.ts";
 import { resolveText, setV1Records, setV2Records, type Records } from "../builders/records.ts";
 import { registerV1 } from "../builders/v1.ts";
 import { ownedResolver, registerV2 } from "../builders/v2.ts";
@@ -14,16 +13,15 @@ import type { Fixture } from "../fixture.ts";
 import { durations } from "./durations.ts";
 import { abis, addresses, coins, contenthashes, hugeText, texts } from "./values.ts";
 
-const v1Text = (c: StepContext, resolver: Address, name: string, key: string) =>
-  c.read<string>([resolver, "v1/PublicResolver"], "text", [namehash(name), key]);
-
 /** A v1 name on the current PublicResolver with `records`, written by its owner. */
 const v1WithRecords = (
   id: string,
   label: string,
   cases: readonly string[],
   tags: Record<string, string>,
-  records: (c: StepContext) => Effect.Effect<Records, never, FileSystem.FileSystem> | Records,
+  records: (
+    c: StepContext,
+  ) => Effect.Effect<Records, never, FileSystem.FileSystem | CurrentStep> | Records,
   owner: "alice" | "bob" = "alice",
 ): Fixture => ({
   id,
@@ -32,10 +30,10 @@ const v1WithRecords = (
   prelaunch: (c) =>
     Effect.gen(function* () {
       const account = c.accounts[owner];
-      const name = yield* registerV1(c, { label, owner: account, duration: durations.active });
+      const name = yield* registerV1({ label, owner: account, duration: durations.active });
       const resolved = records(c);
       const written = Effect.isEffect(resolved) ? yield* resolved : resolved;
-      yield* setV1Records(c, {
+      yield* setV1Records({
         resolver: name.resolver,
         node: name.node,
         from: account,
@@ -47,15 +45,14 @@ const v1WithRecords = (
     Effect.gen(function* () {
       const written = records(c);
       const expected = Effect.isEffect(written) ? yield* written : written;
-      const resolver = facts["resolver"] as Address;
+      const resolver = [facts["resolver"] as Address, "v1/PublicResolver"] as const;
+      const node = namehash(String(facts["name"]));
       for (const [key, value] of Object.entries(expected.texts ?? {})) {
-        const actual = yield* v1Text(c, resolver, String(facts["name"]), key);
+        const actual = yield* c.read<string>(resolver, "text", [node, key]);
         yield* expectState(id, `text ${key.slice(0, 40)}`, actual, value);
       }
       if (expected.contenthash !== undefined) {
-        const actual = yield* c.read([resolver, "v1/PublicResolver"], "contenthash", [
-          namehash(String(facts["name"])),
-        ]);
+        const actual = yield* c.read(resolver, "contenthash", [node]);
         yield* expectState(id, "contenthash", actual, expected.contenthash);
       }
     }),
@@ -64,7 +61,7 @@ const v1WithRecords = (
 const avatar = (
   kind: string,
   cases: readonly string[],
-  uri: (c: StepContext) => Effect.Effect<string, never, FileSystem.FileSystem>,
+  uri: Effect.Effect<string, never, FileSystem.FileSystem | CurrentStep>,
 ) =>
   v1WithRecords(
     `records.avatar.${kind}`,
@@ -72,7 +69,7 @@ const avatar = (
     cases,
     { records: "avatar", avatar: kind },
     (c) =>
-      uri(c).pipe(
+      uri.pipe(
         Effect.map((value) => ({
           texts: { avatar: value },
           addresses: [[coins.eth, c.accounts.alice]],
@@ -82,12 +79,13 @@ const avatar = (
 
 // An avatar pointing at token `id` of `mock.avatarToken`, minted to alice: it is owned when the
 // name's ETH address is hers.
-const tokenAvatar = (c: StepContext, standard: "erc721" | "erc1155", id: bigint) =>
-  c.write("mock.avatarToken", "mint", [c.accounts.alice, id]).pipe(
-    Effect.andThen(c.address("mock.avatarToken")),
-    Effect.map((contract) => `eip155:31337/${standard}:${contract.toLowerCase()}/${id}`),
-    Effect.orDie,
-  );
+const tokenAvatar = (standard: "erc721" | "erc1155", id: bigint) =>
+  Effect.gen(function* () {
+    const c = yield* CurrentStep;
+    yield* c.write("mock.avatarToken", "mint", [c.accounts.alice, id]);
+    const contract = yield* c.address("mock.avatarToken");
+    return `eip155:31337/${standard}:${contract.toLowerCase()}/${id}`;
+  }).pipe(Effect.orDie);
 
 /** Records of every encoding, avatar kinds, content hash codecs, and PermissionedResolver records. */
 export const records: readonly Fixture[] = [
@@ -132,15 +130,17 @@ export const records: readonly Fixture[] = [
   v1WithRecords("records.huge-text", "records-huge", ["K19"], { records: "huge-text" }, () => ({
     texts: { description: hugeText },
   })),
-  avatar("https", ["K33"], () => Effect.succeed("https://ensforge.com/avatar.png")),
-  avatar("erc721-owned", ["K34"], (c) => tokenAvatar(c, "erc721", 1n)),
-  avatar("erc1155", ["K35"], (c) => tokenAvatar(c, "erc1155", 2n)),
-  avatar("data-svg", ["K36"], () =>
+  avatar("https", ["K33"], Effect.succeed("https://ensforge.com/avatar.png")),
+  avatar("erc721-owned", ["K34"], tokenAvatar("erc721", 1n)),
+  avatar("erc1155", ["K35"], tokenAvatar("erc1155", 2n)),
+  avatar(
+    "data-svg",
+    ["K36"],
     Effect.succeed(
       `data:image/svg+xml;base64,${Buffer.from('<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script></svg>').toString("base64")}`,
     ),
   ),
-  avatar("unknown-scheme", ["K38"], () => Effect.succeed("ftp://ensforge.com/avatar.png")),
+  avatar("unknown-scheme", ["K38"], Effect.succeed("ftp://ensforge.com/avatar.png")),
   // The token is alice's, but this name's address is bob's: the avatar is not owned.
   v1WithRecords(
     "records.avatar.erc721-not-owned",
@@ -148,7 +148,7 @@ export const records: readonly Fixture[] = [
     ["K34"],
     { records: "avatar", avatar: "erc721-not-owned" },
     (c) =>
-      tokenAvatar(c, "erc721", 3n).pipe(
+      tokenAvatar("erc721", 3n).pipe(
         Effect.map((value) => ({
           texts: { avatar: value },
           addresses: [[coins.eth, c.accounts.bob]],
@@ -164,14 +164,14 @@ export const records: readonly Fixture[] = [
     v2: true,
     postlaunch: (c) =>
       Effect.gen(function* () {
-        const resolver = yield* ownedResolver(c, { admin: c.accounts.bob });
-        const name = yield* registerV2(c, {
+        const resolver = yield* ownedResolver({ admin: c.accounts.bob });
+        const name = yield* registerV2({
           label: "records-v2",
           owner: c.accounts.bob,
           duration: durations.active,
           resolver,
         });
-        yield* setV2Records(c, {
+        yield* setV2Records({
           resolver,
           name: name.name,
           from: c.accounts.bob,
@@ -192,7 +192,7 @@ export const records: readonly Fixture[] = [
       }),
     check: (c, facts) =>
       Effect.gen(function* () {
-        const url = yield* resolveText(c, {
+        const url = yield* resolveText({
           resolver: facts["resolver"] as Address,
           name: String(facts["name"]),
           key: "url",
@@ -208,14 +208,14 @@ export const records: readonly Fixture[] = [
     // Records on the DNS root `""` of a PermissionedResolver answer for names without their own.
     postlaunch: (c) =>
       Effect.gen(function* () {
-        const resolver = yield* ownedResolver(c, { admin: c.accounts.carol });
-        const name = yield* registerV2(c, {
+        const resolver = yield* ownedResolver({ admin: c.accounts.carol });
+        const name = yield* registerV2({
           label: "records-defaulted",
           owner: c.accounts.carol,
           duration: durations.active,
           resolver,
         });
-        yield* setV2Records(c, {
+        yield* setV2Records({
           resolver,
           name: "",
           from: c.accounts.carol,
@@ -225,7 +225,7 @@ export const records: readonly Fixture[] = [
       }),
     check: (c, facts) =>
       Effect.gen(function* () {
-        const url = yield* resolveText(c, {
+        const url = yield* resolveText({
           resolver: facts["resolver"] as Address,
           name: String(facts["name"]),
           key: "url",
@@ -242,7 +242,7 @@ export const records: readonly Fixture[] = [
     postlaunch: (c) =>
       Effect.gen(function* () {
         const resolver = yield* c.read<Address>("v2.ethRegistry", "getResolver", ["records-v2"]);
-        const name = yield* registerV2(c, {
+        const name = yield* registerV2({
           label: "records-linked",
           owner: c.accounts.bob,
           duration: durations.active,
@@ -258,7 +258,7 @@ export const records: readonly Fixture[] = [
       }),
     check: (c, facts) =>
       Effect.gen(function* () {
-        const url = yield* resolveText(c, {
+        const url = yield* resolveText({
           resolver: facts["resolver"] as Address,
           name: String(facts["name"]),
           key: "url",
@@ -286,9 +286,7 @@ export const records: readonly Fixture[] = [
           [resolver, "v2/PermissionedResolverImpl"],
           "grantSetterRoles",
           [setter, c.accounts.carol],
-          {
-            from: c.accounts.bob,
-          },
+          { from: c.accounts.bob },
         );
         return { name: "records-v2.eth", resolver, delegate: c.accounts.carol };
       }),

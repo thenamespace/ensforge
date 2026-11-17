@@ -5,41 +5,19 @@ import { Effect, FileSystem, Path } from "effect";
 import { step, type ProfileName, type Seed, type Step } from "@ensforge/test-devnet";
 import { namehash } from "viem";
 
-import {
-  clockJump,
-  seededOn,
-  type Facts,
-  type Fixture,
-  type Manifest,
-  type RawFacts,
-} from "./fixture.ts";
+import { clockJump, seededOn, type Facts, type Manifest } from "./fixture.ts";
 import { allFixtures } from "./fixtures/index.ts";
 import { premigration } from "./premigration.ts";
-
-const packageDir = new URL("..", import.meta.url).pathname;
-
-// bigints become decimal strings, so the manifest is plain JSON.
-const toFacts = (facts: RawFacts): Facts =>
-  Object.fromEntries(
-    Object.entries(facts).map(([key, value]) => [
-      key,
-      typeof value === "bigint" ? value.toString() : (value as Facts[string]),
-    ]),
-  );
 
 /**
  * The fixtures seeded on `profile` as a devnet seed: prelaunch phases before the ENSv2 launch
  * (then, on `mainnet-shaped`, the premigration), postlaunch phases, one clock jump, the
  * `afterTime` phases, then every self-check.
  */
-export const fixtureSeed = (
-  profile: ProfileName,
-  key: string,
-  fixtures: readonly Fixture[] = allFixtures,
-): Seed => ({
+export const fixtureSeed = (profile: ProfileName, key: string): Seed => ({
   key: `${profile}:${key}`,
   create: () => {
-    const selected = fixtures.filter((fixture) => seededOn(fixture, profile));
+    const selected = allFixtures.filter((fixture) => seededOn(fixture, profile));
     const facts = new Map<string, Facts>();
     let jumpedAt = 0n;
 
@@ -51,7 +29,14 @@ export const fixtureSeed = (
           step(`fixture ${fixture.id} (${name})`, (c) =>
             run(c, facts.get(fixture.id) ?? {}).pipe(
               Effect.map((found) => {
-                facts.set(fixture.id, { ...facts.get(fixture.id), ...toFacts(found) });
+                // bigints become decimal strings, so the manifest is plain JSON.
+                const recorded = Object.fromEntries(
+                  Object.entries(found).map(([field, value]) => [
+                    field,
+                    typeof value === "bigint" ? value.toString() : value,
+                  ]),
+                );
+                facts.set(fixture.id, { ...facts.get(fixture.id), ...recorded });
               }),
             ),
           ),
@@ -106,7 +91,7 @@ export const fixtureSeed = (
 export const sourcesKey = Effect.fn("sourcesKey")(function* () {
   const fs = yield* FileSystem.FileSystem;
   const path = yield* Path.Path;
-  const src = path.join(packageDir, "src");
+  const src = path.join(new URL("..", import.meta.url).pathname, "src");
   const hash = createHash("sha256");
   for (const file of (yield* fs.readDirectory(src, { recursive: true })).toSorted()) {
     if (!file.endsWith(".ts")) continue;

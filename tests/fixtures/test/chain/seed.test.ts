@@ -5,10 +5,8 @@ import { profileNames } from "@ensforge/test-devnet";
 
 import { allFixtures, Fixtures, seededOn } from "../../src/index.ts";
 
-const profiles = profileNames;
-
 describe("seeded fixtures", () => {
-  for (const profile of profiles) {
+  for (const profile of profileNames) {
     layer(Fixtures.layer({ profile }), { excludeTestServices: true })(profile, (it) => {
       it.effect("seeds and self-checks every fixture for the profile", () =>
         Effect.gen(function* () {

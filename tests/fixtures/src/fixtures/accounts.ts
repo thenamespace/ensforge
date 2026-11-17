@@ -41,9 +41,7 @@ export const accounts: readonly Fixture[] = [
           "v1.publicResolver",
           "approve",
           [namehash("v1-plain.eth"), c.accounts.approved, true],
-          {
-            from: c.accounts.alice,
-          },
+          { from: c.accounts.alice },
         );
         return { name: "v1-plain.eth", owner: c.accounts.alice, delegate: c.accounts.approved };
       }),
@@ -101,9 +99,7 @@ export const accounts: readonly Fixture[] = [
         // A fresh account (anvil mnemonic index 10), so no named account changes behaviour.
         const eoa = mnemonicToAccount(
           "test test test test test test test test test test test junk",
-          {
-            addressIndex: 10,
-          },
+          { addressIndex: 10 },
         ).address;
         yield* c.cheat((client) =>
           client.setCode({ address: eoa, bytecode: concatHex(["0xef0100", delegate]) }),

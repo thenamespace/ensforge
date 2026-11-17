@@ -1,9 +1,9 @@
 import { Effect } from "effect";
 
-import type { StepContext } from "@ensforge/test-devnet";
+import { CurrentStep, dnsEncode } from "@ensforge/test-devnet";
 import { labelhash, namehash, zeroAddress, zeroHash, type Address } from "viem";
 
-import { dnsEncode, labelId, secretFor } from "./names.ts";
+import { labelId, secretFor } from "./names.ts";
 
 /** Seconds a commitment must age before registering (both v1 and v2 controllers). */
 const commitmentAge = 61n;
@@ -28,7 +28,8 @@ export type V1Registration = {
  * Registers `label.eth` on ENSv1 through a real controller: commit, wait out the commitment age
  * on the build clock, register paying the quoted price. Returns the registrar expiry.
  */
-export const registerV1 = Effect.fnUntraced(function* (c: StepContext, options: V1Registration) {
+export const registerV1 = Effect.fnUntraced(function* (options: V1Registration) {
+  const c = yield* CurrentStep;
   const { label, owner, duration } = options;
   const name = `${label}.eth`;
   const secret = secretFor(name);
@@ -113,16 +114,14 @@ export const registerV1 = Effect.fnUntraced(function* (c: StepContext, options: 
 });
 
 /** An unwrapped registry subname, created by the parent's registry owner. */
-export const v1Subname = Effect.fnUntraced(function* (
-  c: StepContext,
-  options: {
-    readonly parent: string;
-    readonly label: string;
-    readonly parentOwner: Address;
-    readonly owner: Address;
-    readonly resolver?: Address;
-  },
-) {
+export const v1Subname = Effect.fnUntraced(function* (options: {
+  readonly parent: string;
+  readonly label: string;
+  readonly parentOwner: Address;
+  readonly owner: Address;
+  readonly resolver?: Address;
+}) {
+  const c = yield* CurrentStep;
   const resolver = options.resolver ?? (yield* c.address("v1.publicResolver"));
   yield* c.write(
     "v1.registry",
@@ -135,18 +134,16 @@ export const v1Subname = Effect.fnUntraced(function* (
 });
 
 /** A wrapped subname, created through the NameWrapper by the wrapped parent's owner. */
-export const wrappedSubname = Effect.fnUntraced(function* (
-  c: StepContext,
-  options: {
-    readonly parent: string;
-    readonly label: string;
-    readonly parentOwner: Address;
-    readonly owner: Address;
-    readonly fuses: number;
-    readonly expiry: bigint;
-    readonly resolver?: Address;
-  },
-) {
+export const wrappedSubname = Effect.fnUntraced(function* (options: {
+  readonly parent: string;
+  readonly label: string;
+  readonly parentOwner: Address;
+  readonly owner: Address;
+  readonly fuses: number;
+  readonly expiry: bigint;
+  readonly resolver?: Address;
+}) {
+  const c = yield* CurrentStep;
   const resolver = options.resolver ?? (yield* c.address("v1.publicResolver"));
   yield* c.write(
     "v1.nameWrapper",
@@ -166,31 +163,12 @@ export const wrappedSubname = Effect.fnUntraced(function* (
   return { name, node: namehash(name), resolver };
 });
 
-/** Wraps an unwrapped `.eth` 2LD its registrant holds. */
-export const wrapEth2ld = Effect.fnUntraced(function* (
-  c: StepContext,
-  options: { readonly label: string; readonly registrant: Address; readonly fuses?: number },
-) {
-  const from = { from: options.registrant } as const;
-  yield* c.write(
-    "v1.baseRegistrar",
-    "setApprovalForAll",
-    [yield* c.address("v1.nameWrapper"), true],
-    from,
-  );
-  yield* c.write(
-    "v1.nameWrapper",
-    "wrapETH2LD",
-    [options.label, options.registrant, options.fuses ?? 0, yield* c.address("v1.publicResolver")],
-    from,
-  );
-});
-
 /** Wraps a non-`.eth` name whose registry owner approved the wrapper. */
-export const wrapName = Effect.fnUntraced(function* (
-  c: StepContext,
-  options: { readonly name: string; readonly owner: Address },
-) {
+export const wrapName = Effect.fnUntraced(function* (options: {
+  readonly name: string;
+  readonly owner: Address;
+}) {
+  const c = yield* CurrentStep;
   const from = { from: options.owner } as const;
   yield* c.write(
     "v1.registry",
@@ -210,10 +188,12 @@ export const wrapName = Effect.fnUntraced(function* (
  * A name on the registry ENS replaced in 2020, under the `test` TLD there (the current registry
  * has no `test`, so reads fall back to the old one). `owner` holds the old root.
  */
-export const oldRegistryName = Effect.fnUntraced(function* (
-  c: StepContext,
-  options: { readonly label: string; readonly owner: Address; readonly resolver: Address },
-) {
+export const oldRegistryName = Effect.fnUntraced(function* (options: {
+  readonly label: string;
+  readonly owner: Address;
+  readonly resolver: Address;
+}) {
+  const c = yield* CurrentStep;
   const root = { from: c.accounts.owner } as const;
   const testOwner = yield* c.read<Address>("v1.legacyRegistry", "owner", [namehash("test")]);
   if (testOwner === zeroAddress) {
@@ -241,15 +221,13 @@ export const oldRegistryName = Effect.fnUntraced(function* (
  * A registry subname created by label hash only, for labels that cannot be written as text
  * (containing `.`, literal `[hex]`, invalid UTF-8, unknown). `name` uses the `[labelhash]` form.
  */
-export const hashedSubname = Effect.fnUntraced(function* (
-  c: StepContext,
-  options: {
-    readonly parent: string;
-    readonly labelhash: `0x${string}`;
-    readonly parentOwner: Address;
-    readonly owner: Address;
-  },
-) {
+export const hashedSubname = Effect.fnUntraced(function* (options: {
+  readonly parent: string;
+  readonly labelhash: `0x${string}`;
+  readonly parentOwner: Address;
+  readonly owner: Address;
+}) {
+  const c = yield* CurrentStep;
   yield* c.write(
     "v1.registry",
     "setSubnodeOwner",

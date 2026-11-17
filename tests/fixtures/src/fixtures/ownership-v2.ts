@@ -1,38 +1,25 @@
 import { Effect } from "effect";
 
 import { Roles } from "@ensforge/contracts";
-import type { StepContext } from "@ensforge/test-devnet";
+import { CurrentStep } from "@ensforge/test-devnet";
 import { maxUint64, zeroAddress, type Address } from "viem";
 
 import { expectState } from "../builders/check.ts";
 import { labelId } from "../builders/names.ts";
 import { registerV1 } from "../builders/v1.ts";
 import { mountUserRegistry, registerV2, v2Subname } from "../builders/v2.ts";
-import type { Facts, Fixture } from "../fixture.ts";
+import type { Fixture } from "../fixture.ts";
 import { days, durations } from "./durations.ts";
 
-const { registry: role, enhancedAccessControl } = Roles;
 const status = { available: 0, reserved: 1, registered: 2 } as const;
 
-const fact = (facts: Facts, key: string) => String(facts[key]);
-const ethRegistry = (c: StepContext) => c.address("v2.ethRegistry");
-const read = <A>(
-  c: StepContext,
-  registry: Address,
-  functionName: string,
-  args: readonly unknown[],
-) => c.read<A>([registry, "v2/ETHRegistry"], functionName, args);
-
 /** A registered `label.eth` with a UserRegistry mounted under it, both held by `owner`. */
-const parentWithRegistry = Effect.fnUntraced(function* (
-  c: StepContext,
-  label: string,
-  owner: Address,
-) {
-  const parent = yield* registerV2(c, { label, owner, duration: durations.active });
-  const registry = yield* mountUserRegistry(c, {
+const parentWithRegistry = Effect.fnUntraced(function* (label: string, owner: Address) {
+  const c = yield* CurrentStep;
+  const parent = yield* registerV2({ label, owner, duration: durations.active });
+  const registry = yield* mountUserRegistry({
     parent: parent.name,
-    parentRegistry: yield* ethRegistry(c),
+    parentRegistry: yield* c.address("v2.ethRegistry"),
     parentTokenId: parent.tokenId,
     owner,
   });
@@ -52,13 +39,12 @@ const lifecycle = (
   tags: { kind: "v2-native", state },
   v2: true,
   postlaunch: (c) =>
-    registerV2(c, { label, owner: c.accounts.alice, duration }).pipe(
+    registerV2({ label, owner: c.accounts.alice, duration }).pipe(
       Effect.map((name) => ({ ...name, owner: c.accounts.alice })),
     ),
   check: (c, facts) =>
     Effect.gen(function* () {
-      const registry = yield* ethRegistry(c);
-      const current = yield* read(c, registry, "getStatus", [labelId(label)]);
+      const current = yield* c.read("v2.ethRegistry", "getStatus", [labelId(label)]);
       yield* expectState(id, "status", current, expected);
       // Grace is the registrar's: the registry already reads AVAILABLE, the registrar refuses.
       if (state === "grace") {
@@ -66,7 +52,9 @@ const lifecycle = (
         yield* expectState(id, "registrable", available, false);
       }
       // An expired name keeps its last owner as `latestOwnerOf`, and its token ID.
-      const latest = yield* read(c, registry, "latestOwnerOf", [BigInt(fact(facts, "tokenId"))]);
+      const latest = yield* c.read("v2.ethRegistry", "latestOwnerOf", [
+        BigInt(String(facts["tokenId"])),
+      ]);
       yield* expectState(id, "latest owner", latest, c.accounts.alice);
     }),
 });
@@ -103,7 +91,7 @@ export const ownershipV2: readonly Fixture[] = [
     tags: { kind: "v2-native", state: "re-registered" },
     v2: true,
     postlaunch: (c) =>
-      registerV2(c, {
+      registerV2({
         label: "v2-again",
         owner: c.accounts.alice,
         duration: durations.expired,
@@ -115,22 +103,21 @@ export const ownershipV2: readonly Fixture[] = [
         })),
       ),
     afterTime: (c) =>
-      registerV2(c, { label: "v2-again", owner: c.accounts.bob, duration: durations.active }).pipe(
+      registerV2({ label: "v2-again", owner: c.accounts.bob, duration: durations.active }).pipe(
         Effect.map((name) => ({ tokenId: name.tokenId, owner: c.accounts.bob })),
       ),
     check: (c, facts) =>
       Effect.gen(function* () {
-        const registry = yield* ethRegistry(c);
-        const owner = yield* read(c, registry, "findOwner", ["v2-again"]);
+        const owner = yield* c.read("v2.ethRegistry", "findOwner", ["v2-again"]);
         yield* expectState("v2.re-registered", "owner", owner, c.accounts.bob);
         yield* expectState(
           "v2.re-registered",
           "new token",
-          fact(facts, "tokenId") !== fact(facts, "firstTokenId"),
+          facts["tokenId"] !== facts["firstTokenId"],
           true,
         );
-        const old = yield* read(c, registry, "latestOwnerOf", [
-          BigInt(fact(facts, "firstTokenId")),
+        const old = yield* c.read("v2.ethRegistry", "latestOwnerOf", [
+          BigInt(String(facts["firstTokenId"])),
         ]);
         yield* expectState("v2.re-registered", "old token dead", old, zeroAddress);
       }),
@@ -143,23 +130,23 @@ export const ownershipV2: readonly Fixture[] = [
     v2: true,
     postlaunch: (c) =>
       Effect.gen(function* () {
-        const parent = yield* parentWithRegistry(c, "v2-parent", c.accounts.alice);
-        const sub = yield* v2Subname(c, {
+        const parent = yield* parentWithRegistry("v2-parent", c.accounts.alice);
+        const sub = yield* v2Subname({
           registry: parent.registry,
           parent: parent.name,
           label: "sub",
           admin: c.accounts.alice,
           owner: c.accounts.alice,
-          roles: enhancedAccessControl.allRoles,
+          roles: Roles.enhancedAccessControl.allRoles,
           expiry: maxUint64,
         });
-        const subRegistry = yield* mountUserRegistry(c, {
+        const subRegistry = yield* mountUserRegistry({
           parent: sub.name,
           parentRegistry: parent.registry,
           parentTokenId: sub.tokenId,
           owner: c.accounts.alice,
         });
-        const deep = yield* v2Subname(c, {
+        const deep = yield* v2Subname({
           registry: subRegistry,
           parent: sub.name,
           label: "deep",
@@ -178,7 +165,11 @@ export const ownershipV2: readonly Fixture[] = [
       }),
     check: (c, facts) =>
       Effect.gen(function* () {
-        const owner = yield* read(c, fact(facts, "registry") as Address, "findOwner", ["deep"]);
+        const owner = yield* c.read(
+          [facts["registry"] as Address, "v2/UserRegistryImpl"],
+          "findOwner",
+          ["deep"],
+        );
         yield* expectState("v2.subnames", "owner", owner, c.accounts.bob);
       }),
   },
@@ -194,8 +185,8 @@ export const ownershipV2: readonly Fixture[] = [
     v2: true,
     postlaunch: (c) =>
       Effect.gen(function* () {
-        const parent = yield* parentWithRegistry(c, `v2-${label}-parent`, c.accounts.alice);
-        const sub = yield* v2Subname(c, {
+        const parent = yield* parentWithRegistry(`v2-${label}-parent`, c.accounts.alice);
+        const sub = yield* v2Subname({
           registry: parent.registry,
           parent: parent.name,
           label,
@@ -224,11 +215,10 @@ export const ownershipV2: readonly Fixture[] = [
       }),
     check: (c, facts) =>
       Effect.gen(function* () {
-        const current = yield* read(c, fact(facts, "registry") as Address, "getStatus", [
-          labelId(label),
-        ]);
+        const registry = [facts["registry"] as Address, "v2/UserRegistryImpl"] as const;
+        const current = yield* c.read(registry, "getStatus", [labelId(label)]);
         yield* expectState(id, "status", current, expected);
-        const resolver = yield* read(c, fact(facts, "registry") as Address, "getResolver", [label]);
+        const resolver = yield* c.read(registry, "getResolver", [label]);
         yield* expectState(id, "resolver cleared", resolver, zeroAddress);
       }),
   })),
@@ -239,7 +229,7 @@ export const ownershipV2: readonly Fixture[] = [
     v2: true,
     postlaunch: (c) =>
       Effect.gen(function* () {
-        const parent = yield* parentWithRegistry(c, "v2-lapsed-parent", c.accounts.alice);
+        const parent = yield* parentWithRegistry("v2-lapsed-parent", c.accounts.alice);
         yield* c.write(
           [parent.registry, "v2/UserRegistryImpl"],
           "register",
@@ -250,13 +240,10 @@ export const ownershipV2: readonly Fixture[] = [
       }),
     check: (c, facts) =>
       Effect.gen(function* () {
-        const expiry = yield* read<bigint>(c, fact(facts, "registry") as Address, "findExpiry", [
-          "held",
-        ]);
+        const registry = [facts["registry"] as Address, "v2/UserRegistryImpl"] as const;
+        const expiry = yield* c.read<bigint>(registry, "findExpiry", ["held"]);
         yield* expectState("v2.reserved.lapsed", "past expiry", expiry < c.time.now(), true);
-        const current = yield* read(c, fact(facts, "registry") as Address, "getStatus", [
-          labelId("held"),
-        ]);
+        const current = yield* c.read(registry, "getStatus", [labelId("held")]);
         yield* expectState("v2.reserved.lapsed", "status", current, status.available);
       }),
   },
@@ -268,29 +255,25 @@ export const ownershipV2: readonly Fixture[] = [
     // Roles outside the regeneration set: the token keeps its ID.
     postlaunch: (c) =>
       Effect.gen(function* () {
-        const name = yield* registerV2(c, {
+        const name = yield* registerV2({
           label: "v2-delegated",
           owner: c.accounts.alice,
           duration: durations.active,
         });
-        const registry = yield* ethRegistry(c);
         yield* c.write(
-          [registry, "v2/ETHRegistry"],
+          "v2.ethRegistry",
           "grantRoles",
-          [name.tokenId, role.setResolver, c.accounts.carol],
-          {
-            from: c.accounts.alice,
-          },
+          [name.tokenId, Roles.registry.setResolver, c.accounts.carol],
+          { from: c.accounts.alice },
         );
-        const tokenId = yield* read<bigint>(c, registry, "findTokenId", ["v2-delegated"]);
+        const tokenId = yield* c.read<bigint>("v2.ethRegistry", "findTokenId", ["v2-delegated"]);
         return { ...name, tokenId, delegate: c.accounts.carol };
       }),
     check: (c, facts) =>
       Effect.gen(function* () {
-        const registry = yield* ethRegistry(c);
-        const has = yield* read(c, registry, "hasRoles", [
-          BigInt(fact(facts, "tokenId")),
-          role.setResolver,
+        const has = yield* c.read("v2.ethRegistry", "hasRoles", [
+          BigInt(String(facts["tokenId"])),
+          Roles.registry.setResolver,
           c.accounts.carol,
         ]);
         yield* expectState("v2.roles", "carol can set the resolver", has, true);
@@ -304,42 +287,38 @@ export const ownershipV2: readonly Fixture[] = [
     v2: true,
     postlaunch: (c) =>
       Effect.gen(function* () {
-        const name = yield* registerV2(c, {
+        const name = yield* registerV2({
           label: "v2-regenerated",
           owner: c.accounts.alice,
           duration: durations.active,
         });
-        const registry = yield* ethRegistry(c);
-        const resource = yield* read<bigint>(c, registry, "getResource", [name.tokenId]);
+        const resource = yield* c.read<bigint>("v2.ethRegistry", "getResource", [name.tokenId]);
         // Granting a role in the regeneration set burns and re-mints the token under a new ID.
         yield* c.write(
-          [registry, "v2/ETHRegistry"],
+          "v2.ethRegistry",
           "grantRoles",
-          [name.tokenId, role.setSubregistry, c.accounts.carol],
-          {
-            from: c.accounts.alice,
-          },
+          [name.tokenId, Roles.registry.setSubregistry, c.accounts.carol],
+          { from: c.accounts.alice },
         );
-        const tokenId = yield* read<bigint>(c, registry, "findTokenId", ["v2-regenerated"]);
+        const tokenId = yield* c.read<bigint>("v2.ethRegistry", "findTokenId", ["v2-regenerated"]);
         return { name: name.name, originalTokenId: name.tokenId, tokenId, resource };
       }),
     check: (c, facts) =>
       Effect.gen(function* () {
-        const registry = yield* ethRegistry(c);
         yield* expectState(
           "v2.regenerated",
           "token regenerated",
-          fact(facts, "tokenId") !== fact(facts, "originalTokenId"),
+          facts["tokenId"] !== facts["originalTokenId"],
           true,
         );
-        const resource = yield* read<bigint>(c, registry, "getResource", [
-          BigInt(fact(facts, "tokenId")),
+        const resource = yield* c.read<bigint>("v2.ethRegistry", "getResource", [
+          BigInt(String(facts["tokenId"])),
         ]);
         yield* expectState(
           "v2.regenerated",
           "resource stable",
           resource.toString(),
-          fact(facts, "resource"),
+          facts["resource"],
         );
       }),
   },
@@ -350,24 +329,19 @@ export const ownershipV2: readonly Fixture[] = [
     v2: true,
     postlaunch: (c) =>
       Effect.gen(function* () {
-        const name = yield* registerV2(c, {
+        const name = yield* registerV2({
           label: "v2-operated",
           owner: c.accounts.carol,
           duration: durations.active,
         });
-        yield* c.write(
-          [yield* ethRegistry(c), "v2/ETHRegistry"],
-          "setApprovalForAll",
-          [c.accounts.operator, true],
-          {
-            from: c.accounts.carol,
-          },
-        );
+        yield* c.write("v2.ethRegistry", "setApprovalForAll", [c.accounts.operator, true], {
+          from: c.accounts.carol,
+        });
         return { ...name, owner: c.accounts.carol, operator: c.accounts.operator };
       }),
     check: (c) =>
       Effect.gen(function* () {
-        const approved = yield* read(c, yield* ethRegistry(c), "isApprovedForAll", [
+        const approved = yield* c.read("v2.ethRegistry", "isApprovedForAll", [
           c.accounts.carol,
           c.accounts.operator,
         ]);
@@ -383,7 +357,7 @@ export const ownershipV2: readonly Fixture[] = [
     // the premigration bonus, resolved through the ENSv1 bridge.
     prelaunch: (c) =>
       Effect.gen(function* () {
-        const name = yield* registerV1(c, {
+        const name = yield* registerV1({
           label: "v1-premigrated",
           owner: c.accounts.alice,
           duration: durations.active,
@@ -399,23 +373,17 @@ export const ownershipV2: readonly Fixture[] = [
       }),
     check: (c, facts) =>
       Effect.gen(function* () {
-        const registry = yield* ethRegistry(c);
-        const current = yield* read(c, registry, "getStatus", [labelId("v1-premigrated")]);
+        const current = yield* c.read("v2.ethRegistry", "getStatus", [labelId("v1-premigrated")]);
         yield* expectState("v2.reserved", "status", current, status.reserved);
-        const resolver = yield* read(c, registry, "getResolver", ["v1-premigrated"]);
+        const resolver = yield* c.read("v2.ethRegistry", "getResolver", ["v1-premigrated"]);
         yield* expectState(
           "v2.reserved",
           "bridge resolver",
           resolver,
           yield* c.address("v2.ensV1Resolver"),
         );
-        const expiry = yield* read<bigint>(c, registry, "findExpiry", ["v1-premigrated"]);
-        yield* expectState(
-          "v2.reserved",
-          "expiry",
-          expiry.toString(),
-          fact(facts, "reservedUntil"),
-        );
+        const expiry = yield* c.read<bigint>("v2.ethRegistry", "findExpiry", ["v1-premigrated"]);
+        yield* expectState("v2.reserved", "expiry", expiry.toString(), facts["reservedUntil"]);
       }),
   },
   {
@@ -426,33 +394,33 @@ export const ownershipV2: readonly Fixture[] = [
     // One registry mounted under two names: `x.a.v2-link.eth` (canonical) and `x.alias.v2-link.eth`.
     postlaunch: (c) =>
       Effect.gen(function* () {
-        const parent = yield* parentWithRegistry(c, "v2-link", c.accounts.alice);
-        const a = yield* v2Subname(c, {
+        const parent = yield* parentWithRegistry("v2-link", c.accounts.alice);
+        const a = yield* v2Subname({
           registry: parent.registry,
           parent: parent.name,
           label: "a",
           admin: c.accounts.alice,
           owner: c.accounts.alice,
-          roles: enhancedAccessControl.allRoles,
+          roles: Roles.enhancedAccessControl.allRoles,
           expiry: maxUint64,
         });
-        const shared = yield* mountUserRegistry(c, {
+        const shared = yield* mountUserRegistry({
           parent: a.name,
           parentRegistry: parent.registry,
           parentTokenId: a.tokenId,
           owner: c.accounts.alice,
         });
-        yield* v2Subname(c, {
+        yield* v2Subname({
           registry: parent.registry,
           parent: parent.name,
           label: "alias",
           admin: c.accounts.alice,
           owner: c.accounts.alice,
-          roles: enhancedAccessControl.allRoles,
+          roles: Roles.enhancedAccessControl.allRoles,
           expiry: maxUint64,
           subregistry: shared,
         });
-        const child = yield* v2Subname(c, {
+        const child = yield* v2Subname({
           registry: shared,
           parent: a.name,
           label: "x",
@@ -465,7 +433,11 @@ export const ownershipV2: readonly Fixture[] = [
       }),
     check: (c, facts) =>
       Effect.gen(function* () {
-        const owner = yield* read(c, fact(facts, "registry") as Address, "findOwner", ["x"]);
+        const owner = yield* c.read(
+          [facts["registry"] as Address, "v2/UserRegistryImpl"],
+          "findOwner",
+          ["x"],
+        );
         yield* expectState("v2.linked", "owner", owner, c.accounts.bob);
       }),
   },
@@ -477,8 +449,8 @@ export const ownershipV2: readonly Fixture[] = [
     // `old.v2-replaced.eth` lives in a registry the parent no longer mounts.
     postlaunch: (c) =>
       Effect.gen(function* () {
-        const parent = yield* parentWithRegistry(c, "v2-replaced", c.accounts.alice);
-        yield* v2Subname(c, {
+        const parent = yield* parentWithRegistry("v2-replaced", c.accounts.alice);
+        yield* v2Subname({
           registry: parent.registry,
           parent: parent.name,
           label: "old",
@@ -487,13 +459,11 @@ export const ownershipV2: readonly Fixture[] = [
           roles: Roles.registryBitmaps.registration,
           expiry: maxUint64,
         });
-        const tokenId = yield* read<bigint>(c, yield* ethRegistry(c), "findTokenId", [
-          "v2-replaced",
-        ]);
-        const replacement = yield* mountUserRegistry(c, {
+        const tokenId = yield* c.read<bigint>("v2.ethRegistry", "findTokenId", ["v2-replaced"]);
+        const replacement = yield* mountUserRegistry({
           parent: parent.name,
           salt: `${parent.name}:replacement`,
-          parentRegistry: yield* ethRegistry(c),
+          parentRegistry: yield* c.address("v2.ethRegistry"),
           parentTokenId: tokenId,
           owner: c.accounts.alice,
         });
@@ -505,9 +475,13 @@ export const ownershipV2: readonly Fixture[] = [
       }),
     check: (c, facts) =>
       Effect.gen(function* () {
-        const mounted = yield* read(c, yield* ethRegistry(c), "getSubregistry", ["v2-replaced"]);
-        yield* expectState("v2.replaced-subregistry", "mounted", mounted, fact(facts, "registry"));
-        const stale = yield* read(c, fact(facts, "staleRegistry") as Address, "findOwner", ["old"]);
+        const mounted = yield* c.read("v2.ethRegistry", "getSubregistry", ["v2-replaced"]);
+        yield* expectState("v2.replaced-subregistry", "mounted", mounted, facts["registry"]);
+        const stale = yield* c.read(
+          [facts["staleRegistry"] as Address, "v2/UserRegistryImpl"],
+          "findOwner",
+          ["old"],
+        );
         yield* expectState("v2.replaced-subregistry", "stale child", stale, c.accounts.bob);
       }),
   },

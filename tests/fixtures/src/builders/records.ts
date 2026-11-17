@@ -1,10 +1,8 @@
 import { Effect } from "effect";
 
 import { Abis } from "@ensforge/contracts";
-import type { StepContext } from "@ensforge/test-devnet";
+import { CurrentStep, dnsEncode } from "@ensforge/test-devnet";
 import { decodeFunctionResult, encodeFunctionData, namehash, type Address, type Hex } from "viem";
-
-import { dnsEncode } from "./names.ts";
 
 /** Records to write; addresses are raw bytes per coin type. */
 export type Records = {
@@ -18,15 +16,13 @@ export type Records = {
 };
 
 /** Writes `records` for `node` on an ENSv1 PublicResolver (any generation with these setters). */
-export const setV1Records = Effect.fnUntraced(function* (
-  c: StepContext,
-  options: {
-    readonly resolver: Address;
-    readonly node: Hex;
-    readonly from: Address;
-    readonly records: Records;
-  },
-) {
+export const setV1Records = Effect.fnUntraced(function* (options: {
+  readonly resolver: Address;
+  readonly node: Hex;
+  readonly from: Address;
+  readonly records: Records;
+}) {
+  const c = yield* CurrentStep;
   const target = [options.resolver, "v1/PublicResolver"] as const;
   const from = { from: options.from } as const;
   const { records, node } = options;
@@ -48,15 +44,13 @@ export const setV1Records = Effect.fnUntraced(function* (
 });
 
 /** Writes `records` for `name` on a PermissionedResolver (setters take the DNS-encoded name). */
-export const setV2Records = Effect.fnUntraced(function* (
-  c: StepContext,
-  options: {
-    readonly resolver: Address;
-    readonly name: string;
-    readonly from: Address;
-    readonly records: Records;
-  },
-) {
+export const setV2Records = Effect.fnUntraced(function* (options: {
+  readonly resolver: Address;
+  readonly name: string;
+  readonly from: Address;
+  readonly records: Records;
+}) {
+  const c = yield* CurrentStep;
   const target = [options.resolver, "v2/PermissionedResolverImpl"] as const;
   const from = { from: options.from } as const;
   const { records } = options;
@@ -82,10 +76,12 @@ export const setV2Records = Effect.fnUntraced(function* (
 });
 
 /** A text record read through ENSIP-10 `resolve`, as PermissionedResolvers answer. */
-export const resolveText = Effect.fnUntraced(function* (
-  c: StepContext,
-  options: { readonly resolver: Address; readonly name: string; readonly key: string },
-) {
+export const resolveText = Effect.fnUntraced(function* (options: {
+  readonly resolver: Address;
+  readonly name: string;
+  readonly key: string;
+}) {
+  const c = yield* CurrentStep;
   const call = encodeFunctionData({
     abi: Abis.shared.textResolver,
     functionName: "text",

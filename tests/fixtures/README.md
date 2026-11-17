@@ -34,7 +34,8 @@ A fixture (`src/fixtures/*`) is a set of devnet steps: `prelaunch` (ENSv1 histor
 profile's ENSv2 launch), `postlaunch`, `afterTime` (after the build's single 400-day clock jump),
 and `check`, which asserts the final state with raw reads and fails the build otherwise. Names are
 registered through the real controllers; the few states only reachable as another actor are
-tagged `cheat`. Builders use raw contract calls, never ensforge.
+tagged `cheat`. Builders (`src/builders/*`) use raw contract calls, never ensforge, and read the
+running step's context with `yield* CurrentStep`.
 
 Fixtures are seeded per profile (`seededOn`): ENSv1 states everywhere, ENSv2 states where ENSv2
 exists, launch-dependent ones after the launch, and a capability-specific set on `sepolia-shaped`.

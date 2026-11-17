@@ -2,8 +2,10 @@ export { devnetClient, type DevnetClient } from "./client.ts";
 export { Anvil } from "./anvil/Anvil.ts";
 export { Chain, ChainError } from "./Chain.ts";
 export { build, type Build, type Seed } from "./build.ts";
+export { dnsEncode } from "./deploy/constants.ts";
 export {
   accounts,
+  CurrentStep,
   step,
   type AccountName,
   type Deployed,

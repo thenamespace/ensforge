@@ -1,154 +1,150 @@
 import { assert, describe, layer } from "@effect/vitest";
-import { Effect, Fiber, Schedule } from "effect";
+import { Effect, Layer } from "effect";
 
-import { Ensforge, ensActions } from "@ensforge/sdk";
+import { Abis } from "@ensforge/contracts";
+import { Duration, Ensforge, ensActions } from "@ensforge/sdk";
 import { Actions } from "@ensforge/sdk/effect";
 import {
   createPublicClient,
   createWalletClient,
+  decodeFunctionResult,
+  encodeFunctionData,
   http,
   maxUint256,
+  namehash,
   parseAbi,
-  zeroAddress,
+  type Address,
 } from "viem";
-import { getEnsAddress } from "viem/actions";
 
-import { Devnet, type DevnetInstance } from "../../src/index.ts";
+import { Chain, Devnet, dnsEncode, type DevnetInstance } from "../../src/index.ts";
 
-const erc20 = parseAbi([
-  "function mint(address to, uint256 amount)",
-  "function approve(address spender, uint256 amount) returns (bool)",
-]);
-
-const clientsOf = (devnet: DevnetInstance) => {
+/** An ensforge client on `devnet`, signing as `account` when given. */
+const ensforgeOn = (devnet: DevnetInstance, account?: Address) => {
   const transport = http(devnet.rpcUrl);
-  const publicClient = createPublicClient({ chain: devnet.chain, transport });
-  const walletClient = createWalletClient({
-    chain: devnet.chain,
-    transport,
-    account: devnet.accounts.user,
-  });
-  const ens = Ensforge.create({
-    publicClient,
-    walletClient,
+  return Ensforge.create({
+    publicClient: createPublicClient({ chain: devnet.chain, transport }),
+    ...(account === undefined
+      ? {}
+      : { walletClient: createWalletClient({ chain: devnet.chain, transport, account }) }),
     deployment: devnet.deployments,
   }).extend(ensActions());
-  return { publicClient, walletClient, ens };
 };
 
-// Registrations wait out the commitment age in chain time; advance it while they wait.
-const advanceChainTime = (devnet: DevnetInstance) =>
-  Effect.promise(async () => {
-    await devnet.client.increaseTime({ seconds: 30 });
-    await devnet.client.mine({ blocks: 1 });
-  }).pipe(Effect.repeat(Schedule.spaced("100 millis")), Effect.forkChild);
-
-// Chain tests run on real time: no TestClock.
-const devnetLayer = (profile: DevnetInstance["profile"]) =>
-  layer(Devnet.layer({ profile }), { excludeTestServices: true });
-
 describe("devnet profiles", () => {
-  devnetLayer("mainnet-shaped")("mainnet-shaped", (it) => {
+  layer(Chain.layer.pipe(Layer.provideMerge(Devnet.layer({ profile: "mainnet-shaped" }))), {
+    excludeTestServices: true,
+  })("mainnet-shaped", (it) => {
     it.effect("ensforge reads ENSv2 state from the generated profile", () =>
       Effect.gen(function* () {
         const devnet = yield* Devnet;
-        const { ens } = clientsOf(devnet);
+        const ens = ensforgeOn(devnet);
 
         const eth = yield* Actions.name.get(ens, { name: "eth" });
         assert.strictEqual(eth.protocol, "v2");
         assert.strictEqual(eth.owner, devnet.accounts.nameOwner);
-        assert.strictEqual(eth.subregistry, devnet.deployments.v2?.contracts.ethRegistry);
-
-        const available = yield* Actions.registration.isAvailable(ens, {
-          name: "devnet-smoke.eth",
-        });
-        assert.isTrue(available);
+        assert.strictEqual(eth.subregistry, devnet.contract("v2.ethRegistry"));
+        assert.isTrue(yield* Actions.registration.isAvailable(ens, { name: "devnet-smoke.eth" }));
       }),
     );
 
     it.effect("a name registered through ensforge resolves through ENSv1's resolver", () =>
       Effect.gen(function* () {
         const devnet = yield* Devnet;
-        const { publicClient, walletClient, ens } = clientsOf(devnet);
-        const usdc = devnet.deployments.v2?.paymentTokens?.usdc ?? zeroAddress;
-        yield* Effect.promise(() =>
-          walletClient.writeContract({
-            address: usdc,
-            abi: erc20,
-            functionName: "mint",
-            args: [devnet.accounts.user, 10n ** 12n],
-          }),
-        );
-        yield* Effect.promise(() =>
-          walletClient.writeContract({
-            address: usdc,
-            abi: erc20,
-            functionName: "approve",
-            args: [devnet.deployments.v2?.contracts.ethRegistrar ?? zeroAddress, maxUint256],
-          }),
-        );
+        const chain = yield* Chain;
+        const { user, user2 } = devnet.accounts;
+        const usdc = devnet.contract("v2.usdc");
+        const name = "resolved.eth";
 
-        const clock = yield* advanceChainTime(devnet);
-        yield* Actions.registration.registerSync(ens, {
-          names: "resolved.eth",
-          duration: 31_536_000n,
-          paymentToken: "usdc",
-          records: { addresses: { eth: devnet.accounts.user2 } },
-        });
-        yield* Fiber.interrupt(clock);
+        yield* chain.isolated(
+          Effect.gen(function* () {
+            yield* chain.write({
+              address: usdc,
+              abi: parseAbi(["function mint(address to, uint256 amount)"]),
+              functionName: "mint",
+              args: [user, 10n ** 12n],
+              account: user,
+            });
+            yield* chain.write({
+              address: usdc,
+              abi: Abis.shared.erc20,
+              functionName: "approve",
+              args: [devnet.contract("v2.ethRegistrar"), maxUint256],
+              account: user,
+            });
+            const ens = ensforgeOn(devnet, user);
+            yield* Actions.registration.registerSync(ens, {
+              names: name,
+              duration: Duration.years(1),
+              paymentToken: "usdc",
+              records: { addresses: { eth: user2 } },
+              onStep: chain.passWaits,
+            });
 
-        // ENSv1's Universal Resolver goes through the `.eth` resolver, which is ENSv2Resolver.
-        const resolved = yield* Effect.promise(() =>
-          getEnsAddress(publicClient, {
-            name: "resolved.eth",
-            universalResolverAddress: devnet.contracts["v1.universalResolver"],
+            // ENSv1's Universal Resolver goes through the `.eth` resolver, which is ENSv2Resolver.
+            const [answer] = yield* chain.read({
+              address: devnet.contract("v1.universalResolver"),
+              abi: Abis.v1.universalResolver,
+              functionName: "resolve",
+              args: [
+                dnsEncode(name),
+                encodeFunctionData({
+                  abi: Abis.shared.addrResolver,
+                  functionName: "addr",
+                  args: [namehash(name)],
+                }),
+              ],
+            });
+            const resolved = decodeFunctionResult({
+              abi: Abis.shared.addrResolver,
+              functionName: "addr",
+              data: answer,
+            });
+            assert.strictEqual(resolved, user2);
+            assert.strictEqual(yield* Actions.record.getAddress(ens, { name }), user2);
           }),
         );
-        assert.strictEqual(resolved, devnet.accounts.user2);
-        const viaProfile = yield* Actions.record.getAddress(ens, { name: "resolved.eth" });
-        assert.strictEqual(viaProfile, devnet.accounts.user2);
       }),
     );
   });
 
-  devnetLayer("v1-live")("v1-live", (it) => {
+  layer(Devnet.layer({ profile: "v1-live" }), { excludeTestServices: true })("v1-live", (it) => {
     it.effect("ensforge reads ENSv1 state, and ENSv1 still owns .eth", () =>
       Effect.gen(function* () {
         const devnet = yield* Devnet;
-        const { ens } = clientsOf(devnet);
 
-        const eth = yield* Actions.name.get(ens, { name: "eth" });
+        const eth = yield* Actions.name.get(ensforgeOn(devnet), { name: "eth" });
         assert.strictEqual(eth.protocol, "v1");
-        assert.strictEqual(eth.owner, devnet.contracts["v1.baseRegistrar"]);
+        assert.strictEqual(eth.owner, devnet.contract("v1.baseRegistrar"));
       }),
     );
   });
 
-  devnetLayer("sepolia-shaped")("sepolia-shaped", (it) => {
-    it.effect("ensforge reads ENSv2 with Sepolia's capabilities", () =>
-      Effect.gen(function* () {
-        const devnet = yield* Devnet;
-        const { ens } = clientsOf(devnet);
+  layer(Devnet.layer({ profile: "sepolia-shaped" }), { excludeTestServices: true })(
+    "sepolia-shaped",
+    (it) => {
+      it.effect("ensforge reads ENSv2 with Sepolia's capabilities", () =>
+        Effect.gen(function* () {
+          const devnet = yield* Devnet;
+          const ens = ensforgeOn(devnet);
 
-        assert.isFalse(devnet.deployments.v2?.capabilities.resolutionErrorWrapping);
-        const eth = yield* Actions.name.get(ens, { name: "eth" });
-        assert.strictEqual(eth.protocol, "v2");
-        const available = yield* Actions.registration.isAvailable(ens, {
-          name: "sepolia-smoke.eth",
-        });
-        assert.isTrue(available);
-      }),
-    );
-  });
+          assert.isFalse(devnet.deployments.v2?.capabilities.resolutionErrorWrapping);
+          const eth = yield* Actions.name.get(ens, { name: "eth" });
+          assert.strictEqual(eth.protocol, "v2");
+          assert.isTrue(
+            yield* Actions.registration.isAvailable(ens, { name: "sepolia-smoke.eth" }),
+          );
+        }),
+      );
+    },
+  );
 
-  devnetLayer("v2-only")("v2-only", (it) => {
+  layer(Devnet.layer({ profile: "v2-only" }), { excludeTestServices: true })("v2-only", (it) => {
     it.effect("the generated profile has no ENSv1", () =>
       Effect.gen(function* () {
         const devnet = yield* Devnet;
-        const { ens } = clientsOf(devnet);
 
         assert.isUndefined(devnet.deployments.v1);
-        const eth = yield* Actions.name.get(ens, { name: "eth" });
+        const eth = yield* Actions.name.get(ensforgeOn(devnet), { name: "eth" });
         assert.strictEqual(eth.protocol, "v2");
       }),
     );
