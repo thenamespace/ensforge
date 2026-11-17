@@ -29,38 +29,64 @@ pnpm catalog. Tool configs live in `.config/`; repository scripts are `ensforge-
 diagnostics. Fix them in the code rather than silencing them; disable one with an
 `@effect-diagnostics-next-line` comment only when the flagged pattern is the point of the code.
 
-## Readability
+## Code guidelines
 
-Apply these conventions across all package source, including the SDK, HCA, React, contracts, and
-new packages. Oxfmt does not insert logical blank lines; review grouping explicitly when writing code.
+These apply to all code: the SDK, HCA, React, contracts, tools and tests. Oxfmt does not insert
+logical blank lines; review grouping explicitly when writing code.
 
-Separate validation, execution, state updates, and result construction with blank lines. Keep short,
-related declarations and assertions together; do not add a blank line after every statement. Separate
-independent functions and type declarations, while keeping overloads and schema/type pairs together.
+### Structure and naming
 
-Use brief comments for non-obvious constraints, ordering, or lifecycle decisions. Avoid comments that
-repeat the code, section banners, roadmap phase labels in source comments, and manual reformatting
-of generated artifacts.
+- Name things for what they are in the domain, consistently across the repository: one name per
+  concept (`fixtures.byId`, `services.indexerUrl`), not synonyms per file.
+- Prefer Effect services (`Context.Service` with a static `layer`, methods built with
+  `Effect.fn`/`Effect.fnUntraced`) over free functions that take a client or instance as their
+  first argument. Shared behaviour belongs in a service other code yields.
+- Use what exists before writing a helper: viem, Effect (`Predicate`, `Schema`, `Array`, …), the
+  SDK's own utilities (`Name.parse`, `CoinType`, `Role`), then the shared test services. When a
+  helper is missing and generally useful, add it to the package that owns the concept, with tests.
+- Keep each public action in its own action folder, following neighboring actions. Keep each file
+  to one responsibility.
 
-Inline trivial wrappers such as a function that only constructs an error or forwards a call. Prefer
-an explicit expression at its use site when a small helper adds navigation without clarifying intent.
-Keep shared functions for substantial reused logic or important domain concepts; do not extract
-one-off helpers merely to shorten a function. Preserve existing public APIs when cleaning up.
+### Helpers and inlining
 
-Keep each public action in its own action folder, following neighboring actions. Separate validation,
-RPC/provider work, mutation, and result construction; group related declarations without inserting
-a blank line after every line.
+- Inline one-off logic at its use site. Do not declare small helpers, constants or fixtures at the
+  top of a file when they are used once or twice in that file: a reader should not have to jump
+  around to follow a test or a function.
+- Extract only substantial logic, or logic reused across files, into a shared module with a
+  specific name; never into catch-all `utils`/`helpers` files.
+- Inline trivial wrappers: a function that only constructs an error, forwards a call, or wraps an
+  assertion (`const fails = (e) => expectFailure(e, …)`) adds navigation without clarifying intent.
+- Preserve existing public APIs when cleaning up.
+
+### Grouping and comments
+
+- Separate logical blocks with a blank line: setup, validation, execution (RPC or provider
+  work), state updates, assertions and result construction. Keep short, related declarations and
+  assertions together; do not add a blank line after every statement. Separate independent
+  functions and type declarations, keeping overloads and schema/type pairs together.
+- Use brief comments for non-obvious constraints, ordering or lifecycle decisions. Avoid comments
+  that repeat the code, section banners, roadmap phase labels, and manual reformatting of
+  generated artifacts.
 
 Defer HCA user documentation until the final documentation phase. Write it in `apps/docs`, not in
-package guides or action README files. Keep the existing research roadmap for implementation tracking.
+package guides or action README files. Keep the existing research roadmap for implementation
+tracking.
 
 ## Tests
 
-Tests call ensforge through its Effect API (`yield* Actions.record.get(ens, options)`, `Actions`
-from `@ensforge/sdk/effect` or `@ensforge/hca/effect`) and assert failures with `expectFailure`.
-Do not wrap the Promise API in `Effect.promise`; that is reserved for viem and other libraries,
-and the Promise API is only called by tests that compare it with the Effect API. See the Tests
-section of CONTRIBUTING.md.
+- All tests live under `tests/`: unit tests in `tests/unit/<package>`, the chain, fuzz and
+  services lanes beside them. Unit tests reach package internals through the workspace-only
+  `@ensforge/<package>/internal/*` export.
+- Tests are Effect programs (`it.effect`, `layer(...)` from `@effect/vitest`). Call ensforge
+  through its Effect API (`yield* Actions.record.get(ens, options)`, `Actions` from
+  `@ensforge/sdk/effect` or `@ensforge/hca/effect`) and assert failures with `expectFailure`.
+  Reach the chain, wallets, gateways, indexers and bundlers through the shared test services; do
+  not write `Effect.promise`/`async` in tests. Only the conformance tests that compare the Promise
+  API with the Effect API call Promises.
+- Write the tests a behaviour needs: the documented contract, its failure cases and regressions.
+  Do not add tests that restate the implementation, check what the type checker already proves,
+  or assert the obvious.
+- See the Tests section of CONTRIBUTING.md for lanes, fixtures and the coverage ledger.
 
 # Learning more about Effect
 
