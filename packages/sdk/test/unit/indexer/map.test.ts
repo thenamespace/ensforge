@@ -232,6 +232,8 @@ describe("Convert other resources", () => {
 
     assert.deepStrictEqual([byAddress.input, byAddress.kind], [addresses.nick, "address"]);
     assert.strictEqual(byAddress.names[0]?.isPrimary, true);
+    // Regression: an address's primary name comes from its rows; bigname sends no `record`.
+    assert.strictEqual(byAddress.name?.name, Fixture.nick.name);
     assert.deepStrictEqual([unknown.input, unknown.kind, unknown.name], ["", "name", null]);
   });
 

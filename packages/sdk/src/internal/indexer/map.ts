@@ -284,14 +284,22 @@ const lookupRecord = (wire: Of<typeof Wire.LookupRecord>) => ({
   isPrimary: wire.is_primary ?? null,
 });
 
-export const lookupResult = (wire: Of<typeof Wire.LookupResult>): T.LookupResult => ({
-  input: wire.input.name ?? wire.input.address ?? "",
-  kind: wire.kind === "address" ? "address" : "name",
-  status: answerStatus(wire.status),
-  name: wire.record === null || wire.record === undefined ? null : lookupRecord(wire.record),
-  names: (wire.records ?? []).map(lookupRecord),
-  reason: wire.failure_reason ?? wire.unsupported_reason ?? null,
-});
+export const lookupResult = (wire: Of<typeof Wire.LookupResult>): T.LookupResult => {
+  const names = (wire.records ?? []).map(lookupRecord);
+  // Name inputs answer one `record`; address inputs list their names, the primary one marked.
+  const record =
+    wire.record === null || wire.record === undefined
+      ? (names.find((row) => row.isPrimary === true) ?? null)
+      : lookupRecord(wire.record);
+  return {
+    input: wire.input.name ?? wire.input.address ?? "",
+    kind: wire.kind === "address" ? "address" : "name",
+    status: answerStatus(wire.status),
+    name: record,
+    names,
+    reason: wire.failure_reason ?? wire.unsupported_reason ?? null,
+  };
+};
 
 export const permission = (wire: Of<typeof Wire.PermissionRow>): T.PermissionRow => ({
   address: getAddress(wire.address),
