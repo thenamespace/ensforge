@@ -19,6 +19,7 @@ import type { NameInput, Status } from "../../actions/migration/types.js";
 import type { Client } from "../../client/types.js";
 import { InvalidInputError } from "../../errors/classes/InvalidInputError.js";
 import { MigrationError } from "../../errors/classes/MigrationError.js";
+import { UnsupportedError } from "../../errors/classes/UnsupportedError.js";
 import type { AnyError } from "../../errors/types.js";
 import type { Plan } from "../../plan/Plan.js";
 import { requireAddress } from "../name/write.js";
@@ -188,7 +189,9 @@ export const planMigration = Effect.fnUntraced(function* (
   const v1 = client.deployment.v1?.contracts;
   const v2 = client.deployment.v2;
   if (v1 === undefined || v2 === undefined) {
-    return yield* Effect.fail(new MigrationError({ code: "NOT_ELIGIBLE", blockers: ["not-eth"] }));
+    return yield* Effect.fail(
+      new UnsupportedError({ code: "UNSUPPORTED_ON_DEPLOYMENT", feature: "ENSv2 migration" }),
+    );
   }
   const inputs = Array.isArray(input.names)
     ? (input.names as readonly NameInput[])

@@ -71,6 +71,8 @@ export type World = Entry & {
   readonly found?: { readonly resolver: Address; readonly offset: bigint } | undefined;
   /** Resolvers that report ENSIP-10 `resolve` (extended resolvers). */
   readonly extended?: readonly Address[] | undefined;
+  /** A deployment without ENSv2, as before its launch. */
+  readonly v1Only?: boolean | undefined;
 };
 
 export const dnsEncode = (name: string): Hex => bytesToHex(packetToBytes(name));
@@ -265,6 +267,9 @@ export const clientFor = (world: World) => {
   const ens = Ensforge.create({
     publicClient: createPublicClient({ chain: mainnet, transport }),
     account: signer,
+    ...(world.v1Only === true
+      ? { deployment: { name: deployment.name, chainId: deployment.chainId, v1: deployment.v1 } }
+      : {}),
     // One eth_call per read keeps the script simple; batching is not under test here.
     batch: { multicall: false },
   });

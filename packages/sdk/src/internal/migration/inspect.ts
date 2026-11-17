@@ -5,6 +5,7 @@ import { hexToBigInt, isAddressEqual, maxUint64, zeroAddress, type Address } fro
 
 import type { Blocker, ResolverPlan, Route, Status } from "../../actions/migration/types.js";
 import type { Client } from "../../client/types.js";
+import { UnsupportedError } from "../../errors/classes/UnsupportedError.js";
 import type { AnyError } from "../../errors/types.js";
 import type { Read } from "../../Types.js";
 import * as Fuse from "../../utils/Fuse.js";
@@ -87,9 +88,12 @@ export const inspectMigration = Effect.fnUntraced(function* (
   });
   if (kind === "v2-migrated") return unmigratable("migrated");
   if (kind !== "v1-unwrapped" && kind !== "v1-wrapped") return unmigratable("not-required");
-  if (!isEth || v1Contracts === undefined || v2 === undefined) {
-    return unmigratable("blocked", ["not-eth"]);
+  if (v1Contracts === undefined || v2 === undefined) {
+    return yield* Effect.fail(
+      new UnsupportedError({ code: "UNSUPPORTED_ON_DEPLOYMENT", feature: "ENSv2 migration" }),
+    );
   }
+  if (!isEth) return unmigratable("blocked", ["not-eth"]);
 
   const { route, blocker } = routeOf(loaded, fuses);
   const blockers: Blocker[] = blocker === undefined ? [] : [blocker];
