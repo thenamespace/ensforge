@@ -19,6 +19,7 @@ export const viaContext = Effect.fnUntraced(function* (
   const walletClient =
     state === undefined ? undefined : yield* fromPromise(() => state.getWalletClient());
   return {
+    client,
     chainId: client.chain.id,
     account,
     publicClient: client.publicClient,

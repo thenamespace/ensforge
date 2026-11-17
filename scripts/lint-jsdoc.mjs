@@ -44,10 +44,16 @@ const jsdocOf = (node, source) => {
     .join("\n");
 };
 
+// The package's own error classes plus core's, which extension packages also throw.
 const errorClasses = (() => {
-  const folder = join(packageFolder, "src/errors/classes");
+  const folders = [
+    join(packageFolder, "src/errors/classes"),
+    join(packageFolder, "../core/src/errors/classes"),
+  ];
   return new Set(
-    existsSync(folder) ? readdirSync(folder).map((file) => file.replace(/\.ts$/, "")) : [],
+    folders.flatMap((folder) =>
+      existsSync(folder) ? readdirSync(folder).map((file) => file.replace(/\.ts$/, "")) : [],
+    ),
   );
 })();
 
@@ -143,7 +149,7 @@ const checkAction = (file, statement, namespace, source) => {
         new RegExp(`Actions\\.${domain}\\.${name}\\(`).test(example.code) &&
         !example.code.includes("/effect"),
     ),
-    effect: examples.some((example) => example.code.includes('"@ensforge/core/effect"')),
+    effect: examples.some((example) => /"@ensforge\/[a-z-]+\/effect"/.test(example.code)),
   };
   for (const [form, present] of Object.entries(forms))
     if (!present) fail(`missing ${form} example`);

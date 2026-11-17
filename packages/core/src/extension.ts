@@ -6,7 +6,8 @@
  */
 export type { Bound, BoundWrite } from "./actions/bound.js";
 export { from } from "./client/from.js";
-export type { Client, Like, ViemClient, ViemWalletClient } from "./client/types.js";
+export type { Client, ClientBase, Like, ViemClient, ViemWalletClient } from "./client/types.js";
+export type { AnyError } from "./errors/types.js";
 export { withDefaults } from "./errors/EnsforgeError.js";
 export { fromCause } from "./errors/translate/fromCause.js";
 export * as Action from "./internal/action/index.js";

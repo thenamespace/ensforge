@@ -15,7 +15,7 @@ const args = process.argv.slice(2);
 const consumerIndex = args.indexOf("--consumer");
 const consumer = consumerIndex === -1 ? undefined : args[consumerIndex + 1];
 const effectFree = args.filter(
-  (arg, index) => !arg.startsWith("--") && index !== consumerIndex + 1,
+  (arg, index) => !arg.startsWith("--") && (consumerIndex === -1 || index !== consumerIndex + 1),
 );
 const packageFolder = process.cwd();
 const problems = [];

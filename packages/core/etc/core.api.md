@@ -1278,6 +1278,6 @@ type Write.Options = { account?: `0x${string}` | Account | undefined; simulate?:
 type Write.Result = { readonly hash: `0x${string}`; readonly hashes: readonly `0x${string}`[]; readonly id: string | undefined; readonly plan: Plan; }
 type Write.SyncOptions = Options & { confirmations?: number | undefined; timeout?: number | undefined; }
 type Write.SyncResult = Result & { readonly receipt: TransactionReceipt; readonly receipts: readonly TransactionReceipt[]; }
-type Write.Via.Context = { readonly chainId: number; readonly account: `0x${string}` | undefined; readonly publicClient: ViemClient; readonly walletClient: ViemWalletClient | undefined; }
+type Write.Via.Context = { readonly client: Client<object>; readonly chainId: number; readonly account: `0x${string}` | undefined; readonly publicClient: ViemClient; readonly walletClient: ViemWalletClient | undefined; }
 type Write.Via.Status = { readonly status: 'pending'; } | { readonly status: 'success'; readonly hashes: readonly `0x${string}`[]; } | { readonly status: 'failed'; readonly reason: string; readonly hashes?: readonly `0x${string}`[]; }
 ```

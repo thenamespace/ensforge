@@ -1,6 +1,6 @@
 import type { Account, Address, BlockTag, Hex, TransactionReceipt } from "viem";
 
-import type { Like, ViemClient, ViemWalletClient } from "./client/types.js";
+import type { Client, Like, ViemClient, ViemWalletClient } from "./client/types.js";
 import type { Plan } from "./plan/Plan.js";
 
 declare const requestValue: unique symbol;
@@ -145,6 +145,8 @@ export declare namespace Write {
   namespace Via {
     /** What a route knows about the write it carries. */
     type Context = {
+      /** The ensforge client the write runs on (deployment, reads). */
+      readonly client: Client<object>;
       readonly chainId: number;
       /** Signer of the write. */
       readonly account: Address | undefined;

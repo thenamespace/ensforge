@@ -170,7 +170,7 @@ export const sendPlan = Effect.fnUntraced(function* (
 
       let sent: readonly Hex[];
       let reference: string | undefined;
-      if (route !== undefined && routeContext !== undefined) {
+      if (route !== undefined && routeContext !== undefined && step.from !== "signer") {
         sent = yield* sendThroughRoute(route, routeContext, merged, (sentReference) => {
           reference = sentReference;
           emit({ step, status: "submitted", reference: sentReference });
@@ -199,8 +199,11 @@ export const sendPlan = Effect.fnUntraced(function* (
           ...Object.fromEntries(group.map((member) => [member.id, sent])),
         },
       });
-      for (const member of group)
-        emit({ step: member, status: "submitted", hashes: sent, bundleId: id, reference });
+      // A routed step reported `submitted` with its reference as soon as it was sent.
+      if (reference === undefined) {
+        for (const member of group)
+          emit({ step: member, status: "submitted", hashes: sent, bundleId: id });
+      }
       hashes.push(...sent);
       previous = { steps: group, hashes: sent };
       index += group.length;
