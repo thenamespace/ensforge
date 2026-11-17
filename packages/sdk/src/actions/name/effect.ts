@@ -495,7 +495,7 @@ export declare namespace setTtlSync {
  *
  * @throws `Errors.InvalidInputError` (`INVALID_NAME`, `INVALID_ADDRESS`) for invalid input.
  * @throws `Errors.NameStateError` (`NAME_EXPIRED`, `NAME_RESERVED`, `NAME_NOT_REGISTERED`) when the name cannot be sent.
- * @throws `Errors.UnauthorizedError` (`NOT_OWNER`, `TRANSFER_DISALLOWED`) when the account may not send it.
+ * @throws `Errors.UnauthorizedError` (`NOT_OWNER`, `TRANSFER_DISALLOWED`) when the account may not send it, or the recipient (an HCA) refuses it.
  * @throws `Errors.UnsupportedError` (`UNSUPPORTED_PROTOCOL`) for `role: "registrant"` on names without a registrant.
  * @throws `Errors.UserRejectedError` when the user rejects the request.
  *
@@ -545,7 +545,7 @@ export declare namespace transfer {
  * ```
  *
  * @throws `Errors.NameStateError` (`NAME_EXPIRED`, `NAME_RESERVED`, `NAME_NOT_REGISTERED`) when the name cannot be sent.
- * @throws `Errors.UnauthorizedError` (`NOT_OWNER`, `TRANSFER_DISALLOWED`) when the account may not send it.
+ * @throws `Errors.UnauthorizedError` (`NOT_OWNER`, `TRANSFER_DISALLOWED`) when the account may not send it, or the recipient (an HCA) refuses it.
  * @throws `Errors.TransactionError` (`TRANSACTION_REVERTED`, `RECEIPT_TIMEOUT`) when confirmation fails.
  *
  * @see {@link transfer} to resolve on submission
