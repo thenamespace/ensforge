@@ -15,7 +15,8 @@ import * as Impl from "./effect.js";
  *
  * **Details**
  *
- * - bigname only; other indexers fail with `INDEXER_UNSUPPORTED`.
+ * - bigname v0.14 and later; other indexers, and older bigname servers, fail with
+ *   `INDEXER_UNSUPPORTED`, so `fallback()` moves on to the next indexer.
  *
  * **Example** (Listing an account's resolvers)
  *

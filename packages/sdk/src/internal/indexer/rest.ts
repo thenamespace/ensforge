@@ -30,7 +30,7 @@ export type RestOptions = {
     readonly snapshots: boolean;
     /** `safe` and `finalized` reads. */
     readonly finality: boolean;
-    /** `GET /resolvers?role_holder=`. */
+    /** `GET /resolvers?role_holder=`; a server without the route reports it unsupported. */
     readonly resolversByRoleHolder: boolean;
   };
 };
@@ -424,6 +424,18 @@ export const restIndexer = (options: RestOptions): Implementation => {
                     ...Params.paging(query),
                   },
                 },
+              ).pipe(
+                // A list route answers an empty page for no matches; a 404 means the server
+                // predates the route (bigname before v0.14), so it does not support the query.
+                Effect.catchTag("NotFoundError", () =>
+                  Effect.fail(
+                    new IndexerError({
+                      code: "INDEXER_UNSUPPORTED",
+                      source: id,
+                      shortMessage: `${id} does not serve resolvers by role holder (GET ${route}).`,
+                    }),
+                  ),
+                ),
               );
               return yield* pageOf(
                 route,

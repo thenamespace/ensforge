@@ -512,6 +512,36 @@ describe("indexer actions against Goldsky", () => {
   );
 });
 
+describe("bigname before the role-holder route (v0.13)", () => {
+  // Sepolia's hosted bigname ran v0.13.0 when v0.14 added `GET /resolvers?role_holder=`.
+  it.effect("reports getResolvers unsupported, and the next indexer answers it", () =>
+    Effect.gen(function* () {
+      const old = fakeBigname({ without: ["/resolvers"] });
+      const current = fakeBigname();
+      yield* expectFailure(
+        EffectActions.indexer.getResolvers(
+          clientWith(bigname({ url: old.url, fetch: old.fetch })),
+          {
+            roleHolder: addresses.nick,
+          },
+        ),
+        { _tag: "IndexerError", code: "INDEXER_UNSUPPORTED" },
+      );
+
+      const client = clientWith(
+        fallback([
+          bigname({ url: old.url, fetch: old.fetch }),
+          bigname({ url: current.url, fetch: current.fetch }),
+        ]),
+      );
+      const page = yield* EffectActions.indexer.getResolvers(client, {
+        roleHolder: addresses.nick,
+      });
+      assert.strictEqual(page.items[0]?.address, addresses.resolverV2);
+    }),
+  );
+});
+
 describe("bigname and Goldsky together", () => {
   it("sends Basenames to Goldsky and ENS to bigname", async () => {
     const big = fakeBigname();
