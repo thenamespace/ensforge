@@ -81,6 +81,14 @@ export class Chain extends Context.Service<
       parameters: SendTransactionParameters,
     ) => Effect.Effect<TransactionReceipt, ChainError>;
     readonly setBalance: (address: Address, value: bigint) => Effect.Effect<void, ChainError>;
+    /** Writes storage slot `slot` of `address` (anvil cheat). */
+    readonly setStorage: (
+      address: Address,
+      slot: Hex,
+      value: Hex,
+    ) => Effect.Effect<void, ChainError>;
+    /** Lets writes send from `address` without its key, e.g. a real name's owner on a fork. */
+    readonly impersonate: (address: Address) => Effect.Effect<void, ChainError>;
     /** Replaces the code at `address` (anvil cheat). */
     readonly setCode: (address: Address, bytecode: Hex) => Effect.Effect<void, ChainError>;
     readonly mine: (blocks?: number) => Effect.Effect<void, ChainError>;
@@ -153,6 +161,10 @@ export class Chain extends Context.Service<
           ),
         setBalance: (address, value) =>
           rpc("setBalance", () => client.setBalance({ address, value })),
+        setStorage: (address, slot, value) =>
+          rpc("setStorageAt", () => client.setStorageAt({ address, index: slot, value })),
+        impersonate: (address) =>
+          rpc("impersonateAccount", () => client.impersonateAccount({ address })),
         setCode: (address, bytecode) => rpc("setCode", () => client.setCode({ address, bytecode })),
         mine,
         increaseTime,

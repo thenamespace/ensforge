@@ -6,9 +6,16 @@ import { layer } from "@effect/vitest";
 import { Effect, Layer, Schema } from "effect";
 
 import { Deployments } from "@ensforge/contracts";
-import { accounts, Anvil, Devnet, devnetClient, type DevnetInstance } from "@ensforge/test-devnet";
+import {
+  accounts,
+  Anvil,
+  Chain,
+  Devnet,
+  devnetClient,
+  type DevnetInstance,
+} from "@ensforge/test-devnet";
 import { chainServices } from "@ensforge/test-integration/support/lane";
-import { defineChain, type Address } from "viem";
+import { defineChain, encodeAbiParameters, erc20Abi, keccak256, toHex, type Address } from "viem";
 import { mainnet, sepolia } from "viem/chains";
 
 /** A live network a fork follows. */
@@ -90,3 +97,41 @@ export const onFork = (network: Network) =>
     ),
     { excludeTestServices: true },
   );
+
+/**
+ * Gives `account` a balance of `amount` of the ERC-20 `token` on a fork, by writing the token's
+ * balance mapping. The mapping's slot differs per token (USDC 9, DAI 2), so it is found by trying
+ * each low slot until `balanceOf` reads the written value.
+ */
+export const fundToken = Effect.fnUntraced(function* (
+  token: Address,
+  account: Address,
+  amount: bigint,
+) {
+  const chain = yield* Chain;
+  const value = toHex(amount, { size: 32 });
+
+  for (let slot = 0n; slot < 64n; slot++) {
+    const key = keccak256(
+      encodeAbiParameters([{ type: "address" }, { type: "uint256" }], [account, slot]),
+    );
+    const before = yield* chain.read({
+      address: token,
+      abi: erc20Abi,
+      functionName: "balanceOf",
+      args: [account],
+    });
+    yield* chain.setStorage(token, key, value);
+    if (
+      (yield* chain.read({
+        address: token,
+        abi: erc20Abi,
+        functionName: "balanceOf",
+        args: [account],
+      })) === amount
+    )
+      return;
+    yield* chain.setStorage(token, key, toHex(before, { size: 32 }));
+  }
+  return yield* new ForkError({ message: `no balance slot found for ${token}` });
+});
