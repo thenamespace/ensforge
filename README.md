@@ -9,7 +9,7 @@ Type-safe tools for reading, writing, and building applications on ENS.
 - Automatic contract routing with typed results and errors
 - Batched reads and wallet-aware write workflows
 - Bring your own viem clients or Wagmi config
-- Framework-independent actions, a grouped SDK client, and reactive React hooks
+- Framework-independent actions, a typed client, and Effect Atom hooks for React
 
 ## Packages
 
@@ -17,7 +17,7 @@ Type-safe tools for reading, writing, and building applications on ENS.
 | ------------------------------------------------------- | ---------------------------------------------------------- |
 | [`@ensforge/contracts`](./packages/contracts/README.md) | Contract ABIs, deployment addresses, and shared interfaces |
 | [`@ensforge/sdk`](./packages/sdk/README.md)             | Framework-independent ENS actions and utilities            |
-| [`@ensforge/react`](./packages/react/README.md)         | Providers, queries, mutations, and cache primitives        |
+| [`@ensforge/react`](./packages/react/README.md)         | Hooks and Effect Atom atoms, with server rendering         |
 
 ## Quick start
 

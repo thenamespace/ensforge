@@ -62,7 +62,9 @@
     "lint": "oxlint --deny-warnings .",
     "pack:check": "publint && attw --pack . --profile esm-only",
     "prepack": "pnpm build",
-    "typecheck": "tsc --noEmit && tsc --noEmit -p test"
+    "typecheck": "tsc --noEmit && tsc --noEmit -p test && tsc --noEmit -p scripts",
+    "api:report": "node ../../scripts/api-report.mjs index atoms server",
+    "verify": "node ../../scripts/lint-jsdoc.mjs src/index.ts src/atoms/index.ts src/server/index.ts && node ../../scripts/api-report.mjs --check index atoms server && node ../../scripts/check-dist-types.mjs --consumer scripts/fixtures/consumer.ts && node ../../scripts/check-examples.mjs scripts/fixtures/example-globals.ts"
   },
   "dependencies": {
     "@effect/atom-react": "catalog:",
@@ -78,7 +80,8 @@
     "react": "catalog:",
     "react-dom": "catalog:",
     "scheduler": "catalog:",
-    "viem": "catalog:"
+    "viem": "catalog:",
+    "wagmi": "catalog:"
   },
   "peerDependencies": {
     "effect": "^4.1.4",

@@ -1,4 +1,4 @@
-// Type-checks every ```ts example in a package's JSDoc, as users would paste it.
+// Type-checks every ```ts and ```tsx example in a package's JSDoc, as users would paste it.
 //
 //   node ../../scripts/check-examples.mjs <globals.ts>
 //
@@ -24,7 +24,7 @@ const sourceFiles = (folder) =>
   readdirSync(folder).flatMap((entry) => {
     const path = join(folder, entry);
     if (statSync(path).isDirectory()) return entry === "legacy" ? [] : sourceFiles(path);
-    return path.endsWith(".ts") ? [path] : [];
+    return /\.tsx?$/.test(path) ? [path] : [];
   });
 
 const examplesOf = (text) => {
@@ -32,10 +32,13 @@ const examplesOf = (text) => {
   for (const comment of text.matchAll(/\/\*\*[\s\S]*?\*\//g)) {
     const lines = comment[0].split("\n").map((line) => line.replace(/^\s*\*( |$)/, ""));
     let fence;
+    let extension = "ts";
     for (const line of lines) {
-      if (fence === undefined && line.trim() === "```ts") fence = [];
-      else if (fence !== undefined && line.trim() === "```") {
-        examples.push(fence.join("\n"));
+      if (fence === undefined && (line.trim() === "```ts" || line.trim() === "```tsx")) {
+        fence = [];
+        extension = line.trim() === "```tsx" ? "tsx" : "ts";
+      } else if (fence !== undefined && line.trim() === "```") {
+        examples.push({ code: fence.join("\n"), extension });
         fence = undefined;
       } else fence?.push(line);
     }
@@ -52,7 +55,7 @@ const toModule = (example) => {
     if (open || /^import\s/.test(line)) {
       imports.push(line);
       open = !/from\s+["'][^"']+["'];?\s*$/.test(line) && !/^import\s+["']/.test(line);
-    } else body.push(line);
+    } else body.push(line.replace(/^export (default )?(?=(async )?function|const|class)/, ""));
   }
   return `${imports.join("\n")}\n\nexport async function* example() {\n${body.join("\n")}\n}\n`;
 };
@@ -63,8 +66,11 @@ mkdirSync(outFolder, { recursive: true });
 const origins = new Map();
 for (const file of sourceFiles(join(packageFolder, "src"))) {
   examplesOf(readFileSync(file, "utf8")).forEach((example, index) => {
-    const name = `${relative(join(packageFolder, "src"), file).replaceAll("/", "__").replace(/\.ts$/, "")}__${index + 1}.ts`;
-    writeFileSync(join(outFolder, name), toModule(example));
+    const base = relative(join(packageFolder, "src"), file)
+      .replaceAll("/", "__")
+      .replace(/\.tsx?$/, "");
+    const name = `${base}__${index + 1}.${example.extension}`;
+    writeFileSync(join(outFolder, name), toModule(example.code));
     origins.set(name, relative(packageFolder, file));
   });
 }
@@ -80,7 +86,7 @@ writeFileSync(
       noUnusedParameters: false,
       allowUnreachableCode: true,
     },
-    include: ["./*.ts", globals],
+    include: ["./*.ts", "./*.tsx", globals],
   }),
 );
 
@@ -92,7 +98,7 @@ try {
   console.log(`examples: ok (${origins.size} examples)`);
 } catch (error) {
   const output = String(error.stdout);
-  const failing = new Set(output.match(/[\w-]+__\d+\.ts/g) ?? []);
+  const failing = new Set(output.match(/[\w.-]+__\d+\.tsx?/g) ?? []);
   console.error(output);
   console.error(`examples: ${failing.size} of ${origins.size} examples fail to type-check`);
   process.exit(1);

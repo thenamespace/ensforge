@@ -40,6 +40,7 @@ export const errorOf = <error>(
     ? Option.getOrElse(AsyncResult.error(result), () => Cause.squash(result.cause) as error)
     : undefined;
 
+/** A read atom's result as the object read hooks return. */
 export const toReadResult = <value, error>(
   result: AsyncResult.AsyncResult<value, error>,
   refresh: () => void,

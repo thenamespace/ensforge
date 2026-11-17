@@ -85,7 +85,7 @@ export const useAddress = (
  *
  * function View() {
  *   const { data: avatar } = useAvatar({ name: "nick.eth" })
- *   return <span>{avatar?.url}</span>
+ *   return <img src={avatar ?? undefined} />
  * }
  * ```
  *
@@ -108,7 +108,7 @@ export const useAvatar = (
  *
  * function View() {
  *   const { data: primary } = usePrimaryName({ address })
- *   return <span>{primary?.name}</span>
+ *   return <span>{primary}</span>
  * }
  * ```
  *
@@ -154,7 +154,7 @@ export const useAvailability = (
  * import { useRegistrationPrice } from "@ensforge/react"
  *
  * function View() {
- *   const { data: price } = useRegistrationPrice({ names: "alice.eth", duration: Duration.years(1) })
+ *   const { data: price } = useRegistrationPrice({ name: "alice.eth", duration: Duration.years(1) })
  *   return <span>{String(price?.total)}</span>
  * }
  * ```
@@ -178,7 +178,7 @@ export const useRegistrationPrice = (
  *
  * function View() {
  *   const { data: permissions } = usePermissions({ name: "alice.eth", account: address })
- *   return <span>{String(permissions?.canSetRecords)}</span>
+ *   return <span>{String(permissions?.can.setRecords)}</span>
  * }
  * ```
  *

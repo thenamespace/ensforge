@@ -65,7 +65,7 @@ export const useReadAtom = <action extends Action>(
  *
  * function CanEdit({ name, account }: { name: string; account: `0x${string}` }) {
  *   const { data, isLoading } = useRead(Actions.permission.get, { name, account })
- *   return isLoading ? null : <span>{String(data?.canSetRecords)}</span>
+ *   return isLoading ? null : <span>{String(data?.can.setRecords)}</span>
  * }
  * ```
  *

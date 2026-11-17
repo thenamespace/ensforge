@@ -12,6 +12,7 @@ export type EnsforgeContextValue = {
   readonly defaults: Freshness;
 };
 
+/** React context behind `EnsforgeProvider` and `useEnsforge`. */
 export const EnsforgeContext = createContext<EnsforgeContextValue | undefined>(undefined);
 
 /** The nearest provider's client and defaults; `client` overrides the client. */

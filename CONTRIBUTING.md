@@ -30,7 +30,7 @@ declaration files.
 apps/docs/          Vocs documentation
 packages/contracts/ ENS ABIs, fragments, interfaces, and deployments
 packages/sdk/       Standalone ENS actions and Effect APIs
-packages/react/     Providers, hooks, atoms, and cache APIs
+packages/react/     Hooks, Effect Atom atoms and server rendering
 packages/hca/       Hidden Contract Account route and executors
 packages/template/  Starter for new packages
 tests/harness/      Shared test harness for every test suite

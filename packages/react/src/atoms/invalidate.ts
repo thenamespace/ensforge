@@ -6,6 +6,15 @@ import type { Ensforge } from "@ensforge/sdk";
 import { runtime } from "./runtime.js";
 import { invalidationKeys, subjectsOf } from "./subjects.js";
 
+// The registry's `Reactivity`, the one read atoms subscribe to.
+const reactivity = runtime
+  .atom(
+    Effect.gen(function* () {
+      return yield* Reactivity.Reactivity;
+    }),
+  )
+  .pipe(Atom.keepAlive);
+
 /**
  * Refetches every cached read of the given names and accounts, chain and indexer reads alike.
  *
@@ -25,15 +34,6 @@ import { invalidationKeys, subjectsOf } from "./subjects.js";
  * @category invalidation
  * @since 1.0.0
  */
-// The registry's `Reactivity`, the one read atoms subscribe to.
-const reactivity = runtime
-  .atom(
-    Effect.gen(function* () {
-      return yield* Reactivity.Reactivity;
-    }),
-  )
-  .pipe(Atom.keepAlive);
-
 export const invalidate = (
   registry: AtomRegistry.AtomRegistry,
   client: Ensforge.Client,
