@@ -182,8 +182,9 @@ export const nameOf = (
     }
     case "NameRegistered":
     case "NameRenewed": {
-      // ENSv2 ETHRegistrar / ETHRenewerV1 and ENSv1 controllers spell the `.eth` label.
-      const plain = label ?? (typeof args["name"] === "string" ? args["name"] : undefined);
+      // ENSv2 ETHRegistrar / ETHRenewerV1 and ENSv1 controllers spell the `.eth` label. The
+      // oldest controllers spell it as `name` and index its hash as `label`.
+      const plain = typeof args["name"] === "string" ? args["name"] : label;
       return plain === undefined ? null : `${plain}.eth`;
     }
     case "NameWrapped":
