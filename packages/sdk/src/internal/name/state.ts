@@ -18,6 +18,24 @@ const flags = (status: NameStatus, isEth2ld: boolean) => ({
   renewable: isEth2ld && (status === "registered" || status === "grace"),
 });
 
+// The `.eth` rules of contracts-v2 v1.0.1 for a label's ENSv2 entry. ETHRegistrar registers a
+// label once it is AVAILABLE and past grace; ETHRenewerV1 renews an ENSv1 name only through the
+// reservation ENSv2 holds for it, or within grace after that reservation lapsed.
+const v2Registers = (now: bigint, v2: V2Data): boolean =>
+  v2.state.status === RegistryStatus.available && now - v2.state.expiry >= (v2.gracePeriod ?? 0n);
+
+const v2RenewsForV1 = (now: bigint, v2: V2Data): boolean =>
+  v2.state.status === RegistryStatus.reserved ||
+  (v2.state.status === RegistryStatus.available &&
+    isAddressEqual(v2.state.latestOwner, zeroAddress) &&
+    now - v2.state.expiry < (v2.gracePeriod ?? 0n));
+
+/** How the deployment registers and renews `.eth` names. */
+export type Registration = {
+  /** ENSv1's controllers still register and renew (before the ENSv2 launch). */
+  readonly v1Registers: boolean;
+};
+
 const fromV2 = (
   data: NameData,
   v2: V2Data,
@@ -35,7 +53,8 @@ const fromV2 = (
   return {
     protocol: "v2",
     status,
-    owner: orNull(state.latestOwner),
+    // An expired token has no holder, in grace too: `latestOwner` is history, not ownership.
+    owner: status === "registered" ? orNull(state.latestOwner) : null,
     manager: null,
     registrant: null,
     registry: v2.registry,
@@ -59,6 +78,7 @@ const fromV1 = (
   data: NameData,
   v1: V1Data,
   wrapped: boolean,
+  registration: Registration,
 ): Omit<NameState, "name" | "kind" | "reachable"> => {
   const { registrar } = v1;
   const unwrapped2ld = !wrapped && registrar !== undefined;
@@ -102,7 +122,20 @@ const fromV1 = (
     ttl: v1.ttl,
     wrapped,
     migrated: false,
-    ...flags(status, data.parts.isEth2ld),
+    ...v1Flags(data, status, registration),
+  };
+};
+
+// Once ENSv2 exists, its registrar can register a `.eth` label it holds no reservation for, and
+// after the launch ENSv1 names renew only through that reservation.
+const v1Flags = (data: NameData, status: NameStatus, registration: Registration) => {
+  const own = registration.v1Registers
+    ? flags(status, data.parts.isEth2ld)
+    : { available: false, renewable: false };
+  const v2 = data.parts.isEth2ld ? data.v2 : undefined;
+  return {
+    available: own.available || (v2 !== undefined && v2Registers(data.now, v2)),
+    renewable: own.renewable || (v2 !== undefined && v2RenewsForV1(data.now, v2)),
   };
 };
 
@@ -127,7 +160,11 @@ const unregistered = (data: NameData): Omit<NameState, "name" | "kind" | "reacha
 });
 
 /** Builds the public state of a classified name. */
-export const toNameState = (data: NameData, kind: NameKind): NameState => {
+export const toNameState = (
+  data: NameData,
+  kind: NameKind,
+  registration: Registration,
+): NameState => {
   // ENSv2 resolution of an ENSv1 name stops early when ENSv2 has a registry for its siblings but
   // no reservation for it (reserved names fall back to ENSv1), or when an ancestor below the TLD
   // is registered on ENSv2 without a registry for its children.
@@ -141,7 +178,7 @@ export const toNameState = (data: NameData, kind: NameKind): NameState => {
     data.v2 !== undefined
       ? fromV2(data, data.v2, kind)
       : (kind === "v1-unwrapped" || kind === "v1-wrapped") && data.v1 !== undefined
-        ? fromV1(data, data.v1, kind === "v1-wrapped")
+        ? fromV1(data, data.v1, kind === "v1-wrapped", registration)
         : unregistered(data);
 
   return { name: data.parts.name, kind, ...fields, reachable };

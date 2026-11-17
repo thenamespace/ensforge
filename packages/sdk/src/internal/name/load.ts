@@ -29,5 +29,7 @@ export const loadName = Effect.fnUntraced(function* (
     nameWrapper: client.deployment.v1?.contracts.nameWrapper,
   });
 
-  return { data, kind, state: toNameState(data, kind) };
+  // A legacy ENSv1 deployment no longer registers or renews (after the ENSv2 launch).
+  const v1Registers = client.deployment.v1?.status !== "legacy";
+  return { data, kind, state: toNameState(data, kind, { v1Registers }) };
 });
