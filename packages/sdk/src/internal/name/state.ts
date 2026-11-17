@@ -1,10 +1,8 @@
-import { hexToBigInt, isAddressEqual, maxUint64, zeroAddress, type Address } from "viem";
+import { hexToBigInt, isAddressEqual, maxUint64, zeroAddress } from "viem";
 
 import type { NameKind, NameState, NameStatus } from "../../actions/name/get/types.js";
+import { nonZeroAddress } from "../address.js";
 import { RegistryStatus, type NameData, type V1Data, type V2Data } from "./read.js";
-
-const orNull = (address: Address | undefined): Address | null =>
-  address === undefined || isAddressEqual(address, zeroAddress) ? null : address;
 
 /** Status of an ENSv2 registration that ends at `expiry`, with an optional grace period after it. */
 const timedStatus = (now: bigint, expiry: bigint, gracePeriod: bigint | undefined): NameStatus => {
@@ -63,12 +61,12 @@ const fromV2 = (
     protocol: "v2",
     status,
     // An expired token has no holder, in grace too: `latestOwner` is history, not ownership.
-    owner: status === "registered" ? orNull(state.latestOwner) : null,
+    owner: status === "registered" ? nonZeroAddress(state.latestOwner) : null,
     manager: null,
     registrant: null,
     registry: v2.registry,
-    subregistry: orNull(v2.subregistry),
-    resolver: orNull(v2.resolver),
+    subregistry: nonZeroAddress(v2.subregistry),
+    resolver: nonZeroAddress(v2.resolver),
     expiry: neverExpires || state.expiry === 0n ? null : state.expiry,
     gracePeriodEnd:
       v2.gracePeriod === undefined || neverExpires ? null : state.expiry + v2.gracePeriod,
@@ -99,7 +97,7 @@ const fromV1 = (
         : null;
   const status: NameStatus =
     expiry === null || expiry === 0n
-      ? orNull(v1.registryOwner) === null
+      ? nonZeroAddress(v1.registryOwner) === null
         ? "available"
         : "registered"
       : v1Status(data.now, expiry, registrar?.gracePeriod);
@@ -108,15 +106,15 @@ const fromV1 = (
     protocol: "v1",
     status,
     owner: wrapped
-      ? orNull(v1.wrapper.owner)
+      ? nonZeroAddress(v1.wrapper.owner)
       : unwrapped2ld
-        ? orNull(registrar.registrant)
-        : orNull(v1.registryOwner),
-    manager: wrapped ? null : orNull(v1.registryOwner),
-    registrant: unwrapped2ld ? orNull(registrar.registrant) : null,
+        ? nonZeroAddress(registrar.registrant)
+        : nonZeroAddress(v1.registryOwner),
+    manager: wrapped ? null : nonZeroAddress(v1.registryOwner),
+    registrant: unwrapped2ld ? nonZeroAddress(registrar.registrant) : null,
     registry: v1.registry,
     subregistry: null,
-    resolver: orNull(v1.resolver),
+    resolver: nonZeroAddress(v1.resolver),
     expiry: expiry === 0n ? null : expiry,
     gracePeriodEnd:
       registrar === undefined || registrar.expiry === 0n

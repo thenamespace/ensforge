@@ -2,12 +2,13 @@ import { Effect } from "effect";
 
 import { Abis, Roles } from "@ensforge/contracts";
 import { permissionedResolverResource } from "@ensforge/contracts/v2";
-import { hexToBigInt, isAddressEqual, zeroAddress, type Address } from "viem";
+import { hexToBigInt, isAddressEqual, type Address } from "viem";
 
 import type { RecordOperation } from "../../actions/permission/get/types.js";
 import type { Client } from "../../client/types.js";
 import type { AnyError } from "../../errors/types.js";
 import * as CoinType from "../../utils/CoinType.js";
+import { nonZeroAddress } from "../address.js";
 import type { LoadedName } from "../name/load.js";
 import { setterKeying } from "../records/setter-keying.js";
 import * as Rpc from "../rpc/index.js";
@@ -53,9 +54,6 @@ export type PermissionFacts = {
     | undefined;
 };
 
-const orNull = (address: Address | undefined): Address | null =>
-  address === undefined || isAddressEqual(address, zeroAddress) ? null : address;
-
 /** The PermissionedResolver resource a record operation checks; `0n` (root) without a key. */
 export const recordResource = (operation: RecordOperation): bigint => {
   const { setRecord: kind, key } = operation;
@@ -95,12 +93,12 @@ const isV2PublicResolver = (client: Client, resolver: Address | null): boolean =
  */
 export const resolverOwnerOf = (client: Client, { state, data }: LoadedName): Address | null => {
   const nameWrapper = client.deployment.v1?.contracts.nameWrapper;
-  const registryOwner = orNull(data.v1?.registryOwner);
+  const registryOwner = nonZeroAddress(data.v1?.registryOwner);
   if (isV2PublicResolver(client, state.resolver)) return state.owner;
   return registryOwner !== null &&
     nameWrapper !== undefined &&
     isAddressEqual(registryOwner, nameWrapper)
-    ? orNull(data.v1?.wrapper.owner)
+    ? nonZeroAddress(data.v1?.wrapper.owner)
     : registryOwner;
 };
 
@@ -121,8 +119,8 @@ export const readPermissionFacts = Effect.fnUntraced(function* (
   const read = Rpc.readContractOrUndefined;
   const none = Effect.undefined;
 
-  const registryOwner = orNull(data.v1?.registryOwner);
-  const wrapperOwner = orNull(data.v1?.wrapper.owner);
+  const registryOwner = nonZeroAddress(data.v1?.registryOwner);
+  const wrapperOwner = nonZeroAddress(data.v1?.wrapper.owner);
   const registrant = state.registrant;
   const v2Registry = state.protocol === "v2" ? state.registry : null;
   const resolver = state.resolver;
@@ -306,9 +304,9 @@ export const readPermissionFacts = Effect.fnUntraced(function* (
     v1: {
       registryOperator: facts.registryOperator === true,
       registrarOperator: facts.registrarOperator === true,
-      registrarApproved: orNull(facts.registrarApproved),
+      registrarApproved: nonZeroAddress(facts.registrarApproved),
       wrapperOperator: facts.wrapperOperator === true,
-      wrapperApproved: orNull(facts.wrapperApproved),
+      wrapperApproved: nonZeroAddress(facts.wrapperApproved),
     },
     v2: {
       roles: (facts.tokenRoles ?? 0n) | (facts.rootRoles ?? 0n),

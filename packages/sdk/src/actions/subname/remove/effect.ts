@@ -1,13 +1,14 @@
 import { Effect } from "effect";
 
 import { Abis } from "@ensforge/contracts";
-import { encodeFunctionData, hexToBigInt, isAddressEqual, zeroAddress, type Address } from "viem";
+import { encodeFunctionData, hexToBigInt, zeroAddress, type Address } from "viem";
 
 import type { Client } from "../../../client/types.js";
 import { ConfigError } from "../../../errors/classes/ConfigError.js";
 import { NameStateError } from "../../../errors/classes/NameStateError.js";
 import type { AnyError } from "../../../errors/types.js";
 import * as Action from "../../../internal/action/index.js";
+import { sameAddress } from "../../../internal/address.js";
 import { requireV1Contracts, singleStepPlan } from "../../../internal/name/write.js";
 import { explainFor } from "../../../internal/permission/check.js";
 import { loadSubname, type LoadedSubname } from "../../../internal/subname/load.js";
@@ -15,9 +16,6 @@ import { addressOf } from "../../../internal/write/signer.js";
 import type { Plan } from "../../../plan/Plan.js";
 import type { Write } from "../../../Types.js";
 import type { remove as Promises } from "./index.js";
-
-const same = (a: Address | null | undefined, b: Address): boolean =>
-  a !== null && a !== undefined && isAddressEqual(a, b);
 
 /**
  * The call that removes the child. ENSv2 unregisters it, which also clears its resolver and
@@ -44,7 +42,7 @@ const removeCall = Effect.fnUntraced(function* (
 
   const contracts = yield* requireV1Contracts(client);
   if (child.state.wrapped) {
-    return same(parent.state.owner, signer)
+    return sameAddress(parent.state.owner, signer)
       ? {
           to: contracts.nameWrapper,
           data: encodeFunctionData({
@@ -64,7 +62,7 @@ const removeCall = Effect.fnUntraced(function* (
           value: 0n,
         };
   }
-  return same(parent.data.v1?.registryOwner, signer)
+  return sameAddress(parent.data.v1?.registryOwner, signer)
     ? {
         to: contracts.registry,
         data: encodeFunctionData({

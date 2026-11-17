@@ -9,13 +9,11 @@ import type { Client } from "../../client/types.js";
 import type { AnyError } from "../../errors/types.js";
 import type { Read } from "../../Types.js";
 import { dnsDecode } from "../../utils/Name.js";
+import { nonZeroAddress } from "../address.js";
 import * as Rpc from "../rpc/index.js";
 
 // ERC-1967 implementation slot: bytes32(uint256(keccak256("eip1967.proxy.implementation")) - 1).
 const implementationSlot = "0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc";
-
-const orNull = (address: Address | undefined): Address | null =>
-  address === undefined || isAddressEqual(address, zeroAddress) ? null : address;
 
 /**
  * Inspects an ENSv2 registry in two batched rounds: identity, parent, canonical name, URI and
@@ -141,7 +139,7 @@ export const inspectRegistry = Effect.fnUntraced(function* (
         : { registry: read.parent[0], label: read.parent[1] },
     canonicalName: canonical === "" ? null : canonical,
     uri: read.uri === undefined || read.uri[0] === "" ? null : read.uri[0],
-    renderer: orNull(read.uri?.[1]),
+    renderer: nonZeroAddress(read.uri?.[1]),
     emancipated,
     upgrade: { latest, eligible: blocker === null, blocker },
   };

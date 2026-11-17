@@ -1,5 +1,5 @@
 import { Roles } from "@ensforge/contracts";
-import { isAddressEqual, type Address } from "viem";
+import type { Address } from "viem";
 
 import type {
   Authority,
@@ -10,12 +10,10 @@ import type {
 } from "../../actions/permission/get/types.js";
 import type { UnauthorizedError } from "../../errors/classes/UnauthorizedError.js";
 import * as Fuse from "../../utils/Fuse.js";
+import { sameAddress } from "../address.js";
 import { recordResource, type PermissionFacts } from "./facts.js";
 
 type Requirement = UnauthorizedError.Requirement;
-
-const same = (a: Address | null | undefined, b: Address): boolean =>
-  a !== null && a !== undefined && isAddressEqual(a, b);
 
 const allow = (
   via: Authority,
@@ -48,11 +46,11 @@ const ownerAuthority = (
   operator: boolean,
   approved: Address | null = null,
 ): Authority | null =>
-  same(owner, account)
+  sameAddress(owner, account)
     ? "owner"
     : operator
       ? "operator"
-      : same(approved, account)
+      : sameAddress(approved, account)
         ? "approved"
         : null;
 
@@ -292,7 +290,7 @@ const evaluateRecord = (facts: PermissionFacts, operation: RecordOperation): Per
   if (resolver.operator === undefined && resolver.delegate === undefined) {
     return { allowed: null, via: null, contract: resolver.address, resource: null, missing: [] };
   }
-  const authority = same(resolver.owner, facts.account)
+  const authority = sameAddress(resolver.owner, facts.account)
     ? "owner"
     : resolver.operator === true
       ? "operator"

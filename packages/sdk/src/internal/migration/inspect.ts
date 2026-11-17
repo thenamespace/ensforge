@@ -10,6 +10,7 @@ import type { AnyError } from "../../errors/types.js";
 import type { Read } from "../../Types.js";
 import * as Fuse from "../../utils/Fuse.js";
 import * as Role from "../../utils/Role.js";
+import { nonZeroAddress } from "../address.js";
 import { loadName, type LoadedName } from "../name/load.js";
 import { RegistryStatus } from "../name/read.js";
 import * as Rpc from "../rpc/index.js";
@@ -101,7 +102,7 @@ export const inspectMigration = Effect.fnUntraced(function* (
   if (state.status === "grace" || state.status === "expired") blockers.push("expired");
 
   const unwrapped = route === "unwrapped";
-  const owner = unwrapped ? state.registrant : orNull(v1?.wrapper.owner);
+  const owner = unwrapped ? state.registrant : nonZeroAddress(v1?.wrapper.owner);
   const token = unwrapped
     ? { address: v1Contracts.baseRegistrar, id: hexToBigInt(data.parts.labelhash) }
     : { address: v1Contracts.nameWrapper, id: hexToBigInt(data.parts.node) };
@@ -141,7 +142,7 @@ export const inspectMigration = Effect.fnUntraced(function* (
     { concurrency: "unbounded" },
   );
 
-  const approved = orNull(reads.approved);
+  const approved = nonZeroAddress(reads.approved);
   if (
     account !== undefined &&
     owner !== null &&
@@ -249,11 +250,6 @@ const resolverPlan = (
   // Custom resolvers (gateways, wildcards, their own permissions) stay; public ones would freeze.
   return context.publicResolver ? "new" : "keep";
 };
-
-const orNull = (address: Address | null | undefined): Address | null =>
-  address === undefined || address === null || isAddressEqual(address, zeroAddress)
-    ? null
-    : address;
 
 const emptyStatus = (
   name: string,
