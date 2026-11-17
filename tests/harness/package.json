@@ -6,7 +6,8 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
-    "./setup": "./src/setup.ts"
+    "./setup": "./src/setup.ts",
+    "./*": "./src/*.ts"
   },
   "scripts": {
     "lint": "oxlint --deny-warnings .",

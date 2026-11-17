@@ -53,13 +53,13 @@ export const ethName = Arbitrary.map(asciiLabel, (label) => `${label}.eth`);
 
 /** Checksummed addresses derived from arbitrary integers. */
 export const address = Arbitrary.map(
-  Arbitrary.schema(Schema.Number.check(Schema.isInt())),
+  Arbitrary.schema(Schema.Number.check(Schema.isInt(), Schema.isGreaterThanOrEqualTo(0))),
   (value): Address => getAddress(keccak256(toHex(value)).slice(0, 42)),
 );
 
 /** 32-byte hex values. */
 export const bytes32 = Arbitrary.map(
-  Arbitrary.schema(Schema.Number.check(Schema.isInt())),
+  Arbitrary.schema(Schema.Number.check(Schema.isInt(), Schema.isGreaterThanOrEqualTo(0))),
   (value): Hex => keccak256(toHex(value)),
 );
 
