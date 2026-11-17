@@ -23,13 +23,15 @@ import * as Impl from "./effect.js";
  * **Example** (Sending a merged plan)
  *
  * ```ts
+ * import { Plan } from "@ensforge/sdk"
+ *
  * const { hash } = await ens.plan.send({ plan: Plan.merge([recordsPlan, primaryNamePlan]) })
  * ```
  *
  * **Example** (Sending a merged plan with a standalone call)
  *
  * ```ts
- * import { Actions } from "@ensforge/sdk"
+ * import { Actions, Plan } from "@ensforge/sdk"
  *
  * await Actions.plan.send(ens, { plan: Plan.merge([recordsPlan, primaryNamePlan]) })
  * ```
@@ -37,7 +39,7 @@ import * as Impl from "./effect.js";
  * **Example** (Sending a merged plan in an Effect program)
  *
  * ```ts
- * import { Actions } from "@ensforge/sdk/effect"
+ * import { Actions, Plan } from "@ensforge/sdk/effect"
  *
  * yield* Actions.plan.send(ens, { plan: Plan.merge([recordsPlan, primaryNamePlan]) })
  * ```
@@ -100,13 +102,15 @@ send.estimateGas = Action.promiseOf(
  * **Example** (Sending a merged plan and waiting)
  *
  * ```ts
+ * import { Plan } from "@ensforge/sdk"
+ *
  * const { receipt } = await ens.plan.sendSync({ plan: Plan.merge([recordsPlan, primaryNamePlan]) })
  * ```
  *
  * **Example** (Waiting with a standalone call)
  *
  * ```ts
- * import { Actions } from "@ensforge/sdk"
+ * import { Actions, Plan } from "@ensforge/sdk"
  *
  * await Actions.plan.sendSync(ens, { plan: Plan.merge([recordsPlan, primaryNamePlan]) })
  * ```
@@ -114,7 +118,7 @@ send.estimateGas = Action.promiseOf(
  * **Example** (Waiting in an Effect program)
  *
  * ```ts
- * import { Actions } from "@ensforge/sdk/effect"
+ * import { Actions, Plan } from "@ensforge/sdk/effect"
  *
  * yield* Actions.plan.sendSync(ens, { plan: Plan.merge([recordsPlan, primaryNamePlan]) })
  * ```

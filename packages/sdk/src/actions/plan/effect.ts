@@ -26,7 +26,7 @@ import type { send as sendTypes, sendSync as sendSyncTypes } from "./send/index.
  * **Example** (Reading a plan)
  *
  * ```ts
- * const record = await ens.plan.get({ id: error.context.planId })
+ * const record = await ens.plan.get({ id: planId })
  * ```
  *
  * **Example** (Reading a plan with a standalone call)
@@ -34,7 +34,7 @@ import type { send as sendTypes, sendSync as sendSyncTypes } from "./send/index.
  * ```ts
  * import { Actions } from "@ensforge/sdk"
  *
- * const record = await Actions.plan.get(publicClient, { id: error.context.planId })
+ * const record = await Actions.plan.get(publicClient, { id: planId })
  * ```
  *
  * **Example** (Reading a plan in an Effect program)
@@ -42,7 +42,7 @@ import type { send as sendTypes, sendSync as sendSyncTypes } from "./send/index.
  * ```ts
  * import { Actions } from "@ensforge/sdk/effect"
  *
- * const record = yield* Actions.plan.get(ens, { id: error.context.planId })
+ * const record = yield* Actions.plan.get(ens, { id: planId })
  * ```
  *
  * @throws `Errors.InternalError` when the storage fails.
@@ -183,7 +183,7 @@ export declare namespace reconcile {
  * **Example** (Resuming after a failure)
  *
  * ```ts
- * const { hash } = await ens.plan.resume({ id: error.context.planId })
+ * const { hash } = await ens.plan.resume({ id: planId })
  * ```
  *
  * **Example** (Resuming with a standalone call)
@@ -279,13 +279,15 @@ export declare namespace resumeSync {
  * **Example** (Sending a merged plan)
  *
  * ```ts
+ * import { Plan } from "@ensforge/sdk"
+ *
  * const { hash } = await ens.plan.send({ plan: Plan.merge([recordsPlan, primaryNamePlan]) })
  * ```
  *
  * **Example** (Sending a merged plan with a standalone call)
  *
  * ```ts
- * import { Actions } from "@ensforge/sdk"
+ * import { Actions, Plan } from "@ensforge/sdk"
  *
  * await Actions.plan.send(ens, { plan: Plan.merge([recordsPlan, primaryNamePlan]) })
  * ```
@@ -293,7 +295,7 @@ export declare namespace resumeSync {
  * **Example** (Sending a merged plan in an Effect program)
  *
  * ```ts
- * import { Actions } from "@ensforge/sdk/effect"
+ * import { Actions, Plan } from "@ensforge/sdk/effect"
  *
  * yield* Actions.plan.send(ens, { plan: Plan.merge([recordsPlan, primaryNamePlan]) })
  * ```
@@ -327,13 +329,15 @@ export declare namespace send {
  * **Example** (Sending a merged plan and waiting)
  *
  * ```ts
+ * import { Plan } from "@ensforge/sdk"
+ *
  * const { receipt } = await ens.plan.sendSync({ plan: Plan.merge([recordsPlan, primaryNamePlan]) })
  * ```
  *
  * **Example** (Waiting with a standalone call)
  *
  * ```ts
- * import { Actions } from "@ensforge/sdk"
+ * import { Actions, Plan } from "@ensforge/sdk"
  *
  * await Actions.plan.sendSync(ens, { plan: Plan.merge([recordsPlan, primaryNamePlan]) })
  * ```
@@ -341,7 +345,7 @@ export declare namespace send {
  * **Example** (Waiting in an Effect program)
  *
  * ```ts
- * import { Actions } from "@ensforge/sdk/effect"
+ * import { Actions, Plan } from "@ensforge/sdk/effect"
  *
  * yield* Actions.plan.sendSync(ens, { plan: Plan.merge([recordsPlan, primaryNamePlan]) })
  * ```

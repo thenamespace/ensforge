@@ -62,6 +62,7 @@ export type Adapter = { readonly id: string } & {
  * **Example** (Trying it before bigname)
  *
  * ```ts
+ * import { Ensforge } from "@ensforge/sdk"
  * import { bigname, fallback } from "@ensforge/sdk/indexer"
  *
  * const ens = Ensforge.create({ publicClient, indexer: fallback([inHouse, bigname()]) })
@@ -70,6 +71,8 @@ export type Adapter = { readonly id: string } & {
  * **Example** (A test double)
  *
  * ```ts
+ * import { defineIndexer } from "@ensforge/sdk/indexer"
+ *
  * const indexer = defineIndexer({
  *   id: "test",
  *   getName: async ({ name }) => (name === "nick.eth" ? fixture : null),

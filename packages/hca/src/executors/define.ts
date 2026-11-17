@@ -30,12 +30,16 @@ import type { Executor } from "../types.js";
  * **Example** (Used first, wallet as fallback)
  *
  * ```ts
+ * import { hca, owner } from "@ensforge/hca"
+ *
  * const via = hca({ executors: [relayer, owner()] })
  * ```
  *
  * **Example** (A test double)
  *
  * ```ts
+ * import { defineExecutor } from "@ensforge/hca"
+ *
  * const fake = defineExecutor({ id: "fake", capabilities, send: async () => "1", status: async () => ({ status: "success", hashes: [hash] }) })
  * ```
  *

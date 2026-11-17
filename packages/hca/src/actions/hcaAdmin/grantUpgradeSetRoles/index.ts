@@ -14,7 +14,7 @@ import * as Impl from "./effect.js";
  * **Example** (Granting upgrade-set roles)
  *
  * ```ts
- * const { hash } = await ens.hcaAdmin.grantUpgradeSetRoles({ account, roles })
+ * const { hash } = await ens.hcaAdmin.grantUpgradeSetRoles({ grantee, roles })
  * ```
  *
  * **Example** (Granting upgrade-set roles with a standalone call)
@@ -22,7 +22,7 @@ import * as Impl from "./effect.js";
  * ```ts
  * import { Actions } from "@ensforge/hca"
  *
- * await Actions.hcaAdmin.grantUpgradeSetRoles(ens, { account, roles })
+ * await Actions.hcaAdmin.grantUpgradeSetRoles(ens, { grantee, roles })
  * ```
  *
  * **Example** (Granting upgrade-set roles in an Effect program)
@@ -30,7 +30,7 @@ import * as Impl from "./effect.js";
  * ```ts
  * import { Actions } from "@ensforge/hca/effect"
  *
- * yield* Actions.hcaAdmin.grantUpgradeSetRoles(ens, { account, roles })
+ * yield* Actions.hcaAdmin.grantUpgradeSetRoles(ens, { grantee, roles })
  * ```
  *
  * @throws `Errors.InvalidInputError` (`INVALID_ADDRESS`) for an invalid address.
@@ -96,7 +96,7 @@ grantUpgradeSetRoles.estimateGas = Action.promiseOf(
  * **Example** (Granting upgrade-set roles and waiting)
  *
  * ```ts
- * const { receipt } = await ens.hcaAdmin.grantUpgradeSetRolesSync({ account, roles })
+ * const { receipt } = await ens.hcaAdmin.grantUpgradeSetRolesSync({ grantee, roles })
  * ```
  *
  * **Example** (Granting upgrade-set roles with a standalone call and waiting)
@@ -104,7 +104,7 @@ grantUpgradeSetRoles.estimateGas = Action.promiseOf(
  * ```ts
  * import { Actions } from "@ensforge/hca"
  *
- * await Actions.hcaAdmin.grantUpgradeSetRolesSync(ens, { account, roles })
+ * await Actions.hcaAdmin.grantUpgradeSetRolesSync(ens, { grantee, roles })
  * ```
  *
  * **Example** (Granting upgrade-set roles in an Effect program and waiting)
@@ -112,7 +112,7 @@ grantUpgradeSetRoles.estimateGas = Action.promiseOf(
  * ```ts
  * import { Actions } from "@ensforge/hca/effect"
  *
- * yield* Actions.hcaAdmin.grantUpgradeSetRolesSync(ens, { account, roles })
+ * yield* Actions.hcaAdmin.grantUpgradeSetRolesSync(ens, { grantee, roles })
  * ```
  *
  * @throws `Errors.InvalidInputError` (`INVALID_ADDRESS`) for an invalid address.

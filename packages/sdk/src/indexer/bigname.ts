@@ -51,7 +51,8 @@ export type RestIndexerOptions = {
  * **Example** (Mainnet or Sepolia)
  *
  * ```ts
- * import { bigname } from "@ensforge/sdk/indexer"
+ * import { Ensforge } from "@ensforge/sdk"
+ * import { bigname, indexerActions } from "@ensforge/sdk/indexer"
  *
  * const ens = Ensforge.create({ publicClient, indexer: bigname() }).extend(indexerActions())
  * ```
@@ -59,6 +60,8 @@ export type RestIndexerOptions = {
  * **Example** (A self-hosted bigname)
  *
  * ```ts
+ * import { bigname } from "@ensforge/sdk/indexer"
+ *
  * const indexer = bigname({ url: "https://bigname.internal", headers: { authorization } })
  * ```
  *

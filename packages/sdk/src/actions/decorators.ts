@@ -1081,6 +1081,8 @@ export type EnsActions = ApprovalActions &
  * **Example** (A client with every action)
  *
  * ```ts
+ * import { Ensforge, ensActions } from "@ensforge/sdk"
+ *
  * const ens = Ensforge.create({ publicClient, walletClient }).extend(ensActions())
  * ```
  *

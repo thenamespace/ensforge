@@ -14,7 +14,7 @@ import * as Impl from "./effect.js";
  * **Example** (Withdrawing the deposit)
  *
  * ```ts
- * const { hash } = await ens.hca.withdrawDeposit({ to: owner, amount })
+ * const { hash } = await ens.hca.withdrawDeposit({ to: account, amount })
  * ```
  *
  * **Example** (Withdrawing the deposit with a standalone call)
@@ -22,7 +22,7 @@ import * as Impl from "./effect.js";
  * ```ts
  * import { Actions } from "@ensforge/hca"
  *
- * await Actions.hca.withdrawDeposit(ens, { to: owner, amount })
+ * await Actions.hca.withdrawDeposit(ens, { to: account, amount })
  * ```
  *
  * **Example** (Withdrawing the deposit in an Effect program)
@@ -30,7 +30,7 @@ import * as Impl from "./effect.js";
  * ```ts
  * import { Actions } from "@ensforge/hca/effect"
  *
- * yield* Actions.hca.withdrawDeposit(ens, { to: owner, amount })
+ * yield* Actions.hca.withdrawDeposit(ens, { to: account, amount })
  * ```
  *
  * @throws `Errors.InvalidInputError` (`INVALID_ADDRESS`) for an invalid recipient.
@@ -91,7 +91,7 @@ withdrawDeposit.estimateGas = Action.promiseOf(
  * **Example** (Withdrawing the deposit and waiting)
  *
  * ```ts
- * const { receipt } = await ens.hca.withdrawDepositSync({ to: owner, amount })
+ * const { receipt } = await ens.hca.withdrawDepositSync({ to: account, amount })
  * ```
  *
  * **Example** (Withdrawing the deposit with a standalone call and waiting)
@@ -99,7 +99,7 @@ withdrawDeposit.estimateGas = Action.promiseOf(
  * ```ts
  * import { Actions } from "@ensforge/hca"
  *
- * await Actions.hca.withdrawDepositSync(ens, { to: owner, amount })
+ * await Actions.hca.withdrawDepositSync(ens, { to: account, amount })
  * ```
  *
  * **Example** (Withdrawing the deposit in an Effect program and waiting)
@@ -107,7 +107,7 @@ withdrawDeposit.estimateGas = Action.promiseOf(
  * ```ts
  * import { Actions } from "@ensforge/hca/effect"
  *
- * yield* Actions.hca.withdrawDepositSync(ens, { to: owner, amount })
+ * yield* Actions.hca.withdrawDepositSync(ens, { to: account, amount })
  * ```
  *
  * @throws `Errors.InvalidInputError` (`INVALID_ADDRESS`) for an invalid recipient.

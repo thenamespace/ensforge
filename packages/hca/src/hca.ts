@@ -90,6 +90,8 @@ const select = (executors: readonly Executor[], session: HcaSession | undefined)
  * **Example** (Prompt-free with a session)
  *
  * ```ts
+ * import { hca, rhinestone } from "@ensforge/hca"
+ *
  * const via = hca({ executors: [rhinestone({ sdk })], session })
  * await ens.record.set({ name: "alice.eth", texts: { url }, via })
  * ```

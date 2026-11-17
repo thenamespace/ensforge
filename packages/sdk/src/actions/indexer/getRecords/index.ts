@@ -32,7 +32,8 @@ import * as Impl from "./effect.js";
  * ```ts
  * import { Actions } from "@ensforge/sdk"
  *
- * const { inventory } = await Actions.indexer.getRecords(ens, { name: "nick.eth", values: false })
+ * const records = await Actions.indexer.getRecords(ens, { name: "nick.eth", values: false })
+ * const keys = records?.inventory?.keys ?? []
  * ```
  *
  * **Example** (Reading chosen records in an Effect program)

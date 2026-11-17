@@ -27,7 +27,7 @@ import * as Impl from "./effect.js";
  * **Example** (Resuming after a failure)
  *
  * ```ts
- * const { hash } = await ens.plan.resume({ id: error.context.planId })
+ * const { hash } = await ens.plan.resume({ id: planId })
  * ```
  *
  * **Example** (Resuming with a standalone call)

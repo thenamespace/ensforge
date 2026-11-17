@@ -19,7 +19,7 @@ import * as Impl from "./effect.js";
  * **Example** (Reading a plan)
  *
  * ```ts
- * const record = await ens.plan.get({ id: error.context.planId })
+ * const record = await ens.plan.get({ id: planId })
  * ```
  *
  * **Example** (Reading a plan with a standalone call)
@@ -27,7 +27,7 @@ import * as Impl from "./effect.js";
  * ```ts
  * import { Actions } from "@ensforge/sdk"
  *
- * const record = await Actions.plan.get(publicClient, { id: error.context.planId })
+ * const record = await Actions.plan.get(publicClient, { id: planId })
  * ```
  *
  * **Example** (Reading a plan in an Effect program)
@@ -35,7 +35,7 @@ import * as Impl from "./effect.js";
  * ```ts
  * import { Actions } from "@ensforge/sdk/effect"
  *
- * const record = yield* Actions.plan.get(ens, { id: error.context.planId })
+ * const record = yield* Actions.plan.get(ens, { id: planId })
  * ```
  *
  * @throws `Errors.InternalError` when the storage fails.

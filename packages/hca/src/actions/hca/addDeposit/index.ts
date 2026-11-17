@@ -14,12 +14,15 @@ import * as Impl from "./effect.js";
  * **Example** (Funding the deposit)
  *
  * ```ts
+ * import { parseEther } from "viem"
+ *
  * const { hash } = await ens.hca.addDeposit({ amount: parseEther("0.01") })
  * ```
  *
  * **Example** (Funding the deposit with a standalone call)
  *
  * ```ts
+ * import { parseEther } from "viem"
  * import { Actions } from "@ensforge/hca"
  *
  * await Actions.hca.addDeposit(ens, { amount: parseEther("0.01") })
@@ -28,6 +31,7 @@ import * as Impl from "./effect.js";
  * **Example** (Funding the deposit in an Effect program)
  *
  * ```ts
+ * import { parseEther } from "viem"
  * import { Actions } from "@ensforge/hca/effect"
  *
  * yield* Actions.hca.addDeposit(ens, { amount: parseEther("0.01") })
@@ -91,12 +95,15 @@ addDeposit.estimateGas = Action.promiseOf(
  * **Example** (Funding the deposit and waiting)
  *
  * ```ts
+ * import { parseEther } from "viem"
+ *
  * const { receipt } = await ens.hca.addDepositSync({ amount: parseEther("0.01") })
  * ```
  *
  * **Example** (Funding the deposit with a standalone call and waiting)
  *
  * ```ts
+ * import { parseEther } from "viem"
  * import { Actions } from "@ensforge/hca"
  *
  * await Actions.hca.addDepositSync(ens, { amount: parseEther("0.01") })
@@ -105,6 +112,7 @@ addDeposit.estimateGas = Action.promiseOf(
  * **Example** (Funding the deposit in an Effect program and waiting)
  *
  * ```ts
+ * import { parseEther } from "viem"
  * import { Actions } from "@ensforge/hca/effect"
  *
  * yield* Actions.hca.addDepositSync(ens, { amount: parseEther("0.01") })

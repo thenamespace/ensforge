@@ -28,7 +28,7 @@ export const days = (n: number | bigint): bigint => count(n) * secondsPerDay;
  * ```ts
  * import { Duration } from "@ensforge/sdk"
  *
- * await ens.registration.register({ name: "alice.eth", duration: Duration.years(1) })
+ * await ens.registration.register({ names: "alice.eth", duration: Duration.years(1) })
  * ```
  *
  * @throws `Errors.InvalidInputError` (`INVALID_DURATION`) for negative or fractional values.

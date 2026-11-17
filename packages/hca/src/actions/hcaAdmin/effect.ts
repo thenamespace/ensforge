@@ -86,7 +86,7 @@ export declare namespace getGovernance {
  * **Example** (Granting upgrade-set roles)
  *
  * ```ts
- * const { hash } = await ens.hcaAdmin.grantUpgradeSetRoles({ account, roles })
+ * const { hash } = await ens.hcaAdmin.grantUpgradeSetRoles({ grantee, roles })
  * ```
  *
  * **Example** (Granting upgrade-set roles with a standalone call)
@@ -94,7 +94,7 @@ export declare namespace getGovernance {
  * ```ts
  * import { Actions } from "@ensforge/hca"
  *
- * await Actions.hcaAdmin.grantUpgradeSetRoles(ens, { account, roles })
+ * await Actions.hcaAdmin.grantUpgradeSetRoles(ens, { grantee, roles })
  * ```
  *
  * **Example** (Granting upgrade-set roles in an Effect program)
@@ -102,7 +102,7 @@ export declare namespace getGovernance {
  * ```ts
  * import { Actions } from "@ensforge/hca/effect"
  *
- * yield* Actions.hcaAdmin.grantUpgradeSetRoles(ens, { account, roles })
+ * yield* Actions.hcaAdmin.grantUpgradeSetRoles(ens, { grantee, roles })
  * ```
  *
  * @throws `Errors.InvalidInputError` (`INVALID_ADDRESS`) for an invalid address.
@@ -133,7 +133,7 @@ export declare namespace grantUpgradeSetRoles {
  * **Example** (Granting upgrade-set roles and waiting)
  *
  * ```ts
- * const { receipt } = await ens.hcaAdmin.grantUpgradeSetRolesSync({ account, roles })
+ * const { receipt } = await ens.hcaAdmin.grantUpgradeSetRolesSync({ grantee, roles })
  * ```
  *
  * **Example** (Granting upgrade-set roles with a standalone call and waiting)
@@ -141,7 +141,7 @@ export declare namespace grantUpgradeSetRoles {
  * ```ts
  * import { Actions } from "@ensforge/hca"
  *
- * await Actions.hcaAdmin.grantUpgradeSetRolesSync(ens, { account, roles })
+ * await Actions.hcaAdmin.grantUpgradeSetRolesSync(ens, { grantee, roles })
  * ```
  *
  * **Example** (Granting upgrade-set roles in an Effect program and waiting)
@@ -149,7 +149,7 @@ export declare namespace grantUpgradeSetRoles {
  * ```ts
  * import { Actions } from "@ensforge/hca/effect"
  *
- * yield* Actions.hcaAdmin.grantUpgradeSetRolesSync(ens, { account, roles })
+ * yield* Actions.hcaAdmin.grantUpgradeSetRolesSync(ens, { grantee, roles })
  * ```
  *
  * @throws `Errors.InvalidInputError` (`INVALID_ADDRESS`) for an invalid address.
@@ -268,7 +268,7 @@ export declare namespace renounceGovernanceSync {
  * **Example** (Revoking upgrade-set roles)
  *
  * ```ts
- * const { hash } = await ens.hcaAdmin.revokeUpgradeSetRoles({ account, roles })
+ * const { hash } = await ens.hcaAdmin.revokeUpgradeSetRoles({ grantee, roles })
  * ```
  *
  * **Example** (Revoking upgrade-set roles with a standalone call)
@@ -276,7 +276,7 @@ export declare namespace renounceGovernanceSync {
  * ```ts
  * import { Actions } from "@ensforge/hca"
  *
- * await Actions.hcaAdmin.revokeUpgradeSetRoles(ens, { account, roles })
+ * await Actions.hcaAdmin.revokeUpgradeSetRoles(ens, { grantee, roles })
  * ```
  *
  * **Example** (Revoking upgrade-set roles in an Effect program)
@@ -284,7 +284,7 @@ export declare namespace renounceGovernanceSync {
  * ```ts
  * import { Actions } from "@ensforge/hca/effect"
  *
- * yield* Actions.hcaAdmin.revokeUpgradeSetRoles(ens, { account, roles })
+ * yield* Actions.hcaAdmin.revokeUpgradeSetRoles(ens, { grantee, roles })
  * ```
  *
  * @throws `Errors.InvalidInputError` (`INVALID_ADDRESS`) for an invalid address.
@@ -315,7 +315,7 @@ export declare namespace revokeUpgradeSetRoles {
  * **Example** (Revoking upgrade-set roles and waiting)
  *
  * ```ts
- * const { receipt } = await ens.hcaAdmin.revokeUpgradeSetRolesSync({ account, roles })
+ * const { receipt } = await ens.hcaAdmin.revokeUpgradeSetRolesSync({ grantee, roles })
  * ```
  *
  * **Example** (Revoking upgrade-set roles with a standalone call and waiting)
@@ -323,7 +323,7 @@ export declare namespace revokeUpgradeSetRoles {
  * ```ts
  * import { Actions } from "@ensforge/hca"
  *
- * await Actions.hcaAdmin.revokeUpgradeSetRolesSync(ens, { account, roles })
+ * await Actions.hcaAdmin.revokeUpgradeSetRolesSync(ens, { grantee, roles })
  * ```
  *
  * **Example** (Revoking upgrade-set roles in an Effect program and waiting)
@@ -331,7 +331,7 @@ export declare namespace revokeUpgradeSetRoles {
  * ```ts
  * import { Actions } from "@ensforge/hca/effect"
  *
- * yield* Actions.hcaAdmin.revokeUpgradeSetRolesSync(ens, { account, roles })
+ * yield* Actions.hcaAdmin.revokeUpgradeSetRolesSync(ens, { grantee, roles })
  * ```
  *
  * @throws `Errors.InvalidInputError` (`INVALID_ADDRESS`) for an invalid address.

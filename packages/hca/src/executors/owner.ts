@@ -25,12 +25,16 @@ import type { Executor } from "../types.js";
  * **Example** (As the fallback)
  *
  * ```ts
+ * import { hca, owner, pimlico } from "@ensforge/hca"
+ *
  * const via = hca({ executors: [pimlico({ apiKey }), owner()] })
  * ```
  *
  * **Example** (Sponsored by the wallet)
  *
  * ```ts
+ * import { hca } from "@ensforge/hca"
+ *
  * await ens.migration.migrate({ names, via: hca(), paymaster: { url: paymasterUrl } })
  * ```
  *

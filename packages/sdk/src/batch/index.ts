@@ -23,6 +23,8 @@ import type { BatchOptions, Requests, Results } from "./types.js";
  * **Example** (Loading a profile)
  *
  * ```ts
+ * import { Actions } from "@ensforge/sdk"
+ *
  * const { results } = await ens.batch({
  *   requests: {
  *     address: Actions.record.getAddress.request({ name: "nick.eth" }),
@@ -45,9 +47,12 @@ import type { BatchOptions, Requests, Results } from "./types.js";
  * **Example** (Batching in an Effect program)
  *
  * ```ts
+ * import { Actions as Requests } from "@ensforge/sdk"
  * import { Actions } from "@ensforge/sdk/effect"
  *
- * const { results } = yield* Actions.batch(ens, { requests: [Actions.name.get.request({ name: "nick.eth" })] })
+ * const { results } = yield* Actions.batch(ens, {
+ *   requests: [Requests.name.get.request({ name: "nick.eth" })],
+ * })
  * ```
  *
  * @throws `Errors.InvalidInputError` (`INVALID_RECORD_VALUE`) for a request that cannot be batched.

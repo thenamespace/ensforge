@@ -22,7 +22,8 @@ import type { Indexer } from "./Indexer.js";
  * **Example** (Basenames)
  *
  * ```ts
- * import { goldsky } from "@ensforge/sdk/indexer"
+ * import { Ensforge } from "@ensforge/sdk"
+ * import { goldsky, indexerActions } from "@ensforge/sdk/indexer"
  *
  * const ens = Ensforge.create({ publicClient, indexer: goldsky() }).extend(indexerActions())
  * const name = await ens.indexer.getName({ name: "jesse.base.eth" })
@@ -31,12 +32,16 @@ import type { Indexer } from "./Indexer.js";
  * **Example** (Behind bigname)
  *
  * ```ts
+ * import { bigname, fallback, goldsky } from "@ensforge/sdk/indexer"
+ *
  * const indexer = fallback([bigname(), goldsky()])
  * ```
  *
  * **Example** (With an API key header)
  *
  * ```ts
+ * import { goldsky } from "@ensforge/sdk/indexer"
+ *
  * const indexer = goldsky({ headers: { "x-api-key": key } })
  * ```
  *

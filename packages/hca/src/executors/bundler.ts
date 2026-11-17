@@ -167,6 +167,8 @@ const isPaymasterError = (error: unknown): boolean => {
  * **Example** (With a sponsorship policy)
  *
  * ```ts
+ * import { bundler } from "@ensforge/hca"
+ *
  * bundler({ url, paymaster: url, paymasterContext: { sponsorshipPolicyId: "sp_…" } })
  * ```
  *
@@ -268,7 +270,7 @@ export type PimlicoOptions = {
  * **Example** (Sponsored)
  *
  * ```ts
- * import { hca, pimlico } from "@ensforge/hca"
+ * import { hca, owner, pimlico } from "@ensforge/hca"
  *
  * const via = hca({ executors: [pimlico({ apiKey, sponsor: true }), owner()] })
  * ```
@@ -276,12 +278,16 @@ export type PimlicoOptions = {
  * **Example** (With a policy)
  *
  * ```ts
+ * import { pimlico } from "@ensforge/hca"
+ *
  * pimlico({ apiKey, sponsor: true, sponsorshipPolicyId: "sp_…" })
  * ```
  *
  * **Example** (Unsponsored: the HCA pays gas)
  *
  * ```ts
+ * import { pimlico } from "@ensforge/hca"
+ *
  * pimlico({ apiKey })
  * ```
  *

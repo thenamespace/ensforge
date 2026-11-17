@@ -175,7 +175,7 @@ export const decorators = (domains: readonly Domain[], profile: Profile = sdkPro
           "/** Every action group bound to a client. */",
           `export type ${profile.aggregate.type} = ${all} & BatchActions;`,
           "",
-          "/**\n * Adds every ENS action group to a client.\n *\n * **Example** (A client with every action)\n *\n * ```ts\n * const ens = Ensforge.create({ publicClient, walletClient }).extend(ensActions())\n * ```\n *\n * @category decorators\n * @since 1.0.0\n */",
+          '/**\n * Adds every ENS action group to a client.\n *\n * **Example** (A client with every action)\n *\n * ```ts\n * import { Ensforge, ensActions } from "@ensforge/sdk"\n *\n * const ens = Ensforge.create({ publicClient, walletClient }).extend(ensActions())\n * ```\n *\n * @category decorators\n * @since 1.0.0\n */',
           `export const ${profile.aggregate.name} =\n  () =>\n  (client: Client<object>): ${profile.aggregate.type} => ({\n${indent(spread, 4)}\n  });`,
         ];
 

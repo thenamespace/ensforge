@@ -85,6 +85,7 @@ const tagged = (index: number, answer: unknown): unknown => {
  * **Example** (bigname first, Goldsky after)
  *
  * ```ts
+ * import { Ensforge } from "@ensforge/sdk"
  * import { bigname, fallback, goldsky } from "@ensforge/sdk/indexer"
  *
  * const ens = Ensforge.create({ publicClient, indexer: fallback([bigname(), goldsky()]) })
@@ -93,12 +94,16 @@ const tagged = (index: number, answer: unknown): unknown => {
  * **Example** (Only when the first is down)
  *
  * ```ts
+ * import { bigname, fallback, goldsky } from "@ensforge/sdk/indexer"
+ *
  * const indexer = fallback([bigname(), goldsky()], { on: ["unavailable", "rateLimited"] })
  * ```
  *
  * **Example** (A self-hosted indexer first)
  *
  * ```ts
+ * import { bigname, fallback } from "@ensforge/sdk/indexer"
+ *
  * const indexer = fallback([bigname({ url: "https://bigname.internal" }), bigname()])
  * ```
  *

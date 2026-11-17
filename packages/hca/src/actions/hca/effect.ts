@@ -48,12 +48,15 @@ import type {
  * **Example** (Funding the deposit)
  *
  * ```ts
+ * import { parseEther } from "viem"
+ *
  * const { hash } = await ens.hca.addDeposit({ amount: parseEther("0.01") })
  * ```
  *
  * **Example** (Funding the deposit with a standalone call)
  *
  * ```ts
+ * import { parseEther } from "viem"
  * import { Actions } from "@ensforge/hca"
  *
  * await Actions.hca.addDeposit(ens, { amount: parseEther("0.01") })
@@ -62,6 +65,7 @@ import type {
  * **Example** (Funding the deposit in an Effect program)
  *
  * ```ts
+ * import { parseEther } from "viem"
  * import { Actions } from "@ensforge/hca/effect"
  *
  * yield* Actions.hca.addDeposit(ens, { amount: parseEther("0.01") })
@@ -94,12 +98,15 @@ export declare namespace addDeposit {
  * **Example** (Funding the deposit and waiting)
  *
  * ```ts
+ * import { parseEther } from "viem"
+ *
  * const { receipt } = await ens.hca.addDepositSync({ amount: parseEther("0.01") })
  * ```
  *
  * **Example** (Funding the deposit with a standalone call and waiting)
  *
  * ```ts
+ * import { parseEther } from "viem"
  * import { Actions } from "@ensforge/hca"
  *
  * await Actions.hca.addDepositSync(ens, { amount: parseEther("0.01") })
@@ -108,6 +115,7 @@ export declare namespace addDeposit {
  * **Example** (Funding the deposit in an Effect program and waiting)
  *
  * ```ts
+ * import { parseEther } from "viem"
  * import { Actions } from "@ensforge/hca/effect"
  *
  * yield* Actions.hca.addDepositSync(ens, { amount: parseEther("0.01") })
@@ -899,7 +907,7 @@ export declare namespace verify {
  * **Example** (Withdrawing the deposit)
  *
  * ```ts
- * const { hash } = await ens.hca.withdrawDeposit({ to: owner, amount })
+ * const { hash } = await ens.hca.withdrawDeposit({ to: account, amount })
  * ```
  *
  * **Example** (Withdrawing the deposit with a standalone call)
@@ -907,7 +915,7 @@ export declare namespace verify {
  * ```ts
  * import { Actions } from "@ensforge/hca"
  *
- * await Actions.hca.withdrawDeposit(ens, { to: owner, amount })
+ * await Actions.hca.withdrawDeposit(ens, { to: account, amount })
  * ```
  *
  * **Example** (Withdrawing the deposit in an Effect program)
@@ -915,7 +923,7 @@ export declare namespace verify {
  * ```ts
  * import { Actions } from "@ensforge/hca/effect"
  *
- * yield* Actions.hca.withdrawDeposit(ens, { to: owner, amount })
+ * yield* Actions.hca.withdrawDeposit(ens, { to: account, amount })
  * ```
  *
  * @throws `Errors.InvalidInputError` (`INVALID_ADDRESS`) for an invalid recipient.
@@ -946,7 +954,7 @@ export declare namespace withdrawDeposit {
  * **Example** (Withdrawing the deposit and waiting)
  *
  * ```ts
- * const { receipt } = await ens.hca.withdrawDepositSync({ to: owner, amount })
+ * const { receipt } = await ens.hca.withdrawDepositSync({ to: account, amount })
  * ```
  *
  * **Example** (Withdrawing the deposit with a standalone call and waiting)
@@ -954,7 +962,7 @@ export declare namespace withdrawDeposit {
  * ```ts
  * import { Actions } from "@ensforge/hca"
  *
- * await Actions.hca.withdrawDepositSync(ens, { to: owner, amount })
+ * await Actions.hca.withdrawDepositSync(ens, { to: account, amount })
  * ```
  *
  * **Example** (Withdrawing the deposit in an Effect program and waiting)
@@ -962,7 +970,7 @@ export declare namespace withdrawDeposit {
  * ```ts
  * import { Actions } from "@ensforge/hca/effect"
  *
- * yield* Actions.hca.withdrawDepositSync(ens, { to: owner, amount })
+ * yield* Actions.hca.withdrawDepositSync(ens, { to: account, amount })
  * ```
  *
  * @throws `Errors.InvalidInputError` (`INVALID_ADDRESS`) for an invalid recipient.

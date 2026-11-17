@@ -39,16 +39,18 @@ export type Adapter = { readonly id: string } & {
  *
  * ```ts
  * import { Indexer } from "@ensforge/sdk/effect"
+ * import { Effect } from "effect"
  *
  * const inHouse = Indexer.define({
  *   id: "in-house",
- *   getName: ({ name }) => api.name(name),
+ *   getName: ({ name }) => Effect.promise(() => api.name(name)),
  * })
  * ```
  *
  * **Example** (With a fallback)
  *
  * ```ts
+ * import { Ensforge } from "@ensforge/sdk"
  * import { bigname, fallback } from "@ensforge/sdk/indexer"
  *
  * const ens = Ensforge.create({ publicClient, indexer: fallback([inHouse, bigname()]) })
@@ -57,6 +59,9 @@ export type Adapter = { readonly id: string } & {
  * **Example** (A test double)
  *
  * ```ts
+ * import { Indexer } from "@ensforge/sdk/effect"
+ * import { Effect } from "effect"
+ *
  * const indexer = Indexer.define({ id: "test", getName: () => Effect.succeed(null) })
  * ```
  *
@@ -106,13 +111,21 @@ export const define = (adapter: Adapter): Indexer => {
  * **Example** (The first three pages)
  *
  * ```ts
+ * import { Indexer } from "@ensforge/sdk/effect"
+ * import { Stream } from "effect"
+ *
  * const firstPages = Indexer.paginate(load).pipe(Stream.take(3))
  * ```
  *
  * **Example** (Items instead of pages)
  *
  * ```ts
- * const subnames = Indexer.paginate(load).pipe(Stream.flatMap((page) => Stream.fromIterable(page.items)))
+ * import { Indexer } from "@ensforge/sdk/effect"
+ * import { Stream } from "effect"
+ *
+ * const subnames = Indexer.paginate(load).pipe(
+ *   Stream.flatMap((page) => Stream.fromIterable(page.items)),
+ * )
  * ```
  *
  * @category indexer

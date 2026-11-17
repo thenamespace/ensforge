@@ -80,12 +80,16 @@ const failedStatuses = new Set(["FAILED", "EXPIRED"]);
  * **Example** (Owner-signed, sponsored)
  *
  * ```ts
+ * import { hca, rhinestone } from "@ensforge/hca"
+ *
  * const via = hca({ executors: [rhinestone({ sdk })] })
  * ```
  *
  * **Example** (Paying fees in the refund token)
  *
  * ```ts
+ * import { rhinestone } from "@ensforge/hca"
+ *
  * rhinestone({ sdk, sessionSigner, sponsored: false })
  * ```
  *

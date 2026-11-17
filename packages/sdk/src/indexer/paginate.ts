@@ -21,6 +21,8 @@ import type { Page } from "./types.js";
  * **Example** (Collecting names, at most 1,000)
  *
  * ```ts
+ * import { paginate } from "@ensforge/sdk/indexer"
+ *
  * const names: string[] = []
  * for await (const page of paginate(ens.indexer.getNamesForAddress, { address })) {
  *   names.push(...page.items.map((item) => item.name))
@@ -31,7 +33,13 @@ import type { Page } from "./types.js";
  * **Example** (With a standalone action)
  *
  * ```ts
- * const pages = paginate((options) => Actions.indexer.getSubnames(ens, options), { name: "ens.eth" })
+ * import { Actions } from "@ensforge/sdk"
+ * import { paginate } from "@ensforge/sdk/indexer"
+ *
+ * const pages = paginate(
+ *   (options: Actions.indexer.getSubnames.Options) => Actions.indexer.getSubnames(ens, options),
+ *   { name: "ens.eth" },
+ * )
  * ```
  *
  * @category indexer
