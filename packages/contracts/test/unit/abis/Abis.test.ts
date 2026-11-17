@@ -9,7 +9,6 @@ import {
 } from "viem";
 
 import { Abis } from "#/index";
-import * as Fragments from "#/internal";
 import {
   hcaOwnerAndSessionValidatorV2Abi,
   standaloneHcaFactoryV2Abi,
@@ -44,18 +43,6 @@ describe("ABI shape", () => {
       .map((event) => toEventSelector(event));
     assert.strictEqual(new Set(functions).size, functions.length);
     assert.strictEqual(new Set(events).size, events.length);
-  });
-
-  // Every internal fragment must be a slice of a published ABI, or the SDK encodes calls the
-  // contracts do not have.
-  it("every internal fragment function exists in a published ABI", () => {
-    const published = new Set(all.flatMap(([, abi]) => functionSelectors(abi)));
-    const unknown = Object.entries(Fragments).flatMap(([name, fragment]) =>
-      functionSelectors(fragment as Abi)
-        .filter((selector) => !published.has(selector))
-        .map((selector) => `${name}: ${selector}`),
-    );
-    assert.deepStrictEqual(unknown, []);
   });
 });
 

@@ -23,7 +23,7 @@ const outFolder = join(packageFolder, "node_modules/.cache/examples");
 const sourceFiles = (folder) =>
   readdirSync(folder).flatMap((entry) => {
     const path = join(folder, entry);
-    if (statSync(path).isDirectory()) return entry === "legacy" ? [] : sourceFiles(path);
+    if (statSync(path).isDirectory()) return sourceFiles(path);
     return /\.tsx?$/.test(path) ? [path] : [];
   });
 

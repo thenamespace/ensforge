@@ -50,18 +50,16 @@ Effect programs import the same actions from `@ensforge/sdk/effect`.
 
 ## Repository
 
-The monorepo also contains private development packages:
+The monorepo also contains private test packages:
 
 ```text
-packages/
-  template/    Starter for future packages
 tests/
-  harness/     Shared test harness (setup, matchers, transports, arbitraries)
+  harness/     Shared test harness (setup, matchers, transports, arbitraries, fake indexer)
 ```
 
 ## Development
 
-Requires Node.js 24+ and pnpm 11.10.0.
+Requires Node.js 26 (see `.node-version`) and pnpm 12 (see `packageManager`).
 
 ```sh
 pnpm install
@@ -69,8 +67,8 @@ pnpm build
 pnpm check
 ```
 
-`pnpm check:sdk-types` compiles a representative SDK consumer and enforces declaration,
-instantiation, and memory budgets for the public type surface.
+`pnpm check` runs formatting, linting, type checking, builds, the fast tests and each package's
+`verify` (API reports, JSDoc, published types and examples).
 
 Package boundaries resolve through generated declarations during editor and type-checking sessions.
 Run `pnpm build` after cloning, or keep `pnpm dev` running while changing multiple packages, so

@@ -49,31 +49,11 @@
       "workspace-source": "./src/indexer/index.ts",
       "default": "./dist/indexer.js"
     },
-    "./legacy": {
-      "workspace-source": "./src/legacy/index.ts",
-      "default": "./dist/legacy.js"
-    },
-    "./legacy/storage": {
-      "workspace-source": "./src/legacy/storage/index.ts",
-      "default": "./dist/legacy/storage.js"
-    },
-    "./legacy/storage/browser": {
-      "workspace-source": "./src/legacy/storage/browser.ts",
-      "default": "./dist/legacy/storage/browser.js"
-    },
-    "./legacy/wagmi": {
-      "workspace-source": "./src/legacy/wagmi/index.ts",
-      "default": "./dist/legacy/wagmi.js"
-    },
     "./wagmi": {
       "workspace-source": "./src/wagmi/index.ts",
       "default": "./dist/wagmi.js"
     },
-    "./package.json": "./package.json",
-    "./legacy/testing": {
-      "workspace-source": "./src/legacy/testing/index.ts",
-      "default": "./dist/legacy/testing.js"
-    }
+    "./package.json": "./package.json"
   },
   "publishConfig": {
     "imports": {
@@ -85,10 +65,6 @@
       "./effect": "./dist/effect.js",
       "./extension": "./dist/extension.js",
       "./indexer": "./dist/indexer.js",
-      "./legacy": "./dist/legacy.js",
-      "./legacy/storage": "./dist/legacy/storage.js",
-      "./legacy/storage/browser": "./dist/legacy/storage/browser.js",
-      "./legacy/wagmi": "./dist/legacy/wagmi.js",
       "./wagmi": "./dist/wagmi.js",
       "./package.json": "./package.json"
     },
@@ -103,7 +79,7 @@
     "indexer:openapi": "node scripts/indexer-openapi.ts",
     "dev": "tsdown --watch",
     "lint": "oxlint --deny-warnings .",
-    "pack:check": "publint && attw --pack . --profile esm-only --exclude-entrypoints ./legacy/testing",
+    "pack:check": "publint && attw --pack . --profile esm-only",
     "prepack": "pnpm build",
     "typecheck": "tsc --noEmit && tsc --noEmit -p scripts && tsc --noEmit -p test",
     "verify": "pnpm codegen:check && node ../../scripts/lint-jsdoc.mjs src/index.ts src/effect.ts src/indexer/index.ts src/wagmi/index.ts && node ../../scripts/api-report.mjs --check index effect indexer wagmi && node ../../scripts/check-dist-types.mjs index actions indexer wagmi --consumer scripts/fixtures/consumer.ts && node scripts/indexer-openapi.ts check && typedoc && node ../../scripts/check-examples.mjs scripts/fixtures/example-globals.ts"

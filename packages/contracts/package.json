@@ -31,10 +31,6 @@
       "workspace-source": "./src/index.ts",
       "default": "./dist/index.js"
     },
-    "./internal": {
-      "workspace-source": "./src/internal.ts",
-      "default": "./dist/internal.js"
-    },
     "./shared": {
       "workspace-source": "./src/shared/index.ts",
       "default": "./dist/shared.js"
@@ -59,7 +55,6 @@
     },
     "exports": {
       ".": "./dist/index.js",
-      "./internal": "./dist/internal.js",
       "./shared": "./dist/shared.js",
       "./v1": "./dist/v1.js",
       "./v2": "./dist/v2.js",
@@ -81,7 +76,6 @@
   },
   "devDependencies": {
     "@effect/vitest": "catalog:",
-    "@ensforge/test-harness": "workspace:*",
     "viem": "catalog:"
   },
   "peerDependencies": {

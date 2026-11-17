@@ -293,9 +293,6 @@ importers:
       '@effect/vitest':
         specifier: 'catalog:'
         version: 4.1.4(effect@4.1.4)(vitest@5.1.0)
-      '@ensforge/test-harness':
-        specifier: workspace:*
-        version: link:../../tests/harness
       viem:
         specifier: 'catalog:'
         version: 2.57.20(bufferutil@4.1.0)(typescript@6.0.3)(utf-8-validate@5.0.10)(zod@4.5.4)

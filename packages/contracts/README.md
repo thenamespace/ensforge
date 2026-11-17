@@ -44,9 +44,6 @@ The same ABIs and constants are available as flat named exports from `@ensforge/
 `@ensforge/contracts/v2` and `@ensforge/contracts/shared` (e.g. `permissionedRegistryV2Abi`).
 `@ensforge/contracts/v2/experimental/hca` exports the hosted contract account ABIs.
 
-`@ensforge/contracts/internal` holds minimal ABI fragments and HCA manifests used by other ensforge
-packages. It is not a public API and changes without notice.
-
 ## License
 
 Apache-2.0

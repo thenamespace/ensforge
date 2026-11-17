@@ -27,12 +27,10 @@ declaration files.
 ## Repository structure
 
 ```text
-apps/docs/          Vocs documentation
-packages/contracts/ ENS ABIs, fragments, interfaces, and deployments
+packages/contracts/ ENS ABIs, interfaces, roles and deployments
 packages/sdk/       Standalone ENS actions and Effect APIs
 packages/react/     Hooks, Effect Atom atoms and server rendering
 packages/hca/       Hidden Contract Account route and executors
-packages/template/  Starter for new packages
 tests/harness/      Shared test harness for every test suite
 ```
 
@@ -46,11 +44,12 @@ Run the complete local check before opening a pull request:
 ```sh
 pnpm check
 pnpm pack:check
-pnpm test:packages
 ```
 
-These commands cover formatting, linting, type checking, unit tests, builds, public type performance,
-package metadata, exports, and clean consumer installations.
+`pnpm check` covers formatting, linting, type checking (sources and tests), builds, the fast tests,
+and each package's `verify`: generated code, JSDoc lint, API reports, published types compiled by a
+consumer, OpenAPI snapshots and every JSDoc example. `pnpm pack:check` validates package metadata
+and exports.
 
 During development, run a focused package command when it provides a faster feedback loop:
 
@@ -77,14 +76,9 @@ Property tests use a fixed seed; reproduce a failure with `ENSFORGE_TEST_SEED=<s
 ## Documentation
 
 Update documentation when changing a public API, configuration option, return type, error, deployment,
-or package entrypoint. Preview the site at `http://localhost:3000`:
-
-```sh
-pnpm --filter @ensforge/docs dev
-```
-
-Keep examples runnable against public exports. Detailed API documentation belongs in `apps/docs`;
-package READMEs should remain useful introductions.
+or package entrypoint: the TSDoc on the export (with examples, which `verify` type-checks), the
+package README, and the API report (`pnpm --filter <package> api:report`). Package READMEs stay short
+introductions; the documentation site comes later.
 
 ## Commits and pull requests
 
@@ -127,13 +121,3 @@ workspace packages generally do not require a changeset.
 
 By contributing, you agree that your contributions are licensed under the
 [Apache License 2.0](./LICENSE).
-
-When changing viem compatibility, also check the minimum supported version against the packed
-packages:
-
-```sh
-ENSFORGE_TEST_VIEM_VERSION=2.49.0 pnpm test:packages
-```
-
-This runs the Node, React/Wagmi, and HCA provider consumer checks with one viem version throughout
-each temporary project.

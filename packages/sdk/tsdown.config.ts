@@ -10,26 +10,8 @@ export default defineConfig({
     extension: "src/extension.ts",
     index: "src/index.ts",
     wagmi: "src/wagmi/index.ts",
-    legacy: "src/legacy/index.ts",
-    "legacy/storage": "src/legacy/storage/index.ts",
-    "legacy/storage/browser": "src/legacy/storage/browser.ts",
-    "legacy/testing": "src/legacy/testing/index.ts",
-    "legacy/wagmi": "src/legacy/wagmi/index.ts",
   },
-  exports: {
-    devExports: "workspace-source",
-    exclude: ["legacy/testing"],
-    customExports: (exports, { isPublish }) =>
-      isPublish
-        ? exports
-        : {
-            ...exports,
-            "./legacy/testing": {
-              "workspace-source": "./src/legacy/testing/index.ts",
-              default: "./dist/legacy/testing.js",
-            },
-          },
-  },
+  exports: { devExports: "workspace-source" },
   unbundle: true,
   publint: "ci-only",
   attw: {

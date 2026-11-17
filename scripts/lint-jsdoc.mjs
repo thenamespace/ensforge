@@ -66,7 +66,7 @@ const resolveModule = (from, specifier) => {
 };
 
 const checkModule = (file) => {
-  if (visited.has(file) || file.includes("/legacy/") || file.includes("/internal/")) return;
+  if (visited.has(file) || file.includes("/internal/")) return;
   visited.add(file);
   const source = parse(file);
 
