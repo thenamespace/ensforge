@@ -24,15 +24,20 @@ export const get = Effect.fn("ensforge.resolver.get")(
       { concurrency: "unbounded" },
     );
 
+    const notFound =
+      options.strict === true
+        ? Effect.fail(new NotFoundError({ code: "RESOLVER_NOT_FOUND" }))
+        : Effect.succeed(null);
     const own = loaded.state.resolver;
     const address = own ?? found?.address;
-    if (address === undefined) {
-      if (options.strict === true)
-        return yield* Effect.fail(new NotFoundError({ code: "RESOLVER_NOT_FOUND" }));
-      return null;
-    }
+    if (address === undefined) return yield* notFound;
 
     const description = yield* describeResolver(client, address, loaded.data.parts.node, options);
+    // The Universal Resolver finds the nearest resolver up the tree, but a parent's resolver
+    // serves this name only as an ENSIP-10 extended resolver.
+    if (own === null && found?.inherited === true && !description.profiles.extended) {
+      return yield* notFound;
+    }
     return { address, inherited: own === null, ...description };
   },
   Action.withContext("resolver.get", { contractKind: "resolver" }),

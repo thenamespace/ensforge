@@ -1,4 +1,4 @@
-import { Abis, Deployments } from "@ensforge/contracts";
+import { Abis, Deployments, InterfaceIds } from "@ensforge/contracts";
 import { scriptedTransport } from "@ensforge/test-harness";
 import { contractScript, type ContractStub } from "@ensforge/test-harness/contracts-eth-call";
 import {
@@ -67,6 +67,10 @@ export type World = Entry & {
   readonly permissioned?: readonly Address[] | undefined;
   /** `isApprovedForAll` on the ENSv1 registry. */
   readonly approvedForAll?: boolean | undefined;
+  /** What the Universal Resolver's `findResolver` returns; `offset > 0` is a parent's resolver. */
+  readonly found?: { readonly resolver: Address; readonly offset: bigint } | undefined;
+  /** Resolvers that report ENSIP-10 `resolve` (extended resolvers). */
+  readonly extended?: readonly Address[] | undefined;
 };
 
 export const dnsEncode = (name: string): Hex => bytesToHex(packetToBytes(name));
@@ -158,6 +162,8 @@ const stubs = (world: World): ContractStub[] => {
   const resolvers = [
     resolverA,
     ...(world.permissioned ?? []),
+    ...(world.extended ?? []),
+    ...(world.found === undefined ? [] : [world.found.resolver]),
     ...names.flatMap((name) => [entries.get(name)?.v1?.resolver, entries.get(name)?.v2?.resolver]),
   ].filter((address): address is Address => address !== undefined && address !== zeroAddress);
 
@@ -223,11 +229,31 @@ const stubs = (world: World): ContractStub[] => {
       functions: { GRACE_PERIOD: () => gracePeriod },
     },
     ...registries.map(registryStub),
-    ...resolvers.map((address) => ({
-      address,
-      abi: Abis.shared.erc165 as Abi,
+    {
+      address: deployment.v2.migration.publicResolverSet,
+      abi: Abis.v2.permissionedAddressSet as Abi,
+      functions: { includes: () => false },
+    },
+    {
+      address: v2.universalResolver,
+      abi: Abis.v2.universalResolver as Abi,
       functions: {
-        supportsInterface: () => (world.permissioned ?? []).some((p) => same(p, address)),
+        findResolver: ([dns]) => [
+          world.found?.resolver ?? zeroAddress,
+          namehash(dnsDecode(dns as Hex)),
+          world.found?.offset ?? 0n,
+        ],
+      },
+    },
+    ...[...new Set(resolvers)].map((address): ContractStub => ({
+      address,
+      abi: [...Abis.shared.erc165, ...Abis.shared.versionableResolver] as Abi,
+      functions: {
+        supportsInterface: ([id]) =>
+          (world.permissioned ?? []).some((p) => same(p, address)) ||
+          (id === InterfaceIds.resolverProfiles.extended &&
+            (world.extended ?? []).some((e) => same(e, address))),
+        recordVersions: () => 0n,
       },
     })),
   ];
