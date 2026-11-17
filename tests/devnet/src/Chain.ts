@@ -71,6 +71,8 @@ export class Chain extends Context.Service<
     readonly receipt: (hash: Hash) => Effect.Effect<TransactionReceipt, ChainError>;
     /** Sends a contract call from an unlocked account and waits for its receipt. */
     readonly write: (parameters: WriteParameters) => Effect.Effect<TransactionReceipt, ChainError>;
+    /** Sends a contract call from an unlocked account without waiting for it to be mined. */
+    readonly submit: (parameters: WriteParameters) => Effect.Effect<Hash, ChainError>;
     /** Sends a transaction from an unlocked account and waits for its receipt. */
     readonly send: (
       parameters: SendTransactionParameters,
@@ -130,6 +132,7 @@ export class Chain extends Context.Service<
         logs: (parameters) => rpc("getLogs", () => client.getLogs(parameters)),
         transaction: (hash) => rpc("getTransaction", () => client.getTransaction({ hash })),
         receipt,
+        submit: (parameters) => rpc("writeContract", () => client.writeContract(parameters)),
         write: (parameters) =>
           Effect.flatMap(
             rpc("writeContract", () => client.writeContract(parameters)),
