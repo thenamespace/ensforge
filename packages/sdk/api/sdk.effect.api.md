@@ -1243,11 +1243,10 @@ class Errors.UnauthorizedError {
   _tag: 'UnauthorizedError'
   name: 'UnauthorizedError'
   shortMessage: string
+  hint: string | undefined
   details: readonly string[]
-  retryable: boolean
   context: { readonly operation?: string | undefined; readonly name?: string | undefined; readonly account?: `0x${string}` | undefined; readonly chainId?: number | undefined; readonly contract?: `0x${string}` | undefined; readonly functionName?: string | undefined; readonly contractKind?: 'registrar' | 'registry' | 'resolver' | 'wrapper' | undefined; readonly registry?: `0x${string}` | undefined; readonly planId?: string | undefined; readonly step?: string | undefined; readonly revert?: { readonly errorName: string | undefined; readonly data: `0x${string}` | undefined; } | undefined; }
   docsUrl: string
-  withContext: (context: Context | undefined) => UnauthorizedError
   withCause: (cause: unknown) => UnauthorizedError
   toJSON: () => Json
   render: any
@@ -1255,9 +1254,10 @@ class Errors.UnauthorizedError {
   missingRoles: readonly string[]
   roleBitmap: bigint | undefined
   requirements: readonly Requirement[]
+  withContext: (context: Context | undefined) => UnauthorizedError
   message: string
   stack: string
-  hint: string | undefined
+  retryable: boolean
   ~effect/ErrorReporter/ignore: boolean
   ~effect/ErrorReporter/severity: 'Debug' | 'Error' | 'Fatal' | 'Info' | 'Trace' | 'Warn'
   ~effect/ErrorReporter/attributes: { readonly [x: string]: unknown; }
