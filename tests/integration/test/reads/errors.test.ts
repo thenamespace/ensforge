@@ -38,7 +38,8 @@ describe("read errors", () => {
     );
 
     // The resolver answers only the legacy `addr(bytes32)`, with an OffchainLookup another
-    // contract sent; that is the failure to report, not the missing ENSIP-9 profile.
+    // contract sent; that is the failure to report, not the missing ENSIP-9 profile. Batched
+    // with the ENSIP-9 call, the Universal Resolver hands it to the batch gateway, which fails.
     it.effect("address reads report a spoofed lookup behind a missing profile", () =>
       Effect.gen(function* () {
         const fixtures = yield* Fixtures;
@@ -47,7 +48,7 @@ describe("read errors", () => {
 
         yield* fails(() => ens.record.getAddress({ name }), {
           _tag: "GatewayError",
-          code: "OFFCHAIN_LOOKUP_INVALID",
+          code: "GATEWAY_REQUEST_FAILED",
         });
       }),
     );
