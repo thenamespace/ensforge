@@ -33,6 +33,13 @@ export type BundlerOptions = {
   paymasterContext?: Readonly<Record<string, unknown>> | undefined;
   /** Id reported on plans and errors. @default "bundler" */
   id?: string | undefined;
+  /**
+   * Milliseconds a UserOperation may stay pending before the write fails with
+   * `HCA_EXECUTION_TIMEOUT`. Bundlers can keep an operation they cannot land forever.
+   *
+   * @default 180_000
+   */
+  timeout?: number | undefined;
 };
 
 const batchMode = padHex("0x01", { size: 32, dir: "right" });
@@ -177,6 +184,9 @@ const isPaymasterError = (error: unknown): boolean => {
  */
 export const bundler = (options: BundlerOptions): Executor => {
   const id = options.id ?? "bundler";
+  const timeout = options.timeout ?? 180_000;
+  // When each UserOperation was first seen pending; a resumed plan starts its wait afresh.
+  const pendingSince = new Map<string, number>();
   const paymasterClient =
     options.paymaster === undefined
       ? undefined
@@ -231,8 +241,17 @@ export const bundler = (options: BundlerOptions): Executor => {
       try {
         receipt = await clientFor(context).getUserOperationReceipt({ hash: reference as Hex });
       } catch {
-        return { status: "pending" };
+        const since = pendingSince.get(reference) ?? Date.now();
+        pendingSince.set(reference, since);
+        if (Date.now() - since < timeout) return { status: "pending" };
+        pendingSince.delete(reference);
+        throw new HcaError({
+          code: "HCA_EXECUTION_TIMEOUT",
+          executor: id,
+          details: [`UserOperation ${reference}`],
+        });
       }
+      pendingSince.delete(reference);
       const hash = receipt.receipt.transactionHash;
       return receipt.success
         ? { status: "success", hashes: [hash] }

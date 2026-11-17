@@ -36,6 +36,10 @@ const defaults: {
     shortMessage: "The paymaster refused to sponsor the HCA UserOperation.",
   }),
   HCA_EXECUTION_FAILED: () => ({ shortMessage: "The HCA execution failed." }),
+  HCA_EXECUTION_TIMEOUT: () => ({
+    shortMessage: "The HCA execution was not included in time.",
+    hint: "It may still be included: `plan.resume` checks it again. Raise the executor's `timeout` to wait longer.",
+  }),
   HCA_UPGRADE_NOT_ALLOWED: () => ({
     shortMessage: "The DAO's upgrade sets do not allow this HCA upgrade.",
   }),
@@ -78,6 +82,7 @@ export declare namespace HcaError {
     | "HCA_BUNDLER_REJECTED"
     | "HCA_PAYMASTER_REJECTED"
     | "HCA_EXECUTION_FAILED"
+    | "HCA_EXECUTION_TIMEOUT"
     | "HCA_UPGRADE_NOT_ALLOWED"
     | "HCA_SDK_UNSUPPORTED";
   type Options = Errors.EnsforgeError.ClassOptions<Code> & {

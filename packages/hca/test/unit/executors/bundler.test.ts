@@ -195,4 +195,31 @@ describe("bundler executor: status", () => {
       assert.deepStrictEqual(status, expected);
     }),
   );
+
+  // Executor hooks are Promise interfaces the write runtime calls.
+  it.effect("gives up on an operation pending longer than its timeout", () =>
+    Effect.gen(function* () {
+      serveRpc(() => ({ result: null }));
+      const status = defined(bundler({ url: bundlerUrl, timeout: 0 }).status);
+      yield* expectRejection(() => status(hash, contextFor()), {
+        _tag: "HcaError",
+        code: "HCA_EXECUTION_TIMEOUT",
+      });
+    }),
+  );
+
+  it.effect("keeps waiting within its timeout, then reports the operation once it lands", () =>
+    Effect.gen(function* () {
+      const status = defined(bundler({ url: bundlerUrl }).status);
+      serveRpc(() => ({ result: null }));
+      assert.deepStrictEqual(yield* Effect.promise(() => status(hash, contextFor())), {
+        status: "pending",
+      });
+      serveRpc(() => receipt(true));
+      assert.deepStrictEqual(yield* Effect.promise(() => status(hash, contextFor())), {
+        status: "success",
+        hashes: [hash],
+      });
+    }),
+  );
 });

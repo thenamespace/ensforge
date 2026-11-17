@@ -206,7 +206,7 @@ type Actions.hcaAdmin.transferGovernanceSync.Options = transferGovernance.Option
 type Actions.hcaAdmin.transferGovernanceSync.ReturnType = Result & { readonly receipt: TransactionReceipt; readonly receipts: readonly TransactionReceipt[]; }
 class HcaError {
   constructor(options: ClassOptions<Code> & { readonly executor?: string | undefined; }) => HcaError
-  code: 'HCA_ACTION_NOT_ALLOWED' | 'HCA_BUNDLER_REJECTED' | 'HCA_EXECUTION_FAILED' | 'HCA_EXECUTOR_UNSUPPORTED' | 'HCA_NOT_VERIFIED' | 'HCA_PAYMASTER_REJECTED' | 'HCA_SAME_CHAIN_SOURCE' | 'HCA_SDK_UNSUPPORTED' | 'HCA_SESSION_INVALID' | 'HCA_UNAVAILABLE' | 'HCA_UPGRADE_NOT_ALLOWED'
+  code: 'HCA_ACTION_NOT_ALLOWED' | 'HCA_BUNDLER_REJECTED' | 'HCA_EXECUTION_FAILED' | 'HCA_EXECUTION_TIMEOUT' | 'HCA_EXECUTOR_UNSUPPORTED' | 'HCA_NOT_VERIFIED' | 'HCA_PAYMASTER_REJECTED' | 'HCA_SAME_CHAIN_SOURCE' | 'HCA_SDK_UNSUPPORTED' | 'HCA_SESSION_INVALID' | 'HCA_UNAVAILABLE' | 'HCA_UPGRADE_NOT_ALLOWED'
   ~ensforge/error: true
   _tag: 'HcaError'
   name: 'HcaError'
@@ -230,6 +230,6 @@ class HcaError {
   ~effect/Runtime/errorExitCode: number
   ~effect/Runtime/errorReported: boolean
 }
-type HcaError.Code = 'HCA_ACTION_NOT_ALLOWED' | 'HCA_BUNDLER_REJECTED' | 'HCA_EXECUTION_FAILED' | 'HCA_EXECUTOR_UNSUPPORTED' | 'HCA_NOT_VERIFIED' | 'HCA_PAYMASTER_REJECTED' | 'HCA_SAME_CHAIN_SOURCE' | 'HCA_SDK_UNSUPPORTED' | 'HCA_SESSION_INVALID' | 'HCA_UNAVAILABLE' | 'HCA_UPGRADE_NOT_ALLOWED'
+type HcaError.Code = 'HCA_ACTION_NOT_ALLOWED' | 'HCA_BUNDLER_REJECTED' | 'HCA_EXECUTION_FAILED' | 'HCA_EXECUTION_TIMEOUT' | 'HCA_EXECUTOR_UNSUPPORTED' | 'HCA_NOT_VERIFIED' | 'HCA_PAYMASTER_REJECTED' | 'HCA_SAME_CHAIN_SOURCE' | 'HCA_SDK_UNSUPPORTED' | 'HCA_SESSION_INVALID' | 'HCA_UNAVAILABLE' | 'HCA_UPGRADE_NOT_ALLOWED'
 type HcaError.Options = ClassOptions<Code> & { readonly executor?: string | undefined; }
 ```
