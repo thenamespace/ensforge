@@ -46,10 +46,15 @@ const resolvesAt = (project: Project, file: string, position: number, target: st
     if (symbol === undefined) return false;
     const resolved =
       (symbol.flags & SymbolFlags.Alias) !== 0 ? checker.getAliasedSymbol(symbol) : symbol;
+    // Properties of a value's type (`ens.record`) or of a declared type (`Options.name`).
+    const type =
+      (resolved.flags & SymbolFlags.Type) !== 0
+        ? checker.getDeclaredTypeOfSymbol(resolved)
+        : checker.getTypeOfSymbol(resolved);
     symbol =
       resolved.getExports().get(segment as never) ??
       resolved.getMembers().get(segment as never) ??
-      checker.getPropertyOfType(checker.getTypeOfSymbol(resolved) ?? checker.getAnyType(), segment);
+      checker.getPropertyOfType(type ?? checker.getAnyType(), segment);
   }
   return symbol !== undefined;
 };

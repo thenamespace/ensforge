@@ -40,6 +40,12 @@ const reactUnit = {
   },
 };
 
+// The repository CLI (`ensforge-dev`); its link checks open real TypeScript projects.
+const tools = {
+  extends: true as const,
+  test: { name: "tools:unit", root: "tools/cli", include: ["test/unit/**/*.test.ts"] },
+};
+
 const types = (name: (typeof packages)[number]) => ({
   extends: true as const,
   test: {
@@ -67,6 +73,7 @@ export default defineConfig({
         name === "react" ? [reactUnit, types(name)] : [unit(name), types(name)],
       ),
       wagmi2,
+      tools,
     ],
     passWithNoTests: true,
   },

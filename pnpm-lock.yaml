@@ -501,6 +501,9 @@ importers:
         specifier: 'catalog:'
         version: 7.0.2
     devDependencies:
+      '@effect/vitest':
+        specifier: 'catalog:'
+        version: 4.1.4(effect@4.1.4)(vitest@5.1.0)
       '@types/node':
         specifier: 'catalog:'
         version: 26.6.6
