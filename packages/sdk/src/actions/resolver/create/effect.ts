@@ -14,11 +14,11 @@ import { parseName } from "../../../internal/name/normalize.js";
 import { setResolverCall } from "../../../internal/name/set-resolver.js";
 import { requireAddress, requireRegistered } from "../../../internal/name/write.js";
 import { deployPermissionedResolver } from "../../../internal/resolver/deploy.js";
+import { roleBitmapOf } from "../../../internal/role/bitmap.js";
 import { addressOf } from "../../../internal/write/signer.js";
 import { make as makePlan } from "../../../plan/make.js";
 import type { Plan } from "../../../plan/Plan.js";
 import type { Write } from "../../../Types.js";
-import * as Role from "../../../utils/Role.js";
 import type { create as Promises } from "./index.js";
 
 /** The extra grants, validated; the owner's grant is added by `deployPermissionedResolver`. */
@@ -28,10 +28,7 @@ const grantsOf = Effect.fnUntraced(function* (
   const extra = yield* Effect.forEach(grants ?? [], (grant) =>
     Effect.gen(function* () {
       const account = yield* requireAddress(grant.account, "grants.account");
-      const roleBitmap = yield* Effect.try({
-        try: () => (typeof grant.roles === "bigint" ? grant.roles : Role.from(grant.roles)),
-        catch: (error) => error as AnyError,
-      });
+      const roleBitmap = yield* roleBitmapOf(grant.roles);
       return { account, roleBitmap };
     }),
   );

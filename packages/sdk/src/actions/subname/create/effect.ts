@@ -17,13 +17,13 @@ import { explainFor } from "../../../internal/permission/check.js";
 import { recordsCall } from "../../../internal/records/write-call.js";
 import { attachCalls, deployUserRegistry } from "../../../internal/registry/deploy.js";
 import { deployPermissionedResolver } from "../../../internal/resolver/deploy.js";
+import { roleBitmapOf } from "../../../internal/role/bitmap.js";
 import { loadSubname, type LoadedSubname } from "../../../internal/subname/load.js";
 import { addressOf } from "../../../internal/write/signer.js";
 import { make as makePlan } from "../../../plan/make.js";
 import type { Plan } from "../../../plan/Plan.js";
 import type { Write } from "../../../Types.js";
 import * as Fuse from "../../../utils/Fuse.js";
-import * as Role from "../../../utils/Role.js";
 import type { create as Promises } from "./index.js";
 
 const invalid = (field: string, input: unknown, shortMessage: string) =>
@@ -111,12 +111,7 @@ const v2Steps = Effect.fnUntraced(function* (
   const roleBitmap =
     options.roles === undefined
       ? Roles.registryBitmaps.registration
-      : typeof options.roles === "bigint"
-        ? options.roles
-        : yield* Effect.try({
-            try: () => Role.from(options.roles as readonly Role.Name[]),
-            catch: (error) => error as AnyError,
-          });
+      : yield* roleBitmapOf(options.roles);
   const write: Plan.Call = exists
     ? {
         to: registry,

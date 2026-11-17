@@ -7,10 +7,10 @@ import type { Client } from "../../../client/types.js";
 import type { AnyError } from "../../../errors/types.js";
 import * as Action from "../../../internal/action/index.js";
 import { requireAddress, singleStepPlan } from "../../../internal/name/write.js";
+import { roleBitmapOf } from "../../../internal/role/bitmap.js";
 import { resolveRoleTarget } from "../../../internal/role/target.js";
 import type { Plan } from "../../../plan/Plan.js";
 import type { Write } from "../../../Types.js";
-import * as Role from "../../../utils/Role.js";
 import type { grant as Promises } from "./index.js";
 
 /** @internal Builds the plan of `Actions.role.grant`. */
@@ -19,10 +19,7 @@ export const plan = Effect.fnUntraced(function* (
   options: Promises.Options & Pick<Write.Options, "account">,
 ): Effect.fn.Return<Plan, AnyError> {
   const account = yield* requireAddress(options.grantee, "grantee");
-  const roles = yield* Effect.try({
-    try: () => (typeof options.roles === "bigint" ? options.roles : Role.from(options.roles)),
-    catch: (error) => error as AnyError,
-  });
+  const roles = yield* roleBitmapOf(options.roles);
   const target = yield* resolveRoleTarget(client, options);
   // Registry and resolver share the EAC functions; the registry ABI covers both.
   const abi = Abis.v2.permissionedRegistry;
