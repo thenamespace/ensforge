@@ -41,10 +41,6 @@
       "workspace-source": "./src/entrypoints/hca-admin.ts",
       "default": "./dist/hca/admin.js"
     },
-    "./indexer": {
-      "workspace-source": "./src/entrypoints/indexer.ts",
-      "default": "./dist/indexer.js"
-    },
     "./wagmi": {
       "workspace-source": "./src/wagmi.ts",
       "default": "./dist/wagmi.js"
@@ -59,7 +55,6 @@
       ".": "./dist/index.js",
       "./hca": "./dist/hca.js",
       "./hca/admin": "./dist/hca/admin.js",
-      "./indexer": "./dist/indexer.js",
       "./wagmi": "./dist/wagmi.js",
       "./package.json": "./package.json"
     },

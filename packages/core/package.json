@@ -57,34 +57,6 @@
       "workspace-source": "./src/legacy/actions/hca/admin/index.ts",
       "default": "./dist/legacy/hca/admin.js"
     },
-    "./legacy/indexer": {
-      "workspace-source": "./src/legacy/actions/indexer/index.ts",
-      "default": "./dist/legacy/indexer.js"
-    },
-    "./legacy/indexer/history": {
-      "workspace-source": "./src/legacy/actions/indexer/history/index.ts",
-      "default": "./dist/legacy/indexer/history.js"
-    },
-    "./legacy/indexer/names": {
-      "workspace-source": "./src/legacy/actions/indexer/names/index.ts",
-      "default": "./dist/legacy/indexer/names.js"
-    },
-    "./legacy/indexer/records": {
-      "workspace-source": "./src/legacy/actions/indexer/records/index.ts",
-      "default": "./dist/legacy/indexer/records.js"
-    },
-    "./legacy/indexer/registrations": {
-      "workspace-source": "./src/legacy/actions/indexer/registrations/index.ts",
-      "default": "./dist/legacy/indexer/registrations.js"
-    },
-    "./legacy/indexer/registries": {
-      "workspace-source": "./src/legacy/actions/indexer/registries/index.ts",
-      "default": "./dist/legacy/indexer/registries.js"
-    },
-    "./legacy/indexer/resolvers": {
-      "workspace-source": "./src/legacy/actions/indexer/resolvers/index.ts",
-      "default": "./dist/legacy/indexer/resolvers.js"
-    },
     "./legacy/storage": {
       "workspace-source": "./src/legacy/storage/index.ts",
       "default": "./dist/legacy/storage.js"
@@ -115,13 +87,6 @@
       "./legacy": "./dist/legacy.js",
       "./legacy/hca": "./dist/legacy/hca.js",
       "./legacy/hca/admin": "./dist/legacy/hca/admin.js",
-      "./legacy/indexer": "./dist/legacy/indexer.js",
-      "./legacy/indexer/history": "./dist/legacy/indexer/history.js",
-      "./legacy/indexer/names": "./dist/legacy/indexer/names.js",
-      "./legacy/indexer/records": "./dist/legacy/indexer/records.js",
-      "./legacy/indexer/registrations": "./dist/legacy/indexer/registrations.js",
-      "./legacy/indexer/registries": "./dist/legacy/indexer/registries.js",
-      "./legacy/indexer/resolvers": "./dist/legacy/indexer/resolvers.js",
       "./legacy/storage": "./dist/legacy/storage.js",
       "./legacy/storage/browser": "./dist/legacy/storage/browser.js",
       "./legacy/wagmi": "./dist/legacy/wagmi.js",

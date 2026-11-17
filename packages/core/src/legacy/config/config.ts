@@ -9,7 +9,6 @@ import type {
   EnsV2ConfigDeployment,
 } from "./custom-network.js";
 import type { GatewayOptions, ResolvedGatewayOptions } from "./gateway-options.js";
-import type { IndexerConfig, ResolvedIndexerConfig } from "./indexer-options.js";
 import type { EnsNetwork, EnsNetworkId } from "./network.js";
 import type { ReadOptions, ResolvedReadOptions } from "./read-options.js";
 import type { ResolvedWriteOptions, WriteOptions } from "./write-options.js";
@@ -37,7 +36,6 @@ export interface SharedCreateConfigParameters {
   readonly reads?: ReadOptions;
   readonly writes?: WriteOptions;
   readonly gateways?: GatewayOptions;
-  readonly indexer?: IndexerConfig | false;
 }
 
 export interface CreateViemConfigParameters extends SharedCreateConfigParameters {
@@ -63,6 +61,5 @@ export interface EnsforgeConfig {
   readonly reads: ResolvedReadOptions;
   readonly writes: ResolvedWriteOptions;
   readonly gateways: ResolvedGatewayOptions;
-  readonly indexer: ResolvedIndexerConfig;
   readonly deployments: EnsDeploymentProfile;
 }

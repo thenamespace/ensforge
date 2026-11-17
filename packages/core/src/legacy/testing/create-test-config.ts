@@ -53,7 +53,6 @@ export const createTestConfig = (parameters: CreateTestConfigParameters): Ensfor
 
   return Object.freeze(
     attachConfigContext(
-      // This legacy test helper omits indexer services; production configs use createConfig.
       {
         [EnsforgeConfigTypeId]: EnsforgeConfigTypeId,
         ...serviceValues,

@@ -1,4 +1,3 @@
-export * from "./indexer.js";
 export { makeMutationAtom, type EnsMutationAtom, type EnsMutationAtomFactory } from "./mutation.js";
 export { makeQueryAtom, type EnsAtom, type EnsAtomFactory } from "./query.js";
 export {

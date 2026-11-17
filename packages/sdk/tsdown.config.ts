@@ -7,7 +7,6 @@ export default defineConfig({
     "hca/admin": "src/entrypoints/hca-admin.ts",
     hca: "src/entrypoints/hca.ts",
     index: "src/index.ts",
-    indexer: "src/entrypoints/indexer.ts",
     wagmi: "src/wagmi.ts",
   },
   exports: { devExports: "workspace-source" },

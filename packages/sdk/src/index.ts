@@ -30,7 +30,7 @@ export {
 } from "@ensforge/core/legacy";
 
 export { Ensforge } from "./ensforge.js";
-export type { HcaActions, IndexerActions } from "./groups/index.js";
+export type { HcaActions } from "./groups/index.js";
 export type {
   BoundAction,
   BoundExecuteHcaCalls,

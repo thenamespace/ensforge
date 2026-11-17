@@ -38,15 +38,15 @@ import { EnsforgeProvider } from "@ensforge/react";
 Use read hooks anywhere below the provider:
 
 ```tsx
-import { useIndexedName } from "@ensforge/react";
+import { useHcaOwner } from "@ensforge/react";
 
-function IndexedName({ name }: { name: string }) {
-  const indexed = useIndexedName({ name, atom: { swr: { staleTime: "1 minute" } } });
+function HcaOwner({ hca }: { hca: `0x${string}` }) {
+  const owner = useHcaOwner({ hca, atom: { swr: { staleTime: "1 minute" } } });
 
-  if (indexed.isInitial) return <span>Loading…</span>;
-  if (indexed.isFailure) return <span>{indexed.error.message}</span>;
+  if (owner.isInitial) return <span>Loading…</span>;
+  if (owner.isFailure) return <span>{owner.error.message}</span>;
 
-  return <p>{indexed.data === null ? "Not indexed" : `${indexed.data?.subnameCount} subnames`}</p>;
+  return <p>Owned by {owner.data}</p>;
 }
 ```
 
@@ -64,7 +64,7 @@ Hook inputs are inferred automatically. When an action parameter type is needed 
 it from the matching SDK group.
 
 ```ts
-import type { GetIndexedNameParameters } from "@ensforge/sdk/indexer";
+import type { HcaReadParameters } from "@ensforge/sdk/hca";
 ```
 
 An existing SDK instance can also be shared through the provider:

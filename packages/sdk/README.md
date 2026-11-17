@@ -6,12 +6,13 @@ A type-safe client for building ENS applications.
 
 - Config-bound actions with no repeated client arguments
 - Unified behavior across supported ENS deployments
-- Grouped APIs for HCA accounts, events, batches and the indexer
+- Grouped APIs for HCA accounts
 
 Name, record, resolver, primary-name and registration actions live in `@ensforge/core`
 (`ens.name.*`, `ens.record.*`, `ens.resolver.*`, `ens.primaryName.*`, `ens.registration.*`,
 `ens.subname.*`, `ens.registry.*`, `ens.permission.*`, `ens.role.*`, `ens.approval.*`,
-`ens.wrapper.*`, `ens.dns.*`, `ens.migration.*`).
+`ens.wrapper.*`, `ens.dns.*`, `ens.migration.*`), and indexer reads in
+`@ensforge/core/indexer` (`ens.indexer.*`).
 
 - Batched reads and wallet-aware write workflows
 - Compatible with viem clients and Wagmi configs
@@ -34,21 +35,7 @@ const sdk = new Ensforge({
   publicClient: createPublicClient({ chain: mainnet, transport: http() }),
 });
 
-const name = await sdk.indexer.getIndexedName({ name: "ens.eth" });
-```
-
-Actions are grouped by ENS capability:
-
-```ts
-const name = await sdk.indexer.getIndexedName({ name: "ens.eth" });
-const history = await sdk.indexer.getNameHistory({ name: "ens.eth" });
-```
-
-Import action-specific types from the corresponding group entrypoint. This keeps editor type
-loading focused while method calls remain fully inferred.
-
-```ts
-import type { GetIndexedNameParameters } from "@ensforge/sdk/indexer";
+const entryPoint = await sdk.hca.getHcaEntryPoint({ hca: "0x…" });
 ```
 
 Use an existing Wagmi config instead of supplying viem clients:

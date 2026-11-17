@@ -3,17 +3,6 @@ export { CodecError, CodecErrorCode } from "./codec-error.js";
 export { ConfigError, ConfigErrorCode } from "./config-error.js";
 export { ContractError, ContractErrorCode } from "./contract-error.js";
 export { GatewayError, GatewayErrorCode } from "./gateway-error.js";
-export { IndexerConfigError, IndexerConfigErrorCode } from "./indexer-config-error.js";
-export { IndexerDecodeError } from "./indexer-decode-error.js";
-export { IndexerFilterError, IndexerFilterErrorCode } from "./indexer-filter-error.js";
-export { IndexerPaginationError, IndexerPaginationErrorCode } from "./indexer-pagination-error.js";
-export { IndexerRequestError, IndexerRequestErrorCode } from "./indexer-request-error.js";
-export {
-  IndexerGraphQLError,
-  IndexerResponseError,
-  type IndexerGraphQLError as IndexerGraphQLErrorType,
-} from "./indexer-response-error.js";
-export { IndexerUnavailableError } from "./indexer-unavailable-error.js";
 export { NameError, NameErrorCode } from "./name-error.js";
 export { MigrationError, MigrationErrorCode } from "./migration-error.js";
 export { RpcError, RpcErrorCode } from "./rpc-error.js";

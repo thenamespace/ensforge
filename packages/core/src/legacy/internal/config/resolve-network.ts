@@ -1,7 +1,7 @@
 import { Exit, Schema } from "effect";
 
 import type { EnsDeploymentProfile } from "../../config/config.js";
-import { ensChainIds, EnsNetworkSchema, type EnsNetwork } from "../../config/network.js";
+import { ensChainIds, EnsNetworkSchema } from "../../config/network.js";
 import { ConfigError } from "../../errors/config-error.js";
 import { CustomEnsNetworkSchema } from "./custom-network-schema.js";
 import { getNetworkProfile } from "./network-profile.js";
@@ -9,7 +9,6 @@ import { getNetworkProfile } from "./network-profile.js";
 interface ResolvedNetwork {
   readonly network: string;
   readonly chainId: number;
-  readonly preset: EnsNetwork | undefined;
   readonly deployments: EnsDeploymentProfile;
 }
 
@@ -27,7 +26,6 @@ export const resolveNetwork = (input: unknown): ResolvedNetwork => {
     return {
       network: input,
       chainId: ensChainIds[input],
-      preset: input,
       deployments: getNetworkProfile(input),
     };
   }
@@ -98,7 +96,6 @@ export const resolveNetwork = (input: unknown): ResolvedNetwork => {
   return {
     network: custom.id,
     chainId: custom.chainId,
-    preset: undefined,
     deployments: freezeDeployment(deployments),
   };
 };
