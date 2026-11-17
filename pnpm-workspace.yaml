@@ -9,6 +9,7 @@ catalog:
   "@commitlint/cli": "21.2.4"
   "@commitlint/config-conventional": "21.2.4"
   "@effect/atom-react": "4.1.4"
+  "@effect/platform-node": "4.1.4"
   "@effect/vitest": "4.1.4"
   "@ensdomains/address-encoder": "3.0.0"
   "@ensdomains/content-hash": "3.2.0"
@@ -31,17 +32,11 @@ catalog:
   scheduler: "0.28.0"
   tslib: "2.9.1"
   turbo: "2.11.11"
-  typedoc: "0.28.20"
   typescript: "7.0.2"
   viem: "2.57.20"
   vitest: "5.1.0"
   wagmi: "3.7.11"
   wagmi-v2: "npm:wagmi@2.19.5"
-
-# typedoc 0.28 supports TypeScript up to 6.0 (tools/typedoc); everything else uses 7.
-catalogs:
-  typescript6:
-    typescript: "6.0.3"
 
 allowBuilds:
   bufferutil: true

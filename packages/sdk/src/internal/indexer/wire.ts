@@ -4,7 +4,7 @@ import { IndexerError } from "../../errors/classes/IndexerError.js";
 
 // bigname's REST shapes, shared by every bigname-compatible indexer (Goldsky serves the same
 // routes with fewer fields). Each exported Struct is named after the OpenAPI component it decodes;
-// `scripts/indexer-openapi.ts check` verifies its fields against the pinned specs. Only identity fields are required: anything one indexer leaves out
+// `ensforge-dev openapi check` verifies its fields against the pinned specs. Only identity fields are required: anything one indexer leaves out
 // decodes as missing, and unknown fields are ignored. Enum-like strings stay strings so a new
 // value upstream does not fail a whole page.
 

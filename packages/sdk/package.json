@@ -73,17 +73,16 @@
     "provenance": true
   },
   "scripts": {
-    "api:report": "node ../../scripts/api-report.mjs index effect indexer wagmi",
-    "build": "node ../../scripts/build-package.mjs",
-    "codegen": "node scripts/codegen/main.ts",
-    "codegen:check": "node scripts/codegen/main.ts --check",
-    "indexer:openapi": "node scripts/indexer-openapi.ts",
-    "dev": "node ../../scripts/build-package.mjs --watch",
+    "api:report": "ensforge-dev api-report",
+    "build": "ensforge-dev build",
+    "dev": "ensforge-dev build --watch",
     "lint": "oxlint --deny-warnings .",
     "pack:check": "publint && attw --pack . --profile esm-only",
     "prepack": "pnpm build",
-    "typecheck": "tsc --noEmit && tsc --noEmit -p scripts && tsc --noEmit -p test",
-    "verify": "pnpm codegen:check && node ../../scripts/lint-jsdoc.mjs src/index.ts src/effect.ts src/indexer/index.ts src/wagmi/index.ts && node ../../scripts/api-report.mjs --check index effect indexer wagmi && node ../../scripts/check-dist-types.mjs index actions indexer wagmi --consumer scripts/fixtures/consumer.ts && node scripts/indexer-openapi.ts check && node ../../tools/typedoc/run.mjs && node ../../scripts/check-examples.mjs scripts/fixtures/example-globals.ts"
+    "typecheck": "tsc --noEmit && tsc --noEmit -p test",
+    "verify": "ensforge-dev verify",
+    "codegen": "ensforge-dev codegen",
+    "openapi": "ensforge-dev openapi"
   },
   "dependencies": {
     "@ensdomains/address-encoder": "catalog:",
@@ -95,7 +94,7 @@
   "devDependencies": {
     "@effect/vitest": "catalog:",
     "@ensforge/test-harness": "workspace:*",
-    "@ensforge/tool-typedoc": "workspace:*",
+    "@ensforge/tools": "workspace:*",
     "viem": "catalog:",
     "wagmi": "catalog:",
     "wagmi-v2": "catalog:"
@@ -112,5 +111,21 @@
   },
   "engines": {
     "node": ">=20.19"
+  },
+  "ensforge": {
+    "api": [
+      ".",
+      "./effect",
+      "./indexer",
+      "./wagmi"
+    ],
+    "effectFree": [
+      ".",
+      "./actions",
+      "./indexer",
+      "./wagmi"
+    ],
+    "codegen": "sdk",
+    "openapi": true
   }
 }

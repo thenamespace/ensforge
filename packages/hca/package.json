@@ -52,16 +52,15 @@
     "provenance": true
   },
   "scripts": {
-    "build": "node ../../scripts/build-package.mjs",
-    "dev": "node ../../scripts/build-package.mjs --watch",
+    "build": "ensforge-dev build",
+    "dev": "ensforge-dev build --watch",
     "lint": "oxlint --deny-warnings .",
     "typecheck": "tsc --noEmit && tsc --noEmit -p test",
     "pack:check": "publint && attw --pack . --profile esm-only",
     "prepack": "pnpm build",
-    "codegen": "node ../sdk/scripts/codegen/main.ts --root .",
-    "codegen:check": "node ../sdk/scripts/codegen/main.ts --root . --check",
-    "verify": "pnpm codegen:check && node ../../scripts/lint-jsdoc.mjs src/index.ts src/effect.ts && node ../../scripts/api-report.mjs --check index effect && node ../../scripts/check-dist-types.mjs index && node ../../scripts/check-examples.mjs scripts/fixtures/example-globals.ts",
-    "api:report": "node ../../scripts/api-report.mjs index effect"
+    "verify": "ensforge-dev verify",
+    "api:report": "ensforge-dev api-report",
+    "codegen": "ensforge-dev codegen"
   },
   "dependencies": {
     "@ensforge/contracts": "workspace:*",
@@ -70,6 +69,7 @@
   "devDependencies": {
     "@effect/vitest": "catalog:",
     "@ensforge/test-harness": "workspace:*",
+    "@ensforge/tools": "workspace:*",
     "viem": "catalog:"
   },
   "peerDependencies": {
@@ -78,5 +78,15 @@
   },
   "engines": {
     "node": ">=20.19"
+  },
+  "ensforge": {
+    "api": [
+      ".",
+      "./effect"
+    ],
+    "effectFree": [
+      "."
+    ],
+    "codegen": "extension"
   }
 }

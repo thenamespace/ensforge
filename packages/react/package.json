@@ -58,14 +58,14 @@
     "provenance": true
   },
   "scripts": {
-    "build": "node ../../scripts/build-package.mjs",
-    "dev": "node ../../scripts/build-package.mjs --watch",
+    "build": "ensforge-dev build",
+    "dev": "ensforge-dev build --watch",
     "lint": "oxlint --deny-warnings .",
     "pack:check": "publint && attw --pack . --profile esm-only",
     "prepack": "pnpm build",
-    "typecheck": "tsc --noEmit && tsc --noEmit -p test && tsc --noEmit -p scripts",
-    "api:report": "node ../../scripts/api-report.mjs index atoms server",
-    "verify": "node ../../scripts/lint-jsdoc.mjs src/index.ts src/atoms/index.ts src/server/index.ts && node ../../scripts/api-report.mjs --check index atoms server && node ../../scripts/check-dist-types.mjs --consumer scripts/fixtures/consumer.ts && node ../../scripts/check-examples.mjs scripts/fixtures/example-globals.ts"
+    "typecheck": "tsc --noEmit && tsc --noEmit -p test",
+    "api:report": "ensforge-dev api-report",
+    "verify": "ensforge-dev verify"
   },
   "dependencies": {
     "@effect/atom-react": "catalog:",
@@ -74,6 +74,7 @@
   "devDependencies": {
     "@effect/vitest": "catalog:",
     "@ensforge/test-harness": "workspace:*",
+    "@ensforge/tools": "workspace:*",
     "@testing-library/react": "catalog:",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
@@ -92,5 +93,12 @@
   },
   "engines": {
     "node": ">=20.19"
+  },
+  "ensforge": {
+    "api": [
+      ".",
+      "./atoms",
+      "./server"
+    ]
   }
 }

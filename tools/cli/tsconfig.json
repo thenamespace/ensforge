@@ -1,0 +1,11 @@
+{
+  "extends": "klarity/tsconfig/library",
+  "compilerOptions": {
+    "lib": ["ES2024"],
+    "types": ["node"],
+    "rootDir": ".",
+    "erasableSyntaxOnly": true,
+    "noErrorTruncation": true
+  },
+  "include": ["src/**/*.ts"]
+}

@@ -1,4 +1,4 @@
-// Wire shapes of bigname's REST API (OpenAPI snapshot `packages/sdk/openapi/bigname.json`), as
+// Wire shapes of bigname's REST API (OpenAPI snapshot `packages/sdk/test/fixtures/openapi/bigname.json`), as
 // recorded responses carry them: snake_case keys, decimal strings for timestamps. Only the fields
 // the fixtures use are typed; servers send more, and the SDK must ignore what it does not know.
 

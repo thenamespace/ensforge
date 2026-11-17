@@ -66,18 +66,18 @@
     "provenance": true
   },
   "scripts": {
-    "api:report": "node ../../scripts/api-report.mjs index v1 v2 shared v2/experimental/hca",
-    "build": "node ../../scripts/build-package.mjs",
-    "dev": "node ../../scripts/build-package.mjs --watch",
+    "api:report": "ensforge-dev api-report",
+    "build": "ensforge-dev build",
+    "dev": "ensforge-dev build --watch",
     "lint": "oxlint --deny-warnings .",
     "pack:check": "publint && attw --pack . --profile esm-only",
     "prepack": "pnpm build",
     "typecheck": "tsc --noEmit && tsc --noEmit -p test",
-    "verify": "node ../../scripts/lint-jsdoc.mjs src/index.ts src/v1/index.ts src/v2/index.ts src/shared/index.ts src/v2/experimental/hca/index.ts && node ../../scripts/api-report.mjs --check index v1 v2 shared v2/experimental/hca && node ../../tools/typedoc/run.mjs && node ../../scripts/check-examples.mjs scripts/fixtures/example-globals.ts"
+    "verify": "ensforge-dev verify"
   },
   "devDependencies": {
     "@effect/vitest": "catalog:",
-    "@ensforge/tool-typedoc": "workspace:*",
+    "@ensforge/tools": "workspace:*",
     "viem": "catalog:"
   },
   "peerDependencies": {
@@ -85,5 +85,14 @@
   },
   "engines": {
     "node": ">=20.19"
+  },
+  "ensforge": {
+    "api": [
+      ".",
+      "./v1",
+      "./v2",
+      "./shared",
+      "./v2/experimental/hca"
+    ]
   }
 }
