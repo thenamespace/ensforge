@@ -60,7 +60,7 @@
     "prepack": "pnpm build",
     "codegen": "node ../sdk/scripts/codegen/main.ts --root .",
     "codegen:check": "node ../sdk/scripts/codegen/main.ts --root . --check",
-    "verify": "pnpm codegen:check && node ../../scripts/lint-jsdoc.mjs src/index.ts src/effect.ts && node ../../scripts/api-report.mjs --check index effect && node ../../scripts/check-dist-types.mjs index",
+    "verify": "pnpm codegen:check && node ../../scripts/lint-jsdoc.mjs src/index.ts src/effect.ts && node ../../scripts/api-report.mjs --check index effect && node ../../scripts/check-dist-types.mjs index && node ../../scripts/check-examples.mjs scripts/fixtures/example-globals.ts",
     "api:report": "node ../../scripts/api-report.mjs index effect"
   },
   "dependencies": {
