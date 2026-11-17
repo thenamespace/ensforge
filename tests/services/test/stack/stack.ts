@@ -39,7 +39,8 @@ export class StackError extends Schema.TaggedError<StackError>()("StackError", {
   message: Schema.String,
 }) {}
 
-// anvil's test mnemonic: indexes 0–9 are the devnet's named accounts; the bundler gets its own.
+// anvil's test mnemonic: indexes 0–9 are the devnet's named accounts and 10 is the fixtures'
+// EIP-7702 EOA (it refuses ETH, so it cannot be the bundler's beneficiary); the bundler gets its own.
 const testMnemonic = "test test test test test test test test test test test junk";
 const bundlerKey = (index: number) => {
   const account = mnemonicToAccount(testMnemonic, { addressIndex: index });
@@ -99,7 +100,7 @@ const startStack = Effect.fnUntraced(function* (
   const [bignamePort, altoPort, paymasterPort] = yield* Effect.promise(() =>
     Promise.all([getPort(), getPort(), getPort()]),
   );
-  const [utility, executor] = [bundlerKey(10), bundlerKey(11)];
+  const [utility, executor] = [bundlerKey(20), bundlerKey(21)];
   if (aa) {
     yield* Effect.promise(() =>
       Promise.all(
