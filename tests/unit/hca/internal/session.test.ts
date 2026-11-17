@@ -65,16 +65,6 @@ const setText = encodeFunctionData({
   functionName: "setText",
   args: ["0x00", "url", "https://alice.dev"],
 });
-const setAddress = encodeFunctionData({
-  abi: Abis.v2.permissionedResolver,
-  functionName: "setAddress",
-  args: ["0x00", 60n, owner],
-});
-const grantRootRoles = encodeFunctionData({
-  abi: Abis.v2.permissionedResolver,
-  functionName: "grantRootRoles",
-  args: [1n, owner],
-});
 const multicall = (calls: readonly `0x${string}`[]) =>
   encodeFunctionData({
     abi: Abis.v2.permissionedResolver,
@@ -104,15 +94,6 @@ const claim = (account: Address, claimed: Address) =>
       args: [account, claimed],
     }),
   );
-const setName = (account: Address) =>
-  to(
-    v2.contracts.defaultReverseRegistrarAdapter,
-    encodeFunctionData({
-      abi: Abis.v2.defaultReverseRegistrarAdapter,
-      functionName: "setNameWithHCA",
-      args: [account, "alice.eth"],
-    }),
-  );
 
 const check = (calls: readonly Plan.Call[]) =>
   checkSessionCalls(makeClient().client, session, calls);
@@ -132,13 +113,46 @@ describe("checkSessionCalls", () => {
       register(owner, zeroAddress, resolver),
     ],
     ["a text record on the session resolver", to(resolver, setText)],
-    ["an address record on the session resolver", to(resolver, setAddress)],
-    ["a multicall of record setters", to(resolver, multicall([setText, setAddress]))],
+    [
+      "an address record on the session resolver",
+      to(
+        resolver,
+        encodeFunctionData({
+          abi: Abis.v2.permissionedResolver,
+          functionName: "setAddress",
+          args: ["0x00", 60n, owner],
+        }),
+      ),
+    ],
+    [
+      "a multicall of record setters",
+      to(
+        resolver,
+        multicall([
+          setText,
+          encodeFunctionData({
+            abi: Abis.v2.permissionedResolver,
+            functionName: "setAddress",
+            args: ["0x00", 60n, owner],
+          }),
+        ]),
+      ),
+    ],
     [
       "deploying the session resolver",
       deployProxy(v2.implementations.permissionedResolver, resolverSalt),
     ],
-    ["the owner's default primary name", setName(owner)],
+    [
+      "the owner's default primary name",
+      to(
+        v2.contracts.defaultReverseRegistrarAdapter,
+        encodeFunctionData({
+          abi: Abis.v2.defaultReverseRegistrarAdapter,
+          functionName: "setNameWithHCA",
+          args: [owner, "alice.eth"],
+        }),
+      ),
+    ],
     ["the owner's reverse claim with the session resolver", claim(owner, resolver)],
     ["the owner's reverse claim without a resolver", claim(owner, zeroAddress)],
     ["a payment approval to the registrar", approve(registrar)],
@@ -184,7 +198,18 @@ describe("checkSessionCalls", () => {
       deployProxy(v2.implementations.permissionedResolver, 8n),
       "only the session resolver may be deployed",
     ],
-    ["someone else's primary name", setName(stranger), "primary names are for the HCA owner only"],
+    [
+      "someone else's primary name",
+      to(
+        v2.contracts.defaultReverseRegistrarAdapter,
+        encodeFunctionData({
+          abi: Abis.v2.defaultReverseRegistrarAdapter,
+          functionName: "setNameWithHCA",
+          args: [stranger, "alice.eth"],
+        }),
+      ),
+      "primary names are for the HCA owner only",
+    ],
     [
       "a reverse claim with another resolver",
       claim(owner, stranger),
@@ -202,7 +227,7 @@ describe("checkSessionCalls", () => {
         _tag: "HcaError",
         code: "HCA_ACTION_NOT_ALLOWED",
       });
-      assert.include(String((error as { details?: readonly string[] }).details), reason);
+      assert.include(String(error.details), reason);
     }),
   );
 
@@ -215,8 +240,18 @@ describe("checkSessionCalls", () => {
 
   // HCAResolverPolicyLib accepts only record setters on the resolver, and `multicall` of them
   // checked recursively.
-  const validatorDenies = [
-    ["a root role grant on the session resolver", to(resolver, grantRootRoles)],
+  it.effect.each([
+    [
+      "a root role grant on the session resolver",
+      to(
+        resolver,
+        encodeFunctionData({
+          abi: Abis.v2.permissionedResolver,
+          functionName: "grantRootRoles",
+          args: [1n, owner],
+        }),
+      ),
+    ],
     [
       "multicallWithNodeCheck",
       to(
@@ -228,13 +263,22 @@ describe("checkSessionCalls", () => {
         }),
       ),
     ],
-    ["a multicall hiding a role grant", to(resolver, multicall([grantRootRoles]))],
-  ] as const;
-  for (const [name, call] of validatorDenies) {
-    it.effect(`denies ${name} like the validator`, () =>
-      expectFailure(check([call]), { _tag: "HcaError", code: "HCA_ACTION_NOT_ALLOWED" }),
-    );
-  }
+    [
+      "a multicall hiding a role grant",
+      to(
+        resolver,
+        multicall([
+          encodeFunctionData({
+            abi: Abis.v2.permissionedResolver,
+            functionName: "grantRootRoles",
+            args: [1n, owner],
+          }),
+        ]),
+      ),
+    ],
+  ] as const)("denies %s like the validator", ([, call]) =>
+    expectFailure(check([call]), { _tag: "HcaError", code: "HCA_ACTION_NOT_ALLOWED" }),
+  );
 });
 
 describe("sessionProblem", () => {

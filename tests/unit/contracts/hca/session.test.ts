@@ -67,17 +67,6 @@ const solidityDigest = keccak256(
   ]),
 );
 
-// `HCASmartSessionLib.multiChainDigest` over `chainSessionHash(chainId, digest)` entries.
-const solidityApproval = (chains: readonly (readonly [number, Hex])[]): Hex => {
-  const chainHashes = chains.map(([chainId, digest]) =>
-    keccak256(concat([golden.chainSessionTypehash, word("uint64", BigInt(chainId)), digest])),
-  );
-  const structHash = keccak256(
-    concat([golden.multiChainSessionTypehash, keccak256(concat(chainHashes))]),
-  );
-  return keccak256(concat(["0x1901", golden.domainSeparator, structHash]));
-};
-
 describe("HCA session typed data", () => {
   it("domain is the deployed Smart Session domain", () => {
     assert.strictEqual(domainSeparator({ domain: hcaSessionDomain }), golden.domainSeparator);
@@ -118,8 +107,18 @@ describe("HCA session typed data", () => {
       ],
     ],
   ] as const)("approval digest over %s equals the validator's", (_, chains) => {
-    const approval = hcaSessionApprovalDigest(chains.map(([chainId]) => ({ chainId, session })));
-    assert.strictEqual(approval, solidityApproval(chains));
+    // `HCASmartSessionLib.multiChainDigest` over `chainSessionHash(chainId, digest)` entries.
+    const chainHashes = chains.map(([chainId, digest]) =>
+      keccak256(concat([golden.chainSessionTypehash, word("uint64", BigInt(chainId)), digest])),
+    );
+    const structHash = keccak256(
+      concat([golden.multiChainSessionTypehash, keccak256(concat(chainHashes))]),
+    );
+
+    assert.strictEqual(
+      hcaSessionApprovalDigest(chains.map(([chainId]) => ({ chainId, session }))),
+      keccak256(concat(["0x1901", golden.domainSeparator, structHash])),
+    );
   });
 
   it("the salt binds every term", () => {

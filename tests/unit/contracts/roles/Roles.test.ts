@@ -4,8 +4,6 @@ import { Roles } from "@ensforge/contracts";
 
 const { allRoles, adminRoles } = Roles.enhancedAccessControl;
 
-const bitIndex = (role: bigint): number => role.toString(2).length - 1;
-
 // EnhancedAccessControl packs each role into one nybble of the low 128 bits (a 4-bit assignee
 // counter) and its admin role into the same nybble of the high 128 bits.
 describe.each([
@@ -17,7 +15,7 @@ describe.each([
   it("each role is a single nybble-aligned bit inside the EAC masks", () => {
     for (const [name, role] of entries) {
       assert.strictEqual(role & (role - 1n), 0n, `${name} is not a single bit`);
-      assert.strictEqual(bitIndex(role) % 4, 0, `${name} is not nybble-aligned`);
+      assert.strictEqual((role.toString(2).length - 1) % 4, 0, `${name} is not nybble-aligned`);
       assert.strictEqual(role & allRoles, role, `${name} is outside allRoles`);
     }
   });

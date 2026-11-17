@@ -2,13 +2,10 @@ import { Arbitrary, Schema } from "effect";
 
 import { getAddress, keccak256, toHex, type Address, type Hex } from "viem";
 
-// Splits by code point, so multi-unit characters such as emoji stay whole.
-const chars = (alphabet: string) => Schema.Literals([...alphabet] as [string, ...string[]]);
-
 /** Lowercase ASCII labels that are already normalized (a–z, 0–9, inner hyphens). */
 export const asciiLabel = Arbitrary.map(
   Arbitrary.schema(
-    Schema.Array(chars("abcdefghijklmnopqrstuvwxyz0123456789")).check(
+    Schema.Array(Schema.Literals([..."abcdefghijklmnopqrstuvwxyz0123456789"])).check(
       Schema.isMinLength(1),
       Schema.isMaxLength(24),
     ),

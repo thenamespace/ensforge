@@ -69,7 +69,8 @@ export type World = {
   readonly now?: bigint;
 };
 
-export const makeClient = (world: World = {}, account: Address = owner) => {
+/** An Ensforge client of `owner` on Sepolia, whose chain answers from `world`. */
+export const makeClient = (world: World = {}) => {
   const script = contractScript({
     code: world.deployed === true ? [hcaAddress] : [],
     contracts: [
@@ -100,11 +101,13 @@ export const makeClient = (world: World = {}, account: Address = owner) => {
       },
     ],
   });
-  const { transport, calls } = scriptedTransport(script);
-  const publicClient = createPublicClient({ chain: sepolia, transport });
+  const publicClient = createPublicClient({
+    chain: sepolia,
+    transport: scriptedTransport(script).transport,
+  });
   const client = Ensforge.create({
     publicClient,
-    account,
+    account: owner,
     batch: { multicall: false },
     ...(world.deployment === undefined ? {} : { deployment: world.deployment }),
     simulate: false,
@@ -112,9 +115,9 @@ export const makeClient = (world: World = {}, account: Address = owner) => {
   const context: Write.Via.Context = {
     client,
     chainId: sepolia.id,
-    account,
+    account: owner,
     publicClient,
     walletClient: undefined,
   };
-  return { client, context, calls };
+  return { client, context };
 };

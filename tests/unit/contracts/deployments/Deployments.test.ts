@@ -9,55 +9,47 @@ const issuesOf = (profile: unknown): readonly string[] => {
     return [];
   } catch (error) {
     assert.instanceOf(error, Deployments.InvalidProfileError);
-    return (error as Deployments.InvalidProfileError).issues;
+    return error.issues;
   }
 };
 
-const addressesOf = (group: object | undefined): readonly [string, Address][] =>
-  Object.entries(group ?? {}) as [string, Address][];
-
 describe("Deployments built-in profiles", () => {
-  it.each(Deployments.list().map((profile) => [profile.name, profile] as const))(
-    "%s passes define",
-    (_, profile) => {
-      assert.deepStrictEqual(issuesOf(profile), []);
-      assert.strictEqual(Deployments.get({ chainId: profile.chainId }), profile);
-    },
-  );
+  const profiles = Deployments.list().map((profile) => [profile.name, profile] as const);
 
-  it.each(Deployments.list().map((profile) => [profile.name, profile] as const))(
-    "%s addresses are checksummed",
-    (_, { v1, v2 }) => {
-      const groups = [
-        v1?.contracts,
-        v2?.contracts,
-        v2?.implementations,
-        v2?.migration,
-        v2?.infrastructure,
-        v2?.dns,
-        v2?.hca,
-        v2?.paymentTokens,
-      ];
-      const all = [
-        ...groups.flatMap(addressesOf).map(([, address]) => address),
-        ...(v1?.legacyPublicResolvers ?? []),
-        ...(v1?.frozenPublicResolvers ?? []),
-      ];
-      for (const address of all) assert.strictEqual(address, getAddress(address));
-    },
-  );
+  it.each(profiles)("%s passes define", (_, profile) => {
+    assert.deepStrictEqual(issuesOf(profile), []);
+    assert.strictEqual(Deployments.get({ chainId: profile.chainId }), profile);
+  });
+
+  it.each(profiles)("%s addresses are checksummed", (_, { v1, v2 }) => {
+    const groups = [
+      v1?.contracts,
+      v2?.contracts,
+      v2?.implementations,
+      v2?.migration,
+      v2?.infrastructure,
+      v2?.dns,
+      v2?.hca,
+      v2?.paymentTokens,
+    ];
+    const all = [
+      ...groups.flatMap((group) => Object.values(group ?? {}) as Address[]),
+      ...(v1?.legacyPublicResolvers ?? []),
+      ...(v1?.frozenPublicResolvers ?? []),
+    ];
+    for (const address of all) assert.strictEqual(address, getAddress(address));
+  });
 
   // Within one group each role has its own contract; the shared EntryPoint and the public
   // Universal Resolver proxy are the documented exceptions across groups.
-  it.each(Deployments.list().map((profile) => [profile.name, profile] as const))(
-    "%s has one address per role within each group",
-    (_, { v1, v2 }) => {
-      for (const group of [v1?.contracts, v2?.contracts, v2?.migration, v2?.hca, v2?.dns]) {
-        const addresses = addressesOf(group).map(([, address]) => address.toLowerCase());
-        assert.strictEqual(new Set(addresses).size, addresses.length);
-      }
-    },
-  );
+  it.each(profiles)("%s has one address per role within each group", (_, { v1, v2 }) => {
+    for (const group of [v1?.contracts, v2?.contracts, v2?.migration, v2?.hca, v2?.dns]) {
+      const addresses = (Object.values(group ?? {}) as Address[]).map((address) =>
+        address.toLowerCase(),
+      );
+      assert.strictEqual(new Set(addresses).size, addresses.length);
+    }
+  });
 
   it("returns undefined for chains without a profile", () => {
     assert.isUndefined(Deployments.get({ chainId: 31337 }));

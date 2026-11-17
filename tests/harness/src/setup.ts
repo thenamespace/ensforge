@@ -1,18 +1,18 @@
-import { beforeEach } from "@effect/vitest";
 // Runs before every test file of the fast lanes: fixed property seeds and no network.
+import { beforeEach } from "@effect/vitest";
 import { Arbitrary } from "effect";
 
-const seed = Number(process.env.ENSFORGE_TEST_SEED ?? 20261117);
-const runs = Number(process.env.ENSFORGE_TEST_RUNS ?? 200);
-
-Arbitrary.configureGlobal({ check: { seed, runs } });
-
-const blocked = (what: string) => () => {
-  throw new Error(
-    `Network access is not allowed in this lane (${what}); use a scripted transport.`,
-  );
-};
+Arbitrary.configureGlobal({
+  check: {
+    seed: Number(process.env.ENSFORGE_TEST_SEED ?? 20261117),
+    runs: Number(process.env.ENSFORGE_TEST_RUNS ?? 200),
+  },
+});
 
 beforeEach(() => {
-  globalThis.fetch = blocked("fetch") as typeof fetch;
+  globalThis.fetch = (() => {
+    throw new Error(
+      "Network access is not allowed in this lane (fetch); use a scripted transport.",
+    );
+  }) as typeof fetch;
 });

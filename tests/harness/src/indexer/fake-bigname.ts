@@ -97,16 +97,6 @@ const etagOf = (text: string): string => {
   return `"${hash.toString(16)}"`;
 };
 
-const headersOf = (init: RequestInit | undefined): Record<string, string> =>
-  Object.fromEntries(
-    [...new Headers(init?.headers).entries()].map(([key, value]) => [key.toLowerCase(), value]),
-  );
-
-const hang = (signal: AbortSignal | undefined) =>
-  new Promise<Response>((_, reject) => {
-    signal?.addEventListener("abort", () => reject(signal.reason), { once: true });
-  });
-
 /**
  * An in-memory bigname-compatible REST server, as a `fetch` implementation. It serves `fixtures`
  * by route, injects failures with `on`/`once`, and records each request.
@@ -146,40 +136,6 @@ export const fakeIndexer = (options: FakeIndexerOptions): FakeIndexer => {
     return fromFixtures(request);
   };
 
-  const fakeFetch = async (input: string | URL | Request, init?: RequestInit) => {
-    const url = new URL(
-      typeof input === "string" ? input : input instanceof URL ? input : input.url,
-    );
-    const href = url.href;
-    const path = href.startsWith(prefix)
-      ? url.pathname.slice(options.version.length)
-      : url.pathname;
-    const matched = href.startsWith(prefix) ? match(path) : undefined;
-    const headers = headersOf(init);
-    const request: FakeRequest = {
-      method: init?.method ?? "GET",
-      url: href,
-      path,
-      route: matched?.route,
-      params: matched?.params ?? {},
-      query: url.searchParams,
-      headers,
-      body: typeof init?.body === "string" ? JSON.parse(init.body) : undefined,
-      signal: init?.signal ?? undefined,
-    };
-
-    const result = answer(request);
-    if (result.kind !== "http") {
-      requests.push({ ...request, status: undefined });
-      if (result.kind === "hang") return hang(request.signal);
-      throw new TypeError(result.message);
-    }
-
-    const response = respond(request, result);
-    requests.push({ ...request, status: response.status });
-    return response;
-  };
-
   const respond = (request: FakeRequest, result: Extract<Reply, { kind: "http" }>) => {
     if (options.etag !== true || result.status !== 200 || request.method !== "GET") {
       return new Response(result.text === "" ? null : result.text, {
@@ -192,6 +148,46 @@ export const fakeIndexer = (options: FakeIndexerOptions): FakeIndexer => {
     return request.headers["if-none-match"] === etag
       ? new Response(null, { status: 304, headers: { etag } })
       : new Response(result.text, { status: 200, headers: { ...result.headers, etag } });
+  };
+
+  const fakeFetch = async (input: string | URL | Request, init?: RequestInit) => {
+    const url = new URL(
+      typeof input === "string" ? input : input instanceof URL ? input : input.url,
+    );
+    const href = url.href;
+    const path = href.startsWith(prefix)
+      ? url.pathname.slice(options.version.length)
+      : url.pathname;
+    const matched = href.startsWith(prefix) ? match(path) : undefined;
+    const request: FakeRequest = {
+      method: init?.method ?? "GET",
+      url: href,
+      path,
+      route: matched?.route,
+      params: matched?.params ?? {},
+      query: url.searchParams,
+      // `Headers` lowercases names.
+      headers: Object.fromEntries(new Headers(init?.headers).entries()),
+      body: typeof init?.body === "string" ? JSON.parse(init.body) : undefined,
+      signal: init?.signal ?? undefined,
+    };
+
+    const result = answer(request);
+    if (result.kind !== "http") {
+      requests.push({ ...request, status: undefined });
+      if (result.kind === "hang") {
+        return new Promise<Response>((_, reject) => {
+          request.signal?.addEventListener("abort", () => reject(request.signal?.reason), {
+            once: true,
+          });
+        });
+      }
+      throw new TypeError(result.message);
+    }
+
+    const response = respond(request, result);
+    requests.push({ ...request, status: response.status });
+    return response;
   };
 
   return {

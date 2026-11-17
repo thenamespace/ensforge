@@ -1,11 +1,10 @@
-import { afterEach, assert, describe, it } from "@effect/vitest";
+import { assert, describe, it } from "@effect/vitest";
 import { Effect } from "effect";
 
 import { Abis } from "@ensforge/contracts";
 import { bundler } from "@ensforge/hca/internal/executors/bundler";
 import type { ExecutionRequest } from "@ensforge/hca/internal/types";
-import { scriptedTransport } from "@ensforge/test-harness";
-import { expectRejection } from "@ensforge/test-harness";
+import { expectRejection, scriptedTransport } from "@ensforge/test-harness";
 import { contractScript } from "@ensforge/test-harness/contracts-eth-call";
 import { createWalletClient, type Hex } from "viem";
 import { entryPoint07Abi } from "viem/account-abstraction";
@@ -20,7 +19,8 @@ const paymasterUrl = "https://paymaster.test/rpc";
 type Rpc = { readonly method: string; readonly id: number };
 type Answer = { readonly result: unknown } | { readonly error: { code: number; message: string } };
 
-// Bundler and paymaster JSON-RPC, answered in memory; no request leaves the process.
+// Bundler and paymaster JSON-RPC, answered in memory; no request leaves the process. The harness
+// setup blocks `fetch` again before the next test.
 const serveRpc = (answer: (url: string, method: string) => Answer) => {
   globalThis.fetch = (async (input: string | URL | Request, init?: RequestInit) => {
     const url = String(input);
@@ -35,26 +35,10 @@ const serveRpc = (answer: (url: string, method: string) => Answer) => {
   }) as typeof fetch;
 };
 
-const defined = <value>(value: value | undefined): value => {
-  assert.isDefined(value);
-  return value as value;
-};
-
-const realFetch = globalThis.fetch;
-afterEach(() => {
-  globalThis.fetch = realFetch;
-});
-
 const gas = {
   preVerificationGas: "0x1",
   verificationGasLimit: "0x1",
   callGasLimit: "0x1",
-  paymasterVerificationGasLimit: "0x1",
-  paymasterPostOpGasLimit: "0x1",
-};
-const stubData = {
-  paymaster: "0x0000000000000000000000000000000000000Fee",
-  paymasterData: "0x",
   paymasterVerificationGasLimit: "0x1",
   paymasterPostOpGasLimit: "0x1",
 };
@@ -100,17 +84,27 @@ const request: ExecutionRequest = {
   description: "test",
 };
 
-const rejection = (message: string) => ({ error: { code: -32500, message } });
-
 const estimateFails = (method: string): Answer =>
-  method === "eth_estimateUserOperationGas" ? rejection("AA23 reverted") : { result: gas };
+  method === "eth_estimateUserOperationGas"
+    ? { error: { code: -32500, message: "AA23 reverted" } }
+    : { result: gas };
 const paymasterFails = (method: string): Answer =>
   method.startsWith("pm_")
-    ? rejection("sponsorship policy rejected the operation")
+    ? { error: { code: -32500, message: "sponsorship policy rejected the operation" } }
     : { result: gas };
 const paymasterOk = (method: string): Answer =>
-  method.startsWith("pm_") ? { result: stubData } : estimateFails(method);
+  method.startsWith("pm_")
+    ? {
+        result: {
+          paymaster: "0x0000000000000000000000000000000000000Fee",
+          paymasterData: "0x",
+          paymasterVerificationGasLimit: "0x1",
+          paymasterPostOpGasLimit: "0x1",
+        },
+      }
+    : estimateFails(method);
 
+// Executors are Promise interfaces the write runtime calls, so these tests await them.
 describe("bundler executor: error classification", () => {
   // Bundler error messages print the UserOperation's `paymaster…` fields once a paymaster is set,
   // and hosted services (Pimlico) serve both from one URL: neither may decide the code.
@@ -123,11 +117,14 @@ describe("bundler executor: error classification", () => {
   ] as const)("classifies %s", ([, paymaster, answer, code]) =>
     Effect.gen(function* () {
       serveRpc((_, method) => answer(method));
-      const executor = bundler({ url: bundlerUrl, ...(paymaster ? { paymaster } : {}) });
-      const error = yield* expectRejection(() => defined(executor.send)(request, contextFor()), {
+      const { send } = bundler({ url: bundlerUrl, ...(paymaster ? { paymaster } : {}) });
+      assert.isDefined(send);
+
+      const error = yield* expectRejection(() => send(request, contextFor()), {
         _tag: "HcaError",
         code,
       });
+
       assert.strictEqual((error as { executor?: string }).executor, "bundler");
     }),
   );
@@ -141,7 +138,10 @@ describe("bundler executor: error classification", () => {
         throw new Error("no request expected");
       });
       const context = withWallet ? contextFor() : { ...contextFor(), walletClient: undefined };
-      yield* expectRejection(() => defined(bundler({ url: bundlerUrl }).send)(sent, context), {
+      const { send } = bundler({ url: bundlerUrl });
+      assert.isDefined(send);
+
+      yield* expectRejection(() => send(sent, context), {
         _tag: "HcaError",
         code: "HCA_EXECUTOR_UNSUPPORTED",
       });
@@ -188,18 +188,19 @@ describe("bundler executor: status", () => {
   ] as const)("reports %s", ([, answer, expected]) =>
     Effect.gen(function* () {
       serveRpc(() => answer);
-      const status = yield* Effect.promise(() =>
-        defined(bundler({ url: bundlerUrl }).status)(hash, contextFor()),
-      );
-      assert.deepStrictEqual(status, expected);
+      const { status } = bundler({ url: bundlerUrl });
+      assert.isDefined(status);
+
+      assert.deepStrictEqual(yield* Effect.promise(() => status(hash, contextFor())), expected);
     }),
   );
 
-  // Executor hooks are Promise interfaces the write runtime calls.
   it.effect("gives up on an operation pending longer than its timeout", () =>
     Effect.gen(function* () {
       serveRpc(() => ({ result: null }));
-      const status = defined(bundler({ url: bundlerUrl, timeout: 0 }).status);
+      const { status } = bundler({ url: bundlerUrl, timeout: 0 });
+      assert.isDefined(status);
+
       yield* expectRejection(() => status(hash, contextFor()), {
         _tag: "HcaError",
         code: "HCA_EXECUTION_TIMEOUT",
@@ -209,11 +210,14 @@ describe("bundler executor: status", () => {
 
   it.effect("keeps waiting within its timeout, then reports the operation once it lands", () =>
     Effect.gen(function* () {
-      const status = defined(bundler({ url: bundlerUrl }).status);
+      const { status } = bundler({ url: bundlerUrl });
+      assert.isDefined(status);
+
       serveRpc(() => ({ result: null }));
       assert.deepStrictEqual(yield* Effect.promise(() => status(hash, contextFor())), {
         status: "pending",
       });
+
       serveRpc(() => receipt(true));
       assert.deepStrictEqual(yield* Effect.promise(() => status(hash, contextFor())), {
         status: "success",

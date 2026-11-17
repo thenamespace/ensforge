@@ -35,6 +35,3 @@ export const fakeEffectRead = <options, value, error = never>(
   path: string,
   answer: (options: options) => Effect.Effect<value, error>,
 ) => Object.assign((_client: Ensforge.Client, options: options) => answer(options), { path });
-
-/** Resolves on the next macrotask, after pending promise chains. */
-export const tick = (ms = 0) => new Promise((resolve) => setTimeout(resolve, ms));

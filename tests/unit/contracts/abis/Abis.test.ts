@@ -14,11 +14,10 @@ import {
   type AbiFunction,
 } from "viem";
 
-const isAbi = (value: unknown): value is Abi => Array.isArray(value);
 const abisOf = (prefix: string, group: object): [string, Abi][] =>
   Object.entries(group).flatMap(([key, value]) =>
-    isAbi(value)
-      ? [[`${prefix}.${key}`, value] as [string, Abi]]
+    Array.isArray(value)
+      ? [[`${prefix}.${key}`, value as Abi] as [string, Abi]]
       : abisOf(`${prefix}.${key}`, value),
   );
 
@@ -31,12 +30,11 @@ const all: [string, Abi][] = [
   ["hca.ownerAndSessionValidator", hcaOwnerAndSessionValidatorV2Abi],
 ];
 
-const functionSelectors = (abi: Abi) =>
-  abi.filter((entry): entry is AbiFunction => entry.type === "function").map(toFunctionSelector);
-
 describe("ABI shape", () => {
   it.each(all)("%s has no duplicate function or event selectors", (_, abi) => {
-    const functions = functionSelectors(abi);
+    const functions = abi
+      .filter((entry): entry is AbiFunction => entry.type === "function")
+      .map(toFunctionSelector);
     const events = abi
       .filter((entry): entry is AbiEvent => entry.type === "event")
       .map((event) => toEventSelector(event));
@@ -44,9 +42,6 @@ describe("ABI shape", () => {
     assert.strictEqual(new Set(events).size, events.length);
   });
 });
-
-const names = (abi: Abi) =>
-  new Set(abi.filter((entry) => entry.type === "function").map((entry) => entry.name));
 
 // The functions packages/sdk and packages/hca call by name on each ABI.
 describe("ABI coverage of SDK calls", () => {
@@ -173,7 +168,9 @@ describe("ABI coverage of SDK calls", () => {
       ],
     ],
   ] as const)("%#: has every called function", (abi, called) => {
-    const present = names(abi as Abi);
+    const present = new Set(
+      (abi as Abi).filter((entry) => entry.type === "function").map((entry) => entry.name),
+    );
     for (const name of called) assert.isTrue(present.has(name), `missing ${name}`);
   });
 });

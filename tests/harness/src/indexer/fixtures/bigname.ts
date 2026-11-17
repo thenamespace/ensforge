@@ -266,29 +266,6 @@ const resolverRecords = (request: FakeRequest): Wire.Envelope | undefined => {
   return { data: { ...nickRecords, records }, meta };
 };
 
-const lookup = (request: FakeRequest): Wire.Envelope => {
-  const { inputs } = request.body as {
-    readonly inputs: readonly { readonly name?: string; readonly address?: string }[];
-  };
-  const results = inputs.map((input): Wire.LookupResult => {
-    if (input.address !== undefined) {
-      return sameAddress(input.address, addresses.nick)
-        ? {
-            input,
-            kind: "address",
-            status: "ok",
-            record: { ...nick, is_primary: true },
-            records: [{ ...nick, is_primary: true }],
-          }
-        : { input, kind: "address", status: "not_found", records: [] };
-    }
-    return input.name === "nick.eth"
-      ? { input, kind: "name", status: "ok", record: nick }
-      : { input, kind: "name", status: "not_found", failure_reason: "unregistered" };
-  });
-  return { data: results, meta };
-};
-
 const nameRows = [nameRow("nick.eth"), ...subnames.map((row) => nameRow(row.name))];
 
 export const bigname: Fixtures = {
@@ -353,7 +330,28 @@ export const bigname: Fixtures = {
       nameRows.filter((row) => (contains ? row.name.includes(query) : row.name.startsWith(query))),
     );
   },
-  "/lookup": lookup,
+  "/lookup": (request) => {
+    const { inputs } = request.body as {
+      readonly inputs: readonly { readonly name?: string; readonly address?: string }[];
+    };
+    const results = inputs.map((input): Wire.LookupResult => {
+      if (input.address !== undefined) {
+        return sameAddress(input.address, addresses.nick)
+          ? {
+              input,
+              kind: "address",
+              status: "ok",
+              record: { ...nick, is_primary: true },
+              records: [{ ...nick, is_primary: true }],
+            }
+          : { input, kind: "address", status: "not_found", records: [] };
+      }
+      return input.name === "nick.eth"
+        ? { input, kind: "name", status: "ok", record: nick }
+        : { input, kind: "name", status: "not_found", failure_reason: "unregistered" };
+    });
+    return { data: results, meta };
+  },
   "/names": (request) =>
     paged(
       request,

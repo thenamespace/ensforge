@@ -8,6 +8,8 @@ import { act, renderHook, waitFor } from "@testing-library/react";
 
 import { client, fakeRead } from "../fixtures.js";
 
+// Hooks render through testing-library, whose `act` and `waitFor` are Promise APIs; these tests
+// stay plain async functions.
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
 const wrapper = (ens: Ensforge.Client) =>

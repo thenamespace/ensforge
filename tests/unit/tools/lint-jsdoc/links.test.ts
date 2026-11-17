@@ -12,16 +12,12 @@ const fixture = (file: string) =>
   fileURLToPath(new URL(`../fixtures/links/${file}`, import.meta.url));
 const files = ["index.ts", "lookup.ts", "guide.ts"].map(fixture);
 
-const services = TypeScript.layer.pipe(
-  Layer.provideMerge(Tools.layer),
-  Layer.provideMerge(NodeServices.layer),
-);
-
-layer(services)("{@link} checks", (it) => {
+layer(
+  TypeScript.layer.pipe(Layer.provideMerge(Tools.layer), Layer.provideMerge(NodeServices.layer)),
+)("{@link} checks", (it) => {
   it.effect("lists every dotted path the entries export, through namespaces", () =>
     Effect.gen(function* () {
       const project = yield* (yield* TypeScript).open(files);
-
       const paths = exportedPaths(project, [fixture("index.ts")]);
 
       assert.includeMembers(

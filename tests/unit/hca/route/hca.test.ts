@@ -46,22 +46,22 @@ const prepare = (
   options: { deployed?: boolean; executor?: Executor } = {},
 ) => {
   const { context } = makeClient({ deployed: options.deployed ?? true });
-  const via = hca(options.executor === undefined ? {} : { executors: [options.executor] });
-  return Effect.promise(() =>
-    (via.prepare as NonNullable<typeof via.prepare>)(planOf(steps), context),
+  const { prepare: prepareRoute } = hca(
+    options.executor === undefined ? {} : { executors: [options.executor] },
   );
-};
-
-const defined = <value>(value: value | undefined): value => {
-  assert.isDefined(value);
-  return value as value;
+  assert.isDefined(prepareRoute);
+  // Routes are Promise interfaces the write runtime calls.
+  return Effect.promise(() => prepareRoute(planOf(steps), context));
 };
 
 /** The calls an `executeByOwner` call runs, decoded with the HCA ABI. */
 const executions = (executeByOwner: Plan.Call | undefined) => {
-  const outer = defined(executeByOwner);
-  assert.strictEqual(outer.to, hcaAddress);
-  const decoded = decodeFunctionData({ abi: standaloneSingleOwnerHcaV2Abi, data: outer.data });
+  assert.isDefined(executeByOwner);
+  assert.strictEqual(executeByOwner.to, hcaAddress);
+  const decoded = decodeFunctionData({
+    abi: standaloneSingleOwnerHcaV2Abi,
+    data: executeByOwner.data,
+  });
   assert.strictEqual(decoded.functionName, "executeByOwner");
   return (
     decoded.args as readonly [readonly { target: Address; value: bigint; callData: Hex }[]]
@@ -90,7 +90,8 @@ describe("hca route: setup step", () => {
           ["a", undefined],
         ],
       );
-      const deploy = defined(defined(plan.steps[0]).calls[0]);
+      const deploy = plan.steps[0]?.calls[0];
+      assert.isDefined(deploy);
       assert.strictEqual(deploy.to, contracts.standaloneFactory);
       assert.deepStrictEqual(
         decodeFunctionData({ abi: standaloneHcaFactoryV2Abi, data: deploy.data }).args,
@@ -147,15 +148,6 @@ describe("hca route: setup step", () => {
         }),
     value: 0n,
   });
-  const operator = {
-    to: v1.nameWrapper,
-    data: encodeFunctionData({
-      abi: Abis.v1.nameWrapper,
-      functionName: "setApprovalForAll",
-      args: [hcaAddress, true],
-    }),
-    value: 0n,
-  };
 
   it.effect.each([
     [
@@ -168,7 +160,17 @@ describe("hca route: setup step", () => {
     [
       "wrapped names, one operator approval",
       [nameWrapper(false, owner), nameWrapper(true, owner)],
-      [operator],
+      [
+        {
+          to: v1.nameWrapper,
+          data: encodeFunctionData({
+            abi: Abis.v1.nameWrapper,
+            functionName: "setApprovalForAll",
+            args: [hcaAddress, true],
+          }),
+          value: 0n,
+        },
+      ],
       true,
     ],
     ["wrapped names of someone else", [nameWrapper(true, other)], [], false],
@@ -220,12 +222,12 @@ describe("hca route: executions", () => {
           ["d+e", 1, 60n],
         ],
       );
-      assert.strictEqual(defined(plan.steps[0]).description, "a, b");
+      assert.strictEqual(plan.steps[0]?.description, "a, b");
       assert.deepStrictEqual(
-        executions(defined(plan.steps[0]).calls[0]).map((e) => e.value),
+        executions(plan.steps[0]?.calls[0]).map((e) => e.value),
         [1n, 2n, 3n],
       );
-      assert.strictEqual(defined(defined(plan.steps[1]).calls[0]).to, target);
+      assert.strictEqual(plan.steps[1]?.calls[0]?.to, target);
     }),
   );
 
@@ -267,8 +269,8 @@ describe("hca route: executions", () => {
   ] as const)("forwards value with %s", ([, executor, forwarded]) =>
     Effect.gen(function* () {
       const plan = yield* prepare([step("a", [call(1n), call(5n)])], executor ? { executor } : {});
-      const outer = defined(defined(plan.steps.at(-1)).calls[0]);
-      assert.strictEqual(outer.value, forwarded);
+      const outer = plan.steps.at(-1)?.calls[0];
+      assert.strictEqual(outer?.value, forwarded);
       assert.deepStrictEqual(
         executions(outer).map((e) => e.value),
         [1n, 5n],
@@ -294,12 +296,13 @@ describe("hca route: preconditions", () => {
   it.effect("needs a signer", () =>
     Effect.gen(function* () {
       const { context } = makeClient();
-      const via = hca();
-      const unsigned = { ...context, account: undefined };
-      yield* expectRejection(() => defined(via.prepare)(planOf([step("a", [call()])]), unsigned), {
-        _tag: "HcaError",
-        code: "HCA_NOT_VERIFIED",
-      });
+      const { prepare: prepareRoute } = hca();
+      assert.isDefined(prepareRoute);
+
+      yield* expectRejection(
+        () => prepareRoute(planOf([step("a", [call()])]), { ...context, account: undefined }),
+        { _tag: "HcaError", code: "HCA_NOT_VERIFIED" },
+      );
     }),
   );
 
@@ -319,13 +322,14 @@ describe("hca route: preconditions", () => {
           },
         ],
       });
+      const { prepare: prepareRoute } = hca();
+      assert.isDefined(prepareRoute);
+
       const error = yield* expectRejection(
-        () => defined(hca().prepare)(planOf([step("a", [call()])]), context),
-        {
-          _tag: "HcaError",
-          code: "HCA_NOT_VERIFIED",
-        },
+        () => prepareRoute(planOf([step("a", [call()])]), context),
+        { _tag: "HcaError", code: "HCA_NOT_VERIFIED" },
       );
+
       assert.deepStrictEqual((error as { details?: unknown }).details, [
         "owner-mismatch",
         "unknown-account",

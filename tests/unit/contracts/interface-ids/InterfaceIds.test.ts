@@ -21,23 +21,6 @@ const interfaceId = (abi: Abi, parents: readonly Abi[] = []): string => {
 };
 
 const v2 = Abis.v2.interfaces;
-// Parents with no ABI of their own in the package, from contracts-v2 v1.0.1.
-const unsafeTransferable = parseAbi([
-  "function unsafeTransfer(address to, uint256 tokenId, bytes data)",
-  "function unsafeBatchTransfer(address to, uint256[] tokenIds, bytes data)",
-]);
-const recordResolver = parseAbi([
-  "function resolve(bytes name, bytes data) view returns (bytes)",
-  "function multicall(bytes[] data) returns (bytes[])",
-  "function multicallWithNodeCheck(bytes32 nodehash, bytes[] data) returns (bytes[])",
-  "function setABI(bytes name, uint256 contentType, bytes data)",
-  "function setAddress(bytes name, uint256 coinType, bytes addressBytes)",
-  "function setContenthash(bytes name, bytes hash)",
-  "function setData(bytes name, string key, bytes value)",
-  "function setInterface(bytes name, bytes4 interfaceId, address implementer)",
-  "function setName(bytes name, string primaryName)",
-  "function setText(bytes name, string key, string value)",
-]);
 
 describe("InterfaceIds.registry", () => {
   it.each([
@@ -49,7 +32,16 @@ describe("InterfaceIds.registry", () => {
     [
       "permissionedRegistry",
       v2.permissionedRegistry,
-      [v2.standardRegistry, v2.enhancedAccessControl, v2.contractNamer, unsafeTransferable],
+      [
+        v2.standardRegistry,
+        v2.enhancedAccessControl,
+        v2.contractNamer,
+        // IUnsafeTransferable has no ABI of its own in the package (contracts-v2 v1.0.1).
+        parseAbi([
+          "function unsafeTransfer(address to, uint256 tokenId, bytes data)",
+          "function unsafeBatchTransfer(address to, uint256[] tokenIds, bytes data)",
+        ]),
+      ],
     ],
     ["wrapperRegistry", v2.wrapperRegistry, [v2.permissionedRegistry]],
   ] as const)("%s matches its ABI", (key, abi, parents) => {
@@ -59,6 +51,20 @@ describe("InterfaceIds.registry", () => {
 
 describe("InterfaceIds.resolver and initializers", () => {
   it("permissionedResolver matches its ABI", () => {
+    // IRecordResolver has no ABI of its own in the package (contracts-v2 v1.0.1).
+    const recordResolver = parseAbi([
+      "function resolve(bytes name, bytes data) view returns (bytes)",
+      "function multicall(bytes[] data) returns (bytes[])",
+      "function multicallWithNodeCheck(bytes32 nodehash, bytes[] data) returns (bytes[])",
+      "function setABI(bytes name, uint256 contentType, bytes data)",
+      "function setAddress(bytes name, uint256 coinType, bytes addressBytes)",
+      "function setContenthash(bytes name, bytes hash)",
+      "function setData(bytes name, string key, bytes value)",
+      "function setInterface(bytes name, bytes4 interfaceId, address implementer)",
+      "function setName(bytes name, string primaryName)",
+      "function setText(bytes name, string key, string value)",
+    ]);
+
     assert.strictEqual(
       interfaceId(v2.permissionedResolver, [recordResolver, v2.enhancedAccessControl]),
       InterfaceIds.resolver.permissionedResolver,
@@ -81,16 +87,13 @@ describe("InterfaceIds.resolver and initializers", () => {
   });
 });
 
-const abiOf = (profile: string) =>
-  (Abis.shared as Readonly<Record<string, Abi>>)[`${profile}Resolver`];
-
 describe("InterfaceIds.resolverProfiles", () => {
   const profiles = Object.entries(InterfaceIds.resolverProfiles);
 
   it.each(profiles.filter(([profile]) => profile !== "dnsRecord"))(
     "%s matches its ABI",
     (profile, id) => {
-      const abi = abiOf(profile);
+      const abi = (Abis.shared as Readonly<Record<string, Abi>>)[`${profile}Resolver`];
       assert.isDefined(abi);
       assert.strictEqual(interfaceId(abi as Abi), id);
     },

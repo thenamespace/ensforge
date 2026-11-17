@@ -12,11 +12,6 @@ import { hcaAddress, makeClient, owner } from "../fixtures";
 
 const signer = privateKeyToAccount(`0x${"22".repeat(32)}`);
 
-const defined = <value>(value: value | undefined): value => {
-  assert.isDefined(value);
-  return value as value;
-};
-
 const fakeSdk = (
   derived: Address,
   intent: Awaited<ReturnType<RhinestoneSdk["getIntentStatus"]>>,
@@ -67,36 +62,39 @@ const request: ExecutionRequest = {
   description: "test",
 };
 
+// Executors are Promise interfaces the write runtime calls, so these tests await them.
 describe("rhinestone executor", () => {
   it.effect("refuses an SDK that derives another HCA address", () =>
-    expectRejection(
-      () =>
-        defined(rhinestone({ sdk: fakeSdk(zeroAddress, { status: "PENDING" }).sdk }).send)(
-          request,
-          contextFor(),
-        ),
-      { _tag: "HcaError", code: "HCA_SDK_UNSUPPORTED" },
-    ),
+    Effect.gen(function* () {
+      const { send } = rhinestone({ sdk: fakeSdk(zeroAddress, { status: "PENDING" }).sdk });
+      assert.isDefined(send);
+
+      yield* expectRejection(() => send(request, contextFor()), {
+        _tag: "HcaError",
+        code: "HCA_SDK_UNSUPPORTED",
+      });
+    }),
   );
 
   it.effect("needs a session signer for session executions", () =>
-    expectRejection(
-      () =>
-        defined(rhinestone({ sdk: fakeSdk(hcaAddress, { status: "PENDING" }).sdk }).send)(
-          { ...request, session },
-          contextFor(),
-        ),
-      { _tag: "HcaError", code: "HCA_EXECUTOR_UNSUPPORTED" },
-    ),
+    Effect.gen(function* () {
+      const { send } = rhinestone({ sdk: fakeSdk(hcaAddress, { status: "PENDING" }).sdk });
+      assert.isDefined(send);
+
+      yield* expectRejection(() => send({ ...request, session }, contextFor()), {
+        _tag: "HcaError",
+        code: "HCA_EXECUTOR_UNSUPPORTED",
+      });
+    }),
   );
 
   it.effect("enables the session with the owner's prefixed signature and its salt", () =>
     Effect.gen(function* () {
       const { sdk, prepared } = fakeSdk(hcaAddress, { status: "PENDING" });
-      const executor = rhinestone({ sdk, sessionSigner: signer, sponsored: false });
-      const id = yield* Effect.promise(() =>
-        defined(executor.send)({ ...request, session }, contextFor()),
-      );
+      const { send } = rhinestone({ sdk, sessionSigner: signer, sponsored: false });
+      assert.isDefined(send);
+
+      const id = yield* Effect.promise(() => send({ ...request, session }, contextFor()));
 
       assert.strictEqual(id, "42");
       const [transaction] = prepared as unknown as readonly [
@@ -129,9 +127,10 @@ describe("rhinestone executor", () => {
     ["an intent in flight", { status: "PRECONFIRMED" }, { status: "pending" }],
   ] as const)("reports %s", ([, intent, expected]) =>
     Effect.gen(function* () {
-      const executor = rhinestone({ sdk: fakeSdk(hcaAddress, intent).sdk });
-      const status = yield* Effect.promise(() => defined(executor.status)("42", contextFor()));
-      assert.deepStrictEqual(status, expected);
+      const { status } = rhinestone({ sdk: fakeSdk(hcaAddress, intent).sdk });
+      assert.isDefined(status);
+
+      assert.deepStrictEqual(yield* Effect.promise(() => status("42", contextFor())), expected);
     }),
   );
 });
