@@ -266,7 +266,8 @@
       "tests/integration/test/reads/name.test.ts > v1.unwrapped",
       "tests/integration/test/reads/registration.test.ts > isAvailable agrees with name.get for every .eth second-level name",
       "tests/integration/test/reads/registration.test.ts > prices renewals through the contract that renews each name",
-      "tests/integration/test/reads/resolver.test.ts > tells which resolvers resolution still reaches"
+      "tests/integration/test/reads/resolver.test.ts > tells which resolvers resolution still reaches",
+      "tests/integration/test/writes/access-matrix.test.ts > record.set as not premigrated"
     ]
   },
   "O20": {
@@ -363,11 +364,15 @@
     "status": "pending"
   },
   "W11": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/writes/access-matrix.test.ts > approval.setToken as token approval, CANNOT_APPROVE"
+    ]
   },
   "W12": {
     "tests": [
-      "tests/integration/test/reads/access.test.ts > reads ENSv1 operators, resolver delegates and token approvals"
+      "tests/integration/test/reads/access.test.ts > reads ENSv1 operators, resolver delegates and token approvals",
+      "tests/integration/test/writes/access-matrix.test.ts > record.set as token-approved",
+      "tests/integration/test/writes/access-matrix.test.ts > approval.setToken as token approval by stranger"
     ]
   },
   "W13": {
@@ -507,7 +512,8 @@
   },
   "R12": {
     "tests": [
-      "tests/integration/test/reads/resolver.test.ts > describes each generation and kind of resolver"
+      "tests/integration/test/reads/resolver.test.ts > describes each generation and kind of resolver",
+      "tests/integration/test/writes/access-matrix.test.ts > record.set as frozen 2019 resolver"
     ]
   },
   "R13": {
@@ -849,7 +855,8 @@
   },
   "P08": {
     "tests": [
-      "tests/integration/test/reads/primary.test.ts > returns null for names that do not verify, unless verification is off"
+      "tests/integration/test/reads/primary.test.ts > returns null for names that do not verify, unless verification is off",
+      "tests/integration/test/writes/access-matrix.test.ts > primaryName.set as someone else's name as primary"
     ]
   },
   "P09": {
@@ -893,7 +900,9 @@
   },
   "P22": {
     "tests": [
-      "tests/integration/test/reads/primary.test.ts > reads verified primary names from every reverse namespace and registrar generation"
+      "tests/integration/test/reads/primary.test.ts > reads verified primary names from every reverse namespace and registrar generation",
+      "tests/integration/test/writes/access-matrix.test.ts > primaryName.set as contract's owner names it",
+      "tests/integration/test/writes/access-matrix.test.ts > primaryName.set as stranger names a contract"
     ]
   },
   "P23": {
@@ -1205,7 +1214,9 @@
   },
   "A02": {
     "tests": [
-      "tests/integration/test/reads/access.test.ts > reads ENSv1 operators, resolver delegates and token approvals"
+      "tests/integration/test/reads/access.test.ts > reads ENSv1 operators, resolver delegates and token approvals",
+      "tests/integration/test/writes/access-matrix.test.ts > record.set as resolver delegate",
+      "tests/integration/test/writes/access-matrix.test.ts > approval.setDelegate as delegate by stranger"
     ]
   },
   "A03": {
@@ -1334,7 +1345,8 @@
   "M:A3": {
     "tests": [
       "tests/integration/test/reads/name.test.ts > registrant, manager and expiry of ENSv1 names",
-      "tests/integration/test/reads/name.test.ts > v1.unwrapped.manager"
+      "tests/integration/test/reads/name.test.ts > v1.unwrapped.manager",
+      "tests/integration/test/writes/access-matrix.test.ts > record.set as registrant, not manager"
     ]
   },
   "M:A4": {
@@ -1349,7 +1361,8 @@
   "M:A7": {
     "tests": [
       "tests/integration/test/reads/name.test.ts > wrapped names report the wrapper's token and expiry",
-      "tests/integration/test/reads/name.test.ts > v1.wrapped"
+      "tests/integration/test/reads/name.test.ts > v1.wrapped",
+      "tests/integration/test/writes/access-matrix.test.ts > record.set as wrapped owner"
     ]
   },
   "M:A8": {
@@ -1424,7 +1437,9 @@
   "M:A24": {
     "tests": [
       "tests/integration/test/reads/access.test.ts > reads ENSv2 roles held by accounts other than the owner",
-      "tests/integration/test/reads/name.test.ts > v2.roles"
+      "tests/integration/test/reads/name.test.ts > v2.roles",
+      "tests/integration/test/writes/access-matrix.test.ts > role.grant as role grant by stranger",
+      "tests/integration/test/writes/access-matrix.test.ts > name.transfer as resolver role, transfer"
     ]
   },
   "M:A25": {
@@ -1443,7 +1458,8 @@
   },
   "M:B2": {
     "tests": [
-      "tests/integration/test/reads/resolver.test.ts > describes each generation and kind of resolver"
+      "tests/integration/test/reads/resolver.test.ts > describes each generation and kind of resolver",
+      "tests/integration/test/writes/access-matrix.test.ts > record.set as frozen 2019 resolver"
     ]
   },
   "M:B3": {
@@ -1457,11 +1473,17 @@
   "M:B5": {
     "tests": [
       "tests/integration/test/reads/records.test.ts > reads a PermissionedResolver, where a zero address is a record",
-      "tests/integration/test/reads/resolver.test.ts > describes ENSv2 resolvers and their record links"
+      "tests/integration/test/reads/resolver.test.ts > describes ENSv2 resolvers and their record links",
+      "tests/integration/test/writes/access-matrix.test.ts > record.set as ENSv2 owner",
+      "tests/integration/test/writes/access-matrix.test.ts > record.set as ENSv2 stranger"
     ]
   },
   "M:B6": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/writes/access-matrix.test.ts > record.set as url role, url",
+      "tests/integration/test/writes/access-matrix.test.ts > record.set as url role, description",
+      "tests/integration/test/writes/access-matrix.test.ts > record.set as url role, address"
+    ]
   },
   "M:B7": {
     "tests": [
@@ -1562,29 +1584,38 @@
     ]
   },
   "M:D1": {
-    "status": "pending"
+    "tests": ["tests/integration/test/writes/access-matrix.test.ts > record.set as ENSv1 owner"]
   },
   "M:D2": {
-    "status": "pending"
+    "tests": ["tests/integration/test/writes/access-matrix.test.ts > record.set as manager"]
   },
   "M:D3": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/writes/access-matrix.test.ts > record.set as registrant, not manager"
+    ]
   },
   "M:D4": {
     "tests": [
-      "tests/integration/test/reads/access.test.ts > reads ENSv1 operators, resolver delegates and token approvals"
+      "tests/integration/test/reads/access.test.ts > reads ENSv1 operators, resolver delegates and token approvals",
+      "tests/integration/test/writes/access-matrix.test.ts > record.set as registry operator"
     ]
   },
   "M:D5": {
-    "status": "pending"
+    "tests": ["tests/integration/test/writes/access-matrix.test.ts > record.set as token-approved"]
   },
   "M:D6": {
     "tests": [
-      "tests/integration/test/reads/access.test.ts > reads ENSv1 operators, resolver delegates and token approvals"
+      "tests/integration/test/reads/access.test.ts > reads ENSv1 operators, resolver delegates and token approvals",
+      "tests/integration/test/writes/access-matrix.test.ts > record.set as resolver delegate"
     ]
   },
   "M:D7": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/writes/access-matrix.test.ts > record.set as url role, url",
+      "tests/integration/test/writes/access-matrix.test.ts > record.set as url role, description",
+      "tests/integration/test/writes/access-matrix.test.ts > name.transfer as resolver role, transfer",
+      "tests/integration/test/writes/access-matrix.test.ts > permission.setRecordAccess as record access by stranger"
+    ]
   },
   "M:D8": {
     "status": "pending"
@@ -1594,11 +1625,12 @@
   },
   "M:D10": {
     "tests": [
-      "tests/integration/test/reads/primary.test.ts > reads verified primary names from every reverse namespace and registrar generation"
+      "tests/integration/test/reads/primary.test.ts > reads verified primary names from every reverse namespace and registrar generation",
+      "tests/integration/test/writes/access-matrix.test.ts > primaryName.set as contract's owner names it"
     ]
   },
   "M:D11": {
-    "status": "pending"
+    "tests": ["tests/integration/test/writes/access-matrix.test.ts > record.set as stranger"]
   },
   "M:D12": {
     "status": "pending"
