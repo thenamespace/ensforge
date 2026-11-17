@@ -87,6 +87,18 @@ const integration = {
   },
 };
 
+// Random ENS operation sequences against a model (`pnpm test:fuzz`; manual and release CI).
+const fuzz = {
+  extends: true as const,
+  test: {
+    name: "fuzz",
+    root: "tests/fuzz",
+    include: ["test/**/*.test.ts"],
+    testTimeout: 3_600_000,
+    hookTimeout: 300_000,
+  },
+};
+
 const types = (name: (typeof packages)[number]) => ({
   extends: true as const,
   test: {
@@ -119,6 +131,7 @@ export default defineConfig({
       fixturesUnit,
       fixturesChain,
       integration,
+      fuzz,
     ],
     passWithNoTests: true,
   },

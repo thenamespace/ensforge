@@ -4,6 +4,10 @@
   "private": true,
   "description": "ensforge actions against the seeded devnet fixtures (not published)",
   "type": "module",
+  "exports": {
+    "./support/*": "./test/support/*.ts",
+    "./writes/support": "./test/writes/support.ts"
+  },
   "scripts": {
     "lint": "oxlint -c ../../.config/oxlint.config.ts --deny-warnings .",
     "typecheck": "tsc --noEmit -p test"

@@ -1,0 +1,25 @@
+{
+  "name": "@ensforge/test-fuzz",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Random ENS operation sequences against a model, invariants and differential checks (not published)",
+  "type": "module",
+  "scripts": {
+    "lint": "oxlint -c ../../.config/oxlint.config.ts --deny-warnings .",
+    "typecheck": "tsc --noEmit -p test"
+  },
+  "devDependencies": {
+    "@effect/platform-node": "catalog:",
+    "@effect/vitest": "catalog:",
+    "@ensdomains/ensjs": "catalog:",
+    "@ensforge/contracts": "workspace:*",
+    "@ensforge/sdk": "workspace:*",
+    "@ensforge/test-devnet": "workspace:*",
+    "@ensforge/test-fixtures": "workspace:*",
+    "@ensforge/test-harness": "workspace:*",
+    "@ensforge/test-integration": "workspace:*",
+    "@types/node": "catalog:",
+    "effect": "catalog:",
+    "viem": "catalog:"
+  }
+}
