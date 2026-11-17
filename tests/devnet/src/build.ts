@@ -69,11 +69,10 @@ const read = <A>(action: () => Promise<A>) =>
     catch: (cause) => new DeployError({ step: "dump", message: String(cause) }),
   });
 
-// A seed's prelaunch steps go before the launch, or before the mocks when there is none.
+// A seed's prelaunch steps go right before the ENSv2 launch, or last when there is none.
 const withSeed = (steps: readonly Step[], seed: ReturnType<Seed["create"]>): readonly Step[] => {
-  const at = steps.findIndex((step) => step.id.startsWith("cutover"));
-  const insert = at === -1 ? steps.findIndex((step) => step.id.startsWith("mocks")) : at;
-  const split = insert === -1 ? steps.length : insert;
+  const launch = steps.findIndex((step) => step.id.startsWith("cutover"));
+  const split = launch === -1 ? steps.length : launch;
   return [...steps.slice(0, split), ...seed.prelaunch, ...steps.slice(split), ...seed.postlaunch];
 };
 

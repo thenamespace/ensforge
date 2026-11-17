@@ -20,10 +20,10 @@ export type ProfileDefinition = {
   readonly deployments: (ledger: Ledger) => Deployments.Profile;
 };
 
+// Mocks need only ENSv1, so they exist before any seed's prelaunch fixtures bind names to them.
 const v1Only = [...canonicalSteps, ...v1Steps, ...mockSteps];
-const ensV2 = [...canonicalSteps, ...v1Steps, ...v2Steps, ...hcaSteps, ...v2ResolutionSteps];
-const greenfield = [...ensV2, ...mockSteps];
-const mainnetShaped = [...ensV2, ...cutoverSteps, ...mockSteps];
+const greenfield = [...v1Only, ...v2Steps, ...hcaSteps, ...v2ResolutionSteps];
+const mainnetShaped = [...greenfield, ...cutoverSteps];
 
 // The devnet deploys the same builds, so it has the same capabilities.
 const mainnetCapabilities = Deployments.mainnet.v2.capabilities;
