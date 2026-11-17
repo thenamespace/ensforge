@@ -154,12 +154,13 @@ export const inspectMigration = Effect.fnUntraced(function* (
   if (Fuse.has(fuses, "cannotTransfer")) blockers.push("cannot-transfer");
   if (Fuse.has(fuses, "cannotApprove") && approved !== null) blockers.push("frozen-approval");
 
-  // `.eth` names claim their ENSv2 reservation; locked children need the parent's
-  // WrapperRegistry, which reserves them on creation.
+  // `.eth` names claim their ENSv2 reservation. A locked child needs only its parent's
+  // WrapperRegistry: it reserves nothing, but takes the child while the NameWrapper holds it.
   const reservation =
     data.v2 !== undefined && data.v2.state.status === RegistryStatus.reserved ? data.v2 : undefined;
-  if (route === "locked-child" && data.v2 === undefined) blockers.push("parent-not-migrated");
-  else if (route !== null && reservation === undefined) blockers.push("not-reserved");
+  if (route === "locked-child") {
+    if (data.v2 === undefined) blockers.push("parent-not-migrated");
+  } else if (route !== null && reservation === undefined) blockers.push("not-reserved");
 
   const publicResolver =
     resolver !== null &&
