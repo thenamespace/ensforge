@@ -1,0 +1,182 @@
+import { assert, layer } from "@effect/vitest";
+import { Effect } from "effect";
+
+import { Actions } from "@ensforge/sdk/effect";
+import { bigname } from "@ensforge/sdk/indexer";
+import { Devnet, type DevnetInstance } from "@ensforge/test-devnet";
+import { expectFailure } from "@ensforge/test-harness";
+import { ensforge, passWaits } from "@ensforge/test-integration/support/chain";
+import type { Address } from "viem";
+
+import { Services, type ServicesApi } from "../stack/stack.ts";
+
+// What people do with a name, end to end: each journey writes through ensforge, then checks the
+// chain and what bigname indexed. Nothing is reverted; every journey uses its own names.
+
+const year = 31_536_000n;
+
+const client = (devnet: DevnetInstance, services: ServicesApi, account?: Address) =>
+  ensforge(devnet, {
+    indexer: bigname({ url: services.indexerUrl }),
+    ...(account === undefined ? {} : { account }),
+  });
+
+layer(Services.layer({ profile: "mainnet-shaped" }), { excludeTestServices: true })(
+  "journeys: names",
+  (it) => {
+    it.effect("a new user registers a profile and is found by address", () =>
+      Effect.gen(function* () {
+        const services = yield* Services;
+        const devnet = yield* Devnet;
+        const { carol } = devnet.accounts;
+        const ens = client(devnet, services, carol);
+        const name = "journey-new.eth";
+
+        yield* Actions.registration.registerSync(ens, {
+          names: name,
+          duration: year,
+          records: {
+            texts: { url: "https://carol.example", description: "Carol" },
+            addresses: { eth: carol },
+          },
+          primaryName: true,
+          onStep: passWaits(devnet),
+        });
+
+        // Resolution on-chain.
+        assert.strictEqual(yield* Actions.primaryName.get(ens, { address: carol }), name);
+        assert.deepStrictEqual(
+          (yield* Actions.record.get(ens, { name, texts: ["url"], addresses: ["eth"] })).texts,
+          { url: "https://carol.example" },
+        );
+
+        // And what an app's address lookup shows.
+        yield* services.waitForIndexed();
+        const [found] = (yield* Actions.indexer.lookup(ens, { inputs: [carol], profile: "detail" }))
+          .results;
+        assert.strictEqual(found?.name?.name, name);
+        assert.strictEqual(found?.name?.records?.texts["description"], "Carol");
+      }),
+    );
+
+    it.effect("an owner lets a profile manager edit chosen records, then takes it back", () =>
+      Effect.gen(function* () {
+        const services = yield* Services;
+        const devnet = yield* Devnet;
+        const { carol, bob } = devnet.accounts;
+        const owner = client(devnet, services, carol);
+        const manager = client(devnet, services, bob);
+        const name = "journey-managed.eth";
+
+        yield* Actions.registration.registerSync(owner, {
+          names: name,
+          duration: year,
+          onStep: passWaits(devnet),
+        });
+        yield* Actions.permission.setRecordAccessSync(owner, {
+          name,
+          grantee: bob,
+          records: { texts: ["url", "avatar"] },
+        });
+
+        yield* Actions.record.setSync(manager, { name, texts: { url: "https://managed.example" } });
+        assert.isFalse(
+          (yield* Actions.permission.check(manager, {
+            name,
+            operation: { setRecord: "text", key: "description" },
+            account: bob,
+          })).allowed,
+        );
+        yield* services.waitForIndexed();
+        assert.strictEqual(
+          (yield* Actions.indexer.getRecords(owner, { name }))?.texts["url"],
+          "https://managed.example",
+        );
+
+        yield* Actions.permission.setRecordAccessSync(owner, {
+          name,
+          grantee: bob,
+          records: { texts: ["url", "avatar"] },
+          revoke: true,
+        });
+        yield* expectFailure(
+          Actions.record.set(manager, { name, texts: { url: "https://revoked.example" } }),
+          { _tag: "UnauthorizedError", code: "MISSING_ROLES" },
+        );
+      }),
+    );
+
+    it.effect("a team shares a name's subnames through registry roles", () =>
+      Effect.gen(function* () {
+        const services = yield* Services;
+        const devnet = yield* Devnet;
+        const { carol, bob } = devnet.accounts;
+        const owner = client(devnet, services, carol);
+        const teammate = client(devnet, services, bob);
+        const parent = "journey-team.eth";
+
+        yield* Actions.registration.registerSync(owner, {
+          names: parent,
+          duration: year,
+          onStep: passWaits(devnet),
+        });
+        yield* Actions.subname.createSync(owner, { name: `docs.${parent}` });
+        const registry = yield* Actions.registry.get(owner, { name: parent });
+        if (registry === null) return assert.fail(`${parent} has no subname registry`);
+
+        // Before the grant the teammate is refused; with the registrar role it registers children.
+        yield* expectFailure(Actions.subname.create(teammate, { name: `api.${parent}` }), {
+          _tag: "UnauthorizedError",
+        });
+        yield* Actions.role.grantSync(owner, {
+          grantee: bob,
+          roles: ["registrar"],
+          target: "registry",
+          contract: registry.address,
+          root: true,
+        });
+        yield* Actions.subname.createSync(teammate, { name: `api.${parent}`, owner: bob });
+
+        yield* services.waitForIndexed();
+        const page = yield* Actions.indexer.getSubnames(owner, { name: parent });
+        assert.sameDeepMembers(
+          page.items.map((item) => [item.name, item.owner]),
+          [
+            [`docs.${parent}`, carol],
+            [`api.${parent}`, bob],
+          ],
+        );
+      }),
+    );
+
+    it.effect("a name is renewed and handed on, and its history tells the story", () =>
+      Effect.gen(function* () {
+        const services = yield* Services;
+        const devnet = yield* Devnet;
+        const { carol, bob } = devnet.accounts;
+        const ens = client(devnet, services, carol);
+        const name = "journey-lifecycle.eth";
+
+        const registered = yield* Actions.registration.registerSync(ens, {
+          names: name,
+          duration: year,
+          onStep: passWaits(devnet),
+        });
+        yield* Actions.registration.renewSync(ens, { names: name, duration: year });
+        yield* Actions.name.transferSync(ens, { name, to: bob });
+
+        const state = yield* Actions.name.get(ens, { name });
+        assert.strictEqual(state.owner, bob);
+        assert.strictEqual(state.expiry, (registered.names[0]?.expiry ?? 0n) + year);
+
+        yield* services.waitForIndexed();
+        const history = yield* Actions.indexer.getHistory(ens, { name, order: "asc" });
+        const types = history.items.map((event) => event.type);
+        assert.includeMembers(types, ["registration", "renewal", "transfer"]);
+        assert.isBelow(types.indexOf("registration"), types.indexOf("renewal"));
+        assert.isBelow(types.indexOf("renewal"), types.lastIndexOf("transfer"));
+        assert.strictEqual((yield* Actions.indexer.getName(ens, { name }))?.owner, bob);
+      }),
+    );
+  },
+);
