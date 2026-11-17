@@ -25,6 +25,8 @@ export type ReadContractParameters<
   readonly abi: abi;
   readonly functionName: functionName;
   readonly args?: ContractFunctionArgs<abi, "pure" | "view", functionName> | undefined;
+  /** Gas limit for the call; a bounded read runs on its own, outside multicall. */
+  readonly gas?: bigint | undefined;
 } & Read.BlockOptions;
 
 /**
@@ -43,7 +45,11 @@ export const readContract = <
   const args = (parameters.args ?? []) as readonly unknown[];
 
   // Chains without Multicall3 (e.g. a bare devnet) read one call at a time.
-  if (multicall === false || client.publicClient.chain?.contracts?.multicall3 === undefined) {
+  if (
+    multicall === false ||
+    parameters.gas !== undefined ||
+    client.publicClient.chain?.contracts?.multicall3 === undefined
+  ) {
     return fromPromise(
       () =>
         viemReadContract(client.publicClient, {
@@ -51,6 +57,7 @@ export const readContract = <
           abi: parameters.abi as Abi,
           functionName: parameters.functionName,
           args,
+          ...(parameters.gas === undefined ? {} : { gas: parameters.gas }),
           ...(parameters.blockNumber === undefined
             ? { blockTag: parameters.blockTag ?? client.config.blockTag }
             : { blockNumber: parameters.blockNumber }),

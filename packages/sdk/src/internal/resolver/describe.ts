@@ -74,6 +74,9 @@ const knownKind = (client: Client, resolver: Address): ResolverKind | undefined 
 };
 
 // A resolver that is not a contract (e.g. an EOA), or not ERC-165, answers nothing.
+/** Gas EIP-165 allows `supportsInterface`. */
+const erc165Gas = 30_000n;
+
 const unanswered = <value>(read: Effect.Effect<value | undefined, AnyError>) =>
   read.pipe(
     Effect.catchIf(
@@ -81,6 +84,13 @@ const unanswered = <value>(read: Effect.Effect<value | undefined, AnyError>) =>
       () => Effect.undefined,
     ),
   );
+
+// `gas` bounds each read of the resolver; a bounded read that fails is no answer.
+const fromResolver = <value>(
+  read: (gas: bigint | undefined) => Effect.Effect<value | undefined, AnyError>,
+  gas: bigint | undefined,
+) =>
+  gas === undefined ? unanswered(read(gas)) : read(gas).pipe(Effect.catch(() => Effect.undefined));
 
 /**
  * Describes the resolver at `resolver` for `node` in one batched round of reads: ERC-165 profile
@@ -105,48 +115,62 @@ export const describeResolver = Effect.fnUntraced(function* (
     block.blockNumber === undefined
       ? { blockTag: block.blockTag }
       : { blockNumber: block.blockNumber };
-  const supports = (interfaceId: Hex) =>
-    unanswered(
-      Rpc.readContractOrUndefined(client, {
-        address: resolver,
-        abi: Abis.shared.erc165,
-        functionName: "supportsInterface",
-        args: [interfaceId],
-        ...at,
-      }),
-    ).pipe(Effect.map((supported) => supported === true));
   const publicResolverSet = client.deployment.v2?.migration.publicResolverSet;
 
-  const { profiles, permissioned, listed, version } = yield* Effect.all(
-    {
-      profiles: Effect.all(
-        Object.fromEntries(
-          Object.entries(profileIds).map(([profile, id]) => [profile, supports(id)]),
-        ) as { readonly [profile in keyof ResolverProfiles]: Effect.Effect<boolean, AnyError> },
-        { concurrency: "unbounded" },
-      ),
-      permissioned: supports(InterfaceIds.resolver.permissionedResolver),
-      listed:
-        publicResolverSet === undefined
-          ? Effect.succeed(false)
-          : Rpc.readContractOrUndefined(client, {
-              address: publicResolverSet,
-              abi: Abis.v2.permissionedAddressSet,
-              functionName: "includes",
-              args: [resolver],
-              ...at,
-            }).pipe(Effect.map((included) => included === true)),
-      version: unanswered(
+  const supports = (interfaceId: Hex, gas: bigint | undefined) =>
+    fromResolver(
+      (bound) =>
         Rpc.readContractOrUndefined(client, {
           address: resolver,
-          abi: Abis.shared.versionableResolver,
-          functionName: "recordVersions",
-          args: [node],
+          abi: Abis.shared.erc165,
+          functionName: "supportsInterface",
+          args: [interfaceId],
+          gas: bound,
           ...at,
         }),
-      ),
-    },
-    { concurrency: "unbounded" },
+      gas,
+    ).pipe(Effect.map((supported) => supported === true));
+
+  const round = (gas: bigint | undefined) =>
+    Effect.all(
+      {
+        profiles: Effect.all(
+          Object.fromEntries(
+            Object.entries(profileIds).map(([profile, id]) => [profile, supports(id, gas)]),
+          ) as { readonly [profile in keyof ResolverProfiles]: Effect.Effect<boolean, AnyError> },
+          { concurrency: "unbounded" },
+        ),
+        permissioned: supports(InterfaceIds.resolver.permissionedResolver, gas),
+        listed:
+          publicResolverSet === undefined
+            ? Effect.succeed(false)
+            : Rpc.readContractOrUndefined(client, {
+                address: publicResolverSet,
+                abi: Abis.v2.permissionedAddressSet,
+                functionName: "includes",
+                args: [resolver],
+                ...at,
+              }).pipe(Effect.map((included) => included === true)),
+        version: fromResolver(
+          (bound) =>
+            Rpc.readContractOrUndefined(client, {
+              address: resolver,
+              abi: Abis.shared.versionableResolver,
+              functionName: "recordVersions",
+              args: [node],
+              gas: bound,
+              ...at,
+            }),
+          gas,
+        ),
+      },
+      { concurrency: "unbounded" },
+    );
+
+  // One batched round has no per-call gas bound, so a resolver that burns gas or returns huge
+  // data fails it at the RPC. Read one by one within EIP-165's 30,000 gas, it just does not answer.
+  const { profiles, permissioned, listed, version } = yield* round(undefined).pipe(
+    Effect.catchTag("NetworkError", () => round(erc165Gas)),
   );
 
   const kind: ResolverKind =
