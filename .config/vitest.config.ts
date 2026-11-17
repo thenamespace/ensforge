@@ -59,6 +59,22 @@ const devnet = {
   },
 };
 
+// Fixtures: the catalog and ledger check runs in the fast lane; seeding runs on the chain lane.
+const fixturesUnit = {
+  extends: true as const,
+  test: { name: "fixtures:unit", root: "tests/fixtures", include: ["test/unit/**/*.test.ts"] },
+};
+const fixturesChain = {
+  extends: true as const,
+  test: {
+    name: "fixtures",
+    root: "tests/fixtures",
+    include: ["test/chain/**/*.test.ts"],
+    testTimeout: 60_000,
+    hookTimeout: 300_000,
+  },
+};
+
 const types = (name: (typeof packages)[number]) => ({
   extends: true as const,
   test: {
@@ -88,6 +104,8 @@ export default defineConfig({
       wagmi2,
       tools,
       devnet,
+      fixturesUnit,
+      fixturesChain,
     ],
     passWithNoTests: true,
   },

@@ -1,0 +1,3464 @@
+[
+  {
+    "id": "L01",
+    "axis": "L",
+    "title": "Uppercase input `Nick.ETH`",
+    "component": "ENSIP-15",
+    "expected": "Normalizes to `nick.eth`; namehash taken after normalization (`ensip/15.md` §Algorithm)",
+    "domains": ["all", "util"]
+  },
+  {
+    "id": "L02",
+    "axis": "L",
+    "title": "Leading/trailing whitespace `\" nick.eth \"`",
+    "component": "ENSIP-15",
+    "expected": "Trimmed before normalizing; inner whitespace is an error",
+    "domains": ["util"]
+  },
+  {
+    "id": "L03",
+    "axis": "L",
+    "title": "Inner NBSP, ZWSP, ZWJ outside emoji pasted from a website",
+    "component": "ENSIP-15",
+    "expected": "Error (ZWJ is valid only inside an emoji sequence; ZWNJ is always disallowed). \"Paste cleaners\" that strip them change the name silently",
+    "domains": ["util", "name"],
+    "bug": true
+  },
+  {
+    "id": "L04",
+    "axis": "L",
+    "title": "Fullwidth `ｎｉｃｋ.eth`",
+    "component": "ENSIP-15 / IDNA",
+    "expected": "Maps to ASCII (unverified example)",
+    "domains": ["util"]
+  },
+  {
+    "id": "L05",
+    "axis": "L",
+    "title": "Alternative dots `nick。eth`, `．`, `｡`",
+    "component": "ENSIP-15",
+    "expected": "Disallowed, not mapped to `.`. UTS-46 libraries map them to `.`",
+    "domains": ["util"],
+    "bug": true
+  },
+  {
+    "id": "L06",
+    "axis": "L",
+    "title": "Mapped chars `a™️` → `atm`, `Ⅵ` → `vi`, `🈁` → `ココ`",
+    "component": "ENSIP-15",
+    "expected": "Output differs from input; `resolveWithNormalization` raises `NormalizationChangedName`",
+    "domains": ["util", "resolver"]
+  },
+  {
+    "id": "L07",
+    "axis": "L",
+    "title": "ASCII apostrophe `'` → `’` (U+2019)",
+    "component": "ENSIP-15",
+    "expected": "Mapped, then fenced. `a's` is OK; `'85` and `joneses'` fail",
+    "domains": ["util"]
+  },
+  {
+    "id": "L08",
+    "axis": "L",
+    "title": "Fenced chars leading, trailing or adjacent (`・a・`, `a・・a`, `6’0’’`)",
+    "component": "ENSIP-15",
+    "expected": "Error",
+    "domains": ["util"]
+  },
+  {
+    "id": "L09",
+    "axis": "L",
+    "title": "Underscore inside a label (`abc_def`, `abc__`, `_abc_`)",
+    "component": "ENSIP-15",
+    "expected": "Only a leading run is allowed (`/^_*[^_]*$/`); `___` OK",
+    "domains": ["util"]
+  },
+  {
+    "id": "L10",
+    "axis": "L",
+    "title": "`--` at positions 3–4 (`ab--c`, `xn--abc`, `----`)",
+    "component": "ENSIP-15",
+    "expected": "Error; punycode is never decoded",
+    "domains": ["util", "reg"]
+  },
+  {
+    "id": "L11",
+    "axis": "L",
+    "title": "Hyphen look-alikes `‐`, `−`, `⸺`",
+    "component": "ENSIP-15",
+    "expected": "Map to `-`; `⸺` → `--`, which can then fail L10",
+    "domains": ["util"]
+  },
+  {
+    "id": "L12",
+    "axis": "L",
+    "title": "`$` and `_$A`",
+    "component": "ENSIP-15",
+    "expected": "Valid; `_$A` → `_$a`",
+    "domains": ["util"]
+  },
+  {
+    "id": "L13",
+    "axis": "L",
+    "title": "Emoji with FE0F missing, present, or doubled (`2764 FE0F FE0F`)",
+    "component": "ENSIP-15",
+    "expected": "Missing or present → same name, FE0F stripped. Doubled → error. URL and display keep FE0F; storage must not",
+    "domains": ["util", "name"],
+    "bug": true
+  },
+  {
+    "id": "L14",
+    "axis": "L",
+    "title": "ZWJ sequence `👨🏻‍💻`; substring emoji `❤️` inside `❤️‍🔥`",
+    "component": "ENSIP-15",
+    "expected": "Longest match wins",
+    "domains": ["util"]
+  },
+  {
+    "id": "L15",
+    "axis": "L",
+    "title": "Bare ZWJ between emoji `💩‍💩`",
+    "component": "ENSIP-15",
+    "expected": "Error",
+    "domains": ["util"]
+  },
+  {
+    "id": "L16",
+    "axis": "L",
+    "title": "Lone skin tone or lone regional indicator",
+    "component": "ENSIP-15",
+    "expected": "Disallowed",
+    "domains": ["util"]
+  },
+  {
+    "id": "L17",
+    "axis": "L",
+    "title": "Keycap `#️⃣`, tag-sequence flag `🏴󠁧󠁢󠁥󠁮󠁧󠁿`",
+    "component": "ENSIP-15",
+    "expected": "Valid emoji",
+    "domains": ["util", "reg"]
+  },
+  {
+    "id": "L18",
+    "axis": "L",
+    "title": "Label starting with a combining mark, including CM right after an emoji",
+    "component": "ENSIP-15",
+    "expected": "Error",
+    "domains": ["util"]
+  },
+  {
+    "id": "L19",
+    "axis": "L",
+    "title": "Duplicate or >4 NSMs (`x̀̀`, 6 Arabic NSMs)",
+    "component": "ENSIP-15",
+    "expected": "Error",
+    "domains": ["util"]
+  },
+  {
+    "id": "L20",
+    "axis": "L",
+    "title": "NFC composition `[61 300]` → `à`; `E︎̃` → `ẽ`",
+    "component": "ENSIP-15",
+    "expected": "NFC applied per text token",
+    "domains": ["util"]
+  },
+  {
+    "id": "L21",
+    "axis": "L",
+    "title": "Mixed script in one label `bahrainمصر` vs across labels `bahrain.مصر`",
+    "component": "ENSIP-15",
+    "expected": "One label → error. Across labels → OK",
+    "domains": ["util"]
+  },
+  {
+    "id": "L22",
+    "axis": "L",
+    "title": "Whole-script confusable `0х` (Cyrillic)",
+    "component": "ENSIP-15",
+    "expected": "Error. `тӕ` is NOT confusable",
+    "domains": ["util"]
+  },
+  {
+    "id": "L23",
+    "axis": "L",
+    "title": "Multi-char confusables (`🇺🇸`/`🇺🇲`, `🚴`/`🚴🏻`)",
+    "component": "ENSIP-15",
+    "expected": "Both valid and different. Show a warning but do not reject (§Security)",
+    "domains": ["util", "primary"]
+  },
+  {
+    "id": "L24",
+    "axis": "L",
+    "title": "Restricted script `𓆏🐸`",
+    "component": "ENSIP-15",
+    "expected": "Valid; group \"Egyp\"",
+    "domains": ["util"]
+  },
+  {
+    "id": "L25",
+    "axis": "L",
+    "title": "Dotless `ı` (`nı̇ck`), middle dot U+B7, ZWNJ",
+    "component": "ENSIP-15",
+    "expected": "Error",
+    "domains": ["util"]
+  },
+  {
+    "id": "L26",
+    "axis": "L",
+    "title": "`ß` and `ς`",
+    "component": "ENSIP-15",
+    "expected": "Kept, NOT mapped to `ss`/`σ` (non-transitional). UTS-46 transitional libraries map them",
+    "domains": ["util"],
+    "bug": true
+  },
+  {
+    "id": "L27",
+    "axis": "L",
+    "title": "`Ξ`",
+    "component": "ENSIP-15",
+    "expected": "Normalizes to `ξ`; beautify shows `Ξ` unless the label is Greek",
+    "domains": ["util"]
+  },
+  {
+    "id": "L28",
+    "axis": "L",
+    "title": "Idempotence `normalize(normalize(x)) == normalize(x)` across `validate/tests.json`",
+    "component": "ENSIP-15",
+    "expected": "Must hold; pin the spec hash from `ensip/15/versions.md` (Unicode 17.0.0)",
+    "domains": ["util"]
+  },
+  {
+    "id": "L29",
+    "axis": "L",
+    "title": "Unicode version drift: a name valid under Unicode 15 but not 17, or the reverse",
+    "component": "ENSIP-15",
+    "expected": "Normalizer version is part of the contract; bigname exposes `ENS_NORMALIZER_VERSION` (`bn/crates/domain/src/normalization.rs`)",
+    "domains": ["util", "idx"]
+  },
+  {
+    "id": "L30",
+    "axis": "L",
+    "title": "Empty labels `a..eth`, `.eth`, `eth.`",
+    "component": "ENSIP-15 / NameCoder",
+    "expected": "`INVALID_NAME`; NameCoder `encode` → `DNSEncodingFailed`",
+    "domains": ["util"]
+  },
+  {
+    "id": "L31",
+    "axis": "L",
+    "title": "Root `\"\"` and `\".\"`",
+    "component": "ENSIP-1/10",
+    "expected": "namehash = 0x0; DNS-encodes to `0x00`. Name actions reject it (= M:C1)",
+    "domains": ["util"]
+  },
+  {
+    "id": "L32",
+    "axis": "L",
+    "title": "Non-normalized name that exists on-chain (registered by hash, e.g. `Nick.eth` in a subregistry)",
+    "component": "registry",
+    "expected": "Reads by namehash still work. API input is rejected (= M:C8)",
+    "domains": ["name", "primary"]
+  },
+  {
+    "id": "L33",
+    "axis": "L",
+    "title": "Normalization changes the name between the search box and the transaction (e.g. registering `ＡＢＣ`)",
+    "component": "registrar",
+    "expected": "Commit must use the normalized label. Committing the raw label registers a name nobody can type",
+    "domains": ["reg"],
+    "bug": true
+  },
+  {
+    "id": "L34",
+    "axis": "L",
+    "title": "Label with a soft hyphen or mixed case among bulk-renew names",
+    "component": "app",
+    "expected": "Excluded as a look-alike",
+    "domains": ["renew"]
+  },
+  {
+    "id": "H01",
+    "axis": "H",
+    "title": "Label of exactly 255 bytes",
+    "component": "NameCoder, NameWrapper",
+    "expected": "Encodes and wraps. 256 → `LabelIsTooLong` / `LabelTooLong` / `WrappedLabelTooLargeError`",
+    "domains": ["util", "wrapper", "sub"]
+  },
+  {
+    "id": "H02",
+    "axis": "H",
+    "title": "Label of 64–255 bytes (over the DNS 63-octet limit)",
+    "component": "ENSIP-10",
+    "expected": "Valid in ENS DNS encoding: ENSIP-10 lifts the total limit, and the length byte allows 255",
+    "domains": ["util"]
+  },
+  {
+    "id": "H03",
+    "axis": "H",
+    "title": "Label over 255 bytes in a **read**",
+    "component": "UR / ensjs",
+    "expected": "ensjs DNS-encodes it as `[labelhash]` and returns null, no throw. The UR sees a different name, so this works only if the resolver understands hashed labels. Silent wrong answer possible",
+    "domains": ["record", "resolver"],
+    "bug": true
+  },
+  {
+    "id": "H04",
+    "axis": "H",
+    "title": "Label containing a literal `.` (a mainnet name registered by labelhash, e.g. `8436.eth` as one label)",
+    "component": "NameWrapper, ensjs",
+    "expected": "Must be encoded as `[labelhash]`, never split. The NameWrapper node must match",
+    "domains": ["util", "wrapper", "idx"]
+  },
+  {
+    "id": "H05",
+    "axis": "H",
+    "title": "Label that is literally `[` + 64 hex + `]` in UTF-8, or that contains a stray `]`",
+    "component": "ensjs",
+    "expected": "Encoded as `[labelhash]` so it cannot be confused with an encoded label",
+    "domains": ["util"]
+  },
+  {
+    "id": "H06",
+    "axis": "H",
+    "title": "Invalid UTF-8 label (`0xff`), literal U+FFFD, leading BOM",
+    "component": "registry, indexer",
+    "expected": "ensjs encodes as `[labelhash]`; BOM kept. bigname renders non-UTF-8 labels in an octal-escape form that is never accepted as input",
+    "domains": ["util", "idx"]
+  },
+  {
+    "id": "H07",
+    "axis": "H",
+    "title": "DNS decode errors: `0x`, missing terminator, label past end, trailing data, `\\x03a.b\\x00`",
+    "component": "NameCoder",
+    "expected": "`DNSDecodingFailed` / `InvalidDnsEncodedNameError`",
+    "domains": ["util", "event"]
+  },
+  {
+    "id": "H08",
+    "axis": "H",
+    "title": "Single-byte labels 1–255, including byte 0xC0+ (looks like a DNS compression pointer)",
+    "component": "ensjs",
+    "expected": "Read as a length, not a pointer",
+    "domains": ["util"]
+  },
+  {
+    "id": "H09",
+    "axis": "H",
+    "title": "`[labelhash]` with uppercase hex, `0x` prefix, or the wrong length",
+    "component": "ensjs, bigname",
+    "expected": "Error (`InvalidEncodedLabelError`; bigname `400`)",
+    "domains": ["util", "idx"]
+  },
+  {
+    "id": "H10",
+    "axis": "H",
+    "title": "`[labelhash]` that a LabelStore or the NameWrapper `names()` can heal (`[4ca9…].eth` → `wrapped.eth`)",
+    "component": "NameWrapper, LabelStore",
+    "expected": "Recovered; an unknown hash stays encoded (= M:C6)",
+    "domains": ["name", "util"]
+  },
+  {
+    "id": "H11",
+    "axis": "H",
+    "title": "`[labelhash]` in a write (subname create, wrap, register)",
+    "component": "NameWrapper / registrar",
+    "expected": "Wrap needs the plaintext label: the app asks for it and checks the hash. Registration rejects it",
+    "domains": ["wrapper", "reg", "sub"]
+  },
+  {
+    "id": "H12",
+    "axis": "H",
+    "title": "Encoded TLD (`[hash-of-eth]`) or encoded `base`",
+    "component": "bigname",
+    "expected": "Namespace inferred from the hash",
+    "domains": ["idx"]
+  },
+  {
+    "id": "H13",
+    "axis": "H",
+    "title": "Name with more than 32 labels",
+    "component": "bigname",
+    "expected": "Alias paths are not walked beyond 32; deep names are otherwise fine (unverified on-chain)",
+    "domains": ["idx", "name"]
+  },
+  {
+    "id": "H14",
+    "axis": "H",
+    "title": "`parent('eth')` = `''`; `eth` as input to name actions",
+    "component": "ENSIP-10 / ensjs",
+    "expected": "TLD actions → `UnsupportedNameTypeError` (ensjs v2 availability on `eth`, `com`, `''`)",
+    "domains": ["name", "reg"]
+  },
+  {
+    "id": "H15",
+    "axis": "H",
+    "title": "`[root]` alone vs `[root].eth`",
+    "component": "ensjs",
+    "expected": "`[root]` alone allowed; with other labels → `RootNameIncludesOtherLabelsError`",
+    "domains": ["util"]
+  },
+  {
+    "id": "H16",
+    "axis": "H",
+    "title": "Reverse name `addr.reverse` built from a checksummed address",
+    "component": "ENSIP-3",
+    "expected": "Lowercase hex, no `0x`",
+    "domains": ["primary"]
+  },
+  {
+    "id": "H17",
+    "axis": "H",
+    "title": "Reverse coin hex with leading zeros `03c.reverse`, 64-digit `3c`, and `0.reverse`",
+    "component": "ENSIP-19 / DefaultReverseResolver",
+    "expected": "`[coinTypeAsHex]` must have NO leading zeros when built. The resolver accepts padded forms when parsing. Builders that pad produce a different node",
+    "domains": ["primary", "util"],
+    "bug": true
+  },
+  {
+    "id": "H18",
+    "axis": "H",
+    "title": "Reverse address that is not 20 bytes (1-byte `0x81`, 33 bytes) and empty `0x`",
+    "component": "ENSIP-19",
+    "expected": "Allowed for non-EVM coins. Empty → `EmptyAddress`",
+    "domains": ["primary"]
+  },
+  {
+    "id": "H19",
+    "axis": "H",
+    "title": "Malformed reverse names (`zzz.addr.reverse`, `1234.addr.reverse.eth`, `.default.reverse`)",
+    "component": "ENSIP19 lib",
+    "expected": "`parse` → `('0x', 0)`; empty label → `DNSDecodingFailed`",
+    "domains": ["primary", "util"]
+  },
+  {
+    "id": "H20",
+    "axis": "H",
+    "title": "`base.eth` vs `x.base.eth`",
+    "component": "bigname",
+    "expected": "`base.eth` is namespace `ens`; `*.base.eth` is `basenames`",
+    "domains": ["idx"]
+  },
+  {
+    "id": "H21",
+    "axis": "H",
+    "title": "DNS 2LD under a multi-label public suffix (`example.co.nz`)",
+    "component": "DNSRegistrar",
+    "expected": "Claimable; the suffix itself is a public suffix",
+    "domains": ["dns"]
+  },
+  {
+    "id": "H22",
+    "axis": "H",
+    "title": "TLD that is not a public suffix, or `.nottld`",
+    "component": "TLDPublicSuffixList, TemporaryDNSRegistrar",
+    "expected": "`TLDNotPublic`; app: \"This TLD is not supported\"",
+    "domains": ["dns"]
+  },
+  {
+    "id": "H23",
+    "axis": "H",
+    "title": "Very long full name (e.g. 10 labels × 63 bytes) through `eth_call` and gateway GET URLs",
+    "component": "UR, gateway",
+    "expected": "Works on-chain. GET URLs may exceed server limits; apps-monorepo falls back from batch to single reads for long URLs",
+    "domains": ["resolver", "batch"]
+  },
+  {
+    "id": "H24",
+    "axis": "H",
+    "title": "4LD and deeper v1 and v2 chains",
+    "component": "registry",
+    "expected": "Each level resolves; v2 needs a registry per level",
+    "domains": ["name", "sub"]
+  },
+  {
+    "id": "H25",
+    "axis": "H",
+    "title": "Virtual subname under a v2 name with no subregistry (`a.bb.test.eth`)",
+    "component": "LibResolution",
+    "expected": "Resolves through the nearest ancestor resolver (wildcard), owner null",
+    "domains": ["resolver", "name"]
+  },
+  {
+    "id": "O01",
+    "axis": "O",
+    "title": "Name only in `ENSRegistryOld` (2017 registry), e.g. `legacy.test`",
+    "component": "ENSRegistryWithFallback",
+    "expected": "Owner, resolver and TTL fall back to the old registry; bigname `authority=ens_v0`. App shows \"Registry out of date\"",
+    "domains": ["name", "resolver", "idx"]
+  },
+  {
+    "id": "O02",
+    "axis": "O",
+    "title": "First write to an `ens_v0` name in the new registry",
+    "component": "registry",
+    "expected": "Old resolver pointers are retracted (except the root); authority becomes `ens_v1`",
+    "domains": ["name", "idx"]
+  },
+  {
+    "id": "O03",
+    "axis": "O",
+    "title": "Registrar NFT transferred without `reclaim` (registrant ≠ manager by handoff)",
+    "component": "BaseRegistrar",
+    "expected": "`owner` = new holder, `manager` = old registry owner (= M:A3, but from a transfer, not `setOwner`)",
+    "domains": ["name", "perm", "migr"]
+  },
+  {
+    "id": "O04",
+    "axis": "O",
+    "title": "Registrar `register` without updating the registry",
+    "component": "BaseRegistrar",
+    "expected": "Registry owner 0, NFT owner set: owner exists, manager null",
+    "domains": ["name"]
+  },
+  {
+    "id": "O05",
+    "axis": "O",
+    "title": "Unwrapped `.eth` expired past grace, registry owner still set (stale manager)",
+    "component": "BaseRegistrar",
+    "expected": "`ownerOf` reverts; registry still reports the old manager. SDK must not report that manager as owner (= M:A6)",
+    "domains": ["name", "perm"]
+  },
+  {
+    "id": "O06",
+    "axis": "O",
+    "title": "Implicit unwrap: wrapped `.eth` expires past grace and is re-registered on the registrar directly",
+    "component": "NameWrapper",
+    "expected": "Registry owner = self, ERC-721 to the wrapper, but wrapper token owner is stale. `setChildFuses` → `Unauthorised`. Stale wrapper data must be ignored",
+    "domains": ["name", "wrapper"]
+  },
+  {
+    "id": "O07",
+    "axis": "O",
+    "title": "Wrapper says expired, registrar says live",
+    "component": "NameWrapper",
+    "expected": "`nameWrapper.renew(id,1)` resyncs (wrapper expiry = registrar expiry + 90d)",
+    "domains": ["renew", "wrapper"]
+  },
+  {
+    "id": "O08",
+    "axis": "O",
+    "title": "Desynced wrapped name: renewed through the legacy controller, so wrapper expiry < registrar expiry + grace",
+    "component": "NameWrapper",
+    "expected": "App shows \"Name misconfigured\" + Repair. SDK `name.get` must report which expiry it uses (= partly M:A13)",
+    "domains": ["name", "renew", "wrapper"],
+    "bug": true
+  },
+  {
+    "id": "O09",
+    "axis": "O",
+    "title": "Parent's registry `setSubnodeOwner` over a wrapped child",
+    "component": "ENSRegistry",
+    "expected": "Silently unwraps the child with no `NameUnwrapped` event",
+    "domains": ["name", "event", "idx"]
+  },
+  {
+    "id": "O10",
+    "axis": "O",
+    "title": "Wrapped child under an unwrapped parent",
+    "component": "NameWrapper",
+    "expected": "Parent owner can still take it via the registry; app shows no send button for the parent",
+    "domains": ["name", "perm"]
+  },
+  {
+    "id": "O11",
+    "axis": "O",
+    "title": "Unwrapped registry child under a wrapped or emancipated parent",
+    "component": "registry",
+    "expected": "Owned via the registry; the parent owner (wrapper) can override",
+    "domains": ["name", "perm"]
+  },
+  {
+    "id": "O12",
+    "axis": "O",
+    "title": "Ownerless registry row that still has a resolver",
+    "component": "registry",
+    "expected": "bigname: `status=unregistered`, no authority, records still served",
+    "domains": ["name", "idx"]
+  },
+  {
+    "id": "O13",
+    "axis": "O",
+    "title": "v2 RESERVED name with a past expiry",
+    "component": "PermissionedRegistry",
+    "expected": "Allowed for `reserve` (not at genesis, expiry 0 → `CannotSetPastExpiry(0)`). Status must be read from `getStatus`, not inferred from expiry",
+    "domains": ["name", "reg"]
+  },
+  {
+    "id": "O14",
+    "axis": "O",
+    "title": "v2 `unregister` then root `renew`",
+    "component": "PermissionedRegistry",
+    "expected": "Revives as **RESERVED**, not REGISTERED; resolver and subregistry 0",
+    "domains": ["name", "sub"]
+  },
+  {
+    "id": "O15",
+    "axis": "O",
+    "title": "v2 expired name: `getState`",
+    "component": "PermissionedRegistry",
+    "expected": "AVAILABLE, keeps old expiry and **old latestOwner**, resource = tokenId+1. Using `latestOwner` as owner",
+    "domains": ["name", "idx"],
+    "bug": true
+  },
+  {
+    "id": "O16",
+    "axis": "O",
+    "title": "v2 unregistered: expiry = time of unregister, tokenId+1",
+    "component": "PermissionedRegistry",
+    "expected": "AVAILABLE; resolver/subregistry/roles cleared (GHSA-m38m)",
+    "domains": ["name", "sub"]
+  },
+  {
+    "id": "O17",
+    "axis": "O",
+    "title": "v2 name re-registered after expiry: `latestOwnerOf(oldTokenId)` = 0",
+    "component": "PermissionedRegistry",
+    "expected": "New version; old token is dead",
+    "domains": ["name", "event"]
+  },
+  {
+    "id": "O18",
+    "axis": "O",
+    "title": "v2 premigrated v1 name (RESERVED to `ENSV1Resolver`)",
+    "component": "ETHRegistrar",
+    "expected": "Unavailable through **v1 expiry + v1 grace (90d)**, not v2 grace (28d)",
+    "domains": ["reg", "name"]
+  },
+  {
+    "id": "O19",
+    "axis": "O",
+    "title": "v1 name with no v2 reservation (premigration missing)",
+    "component": "migration",
+    "expected": "Not migratable; still resolves on v1. ensjs `test123.eth` counts as available on v2",
+    "domains": ["migr", "reg", "name"]
+  },
+  {
+    "id": "O20",
+    "axis": "O",
+    "title": "Linked registry: one UserRegistry under two parents (`linked.parent.eth` / `sub1.sub2.parent.eth`)",
+    "component": "LibResolution",
+    "expected": "Both paths resolve the same token. Canonical name follows `setParent`; the other is an alias. bigname serves the shortest mount path",
+    "domains": ["name", "registry", "idx"]
+  },
+  {
+    "id": "O21",
+    "axis": "O",
+    "title": "Shared subregistry leaks children: a child created under one parent appears under the other",
+    "component": "v2 registry",
+    "expected": "Protocol invariant (same labels under each linked parent); not a bug, but surprises users",
+    "domains": ["sub", "registry"]
+  },
+  {
+    "id": "O22",
+    "axis": "O",
+    "title": "`setParent` claim pointing at a parent that does not mount it",
+    "component": "LibResolution",
+    "expected": "`findCanonicalName` returns `\"\"`; bigname `404`",
+    "domains": ["registry", "name"]
+  },
+  {
+    "id": "O23",
+    "axis": "O",
+    "title": "Replaced subregistry: old children no longer reachable",
+    "component": "v2 registry",
+    "expected": "Children of the old registry stop resolving",
+    "domains": ["sub", "resolver"]
+  },
+  {
+    "id": "O24",
+    "axis": "O",
+    "title": "v1 and v2 fallback loop (v2 `ENSV1Resolver` ↔ v1 `ENSV2Resolver`)",
+    "component": "UR",
+    "expected": "Terminates with `ResolverError(UnreachableName(name))`",
+    "domains": ["resolver"]
+  },
+  {
+    "id": "O25",
+    "axis": "O",
+    "title": "Bogus v2 `eth` resolver",
+    "component": "ENSV2Resolver",
+    "expected": "Ignored; v1 `eth` resolver is used (\"eth override\")",
+    "domains": ["resolver"]
+  },
+  {
+    "id": "O26",
+    "axis": "O",
+    "title": "v1 UR resolving v2 names via ENSV2Resolver (`abc.sub.test.eth`)",
+    "component": "v1 UR",
+    "expected": "Resolves",
+    "domains": ["resolver"]
+  },
+  {
+    "id": "O27",
+    "axis": "O",
+    "title": "Graveyard-held v1 husk after migration",
+    "component": "Graveyard",
+    "expected": "v1 owner = Graveyard; v1 resolver cleared (unless locked with CANNOT_SET_RESOLVER). Writes via v1 PublicResolver denied",
+    "domains": ["name", "perm", "migr"]
+  },
+  {
+    "id": "O28",
+    "axis": "O",
+    "title": "Mixed-authority tree: locked migrated parent, unmigrated locked children",
+    "component": "WrapperRegistry",
+    "expected": "Children resolve via v1 (`V1_RESOLVER`); registering over them → `NameRequiresMigration`",
+    "domains": ["name", "sub", "migr"]
+  },
+  {
+    "id": "O29",
+    "axis": "O",
+    "title": "Abandoned child (v1 record cleared) under a migrated parent",
+    "component": "WrapperRegistry",
+    "expected": "Can be registered fresh",
+    "domains": ["sub"]
+  },
+  {
+    "id": "O30",
+    "axis": "O",
+    "title": "Unmigrated name past expiry, reservation still live",
+    "component": "ENSV1Resolver",
+    "expected": "Still resolves via v1 until the reservation lapses; after grace anyone can clear it to the Graveyard",
+    "domains": ["name", "resolver", "migr"]
+  },
+  {
+    "id": "O31",
+    "axis": "O",
+    "title": "bigname: released v2 authority tombstone wins over a live v1 registration",
+    "component": "indexer",
+    "expected": "`authority=ens_v2`, `status=released`",
+    "domains": ["idx"]
+  },
+  {
+    "id": "O32",
+    "axis": "O",
+    "title": "bigname: Universal-Resolver-cutover chain, `.eth` with no live v2 entry",
+    "component": "indexer",
+    "expected": "Owner and expiry served; no resolver; `unresolvable_reason=no_live_ens_v2_entry`",
+    "domains": ["idx", "resolver"]
+  },
+  {
+    "id": "O33",
+    "axis": "O",
+    "title": "TLD recovery: root `setChildFuses(0x0, xyz, PCC, 0)`",
+    "component": "NameWrapper",
+    "expected": "Wrapper owner 0, registry still points at the wrapper; then `NameIsNotWrapped`",
+    "domains": ["wrapper", "name"]
+  },
+  {
+    "id": "O34",
+    "axis": "O",
+    "title": "Locked TLD in Root",
+    "component": "Root",
+    "expected": "`setSubnodeOwner` reverts",
+    "domains": ["dns", "registry"]
+  },
+  {
+    "id": "W01",
+    "axis": "W",
+    "title": "Fuse state 0001 (expired, parent CU burned): `setChildFuses` without extending expiry",
+    "component": "NameWrapper",
+    "expected": "`OperationProhibited`; allowed if expiry is extended in the same call",
+    "domains": ["wrapper"]
+  },
+  {
+    "id": "W02",
+    "axis": "W",
+    "title": "Impossible transitions (PCC without parent CU, CU without PCC, CU on expired)",
+    "component": "NameWrapper",
+    "expected": "`OperationProhibited` via each setter",
+    "domains": ["wrapper", "sub"]
+  },
+  {
+    "id": "W03",
+    "axis": "W",
+    "title": "1011: parent extends a PCC child's expiry via `setChildFuses` but not via `setSubnodeOwner`/`setSubnodeRecord`",
+    "component": "NameWrapper",
+    "expected": "Only `setChildFuses` / `extendExpiry` work",
+    "domains": ["sub", "wrapper"]
+  },
+  {
+    "id": "W04",
+    "axis": "W",
+    "title": "Owner tries to unwrap and rewrap to clear PCC",
+    "component": "NameWrapper",
+    "expected": "Not possible; PCC persists until expiry",
+    "domains": ["wrapper"]
+  },
+  {
+    "id": "W05",
+    "axis": "W",
+    "title": "**Expired PCC child under a live parent**",
+    "component": "NameWrapper",
+    "expected": "Owner 0 and fuses 0 via `getData`; parent cannot delete; can be recreated with fresh fuses. apps-monorepo declares it unseedable because `_normaliseExpiry` \"clamps to the parent\". That reasoning is wrong: the function caps at the parent's expiry and floors at the old one, so a child can be given a shorter expiry (`repos/ens-contracts/contracts/wrapper/NameWrapper.sol:978`)",
+    "domains": ["name", "sub", "wrapper"],
+    "bug": true
+  },
+  {
+    "id": "W06",
+    "axis": "W",
+    "title": "Emancipated child after its parent expired",
+    "component": "NameWrapper",
+    "expected": "Child stays until its own expiry (capped at the parent's), so it lapses with the parent. Expired emancipated → `NameIsNotWrapped` for `extendExpiry`",
+    "domains": ["wrapper", "sub"]
+  },
+  {
+    "id": "W07",
+    "axis": "W",
+    "title": "Wrapped `.eth` in grace (wrapper expiry not reached)",
+    "component": "NameWrapper",
+    "expected": "`setResolver`/`setTTL`/`setSubnodeOwner`/`setFuses` → `Unauthorised`; transfer → insufficient balance. Unexpired subnames keep working",
+    "domains": ["wrapper", "perm", "sub"]
+  },
+  {
+    "id": "W08",
+    "axis": "W",
+    "title": "`balanceOf`/`ownerOf` of an expired wrapped name",
+    "component": "NameWrapper",
+    "expected": "0 / zero address; `getData` zeroes fuses",
+    "domains": ["name", "wrapper"]
+  },
+  {
+    "id": "W09",
+    "axis": "W",
+    "title": "Plain wrapped (no PCC) child past its wrapper expiry",
+    "component": "NameWrapper",
+    "expected": "Owner kept by the wrapper storage, but `ownerOf` returns 0 (unverified: bigname keeps `wrapped` with owner) RPC vs indexer disagreement",
+    "domains": ["name", "idx"],
+    "bug": true
+  },
+  {
+    "id": "W10",
+    "axis": "W",
+    "title": "`lapsed` (emancipated/locked past wrapper expiry)",
+    "component": "indexer",
+    "expected": "Owner, manager, permissions, fuses withheld; wrapper expiry visible",
+    "domains": ["idx"]
+  },
+  {
+    "id": "W11",
+    "axis": "W",
+    "title": "`CANNOT_APPROVE` burned with an outstanding approval",
+    "component": "NameWrapper",
+    "expected": "Approval cannot change and **survives transfer**. Migration refuses with `FrozenTokenApproval`",
+    "domains": ["wrapper", "migr", "perm"]
+  },
+  {
+    "id": "W12",
+    "axis": "W",
+    "title": "Token-approved address on a wrapped name",
+    "component": "NameWrapper",
+    "expected": "May only `extendExpiry` (not when expired); everything else `Unauthorised`",
+    "domains": ["perm"]
+  },
+  {
+    "id": "W13",
+    "axis": "W",
+    "title": "Approval cleared on transfer / unwrap / re-register",
+    "component": "NameWrapper",
+    "expected": "Cleared (unless CANNOT_APPROVE)",
+    "domains": ["perm"]
+  },
+  {
+    "id": "W14",
+    "axis": "W",
+    "title": "`CAN_EXTEND_EXPIRY` child extends itself; without the fuse",
+    "component": "NameWrapper",
+    "expected": "Allowed / `OperationProhibited`. Expiry clamped to [old, parent]",
+    "domains": ["sub", "renew"]
+  },
+  {
+    "id": "W15",
+    "axis": "W",
+    "title": "`.eth` 2LD owner calling `extendExpiry` on itself",
+    "component": "NameWrapper",
+    "expected": "`OperationProhibited` (renew via the controller)",
+    "domains": ["renew"]
+  },
+  {
+    "id": "W16",
+    "axis": "W",
+    "title": "Unknown (user-defined) fuse bits",
+    "component": "NameWrapper",
+    "expected": "Can be burned; SDK must decode them as unnamed",
+    "domains": ["wrapper"]
+  },
+  {
+    "id": "W17",
+    "axis": "W",
+    "title": "Fuse values > uint16 on `registerAndWrapETH2LD`",
+    "component": "NameWrapper",
+    "expected": "Revert (no reason)",
+    "domains": ["reg", "wrapper"]
+  },
+  {
+    "id": "W18",
+    "axis": "W",
+    "title": "`wrap` with trailing junk after the DNS name",
+    "component": "NameWrapper",
+    "expected": "`namehash: Junk at end of name`",
+    "domains": ["wrapper"]
+  },
+  {
+    "id": "W19",
+    "axis": "W",
+    "title": "`wrapETH2LD` by the registry controller who is not the registrant",
+    "component": "NameWrapper",
+    "expected": "`Unauthorised`",
+    "domains": ["wrapper"]
+  },
+  {
+    "id": "W20",
+    "axis": "W",
+    "title": "ERC-1155 approval used for wrapping",
+    "component": "NameWrapper",
+    "expected": "`Unauthorised` (approval is not wrap rights)",
+    "domains": ["wrapper", "perm"]
+  },
+  {
+    "id": "W21",
+    "axis": "W",
+    "title": "Rewrapping an expired name with CANNOT_TRANSFER burned",
+    "component": "NameWrapper",
+    "expected": "Allowed; fuses read as the new set",
+    "domains": ["wrapper"]
+  },
+  {
+    "id": "W22",
+    "axis": "W",
+    "title": "`setRecord(owner=0)` on a wrapped subname",
+    "component": "NameWrapper",
+    "expected": "Unwraps (burn); with CU → `OperationProhibited`; on `.eth` → `IncorrectTargetOwner`",
+    "domains": ["sub", "wrapper"]
+  },
+  {
+    "id": "W23",
+    "axis": "W",
+    "title": "Wrapper `upgrade` with no upgrade contract",
+    "component": "NameWrapper",
+    "expected": "`CannotUpgrade`",
+    "domains": ["wrapper"]
+  },
+  {
+    "id": "W24",
+    "axis": "W",
+    "title": "v2: role change in REGENERATION_ROLE_BITMAP",
+    "component": "PermissionedRegistry",
+    "expected": "tokenId+1, `TokenRegenerated`, same resource (= M:A25)",
+    "domains": ["registry", "perm", "event"]
+  },
+  {
+    "id": "W25",
+    "axis": "W",
+    "title": "v2: seller front-runs a sale with a role revoke",
+    "component": "PermissionedRegistry",
+    "expected": "Buyer's transfer of the old ID → `ERC1155InsufficientBalance(..., oldId)`. SDKs caching tokenId between plan and send (E5)",
+    "domains": ["name", "plan"],
+    "bug": true
+  },
+  {
+    "id": "W26",
+    "axis": "W",
+    "title": "v2: root grants on an emancipated registry",
+    "component": "PermissionedRegistry",
+    "expected": "Do not regenerate the token",
+    "domains": ["perm"]
+  },
+  {
+    "id": "W27",
+    "axis": "W",
+    "title": "v2: 16th assignee of a role",
+    "component": "EAC",
+    "expected": "`EACMaxAssignees`; a transfer still succeeds",
+    "domains": ["perm"]
+  },
+  {
+    "id": "W28",
+    "axis": "W",
+    "title": "v2: operator via `setApprovalForAll`",
+    "component": "PermissionedRegistry",
+    "expected": "Operator gets all owner roles (blended), can grant/revoke; cannot be revoked via `revokeRoles` (returns false)",
+    "domains": ["perm"]
+  },
+  {
+    "id": "W29",
+    "axis": "W",
+    "title": "v2: not-emancipated registry, or token with several assignees",
+    "component": "PermissionedRegistry",
+    "expected": "`safeTransferFrom` reverts (`TransferUnsafeUntilRegistryIsEmancipated` / `TransferUnsafeWithMultipleAssignees`); `unsafeTransfer` required",
+    "domains": ["name"]
+  },
+  {
+    "id": "W30",
+    "axis": "W",
+    "title": "v2: owner without CAN_TRANSFER",
+    "component": "PermissionedRegistry",
+    "expected": "`TransferDisallowed`",
+    "domains": ["name", "perm"]
+  },
+  {
+    "id": "W31",
+    "axis": "W",
+    "title": "v2: transfer while expired",
+    "component": "PermissionedRegistry",
+    "expected": "`TransferDisallowed`",
+    "domains": ["name"]
+  },
+  {
+    "id": "W32",
+    "axis": "W",
+    "title": "v2: `grantRoles(ROOT_RESOURCE, …)`",
+    "component": "EAC",
+    "expected": "`EACRootResourceNotAllowed`; use `grantRootRoles`",
+    "domains": ["perm"]
+  },
+  {
+    "id": "W33",
+    "axis": "W",
+    "title": "v2: grant to account 0 / reserve with non-zero roles",
+    "component": "EAC",
+    "expected": "`EACInvalidAccount` / `EACCannotGrantRoles`",
+    "domains": ["perm", "reg"]
+  },
+  {
+    "id": "W34",
+    "axis": "W",
+    "title": "v2: `setSubregistry` by the token owner without the explicit role",
+    "component": "PermissionedRegistry",
+    "expected": "Unauthorized (ownership alone is not enough)",
+    "domains": ["sub", "registry"]
+  },
+  {
+    "id": "W35",
+    "axis": "W",
+    "title": "v2: role reads after expiry",
+    "component": "PermissionedRegistry",
+    "expected": "`roles`, `hasRoles`, `roleCount` all 0/false",
+    "domains": ["perm"]
+  },
+  {
+    "id": "W36",
+    "axis": "W",
+    "title": "v2: any version of the tokenId passed to getters/setters",
+    "component": "PermissionedRegistry",
+    "expected": "Accepted (fuzzed over version)",
+    "domains": ["name", "util"]
+  },
+  {
+    "id": "W37",
+    "axis": "W",
+    "title": "v2: ERC-1155 receiver forwards or re-enters during mint",
+    "component": "PermissionedRegistry",
+    "expected": "Ownership follows; events stay ordered (BET-594)",
+    "domains": ["event", "reg"]
+  },
+  {
+    "id": "W38",
+    "axis": "W",
+    "title": "Locked migration fuse → role mapping (CANNOT_BURN_FUSES, CANNOT_CREATE_SUBDOMAIN, CAN_EXTEND_EXPIRY → expiry `uint64.max`)",
+    "component": "LockedMigrationController",
+    "expected": "As listed; children cannot be revived without the registrar role",
+    "domains": ["migr", "perm"]
+  },
+  {
+    "id": "R01",
+    "axis": "R",
+    "title": "Exact resolver beats a parent wildcard",
+    "component": "ENSIP-10",
+    "expected": "Exact match first",
+    "domains": ["resolver"]
+  },
+  {
+    "id": "R02",
+    "axis": "R",
+    "title": "Parent resolver that is NOT extended (no `0x9061b923`)",
+    "component": "ENSIP-10",
+    "expected": "`ResolverNotFound` (legacy methods must not be called on a parent's resolver). Older URs said `ResolverWildcardNotSupported`, which no clone defines (unverified on mainnet)",
+    "domains": ["resolver", "record"]
+  },
+  {
+    "id": "R03",
+    "axis": "R",
+    "title": "Wildcard: calldata uses the ORIGINAL name's node, not the parent's",
+    "component": "ENSIP-10",
+    "expected": "`resolve(dnsencode(name), calldata(namehash(name)))`",
+    "domains": ["resolver", "record"]
+  },
+  {
+    "id": "R04",
+    "axis": "R",
+    "title": "`findResolver` offset for wildcard (`sub.nick.eth` → offset 4)",
+    "component": "UR",
+    "expected": "Returns `(resolver, node, offset)`",
+    "domains": ["resolver"]
+  },
+  {
+    "id": "R05",
+    "axis": "R",
+    "title": "Resolver is an EOA",
+    "component": "UR",
+    "expected": "`ResolverNotContract(name, addr)` (= M:B14). Matrix says `resolver.get` reports it as `custom`; reads must give a typed error, not null",
+    "domains": ["resolver", "record"]
+  },
+  {
+    "id": "R06",
+    "axis": "R",
+    "title": "Resolver is a non-resolver contract (e.g. the NameWrapper's own address)",
+    "component": "UR",
+    "expected": "`ResolverError` or `UnsupportedResolverProfile`; app treats it as \"invalid resolver\"",
+    "domains": ["resolver", "record", "primary"]
+  },
+  {
+    "id": "R07",
+    "axis": "R",
+    "title": "Resolver returns `0x` (empty success)",
+    "component": "UR",
+    "expected": "`UnsupportedResolverProfile(calldata)`",
+    "domains": ["record"]
+  },
+  {
+    "id": "R08",
+    "axis": "R",
+    "title": "Resolver reverts with empty data",
+    "component": "UR",
+    "expected": "`ResolverError('0x')`",
+    "domains": ["record"]
+  },
+  {
+    "id": "R09",
+    "axis": "R",
+    "title": "Resolver reverts with `UnsupportedResolverProfile` itself",
+    "component": "UR",
+    "expected": "Passed through as `UnsupportedResolverProfile`",
+    "domains": ["record"]
+  },
+  {
+    "id": "R10",
+    "axis": "R",
+    "title": "Multicall where one call reverts",
+    "component": "UR",
+    "expected": "That entry is `0x`/encoded error; the others succeed. Result length not a multiple of 32 = an error (`ensip/23.md`)",
+    "domains": ["record", "batch"]
+  },
+  {
+    "id": "R11",
+    "axis": "R",
+    "title": "Resolver without ERC-165 (`supportsInterface` reverts or is missing)",
+    "component": "UR / ensjs",
+    "expected": "UR treats it as an old resolver (`DummyShapeshiftResolver` non-ERC165 mode). Matrix B2 covers profiles only",
+    "domains": ["resolver"]
+  },
+  {
+    "id": "R12",
+    "axis": "R",
+    "title": "Oldest mainnet resolvers with no multicall (`0x394D8E…`, jessesum.eth)",
+    "component": "UR",
+    "expected": "Only ETH comes back; other profiles absent, not errors",
+    "domains": ["record"]
+  },
+  {
+    "id": "R13",
+    "axis": "R",
+    "title": "Gas-burning resolver (infinite loop)",
+    "component": "UR",
+    "expected": "Should give a bounded error, not hang. **none upstream; [BUG?]** batch reads time out as a whole",
+    "domains": ["record", "batch"],
+    "bug": true
+  },
+  {
+    "id": "R14",
+    "axis": "R",
+    "title": "Returndata bomb (resolver returns MBs)",
+    "component": "UR / client",
+    "expected": "Bounded memory; client-side decode limits (ensjs CBOR limits: 1 MiB, 100k items, depth 100)",
+    "domains": ["record"]
+  },
+  {
+    "id": "R15",
+    "axis": "R",
+    "title": "Resolver that returns malformed ABI-encoded data (bad offsets) for `addr`/`text`",
+    "component": "client",
+    "expected": "Typed decode error per key, not a crashed batch.",
+    "domains": ["record", "batch"],
+    "bug": true
+  },
+  {
+    "id": "R16",
+    "axis": "R",
+    "title": "Spoof composite resolver claiming to wrap the latest public resolver",
+    "component": "app",
+    "expected": "Not treated as latest; \"latest\" repair stays offered",
+    "domains": ["resolver"]
+  },
+  {
+    "id": "R17",
+    "axis": "R",
+    "title": "Composite resolver whose underlying resolver is zero, itself, or reverts",
+    "component": "app",
+    "expected": "Null / not composite",
+    "domains": ["resolver"]
+  },
+  {
+    "id": "R18",
+    "axis": "R",
+    "title": "Unknown resolver that names itself \"PublicResolver\"",
+    "component": "app",
+    "expected": "Not latest",
+    "domains": ["resolver"]
+  },
+  {
+    "id": "R19",
+    "axis": "R",
+    "title": "Registry `getResolver`/`getSubregistry` reverts with `OffchainLookup`",
+    "component": "UR v2",
+    "expected": "`ResolutionError(registry, data)` (= M:B16)",
+    "domains": ["resolver"]
+  },
+  {
+    "id": "R20",
+    "axis": "R",
+    "title": "Mainnet UR (`ResolutionError` wrapping) vs devnet",
+    "component": "UR",
+    "expected": "Errors arrive wrapped on mainnet; unwrap to the inner error (KL-14)",
+    "domains": ["resolver", "dns"]
+  },
+  {
+    "id": "R21",
+    "axis": "R",
+    "title": "PermissionedResolver default record: any name with no own record falls back to the `\"\"` record",
+    "component": "PermissionedResolver",
+    "expected": "Reads return the default record's values. A shared resolver can answer for names nobody configured",
+    "domains": ["record", "resolver"],
+    "bug": true
+  },
+  {
+    "id": "R22",
+    "axis": "R",
+    "title": "Linked records (`linkToNode`) and unlink (`linkToRecord(name, 0)`)",
+    "component": "PermissionedResolver",
+    "expected": "Shared record ID; unlink idempotent; unknown target → `InvalidRecord`",
+    "domains": ["resolver"]
+  },
+  {
+    "id": "R23",
+    "axis": "R",
+    "title": "Resolver alias `sub.alias.eth` resolving only through `alias.eth`'s link",
+    "component": "PermissionedResolver",
+    "expected": "Resolves; no owner",
+    "domains": ["resolver", "name"]
+  },
+  {
+    "id": "R24",
+    "axis": "R",
+    "title": "`resolve(name, \"\")` or an unknown selector",
+    "component": "PermissionedResolver",
+    "expected": "`UnsupportedResolverProfile`",
+    "domains": ["resolver"]
+  },
+  {
+    "id": "R25",
+    "axis": "R",
+    "title": "`multicall` on PermissionedResolver with one failing getter",
+    "component": "PermissionedResolver",
+    "expected": "Whole multicall reverts (unlike the UR)",
+    "domains": ["record"]
+  },
+  {
+    "id": "R26",
+    "axis": "R",
+    "title": "PublicResolverV2 on a name the NameWrapper does not know (= M:B4)",
+    "component": "PublicResolverV2",
+    "expected": "Writes unauthorized; `canModifyName` via v1 owner, operator or approve",
+    "domains": ["record", "perm"]
+  },
+  {
+    "id": "R27",
+    "axis": "R",
+    "title": "PublicResolver auth when the registry owner is the NameWrapper",
+    "component": "PublicResolver",
+    "expected": "Wrapper token owner authorized; delegate to self → revert",
+    "domains": ["perm", "record"]
+  },
+  {
+    "id": "R28",
+    "axis": "R",
+    "title": "Resolver `clearRecords` version bump",
+    "component": "PublicResolver",
+    "expected": "All profiles reset, including DNS, zonehash, interface",
+    "domains": ["record"]
+  },
+  {
+    "id": "R29",
+    "axis": "R",
+    "title": "Offchain resolver behind `ENSV1Resolver` mirror (`jesse.base.eth`)",
+    "component": "ensjs",
+    "expected": "`resolverAddress` is the underlying resolver when called directly; the MIRROR when it falls back to the UR. Inconsistent `resolverAddress`",
+    "domains": ["resolver", "record"],
+    "bug": true
+  },
+  {
+    "id": "R30",
+    "axis": "R",
+    "title": "Resolver advertising ERC-7996 `eth.ens.resolver.extended.multicall` vs not",
+    "component": "UR / ensjs",
+    "expected": "Same results either way",
+    "domains": ["record", "batch"]
+  },
+  {
+    "id": "R31",
+    "axis": "R",
+    "title": "`resolver.get` reports the real resolver, not the UR mirror, for v1 names",
+    "component": "ensjs",
+    "expected": "Real resolver",
+    "domains": ["resolver"]
+  },
+  {
+    "id": "R32",
+    "axis": "R",
+    "title": "UR proxy upgrade: OffchainLookup forwarded with the sender rewritten",
+    "component": "UpgradableUniversalResolverProxy",
+    "expected": "Client must accept the proxy as sender",
+    "domains": ["resolver"]
+  },
+  {
+    "id": "R33",
+    "axis": "R",
+    "title": "Legacy direct-call path (no UR) on a chain without the UR",
+    "component": "client",
+    "expected": "Same values via registry + resolver; matrix F6 is multicall only",
+    "domains": ["record", "resolver"]
+  },
+  {
+    "id": "X01",
+    "axis": "X",
+    "title": "Gateway HTTP 400 / 500",
+    "component": "batch gateway",
+    "expected": "`HttpError(status, msg)` per request (ENSIP-21)",
+    "domains": ["record", "resolver"]
+  },
+  {
+    "id": "X02",
+    "axis": "X",
+    "title": "Gateway returns invalid JSON",
+    "component": "ensjs",
+    "expected": "`HttpError(500, \"Unexpected token…\")`",
+    "domains": ["record"]
+  },
+  {
+    "id": "X03",
+    "axis": "X",
+    "title": "Gateway URL with `{data}` (GET) vs without (POST); `{sender}` lowercased",
+    "component": "EIP-3668",
+    "expected": "Templates substituted (unverified, EIP not in clones)",
+    "domains": ["record"]
+  },
+  {
+    "id": "X04",
+    "axis": "X",
+    "title": "First URL 5xx, second OK; first URL 4xx",
+    "component": "EIP-3668",
+    "expected": "5xx tries the next URL; 4xx stops (unverified)",
+    "domains": ["record"],
+    "bug": true
+  },
+  {
+    "id": "X05",
+    "axis": "X",
+    "title": "`OffchainLookup.sender` ≠ called contract (= M:B12)",
+    "component": "EIP-3668",
+    "expected": "Reject",
+    "domains": ["record"]
+  },
+  {
+    "id": "X06",
+    "axis": "X",
+    "title": "Nested OffchainLookup (callback reverts with another lookup)",
+    "component": "EIP-3668 / UR",
+    "expected": "Followed up to a limit (viem limit unverified)",
+    "domains": ["record", "dns"]
+  },
+  {
+    "id": "X07",
+    "axis": "X",
+    "title": "Non-CCIP-aware contract emitting `OffchainLookup` inside the OffchainDNSResolver",
+    "component": "OffchainDNSResolver",
+    "expected": "`InvalidOperation`",
+    "domains": ["dns"]
+  },
+  {
+    "id": "X08",
+    "axis": "X",
+    "title": "`x-batch-gateway:true` URL",
+    "component": "ENSIP-21",
+    "expected": "Use the local batch gateway; ignore the other URLs",
+    "domains": ["record"]
+  },
+  {
+    "id": "X09",
+    "axis": "X",
+    "title": "Batch gateway duplicate requests",
+    "component": "ensjs",
+    "expected": "Deduplicated",
+    "domains": ["batch"]
+  },
+  {
+    "id": "X10",
+    "axis": "X",
+    "title": "Partial key failure through a batch gateway",
+    "component": "app",
+    "expected": "Successful keys kept",
+    "domains": ["record"]
+  },
+  {
+    "id": "X11",
+    "axis": "X",
+    "title": "Gateway rate limit (429)",
+    "component": "app",
+    "expected": "Typed error and retry",
+    "domains": ["record"]
+  },
+  {
+    "id": "X12",
+    "axis": "X",
+    "title": "Gateway timeout and `signal` abort mid-lookup",
+    "component": "client",
+    "expected": "Typed timeout; abort cancels HTTP too",
+    "domains": ["record"]
+  },
+  {
+    "id": "X13",
+    "axis": "X",
+    "title": "`ccipRead: false` on an offchain name (= M:F4)",
+    "component": "client",
+    "expected": "`CCIP_READ_DISABLED`, not a raw `OffchainLookup` revert",
+    "domains": ["record", "primary"]
+  },
+  {
+    "id": "X14",
+    "axis": "X",
+    "title": "Gateway answers but the callback's signature check fails (signed offchain resolver)",
+    "component": "resolver",
+    "expected": "`ResolverError(...)`",
+    "domains": ["record"]
+  },
+  {
+    "id": "X15",
+    "axis": "X",
+    "title": "Offchain names are not in any registry (KL-13): `name.get` says `available`",
+    "component": "client",
+    "expected": "Documented; app: wildcard subname shows no expiry (not 1970)",
+    "domains": ["name"]
+  },
+  {
+    "id": "X16",
+    "axis": "X",
+    "title": "v2 name on a CCIP resolver",
+    "component": "app",
+    "expected": "Editor disabled (records not writable on-chain)",
+    "domains": ["record", "perm"]
+  },
+  {
+    "id": "X17",
+    "axis": "X",
+    "title": "Migration of a name on an offchain resolver",
+    "component": "migration",
+    "expected": "Resolver kept; nothing read through the gateway; wildcard subname still resolves",
+    "domains": ["migr"]
+  },
+  {
+    "id": "X18",
+    "axis": "X",
+    "title": "Gateway response with a valid body for a different request (replayed)",
+    "component": "resolver",
+    "expected": "Callback rejects (unverified)",
+    "domains": ["record"]
+  },
+  {
+    "id": "K01",
+    "axis": "K",
+    "title": "`addr(node)` vs `addr(node,60)` share storage",
+    "component": "PublicResolver",
+    "expected": "Equal; `setAddr(60, …)` clears `addr(node)` too",
+    "domains": ["record"]
+  },
+  {
+    "id": "K02",
+    "axis": "K",
+    "title": "Default EVM address (`0x80000000`) used for EVM coin types",
+    "component": "PublicResolver, PermissionedResolver",
+    "expected": "Used for 60 and `default|chain`; NOT for non-EVM (0, 1 → `0x`)",
+    "domains": ["record"]
+  },
+  {
+    "id": "K03",
+    "axis": "K",
+    "title": "Explicit `address(0)` set for a coin blocks the default fallback",
+    "component": "PublicResolver",
+    "expected": "Returns 20 zero bytes, not the default. Clients that treat zero as unset then show the default",
+    "domains": ["record"],
+    "bug": true
+  },
+  {
+    "id": "K04",
+    "axis": "K",
+    "title": "Zero-20-byte vs empty value",
+    "component": "resolvers, bigname",
+    "expected": "v2 PermissionedResolver: zero counts as set (`hasAddr` true). bigname: zero-20 `addr:60` = `not_found` even if a default exists. Pick and document one meaning",
+    "domains": ["record", "idx"]
+  },
+  {
+    "id": "K05",
+    "axis": "K",
+    "title": "ENSIP-19 default must not fall back to coin 60",
+    "component": "ENSIP-19",
+    "expected": "`addr(node, 0x80000000)` only",
+    "domains": ["record", "primary"]
+  },
+  {
+    "id": "K06",
+    "axis": "K",
+    "title": "Invalid EVM address bytes (`0x1234`)",
+    "component": "PublicResolver",
+    "expected": "`InvalidEVMAddress`",
+    "domains": ["record"]
+  },
+  {
+    "id": "K07",
+    "axis": "K",
+    "title": "Mixed-case ETH address with a bad checksum as input",
+    "component": "ENSIP-9",
+    "expected": "Reject; all-lower or all-upper accepted",
+    "domains": ["record", "util"]
+  },
+  {
+    "id": "K08",
+    "axis": "K",
+    "title": "RSK (coin 137) checksum with chainId 30",
+    "component": "ENSIP-9",
+    "expected": "RSKIP60 checksum",
+    "domains": ["record"]
+  },
+  {
+    "id": "K09",
+    "axis": "K",
+    "title": "BTC P2PKH, P2SH, bech32 v0 and **v1 (taproot `OP_1`)**",
+    "component": "ENSIP-9",
+    "expected": "Native scriptPubkey bytes",
+    "domains": ["record"]
+  },
+  {
+    "id": "K10",
+    "axis": "K",
+    "title": "BCH legacy vs cashaddr; XRP r- vs X-address",
+    "component": "ENSIP-9",
+    "expected": "Same bytes",
+    "domains": ["record"]
+  },
+  {
+    "id": "K11",
+    "axis": "K",
+    "title": "EVM chainId ≥ 2^31",
+    "component": "ENSIP-11",
+    "expected": "Cannot be a coin type; reject",
+    "domains": ["record", "primary", "util"],
+    "bug": true
+  },
+  {
+    "id": "K12",
+    "axis": "K",
+    "title": "Legacy SLIP-44 EVM coins (ETC 61, XDAI 700…)",
+    "component": "ENSIP-11",
+    "expected": "Read-only `_LEGACY` names; `etcLegacy` alias",
+    "domains": ["record"]
+  },
+  {
+    "id": "K13",
+    "axis": "K",
+    "title": "AVAX / RSK keep SLIP-44 types, not `0x80000000|chainId`",
+    "component": "ENSIP-11",
+    "expected": "Exceptions honoured",
+    "domains": ["record"]
+  },
+  {
+    "id": "K14",
+    "axis": "K",
+    "title": "Coins dropped by address-encoder 3 (KL-16)",
+    "component": "client",
+    "expected": "Raw bytes or `INVALID_COIN_TYPE`",
+    "domains": ["record"]
+  },
+  {
+    "id": "K15",
+    "axis": "K",
+    "title": "Text missing → `\"\"`; unicode and emoji values",
+    "component": "ENSIP-5",
+    "expected": "`\"\"` → null; unicode round-trips",
+    "domains": ["record"]
+  },
+  {
+    "id": "K16",
+    "axis": "K",
+    "title": "`display` text that does not case-fold-match the name",
+    "component": "ENSIP-5",
+    "expected": "Ignore",
+    "domains": ["record"]
+  },
+  {
+    "id": "K17",
+    "axis": "K",
+    "title": "Service keys `com.twitter` vs legacy `vnd.twitter`",
+    "component": "ENSIP-5",
+    "expected": "Fallback to legacy key (client choice)",
+    "domains": ["record"]
+  },
+  {
+    "id": "K18",
+    "axis": "K",
+    "title": "ENSIP-18 `theme` with a bad colour, `description` > 160, `url` not http(s)",
+    "component": "ENSIP-18",
+    "expected": "Skip / client validation",
+    "domains": ["record"]
+  },
+  {
+    "id": "K19",
+    "axis": "K",
+    "title": "Very large text value (e.g. 100 KB)",
+    "component": "resolver, UR",
+    "expected": "Readable; gas of `eth_call` may hit the RPC cap.",
+    "domains": ["record"],
+    "bug": true
+  },
+  {
+    "id": "K20",
+    "axis": "K",
+    "title": "Text key with whitespace or comma",
+    "component": "bigname",
+    "expected": "Outside the key grammar → 400",
+    "domains": ["idx"]
+  },
+  {
+    "id": "K21",
+    "axis": "K",
+    "title": "Contenthash ipfs CIDv1 dag-pb ↔ text CIDv0 `Qm…`",
+    "component": "ENSIP-7",
+    "expected": "Both directions",
+    "domains": ["record"]
+  },
+  {
+    "id": "K22",
+    "axis": "K",
+    "title": "Contenthash ipns, bzz, onion (16), onion3 (56), sia, arweave, adnl, tonstorage",
+    "component": "multicodec",
+    "expected": "Round-trip; wrong lengths throw",
+    "domains": ["record"]
+  },
+  {
+    "id": "K23",
+    "axis": "K",
+    "title": "Unknown contenthash codec `0xdeadbeef`",
+    "component": "client",
+    "expected": "Null (non-strict) / error (strict); never crash",
+    "domains": ["record"]
+  },
+  {
+    "id": "K24",
+    "axis": "K",
+    "title": "ABI type not a power of two (3)",
+    "component": "PublicResolver / PermissionedResolver",
+    "expected": "`setABI` reverts / `InvalidContentType`",
+    "domains": ["record"]
+  },
+  {
+    "id": "K25",
+    "axis": "K",
+    "title": "ABI read mask returns the LOWEST matching type (mask 7 with types 2 and 4 → 2)",
+    "component": "PublicResolver",
+    "expected": "Lowest bit",
+    "domains": ["record"]
+  },
+  {
+    "id": "K26",
+    "axis": "K",
+    "title": "ABI type 256 / bit 255",
+    "component": "PublicResolver / v2",
+    "expected": "v1 read → `0x` → null; v2 allows bit 255",
+    "domains": ["record"]
+  },
+  {
+    "id": "K27",
+    "axis": "K",
+    "title": "Malformed or oversized CBOR / zlib ABI",
+    "component": "client",
+    "expected": "Null (non-strict); other records in the same call kept",
+    "domains": ["record"]
+  },
+  {
+    "id": "K28",
+    "axis": "K",
+    "title": "ABI lookup falls back to the reverse record of the name's address",
+    "component": "ENSIP-4",
+    "expected": "Optional fallback (client choice)",
+    "domains": ["record"]
+  },
+  {
+    "id": "K29",
+    "axis": "K",
+    "title": "pubkey `(0,0)`",
+    "component": "PublicResolver",
+    "expected": "Null (= matrix)",
+    "domains": ["record"]
+  },
+  {
+    "id": "K30",
+    "axis": "K",
+    "title": "interfaceImplementer unset → fallback ERC-165 on `addr()`; EOA or non-165 target → 0",
+    "component": "ENSIP-8",
+    "expected": "0, not revert",
+    "domains": ["record"]
+  },
+  {
+    "id": "K31",
+    "axis": "K",
+    "title": "`data` record (ENSIP-24) missing key → empty bytes; v1 resolver → revert (KL-05)",
+    "component": "ENSIP-24",
+    "expected": "Empty / typed error",
+    "domains": ["record"]
+  },
+  {
+    "id": "K32",
+    "axis": "K",
+    "title": "DNS records: RRset clear with empty data; mixed-case owner names",
+    "component": "PublicResolver",
+    "expected": "As ENSIP-6",
+    "domains": ["dns"]
+  },
+  {
+    "id": "K33",
+    "axis": "K",
+    "title": "Avatar: https direct image; https pointing to HTML",
+    "component": "ENSIP-12",
+    "expected": "Image OK; HTML invalid",
+    "domains": ["record"]
+  },
+  {
+    "id": "K34",
+    "axis": "K",
+    "title": "Avatar `eip155:1/erc721:…/id` owned / not owned by `addr`",
+    "component": "ENSIP-12",
+    "expected": "Not owned → null (= matrix)",
+    "domains": ["record"]
+  },
+  {
+    "id": "K35",
+    "axis": "K",
+    "title": "Avatar ERC-1155 with `{id}` substitution (hex, 64 chars, no `0x`) and balance 0",
+    "component": "ERC-1155 / ENSIP-12",
+    "expected": "`{id}` replaced; balance 0 → invalid (unverified)",
+    "domains": ["record"],
+    "bug": true
+  },
+  {
+    "id": "K36",
+    "axis": "K",
+    "title": "Avatar `data:image/svg+xml;base64,…` with script",
+    "component": "ENSIP-12",
+    "expected": "Returned as data; consumers must sanitize",
+    "domains": ["record"]
+  },
+  {
+    "id": "K37",
+    "axis": "K",
+    "title": "Avatar on a reverse node (ENSIP-12 address flow)",
+    "component": "ENSIP-19",
+    "expected": "New reverse resolvers do not support `text()`; fall back to forward name",
+    "domains": ["record", "primary"]
+  },
+  {
+    "id": "K38",
+    "axis": "K",
+    "title": "Avatar unknown scheme (`ftp://`, `ar://` without gateway)",
+    "component": "ENSIP-12",
+    "expected": "Ignored as unset",
+    "domains": ["record"]
+  },
+  {
+    "id": "K39",
+    "axis": "K",
+    "title": "Records written through `multicall` with a node that differs from the name",
+    "component": "ETHRegistrarController",
+    "expected": "`multicall: All records must have a matching namehash`",
+    "domains": ["reg", "record"]
+  },
+  {
+    "id": "K40",
+    "axis": "K",
+    "title": "v2 record clear falls back to the default record (KL-34)",
+    "component": "PermissionedResolver",
+    "expected": "Clearing reveals the default value",
+    "domains": ["record"]
+  },
+  {
+    "id": "K41",
+    "axis": "K",
+    "title": "ENSIP-25/26/28/31 agent and payment keys (`agent-registration[…][…]`, `accounts[1]`)",
+    "component": "ENSIP",
+    "expected": "Keys contain `[`, `]` and hex; must round-trip as text keys",
+    "domains": ["record", "idx"]
+  },
+  {
+    "id": "P01",
+    "axis": "P",
+    "title": "`addr.reverse` set; `default.reverse` set to a different name",
+    "component": "ETHReverseResolver",
+    "expected": "Priority: standalone `addr.reverse` → v1 registry resolver → default",
+    "domains": ["primary"]
+  },
+  {
+    "id": "P02",
+    "axis": "P",
+    "title": "v1 reverse resolver returns `\"\"`",
+    "component": "ETHReverseResolver",
+    "expected": "Falls through to default",
+    "domains": ["primary"]
+  },
+  {
+    "id": "P03",
+    "axis": "P",
+    "title": "v1 reverse resolver reverts or has no code",
+    "component": "ETHReverseResolver",
+    "expected": "Stops; returns empty (no default fallback).",
+    "domains": ["primary"],
+    "bug": true
+  },
+  {
+    "id": "P04",
+    "axis": "P",
+    "title": "Old ENSIP-3 resolver on `addr.reverse` with an unset name",
+    "component": "ENSIP-19",
+    "expected": "No default fallback (spec §Backwards Compatibility)",
+    "domains": ["primary"]
+  },
+  {
+    "id": "P05",
+    "axis": "P",
+    "title": "Chain reverse unset → default name",
+    "component": "ChainReverseResolver",
+    "expected": "Default returned",
+    "domains": ["primary"]
+  },
+  {
+    "id": "P06",
+    "axis": "P",
+    "title": "Default reverse for a non-EVM coin",
+    "component": "DefaultReverseResolver",
+    "expected": "`UnreachableName`",
+    "domains": ["primary"]
+  },
+  {
+    "id": "P07",
+    "axis": "P",
+    "title": "Primary name not normalized (`Nick.eth`)",
+    "component": "ENSIP-19 / UR v2",
+    "expected": "Reject (`PrimaryNameNotNormalized`); never normalize",
+    "domains": ["primary"]
+  },
+  {
+    "id": "P08",
+    "axis": "P",
+    "title": "Primary name whose forward `addr` mismatches",
+    "component": "UR",
+    "expected": "`ReverseAddressMismatch` → null (= matrix)",
+    "domains": ["primary"]
+  },
+  {
+    "id": "P09",
+    "axis": "P",
+    "title": "Forward match only via the default address fallback",
+    "component": "UR",
+    "expected": "Accepted",
+    "domains": ["primary"]
+  },
+  {
+    "id": "P10",
+    "axis": "P",
+    "title": "Forward resolver lacks `addr` profile",
+    "component": "UR",
+    "expected": "`UnsupportedResolverProfile(addr(bytes32))`",
+    "domains": ["primary"]
+  },
+  {
+    "id": "P11",
+    "axis": "P",
+    "title": "Reverse resolver without `name()`",
+    "component": "UR",
+    "expected": "`UnsupportedResolverProfile(name(bytes32))`",
+    "domains": ["primary"]
+  },
+  {
+    "id": "P12",
+    "axis": "P",
+    "title": "Primary name whose forward name is offchain (CCIP)",
+    "component": "UR",
+    "expected": "Works (offchain extended forward + onchain addr)",
+    "domains": ["primary"]
+  },
+  {
+    "id": "P13",
+    "axis": "P",
+    "title": "Non-EVM coin (123) primary with an offchain forward",
+    "component": "UR",
+    "expected": "Works",
+    "domains": ["primary"]
+  },
+  {
+    "id": "P14",
+    "axis": "P",
+    "title": "Whitespace-only primary name",
+    "component": "bigname",
+    "expected": "Stops the fallback; `not_found`",
+    "domains": ["primary", "idx"]
+  },
+  {
+    "id": "P15",
+    "axis": "P",
+    "title": "Non-UTF-8 primary name bytes",
+    "component": "bigname",
+    "expected": "`unsupported` / `failed`",
+    "domains": ["primary", "idx"]
+  },
+  {
+    "id": "P16",
+    "axis": "P",
+    "title": "Primary set to a `[labelhash]` name",
+    "component": "app",
+    "expected": "Must be decrypted before setting",
+    "domains": ["primary"]
+  },
+  {
+    "id": "P17",
+    "axis": "P",
+    "title": "`getNames` batch with empty inputs and `''` answers",
+    "component": "ensjs",
+    "expected": "Aligned output; `''` → null",
+    "domains": ["primary", "batch"]
+  },
+  {
+    "id": "P18",
+    "axis": "P",
+    "title": "L2 reverse signature: past expiry, > 1 day ahead, wrong coin list, empty list",
+    "component": "L2ReverseRegistrar (v1c)",
+    "expected": "`SignatureExpired`, `SignatureExpiryTooHigh`, `CoinTypeNotFound`",
+    "domains": ["primary"]
+  },
+  {
+    "id": "P19",
+    "axis": "P",
+    "title": "L2 reverse (v2 build) human-readable message; `signedAt` in the future; replayed or older signature",
+    "component": "L2ReverseRegistrar (v2c)",
+    "expected": "`SignatureNotValidYet`; `StaleSignature`; a direct `setName` invalidates older signatures",
+    "domains": ["primary"]
+  },
+  {
+    "id": "P20",
+    "axis": "P",
+    "title": "Chain IDs not ascending or current chain missing",
+    "component": "L2ReverseRegistrar (v2c)",
+    "expected": "`ChainIdsNotAscending`, `CurrentChainNotFound`",
+    "domains": ["primary"]
+  },
+  {
+    "id": "P21",
+    "axis": "P",
+    "title": "ERC-1271 and ERC-6492 (undeployed) signer",
+    "component": "L2ReverseRegistrar",
+    "expected": "Accepted (6492 skipped in v1c)",
+    "domains": ["primary", "hca"]
+  },
+  {
+    "id": "P22",
+    "axis": "P",
+    "title": "Ownable contract primary name via `setNameForAddr`; non-Ownable or not-owner",
+    "component": "ReverseRegistrar",
+    "expected": "Works / `UnauthorizedNamer` / `NotOwnerOfContract`",
+    "domains": ["primary"]
+  },
+  {
+    "id": "P23",
+    "axis": "P",
+    "title": "ContractNamer `syncName`; empty value clears",
+    "component": "L2ReverseRegistrar",
+    "expected": "Clears",
+    "domains": ["primary"]
+  },
+  {
+    "id": "P24",
+    "axis": "P",
+    "title": "HCA reverse: owner mismatch, untrusted deployment, spoofed proxy slot",
+    "component": "ReverseRegistrarAdapter",
+    "expected": "`HCAOwnerMismatch`, `HCADeploymentNotTrusted`, rejected",
+    "domains": ["primary", "hca"]
+  },
+  {
+    "id": "P25",
+    "axis": "P",
+    "title": "`setName(\"\")`",
+    "component": "L2ReverseRegistrar",
+    "expected": "Allowed (clears)",
+    "domains": ["primary"]
+  },
+  {
+    "id": "P26",
+    "axis": "P",
+    "title": "Register with `reverseRecord` `['ethereum','default']`, `[]`, or without a resolver",
+    "component": "ETHRegistrarController",
+    "expected": "Sets both / none / `ResolverRequiredForReverseRecord`",
+    "domains": ["reg", "primary"]
+  },
+  {
+    "id": "P27",
+    "axis": "P",
+    "title": "ENSIP-23 example uses `addr.reverse` with an L2 coin (doc error)",
+    "component": "doc",
+    "expected": "Use `80002105.reverse`",
+    "domains": ["primary"]
+  },
+  {
+    "id": "P28",
+    "axis": "P",
+    "title": "Sepolia L2 coin types (`80014a34.reverse`) and L1 testnet using 60",
+    "component": "ENSIP-19",
+    "expected": "Per `ensip/19/supported.md`",
+    "domains": ["primary", "F"]
+  },
+  {
+    "id": "P29",
+    "axis": "P",
+    "title": "Address `0x00…` with coin 0",
+    "component": "UR",
+    "expected": "Reverts (no resolver)",
+    "domains": ["primary"]
+  },
+  {
+    "id": "P30",
+    "axis": "P",
+    "title": "Primary name points at a subname created after the reverse claim, then deleted",
+    "component": "UR",
+    "expected": "Mismatch → null (unverified)",
+    "domains": ["primary"]
+  },
+  {
+    "id": "G01",
+    "axis": "G",
+    "title": "Length in code points vs graphemes: `💩💩` (2) invalid; `🇺🇸` = 2 cp; `🍄‍🟫` = 3 cp → valid 3-char price",
+    "component": "StringUtils, RentPriceOracle",
+    "expected": "Price uses code points, not graphemes. UI shows \"2 characters\" for a valid paid 3-cp name",
+    "domains": ["reg"],
+    "bug": true
+  },
+  {
+    "id": "G02",
+    "axis": "G",
+    "title": "`たこ` (2 cp) invalid, `你好吗` valid",
+    "component": "v1 controller",
+    "expected": "`valid()` false / true",
+    "domains": ["reg"]
+  },
+  {
+    "id": "G03",
+    "axis": "G",
+    "title": "1–2 cp labels on v2",
+    "component": "RentPriceOracle",
+    "expected": "Not valid (rate 0) → `NotValid`",
+    "domains": ["reg"]
+  },
+  {
+    "id": "G04",
+    "axis": "G",
+    "title": "256-byte label price",
+    "component": "RentPriceOracle",
+    "expected": "`getBasePrice` = 0 (invalid)",
+    "domains": ["reg"]
+  },
+  {
+    "id": "G05",
+    "axis": "G",
+    "title": "Short subnames allowed in app while short 2LDs are rejected",
+    "component": "app",
+    "expected": "Subname length rules differ from registrar rules",
+    "domains": ["sub"]
+  },
+  {
+    "id": "G06",
+    "axis": "G",
+    "title": "Commitment age: exactly min, min−1, exactly max, max+1",
+    "component": "ETHRegistrar",
+    "expected": "`CommitmentTooNew` / `CommitmentTooOld` boundaries",
+    "domains": ["reg"]
+  },
+  {
+    "id": "G07",
+    "axis": "G",
+    "title": "Commit twice with an unexpired commitment",
+    "component": "ETHRegistrar",
+    "expected": "`UnexpiredCommitmentExists`",
+    "domains": ["reg"]
+  },
+  {
+    "id": "G08",
+    "axis": "G",
+    "title": "Commitment excludes payment token",
+    "component": "ETHRegistrar",
+    "expected": "Paying in DAI after quoting USDC still matches",
+    "domains": ["reg"]
+  },
+  {
+    "id": "G09",
+    "axis": "G",
+    "title": "Duration < 28 days (register and renew)",
+    "component": "ETHRegistrar",
+    "expected": "`DurationTooShort`",
+    "domains": ["reg", "renew"]
+  },
+  {
+    "id": "G10",
+    "axis": "G",
+    "title": "Renew same label twice in one `renewBatch`",
+    "component": "ETHRegistrar",
+    "expected": "Durations stack. Dedup in UI vs on-chain stacking",
+    "domains": ["renew"],
+    "bug": true
+  },
+  {
+    "id": "G11",
+    "axis": "G",
+    "title": "Renew at exactly `expiry + GRACE`",
+    "component": "ETHRegistrar",
+    "expected": "`NameNotRenewable` (exclusive)",
+    "domains": ["renew"]
+  },
+  {
+    "id": "G12",
+    "axis": "G",
+    "title": "Renew a v1 name through ETHRenewerV1, in grace and after",
+    "component": "ETHRenewerV1",
+    "expected": "Works in grace; after → `NameNotRenewable`; wrapped names get `syncWrapper`",
+    "domains": ["renew"]
+  },
+  {
+    "id": "G13",
+    "axis": "G",
+    "title": "Unwrapped renewal through ETHRenewerV1 does not touch the wrapper",
+    "component": "ETHRenewerV1",
+    "expected": "Wrapper expiry unchanged",
+    "domains": ["renew", "wrapper"]
+  },
+  {
+    "id": "G14",
+    "axis": "G",
+    "title": "Premium: max at end of grace, halfway, 0 after 21 days",
+    "component": "ETHRegistrar",
+    "expected": "Curve matches oracle (= matrix)",
+    "domains": ["reg"]
+  },
+  {
+    "id": "G15",
+    "axis": "G",
+    "title": "Price changes between quote and register (KL-22)",
+    "component": "client",
+    "expected": "Pays more up to the buffer (app uses 2%)",
+    "domains": ["reg"]
+  },
+  {
+    "id": "G16",
+    "axis": "G",
+    "title": "ERC-20 returning void; returning false; blacklisted payer",
+    "component": "ETHRegistrar",
+    "expected": "Accepted / `SafeERC20FailedOperation` / token error",
+    "domains": ["reg", "renew"]
+  },
+  {
+    "id": "G17",
+    "axis": "G",
+    "title": "Allowance short vs exact; no leftover allowance",
+    "component": "app",
+    "expected": "Approve only the shortfall",
+    "domains": ["reg", "plan"]
+  },
+  {
+    "id": "G18",
+    "axis": "G",
+    "title": "Register to a contract that rejects ERC-1155 (DAO timelock)",
+    "component": "PermissionedRegistry",
+    "expected": "`ERC1155InvalidReceiver` (KL-20)",
+    "domains": ["reg"]
+  },
+  {
+    "id": "G19",
+    "axis": "G",
+    "title": "Lost race: someone else registers between commit and reveal",
+    "component": "ETHRegistrar",
+    "expected": "`NameNotAvailable`; do not retry",
+    "domains": ["reg", "hca"]
+  },
+  {
+    "id": "G20",
+    "axis": "G",
+    "title": "Commit via private mempool detected / commit tx never confirmed in UI",
+    "component": "app",
+    "expected": "Resume works",
+    "domains": ["reg", "plan"]
+  },
+  {
+    "id": "G21",
+    "axis": "G",
+    "title": "Expired commitment on resume",
+    "component": "app",
+    "expected": "Restart",
+    "domains": ["reg", "plan"]
+  },
+  {
+    "id": "G22",
+    "axis": "G",
+    "title": "v1 controller: `data` with resolver 0; EOA resolver; non-resolver calldata",
+    "component": "ETHRegistrarController",
+    "expected": "`ResolverRequiredWhenDataSupplied` / revert",
+    "domains": ["reg"]
+  },
+  {
+    "id": "G23",
+    "axis": "G",
+    "title": "Bulk renewal including a nonexistent name; excess ETH",
+    "component": "BulkRenewal",
+    "expected": "Revert / refunded",
+    "domains": ["renew"]
+  },
+  {
+    "id": "G24",
+    "axis": "G",
+    "title": "Third party renews a name it does not own",
+    "component": "registrars",
+    "expected": "Allowed",
+    "domains": ["renew"]
+  },
+  {
+    "id": "G25",
+    "axis": "G",
+    "title": "Referrer bytes32 encoded in calldata",
+    "component": "registrar",
+    "expected": "Exact bytes",
+    "domains": ["reg", "renew"]
+  },
+  {
+    "id": "G26",
+    "axis": "G",
+    "title": "Renewal tier discounts (2y 12.5%, 3y 31.25%, 6y+ 43.75%)",
+    "component": "RentPriceOracle",
+    "expected": "Exact",
+    "domains": ["renew"]
+  },
+  {
+    "id": "G27",
+    "axis": "G",
+    "title": "`convertUnits` rounds up (USDC 6 decimals vs DAI 18)",
+    "component": "RentPriceOracle",
+    "expected": "`mulDiv` up; never quote 0",
+    "domains": ["reg"]
+  },
+  {
+    "id": "G28",
+    "axis": "G",
+    "title": "Payment token removed (`updatePaymentToken(t,0,0)`)",
+    "component": "RentPriceOracle",
+    "expected": "`PaymentTokenNotSupported`",
+    "domains": ["reg"]
+  },
+  {
+    "id": "G29",
+    "axis": "G",
+    "title": "Registration with records before v2 resolver deployed (one resolver per wallet reused)",
+    "component": "app",
+    "expected": "Reuse, no second deploy",
+    "domains": ["reg"]
+  },
+  {
+    "id": "G30",
+    "axis": "G",
+    "title": "ENSIP-14 referral secret prefix / ensjs campaign > 0xffffffff",
+    "component": "ENSIP-14 / ensjs",
+    "expected": "`CampaignReferenceTooLargeError`",
+    "domains": ["reg"]
+  },
+  {
+    "id": "T01",
+    "axis": "T",
+    "title": "v1 `.eth` at exactly `expiry`",
+    "component": "BaseRegistrar",
+    "expected": "`ownerOf` requires `expiry > now`, so at T = E the name is already expired (`repos/ens-contracts/contracts/ethregistrar/BaseRegistrarImplementation.sol:74`)",
+    "domains": ["name"],
+    "bug": true
+  },
+  {
+    "id": "T02",
+    "axis": "T",
+    "title": "v1 `.eth` at exactly `expiry + 90d`",
+    "component": "BaseRegistrar",
+    "expected": "Renewable (`>=`, line 161) and NOT available (`<`, line 103); available at G+1",
+    "domains": ["reg", "renew"],
+    "bug": true
+  },
+  {
+    "id": "T03",
+    "axis": "T",
+    "title": "Wrapped name at exactly wrapper expiry",
+    "component": "NameWrapper",
+    "expected": "Not expired (`expiry < now` is the test, line 714/825), so one second longer than the registrar. Wrapper `.eth` expiry = registrar + 90d",
+    "domains": ["wrapper", "name"],
+    "bug": true
+  },
+  {
+    "id": "T04",
+    "axis": "T",
+    "title": "v2 name at exactly expiry",
+    "component": "PermissionedRegistry",
+    "expected": "Expired (`now >= expiry`, line 681)",
+    "domains": ["name"]
+  },
+  {
+    "id": "T05",
+    "axis": "T",
+    "title": "v2 grace end",
+    "component": "ETHRegistrar",
+    "expected": "In grace iff `now − expiry < GRACE`; at T = G available",
+    "domains": ["reg"]
+  },
+  {
+    "id": "T06",
+    "axis": "T",
+    "title": "bigname status table: v1 expired `E ≤ T ≤ G`, v2 `E ≤ T < G`, wrapper-only `T ≤ E` active",
+    "component": "indexer",
+    "expected": "Matches T01–T05; release one second after grace for v1",
+    "domains": ["idx"]
+  },
+  {
+    "id": "T07",
+    "axis": "T",
+    "title": "Migration bonus: v2 expiry = v1 expiry + (1 + 90d − 28d); reservation +62d vs +62d+1s",
+    "component": "migration",
+    "expected": "Exact expiry kept",
+    "domains": ["migr"]
+  },
+  {
+    "id": "T08",
+    "axis": "T",
+    "title": "Grace day 1, 45, 89; renew then migrate",
+    "component": "migration",
+    "expected": "V2 expiry = renewed v1 expiry + bonus",
+    "domains": ["migr", "renew"]
+  },
+  {
+    "id": "T09",
+    "axis": "T",
+    "title": "Renewal in grace extends from the original expiry, not now",
+    "component": "registrars",
+    "expected": "E + duration",
+    "domains": ["renew"]
+  },
+  {
+    "id": "T10",
+    "axis": "T",
+    "title": "`block.timestamp` ahead of wall clock (devnet `evm_increaseTime`)",
+    "component": "client",
+    "expected": "Status must use chain time, never `Date.now()`.",
+    "domains": ["name", "reg"],
+    "bug": true
+  },
+  {
+    "id": "T11",
+    "axis": "T",
+    "title": "Historical read before ENSv2 (or UR) deployment block",
+    "component": "client",
+    "expected": "Typed error or v1 path, not `0x` decode failure",
+    "domains": ["all reads"],
+    "bug": true
+  },
+  {
+    "id": "T12",
+    "axis": "T",
+    "title": "Expiry polling near grace end (±5 min)",
+    "component": "app",
+    "expected": "Switches on",
+    "domains": ["name"]
+  },
+  {
+    "id": "T13",
+    "axis": "T",
+    "title": "NameWrapper expiry 0 (parent never set) and `MAX_EXPIRY`",
+    "component": "indexer, wrapper",
+    "expected": "`not_set` / `no_expiry`; SDK should not show 1970 or year 584 billion",
+    "domains": ["name", "idx"]
+  },
+  {
+    "id": "T14",
+    "axis": "T",
+    "title": "`uint64.max` expiry (v2 locked child with CAN_EXTEND_EXPIRY, DNS TLD sync)",
+    "component": "v2",
+    "expected": "Never-expiring; bigints",
+    "domains": ["name"]
+  },
+  {
+    "id": "T15",
+    "axis": "T",
+    "title": "`ens_v1.expires_at` saturation at `i64::MAX`",
+    "component": "indexer",
+    "expected": "Large values exact as strings",
+    "domains": ["idx"]
+  },
+  {
+    "id": "T16",
+    "axis": "T",
+    "title": "Stale plan: name expires or changes between plan and send (= M:E5)",
+    "component": "plan",
+    "expected": "Re-validate",
+    "domains": ["plan"]
+  },
+  {
+    "id": "D01",
+    "axis": "D",
+    "title": "`_ens` TXT `a=0x…` lowercase (unchecksummed)",
+    "component": "ensjs DNS owner",
+    "expected": "`DnsInvalidAddressChecksumError`",
+    "domains": ["dns"]
+  },
+  {
+    "id": "D02",
+    "axis": "D",
+    "title": "NXDOMAIN; AD bit false; no TXT; malformed TXT",
+    "component": "DoH",
+    "expected": "Typed errors; null when non-strict",
+    "domains": ["dns"]
+  },
+  {
+    "id": "D03",
+    "axis": "D",
+    "title": "RRSIG wildcard expansion",
+    "component": "DoH",
+    "expected": "`DnsDnssecWildcardExpansionError`",
+    "domains": ["dns"]
+  },
+  {
+    "id": "D04",
+    "axis": "D",
+    "title": "`ENS1` record with an ENS name, an address, extra context (address or text)",
+    "component": "OffchainDNSResolver",
+    "expected": "All resolve; context passed only to extended resolvers",
+    "domains": ["dns"]
+  },
+  {
+    "id": "D05",
+    "axis": "D",
+    "title": "Several `ENS1` records; invalid ones (`ENS1 nonexistent.eth`, `ENS1 0x1234`, `nonsense`) first",
+    "component": "OffchainDNSResolver",
+    "expected": "First valid wins; all invalid → `CouldNotResolve`",
+    "domains": ["dns"]
+  },
+  {
+    "id": "D06",
+    "axis": "D",
+    "title": "ExtendedDNSResolver context parsing: `a[60]=`, `a[e<chain>]=`, quoted `t[key]='…\\'…'`, unterminated quote",
+    "component": "ExtendedDNSResolver",
+    "expected": "Values; bad hex → `InvalidAddressFormat`; unterminated → `\"\"`",
+    "domains": ["dns", "record"]
+  },
+  {
+    "id": "D07",
+    "axis": "D",
+    "title": "On-chain imported DNS name takes precedence over gasless `ENS1`",
+    "component": "ENSIP-17",
+    "expected": "Imported wins; resolver 0 → falls back to gasless",
+    "domains": ["dns", "resolver"]
+  },
+  {
+    "id": "D08",
+    "axis": "D",
+    "title": "v2 DNSTLDResolver: subname still on v1",
+    "component": "DNSTLDResolver",
+    "expected": "`UnreachableName` wrapped in `ResolverError`",
+    "domains": ["dns"]
+  },
+  {
+    "id": "D09",
+    "axis": "D",
+    "title": "DNSTXTResolver invalid hex / wrong address length",
+    "component": "DNSTXTResolver",
+    "expected": "`InvalidHexData` / `InvalidDataLength`",
+    "domains": ["dns"]
+  },
+  {
+    "id": "D10",
+    "axis": "D",
+    "title": "DNSAliasResolver rewrite (\"com eth\", \"test.com test.eth\")",
+    "component": "DNSAliasResolver",
+    "expected": "Rewritten resolution",
+    "domains": ["dns", "resolver"]
+  },
+  {
+    "id": "D11",
+    "axis": "D",
+    "title": "DNSSEC: stale proof, expired / not-yet-valid signature, wrong algorithm, RSA e=3",
+    "component": "DNSSEC",
+    "expected": "`StaleProof`, `SignatureExpired`, `SignatureNotValidYet`, `NoMatchingProof`",
+    "domains": ["dns"]
+  },
+  {
+    "id": "D12",
+    "axis": "D",
+    "title": "Unrelated proof reused for another name",
+    "component": "DNSRegistrar",
+    "expected": "`NoOwnerRecordFound`",
+    "domains": ["dns"]
+  },
+  {
+    "id": "D13",
+    "axis": "D",
+    "title": "Root KSK rollover (20326/38696)",
+    "component": "DNSSEC oracle",
+    "expected": "KL-29; app bridges both keys",
+    "domains": ["dns"]
+  },
+  {
+    "id": "D14",
+    "axis": "D",
+    "title": "Domain without DNSSEC; nonexistent TLD; DoH error",
+    "component": "app",
+    "expected": "Typed",
+    "domains": ["dns"]
+  },
+  {
+    "id": "D15",
+    "axis": "D",
+    "title": "Wrapped DNS name (`wrappeddnsname.com`)",
+    "component": "NameWrapper",
+    "expected": "Readable; non-`.eth` wrap rules",
+    "domains": ["dns", "wrapper"]
+  },
+  {
+    "id": "D16",
+    "axis": "D",
+    "title": "DNS owner ≠ ENS manager (sync banner)",
+    "component": "app",
+    "expected": "Out-of-sync state",
+    "domains": ["dns"]
+  },
+  {
+    "id": "D17",
+    "axis": "D",
+    "title": "TemporaryDNSRegistrar `syncTLD(\"\")`",
+    "component": "v2",
+    "expected": "`LabelIsEmpty`; synced TLD expiry `uint64.max`",
+    "domains": ["dns"]
+  },
+  {
+    "id": "D18",
+    "axis": "D",
+    "title": "Mainnet DNS resolution inner error unknown",
+    "component": "UR",
+    "expected": "KL-14",
+    "domains": ["dns"]
+  },
+  {
+    "id": "D19",
+    "axis": "D",
+    "title": "`ENS1` TXT field over 255 bytes split across strings",
+    "component": "ENSIP-17",
+    "expected": "Only the first text field is read (unverified handling)",
+    "domains": ["dns"],
+    "bug": true
+  },
+  {
+    "id": "M01",
+    "axis": "M",
+    "title": "Batch where the last item is invalid",
+    "component": "UnlockedMigrationController",
+    "expected": "Whole batch reverts",
+    "domains": ["migr", "plan"]
+  },
+  {
+    "id": "M02",
+    "axis": "M",
+    "title": "Data shorter than `7×32` bytes",
+    "component": "controller",
+    "expected": "`InvalidData` (not `LabelIsEmpty`, even for \"\")",
+    "domains": ["migr"]
+  },
+  {
+    "id": "M03",
+    "axis": "M",
+    "title": "Label ≠ token",
+    "component": "controller",
+    "expected": "`NameDataMismatch`",
+    "domains": ["migr"]
+  },
+  {
+    "id": "M04",
+    "axis": "M",
+    "title": "Locked name sent to the unlocked controller",
+    "component": "controller",
+    "expected": "`NameIsLocked`",
+    "domains": ["migr"]
+  },
+  {
+    "id": "M05",
+    "axis": "M",
+    "title": "Not premigrated",
+    "component": "controller",
+    "expected": "`EACUnauthorizedAccountRoles(ROOT, ROLE_REGISTRAR, …)`, wrapped by `WrappedErrorLib` via NameWrapper. Decode the wrapped error",
+    "domains": ["migr"],
+    "bug": true
+  },
+  {
+    "id": "M06",
+    "axis": "M",
+    "title": "Migrated roles include `ROLE_WAS_RESERVED`",
+    "component": "controller",
+    "expected": "\"Migrated\" flag",
+    "domains": ["migr", "perm"]
+  },
+  {
+    "id": "M07",
+    "axis": "M",
+    "title": "`CANNOT_SET_RESOLVER`: certified old PublicResolver swapped to PublicResolverV2; uncertified refused",
+    "component": "LockedMigrationController / app",
+    "expected": "As stated",
+    "domains": ["migr"]
+  },
+  {
+    "id": "M08",
+    "axis": "M",
+    "title": "`CANNOT_TRANSFER` locked name",
+    "component": "NameWrapper",
+    "expected": "`OperationProhibited`; never offered",
+    "domains": ["migr"]
+  },
+  {
+    "id": "M09",
+    "axis": "M",
+    "title": "Child migrated under a locked parent: registering over an unmigrated locked child",
+    "component": "WrapperRegistry",
+    "expected": "`NameRequiresMigration`",
+    "domains": ["migr", "sub"]
+  },
+  {
+    "id": "M10",
+    "axis": "M",
+    "title": "Graveyard `clear` on a child without a preimage",
+    "component": "Graveyard",
+    "expected": "`NameRequiresPreimage`; poisoned names repairable",
+    "domains": ["migr"]
+  },
+  {
+    "id": "M11",
+    "axis": "M",
+    "title": "MigrationHelper: wrapped owner mismatch, parent not migrated",
+    "component": "MigrationHelper",
+    "expected": "`WrappedOwnerMismatch`, `ParentNotMigrated`",
+    "domains": ["migr"]
+  },
+  {
+    "id": "M12",
+    "axis": "M",
+    "title": "Records copy: 50 records over batches; contenthash and ABI byte-for-byte; keys not indexed survive",
+    "component": "app",
+    "expected": "Exact copy",
+    "domains": ["migr", "record"]
+  },
+  {
+    "id": "M13",
+    "axis": "M",
+    "title": "Subname family of 150 (all or nothing); child created after review; occupied UserRegistry slot",
+    "component": "app",
+    "expected": "Fail closed",
+    "domains": ["migr", "sub"]
+  },
+  {
+    "id": "M14",
+    "axis": "M",
+    "title": "Approval revoked mid-flow",
+    "component": "app",
+    "expected": "Specific error",
+    "domains": ["migr", "plan"]
+  },
+  {
+    "id": "M15",
+    "axis": "M",
+    "title": "Unknown-label leaf in the subtree",
+    "component": "app",
+    "expected": "Dropped or blocking (configurable)",
+    "domains": ["migr"]
+  },
+  {
+    "id": "M16",
+    "axis": "M",
+    "title": "Primary name survives migration",
+    "component": "app",
+    "expected": "Unchanged",
+    "domains": ["primary", "migr"]
+  },
+  {
+    "id": "M17",
+    "axis": "M",
+    "title": "Registrant (not manager) is the one who migrates",
+    "component": "app",
+    "expected": "Eligibility by registrant",
+    "domains": ["migr"]
+  },
+  {
+    "id": "M18",
+    "axis": "M",
+    "title": "Lapsed reservation keeps records",
+    "component": "app",
+    "expected": "Records remain readable",
+    "domains": ["migr", "record"]
+  },
+  {
+    "id": "A01",
+    "axis": "A",
+    "title": "Registry operator (not owner) calls `setPrimaryName` for another address",
+    "component": "ReverseRegistrar",
+    "expected": "Works when authorised",
+    "domains": ["primary"]
+  },
+  {
+    "id": "A02",
+    "axis": "A",
+    "title": "Delegate (resolver `approve(node, delegate)`) writes records; owner changes",
+    "component": "PublicResolver",
+    "expected": "Delegation is per owner; a new owner voids it",
+    "domains": ["record", "perm"]
+  },
+  {
+    "id": "A03",
+    "axis": "A",
+    "title": "EIP-7702 delegated EOA as owner",
+    "component": "registries",
+    "expected": "ERC-1155 hook depends on the delegate code (KL-20)",
+    "domains": ["reg", "name"],
+    "bug": true
+  },
+  {
+    "id": "A04",
+    "axis": "A",
+    "title": "Receiver that re-enters and unregisters during mint",
+    "component": "PermissionedRegistry",
+    "expected": "Handled (`mutatingReceiver_*`)",
+    "domains": ["reg"]
+  },
+  {
+    "id": "A05",
+    "axis": "A",
+    "title": "Smart-account approval cancelled mid bulk renew",
+    "component": "app",
+    "expected": "Retry without double charge",
+    "domains": ["renew", "hca"]
+  },
+  {
+    "id": "A06",
+    "axis": "A",
+    "title": "Owner-not-manager edits profile",
+    "component": "app",
+    "expected": "Disabled",
+    "domains": ["record", "perm"]
+  },
+  {
+    "id": "A07",
+    "axis": "A",
+    "title": "Parent owner sends a PCC child",
+    "component": "app/NameWrapper",
+    "expected": "Not allowed",
+    "domains": ["name", "perm"]
+  },
+  {
+    "id": "A08",
+    "axis": "A",
+    "title": "Emancipated child's parent tries to delete",
+    "component": "app",
+    "expected": "Not allowed",
+    "domains": ["sub"]
+  },
+  {
+    "id": "A09",
+    "axis": "A",
+    "title": "Transfer to self, to zero, to a name, with whitespace",
+    "component": "app",
+    "expected": "Refused / resolved / trimmed",
+    "domains": ["name"]
+  },
+  {
+    "id": "A10",
+    "axis": "A",
+    "title": "Wallet on the wrong chain",
+    "component": "app",
+    "expected": "Typed error",
+    "domains": ["plan"]
+  },
+  {
+    "id": "Z01",
+    "axis": "Z",
+    "title": "HCA receiving an NFT",
+    "component": "StandaloneSingleOwnerHCA",
+    "expected": "`NoNFTAllowed`",
+    "domains": ["hca"]
+  },
+  {
+    "id": "Z02",
+    "axis": "Z",
+    "title": "HCA policy: register with a non-zero subregistry",
+    "component": "HCA validator",
+    "expected": "`PolicyRuleFailed`",
+    "domains": ["hca", "reg"]
+  },
+  {
+    "id": "Z03",
+    "axis": "Z",
+    "title": "Session expired; claim mismatch; funding policy failure; gas refund",
+    "component": "HCA validators",
+    "expected": "`SessionExpired`, `ClaimFieldMismatch`, `FundingPolicyFailed`, `GasRefundNotAllowed`",
+    "domains": ["hca"]
+  },
+  {
+    "id": "Z04",
+    "axis": "Z",
+    "title": "Implementation approval revoked after deployment",
+    "component": "StandaloneHCAFactory",
+    "expected": "Existing HCAs stay certified",
+    "domains": ["hca"]
+  },
+  {
+    "id": "Z05",
+    "axis": "Z",
+    "title": "Session revoked by nonce bump; undeployed account revoked",
+    "component": "app",
+    "expected": "Session dead; account deployed then revoked",
+    "domains": ["hca"]
+  },
+  {
+    "id": "Z06",
+    "axis": "Z",
+    "title": "Delegatecall from HCA",
+    "component": "HCA",
+    "expected": "Blocked",
+    "domains": ["hca"]
+  },
+  {
+    "id": "F01",
+    "axis": "F",
+    "title": "Sepolia: UR cut over for its whole history; mainnet not",
+    "component": "bigname, UR",
+    "expected": "Different resolution paths per chain",
+    "domains": ["resolver", "idx"]
+  },
+  {
+    "id": "F02",
+    "axis": "F",
+    "title": "UR v1 vs v2 deployed at once (mirror `ENSV1Resolver` returned as `resolverAddress`)",
+    "component": "ensjs",
+    "expected": "Report the real resolver",
+    "domains": ["resolver"]
+  },
+  {
+    "id": "F03",
+    "axis": "F",
+    "title": "Mainnet remote fork matrix (PublicResolver V0/V2/V3, cb.id, Namestone, Namespace, 3DNS, OffchainDNS, Unruggable, Linea, NFT resolvers, Uninames)",
+    "component": "UR",
+    "expected": "All resolve",
+    "domains": ["record", "primary"]
+  },
+  {
+    "id": "F04",
+    "axis": "F",
+    "title": "Live name that stopped resolving (`taytems.xyz`)",
+    "component": "ensjs",
+    "expected": "Tests skipped; canaries must tolerate drift",
+    "domains": ["dns"]
+  },
+  {
+    "id": "F05",
+    "axis": "F",
+    "title": "Every `eth_call` pinned to the given `blockNumber`",
+    "component": "ensjs",
+    "expected": "Pinned",
+    "domains": ["all reads"]
+  },
+  {
+    "id": "I01",
+    "axis": "I",
+    "title": "`status` per policy (table in T06)",
+    "component": "bigname",
+    "expected": "active/expired/released/unregistered",
+    "domains": ["idx"]
+  },
+  {
+    "id": "I02",
+    "axis": "I",
+    "title": "`release_kind=unregistered` keeps the scheduled expiry",
+    "component": "bigname",
+    "expected": "Status `released` immediately",
+    "domains": ["idx"]
+  },
+  {
+    "id": "I03",
+    "axis": "I",
+    "title": "`lapsed_registration` coexisting with `active` (v1 lapsed under a live v2 reservation)",
+    "component": "bigname",
+    "expected": "Both present",
+    "domains": ["idx", "migr"]
+  },
+  {
+    "id": "I04",
+    "axis": "I",
+    "title": "NameWrapper-expiry-only lapse with a live lease",
+    "component": "bigname",
+    "expected": "Not released; no owner until wrapper renewal",
+    "domains": ["idx"]
+  },
+  {
+    "id": "I05",
+    "axis": "I",
+    "title": "`wrapper_state=unknown` (wrap evidence incomplete)",
+    "component": "bigname",
+    "expected": "Nothing invented",
+    "domains": ["idx"]
+  },
+  {
+    "id": "I06",
+    "axis": "I",
+    "title": "Wrapped renewal via BaseRegistrar only: `wrapper_expires_at` trails",
+    "component": "bigname",
+    "expected": "Trails `ens_v1.expires_at`",
+    "domains": ["idx", "renew"]
+  },
+  {
+    "id": "I07",
+    "axis": "I",
+    "title": "Preimage revealed later upgrades a `[hash]` child",
+    "component": "bigname",
+    "expected": "Display changes between pages",
+    "domains": ["idx"]
+  },
+  {
+    "id": "I08",
+    "axis": "I",
+    "title": "`token_id` regenerated; `registration_id` stable",
+    "component": "bigname",
+    "expected": "As stated",
+    "domains": ["idx"]
+  },
+  {
+    "id": "I09",
+    "axis": "I",
+    "title": "Alias path: served only on the name route, `canonical_name` added",
+    "component": "bigname",
+    "expected": "Lookup returns `not_found` for the alias",
+    "domains": ["idx"]
+  },
+  {
+    "id": "I10",
+    "axis": "I",
+    "title": "Alias through a migrated WrapperRegistry falling back to v1",
+    "component": "bigname",
+    "expected": "`404` (TYR-300)",
+    "domains": ["idx"]
+  },
+  {
+    "id": "I11",
+    "axis": "I",
+    "title": "`read_status=unsupported` with ownership still served (`ens_v2_path_not_projected`)",
+    "component": "bigname",
+    "expected": "Records withheld",
+    "domains": ["idx"]
+  },
+  {
+    "id": "I12",
+    "axis": "I",
+    "title": "Records: version boundary and resolver change reset values",
+    "component": "bigname",
+    "expected": "Old values never return",
+    "domains": ["idx", "record"]
+  },
+  {
+    "id": "I13",
+    "axis": "I",
+    "title": "Shared resolver fan-in marked unsupported",
+    "component": "bigname",
+    "expected": "As stated",
+    "domains": ["idx"]
+  },
+  {
+    "id": "I14",
+    "axis": "I",
+    "title": "`source=verified` does not follow CCIP",
+    "component": "bigname",
+    "expected": "`offchain_lookup_required`",
+    "domains": ["idx"]
+  },
+  {
+    "id": "I15",
+    "axis": "I",
+    "title": "Redo in progress → `409 stale`; reorg converges",
+    "component": "bigname",
+    "expected": "As stated",
+    "domains": ["idx"]
+  },
+  {
+    "id": "I16",
+    "axis": "I",
+    "title": "Cursor drift: rows move or repeat between pages",
+    "component": "bigname",
+    "expected": "Documented",
+    "domains": ["idx"]
+  },
+  {
+    "id": "I17",
+    "axis": "I",
+    "title": "`at` on collection routes",
+    "component": "bigname",
+    "expected": "`400`",
+    "domains": ["idx"]
+  },
+  {
+    "id": "I18",
+    "axis": "I",
+    "title": "Subnames `include_expired=false`",
+    "component": "bigname",
+    "expected": "Drops expired and released",
+    "domains": ["idx", "sub"]
+  },
+  {
+    "id": "I19",
+    "axis": "I",
+    "title": "Indexer vs RPC disagreement (W09, O15, K04)",
+    "component": "both",
+    "expected": "Documented per field (KL-46)",
+    "domains": ["idx"]
+  },
+  {
+    "id": "I20",
+    "axis": "I",
+    "title": "Upstream docs vs tests disagree on v2 event names (`NameRegistered` vs `LabelRegistered`)",
+    "component": "contracts-v2 docs",
+    "expected": "Trust the tests",
+    "domains": ["event", "idx"]
+  },
+  {
+    "id": "M:A1",
+    "axis": "M:A",
+    "title": "available, never registered"
+  },
+  {
+    "id": "M:A2",
+    "axis": "M:A",
+    "title": "v1 unwrapped `.eth` 2LD, registrant = manager"
+  },
+  {
+    "id": "M:A3",
+    "axis": "M:A",
+    "title": "v1 unwrapped `.eth` 2LD, registrant ≠ manager",
+    "notes": "Covers both roles in transfer, reclaim and setManager"
+  },
+  {
+    "id": "M:A4",
+    "axis": "M:A",
+    "title": "v1 unwrapped subname (registry only, no registrar NFT)",
+    "notes": "Depth 2 and depth 3"
+  },
+  {
+    "id": "M:A5",
+    "axis": "M:A",
+    "title": "v1 unwrapped `.eth` in grace"
+  },
+  {
+    "id": "M:A6",
+    "axis": "M:A",
+    "title": "v1 unwrapped `.eth` expired past grace, registry owner still set",
+    "notes": "Stale manager"
+  },
+  {
+    "id": "M:A7",
+    "axis": "M:A",
+    "title": "v1 wrapped `.eth` 2LD, emancipated, not locked"
+  },
+  {
+    "id": "M:A8",
+    "axis": "M:A",
+    "title": "v1 wrapped, locked (`CANNOT_UNWRAP`)",
+    "notes": "Variants with `CANNOT_TRANSFER`, `CANNOT_SET_RESOLVER`, `CANNOT_SET_TTL`, `CANNOT_CREATE_SUBDOMAIN` burned"
+  },
+  {
+    "id": "M:A9",
+    "axis": "M:A",
+    "title": "v1 wrapped subname: parent-controlled"
+  },
+  {
+    "id": "M:A10",
+    "axis": "M:A",
+    "title": "v1 wrapped subname: emancipated"
+  },
+  {
+    "id": "M:A11",
+    "axis": "M:A",
+    "title": "v1 wrapped subname: locked"
+  },
+  {
+    "id": "M:A12",
+    "axis": "M:A",
+    "title": "v1 wrapped, wrapper expiry passed"
+  },
+  {
+    "id": "M:A13",
+    "axis": "M:A",
+    "title": "v1 wrapped name whose registrar NFT expired, but the wrapper token remains"
+  },
+  {
+    "id": "M:A14",
+    "axis": "M:A",
+    "title": "v2-native `.eth` registered"
+  },
+  {
+    "id": "M:A15",
+    "axis": "M:A",
+    "title": "v2-native `.eth` in grace"
+  },
+  {
+    "id": "M:A16",
+    "axis": "M:A",
+    "title": "v2-native `.eth` expired"
+  },
+  {
+    "id": "M:A17",
+    "axis": "M:A",
+    "title": "v2-native re-registered after expiry",
+    "notes": "GHSA-m38m: resolver, subregistry and roles are cleared"
+  },
+  {
+    "id": "M:A18",
+    "axis": "M:A",
+    "title": "v2 subname in a user registry, depth 2 and 3",
+    "notes": "With and without its own subregistry; with and without expiry"
+  },
+  {
+    "id": "M:A19",
+    "axis": "M:A",
+    "title": "v2 name that was unregistered → available again"
+  },
+  {
+    "id": "M:A20",
+    "axis": "M:A",
+    "title": "v2-migrated from v1 unwrapped (unlocked migration, v1 record in the Graveyard)"
+  },
+  {
+    "id": "M:A21",
+    "axis": "M:A",
+    "title": "v2-migrated from v1 wrapped, unlocked"
+  },
+  {
+    "id": "M:A22",
+    "axis": "M:A",
+    "title": "v2-migrated, locked migration into a WrapperRegistry",
+    "notes": "With and without `CAN_EXTEND_EXPIRY` (max expiry, no `ROLE_RENEW`)"
+  },
+  {
+    "id": "M:A23",
+    "axis": "M:A",
+    "title": "v2-reserved (v1 authoritative, read through the `ensV1Resolver` bridge)"
+  },
+  {
+    "id": "M:A24",
+    "axis": "M:A",
+    "title": "v2 name with roles held by non-owners",
+    "notes": "`ROLE_SET_RESOLVER`, `ROLE_RENEW`, `ROLE_CAN_TRANSFER`, a second `ROLE_RENEW` assignee (GHSA-hvjh)"
+  },
+  {
+    "id": "M:A25",
+    "axis": "M:A",
+    "title": "v2 name whose token ID was regenerated by a role change",
+    "notes": "`resource` must stay stable; a change outside `REGENERATION_ROLE_BITMAP` keeps the ID (GHSA-67r7)"
+  },
+  {
+    "id": "M:A26",
+    "axis": "M:A",
+    "title": "v2 subregistry from an old UserRegistry impl vs the new impl",
+    "notes": "`canUpgradeFrom`"
+  },
+  {
+    "id": "M:B1",
+    "axis": "M:B",
+    "title": "Own v1 PublicResolver, latest"
+  },
+  {
+    "id": "M:B2",
+    "axis": "M:B",
+    "title": "Own legacy v1 resolver without newer profiles",
+    "notes": "No `setData` (ENSIP-24), no ERC-165 for some profiles"
+  },
+  {
+    "id": "M:B3",
+    "axis": "M:B",
+    "title": "Own PublicResolverV2 on a NameWrapper-known name"
+  },
+  {
+    "id": "M:B4",
+    "axis": "M:B",
+    "title": "Own PublicResolverV2 on a name the NameWrapper does not know",
+    "notes": "Writes must be unauthorized"
+  },
+  {
+    "id": "M:B5",
+    "axis": "M:B",
+    "title": "Own PermissionedResolver: owner holds all root roles"
+  },
+  {
+    "id": "M:B6",
+    "axis": "M:B",
+    "title": "Own PermissionedResolver: partial roles",
+    "notes": "Per-key text/data roles; per-coin address roles"
+  },
+  {
+    "id": "M:B7",
+    "axis": "M:B",
+    "title": "PermissionedResolver with linked records",
+    "notes": "`linkToNode`, `linkToRecord`, shared record IDs"
+  },
+  {
+    "id": "M:B8",
+    "axis": "M:B",
+    "title": "ENSv1 name read through the `ENSV1Resolver` bridge (A23, and every v1 name via the v2 UR)"
+  },
+  {
+    "id": "M:B9",
+    "axis": "M:B",
+    "title": "On-chain wildcard (ENSIP-10 extended resolver on a parent)",
+    "notes": "`inherited = true`"
+  },
+  {
+    "id": "M:B10",
+    "axis": "M:B",
+    "title": "Off-chain CCIP-Read through a local gateway fixture"
+  },
+  {
+    "id": "M:B11",
+    "axis": "M:B",
+    "title": "CCIP gateway failing: HTTP error, timeout, bad response"
+  },
+  {
+    "id": "M:B12",
+    "axis": "M:B",
+    "title": "Spoofed `OffchainLookup` sender",
+    "notes": "`InvalidOffchainLookup`"
+  },
+  {
+    "id": "M:B13",
+    "axis": "M:B",
+    "title": "No resolver set, on the name or any parent"
+  },
+  {
+    "id": "M:B14",
+    "axis": "M:B",
+    "title": "Resolver set to an EOA or a non-contract"
+  },
+  {
+    "id": "M:B15",
+    "axis": "M:B",
+    "title": "Resolver that reverts on every call"
+  },
+  {
+    "id": "M:B16",
+    "axis": "M:B",
+    "title": "Registry that reverts during resolution",
+    "notes": "`ResolutionError` (mainnet wrapping)"
+  },
+  {
+    "id": "M:B17",
+    "axis": "M:B",
+    "title": "Resolver answering `0x`, or data not a multiple of 32 bytes",
+    "notes": "ensjs success heuristic"
+  },
+  {
+    "id": "M:C1",
+    "axis": "M:C",
+    "title": "Root `\"\"`",
+    "notes": "Rejected by every name action"
+  },
+  {
+    "id": "M:C2",
+    "axis": "M:C",
+    "title": "TLDs: `eth`, `reverse`, `arpa`, a DNS TLD"
+  },
+  {
+    "id": "M:C3",
+    "axis": "M:C",
+    "title": "Reverse names",
+    "notes": "`<addr>.addr.reverse`, `<addr>.default.reverse`, `<addr>.<coinTypeHex>.reverse` (ENSIP-19)"
+  },
+  {
+    "id": "M:C4",
+    "axis": "M:C",
+    "title": "DNSSEC-imported DNS name (on-chain, DNSRegistrar / TemporaryDNSRegistrar)"
+  },
+  {
+    "id": "M:C5",
+    "axis": "M:C",
+    "title": "Off-chain DNS name (`ENS1` TXT via OffchainDNSResolver)",
+    "notes": "Devnet DNS fixture, or fork/live only"
+  },
+  {
+    "id": "M:C6",
+    "axis": "M:C",
+    "title": "Encoded labels `[labelhash]`",
+    "notes": "Unknown label: label-keyed reads skipped. Known to the LabelStore: `getLabel` recovers it"
+  },
+  {
+    "id": "M:C7",
+    "axis": "M:C",
+    "title": "Normalization inputs",
+    "notes": "Uppercase, emoji, ZWJ sequences, mixed scripts, confusables, underscores, `[`/`]`, very long labels, empty labels (`a..eth`), leading or trailing dots"
+  },
+  {
+    "id": "M:C8",
+    "axis": "M:C",
+    "title": "Non-normalizable names that exist on-chain (registered by hash)",
+    "notes": "Readable by namehash only. The API rejects them with `INVALID_NAME`"
+  },
+  {
+    "id": "M:C9",
+    "axis": "M:C",
+    "title": "Labels at the registrar minimum length boundary (2, 3, 4, 5+ characters for pricing)"
+  },
+  {
+    "id": "M:D1",
+    "axis": "M:D",
+    "title": "Canonical owner"
+  },
+  {
+    "id": "M:D2",
+    "axis": "M:D",
+    "title": "v1 manager only"
+  },
+  {
+    "id": "M:D3",
+    "axis": "M:D",
+    "title": "v1 registrant only"
+  },
+  {
+    "id": "M:D4",
+    "axis": "M:D",
+    "title": "Operator via `setApprovalForAll` (registry, registrar, wrapper, v2 registry)"
+  },
+  {
+    "id": "M:D5",
+    "axis": "M:D",
+    "title": "Token-approved address (`approve`)"
+  },
+  {
+    "id": "M:D6",
+    "axis": "M:D",
+    "title": "Resolver delegate (`approve(node, delegate)`)"
+  },
+  {
+    "id": "M:D7",
+    "axis": "M:D",
+    "title": "v2 role holder without ownership"
+  },
+  {
+    "id": "M:D8",
+    "axis": "M:D",
+    "title": "Parent owner (wrapped parent-controlled child; v2 parent registry admin)"
+  },
+  {
+    "id": "M:D9",
+    "axis": "M:D",
+    "title": "HCA account"
+  },
+  {
+    "id": "M:D10",
+    "axis": "M:D",
+    "title": "Contract account (Ownable, ContractNamer)"
+  },
+  {
+    "id": "M:D11",
+    "axis": "M:D",
+    "title": "Unrelated account"
+  },
+  {
+    "id": "M:D12",
+    "axis": "M:D",
+    "title": "No wallet (read-only client)"
+  },
+  {
+    "id": "M:E1",
+    "axis": "M:E",
+    "title": "Exactly at `expiry`"
+  },
+  {
+    "id": "M:E2",
+    "axis": "M:E",
+    "title": "Exactly at `gracePeriodEnd`"
+  },
+  {
+    "id": "M:E3",
+    "axis": "M:E",
+    "title": "One second before and after E1 and E2"
+  },
+  {
+    "id": "M:E4",
+    "axis": "M:E",
+    "title": "Historical reads with `blockNumber` / `blockTag` before and after a change"
+  },
+  {
+    "id": "M:E5",
+    "axis": "M:E",
+    "title": "Plan built at time T, sent after state changes (stale plan)"
+  },
+  {
+    "id": "M:F1",
+    "axis": "M:F",
+    "title": "Devnet (contracts-v2 v1.0.1 source semantics)"
+  },
+  {
+    "id": "M:F2",
+    "axis": "M:F",
+    "title": "Mainnet fork (`ResolutionError` wrapping, real bytecode)"
+  },
+  {
+    "id": "M:F3",
+    "axis": "M:F",
+    "title": "Sepolia fork"
+  },
+  {
+    "id": "M:F4",
+    "axis": "M:F",
+    "title": "`ccipRead: false`"
+  },
+  {
+    "id": "M:F5",
+    "axis": "M:F",
+    "title": "Custom gateway URLs"
+  },
+  {
+    "id": "M:F6",
+    "axis": "M:F",
+    "title": "No multicall3 on the chain"
+  },
+  {
+    "id": "M:F7",
+    "axis": "M:F",
+    "title": "`batch` disabled"
+  },
+  {
+    "id": "M:F8",
+    "axis": "M:F",
+    "title": "ENSv1-only deployment profile"
+  },
+  {
+    "id": "M:F9",
+    "axis": "M:F",
+    "title": "ENSv2-only deployment profile"
+  }
+]
