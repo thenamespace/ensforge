@@ -28,3 +28,22 @@ export const ensforge = (devnet: DevnetInstance, account?: Address) => {
 
 /** Runs an ensforge Promise call inside a test. */
 export const call = <A>(promise: () => Promise<A>) => Effect.promise(promise);
+
+/**
+ * Runs `effect` on a new block mined at `timestamp`, then reverts the chain, so tests can read
+ * state at a moment without changing the shared devnet.
+ */
+export const atTimestamp = <A, E, R>(
+  devnet: DevnetInstance,
+  timestamp: bigint,
+  effect: Effect.Effect<A, E, R>,
+) =>
+  Effect.acquireUseRelease(
+    Effect.promise(() => devnet.client.snapshot()),
+    () =>
+      Effect.promise(async () => {
+        await devnet.client.setNextBlockTimestamp({ timestamp });
+        await devnet.client.mine({ blocks: 1 });
+      }).pipe(Effect.andThen(effect)),
+    (id) => Effect.promise(() => devnet.client.revert({ id })),
+  );
