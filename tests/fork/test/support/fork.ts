@@ -54,6 +54,8 @@ const startFork = Effect.fn("startFork")(function* (network: Network) {
   const contracts: Record<string, Address> = Object.fromEntries([
     ...Object.entries(deployments.v1.contracts).map(([key, address]) => [`v1.${key}`, address]),
     ...Object.entries(deployments.v2.contracts).map(([key, address]) => [`v2.${key}`, address]),
+    // Named as on the devnet, so the integration helpers (`usdcOf`) read the real token.
+    ...Object.entries(deployments.v2.paymentTokens).map(([key, address]) => [`v2.${key}`, address]),
   ]);
   const base = network === "mainnet" ? mainnet : sepolia;
   const chain = defineChain({
@@ -63,6 +65,17 @@ const startFork = Effect.fn("startFork")(function* (network: Network) {
       ...base.contracts,
       ensUniversalResolver: { address: deployments.v2.contracts.universalResolver },
     },
+  });
+
+  // Anvil's well-known accounts carry code on real networks (EIP-7702 delegations to sweepers),
+  // so they would reject token callbacks: clear it, so they behave as on a devnet.
+  const client = devnetClient(rpcUrl, chain);
+  yield* Effect.tryPromise({
+    try: () =>
+      Promise.all(
+        Object.values(accounts).map((address) => client.setCode({ address, bytecode: "0x" })),
+      ),
+    catch: (cause) => new ForkError({ message: `could not clear account code: ${String(cause)}` }),
   });
 
   return {
@@ -79,7 +92,7 @@ const startFork = Effect.fn("startFork")(function* (network: Network) {
     ledger: new Map(),
     seed: undefined,
     accounts,
-    client: devnetClient(rpcUrl, chain),
+    client,
   } satisfies DevnetInstance;
 });
 
