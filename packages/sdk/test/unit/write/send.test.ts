@@ -6,6 +6,7 @@ import { createPublicClient, createWalletClient, numberToHex, pad, type Hex } fr
 import { mainnet } from "viem/chains";
 
 import * as Ensforge from "#/client/Ensforge";
+import { sendPlan } from "#/internal/write/send";
 import { sendSequential } from "#/internal/write/transport";
 
 const account = "0x00000000000000000000000000000000000a11ce";
@@ -70,6 +71,55 @@ describe("sendSequential", () => {
         "eth_getTransactionReceipt",
         "eth_sendTransaction",
       ]);
+    }),
+  );
+});
+
+/** The `onStep` statuses of a one-step plan sent with or without `confirmLast`. */
+const statuses = (confirmLast: boolean) =>
+  Effect.gen(function* () {
+    let sent = 0;
+    const { transport } = scriptedTransport(({ method, params }) => {
+      if (method === "eth_sendTransaction") return pad(numberToHex(++sent));
+      if (method === "eth_getTransactionReceipt") return receipt(params[0] as Hex);
+      if (method === "eth_blockNumber") return "0x1";
+      if (method === "eth_estimateGas") return "0x5208";
+      return undefined;
+    });
+    const client = Ensforge.create({
+      publicClient: createPublicClient({ chain: mainnet, transport, pollingInterval: 1 }),
+    });
+    const walletClient = createWalletClient({ chain: mainnet, transport, account });
+    const events: string[] = [];
+    const plan = {
+      id: "plan",
+      operation: "test",
+      chainId: 1,
+      account,
+      steps: [
+        {
+          id: "only",
+          description: "Only step",
+          calls: [{ to: target, data: "0x01", value: 0n }],
+        },
+      ],
+      calls: [{ to: target, data: "0x01", value: 0n }],
+    } as const;
+    yield* sendPlan(client, plan as never, { walletClient, account } as never, {
+      simulate: false,
+      mode: "sequential",
+      confirmLast,
+      onStep: (event) => events.push(event.status),
+    });
+    return events;
+  });
+
+describe("sendPlan", () => {
+  // `…Sync` writes wait for the last step too; its listeners hear it confirmed like the others.
+  it.effect("reports the last step confirmed when asked to wait for it", () =>
+    Effect.gen(function* () {
+      assert.deepStrictEqual(yield* statuses(true), ["submitted", "confirmed"]);
+      assert.deepStrictEqual(yield* statuses(false), ["submitted"]);
     }),
   );
 });

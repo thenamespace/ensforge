@@ -139,7 +139,7 @@ export const write = <options, error extends EnsforgeError>(
     ): Effect.fn.Return<Write.SyncResult, error | AnyError> {
       const plan = yield* planned(client, options);
       const signer = yield* resolveSigner(client, options.account);
-      const result = yield* sendPlan(client, plan, signer, options).pipe(
+      const result = yield* sendPlan(client, plan, signer, { ...options, confirmLast: true }).pipe(
         Effect.catch((error: AnyError) =>
           explained(client, options, addressOf(signer.account), explain, error).pipe(
             Effect.flatMap(Effect.fail),

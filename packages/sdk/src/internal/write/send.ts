@@ -62,7 +62,11 @@ export const sendPlan = Effect.fnUntraced(function* (
   client: Client,
   plan: Plan,
   signer: Signer,
-  options: Write.Options & Pick<Write.SyncOptions, "timeout">,
+  options: Write.Options &
+    Pick<Write.SyncOptions, "confirmations" | "timeout"> & {
+      /** Wait for the last step's receipts too (`…Sync` writes), so it reports `confirmed`. */
+      readonly confirmLast?: boolean | undefined;
+    },
   resumed?: Plan.Record,
 ): Effect.fn.Return<Write.Result, AnyError> {
   const simulate = options.simulate ?? client.config.simulate;
@@ -208,6 +212,12 @@ export const sendPlan = Effect.fnUntraced(function* (
       hashes.push(...sent);
       previous = { steps: group, hashes: sent };
       index += group.length;
+    }
+
+    if (options.confirmLast === true && previous.hashes.length > 0) {
+      yield* receiptsOf(client, previous.hashes, options);
+      for (const done of previous.steps)
+        emit({ step: done, status: "confirmed", hashes: previous.hashes });
     }
   });
 

@@ -96,7 +96,7 @@ export const migrateSync = Effect.fn("ensforge.migration.migrateSync")(
       addressOf(options.account) ?? client.account,
     );
     const signer = yield* resolveSigner(client, options.account);
-    const result = yield* sendPlan(client, migration, signer, options);
+    const result = yield* sendPlan(client, migration, signer, { ...options, confirmLast: true });
     const receipts = yield* waitForReceipts(client, result, options);
 
     yield* verifyMigration(client, expectations);
