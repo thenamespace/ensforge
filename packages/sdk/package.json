@@ -98,7 +98,7 @@
     "@ensforge/tool-typedoc": "workspace:*",
     "viem": "catalog:",
     "wagmi": "catalog:",
-    "wagmi-v2": "npm:wagmi@2.19.5"
+    "wagmi-v2": "catalog:"
   },
   "peerDependencies": {
     "effect": "^4.1.4",

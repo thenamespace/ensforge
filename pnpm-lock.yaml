@@ -173,6 +173,18 @@ settings:
 
 catalogs:
   default:
+    '@arethetypeswrong/cli':
+      specifier: 0.18.5
+      version: 0.18.5
+    '@changesets/cli':
+      specifier: 3.0.3
+      version: 3.0.3
+    '@commitlint/cli':
+      specifier: 21.2.4
+      version: 21.2.4
+    '@commitlint/config-conventional':
+      specifier: 21.2.4
+      version: 21.2.4
     '@effect/atom-react':
       specifier: 4.1.4
       version: 4.1.4
@@ -185,6 +197,12 @@ catalogs:
     '@ensdomains/content-hash':
       specifier: 3.2.0
       version: 3.2.0
+    '@testing-library/react':
+      specifier: 16.3.3
+      version: 16.3.3
+    '@types/node':
+      specifier: 26.6.6
+      version: 26.6.6
     '@types/react':
       specifier: 19.3.0
       version: 19.3.0
@@ -200,15 +218,45 @@ catalogs:
     fflate:
       specifier: 0.8.3
       version: 0.8.3
+    jsdom:
+      specifier: 31.0.1
+      version: 31.0.1
+    klarity:
+      specifier: 0.3.0
+      version: 0.3.0
+    lefthook:
+      specifier: 2.2.2
+      version: 2.2.2
+    oxfmt:
+      specifier: 0.78.0
+      version: 0.78.0
+    oxlint:
+      specifier: 1.93.0
+      version: 1.93.0
+    publint:
+      specifier: 0.3.25
+      version: 0.3.25
     react:
       specifier: 19.3.1
       version: 19.3.1
     react-dom:
       specifier: 19.3.1
       version: 19.3.1
+    rolldown:
+      specifier: 1.3.2
+      version: 1.3.2
     scheduler:
       specifier: 0.28.0
       version: 0.28.0
+    turbo:
+      specifier: 2.11.11
+      version: 2.11.11
+    typedoc:
+      specifier: 0.28.20
+      version: 0.28.20
+    typescript:
+      specifier: 7.0.2
+      version: 7.0.2
     viem:
       specifier: 2.57.20
       version: 2.57.20
@@ -218,6 +266,13 @@ catalogs:
     wagmi:
       specifier: 3.7.11
       version: 3.7.11
+    wagmi-v2:
+      specifier: npm:wagmi@2.19.5
+      version: 2.19.5
+  typescript6:
+    typescript:
+      specifier: 6.0.3
+      version: 6.0.3
 
 overrides:
   tslib: 2.9.1
@@ -228,52 +283,52 @@ importers:
   .:
     devDependencies:
       '@arethetypeswrong/cli':
-        specifier: 0.18.5
+        specifier: 'catalog:'
         version: 0.18.5
       '@changesets/cli':
-        specifier: 3.0.3
+        specifier: 'catalog:'
         version: 3.0.3
       '@commitlint/cli':
-        specifier: 21.2.4
+        specifier: 'catalog:'
         version: 21.2.4(conventional-commits-parser@7.1.2)(typescript@7.0.2)
       '@commitlint/config-conventional':
-        specifier: 21.2.4
+        specifier: 'catalog:'
         version: 21.2.4
       '@effect/vitest':
         specifier: 'catalog:'
         version: 4.1.4(effect@4.1.4)(vitest@5.1.0)
       '@types/node':
-        specifier: 26.6.6
+        specifier: 'catalog:'
         version: 26.6.6
       effect:
         specifier: 'catalog:'
         version: 4.1.4
       klarity:
-        specifier: 0.3.0
+        specifier: 'catalog:'
         version: 0.3.0(@commitlint/cli@21.2.4(conventional-commits-parser@7.1.2)(typescript@7.0.2))(@commitlint/config-conventional@21.2.4)(@vitest/coverage-v8@5.1.0)(lefthook@2.2.2)(oxfmt@0.78.0)(oxlint@1.93.0)(publint@0.3.25)(tsdown@0.23.7(@arethetypeswrong/core@0.18.5)(@volar/typescript@2.4.28(typescript@7.0.2))(@vue/language-core@3.3.11)(publint@0.3.25)(tsx@4.22.4)(typescript@7.0.2)(vue-tsc@3.3.11(typescript@7.0.2)))(turbo@2.11.11)(typescript@7.0.2)(vitest@5.1.0)
       lefthook:
-        specifier: 2.2.2
+        specifier: 'catalog:'
         version: 2.2.2
       oxfmt:
-        specifier: 0.78.0
+        specifier: 'catalog:'
         version: 0.78.0
       oxlint:
-        specifier: 1.93.0
+        specifier: 'catalog:'
         version: 1.93.0
       publint:
-        specifier: 0.3.25
+        specifier: 'catalog:'
         version: 0.3.25
       rolldown:
-        specifier: 1.3.2
+        specifier: 'catalog:'
         version: 1.3.2
       tslib:
         specifier: 2.9.1
         version: 2.9.1
       turbo:
-        specifier: 2.11.11
+        specifier: 'catalog:'
         version: 2.11.11
       typescript:
-        specifier: 7.0.2
+        specifier: 'catalog:'
         version: 7.0.2
       viem:
         specifier: 'catalog:'
@@ -338,7 +393,7 @@ importers:
         specifier: workspace:*
         version: link:../../tests/harness
       '@testing-library/react':
-        specifier: 16.3.3
+        specifier: 'catalog:'
         version: 16.3.3(@testing-library/dom@10.4.2)(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       '@types/react':
         specifier: 'catalog:'
@@ -347,7 +402,7 @@ importers:
         specifier: 'catalog:'
         version: 19.3.0(@types/react@19.3.0)
       jsdom:
-        specifier: 31.0.1
+        specifier: 'catalog:'
         version: 31.0.1(@noble/hashes@1.8.0)
       react:
         specifier: 'catalog:'
@@ -402,7 +457,7 @@ importers:
         specifier: 'catalog:'
         version: 3.7.11(@coinbase/wallet-sdk@4.3.6(@types/react@19.3.0)(bufferutil@4.1.0)(immer@11.1.18)(react@18.3.1)(typescript@7.0.2)(use-sync-external-store@1.4.0(react@18.3.1))(utf-8-validate@5.0.10)(zod@4.5.4))(@safe-global/safe-apps-provider@0.18.6(bufferutil@4.1.0)(typescript@7.0.2)(utf-8-validate@5.0.10)(zod@4.5.4))(@safe-global/safe-apps-sdk@9.1.0(bufferutil@4.1.0)(typescript@7.0.2)(utf-8-validate@5.0.10)(zod@4.5.4))(@tanstack/query-core@5.102.8)(@tanstack/react-query@5.102.8(react@18.3.1))(@types/react@19.3.0)(@walletconnect/ethereum-provider@2.21.1(@types/react@19.3.0)(bufferutil@4.1.0)(react@18.3.1)(typescript@7.0.2)(utf-8-validate@5.0.10)(zod@4.5.4))(immer@11.1.18)(react@19.3.1)(typescript@7.0.2)(viem@2.57.20(bufferutil@4.1.0)(typescript@7.0.2)(utf-8-validate@5.0.10)(zod@4.5.4))
       wagmi-v2:
-        specifier: npm:wagmi@2.19.5
+        specifier: 'catalog:'
         version: wagmi@2.19.5(@coinbase/wallet-sdk@4.3.6(@types/react@19.3.0)(bufferutil@4.1.0)(immer@11.1.18)(react@18.3.1)(typescript@7.0.2)(use-sync-external-store@1.4.0(react@18.3.1))(utf-8-validate@5.0.10)(zod@4.5.4))(@tanstack/query-core@5.102.8)(@tanstack/react-query@5.102.8(react@18.3.1))(@types/react@19.3.0)(@walletconnect/ethereum-provider@2.21.1(@types/react@19.3.0)(bufferutil@4.1.0)(react@18.3.1)(typescript@7.0.2)(utf-8-validate@5.0.10)(zod@4.5.4))(bufferutil@4.1.0)(debug@4.4.3(supports-color@7.2.0))(immer@11.1.18)(react@18.3.1)(supports-color@7.2.0)(typescript@7.0.2)(utf-8-validate@5.0.10)(viem@2.57.20(bufferutil@4.1.0)(typescript@7.0.2)(utf-8-validate@5.0.10)(zod@4.5.4))(wagmi@3.7.11)(zod@4.5.4)
 
   tests/harness:
@@ -423,10 +478,10 @@ importers:
   tools/typedoc:
     devDependencies:
       typedoc:
-        specifier: 0.28.20
+        specifier: 'catalog:'
         version: 0.28.20(typescript@6.0.3)
       typescript:
-        specifier: 6.0.3
+        specifier: catalog:typescript6
         version: 6.0.3
 
 packages:
