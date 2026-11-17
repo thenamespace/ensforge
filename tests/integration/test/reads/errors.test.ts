@@ -37,6 +37,21 @@ describe("read errors", () => {
       }),
     );
 
+    // The resolver answers only the legacy `addr(bytes32)`, with an OffchainLookup another
+    // contract sent; that is the failure to report, not the missing ENSIP-9 profile.
+    it.effect("address reads report a spoofed lookup behind a missing profile", () =>
+      Effect.gen(function* () {
+        const fixtures = yield* Fixtures;
+        const ens = ensforge(yield* Devnet);
+        const name = fixtures.byId("resolver.spoofed-offchain-lookup").name;
+
+        yield* fails(() => ens.record.getAddress({ name }), {
+          _tag: "GatewayError",
+          code: "OFFCHAIN_LOOKUP_INVALID",
+        });
+      }),
+    );
+
     it.effect("history scans past their request budget", () =>
       Effect.gen(function* () {
         const ens = ensforge(yield* Devnet);
