@@ -116,8 +116,14 @@ export const ensAtom = <action extends Action>(
       client,
       action,
       options,
-      JSON.stringify(freshness, (_, value: unknown) =>
-        Duration.isDuration(value) ? Duration.toMillis(value) : value,
+      // Durations become milliseconds first: `JSON.stringify` calls their `toJSON` before a replacer.
+      JSON.stringify(
+        Object.fromEntries(
+          Object.entries(freshness).map(([option, value]) => [
+            option,
+            Duration.isDuration(value) ? Duration.toMillis(value) : value,
+          ]),
+        ),
       ),
     ),
   ) as ReadAtom<ActionValue<action>, ActionError<action>>;

@@ -1,5 +1,5 @@
 import { assert, describe, it } from "@effect/vitest";
-import { Effect } from "effect";
+import { Duration, Effect } from "effect";
 import { AsyncResult, AtomRegistry } from "effect/reactivity";
 
 import { ensAtom, invalidate } from "@ensforge/react/atoms";
@@ -27,6 +27,17 @@ describe("ensAtom", () => {
       assert.strictEqual(calls.length, 1);
     }),
   );
+
+  // Regression: a `Duration` serialized through its `toJSON`, so the read kept no freshness.
+  it("reads `Duration` freshness as the same milliseconds", () => {
+    const ens = client();
+    const { action } = fakeRead("test.fresh", (options: { name: string }) => options.name);
+
+    assert.strictEqual(
+      ensAtom(ens, action, { name: "a.eth" }, { staleTime: Duration.seconds(30) }),
+      ensAtom(ens, action, { name: "a.eth" }, { staleTime: 30_000 }),
+    );
+  });
 
   it.effect("runs Effect actions and keeps their typed failures", () =>
     Effect.gen(function* () {
