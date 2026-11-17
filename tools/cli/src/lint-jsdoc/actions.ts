@@ -2,9 +2,7 @@ import { relative, join } from "node:path";
 
 import * as ts from "typescript/unstable/ast";
 
-import { isExported, jsdocOf } from "./source.ts";
-
-const sections = new Set(["**When to use**", "**Details**", "**Gotchas**"]);
+import { isExported, jsdocOf } from "../jsdoc.ts";
 
 /**
  * Problems in one action file (`src/actions/<domain>/<action>/index.ts`): the Effect-style doc
@@ -59,7 +57,8 @@ export const checkActionFile = (
 
       const example = /^\*\*Example\*\* \((.+)\)$/.exec(line);
       if (example === null) {
-        if (!sections.has(line)) fail(`unknown section heading ${line}`);
+        if (!["**When to use**", "**Details**", "**Gotchas**"].includes(line))
+          fail(`unknown section heading ${line}`);
         if (line === "**When to use**") {
           const first = lines.slice(index + 1).find((next) => next.trim() !== "");
           if (!/^Use (to|when|as|with)\b/.test(first?.trim() ?? ""))

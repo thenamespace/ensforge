@@ -2,8 +2,6 @@ import { SymbolFlags, type Symbol as TsSymbol } from "typescript/unstable/sync";
 
 import type { Project } from "../services/TypeScript.ts";
 
-const meaning = SymbolFlags.Value | SymbolFlags.Type | SymbolFlags.Namespace | SymbolFlags.Alias;
-
 /**
  * Every dotted path the entries export (`Actions.record.get`, `Errors.InvalidInputError`,
  * `getText.Options`), so links may name public API from files that do not import it.
@@ -40,7 +38,12 @@ export const exportedPaths = (
 const resolvesAt = (project: Project, file: string, position: number, target: string): boolean => {
   const { checker } = project;
   const [first = "", ...rest] = target.split(".");
-  let symbol = checker.resolveName(first, meaning, { document: file, position }, false);
+  let symbol = checker.resolveName(
+    first,
+    SymbolFlags.Value | SymbolFlags.Type | SymbolFlags.Namespace | SymbolFlags.Alias,
+    { document: file, position },
+    false,
+  );
 
   for (const segment of rest) {
     if (symbol === undefined) return false;

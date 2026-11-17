@@ -57,8 +57,8 @@ export const examples = Effect.fn("examples")(function* () {
       cwd: workspace.packageDir,
     })
     .pipe(
-      Effect.catchTag("ToolFailed", ({ output }) =>
-        Effect.fail(
+      Effect.mapError(
+        ({ output }) =>
           new CheckFailed({
             check: "examples",
             problems: [
@@ -66,7 +66,6 @@ export const examples = Effect.fn("examples")(function* () {
               `${new Set(output.match(/[\w.-]+__\d+\.tsx?/g) ?? []).size} of ${count} examples fail to type-check`,
             ],
           }),
-        ),
       ),
     );
   yield* Console.log(`examples: ok (${count} examples)`);

@@ -137,9 +137,8 @@ export const define = <const profile extends Profile>(profile: profile): profile
 
   if (typeof profile.name !== "string" || profile.name.length === 0)
     issues.push("name must be a non-empty string");
-  if (!Number.isSafeInteger(profile.chainId) || profile.chainId <= 0) {
+  if (!Number.isSafeInteger(profile.chainId) || profile.chainId <= 0)
     issues.push("chainId must be a positive integer");
-  }
   if (profile.v1 === undefined && profile.v2 === undefined)
     issues.push("at least one of v1 and v2 is required");
   if (profile.v1 !== undefined) validateV1(profile.v1, profile.chainId, issues);
@@ -234,8 +233,6 @@ const v2GroupKeys = {
   paymentTokens: { required: ["dai", "usdc"], optional: [] } satisfies Keys<V2PaymentTokens>,
 } as const;
 
-const optionalV2Groups = new Set(["dns", "hca", "paymentTokens"]);
-
 const capabilityValues = {
   resolutionErrorWrapping: [true, false],
   wrapperRegistryInitializer: ["explicit", "fuse-derived"],
@@ -300,6 +297,7 @@ const validateV1 = (deployment: V1, chainId: number, issues: string[]): void => 
   validateIdentity("v1", deployment, chainId, issues);
   if (deployment.protocol !== "v1") issues.push('v1.protocol must be "v1"');
   validateGroup("v1.contracts", deployment.contracts, v1ContractKeys, issues);
+
   for (const key of ["legacyPublicResolvers", "frozenPublicResolvers"] as const) {
     const addresses: unknown = deployment[key];
     if (
@@ -320,7 +318,7 @@ const validateV2 = (deployment: V2, chainId: number, issues: string[]): void => 
 
   for (const [group, keys] of Object.entries(v2GroupKeys)) {
     const value = deployment[group as keyof typeof v2GroupKeys];
-    if (value === undefined && optionalV2Groups.has(group)) continue;
+    if (value === undefined && ["dns", "hca", "paymentTokens"].includes(group)) continue;
     validateGroup(`v2.${group}`, value, keys, issues);
   }
 
@@ -329,12 +327,10 @@ const validateV2 = (deployment: V2, chainId: number, issues: string[]): void => 
     issues.push("v2.capabilities is required");
     return;
   }
+
+  const flags = capabilities as Readonly<Record<string, unknown>>;
   for (const [flag, allowed] of Object.entries(capabilityValues)) {
-    if (
-      !(allowed as readonly unknown[]).includes(
-        (capabilities as Readonly<Record<string, unknown>>)[flag],
-      )
-    ) {
+    if (!(allowed as readonly unknown[]).includes(flags[flag])) {
       issues.push(
         `v2.capabilities.${flag} must be one of ${allowed.map((value) => JSON.stringify(value)).join(", ")}`,
       );

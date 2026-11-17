@@ -5,9 +5,6 @@ import { CheckFailed } from "../errors.ts";
 import { TypeScript } from "../services/TypeScript.ts";
 import { Workspace } from "../services/Workspace.ts";
 
-const importsOf = (text: string): string[] =>
-  [...text.matchAll(/(?:from|import)\s*\(?\s*"([^"]+)"/g)].map((match) => match[1] ?? "");
-
 /**
  * Checks the built declarations: those reachable from the `effectFree` entries never import
  * `effect` (Promise users never need its types), and `verify/consumer.ts`, which imports the
@@ -28,7 +25,8 @@ export const distTypes = Effect.fn("distTypes")(function* () {
       const file = pending.pop() ?? "";
       if (seen.has(file) || !(yield* fs.exists(file))) continue;
       seen.add(file);
-      for (const specifier of importsOf(yield* fs.readFileString(file))) {
+      const text = yield* fs.readFileString(file);
+      for (const [, specifier = ""] of text.matchAll(/(?:from|import)\s*\(?\s*"([^"]+)"/g)) {
         if (specifier === "effect" || specifier.startsWith("effect/"))
           problems.push(
             `${entry.name}: ${path.relative(workspace.packageDir, file)} imports "${specifier}"`,

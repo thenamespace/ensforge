@@ -1,3 +1,5 @@
+import { Predicate } from "effect";
+
 type Parameter = { readonly type: string; readonly components?: readonly Parameter[] };
 type AbiItem = {
   readonly type: string;
@@ -12,8 +14,7 @@ export const isAbi = (value: unknown): value is readonly AbiItem[] =>
   Array.isArray(value) &&
   value.length > 0 &&
   value.every(
-    (item) =>
-      typeof item === "object" && item !== null && typeof (item as AbiItem).type === "string",
+    (item) => Predicate.isObjectOrArray(item) && Predicate.isString((item as AbiItem).type),
   );
 
 const parameterType = (parameter: Parameter): string =>

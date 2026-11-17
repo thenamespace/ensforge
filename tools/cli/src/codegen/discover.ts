@@ -2,10 +2,8 @@ import { join } from "node:path";
 
 import * as ts from "typescript/unstable/ast";
 
+import { isExported, jsdocBlockOf } from "../jsdoc.ts";
 import type { Project } from "../services/TypeScript.ts";
-
-/** Names an action group may not use: they are top-level members of the client. */
-const reserved = new Set(["chain", "account", "deployment", "publicClient", "config", "extend"]);
 
 /** Properties that make an action a write (built by `Action.write`). */
 export const writeMethods = ["prepare", "simulate", "estimateGas"] as const;
@@ -29,15 +27,6 @@ export type Domain = {
 
 export const isWrite = (action: Action): boolean =>
   writeMethods.every((method) => action.properties.includes(method));
-
-const isExported = (node: { readonly modifiers?: readonly ts.Node[] | undefined }): boolean =>
-  node.modifiers?.some((modifier) => modifier.kind === ts.SyntaxKind.ExportKeyword) ?? false;
-
-const leadingJsDoc = (node: ts.Node, source: ts.SourceFile): string => {
-  const last = (ts.getLeadingCommentRanges(source.text, node.getFullStart()) ?? []).at(-1);
-  const text = last === undefined ? "" : source.text.slice(last.pos, last.end);
-  return text.startsWith("/**") ? text : "";
-};
 
 /** The action folders of each domain under `src/actions`, sorted, with the files they have. */
 export type Layout = readonly {
@@ -63,7 +52,7 @@ const readActions = (project: Project, file: string, folder: string): Action[] =
       actions.set(name, {
         name,
         folder,
-        jsdoc: leadingJsDoc(statement, source),
+        jsdoc: jsdocBlockOf(statement, source) ?? "",
         properties: [],
         types: [],
       });
@@ -117,7 +106,9 @@ export const discover = (
   const problems: string[] = [];
 
   const domains = layout.map(({ domain, folders }) => {
-    if (reserved.has(domain)) problems.push(`domain "${domain}" uses a reserved client name`);
+    // Top-level client members that an action group's name would shadow.
+    if (["chain", "account", "deployment", "publicClient", "config", "extend"].includes(domain))
+      problems.push(`domain "${domain}" uses a reserved client name`);
 
     const actions = folders.flatMap(({ folder, files }) => {
       if (!files.includes("index.ts") || !files.includes("effect.ts")) {

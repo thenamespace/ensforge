@@ -12,11 +12,11 @@ import {
   treeBarrel,
 } from "../codegen/render.ts";
 import { CheckFailed, SetupError } from "../errors.ts";
-import { formatFiles } from "../services/Format.ts";
+import { Tools } from "../services/Tools.ts";
 import { TypeScript } from "../services/TypeScript.ts";
 import { Workspace } from "../services/Workspace.ts";
 
-const sortedDirectories = Effect.fn("codegen.directories")(function* (folder: string) {
+const sortedDirectories = Effect.fn("codegen.sortedDirectories")(function* (folder: string) {
   const fs = yield* FileSystem.FileSystem;
   const path = yield* Path.Path;
   const names: string[] = [];
@@ -34,8 +34,10 @@ const sortedDirectories = Effect.fn("codegen.directories")(function* (folder: st
 export const codegen = Effect.fn("codegen")(function* (check: boolean) {
   const workspace = yield* Workspace;
   const typescript = yield* TypeScript;
+  const tools = yield* Tools;
   const fs = yield* FileSystem.FileSystem;
   const path = yield* Path.Path;
+
   if (workspace.config.codegen === undefined)
     return yield* new SetupError({
       message: `${workspace.name} has no "ensforge.codegen" setting.`,
@@ -54,6 +56,7 @@ export const codegen = Effect.fn("codegen")(function* (check: boolean) {
     }
     layout.push({ domain, folders });
   }
+
   const project = yield* typescript.open(
     layout.flatMap(({ domain, folders }) =>
       folders.flatMap(({ folder, files }) =>
@@ -84,9 +87,17 @@ export const codegen = Effect.fn("codegen")(function* (check: boolean) {
     yield* fs.makeDirectory(path.dirname(path.join(stage, file)), { recursive: true });
     yield* fs.writeFileString(path.join(stage, file), text);
   }
-  yield* formatFiles([...outputs.keys()].map((file) => path.join(stage, file)));
-
-  const actionCount = domains.flatMap((domain) => domain.actions).length;
+  const oxfmtConfig = path.join(workspace.root, ".config/oxfmt.config.ts");
+  yield* tools.run(
+    "pnpm",
+    [
+      "exec",
+      "oxfmt",
+      ...((yield* fs.exists(oxfmtConfig)) ? ["-c", oxfmtConfig] : []),
+      ...[...outputs.keys()].map((file) => path.join(stage, file)),
+    ],
+    { cwd: workspace.root },
+  );
   if (!check) return yield* Console.log(`codegen: wrote ${outputs.size} files`);
 
   const stale: string[] = [];
@@ -103,7 +114,9 @@ export const codegen = Effect.fn("codegen")(function* (check: boolean) {
       problems: [...stale, "Generated files are stale; run `ensforge-dev codegen`."],
     });
   }
-  yield* Console.log(`codegen: ok (${domains.length} domains, ${actionCount} actions)`);
+  yield* Console.log(
+    `codegen: ok (${domains.length} domains, ${domains.flatMap((domain) => domain.actions).length} actions)`,
+  );
 }, Effect.scoped);
 
 export const codegenCommand = Command.make(

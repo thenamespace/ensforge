@@ -2,8 +2,8 @@ import { dirname, join } from "node:path";
 
 import * as ts from "typescript/unstable/ast";
 
+import { isExported, jsdocOf } from "../jsdoc.ts";
 import type { Project } from "../services/TypeScript.ts";
-import { isExported, jsdocOf } from "./source.ts";
 
 /**
  * Exported declarations without a JSDoc block, in every module reachable from the entries

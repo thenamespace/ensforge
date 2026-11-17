@@ -31,17 +31,11 @@ export const verify = Effect.fn("verify")(function* () {
   ];
 
   const problems: string[] = [];
-  const collect = <E, R>(check: Effect.Effect<void, E | CheckFailed, R>) =>
-    check.pipe(
-      Effect.catch((error) =>
-        error instanceof CheckFailed
-          ? Effect.sync(() => {
-              problems.push(`[${error.check}]`, ...error.problems);
-            })
-          : Effect.fail(error as E),
-      ),
+  for (const check of checks) {
+    yield* Effect.catchTag(check, "CheckFailed", (failed) =>
+      Effect.sync(() => problems.push(`[${failed.check}]`, ...failed.problems)),
     );
-  for (const check of checks) yield* collect(check);
+  }
   if (problems.length > 0) return yield* new CheckFailed({ check: "verify", problems });
   yield* Console.log(`verify: ok (${workspace.name})`);
 });

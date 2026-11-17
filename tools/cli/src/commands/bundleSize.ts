@@ -28,12 +28,6 @@ const scenarios: Readonly<Record<string, readonly [pkg: string, source: string]>
 };
 
 const Budgets = Schema.fromJsonString(Schema.Record(Schema.String, Schema.Finite));
-const isExternal = (id: string) =>
-  id === "viem" ||
-  id.startsWith("viem/") ||
-  id === "react" ||
-  id.startsWith("react/") ||
-  id === "react-dom";
 
 /** Gzipped bytes an app loads up front: the entry and its static imports, not lazy chunks. */
 const measure = Effect.fn("bundleSize.measure")(function* (folder: string, source: string) {
@@ -47,7 +41,12 @@ const measure = Effect.fn("bundleSize.measure")(function* (folder: string, sourc
     try: () =>
       build({
         input: path.join(folder, "entry.mjs"),
-        external: isExternal,
+        external: (id) =>
+          id === "viem" ||
+          id.startsWith("viem/") ||
+          id === "react" ||
+          id.startsWith("react/") ||
+          id === "react-dom",
         output: { format: "esm", minify: true },
         write: false,
         logLevel: "silent",

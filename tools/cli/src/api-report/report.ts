@@ -1,3 +1,5 @@
+import { Predicate } from "effect";
+
 import { SyntaxKind } from "typescript/unstable/ast";
 import {
   NodeBuilderFlags,
@@ -13,11 +15,6 @@ import { formatAbiItem, isAbi } from "./abi.ts";
 // TypeFormatFlags (TypeScript 7 does not export the enum): NoTruncation | InTypeAlias |
 // UseSingleQuotesForStringLiteralType | WriteArrowStyleSignature.
 const typeFlags = 1 | 8_388_608 | 268_435_456 | 262_144;
-const signatureFlags =
-  NodeBuilderFlags.NoTruncation |
-  NodeBuilderFlags.InTypeAlias |
-  NodeBuilderFlags.UseSingleQuotesForStringLiteralType |
-  NodeBuilderFlags.IgnoreErrors;
 
 const isNamespace = (symbol: TsSymbol): boolean =>
   (symbol.flags & (SymbolFlags.ValueModule | SymbolFlags.NamespaceModule)) !== 0 &&
@@ -28,9 +25,7 @@ const valueAt = (module: unknown, path: string): unknown =>
     .split(".")
     .reduce<unknown>(
       (value, key) =>
-        typeof value === "object" || typeof value === "function"
-          ? (value as Record<string, unknown> | null)?.[key]
-          : undefined,
+        Predicate.isObjectKeyword(value) ? (value as Record<string, unknown>)[key] : undefined,
       module,
     );
 
@@ -52,7 +47,10 @@ export const renderReport = (project: Project, file: string, runtime: unknown): 
       signature,
       SyntaxKind.FunctionType,
       undefined,
-      signatureFlags,
+      NodeBuilderFlags.NoTruncation |
+        NodeBuilderFlags.InTypeAlias |
+        NodeBuilderFlags.UseSingleQuotesForStringLiteralType |
+        NodeBuilderFlags.IgnoreErrors,
     );
     return node === undefined ? "" : project.print(node).replaceAll(/\s*\n\s*/g, " ");
   };
