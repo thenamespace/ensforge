@@ -1,5 +1,15 @@
 // Compiled by scripts/check-dist-types.mjs against the built declarations, as a user would.
 import { Actions, Ensforge, Errors, Name, ensActions, type Plan, type Write } from "@ensforge/core";
+import {
+  bigname,
+  defineIndexer,
+  fallback,
+  goldsky,
+  indexerActions,
+  paginate,
+  type Page,
+  type Subname,
+} from "@ensforge/core/indexer";
 import { createPublicClient, http } from "viem";
 import { mainnet } from "viem/chains";
 
@@ -41,3 +51,21 @@ export const both = Actions.record.getText(publicClient, {
 
 // @ts-expect-error only extended domains exist
 export const missing = Ensforge.create({ publicClient }).record;
+
+const indexed = Ensforge.create({
+  publicClient,
+  indexer: fallback([bigname({ cache: true }), goldsky()]),
+}).extend(indexerActions());
+export const subnames: Promise<Page<Subname>> = indexed.indexer.getSubnames({ name: "ens.eth" });
+export const indexedName = indexed.indexer.getName({ name: "jesse.base.eth", strict: true });
+export const custom = defineIndexer({
+  id: "custom",
+  getStatus: async () => ({ status: "ready", chains: {} }),
+});
+export const walk = async (): Promise<number> => {
+  let count = 0;
+  for await (const page of paginate(indexed.indexer.getSubnames, { name: "ens.eth" })) {
+    count += page.items.length;
+  }
+  return count;
+};

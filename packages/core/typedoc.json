@@ -1,6 +1,6 @@
 {
   "$schema": "https://typedoc.org/schema.json",
-  "entryPoints": ["src/index.ts", "src/effect.ts"],
+  "entryPoints": ["src/index.ts", "src/effect.ts", "src/indexer/index.ts"],
   "tsconfig": "tsconfig.json",
   "emit": "none",
   "excludeInternal": true,

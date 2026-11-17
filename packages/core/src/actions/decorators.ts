@@ -6,6 +6,7 @@ import * as approval from "./approval/index.js";
 import type { Bound, BoundWrite } from "./bound.js";
 import * as dns from "./dns/index.js";
 import * as event from "./event/index.js";
+import * as indexer from "./indexer/index.js";
 import * as migration from "./migration/index.js";
 import * as name from "./name/index.js";
 import * as permission from "./permission/index.js";
@@ -185,6 +186,82 @@ export const eventActions =
       decode: (options) => event.decode(client, options),
       get: (options) => event.get(client, options),
       watch: (options) => event.watch(client, options),
+    },
+  });
+
+/** `indexer` actions bound to a client. */
+export type IndexerActions = {
+  readonly indexer: {
+    /** Searches indexed ENS events by name, address, resolver, contract or block range. */
+    readonly getEvents: Bound<typeof indexer.getEvents>;
+    /** Reads the full history of a name, or of every name an address is related to. */
+    readonly getHistory: Bound<typeof indexer.getHistory>;
+    /** Reads one name from the indexer: owner, manager, expiry, resolver, records and protocol. */
+    readonly getName: Bound<typeof indexer.getName>;
+    /** Lists names by when they expire or leave their grace period. */
+    readonly getNamesByExpiry: Bound<typeof indexer.getNamesByExpiry>;
+    /** Lists the names an address owns, manages, holds roles on, resolves to, or used to own. */
+    readonly getNamesForAddress: Bound<typeof indexer.getNamesForAddress>;
+    /** Reads what the indexer serves for a namespace: its networks and which features are complete. */
+    readonly getNamespace: Bound<typeof indexer.getNamespace>;
+    /** Lists who can do what over a name, a registration, an account or an ENSv2 registry. */
+    readonly getPermissions: Bound<typeof indexer.getPermissions>;
+    /** Reads an address's primary name from the indexer, verified on-chain when the indexer can. */
+    readonly getPrimaryName: Bound<typeof indexer.getPrimaryName>;
+    /** Reads a name's records and its record inventory from the indexer. */
+    readonly getRecords: Bound<typeof indexer.getRecords>;
+    /** Reads an ENSv2 registry: the name it serves, its parent registry, when it was created and its counts. */
+    readonly getRegistry: Bound<typeof indexer.getRegistry>;
+    /** Lists the labels of an ENSv2 registry, optionally only those an address holds or does not hold. */
+    readonly getRegistryLabels: Bound<typeof indexer.getRegistryLabels>;
+    /** Reads a resolver and one page of the names bound to it. */
+    readonly getResolver: Bound<typeof indexer.getResolver>;
+    /** Lists the names linked to record sets on an ENSv2 resolver. */
+    readonly getResolverLinks: Bound<typeof indexer.getResolverLinks>;
+    /** Lists the role grants on an ENSv2 resolver. */
+    readonly getResolverRoles: Bound<typeof indexer.getResolverRoles>;
+    /** Lists the ENSv2 resolvers on which an address holds roles. */
+    readonly getResolvers: Bound<typeof indexer.getResolvers>;
+    /** Reads the indexer's health and how far each chain is indexed. */
+    readonly getStatus: Bound<typeof indexer.getStatus>;
+    /** Lists the direct subnames of a name. */
+    readonly getSubnames: Bound<typeof indexer.getSubnames>;
+    /** Reads up to 1,000 names and addresses in one request. */
+    readonly lookup: Bound<typeof indexer.lookup>;
+    /** Searches names by text. */
+    readonly search: Bound<typeof indexer.search>;
+  };
+};
+
+/**
+ * Adds the `indexer` actions to a client.
+ *
+ * @category decorators
+ * @since 1.0.0
+ */
+export const indexerActions =
+  () =>
+  (client: Client<object>): IndexerActions => ({
+    indexer: {
+      getEvents: (options) => indexer.getEvents(client, options),
+      getHistory: (options) => indexer.getHistory(client, options),
+      getName: (options) => indexer.getName(client, options),
+      getNamesByExpiry: (options) => indexer.getNamesByExpiry(client, options),
+      getNamesForAddress: (options) => indexer.getNamesForAddress(client, options),
+      getNamespace: (options) => indexer.getNamespace(client, options),
+      getPermissions: (options) => indexer.getPermissions(client, options),
+      getPrimaryName: (options) => indexer.getPrimaryName(client, options),
+      getRecords: (options) => indexer.getRecords(client, options),
+      getRegistry: (options) => indexer.getRegistry(client, options),
+      getRegistryLabels: (options) => indexer.getRegistryLabels(client, options),
+      getResolver: (options) => indexer.getResolver(client, options),
+      getResolverLinks: (options) => indexer.getResolverLinks(client, options),
+      getResolverRoles: (options) => indexer.getResolverRoles(client, options),
+      getResolvers: (options) => indexer.getResolvers(client, options),
+      getStatus: (options) => indexer.getStatus(client, options),
+      getSubnames: (options) => indexer.getSubnames(client, options),
+      lookup: (options) => indexer.lookup(client, options),
+      search: (options) => indexer.search(client, options),
     },
   });
 

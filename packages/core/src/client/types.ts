@@ -1,6 +1,7 @@
 import type { Deployments } from "@ensforge/contracts";
 import type { Account, Address, BlockTag, Chain, Client as ViemBaseClient, Transport } from "viem";
 
+import type { Indexer } from "../indexer/Indexer.js";
 import type { Plan } from "../plan/Plan.js";
 
 /**
@@ -39,6 +40,8 @@ export type Config = {
   readonly storage: Plan.Storage;
   /** Whether writes are simulated before the wallet prompt. */
   readonly simulate: boolean;
+  /** Indexer for `indexer.*` actions and migration discovery, when configured. */
+  readonly indexer: Indexer | undefined;
 };
 
 /**
@@ -146,4 +149,12 @@ export type CreateOptions = {
    * @default true
    */
   simulate?: boolean | undefined;
+  /**
+   * Indexer for `indexer.*` actions and for discovering records and subnames during migration:
+   * `bigname()`, `goldsky()`, `fallback([...])` or `defineIndexer({...})` from
+   * `@ensforge/core/indexer`.
+   *
+   * @default none; indexer actions fail with `INDEXER_NOT_CONFIGURED`
+   */
+  indexer?: Indexer | undefined;
 };

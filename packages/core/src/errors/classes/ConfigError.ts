@@ -21,7 +21,7 @@ const defaults: {
   }),
   INDEXER_NOT_CONFIGURED: () => ({
     shortMessage: "This action needs an indexer.",
-    hint: "Pass `indexer: bigname()` to Ensforge.create.",
+    hint: "Pass an indexer to Ensforge.create, e.g. `indexer: bigname()` from @ensforge/core/indexer.",
   }),
   INVALID_ACTION_GROUP: () => ({
     shortMessage: "A decorator added an action group with a reserved name.",

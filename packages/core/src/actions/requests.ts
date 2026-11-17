@@ -12,6 +12,25 @@ import { getRecords as dnsGetRecords } from "./dns/getRecords/effect.js";
 import { getStatus as dnsGetStatus } from "./dns/getStatus/effect.js";
 import { decode as eventDecode } from "./event/decode/effect.js";
 import { get as eventGet } from "./event/get/effect.js";
+import { getEvents as indexerGetEvents } from "./indexer/getEvents/effect.js";
+import { getHistory as indexerGetHistory } from "./indexer/getHistory/effect.js";
+import { getName as indexerGetName } from "./indexer/getName/effect.js";
+import { getNamesByExpiry as indexerGetNamesByExpiry } from "./indexer/getNamesByExpiry/effect.js";
+import { getNamesForAddress as indexerGetNamesForAddress } from "./indexer/getNamesForAddress/effect.js";
+import { getNamespace as indexerGetNamespace } from "./indexer/getNamespace/effect.js";
+import { getPermissions as indexerGetPermissions } from "./indexer/getPermissions/effect.js";
+import { getPrimaryName as indexerGetPrimaryName } from "./indexer/getPrimaryName/effect.js";
+import { getRecords as indexerGetRecords } from "./indexer/getRecords/effect.js";
+import { getRegistry as indexerGetRegistry } from "./indexer/getRegistry/effect.js";
+import { getRegistryLabels as indexerGetRegistryLabels } from "./indexer/getRegistryLabels/effect.js";
+import { getResolver as indexerGetResolver } from "./indexer/getResolver/effect.js";
+import { getResolverLinks as indexerGetResolverLinks } from "./indexer/getResolverLinks/effect.js";
+import { getResolverRoles as indexerGetResolverRoles } from "./indexer/getResolverRoles/effect.js";
+import { getResolvers as indexerGetResolvers } from "./indexer/getResolvers/effect.js";
+import { getStatus as indexerGetStatus } from "./indexer/getStatus/effect.js";
+import { getSubnames as indexerGetSubnames } from "./indexer/getSubnames/effect.js";
+import { lookup as indexerLookup } from "./indexer/lookup/effect.js";
+import { search as indexerSearch } from "./indexer/search/effect.js";
 import { get as migrationGet } from "./migration/get/effect.js";
 import { get as nameGet } from "./name/get/effect.js";
 import { getLabel as nameGetLabel } from "./name/getLabel/effect.js";
@@ -55,6 +74,25 @@ export const requests: Readonly<
   "dns.getStatus": dnsGetStatus,
   "event.decode": eventDecode,
   "event.get": eventGet,
+  "indexer.getEvents": indexerGetEvents,
+  "indexer.getHistory": indexerGetHistory,
+  "indexer.getName": indexerGetName,
+  "indexer.getNamesByExpiry": indexerGetNamesByExpiry,
+  "indexer.getNamesForAddress": indexerGetNamesForAddress,
+  "indexer.getNamespace": indexerGetNamespace,
+  "indexer.getPermissions": indexerGetPermissions,
+  "indexer.getPrimaryName": indexerGetPrimaryName,
+  "indexer.getRecords": indexerGetRecords,
+  "indexer.getRegistry": indexerGetRegistry,
+  "indexer.getRegistryLabels": indexerGetRegistryLabels,
+  "indexer.getResolver": indexerGetResolver,
+  "indexer.getResolverLinks": indexerGetResolverLinks,
+  "indexer.getResolverRoles": indexerGetResolverRoles,
+  "indexer.getResolvers": indexerGetResolvers,
+  "indexer.getStatus": indexerGetStatus,
+  "indexer.getSubnames": indexerGetSubnames,
+  "indexer.lookup": indexerLookup,
+  "indexer.search": indexerSearch,
   "migration.get": migrationGet,
   "name.get": nameGet,
   "name.getLabel": nameGetLabel,

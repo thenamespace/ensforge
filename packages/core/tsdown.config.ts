@@ -6,6 +6,7 @@ export default defineConfig({
   entry: {
     actions: "src/actions/index.ts",
     effect: "src/effect.ts",
+    indexer: "src/indexer/index.ts",
     index: "src/index.ts",
     legacy: "src/legacy/index.ts",
     "legacy/hca": "src/legacy/actions/hca/index.ts",

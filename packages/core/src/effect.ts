@@ -9,3 +9,4 @@ export * as ContentHash from "./utils/ContentHash.js";
 export * as Duration from "./utils/Duration.js";
 export * as Fuse from "./utils/Fuse.js";
 export * as Role from "./utils/Role.js";
+export * as Indexer from "./indexer/Indexer.effect.js";

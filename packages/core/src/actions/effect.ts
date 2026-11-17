@@ -3,6 +3,7 @@
 export * as approval from "./approval/effect.js";
 export * as dns from "./dns/effect.js";
 export * as event from "./event/effect.js";
+export * as indexer from "./indexer/effect.js";
 export * as migration from "./migration/effect.js";
 export * as name from "./name/effect.js";
 export * as permission from "./permission/effect.js";

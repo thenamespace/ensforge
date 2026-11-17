@@ -35,7 +35,7 @@ export const messages: { readonly [code in Code]: Template<code> } = {
   }),
   INDEXER_NOT_CONFIGURED: () => ({
     title: "Search unavailable",
-    message: "Name search is not available in this app.",
+    message: "Name data is not available in this app.",
   }),
   INVALID_ACTION_GROUP: () => ({
     title: "Configuration problem",
@@ -204,6 +204,10 @@ export const messages: { readonly [code in Code]: Template<code> } = {
     title: "Nothing to resume",
     message: "There is no saved progress to continue.",
   }),
+  INDEXER_NOT_FOUND: () => ({
+    title: "Not found",
+    message: "Nothing was found.",
+  }),
   UNSUPPORTED_PROTOCOL: () => ({
     title: "Not supported",
     message: "This action is not available for this name.",
@@ -345,6 +349,10 @@ export const messages: { readonly [code in Code]: Template<code> } = {
   INDEXER_REQUEST_REJECTED: () => ({
     title: "Search failed",
     message: "This search could not be completed.",
+  }),
+  INDEXER_UNSUPPORTED: () => ({
+    title: "Data unavailable",
+    message: "This information is not available here.",
   }),
   INDEXER_BEHIND: () => ({
     title: "Data updating",

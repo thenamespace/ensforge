@@ -17,6 +17,9 @@ const defaults: {
   }),
   REGISTRY_NOT_FOUND: () => ({ shortMessage: "No registry was found for this name." }),
   PLAN_NOT_FOUND: () => ({ shortMessage: "No saved plan was found with this id." }),
+  INDEXER_NOT_FOUND: (o: NotFoundError.Options) => ({
+    shortMessage: `The indexer has no record of ${o.resource ?? "this resource"}.`,
+  }),
 };
 
 /**
@@ -43,6 +46,7 @@ export declare namespace NotFoundError {
     | "PRIMARY_NAME_NOT_SET"
     | "PRIMARY_NAME_MISMATCH"
     | "REGISTRY_NOT_FOUND"
-    | "PLAN_NOT_FOUND";
+    | "PLAN_NOT_FOUND"
+    | "INDEXER_NOT_FOUND";
   type Options = EnsforgeError.ClassOptions<Code> & { readonly resource?: string | undefined };
 }

@@ -13,6 +13,10 @@ const defaults: {
     shortMessage: "The indexer is behind the chain.",
     hint: "Retry shortly, or read on-chain instead.",
   }),
+  INDEXER_UNSUPPORTED: () => ({
+    shortMessage: "The indexer does not support this query.",
+    hint: "Use an indexer that serves it, e.g. `fallback([bigname(), goldsky()])`.",
+  }),
 };
 
 const retryableCodes = new Set<string>([
@@ -22,7 +26,7 @@ const retryableCodes = new Set<string>([
 ]);
 
 /**
- * A bigname-compatible indexer request failed.
+ * An indexer request failed, or the indexer cannot serve the query (`INDEXER_UNSUPPORTED`).
  *
  * @category errors
  * @since 1.0.0
@@ -30,8 +34,12 @@ const retryableCodes = new Set<string>([
 export class IndexerError extends EnsforgeError<"IndexerError", IndexerError.Code> {
   /** The indexer's own error code, e.g. bigname's `rate_limited`. */
   readonly indexerCode: string | undefined;
+  /** HTTP status of the failed request. */
   readonly status: number | undefined;
+  /** Route that failed, e.g. `/v1/names/{name}`. */
   readonly route: string | undefined;
+  /** Adapter that failed, e.g. `bigname`. */
+  readonly source: string | undefined;
 
   constructor(options: IndexerError.Options) {
     super(
@@ -41,6 +49,7 @@ export class IndexerError extends EnsforgeError<"IndexerError", IndexerError.Cod
     this.indexerCode = options.indexerCode;
     this.status = options.status;
     this.route = options.route;
+    this.source = options.source;
   }
 }
 
@@ -50,10 +59,12 @@ export declare namespace IndexerError {
     | "INDEXER_RATE_LIMITED"
     | "INDEXER_RESPONSE_INVALID"
     | "INDEXER_REQUEST_REJECTED"
-    | "INDEXER_BEHIND";
+    | "INDEXER_BEHIND"
+    | "INDEXER_UNSUPPORTED";
   type Options = EnsforgeError.ClassOptions<Code> & {
     readonly indexerCode?: string | undefined;
     readonly status?: number | undefined;
     readonly route?: string | undefined;
+    readonly source?: string | undefined;
   };
 }

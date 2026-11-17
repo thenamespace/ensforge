@@ -25,4 +25,5 @@ export const resolveConfig = (options: CreateOptions): Config =>
     blockTag: options.blockTag ?? "latest",
     storage: options.storage ?? memoryStorage(),
     simulate: options.simulate ?? true,
+    indexer: options.indexer,
   });

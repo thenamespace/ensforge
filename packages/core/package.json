@@ -41,6 +41,10 @@
       "workspace-source": "./src/effect.ts",
       "default": "./dist/effect.js"
     },
+    "./indexer": {
+      "workspace-source": "./src/indexer/index.ts",
+      "default": "./dist/indexer.js"
+    },
     "./legacy": {
       "workspace-source": "./src/legacy/index.ts",
       "default": "./dist/legacy.js"
@@ -107,6 +111,7 @@
       ".": "./dist/index.js",
       "./actions": "./dist/actions.js",
       "./effect": "./dist/effect.js",
+      "./indexer": "./dist/indexer.js",
       "./legacy": "./dist/legacy.js",
       "./legacy/hca": "./dist/legacy/hca.js",
       "./legacy/hca/admin": "./dist/legacy/hca/admin.js",
@@ -126,7 +131,7 @@
     "provenance": true
   },
   "scripts": {
-    "api:report": "node ../../scripts/api-report.mjs index effect",
+    "api:report": "node ../../scripts/api-report.mjs index effect indexer",
     "build": "tsdown",
     "codegen": "node scripts/codegen/main.ts",
     "codegen:check": "node scripts/codegen/main.ts --check",
@@ -135,7 +140,7 @@
     "pack:check": "publint && attw --pack . --profile esm-only --exclude-entrypoints ./legacy/testing",
     "prepack": "pnpm build",
     "typecheck": "tsc --noEmit && tsc --noEmit -p scripts",
-    "verify": "pnpm codegen:check && node ../../scripts/lint-jsdoc.mjs src/index.ts src/effect.ts && node ../../scripts/api-report.mjs --check index effect && node ../../scripts/check-dist-types.mjs index actions --consumer scripts/fixtures/consumer.ts && typedoc"
+    "verify": "pnpm codegen:check && node ../../scripts/lint-jsdoc.mjs src/index.ts src/effect.ts src/indexer/index.ts && node ../../scripts/api-report.mjs --check index effect indexer && node ../../scripts/check-dist-types.mjs index actions indexer --consumer scripts/fixtures/consumer.ts && typedoc"
   },
   "dependencies": {
     "@ensdomains/address-encoder": "catalog:",

@@ -115,10 +115,14 @@ const decoratorBlock = ({ domain, actions }: Domain): string => {
 };
 
 /** `actions/decorators.ts`: one decorator per domain plus `ensActions()`. */
+// Domains added with their own decorator only: `indexer` needs an indexer and its own entry point.
+const optIn = new Set(["indexer"]);
+
 export const decorators = (domains: readonly Domain[]): string => {
-  const all = domains.map(({ domain }) => `${pascal(domain)}Actions`).join(" & ");
+  const included = domains.filter(({ domain }) => !optIn.has(domain));
+  const all = included.map(({ domain }) => `${pascal(domain)}Actions`).join(" & ");
   const spread = [
-    ...domains.map(({ domain }) => `...${domain}Actions()(client),`),
+    ...included.map(({ domain }) => `...${domain}Actions()(client),`),
     "...batchActions()(client),",
   ].join("\n");
 
