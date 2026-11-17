@@ -54,6 +54,10 @@ export type V2Name = {
   readonly status?: 0 | 1 | 2 | undefined;
   readonly expiry?: bigint | undefined;
   readonly tokenId?: bigint | undefined;
+  /** The owner's token roles. */
+  readonly roles?: bigint | undefined;
+  /** Whether the owner alone holds the unemancipated roles (default true). */
+  readonly onlyAssignee?: boolean | undefined;
 };
 
 export type Entry = { readonly v1?: V1Name | undefined; readonly v2?: V2Name | undefined };
@@ -154,6 +158,12 @@ const stubs = (world: World): ContractStub[] => {
           v2Of(BigInt(labelhash(label as string)))?.v2.resolver ?? zeroAddress,
         getSubregistry: ([label]) =>
           v2Of(BigInt(labelhash(label as string)))?.v2.subregistry ?? zeroAddress,
+        roles: ([, account]) =>
+          names
+            .map((name) => entries.get(name)?.v2)
+            .find((state) => state !== undefined && same(state.owner, account))?.roles ?? 0n,
+        isOnlyAssignee: ([id]) => v2Of(id as bigint)?.v2.onlyAssignee ?? true,
+        isApprovedForAll: () => false,
       },
     };
   };

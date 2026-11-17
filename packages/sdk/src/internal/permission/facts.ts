@@ -1,6 +1,6 @@
 import { Effect } from "effect";
 
-import { Abis } from "@ensforge/contracts";
+import { Abis, Roles } from "@ensforge/contracts";
 import { permissionedResolverResource } from "@ensforge/contracts/v2";
 import { hexToBigInt, isAddressEqual, zeroAddress, type Address } from "viem";
 
@@ -28,6 +28,8 @@ export type PermissionFacts = {
     readonly roles: bigint;
     /** Token roles of the owner (`canTransferAdmin` decides transfers). */
     readonly ownerRoles: bigint;
+    /** No one but the owner holds the name's unemancipated roles, so a safe transfer may go. */
+    readonly ownerOnlyAssignee: boolean;
     readonly operator: boolean;
     /** Root roles of the account on the name's subregistry. */
     readonly subregistryRoles: bigint | null;
@@ -211,6 +213,15 @@ export const readPermissionFacts = Effect.fnUntraced(function* (
               functionName: "roles",
               args: [state.resource, state.owner],
             }),
+      ownerOnlyAssignee:
+        v2Registry === null || state.tokenId === null || state.owner === null
+          ? none
+          : read(client, {
+              address: v2Registry,
+              abi: Abis.v2.permissionedRegistry,
+              functionName: "isOnlyAssignee",
+              args: [state.tokenId, Roles.registryBitmaps.unemancipated, state.owner],
+            }),
       v2Operator:
         v2Registry === null || state.owner === null
           ? none
@@ -298,6 +309,7 @@ export const readPermissionFacts = Effect.fnUntraced(function* (
     v2: {
       roles: (facts.tokenRoles ?? 0n) | (facts.rootRoles ?? 0n),
       ownerRoles: facts.ownerRoles ?? 0n,
+      ownerOnlyAssignee: facts.ownerOnlyAssignee !== false,
       operator: facts.v2Operator === true,
       subregistryRoles: state.subregistry === null ? null : (facts.subregistryRoles ?? 0n),
     },

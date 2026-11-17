@@ -85,6 +85,14 @@ const evaluateV2 = (facts: PermissionFacts, operation: NameOperation): Permissio
           registry,
         );
       }
+      // A safe transfer would leave other holders' roles in place (GHSA-hvjh), so it reverts.
+      if (!facts.v2.ownerOnlyAssignee) {
+        return blocked(
+          "transfer-disallowed",
+          "Other accounts hold roles on the name; `name.transfer` with `unsafe: true` sends it anyway.",
+          registry,
+        );
+      }
       return byOwner(
         ownerAuthority(facts.account, state.owner, facts.v2.operator),
         registry,
