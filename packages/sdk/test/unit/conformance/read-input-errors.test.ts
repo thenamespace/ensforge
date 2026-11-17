@@ -3,7 +3,9 @@ import { Effect } from "effect";
 
 import { Deployments } from "@ensforge/contracts";
 import { Actions } from "@ensforge/sdk";
+import { Actions as EffectActions } from "@ensforge/sdk/effect";
 import {
+  expectFailure,
   expectRejection,
   noRpc,
   scriptedTransport,
@@ -46,81 +48,101 @@ const invalidValue: ExpectedError = { _tag: "InvalidInputError", code: "INVALID_
 const noWallet: ExpectedError = { _tag: "ConfigError", code: "WALLET_NOT_CONFIGURED" };
 const unsupported: ExpectedError = { _tag: "UnsupportedError", code: "UNSUPPORTED_ON_DEPLOYMENT" };
 
-const cases: readonly (readonly [string, () => Promise<unknown>, ExpectedError])[] = [
+// Each case runs through the Promise and the Effect actions alike: both take the same arguments
+// (`paths.test.ts`), and the Effect form must fail with the typed error, never a defect.
+type Call = (actions: typeof Actions) => Promise<unknown>;
+const asEffect = (call: Call) =>
+  call(EffectActions as unknown as typeof Actions) as unknown as Effect.Effect<unknown, unknown>;
+
+const cases: readonly (readonly [string, Call, ExpectedError])[] = [
   [
     "approval.getDelegate",
-    () => Actions.approval.getDelegate(client(), { name, delegate: badAddress }),
+    (actions) => actions.approval.getDelegate(client(), { name, delegate: badAddress }),
     invalidAddress,
   ],
   [
     "migration.get",
-    () => Actions.migration.get(client(), { name, account: badAddress }),
+    (actions) => actions.migration.get(client(), { name, account: badAddress }),
     invalidAddress,
   ],
   [
     "permission.check",
-    () => Actions.permission.check(client(), { name, operation: "transfer", account: badAddress }),
+    (actions) =>
+      actions.permission.check(client(), { name, operation: "transfer", account: badAddress }),
     invalidAddress,
   ],
   [
     "permission.check",
-    () => Actions.permission.check(client(), { name, operation: "transfer" }),
+    (actions) => actions.permission.check(client(), { name, operation: "transfer" }),
     noWallet,
   ],
   [
     "permission.get",
-    () => Actions.permission.get(client(), { name, account: badAddress }),
+    (actions) => actions.permission.get(client(), { name, account: badAddress }),
     invalidAddress,
   ],
-  ["permission.get", () => Actions.permission.get(client(), { name }), noWallet],
-  ["plan.list", () => Actions.plan.list(client(), { account: badAddress }), invalidAddress],
+  ["permission.get", (actions) => actions.permission.get(client(), { name }), noWallet],
+  ["plan.list", (actions) => actions.plan.list(client(), { account: badAddress }), invalidAddress],
   [
     "primaryName.get",
-    () => Actions.primaryName.get(client(), { address: badAddress }),
+    (actions) => actions.primaryName.get(client(), { address: badAddress }),
     invalidAddress,
   ],
   [
     "primaryName.get",
-    () => Actions.primaryName.get(client(), { address, coin: "nope" }),
+    (actions) => actions.primaryName.get(client(), { address, coin: "nope" }),
     invalidCoin,
   ],
-  ["record.get", () => Actions.record.get(client(), { name, addresses: ["nope"] }), invalidCoin],
+  [
+    "record.get",
+    (actions) => actions.record.get(client(), { name, addresses: ["nope"] }),
+    invalidCoin,
+  ],
   [
     "record.getAddress",
-    () => Actions.record.getAddress(client(), { name, coin: "nope" }),
+    (actions) => actions.record.getAddress(client(), { name, coin: "nope" }),
     invalidCoin,
   ],
   [
     "registration.getCommitmentStatus",
-    () => Actions.registration.getCommitmentStatus(client(), { commitment: "0x12" }),
+    (actions) => actions.registration.getCommitmentStatus(client(), { commitment: "0x12" }),
     invalidValue,
   ],
-  ["registry.get", () => Actions.registry.get(client(), { registry: badAddress }), invalidAddress],
+  [
+    "registry.get",
+    (actions) => actions.registry.get(client(), { registry: badAddress }),
+    invalidAddress,
+  ],
   [
     "resolver.resolve",
-    () => Actions.resolver.resolve(client(), { name, data: "zz" as never }),
+    (actions) => actions.resolver.resolve(client(), { name, data: "zz" as never }),
     invalidValue,
   ],
   [
     "role.get",
-    () => Actions.role.get(client(), { account: badAddress, target: "registry", name }),
+    (actions) => actions.role.get(client(), { account: badAddress, target: "registry", name }),
     invalidAddress,
   ],
   [
     "role.get",
-    () => Actions.role.get(client(), { account: address, target: "registry" }),
+    (actions) => actions.role.get(client(), { account: address, target: "registry" }),
     invalidValue,
   ],
-  ["name.getLabel", () => Actions.name.getLabel(client(), { labelhash: "0x12" }), invalidValue],
   [
     "name.getLabel",
-    () => Actions.name.getLabel(client(mainnetV1Only), { labelhash: `0x${"00".repeat(32)}` }),
+    (actions) => actions.name.getLabel(client(), { labelhash: "0x12" }),
+    invalidValue,
+  ],
+  [
+    "name.getLabel",
+    (actions) =>
+      actions.name.getLabel(client(mainnetV1Only), { labelhash: `0x${"00".repeat(32)}` }),
     unsupported,
   ],
   [
     "approval.getOperator",
-    () =>
-      Actions.approval.getOperator(client(mainnetV2Only), {
+    (actions) =>
+      actions.approval.getOperator(client(mainnetV2Only), {
         owner: address,
         operator: address,
         contract: "registrar",
@@ -131,7 +153,10 @@ const cases: readonly (readonly [string, () => Promise<unknown>, ExpectedError])
 
 describe("read input errors", () => {
   it.each(cases)("%s fails before reading the chain", (_, read, expected) =>
-    Effect.runPromise(Effect.asVoid(expectRejection(read, expected))),
+    Effect.runPromise(Effect.asVoid(expectRejection(() => read(Actions), expected))),
+  );
+  it.effect.each(cases)("%s fails as an Effect with the same error", ([, read, expected]) =>
+    Effect.asVoid(expectFailure(asEffect(read), expected)),
   );
 });
 

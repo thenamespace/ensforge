@@ -3,7 +3,9 @@ import { Effect } from "effect";
 
 import { Deployments } from "@ensforge/contracts";
 import { Actions } from "@ensforge/sdk";
+import { Actions as EffectActions } from "@ensforge/sdk/effect";
 import {
+  expectFailure,
   expectRejection,
   noRpc,
   scriptedTransport,
@@ -38,11 +40,17 @@ const invalidRoles: ExpectedError = { _tag: "InvalidInputError", code: "INVALID_
 const unsupported: ExpectedError = { _tag: "UnsupportedError", code: "UNSUPPORTED_ON_DEPLOYMENT" };
 const year = 31_536_000n;
 
-const cases: readonly (readonly [string, () => Promise<unknown>, ExpectedError])[] = [
+// Each case runs through the Promise and the Effect actions alike: both take the same arguments
+// (`paths.test.ts`), and the Effect form must fail with the typed error, never a defect.
+type Call = (actions: typeof Actions) => Promise<unknown>;
+const asEffect = (call: Call) =>
+  call(EffectActions as unknown as typeof Actions) as unknown as Effect.Effect<unknown, unknown>;
+
+const cases: readonly (readonly [string, Call, ExpectedError])[] = [
   [
     "approval.setDelegate",
-    () =>
-      Actions.approval.setDelegate.prepare(client(), {
+    (actions) =>
+      actions.approval.setDelegate.prepare(client(), {
         name,
         delegate: badAddress,
         approved: true,
@@ -51,8 +59,8 @@ const cases: readonly (readonly [string, () => Promise<unknown>, ExpectedError])
   ],
   [
     "approval.setOperator",
-    () =>
-      Actions.approval.setOperator.prepare(client(), {
+    (actions) =>
+      actions.approval.setOperator.prepare(client(), {
         operator: badAddress,
         approved: true,
         contract: "registry",
@@ -61,8 +69,8 @@ const cases: readonly (readonly [string, () => Promise<unknown>, ExpectedError])
   ],
   [
     "approval.setOperator",
-    () =>
-      Actions.approval.setOperator.prepare(client(v2Only), {
+    (actions) =>
+      actions.approval.setOperator.prepare(client(v2Only), {
         operator: account,
         approved: true,
         contract: "registrar",
@@ -71,86 +79,104 @@ const cases: readonly (readonly [string, () => Promise<unknown>, ExpectedError])
   ],
   [
     "approval.setToken",
-    () => Actions.approval.setToken.prepare(client(), { name, to: badAddress }),
+    (actions) => actions.approval.setToken.prepare(client(), { name, to: badAddress }),
     invalidAddress,
   ],
   [
     "migration.migrate",
-    () => Actions.migration.migrate.prepare(client(), { names: name, owner: badAddress }),
+    (actions) => actions.migration.migrate.prepare(client(), { names: name, owner: badAddress }),
     invalidAddress,
   ],
   [
     "name.setManager",
-    () => Actions.name.setManager.prepare(client(), { name, manager: badAddress }),
+    (actions) => actions.name.setManager.prepare(client(), { name, manager: badAddress }),
     invalidAddress,
   ],
-  ["name.setTtl", () => Actions.name.setTtl.prepare(client(), { name, ttl: -1n }), invalidValue],
+  [
+    "name.setTtl",
+    (actions) => actions.name.setTtl.prepare(client(), { name, ttl: -1n }),
+    invalidValue,
+  ],
   [
     "name.transfer",
-    () => Actions.name.transfer.prepare(client(), { name, to: badAddress }),
+    (actions) => actions.name.transfer.prepare(client(), { name, to: badAddress }),
     invalidAddress,
   ],
   [
     "permission.setRecordAccess",
-    () => Actions.permission.setRecordAccess.prepare(client(), { name, grantee: badAddress }),
+    (actions) =>
+      actions.permission.setRecordAccess.prepare(client(), { name, grantee: badAddress }),
     invalidAddress,
   ],
   [
     "registration.commit",
-    () => Actions.registration.commit.prepare(client(v1Only), { names: name, duration: year }),
+    (actions) =>
+      actions.registration.commit.prepare(client(v1Only), { names: name, duration: year }),
     unsupported,
   ],
   [
     "registration.register",
-    () => Actions.registration.register.prepare(client(v1Only), { names: name, duration: year }),
+    (actions) =>
+      actions.registration.register.prepare(client(v1Only), { names: name, duration: year }),
     unsupported,
   ],
   [
     "registration.renew",
-    () => Actions.registration.renew.prepare(client(v1Only), { names: name, duration: year }),
+    (actions) =>
+      actions.registration.renew.prepare(client(v1Only), { names: name, duration: year }),
     unsupported,
   ],
   [
     "registry.deploy",
-    () => Actions.registry.deploy.prepare(client(), { owner: badAddress }),
+    (actions) => actions.registry.deploy.prepare(client(), { owner: badAddress }),
     invalidAddress,
   ],
   [
     "registry.deploy",
-    () => Actions.registry.deploy.prepare(client(), { grants: [{ account, roles: 1n << 300n }] }),
+    (actions) =>
+      actions.registry.deploy.prepare(client(), { grants: [{ account, roles: 1n << 300n }] }),
     invalidRoles,
   ],
-  ["registry.deploy", () => Actions.registry.deploy.prepare(client(v1Only), {}), unsupported],
+  [
+    "registry.deploy",
+    (actions) => actions.registry.deploy.prepare(client(v1Only), {}),
+    unsupported,
+  ],
   [
     "registry.setUri",
-    () => Actions.registry.setUri.prepare(client(), { registry: badAddress, uri: "x" }),
+    (actions) => actions.registry.setUri.prepare(client(), { registry: badAddress, uri: "x" }),
     invalidAddress,
   ],
   [
     "registry.upgrade",
-    () => Actions.registry.upgrade.prepare(client(), { registry: badAddress }),
+    (actions) => actions.registry.upgrade.prepare(client(), { registry: badAddress }),
     invalidAddress,
   ],
   [
     "resolver.create",
-    () => Actions.resolver.create.prepare(client(), { owner: badAddress }),
+    (actions) => actions.resolver.create.prepare(client(), { owner: badAddress }),
     invalidAddress,
   ],
   [
     "resolver.create",
-    () => Actions.resolver.create.prepare(client(), { grants: [{ account, roles: 1n << 300n }] }),
+    (actions) =>
+      actions.resolver.create.prepare(client(), { grants: [{ account, roles: 1n << 300n }] }),
     invalidRoles,
   ],
-  ["resolver.create", () => Actions.resolver.create.prepare(client(v1Only), {}), unsupported],
+  [
+    "resolver.create",
+    (actions) => actions.resolver.create.prepare(client(v1Only), {}),
+    unsupported,
+  ],
   [
     "resolver.upgrade",
-    () => Actions.resolver.upgrade.prepare(client(), { name, implementation: badAddress }),
+    (actions) => actions.resolver.upgrade.prepare(client(), { name, implementation: badAddress }),
     invalidAddress,
   ],
   [
     "role.grant",
-    () =>
-      Actions.role.grant.prepare(client(), {
+    (actions) =>
+      actions.role.grant.prepare(client(), {
         grantee: badAddress,
         roles: ["setResolver"],
         target: "registry",
@@ -160,8 +186,8 @@ const cases: readonly (readonly [string, () => Promise<unknown>, ExpectedError])
   ],
   [
     "role.grant",
-    () =>
-      Actions.role.grant.prepare(client(), {
+    (actions) =>
+      actions.role.grant.prepare(client(), {
         grantee: account,
         roles: 1n << 300n,
         target: "registry",
@@ -171,8 +197,8 @@ const cases: readonly (readonly [string, () => Promise<unknown>, ExpectedError])
   ],
   [
     "role.revoke",
-    () =>
-      Actions.role.revoke.prepare(client(), {
+    (actions) =>
+      actions.role.revoke.prepare(client(), {
         holder: badAddress,
         roles: ["setResolver"],
         target: "registry",
@@ -182,8 +208,8 @@ const cases: readonly (readonly [string, () => Promise<unknown>, ExpectedError])
   ],
   [
     "role.revoke",
-    () =>
-      Actions.role.revoke.prepare(client(), {
+    (actions) =>
+      actions.role.revoke.prepare(client(), {
         holder: account,
         roles: 1n << 300n,
         target: "registry",
@@ -193,8 +219,8 @@ const cases: readonly (readonly [string, () => Promise<unknown>, ExpectedError])
   ],
   [
     "role.revoke",
-    () =>
-      Actions.role.revoke.prepare(client(), {
+    (actions) =>
+      actions.role.revoke.prepare(client(), {
         holder: account,
         roles: ["setResolver"],
         target: "registry",
@@ -203,8 +229,8 @@ const cases: readonly (readonly [string, () => Promise<unknown>, ExpectedError])
   ],
   [
     "role.grant",
-    () =>
-      Actions.role.grant.prepare(client(), {
+    (actions) =>
+      actions.role.grant.prepare(client(), {
         grantee: account,
         roles: -1n,
         target: "registry",
@@ -216,6 +242,9 @@ const cases: readonly (readonly [string, () => Promise<unknown>, ExpectedError])
 
 describe("write input errors", () => {
   it.each(cases)("%s fails before reading the chain", (_, write, expected) =>
-    Effect.runPromise(Effect.asVoid(expectRejection(write, expected))),
+    Effect.runPromise(Effect.asVoid(expectRejection(() => write(Actions), expected))),
+  );
+  it.effect.each(cases)("%s fails as an Effect with the same error", ([, write, expected]) =>
+    Effect.asVoid(expectFailure(asEffect(write), expected)),
   );
 });
