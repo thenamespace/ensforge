@@ -130,6 +130,8 @@ export const revertMap: Readonly<Record<string, Mapper>> = {
   UnsupportedResolverProfile: () => new UnsupportedError({ code: "RESOLVER_PROFILE_UNSUPPORTED" }),
   ResolverNotFound: () => new NotFoundError({ code: "RESOLVER_NOT_FOUND" }),
   ResolverNotContract: () => new NotFoundError({ code: "RESOLVER_NOT_FOUND" }),
+  // The ENSv1 bridge (ENSV1Resolver) finds no usable ENSv1 resolver for the name.
+  UnreachableName: () => new NotFoundError({ code: "RESOLVER_NOT_FOUND" }),
   ReverseAddressMismatch: () => new NotFoundError({ code: "PRIMARY_NAME_MISMATCH" }),
   PrimaryNameNotNormalized: ([name]) =>
     new InvalidInputError({ code: "INVALID_NAME", input: name, field: "primary name" }),

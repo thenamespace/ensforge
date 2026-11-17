@@ -60,6 +60,7 @@ const expected: Readonly<Record<string, { readonly _tag: string; readonly code: 
   ResolverNotContract: { _tag: "NotFoundError", code: "RESOLVER_NOT_FOUND" },
   ReverseAddressMismatch: { _tag: "NotFoundError", code: "PRIMARY_NAME_MISMATCH" },
   PrimaryNameNotNormalized: { _tag: "InvalidInputError", code: "INVALID_NAME" },
+  UnreachableName: { _tag: "NotFoundError", code: "RESOLVER_NOT_FOUND" },
   InvalidRecord: { _tag: "InvalidInputError", code: "INVALID_RECORD_VALUE" },
   HttpError: { _tag: "GatewayError", code: "GATEWAY_REQUEST_FAILED" },
   InvalidOffchainLookup: { _tag: "GatewayError", code: "OFFCHAIN_LOOKUP_INVALID" },
