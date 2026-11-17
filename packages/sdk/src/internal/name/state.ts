@@ -6,11 +6,20 @@ import { RegistryStatus, type NameData, type V1Data, type V2Data } from "./read.
 const orNull = (address: Address | undefined): Address | null =>
   address === undefined || isAddressEqual(address, zeroAddress) ? null : address;
 
-/** Status of a registration that ends at `expiry`, with an optional grace period after it. */
+/** Status of an ENSv2 registration that ends at `expiry`, with an optional grace period after it. */
 const timedStatus = (now: bigint, expiry: bigint, gracePeriod: bigint | undefined): NameStatus => {
   if (now < expiry) return "registered";
   if (gracePeriod !== undefined && now < expiry + gracePeriod) return "grace";
   return "expired";
+};
+
+// ENSv1 counts the last second of a window as inside it: BaseRegistrar renews and withholds a
+// name through `expiry + GRACE_PERIOD`, and NameWrapper expires a token only once `expiry < now`.
+// Registrar tokens (with a grace period) still expire at `expiry`.
+const v1Status = (now: bigint, expiry: bigint, gracePeriod: bigint | undefined): NameStatus => {
+  if (gracePeriod === undefined) return now <= expiry ? "registered" : "expired";
+  if (now < expiry) return "registered";
+  return now <= expiry + gracePeriod ? "grace" : "expired";
 };
 
 const flags = (status: NameStatus, isEth2ld: boolean) => ({
@@ -93,7 +102,7 @@ const fromV1 = (
       ? orNull(v1.registryOwner) === null
         ? "available"
         : "registered"
-      : timedStatus(data.now, expiry, registrar?.gracePeriod);
+      : v1Status(data.now, expiry, registrar?.gracePeriod);
 
   return {
     protocol: "v1",

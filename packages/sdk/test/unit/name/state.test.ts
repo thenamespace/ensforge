@@ -29,7 +29,7 @@ const v2Entry = (state: Partial<V2Data["state"]>): V2Data => ({
 });
 
 // A live, unwrapped ENSv1 `.eth` name, with or without an ENSv2 entry for its label.
-const v1Name = (v2: V2Data | undefined): NameData => ({
+const v1Name = (v2: V2Data | undefined, expiry = now + 365n * day): NameData => ({
   parts: nameParts("alice.eth"),
   now,
   v1: {
@@ -38,7 +38,7 @@ const v1Name = (v2: V2Data | undefined): NameData => ({
     resolver: zeroAddress,
     ttl: 0n,
     wrapper: { owner: zeroAddress, fuses: 0, expiry: 0n },
-    registrar: { registrant: alice, expiry: now + 365n * day, gracePeriod: 90n * day },
+    registrar: { registrant: alice, expiry, gracePeriod: 90n * day },
   },
   v2,
   ownedAncestor: false,
@@ -98,5 +98,32 @@ describe("name state", () => {
     };
     const state = stateOf(data, false);
     assert.include(state, { status: "expired", available: true, renewable: false });
+  });
+
+  it("follows ENSv1's inclusive window ends", () => {
+    const expiry = now + day;
+    const grace = 90n * day;
+    const statusAt = (time: bigint) =>
+      stateOf({ ...v1Name(undefined, expiry), now: time }, true).status;
+    assert.deepStrictEqual(
+      [expiry - 1n, expiry, expiry + grace, expiry + grace + 1n].map(statusAt),
+      ["registered", "grace", "grace", "expired"],
+    );
+  });
+
+  it("keeps a wrapped subname live through its wrapper expiry", () => {
+    const data: NameData = {
+      ...v1Name(undefined),
+      parts: nameParts("sub.alice.eth"),
+      v1: {
+        registry,
+        registryOwner: nameWrapper,
+        resolver: zeroAddress,
+        ttl: 0n,
+        wrapper: { owner: alice, fuses: 0, expiry: now },
+        registrar: undefined,
+      },
+    };
+    assert.include(stateOf(data, true), { status: "registered", owner: alice });
   });
 });
