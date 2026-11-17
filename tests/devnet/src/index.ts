@@ -1,5 +1,6 @@
 export { devnetClient, type DevnetClient } from "./client.ts";
-export { type Build, type Seed } from "./build.ts";
+export { Anvil } from "./anvil/Anvil.ts";
+export { build, type Build, type Seed } from "./build.ts";
 export {
   accounts,
   step,
