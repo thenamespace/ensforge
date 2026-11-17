@@ -146,8 +146,11 @@ export const txtProof = (
   ];
 };
 
+/** A DNSSEC proof as `IDNSGateway.resolve` returns it: record sets, root keys first. */
+export type Proof = ReturnType<typeof txtProof>;
+
 /** An ENSIP-17 DNSSEC gateway answer (`IDNSGateway.resolve`) for `proof`. */
-export const gatewayAnswer = (proof: ReturnType<typeof txtProof>) => ({
+export const gatewayAnswer = (proof: Proof) => ({
   status: 200,
   body: JSON.stringify({
     data: encodeFunctionResult({

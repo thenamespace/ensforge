@@ -36,6 +36,8 @@ export type DevnetInstance = {
   readonly deployments: Deployments.Profile;
   /** Every deployed contract by ledger key (`v1.registry`, `v2.ethRegistry`, …). */
   readonly contracts: Readonly<Record<string, Address>>;
+  /** The contract deployed under ledger key `key`; throws for a key the profile lacks. */
+  readonly contract: (key: string) => Address;
   /** The same contracts with the artifact each was deployed from. */
   readonly ledger: Ledger;
   /** The seed's output, when started with one. */
@@ -100,6 +102,11 @@ export const startDevnet = Effect.fn("startDevnet")(function* (options: DevnetOp
     chain,
     deployments,
     contracts,
+    contract: (key) => {
+      const address = contracts[key];
+      if (address === undefined) throw new Error(`${options.profile} deploys no ${key}`);
+      return address;
+    },
     ledger: built.ledger,
     seed: built.seed,
     accounts,

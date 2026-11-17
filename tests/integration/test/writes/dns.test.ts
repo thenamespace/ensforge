@@ -2,59 +2,50 @@ import { assert, describe } from "@effect/vitest";
 import { Effect } from "effect";
 
 import { Actions } from "@ensforge/sdk/effect";
-import { Devnet, type DevnetInstance } from "@ensforge/test-devnet";
+import { Chain, Devnet } from "@ensforge/test-devnet";
 import { expectFailure } from "@ensforge/test-harness";
-import type { Address } from "viem";
 
-import { ensforge, isolated, onProfile } from "../support/chain.ts";
-import { gatewayAnswer, ownerText, txtProof } from "../support/dnssec.ts";
-import { gateway } from "../support/gateway.ts";
+import { Clients } from "../support/clients.ts";
+import { txtProof } from "../support/dnssec.ts";
+import { Gateways } from "../support/gateways.ts";
+import { onProfile } from "../support/lane.ts";
 
-// DNS names are imported with DNSSEC proofs from a gateway (ENSIP-17). The gateway here answers
+// DNS names are imported with DNSSEC proofs from a gateway (ENSIP-17). The gateways here answer
 // with proofs signed for ens-contracts' test anchor, which the devnet's oracle trusts.
-
-const name = "ensforge-dns.com";
-
-const now = (devnet: DevnetInstance) =>
-  Effect.promise(() => devnet.client.getBlock()).pipe(
-    Effect.map((block) => Number(block.timestamp)),
-  );
-
-/** A gateway proving `texts` for `_ens.<name>`, signed a minute before `at`. */
-const provingGateway = (texts: readonly string[], at: number) =>
-  gateway(() => gatewayAnswer(txtProof(name, texts, at - 60)));
 
 describe("DNS names", () => {
   onProfile("v1-live")("v1-live", (it) => {
+    const name = "ensforge-dns.com";
+
     it.effect(
       "imports a DNS name to the owner its TXT record names, from any sender",
       () =>
         Effect.gen(function* () {
-          const devnet = yield* Devnet;
-          const { alice, bob } = devnet.accounts;
-          const { url } = yield* provingGateway([ownerText(alice)], yield* now(devnet));
+          const { accounts } = yield* Devnet;
+          const chain = yield* Chain;
+          const clients = yield* Clients;
+          const gateways = yield* Gateways;
+          const signedAt = Number(yield* chain.now) - 60;
+          const { url } = yield* gateways.serveProof(
+            txtProof(name, [`a=${accounts.alice}`], signedAt),
+          );
           const gatewayUrls = [url];
-          const reader = ensforge(devnet);
 
-          const proof = yield* Actions.dns.getProof(reader, { name, gatewayUrls });
-          assert.deepStrictEqual(proof.txt, [ownerText(alice)]);
-          assert.include(yield* Actions.dns.getStatus(reader, { name, gatewayUrls }), {
+          const proof = yield* Actions.dns.getProof(clients.reader, { name, gatewayUrls });
+          assert.deepStrictEqual(proof.txt, [`a=${accounts.alice}`]);
+          assert.include(yield* Actions.dns.getStatus(clients.reader, { name, gatewayUrls }), {
             imported: false,
-            dnsOwner: alice,
+            dnsOwner: accounts.alice,
             proofValid: true,
           });
 
-          yield* isolated(
-            devnet,
+          yield* chain.isolated(
             Effect.gen(function* () {
-              yield* Actions.dns.claimSync(ensforge(devnet, { account: bob }), {
-                name,
-                gatewayUrls,
-              });
-              assert.strictEqual(
-                yield* Actions.name.get(reader, { name }).pipe(Effect.map((state) => state.owner)),
-                alice,
-              );
+              const bob = clients.make({ account: accounts.bob });
+              yield* Actions.dns.claimSync(bob, { name, gatewayUrls });
+
+              const state = yield* Actions.name.get(clients.reader, { name });
+              assert.strictEqual(state.owner, accounts.alice);
             }),
           );
         }),
@@ -64,31 +55,35 @@ describe("DNS names", () => {
     it.effect("sets a resolver while claiming, only as the DNS owner", () =>
       Effect.gen(function* () {
         const devnet = yield* Devnet;
+        const chain = yield* Chain;
+        const clients = yield* Clients;
+        const gateways = yield* Gateways;
         const { alice, bob } = devnet.accounts;
-        const resolver = devnet.contracts["v1.publicResolver"] as Address;
-        const { url } = yield* provingGateway([ownerText(alice)], yield* now(devnet));
+        const signedAt = Number(yield* chain.now) - 60;
+        const { url } = yield* gateways.serveProof(txtProof(name, [`a=${alice}`], signedAt));
+        const resolver = devnet.contract("v1.publicResolver");
         const options = { name, gatewayUrls: [url], resolver };
 
-        yield* expectFailure(Actions.dns.claim(ensforge(devnet, { account: bob }), options), {
+        yield* expectFailure(Actions.dns.claim(clients.make({ account: bob }), options), {
           _tag: "UnauthorizedError",
           code: "NOT_OWNER",
         });
-        yield* isolated(
-          devnet,
+
+        yield* chain.isolated(
           Effect.gen(function* () {
-            yield* Actions.dns.claimSync(ensforge(devnet, { account: alice }), options);
-            const state = yield* Actions.name.get(ensforge(devnet), { name });
-            assert.include(state, { owner: alice, resolver });
+            const owner = clients.make({ account: alice });
+            yield* Actions.dns.claimSync(owner, options);
+            assert.include(yield* Actions.name.get(clients.reader, { name }), {
+              owner: alice,
+              resolver,
+            });
 
             // DNS records live on the public resolver; the owner hosts a zonehash there.
             const zonehash =
-              "0xe301017012204edd2984eeaf3ddf50bac238ec95c5713fb40b5e428b508fdbe55d3b9f155ffe" as const;
-            yield* Actions.dns.setRecordsSync(ensforge(devnet, { account: alice }), {
-              name,
-              zonehash,
-            });
+              "0xe301017012204edd2984eeaf3ddf50bac238ec95c5713fb40b5e428b508fdbe55d3b9f155ffe";
+            yield* Actions.dns.setRecordsSync(owner, { name, zonehash });
             yield* expectFailure(
-              Actions.dns.setRecords(ensforge(devnet, { account: bob }), { name, zonehash: null }),
+              Actions.dns.setRecords(clients.make({ account: bob }), { name, zonehash: null }),
               { _tag: "UnauthorizedError", code: "NOT_OWNER" },
             );
           }),
@@ -98,22 +93,25 @@ describe("DNS names", () => {
 
     it.effect("refuses proofs that do not hold, and gateways that fail", () =>
       Effect.gen(function* () {
-        const devnet = yield* Devnet;
-        const { alice } = devnet.accounts;
-        const at = yield* now(devnet);
-        const ens = ensforge(devnet, { account: alice });
+        const { accounts } = yield* Devnet;
+        const chain = yield* Chain;
+        const clients = yield* Clients;
+        const gateways = yield* Gateways;
+        const ens = clients.make({ account: accounts.alice });
+        const now = Number(yield* chain.now);
 
-        const missing = yield* provingGateway(["v=spf1 -all"], at);
+        const missing = yield* gateways.serveProof(txtProof(name, ["v=spf1 -all"], now - 60));
         yield* expectFailure(Actions.dns.claim(ens, { name, gatewayUrls: [missing.url] }), {
           _tag: "DnsError",
           code: "DNS_RECORD_MISSING",
         });
 
         // DNSRegistrar takes no proof older than the last one it imported.
-        const fresh = yield* provingGateway([ownerText(alice)], at);
-        const stale = yield* provingGateway([ownerText(alice)], at - 3600);
-        yield* isolated(
-          devnet,
+        const fresh = yield* gateways.serveProof(txtProof(name, [`a=${accounts.alice}`], now));
+        const stale = yield* gateways.serveProof(
+          txtProof(name, [`a=${accounts.alice}`], now - 3600),
+        );
+        yield* chain.isolated(
           Effect.gen(function* () {
             yield* Actions.dns.claimSync(ens, { name, gatewayUrls: [fresh.url] });
             yield* expectFailure(Actions.dns.claim(ens, { name, gatewayUrls: [stale.url] }), {
@@ -123,12 +121,12 @@ describe("DNS names", () => {
           }),
         );
 
-        const down = yield* gateway(() => ({ status: 500, body: "{}" }));
+        const down = yield* gateways.serve(() => ({ status: 500, body: "{}" }));
         yield* expectFailure(Actions.dns.claim(ens, { name, gatewayUrls: [down.url] }), {
           _tag: "GatewayError",
           code: "GATEWAY_REQUEST_FAILED",
         });
-        const garbled = yield* gateway(() => ({ status: 200, body: '{"data":"0x1234"}' }));
+        const garbled = yield* gateways.serve(() => ({ status: 200, body: '{"data":"0x1234"}' }));
         yield* expectFailure(Actions.dns.claim(ens, { name, gatewayUrls: [garbled.url] }), {
           _tag: "GatewayError",
           code: "GATEWAY_RESPONSE_INVALID",
@@ -138,15 +136,17 @@ describe("DNS names", () => {
 
     it.effect("refuses names and proofs the registrar cannot take", () =>
       Effect.gen(function* () {
-        const devnet = yield* Devnet;
-        const { alice } = devnet.accounts;
-        const at = yield* now(devnet);
-        const ens = ensforge(devnet, { account: alice });
+        const { accounts } = yield* Devnet;
+        const chain = yield* Chain;
+        const clients = yield* Clients;
+        const gateways = yield* Gateways;
+        const ens = clients.make({ account: accounts.alice });
+        const now = Number(yield* chain.now);
 
         // `.test` is not a public suffix the DNSRegistrar serves.
         const local = "ensforge-dns.test";
-        const unlisted = yield* gateway(() =>
-          gatewayAnswer(txtProof(local, [ownerText(alice)], at - 60)),
+        const unlisted = yield* gateways.serveProof(
+          txtProof(local, [`a=${accounts.alice}`], now - 60),
         );
         yield* expectFailure(Actions.dns.claim(ens, { name: local, gatewayUrls: [unlisted.url] }), {
           _tag: "DnsError",
@@ -154,7 +154,9 @@ describe("DNS names", () => {
         });
 
         // Signed for a moment that has not come yet: the oracle refuses it.
-        const early = yield* provingGateway([ownerText(alice)], at + 30 * 86_400);
+        const early = yield* gateways.serveProof(
+          txtProof(name, [`a=${accounts.alice}`], now + 30 * 86_400),
+        );
         yield* expectFailure(Actions.dns.claim(ens, { name, gatewayUrls: [early.url] }), {
           _tag: "DnsError",
           code: "DNSSEC_PROOF_FAILED",
@@ -173,7 +175,7 @@ describe("DNS names", () => {
           }),
           { _tag: "InvalidInputError", code: "INVALID_RECORD_VALUE" },
         );
-        const proven = yield* provingGateway([ownerText(alice)], at);
+        const proven = yield* gateways.serveProof(txtProof(name, [`a=${accounts.alice}`], now));
         yield* expectFailure(
           Actions.dns.claim(ens, { name, gatewayUrls: [proven.url], resolver: "0x1234" }),
           { _tag: "InvalidInputError", code: "INVALID_ADDRESS" },
@@ -184,25 +186,33 @@ describe("DNS names", () => {
     // Before the launch the deployment names no DNSSEC gateway; reads need `gatewayUrls`.
     it.effect("needs gateways for DNSSEC reads, and reports the ones that fail", () =>
       Effect.gen(function* () {
-        const ens = ensforge(yield* Devnet);
-        const noGateway = { _tag: "UnsupportedError", code: "UNSUPPORTED_ON_DEPLOYMENT" } as const;
-        yield* expectFailure(Actions.dns.getProof(ens, { name }), noGateway);
-        yield* expectFailure(Actions.dns.getStatus(ens, { name }), noGateway);
-        yield* expectFailure(Actions.dns.getOffchainResolver(ens, { name }), noGateway);
+        const { reader } = yield* Clients;
+        const gateways = yield* Gateways;
 
-        const down = yield* gateway(() => ({ status: 500, body: "{}" }));
-        const garbled = yield* gateway(() => ({ status: 200, body: '{"data":"0x1234"}' }));
+        const noGateway = { _tag: "UnsupportedError", code: "UNSUPPORTED_ON_DEPLOYMENT" } as const;
+        yield* expectFailure(Actions.dns.getProof(reader, { name }), noGateway);
+        yield* expectFailure(Actions.dns.getStatus(reader, { name }), noGateway);
+        yield* expectFailure(Actions.dns.getOffchainResolver(reader, { name }), noGateway);
+
+        const down = yield* gateways.serve(() => ({ status: 500, body: "{}" }));
+        const garbled = yield* gateways.serve(() => ({ status: 200, body: '{"data":"0x1234"}' }));
         for (const [url, code] of [
           [down.url, "GATEWAY_REQUEST_FAILED"],
           [garbled.url, "GATEWAY_RESPONSE_INVALID"],
         ] as const) {
-          const expected = { _tag: "GatewayError", code };
-          yield* expectFailure(Actions.dns.getProof(ens, { name, gatewayUrls: [url] }), expected);
-          yield* expectFailure(Actions.dns.getStatus(ens, { name, gatewayUrls: [url] }), expected);
-          yield* expectFailure(
-            Actions.dns.getOffchainResolver(ens, { name, gatewayUrls: [url] }),
-            expected,
-          );
+          const options = { name, gatewayUrls: [url] };
+          yield* expectFailure(Actions.dns.getProof(reader, options), {
+            _tag: "GatewayError",
+            code,
+          });
+          yield* expectFailure(Actions.dns.getStatus(reader, options), {
+            _tag: "GatewayError",
+            code,
+          });
+          yield* expectFailure(Actions.dns.getOffchainResolver(reader, options), {
+            _tag: "GatewayError",
+            code,
+          });
         }
       }),
     );

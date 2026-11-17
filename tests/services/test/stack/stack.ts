@@ -4,8 +4,10 @@ import { NodeServices } from "@effect/platform-node";
 import { Context, Duration, Effect, Layer, Schedule, Schema } from "effect";
 import { ChildProcessSpawner } from "effect/process";
 
-import { Devnet, type DevnetInstance, type ProfileName } from "@ensforge/test-devnet";
+import { bigname, type Indexer } from "@ensforge/sdk/indexer";
+import { Chain, Devnet, type ChainError, type ProfileName } from "@ensforge/test-devnet";
 import { Fixtures } from "@ensforge/test-fixtures";
+import { chainServices } from "@ensforge/test-integration/support/lane";
 import getPort from "get-port";
 import { parseEther, toHex } from "viem";
 import { mnemonicToAccount } from "viem/accounts";
@@ -24,10 +26,12 @@ export type ServiceSet = "indexer" | "aa";
 
 /** The services stack on top of a devnet. */
 export type ServicesApi = {
-  /** bigname's base URL, for `bigname({ url })` (`indexer`). */
+  /** bigname's base URL (`indexer`). */
   readonly indexerUrl: string;
+  /** ensforge's bigname adapter on that URL, for `Clients.make({ indexer })`. */
+  readonly indexer: Indexer;
   /** Waits until bigname has indexed `block` (the devnet's latest block by default). */
-  readonly waitForIndexed: (block?: bigint) => Effect.Effect<void, StackError>;
+  readonly waitForIndexed: (block?: bigint) => Effect.Effect<void, StackError | ChainError>;
   /** alto's ERC-4337 RPC URL (`aa`). */
   readonly bundlerUrl: string;
   /** The ERC-7677 paymaster's URL, which sponsors every UserOperation (`aa`). */
@@ -91,24 +95,20 @@ const reachable = (url: string, init?: RequestInit) =>
     ),
   );
 
-const startStack = Effect.fnUntraced(function* (
-  devnet: DevnetInstance,
-  services: readonly ServiceSet[],
-) {
+const startStack = Effect.fnUntraced(function* (services: readonly ServiceSet[]) {
+  const devnet = yield* Devnet;
+  const chain = yield* Chain;
   const indexer = services.includes("indexer");
   const aa = services.includes("aa");
-  const [bignamePort, altoPort, paymasterPort] = yield* Effect.promise(() =>
-    Promise.all([getPort(), getPort(), getPort()]),
-  );
+  const [bignamePort, altoPort, paymasterPort] = yield* Effect.all([
+    Effect.promise(() => getPort()),
+    Effect.promise(() => getPort()),
+    Effect.promise(() => getPort()),
+  ]);
   const [utility, executor] = [bundlerKey(20), bundlerKey(21)];
   if (aa) {
-    yield* Effect.promise(() =>
-      Promise.all(
-        [utility, executor].map(({ address }) =>
-          devnet.client.setBalance({ address, value: parseEther("1000") }),
-        ),
-      ),
-    );
+    yield* chain.setBalance(utility.address, parseEther("1000"));
+    yield* chain.setBalance(executor.address, parseEther("1000"));
   }
 
   const project = `ensforge-${process.pid}-${bignamePort}`;
@@ -151,7 +151,7 @@ const startStack = Effect.fnUntraced(function* (
   const indexerUrl = `http://127.0.0.1:${bignamePort}`;
   const waitForIndexed = (block?: bigint) =>
     Effect.gen(function* () {
-      const target = block ?? (yield* Effect.promise(() => devnet.client.getBlockNumber()));
+      const target = block ?? (yield* chain.blockNumber);
       yield* until(
         indexedBlock(indexerUrl).pipe(
           Effect.flatMap((indexed) =>
@@ -183,13 +183,20 @@ const startStack = Effect.fnUntraced(function* (
     yield* until(reachable(bundlerUrl, entryPoints), logs);
     yield* until(reachable(`${paymasterUrl}/ping`), logs);
   }
-  return { indexerUrl, waitForIndexed, bundlerUrl, paymasterUrl } satisfies ServicesApi;
+  return {
+    indexerUrl,
+    indexer: bigname({ url: indexerUrl }),
+    waitForIndexed,
+    bundlerUrl,
+    paymasterUrl,
+  } satisfies ServicesApi;
 });
 
 /**
  * The services stack for a suite: the profile's seeded devnet, answering as Sepolia and
  * reachable from containers, with the requested services running against it. Provides
- * `Services`, `Fixtures` and `Devnet`; everything stops when the suite's layer closes.
+ * `Services`, `Fixtures`, `Devnet` and the chain services (`Chain`, `Clients`, `Wallets`,
+ * `Gateways`); everything stops when the suite's layer closes.
  */
 export class Services extends Context.Service<Services, ServicesApi>()(
   "@ensforge/test-services/Services",
@@ -198,12 +205,8 @@ export class Services extends Context.Service<Services, ServicesApi>()(
     readonly profile: ProfileName;
     readonly services?: readonly ServiceSet[];
   }) =>
-    Layer.effect(
-      Services,
-      Effect.flatMap(Effect.service(Devnet), (devnet) =>
-        startStack(devnet, options.services ?? ["indexer"]),
-      ),
-    ).pipe(
+    Layer.effect(Services, startStack(options.services ?? ["indexer"])).pipe(
+      Layer.provideMerge(chainServices),
       Layer.provideMerge(
         Fixtures.layer({ profile: options.profile, chainId: sepoliaChainId, host: "0.0.0.0" }),
       ),

@@ -1,25 +1,16 @@
 import { assert, layer } from "@effect/vitest";
 import { Effect } from "effect";
 
+import { Duration } from "@ensforge/sdk";
 import { Actions } from "@ensforge/sdk/effect";
-import { bigname } from "@ensforge/sdk/indexer";
-import { Devnet, type DevnetInstance } from "@ensforge/test-devnet";
+import { Chain, Devnet } from "@ensforge/test-devnet";
 import { expectFailure } from "@ensforge/test-harness";
-import { ensforge, passWaits } from "@ensforge/test-integration/support/chain";
-import type { Address } from "viem";
+import { Clients } from "@ensforge/test-integration/support/clients";
 
-import { Services, type ServicesApi } from "../stack/stack.ts";
+import { Services } from "../stack/stack.ts";
 
 // What people do with a name, end to end: each journey writes through ensforge, then checks the
 // chain and what bigname indexed. Nothing is reverted; every journey uses its own names.
-
-const year = 31_536_000n;
-
-const client = (devnet: DevnetInstance, services: ServicesApi, account?: Address) =>
-  ensforge(devnet, {
-    indexer: bigname({ url: services.indexerUrl }),
-    ...(account === undefined ? {} : { account }),
-  });
 
 layer(Services.layer({ profile: "mainnet-shaped" }), { excludeTestServices: true })(
   "journeys: names",
@@ -27,20 +18,22 @@ layer(Services.layer({ profile: "mainnet-shaped" }), { excludeTestServices: true
     it.effect("a new user registers a profile and is found by address", () =>
       Effect.gen(function* () {
         const services = yield* Services;
-        const devnet = yield* Devnet;
-        const { carol } = devnet.accounts;
-        const ens = client(devnet, services, carol);
+        const { accounts } = yield* Devnet;
+        const chain = yield* Chain;
+        const clients = yield* Clients;
+        const { carol } = accounts;
+        const ens = clients.make({ account: carol, indexer: services.indexer });
         const name = "journey-new.eth";
 
         yield* Actions.registration.registerSync(ens, {
           names: name,
-          duration: year,
+          duration: Duration.years(1),
           records: {
             texts: { url: "https://carol.example", description: "Carol" },
             addresses: { eth: carol },
           },
           primaryName: true,
-          onStep: passWaits(devnet),
+          onStep: chain.passWaits,
         });
 
         // Resolution on-chain.
@@ -62,16 +55,18 @@ layer(Services.layer({ profile: "mainnet-shaped" }), { excludeTestServices: true
     it.effect("an owner lets a profile manager edit chosen records, then takes it back", () =>
       Effect.gen(function* () {
         const services = yield* Services;
-        const devnet = yield* Devnet;
-        const { carol, bob } = devnet.accounts;
-        const owner = client(devnet, services, carol);
-        const manager = client(devnet, services, bob);
+        const { accounts } = yield* Devnet;
+        const chain = yield* Chain;
+        const clients = yield* Clients;
+        const { carol, bob } = accounts;
+        const owner = clients.make({ account: carol, indexer: services.indexer });
+        const manager = clients.make({ account: bob, indexer: services.indexer });
         const name = "journey-managed.eth";
 
         yield* Actions.registration.registerSync(owner, {
           names: name,
-          duration: year,
-          onStep: passWaits(devnet),
+          duration: Duration.years(1),
+          onStep: chain.passWaits,
         });
         yield* Actions.permission.setRecordAccessSync(owner, {
           name,
@@ -109,16 +104,18 @@ layer(Services.layer({ profile: "mainnet-shaped" }), { excludeTestServices: true
     it.effect("a team shares a name's subnames through registry roles", () =>
       Effect.gen(function* () {
         const services = yield* Services;
-        const devnet = yield* Devnet;
-        const { carol, bob } = devnet.accounts;
-        const owner = client(devnet, services, carol);
-        const teammate = client(devnet, services, bob);
+        const { accounts } = yield* Devnet;
+        const chain = yield* Chain;
+        const clients = yield* Clients;
+        const { carol, bob } = accounts;
+        const owner = clients.make({ account: carol, indexer: services.indexer });
+        const teammate = clients.make({ account: bob, indexer: services.indexer });
         const parent = "journey-team.eth";
 
         yield* Actions.registration.registerSync(owner, {
           names: parent,
-          duration: year,
-          onStep: passWaits(devnet),
+          duration: Duration.years(1),
+          onStep: chain.passWaits,
         });
         yield* Actions.subname.createSync(owner, { name: `docs.${parent}` });
         const registry = yield* Actions.registry.get(owner, { name: parent });
@@ -152,22 +149,24 @@ layer(Services.layer({ profile: "mainnet-shaped" }), { excludeTestServices: true
     it.effect("a name is renewed and handed on, and its history tells the story", () =>
       Effect.gen(function* () {
         const services = yield* Services;
-        const devnet = yield* Devnet;
-        const { carol, bob } = devnet.accounts;
-        const ens = client(devnet, services, carol);
+        const { accounts } = yield* Devnet;
+        const chain = yield* Chain;
+        const clients = yield* Clients;
+        const { carol, bob } = accounts;
+        const ens = clients.make({ account: carol, indexer: services.indexer });
         const name = "journey-lifecycle.eth";
 
         const registered = yield* Actions.registration.registerSync(ens, {
           names: name,
-          duration: year,
-          onStep: passWaits(devnet),
+          duration: Duration.years(1),
+          onStep: chain.passWaits,
         });
-        yield* Actions.registration.renewSync(ens, { names: name, duration: year });
+        yield* Actions.registration.renewSync(ens, { names: name, duration: Duration.years(1) });
         yield* Actions.name.transferSync(ens, { name, to: bob });
 
         const state = yield* Actions.name.get(ens, { name });
         assert.strictEqual(state.owner, bob);
-        assert.strictEqual(state.expiry, (registered.names[0]?.expiry ?? 0n) + year);
+        assert.strictEqual(state.expiry, (registered.names[0]?.expiry ?? 0n) + Duration.years(1));
 
         yield* services.waitForIndexed();
         const history = yield* Actions.indexer.getHistory(ens, { name, order: "asc" });

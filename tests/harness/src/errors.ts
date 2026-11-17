@@ -4,17 +4,22 @@ import { Effect } from "effect";
 /** What a failure must look like: an ensforge error class and code. */
 export type ExpectedError = { readonly _tag: string; readonly code?: string | undefined };
 
+/** The member of `E` tagged `Tag`, or `E` itself when none is (an error class `E` does not list). */
+type Tagged<E, Tag extends string> = [Extract<E, { readonly _tag: Tag }>] extends [never]
+  ? E & { readonly _tag: Tag; readonly code: string }
+  : Extract<E, { readonly _tag: Tag }>;
+
 /**
  * Runs `effect`, expects it to fail with an ensforge error matching `expected`, and returns that
- * error for further assertions. A success fails the test with the value.
+ * error, narrowed to its class, for further assertions. A success fails the test with the value.
  */
-export const expectFailure = <A, E>(
+export const expectFailure = <A, E, const Tag extends string>(
   effect: Effect.Effect<A, E>,
-  expected: ExpectedError,
-): Effect.Effect<E & { readonly _tag: string; readonly code: string }, A> =>
+  expected: { readonly _tag: Tag; readonly code?: string | undefined },
+): Effect.Effect<Tagged<E, Tag>, A> =>
   Effect.flip(effect).pipe(
     Effect.map((error) => {
-      const tagged = error as E & { readonly _tag: string; readonly code: string };
+      const tagged = error as Tagged<E, Tag> & { readonly _tag: string; readonly code: string };
       strictEqual(tagged._tag, expected._tag);
       if (expected.code !== undefined) strictEqual(tagged.code, expected.code);
       return tagged;
