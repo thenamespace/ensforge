@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+
 import { assert, describe, it } from "@effect/vitest";
 
 import { Abis, Roles } from "@ensforge/contracts";
@@ -122,9 +124,73 @@ const overloads = (errorName: string): readonly Hex[] =>
 const encode = (errorName: string, args: readonly unknown[]): Hex =>
   encodeErrorResult({ abi: Abis.shared.errors, errorName, args } as never);
 
+// Mapped errors no devnet contract is made to raise yet; the list must shrink, never grow.
+const notRaisedOnChain = [
+  // DNSSEC registrars, oracles and their gateway: the DNS lane (024).
+  "TLDNotPublic",
+  "InvalidPublicSuffix",
+  "StaleProof",
+  "NoOwnerRecordFound",
+  "InvalidClass",
+  "InvalidLabelCount",
+  "InvalidProofType",
+  "InvalidRRSet",
+  "InvalidSignature",
+  "InvalidSignerName",
+  "NoMatchingProof",
+  "ProofNameMismatch",
+  "SignatureExpired",
+  "SignatureNotValidYet",
+  "SignatureTypeMismatch",
+  // Batch gateway failures: raised by the Universal Resolver's gateway, not reached here yet.
+  "HttpError",
+  "InvalidOffchainLookup",
+  "InvalidBatchGatewayResponse",
+  "UnsafeBatchGatewayResponse",
+  // Not reached by a devnet scenario yet: ensforge refuses most of these states before sending,
+  // or the devnet deploys no contract that raises them with revert data.
+  "NameIsLocked",
+  "NameRequiresMigration",
+  "ParentNotMigrated",
+  "NameNotLocked",
+  "TransferUnsafeUntilRegistryIsEmancipated",
+  "EACInvalidRoleBitmap",
+  "LabelAlreadyRegistered",
+  "LabelAlreadyReserved",
+  "NameNotRenewable",
+  "CannotSetPastExpiry",
+  "InsufficientValue",
+  "NotValid",
+  "UnsupportedResolverProfile",
+  "InvalidRecord",
+  "PrimaryNameNotNormalized",
+  "ReverseAddressMismatch",
+  "ResolverNotFound",
+  "ResolverNotContract",
+  "OwnableUnauthorizedAccount",
+  "WrappedOwnerMismatch",
+  "PermissionDenied",
+  "UnauthorizedNamer",
+  "NotApprovedOperator",
+  "CommitmentNotFound",
+  "UpgradeTargetNotApproved",
+  "InvalidUpgradeTarget",
+];
+
 describe("revertMap coverage", () => {
   it("documents every mapped contract error", () => {
     assert.sameMembers(Object.keys(revertMap), Object.keys(expected));
+  });
+
+  it("has each mapped error raised by a devnet contract, or listed as not yet", () => {
+    const chainTest = readFileSync(
+      new URL("../../../../../../tests/integration/test/writes/reverts.test.ts", import.meta.url),
+      "utf8",
+    );
+    const missing = Object.keys(revertMap).filter(
+      (errorName) => !new RegExp(String.raw`\b${errorName}\b`, "u").test(chainTest),
+    );
+    assert.sameMembers(missing, notRaisedOnChain);
   });
 });
 
