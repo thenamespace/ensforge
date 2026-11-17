@@ -6,6 +6,7 @@ export * as event from "./event/effect.js";
 export * as migration from "./migration/effect.js";
 export * as name from "./name/effect.js";
 export * as permission from "./permission/effect.js";
+export * as plan from "./plan/effect.js";
 export * as primaryName from "./primaryName/effect.js";
 export * as record from "./record/effect.js";
 export * as registration from "./registration/effect.js";

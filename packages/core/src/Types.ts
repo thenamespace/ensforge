@@ -93,6 +93,15 @@ export declare namespace Write {
      * @default "auto"
      */
     mode?: Mode | undefined;
+    /**
+     * Most calls per wallet bundle. Consecutive steps share a bundle when the wallet supports
+     * atomic batches, up to this many calls and never across a chain-time wait.
+     *
+     * @default 10
+     */
+    maxBundleCalls?: number | undefined;
+    /** Called as each step waits, is submitted, confirmed or fails. */
+    onStep?: ((event: Plan.Event) => void) | undefined;
   };
 
   type SyncOptions = Options & {

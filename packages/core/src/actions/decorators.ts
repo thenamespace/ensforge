@@ -9,6 +9,7 @@ import * as event from "./event/index.js";
 import * as migration from "./migration/index.js";
 import * as name from "./name/index.js";
 import * as permission from "./permission/index.js";
+import * as plan from "./plan/index.js";
 import * as primaryName from "./primaryName/index.js";
 import * as record from "./record/index.js";
 import * as registration from "./registration/index.js";
@@ -353,6 +354,56 @@ export const permissionActions =
         },
       ),
       setRecordAccessSync: (options) => permission.setRecordAccessSync(client, options),
+    },
+  });
+
+/** `plan` actions bound to a client. */
+export type PlanActions = {
+  readonly plan: {
+    /** Reads a saved plan and its progress. */
+    readonly get: Bound<typeof plan.get>;
+    /** Lists the saved plans of this client's chain, newest first. */
+    readonly list: Bound<typeof plan.list>;
+    /** Records a transaction sent outside ensforge as a plan step's submission. */
+    readonly reconcile: Bound<typeof plan.reconcile>;
+    /** Continues a saved plan after a failure or a reload. Resolves once the remaining transactions are submitted. */
+    readonly resume: Bound<typeof plan.resume>;
+    /** Continues a saved plan and resolves once every receipt is in. */
+    readonly resumeSync: Bound<typeof plan.resumeSync>;
+    /** Sends any plan: one prepared by a write's `.prepare`, or several combined with `Plan.merge`. Resolves once the transaction is submitted. */
+    readonly send: BoundWrite<typeof plan.send>;
+    /** Sends any plan: one prepared by a write's `.prepare`, or several combined with `Plan.merge`. Resolves once the receipt is in. */
+    readonly sendSync: Bound<typeof plan.sendSync>;
+  };
+};
+
+/**
+ * Adds the `plan` actions to a client.
+ *
+ * @category decorators
+ * @since 1.0.0
+ */
+export const planActions =
+  () =>
+  (client: Client<object>): PlanActions => ({
+    plan: {
+      get: (options) => plan.get(client, options),
+      list: (options) => plan.list(client, options),
+      reconcile: (options) => plan.reconcile(client, options),
+      resume: (options) => plan.resume(client, options),
+      resumeSync: (options) => plan.resumeSync(client, options),
+      send: Object.assign(
+        (options: Parameters<typeof plan.send>[1]) => plan.send(client, options),
+        {
+          prepare: (options: Parameters<typeof plan.send.prepare>[1]) =>
+            plan.send.prepare(client, options),
+          simulate: (options: Parameters<typeof plan.send.simulate>[1]) =>
+            plan.send.simulate(client, options),
+          estimateGas: (options: Parameters<typeof plan.send.estimateGas>[1]) =>
+            plan.send.estimateGas(client, options),
+        },
+      ),
+      sendSync: (options) => plan.sendSync(client, options),
     },
   });
 
@@ -936,6 +987,7 @@ export type EnsActions = ApprovalActions &
   MigrationActions &
   NameActions &
   PermissionActions &
+  PlanActions &
   PrimaryNameActions &
   RecordActions &
   RegistrationActions &
@@ -967,6 +1019,7 @@ export const ensActions =
     ...migrationActions()(client),
     ...nameActions()(client),
     ...permissionActions()(client),
+    ...planActions()(client),
     ...primaryNameActions()(client),
     ...recordActions()(client),
     ...registrationActions()(client),

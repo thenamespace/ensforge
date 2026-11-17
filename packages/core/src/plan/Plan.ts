@@ -96,19 +96,31 @@ export declare namespace Plan {
     readonly value: bigint;
   };
 
-  /** Progress of a plan being sent. */
+  /**
+   * Progress of a plan being sent: `waiting` for chain time before a step, `submitted` once its
+   * transactions are sent, `confirmed` once their receipts are in, `failed` with the error.
+   */
   type Event = {
     readonly step: Step;
     readonly status: "waiting" | "submitted" | "confirmed" | "failed";
-    readonly hash?: Hex | undefined;
+    /** Transactions of the step, once submitted. */
+    readonly hashes?: readonly Hex[] | undefined;
+    /** EIP-5792 bundle the step was sent in. */
+    readonly bundleId?: string | undefined;
+    readonly error?: AnyError | undefined;
   };
 
-  /** A saved plan and its progress, for resuming after a reload. */
+  /** A saved plan and its progress, for resuming after a failure or a reload. */
   type Record = {
     readonly plan: Plan;
+    /** `pending` while steps remain, `completed` once every step is submitted. */
     readonly status: "pending" | "completed" | "failed";
-    /** Transaction hash per submitted step id. */
-    readonly submitted: Readonly<globalThis.Record<string, Hex>>;
+    /** Transaction hashes per submitted step id. */
+    readonly submitted: Readonly<globalThis.Record<string, readonly Hex[]>>;
+    /** EIP-5792 bundle id per step sent in a bundle. */
+    readonly bundles: Readonly<globalThis.Record<string, string>>;
+    /** Message of the last failure. */
+    readonly error?: string | undefined;
     /** Unix time in milliseconds. */
     readonly updatedAt: number;
   };

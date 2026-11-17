@@ -152,6 +152,10 @@ export declare namespace EnsforgeError {
     readonly contractKind?: "registry" | "resolver" | "wrapper" | "registrar" | undefined;
     /** ENSv2 registry that wrapped the revert in `ResolutionError` (mainnet). */
     readonly registry?: Address | undefined;
+    /** Saved plan a failed write belongs to; pass it to `plan.resume`. */
+    readonly planId?: string | undefined;
+    /** Step of the plan that failed. */
+    readonly step?: string | undefined;
     /** The contract revert this error was translated from, when it came from one. */
     readonly revert?:
       | { readonly errorName: string | undefined; readonly data: Hex | undefined }

@@ -17,6 +17,9 @@ import { get as nameGet } from "./name/get/effect.js";
 import { getLabel as nameGetLabel } from "./name/getLabel/effect.js";
 import { check as permissionCheck } from "./permission/check/effect.js";
 import { get as permissionGet } from "./permission/get/effect.js";
+import { get as planGet } from "./plan/get/effect.js";
+import { list as planList } from "./plan/list/effect.js";
+import { reconcile as planReconcile } from "./plan/reconcile/effect.js";
 import { get as primaryNameGet } from "./primaryName/get/effect.js";
 import { get as recordGet } from "./record/get/effect.js";
 import { getAddress as recordGetAddress } from "./record/getAddress/effect.js";
@@ -57,6 +60,9 @@ export const requests: Readonly<
   "name.getLabel": nameGetLabel,
   "permission.check": permissionCheck,
   "permission.get": permissionGet,
+  "plan.get": planGet,
+  "plan.list": planList,
+  "plan.reconcile": planReconcile,
   "primaryName.get": primaryNameGet,
   "record.get": recordGet,
   "record.getAddress": recordGetAddress,

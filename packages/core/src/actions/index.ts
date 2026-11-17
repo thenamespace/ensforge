@@ -6,6 +6,7 @@ export * as event from "./event/index.js";
 export * as migration from "./migration/index.js";
 export * as name from "./name/index.js";
 export * as permission from "./permission/index.js";
+export * as plan from "./plan/index.js";
 export * as primaryName from "./primaryName/index.js";
 export * as record from "./record/index.js";
 export * as registration from "./registration/index.js";

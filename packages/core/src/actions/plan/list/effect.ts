@@ -1,0 +1,29 @@
+import { Effect } from "effect";
+
+import { isAddressEqual } from "viem";
+
+import type { Client } from "../../../client/types.js";
+import * as Action from "../../../internal/action/index.js";
+import { requireAddress } from "../../../internal/name/write.js";
+import { fromPromise } from "../../../internal/rpc/fromPromise.js";
+import type { list as Promises } from "./index.js";
+
+/** @internal Implementation of `Actions.plan.list`. */
+export const list = Effect.fn("ensforge.plan.list")(function* (
+  client: Client,
+  options: Promises.Options,
+): Effect.fn.Return<Promises.ReturnType, Promises.ErrorType> {
+  const account =
+    options.account === undefined ? undefined : yield* requireAddress(options.account, "account");
+  const records = yield* fromPromise(() => client.config.storage.list());
+
+  const matching = records.filter(
+    (record) =>
+      record.plan.chainId === client.chain.id &&
+      (options.status === undefined || record.status === options.status) &&
+      (account === undefined ||
+        (record.plan.account !== undefined && isAddressEqual(record.plan.account, account))),
+  );
+  // oxlint-disable-next-line unicorn/no-array-sort -- sorts a fresh array
+  return matching.sort((a, b) => b.updatedAt - a.updatedAt);
+}, Action.withContext("plan.list"));
