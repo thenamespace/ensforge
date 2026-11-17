@@ -27,7 +27,10 @@ export const capabilities = (config: HttpConfig) => {
 
     const route = "/status";
     const body = yield* send(config, { route, path: route });
-    const { data } = yield* Wire.decode(Wire.envelope(Wire.Status), body, { id: config.id, route });
+    const { data } = yield* Wire.decode(Wire.envelope(Wire.StatusData), body, {
+      id: config.id,
+      route,
+    });
     const value = new Set(
       Object.entries(data.chains)
         .filter(([, chain]) => chain.indexed_block !== null && chain.indexed_block !== undefined)

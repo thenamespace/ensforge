@@ -3,7 +3,8 @@ import { Effect, Schema } from "effect";
 import { IndexerError } from "../../errors/classes/IndexerError.js";
 
 // bigname's REST shapes, shared by every bigname-compatible indexer (Goldsky serves the same
-// routes with fewer fields). Only identity fields are required: anything one indexer leaves out
+// routes with fewer fields). Each exported Struct is named after the OpenAPI component it decodes;
+// `scripts/indexer-openapi.ts check` verifies its fields against the pinned specs. Only identity fields are required: anything one indexer leaves out
 // decodes as missing, and unknown fields are ignored. Enum-like strings stay strings so a new
 // value upstream does not fail a whole page.
 
@@ -77,14 +78,16 @@ const detailFields = {
   primary_address: opt(Schema.String),
   migrated_at: opt(Schema.String),
   records: opt(RecordGroups),
-  record_count: opt(Schema.Number),
-  subname_count: opt(Schema.Number),
   read_status: opt(Schema.String),
   unsupported_reason: opt(Schema.String),
   failure_reason: opt(Schema.String),
 };
 
-export const NameRecord = Schema.Struct(detailFields);
+export const NameRecord = Schema.Struct({
+  ...detailFields,
+  record_count: opt(Schema.Number),
+  subname_count: opt(Schema.Number),
+});
 
 export const LookupRecord = Schema.Struct({ ...detailFields, is_primary: opt(Schema.Boolean) });
 
@@ -272,7 +275,7 @@ export const ChainStatus = Schema.Struct({
   lag_seconds: opt(Schema.Number),
 });
 
-export const Status = Schema.Struct({
+export const StatusData = Schema.Struct({
   status: Schema.String,
   chains: Schema.Record(Schema.String, ChainStatus),
 });
@@ -280,37 +283,6 @@ export const Status = Schema.Struct({
 /** `{ data, meta, page }`, as every route answers. */
 export const envelope = <S extends Schema.Top>(data: S) =>
   Schema.Struct({ data, meta: opt(Meta), page: opt(Page) });
-
-/**
- * The OpenAPI component each Schema decodes, for the conformance check against the pinned
- * snapshots (`scripts/indexer-openapi.mjs`).
- */
-export const components = {
-  ContractRef,
-  Meta,
-  Page,
-  EnsV1,
-  RecordGroups,
-  NameRecord,
-  LookupRecord,
-  AddressName,
-  Subname,
-  RegistryLabel,
-  SearchName,
-  HistoryEvent,
-  NameRecords,
-  PrimaryName,
-  LookupResult,
-  PermissionRow,
-  RegistryOverview,
-  ResolverOverview,
-  ResolverLink,
-  ResolverRole,
-  RoleHolderResolver,
-  Namespace,
-  ChainStatus,
-  StatusData: Status,
-} as const;
 
 /** Decodes a response body; a mismatch fails with `INDEXER_RESPONSE_INVALID`. */
 export const decode = <S extends Schema.Constraint>(

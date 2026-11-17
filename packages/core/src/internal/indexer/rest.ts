@@ -455,7 +455,7 @@ export const restIndexer = (options: RestOptions): Implementation => {
       Effect.gen(function* () {
         const config = yield* configFor(context.chainId);
         const route = "/status";
-        const envelope = yield* get(config, Wire.envelope(Wire.Status), { route, path: route });
+        const envelope = yield* get(config, Wire.envelope(Wire.StatusData), { route, path: route });
         return yield* mapped(route, () => Convert.status(envelope.data, id));
       }),
   };

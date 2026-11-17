@@ -380,7 +380,7 @@ export const namespace = (wire: Of<typeof Wire.Namespace>): T.NamespaceInfo => (
 const opsStatus = (value: string | null | undefined): T.ChainStatus["status"] =>
   oneOf(["ready", "degraded", "stale"], value) ?? "degraded";
 
-export const status = (wire: Of<typeof Wire.Status>, indexer: string): T.IndexerStatus => ({
+export const status = (wire: Of<typeof Wire.StatusData>, indexer: string): T.IndexerStatus => ({
   status: opsStatus(wire.status),
   chains: Object.fromEntries(
     Object.entries(wire.chains).map(([chainId, chain]) => [
