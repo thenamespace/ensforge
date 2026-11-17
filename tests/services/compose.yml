@@ -107,8 +107,8 @@ services:
       bigname-reader: { condition: service_completed_successfully }
 
   # Account abstraction (`--profile aa`): the EntryPoints the bundler and paymaster expect, Pimlico's
-  # alto bundler (safe mode off: it cannot trace its simulations on anvil, KL-51) and a paymaster
-  # that sponsors every UserOperation.
+  # alto bundler (safe mode off: anvil runs its tracer, but alto cannot decode its own simulation
+  # result, `DelegateAndRevert`, KL-51) and a paymaster that sponsors every UserOperation.
   aa-deployer:
     <<: *devnet-host
     profiles: [aa]
