@@ -236,7 +236,10 @@
     "tests": ["tests/integration/test/reads/name.test.ts > v1.unwrapped.sub.wrapped-parent"]
   },
   "O12": {
-    "tests": ["tests/integration/test/reads/name.test.ts > v1.subname.deleted"]
+    "tests": [
+      "tests/integration/test/reads/name.test.ts > v1.subname.deleted",
+      "tests/integration/test/writes/hierarchy.test.ts > creates, updates and removes ENSv1 subnames"
+    ]
   },
   "O13": {
     "tests": ["tests/integration/test/reads/name.test.ts > v2.reserved.lapsed"]
@@ -332,18 +335,25 @@
     "status": "pending"
   },
   "W02": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/writes/hierarchy.test.ts > follows NameWrapper fuse rules for children"
+    ]
   },
   "W03": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/writes/hierarchy.test.ts > extends an emancipated child's expiry, up to its parent's"
+    ]
   },
   "W04": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/writes/hierarchy.test.ts > wraps, burns fuses, and refuses what burned fuses forbid"
+    ]
   },
   "W05": {
     "tests": [
       "tests/integration/test/reads/name.test.ts > v1.wrapped.sub.expired-emancipated",
-      "tests/integration/test/reads/wrapper.test.ts > withholds what the wrapper withholds once a token expires"
+      "tests/integration/test/reads/wrapper.test.ts > withholds what the wrapper withholds once a token expires",
+      "tests/integration/test/writes/hierarchy.test.ts > follows NameWrapper fuse rules for children"
     ]
   },
   "W06": {
@@ -386,7 +396,9 @@
     "status": "pending"
   },
   "W14": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/writes/hierarchy.test.ts > extends an emancipated child's expiry, up to its parent's"
+    ]
   },
   "W15": {
     "status": "pending"
@@ -985,7 +997,8 @@
     "tests": [
       "tests/integration/test/reads/name.test.ts > registration.v1-renewed-by-renewer",
       "tests/integration/test/reads/registration.test.ts > prices renewals through the contract that renews each name",
-      "tests/integration/test/writes/renewal.test.ts > renews a premigrated ENSv1 name through ETHRenewerV1"
+      "tests/integration/test/writes/renewal.test.ts > renews a premigrated ENSv1 name through ETHRenewerV1",
+      "tests/integration/test/writes/hierarchy.test.ts > extends an emancipated child's expiry, up to its parent's"
     ]
   },
   "G13": {
@@ -1380,7 +1393,10 @@
     ]
   },
   "M:A4": {
-    "tests": ["tests/integration/test/reads/name.test.ts > v1.subname"]
+    "tests": [
+      "tests/integration/test/reads/name.test.ts > v1.subname",
+      "tests/integration/test/writes/hierarchy.test.ts > creates, updates and removes ENSv1 subnames"
+    ]
   },
   "M:A5": {
     "tests": ["tests/integration/test/reads/name.test.ts > v1.unwrapped.grace"]
@@ -1393,21 +1409,29 @@
       "tests/integration/test/reads/name.test.ts > wrapped names report the wrapper's token and expiry",
       "tests/integration/test/reads/name.test.ts > v1.wrapped",
       "tests/integration/test/writes/access-matrix.test.ts > record.set as wrapped owner",
-      "tests/integration/test/writes/transfers.test.ts > transfers each ENSv1 role it is asked to"
+      "tests/integration/test/writes/transfers.test.ts > transfers each ENSv1 role it is asked to",
+      "tests/integration/test/writes/hierarchy.test.ts > wraps, burns fuses, and refuses what burned fuses forbid"
     ]
   },
   "M:A8": {
     "tests": [
       "tests/integration/test/reads/access.test.ts > reports what an account may do, and why not",
       "tests/integration/test/reads/name.test.ts > v1.wrapped.locked",
-      "tests/integration/test/writes/transfers.test.ts > transfers each ENSv1 role it is asked to"
+      "tests/integration/test/writes/transfers.test.ts > transfers each ENSv1 role it is asked to",
+      "tests/integration/test/writes/hierarchy.test.ts > wraps, burns fuses, and refuses what burned fuses forbid"
     ]
   },
   "M:A9": {
-    "tests": ["tests/integration/test/reads/name.test.ts > v1.wrapped.sub"]
+    "tests": [
+      "tests/integration/test/reads/name.test.ts > v1.wrapped.sub",
+      "tests/integration/test/writes/hierarchy.test.ts > follows NameWrapper fuse rules for children"
+    ]
   },
   "M:A10": {
-    "tests": ["tests/integration/test/reads/name.test.ts > v1.wrapped.sub.emancipated"]
+    "tests": [
+      "tests/integration/test/reads/name.test.ts > v1.wrapped.sub.emancipated",
+      "tests/integration/test/writes/hierarchy.test.ts > follows NameWrapper fuse rules for children"
+    ]
   },
   "M:A11": {
     "tests": ["tests/integration/test/reads/name.test.ts > v1.wrapped.sub.locked"]
@@ -1445,7 +1469,9 @@
       "tests/integration/test/reads/name.test.ts > token ID, resource, registry and expiry of ENSv2 names",
       "tests/integration/test/reads/name.test.ts > v2.subnames",
       "tests/integration/test/reads/registry.test.ts > identifies each kind of registry by the name whose children it holds",
-      "tests/integration/test/reads/registry.test.ts > reads a registry by address, with its parent and canonical name"
+      "tests/integration/test/reads/registry.test.ts > reads a registry by address, with its parent and canonical name",
+      "tests/integration/test/writes/hierarchy.test.ts > creates ENSv2 subnames, deploying a registry where the parent has none",
+      "tests/integration/test/writes/hierarchy.test.ts > deploys a registry and attaches it under a name"
     ]
   },
   "M:A19": {
