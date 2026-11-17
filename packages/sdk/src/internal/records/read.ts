@@ -24,12 +24,14 @@ export const readRecords = Effect.fnUntraced(function* (
     try: () => planRecordReads(namehash(name), options.selection),
     catch: (error) => error as AnyError,
   });
-  if (plan.calls.length === 0) return { resolver: null, ...plan.assemble([]) };
+  if (plan.calls.length === 0) {
+    return { resolver: null, ...plan.assemble([], yield* plan.codecs) };
+  }
 
-  const { resolver, results } = yield* resolveCalls(client, {
-    ...options,
-    name,
-    calls: plan.calls,
-  });
-  return { resolver, ...plan.assemble(results) };
+  // The codecs load while the resolver answers.
+  const [{ resolver, results }, codecs] = yield* Effect.all(
+    [resolveCalls(client, { ...options, name, calls: plan.calls }), plan.codecs],
+    { concurrency: 2 },
+  );
+  return { resolver, ...plan.assemble(results, codecs) };
 });

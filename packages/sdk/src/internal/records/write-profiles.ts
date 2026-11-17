@@ -14,8 +14,8 @@ import { InvalidInputError } from "../../errors/classes/InvalidInputError.js";
 import { UnsupportedError } from "../../errors/classes/UnsupportedError.js";
 import type { Plan } from "../../plan/Plan.js";
 import * as CoinType from "../../utils/CoinType.js";
-import * as ContentHash from "../../utils/ContentHash.js";
 import { encodeAbiJson } from "./abi-record.js";
+import { loadRecordCodecs, type RecordCodecs } from "./codecs.js";
 import type { SetterKeying } from "./setter-keying.js";
 
 /** Records to write; `null` deletes one. */
@@ -73,6 +73,23 @@ const requireImplementer = (implementer: Address | null): Address => {
 };
 
 /**
+ * The codecs `encodeRecordWrites` needs for `writes`: their coins' address codecs and, when a
+ * content hash is set, the content-hash codec.
+ */
+export const recordWriteCodecs = (writes: RecordWrites) =>
+  loadRecordCodecs({
+    // Unknown coin names are left out here; encoding then rejects them with their own error.
+    coinTypes: Object.keys(writes.addresses ?? {}).flatMap((key) => {
+      try {
+        return [coinTypeOf(key)];
+      } catch {
+        return [];
+      }
+    }),
+    contentHash: writes.contentHash !== undefined && writes.contentHash !== null,
+  });
+
+/**
  * Encodes resolver setter calls for `writes`. Node-based resolvers take the node; the ENSv2
  * PermissionedResolver takes the DNS-encoded name and has no pubkey or `clearRecords`.
  * Throws `InvalidInputError` / `UnsupportedError` for invalid or unsupported writes.
@@ -81,6 +98,7 @@ export const encodeRecordWrites = (
   keying: SetterKeying,
   target: { readonly node: Hex; readonly dns: Hex },
   writes: RecordWrites,
+  codecs: RecordCodecs,
 ): Hex[] => {
   const byName = keying === "name";
   const calls: Hex[] = [];
@@ -128,7 +146,7 @@ export const encodeRecordWrites = (
     // deletion there writes the zero address; the PermissionedResolver accepts empty bytes.
     const bytes =
       value !== null
-        ? CoinType.encodeAddress(coinType, value)
+        ? codecs.encodeAddress(coinType, value)
         : !byName && coinType === 60n
           ? zeroAddress
           : "0x";
@@ -148,7 +166,14 @@ export const encodeRecordWrites = (
   }
 
   if (writes.contentHash !== undefined) {
-    const hash = writes.contentHash === null ? "0x" : ContentHash.encode(writes.contentHash);
+    const { contentHash } = codecs;
+    if (writes.contentHash !== null && contentHash === undefined) {
+      throw new Error("The content-hash codec was not loaded (see recordWriteCodecs).");
+    }
+    const hash =
+      writes.contentHash === null || contentHash === undefined
+        ? "0x"
+        : contentHash.encode(writes.contentHash);
     calls.push(
       byName
         ? encodeFunctionData({

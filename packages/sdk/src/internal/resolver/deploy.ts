@@ -10,7 +10,11 @@ import type { Plan } from "../../plan/Plan.js";
 import * as Role from "../../utils/Role.js";
 import { deployProxy } from "../factory/verifiable-proxy.js";
 import type { NameParts } from "../name/parts.js";
-import { encodeRecordWrites, type RecordWrites } from "../records/write-profiles.js";
+import {
+  encodeRecordWrites,
+  recordWriteCodecs,
+  type RecordWrites,
+} from "../records/write-profiles.js";
 
 /** Every PermissionedResolver role and its admin role: what a resolver's owner gets. */
 export const allResolverRoles = Object.values(Role.resolver).reduce(
@@ -45,10 +49,14 @@ export const deployPermissionedResolver = Effect.fnUntraced(function* (
   const calls =
     name === undefined || records === undefined
       ? []
-      : yield* Effect.try({
-          try: () => encodeRecordWrites("name", name, records),
-          catch: (error) => error as AnyError,
-        });
+      : yield* recordWriteCodecs(records).pipe(
+          Effect.flatMap((codecs) =>
+            Effect.try({
+              try: () => encodeRecordWrites("name", name, records, codecs),
+              catch: (error) => error as AnyError,
+            }),
+          ),
+        );
   return yield* deployProxy(client, {
     factory: v2.contracts.verifiableFactory,
     implementation: v2.implementations.permissionedResolver,

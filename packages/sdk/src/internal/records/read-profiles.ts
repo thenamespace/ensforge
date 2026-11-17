@@ -10,8 +10,8 @@ import {
 
 import type { Selection } from "../../actions/record/get/types.js";
 import * as CoinType from "../../utils/CoinType.js";
-import * as ContentHash from "../../utils/ContentHash.js";
-import { allAbiContentTypes, decodeAbiRecord } from "./abi-record.js";
+import { allAbiContentTypes } from "./abi-record.js";
+import { loadRecordCodecs, type RecordCodecs } from "./codecs.js";
 
 /** ENSIP-19 default EVM coin type: the fallback address for EVM chains without their own record. */
 export const defaultEvmCoinType = 0x8000_0000n;
@@ -19,7 +19,12 @@ export const defaultEvmCoinType = 0x8000_0000n;
 /** One resolver call and how its result lands in the output. */
 type Read = {
   readonly call: Hex;
-  readonly apply: (result: Hex | undefined, output: Output, results: Results) => void;
+  readonly apply: (
+    result: Hex | undefined,
+    output: Output,
+    results: Results,
+    codecs: RecordCodecs,
+  ) => void;
 };
 
 type Output = Record<string, Record<string, unknown> | unknown>;
@@ -61,10 +66,14 @@ const textReads = (node: Hex, keys: readonly string[]): Read[] =>
     },
   }));
 
-const decodeAddress = (coinType: bigint, result: Hex | undefined): string | null => {
+const decodeAddress = (
+  codecs: RecordCodecs,
+  coinType: bigint,
+  result: Hex | undefined,
+): string | null => {
   if (result === undefined) return null;
   const bytes = decode("addr", result) as Hex;
-  return bytes === "0x" ? null : orNull(() => CoinType.decodeAddress(coinType, bytes));
+  return bytes === "0x" ? null : orNull(() => codecs.decodeAddress(coinType, bytes));
 };
 
 const addressReads = (node: Hex, coins: readonly (string | bigint)[]): Read[] =>
@@ -77,10 +86,10 @@ const addressReads = (node: Hex, coins: readonly (string | bigint)[]): Read[] =>
         functionName: "addr",
         args: [node, coinType],
       }),
-      apply: (result, output, results) => {
-        const own = decodeAddress(coinType, result);
+      apply: (result, output, results, codecs) => {
+        const own = decodeAddress(codecs, coinType, result);
         (output.addresses as Record<string, unknown>)[String(coin)] =
-          own ?? (usesDefault ? decodeAddress(coinType, results.defaultAddress) : null);
+          own ?? (usesDefault ? decodeAddress(codecs, coinType, results.defaultAddress) : null);
       },
     };
   });
@@ -99,10 +108,14 @@ const keyedReads = <value>(
     },
   }));
 
-const singleRead = (field: string, call: Hex, read: (result: Hex) => unknown): Read => ({
+const singleRead = (
+  field: string,
+  call: Hex,
+  read: (result: Hex, codecs: RecordCodecs) => unknown,
+): Read => ({
   call,
-  apply: (result, output) => {
-    output[field] = result === undefined ? null : orNull(() => read(result));
+  apply: (result, output, _results, codecs) => {
+    output[field] = result === undefined ? null : orNull(() => read(result, codecs));
   },
 });
 
@@ -153,7 +166,8 @@ export const planRecordReads = (node: Hex, selection: Selection) => {
           functionName: "contenthash",
           args: [node],
         }),
-        (result) => ContentHash.decode(decode("contenthash", result) as Hex),
+        (result, codecs) =>
+          codecs.contentHash?.decode(decode("contenthash", result) as Hex) ?? null,
       ),
     );
   }
@@ -167,9 +181,9 @@ export const planRecordReads = (node: Hex, selection: Selection) => {
           functionName: "ABI",
           args: [node, contentTypes],
         }),
-        (result) => {
+        (result, codecs) => {
           const [contentType, data] = decode("ABI", result) as [bigint, Hex];
-          return decodeAbiRecord(contentType, data);
+          return codecs.decodeAbiRecord?.(contentType, data) ?? null;
         },
       ),
     );
@@ -215,7 +229,14 @@ export const planRecordReads = (node: Hex, selection: Selection) => {
   });
   const calls = [...reads.map((read) => read.call), ...(needsDefault ? [defaultCall] : [])];
 
-  const assemble = (results: readonly (Hex | undefined)[]): Output => {
+  // Only the codecs this selection decodes with are loaded.
+  const codecs = loadRecordCodecs({
+    coinTypes: (selection.addresses ?? []).map((coin) => CoinType.from(coin)),
+    contentHash: selection.contentHash === true,
+    abi: selection.abi !== undefined,
+  });
+
+  const assemble = (results: readonly (Hex | undefined)[], loaded: RecordCodecs): Output => {
     const output: Output = {
       ...(selection.texts === undefined ? {} : { texts: {} }),
       ...(selection.addresses === undefined ? {} : { addresses: {} }),
@@ -223,9 +244,9 @@ export const planRecordReads = (node: Hex, selection: Selection) => {
       ...(selection.data === undefined ? {} : { data: {} }),
     };
     const shared: Results = { defaultAddress: needsDefault ? results.at(-1) : undefined };
-    for (const [index, read] of reads.entries()) read.apply(results[index], output, shared);
+    for (const [index, read] of reads.entries()) read.apply(results[index], output, shared, loaded);
     return output;
   };
 
-  return { calls, assemble };
+  return { calls, codecs, assemble };
 };

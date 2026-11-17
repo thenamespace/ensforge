@@ -14,7 +14,11 @@ import { requireRegistered } from "../../../internal/name/write.js";
 import { explainFor } from "../../../internal/permission/check.js";
 import { writeOperations } from "../../../internal/permission/records.js";
 import { setterKeying } from "../../../internal/records/setter-keying.js";
-import { encodeRecordWrites, resolverCall } from "../../../internal/records/write-profiles.js";
+import {
+  encodeRecordWrites,
+  recordWriteCodecs,
+  resolverCall,
+} from "../../../internal/records/write-profiles.js";
 import { addressOf } from "../../../internal/write/signer.js";
 import { make as makePlan } from "../../../plan/make.js";
 import type { Plan } from "../../../plan/Plan.js";
@@ -58,8 +62,9 @@ export const plan = Effect.fnUntraced(function* (
   }
 
   const keying = yield* setterKeying(client, resolver);
+  const codecs = yield* recordWriteCodecs(options);
   const calls = yield* Effect.try({
-    try: () => encodeRecordWrites(keying, loaded.data.parts, options),
+    try: () => encodeRecordWrites(keying, loaded.data.parts, options, codecs),
     catch: (error) => error as AnyError,
   });
 
