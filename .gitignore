@@ -13,3 +13,6 @@ research/
 
 # codegen --check scratch output
 .codegen-check/
+
+# devnet clones and state dumps
+tests/devnet/.cache/

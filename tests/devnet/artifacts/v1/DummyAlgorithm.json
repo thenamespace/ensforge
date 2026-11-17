@@ -1,0 +1,23 @@
+{
+  "source": {
+    "kind": "build",
+    "repository": "contracts-v2",
+    "buildInfo": "contracts/deployments/mainnet/build-info/solc-0_8_25-b30e6dc9a03b37f6a0b89af5d02a73d3993944f7.json",
+    "contract": "project/lib/ens-contracts/contracts/dnssec-oracle/algorithms/DummyAlgorithm.sol:DummyAlgorithm",
+    "commit": "5026725d2a927f84de3a3a34b5bfe6cb92ae7cbb"
+  },
+  "abi": [
+    {
+      "inputs": [
+        { "internalType": "bytes", "name": "", "type": "bytes" },
+        { "internalType": "bytes", "name": "", "type": "bytes" },
+        { "internalType": "bytes", "name": "", "type": "bytes" }
+      ],
+      "name": "verify",
+      "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }],
+      "stateMutability": "view",
+      "type": "function"
+    }
+  ],
+  "bytecode": "0x6080604052348015600e575f80fd5b506101698061001c5f395ff3fe608060405234801561000f575f80fd5b5060043610610029575f3560e01c8063de8f50a11461002d575b5f80fd5b61004761003b3660046100a0565b60019695505050505050565b604051901515815260200160405180910390f35b5f8083601f84011261006b575f80fd5b50813567ffffffffffffffff811115610082575f80fd5b602083019150836020828501011115610099575f80fd5b9250929050565b5f805f805f80606087890312156100b5575f80fd5b863567ffffffffffffffff808211156100cc575f80fd5b6100d88a838b0161005b565b909850965060208901359150808211156100f0575f80fd5b6100fc8a838b0161005b565b90965094506040890135915080821115610114575f80fd5b5061012189828a0161005b565b979a969950949750929593949250505056fea2646970667358221220c3f845e79098eac76c0bcf0e6fd3c0f4d6a612c59576de7b75f3d22b688536e264736f6c63430008190033"
+}

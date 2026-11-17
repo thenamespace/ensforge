@@ -15,6 +15,7 @@
     "prepare": "lefthook install && effect-tsgo patch --typescript --no-oxlint",
     "release": "changeset publish",
     "test": "vitest run -c .config/vitest.config.ts --project \"*:unit\" --project \"*:types\"",
+    "test:devnet": "vitest run -c .config/vitest.config.ts --project devnet",
     "typecheck": "turbo --root-turbo-json .config/turbo.json run typecheck",
     "version-packages": "changeset version",
     "bundle:size": "ensforge-dev bundle-size"

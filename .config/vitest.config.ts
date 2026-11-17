@@ -46,6 +46,19 @@ const tools = {
   test: { name: "tools:unit", root: "tools/cli", include: ["test/unit/**/*.test.ts"] },
 };
 
+// Chain lane: every profile on a local anvil (`pnpm test:devnet`; needs Foundry, see
+// tests/devnet/foundry-version). Not part of `pnpm test`.
+const devnet = {
+  extends: true as const,
+  test: {
+    name: "devnet",
+    root: "tests/devnet",
+    include: ["test/**/*.test.ts"],
+    testTimeout: 60_000,
+    hookTimeout: 120_000,
+  },
+};
+
 const types = (name: (typeof packages)[number]) => ({
   extends: true as const,
   test: {
@@ -74,6 +87,7 @@ export default defineConfig({
       ),
       wagmi2,
       tools,
+      devnet,
     ],
     passWithNoTests: true,
   },
