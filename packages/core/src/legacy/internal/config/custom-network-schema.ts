@@ -94,6 +94,8 @@ const EnsV2Capabilities = Schema.Struct({
   lockedMigrationRenewal: Schema.Literals(["renew-role", "max-expiry"]),
   userRegistryUpgradeGate: Schema.Boolean,
   hcaSameChainSourceRejected: Schema.Boolean,
+  hcaSessionDomain: Schema.Literals(["smart-session", "hca"]),
+  hcaContractOwners: Schema.Boolean,
 });
 
 const EnsV2HcaContractAddresses = Schema.Struct({
@@ -101,6 +103,9 @@ const EnsV2HcaContractAddresses = Schema.Struct({
   upgradeSet: EthereumAddress,
   standaloneFactory: EthereumAddress,
   standaloneImplementation: EthereumAddress,
+  entryPoint: EthereumAddress,
+  intentExecutor: EthereumAddress,
+  gasRefundPaymaster: EthereumAddress,
 });
 
 const EnsV2TestTokenAddresses = Schema.Struct({
