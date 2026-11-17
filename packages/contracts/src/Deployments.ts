@@ -225,6 +225,9 @@ const v2GroupKeys = {
       "upgradeSet",
       "standaloneFactory",
       "standaloneImplementation",
+      "entryPoint",
+      "intentExecutor",
+      "gasRefundPaymaster",
     ],
     optional: [],
   } satisfies Keys<V2Hca>,
@@ -240,6 +243,8 @@ const capabilityValues = {
   lockedMigrationRenewal: ["renew-role", "max-expiry"],
   userRegistryUpgradeGate: [true, false],
   hcaSameChainSourceRejected: [true, false],
+  hcaSessionDomain: ["smart-session", "hca"],
+  hcaContractOwners: [true, false],
 } as const satisfies { readonly [key in keyof Capabilities]: readonly Capabilities[key][] };
 
 /** Required and optional keys of an address group; a misspelled or misplaced key fails to compile. */

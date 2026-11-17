@@ -67,6 +67,9 @@ export const mainnetV2 = {
     upgradeSet: "0x85E115F5b43c72e2BA4419a9A95e325dB18431c2",
     standaloneFactory: "0x742bf21897a78e2C98cC5f5C5473A370a081e561",
     standaloneImplementation: "0x116F462FA078ec0009e9b25DCd60309E70aaC4F4",
+    entryPoint: "0x0000000071727De22E5E9d8BAf0edAc6f37da032",
+    intentExecutor: "0x00000000005aD9ce1f5035FD62CA96CEf16AdAAF",
+    gasRefundPaymaster: "0x1d7df6Ddc7328Ac827EB4D7f171C60AFB7f9A599",
   },
   // Circle USDC and MakerDAO DAI; both are accepted by the StandardRentPriceOracle.
   paymentTokens: {
@@ -80,6 +83,8 @@ export const mainnetV2 = {
     lockedMigrationRenewal: "max-expiry",
     userRegistryUpgradeGate: true,
     hcaSameChainSourceRejected: true,
+    hcaSessionDomain: "smart-session",
+    hcaContractOwners: false,
   },
   provenance: {
     repository: "https://github.com/ensdomains/contracts-v2",

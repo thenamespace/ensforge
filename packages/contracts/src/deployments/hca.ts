@@ -54,12 +54,7 @@ export interface HcaDeploymentProfile {
 export const sepoliaHcaDeployment = {
   generation: hcaAccountGeneration,
   deployment: sepoliaV2,
-  contracts: {
-    standaloneFactory: sepoliaV2.hca.standaloneFactory,
-    standaloneImplementation: sepoliaV2.hca.standaloneImplementation,
-    ownerAndSessionValidator: sepoliaV2.hca.ownerAndSessionValidator,
-    upgradeSet: sepoliaV2.hca.upgradeSet,
-  },
+  contracts: sepoliaV2.hca,
   environment: "sepolia",
   infrastructure: {
     entryPoint: hcaAccountGeneration.entryPoint,

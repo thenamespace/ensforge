@@ -226,6 +226,12 @@ export interface V2Hca {
   readonly standaloneFactory: Address;
   /** Single-owner standalone HCA implementation. */
   readonly standaloneImplementation: Address;
+  /** ERC-4337 EntryPoint (v0.7) the HCA accepts UserOperations from. */
+  readonly entryPoint: Address;
+  /** Rhinestone IntentExecutor, the only caller whose session signatures the validator accepts. */
+  readonly intentExecutor: Address;
+  /** Paymaster that reimburses intent execution from the session's refund token. */
+  readonly gasRefundPaymaster: Address;
 }
 
 /**
@@ -271,6 +277,13 @@ export interface Capabilities {
   readonly userRegistryUpgradeGate: boolean;
   /** The HCA validator rejects permits whose source chain is the current chain. */
   readonly hcaSameChainSourceRejected: boolean;
+  /**
+   * EIP-712 domain HCA session approvals are signed under: Rhinestone's `smart-session` domain
+   * (contracts-v2 v1.0.1), or a dedicated `hca` domain (contracts-v2 #498, not deployed).
+   */
+  readonly hcaSessionDomain: "smart-session" | "hca";
+  /** HCA owners can be contracts that sign with ERC-1271 (contracts-v2 #499, not deployed). */
+  readonly hcaContractOwners: boolean;
 }
 
 /**

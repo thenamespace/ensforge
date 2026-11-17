@@ -5,3 +5,4 @@ export * from "./standalone-hca-factory-interface.js";
 export * from "./standalone-hca-factory.js";
 export * from "./standalone-hca-owner-interface.js";
 export * from "./standalone-single-owner-hca.js";
+export * from "./session.js";

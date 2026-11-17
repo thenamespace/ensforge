@@ -61,6 +61,9 @@ export const sepoliaV2 = {
     upgradeSet: "0xCde956D6E2949Bc25a4273F93E0db6f68A1a6f34",
     standaloneFactory: "0x6Bad0176236e97b346B5Dd13BCc8325B931EE8ab",
     standaloneImplementation: "0xC940e5C5bF263C0e097054AECf73826769A72CEE",
+    entryPoint: "0x0000000071727De22E5E9d8BAf0edAc6f37da032",
+    intentExecutor: "0x00000000005aD9ce1f5035FD62CA96CEf16AdAAF",
+    gasRefundPaymaster: "0x1d7df6Ddc7328Ac827EB4D7f171C60AFB7f9A599",
   },
   paymentTokens: {
     dai: "0xF6faC8A58a0BE13b9197f27C41B73162Fe32572b",
@@ -73,6 +76,8 @@ export const sepoliaV2 = {
     lockedMigrationRenewal: "renew-role",
     userRegistryUpgradeGate: true,
     hcaSameChainSourceRejected: false,
+    hcaSessionDomain: "smart-session",
+    hcaContractOwners: false,
   },
   provenance: {
     repository: "https://github.com/ensdomains/contracts-v2",
