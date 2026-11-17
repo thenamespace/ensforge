@@ -1,0 +1,12 @@
+{
+  "extends": "klarity/tsconfig/library",
+  "compilerOptions": {
+    "customConditions": ["workspace-source"],
+    "types": ["node"],
+    "rootDir": ".",
+    "noEmit": true,
+    "erasableSyntaxOnly": true,
+    "noErrorTruncation": true
+  },
+  "include": ["src/**/*.ts"]
+}

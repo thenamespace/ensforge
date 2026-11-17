@@ -6,7 +6,7 @@
   "scripts": {
     "build": "turbo run build",
     "changeset": "changeset",
-    "check": "pnpm format:check && pnpm lint && turbo run typecheck build verify",
+    "check": "pnpm format:check && pnpm lint && turbo run typecheck build verify && pnpm test",
     "dev": "turbo run dev",
     "format": "oxfmt --write .",
     "format:check": "oxfmt --check .",
@@ -15,6 +15,9 @@
     "pack:check": "turbo run pack:check",
     "prepare": "lefthook install",
     "release": "changeset publish",
+    "test": "vitest run --project \"*:unit\" --project \"*:types\"",
+    "test:types": "vitest run --project \"*:types\"",
+    "test:unit": "vitest run --project \"*:unit\"",
     "typecheck": "turbo run typecheck",
     "verify": "turbo run verify",
     "version-packages": "changeset version"
@@ -24,6 +27,7 @@
     "@changesets/cli": "3.0.3",
     "@commitlint/cli": "21.2.4",
     "@commitlint/config-conventional": "21.2.4",
+    "@effect/vitest": "catalog:",
     "@types/node": "26.6.6",
     "effect": "catalog:",
     "klarity": "0.3.0",
@@ -37,6 +41,7 @@
     "typedoc": "0.28.20",
     "typescript": "6.0.3",
     "viem": "catalog:",
+    "vitest": "catalog:",
     "wagmi": "catalog:"
   },
   "engines": {

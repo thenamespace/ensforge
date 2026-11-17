@@ -1,0 +1,23 @@
+{
+  "name": "@ensforge/test-env",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Shared test harness for ensforge packages (not published)",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./setup": "./src/setup.ts"
+  },
+  "scripts": {
+    "lint": "oxlint --deny-warnings .",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@effect/vitest": "catalog:",
+    "@ensforge/contracts": "workspace:*",
+    "@ensforge/core": "workspace:*",
+    "effect": "catalog:",
+    "viem": "catalog:",
+    "vitest": "catalog:"
+  }
+}

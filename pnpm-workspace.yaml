@@ -3,6 +3,7 @@ packages:
 
 catalog:
   "@effect/atom-react": "4.1.4"
+  "@effect/vitest": "4.1.4"
   "@ensdomains/address-encoder": "3.0.0"
   "@ensdomains/content-hash": "3.2.0"
   "@types/react": "19.3.0"
@@ -14,6 +15,7 @@ catalog:
   react-dom: "19.3.1"
   scheduler: "0.28.0"
   viem: "2.57.20"
+  vitest: "5.1.0"
   wagmi: "3.7.11"
 
 allowBuilds:
