@@ -14,6 +14,18 @@ const unit = (name: (typeof packages)[number]) => ({
   },
 });
 
+// The wagmi adapter again on wagmi 2, which most wallet kits (RainbowKit, ConnectKit) still use.
+const wagmi2 = {
+  extends: true as const,
+  resolve: { alias: [{ find: /^wagmi(\/.*)?$/, replacement: "wagmi-v2$1" }] },
+  test: {
+    name: "sdk-wagmi2:unit",
+    root: "packages/sdk",
+    include: ["test/unit/wagmi/**/*.test.ts"],
+    setupFiles: ["../../tests/harness/src/setup.ts"],
+  },
+};
+
 const types = (name: (typeof packages)[number]) => ({
   extends: true as const,
   test: {
@@ -34,7 +46,7 @@ export default defineConfig({
   resolve: { conditions: ["workspace-source"] },
   ssr: { resolve: { conditions: ["workspace-source"] } },
   test: {
-    projects: packages.flatMap((name) => [unit(name), types(name)]),
+    projects: [...packages.flatMap((name) => [unit(name), types(name)]), wagmi2],
     passWithNoTests: true,
   },
 });
