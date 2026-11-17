@@ -1,16 +1,19 @@
 import { Effect } from "effect";
 
 import { Abis } from "@ensforge/contracts";
-import { encodeFunctionData } from "viem";
+import { encodeFunctionData, isAddressEqual } from "viem";
 
 import type { Client } from "../../../client/types.js";
 import { NotFoundError } from "../../../errors/classes/NotFoundError.js";
+import { UnauthorizedError } from "../../../errors/classes/UnauthorizedError.js";
 import { UnsupportedError } from "../../../errors/classes/UnsupportedError.js";
 import type { AnyError } from "../../../errors/types.js";
 import * as Action from "../../../internal/action/index.js";
 import { loadName } from "../../../internal/name/load.js";
 import { requireAddress, singleStepPlan } from "../../../internal/name/write.js";
+import { resolverOwnerOf } from "../../../internal/permission/facts.js";
 import { setterKeying } from "../../../internal/records/setter-keying.js";
+import { addressOf } from "../../../internal/write/signer.js";
 import type { Plan } from "../../../plan/Plan.js";
 import type { Write } from "../../../Types.js";
 import type { setDelegate as Promises } from "./index.js";
@@ -33,6 +36,20 @@ export const plan = Effect.fnUntraced(function* (
         feature: "delegates",
         shortMessage: "PermissionedResolvers use roles, not delegates.",
         hint: "Use permission.setRecordAccess.",
+      }),
+    );
+  }
+
+  // The resolver keeps a delegate under the account that approves it and honours only the name
+  // owner's: anyone else's approval would change nothing.
+  const signer = addressOf(options.account) ?? client.account;
+  const owner = resolverOwnerOf(client, loaded);
+  if (signer !== undefined && (owner === null || !isAddressEqual(signer, owner))) {
+    return yield* Effect.fail(
+      new UnauthorizedError({
+        code: "NOT_OWNER",
+        account: signer,
+        hint: "Only the name's owner can give it a delegate.",
       }),
     );
   }

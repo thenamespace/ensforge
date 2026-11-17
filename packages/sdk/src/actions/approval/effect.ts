@@ -218,6 +218,7 @@ export declare namespace getToken {
  * @throws `Errors.InvalidInputError` (`INVALID_NAME`, `INVALID_ADDRESS`) for invalid input.
  * @throws `Errors.NotFoundError` (`RESOLVER_NOT_FOUND`) when the name has no resolver.
  * @throws `Errors.UnsupportedError` (`RESOLVER_PROFILE_UNSUPPORTED`) for PermissionedResolvers.
+ * @throws `Errors.UnauthorizedError` (`NOT_OWNER`) when the signer does not own the name.
  * @throws `Errors.UserRejectedError` when the user rejects the request.
  *
  * @see {@link Actions.approval.getDelegate} to read it
@@ -268,6 +269,7 @@ export declare namespace setDelegate {
  * @throws `Errors.InvalidInputError` (`INVALID_NAME`, `INVALID_ADDRESS`) for invalid input.
  * @throws `Errors.NotFoundError` (`RESOLVER_NOT_FOUND`) when the name has no resolver.
  * @throws `Errors.UnsupportedError` (`RESOLVER_PROFILE_UNSUPPORTED`) for PermissionedResolvers.
+ * @throws `Errors.UnauthorizedError` (`NOT_OWNER`) when the signer does not own the name.
  * @throws `Errors.TransactionError` (`TRANSACTION_REVERTED`, `RECEIPT_TIMEOUT`) when confirmation fails.
  *
  * @see {@link setDelegate} to resolve on submission
