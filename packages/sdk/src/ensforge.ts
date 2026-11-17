@@ -7,24 +7,15 @@ import {
 import { createMemoryWorkflowStorage } from "@ensforge/core/legacy/storage";
 
 import {
-  makeBatchActions,
-  makeWorkflowActions,
-  type WorkflowActions,
   makeHcaActions,
   type HcaActions,
-  makeEventsActions,
   makeIndexerActions,
-  type BatchActions,
-  type EventsActions,
   type IndexerActions,
 } from "./groups/index.js";
 
 export class Ensforge {
   readonly config: EnsforgeConfig;
   readonly hca: HcaActions;
-  readonly batch: BatchActions;
-  readonly workflows: WorkflowActions;
-  readonly events: EventsActions;
   readonly indexer: IndexerActions;
 
   constructor(parameters: CreateConfigParameters | EnsforgeConfig) {
@@ -47,9 +38,6 @@ export class Ensforge {
 
     this.config = config;
     this.hca = makeHcaActions(config);
-    this.batch = makeBatchActions(config);
-    this.workflows = makeWorkflowActions(config);
-    this.events = makeEventsActions(config);
     this.indexer = makeIndexerActions(config);
 
     Object.freeze(this);

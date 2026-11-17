@@ -53,12 +53,11 @@ function IndexedName({ name }: { name: string }) {
 Write hooks expose mutation state and Promise-based execution:
 
 ```tsx
-import { useSendCalls } from "@ensforge/react";
+import { useDeployHca } from "@ensforge/react";
 
-const sendCalls = useSendCalls();
+const deployHca = useDeployHca();
 
-const send = () =>
-  sendCalls.mutate({ calls: [{ to: "0xB0b0000000000000000000000000000000000000", value: 1n }] });
+const deploy = (owner: `0x${string}`) => deployHca.mutate({ owner });
 ```
 
 Hook inputs are inferred automatically. When an action parameter type is needed explicitly, import

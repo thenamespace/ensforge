@@ -1,7 +1,4 @@
-export * from "./batch/index.js";
-export * from "./events/index.js";
 export * from "./hca/index.js";
-export * from "./workflows/index.js";
 
 // Shared types still referenced by the remaining 0.x actions; the name, records and ownership
 // actions themselves moved to the 1.0 API.

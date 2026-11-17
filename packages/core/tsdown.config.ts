@@ -8,8 +8,6 @@ export default defineConfig({
     effect: "src/effect.ts",
     index: "src/index.ts",
     legacy: "src/legacy/index.ts",
-    "legacy/batch": "src/legacy/actions/batch/index.ts",
-    "legacy/events": "src/legacy/actions/events/index.ts",
     "legacy/hca": "src/legacy/actions/hca/index.ts",
     "legacy/hca/admin": "src/legacy/actions/hca/admin/index.ts",
     "legacy/indexer": "src/legacy/actions/indexer/index.ts",

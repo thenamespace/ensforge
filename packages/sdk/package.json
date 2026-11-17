@@ -33,14 +33,6 @@
       "workspace-source": "./src/index.ts",
       "default": "./dist/index.js"
     },
-    "./batch": {
-      "workspace-source": "./src/entrypoints/batch.ts",
-      "default": "./dist/batch.js"
-    },
-    "./events": {
-      "workspace-source": "./src/entrypoints/events.ts",
-      "default": "./dist/events.js"
-    },
     "./hca": {
       "workspace-source": "./src/entrypoints/hca.ts",
       "default": "./dist/hca.js"
@@ -65,8 +57,6 @@
     },
     "exports": {
       ".": "./dist/index.js",
-      "./batch": "./dist/batch.js",
-      "./events": "./dist/events.js",
       "./hca": "./dist/hca.js",
       "./hca/admin": "./dist/hca/admin.js",
       "./indexer": "./dist/indexer.js",

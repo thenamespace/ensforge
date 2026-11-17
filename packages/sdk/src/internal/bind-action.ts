@@ -12,23 +12,12 @@ import type {
   WaitForHcaExecutionParameters,
   HcaExecutionStatus,
   WriteError,
-  EnsEvent,
   EnsNoParametersAction,
   EnsReadAction,
   EnsReadRequest,
   EnsforgeConfig,
   EnsWriteAction,
   EnsWriteIntent,
-  ReadBatch,
-  ReadBatchError,
-  ReadBatchOptions,
-  ReadBatchResult,
-  ReadBatchSettled,
-  ReadBatchSettledResult,
-  RpcError,
-  WatchEnsEvents,
-  WatchEnsEventsError,
-  WatchEnsEventsParameters,
 } from "@ensforge/core/legacy";
 
 type Callable = (...arguments_: never[]) => unknown;
@@ -71,46 +60,6 @@ export type BoundAction<Action extends Callable> =
         : Action extends EnsAction<infer Parameters, infer Success, infer Failure>
           ? BoundBaseAction<Parameters, Success, Failure>
           : never;
-
-type ReadRequests = Readonly<Record<string, EnsReadRequest<unknown, unknown>>>;
-
-export interface BoundReadBatch {
-  <const Requests extends ReadRequests>(
-    requests: Requests,
-    options?: ReadBatchOptions,
-    runOptions?: Effect.RunOptions,
-  ): Promise<ReadBatchResult<Requests>>;
-
-  readonly effect: <const Requests extends ReadRequests>(
-    requests: Requests,
-    options?: ReadBatchOptions,
-  ) => Effect.Effect<ReadBatchResult<Requests>, ReadBatchError<Requests>>;
-}
-
-export interface BoundReadBatchSettled {
-  <const Requests extends ReadRequests>(
-    requests: Requests,
-    options?: ReadBatchOptions,
-    runOptions?: Effect.RunOptions,
-  ): Promise<ReadBatchSettledResult<Requests>>;
-
-  readonly effect: <const Requests extends ReadRequests>(
-    requests: Requests,
-    options?: ReadBatchOptions,
-  ) => Effect.Effect<ReadBatchSettledResult<Requests>, RpcError>;
-}
-
-export interface BoundWatchEnsEvents {
-  (
-    parameters: WatchEnsEventsParameters,
-    onEvent: (event: EnsEvent) => void,
-    onError: (error: WatchEnsEventsError) => void,
-  ): Promise<() => void>;
-
-  readonly stream: (
-    parameters: WatchEnsEventsParameters,
-  ) => Stream.Stream<EnsEvent, WatchEnsEventsError>;
-}
 
 export interface BoundExecuteHcaCalls {
   <Adapter extends ExecutionAdapter>(
@@ -158,9 +107,6 @@ export function bindAction(
   config: EnsforgeConfig,
   action: WatchHcaExecution,
 ): BoundWatchHcaExecution;
-export function bindAction(config: EnsforgeConfig, action: ReadBatch): BoundReadBatch;
-export function bindAction(config: EnsforgeConfig, action: ReadBatchSettled): BoundReadBatchSettled;
-export function bindAction(config: EnsforgeConfig, action: WatchEnsEvents): BoundWatchEnsEvents;
 export function bindAction<Action extends Callable>(
   config: EnsforgeConfig,
   action: Action,

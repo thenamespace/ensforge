@@ -30,15 +30,12 @@ export {
 } from "@ensforge/core/legacy";
 
 export { Ensforge } from "./ensforge.js";
-export type { HcaActions, BatchActions, EventsActions, IndexerActions } from "./groups/index.js";
+export type { HcaActions, IndexerActions } from "./groups/index.js";
 export type {
   BoundAction,
   BoundExecuteHcaCalls,
   BoundWatchHcaExecution,
   BoundNoParametersAction,
-  BoundReadBatch,
-  BoundReadBatchSettled,
-  BoundWatchEnsEvents,
 } from "./internal/bind-action.js";
 export type {
   ExecutionAdapter,
@@ -59,6 +56,5 @@ export type {
   WorkflowProgress,
   WorkflowSnapshot,
 } from "@ensforge/core/legacy";
-export type { WorkflowActions } from "./groups/workflows.js";
 
 export type { EnsAction } from "@ensforge/core/legacy";

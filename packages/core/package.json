@@ -45,14 +45,6 @@
       "workspace-source": "./src/legacy/index.ts",
       "default": "./dist/legacy.js"
     },
-    "./legacy/batch": {
-      "workspace-source": "./src/legacy/actions/batch/index.ts",
-      "default": "./dist/legacy/batch.js"
-    },
-    "./legacy/events": {
-      "workspace-source": "./src/legacy/actions/events/index.ts",
-      "default": "./dist/legacy/events.js"
-    },
     "./legacy/hca": {
       "workspace-source": "./src/legacy/actions/hca/index.ts",
       "default": "./dist/legacy/hca.js"
@@ -116,8 +108,6 @@
       "./actions": "./dist/actions.js",
       "./effect": "./dist/effect.js",
       "./legacy": "./dist/legacy.js",
-      "./legacy/batch": "./dist/legacy/batch.js",
-      "./legacy/events": "./dist/legacy/events.js",
       "./legacy/hca": "./dist/legacy/hca.js",
       "./legacy/hca/admin": "./dist/legacy/hca/admin.js",
       "./legacy/indexer": "./dist/legacy/indexer.js",

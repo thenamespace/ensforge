@@ -1,16 +1,16 @@
 # `@ensforge/core`
 
-Type-safe actions and utilities for building ENS applications.
+Type-safe, Effect-native actions and utilities for ENS applications, across ENSv1 and ENSv2.
 
 ## Features
 
-- Unified reads and writes across supported ENS deployments
-- Automatic protocol and migration-state routing
-- Names, records, registration, renewal, migration, wrapping, DNS, and reverse resolution
-- Batched reads and wallet-aware write execution
-- CCIP-Read support through viem
-- Name normalization, hashing, DNS encoding, and record codecs
-- Bring your own viem clients or Wagmi config
+- Names, records, resolvers, registration, renewal, subnames, registries, permissions, roles,
+  approvals, primary names, NameWrapper, DNS and ENSv1 → ENSv2 migration
+- Batched reads (Multicall3) with CCIP-Read for off-chain names
+- Writes as plans: simulated first, bundled for EIP-5792 wallets, resumable after failures
+- ENS events normalized across ENSv1 and ENSv2
+- Name normalization, hashing, DNS encoding and record codecs
+- Promise and Effect APIs; bring your own viem clients
 
 ## Installation
 
@@ -21,42 +21,44 @@ pnpm add @ensforge/core effect@^4 viem
 ## Overview
 
 ```ts
-import { createConfig, getAddress, getOwner } from "@ensforge/core";
+import { Actions, Ensforge, ensActions } from "@ensforge/core";
 import { createPublicClient, http } from "viem";
 import { mainnet } from "viem/chains";
 
-const config = createConfig({
-  network: "mainnet",
+const ens = Ensforge.create({
   publicClient: createPublicClient({ chain: mainnet, transport: http() }),
-});
+}).extend(ensActions());
 
-const owner = await getOwner(config, { name: "ens.eth" });
-const address = await getAddress(config, { name: "ens.eth" });
+const name = await ens.name.get({ name: "ens.eth" });
+const address = await ens.record.getAddress({ name: "ens.eth" });
 ```
 
-Every action uses the same config and returns typed results. Wagmi support is isolated in an
-optional entrypoint, so viem-only applications do not need to install Wagmi:
+Run several reads together. A record of requests returns a record of results; a list returns a
+tuple:
 
 ```ts
-import { createWagmiConfig } from "@ensforge/core/wagmi";
-
-const config = createWagmiConfig({
-  network: "mainnet",
-  wagmiConfig,
+const { results } = await ens.batch({
+  requests: {
+    name: Actions.name.get.request({ name: "ens.eth" }),
+    avatar: Actions.record.getText.request({ name: "ens.eth", key: "avatar" }),
+  },
 });
 ```
 
-Compose compatible reads into one request with `readBatch`:
+Writes need a wallet client. Each write is a plan you can inspect, simulate or send, and resume:
 
 ```ts
-import { getAvatar, readBatch } from "@ensforge/core";
-
-const profile = await readBatch(config, {
-  owner: getOwner.request({ name: "ens.eth" }),
-  address: getAddress.request({ name: "ens.eth" }),
-  avatar: getAvatar.request({ name: "ens.eth" }),
+const plan = await ens.record.set.prepare({
+  name: "alice.eth",
+  texts: { url: "https://alice.dev" },
 });
+const { hash } = await ens.record.set({ name: "alice.eth", texts: { url: "https://alice.dev" } });
+
+// After a failure, continue where it stopped:
+await ens.plan.resume({ id: error.context.planId });
 ```
+
+The same actions run in Effect programs from `@ensforge/core/effect`.
 
 ## License
 
