@@ -235,6 +235,19 @@ export const sources = {
     },
   },
 
+  // Sepolia's builds where they differ from mainnet's (older resolution and WrapperRegistry
+  // semantics), for the `sepolia-shaped` profile.
+  "sepolia/UniversalHelper": v2Deployment("sepolia/UniversalHelper.json"),
+  "sepolia/ENSV2Resolver": v2Deployment("sepolia/ENSV2Resolver.json"),
+  "sepolia/PublicResolverV2": v2Deployment("sepolia/PublicResolverV2.json"),
+  "sepolia/UniversalResolverV2": v2Deployment("sepolia/UniversalResolverV2.json"),
+  "sepolia/WrapperRegistryImpl": v2Deployment("sepolia/WrapperRegistryImpl.json"),
+  "sepolia/LockedMigrationController": v2Deployment("sepolia/LockedMigrationController.json"),
+  "sepolia/MigrationHelper": v2Deployment("sepolia/MigrationHelper.json"),
+  "sepolia/DNSTLDResolver": v2Deployment("sepolia/DNSTLDResolver.json"),
+  "sepolia/DNSAliasResolver": v2Deployment("sepolia/DNSAliasResolver.json"),
+  "sepolia/HCAOwnerAndSessionValidator": v2Deployment("sepolia/HCAOwnerAndSessionValidator.json"),
+
   // Behaviour mocks from the pinned ENS test suites, for states no real contract is in.
   "mocks/DummyShapeshiftResolver": v2Build(
     `${ensContracts}/universalResolver/mocks/DummyShapeshiftResolver.sol:DummyShapeshiftResolver`,

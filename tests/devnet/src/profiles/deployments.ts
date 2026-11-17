@@ -3,18 +3,6 @@ import type { Address } from "viem";
 
 import type { Ledger } from "../deploy/engine.ts";
 
-/** The capabilities of the contracts-v2 builds live on mainnet, which the devnet deploys. */
-export const mainnetCapabilities: Deployments.Capabilities = {
-  resolutionErrorWrapping: true,
-  wrapperRegistryInitializer: "fuse-derived",
-  wrapperRegistryEmancipation: "role-derived",
-  lockedMigrationRenewal: "max-expiry",
-  userRegistryUpgradeGate: true,
-  hcaSameChainSourceRejected: true,
-  hcaSessionDomain: "smart-session",
-  hcaContractOwners: false,
-};
-
 const reader =
   (ledger: Ledger) =>
   (key: string): Address => {

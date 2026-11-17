@@ -21,6 +21,7 @@ cli.pipe(
     AnvilError: ({ message }) => report([`anvil: ${message}`]),
     ArtifactError: ({ artifact, message }) => report([`${artifact}: ${message}`]),
     DeployError: ({ step, message }) => report([`step ${step}: ${message}`]),
+    VerifyFailed: ({ profile, problems }) => report([...problems, `verify ${profile}: failed`]),
   }),
   Effect.provide(Anvil.layer.pipe(Layer.provideMerge(NodeServices.layer))),
   NodeRuntime.runMain,

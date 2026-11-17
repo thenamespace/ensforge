@@ -1,9 +1,11 @@
 import { Console, Effect, FileSystem, Option } from "effect";
-import { Command, Flag } from "effect/cli";
+import { Argument, Command, Flag } from "effect/cli";
 
 import { build } from "../build.ts";
 import { startDevnet } from "../Devnet.ts";
-import { chainId, profiles } from "../profiles/profiles.ts";
+import { VerifyFailed } from "../errors.ts";
+import { chainId, profileNames, profiles } from "../profiles/profiles.ts";
+import { verify } from "../verify.ts";
 import { profileArgument } from "./build.ts";
 
 export const startCommand = Command.make(
@@ -64,3 +66,19 @@ export const profileCommand = Command.make("profile", { profile: profileArgument
     ),
   ),
 ).pipe(Command.withDescription("Print the ensforge deployment profile of a profile"));
+
+export const verifyCommand = Command.make(
+  "verify",
+  { profiles: profileArgument.pipe(Argument.variadic()) },
+  ({ profiles: selected }) =>
+    Effect.forEach(selected.length > 0 ? selected : profileNames, (profile) =>
+      Effect.gen(function* () {
+        const devnet = yield* startDevnet({ profile });
+        const problems = yield* verify(devnet);
+        if (problems.length > 0) return yield* new VerifyFailed({ profile, problems });
+        yield* Console.log(`${profile}: ok`);
+      }).pipe(Effect.scoped),
+    ),
+).pipe(
+  Command.withDescription("Check that profiles (all when none is named) are wired as intended"),
+);

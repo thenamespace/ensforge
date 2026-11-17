@@ -312,6 +312,9 @@ importers:
       '@effect/vitest':
         specifier: 'catalog:'
         version: 4.1.4(effect@4.1.4)(vitest@5.1.0)
+      '@ensforge/test-devnet':
+        specifier: workspace:*
+        version: link:tests/devnet
       '@ensforge/tools':
         specifier: workspace:*
         version: link:tools/cli

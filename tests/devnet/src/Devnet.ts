@@ -8,7 +8,7 @@ import { foundry } from "viem/chains";
 import { Anvil } from "./anvil/Anvil.ts";
 import { build } from "./build.ts";
 import { devnetClient, type DevnetClient } from "./client.ts";
-import { accounts } from "./deploy/engine.ts";
+import { accounts, type Ledger } from "./deploy/engine.ts";
 import { profiles, type ProfileName } from "./profiles/profiles.ts";
 
 export type DevnetOptions = {
@@ -29,6 +29,8 @@ export type DevnetInstance = {
   readonly deployments: Deployments.Profile;
   /** Every deployed contract by ledger key (`v1.registry`, `v2.ethRegistry`, …). */
   readonly contracts: Readonly<Record<string, Address>>;
+  /** The same contracts with the artifact each was deployed from. */
+  readonly ledger: Ledger;
   /** Prefunded named accounts (anvil's default mnemonic). */
   readonly accounts: typeof accounts;
   /** viem test, public and wallet actions on this devnet (`snapshot`, `increaseTime`, …). */
@@ -70,6 +72,7 @@ export const startDevnet = Effect.fn("startDevnet")(function* (options: DevnetOp
     chain,
     deployments,
     contracts,
+    ledger: built.ledger,
     accounts,
     client: devnetClient(rpcUrl, chain),
   };

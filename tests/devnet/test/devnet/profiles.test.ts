@@ -127,6 +127,23 @@ describe("devnet profiles", () => {
     );
   });
 
+  devnetLayer("sepolia-shaped")("sepolia-shaped", (it) => {
+    it.effect("ensforge reads ENSv2 with Sepolia's capabilities", () =>
+      Effect.gen(function* () {
+        const devnet = yield* Devnet;
+        const { ens } = clientsOf(devnet);
+
+        assert.isFalse(devnet.deployments.v2?.capabilities.resolutionErrorWrapping);
+        const eth = yield* Effect.promise(() => ens.name.get({ name: "eth" }));
+        assert.strictEqual(eth.protocol, "v2");
+        const available = yield* Effect.promise(() =>
+          ens.registration.isAvailable({ name: "sepolia-smoke.eth" }),
+        );
+        assert.isTrue(available);
+      }),
+    );
+  });
+
   devnetLayer("v2-only")("v2-only", (it) => {
     it.effect("the generated profile has no ENSv1", () =>
       Effect.gen(function* () {

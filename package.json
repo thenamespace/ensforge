@@ -27,6 +27,7 @@
     "@commitlint/config-conventional": "catalog:",
     "@effect/tsgo": "catalog:",
     "@effect/vitest": "catalog:",
+    "@ensforge/test-devnet": "workspace:*",
     "@ensforge/tools": "workspace:*",
     "@types/node": "catalog:",
     "effect": "catalog:",

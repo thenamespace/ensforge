@@ -11,7 +11,7 @@ import { devnetClient } from "./client.ts";
 import { genesisTimestamp, runSteps, type Ledger } from "./deploy/engine.ts";
 import { DeployError } from "./errors.ts";
 import { cacheDir, packageDir } from "./package.ts";
-import { profiles, type ProfileName } from "./profiles/profiles.ts";
+import { profiles, type ProfileDefinition, type ProfileName } from "./profiles/profiles.ts";
 
 /** A built profile: the chain state to load and what was deployed where. */
 export type Build = {
@@ -54,7 +54,8 @@ const read = <A>(action: () => Promise<A>) =>
 const buildFresh = Effect.fn("buildFresh")(function* (profile: ProfileName) {
   const anvil = yield* Anvil;
   const { rpcUrl } = yield* anvil.start({ mining: false, timestamp: genesisTimestamp });
-  const ledger = yield* runSteps(rpcUrl, profiles[profile].steps);
+  const definition: ProfileDefinition = profiles[profile];
+  const ledger = yield* runSteps(rpcUrl, definition.steps, definition.variant);
 
   const client = devnetClient(rpcUrl);
   // `dumpState` returns the `--dump-state` JSON, gzipped and hex-encoded.

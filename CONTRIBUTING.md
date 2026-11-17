@@ -35,6 +35,7 @@ packages/sdk/       Standalone ENS actions and Effect APIs
 packages/react/     Hooks, Effect Atom atoms and server rendering
 packages/hca/       Hosted Contract Account route and executors
 tests/harness/      Shared test harness for every test suite
+tests/devnet/       ENS deployed on a local anvil for chain test suites
 tools/cli/          ensforge-dev: builds, verify checks, codegen and bundle budgets
 .config/            Lint, format, test, turbo and commit configuration
 ```
@@ -77,6 +78,8 @@ property tests from Schemas or `effect/Arbitrary`.
 - Suites that need a chain or services live in private packages under `tests/` and are run by
   maintainers and release CI. Shared setup, matchers, transports and arbitraries live in
   `tests/harness`.
+- `tests/devnet` deploys ENS on a local anvil (Foundry, see its README). `pnpm test:devnet` runs
+  the chain lane.
 
 Property tests use a fixed seed; reproduce a failure with `ENSFORGE_TEST_SEED=<seed> pnpm test`.
 

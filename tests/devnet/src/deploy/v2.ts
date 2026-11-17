@@ -126,8 +126,10 @@ export const v2Steps: readonly Step[] = [
   step("v2.dns", (c) =>
     Effect.gen(function* () {
       const root = yield* c.address("v2.rootRegistry");
+      // Sepolia's older build also takes ENSv1's DNS TLD resolver.
       const tldResolver = yield* c.deploy("v2.dnsTldResolver", "v2/DNSTLDResolver", [
         yield* c.address("v1.registry"),
+        ...(c.network === "sepolia" ? [yield* c.address("v1.offchainDnsResolver")] : []),
         root,
         yield* c.address("v1.dnssecOracle"),
         yield* c.address("v2.dnssecGatewayProvider"),
@@ -283,25 +285,33 @@ export const v2Steps: readonly Step[] = [
           c.accounts.owner,
         ],
       );
-      const lockedImplementation = yield* c.deploy(
-        "v2.lockedMigrationControllerImplementation",
-        "v2/LockedMigrationControllerImplementation",
-        [
-          nameWrapper,
-          graveyard,
-          ethRegistry,
-          verifiableFactory,
-          wrapperRegistry,
-          yield* c.address("v2.publicResolverSet"),
-          yield* c.address("v2.publicResolver"),
-          namer,
-        ],
-      );
-      const locked = yield* c.deploy(
-        "v2.lockedMigrationController",
-        "v2/LockedMigrationControllerProxy",
-        [lockedImplementation, c.accounts.owner, "0x"],
-      );
+      const lockedArguments = [
+        nameWrapper,
+        graveyard,
+        ethRegistry,
+        verifiableFactory,
+        wrapperRegistry,
+        yield* c.address("v2.publicResolverSet"),
+        yield* c.address("v2.publicResolver"),
+        namer,
+      ];
+      // Mainnet's controller sits behind an EIP-173 proxy; Sepolia's is deployed directly.
+      const locked =
+        c.network === "sepolia"
+          ? yield* c.deploy(
+              "v2.lockedMigrationController",
+              "v2/LockedMigrationControllerImplementation",
+              lockedArguments,
+            )
+          : yield* c.deploy("v2.lockedMigrationController", "v2/LockedMigrationControllerProxy", [
+              yield* c.deploy(
+                "v2.lockedMigrationControllerImplementation",
+                "v2/LockedMigrationControllerImplementation",
+                lockedArguments,
+              ),
+              c.accounts.owner,
+              "0x",
+            ]);
       yield* c.write("v2.ethRegistry", "grantRootRoles", [
         deploymentRoles.migrationController,
         locked,

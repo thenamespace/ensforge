@@ -35,8 +35,18 @@ export type Ledger = Map<string, Deployed>;
 
 export type TxOptions = { readonly from?: AccountName | Address; readonly value?: bigint };
 
+/**
+ * Which network's builds a profile deploys. Steps branch on it only where a constructor differs;
+ * otherwise `artifacts` swaps the build.
+ */
+export type Variant = {
+  readonly network: "mainnet" | "sepolia";
+  readonly artifacts?: Partial<Record<ArtifactName, ArtifactName>>;
+};
+
 /** What a step can do: deploy, call and read contracts, and use anvil's cheat RPCs. */
 export type StepContext = {
+  readonly network: Variant["network"];
   readonly accounts: typeof accounts;
   readonly address: (key: string) => Effect.Effect<Address, DeployError>;
   readonly deploy: (
@@ -86,7 +96,11 @@ const shortMessage = (cause: unknown): string =>
  * Runs `steps` against an anvil started with `--no-mining`, mining one block per transaction at
  * `genesisTimestamp + n·12s` so a build gives the same state every time.
  */
-export const runSteps = Effect.fn("runSteps")(function* (rpcUrl: string, steps: readonly Step[]) {
+export const runSteps = Effect.fn("runSteps")(function* (
+  rpcUrl: string,
+  steps: readonly Step[],
+  variant: Variant = { network: "mainnet" },
+) {
   const client = devnetClient(rpcUrl);
   const ledger: Ledger = new Map();
   let next = genesisTimestamp;
@@ -139,10 +153,12 @@ export const runSteps = Effect.fn("runSteps")(function* (rpcUrl: string, steps: 
     });
 
     const context: StepContext = {
+      network: variant.network,
       accounts,
       address: (key) => resolve(key).pipe(Effect.map((deployed) => deployed.address)),
-      deploy: (key, artifact, args = [], options = {}) =>
+      deploy: (key, requested, args = [], options = {}) =>
         Effect.gen(function* () {
+          const artifact = variant.artifacts?.[requested] ?? requested;
           if (ledger.has(key))
             return yield* new DeployError({ step: id, message: `${key} is already deployed` });
           const { abi, bytecode } = yield* loadArtifact(artifact);
