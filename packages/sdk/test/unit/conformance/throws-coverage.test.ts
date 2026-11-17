@@ -4,7 +4,7 @@ import { assert, describe, it } from "@effect/vitest";
 
 import { Actions } from "@ensforge/sdk";
 
-// Every error code a read action documents (`@throws … (`CODE`)`) must be asserted by a test that
+// Every error code an action documents (`@throws … (`CODE`)`) must be asserted by a test that
 // names the action. Codes not covered yet are listed below and must shrink, never grow.
 
 const repository = new URL("../../../../../", import.meta.url);
@@ -15,6 +15,14 @@ const testFolders = ["packages/sdk/test/unit/", "tests/integration/test/"].map(
 
 // `conformance/invalid-name.test.ts` asserts these for every action generically.
 const coveredEverywhere = new Set(["INVALID_NAME"]);
+
+// Every write signs and sends through one runner: `writes/conformance.test.ts` sends each write
+// without a wallet, and `writes/errors.test.ts` reverts and times out a sent one.
+const coveredForWrites = new Set([
+  "WALLET_NOT_CONFIGURED",
+  "TRANSACTION_REVERTED",
+  "RECEIPT_TIMEOUT",
+]);
 
 /** Documented codes of each read action without a test yet: `domain.action` → codes. */
 const uncovered: Readonly<Record<string, readonly string[]>> = {
@@ -34,8 +42,31 @@ const uncovered: Readonly<Record<string, readonly string[]>> = {
     "GATEWAY_RESPONSE_INVALID",
     "UNSUPPORTED_ON_DEPLOYMENT",
   ],
-  // Plans are written by write actions: the write lane (022).
-  "plan.reconcile": ["PLAN_NOT_FOUND", "INVALID_RECORD_VALUE"],
+};
+
+/** Documented codes of each write action without a test yet: `domain.action` → codes. */
+const uncoveredWrites: Readonly<Record<string, readonly string[]>> = {
+  // DNSSEC claims need a mock DNSSEC oracle and gateway: the DNS lane (024).
+  "dns.claim": [
+    "INVALID_ADDRESS",
+    "INVALID_RECORD_VALUE",
+    "DNS_RECORD_MISSING",
+    "PROOF_STALE",
+    "DNSSEC_PROOF_FAILED",
+    "TLD_NOT_PUBLIC",
+    "GATEWAY_REQUEST_FAILED",
+    "GATEWAY_RESPONSE_INVALID",
+    "NOT_OWNER",
+  ],
+  "dns.setRecords": [
+    "INVALID_RECORD_VALUE",
+    "NAME_EXPIRED",
+    "NAME_RESERVED",
+    "NAME_NOT_REGISTERED",
+    "RESOLVER_NOT_FOUND",
+    "RESOLVER_PROFILE_UNSUPPORTED",
+    "NOT_OWNER",
+  ],
 };
 
 const testSources = testFolders.flatMap((folder) =>
@@ -67,17 +98,41 @@ const documentedCodes = (domain: string, name: string): readonly string[] => {
   ];
 };
 
+const writeActions = Object.entries(Actions as unknown as Record<string, Record<string, unknown>>)
+  .filter(([domain]) => domain !== "batch")
+  .flatMap(([domain, group]) =>
+    Object.entries(group)
+      .filter(([, action]) => (action as { readonly prepare?: unknown }).prepare !== undefined)
+      .map(([name]) => ({ domain, name, path: `${domain}.${name}` })),
+  );
+
+const missingCodes = (
+  actions: readonly { domain: string; name: string; path: string }[],
+  covered: ReadonlySet<string>,
+) => {
+  const missing: Record<string, string[]> = {};
+  for (const { domain, name, path } of actions) {
+    const files = testSources.filter((source) => source.includes(path));
+    for (const code of documentedCodes(domain, name)) {
+      if (covered.has(code)) continue;
+      if (files.some((source) => source.includes(`"${code}"`))) continue;
+      (missing[path] ??= []).push(code);
+    }
+  }
+  return missing;
+};
+
 describe("documented read errors", () => {
   it("are asserted by a test that names the action", () => {
-    const missing: Record<string, string[]> = {};
-    for (const { domain, name, path } of readActions) {
-      const files = testSources.filter((source) => source.includes(path));
-      for (const code of documentedCodes(domain, name)) {
-        if (coveredEverywhere.has(code)) continue;
-        if (files.some((source) => source.includes(`"${code}"`))) continue;
-        (missing[path] ??= []).push(code);
-      }
-    }
-    assert.deepStrictEqual(missing, uncovered);
+    assert.deepStrictEqual(missingCodes(readActions, coveredEverywhere), uncovered);
+  });
+});
+
+describe("documented write errors", () => {
+  it("are asserted by a test that names the action", () => {
+    assert.deepStrictEqual(
+      missingCodes(writeActions, new Set([...coveredEverywhere, ...coveredForWrites])),
+      uncoveredWrites,
+    );
   });
 });
