@@ -10,6 +10,7 @@ catalog:
   "@commitlint/config-conventional": "21.2.4"
   "@effect/atom-react": "4.1.4"
   "@effect/platform-node": "4.1.4"
+  "@effect/tsgo": "0.70.0"
   "@effect/vitest": "4.1.4"
   "@ensdomains/address-encoder": "3.0.0"
   "@ensdomains/content-hash": "3.2.0"
@@ -55,3 +56,11 @@ overrides:
 
 minimumReleaseAgeExclude:
   - viem@2.56.0
+  - "@effect/tsgo-darwin-arm64@0.70.0"
+  - "@effect/tsgo-darwin-x64@0.70.0"
+  - "@effect/tsgo-linux-arm64@0.70.0"
+  - "@effect/tsgo-linux-arm@0.70.0"
+  - "@effect/tsgo-linux-x64@0.70.0"
+  - "@effect/tsgo-win32-arm64@0.70.0"
+  - "@effect/tsgo-win32-x64@0.70.0"
+  - "@effect/tsgo@0.70.0"

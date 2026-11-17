@@ -5,7 +5,16 @@
     "types": ["node"],
     "rootDir": ".",
     "erasableSyntaxOnly": true,
-    "noErrorTruncation": true
+    "noErrorTruncation": true,
+    "plugins": [
+      {
+        "name": "@effect/language-service",
+        "diagnosticSeverity": {
+          "experimentalApiUsage": "off",
+          "unstableApiUsage": "off"
+        }
+      }
+    ]
   },
   "include": ["src/**/*.ts"]
 }
