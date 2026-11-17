@@ -38,6 +38,9 @@ tagged `cheat`. Builders use raw contract calls, never ensforge.
 
 Fixtures are seeded per profile (`seededOn`): ENSv1 states everywhere, ENSv2 states where ENSv2
 exists, launch-dependent ones after the launch, and a capability-specific set on `sepolia-shaped`.
+On `mainnet-shaped`, a premigration step before the launch reserves every live ENSv1 `.eth` label,
+as mainnet's launch does, except fixtures marked `unreserved`; reserved fixtures record
+`premigrated: true`.
 A seeded build is cached like a profile and is deterministic (`test/chain/determinism.test.ts`).
 
 `pnpm test:chain` seeds every profile; `pnpm test` runs the catalog and ledger check.

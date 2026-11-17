@@ -16,6 +16,7 @@ export const ownershipV1: readonly Fixture[] = [
     id: "v1.unwrapped",
     cases: ["M:A2", "O19", "M:D1", "T01", "M:E1", "M:E2", "M:E3"],
     tags: { kind: "v1-unwrapped", state: "registered" },
+    unreserved: true,
     prelaunch: (c) =>
       registerV1(c, {
         label: "v1-plain",

@@ -36,6 +36,8 @@ export type Fixture = {
   readonly unlaunched?: true;
   /** Also seeded on `sepolia-shaped`, whose capabilities change this state. */
   readonly sepolia?: true;
+  /** Left out of `mainnet-shaped`'s premigration: an ENSv1 name ENSv2 holds no reservation for. */
+  readonly unreserved?: true;
   readonly prelaunch?: Phase;
   readonly postlaunch?: Phase;
   readonly afterTime?: Phase;

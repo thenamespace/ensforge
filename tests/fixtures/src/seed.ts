@@ -14,6 +14,7 @@ import {
   type RawFacts,
 } from "./fixture.ts";
 import { allFixtures } from "./fixtures/index.ts";
+import { premigration } from "./premigration.ts";
 
 const packageDir = new URL("..", import.meta.url).pathname;
 
@@ -27,8 +28,9 @@ const toFacts = (facts: RawFacts): Facts =>
   );
 
 /**
- * The fixtures seeded on `profile` as a devnet seed: prelaunch phases before the ENSv2 launch,
- * postlaunch phases, one clock jump, the `afterTime` phases, then every self-check.
+ * The fixtures seeded on `profile` as a devnet seed: prelaunch phases before the ENSv2 launch
+ * (then, on `mainnet-shaped`, the premigration), postlaunch phases, one clock jump, the
+ * `afterTime` phases, then every self-check.
  */
 export const fixtureSeed = (
   profile: ProfileName,
@@ -57,7 +59,10 @@ export const fixtureSeed = (
       });
 
     return {
-      prelaunch: phase("prelaunch"),
+      prelaunch: [
+        ...phase("prelaunch"),
+        ...(profile === "mainnet-shaped" ? [premigration(selected, facts)] : []),
+      ],
       postlaunch: [
         ...phase("postlaunch"),
         step("fixtures clock jump", (c) =>
