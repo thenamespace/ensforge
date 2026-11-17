@@ -10,7 +10,7 @@ export default defineConfig({
   overrides: [
     {
       // Tests run through @effect/vitest only (it re-exports vitest's API).
-      files: ["**/test/**", "tests/**"],
+      files: ["**/test/**", "**/tests/**"],
       rules: {
         "no-restricted-imports": [
           "error",

@@ -1,2 +1,22 @@
-extends:
-  - node_modules/klarity/src/lefthook/monorepo.yml
+# Git hooks (from klarity's monorepo preset, with the configs in .config/).
+min_version: 2.1.0
+
+pre-commit:
+  jobs:
+    - name: format
+      glob: "*.{js,jsx,mjs,cjs,ts,tsx,mts,cts,json,jsonc,css,scss,md,mdx,yaml,yml}"
+      run: pnpm exec oxfmt -c .config/oxfmt.config.ts --write {staged_files}
+      stage_fixed: true
+    - name: lint
+      glob: "*.{js,jsx,mjs,cjs,ts,tsx,mts,cts}"
+      run: pnpm exec oxlint -c .config/oxlint.config.ts --deny-warnings {staged_files}
+
+commit-msg:
+  jobs:
+    - name: commitlint
+      run: pnpm exec commitlint --config .config/commitlint.config.ts --edit {1}
+
+pre-push:
+  jobs:
+    - name: check
+      run: pnpm exec turbo --root-turbo-json .config/turbo.json run lint typecheck && pnpm test

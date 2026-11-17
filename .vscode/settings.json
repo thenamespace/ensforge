@@ -1,0 +1,10 @@
+{
+  "oxc.configPath": ".config/oxlint.config.ts",
+  "oxc.fmt.configPath": ".config/oxfmt.config.ts",
+  "editor.defaultFormatter": "oxc.oxc-vscode",
+  "editor.formatOnSave": true,
+  "vitest.rootConfig": ".config/vitest.config.ts",
+  "json.schemas": [
+    { "fileMatch": [".config/turbo.json"], "url": "https://turborepo.com/schema.json" }
+  ]
+}

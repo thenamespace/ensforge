@@ -54,7 +54,7 @@
   "scripts": {
     "build": "ensforge-dev build",
     "dev": "ensforge-dev build --watch",
-    "lint": "oxlint --deny-warnings .",
+    "lint": "oxlint -c ../../.config/oxlint.config.ts --deny-warnings .",
     "typecheck": "tsc --noEmit && tsc --noEmit -p test",
     "pack:check": "publint && attw --pack . --profile esm-only",
     "prepack": "pnpm build",

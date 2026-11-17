@@ -10,7 +10,7 @@
     "./*": "./src/*.ts"
   },
   "scripts": {
-    "lint": "oxlint --deny-warnings .",
+    "lint": "oxlint -c ../../.config/oxlint.config.ts --deny-warnings .",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

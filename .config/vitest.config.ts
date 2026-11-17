@@ -1,3 +1,5 @@
+import { fileURLToPath } from "node:url";
+
 import { defineConfig } from "vitest/config";
 
 // Fast lanes (018): `<package>:unit` and `<package>:types`, network-free. Chain lanes
@@ -54,6 +56,8 @@ const types = (name: (typeof packages)[number]) => ({
 });
 
 export default defineConfig({
+  // Project paths below are relative to the repository root, not this folder.
+  root: fileURLToPath(new URL("..", import.meta.url)),
   // Tests run against package sources, not builds.
   resolve: { conditions: ["workspace-source"] },
   ssr: { resolve: { conditions: ["workspace-source"] } },

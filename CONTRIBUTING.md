@@ -56,7 +56,7 @@ and exports. `pnpm check` also bundles typical imports and fails when one grows 
 During development, run a focused package command when it provides a faster feedback loop:
 
 ```sh
-pnpm vitest --project sdk:unit
+pnpm exec vitest -c .config/vitest.config.ts --project sdk:unit
 pnpm --filter @ensforge/sdk typecheck
 ```
 
