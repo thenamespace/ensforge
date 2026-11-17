@@ -1,0 +1,25 @@
+{
+  "name": "@ensforge/test-services",
+  "version": "0.0.0",
+  "private": true,
+  "description": "ensforge against the off-chain services it talks to, run locally against the devnet (not published)",
+  "type": "module",
+  "scripts": {
+    "lint": "oxlint -c ../../.config/oxlint.config.ts --deny-warnings .",
+    "typecheck": "tsc --noEmit -p test"
+  },
+  "devDependencies": {
+    "@effect/platform-node": "catalog:",
+    "@effect/vitest": "catalog:",
+    "@ensforge/contracts": "workspace:*",
+    "@ensforge/sdk": "workspace:*",
+    "@ensforge/test-devnet": "workspace:*",
+    "@ensforge/test-fixtures": "workspace:*",
+    "@ensforge/test-harness": "workspace:*",
+    "@ensforge/test-integration": "workspace:*",
+    "@types/node": "catalog:",
+    "effect": "catalog:",
+    "get-port": "catalog:",
+    "viem": "catalog:"
+  }
+}

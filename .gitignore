@@ -16,3 +16,4 @@ research/
 
 # devnet clones and state dumps
 tests/devnet/.cache/
+tests/services/.cache/

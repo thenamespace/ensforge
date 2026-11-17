@@ -2,6 +2,7 @@ import { layer } from "@effect/vitest";
 import { Effect } from "effect";
 
 import { Ensforge, ensActions, type Plan } from "@ensforge/sdk";
+import type { Indexer } from "@ensforge/sdk/indexer";
 import type { DevnetInstance, ProfileName } from "@ensforge/test-devnet";
 import { Fixtures } from "@ensforge/test-fixtures";
 import { createPublicClient, createWalletClient, http, type Address } from "viem";
@@ -23,6 +24,8 @@ export type ClientOptions = {
   readonly ccipRead?: false | { readonly gatewayUrls?: readonly string[] } | undefined;
   /** Where plans are saved; shared between clients to resume across them. */
   readonly storage?: Plan.Storage | undefined;
+  /** An indexer for the `indexer.*` actions (the services lane's bigname). */
+  readonly indexer?: Indexer | undefined;
 };
 
 /** An ensforge client on the devnet. */
@@ -35,6 +38,7 @@ export const ensforge = (devnet: DevnetInstance, options: ClientOptions = {}) =>
     deployment: devnet.deployments,
     ...(options.ccipRead === undefined ? {} : { ccipRead: options.ccipRead }),
     ...(options.storage === undefined ? {} : { storage: options.storage }),
+    ...(options.indexer === undefined ? {} : { indexer: options.indexer }),
     ...(options.account === undefined
       ? {}
       : {

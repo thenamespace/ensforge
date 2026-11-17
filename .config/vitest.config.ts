@@ -99,6 +99,20 @@ const fuzz = {
   },
 };
 
+// ensforge against off-chain services in Docker (`pnpm test:services`; manual and release CI).
+const services = {
+  extends: true as const,
+  test: {
+    name: "services",
+    root: "tests/services",
+    include: ["test/**/*.test.ts"],
+    testTimeout: 600_000,
+    hookTimeout: 900_000,
+    // One stack per file; several at once would compete for the emulated indexer.
+    fileParallelism: false,
+  },
+};
+
 const types = (name: (typeof packages)[number]) => ({
   extends: true as const,
   test: {
@@ -132,6 +146,7 @@ export default defineConfig({
       fixturesChain,
       integration,
       fuzz,
+      services,
     ],
     passWithNoTests: true,
   },

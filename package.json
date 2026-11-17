@@ -15,6 +15,7 @@
     "prepare": "lefthook install && effect-tsgo patch --typescript --no-oxlint",
     "release": "changeset publish",
     "test": "vitest run -c .config/vitest.config.ts --project \"*:unit\" --project \"*:types\"",
+    "test:services": "vitest run -c .config/vitest.config.ts --project services",
     "test:fuzz": "vitest run -c .config/vitest.config.ts --project fuzz",
     "test:chain": "vitest run -c .config/vitest.config.ts --project devnet --project fixtures --project integration",
     "typecheck": "turbo --root-turbo-json .config/turbo.json run typecheck",
