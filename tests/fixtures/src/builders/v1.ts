@@ -236,3 +236,26 @@ export const oldRegistryName = Effect.fnUntraced(function* (
   });
   return { name, node: namehash(name) };
 });
+
+/**
+ * A registry subname created by label hash only, for labels that cannot be written as text
+ * (containing `.`, literal `[hex]`, invalid UTF-8, unknown). `name` uses the `[labelhash]` form.
+ */
+export const hashedSubname = Effect.fnUntraced(function* (
+  c: StepContext,
+  options: {
+    readonly parent: string;
+    readonly labelhash: `0x${string}`;
+    readonly parentOwner: Address;
+    readonly owner: Address;
+  },
+) {
+  yield* c.write(
+    "v1.registry",
+    "setSubnodeOwner",
+    [namehash(options.parent), options.labelhash, options.owner],
+    { from: options.parentOwner },
+  );
+  const name = `[${options.labelhash.slice(2)}].${options.parent}`;
+  return { name, node: namehash(name) };
+});

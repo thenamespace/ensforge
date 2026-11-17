@@ -16,6 +16,8 @@ export const durations = {
   v1Premium: clockJump - 100n * day,
   /** ENSv2: expired 14 days before the jump, inside the 28-day grace period. */
   v2Grace: clockJump - 14n * day,
+  /** ENSv2: grace ended 10 days before the jump, inside the 21-day premium. */
+  v2Premium: clockJump - 38n * day,
   /** The shortest registration: long expired after the jump, grace and premium included. */
   expired: 28n * day,
 };

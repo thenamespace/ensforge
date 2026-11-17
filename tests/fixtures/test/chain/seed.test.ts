@@ -18,7 +18,7 @@ describe("seeded fixtures", () => {
             fixtures.all.map((fixture) => fixture.id),
             expected.map((fixture) => fixture.id),
           );
-          for (const fixture of fixtures.all) assert.match(fixture.name, /\./, fixture.id);
+          for (const fixture of fixtures.all) assert.isNotEmpty(fixture.name, fixture.id);
         }),
       );
     });

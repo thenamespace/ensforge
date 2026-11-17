@@ -40,3 +40,5 @@ Verified on chain while seeding (the self-checks failed until these were encoded
   names lose owner and fuses at expiry (W09).
 - ENSv2 grace is the registrar's: the registry already reports a name in grace as AVAILABLE, while
   the ETHRegistrar refuses to register it until grace ends (T05).
+- ETHRenewerV1 renews only ENSv1 names ENSv2 reserved for them (premigrated), or reserved ones in
+  ENSv2 grace; an ENSv1 name without a reservation cannot be renewed after the launch (G12).

@@ -78,7 +78,7 @@ export const ownershipV2: readonly Fixture[] = [
     "v2-plain",
     durations.active,
     status.registered,
-    ["M:A14", "M:D1"],
+    ["M:A14", "M:D1", "T04", "M:E1", "M:E3"],
     "registered",
   ),
   lifecycle(

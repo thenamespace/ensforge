@@ -31,12 +31,17 @@ const wrappedEth = (
   cases,
   tags: { kind: "v1-wrapped", state: "registered", ...tags },
   prelaunch: (c) =>
-    registerV1(c, {
-      label,
-      owner: c.accounts.alice,
-      duration: durations.active,
-      controller: "wrapped",
-      fuses: ownerFuses,
+    Effect.gen(function* () {
+      const name = yield* registerV1(c, {
+        label,
+        owner: c.accounts.alice,
+        duration: durations.active,
+        controller: "wrapped",
+        fuses: ownerFuses,
+      });
+      // The wrapper's own expiry: the registrar's plus the 90-day grace period.
+      const data = yield* getData(c, name.name);
+      return { ...name, wrapperExpiry: data.expiry };
     }),
   check: (c, facts) =>
     Effect.gen(function* () {
@@ -107,7 +112,7 @@ const fuseOwnerWhenExpired = "0x0000000000000000000000000000000000000000";
 
 /** The NameWrapper's states: fuses, subnames, approvals, expiry and desync, mixed trees. */
 export const wrapper: readonly Fixture[] = [
-  wrappedEth("v1.wrapped", "w-plain", 0, ["M:A7", "W16"], { fuses: "none" }),
+  wrappedEth("v1.wrapped", "w-plain", 0, ["M:A7", "W16", "T03"], { fuses: "none" }),
   parentFixture,
   ...(
     [
