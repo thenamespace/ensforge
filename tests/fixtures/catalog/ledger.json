@@ -251,7 +251,10 @@
     "tests": ["tests/integration/test/reads/name.test.ts > v2.unregistered"]
   },
   "O17": {
-    "tests": ["tests/integration/test/reads/name.test.ts > v2.re-registered"]
+    "tests": [
+      "tests/integration/test/reads/name.test.ts > v2.re-registered",
+      "tests/integration/test/writes/registration.test.ts > re-registers an expired name as a new token, without the old roles"
+    ]
   },
   "O18": {
     "tests": [
@@ -918,7 +921,8 @@
   },
   "P26": {
     "tests": [
-      "tests/integration/test/reads/primary.test.ts > returns null for names that do not verify, unless verification is off"
+      "tests/integration/test/reads/primary.test.ts > returns null for names that do not verify, unless verification is off",
+      "tests/integration/test/writes/registration.test.ts > sets records, a primary name and a referrer while registering"
     ]
   },
   "P27": {
@@ -954,7 +958,8 @@
   },
   "G06": {
     "tests": [
-      "tests/integration/test/reads/registration.test.ts > tracks a commitment through its window"
+      "tests/integration/test/reads/registration.test.ts > tracks a commitment through its window",
+      "tests/integration/test/writes/registration.test.ts > registers from an earlier commitment only inside its window"
     ]
   },
   "G07": {
@@ -983,7 +988,8 @@
   },
   "G14": {
     "tests": [
-      "tests/integration/test/reads/registration.test.ts > quotes the premium curve of a released name at a given time"
+      "tests/integration/test/reads/registration.test.ts > quotes the premium curve of a released name at a given time",
+      "tests/integration/test/writes/registration.test.ts > pays the premium of a recently released name"
     ]
   },
   "G15": {
@@ -993,7 +999,9 @@
     "status": "pending"
   },
   "G17": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/writes/registration.test.ts > registers a name through commit, wait and reveal, paying the quote"
+    ]
   },
   "G18": {
     "status": "pending"
@@ -1002,10 +1010,14 @@
     "status": "pending"
   },
   "G20": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/writes/registration.test.ts > registers from an earlier commitment only inside its window"
+    ]
   },
   "G21": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/writes/registration.test.ts > registers from an earlier commitment only inside its window"
+    ]
   },
   "G22": {
     "status": "pending"
@@ -1017,7 +1029,9 @@
     "status": "pending"
   },
   "G25": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/writes/registration.test.ts > sets records, a primary name and a referrer while registering"
+    ]
   },
   "G26": {
     "tests": [
@@ -1389,7 +1403,10 @@
     "tests": ["tests/integration/test/reads/name.test.ts > v1.wrapped.grace"]
   },
   "M:A14": {
-    "tests": ["tests/integration/test/reads/name.test.ts > v2.registered"]
+    "tests": [
+      "tests/integration/test/reads/name.test.ts > v2.registered",
+      "tests/integration/test/writes/registration.test.ts > registers a name through commit, wait and reveal, paying the quote"
+    ]
   },
   "M:A15": {
     "tests": ["tests/integration/test/reads/name.test.ts > v2.grace"]
@@ -1398,7 +1415,10 @@
     "tests": ["tests/integration/test/reads/name.test.ts > v2.expired"]
   },
   "M:A17": {
-    "tests": ["tests/integration/test/reads/name.test.ts > v2.re-registered"]
+    "tests": [
+      "tests/integration/test/reads/name.test.ts > v2.re-registered",
+      "tests/integration/test/writes/registration.test.ts > re-registers an expired name as a new token, without the old roles"
+    ]
   },
   "M:A18": {
     "tests": [
@@ -1590,7 +1610,8 @@
   },
   "M:C9": {
     "tests": [
-      "tests/integration/test/reads/registration.test.ts > prices labels by code point and refuses labels below the minimum"
+      "tests/integration/test/reads/registration.test.ts > prices labels by code point and refuses labels below the minimum",
+      "tests/integration/test/writes/registration.test.ts > registers several names, each at its price tier"
     ]
   },
   "M:D1": {
