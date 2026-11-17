@@ -1,6 +1,6 @@
 import type { Account, Address, BlockTag, Hex, TransactionReceipt } from "viem";
 
-import type { Like } from "./client/types.js";
+import type { Like, ViemClient, ViemWalletClient } from "./client/types.js";
 import type { Plan } from "./plan/Plan.js";
 
 declare const requestValue: unique symbol;
@@ -102,7 +102,55 @@ export declare namespace Write {
     maxBundleCalls?: number | undefined;
     /** Called as each step waits, is submitted, confirmed or fails. */
     onStep?: ((event: Plan.Event) => void) | undefined;
+    /**
+     * Send the write another way than the signer's own transactions, e.g. through a smart account
+     * (`hca()` from `@ensforge/hca`). Also applies to `.prepare`, `.simulate` and `.estimateGas`.
+     */
+    via?: Via | undefined;
+    /**
+     * EIP-5792 paymaster service for wallets that support it (`paymasterService` capability), so the
+     * wallet's calls are sponsored. Sends through `wallet_sendCalls` even for one call.
+     */
+    paymaster?:
+      | { readonly url: string; readonly context?: Readonly<Record<string, unknown>> }
+      | undefined;
   };
+
+  /**
+   * A route for writes: rewrites a plan (e.g. into smart-account executions) and, optionally, sends
+   * its steps itself (a bundler, an intent network). Without `send`, the signer sends the rewritten
+   * plan as usual. Built by extension packages; resumable through `plan.resume` like any write.
+   */
+  type Via = {
+    /** Shown in progress and errors, e.g. `hca`. */
+    readonly id: string;
+    /** Rewrites the plan before it is simulated or sent; the plan's id stays the same. */
+    readonly prepare?: ((plan: Plan, context: Via.Context) => Promise<Plan>) | undefined;
+    /** Sends one step and returns a reference to follow it, e.g. a UserOperation hash. */
+    readonly send?: ((step: Plan.Step, context: Via.Context) => Promise<string>) | undefined;
+    /** Outcome of a step sent with `send`. */
+    readonly status?:
+      | ((reference: string, context: Via.Context) => Promise<Via.Status>)
+      | undefined;
+  };
+
+  namespace Via {
+    /** What a route knows about the write it carries. */
+    type Context = {
+      readonly chainId: number;
+      /** Signer of the write. */
+      readonly account: Address | undefined;
+      readonly publicClient: ViemClient;
+      /** The signer's wallet, when one is configured. */
+      readonly walletClient: ViemWalletClient | undefined;
+    };
+
+    /** Where a sent step is: still pending, mined (with its transactions), or failed. */
+    type Status =
+      | { readonly status: "pending" }
+      | { readonly status: "success"; readonly hashes: readonly Hex[] }
+      | { readonly status: "failed"; readonly reason: string; readonly hashes?: readonly Hex[] };
+  }
 
   type SyncOptions = Options & {
     /**
@@ -115,10 +163,10 @@ export declare namespace Write {
     timeout?: number | undefined;
   };
 
-  /** A write's `.prepare`, `.simulate` or `.estimateGas`: options plus an optional `account`. */
+  /** A write's `.prepare`, `.simulate` or `.estimateGas`: options plus `account` and `via`. */
   type Method<options, value> = (
     client: Like,
-    options: options & Pick<Options, "account">,
+    options: options & Pick<Options, "account" | "via">,
   ) => Promise<value>;
 
   /** Returned by every write: resolves once every call is submitted. */

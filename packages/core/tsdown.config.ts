@@ -7,6 +7,7 @@ export default defineConfig({
     actions: "src/actions/index.ts",
     effect: "src/effect.ts",
     indexer: "src/indexer/index.ts",
+    extension: "src/extension.ts",
     index: "src/index.ts",
     legacy: "src/legacy/index.ts",
     "legacy/hca": "src/legacy/actions/hca/index.ts",

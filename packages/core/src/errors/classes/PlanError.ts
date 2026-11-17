@@ -10,6 +10,10 @@ const defaults: {
   PLAN_CHAIN_MISMATCH: () => ({ shortMessage: "The plan was prepared for another chain." }),
   PLAN_ACCOUNT_MISMATCH: () => ({ shortMessage: "The plan was prepared for another account." }),
   PLAN_INVALID: () => ({ shortMessage: "The text is not a serialized ensforge plan." }),
+  PLAN_ROUTE_REQUIRED: () => ({
+    shortMessage: "Part of this plan was sent through a route (`via`), which resuming needs again.",
+    hint: "Pass the same `via` to plan.resume, e.g. `via: hca()`.",
+  }),
 };
 
 /**
@@ -25,6 +29,11 @@ export class PlanError extends EnsforgeError<"PlanError", PlanError.Code> {
 }
 
 export declare namespace PlanError {
-  type Code = "PLAN_STALE" | "PLAN_CHAIN_MISMATCH" | "PLAN_ACCOUNT_MISMATCH" | "PLAN_INVALID";
+  type Code =
+    | "PLAN_STALE"
+    | "PLAN_CHAIN_MISMATCH"
+    | "PLAN_ACCOUNT_MISMATCH"
+    | "PLAN_INVALID"
+    | "PLAN_ROUTE_REQUIRED";
   type Options = EnsforgeError.ClassOptions<Code>;
 }

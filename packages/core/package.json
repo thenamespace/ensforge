@@ -41,6 +41,10 @@
       "workspace-source": "./src/effect.ts",
       "default": "./dist/effect.js"
     },
+    "./extension": {
+      "workspace-source": "./src/extension.ts",
+      "default": "./dist/extension.js"
+    },
     "./indexer": {
       "workspace-source": "./src/indexer/index.ts",
       "default": "./dist/indexer.js"
@@ -83,6 +87,7 @@
       ".": "./dist/index.js",
       "./actions": "./dist/actions.js",
       "./effect": "./dist/effect.js",
+      "./extension": "./dist/extension.js",
       "./indexer": "./dist/indexer.js",
       "./legacy": "./dist/legacy.js",
       "./legacy/hca": "./dist/legacy/hca.js",

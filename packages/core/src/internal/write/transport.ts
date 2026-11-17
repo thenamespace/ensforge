@@ -15,6 +15,7 @@ import { TransactionError } from "../../errors/classes/TransactionError.js";
 import { fromCause } from "../../errors/translate/fromCause.js";
 import type { AnyError } from "../../errors/types.js";
 import type { Plan } from "../../plan/Plan.js";
+import type { Write } from "../../Types.js";
 import { fromPromise } from "../rpc/fromPromise.js";
 import { addressOf, type Signer } from "./signer.js";
 
@@ -61,6 +62,7 @@ export const sendBatch = Effect.fnUntraced(function* (
   signer: Signer,
   step: Plan.Step,
   timeout: number | undefined,
+  paymaster?: Write.Options["paymaster"],
 ) {
   const context = { account: addressOf(signer.account), chainId: client.chain.id };
   const { id } = yield* fromPromise(
@@ -70,6 +72,16 @@ export const sendBatch = Effect.fnUntraced(function* (
         ...(signer.walletClient.chain === undefined ? {} : { chain: signer.walletClient.chain }),
         calls: step.calls.map((item) => ({ to: item.to, data: item.data, value: item.value })),
         forceAtomic: true,
+        ...(paymaster === undefined
+          ? {}
+          : {
+              capabilities: {
+                paymasterService: {
+                  url: paymaster.url,
+                  ...(paymaster.context === undefined ? {} : { context: paymaster.context }),
+                },
+              },
+            }),
       }),
     context,
   );

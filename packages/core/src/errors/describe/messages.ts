@@ -390,6 +390,10 @@ export const messages: { readonly [code in Code]: Template<code> } = {
     title: "Wrong account",
     message: "This was prepared for a different account.",
   }),
+  PLAN_ROUTE_REQUIRED: () => ({
+    title: "Cannot continue",
+    message: "This transaction must be continued the same way it was started.",
+  }),
   PLAN_INVALID: () => ({
     title: "Cannot resume",
     message: "The saved progress is damaged.",

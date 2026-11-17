@@ -37,6 +37,8 @@ export interface Plan {
   readonly warnings: readonly Plan.Warning[];
   /** Contracts the plan deploys, at their predicted addresses. */
   readonly deploys: readonly Plan.Deployment[];
+  /** Fees a route (`via`) charges besides gas, e.g. a sponsored execution or a token refund. */
+  readonly fees?: readonly Plan.Fee[] | undefined;
 }
 
 export declare namespace Plan {
@@ -73,6 +75,19 @@ export declare namespace Plan {
   /** A non-blocking note about the plan. */
   type Warning = { readonly code: string; readonly message: string };
 
+  /** A fee a route charges, in a token or in native currency. */
+  type Fee = {
+    readonly kind: "gas" | "execution" | "bridge";
+    /** Token address, or `native`. */
+    readonly token: Address | "native";
+    /** Expected amount, in the token's smallest unit. */
+    readonly amount: bigint;
+    /** Most the route may charge. */
+    readonly maximum: bigint;
+    /** Paid by the route's sponsor instead of the account. */
+    readonly sponsored: boolean;
+  };
+
   /** A contract the plan deploys. The address is known before sending (CREATE2). */
   type Deployment = { readonly contract: "resolver" | "registry"; readonly address: Address };
 
@@ -107,6 +122,8 @@ export declare namespace Plan {
     readonly hashes?: readonly Hex[] | undefined;
     /** EIP-5792 bundle the step was sent in. */
     readonly bundleId?: string | undefined;
+    /** Reference of a step sent through a route (`via`), e.g. a UserOperation hash. */
+    readonly reference?: string | undefined;
     readonly error?: AnyError | undefined;
   };
 
@@ -119,6 +136,8 @@ export declare namespace Plan {
     readonly submitted: Readonly<globalThis.Record<string, readonly Hex[]>>;
     /** EIP-5792 bundle id per step sent in a bundle. */
     readonly bundles: Readonly<globalThis.Record<string, string>>;
+    /** Route references per step sent through `via` (e.g. UserOperation hashes). */
+    readonly references?: Readonly<globalThis.Record<string, string>> | undefined;
     /** Message of the last failure. */
     readonly error?: string | undefined;
     /** Unix time in milliseconds. */

@@ -11,6 +11,7 @@ import { waitForReceipts } from "../write/receipts.js";
 import { sendPlan } from "../write/send.js";
 import { addressOf, resolveSigner } from "../write/signer.js";
 import { estimatePlan, simulatePlan } from "../write/simulate.js";
+import { routePlan } from "../write/via.js";
 import { withContext } from "./context.js";
 
 /** Builds the plan of a write action from its options. */
@@ -62,12 +63,20 @@ export const write = <options, error extends EnsforgeError>(
   extra?: EnsforgeError.Context,
   explain?: Explainer<options>,
 ) => {
+  // The plan as the route (`via`) will send it; without a route, as planned.
+  const planned = (client: Client, options: options & Pick<Write.Options, "account" | "via">) =>
+    planner(client, options).pipe(
+      Effect.flatMap((plan) =>
+        routePlan(client, plan, options.via, addressOf(options.account) ?? client.account),
+      ),
+    );
+
   const prepare = Effect.fn(`ensforge.${path}.prepare`)(
     function* (
       client: Client,
-      options: options & Pick<Write.Options, "account">,
-    ): Effect.fn.Return<Plan, error> {
-      return yield* planner(client, options);
+      options: options & Pick<Write.Options, "account" | "via">,
+    ): Effect.fn.Return<Plan, error | AnyError> {
+      return yield* planned(client, options);
     },
     withContext(`${path}.prepare`, extra),
   );
@@ -75,9 +84,9 @@ export const write = <options, error extends EnsforgeError>(
   const simulate = Effect.fn(`ensforge.${path}.simulate`)(
     function* (
       client: Client,
-      options: options & Pick<Write.Options, "account">,
-    ): Effect.fn.Return<Plan.Simulation, error> {
-      const plan = yield* planner(client, options);
+      options: options & Pick<Write.Options, "account" | "via">,
+    ): Effect.fn.Return<Plan.Simulation, error | AnyError> {
+      const plan = yield* planned(client, options);
       const account = addressOf(options.account) ?? client.account;
       const simulation = yield* simulatePlan(client, plan, account);
       const steps = yield* Effect.forEach(simulation.steps, (step) =>
@@ -95,9 +104,9 @@ export const write = <options, error extends EnsforgeError>(
   const estimateGas = Effect.fn(`ensforge.${path}.estimateGas`)(
     function* (
       client: Client,
-      options: options & Pick<Write.Options, "account">,
+      options: options & Pick<Write.Options, "account" | "via">,
     ): Effect.fn.Return<Plan.Estimate, error | AnyError> {
-      const plan = yield* planner(client, options);
+      const plan = yield* planned(client, options);
       return yield* estimatePlan(client, plan, addressOf(options.account) ?? client.account);
     },
     withContext(`${path}.estimateGas`, extra),
@@ -108,7 +117,7 @@ export const write = <options, error extends EnsforgeError>(
       client: Client,
       options: options & Write.Options,
     ): Effect.fn.Return<Write.Result, error | AnyError> {
-      const plan = yield* planner(client, options);
+      const plan = yield* planned(client, options);
       const signer = yield* resolveSigner(client, options.account);
       return yield* sendPlan(client, plan, signer, options).pipe(
         Effect.catch((error: AnyError) =>
@@ -126,7 +135,7 @@ export const write = <options, error extends EnsforgeError>(
       client: Client,
       options: options & Write.SyncOptions,
     ): Effect.fn.Return<Write.SyncResult, error | AnyError> {
-      const plan = yield* planner(client, options);
+      const plan = yield* planned(client, options);
       const signer = yield* resolveSigner(client, options.account);
       const result = yield* sendPlan(client, plan, signer, options).pipe(
         Effect.catch((error: AnyError) =>

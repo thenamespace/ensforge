@@ -46,7 +46,7 @@ import * as Impl from "./effect.js";
  * yield* Actions.plan.resume(ens, { id })
  * ```
  *
- * @throws `Errors.NotFoundError` (`PLAN_NOT_FOUND`) or `Errors.PlanError` (`PLAN_CHAIN_MISMATCH`, `PLAN_ACCOUNT_MISMATCH`) when the plan cannot continue here.
+ * @throws `Errors.NotFoundError` (`PLAN_NOT_FOUND`) or `Errors.PlanError` (`PLAN_CHAIN_MISMATCH`, `PLAN_ACCOUNT_MISMATCH`, `PLAN_ROUTE_REQUIRED`) when the plan cannot continue here.
  * @throws `Errors.ContractRevertError` (`CONTRACT_REVERTED`), or the failing step's own error, with `context.planId` and `context.step`.
  *
  * @see {@link Actions.plan.get} to read its progress first
@@ -102,7 +102,7 @@ export declare namespace resume {
  * yield* Actions.plan.resumeSync(ens, { id })
  * ```
  *
- * @throws `Errors.NotFoundError` (`PLAN_NOT_FOUND`) or `Errors.PlanError` (`PLAN_CHAIN_MISMATCH`, `PLAN_ACCOUNT_MISMATCH`) when the plan cannot continue here.
+ * @throws `Errors.NotFoundError` (`PLAN_NOT_FOUND`) or `Errors.PlanError` (`PLAN_CHAIN_MISMATCH`, `PLAN_ACCOUNT_MISMATCH`, `PLAN_ROUTE_REQUIRED`) when the plan cannot continue here.
  * @throws `Errors.TransactionError` (`TRANSACTION_REVERTED`, `RECEIPT_TIMEOUT`) when confirmation fails.
  *
  * @see {@link resume} to resolve on submission

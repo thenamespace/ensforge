@@ -4,6 +4,7 @@ import type { Hex } from "viem";
 import { getBlock, getTransaction } from "viem/actions";
 
 import type { Client } from "../../client/types.js";
+import { PlanError } from "../../errors/classes/PlanError.js";
 import type { AnyError } from "../../errors/types.js";
 import type { Plan } from "../../plan/Plan.js";
 import type { Write } from "../../Types.js";
@@ -18,6 +19,7 @@ import {
   supportsAtomicBatch,
   waitForChainTime,
 } from "./transport.js";
+import { routeOutcome, sendThroughRoute, viaContext } from "./via.js";
 
 /** MetaMask's limit; other wallets accept more, which `maxBundleCalls` allows. */
 const defaultMaxBundleCalls = 10;
@@ -28,6 +30,7 @@ export const freshRecord = (plan: Plan): Plan.Record => ({
   status: "pending",
   submitted: {},
   bundles: {},
+  references: {},
   updatedAt: Date.now(),
 });
 
@@ -50,6 +53,9 @@ const known = (client: Client, hashes: readonly Hex[]) =>
  *   up to `maxBundleCalls` calls: they run in order inside it, as the up-front simulation did.
  * - Resuming (`resumed`), steps already submitted are confirmed instead of sent again; a dropped
  *   transaction or a failed bundle is sent again, after simulating it against current state.
+ * - With a route that sends (`via.send`), each step goes through the route instead; its reference
+ *   is saved so a resumed write follows it instead of sending again.
+ * - With `paymaster`, every step goes through `wallet_sendCalls` with the paymaster service.
  */
 export const sendPlan = Effect.fnUntraced(function* (
   client: Client,
@@ -63,6 +69,13 @@ export const sendPlan = Effect.fnUntraced(function* (
   const mode = options.mode ?? "auto";
   const maxBundleCalls = options.maxBundleCalls ?? defaultMaxBundleCalls;
   const emit = (event: Plan.Event) => options.onStep?.(event);
+  const route = options.via?.send === undefined ? undefined : options.via;
+  const routeContext = route === undefined ? undefined : yield* viaContext(client, account);
+  // Steps sent through a route are only known to that route; sending them again from the wallet
+  // would execute them twice.
+  if (route === undefined && Object.keys(resumed?.references ?? {}).length > 0) {
+    return yield* Effect.fail(new PlanError({ code: "PLAN_ROUTE_REQUIRED" }));
+  }
 
   let record = resumed ?? freshRecord(plan);
   // Saving is best effort: storage that is unavailable (server rendering) must not stop a write.
@@ -82,7 +95,8 @@ export const sendPlan = Effect.fnUntraced(function* (
 
   let atomic: boolean | undefined;
   const bundles = Effect.gen(function* () {
-    if (mode === "batch") return true;
+    if (route !== undefined) return false;
+    if (mode === "batch" || options.paymaster !== undefined) return true;
     if (mode === "sequential") return false;
     atomic ??= yield* supportsAtomicBatch(signer, client.chain.id);
     return atomic;
@@ -101,7 +115,7 @@ export const sendPlan = Effect.fnUntraced(function* (
       const step = plan.steps[index] as Plan.Step;
 
       // Resuming: a step submitted before is confirmed, unless its transactions vanished.
-      const recorded = yield* recordedHashes(client, signer, record, step);
+      const recorded = yield* recordedHashes(client, signer, record, step, route, routeContext);
       if (recorded !== undefined) {
         hashes.push(...recorded);
         previous = { steps: [step], hashes: recorded };
@@ -155,8 +169,18 @@ export const sendPlan = Effect.fnUntraced(function* (
       }
 
       let sent: readonly Hex[];
-      if (bundled && (merged.calls.length > 1 || mode === "batch")) {
-        const batch = yield* sendBatch(client, signer, merged, options.timeout);
+      let reference: string | undefined;
+      if (route !== undefined && routeContext !== undefined) {
+        sent = yield* sendThroughRoute(route, routeContext, merged, (sentReference) => {
+          reference = sentReference;
+          emit({ step, status: "submitted", reference: sentReference });
+          return save({ references: { ...record.references, [step.id]: sentReference } });
+        });
+      } else if (
+        bundled &&
+        (merged.calls.length > 1 || mode === "batch" || options.paymaster !== undefined)
+      ) {
+        const batch = yield* sendBatch(client, signer, merged, options.timeout, options.paymaster);
         id = batch.id;
         sent = batch.hashes;
         yield* save({
@@ -176,7 +200,7 @@ export const sendPlan = Effect.fnUntraced(function* (
         },
       });
       for (const member of group)
-        emit({ step: member, status: "submitted", hashes: sent, bundleId: id });
+        emit({ step: member, status: "submitted", hashes: sent, bundleId: id, reference });
       hashes.push(...sent);
       previous = { steps: group, hashes: sent };
       index += group.length;
@@ -211,10 +235,18 @@ const recordedHashes = Effect.fnUntraced(function* (
   signer: Signer,
   record: Plan.Record,
   step: Plan.Step,
+  route: Write.Via | undefined,
+  routeContext: Write.Via.Context | undefined,
 ): Effect.fn.Return<readonly Hex[] | undefined, AnyError> {
   const submitted = record.submitted[step.id];
   if (submitted !== undefined && submitted.length > 0) {
     return (yield* known(client, submitted)) ? submitted : undefined;
+  }
+
+  // Sent through a route: ask it; a failure before landing sends the step again.
+  const reference = record.references?.[step.id];
+  if (reference !== undefined && route !== undefined && routeContext !== undefined) {
+    return yield* routeOutcome(route, routeContext, reference);
   }
 
   const bundle = record.bundles[step.id];
