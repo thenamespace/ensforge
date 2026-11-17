@@ -14,12 +14,15 @@ sdk must not depend on React or application runtimes.
 
 ## Commands
 
-- `pnpm check`: formatting, linting, type checking, tests, and builds.
+- `pnpm check`: formatting, linting, type checking, builds, verify, bundle budgets and tests.
 - `pnpm format`: format the workspace with Oxfmt.
 - `pnpm changeset`: record a publishable package change.
 
-Use the Klarity presets already configured at the workspace root. Do not add Prettier, ESLint, Husky,
-lint-staged, tsup, or Rollup unless a demonstrated requirement cannot be met by the existing tools.
+Use the Klarity presets already configured at the workspace root. Packages build with TypeScript 7's
+`tsc` (`scripts/build-package.mjs`), which keeps `export * as` re-exports tree-shakeable; tsdown's
+unbundled output did not. Do not add Prettier, ESLint, Husky, lint-staged, tsup, or Rollup unless a
+demonstrated requirement cannot be met by the existing tools. Pin every external dependency in the
+pnpm catalog.
 
 ## Readability
 
