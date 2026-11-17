@@ -620,6 +620,9 @@ importers:
       '@ensforge/contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
+      '@ensforge/hca':
+        specifier: workspace:*
+        version: link:../../packages/hca
       '@ensforge/sdk':
         specifier: workspace:*
         version: link:../../packages/sdk
@@ -653,6 +656,9 @@ importers:
       '@ensforge/contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
+      '@ensforge/hca':
+        specifier: workspace:*
+        version: link:../../packages/hca
       '@ensforge/sdk':
         specifier: workspace:*
         version: link:../../packages/sdk

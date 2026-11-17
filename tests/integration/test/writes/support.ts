@@ -2,7 +2,7 @@ import { Effect } from "effect";
 
 import { Abis } from "@ensforge/contracts";
 import type { DevnetInstance } from "@ensforge/test-devnet";
-import { erc20Abi, hexToBigInt, labelhash, namehash, type Abi, type Address } from "viem";
+import { erc20Abi, hexToBigInt, labelhash, namehash, parseAbi, type Abi, type Address } from "viem";
 
 /** A `.eth` label's ENSv2 entry, read from the ETH registry itself. */
 export const ethEntry = (devnet: DevnetInstance, label: string) => {
@@ -34,6 +34,20 @@ export const usdcOf = (devnet: DevnetInstance, account: Address) =>
       args: [account],
     }),
   );
+
+/** Mints the devnet's mock USDC to `account`. */
+export const mintUsdc = (devnet: DevnetInstance, account: Address, amount: bigint) =>
+  Effect.promise(async () => {
+    const hash = await devnet.client.writeContract({
+      account: devnet.accounts.deployer,
+      chain: devnet.chain,
+      address: devnet.contracts["v2.usdc"] as Address,
+      abi: parseAbi(["function mint(address to, uint256 amount)"]),
+      functionName: "mint",
+      args: [account, amount],
+    });
+    await devnet.client.waitForTransactionReceipt({ hash });
+  });
 
 /** ENSv1 ownership of `name`: registry owner, registrar token holder (`.eth` 2LDs), wrapper owner. */
 export const v1Owners = (devnet: DevnetInstance, name: string) => {
