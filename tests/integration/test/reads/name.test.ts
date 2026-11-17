@@ -10,6 +10,7 @@ import { call, ensforge, onProfile } from "../support/chain.ts";
 import {
   atStage,
   holder,
+  premigrated,
   stageOf,
   unclaimed,
   v1Eth,
@@ -182,6 +183,8 @@ describe("name.get", () => {
               const fixtures = yield* Fixtures;
               const devnet = yield* Devnet;
               const fixture = fixtures.byId(definition.id);
+              const wanted =
+                fixture.facts["premigrated"] === true ? premigrated(expectation) : expectation;
               const stage = stageOf(profile);
               const state = yield* call(() => ensforge(devnet).name.get({ name: fixture.name }));
 
@@ -197,14 +200,14 @@ describe("name.get", () => {
                   renewable: state.renewable,
                 },
                 {
-                  kind: expectation.kind,
-                  status: expectation.status,
-                  owner: holder(devnet, fixture, expectation.owner),
-                  wrapped: expectation.wrapped ?? false,
-                  migrated: expectation.migrated ?? false,
-                  reachable: atStage(expectation.reachable, stage),
-                  available: atStage(expectation.available, stage),
-                  renewable: atStage(expectation.renewable, stage),
+                  kind: wanted.kind,
+                  status: wanted.status,
+                  owner: holder(devnet, fixture, wanted.owner),
+                  wrapped: wanted.wrapped ?? false,
+                  migrated: wanted.migrated ?? false,
+                  reachable: atStage(wanted.reachable, stage),
+                  available: atStage(wanted.available, stage),
+                  renewable: atStage(wanted.renewable, stage),
                 },
               );
             }),

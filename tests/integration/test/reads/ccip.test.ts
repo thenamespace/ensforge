@@ -63,76 +63,81 @@ const offchain = (
   }).pipe(Effect.scoped);
 
 describe("CCIP-Read", () => {
-  onProfile("v1-live")("v1-live", (it) => {
-    it.effect(
-      "follows an off-chain lookup through the resolver's gateway",
-      () =>
-        offchain(
-          () => ok,
-          ({ devnet, name, requests }) =>
-            Effect.gen(function* () {
-              const resolved = yield* call(() =>
-                ensforge(devnet).resolver.resolve({ name, data: addrCall(name) }),
-              );
-              assert.strictEqual(
-                resolved.data,
-                encodeAbiParameters([{ type: "address" }], [devnet.accounts.alice]),
-              );
-              assert.isAbove(requests(), 0);
-            }),
-        ),
-      { meta: { cases: ["M:B10"] } },
-    );
-
-    it.effect(
-      "does not contact the gateway when CCIP-Read is disabled",
-      () =>
-        offchain(
-          () => ok,
-          ({ devnet, name, requests }) =>
-            Effect.gen(function* () {
-              const ens = ensforge(devnet, { ccipRead: false });
-              yield* expectRejection(() => ens.resolver.resolve({ name, data: addrCall(name) }), {
-                _tag: "ConfigError",
-                code: "CCIP_READ_DISABLED",
-              });
-              assert.strictEqual(requests(), 0);
-            }),
-        ),
-      { meta: { cases: ["X13", "M:F4"] } },
-    );
-
-    it.effect(
-      "reports a failing gateway with its HTTP status",
-      () =>
-        offchain(
-          () => ({ status: 500, body: '{"message":"down"}' }),
-          ({ devnet, name }) =>
-            Effect.gen(function* () {
-              const error = yield* expectRejection(
-                () => ensforge(devnet).resolver.resolve({ name, data: addrCall(name) }),
-                { _tag: "GatewayError", code: "GATEWAY_REQUEST_FAILED" },
-              );
-              assert.strictEqual((error as { readonly status?: number }).status, 500);
-            }),
-        ),
-      { meta: { cases: ["M:B11", "X01"] } },
-    );
-
-    it.effect("sends lookups through the batch gateways the caller names", () =>
-      offchain(
-        () => ok,
-        ({ devnet, name }) =>
-          expectRejection(
-            () =>
-              ensforge(devnet).resolver.resolve({
-                name,
-                data: addrCall(name),
-                gatewayUrls: ["http://127.0.0.1:9/"],
+  for (const profile of ["v1-live", "mainnet-shaped"] as const) {
+    onProfile(profile)(profile, (it) => {
+      it.effect(
+        "follows an off-chain lookup through the resolver's gateway",
+        () =>
+          offchain(
+            () => ok,
+            ({ devnet, name, requests }) =>
+              Effect.gen(function* () {
+                const resolved = yield* call(() =>
+                  ensforge(devnet).resolver.resolve({ name, data: addrCall(name) }),
+                );
+                assert.strictEqual(
+                  resolved.data,
+                  encodeAbiParameters([{ type: "address" }], [devnet.accounts.alice]),
+                );
+                assert.isAbove(requests(), 0);
               }),
-            { _tag: "GatewayError", code: "GATEWAY_REQUEST_FAILED" },
-          ).pipe(Effect.asVoid),
-      ),
-    );
-  });
+          ),
+        { meta: { cases: ["M:B10"] } },
+      );
+
+      it.effect(
+        "does not contact the gateway when CCIP-Read is disabled",
+        () =>
+          offchain(
+            () => ok,
+            ({ devnet, name, requests }) =>
+              Effect.gen(function* () {
+                const ens = ensforge(devnet, { ccipRead: false });
+                yield* expectRejection(() => ens.resolver.resolve({ name, data: addrCall(name) }), {
+                  _tag: "ConfigError",
+                  code: "CCIP_READ_DISABLED",
+                });
+                assert.strictEqual(requests(), 0);
+              }),
+          ),
+        { meta: { cases: ["X13", "M:F4"] } },
+      );
+
+      it.effect(
+        "reports a failing gateway with its HTTP status",
+        () =>
+          offchain(
+            () => ({ status: 500, body: '{"message":"down"}' }),
+            ({ devnet, name }) =>
+              Effect.gen(function* () {
+                const error = yield* expectRejection(
+                  () => ensforge(devnet).resolver.resolve({ name, data: addrCall(name) }),
+                  { _tag: "GatewayError", code: "GATEWAY_REQUEST_FAILED" },
+                );
+                assert.strictEqual((error as { readonly status?: number }).status, 500);
+              }),
+          ),
+        { meta: { cases: ["M:B11", "X01"] } },
+      );
+
+      // After the launch the ENSv1 bridge follows ENSv1 lookups itself, without the caller's gateways.
+      if (profile === "v1-live") {
+        it.effect("sends lookups through the batch gateways the caller names", () =>
+          offchain(
+            () => ok,
+            ({ devnet, name }) =>
+              expectRejection(
+                () =>
+                  ensforge(devnet).resolver.resolve({
+                    name,
+                    data: addrCall(name),
+                    gatewayUrls: ["http://127.0.0.1:9/"],
+                  }),
+                { _tag: "GatewayError", code: "GATEWAY_REQUEST_FAILED" },
+              ).pipe(Effect.asVoid),
+          ),
+        );
+      }
+    });
+  }
 });

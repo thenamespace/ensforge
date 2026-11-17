@@ -36,9 +36,14 @@ describe("migration.get", () => {
             status: "blocked",
             blockers: ["not-reserved"],
           });
+          // Premigrated, but a burned CANNOT_TRANSFER keeps the token where it is.
           assert.deepInclude(yield* statusOf("v1.wrapped.locked.all"), {
             route: "wrapped-locked",
-            blockers: ["cannot-transfer", "not-reserved"],
+            blockers: ["cannot-transfer"],
+          });
+          assert.deepInclude(yield* statusOf("v1.wrapped"), {
+            status: "eligible",
+            route: "wrapped-unlocked",
           });
           assert.deepInclude(yield* statusOf("v1.wrapped.sub"), {
             blockers: ["unlocked-child", "not-owner"],

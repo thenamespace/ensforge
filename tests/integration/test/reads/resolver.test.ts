@@ -1,7 +1,7 @@
 import { assert, describe } from "@effect/vitest";
 import { Effect } from "effect";
 
-import { Devnet } from "@ensforge/test-devnet";
+import { Devnet, type DevnetInstance, type ProfileName } from "@ensforge/test-devnet";
 import { Fixtures } from "@ensforge/test-fixtures";
 import { expectRejection } from "@ensforge/test-harness";
 import { encodeAbiParameters, encodeFunctionData, namehash, parseAbi, type Address } from "viem";
@@ -30,139 +30,153 @@ const misbehaving = {
   "resolver.unsupported-profile": "RESOLVER_PROFILE_UNSUPPORTED",
 } as const;
 
+/** After the launch the ENSv1 bridge serves premigrated ENSv1 names; before it, their own resolvers do. */
+const servedBy = (devnet: DevnetInstance, profile: ProfileName, own: unknown) =>
+  (profile === "mainnet-shaped" ? devnet.contracts["v2.ensV1Resolver"] : own) as Address;
+
 describe("resolver reads", () => {
-  onProfile("v1-live")("v1-live", (it) => {
-    it.effect(
-      "describes each generation and kind of resolver",
-      () =>
-        Effect.gen(function* () {
-          const fixtures = yield* Fixtures;
-          const ens = ensforge(yield* Devnet);
-          const resolverOf = (name: string) => call(() => ens.resolver.get({ name }));
-          const nameOf = (id: string) => fixtures.byId(id).name;
+  for (const profile of ["v1-live", "mainnet-shaped"] as const) {
+    onProfile(profile)(profile, (it) => {
+      it.effect(
+        "describes each generation and kind of resolver",
+        () =>
+          Effect.gen(function* () {
+            const fixtures = yield* Fixtures;
+            const devnet = yield* Devnet;
+            const ens = ensforge(devnet);
+            const resolverOf = (name: string) => call(() => ens.resolver.get({ name }));
+            const nameOf = (id: string) => fixtures.byId(id).name;
 
-          assert.deepInclude(yield* resolverOf(nameOf("records.v1")), {
-            kind: "public-resolver",
-            authorization: "owner",
-            version: 0n,
-          });
-          assert.deepInclude(yield* resolverOf(nameOf("resolver.2020")), {
-            kind: "public-resolver",
-            authorization: "owner",
-          });
-          // Bound to the registry ENS replaced in 2020: readable, not writable.
-          assert.deepInclude(yield* resolverOf(nameOf("resolver.frozen-2019")), {
-            kind: "public-resolver",
-            authorization: "none",
-          });
-          for (const id of ["resolver.eoa", "resolver.no-erc165"]) {
-            assert.deepInclude(yield* resolverOf(nameOf(id)), { kind: "custom", inherited: false });
-          }
-          assert.deepInclude(yield* resolverOf(nameOf("resolver.unsupported-profile")), {
-            kind: "extended",
-          });
+            assert.deepInclude(yield* resolverOf(nameOf("records.v1")), {
+              kind: "public-resolver",
+              authorization: "owner",
+              version: 0n,
+            });
+            assert.deepInclude(yield* resolverOf(nameOf("resolver.2020")), {
+              kind: "public-resolver",
+              authorization: "owner",
+            });
+            // Bound to the registry ENS replaced in 2020: readable, not writable.
+            assert.deepInclude(yield* resolverOf(nameOf("resolver.frozen-2019")), {
+              kind: "public-resolver",
+              authorization: "none",
+            });
+            for (const id of ["resolver.eoa", "resolver.no-erc165"]) {
+              assert.deepInclude(yield* resolverOf(nameOf(id)), {
+                kind: "custom",
+                inherited: false,
+              });
+            }
+            assert.deepInclude(yield* resolverOf(nameOf("resolver.unsupported-profile")), {
+              kind: "extended",
+            });
 
-          const wildcard = fixtures.byId("resolver.wildcard");
-          assert.deepInclude(yield* resolverOf(String(wildcard.facts["wildcardChild"])), {
-            address: wildcard.facts["resolver"] as Address,
-            inherited: true,
-            kind: "extended",
-          });
+            const wildcard = fixtures.byId("resolver.wildcard");
+            assert.deepInclude(yield* resolverOf(String(wildcard.facts["wildcardChild"])), {
+              address: wildcard.facts["resolver"] as Address,
+              inherited: true,
+              kind: "extended",
+            });
 
-          // The `eth` resolver is not extended, so it does not serve names below it.
-          assert.isNull(yield* resolverOf(nameOf("resolver.none")));
-          yield* expectRejection(
-            () => ens.resolver.get({ name: nameOf("resolver.none"), strict: true }),
-            { _tag: "NotFoundError", code: "RESOLVER_NOT_FOUND" },
-          );
-        }),
-      { meta: { cases: ["M:B2", "M:B9", "M:B13", "M:B14", "R02", "R05", "R11", "R12"] } },
-    );
-
-    it.effect(
-      "reads misbehaving resolvers as missing records, and fails strict reads with a typed error",
-      () =>
-        Effect.gen(function* () {
-          const fixtures = yield* Fixtures;
-          const ens = ensforge(yield* Devnet);
-
-          for (const [id, code] of Object.entries(misbehaving)) {
-            const name = fixtures.byId(id).name;
-            const records = yield* call(() =>
-              ens.record.get({ name, texts: ["url"], addresses: ["eth", "btc"] }),
-            );
-            assert.deepStrictEqual(
-              [records.texts, records.addresses],
-              [{ url: null }, { eth: null, btc: null }],
-              id,
-            );
+            // The `eth` resolver is not extended, so it does not serve names below it.
+            assert.isNull(yield* resolverOf(nameOf("resolver.none")));
             yield* expectRejection(
-              () => ens.record.get({ name, addresses: ["eth"], strict: true }),
-              { _tag: code === "RESOLVER_NOT_FOUND" ? "NotFoundError" : "UnsupportedError", code },
+              () => ens.resolver.get({ name: nameOf("resolver.none"), strict: true }),
+              { _tag: "NotFoundError", code: "RESOLVER_NOT_FOUND" },
             );
-          }
-        }),
-      {
-        meta: {
-          cases: [
-            "M:B13",
-            "M:B14",
-            "M:B15",
-            "M:B17",
-            "R05",
-            "R06",
-            "R07",
-            "R08",
-            "R09",
-            "R13",
-            "R14",
-            "R15",
-          ],
-        },
-      },
-    );
+          }),
+        { meta: { cases: ["M:B2", "M:B9", "M:B13", "M:B14", "R02", "R05", "R11", "R12"] } },
+      );
 
-    it.effect(
-      "resolves through the exact resolver first, then a parent's wildcard",
-      () =>
+      it.effect(
+        "reads misbehaving resolvers as missing records, and fails strict reads with a typed error",
+        () =>
+          Effect.gen(function* () {
+            const fixtures = yield* Fixtures;
+            const ens = ensforge(yield* Devnet);
+
+            for (const [id, code] of Object.entries(misbehaving)) {
+              const name = fixtures.byId(id).name;
+              const records = yield* call(() =>
+                ens.record.get({ name, texts: ["url"], addresses: ["eth", "btc"] }),
+              );
+              assert.deepStrictEqual(
+                [records.texts, records.addresses],
+                [{ url: null }, { eth: null, btc: null }],
+                id,
+              );
+              yield* expectRejection(
+                () => ens.record.get({ name, addresses: ["eth"], strict: true }),
+                {
+                  _tag: code === "RESOLVER_NOT_FOUND" ? "NotFoundError" : "UnsupportedError",
+                  code,
+                },
+              );
+            }
+          }),
+        {
+          meta: {
+            cases: [
+              "M:B13",
+              "M:B14",
+              "M:B15",
+              "M:B17",
+              "R05",
+              "R06",
+              "R07",
+              "R08",
+              "R09",
+              "R13",
+              "R14",
+              "R15",
+            ],
+          },
+        },
+      );
+
+      it.effect(
+        "resolves through the exact resolver first, then a parent's wildcard",
+        () =>
+          Effect.gen(function* () {
+            const fixtures = yield* Fixtures;
+            const devnet = yield* Devnet;
+            const { accounts } = devnet;
+            const ens = ensforge(devnet);
+            const wildcard = fixtures.byId("resolver.wildcard");
+            const resolve = (name: string) =>
+              call(() => ens.resolver.resolve({ name, data: addrCall(name) }));
+
+            // The parent's resolver is called with the child's own node.
+            const child = String(wildcard.facts["wildcardChild"]);
+            assert.deepStrictEqual(yield* resolve(child), {
+              data: answer(accounts.bob),
+              resolver: servedBy(devnet, profile, wildcard.facts["resolver"]),
+            });
+            assert.strictEqual(
+              (yield* resolve(String(wildcard.facts["exact"]))).data,
+              answer(accounts.carol),
+            );
+            // A resolver without ERC-165 is still called (an old resolver).
+            assert.strictEqual(
+              (yield* resolve(fixtures.byId("resolver.no-erc165").name)).data,
+              answer(accounts.alice),
+            );
+          }),
+        { meta: { cases: ["M:B9", "R01", "R03", "R04", "R11", "H25"] } },
+      );
+
+      it.effect("links records only on PermissionedResolvers", () =>
         Effect.gen(function* () {
           const fixtures = yield* Fixtures;
-          const { accounts } = yield* Devnet;
           const ens = ensforge(yield* Devnet);
-          const wildcard = fixtures.byId("resolver.wildcard");
-          const resolve = (name: string) =>
-            call(() => ens.resolver.resolve({ name, data: addrCall(name) }));
-
-          // The parent's resolver is called with the child's own node.
-          const child = String(wildcard.facts["wildcardChild"]);
-          assert.deepStrictEqual(yield* resolve(child), {
-            data: answer(accounts.bob),
-            resolver: wildcard.facts["resolver"] as Address,
-          });
-          assert.strictEqual(
-            (yield* resolve(String(wildcard.facts["exact"]))).data,
-            answer(accounts.carol),
-          );
-          // A resolver without ERC-165 is still called (an old resolver).
-          assert.strictEqual(
-            (yield* resolve(fixtures.byId("resolver.no-erc165").name)).data,
-            answer(accounts.alice),
+          yield* expectRejection(
+            () => ens.resolver.getLink({ name: fixtures.byId("records.v1").name }),
+            { _tag: "UnsupportedError", code: "RESOLVER_PROFILE_UNSUPPORTED" },
           );
         }),
-      { meta: { cases: ["M:B9", "R01", "R03", "R04", "R11", "H25"] } },
-    );
-
-    it.effect("links records only on PermissionedResolvers", () =>
-      Effect.gen(function* () {
-        const fixtures = yield* Fixtures;
-        const ens = ensforge(yield* Devnet);
-        yield* expectRejection(
-          () => ens.resolver.getLink({ name: fixtures.byId("records.v1").name }),
-          { _tag: "UnsupportedError", code: "RESOLVER_PROFILE_UNSUPPORTED" },
-        );
-      }),
-    );
-  });
+      );
+    });
+  }
 
   onProfile("mainnet-shaped")("mainnet-shaped", (it) => {
     it.effect(

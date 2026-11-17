@@ -85,6 +85,16 @@ export const v1Reserved = (cases: readonly string[], owner: Holder): NameExpecta
   renewable: true,
 });
 
+/**
+ * An ENSv1 `.eth` name that `mainnet-shaped`'s premigration reserved: resolved through the ENSv1
+ * bridge and renewed through its reservation. A reservation ends 62 days after the ENSv1 expiry,
+ * inside the 90-day grace period, so an expired name is back to unreserved.
+ */
+export const premigrated = (expectation: NameExpectation): NameExpectation =>
+  expectation.status === "expired"
+    ? expectation
+    : { ...expectation, reachable: true, available: false, renewable: true };
+
 /** An ENSv1 name below a second-level name (or not under `.eth`): never registered or renewed. */
 export const v1Sub = (
   cases: readonly string[],

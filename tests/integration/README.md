@@ -33,6 +33,6 @@ Tag each test with the catalog cases it covers (`meta: { cases }`) and list it i
 `tests/fixtures/catalog/ledger.json`. Expected values come from fixture facts or raw contract
 reads, never from ensforge. Raw writes in a test await their receipt and run inside `isolated`.
 
-After the launch, ENSv1 names that were not premigrated no longer resolve, so ENSv1 resolver,
-record and primary-name behaviour is tested on `v1-live`. Profiles start from a state dump, so
-reads before the dump's block (e.g. before ENSv2 was deployed) are not possible.
+ENSv1 resolver, record and primary-name behaviour runs on `v1-live` and on `mainnet-shaped`, where
+premigrated names resolve through the ENSv1 bridge. Profiles start from a state dump, so reads
+before the dump's block (e.g. before ENSv2 was deployed) are not possible.
