@@ -16,6 +16,7 @@
     "@ensforge/sdk": "workspace:*",
     "@ensforge/test-devnet": "workspace:*",
     "@ensforge/test-fixtures": "workspace:*",
+    "@ensforge/test-fuzz": "workspace:*",
     "@ensforge/test-harness": "workspace:*",
     "@ensforge/test-integration": "workspace:*",
     "@types/node": "catalog:",

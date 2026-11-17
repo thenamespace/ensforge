@@ -6,27 +6,11 @@ import { bigname } from "@ensforge/sdk/indexer";
 import { Devnet } from "@ensforge/test-devnet";
 import { Fixtures } from "@ensforge/test-fixtures";
 import { ensforge } from "@ensforge/test-integration/support/chain";
-import { isAddressEqual, type Address, type Hex } from "viem";
+import type { Hex } from "viem";
 
 import { Services } from "../stack/stack.ts";
+import { nameDifferences } from "./compare.ts";
 import { indexedDifferences, indexedRecordDifferences } from "./differences.ts";
-
-const same = (a: Address | null | undefined, b: Address | null | undefined) =>
-  a === null || a === undefined || b === null || b === undefined
-    ? (a ?? null) === (b ?? null)
-    : isAddressEqual(a, b);
-
-/**
- * The indexer statuses that describe a chain status: bigname calls a registration that ended
- * `released` (also once it was unregistered), and keeps `expired` for the window before that.
- */
-const statusesFor: Readonly<Record<string, readonly string[]>> = {
-  registered: ["active"],
-  grace: ["active", "expired"],
-  expired: ["expired", "released"],
-  available: ["released", "unregistered"],
-  reserved: ["active"],
-};
 
 // Every fixture, read from the chain and from bigname at the block bigname has indexed. Where they
 // differ by design, `differences.ts` says why; the list only shrinks.
@@ -44,47 +28,8 @@ layer(Services.layer({ profile: "mainnet-shaped" }), { excludeTestServices: true
           const found: string[] = [];
 
           for (const fixture of fixtures.all) {
-            const { name } = fixture;
-            const answer = yield* Effect.result(Actions.indexer.getName(ens, { name }));
-            if (Result.isFailure(answer)) {
-              found.push(`${fixture.id}: indexer error ${answer.failure.code}`);
-              continue;
-            }
-            const indexed = answer.success;
-            const block = indexed?.asOf?.blockNumber;
-            const read = yield* Effect.result(
-              Actions.name.get(ens, {
-                name,
-                ...(block === undefined ? {} : { blockNumber: block }),
-              }),
-            );
-            if (Result.isFailure(read)) {
-              found.push(`${fixture.id}: chain error ${read.failure.code}`);
-              continue;
-            }
-            const state = read.success;
-            if (indexed === null) {
-              if (state.status !== "available") found.push(`${fixture.id}: not indexed`);
-              continue;
-            }
-            if (!(statusesFor[state.status] ?? []).includes(indexed.status ?? "")) {
-              found.push(`${fixture.id}: status ${indexed.status}, chain ${state.status}`);
-            }
-            if (!same(indexed.owner, state.owner)) {
-              found.push(`${fixture.id}: owner ${indexed.owner}, chain ${state.owner}`);
-            }
-            // While ENSv1 decides a name, its registry resolver and registrar expiry are ENSv1
-            // facts; the top-level fields describe what ENSv2 serves (the reservation).
-            const v1 = indexed.authority === "ensV1" || indexed.authority === "ensV0";
-            const resolver = v1 ? indexed.ensV1?.resolver?.address : indexed.resolver?.address;
-            if (!same(resolver, state.resolver)) {
-              found.push(`${fixture.id}: resolver ${resolver}, chain ${state.resolver}`);
-            }
-            // Subnames have no registrar lease; their NameWrapper expiry is the top-level one.
-            const expiry = (v1 ? indexed.ensV1?.expiresAt : undefined) ?? indexed.expiresAt;
-            if (state.expiry !== null && expiry !== state.expiry) {
-              found.push(`${fixture.id}: expiry ${expiry}, chain ${state.expiry}`);
-            }
+            const differences = yield* nameDifferences(ens, fixture.id, fixture.name);
+            found.push(...differences.map((difference) => difference.entry));
           }
 
           assert.deepStrictEqual(found.toSorted(), Object.keys(indexedDifferences).toSorted());

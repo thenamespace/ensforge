@@ -668,6 +668,9 @@ importers:
       '@ensforge/test-fixtures':
         specifier: workspace:*
         version: link:../fixtures
+      '@ensforge/test-fuzz':
+        specifier: workspace:*
+        version: link:../fuzz
       '@ensforge/test-harness':
         specifier: workspace:*
         version: link:../harness
