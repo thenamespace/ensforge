@@ -112,6 +112,10 @@ export const messages: { readonly [code in Code]: Template<code> } = {
     title: "Name not wrapped",
     message: `${thisName(error)} is not wrapped.`,
   }),
+  LOG_RANGE_TOO_LARGE: () => ({
+    title: "History unavailable",
+    message: "This RPC provider cannot return events for such a long period.",
+  }),
   NAME_UNREACHABLE: (error) => ({
     title: "Name unreachable",
     message: `${thisName(error)} no longer resolves: its parent moved to ENSv2 without it.`,
