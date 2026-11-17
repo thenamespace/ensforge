@@ -1,5 +1,6 @@
 import { Effect, Schema } from "effect";
 
+import { Actions } from "@ensforge/sdk/effect";
 import type { Address } from "viem";
 
 import { refused, send, succeeds, type CommandSpec } from "../model/command.ts";
@@ -47,7 +48,14 @@ export const primary: CommandSpec<typeof Primary.Type> = {
             ),
       );
 
-      const outcome = yield* send(context, actor.name, "primaryName.set", { name }, expected);
+      const outcome = yield* send(
+        context,
+        actor.name,
+        Actions.primaryName.set,
+        Actions.primaryName.setSync,
+        { name },
+        expected,
+      );
       if (!outcome.ok) return model;
 
       return { ...model, primary: { ...model.primary, [actor.address]: name } };

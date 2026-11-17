@@ -1,10 +1,11 @@
 import { assert, describe } from "@effect/vitest";
 import { Effect } from "effect";
 
-import { Devnet, profileNames } from "@ensforge/test-devnet";
+import { profileNames } from "@ensforge/test-devnet";
 import { Fixtures } from "@ensforge/test-fixtures";
-import { ensforge, onProfile } from "@ensforge/test-integration/support/chain";
-import { isAddress, type Address } from "viem";
+import { Clients } from "@ensforge/test-integration/support/clients";
+import { onProfile } from "@ensforge/test-integration/support/lane";
+import { isAddress } from "viem";
 
 import { disagreeing, readName, readPrimary } from "./compare.ts";
 import { documented } from "./documented.ts";
@@ -17,15 +18,14 @@ describe("ensforge, viem and ensjs", () => {
       it.effect("read every fixture alike, apart from documented differences", () =>
         Effect.gen(function* () {
           const fixtures = yield* Fixtures;
-          const devnet = yield* Devnet;
-          const ens = ensforge(devnet);
+          const { reader } = yield* Clients;
           const found: string[] = [];
 
           for (const fixture of fixtures.all) {
-            const readings = [...(yield* readName(ens, devnet.client, fixture.name))];
+            const readings = [...(yield* readName(reader, fixture.name))];
             const address = fixture.facts["address"];
             if (typeof address === "string" && isAddress(address)) {
-              readings.push(yield* readPrimary(ens, devnet.client, address as Address));
+              readings.push(yield* readPrimary(reader, address));
             }
             for (const reading of readings) {
               for (const library of disagreeing(reading)) {

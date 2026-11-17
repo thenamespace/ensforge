@@ -1,9 +1,7 @@
 import { assert, describe } from "@effect/vitest";
 import { Arbitrary, Effect } from "effect";
 
-import { Devnet } from "@ensforge/test-devnet";
-import { Fixtures } from "@ensforge/test-fixtures";
-import { onProfile } from "@ensforge/test-integration/support/chain";
+import { onProfile } from "@ensforge/test-integration/support/lane";
 
 import { Command } from "../commands/index.ts";
 import { makeContext } from "../model/command.ts";
@@ -16,7 +14,7 @@ describe("random sequences", () => {
   onProfile("mainnet-shaped")("mainnet-shaped", (it) => {
     it.effect(`agree with the model and keep every invariant (seed ${seed})`, () =>
       Effect.gen(function* () {
-        const context = makeContext(yield* makeWorld(yield* Devnet, yield* Fixtures));
+        const context = yield* makeContext(yield* makeWorld);
         const result = yield* Arbitrary.checkEffect(
           Arbitrary.array(Arbitrary.schema(Command), { minLength: 1, maxLength }),
           (commands) => Effect.as(runSequence(context, commands), true),

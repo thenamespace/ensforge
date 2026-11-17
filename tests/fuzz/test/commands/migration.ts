@@ -1,8 +1,11 @@
 import { Effect, Schema } from "effect";
 
+import { Name } from "@ensforge/sdk";
+import { Actions } from "@ensforge/sdk/effect";
+
 import { either, SequenceFailure, send, type CommandSpec } from "../model/command.ts";
 import { anyCode, Index, nearBoundary } from "../model/expect.ts";
-import { labelOf, pick, withV1 } from "../model/model.ts";
+import { pick, withV1 } from "../model/model.ts";
 import { resyncV2 } from "../model/sync.ts";
 import { actorOf } from "./names.ts";
 
@@ -37,11 +40,13 @@ export const migrate: CommandSpec<typeof Migrate.Type> = {
       const entry = model.v1[name];
       if (entry === undefined) return model;
       const owner = entry.wrapped ? entry.manager : entry.registrant;
+      const { label } = Name.parse(name);
 
       const outcome = yield* send(
         context,
         actor.name,
-        "migration.migrate",
+        Actions.migration.migrate,
+        Actions.migration.migrateSync,
         { names: name, resolver: "keep" },
         // Near an expiry the name may lapse between the check and the next block's simulation.
         nearBoundary(model, world) ? either(anyCode) : either(...refusals),
@@ -49,20 +54,15 @@ export const migrate: CommandSpec<typeof Migrate.Type> = {
       if (!outcome.ok) return model;
 
       // The migrated name keeps its owner and resolver; who may edit its records is left open.
-      const migrated = yield* resyncV2(
-        world,
-        withV1(model, name, { ...entry, migrated: true }),
-        labelOf(name),
-        {
-          ownResolver: entry.ownResolver,
-          // Records stay in the name's own resolver, whether or not it is set now.
-          url: entry.url,
-          addr: entry.addr,
-          // ENSv1 children stay where they are, still owned by their holder.
-          sub: entry.sub,
-        },
-      );
-      const v2 = migrated.v2[labelOf(name)];
+      const migrated = yield* resyncV2(withV1(model, name, { ...entry, migrated: true }), label, {
+        ownResolver: entry.ownResolver,
+        // Records stay in the name's own resolver, whether or not it is set now.
+        url: entry.url,
+        addr: entry.addr,
+        // ENSv1 children stay where they are, still owned by their holder.
+        sub: entry.sub,
+      });
+      const v2 = migrated.v2[label];
       if (v2 === undefined || v2.owner !== owner) {
         return yield* new SequenceFailure({
           message: `${name} migrated to ENSv2 owned by ${v2?.owner ?? "nobody"}, not its ENSv1 owner ${owner}`,

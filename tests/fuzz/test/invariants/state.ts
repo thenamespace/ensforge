@@ -1,11 +1,12 @@
 import { Effect } from "effect";
 
+import { Name } from "@ensforge/sdk";
 import { Actions, type Errors } from "@ensforge/sdk/effect";
 import { isAddressEqual, type Address } from "viem";
 
 import { forwardOf } from "../commands/primary.ts";
 import { SequenceFailure, type Context } from "../model/command.ts";
-import { labelOf, v1Resolves, v1Status, v2Status, type Model } from "../model/model.ts";
+import { v1Resolves, v1Status, v2Status, type Model } from "../model/model.ts";
 import { subLabel, v2Labels } from "../model/world.ts";
 
 const sameAddress = (actual: Address | null, expected: Address | null) =>
@@ -39,7 +40,7 @@ export const readsMatchModel = Effect.fnUntraced(function* (
   const { reader, world } = context;
   const migrated = world.v1Names.filter((name) => model.v1[name]?.migrated === true);
 
-  for (const label of [...v2Labels, ...migrated.map(labelOf)]) {
+  for (const label of [...v2Labels, ...migrated.map((name) => Name.parse(name).label)]) {
     const name = `${label}.eth`;
     const entry = model.v2[label];
     const status = v2Status(model, world.constants, label);

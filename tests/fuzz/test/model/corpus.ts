@@ -9,7 +9,7 @@ import { Command } from "../commands/index.ts";
 /** A shrunk failing sequence, replayed by `corpus.test.ts` from then on. */
 export const Entry = Schema.Struct({
   /** The seed of the run that found it. */
-  seed: Schema.Union([Schema.String, Schema.Number]),
+  seed: Schema.Union([Schema.String, Schema.Finite]),
   /** Why it failed when found. */
   failure: Schema.String,
   commands: Schema.Array(Command),

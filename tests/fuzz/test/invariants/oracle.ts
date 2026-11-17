@@ -1,47 +1,37 @@
 import { Effect } from "effect";
 
-import { Errors, type Plan } from "@ensforge/sdk";
 import { Actions } from "@ensforge/sdk/effect";
+import type { Client } from "@ensforge/test-integration/support/clients";
+import type { Address } from "viem";
 
 import { targetsOf } from "../commands/names.ts";
-import { SequenceFailure, type Client, type Context } from "../model/command.ts";
+import { SequenceFailure, type Context } from "../model/command.ts";
 import { subLabel, actorNames } from "../model/world.ts";
 import type { sampler } from "./sample.ts";
 
-type Simulate = (options: object) => Promise<Plan.Simulation>;
-
-/** Each checked operation, with the write that performs it. */
+/** Each checked operation, with a simulation of the write that performs it. */
 const operations = [
   {
     operation: "transfer",
-    path: "name.transfer",
-    options: (name: string, to: string) => ({ name, to }),
+    simulate: (ens: Client, name: string, to: Address) =>
+      Actions.name.transfer.simulate(ens, { name, to }),
   },
   {
     operation: "setResolver",
-    path: "resolver.set",
-    options: (name: string) => ({ name, resolver: null }),
+    simulate: (ens: Client, name: string) =>
+      Actions.resolver.set.simulate(ens, { name, resolver: null }),
   },
   {
     operation: "createSubname",
-    path: "subname.create",
-    options: (name: string) => ({ name: `oracle-${subLabel}.${name}` }),
+    simulate: (ens: Client, name: string) =>
+      Actions.subname.create.simulate(ens, { name: `oracle-${subLabel}.${name}` }),
   },
   {
     operation: { setRecord: "text", key: "url" },
-    path: "record.set",
-    options: (name: string) => ({ name, texts: { url: "https://oracle.example" } }),
+    simulate: (ens: Client, name: string) =>
+      Actions.record.set.simulate(ens, { name, texts: { url: "https://oracle.example" } }),
   },
 ] as const;
-
-const simulateOf = (client: Client, path: string) => {
-  const [domain = "", name = ""] = path.split(".");
-  const write = (client as unknown as Record<string, Record<string, { simulate: Simulate }>>)[
-    domain
-  ]?.[name];
-  if (write === undefined) throw new Error(`${path} is not a write`);
-  return write.simulate;
-};
 
 /**
  * The permission oracle: for a sampled name, operation and account, `permission.check` allows the
@@ -56,27 +46,23 @@ export const permissionOracle = Effect.fnUntraced(function* (
   const name = choose(targetsOf(world));
   const actor = choose(actorNames);
   const other = world.actors[choose(actorNames.filter((candidate) => candidate !== actor))];
-  const { operation, path, options } = choose(operations);
+  const { operation, simulate } = choose(operations);
   const account = world.actors[actor];
 
   const check = yield* Actions.permission.check(context.reader, { name, operation, account });
   // `null`: the engine cannot tell (e.g. an unknown resolver); nothing to compare.
   if (check.allowed === null) return;
-  const simulated = yield* Effect.promise(() =>
-    simulateOf(
-      context.as[actor],
-      path,
-    )(options(name, other)).then(
-      (simulation) => ({
-        ok: simulation.ok,
-        code: simulation.steps.find((step) => !step.ok)?.error?.code,
-      }),
-      (error: unknown) => ({ ok: false, code: Errors.is(error) ? error.code : String(error) }),
-    ),
+  const simulated = yield* simulate(context.as[actor], name, other).pipe(
+    Effect.map((simulation) => ({
+      ok: simulation.ok,
+      code: simulation.steps.find((step) => !step.ok)?.error?.code,
+    })),
+    Effect.catch((error) => Effect.succeed({ ok: false, code: error.code })),
+    Effect.catchDefect((defect) => Effect.succeed({ ok: false, code: String(defect) })),
   );
   if (check.allowed !== simulated.ok) {
     return yield* new SequenceFailure({
-      message: `permission.check(${name}, ${JSON.stringify(operation)}, ${actor}) says ${check.allowed ? "allowed" : `not allowed (${JSON.stringify(check.missing)})`}, but ${path}.simulate ${simulated.ok ? "succeeds" : `fails ${simulated.code}`}`,
+      message: `permission.check(${name}, ${JSON.stringify(operation)}, ${actor}) says ${check.allowed ? "allowed" : `not allowed (${JSON.stringify(check.missing)})`}, but simulating it ${simulated.ok ? "succeeds" : `fails ${simulated.code}`}`,
     });
   }
 });

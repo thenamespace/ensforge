@@ -1,13 +1,13 @@
 import { Effect } from "effect";
 
-import { isolated } from "@ensforge/test-integration/support/chain";
+import { Chain } from "@ensforge/test-devnet";
+import { mintUsdc } from "@ensforge/test-integration/support/contracts";
 
 import { specOf, type Command } from "../commands/index.ts";
 import { invariants } from "../invariants/index.ts";
 import { SequenceFailure, type Context } from "./command.ts";
 import type { Model } from "./model.ts";
 import { initialModel } from "./sync.ts";
-import { chainTime, fund } from "./world.ts";
 
 const atStep = (step: number, command: Command) => (failure: SequenceFailure) =>
   new SequenceFailure({
@@ -24,19 +24,35 @@ export const applySequence = Effect.fnUntraced(function* (
   commands: readonly Command[],
   from?: Model,
 ) {
-  yield* fund(context.world);
+  const chain = yield* Chain;
+  // Registrations pay in the payment token.
+  yield* Effect.forEach(
+    Object.values(context.world.actors),
+    (actor) => mintUsdc(actor, 10n ** 18n),
+    {
+      discard: true,
+    },
+  ).pipe(Effect.orDie);
   let model = from ?? (yield* initialModel(context.world));
 
   for (const [step, command] of commands.entries()) {
     const next = yield* specOf(command)
       .run(context, model, command)
       .pipe(Effect.mapError(atStep(step, command)));
-    model = { ...next, now: yield* chainTime(context.world) };
+    model = { ...next, now: yield* Effect.orDie(chain.now) };
     yield* invariants(context, model, step, command).pipe(Effect.mapError(atStep(step, command)));
   }
   return model;
 });
 
 /** Runs `commands` with {@link applySequence} from the profile's state, then reverts the chain. */
-export const runSequence = (context: Context, commands: readonly Command[]) =>
-  isolated(context.world.devnet, Effect.asVoid(applySequence(context, commands)));
+export const runSequence = Effect.fnUntraced(function* (
+  context: Context,
+  commands: readonly Command[],
+) {
+  const chain = yield* Chain;
+  // A failed snapshot is the devnet's fault, not a finding to shrink.
+  yield* chain
+    .isolated(applySequence(context, commands))
+    .pipe(Effect.catchTag("ChainError", (error) => Effect.die(error)));
+});

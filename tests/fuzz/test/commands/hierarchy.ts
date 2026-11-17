@@ -1,5 +1,6 @@
 import { Effect, Schema } from "effect";
 
+import { Actions } from "@ensforge/sdk/effect";
 import type { Address } from "viem";
 
 import {
@@ -92,13 +93,23 @@ export const subname: CommandSpec<typeof Subname.Type> = {
       const name = `${subLabel}.${target.name}`;
       const expected = expectation(model, world, target, actor.address, command.remove);
 
-      const outcome = yield* send(
-        context,
-        actor.name,
-        command.remove ? "subname.remove" : "subname.create",
-        { name },
-        expected,
-      );
+      const outcome = command.remove
+        ? yield* send(
+            context,
+            actor.name,
+            Actions.subname.remove,
+            Actions.subname.removeSync,
+            { name },
+            expected,
+          )
+        : yield* send(
+            context,
+            actor.name,
+            Actions.subname.create,
+            Actions.subname.createSync,
+            { name },
+            expected,
+          );
       if (!outcome.ok) return model;
 
       const sub = command.remove ? null : actor.address;

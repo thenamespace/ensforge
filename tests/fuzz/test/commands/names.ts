@@ -1,5 +1,8 @@
 import { Effect, Schema } from "effect";
 
+import { Duration } from "@ensforge/sdk";
+import { Actions } from "@ensforge/sdk/effect";
+import { Chain } from "@ensforge/test-devnet";
 import type { Address } from "viem";
 
 import {
@@ -23,16 +26,7 @@ import {
   type Model,
 } from "../model/model.ts";
 import { resyncV1 } from "../model/sync.ts";
-import {
-  actorNames,
-  readV2,
-  travelTo,
-  v2Labels,
-  type ActorName,
-  type World,
-} from "../model/world.ts";
-
-const year = 31_536_000n;
+import { actorNames, readV2, v2Labels, type ActorName, type World } from "../model/world.ts";
 
 export const Register = Schema.Struct({
   kind: Schema.Literal("register"),
@@ -98,10 +92,11 @@ export const register: CommandSpec<typeof Register.Type> = {
       const outcome = yield* send(
         context,
         actor.name,
-        "registration.register",
+        Actions.registration.register,
+        Actions.registration.registerSync,
         {
           names: `${label}.eth`,
-          duration: BigInt(command.years) * year,
+          duration: Duration.years(command.years),
           records: {
             addresses: { eth: actor.address },
             ...(url === null ? {} : { texts: { url } }),
@@ -112,7 +107,7 @@ export const register: CommandSpec<typeof Register.Type> = {
       if (!outcome.ok) return model;
 
       // The expiry and the deployed resolver are chosen by the chain.
-      const entry = yield* readV2(world, label);
+      const entry = yield* readV2(label);
       return withV2(model, label, {
         owner: actor.address,
         expiry: entry.expiry,
@@ -133,7 +128,7 @@ export const renew: CommandSpec<typeof Renew.Type> = {
     Effect.gen(function* () {
       const { world } = context;
       const label = pick(v2Labels, command.name) as string;
-      const duration = BigInt(command.years) * year;
+      const duration = Duration.years(command.years);
       const expected = stable(model, (at) =>
         isFree(v2Status(at, world.constants, label)) ? refused("NAME_NOT_RENEWABLE") : succeeds,
       );
@@ -141,7 +136,8 @@ export const renew: CommandSpec<typeof Renew.Type> = {
       const outcome = yield* send(
         context,
         actorOf(world, command.actor).name,
-        "registration.renew",
+        Actions.registration.renew,
+        Actions.registration.renewSync,
         { names: `${label}.eth`, duration },
         expected,
       );
@@ -216,7 +212,8 @@ export const transfer: CommandSpec<typeof Transfer.Type> = {
       const outcome = yield* send(
         context,
         actor.name,
-        "name.transfer",
+        Actions.name.transfer,
+        Actions.name.transferSync,
         { name: target.name, to },
         expected,
       );
@@ -224,7 +221,7 @@ export const transfer: CommandSpec<typeof Transfer.Type> = {
 
       if (target.protocol === "v1") {
         // Where the model does not decide, the chain's state is taken as the outcome.
-        if (!("ok" in expected)) return yield* resyncV1(world, model, target.name);
+        if (!("ok" in expected)) return yield* resyncV1(model, target.name);
         const { entry } = target;
         return withV1(
           model,
@@ -256,7 +253,10 @@ export const wait: CommandSpec<typeof Wait.Type> = {
       // Time only moves forward; a boundary already passed becomes a day's wait.
       const timestamp = moment > model.now ? moment : model.now + 86_400n;
 
-      yield* travelTo(world, timestamp);
+      const chain = yield* Chain;
+      yield* chain
+        .setNextBlockTimestamp(timestamp)
+        .pipe(Effect.andThen(chain.mine()), Effect.orDie);
       return { ...model, now: timestamp };
     }),
 };

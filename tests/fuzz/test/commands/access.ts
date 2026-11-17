@@ -1,5 +1,8 @@
 import { Effect, Schema } from "effect";
 
+import { Actions } from "@ensforge/sdk/effect";
+import { Devnet } from "@ensforge/test-devnet";
+
 import { either, refused, send, succeeds, type CommandSpec } from "../model/command.ts";
 import { Index, stable } from "../model/expect.ts";
 import { isOperator, pick, v2Status, withV2 } from "../model/model.ts";
@@ -51,18 +54,24 @@ export const role: CommandSpec<typeof Role.Type> = {
           : refused("CANNOT_GRANT_ROLES", "MISSING_ROLES", "NOT_OWNER");
       });
 
-      const outcome = yield* send(
-        context,
-        actor.name,
-        command.grant ? "role.grant" : "role.revoke",
-        {
-          ...(command.grant ? { grantee } : { holder: grantee }),
-          roles: ["setResolver"],
-          target: "registry",
-          name: `${label}.eth`,
-        },
-        expected,
-      );
+      const options = { roles: ["setResolver"], target: "registry", name: `${label}.eth` } as const;
+      const outcome = command.grant
+        ? yield* send(
+            context,
+            actor.name,
+            Actions.role.grant,
+            Actions.role.grantSync,
+            { ...options, grantee },
+            expected,
+          )
+        : yield* send(
+            context,
+            actor.name,
+            Actions.role.revoke,
+            Actions.role.revokeSync,
+            { ...options, holder: grantee },
+            expected,
+          );
       if (!outcome.ok || entry === undefined) return model;
       // A grant on a lapsed name's old token is not the model's concern.
       if (v2Status(model, world.constants, label) !== "registered") return model;
@@ -78,6 +87,7 @@ export const role: CommandSpec<typeof Role.Type> = {
 export const operator: CommandSpec<typeof Operator.Type> = {
   run: (context, model, command) =>
     Effect.gen(function* () {
+      const devnet = yield* Devnet;
       const actor = actorOf(context.world, command.actor);
       const operatorAddress = actorOf(context.world, command.operator).address;
       if (operatorAddress === actor.address) return model;
@@ -85,11 +95,12 @@ export const operator: CommandSpec<typeof Operator.Type> = {
       const outcome = yield* send(
         context,
         actor.name,
-        "approval.setOperator",
+        Actions.approval.setOperator,
+        Actions.approval.setOperatorSync,
         {
           operator: operatorAddress,
           approved: command.approved,
-          contract: context.world.devnet.contracts["v2.ethRegistry"],
+          contract: devnet.contract("v2.ethRegistry"),
         },
         succeeds,
       );

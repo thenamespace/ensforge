@@ -1,5 +1,7 @@
 import { Effect, Schema } from "effect";
 
+import { Actions } from "@ensforge/sdk/effect";
+
 import { either, refused, send, succeeds, type CommandSpec } from "../model/command.ts";
 import { Index, stable } from "../model/expect.ts";
 import { burned, isOperator, pick, targetOf, v1Status, withV1, withV2 } from "../model/model.ts";
@@ -54,7 +56,8 @@ export const setText: CommandSpec<typeof SetText.Type> = {
       const outcome = yield* send(
         context,
         actor.name,
-        "record.set",
+        Actions.record.set,
+        Actions.record.setSync,
         { name: target.name, texts: { url } },
         expected,
       );
@@ -108,14 +111,15 @@ export const setResolver: CommandSpec<typeof SetResolver.Type> = {
       const outcome = yield* send(
         context,
         actor.name,
-        "resolver.set",
+        Actions.resolver.set,
+        Actions.resolver.setSync,
         { name: target.name, resolver },
         expected,
       );
       if (!outcome.ok) return model;
 
       if (target.protocol === "v1") {
-        if (!("ok" in expected)) return yield* resyncV1(world, model, target.name);
+        if (!("ok" in expected)) return yield* resyncV1(model, target.name);
         return withV1(model, target.name, { ...target.entry, resolver });
       }
       const entry = model.v2[target.label];

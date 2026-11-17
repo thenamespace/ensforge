@@ -15,8 +15,8 @@ export const librariesAgree = Effect.fnUntraced(function* (
   const name = choose(targetsOf(world));
   const actor = world.actors[choose(actorNames)];
   const readings = [
-    ...(yield* readName(context.reader, world.devnet.client, name)),
-    yield* readPrimary(context.reader, world.devnet.client, actor),
+    ...(yield* readName(context.reader, name)),
+    yield* readPrimary(context.reader, actor),
   ];
 
   for (const reading of readings) {

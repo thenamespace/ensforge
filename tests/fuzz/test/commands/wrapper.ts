@@ -1,6 +1,7 @@
 import { Effect, Schema } from "effect";
 
 import { nameWrapperFuses } from "@ensforge/contracts/v1";
+import { Actions } from "@ensforge/sdk/effect";
 import type { Address } from "viem";
 
 import {
@@ -91,35 +92,49 @@ export const wrapper: CommandSpec<typeof Wrapper.Type> = {
       const actor = actorOf(world, command.actor);
       const fuse = pick(fuses, command.fuse) as (typeof fuses)[number];
       const expected = expectation(model, world, name, actor.address, command.action, fuse);
-      const options =
-        command.action === "burn" ? { name, fuses: [fuse] } : { name, owner: actor.address };
 
-      const outcome = yield* send(
-        context,
-        actor.name,
+      const outcome =
         command.action === "wrap"
-          ? "wrapper.wrap"
+          ? yield* send(
+              context,
+              actor.name,
+              Actions.wrapper.wrap,
+              Actions.wrapper.wrapSync,
+              { name, owner: actor.address },
+              expected,
+            )
           : command.action === "unwrap"
-            ? "wrapper.unwrap"
-            : "wrapper.setFuses",
-        options,
-        expected,
-      );
+            ? yield* send(
+                context,
+                actor.name,
+                Actions.wrapper.unwrap,
+                Actions.wrapper.unwrapSync,
+                { name, owner: actor.address },
+                expected,
+              )
+            : yield* send(
+                context,
+                actor.name,
+                Actions.wrapper.setFuses,
+                Actions.wrapper.setFusesSync,
+                { name, fuses: [fuse] },
+                expected,
+              );
       const entry = model.v1[name];
       if (!outcome.ok || entry === undefined) return model;
-      if (!("ok" in expected)) return yield* resyncV1(world, model, name);
+      if (!("ok" in expected)) return yield* resyncV1(model, name);
 
       if (command.action === "burn") {
         return withV1(model, name, { ...entry, fuses: entry.fuses | nameWrapperFuses[fuse] });
       }
       // Wrapping sets the fuses the NameWrapper chooses for a `.eth` name.
-      const chain = yield* readV1(world, name);
+      const state = yield* readV1(name);
       return withV1(model, name, {
         ...entry,
         wrapped: command.action === "wrap",
         manager: actor.address,
-        registrant: command.action === "wrap" ? chain.registrant : actor.address,
-        fuses: chain.fuses,
+        registrant: command.action === "wrap" ? state.registrant : actor.address,
+        fuses: state.fuses,
       });
     }),
 };

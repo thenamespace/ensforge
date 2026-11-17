@@ -1,9 +1,9 @@
 import { Effect } from "effect";
 
 import { Actions } from "@ensforge/sdk/effect";
-import { getEnsText } from "viem/actions";
 
 import { targetsOf } from "../commands/names.ts";
+import { viem } from "../differential/libraries.ts";
 import { SequenceFailure, type Context } from "../model/command.ts";
 import { targetOf, v1Resolves, v2Status, type Model } from "../model/model.ts";
 import { readUrl } from "../model/sync.ts";
@@ -24,15 +24,10 @@ export const resolutionAgrees = Effect.fnUntraced(function* (
     Effect.catch((error) => Effect.succeed(`error ${error.code}`)),
     Effect.catchDefect((defect) => Effect.succeed(`untyped ${String(defect)}`)),
   );
-  const viem = yield* Effect.promise(() =>
-    getEnsText(world.devnet.client, { name, key: "url" }).then(
-      (url) => url,
-      () => null,
-    ),
-  );
-  if (ensforge !== viem) {
+  const universalResolver = yield* viem.text(name, "url").pipe(Effect.orElseSucceed(() => null));
+  if (ensforge !== universalResolver) {
     return yield* new SequenceFailure({
-      message: `${name}: ensforge resolves url ${String(ensforge)}, viem's Universal Resolver ${String(viem)}`,
+      message: `${name}: ensforge resolves url ${String(ensforge)}, viem's Universal Resolver ${String(universalResolver)}`,
     });
   }
 
@@ -44,7 +39,7 @@ export const resolutionAgrees = Effect.fnUntraced(function* (
   const resolver =
     target.protocol === "v1" ? target.entry.resolver : (model.v2[target.label]?.resolver ?? null);
   if (!resolves || resolver === null) return;
-  const direct = yield* readUrl(world, resolver, name);
+  const direct = yield* readUrl(resolver, name);
   if (ensforge !== direct) {
     return yield* new SequenceFailure({
       message: `${name}: ensforge resolves url ${String(ensforge)}, its resolver holds ${String(direct)}`,

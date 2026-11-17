@@ -1,4 +1,5 @@
 import { nameWrapperFuses } from "@ensforge/contracts/v1";
+import { Name } from "@ensforge/sdk";
 import type { Address } from "viem";
 
 import type { Constants, World } from "./world.ts";
@@ -91,8 +92,6 @@ export const burned = (entry: V1Name, fuse: keyof typeof nameWrapperFuses) =>
 export const isOperator = (model: Model, owner: Address, actor: Address) =>
   model.operators[owner]?.includes(actor) ?? false;
 
-export const labelOf = (name: string) => name.slice(0, -".eth".length);
-
 /** Where a target name lives now: on ENSv1 (until migrated) or as an ENSv2 label. */
 export type Target =
   | { readonly protocol: "v1"; readonly name: string; readonly entry: V1Name }
@@ -102,7 +101,7 @@ export const targetOf = (model: Model, world: World, name: string): Target => {
   const entry = model.v1[name];
   return world.v1Names.includes(name) && entry !== undefined && !entry.migrated
     ? { protocol: "v1", name, entry }
-    : { protocol: "v2", name, label: labelOf(name) };
+    : { protocol: "v2", name, label: Name.parse(name).label };
 };
 
 export const withV2 = (model: Model, label: string, entry: V2Name | undefined): Model => ({

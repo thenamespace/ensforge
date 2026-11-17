@@ -2,26 +2,15 @@ import { describe } from "@effect/vitest";
 import { Arbitrary, Effect, Schema } from "effect";
 
 import { Abis } from "@ensforge/contracts";
+import { Duration } from "@ensforge/sdk";
 import { Actions } from "@ensforge/sdk/effect";
-import { Devnet } from "@ensforge/test-devnet";
+import { Chain, Devnet } from "@ensforge/test-devnet";
 import { Arbitraries } from "@ensforge/test-harness";
-import { ensforge, onProfile } from "@ensforge/test-integration/support/chain";
+import { Clients } from "@ensforge/test-integration/support/clients";
+import { onProfile } from "@ensforge/test-integration/support/lane";
 import { decodeFunctionData, type Abi, type Address, type Hex } from "viem";
 
 import { holds } from "./check.ts";
-
-const year = 31_536_000n;
-
-const registrations = Arbitrary.all({
-  // Labels short enough to be refused are not the point here.
-  label: Arbitrary.map(Arbitraries.asciiLabel, (label) => `reg${label}`),
-  owner: Arbitraries.address,
-  secret: Arbitraries.bytes32,
-  referrer: Arbitraries.bytes32,
-  years: Arbitrary.schema(Schema.Literals([1n, 2n, 3n])),
-});
-
-const abi = [...Abis.v2.ethRegistrar, ...Abis.v2.verifiableFactory, ...Abis.shared.erc20] as Abi;
 
 describe("registration plans against the contracts", () => {
   onProfile("mainnet-shaped")("mainnet-shaped", (it) => {
@@ -31,25 +20,29 @@ describe("registration plans against the contracts", () => {
       "commitments and resolver addresses agree with ETHRegistrar and VerifiableFactory",
       () =>
         Effect.gen(function* () {
-          const devnet = yield* Devnet;
-          const signer = devnet.accounts.alice;
-          const ens = ensforge(devnet, { account: signer });
-          const read = (address: Address, functionName: string, args: readonly unknown[]) =>
-            Effect.promise(
-              () =>
-                devnet.client.readContract({
-                  address,
-                  abi,
-                  functionName,
-                  args,
-                } as never) as Promise<unknown>,
-            );
+          const signer = (yield* Devnet).accounts.alice;
+          const chain = yield* Chain;
+          const ens = (yield* Clients).make({ account: signer });
+          // Every contract a registration plan calls, to decode its calls.
+          const abi = [
+            ...Abis.v2.ethRegistrar,
+            ...Abis.v2.verifiableFactory,
+            ...Abis.shared.erc20,
+          ] as Abi;
+          const registrations = Arbitrary.all({
+            // Labels short enough to be refused are not the point here.
+            label: Arbitrary.map(Arbitraries.asciiLabel, (label) => `reg${label}`),
+            owner: Arbitraries.address,
+            secret: Arbitraries.bytes32,
+            referrer: Arbitraries.bytes32,
+            years: Arbitrary.schema(Schema.Literals([1, 2, 3])),
+          });
 
           yield* holds(registrations, (input) =>
             Effect.gen(function* () {
               const plan = yield* Actions.registration.register.prepare(ens, {
                 names: `${input.label}.eth`,
-                duration: input.years * year,
+                duration: Duration.years(input.years),
                 owner: input.owner,
                 secret: input.secret,
                 referrer: input.referrer,
@@ -80,16 +73,18 @@ describe("registration plans against the contracts", () => {
                 Address,
                 Hex,
               ];
-              const predicted = yield* read(deploy.to, "predictProxyAddress", [signer, salt]);
-              const commitment = yield* read(register.to, "makeCommitment", [
-                label,
-                owner,
-                secret,
-                subregistry,
-                resolver,
-                duration,
-                referrer,
-              ]);
+              const predicted = yield* chain.read({
+                address: deploy.to,
+                abi: Abis.v2.verifiableFactory,
+                functionName: "predictProxyAddress",
+                args: [signer, salt],
+              });
+              const commitment = yield* chain.read({
+                address: register.to,
+                abi: Abis.v2.ethRegistrar,
+                functionName: "makeCommitment",
+                args: [label, owner, secret, subregistry, resolver, duration, referrer],
+              });
               return predicted === resolver && commitment === commit.decoded.args?.[0];
             }),
           );
