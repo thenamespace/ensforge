@@ -1,19 +1,12 @@
-import { Effect } from "effect";
+import { Effect, type FileSystem } from "effect";
 
 import { Abis, Roles } from "@ensforge/contracts";
 import { permissionedResolverResource } from "@ensforge/contracts/v2";
 import type { StepContext } from "@ensforge/test-devnet";
-import {
-  encodeFunctionData,
-  hexToBigInt,
-  namehash,
-  stringToHex,
-  zeroAddress,
-  type Address,
-} from "viem";
+import { encodeFunctionData, namehash, stringToHex, zeroAddress, type Address } from "viem";
 
 import { expectState } from "../builders/check.ts";
-import { dnsEncode, labelId } from "../builders/names.ts";
+import { dnsEncode } from "../builders/names.ts";
 import { resolveText, setV1Records, setV2Records, type Records } from "../builders/records.ts";
 import { registerV1 } from "../builders/v1.ts";
 import { ownedResolver, registerV2 } from "../builders/v2.ts";
@@ -30,7 +23,7 @@ const v1WithRecords = (
   label: string,
   cases: readonly string[],
   tags: Record<string, string>,
-  records: (c: StepContext) => Effect.Effect<Records, never, never> | Records,
+  records: (c: StepContext) => Effect.Effect<Records, never, FileSystem.FileSystem> | Records,
   owner: "alice" | "bob" = "alice",
 ): Fixture => ({
   id,
@@ -71,7 +64,7 @@ const v1WithRecords = (
 const avatar = (
   kind: string,
   cases: readonly string[],
-  uri: (c: StepContext) => Effect.Effect<string>,
+  uri: (c: StepContext) => Effect.Effect<string, never, FileSystem.FileSystem>,
 ) =>
   v1WithRecords(
     `records.avatar.${kind}`,
@@ -87,9 +80,11 @@ const avatar = (
       ),
   );
 
-// Avatars that point at tokens: the `.eth` registrar (ERC-721) and the NameWrapper (ERC-1155).
-const tokenUri = (c: StepContext, standard: "erc721" | "erc1155", key: string, id: bigint) =>
-  c.address(key).pipe(
+// An avatar pointing at token `id` of `mock.avatarToken`, minted to alice: it is owned when the
+// name's ETH address is hers.
+const tokenAvatar = (c: StepContext, standard: "erc721" | "erc1155", id: bigint) =>
+  c.write("mock.avatarToken", "mint", [c.accounts.alice, id]).pipe(
+    Effect.andThen(c.address("mock.avatarToken")),
     Effect.map((contract) => `eip155:31337/${standard}:${contract.toLowerCase()}/${id}`),
     Effect.orDie,
   );
@@ -138,12 +133,8 @@ export const records: readonly Fixture[] = [
     texts: { description: hugeText },
   })),
   avatar("https", ["K33"], () => Effect.succeed("https://ensforge.com/avatar.png")),
-  avatar("erc721-owned", ["K34"], (c) =>
-    tokenUri(c, "erc721", "v1.baseRegistrar", labelId("v1-plain")),
-  ),
-  avatar("erc1155", ["K35"], (c) =>
-    tokenUri(c, "erc1155", "v1.nameWrapper", hexToBigInt(namehash("w-plain.eth"))),
-  ),
+  avatar("erc721-owned", ["K34"], (c) => tokenAvatar(c, "erc721", 1n)),
+  avatar("erc1155", ["K35"], (c) => tokenAvatar(c, "erc1155", 2n)),
   avatar("data-svg", ["K36"], () =>
     Effect.succeed(
       `data:image/svg+xml;base64,${Buffer.from('<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script></svg>').toString("base64")}`,
@@ -157,7 +148,7 @@ export const records: readonly Fixture[] = [
     ["K34"],
     { records: "avatar", avatar: "erc721-not-owned" },
     (c) =>
-      tokenUri(c, "erc721", "v1.baseRegistrar", labelId("v1-plain")).pipe(
+      tokenAvatar(c, "erc721", 3n).pipe(
         Effect.map((value) => ({
           texts: { avatar: value },
           addresses: [[coins.eth, c.accounts.bob]],
