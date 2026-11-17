@@ -1,7 +1,7 @@
 import { assert, describe, it } from "@effect/vitest";
 
 import { Abis, Roles } from "@ensforge/contracts";
-import { encodeErrorResult, getAddress, type AbiParameter, type Hex } from "viem";
+import { encodeErrorResult, getAddress, parseAbi, type AbiParameter, type Hex } from "viem";
 
 import { UnauthorizedError } from "#/errors/classes/index";
 import { fromRevert } from "#/errors/translate/revert";
@@ -282,5 +282,30 @@ describe("OffchainLookup reverts", () => {
     assert.include(raw, { _tag: "GatewayError", code: "OFFCHAIN_LOOKUP_INVALID" });
     assert.include(wrapped, { _tag: "GatewayError", code: "OFFCHAIN_LOOKUP_INVALID" });
     assert.strictEqual(wrapped.context.registry, registry);
+  });
+});
+
+const requireRevert = (message: string): Hex =>
+  encodeErrorResult({
+    abi: parseAbi(["error Error(string)"]),
+    errorName: "Error",
+    args: [message],
+  });
+
+describe("ENSv1 require messages", () => {
+  it.each([
+    ["ERC721: approve caller is not token owner or approved for all", "NOT_OWNER"],
+    [
+      "ReverseRegistrar: Caller is not a controller or authorised by address or the address itself",
+      "NOT_APPROVED",
+    ],
+  ])("%s → %s", (message, code) => {
+    const error = fromRevert({ data: requireRevert(message) }, {});
+    assert.include(error, { _tag: "UnauthorizedError", code });
+  });
+
+  it("leaves other messages as a contract revert", () => {
+    const error = fromRevert({ data: requireRevert("something else") }, {});
+    assert.include(error, { _tag: "ContractRevertError", code: "CONTRACT_REVERTED" });
   });
 });

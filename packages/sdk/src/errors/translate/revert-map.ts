@@ -174,3 +174,16 @@ export const revertMap: Readonly<Record<string, Mapper>> = {
   SignatureNotValidYet: dnssecProofFailed,
   SignatureTypeMismatch: dnssecProofFailed,
 };
+
+/**
+ * `require` messages of ENSv1 contracts (`Error(string)` reverts) → ensforge error, for the checks
+ * those contracts make without custom errors.
+ */
+export const requireMap: Readonly<Record<string, Mapper>> = {
+  // NameWrapper.approve: only the token holder or an operator may approve.
+  "ERC721: approve caller is not token owner or approved for all": notOwner,
+  // ReverseRegistrar.setNameForAddr: the address itself, its operator, a controller, or (for a
+  // contract) its Ownable owner.
+  "ReverseRegistrar: Caller is not a controller or authorised by address or the address itself":
+    notApproved,
+};

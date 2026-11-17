@@ -3,7 +3,7 @@ import { decodeErrorResult, isHex, type Address, type Hex } from "viem";
 
 import { ContractRevertError, UnsupportedError } from "../classes/index.js";
 import type { EnsforgeError } from "../EnsforgeError.js";
-import { revertMap } from "./revert-map.js";
+import { requireMap, revertMap } from "./revert-map.js";
 
 /** A contract revert, decoded by viem or still raw. */
 export type Revert = {
@@ -58,6 +58,11 @@ export const fromRevert = (
     const inner = message.slice(wrappedErrorPrefix.length - 2);
     if (message.startsWith(wrappedErrorPrefix) && isHex(inner) && inner.length % 2 === 0) {
       return fromRevert({ data: inner }, context, depth + 1);
+    }
+    const required = requireMap[message];
+    if (required !== undefined) {
+      const revertContext = { ...context, revert: { errorName, data: decoded.data } };
+      return required(args, revertContext).withContext(revertContext);
     }
   }
 
