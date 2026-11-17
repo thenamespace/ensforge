@@ -1,4 +1,4 @@
-import type { Address, Hex } from "viem";
+import { isAddressEqual, type Address, type Hex } from "viem";
 
 import {
   CommitmentError,
@@ -146,8 +146,13 @@ export const revertMap: Readonly<Record<string, Mapper>> = {
       details: message === undefined || message === "" ? [] : [`Gateway said: ${String(message)}`],
     }),
   InvalidOffchainLookup: () => new GatewayError({ code: "OFFCHAIN_LOOKUP_INVALID" }),
-  // Only surfaces as a revert when the client disables CCIP-Read; viem follows it otherwise.
-  OffchainLookup: () => new ConfigError({ code: "CCIP_READ_DISABLED" }),
+  // EIP-3668 clients follow only a lookup whose sender is the contract they called, so one from
+  // that contract means CCIP-Read is disabled; any other sender (e.g. a registry reverting under
+  // the Universal Resolver) is a lookup no client may follow.
+  OffchainLookup: ([sender], context) =>
+    context.contract !== undefined && !isAddressEqual(sender as Address, context.contract)
+      ? new GatewayError({ code: "OFFCHAIN_LOOKUP_INVALID" })
+      : new ConfigError({ code: "CCIP_READ_DISABLED" }),
   InvalidBatchGatewayResponse: () => new GatewayError({ code: "GATEWAY_RESPONSE_INVALID" }),
   UnsafeBatchGatewayResponse: () => new GatewayError({ code: "GATEWAY_RESPONSE_INVALID" }),
   NameNotLocked: () => new MigrationError({ code: "NAME_NOT_LOCKED" }),

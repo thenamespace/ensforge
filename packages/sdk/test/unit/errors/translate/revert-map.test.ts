@@ -254,3 +254,32 @@ describe("revertMap fields", () => {
     },
   );
 });
+
+const lookupFrom = (sender: Hex) =>
+  encode("OffchainLookup", [sender, [], "0x", "0x12345678", "0x"]);
+
+describe("OffchainLookup reverts", () => {
+  const universalResolver = getAddress("0x00000000000000000000000000000000000000b0");
+  const registry = getAddress("0x00000000000000000000000000000000000000e7");
+
+  it("means CCIP-Read is disabled when the called contract asked", () => {
+    const error = fromRevert(
+      { data: lookupFrom(universalResolver) },
+      { contract: universalResolver },
+    );
+    assert.include(error, { _tag: "ConfigError", code: "CCIP_READ_DISABLED" });
+  });
+
+  // A registry's lookup under the Universal Resolver: raw on devnets, wrapped on mainnet.
+  it("is an invalid lookup when another contract asked", () => {
+    const raw = fromRevert({ data: lookupFrom(registry) }, { contract: universalResolver });
+    const wrapped = fromRevert(
+      { data: encode("ResolutionError", [registry, lookupFrom(registry)]) },
+      { contract: universalResolver },
+    );
+
+    assert.include(raw, { _tag: "GatewayError", code: "OFFCHAIN_LOOKUP_INVALID" });
+    assert.include(wrapped, { _tag: "GatewayError", code: "OFFCHAIN_LOOKUP_INVALID" });
+    assert.strictEqual(wrapped.context.registry, registry);
+  });
+});
