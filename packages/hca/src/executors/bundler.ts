@@ -117,6 +117,23 @@ const hcaAccount = (request: ExecutionRequest, context: Write.Via.Context) => {
   });
 };
 
+// Errors thrown by the paymaster client itself. Bundler errors print the UserOperation,
+// `paymaster…` fields included, so their message cannot tell the two apart.
+const paymasterErrors = new WeakSet<object>();
+
+const markPaymasterError = (cause: unknown): never => {
+  if (typeof cause === "object" && cause !== null) paymasterErrors.add(cause);
+  throw cause;
+};
+
+const isPaymasterError = (error: unknown): boolean => {
+  for (let current = error; typeof current === "object" && current !== null;) {
+    if (paymasterErrors.has(current)) return true;
+    current = (current as { readonly cause?: unknown }).cause;
+  }
+  return false;
+};
+
 /**
  * Runs HCA executions as owner-signed ERC-4337 UserOperations through any bundler, optionally
  * sponsored by a paymaster. Experimental: the HCA's bundler path has no production proof
@@ -158,10 +175,20 @@ const hcaAccount = (request: ExecutionRequest, context: Write.Via.Context) => {
  */
 export const bundler = (options: BundlerOptions): Executor => {
   const id = options.id ?? "bundler";
-  const paymaster =
+  const paymasterClient =
     options.paymaster === undefined
       ? undefined
       : createPaymasterClient({ transport: http(options.paymaster) });
+  const paymaster =
+    paymasterClient === undefined
+      ? undefined
+      : {
+          getPaymasterStubData: (
+            parameters: Parameters<typeof paymasterClient.getPaymasterStubData>[0],
+          ) => paymasterClient.getPaymasterStubData(parameters).catch(markPaymasterError),
+          getPaymasterData: (parameters: Parameters<typeof paymasterClient.getPaymasterData>[0]) =>
+            paymasterClient.getPaymasterData(parameters).catch(markPaymasterError),
+        };
   const clientFor = (context: Write.Via.Context) =>
     createBundlerClient({
       client: context.publicClient,
@@ -190,12 +217,8 @@ export const bundler = (options: BundlerOptions): Executor => {
         });
       } catch (cause) {
         if (cause instanceof HcaError) throw cause;
-        const message = cause instanceof Error ? cause.message : String(cause);
         throw new HcaError({
-          code:
-            paymaster !== undefined && /paymaster/i.test(message)
-              ? "HCA_PAYMASTER_REJECTED"
-              : "HCA_BUNDLER_REJECTED",
+          code: isPaymasterError(cause) ? "HCA_PAYMASTER_REJECTED" : "HCA_BUNDLER_REJECTED",
           executor: id,
           cause,
         });
