@@ -210,6 +210,25 @@ describe("resolver reads", () => {
     );
 
     it.effect(
+      "tells which resolvers resolution still reaches",
+      () =>
+        Effect.gen(function* () {
+          const fixtures = yield* Fixtures;
+          const ens = ensforge(yield* Devnet);
+          const servingOf = (id: string) =>
+            call(() => ens.resolver.get({ name: fixtures.byId(id).name })).pipe(
+              Effect.map((resolver) => resolver?.serving),
+            );
+
+          // Not premigrated: its ENSv1 resolver is kept but no longer resolves it.
+          assert.isFalse(yield* servingOf("v1.unwrapped"));
+          assert.isTrue(yield* servingOf("records.v1"));
+          assert.isTrue(yield* servingOf("records.v2"));
+        }),
+      { meta: { cases: ["O19"] } },
+    );
+
+    it.effect(
       "fails with a typed error when a registry reverts during resolution",
       () =>
         Effect.gen(function* () {

@@ -265,7 +265,8 @@
       "tests/integration/test/reads/migration.test.ts > reports each name's route, blockers and state after migrating",
       "tests/integration/test/reads/name.test.ts > v1.unwrapped",
       "tests/integration/test/reads/registration.test.ts > isAvailable agrees with name.get for every .eth second-level name",
-      "tests/integration/test/reads/registration.test.ts > prices renewals through the contract that renews each name"
+      "tests/integration/test/reads/registration.test.ts > prices renewals through the contract that renews each name",
+      "tests/integration/test/reads/resolver.test.ts > tells which resolvers resolution still reaches"
     ]
   },
   "O20": {
