@@ -36,7 +36,7 @@
     },
     "./actions": {
       "workspace-source": "./src/actions/index.ts",
-      "default": "./dist/actions.js"
+      "default": "./dist/actions/index.js"
     },
     "./effect": {
       "workspace-source": "./src/effect.ts",
@@ -48,11 +48,11 @@
     },
     "./indexer": {
       "workspace-source": "./src/indexer/index.ts",
-      "default": "./dist/indexer.js"
+      "default": "./dist/indexer/index.js"
     },
     "./wagmi": {
       "workspace-source": "./src/wagmi/index.ts",
-      "default": "./dist/wagmi.js"
+      "default": "./dist/wagmi/index.js"
     },
     "./package.json": "./package.json"
   },
@@ -62,11 +62,11 @@
     },
     "exports": {
       ".": "./dist/index.js",
-      "./actions": "./dist/actions.js",
+      "./actions": "./dist/actions/index.js",
       "./effect": "./dist/effect.js",
       "./extension": "./dist/extension.js",
-      "./indexer": "./dist/indexer.js",
-      "./wagmi": "./dist/wagmi.js",
+      "./indexer": "./dist/indexer/index.js",
+      "./wagmi": "./dist/wagmi/index.js",
       "./package.json": "./package.json"
     },
     "access": "public",
@@ -74,11 +74,11 @@
   },
   "scripts": {
     "api:report": "node ../../scripts/api-report.mjs index effect indexer wagmi",
-    "build": "tsdown",
+    "build": "node ../../scripts/build-package.mjs",
     "codegen": "node scripts/codegen/main.ts",
     "codegen:check": "node scripts/codegen/main.ts --check",
     "indexer:openapi": "node scripts/indexer-openapi.ts",
-    "dev": "tsdown --watch",
+    "dev": "node ../../scripts/build-package.mjs --watch",
     "lint": "oxlint --deny-warnings .",
     "pack:check": "publint && attw --pack . --profile esm-only",
     "prepack": "pnpm build",

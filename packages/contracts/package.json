@@ -34,19 +34,19 @@
     },
     "./shared": {
       "workspace-source": "./src/shared/index.ts",
-      "default": "./dist/shared.js"
+      "default": "./dist/shared/index.js"
     },
     "./v1": {
       "workspace-source": "./src/v1/index.ts",
-      "default": "./dist/v1.js"
+      "default": "./dist/v1/index.js"
     },
     "./v2": {
       "workspace-source": "./src/v2/index.ts",
-      "default": "./dist/v2.js"
+      "default": "./dist/v2/index.js"
     },
     "./v2/experimental/hca": {
       "workspace-source": "./src/v2/experimental/hca/index.ts",
-      "default": "./dist/v2/experimental/hca.js"
+      "default": "./dist/v2/experimental/hca/index.js"
     },
     "./package.json": "./package.json"
   },
@@ -56,10 +56,10 @@
     },
     "exports": {
       ".": "./dist/index.js",
-      "./shared": "./dist/shared.js",
-      "./v1": "./dist/v1.js",
-      "./v2": "./dist/v2.js",
-      "./v2/experimental/hca": "./dist/v2/experimental/hca.js",
+      "./shared": "./dist/shared/index.js",
+      "./v1": "./dist/v1/index.js",
+      "./v2": "./dist/v2/index.js",
+      "./v2/experimental/hca": "./dist/v2/experimental/hca/index.js",
       "./package.json": "./package.json"
     },
     "access": "public",
@@ -67,8 +67,8 @@
   },
   "scripts": {
     "api:report": "node ../../scripts/api-report.mjs index v1 v2 shared v2/experimental/hca",
-    "build": "tsdown",
-    "dev": "tsdown --watch",
+    "build": "node ../../scripts/build-package.mjs",
+    "dev": "node ../../scripts/build-package.mjs --watch",
     "lint": "oxlint --deny-warnings .",
     "pack:check": "publint && attw --pack . --profile esm-only",
     "prepack": "pnpm build",

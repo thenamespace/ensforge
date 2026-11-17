@@ -6,14 +6,11 @@
 // Each scenario is bundled from the package it imports (built `dist`, published exports), minified,
 // with viem external: apps already ship it. Sizes are gzipped bytes. Budgets allow 5% growth.
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
-import { createRequire } from "node:module";
 import { join } from "node:path";
 import { gzipSync } from "node:zlib";
 
 const root = new URL("..", import.meta.url).pathname;
-const { build } = await import(
-  createRequire(createRequire(import.meta.url).resolve("tsdown")).resolve("rolldown")
-);
+const { build } = await import("rolldown");
 
 const scenarios = {
   "sdk: Actions.record.getText": [

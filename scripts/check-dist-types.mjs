@@ -27,7 +27,8 @@ const importsOf = (file) =>
 
 for (const entry of effectFree) {
   const seen = new Set();
-  const pending = [join(packageFolder, "dist", `${entry}.d.ts`)];
+  const flat = join(packageFolder, "dist", `${entry}.d.ts`);
+  const pending = [existsSync(flat) ? flat : join(packageFolder, "dist", entry, "index.d.ts")];
 
   while (pending.length > 0) {
     const file = pending.pop();

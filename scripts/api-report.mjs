@@ -56,9 +56,11 @@ const isNamespace = (symbol) =>
 const valueAt = (module, path) => path.split(".").reduce((value, key) => value?.[key], module);
 
 const reportOf = async (entry) => {
-  const file = join(packageFolder, "dist", `${entry}.d.ts`);
+  // An entry is `dist/<entry>.d.ts` or, for a folder entry, `dist/<entry>/index.d.ts`.
+  const flat = join(packageFolder, "dist", `${entry}.d.ts`);
+  const file = existsSync(flat) ? flat : join(packageFolder, "dist", entry, "index.d.ts");
   // ABIs print as one signature per line instead of their (huge) literal type.
-  const runtime = await import(pathToFileURL(join(packageFolder, "dist", `${entry}.js`)).href);
+  const runtime = await import(pathToFileURL(file.replace(/\.d\.ts$/, ".js")).href);
   const program = ts.createProgram([file], {
     module: ts.ModuleKind.ESNext,
     moduleResolution: ts.ModuleResolutionKind.Bundler,

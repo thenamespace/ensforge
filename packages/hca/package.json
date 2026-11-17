@@ -52,8 +52,8 @@
     "provenance": true
   },
   "scripts": {
-    "build": "tsdown",
-    "dev": "tsdown --watch",
+    "build": "node ../../scripts/build-package.mjs",
+    "dev": "node ../../scripts/build-package.mjs --watch",
     "lint": "oxlint --deny-warnings .",
     "typecheck": "tsc --noEmit && tsc --noEmit -p test",
     "pack:check": "publint && attw --pack . --profile esm-only",
