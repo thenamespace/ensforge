@@ -1,6 +1,6 @@
 import { Effect } from "effect";
 
-import { Abis } from "@ensforge/contracts";
+import { Abis, Roles } from "@ensforge/contracts";
 import { encodeFunctionData, isAddressEqual } from "viem";
 
 import type { Client } from "../../../client/types.js";
@@ -13,6 +13,7 @@ import * as Action from "../../../internal/action/index.js";
 import { requireAddress, singleStepPlan } from "../../../internal/name/write.js";
 import { inspectRegistry } from "../../../internal/registry/inspect.js";
 import { requireTargetRegistry } from "../../../internal/registry/target.js";
+import * as Rpc from "../../../internal/rpc/index.js";
 import { addressOf } from "../../../internal/write/signer.js";
 import type { Plan } from "../../../plan/Plan.js";
 import type { Write } from "../../../Types.js";
@@ -35,18 +36,53 @@ export const plan = Effect.fnUntraced(function* (
       ? info.upgrade.latest
       : yield* requireAddress(options.implementation, "implementation");
 
-  // A custom target is checked by the registry itself during the upgrade; the latest one is
-  // checked here so the reason is clear before signing.
+  // The inspection checks the latest target; a custom one gets the same two checks here (the
+  // `upgrade` root role, and the target accepting the current implementation), so a refusal is
+  // explained before signing instead of by a bare revert.
+  const current = info.implementation;
+  const custom =
+    options.implementation !== undefined &&
+    target !== null &&
+    current !== null &&
+    !isAddressEqual(target, current);
+  const checked =
+    custom && target !== null && current !== null
+      ? yield* Effect.all(
+          {
+            authorized: Rpc.readContractOrUndefined(client, {
+              address: registry,
+              abi: Abis.v2.userRegistry,
+              functionName: "hasRootRoles",
+              args: [Roles.registry.upgrade, signer],
+            }),
+            accepts: Rpc.readContractOrUndefined(client, {
+              address: target,
+              abi: Abis.v2.userRegistry,
+              functionName: "canUpgradeFrom",
+              args: [current],
+            }).pipe(
+              // An address without code is no implementation either.
+              Effect.catchIf(
+                (error) => error.code === "CONTRACT_NOT_DEPLOYED",
+                () => Effect.undefined,
+              ),
+            ),
+          },
+          { concurrency: "unbounded" },
+        )
+      : undefined;
   const blocker =
-    target === null || info.implementation === null
+    target === null || current === null
       ? "not-upgradeable"
       : options.implementation === undefined
         ? info.upgrade.blocker
-        : isAddressEqual(target, info.implementation)
+        : checked === undefined
           ? "up-to-date"
-          : info.upgrade.blocker === "unauthorized"
+          : checked.authorized !== true
             ? "unauthorized"
-            : null;
+            : checked.accepts !== true
+              ? "not-approved"
+              : null;
   switch (blocker) {
     case "up-to-date":
       return yield* Effect.fail(
