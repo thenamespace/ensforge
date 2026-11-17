@@ -126,22 +126,8 @@ const encode = (errorName: string, args: readonly unknown[]): Hex =>
 
 // Mapped errors no devnet contract is made to raise yet; the list must shrink, never grow.
 const notRaisedOnChain = [
-  // DNSSEC registrars, oracles and their gateway: the DNS lane (024).
-  "TLDNotPublic",
-  "InvalidPublicSuffix",
-  "StaleProof",
-  "NoOwnerRecordFound",
-  "InvalidClass",
-  "InvalidLabelCount",
-  "InvalidProofType",
-  "InvalidRRSet",
+  // The devnet's DNSSEC oracle checks signatures with DummyAlgorithm, which accepts every one.
   "InvalidSignature",
-  "InvalidSignerName",
-  "NoMatchingProof",
-  "ProofNameMismatch",
-  "SignatureExpired",
-  "SignatureNotValidYet",
-  "SignatureTypeMismatch",
   // Batch gateway failures: raised by the Universal Resolver's gateway, not reached here yet.
   "HttpError",
   "InvalidOffchainLookup",

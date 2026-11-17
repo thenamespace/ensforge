@@ -5,6 +5,7 @@ import { Abis, Roles } from "@ensforge/contracts";
 import { Devnet, type DevnetInstance } from "@ensforge/test-devnet";
 import { Fixtures } from "@ensforge/test-fixtures";
 import {
+  bytesToHex,
   decodeErrorResult,
   encodeFunctionData,
   keccak256,
@@ -17,8 +18,10 @@ import {
   type BaseError,
   type Hex,
 } from "viem";
+import { packetToBytes } from "viem/ens";
 
 import { ensforge, isolated, onProfile } from "../support/chain.ts";
+import { ownerText, RecordType, txtProof, type Tampering } from "../support/dnssec.ts";
 import { ethEntry } from "./support.ts";
 
 // Each contract error the SDK maps (`revertMap`) is raised here by a deployed contract, so the
@@ -279,6 +282,84 @@ describe("contract errors", () => {
             assert.strictEqual(
               yield* revertOf(devnet, register(alice, "qqqqq")),
               "CommitmentTooOld",
+            );
+          }),
+        );
+      }),
+    );
+
+    it.effect("come from the DNSSEC oracle and the DNS registrars", () =>
+      Effect.gen(function* () {
+        const devnet = yield* Devnet;
+        const { alice } = devnet.accounts;
+        const at = Number((yield* Effect.promise(() => devnet.client.getBlock())).timestamp);
+        const name = "reverts-dns.com";
+        const owner = [ownerText(alice)];
+        const proof = (tampered: Tampering = {}, inception = at - 60) =>
+          txtProof(name, owner, inception, tampered);
+        const oracle = {
+          to: devnet.contracts["v1.dnssecOracle"] as Address,
+          abi: Abis.v1.dnssecOracle as Abi,
+          from: alice,
+          functionName: "verifyRRSet",
+        };
+        const registrar = {
+          to: devnet.contracts["v1.dnsRegistrar"] as Address,
+          abi: Abis.v1.dnsRegistrar as Abi,
+          from: alice,
+          functionName: "proveAndClaim",
+        };
+        const verify = (rrsets: ReturnType<typeof txtProof>): Call => ({
+          ...oracle,
+          args: [rrsets],
+        });
+        const claim = (dnsName: string, rrsets: ReturnType<typeof txtProof>): Call => ({
+          ...registrar,
+          args: [bytesToHex(packetToBytes(dnsName)), rrsets],
+        });
+        const [rootKeys, signed] = proof();
+
+        const cases: Readonly<Record<string, Call>> = {
+          SignatureNotValidYet: verify(proof({}, at + 86_400)),
+          SignatureExpired: verify(proof({ expiration: at - 30 })),
+          NoMatchingProof: verify(proof({ keyTag: 999 })),
+          InvalidLabelCount: verify(proof({ labels: 1 })),
+          InvalidSignerName: verify(proof({ signer: "org" })),
+          ProofNameMismatch: verify(proof({ signer: "com" })),
+          SignatureTypeMismatch: verify(proof({ covered: RecordType.dnskey })),
+          InvalidClass: verify(proof({ dnsClass: 3 })),
+          InvalidRRSet: verify(
+            txtProof(name, [...owner, "v=spf1 -all"], at - 60, {
+              recordNames: [`_ens.${name}`, "_ens.other.com"],
+            }),
+          ),
+          // A TXT set cannot prove the next set: only DNSKEY and DS sets can.
+          InvalidProofType: verify([rootKeys, signed, signed].filter((set) => set !== undefined)),
+          NoOwnerRecordFound: claim(name, txtProof(name, ["v=spf1 -all"], at - 60)),
+          InvalidPublicSuffix: claim(
+            "reverts-dns.test",
+            txtProof("reverts-dns.test", owner, at - 60),
+          ),
+          TLDNotPublic: {
+            to: devnet.contracts["v2.temporaryDnsRegistrar"] as Address,
+            abi: Abis.v2.temporaryDnsRegistrar as Abi,
+            from: alice,
+            functionName: "syncTLD",
+            args: ["test"],
+          },
+        };
+        for (const [error, call] of Object.entries(cases)) {
+          assert.strictEqual(yield* revertOf(devnet, call), error, error);
+        }
+
+        // DNSRegistrar takes no proof older than the one it imported.
+        yield* isolated(
+          devnet,
+          Effect.gen(function* () {
+            yield* write(devnet, claim(name, proof()));
+            assert.strictEqual(
+              yield* revertOf(devnet, claim(name, proof({}, at - 3600))),
+              "StaleProof",
             );
           }),
         );

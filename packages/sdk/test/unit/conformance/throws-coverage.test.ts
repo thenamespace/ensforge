@@ -25,49 +25,10 @@ const coveredForWrites = new Set([
 ]);
 
 /** Documented codes of each read action without a test yet: `domain.action` → codes. */
-const uncovered: Readonly<Record<string, readonly string[]>> = {
-  // DNSSEC gateways and proofs: the DNS lane (024).
-  "dns.getOffchainResolver": [
-    "GATEWAY_REQUEST_FAILED",
-    "GATEWAY_RESPONSE_INVALID",
-    "UNSUPPORTED_ON_DEPLOYMENT",
-  ],
-  "dns.getProof": [
-    "GATEWAY_REQUEST_FAILED",
-    "GATEWAY_RESPONSE_INVALID",
-    "UNSUPPORTED_ON_DEPLOYMENT",
-  ],
-  "dns.getStatus": [
-    "GATEWAY_REQUEST_FAILED",
-    "GATEWAY_RESPONSE_INVALID",
-    "UNSUPPORTED_ON_DEPLOYMENT",
-  ],
-};
+const uncovered: Readonly<Record<string, readonly string[]>> = {};
 
 /** Documented codes of each write action without a test yet: `domain.action` → codes. */
-const uncoveredWrites: Readonly<Record<string, readonly string[]>> = {
-  // DNSSEC claims need a mock DNSSEC oracle and gateway: the DNS lane (024).
-  "dns.claim": [
-    "INVALID_ADDRESS",
-    "INVALID_RECORD_VALUE",
-    "DNS_RECORD_MISSING",
-    "PROOF_STALE",
-    "DNSSEC_PROOF_FAILED",
-    "TLD_NOT_PUBLIC",
-    "GATEWAY_REQUEST_FAILED",
-    "GATEWAY_RESPONSE_INVALID",
-    "NOT_OWNER",
-  ],
-  "dns.setRecords": [
-    "INVALID_RECORD_VALUE",
-    "NAME_EXPIRED",
-    "NAME_RESERVED",
-    "NAME_NOT_REGISTERED",
-    "RESOLVER_NOT_FOUND",
-    "RESOLVER_PROFILE_UNSUPPORTED",
-    "NOT_OWNER",
-  ],
-};
+const uncoveredWrites: Readonly<Record<string, readonly string[]>> = {};
 
 const testSources = testFolders.flatMap((folder) =>
   readdirSync(folder, { recursive: true, encoding: "utf8" })
