@@ -2,8 +2,7 @@ import { Effect } from "effect";
 
 import { standaloneHcaFactoryV2Abi } from "@ensforge/contracts/v2/experimental/hca";
 import type { Errors, Plan, Write } from "@ensforge/sdk";
-import { requireAddress } from "@ensforge/sdk/extension";
-import { Action, type Client } from "@ensforge/sdk/extension";
+import { Action, type Client, requireAddress } from "@ensforge/sdk/extension";
 import { encodeFunctionData } from "viem";
 
 import type { HcaError } from "../../../errors/classes/HcaError.js";
@@ -19,6 +18,7 @@ export const plan = Effect.fnUntraced(function* (
   const deployment = yield* requireHca(client);
   const signer = yield* signerOf(client, options.account);
   const implementation = yield* requireAddress(options.implementation, "implementation");
+
   return onePlan(client, {
     operation: "hcaAdmin.setDeploymentApproval",
     account: signer,

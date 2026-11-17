@@ -14,6 +14,7 @@ export const plan = Effect.fnUntraced(function* (
   options: Promises.Options & Pick<Write.Options, "account">,
 ): Effect.fn.Return<Plan, Errors.AnyError | HcaError> {
   const owner = yield* signerOf(client, options.account);
+
   return onePlan(client, {
     operation: "hca.execute",
     account: owner,

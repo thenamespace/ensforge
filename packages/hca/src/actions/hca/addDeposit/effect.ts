@@ -18,6 +18,7 @@ export const plan = Effect.fnUntraced(function* (
   const deployment = yield* requireHca(client);
   const signer = yield* signerOf(client, options.account);
   const account = yield* accountInput(client, { address: options.address, owner: signer });
+
   return onePlan(client, {
     operation: "hca.addDeposit",
     account: signer,

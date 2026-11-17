@@ -1,3 +1,5 @@
+import { Predicate } from "effect";
+
 import { Name } from "@ensforge/sdk";
 import type { Ensforge, Write } from "@ensforge/sdk";
 
@@ -27,14 +29,6 @@ const strings = (value: unknown): readonly string[] => {
   return [];
 };
 
-const normalized = (name: string): string | undefined =>
-  Name.isValid(name) ? Name.normalize(name) : undefined;
-
-const addressOf = (value: unknown): readonly string[] =>
-  typeof value === "object" && value !== null && "address" in value
-    ? strings((value as { readonly address: unknown }).address)
-    : strings(value);
-
 /**
  * Subjects named in an action's options. Encoded labels and invalid names are kept out; the
  * action fails on them anyway.
@@ -45,10 +39,14 @@ const addressOf = (value: unknown): readonly string[] =>
 export const subjectsOf = (options: unknown): Subjects => {
   const fields = (options ?? {}) as Readonly<Record<string, unknown>>;
   const names = nameFields.flatMap((field) => strings(fields[field]));
-  const addresses = addressFields.flatMap((field) => addressOf(fields[field]));
+  // An account option may be a viem account, named by its `address`.
+  const addresses = addressFields.flatMap((field) => {
+    const value = fields[field];
+    return strings(Predicate.hasProperty(value, "address") ? value.address : value);
+  });
 
   return {
-    names: [...new Set(names.flatMap((name) => normalized(name) ?? []))],
+    names: [...new Set(names.flatMap((name) => (Name.isValid(name) ? Name.normalize(name) : [])))],
     addresses: [...new Set(addresses.map((address) => address.toLowerCase()))],
   };
 };
@@ -73,13 +71,15 @@ export const writeSubjects = (options: unknown, result: Write.Result | undefined
   };
 };
 
-// Reactivity keys are flat strings: its record form also fires the bare field key, which would
-// refresh every read of any name.
-const keysOf = (
+/**
+ * Reactivity keys to invalidate for subjects, in chain or indexer reads. They are flat strings:
+ * the record form also fires the bare field key, which would refresh every read of any name.
+ */
+export const invalidationKeys = (
   client: Ensforge.Client,
   scope: "chain" | "indexer",
   subjects: Subjects,
-): string[] => [
+): readonly string[] => [
   ...subjects.names.map((name) => `ensforge/${scope}/name:${client.chain.id}:${name}`),
   ...subjects.addresses.map((address) => `ensforge/${scope}/address:${client.chain.id}:${address}`),
 ];
@@ -90,13 +90,6 @@ export const readReactivityKeys = (
   path: string,
   subjects: Subjects,
 ): readonly string[] => [
-  ...keysOf(client, path.startsWith("indexer.") ? "indexer" : "chain", subjects),
+  ...invalidationKeys(client, path.startsWith("indexer.") ? "indexer" : "chain", subjects),
   `ensforge/path:${client.chain.id}:${path}`,
 ];
-
-/** Reactivity keys to invalidate for subjects, in chain or indexer reads. */
-export const invalidationKeys = (
-  client: Ensforge.Client,
-  scope: "chain" | "indexer",
-  subjects: Subjects,
-): readonly string[] => keysOf(client, scope, subjects);

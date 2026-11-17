@@ -14,7 +14,7 @@ import { getCode } from "viem/actions";
 
 import type { HcaError } from "../errors/classes/HcaError.js";
 import type { HcaAccount, HcaProblem } from "../types.js";
-import { requireHca, type HcaDeployment } from "./deployment.js";
+import { requireHca } from "./deployment.js";
 
 type ReadError = HcaError | Effect.Error<ReturnType<typeof Rpc.readContract>>;
 
@@ -65,7 +65,7 @@ export const readAccount = Effect.fnUntraced(function* (
       initialImplementation: deployment.contracts.standaloneImplementation,
       sessionNonce: 0n,
       upgradeSet: deployment.contracts.upgradeSet,
-      problems: problemsOf(deployment, { address, predicted, deployed: false }),
+      problems: problemsOf({ address, predicted, deployed: false }),
     };
   }
 
@@ -123,7 +123,7 @@ export const readAccount = Effect.fnUntraced(function* (
     initialImplementation: deployment.contracts.standaloneImplementation,
     sessionNonce,
     upgradeSet: deployment.contracts.upgradeSet,
-    problems: problemsOf(deployment, {
+    problems: problemsOf({
       address,
       predicted,
       deployed: true,
@@ -137,19 +137,16 @@ export const readAccount = Effect.fnUntraced(function* (
 });
 
 /** HCA.md's checks before using an existing HCA, plus the address derivation. */
-const problemsOf = (
-  _deployment: HcaDeployment,
-  facts: {
-    readonly address: Address;
-    readonly predicted: Address | undefined;
-    readonly deployed: boolean;
-    readonly owner?: Address | null | undefined;
-    readonly authorizedOwner?: Address | null | undefined;
-    readonly accountId?: string | undefined;
-    readonly trusted?: boolean | undefined;
-    readonly expectedOwner?: Address | undefined;
-  },
-): readonly HcaProblem[] => {
+const problemsOf = (facts: {
+  readonly address: Address;
+  readonly predicted: Address | undefined;
+  readonly deployed: boolean;
+  readonly owner?: Address | null | undefined;
+  readonly authorizedOwner?: Address | null | undefined;
+  readonly accountId?: string | undefined;
+  readonly trusted?: boolean | undefined;
+  readonly expectedOwner?: Address | undefined;
+}): readonly HcaProblem[] => {
   const failed: HcaProblem[] = [];
   if (facts.predicted !== undefined && !isAddressEqual(facts.predicted, facts.address))
     failed.push("address-mismatch");
@@ -169,5 +166,6 @@ const problemsOf = (
       !isAddressEqual(facts.authorizedOwner, facts.owner))
   )
     failed.push("not-certified");
+
   return failed;
 };

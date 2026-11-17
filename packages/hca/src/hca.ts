@@ -46,14 +46,6 @@ const ownerOf = (context: Write.Via.Context): Address => {
   return context.account;
 };
 
-const select = (executors: readonly Executor[], session: HcaSession | undefined): Executor => {
-  const executor = executors.find(
-    (candidate) => session === undefined || candidate.capabilities.sessions,
-  );
-  if (executor === undefined) throw new HcaError({ code: "HCA_EXECUTOR_UNSUPPORTED" });
-  return executor;
-};
-
 /**
  * Sends writes through the signer's ENS Hosted Contract Account (HCA): pass it as `via` to any
  * write. Steps run as one atomic `executeByOwner` each, the HCA is deployed on first use, and the
@@ -102,7 +94,10 @@ const select = (executors: readonly Executor[], session: HcaSession | undefined)
 export const hca = (options: HcaOptions = {}): Write.Via => {
   const executors = options.executors ?? [ownerExecutor()];
   const { session } = options;
-  const executor = select(executors, session);
+  const executor = executors.find(
+    (candidate) => session === undefined || candidate.capabilities.sessions,
+  );
+  if (executor === undefined) throw new HcaError({ code: "HCA_EXECUTOR_UNSUPPORTED" });
 
   const prepare = Effect.fnUntraced(function* (plan: Plan, context: Write.Via.Context) {
     const client = context.client as Client;
@@ -225,8 +220,7 @@ export const hca = (options: HcaOptions = {}): Write.Via => {
   const send = executor.send;
   return {
     id: `hca:${executor.id}`,
-    sender: (context) =>
-      run(predictAddress(context.client as Client, ownerOf(context))) as Promise<Address>,
+    sender: (context) => run(predictAddress(context.client as Client, ownerOf(context))),
     prepare: (plan, context) => run(prepare(plan, context)),
     ...(send === undefined
       ? {}

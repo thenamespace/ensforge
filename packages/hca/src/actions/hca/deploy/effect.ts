@@ -16,6 +16,7 @@ export const plan = Effect.fnUntraced(function* (
 ): Effect.fn.Return<Plan, Errors.AnyError | HcaError> {
   const deployment = yield* requireHca(client);
   const owner = yield* signerOf(client, options.account);
+
   return onePlan(client, {
     operation: "hca.deploy",
     account: owner,

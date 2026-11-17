@@ -42,30 +42,6 @@ export type BundlerOptions = {
   timeout?: number | undefined;
 };
 
-const batchMode = padHex("0x01", { size: 32, dir: "right" });
-
-const execution = (calls: ExecutionRequest["calls"]): Hex =>
-  encodeFunctionData({
-    abi: standaloneSingleOwnerHcaV2Abi,
-    functionName: "execute",
-    args: [
-      batchMode,
-      encodeAbiParameters(
-        [
-          {
-            type: "tuple[]",
-            components: [
-              { name: "target", type: "address" },
-              { name: "value", type: "uint256" },
-              { name: "callData", type: "bytes" },
-            ],
-          },
-        ],
-        [calls.map((call) => ({ target: call.to, value: call.value, callData: call.data }))],
-      ),
-    ],
-  });
-
 /** The HCA as a viem smart account whose UserOperations the owner signs. */
 const hcaAccount = (request: ExecutionRequest, context: Write.Via.Context) => {
   const client = context.client as Client;
@@ -96,10 +72,34 @@ const hcaAccount = (request: ExecutionRequest, context: Write.Via.Context) => {
         functionName: "getNonce",
         args: [request.hca, 0n],
       }),
+    // ERC-7579 batch mode: the calls are ABI-encoded executions run in order.
     encodeCalls: async (calls) =>
-      execution(
-        calls.map((call) => ({ to: call.to, data: call.data ?? "0x", value: call.value ?? 0n })),
-      ),
+      encodeFunctionData({
+        abi: standaloneSingleOwnerHcaV2Abi,
+        functionName: "execute",
+        args: [
+          padHex("0x01", { size: 32, dir: "right" }),
+          encodeAbiParameters(
+            [
+              {
+                type: "tuple[]",
+                components: [
+                  { name: "target", type: "address" },
+                  { name: "value", type: "uint256" },
+                  { name: "callData", type: "bytes" },
+                ],
+              },
+            ],
+            [
+              calls.map((call) => ({
+                target: call.to,
+                value: call.value ?? 0n,
+                callData: call.data ?? "0x",
+              })),
+            ],
+          ),
+        ],
+      }),
     // A well-formed signature that is not the owner's, for gas estimation only.
     getStubSignature: async () => `0x${"11".repeat(32)}${"22".repeat(32)}1b`,
     signMessage: async () => {

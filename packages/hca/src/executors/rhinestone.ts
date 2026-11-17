@@ -51,8 +51,6 @@ export type RhinestoneOptions = {
   sponsored?: boolean | undefined;
 };
 
-const failedStatuses = new Set(["FAILED", "EXPIRED"]);
-
 /**
  * Runs HCA executions as Rhinestone intents: owner-signed, or prompt-free with an HCA session.
  * Experimental; bring a Rhinestone SDK with standalone HCA support.
@@ -100,13 +98,13 @@ export const rhinestone = (options: RhinestoneOptions): Executor => {
   const sponsored = options.sponsored ?? true;
 
   const account = async (request: ExecutionRequest, context: Write.Via.Context) => {
-    const client = context.client as Client;
-    const hca = client.deployment.v2?.hca;
+    const v2 = (context.client as Client).deployment.v2;
+    const hca = v2?.hca;
     const owner = context.walletClient?.account;
-    if (hca === undefined || owner === undefined) {
+    if (v2 === undefined || hca === undefined || owner === undefined) {
       throw new HcaError({ code: "HCA_EXECUTOR_UNSUPPORTED", executor: "rhinestone" });
     }
-    const verifiableFactory = client.deployment.v2?.contracts.verifiableFactory as Address;
+    const { verifiableFactory } = v2.contracts;
     const proxyLogic = await readContract(context.publicClient, {
       address: verifiableFactory,
       abi: Abis.v2.verifiableFactory,
@@ -179,14 +177,14 @@ export const rhinestone = (options: RhinestoneOptions): Executor => {
             }),
       });
       const signed = await created.signTransaction(prepared);
-      const result = await created.submitTransaction(signed);
-      return String(result.id);
+      const { id } = await created.submitTransaction(signed);
+      return String(id);
     },
     status: async (reference) => {
       const intent = await options.sdk.getIntentStatus(BigInt(reference));
       const hash = intent.fill?.hash;
       if (hash !== undefined) return { status: "success", hashes: [hash] };
-      if (failedStatuses.has(intent.status)) {
+      if (intent.status === "FAILED" || intent.status === "EXPIRED") {
         return { status: "failed", reason: `the intent is ${intent.status.toLowerCase()}` };
       }
       return { status: "pending" };

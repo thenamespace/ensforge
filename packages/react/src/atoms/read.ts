@@ -46,13 +46,6 @@ export type Freshness = {
  */
 export type ReadAtom<value, error> = Atom.Atom<AsyncResult.AsyncResult<value, error>>;
 
-const freshnessKey = (freshness: Freshness): string =>
-  JSON.stringify(freshness, (_, value: unknown) =>
-    typeof value === "object" && value !== null && Duration.isDuration(value)
-      ? Duration.toMillis(value)
-      : value,
-  );
-
 const family = Atom.family((input: ReadInput) => {
   const { client, action, options } = input;
   const freshness = JSON.parse(input.freshness) as Freshness;
@@ -118,7 +111,13 @@ export const ensAtom = <action extends Action>(
   options: ActionOptions<action>,
   freshness: Freshness = {},
 ): ReadAtom<ActionValue<action>, ActionError<action>> =>
-  family(new ReadInput(client, action, options, freshnessKey(freshness))) as ReadAtom<
-    ActionValue<action>,
-    ActionError<action>
-  >;
+  family(
+    new ReadInput(
+      client,
+      action,
+      options,
+      JSON.stringify(freshness, (_, value: unknown) =>
+        Duration.isDuration(value) ? Duration.toMillis(value) : value,
+      ),
+    ),
+  ) as ReadAtom<ActionValue<action>, ActionError<action>>;

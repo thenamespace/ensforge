@@ -29,20 +29,6 @@ export type ReadConfig = Freshness & {
 
 const idle = Atom.make(AsyncResult.initial<never, never>(false));
 
-/** The read's atom, or an idle one while disabled. */
-export const useReadAtom = <action extends Action>(
-  action: action,
-  options: ActionOptions<action> | undefined,
-  config: ReadConfig,
-): ReadAtom<ActionValue<action>, ActionError<action>> => {
-  const { enabled = true, client: own, ...freshness } = config;
-  const { client, defaults } = useEnsforgeContext(own);
-
-  return enabled && options !== undefined
-    ? ensAtom(client, action, options, { ...defaults, ...freshness })
-    : idle;
-};
-
 /**
  * Reads with any ensforge action and keeps the result fresh.
  *
@@ -77,7 +63,11 @@ export const useRead = <action extends Action>(
   options: ActionOptions<action> | undefined,
   config: ReadConfig = {},
 ): ReadResult<ActionValue<action>, ActionError<action>> => {
-  const atom = useReadAtom(action, options, config);
+  const { enabled = true, client: own, ...freshness } = config;
+  const { client, defaults } = useEnsforgeContext(own);
+  const atom: ReadAtom<ActionValue<action>, ActionError<action>> = enabled && options !== undefined
+    ? ensAtom(client, action, options, { ...defaults, ...freshness })
+    : idle;
   const result = useAtomValue(atom);
   const refresh = useAtomRefresh(atom);
 

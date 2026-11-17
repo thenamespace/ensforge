@@ -12,27 +12,14 @@ import {
 } from "@ensforge/contracts/v2/experimental/hca";
 import type { Plan } from "@ensforge/sdk";
 import { Rpc, type AnyError, type Client, type ViemWalletClient } from "@ensforge/sdk/extension";
-import {
-  decodeFunctionData,
-  isAddressEqual,
-  zeroAddress,
-  type Abi,
-  type Address,
-  type Hex,
-} from "viem";
+import { isAddressEqual, zeroAddress, type Abi, type Address, type Hex } from "viem";
 import { signTypedData } from "viem/actions";
 
 import { HcaError } from "../errors/classes/HcaError.js";
 import type { HcaSession } from "../types.js";
 import { readAccount } from "./account.js";
-import { requireHca, type HcaDeployment } from "./deployment.js";
-
-/** The ENS app's refund ceilings: $20k per ETH, 500k gas of overhead, 100 USDC per intent. */
-export const defaultRefund = {
-  maxExchangeRate: 20_000_000_000n,
-  maxGasOverhead: 500_000n,
-  maxAmount: 100_000_000n,
-} as const;
+import { decodeCall } from "./decode.js";
+import { requireHca } from "./deployment.js";
 
 /** Signs a session approval for the signer's HCA and returns the storable session. */
 export const authorize = Effect.fnUntraced(function* (
@@ -65,14 +52,16 @@ export const authorize = Effect.fnUntraced(function* (
     );
   }
 
+  // Refund ceilings default to the ENS app's: $20k per ETH, 500k gas of overhead, 100 USDC per
+  // intent.
   const terms: HcaSessionTerms = {
     sessionNonce: account.sessionNonce,
     validUntil: options.validUntil,
     resolver: options.resolver,
     refundToken,
-    maxRefundExchangeRate: options.refund?.maxExchangeRate ?? defaultRefund.maxExchangeRate,
-    maxRefundGasOverhead: options.refund?.maxGasOverhead ?? defaultRefund.maxGasOverhead,
-    maxRefundAmount: options.refund?.maxAmount ?? defaultRefund.maxAmount,
+    maxRefundExchangeRate: options.refund?.maxExchangeRate ?? 20_000_000_000n,
+    maxRefundGasOverhead: options.refund?.maxGasOverhead ?? 500_000n,
+    maxRefundAmount: options.refund?.maxAmount ?? 100_000_000n,
   };
   const salt = hcaSessionSalt(terms);
   const session = hcaSignedSession({
@@ -111,26 +100,16 @@ export const sessionProblem = Effect.fnUntraced(function* (
   "chain" | "expired" | "signing-domain" | "revoked" | undefined,
   AnyError | HcaError
 > {
-  if (session.chainId !== client.chain.id) return "chain" as const;
+  if (session.chainId !== client.chain.id) return "chain";
   // The validator compares `validUntil` with the block's timestamp, not the local clock.
   const now = yield* Rpc.blockTimestamp(client, {});
-  if (BigInt(session.terms.validUntil) < now) return "expired" as const;
+  if (BigInt(session.terms.validUntil) < now) return "expired";
   const domain = client.deployment.v2?.capabilities.hcaSessionDomain ?? "smart-session";
-  if (session.signingDomain !== domain) return "signing-domain" as const;
+  if (session.signingDomain !== domain) return "signing-domain";
   const account = yield* readAccount(client, { address: session.hca });
-  if (account.sessionNonce !== session.terms.sessionNonce) return "revoked" as const;
+  if (account.sessionNonce !== session.terms.sessionNonce) return "revoked";
   return undefined;
 });
-
-type Decoded = { readonly functionName: string; readonly args?: readonly unknown[] | undefined };
-
-const decode = (abi: Abi, data: Hex): Decoded | undefined => {
-  try {
-    return decodeFunctionData({ abi, data }) as Decoded;
-  } catch {
-    return undefined;
-  }
-};
 
 // Record calls a session may make on its resolver: HCAResolverPolicyLib (v1.0.1) allows these
 // setters, and `multicall` only when every inner call is allowed too.
@@ -147,7 +126,7 @@ const recordSetters = new Set([
 ]);
 
 const isRecordCall = (data: Hex): boolean => {
-  const decoded = decode(Abis.v2.permissionedResolver as Abi, data);
+  const decoded = decodeCall(Abis.v2.permissionedResolver as Abi, data);
   if (decoded === undefined) return false;
   if (decoded.functionName === "multicall") {
     const [inner] = decoded.args as readonly [readonly Hex[]];
@@ -181,7 +160,7 @@ export const checkSessionCalls = Effect.fnUntraced(function* (
     if (call.value !== 0n) return yield* Effect.fail(notAllowed(call, "sessions send no value"));
 
     if (isAddressEqual(call.to, registrar)) {
-      const decoded = decode(Abis.v2.ethRegistrar as Abi, call.data);
+      const decoded = decodeCall(Abis.v2.ethRegistrar as Abi, call.data);
       if (decoded?.functionName === "commit") continue;
       if (decoded?.functionName === "register") {
         const [, owner, , subregistry, registeredResolver] = decoded.args as readonly [
@@ -208,20 +187,30 @@ export const checkSessionCalls = Effect.fnUntraced(function* (
     }
 
     if (isAddressEqual(call.to, deployment.verifiableFactory)) {
-      const decoded = decode(Abis.v2.verifiableFactory as Abi, call.data);
+      const decoded = decodeCall(Abis.v2.verifiableFactory as Abi, call.data);
       if (decoded?.functionName === "deployProxy") {
         const [implementation, salt] = decoded.args as readonly [Address, bigint, Hex];
         const permitted = deployment.v2.implementations.permissionedResolver;
         if (!isAddressEqual(implementation, permitted))
           return yield* Effect.fail(notAllowed(call, "only the approved PermissionedResolver"));
-        const predicted = yield* predictedResolver(client, deployment, session.hca, salt);
+        const proxyLogic = yield* Rpc.readContract(client, {
+          address: deployment.verifiableFactory,
+          abi: Abis.v2.verifiableFactory,
+          functionName: "proxyLogic",
+        });
+        const predicted = predictVerifiableProxyAddress({
+          factory: deployment.verifiableFactory,
+          proxyLogic,
+          deployer: session.hca,
+          salt,
+        });
         if (isAddressEqual(predicted, resolver)) continue;
       }
       return yield* Effect.fail(notAllowed(call, "only the session resolver may be deployed"));
     }
 
     if (isAddressEqual(call.to, deployment.v2.contracts.defaultReverseRegistrarAdapter)) {
-      const decoded = decode(Abis.v2.defaultReverseRegistrarAdapter as Abi, call.data);
+      const decoded = decodeCall(Abis.v2.defaultReverseRegistrarAdapter as Abi, call.data);
       const [account] = (decoded?.args ?? []) as readonly [Address?];
       if (
         decoded?.functionName === "setNameWithHCA" &&
@@ -232,7 +221,7 @@ export const checkSessionCalls = Effect.fnUntraced(function* (
       return yield* Effect.fail(notAllowed(call, "primary names are for the HCA owner only"));
     }
     if (isAddressEqual(call.to, deployment.v2.contracts.reverseRegistrarAdapter)) {
-      const decoded = decode(Abis.v2.reverseRegistrarAdapter as Abi, call.data);
+      const decoded = decodeCall(Abis.v2.reverseRegistrarAdapter as Abi, call.data);
       const [account, claimed] = (decoded?.args ?? []) as readonly [Address?, Address?];
       if (
         decoded?.functionName === "claimWithHCA" &&
@@ -247,7 +236,7 @@ export const checkSessionCalls = Effect.fnUntraced(function* (
       );
     }
 
-    const approval = decode(Abis.shared.erc20 as Abi, call.data);
+    const approval = decodeCall(Abis.shared.erc20 as Abi, call.data);
     if (approval?.functionName === "approve") {
       const [spender] = approval.args as readonly [Address, bigint];
       if (isAddressEqual(spender, registrar)) continue;
@@ -256,23 +245,4 @@ export const checkSessionCalls = Effect.fnUntraced(function* (
 
     return yield* Effect.fail(notAllowed(call, "not part of the session policy"));
   }
-});
-
-const predictedResolver = Effect.fnUntraced(function* (
-  client: Client,
-  deployment: HcaDeployment,
-  hca: Address,
-  salt: bigint,
-): Effect.fn.Return<Address, AnyError> {
-  const proxyLogic = yield* Rpc.readContract(client, {
-    address: deployment.verifiableFactory,
-    abi: Abis.v2.verifiableFactory,
-    functionName: "proxyLogic",
-  });
-  return predictVerifiableProxyAddress({
-    factory: deployment.verifiableFactory,
-    proxyLogic,
-    deployer: hca,
-    salt,
-  });
 });

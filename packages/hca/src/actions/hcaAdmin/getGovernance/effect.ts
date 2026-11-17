@@ -2,8 +2,7 @@ import { Effect } from "effect";
 
 import { Abis } from "@ensforge/contracts";
 import { standaloneHcaFactoryV2Abi } from "@ensforge/contracts/v2/experimental/hca";
-import { Rpc, requireAddress } from "@ensforge/sdk/extension";
-import { Action, type Client } from "@ensforge/sdk/extension";
+import { Action, type Client, requireAddress, Rpc } from "@ensforge/sdk/extension";
 
 import { requireHca } from "../../../internal/deployment.js";
 import type { getGovernance as Promises } from "./index.js";
@@ -19,6 +18,7 @@ export const getGovernance = Effect.fn("ensforge.hcaAdmin.getGovernance")(functi
     abi: standaloneHcaFactoryV2Abi,
     functionName: "owner",
   });
+
   if (options.implementation === undefined) {
     return {
       factoryOwner,
@@ -27,6 +27,7 @@ export const getGovernance = Effect.fn("ensforge.hcaAdmin.getGovernance")(functi
       upgradeApproved: null,
     };
   }
+
   const implementation = yield* requireAddress(options.implementation, "implementation");
   const [deploymentApproved, upgradeApproved] = yield* Effect.all([
     Rpc.readContract(client, {
@@ -42,6 +43,7 @@ export const getGovernance = Effect.fn("ensforge.hcaAdmin.getGovernance")(functi
       args: [implementation],
     }),
   ]);
+
   return {
     factoryOwner,
     upgradeSet: deployment.contracts.upgradeSet,

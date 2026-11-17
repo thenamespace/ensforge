@@ -1,7 +1,13 @@
 import { Effect } from "effect";
 
-import { requireAddress, resolveSigner, addressOf } from "@ensforge/sdk/extension";
-import { Action, type Client } from "@ensforge/sdk/extension";
+import {
+  Action,
+  addressOf,
+  type Client,
+  requireAddress,
+  resolveSigner,
+} from "@ensforge/sdk/extension";
+import type { Address } from "viem";
 
 import { authorize } from "../../../internal/session.js";
 import type { authorizeSession as Promises } from "./index.js";
@@ -14,7 +20,8 @@ export const authorizeSession = Effect.fn("ensforge.hca.authorizeSession")(funct
   const sessionKey = yield* requireAddress(options.sessionKey, "sessionKey");
   const resolver = yield* requireAddress(options.resolver, "resolver");
   const signer = yield* resolveSigner(client, options.account);
-  const owner = addressOf(signer.account) as `0x${string}`;
+  const owner = addressOf(signer.account) as Address;
+
   return yield* authorize(client, signer.walletClient, owner, {
     sessionKey,
     resolver,

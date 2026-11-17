@@ -1,12 +1,8 @@
 import { Abis } from "@ensforge/contracts";
 import type { Plan } from "@ensforge/sdk";
-import {
-  decodeFunctionData,
-  encodeFunctionData,
-  isAddressEqual,
-  type Abi,
-  type Address,
-} from "viem";
+import { encodeFunctionData, isAddressEqual, type Abi, type Address } from "viem";
+
+import { decodeCall } from "./decode.js";
 
 /**
  * The approvals the owner gives the HCA so it can move the owner's name tokens: the `.eth`
@@ -26,7 +22,7 @@ export const tokenApprovals = (
 
   for (const call of calls) {
     if (options.baseRegistrar !== undefined && isAddressEqual(call.to, options.baseRegistrar)) {
-      const decoded = safeDecode(Abis.v1.baseRegistrar as Abi, call.data);
+      const decoded = decodeCall(Abis.v1.baseRegistrar as Abi, call.data);
       const [from, , tokenId] = (decoded?.args ?? []) as readonly [Address?, Address?, bigint?];
       if (
         decoded !== undefined &&
@@ -51,7 +47,7 @@ export const tokenApprovals = (
       isAddressEqual(call.to, options.nameWrapper) &&
       !wrapper
     ) {
-      const decoded = safeDecode(Abis.v1.nameWrapper as Abi, call.data);
+      const decoded = decodeCall(Abis.v1.nameWrapper as Abi, call.data);
       const [from] = (decoded?.args ?? []) as readonly [Address?];
       if (
         decoded !== undefined &&
@@ -72,16 +68,6 @@ export const tokenApprovals = (
       }
     }
   }
-  return { calls: approvals, wrapper };
-};
 
-const safeDecode = (abi: Abi, data: `0x${string}`) => {
-  try {
-    return decodeFunctionData({ abi, data }) as {
-      readonly functionName: string;
-      readonly args?: readonly unknown[];
-    };
-  } catch {
-    return undefined;
-  }
+  return { calls: approvals, wrapper };
 };

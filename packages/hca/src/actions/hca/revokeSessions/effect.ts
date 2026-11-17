@@ -25,6 +25,7 @@ export const plan = Effect.fnUntraced(function* (
       }),
     );
   }
+
   return onePlan(client, {
     operation: "hca.revokeSessions",
     account: owner,

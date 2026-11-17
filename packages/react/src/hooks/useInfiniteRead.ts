@@ -83,6 +83,7 @@ export const useInfiniteRead = <action extends PageAction>(
       (page) => (page as { readonly items: readonly ItemOf<ActionValue<action>>[] }).items,
     ),
     // The pull only learns the stream ended on the next pull; the last page already says so.
+    // `paginate` always emits the first page, even an empty one, so the pull never ends empty.
     hasMore:
       loaded === undefined ||
       (!loaded.done &&
@@ -90,7 +91,6 @@ export const useInfiniteRead = <action extends PageAction>(
     loadMore: () => pull(),
     isLoading: AsyncResult.isInitial(result) && result.waiting,
     isLoadingMore: !AsyncResult.isInitial(result) && result.waiting,
-    // `paginate` always emits the first page, even an empty one, so the pull never ends empty.
     error: errorOf(result) as ActionError<action> | undefined,
     result: result as unknown as InfiniteReadResult<
       ActionValue<action>,

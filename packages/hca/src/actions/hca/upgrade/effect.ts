@@ -3,8 +3,7 @@ import { Effect } from "effect";
 import { Abis } from "@ensforge/contracts";
 import { standaloneSingleOwnerHcaV2Abi } from "@ensforge/contracts/v2/experimental/hca";
 import type { Errors, Plan, Write } from "@ensforge/sdk";
-import { Rpc, requireAddress } from "@ensforge/sdk/extension";
-import { Action, type Client } from "@ensforge/sdk/extension";
+import { Action, type Client, requireAddress, Rpc } from "@ensforge/sdk/extension";
 import { encodeFunctionData } from "viem";
 
 import { HcaError } from "../../../errors/classes/HcaError.js";
@@ -35,9 +34,11 @@ export const plan = Effect.fnUntraced(function* (
           functionName: "canUpgradeFrom",
           args: [account.implementation],
         }).pipe(Effect.orElseSucceed(() => false));
+
   if (!account.deployed || !inUpgradeSet || !predecessorAllowed) {
     return yield* Effect.fail(new HcaError({ code: "HCA_UPGRADE_NOT_ALLOWED" }));
   }
+
   return onePlan(client, {
     operation: "hca.upgrade",
     account: owner,

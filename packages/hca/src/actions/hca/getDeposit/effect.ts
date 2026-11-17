@@ -1,7 +1,6 @@
 import { Effect } from "effect";
 
-import { Rpc } from "@ensforge/sdk/extension";
-import { Action, type Client } from "@ensforge/sdk/extension";
+import { Action, type Client, Rpc } from "@ensforge/sdk/extension";
 import { entryPoint07Abi } from "viem/account-abstraction";
 
 import { requireHca } from "../../../internal/deployment.js";
