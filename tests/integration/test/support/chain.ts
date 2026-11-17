@@ -1,10 +1,12 @@
 import { layer } from "@effect/vitest";
 import { Effect } from "effect";
 
-import { Ensforge, ensActions } from "@ensforge/sdk";
+import { Ensforge, ensActions, type Plan } from "@ensforge/sdk";
 import type { DevnetInstance, ProfileName } from "@ensforge/test-devnet";
 import { Fixtures } from "@ensforge/test-fixtures";
 import { createPublicClient, createWalletClient, http, type Address } from "viem";
+
+import type { TestWallet } from "./wallet.ts";
 
 /**
  * A seeded profile for a test file: `Fixtures` and `Devnet`. Chain tests run on real time, so the
@@ -13,16 +15,19 @@ import { createPublicClient, createWalletClient, http, type Address } from "viem
 export const onProfile = (profile: ProfileName) =>
   layer(Fixtures.layer({ profile }), { excludeTestServices: true });
 
-/** Client settings a test varies: the writing account and CCIP-Read. */
+/** Client settings a test varies: the writing account, its wallet, and CCIP-Read. */
 export type ClientOptions = {
   readonly account?: Address | undefined;
+  /** The account's wallet; the devnet's unlocked account by default. */
+  readonly wallet?: TestWallet | undefined;
   readonly ccipRead?: false | { readonly gatewayUrls?: readonly string[] } | undefined;
 };
 
 /** An ensforge client on the devnet. */
 export const ensforge = (devnet: DevnetInstance, options: ClientOptions = {}) => {
   const transport = http(devnet.rpcUrl);
-  const publicClient = createPublicClient({ chain: devnet.chain, transport });
+  // The devnet answers at once; short polling keeps receipt and chain-time waits short.
+  const publicClient = createPublicClient({ chain: devnet.chain, transport, pollingInterval: 50 });
   return Ensforge.create({
     publicClient,
     deployment: devnet.deployments,
@@ -32,7 +37,8 @@ export const ensforge = (devnet: DevnetInstance, options: ClientOptions = {}) =>
       : {
           walletClient: createWalletClient({
             chain: devnet.chain,
-            transport,
+            pollingInterval: 50,
+            transport: options.wallet?.transport ?? transport,
             account: options.account,
           }),
         }),
@@ -63,3 +69,15 @@ export const atTimestamp = <A, E, R>(
       await devnet.client.mine({ blocks: 1 });
     }).pipe(Effect.andThen(effect)),
   );
+
+/**
+ * An `onStep` that moves the devnet's clock past each wait a plan asks for (e.g. a commitment's
+ * minimum age); the devnet's time only moves with its blocks.
+ */
+export const passWaits = (devnet: DevnetInstance) => (event: Plan.Event) => {
+  const seconds = event.step.waitFor?.seconds;
+  if (event.status !== "waiting" || seconds === undefined) return;
+  void devnet.client
+    .increaseTime({ seconds: Number(seconds) })
+    .then(() => devnet.client.mine({ blocks: 1 }));
+};
