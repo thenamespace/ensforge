@@ -1058,7 +1058,9 @@
     "tests": ["tests/integration/test/reads/name.test.ts > registration.v2-renewed-in-grace"]
   },
   "T10": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/conformance.test.ts > reads at a pinned block, with that block's time"
+    ]
   },
   "T11": {
     "status": "pending"
@@ -1611,7 +1613,9 @@
     ]
   },
   "M:E4": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/conformance.test.ts > reads at a pinned block, with that block's time"
+    ]
   },
   "M:E5": {
     "status": "pending"
