@@ -103,6 +103,20 @@ const services = {
   },
 };
 
+// Forks of mainnet and Sepolia at pinned blocks (`pnpm test:fork`; needs Foundry and archive RPCs
+// in .env). One fork at a time keeps the RPC under its rate limit.
+const fork = {
+  extends: true as const,
+  test: {
+    name: "fork",
+    root: "tests/fork",
+    include: ["test/**/*.test.ts"],
+    testTimeout: 600_000,
+    hookTimeout: 600_000,
+    fileParallelism: false,
+  },
+};
+
 const types = (name: (typeof packages)[number]) => ({
   extends: true as const,
   test: {
@@ -135,6 +149,7 @@ export default defineConfig({
       integration,
       fuzz,
       services,
+      fork,
     ],
     passWithNoTests: true,
   },

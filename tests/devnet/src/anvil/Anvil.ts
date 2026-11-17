@@ -20,6 +20,16 @@ export type AnvilOptions = {
   readonly loadState?: string;
   /** EIP-155 chain id; anvil's 31337 when omitted. */
   readonly chainId?: number;
+  /** Fork a live network at a pinned block instead of starting empty. */
+  readonly fork?: {
+    readonly url: string;
+    readonly blockNumber: bigint;
+    /**
+     * anvil's budget of RPC compute units per second towards `url` (Alchemy's units, about 16–26
+     * a call). Keeps forks under a rate-limited endpoint's quota.
+     */
+    readonly computeUnitsPerSecond: number;
+  };
 };
 
 export type AnvilInstance = { readonly rpcUrl: string; readonly port: number };
@@ -78,6 +88,17 @@ export class Anvil extends Context.Service<
           timestamp: options.timestamp,
           loadState: options.loadState,
           chainId: options.chainId,
+          ...(options.fork === undefined
+            ? {}
+            : {
+                forkUrl: options.fork.url,
+                forkBlockNumber: options.fork.blockNumber,
+                computeUnitsPerSecond: options.fork.computeUnitsPerSecond,
+                // A throttled endpoint answers 429 under load: wait and try again.
+                retries: 10,
+                forkRetryBackoff: 2_000,
+                timeout: 120_000,
+              }),
         });
         yield* Effect.acquireRelease(
           Effect.tryPromise({

@@ -15,8 +15,11 @@ import { profiles } from "./profiles/profiles.ts";
  */
 export const verify = Effect.fn("verify")(function* () {
   const devnet = yield* Devnet;
-  const { client, accounts, ledger, contract } = devnet;
-  const launched = profiles[devnet.profile].steps.some((step) => step.id.startsWith("cutover"));
+  const { client, accounts, ledger, contract, profile } = devnet;
+  if (profile === "mainnet" || profile === "sepolia") {
+    return yield* Effect.die(new Error(`verify checks a built profile, not a fork of ${profile}`));
+  }
+  const launched = profiles[profile].steps.some((step) => step.id.startsWith("cutover"));
   const hasV2 = ledger.has("v2.rootRegistry");
   const problems: string[] = [];
 

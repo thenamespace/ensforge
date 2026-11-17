@@ -28,7 +28,8 @@ export type DevnetOptions = {
 
 /** A running devnet: anvil loaded with a built profile. */
 export type DevnetInstance = {
-  readonly profile: ProfileName;
+  /** The built profile it runs, or the live network a fork follows. */
+  readonly profile: ProfileName | "mainnet" | "sepolia";
   readonly rpcUrl: string;
   /** viem chain with Multicall3 and the Universal Resolver of the profile. */
   readonly chain: Chain;

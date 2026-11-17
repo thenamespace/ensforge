@@ -57,6 +57,8 @@ export class Chain extends Context.Service<
     readonly now: Effect.Effect<bigint, ChainError>;
     readonly blockNumber: Effect.Effect<bigint, ChainError>;
     readonly balance: (address: Address) => Effect.Effect<bigint, ChainError>;
+    /** The code at `address`; `undefined` for an account without code. */
+    readonly code: (address: Address) => Effect.Effect<Hex | undefined, ChainError>;
     readonly read: <
       const abi extends Abi | readonly unknown[],
       functionName extends ReadFunction<abi>,
@@ -129,6 +131,7 @@ export class Chain extends Context.Service<
         now: Effect.map(latestBlock, (block) => block.timestamp),
         blockNumber: rpc("getBlockNumber", () => client.getBlockNumber()),
         balance: (address) => rpc("getBalance", () => client.getBalance({ address })),
+        code: (address) => rpc("getCode", () => client.getCode({ address })),
         read: (parameters) =>
           rpc("readContract", () => client.readContract(parameters as never)) as never,
         call: (parameters) => rpc("call", () => client.call(parameters)),
