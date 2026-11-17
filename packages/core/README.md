@@ -9,6 +9,7 @@ Type-safe, Effect-native actions and utilities for ENS applications, across ENSv
 - Batched reads (Multicall3) with CCIP-Read for off-chain names
 - Writes as plans: simulated first, bundled for EIP-5792 wallets, resumable after failures
 - ENS events normalized across ENSv1 and ENSv2
+- Pluggable indexers (bigname, Goldsky, your own) for lists, history and search, ENS and Basenames
 - Name normalization, hashing, DNS encoding and record codecs
 - Promise and Effect APIs; bring your own viem clients
 
@@ -59,6 +60,30 @@ await ens.plan.resume({ id: error.context.planId });
 ```
 
 The same actions run in Effect programs from `@ensforge/core/effect`.
+
+## Indexer
+
+Lists, history and search come from an indexer. `bigname()` (mainnet, Sepolia) and `goldsky()`
+(mainnet ENS and Basenames) are built in; `fallback` asks each in turn, and `defineIndexer` adapts
+any other source:
+
+```ts
+import { bigname, fallback, goldsky, indexerActions, paginate } from "@ensforge/core/indexer";
+
+const ens = Ensforge.create({ publicClient, indexer: fallback([bigname(), goldsky()]) })
+  .extend(ensActions())
+  .extend(indexerActions());
+
+const names = await ens.indexer.getNamesForAddress({ address: "0xb8c2…" });
+const basename = await ens.indexer.getName({ name: "jesse.base.eth" }); // answered by Goldsky
+
+for await (const page of paginate(ens.indexer.getSubnames, { name: "ens.eth" })) {
+  console.log(page.items.map((subname) => subname.name));
+}
+```
+
+With an indexer, `migration.migrate` also copies every record a name has set and recreates its
+subnames without listing them.
 
 ## License
 
