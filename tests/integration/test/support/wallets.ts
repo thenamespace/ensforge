@@ -47,6 +47,7 @@ export class Wallets extends Context.Service<
     Effect.gen(function* () {
       const devnet = yield* Devnet;
       const chain = yield* Chain;
+      const context = yield* Effect.context<never>();
       const node = http(devnet.rpcUrl)({ chain: devnet.chain });
       const forward = (method: string, params?: unknown) =>
         Effect.tryPromise({
@@ -128,7 +129,7 @@ export class Wallets extends Context.Service<
 
         // viem calls the wallet through Promises; this is the one place they appear.
         const request = (({ method, params }: { method: string; params?: unknown }) =>
-          Effect.runPromise(
+          Effect.runPromiseWith(context)(
             handle(method, (params ?? []) as readonly unknown[]),
           )) as EIP1193RequestFn;
 

@@ -23,12 +23,9 @@ describe("verify", () => {
   })("tampered", (it) => {
     it.effect("reports altered code and a moved resolver", () =>
       Effect.gen(function* () {
-        const { client, accounts, contract } = yield* Devnet;
+        const { accounts, contract } = yield* Devnet;
         const chain = yield* Chain;
-        // `Chain` has no `setCode`: this one anvil cheat goes through the viem test client.
-        yield* Effect.tryPromise(() =>
-          client.setCode({ address: contract("legacy.publicResolver2017"), bytecode: "0x00" }),
-        );
+        yield* chain.setCode(contract("legacy.publicResolver2017"), "0x00");
         yield* chain.write({
           address: contract("v1.registrarSecurityController"),
           abi: parseAbi(["function setRegistrarResolver(address resolver)"]),

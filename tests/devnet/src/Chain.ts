@@ -10,6 +10,7 @@ import type {
   ContractFunctionName,
   GetLogsParameters,
   Hash,
+  Hex,
   Log,
   ReadContractParameters,
   ReadContractReturnType,
@@ -78,6 +79,8 @@ export class Chain extends Context.Service<
       parameters: SendTransactionParameters,
     ) => Effect.Effect<TransactionReceipt, ChainError>;
     readonly setBalance: (address: Address, value: bigint) => Effect.Effect<void, ChainError>;
+    /** Replaces the code at `address` (anvil cheat). */
+    readonly setCode: (address: Address, bytecode: Hex) => Effect.Effect<void, ChainError>;
     readonly mine: (blocks?: number) => Effect.Effect<void, ChainError>;
     readonly increaseTime: (seconds: number) => Effect.Effect<void, ChainError>;
     readonly setNextBlockTimestamp: (timestamp: bigint) => Effect.Effect<void, ChainError>;
@@ -103,6 +106,8 @@ export class Chain extends Context.Service<
     Chain,
     Effect.gen(function* () {
       const { client } = yield* Devnet;
+      // `passWaits` is a plain callback the SDK calls; it runs its effects with this context.
+      const context = yield* Effect.context<never>();
       const latestBlock = rpc("getBlock", () => client.getBlock());
       const receipt = (hash: Hash) =>
         rpc("waitForTransactionReceipt", () => client.waitForTransactionReceipt({ hash }));
@@ -145,6 +150,7 @@ export class Chain extends Context.Service<
           ),
         setBalance: (address, value) =>
           rpc("setBalance", () => client.setBalance({ address, value })),
+        setCode: (address, bytecode) => rpc("setCode", () => client.setCode({ address, bytecode })),
         mine,
         increaseTime,
         setNextBlockTimestamp,
@@ -158,7 +164,7 @@ export class Chain extends Context.Service<
         passWaits: (event) => {
           const seconds = event.step.waitFor?.seconds;
           if (event.status !== "waiting" || seconds === undefined) return;
-          Effect.runFork(increaseTime(Number(seconds)).pipe(Effect.andThen(mine())));
+          Effect.runForkWith(context)(increaseTime(Number(seconds)).pipe(Effect.andThen(mine())));
         },
       });
     }),
