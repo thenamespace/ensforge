@@ -1,10 +1,13 @@
 import { Effect } from "effect";
 
+import { isAddressEqual } from "viem";
+
 import type { Client } from "../../../client/types.js";
 import { NotFoundError } from "../../../errors/classes/NotFoundError.js";
 import * as Action from "../../../internal/action/index.js";
 import { loadName } from "../../../internal/name/load.js";
 import { describeResolver } from "../../../internal/resolver/describe.js";
+import { nearestV1AncestorResolver } from "../../../internal/resolver/v1-ancestor.js";
 import * as Rpc from "../../../internal/rpc/index.js";
 import type { get as Promises } from "./index.js";
 
@@ -29,13 +32,23 @@ export const get = Effect.fn("ensforge.resolver.get")(
         ? Effect.fail(new NotFoundError({ code: "RESOLVER_NOT_FOUND" }))
         : Effect.succeed(null);
     const own = loaded.state.resolver;
-    const address = own ?? found?.address;
+    // ENSv2 sends premigrated ENSv1 names to the ENSv1 bridge, which resolves them from the ENSv1
+    // registry: describe the ENSv1 resolver it uses, as before the launch.
+    const bridge = client.deployment.v2?.migration.ensV1Resolver;
+    const bridged =
+      own === null &&
+      found !== null &&
+      bridge !== undefined &&
+      isAddressEqual(found.address, bridge);
+    const served = bridged
+      ? yield* nearestV1AncestorResolver(client, loaded.data.parts.name, options)
+      : found;
+    const address = own ?? served?.address;
     if (address === undefined) return yield* notFound;
 
     const description = yield* describeResolver(client, address, loaded.data.parts.node, options);
-    // The Universal Resolver finds the nearest resolver up the tree, but a parent's resolver
-    // serves this name only as an ENSIP-10 extended resolver.
-    if (own === null && found?.inherited === true && !description.profiles.extended) {
+    // A parent's resolver serves this name only as an ENSIP-10 extended resolver.
+    if (own === null && served?.inherited === true && !description.profiles.extended) {
       return yield* notFound;
     }
     return { address, inherited: own === null, ...description };

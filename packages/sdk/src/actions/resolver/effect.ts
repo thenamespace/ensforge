@@ -143,7 +143,8 @@ export declare namespace createSync {
  *
  * - The name's own resolver comes from the registry that holds the name (ENSv1 or ENSv2).
  * - Without one, the resolver serving the name is returned with `inherited: true`: a parent's
- *   wildcard resolver, an off-chain resolver, or the ENSv1 bridge.
+ *   wildcard resolver or an off-chain resolver. For ENSv1 names that ENSv2 serves through the
+ *   ENSv1 bridge, it is the ENSv1 resolver behind the bridge, as before the ENSv2 launch.
  * - Costs three batched calls: name state, then one round of ERC-165 checks.
  * - Returns `null` when nothing resolves the name, unless `strict` is set.
  *
