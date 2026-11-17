@@ -4,6 +4,12 @@
   "private": true,
   "description": "Random ENS operation sequences against a model, invariants and differential checks (not published)",
   "type": "module",
+  "exports": {
+    "./commands": "./test/commands/index.ts",
+    "./commands/*": "./test/commands/*.ts",
+    "./model/*": "./test/model/*.ts",
+    "./sequences/budget": "./test/sequences/budget.ts"
+  },
   "scripts": {
     "lint": "oxlint -c ../../.config/oxlint.config.ts --deny-warnings .",
     "typecheck": "tsc --noEmit -p test"
