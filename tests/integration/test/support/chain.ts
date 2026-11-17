@@ -13,37 +13,53 @@ import { createPublicClient, createWalletClient, http, type Address } from "viem
 export const onProfile = (profile: ProfileName) =>
   layer(Fixtures.layer({ profile }), { excludeTestServices: true });
 
-/** An ensforge client on the devnet, writing as `account` when given. */
-export const ensforge = (devnet: DevnetInstance, account?: Address) => {
+/** Client settings a test varies: the writing account and CCIP-Read. */
+export type ClientOptions = {
+  readonly account?: Address | undefined;
+  readonly ccipRead?: false | { readonly gatewayUrls?: readonly string[] } | undefined;
+};
+
+/** An ensforge client on the devnet. */
+export const ensforge = (devnet: DevnetInstance, options: ClientOptions = {}) => {
   const transport = http(devnet.rpcUrl);
   const publicClient = createPublicClient({ chain: devnet.chain, transport });
   return Ensforge.create({
     publicClient,
     deployment: devnet.deployments,
-    ...(account === undefined
+    ...(options.ccipRead === undefined ? {} : { ccipRead: options.ccipRead }),
+    ...(options.account === undefined
       ? {}
-      : { walletClient: createWalletClient({ chain: devnet.chain, transport, account }) }),
+      : {
+          walletClient: createWalletClient({
+            chain: devnet.chain,
+            transport,
+            account: options.account,
+          }),
+        }),
   }).extend(ensActions());
 };
 
 /** Runs an ensforge Promise call inside a test. */
 export const call = <A>(promise: () => Promise<A>) => Effect.promise(promise);
 
-/**
- * Runs `effect` on a new block mined at `timestamp`, then reverts the chain, so tests can read
- * state at a moment without changing the shared devnet.
- */
+/** Runs `effect` and then reverts the chain, so a test can write without changing the devnet. */
+export const isolated = <A, E, R>(devnet: DevnetInstance, effect: Effect.Effect<A, E, R>) =>
+  Effect.acquireUseRelease(
+    Effect.promise(() => devnet.client.snapshot()),
+    () => effect,
+    (id) => Effect.promise(() => devnet.client.revert({ id })),
+  );
+
+/** Runs `effect` on a new block mined at `timestamp`, isolated like {@link isolated}. */
 export const atTimestamp = <A, E, R>(
   devnet: DevnetInstance,
   timestamp: bigint,
   effect: Effect.Effect<A, E, R>,
 ) =>
-  Effect.acquireUseRelease(
-    Effect.promise(() => devnet.client.snapshot()),
-    () =>
-      Effect.promise(async () => {
-        await devnet.client.setNextBlockTimestamp({ timestamp });
-        await devnet.client.mine({ blocks: 1 });
-      }).pipe(Effect.andThen(effect)),
-    (id) => Effect.promise(() => devnet.client.revert({ id })),
+  isolated(
+    devnet,
+    Effect.promise(async () => {
+      await devnet.client.setNextBlockTimestamp({ timestamp });
+      await devnet.client.mine({ blocks: 1 });
+    }).pipe(Effect.andThen(effect)),
   );

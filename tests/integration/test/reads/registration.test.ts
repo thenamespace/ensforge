@@ -217,16 +217,17 @@ describe("registration reads", () => {
             devnet,
             latest + 1n,
             Effect.gen(function* () {
-              yield* Effect.promise(() =>
-                devnet.client.writeContract({
+              yield* Effect.promise(async () => {
+                const hash = await devnet.client.writeContract({
                   address: devnet.contracts["v2.ethRegistrar"] as Address,
                   abi: Abis.v2.ethRegistrar,
                   functionName: "commit",
                   args: [commitment],
                   account: devnet.accounts.alice,
                   chain: devnet.chain,
-                }),
-              );
+                });
+                await devnet.client.waitForTransactionReceipt({ hash });
+              });
               const { committedAt } = yield* status();
               if (committedAt === null) return assert.fail("commitment not recorded");
               return yield* Effect.forEach([59n, 60n, day - 1n, day], (age) =>
