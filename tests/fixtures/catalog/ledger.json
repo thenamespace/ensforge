@@ -277,7 +277,8 @@
       "tests/integration/test/reads/registration.test.ts > isAvailable agrees with name.get for every .eth second-level name",
       "tests/integration/test/reads/registration.test.ts > prices renewals through the contract that renews each name",
       "tests/integration/test/reads/resolver.test.ts > tells which resolvers resolution still reaches",
-      "tests/integration/test/writes/access-matrix.test.ts > record.set as not premigrated"
+      "tests/integration/test/writes/access-matrix.test.ts > record.set as not premigrated",
+      "tests/integration/test/writes/migration.test.ts > refuses blocked names before the wallet is asked"
     ]
   },
   "O20": {
@@ -308,16 +309,23 @@
     "status": "pending"
   },
   "O27": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/writes/migration.test.ts > migrates unwrapped and wrapped names, leaving their ENSv1 husk to the Graveyard"
+    ]
   },
   "O28": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/writes/migration.test.ts > migrates a locked name into a WrapperRegistry, then its locked child"
+    ]
   },
   "O29": {
     "status": "pending"
   },
   "O30": {
-    "tests": ["tests/integration/test/reads/name.test.ts > v2.reserved"]
+    "tests": [
+      "tests/integration/test/reads/name.test.ts > v2.reserved",
+      "tests/integration/test/writes/migration.test.ts > copies records to a new resolver, keeps the manager, and renews a name in grace first"
+    ]
   },
   "O31": {
     "status": "pending"
@@ -382,7 +390,8 @@
   },
   "W11": {
     "tests": [
-      "tests/integration/test/writes/access-matrix.test.ts > approval.setToken as token approval, CANNOT_APPROVE"
+      "tests/integration/test/writes/access-matrix.test.ts > approval.setToken as token approval, CANNOT_APPROVE",
+      "tests/integration/test/writes/migration.test.ts > refuses blocked names before the wallet is asked"
     ]
   },
   "W12": {
@@ -472,7 +481,9 @@
     "status": "pending"
   },
   "W38": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/writes/migration.test.ts > migrates a locked name into a WrapperRegistry, then its locked child"
+    ]
   },
   "R01": {
     "tests": [
@@ -1104,7 +1115,9 @@
     "status": "pending"
   },
   "T08": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/writes/migration.test.ts > copies records to a new resolver, keeps the manager, and renews a name in grace first"
+    ]
   },
   "T09": {
     "tests": [
@@ -1208,16 +1221,22 @@
     "status": "pending"
   },
   "M06": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/writes/migration.test.ts > migrates unwrapped and wrapped names, leaving their ENSv1 husk to the Graveyard"
+    ]
   },
   "M07": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/writes/migration.test.ts > migrates a locked name into a WrapperRegistry, then its locked child"
+    ]
   },
   "M08": {
     "status": "pending"
   },
   "M09": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/writes/migration.test.ts > migrates a locked name into a WrapperRegistry, then its locked child"
+    ]
   },
   "M10": {
     "status": "pending"
@@ -1483,17 +1502,22 @@
   "M:A20": {
     "tests": [
       "tests/integration/test/reads/migration.test.ts > reports each name's route, blockers and state after migrating",
-      "tests/integration/test/reads/name.test.ts > migration.unwrapped"
+      "tests/integration/test/reads/name.test.ts > migration.unwrapped",
+      "tests/integration/test/writes/migration.test.ts > migrates unwrapped and wrapped names, leaving their ENSv1 husk to the Graveyard"
     ]
   },
   "M:A21": {
-    "tests": ["tests/integration/test/reads/name.test.ts > migration.wrapped-unlocked"]
+    "tests": [
+      "tests/integration/test/reads/name.test.ts > migration.wrapped-unlocked",
+      "tests/integration/test/writes/migration.test.ts > migrates unwrapped and wrapped names, leaving their ENSv1 husk to the Graveyard"
+    ]
   },
   "M:A22": {
     "tests": [
       "tests/integration/test/reads/migration.test.ts > reports each name's route, blockers and state after migrating",
       "tests/integration/test/reads/name.test.ts > migration.locked",
-      "tests/integration/test/reads/registry.test.ts > identifies each kind of registry by the name whose children it holds"
+      "tests/integration/test/reads/registry.test.ts > identifies each kind of registry by the name whose children it holds",
+      "tests/integration/test/writes/migration.test.ts > migrates a locked name into a WrapperRegistry, then its locked child"
     ]
   },
   "M:A23": {
