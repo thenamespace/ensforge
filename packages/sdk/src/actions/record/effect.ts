@@ -57,6 +57,7 @@ import type { set as setTypes, setSync as setSyncTypes } from "./set/index.js";
  *
  * @throws `Errors.InvalidInputError` (`INVALID_NAME`, `INVALID_COIN_TYPE`) for invalid input.
  * @throws `Errors.NotFoundError` (`RESOLVER_NOT_FOUND`) with `strict` when the name has no resolver.
+ * @throws `Errors.UnsupportedError` (`RESOLVER_PROFILE_UNSUPPORTED`) with `strict` when the resolver supports none of the records.
  * @throws `Errors.GatewayError` when an off-chain gateway fails.
  * @throws `Errors.NetworkError` when the RPC request fails.
  *
@@ -110,6 +111,7 @@ export declare namespace get {
  *
  * @throws `Errors.InvalidInputError` (`INVALID_NAME`, `INVALID_COIN_TYPE`) for invalid input.
  * @throws `Errors.NotFoundError` (`RECORD_NOT_FOUND`, `RESOLVER_NOT_FOUND`) with `strict`.
+ * @throws `Errors.UnsupportedError` (`RESOLVER_PROFILE_UNSUPPORTED`) with `strict` when the resolver supports none of the records.
  * @throws `Errors.GatewayError` when an off-chain gateway fails.
  * @throws `Errors.NetworkError` when the RPC request fails.
  *
@@ -167,6 +169,7 @@ export declare namespace getAddress {
  *
  * @throws `Errors.InvalidInputError` (`INVALID_NAME`) when the name cannot be normalized.
  * @throws `Errors.NotFoundError` (`RECORD_NOT_FOUND`, `RESOLVER_NOT_FOUND`) with `strict`.
+ * @throws `Errors.UnsupportedError` (`RESOLVER_PROFILE_UNSUPPORTED`) with `strict` when the resolver supports none of the records.
  * @throws `Errors.GatewayError` (`GATEWAY_REQUEST_FAILED`, `GATEWAY_RESPONSE_INVALID`) with `strict` when NFT metadata cannot be loaded.
  * @throws `Errors.NetworkError` when the RPC request fails.
  *
@@ -222,6 +225,7 @@ export declare namespace getAvatar {
  *
  * @throws `Errors.InvalidInputError` (`INVALID_NAME`) when the name cannot be normalized.
  * @throws `Errors.NotFoundError` (`RECORD_NOT_FOUND`, `RESOLVER_NOT_FOUND`) with `strict`.
+ * @throws `Errors.UnsupportedError` (`RESOLVER_PROFILE_UNSUPPORTED`) with `strict` when the resolver supports none of the records.
  * @throws `Errors.GatewayError` when an off-chain gateway fails.
  * @throws `Errors.NetworkError` when the RPC request fails.
  *
@@ -278,6 +282,7 @@ export declare namespace getContentHash {
  *
  * @throws `Errors.InvalidInputError` (`INVALID_NAME`) when the name cannot be normalized.
  * @throws `Errors.NotFoundError` (`RECORD_NOT_FOUND`, `RESOLVER_NOT_FOUND`) with `strict`.
+ * @throws `Errors.UnsupportedError` (`RESOLVER_PROFILE_UNSUPPORTED`) with `strict` when the resolver supports none of the records.
  * @throws `Errors.GatewayError` when an off-chain gateway fails.
  * @throws `Errors.NetworkError` when the RPC request fails.
  *

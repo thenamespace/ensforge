@@ -28,7 +28,11 @@ type Read = {
 };
 
 type Output = Record<string, Record<string, unknown> | unknown>;
-type Results = { readonly defaultAddress: Hex | undefined };
+type Results = {
+  readonly defaultAddress: Hex | undefined;
+  /** The legacy `addr(bytes32)` answer, for resolvers older than ENSIP-9. */
+  readonly legacyEth: Hex | undefined;
+};
 
 // One single-function ENSIP profile ABI per read, so overloads such as `addr` never get mixed up.
 const profileAbis = {
@@ -76,6 +80,16 @@ const decodeAddress = (
   return bytes === "0x" ? null : orNull(() => codecs.decodeAddress(coinType, bytes));
 };
 
+const decodeLegacyEth = (codecs: RecordCodecs, result: Hex | undefined): string | null => {
+  if (result === undefined) return null;
+  const address = orNull(() =>
+    decodeFunctionResult({ abi: Abis.shared.addrResolver, functionName: "addr", data: result }),
+  );
+  return address === null || isAddressEqual(address, zeroAddress)
+    ? null
+    : orNull(() => codecs.decodeAddress(60n, address));
+};
+
 const addressReads = (node: Hex, coins: readonly (string | bigint)[]): Read[] =>
   coins.map((coin) => {
     const coinType = CoinType.from(coin);
@@ -93,7 +107,10 @@ const addressReads = (node: Hex, coins: readonly (string | bigint)[]): Read[] =>
         (output.addresses as Record<string, unknown>)[String(coin)] =
           unset && usesDefault
             ? decodeAddress(codecs, coinType, results.defaultAddress)
-            : decodeAddress(codecs, coinType, result);
+            : // A resolver without ENSIP-9 answers ETH only through the legacy `addr(bytes32)`.
+              result === undefined && coinType === 60n
+              ? decodeLegacyEth(codecs, results.legacyEth)
+              : decodeAddress(codecs, coinType, result);
       },
     };
   });
@@ -231,7 +248,18 @@ export const planRecordReads = (node: Hex, selection: Selection) => {
     functionName: "addr",
     args: [node, defaultEvmCoinType],
   });
-  const calls = [...reads.map((read) => read.call), ...(needsDefault ? [defaultCall] : [])];
+  // ETH also asks the legacy `addr(bytes32)` in the same request, for pre-ENSIP-9 resolvers.
+  const needsLegacyEth = (selection.addresses ?? []).some((coin) => CoinType.from(coin) === 60n);
+  const legacyEthCall = encodeFunctionData({
+    abi: Abis.shared.addrResolver,
+    functionName: "addr",
+    args: [node],
+  });
+  const calls = [
+    ...reads.map((read) => read.call),
+    ...(needsDefault ? [defaultCall] : []),
+    ...(needsLegacyEth ? [legacyEthCall] : []),
+  ];
 
   // Only the codecs this selection decodes with are loaded.
   const codecs = loadRecordCodecs({
@@ -247,7 +275,10 @@ export const planRecordReads = (node: Hex, selection: Selection) => {
       ...(selection.interfaces === undefined ? {} : { interfaces: {} }),
       ...(selection.data === undefined ? {} : { data: {} }),
     };
-    const shared: Results = { defaultAddress: needsDefault ? results.at(-1) : undefined };
+    const shared: Results = {
+      defaultAddress: needsDefault ? results[reads.length] : undefined,
+      legacyEth: needsLegacyEth ? results[reads.length + (needsDefault ? 1 : 0)] : undefined,
+    };
     for (const [index, read] of reads.entries()) read.apply(results[index], output, shared, loaded);
     return output;
   };

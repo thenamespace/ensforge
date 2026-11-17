@@ -43,6 +43,7 @@ import * as Impl from "./effect.js";
  *
  * @throws `Errors.InvalidInputError` (`INVALID_NAME`) when the name cannot be normalized.
  * @throws `Errors.NotFoundError` (`RECORD_NOT_FOUND`, `RESOLVER_NOT_FOUND`) with `strict`.
+ * @throws `Errors.UnsupportedError` (`RESOLVER_PROFILE_UNSUPPORTED`) with `strict` when the resolver supports none of the records.
  * @throws `Errors.GatewayError` when an off-chain gateway fails.
  * @throws `Errors.NetworkError` when the RPC request fails.
  *

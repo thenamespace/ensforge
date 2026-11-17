@@ -4,6 +4,8 @@ import { Abis } from "@ensforge/contracts";
 import { decodeFunctionResult, encodeFunctionData, type Address, type Hex } from "viem";
 
 import type { Client } from "../../client/types.js";
+import { UnsupportedError } from "../../errors/classes/UnsupportedError.js";
+import { fromRevert } from "../../errors/translate/revert.js";
 import type { AnyError } from "../../errors/types.js";
 import type { Read } from "../../Types.js";
 import * as Rpc from "../rpc/index.js";
@@ -62,8 +64,20 @@ export const resolveCalls = Effect.fnUntraced(function* (
         data: resolved.data,
       });
 
-  return {
-    resolver: resolved.resolver,
-    results: results.map((result) => (isResult(result) ? result : undefined)),
-  };
+  const answered = results.map((result) => (isResult(result) ? result : undefined));
+  // When no call is answered, a strict read fails as a single call would: with the error the
+  // first call reverted with (e.g. no reachable resolver), or as a missing profile.
+  if (options.strict && !single && answered.every((result) => result === undefined)) {
+    const first = results[0];
+    const error =
+      first === undefined || first === "0x"
+        ? undefined
+        : (fromRevert({ data: first }, { contract: resolved.resolver }) as AnyError);
+    return yield* Effect.fail(
+      error === undefined || error._tag === "ContractRevertError"
+        ? new UnsupportedError({ code: "RESOLVER_PROFILE_UNSUPPORTED" })
+        : error,
+    );
+  }
+  return { resolver: resolved.resolver, results: answered };
 });

@@ -24,7 +24,6 @@ const misbehaving = {
   "resolver.reverting": "RESOLVER_PROFILE_UNSUPPORTED",
   "resolver.gas-burner": "RESOLVER_PROFILE_UNSUPPORTED",
   "resolver.returndata-bomb": "RESOLVER_PROFILE_UNSUPPORTED",
-  "resolver.no-erc165": "RESOLVER_PROFILE_UNSUPPORTED",
   "resolver.empty-answer": "RESOLVER_PROFILE_UNSUPPORTED",
   "resolver.malformed-answer": "RESOLVER_PROFILE_UNSUPPORTED",
   "resolver.unsupported-profile": "RESOLVER_PROFILE_UNSUPPORTED",
@@ -115,13 +114,24 @@ describe("resolver reads", () => {
                 [{ url: null }, { eth: null, btc: null }],
                 id,
               );
+              const expected = {
+                _tag: code === "RESOLVER_NOT_FOUND" ? "NotFoundError" : "UnsupportedError",
+                code,
+              };
               yield* expectRejection(
                 () => ens.record.get({ name, addresses: ["eth"], strict: true }),
-                {
-                  _tag: code === "RESOLVER_NOT_FOUND" ? "NotFoundError" : "UnsupportedError",
-                  code,
-                },
+                expected,
               );
+              yield* expectRejection(() => ens.record.getAddress({ name, strict: true }), expected);
+              yield* expectRejection(
+                () => ens.record.getText({ name, key: "url", strict: true }),
+                expected,
+              );
+              yield* expectRejection(
+                () => ens.record.getContentHash({ name, strict: true }),
+                expected,
+              );
+              yield* expectRejection(() => ens.record.getAvatar({ name, strict: true }), expected);
             }
           }),
         {
@@ -142,6 +152,32 @@ describe("resolver reads", () => {
             ],
           },
         },
+      );
+
+      // Resolvers older than ENSIP-9 and ERC-165 still answer the legacy `addr(bytes32)`; the
+      // Universal Resolver calls it as an old resolver, and so does every client.
+      it.effect(
+        "reads ETH from a resolver without ERC-165 through the legacy addr",
+        () =>
+          Effect.gen(function* () {
+            const fixtures = yield* Fixtures;
+            const devnet = yield* Devnet;
+            const ens = ensforge(devnet);
+            const name = fixtures.byId("resolver.no-erc165").name;
+
+            assert.strictEqual(
+              yield* call(() => ens.record.getAddress({ name, strict: true })),
+              devnet.accounts.alice,
+            );
+            const records = yield* call(() =>
+              ens.record.get({ name, texts: ["url"], addresses: ["eth", "btc"] }),
+            );
+            assert.deepStrictEqual(
+              [records.texts, records.addresses],
+              [{ url: null }, { eth: devnet.accounts.alice, btc: null }],
+            );
+          }),
+        { meta: { cases: ["R11", "R12"] } },
       );
 
       it.effect(

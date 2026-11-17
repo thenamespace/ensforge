@@ -27,4 +27,30 @@ describe("planRecordReads", () => {
       });
     }),
   );
+
+  // Resolvers older than ENSIP-9 (catalog R11, R12) only answer the legacy `addr(bytes32)`.
+  it.effect("reads ETH through the legacy addr when the resolver lacks ENSIP-9", () =>
+    Effect.gen(function* () {
+      const plan = planRecordReads(namehash("nick.eth"), { addresses: ["eth"] });
+      const codecs = yield* plan.codecs;
+      const legacy = encodeAbiParameters([{ type: "address" }], [defaultAddress]);
+
+      assert.strictEqual(plan.calls.length, 2);
+      assert.deepStrictEqual(plan.assemble([undefined, legacy], codecs).addresses, {
+        eth: defaultAddress,
+      });
+      // An ENSIP-9 answer wins over the legacy one.
+      const ensip9 = getAddress("0x00000000000000000000000000000000000a11ce");
+      assert.deepStrictEqual(plan.assemble([addrResult(ensip9), legacy], codecs).addresses, {
+        eth: ensip9,
+      });
+      assert.deepStrictEqual(
+        plan.assemble(
+          [undefined, encodeAbiParameters([{ type: "address" }], [zeroAddress])],
+          codecs,
+        ).addresses,
+        { eth: null },
+      );
+    }),
+  );
 });
