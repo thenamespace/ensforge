@@ -120,21 +120,6 @@ export const sessionProblem = Effect.fnUntraced(function* (
   return undefined;
 });
 
-// Session calls by target: the validator's fixed policy (HCAOwnerAndSessionValidator, v1.0.1).
-const resolverSetters = new Set([
-  "setAddr",
-  "setText",
-  "setContenthash",
-  "setABI",
-  "setInterface",
-  "setData",
-  "linkToNode",
-  "linkToRecord",
-  "setName",
-  "multicall",
-  "multicallWithNodeCheck",
-]);
-
 type Decoded = { readonly functionName: string; readonly args?: readonly unknown[] | undefined };
 
 const decode = (abi: Abi, data: Hex): Decoded | undefined => {
@@ -143,6 +128,30 @@ const decode = (abi: Abi, data: Hex): Decoded | undefined => {
   } catch {
     return undefined;
   }
+};
+
+// Record calls a session may make on its resolver: HCAResolverPolicyLib (v1.0.1) allows these
+// setters, and `multicall` only when every inner call is allowed too.
+const recordSetters = new Set([
+  "setAddress",
+  "setText",
+  "setContenthash",
+  "setABI",
+  "setInterface",
+  "setData",
+  "linkToNode",
+  "linkToRecord",
+  "setName",
+]);
+
+const isRecordCall = (data: Hex): boolean => {
+  const decoded = decode(Abis.v2.permissionedResolver as Abi, data);
+  if (decoded === undefined) return false;
+  if (decoded.functionName === "multicall") {
+    const [inner] = decoded.args as readonly [readonly Hex[]];
+    return inner.every(isRecordCall);
+  }
+  return recordSetters.has(decoded.functionName);
 };
 
 const notAllowed = (call: Plan.Call, reason: string) =>
@@ -192,12 +201,7 @@ export const checkSessionCalls = Effect.fnUntraced(function* (
     }
 
     if (isAddressEqual(call.to, resolver)) {
-      const decoded = decode(Abis.v2.permissionedResolver as Abi, call.data);
-      if (decoded !== undefined && resolverSetters.has(decoded.functionName)) continue;
-      if (decoded?.functionName === "grantRootRoles") {
-        const [, account] = decoded.args as readonly [bigint, Address];
-        if (isAddressEqual(account, session.owner)) continue;
-      }
+      if (isRecordCall(call.data)) continue;
       return yield* Effect.fail(notAllowed(call, "only record setters on the session resolver"));
     }
 
