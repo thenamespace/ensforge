@@ -1,0 +1,349 @@
+import { assert, describe } from "@effect/vitest";
+import { Effect } from "effect";
+
+import { Devnet, profileNames, type ProfileName } from "@ensforge/test-devnet";
+import { allFixtures, Fixtures, seededOn } from "@ensforge/test-fixtures";
+import { expectRejection } from "@ensforge/test-harness";
+import { labelhash, namehash } from "viem";
+
+import { call, ensforge, onProfile } from "../support/chain.ts";
+import {
+  atStage,
+  holder,
+  stageOf,
+  unclaimed,
+  v1Eth,
+  v1Reserved,
+  v1Sub,
+  v2Eth,
+  v2Sub,
+  type NameExpectation,
+} from "../support/expect.ts";
+
+const days = (count: bigint) => count * 86_400n;
+
+/** What `name.get` must report for every fixture's name. */
+const expected: Readonly<Record<string, NameExpectation>> = {
+  "v1.unwrapped": v1Eth(["M:A2", "O19"], "alice"),
+  "v1.unwrapped.manager": v1Eth(["M:A3"], "alice"),
+  "v1.unwrapped.transferred": v1Eth(["O03"], "bob"),
+  "v1.unwrapped.registrar-only": v1Eth(["O04"], "alice"),
+  "v1.unwrapped.legacy-controller": v1Eth([], "alice"),
+  "v1.unwrapped.grace": v1Eth(["M:A5"], null, "grace"),
+  "v1.unwrapped.premium": v1Eth([], null, "expired"),
+  "v1.unwrapped.expired": v1Eth(["M:A6", "O05"], null, "expired"),
+  "v1.subname": v1Sub(["M:A4", "H24"], "bob"),
+  "v1.subname.deleted": unclaimed(["O12"]),
+  "v1.old-registry": v1Sub(["O01"], "alice"),
+  "v1.old-registry.migrated": v1Sub(["O02"], "bob"),
+  "v1.wrapped": v1Eth(["M:A7"], "alice", "registered", "v1-wrapped"),
+  "v1.wrapped.locked": v1Eth(["M:A8"], "alice", "registered", "v1-wrapped"),
+  "v1.wrapped.locked.cannot-transfer": v1Eth([], "alice", "registered", "v1-wrapped"),
+  "v1.wrapped.locked.cannot-set-resolver": v1Eth([], "alice", "registered", "v1-wrapped"),
+  "v1.wrapped.locked.cannot-set-ttl": v1Eth([], "alice", "registered", "v1-wrapped"),
+  "v1.wrapped.locked.cannot-create-subdomain": v1Eth([], "alice", "registered", "v1-wrapped"),
+  "v1.wrapped.locked.cannot-burn-fuses": v1Eth([], "alice", "registered", "v1-wrapped"),
+  "v1.wrapped.locked.all": v1Eth([], "alice", "registered", "v1-wrapped"),
+  "v1.wrapped.approved": v1Eth([], "alice", "registered", "v1-wrapped"),
+  "v1.wrapped.locked.cannot-approve": v1Eth([], "alice", "registered", "v1-wrapped"),
+  "v1.wrapped.sub": v1Sub(["M:A9"], "bob", "registered", "v1-wrapped"),
+  "v1.wrapped.sub.emancipated": v1Sub(["M:A10"], "bob", "registered", "v1-wrapped"),
+  "v1.wrapped.sub.locked": v1Sub(["M:A11"], "bob", "registered", "v1-wrapped"),
+  "v1.wrapped.sub.can-extend": v1Sub([], "bob", "registered", "v1-wrapped"),
+  // An expired emancipated child has no owner; a parent-controlled one keeps it (W09).
+  "v1.wrapped.sub.expired-emancipated": v1Sub(["W05"], null, "expired", "v1-wrapped"),
+  "v1.wrapped.sub.expired": v1Sub(["W09", "M:A12"], "bob", "expired", "v1-wrapped"),
+  // In the registrar's grace period the wrapper still holds the token.
+  "v1.wrapped.grace": v1Eth(["M:A13", "W07"], "alice", "grace", "v1-wrapped"),
+  "v1.wrapped.expired": v1Eth(["W08"], null, "expired", "v1-wrapped"),
+  // Registrar renewed past the wrapper: registered, but the wrapper reports no owner until resynced.
+  "v1.wrapped.desynced": v1Eth(["O07", "O08"], null, "registered", "v1-wrapped"),
+  "v1.wrapped.sub.unwrapped-parent": v1Sub(["O10"], "bob", "registered", "v1-wrapped"),
+  "v1.unwrapped.sub.wrapped-parent": v1Sub(["O11"], "bob"),
+  "v1.wrapped.implicit-unwrap": v1Eth(["O06"], "bob"),
+  "v2.registered": v2Eth(["M:A14"], "alice"),
+  "v2.grace": v2Eth(["M:A15", "O15"], null, "grace"),
+  "v2.expired": v2Eth(["M:A16", "O15"], null, "expired"),
+  "v2.re-registered": v2Eth(["M:A17", "O17"], "bob"),
+  "v2.subnames": v2Sub(["M:A18"], "bob"),
+  "v2.unregistered": unclaimed(["M:A19", "O16"]),
+  "v2.unregistered.renewed": {
+    cases: ["O14"],
+    kind: "v2-reserved",
+    status: "reserved",
+    owner: null,
+    reachable: true,
+    available: false,
+    renewable: false,
+  },
+  "v2.reserved.lapsed": unclaimed(["O13"]),
+  "v2.roles": v2Eth(["M:A24"], "alice"),
+  "v2.regenerated": v2Eth(["M:A25"], "alice"),
+  "v2.operator": v2Eth([], "carol"),
+  // A premigration reservation leaves ENSv1 in charge until the name migrates.
+  "v2.reserved": v1Reserved(["M:A23", "O18", "O30"], "alice"),
+  "v2.linked": v2Sub(["O20"], "bob"),
+  "v2.replaced-subregistry": unclaimed(["O23"]),
+  "resolver.none": v1Eth([], "alice"),
+  "resolver.eoa": v1Eth([], "alice"),
+  "resolver.not-a-resolver": v1Eth([], "alice"),
+  "resolver.reverting": v1Eth([], "alice"),
+  "resolver.gas-burner": v1Eth([], "alice"),
+  "resolver.returndata-bomb": v1Eth([], "alice"),
+  "resolver.public-resolver-v2.unknown": v1Eth([], "alice"),
+  "resolver.no-erc165": v1Eth([], "alice"),
+  "resolver.empty-answer": v1Eth([], "alice"),
+  "resolver.malformed-answer": v1Eth([], "alice"),
+  "resolver.unsupported-profile": v1Eth([], "alice"),
+  "resolver.offchain": v1Eth([], "alice"),
+  "resolver.spoofed-offchain-lookup": v1Eth([], "alice"),
+  "resolver.wildcard": v1Eth([], "alice"),
+  "resolver.frozen-2019": v1Eth([], "alice"),
+  "resolver.2020": v1Eth([], "alice"),
+  "records.v1": v1Eth([], "alice"),
+  "records.btc-taproot": v1Eth([], "alice"),
+  "records.contenthash.ipfs": v1Eth([], "alice"),
+  "records.contenthash.ipns": v1Eth([], "alice"),
+  "records.contenthash.swarm": v1Eth([], "alice"),
+  "records.contenthash.onion3": v1Eth([], "alice"),
+  "records.contenthash.arweave": v1Eth([], "alice"),
+  "records.contenthash.unknown": v1Eth([], "alice"),
+  "records.huge-text": v1Eth([], "alice"),
+  "records.avatar.https": v1Eth([], "alice"),
+  "records.avatar.erc721-owned": v1Eth([], "alice"),
+  "records.avatar.erc1155": v1Eth([], "alice"),
+  "records.avatar.data-svg": v1Eth([], "alice"),
+  "records.avatar.unknown-scheme": v1Eth([], "alice"),
+  "records.avatar.erc721-not-owned": v1Eth([], "bob"),
+  "records.v2": v2Eth([], "bob"),
+  "records.v2.default": v2Eth([], "carol"),
+  "records.v2.linked": v2Eth([], "bob"),
+  "records.v2.partial-roles": v2Eth([], "bob"),
+  "primary.addr-reverse": v1Eth([], "alice"),
+  "primary.default-reverse": v1Eth([], "bob"),
+  "primary.both": v1Eth([], "carol"),
+  "primary.mismatch": v1Eth([], "alice"),
+  "primary.not-normalized": v1Eth([], "approved"),
+  "primary.contract": v1Eth([], "user"),
+  "primary.reverse-2017": v1Eth([], "user2"),
+  "primary.reverse-2020": v1Eth([], "user"),
+  "primary.at-registration": v1Eth([], "nameOwner"),
+  "hierarchy.label-63": v1Sub(["H02"], "bob"),
+  "hierarchy.label-64": v1Sub(["H02"], "bob"),
+  "hierarchy.label-255": v1Sub(["H01"], "bob"),
+  "hierarchy.label-with-dot": v1Sub(["H04", "M:C6"], "bob"),
+  "hierarchy.label-literal-hex": v1Sub(["H05"], "bob"),
+  "hierarchy.label-invalid-utf8": v1Sub(["H06"], "bob"),
+  "hierarchy.label-unknown": v1Sub(["M:C6"], "bob"),
+  "hierarchy.label-unnormalized": v1Sub(["L32", "M:C8"], "bob"),
+  "hierarchy.depth-33": v1Sub(["H13"], "alice"),
+  "dns.imported": v1Sub(["M:C4"], "alice"),
+  "dns.imported.wrapped": v1Sub(["D15"], "bob", "registered", "v1-wrapped"),
+  "dns.synced-tld": { ...v2Sub(["D17", "M:C2"], "owner") },
+  "registration.price.3cp": v2Eth([], "alice"),
+  "registration.price.4cp": v2Eth([], "alice"),
+  "registration.price.5cp": v2Eth([], "alice"),
+  "registration.price.emoji-zwj": v2Eth([], "alice"),
+  "registration.v2-premium": v2Eth([], null, "expired"),
+  "registration.v2-renewed-in-grace": v2Eth(["T09"], "alice"),
+  "registration.v1-renewed-by-renewer": v1Reserved(["G12"], "alice"),
+  "migration.unwrapped": v2Eth(["M:A20"], "alice", "registered", "v2-migrated"),
+  "migration.wrapped-unlocked": v2Eth(["M:A21"], "alice", "registered", "v2-migrated"),
+  "migration.locked": v2Eth(["M:A22"], "alice", "registered", "v2-migrated"),
+  "account.v1-operator": v1Eth([], "alice"),
+  "account.resolver-delegate": v1Eth([], "alice"),
+  "account.hca": v1Eth([], "alice"),
+  "account.eip7702": v1Eth([], "alice"),
+};
+
+// A name whose parent registry reverts is a typed error, not a state.
+const unreadable = new Set(["resolver.registry-reverts"]);
+
+// `v2-only` knows no ENSv1: only names that live in ENSv2 there.
+const readOn = (profile: ProfileName) =>
+  allFixtures.filter(
+    (fixture) =>
+      seededOn(fixture, profile) &&
+      !unreadable.has(fixture.id) &&
+      (profile !== "v2-only" || fixture.tags["kind"] === "v2-native"),
+  );
+
+describe("name.get", () => {
+  for (const profile of profileNames) {
+    onProfile(profile)(profile, (it) => {
+      for (const definition of readOn(profile)) {
+        const expectation = expected[definition.id];
+        it.effect(
+          definition.id,
+          () =>
+            Effect.gen(function* () {
+              if (expectation === undefined)
+                return assert.fail(`no expectation for ${definition.id}`);
+              const fixtures = yield* Fixtures;
+              const devnet = yield* Devnet;
+              const fixture = fixtures.byId(definition.id);
+              const stage = stageOf(profile);
+              const state = yield* call(() => ensforge(devnet).name.get({ name: fixture.name }));
+
+              assert.deepStrictEqual(
+                {
+                  kind: state.kind,
+                  status: state.status,
+                  owner: state.owner,
+                  wrapped: state.wrapped,
+                  migrated: state.migrated,
+                  reachable: state.reachable,
+                  available: state.available,
+                  renewable: state.renewable,
+                },
+                {
+                  kind: expectation.kind,
+                  status: expectation.status,
+                  owner: holder(devnet, fixture, expectation.owner),
+                  wrapped: expectation.wrapped ?? false,
+                  migrated: expectation.migrated ?? false,
+                  reachable: atStage(expectation.reachable, stage),
+                  available: atStage(expectation.available, stage),
+                  renewable: atStage(expectation.renewable, stage),
+                },
+              );
+            }),
+          { meta: { cases: [...(expectation?.cases ?? [])] } },
+        );
+      }
+    });
+  }
+
+  onProfile("mainnet-shaped")("fields", (it) => {
+    it.effect(
+      "registrant, manager and expiry of ENSv1 names",
+      () =>
+        Effect.gen(function* () {
+          const fixtures = yield* Fixtures;
+          const ens = ensforge(yield* Devnet);
+          const { accounts } = yield* Devnet;
+
+          const managed = yield* call(() =>
+            ens.name.get({ name: fixtures.byId("v1.unwrapped.manager").name }),
+          );
+          assert.include(managed, { registrant: accounts.alice, manager: accounts.bob });
+          const transferred = yield* call(() =>
+            ens.name.get({ name: fixtures.byId("v1.unwrapped.transferred").name }),
+          );
+          assert.include(transferred, { registrant: accounts.bob, manager: accounts.alice });
+          const orphan = yield* call(() =>
+            ens.name.get({ name: fixtures.byId("v1.unwrapped.registrar-only").name }),
+          );
+          assert.include(orphan, { registrant: accounts.alice, manager: null, resolver: null });
+
+          const plain = fixtures.byId("v1.unwrapped");
+          const state = yield* call(() => ens.name.get({ name: plain.name }));
+          assert.strictEqual(state.expiry, BigInt(String(plain.facts["expiry"])));
+          assert.strictEqual(
+            state.gracePeriodEnd,
+            BigInt(String(plain.facts["expiry"])) + days(90n),
+          );
+          assert.strictEqual(state.tokenId, BigInt(labelhash("v1-plain")));
+        }),
+      { meta: { cases: ["M:A3", "O03", "O04"] } },
+    );
+
+    it.effect(
+      "token ID, resource, registry and expiry of ENSv2 names",
+      () =>
+        Effect.gen(function* () {
+          const fixtures = yield* Fixtures;
+          const ens = ensforge(yield* Devnet);
+
+          const plain = fixtures.byId("v2.registered");
+          const state = yield* call(() => ens.name.get({ name: plain.name }));
+          assert.strictEqual(state.expiry, BigInt(String(plain.facts["expiry"])));
+          assert.strictEqual(
+            state.gracePeriodEnd,
+            BigInt(String(plain.facts["expiry"])) + days(28n),
+          );
+
+          const regenerated = fixtures.byId("v2.regenerated");
+          const current = yield* call(() => ens.name.get({ name: regenerated.name }));
+          assert.strictEqual(current.tokenId, BigInt(String(regenerated.facts["tokenId"])));
+          assert.strictEqual(current.resource, BigInt(String(regenerated.facts["resource"])));
+
+          const deep = fixtures.byId("v2.subnames");
+          const sub = yield* call(() => ens.name.get({ name: deep.name }));
+          assert.strictEqual(sub.registry, deep.facts["registry"]);
+        }),
+      { meta: { cases: ["M:A25", "W24", "M:A18"] } },
+    );
+
+    it.effect(
+      "wrapped names report the wrapper's token and expiry",
+      () =>
+        Effect.gen(function* () {
+          const fixtures = yield* Fixtures;
+          const ens = ensforge(yield* Devnet);
+          const wrapped = fixtures.byId("v1.wrapped");
+          const state = yield* call(() => ens.name.get({ name: wrapped.name }));
+          assert.strictEqual(state.tokenId, BigInt(namehash(wrapped.name)));
+          assert.strictEqual(state.expiry, BigInt(String(wrapped.facts["expiry"])));
+        }),
+      { meta: { cases: ["M:A7"] } },
+    );
+
+    it.effect(
+      "a name whose parent registry reverts fails with a typed error",
+      () =>
+        Effect.gen(function* () {
+          const fixtures = yield* Fixtures;
+          const ens = ensforge(yield* Devnet);
+          yield* expectRejection(
+            () => ens.name.get({ name: fixtures.byId("resolver.registry-reverts").name }),
+            {
+              _tag: "ContractRevertError",
+              code: "CONTRACT_REVERTED",
+            },
+          );
+        }),
+      { meta: { cases: ["M:B16"] } },
+    );
+
+    it.effect(
+      "normalizes input and rejects names that cannot be normalized",
+      () =>
+        Effect.gen(function* () {
+          const ens = ensforge(yield* Devnet);
+          const upper = yield* call(() => ens.name.get({ name: "V1-PLAIN.ETH" }));
+          assert.strictEqual(upper.name, "v1-plain.eth");
+          for (const name of ["a..eth", "", ".", "nick\u200c.eth"]) {
+            yield* expectRejection(() => ens.name.get({ name }), {
+              _tag: "InvalidInputError",
+              code: "INVALID_NAME",
+            });
+          }
+        }),
+      { meta: { cases: ["L30", "L31", "M:C1", "M:C7"] } },
+    );
+  });
+});
+
+describe("name.getLabel", () => {
+  onProfile("mainnet-shaped")("mainnet-shaped", (it) => {
+    it.effect(
+      "recovers ENSv2 labels from the LabelStore and leaves unknown ones null",
+      () =>
+        Effect.gen(function* () {
+          const ens = ensforge(yield* Devnet);
+          assert.strictEqual(
+            yield* call(() => ens.name.getLabel({ labelhash: labelhash("v2-plain") })),
+            "v2-plain",
+          );
+          assert.strictEqual(
+            yield* call(() =>
+              ens.name.getLabel({ labelhash: labelhash("never revealed by ensforge") }),
+            ),
+            null,
+          );
+        }),
+      { meta: { cases: ["H10", "M:C6"] } },
+    );
+  });
+});

@@ -46,7 +46,7 @@ const tools = {
   test: { name: "tools:unit", root: "tools/cli", include: ["test/unit/**/*.test.ts"] },
 };
 
-// Chain lane: every profile on a local anvil (`pnpm test:devnet`; needs Foundry, see
+// Chain lane: every profile on a local anvil (`pnpm test:chain`; needs Foundry, see
 // tests/devnet/foundry-version). Not part of `pnpm test`.
 const devnet = {
   extends: true as const,
@@ -70,6 +70,18 @@ const fixturesChain = {
     name: "fixtures",
     root: "tests/fixtures",
     include: ["test/chain/**/*.test.ts"],
+    testTimeout: 60_000,
+    hookTimeout: 300_000,
+  },
+};
+
+// ensforge's actions against the seeded fixtures, on the chain lane.
+const integration = {
+  extends: true as const,
+  test: {
+    name: "integration",
+    root: "tests/integration",
+    include: ["test/**/*.test.ts"],
     testTimeout: 60_000,
     hookTimeout: 300_000,
   },
@@ -106,6 +118,7 @@ export default defineConfig({
       devnet,
       fixturesUnit,
       fixturesChain,
+      integration,
     ],
     passWithNoTests: true,
   },

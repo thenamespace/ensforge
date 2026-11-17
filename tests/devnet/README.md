@@ -38,7 +38,7 @@ layer(Devnet.layer({ profile: "mainnet-shaped" }), { excludeTestServices: true }
 });
 ```
 
-Chain tests run on real time, hence `excludeTestServices`. `pnpm test:devnet` runs this lane; it
+Chain tests run on real time, hence `excludeTestServices`. `pnpm test:chain` runs this lane; it
 is not part of `pnpm test`.
 
 ## Commands

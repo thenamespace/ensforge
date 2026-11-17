@@ -80,7 +80,7 @@ property tests from Schemas or `effect/Arbitrary`.
   maintainers and release CI. Shared setup, matchers, transports and arbitraries live in
   `tests/harness`.
 - `tests/devnet` deploys ENS on a local anvil (Foundry, see its README); `tests/fixtures` seeds
-  every name state on it and holds the edge-case catalog and coverage ledger. `pnpm test:devnet`
+  every name state on it and holds the edge-case catalog and coverage ledger. `pnpm test:chain`
   runs the chain lane. Tag tests with the catalog cases they cover (`meta: { cases: ["O08"] }`)
   and list them in `tests/fixtures/catalog/ledger.json`.
 

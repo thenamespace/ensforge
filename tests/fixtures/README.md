@@ -40,4 +40,4 @@ Fixtures are seeded per profile (`seededOn`): ENSv1 states everywhere, ENSv2 sta
 exists, launch-dependent ones after the launch, and a capability-specific set on `sepolia-shaped`.
 A seeded build is cached like a profile and is deterministic (`test/chain/determinism.test.ts`).
 
-`pnpm test:devnet` seeds every profile; `pnpm test` runs the catalog and ledger check.
+`pnpm test:chain` seeds every profile; `pnpm test` runs the catalog and ledger check.
