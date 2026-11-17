@@ -17,12 +17,9 @@ import * as Impl from "./effect.js";
  * - `http(s)` and `data:` URIs are returned as-is; `ipfs://`, `ipns://`, `ar://` and bare CIDs go
  *   through `gateways`.
  * - NFT avatars (`eip155:1/erc721:…/…`, `erc1155`) read the token's metadata and return its image.
- *   They resolve only on the client's own chain.
+ *   They resolve only on the client's own chain, and only when the name's ETH address owns the
+ *   token (ENSIP-12): `ownerOf` for ERC-721, a non-zero balance for ERC-1155.
  * - Returns `null` when the avatar is not set or cannot be loaded, unless `strict` is set.
- *
- * **Gotchas**
- *
- * - NFT ownership is not checked against the name's owner.
  *
  * **Example** (Showing a profile picture)
  *
