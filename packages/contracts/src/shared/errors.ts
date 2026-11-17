@@ -1,8 +1,8 @@
 /**
  * Every custom error of the ENS contracts in this package (ENSv1 ens-contracts v1.7.0 and
  * ENSv2 contracts-v2 v1.0.1), plus the OpenZeppelin `IERC20Errors` that ERC-20 payment tokens
- * raise and the verifiable proxy's `InvalidUpgradeTarget`. Use it to decode a revert from any ENS
- * call.
+ * raise, the verifiable proxy's `InvalidUpgradeTarget` and the HCA's `NoNFTAllowed` (raised when a
+ * name token is sent to a Hosted Contract Account). Use it to decode a revert from any ENS call.
  *
  * Generated from the ABIs of this package; regenerate when they change.
  *
@@ -844,6 +844,11 @@ export const ensErrorsAbi = [
         type: "bytes",
       },
     ],
+  },
+  {
+    type: "error",
+    name: "NoNFTAllowed",
+    inputs: [],
   },
   {
     type: "error",
