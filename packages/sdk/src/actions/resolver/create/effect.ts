@@ -13,6 +13,7 @@ import { loadName } from "../../../internal/name/load.js";
 import { parseName } from "../../../internal/name/normalize.js";
 import { setResolverCall } from "../../../internal/name/set-resolver.js";
 import { requireAddress, requireRegistered } from "../../../internal/name/write.js";
+import { explainFor } from "../../../internal/permission/check.js";
 import { deployPermissionedResolver } from "../../../internal/resolver/deploy.js";
 import { roleBitmapOf } from "../../../internal/role/bitmap.js";
 import { addressOf } from "../../../internal/write/signer.js";
@@ -97,7 +98,19 @@ export const plan = Effect.fnUntraced(function* (
   });
 });
 
-const write = Action.write("resolver.create", plan, { contractKind: "resolver" });
+// Pointing a name at the new resolver is the step a contract may refuse without saying why.
+const pointsName = explainFor(
+  (options: Promises.Options) => options.name ?? "",
+  () => ["setResolver" as const],
+);
+
+const write = Action.write(
+  "resolver.create",
+  plan,
+  { contractKind: "resolver" },
+  (client, options, account) =>
+    options.name === undefined ? Effect.undefined : pointsName(client, options, account),
+);
 
 const withResolver = <result extends Write.Result>(result: result) => ({
   ...result,
