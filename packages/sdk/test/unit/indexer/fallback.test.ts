@@ -210,6 +210,18 @@ describe("fallback pinning", () => {
     }),
   );
 
+  it.effect("fails a cursor whose issuer is not in this fallback", () =>
+    Effect.gen(function* () {
+      const only = adapter("a", () => Effect.succeed(page(null)));
+
+      yield* expectFailure(subnames([only], {}, "f3:c"), {
+        _tag: "IndexerError",
+        code: "INDEXER_UNSUPPORTED",
+      });
+      assert.strictEqual(only.seen.length, 0);
+    }),
+  );
+
   it.effect("passes an untagged cursor through to every indexer in order", () =>
     Effect.gen(function* () {
       const first = adapter("a", failing("INDEXER_UNSUPPORTED"));

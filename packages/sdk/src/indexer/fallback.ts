@@ -1,5 +1,6 @@
 import { Effect } from "effect";
 
+import { IndexerError } from "../errors/classes/IndexerError.js";
 import type { AnyError } from "../errors/types.js";
 import {
   implementationOf,
@@ -139,8 +140,18 @@ export const fallback = (
       Effect.gen(function* () {
         const pin = pinned(query);
         if (pin !== undefined) {
+          // A tagged cursor is unreadable by the other indexers, so never fall through with it.
           const answer = ask(pin.index, pin.query, context);
-          if (answer !== undefined) return yield* answer;
+          if (answer === undefined) {
+            return yield* Effect.fail(
+              new IndexerError({
+                code: "INDEXER_UNSUPPORTED",
+                source: id,
+                shortMessage: `The cursor or snapshot token was issued by indexer ${pin.index}, which cannot serve ${method}.`,
+              }),
+            );
+          }
+          return yield* answer;
         }
 
         let failure: AnyError | undefined;
