@@ -6,7 +6,6 @@ import {
   hexToBytes,
   numberToBytes,
   stringToBytes,
-  type Address,
   type Hex,
 } from "viem";
 
@@ -155,6 +154,3 @@ export const gatewayAnswer = (proof: Proof) => ({
     }),
   }),
 });
-
-/** The `_ens` TXT string that hands a DNS name to `owner`. */
-export const ownerText = (owner: Address) => `a=${owner}`;

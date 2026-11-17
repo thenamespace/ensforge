@@ -26,7 +26,7 @@ import { packetToBytes } from "viem/ens";
 
 import { Clients } from "../support/clients.ts";
 import { ethEntry } from "../support/contracts.ts";
-import { ownerText, RecordType, txtProof, type Tampering } from "../support/dnssec.ts";
+import { RecordType, txtProof, type Tampering } from "../support/dnssec.ts";
 import { onProfile } from "../support/lane.ts";
 
 // Each contract error the SDK maps (`revertMap`) is raised here by a deployed contract, so the
@@ -274,7 +274,7 @@ describe("contract errors", () => {
         const { alice } = devnet.accounts;
         const at = Number(yield* chain.now);
         const name = "reverts-dns.com";
-        const owner = [ownerText(alice)];
+        const owner = [`a=${alice}`];
         const proof = (tampered: Tampering = {}, inception = at - 60) =>
           txtProof(name, owner, inception, tampered);
         const oracle = {
