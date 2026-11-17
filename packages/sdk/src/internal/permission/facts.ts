@@ -129,7 +129,11 @@ export const readPermissionFacts = Effect.fnUntraced(function* (
 
   const v2PublicResolver = isV2PublicResolver(client, resolver);
   const resolverOwner = resolverOwnerOf(client, loaded);
-  const resources = [...new Set(records.map(recordResource))].filter((resource) => resource !== 0n);
+  // Coin keys are parsed here, so an unknown coin fails as InvalidInputError, not a defect.
+  const resources = yield* Effect.try({
+    try: () => [...new Set(records.map(recordResource))].filter((resource) => resource !== 0n),
+    catch: (error) => error as AnyError,
+  });
   // Frozen resolvers cannot be written, and the oldest burn all gas on unknown calls, which would
   // sink the whole multicall: they are never probed.
   const frozen =

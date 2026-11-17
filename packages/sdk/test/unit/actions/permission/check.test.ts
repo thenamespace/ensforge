@@ -3,6 +3,8 @@ import { Effect } from "effect";
 
 import { Roles } from "@ensforge/contracts";
 import { Actions } from "@ensforge/sdk";
+import { Actions as EffectActions } from "@ensforge/sdk/effect";
+import { expectFailure } from "@ensforge/test-harness";
 
 import { clientFor, other, signer } from "../world.js";
 
@@ -42,6 +44,21 @@ describe("permission.check", () => {
         Actions.permission.check(ens, { name: "alice.eth", operation: "transfer", account: other }),
       );
       assert.isFalse(check.allowed);
+    }),
+  );
+
+  // Regression: the coin key was parsed outside the Effect, so the Effect API died with a defect.
+  it.effect("fails with a typed error for an address record key that is not a coin", () =>
+    Effect.gen(function* () {
+      const { ens } = clientFor({ name: "alice.eth" });
+      yield* expectFailure(
+        EffectActions.permission.check(ens, {
+          name: "alice.eth",
+          operation: { setRecord: "address", key: "nope" },
+          account: signer,
+        }),
+        { _tag: "InvalidInputError", code: "INVALID_COIN_TYPE" },
+      );
     }),
   );
 });
