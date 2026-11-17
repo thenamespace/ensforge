@@ -4,30 +4,16 @@ import { Deferred, Effect, Fiber } from "effect";
 import { hca } from "@ensforge/hca";
 import { Plan } from "@ensforge/sdk";
 import { Actions } from "@ensforge/sdk/effect";
-import { bigname } from "@ensforge/sdk/indexer";
-import { Devnet, type DevnetInstance } from "@ensforge/test-devnet";
+import { Chain, Devnet } from "@ensforge/test-devnet";
 import { Fixtures } from "@ensforge/test-fixtures";
-import { ensforge, passWaits } from "@ensforge/test-integration/support/chain";
-import { gatewayAnswer, ownerText, txtProof } from "@ensforge/test-integration/support/dnssec";
-import { gateway } from "@ensforge/test-integration/support/gateway";
-import type { Address } from "viem";
+import { Clients } from "@ensforge/test-integration/support/clients";
+import { txtProof } from "@ensforge/test-integration/support/dnssec";
+import { Gateways } from "@ensforge/test-integration/support/gateways";
 
-import { Services, type ServicesApi } from "../stack/stack.ts";
+import { Services } from "../stack/stack.ts";
 
 // Moving names from ENSv1 to ENSv2, end to end against the chain and bigname. Nothing is reverted;
 // each journey migrates different fixture names.
-
-const client = (
-  devnet: DevnetInstance,
-  services: ServicesApi,
-  account: Address,
-  storage?: Plan.Storage,
-) =>
-  ensforge(devnet, {
-    account,
-    indexer: bigname({ url: services.indexerUrl }),
-    ...(storage === undefined ? {} : { storage }),
-  });
 
 layer(Services.layer({ profile: "mainnet-shaped" }), { excludeTestServices: true })(
   "journeys: migration",
@@ -35,18 +21,21 @@ layer(Services.layer({ profile: "mainnet-shaped" }), { excludeTestServices: true
     it.effect("a migration stopped after its first step resumes where it left off", () =>
       Effect.gen(function* () {
         const services = yield* Services;
-        const devnet = yield* Devnet;
+        const { accounts } = yield* Devnet;
+        const chain = yield* Chain;
+        const clients = yield* Clients;
         const fixtures = yield* Fixtures;
-        const { alice } = devnet.accounts;
-        const name = fixtures.byId("records.v1").name;
+        const { alice } = accounts;
         const storage = Plan.memoryStorage();
+        const ens = clients.make({ account: alice, storage, indexer: services.indexer });
+        const name = fixtures.byId("records.v1").name;
         const profile = { name, texts: ["url", "unicode"], contentHash: true } as const;
-        const before = yield* Actions.record.get(client(devnet, services, alice), profile);
+        const before = yield* Actions.record.get(ens, profile);
 
         // The app stops (the fiber is interrupted) once the first step is confirmed.
         const confirmed = yield* Deferred.make<string>();
         const first = yield* Effect.forkChild(
-          Actions.migration.migrateSync(client(devnet, services, alice, storage), {
+          Actions.migration.migrateSync(ens, {
             names: name,
             resolver: "new",
             onStep: (event) => {
@@ -60,26 +49,26 @@ layer(Services.layer({ profile: "mainnet-shaped" }), { excludeTestServices: true
         yield* Fiber.interrupt(first);
 
         // A new session finds the unfinished plan and finishes it without repeating the step.
-        const ens = client(devnet, services, alice, storage);
-        const unfinished = (yield* Actions.plan.list(ens, {})).find(
+        const session = clients.make({ account: alice, storage, indexer: services.indexer });
+        const unfinished = (yield* Actions.plan.list(session, {})).find(
           (record) => record.status !== "completed",
         );
         if (unfinished === undefined) return assert.fail("no unfinished migration plan");
         const events: string[] = [];
-        yield* Actions.plan.resumeSync(ens, {
+        yield* Actions.plan.resumeSync(session, {
           id: unfinished.plan.id,
           onStep: (event) => {
             events.push(`${event.step.id}:${event.status}`);
-            passWaits(devnet)(event);
+            chain.passWaits(event);
           },
         });
         assert.notInclude(events, `${stoppedAfter}:submitted`);
 
-        const after = yield* Actions.record.get(ens, profile);
+        const after = yield* Actions.record.get(session, profile);
         assert.notStrictEqual(after.resolver, before.resolver);
         assert.deepStrictEqual({ ...after, resolver: null }, { ...before, resolver: null });
         yield* services.waitForIndexed();
-        assert.include(yield* Actions.indexer.getName(ens, { name }), {
+        assert.include(yield* Actions.indexer.getName(session, { name }), {
           authority: "ensV2",
           owner: alice,
         });
@@ -89,17 +78,19 @@ layer(Services.layer({ profile: "mainnet-shaped" }), { excludeTestServices: true
     it.effect("an owner migrates two names in one HCA execution", () =>
       Effect.gen(function* () {
         const services = yield* Services;
-        const devnet = yield* Devnet;
+        const { accounts } = yield* Devnet;
+        const chain = yield* Chain;
+        const clients = yield* Clients;
         const fixtures = yield* Fixtures;
-        const { alice } = devnet.accounts;
-        const ens = client(devnet, services, alice);
+        const { alice } = accounts;
+        const ens = clients.make({ account: alice, indexer: services.indexer });
         const names = [fixtures.byId("v2.reserved").name, fixtures.byId("v1.wrapped").name];
 
         const result = yield* Actions.migration.migrateSync(ens, {
           names,
           resolver: "keep",
           via: hca(),
-          onStep: passWaits(devnet),
+          onStep: chain.passWaits,
         });
         assert.strictEqual(
           result.plan.steps.filter((step) => step.id === "migrate").length,
@@ -119,14 +110,15 @@ layer(Services.layer({ profile: "mainnet-shaped" }), { excludeTestServices: true
     it.effect("a DNS name is imported with its DNSSEC proof", () =>
       Effect.gen(function* () {
         const services = yield* Services;
-        const devnet = yield* Devnet;
-        const { carol } = devnet.accounts;
-        const ens = client(devnet, services, carol);
+        const { accounts } = yield* Devnet;
+        const chain = yield* Chain;
+        const clients = yield* Clients;
+        const gateways = yield* Gateways;
+        const { carol } = accounts;
+        const ens = clients.make({ account: carol, indexer: services.indexer });
         const name = "ensforge-journey.com";
-        const block = yield* Effect.promise(() => devnet.client.getBlock());
-        const { url } = yield* gateway(() =>
-          gatewayAnswer(txtProof(name, [ownerText(carol)], Number(block.timestamp) - 60)),
-        );
+        const signedAt = Number(yield* chain.now) - 60;
+        const { url } = yield* gateways.serveProof(txtProof(name, [`a=${carol}`], signedAt));
 
         yield* Actions.dns.claimSync(ens, { name, gatewayUrls: [url] });
 
@@ -137,7 +129,7 @@ layer(Services.layer({ profile: "mainnet-shaped" }), { excludeTestServices: true
           authority: "ensV1",
           owner: carol,
         });
-      }),
+      }).pipe(Effect.scoped),
     );
   },
 );

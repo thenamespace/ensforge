@@ -5,7 +5,7 @@ import { keccak256, toHex, type Address } from "viem";
  * Roles the devnet does not deploy (older resolver generations) are left out and point at
  * addresses without code.
  */
-export const devnetRoles: Readonly<Record<string, string>> = {
+const devnetRoles: Readonly<Record<string, string>> = {
   "ens_execution:universal_resolver": "v2.universalResolver",
   "ens_execution:universal_resolver_managed": "v2.managedUniversalResolverProxy",
   "ens_execution:universal_resolver_implementation": "v2.universalResolverImplementation",
@@ -46,7 +46,7 @@ export const devnetRoles: Readonly<Record<string, string>> = {
 const addressPattern = "0x[0-9a-fA-F]{40}";
 
 /** Every `(role or root name, address)` a manifest declares. */
-export const declaredAddresses = (manifest: string): readonly (readonly [string, string])[] => {
+const declaredAddresses = (manifest: string): readonly (readonly [string, string])[] => {
   const found: (readonly [string, string])[] = [];
   // Inline tables, e.g. `resolver_implementations = [ { role = "…", address = "0x…", … } ]`.
   for (const [, role = "", address = ""] of manifest.matchAll(

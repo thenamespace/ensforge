@@ -6,7 +6,7 @@ import { Effect } from "effect";
 import { ChildProcess, ChildProcessSpawner } from "effect/process";
 
 import type { DevnetInstance } from "@ensforge/test-devnet";
-import { keccak256, toHex, type Address } from "viem";
+import { keccak256, toHex } from "viem";
 
 import { docker, DockerError } from "./docker.ts";
 import { bignameSource } from "./images.ts";
@@ -53,18 +53,6 @@ const source = Effect.gen(function* () {
   return dir;
 });
 
-/** bigname's Sepolia manifests, rewritten for the devnet (`<family>/v<n>.toml` → text). */
-const devnetProfile = (checkout: string, devnet: DevnetInstance) => {
-  const sepolia = join(checkout, "manifests", "sepolia", "ethereum", "ens");
-  const manifests = new Map<string, string>();
-  for (const family of readdirSync(sepolia)) {
-    for (const file of readdirSync(join(sepolia, family))) {
-      manifests.set(`${family}/${file}`, readFileSync(join(sepolia, family, file), "utf8"));
-    }
-  }
-  return rewriteManifests(manifests, devnet.contracts as Readonly<Record<string, Address>>);
-};
-
 /**
  * A bigname image for the devnet's contracts: built from the pinned source with the devnet
  * profile compiled in, and reused while the profile is unchanged. The first build compiles
@@ -72,7 +60,16 @@ const devnetProfile = (checkout: string, devnet: DevnetInstance) => {
  */
 export const bignameImage = Effect.fnUntraced(function* (devnet: DevnetInstance) {
   const checkout = yield* source;
-  const profile = devnetProfile(checkout, devnet);
+  // bigname's Sepolia manifests (`<family>/v<n>.toml`), rewritten for the devnet.
+  const sepolia = join(checkout, "manifests", "sepolia", "ethereum", "ens");
+  const manifests = new Map<string, string>();
+  for (const family of readdirSync(sepolia)) {
+    for (const file of readdirSync(join(sepolia, family))) {
+      manifests.set(`${family}/${file}`, readFileSync(join(sepolia, family, file), "utf8"));
+    }
+  }
+  const profile = rewriteManifests(manifests, devnet.contracts);
+
   // The image changes with the profile or the build recipe.
   const fingerprint = keccak256(
     toHex(

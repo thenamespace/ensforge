@@ -1,11 +1,10 @@
 import { assert, layer } from "@effect/vitest";
 import { Effect, Result } from "effect";
 
+import { Name } from "@ensforge/sdk";
 import { Actions, CoinType, ContentHash } from "@ensforge/sdk/effect";
-import { bigname } from "@ensforge/sdk/indexer";
-import { Devnet } from "@ensforge/test-devnet";
 import { Fixtures } from "@ensforge/test-fixtures";
-import { ensforge } from "@ensforge/test-integration/support/chain";
+import { Clients } from "@ensforge/test-integration/support/clients";
 import type { Hex } from "viem";
 
 import { Services } from "../stack/stack.ts";
@@ -14,6 +13,7 @@ import { indexedDifferences, indexedRecordDifferences } from "./differences.ts";
 
 // Every fixture, read from the chain and from bigname at the block bigname has indexed. Where they
 // differ by design, `differences.ts` says why; the list only shrinks.
+
 layer(Services.layer({ profile: "mainnet-shaped" }), { excludeTestServices: true })(
   "bigname against the chain",
   (it) => {
@@ -22,11 +22,11 @@ layer(Services.layer({ profile: "mainnet-shaped" }), { excludeTestServices: true
       () =>
         Effect.gen(function* () {
           const services = yield* Services;
-          const devnet = yield* Devnet;
           const fixtures = yield* Fixtures;
-          const ens = ensforge(devnet, { indexer: bigname({ url: services.indexerUrl }) });
-          const found: string[] = [];
+          const clients = yield* Clients;
+          const ens = clients.make({ indexer: services.indexer });
 
+          const found: string[] = [];
           for (const fixture of fixtures.all) {
             const differences = yield* nameDifferences(ens, fixture.id, fixture.name);
             found.push(...differences.map((difference) => difference.entry));
@@ -42,9 +42,9 @@ layer(Services.layer({ profile: "mainnet-shaped" }), { excludeTestServices: true
       () =>
         Effect.gen(function* () {
           const services = yield* Services;
-          const devnet = yield* Devnet;
           const fixtures = yield* Fixtures;
-          const ens = ensforge(devnet, { indexer: bigname({ url: services.indexerUrl }) });
+          const clients = yield* Clients;
+          const ens = clients.make({ indexer: services.indexer });
           const found: string[] = [];
           let compared = 0;
 
@@ -77,16 +77,16 @@ layer(Services.layer({ profile: "mainnet-shaped" }), { excludeTestServices: true
               found.push(`${fixture.id}: chain error ${read.failure.code}`);
               continue;
             }
+
             const chain = read.success;
             compared += 1;
             for (const key of texts) {
-              const value = (chain.texts as Record<string, string | null>)[key] ?? null;
+              const value = chain.texts[key] ?? null;
               if (value !== indexed.texts[key]) found.push(`${fixture.id}: text ${key}`);
             }
             // bigname serves the record's bytes; `record.get` decodes them (a zero EVM address is null).
             for (const coin of coins) {
-              const value =
-                (chain.addresses as Record<string, string | null>)[String(coin)] ?? null;
+              const value = chain.addresses[`${coin}`] ?? null;
               const bytes = indexed.addresses[String(coin)] as Hex;
               if (value?.toLowerCase() !== CoinType.decodeAddress(coin, bytes)?.toLowerCase()) {
                 found.push(`${fixture.id}: addr ${coin}`);
@@ -116,14 +116,16 @@ layer(Services.layer({ profile: "mainnet-shaped" }), { excludeTestServices: true
       () =>
         Effect.gen(function* () {
           const services = yield* Services;
-          const devnet = yield* Devnet;
           const fixtures = yield* Fixtures;
-          const ens = ensforge(devnet, { indexer: bigname({ url: services.indexerUrl }) });
+          const clients = yield* Clients;
+          const ens = clients.make({ indexer: services.indexer });
+
           const records = yield* Actions.indexer.getRecords(ens, {
             name: fixtures.byId("resolver.offchain").name,
             keys: ["addr:60"],
             source: "verified",
           });
+
           // bigname documents `offchain_lookup_required`; v0.14.11 reports the OffchainLookup as a
           // revert. Either way it answers no value and never calls the gateway.
           assert.deepStrictEqual(records?.answers["addr:60"], {
@@ -141,9 +143,9 @@ layer(Services.layer({ profile: "mainnet-shaped" }), { excludeTestServices: true
       () =>
         Effect.gen(function* () {
           const services = yield* Services;
-          const devnet = yield* Devnet;
           const fixtures = yield* Fixtures;
-          const ens = ensforge(devnet, { indexer: bigname({ url: services.indexerUrl }) });
+          const clients = yield* Clients;
+          const ens = clients.make({ indexer: services.indexer });
           const linked = fixtures.byId("v2.linked");
           const alias = String(linked.facts["alias"]);
 
@@ -153,6 +155,7 @@ layer(Services.layer({ profile: "mainnet-shaped" }), { excludeTestServices: true
           const aliased = yield* Actions.indexer.getName(ens, { name: alias });
           assert.strictEqual(aliased?.name, alias);
           assert.strictEqual(aliased?.registrationId, canonical?.registrationId);
+
           const looked = yield* Actions.indexer.lookup(ens, { inputs: [linked.name, alias] });
           assert.deepStrictEqual(
             looked.results.map((result) => result.status),
@@ -167,20 +170,26 @@ layer(Services.layer({ profile: "mainnet-shaped" }), { excludeTestServices: true
       () =>
         Effect.gen(function* () {
           const services = yield* Services;
-          const devnet = yield* Devnet;
           const fixtures = yield* Fixtures;
-          const ens = ensforge(devnet, { indexer: bigname({ url: services.indexerUrl }) });
-          const subnames = (parent: string, includeExpired: boolean) =>
-            Actions.indexer
-              .getSubnames(ens, { name: parent, includeExpired })
-              .pipe(Effect.map((page) => page.items.map((item) => item.name).toSorted()));
+          const clients = yield* Clients;
+          const ens = clients.make({ indexer: services.indexer });
           const wrapped = fixtures.byId("v1.wrapped.sub.expired").name;
           const emancipated = fixtures.byId("v1.wrapped.sub.expired-emancipated").name;
-          const parent = wrapped.split(".").slice(1).join(".");
+          const parent = Name.parse(wrapped).parent ?? assert.fail(`${wrapped} has no parent`);
 
           // By expiry, not status: bigname still calls the parent-controlled child active.
-          const all = yield* subnames(parent, true);
-          const live = yield* subnames(parent, false);
+          const all = (yield* Actions.indexer.getSubnames(ens, {
+            name: parent,
+            includeExpired: true,
+          })).items
+            .map((item) => item.name)
+            .toSorted();
+          const live = (yield* Actions.indexer.getSubnames(ens, {
+            name: parent,
+            includeExpired: false,
+          })).items
+            .map((item) => item.name)
+            .toSorted();
           assert.includeMembers(all, [wrapped, emancipated]);
           assert.deepStrictEqual(
             live,
@@ -190,7 +199,7 @@ layer(Services.layer({ profile: "mainnet-shaped" }), { excludeTestServices: true
           // A child whose ENSv1 owner was cleared stays listed, as `unregistered`.
           const deleted = fixtures.byId("v1.subname.deleted").name;
           const cleared = yield* Actions.indexer.getSubnames(ens, {
-            name: deleted.split(".").slice(1).join("."),
+            name: Name.parse(deleted).parent ?? assert.fail(`${deleted} has no parent`),
             includeExpired: false,
           });
           assert.deepStrictEqual(

@@ -2,7 +2,10 @@ import { Effect, Schema, Stream } from "effect";
 import { ChildProcess, ChildProcessSpawner } from "effect/process";
 
 /** A Docker command that failed, with its output. */
-export class DockerError extends Schema.TaggedError<DockerError>()("DockerError", {
+export class DockerError extends Schema.TaggedError<
+  DockerError,
+  { readonly brand: unique symbol }
+>()("DockerError", {
   message: Schema.String,
 }) {}
 
