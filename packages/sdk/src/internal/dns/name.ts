@@ -11,15 +11,13 @@ const ensTlds = new Set(["eth", "reverse"]);
 /** Normalizes a DNS name: one with a DNS top-level domain and no encoded labels. */
 export const parseDnsName = (name: string): Effect.Effect<NameParts, AnyError> =>
   parseName(name).pipe(
-    Effect.flatMap((parts) =>
-      parts.name.includes("[") || ensTlds.has(parts.name.split(".").at(-1) as string)
-        ? Effect.fail(
-            new InvalidInputError({
-              code: "INVALID_NAME",
-              input: parts.name,
-              shortMessage: `${parts.name} is not a DNS name.`,
-            }),
-          )
-        : Effect.succeed(parts),
+    Effect.filterOrFail(
+      (parts) => !parts.name.includes("[") && !ensTlds.has(parts.name.split(".").at(-1) as string),
+      (parts) =>
+        new InvalidInputError({
+          code: "INVALID_NAME",
+          input: parts.name,
+          shortMessage: `${parts.name} is not a DNS name.`,
+        }),
     ),
   );

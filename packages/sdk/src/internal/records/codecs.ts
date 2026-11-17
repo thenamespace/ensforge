@@ -52,11 +52,11 @@ export const loadRecordCodecs = (needs: {
       contentHash:
         needs.contentHash === true
           ? Effect.promise(() => import("../../utils/ContentHash.js"))
-          : Effect.succeed(undefined),
+          : Effect.undefined,
       abi:
         needs.abi === true
           ? Effect.promise(() => import("./abi-record-decode.js"))
-          : Effect.succeed(undefined),
+          : Effect.undefined,
     },
     { concurrency: "unbounded" },
   ).pipe(

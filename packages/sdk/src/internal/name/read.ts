@@ -65,7 +65,7 @@ export type NameData = {
 
 const readV1 = (client: Client, parts: NameParts, block: Read.BlockOptions) => {
   const contracts = client.deployment.v1?.contracts;
-  if (contracts === undefined) return Effect.succeed(undefined);
+  if (contracts === undefined) return Effect.undefined;
 
   const at =
     block.blockNumber === undefined
@@ -116,7 +116,7 @@ const readV1 = (client: Client, parts: NameParts, block: Read.BlockOptions) => {
             },
             { concurrency: "unbounded" },
           )
-        : Effect.succeed(undefined),
+        : Effect.undefined,
     },
     { concurrency: "unbounded" },
   ).pipe(
@@ -157,13 +157,13 @@ const readV2 = Effect.fnUntraced(function* (
             functionName: "GRACE_PERIOD",
             ...at,
           })
-        : Effect.succeed(undefined),
+        : Effect.undefined,
     },
     { concurrency: "unbounded" },
   ).pipe(
     Effect.catchIf(
       (error: AnyError) => error._tag === "ConfigError" && error.code === "CONTRACT_NOT_DEPLOYED",
-      () => Effect.succeed(undefined),
+      () => Effect.undefined,
     ),
   );
   if (found === undefined || isAddressEqual(found.registry, zeroAddress)) return undefined;
@@ -171,7 +171,7 @@ const readV2 = Effect.fnUntraced(function* (
 
   const parent = { address: registry, abi: Abis.v2.permissionedRegistry, ...at } as const;
   const labelReads = parts.encodedLabel
-    ? { resolver: Effect.succeed(undefined), subregistry: Effect.succeed(undefined) }
+    ? { resolver: Effect.undefined, subregistry: Effect.undefined }
     : {
         resolver: Rpc.readContract(client, {
           ...parent,

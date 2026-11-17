@@ -115,7 +115,7 @@ export const inspectMigration = Effect.fnUntraced(function* (
       }),
       operator:
         account === undefined || owner === null
-          ? Effect.succeed(undefined)
+          ? Effect.undefined
           : Rpc.readContractOrUndefined(client, {
               address: token.address,
               abi: Abis.shared.erc721,

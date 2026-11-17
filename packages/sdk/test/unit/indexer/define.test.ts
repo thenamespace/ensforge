@@ -189,11 +189,9 @@ describe("client without an ensforge indexer", () => {
     { label: "no indexer", indexer: undefined },
     { label: "a foreign value", indexer: { id: "fake", "~ensforge/indexer": true } as const },
   ])("fails with INDEXER_NOT_CONFIGURED for $label", ({ indexer }) =>
-    Effect.gen(function* () {
-      yield* expectFailure(Actions.indexer.getStatus(clientWith(indexer), {}), {
-        _tag: "ConfigError",
-        code: "INDEXER_NOT_CONFIGURED",
-      });
+    expectFailure(Actions.indexer.getStatus(clientWith(indexer), {}), {
+      _tag: "ConfigError",
+      code: "INDEXER_NOT_CONFIGURED",
     }),
   );
 });

@@ -9,7 +9,7 @@ import { client, fakeEffectRead, fakeRead, tick } from "../../fixtures.js";
 const settled = <value, error>(
   registry: AtomRegistry.AtomRegistry,
   atom: Parameters<typeof AtomRegistry.getResult<value, error>>[1],
-) => Effect.runPromise(Effect.exit(AtomRegistry.getResult(registry, atom)));
+) => Effect.runPromiseExit(AtomRegistry.getResult(registry, atom));
 
 describe("ensAtom", () => {
   it("is one atom, and one request, per client, action and options", async () => {

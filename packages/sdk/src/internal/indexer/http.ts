@@ -118,7 +118,9 @@ const attempt = (config: HttpConfig, request: HttpRequest, url: string): Effect.
       const text = response.status === 304 ? "" : await response.text();
       return { response, text };
     },
-    catch: (cause) => cause,
+    // Network failures (DNS, reset, CORS) are retryable.
+    catch: (cause) =>
+      fail("INDEXER_UNAVAILABLE", { shortMessage: "The indexer could not be reached.", cause }),
   }).pipe(
     Effect.timeoutOrElse({
       duration: config.timeout,
@@ -178,21 +180,7 @@ const attempt = (config: HttpConfig, request: HttpRequest, url: string): Effect.
           : { ok: false, error };
       }),
     ),
-    // Network failures (DNS, reset, CORS) are retryable; the timeout error is already typed.
-    Effect.catch((cause) =>
-      Effect.succeed<Attempt>(
-        cause instanceof IndexerError
-          ? { ok: false, error: cause, delay: -1 }
-          : {
-              ok: false,
-              error: fail("INDEXER_UNAVAILABLE", {
-                shortMessage: "The indexer could not be reached.",
-                cause,
-              }),
-              delay: -1,
-            },
-      ),
-    ),
+    Effect.catch((error) => Effect.succeed<Attempt>({ ok: false, error, delay: -1 })),
   );
 };
 

@@ -78,7 +78,7 @@ const unanswered = <value>(read: Effect.Effect<value | undefined, AnyError>) =>
   read.pipe(
     Effect.catchIf(
       (error: AnyError) => error._tag === "ConfigError" && error.code === "CONTRACT_NOT_DEPLOYED",
-      () => Effect.succeed(undefined),
+      () => Effect.undefined,
     ),
   );
 

@@ -230,6 +230,8 @@ describe("batch cancellation", () => {
   it.effect("rejects with the abort reason", () =>
     Effect.gen(function* () {
       const { publicClient } = setup();
+      // The caller's own controller is what `signal` is for.
+      // @effect-diagnostics-next-line abortControllerInEffect:off
       const controller = new AbortController();
       const reason = new Error("cancelled");
       controller.abort(reason);
@@ -241,11 +243,11 @@ describe("batch cancellation", () => {
               requests: [operatorRequest(approved)],
               signal: controller.signal,
             }),
-          catch: (cause) => cause,
+          catch: (cause) => ({ cause }),
         }),
       );
 
-      assert.strictEqual(error, reason);
+      assert.strictEqual(error.cause, reason);
     }),
   );
 });

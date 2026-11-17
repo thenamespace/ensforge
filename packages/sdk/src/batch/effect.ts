@@ -53,7 +53,7 @@ export const batch = Effect.fn("ensforge.batch")(function* <
 
   const input = options.requests as Requests;
   const results = Array.isArray(input)
-    ? yield* Effect.all((input as readonly Request[]).map(effectOf), { concurrency: "unbounded" })
+    ? yield* Effect.forEach(input as readonly Request[], effectOf, { concurrency: "unbounded" })
     : yield* Effect.all(
         Object.fromEntries(
           Object.entries(input as Readonly<Record<string, Request>>).map(([key, request]) => [

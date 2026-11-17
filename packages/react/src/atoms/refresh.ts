@@ -45,7 +45,7 @@ export const refreshAfterWrite = (
 
   const mined =
     last === undefined || isMined(value)
-      ? Effect.succeed(undefined)
+      ? Effect.undefined
       : Effect.promise(() => waitForTransactionReceipt(client.publicClient, { hash: last }));
 
   return Effect.gen(function* () {

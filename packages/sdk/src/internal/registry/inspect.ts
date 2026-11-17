@@ -56,7 +56,7 @@ export const inspectRegistry = Effect.fnUntraced(function* (
       }),
       canonical:
         v2 === undefined
-          ? Effect.succeed(undefined)
+          ? Effect.undefined
           : Rpc.readContractOrUndefined(client, {
               address: v2.contracts.universalHelper,
               abi: Abis.v2.universalHelper,
@@ -66,7 +66,7 @@ export const inspectRegistry = Effect.fnUntraced(function* (
             }),
       canUpgrade:
         options.account === undefined
-          ? Effect.succeed(undefined)
+          ? Effect.undefined
           : Rpc.readContractOrUndefined(client, {
               ...registry,
               functionName: "hasRootRoles",
@@ -112,7 +112,7 @@ export const inspectRegistry = Effect.fnUntraced(function* (
           !emancipated ||
           read.upgradeSet === undefined ||
           isAddressEqual(read.upgradeSet, zeroAddress)
-            ? Effect.succeed(undefined)
+            ? Effect.undefined
             : Rpc.readContractOrUndefined(client, {
                 address: read.upgradeSet,
                 abi: Abis.v2.permissionedAddressSet,

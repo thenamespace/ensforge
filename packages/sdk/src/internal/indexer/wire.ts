@@ -10,10 +10,10 @@ import { IndexerError } from "../../errors/classes/IndexerError.js";
 
 const opt = <S extends Schema.Top>(schema: S) => Schema.optional(Schema.NullOr(schema));
 
-export const ContractRef = Schema.Struct({ chain_id: Schema.Number, address: Schema.String });
+export const ContractRef = Schema.Struct({ chain_id: Schema.Finite, address: Schema.String });
 
 const AsOf = Schema.Struct({
-  block_number: Schema.Number,
+  block_number: Schema.Finite,
   block_hash: Schema.String,
   timestamp: Schema.String,
 });
@@ -31,7 +31,7 @@ export const Meta = Schema.Struct({
 export const Page = Schema.Struct({
   next_cursor: opt(Schema.String),
   has_more: opt(Schema.Boolean),
-  total_count: opt(Schema.Number),
+  total_count: opt(Schema.Finite),
 });
 
 export const EnsV1 = Schema.Struct({
@@ -39,7 +39,7 @@ export const EnsV1 = Schema.Struct({
   expires_at: opt(Schema.String),
   wrapper_state: opt(Schema.String),
   wrapper_expires_at: opt(Schema.String),
-  wrapper_fuses: opt(Schema.Struct({ fuses: Schema.Number })),
+  wrapper_fuses: opt(Schema.Struct({ fuses: Schema.Finite })),
 });
 
 const nameFields = {
@@ -70,7 +70,7 @@ export const RecordGroups = Schema.Struct({
 
 const detailFields = {
   ...nameFields,
-  chain_id: opt(Schema.Number),
+  chain_id: opt(Schema.Finite),
   registration_id: opt(Schema.String),
   token_id: opt(Schema.String),
   resolver: opt(ContractRef),
@@ -85,8 +85,8 @@ const detailFields = {
 
 export const NameRecord = Schema.Struct({
   ...detailFields,
-  record_count: opt(Schema.Number),
-  subname_count: opt(Schema.Number),
+  record_count: opt(Schema.Finite),
+  subname_count: opt(Schema.Finite),
 });
 
 export const LookupRecord = Schema.Struct({ ...detailFields, is_primary: opt(Schema.Boolean) });
@@ -96,14 +96,14 @@ export const AddressName = Schema.Struct({
   relations: opt(Schema.Array(Schema.String)),
   is_primary: opt(Schema.Boolean),
   migrated_at: opt(Schema.String),
-  record_count: opt(Schema.Number),
-  subname_count: opt(Schema.Number),
+  record_count: opt(Schema.Finite),
+  subname_count: opt(Schema.Finite),
 });
 
 const subnameFields = {
   ...nameFields,
   labelhash: opt(Schema.String),
-  subname_count: opt(Schema.Number),
+  subname_count: opt(Schema.Finite),
   subregistry: opt(ContractRef),
 };
 
@@ -111,13 +111,13 @@ export const Subname = Schema.Struct(subnameFields);
 
 export const RegistryLabel = Schema.Struct({
   ...subnameFields,
-  role_holder_count: opt(Schema.Number),
+  role_holder_count: opt(Schema.Finite),
 });
 
 export const SearchName = Schema.Struct({
   ...nameFields,
-  expires_window_index: opt(Schema.Number),
-  grace_ends_window_index: opt(Schema.Number),
+  expires_window_index: opt(Schema.Finite),
+  grace_ends_window_index: opt(Schema.Finite),
 });
 
 export const HistoryEvent = Schema.Struct({
@@ -130,10 +130,10 @@ export const HistoryEvent = Schema.Struct({
   kind: opt(Schema.String),
   registration_id: opt(Schema.String),
   contract_address: opt(Schema.String),
-  block_number: opt(Schema.Number),
+  block_number: opt(Schema.Finite),
   timestamp: opt(Schema.String),
   transaction_hash: opt(Schema.String),
-  log_index: opt(Schema.Number),
+  log_index: opt(Schema.Finite),
   data: opt(Schema.Record(Schema.String, Schema.Unknown)),
 });
 
@@ -167,7 +167,7 @@ const PrimaryNameAnswer = Schema.Struct({
 
 export const PrimaryName = Schema.Struct({
   address: Schema.String,
-  coin_type: Schema.Number,
+  coin_type: Schema.Finite,
   namespace: opt(Schema.String),
   answers: opt(Schema.Array(PrimaryNameAnswer)),
   verification: opt(Schema.Struct({ status: Schema.String, name: opt(Schema.String) })),
@@ -195,25 +195,25 @@ export const PermissionRow = Schema.Struct({
 });
 
 export const RegistryOverview = Schema.Struct({
-  chain_id: Schema.Number,
+  chain_id: Schema.Finite,
   address: Schema.String,
   name: opt(Schema.Struct({ name: Schema.String })),
   parent_registry: opt(ContractRef),
   created_at: opt(Schema.String),
-  created_block_number: opt(Schema.Number),
+  created_block_number: opt(Schema.Finite),
   created_transaction_hash: opt(Schema.String),
   counts: opt(
     Schema.Struct({
-      labels: opt(Schema.Number),
-      roles: opt(Schema.Number),
-      events: opt(Schema.Number),
+      labels: opt(Schema.Finite),
+      roles: opt(Schema.Finite),
+      events: opt(Schema.Finite),
     }),
   ),
   referenced_by: opt(Schema.Struct({ data: Schema.Array(Schema.Struct({ name: Schema.String })) })),
 });
 
 export const ResolverOverview = Schema.Struct({
-  chain_id: Schema.Number,
+  chain_id: Schema.Finite,
   address: Schema.String,
   bound_names: opt(
     Schema.Struct({
@@ -230,7 +230,7 @@ export const ResolverLink = Schema.Struct({
   record_id: Schema.String,
   default: Schema.Boolean,
   link_event: opt(
-    Schema.Struct({ block_number: opt(Schema.Number), transaction_hash: opt(Schema.String) }),
+    Schema.Struct({ block_number: opt(Schema.Finite), transaction_hash: opt(Schema.String) }),
   ),
 });
 
@@ -239,13 +239,13 @@ export const ResolverRole = Schema.Struct({
   name: opt(Schema.String),
   registration_id: Schema.String,
   powers: Schema.Array(Schema.String),
-  grant_event: opt(Schema.Struct({ block_number: opt(Schema.Number) })),
+  grant_event: opt(Schema.Struct({ block_number: opt(Schema.Finite) })),
 });
 
 export const RoleHolderResolver = Schema.Struct({
-  chain_id: Schema.Number,
+  chain_id: Schema.Finite,
   address: Schema.String,
-  grant_count: Schema.Number,
+  grant_count: Schema.Finite,
   powers: Schema.Array(Schema.String),
 });
 
@@ -256,9 +256,9 @@ export const Namespace = Schema.Struct({
     Schema.Array(
       Schema.Struct({
         network: Schema.String,
-        chain_id: opt(Schema.Number),
+        chain_id: opt(Schema.Finite),
         resolution: opt(
-          Schema.Struct({ protocol: Schema.String, since_block: opt(Schema.Number) }),
+          Schema.Struct({ protocol: Schema.String, since_block: opt(Schema.Finite) }),
         ),
       }),
     ),
@@ -267,12 +267,12 @@ export const Namespace = Schema.Struct({
 
 export const ChainStatus = Schema.Struct({
   status: opt(Schema.String),
-  indexed_block: opt(Schema.Number),
-  latest_block: opt(Schema.Number),
-  safe_block: opt(Schema.Number),
-  finalized_block: opt(Schema.Number),
-  lag_blocks: opt(Schema.Number),
-  lag_seconds: opt(Schema.Number),
+  indexed_block: opt(Schema.Finite),
+  latest_block: opt(Schema.Finite),
+  safe_block: opt(Schema.Finite),
+  finalized_block: opt(Schema.Finite),
+  lag_blocks: opt(Schema.Finite),
+  lag_seconds: opt(Schema.Finite),
 });
 
 export const StatusData = Schema.Struct({

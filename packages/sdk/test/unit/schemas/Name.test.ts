@@ -29,6 +29,6 @@ describe("Name.Normalized", () => {
   );
 
   it.prop("accepts generated normalized names", [Arbitraries.name], ([name]) => {
-    assert.strictEqual(Schema.decodeUnknownSync(Name.Normalized)(name), name);
+    assert.strictEqual(Schema.decodeSync(Name.Normalized)(name), name);
   });
 });

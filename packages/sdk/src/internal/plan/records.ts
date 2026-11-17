@@ -1,4 +1,4 @@
-import { Effect } from "effect";
+import { Effect, Predicate } from "effect";
 
 import { isAddressEqual, type Address } from "viem";
 
@@ -12,15 +12,13 @@ import { fromPromise } from "../rpc/fromPromise.js";
 /** The saved record of plan `id`. */
 export const requireRecord = (client: Client, id: string): Effect.Effect<Plan.Record, AnyError> =>
   fromPromise(() => client.config.storage.get(id)).pipe(
-    Effect.flatMap((record) =>
-      record === undefined
-        ? Effect.fail(
-            new NotFoundError({
-              code: "PLAN_NOT_FOUND",
-              hint: "Plans are saved in the client's `storage`; memory storage forgets them on reload.",
-            }),
-          )
-        : Effect.succeed(record),
+    Effect.filterOrFail(
+      Predicate.isNotUndefined,
+      () =>
+        new NotFoundError({
+          code: "PLAN_NOT_FOUND",
+          hint: "Plans are saved in the client's `storage`; memory storage forgets them on reload.",
+        }),
     ),
   );
 

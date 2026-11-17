@@ -1,4 +1,4 @@
-import { Effect } from "effect";
+import { Effect, Predicate } from "effect";
 
 import type { Address } from "viem";
 
@@ -30,14 +30,12 @@ export const requireTargetRegistry = (
   target: RegistryTarget,
 ): Effect.Effect<Address, AnyError> =>
   findTargetRegistry(client, target).pipe(
-    Effect.flatMap((address) =>
-      address === undefined
-        ? Effect.fail(
-            new NotFoundError({
-              code: "REGISTRY_NOT_FOUND",
-              hint: "Create one with registry.deploy, or subname.create deploys it with the first subname.",
-            }),
-          )
-        : Effect.succeed(address),
+    Effect.filterOrFail(
+      Predicate.isNotUndefined,
+      () =>
+        new NotFoundError({
+          code: "REGISTRY_NOT_FOUND",
+          hint: "Create one with registry.deploy, or subname.create deploys it with the first subname.",
+        }),
     ),
   );

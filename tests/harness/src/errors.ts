@@ -23,9 +23,13 @@ export const expectFailure = <A, E>(
 
 /** Runs a Promise-returning call and expects it to reject with a matching ensforge error. */
 export const expectRejection = (thunk: () => Promise<unknown>, expected: ExpectedError) =>
-  Effect.flip(Effect.tryPromise({ try: thunk, catch: (cause) => cause })).pipe(
-    Effect.map((cause) => {
-      const error = cause as { readonly _tag?: string; readonly code?: string };
+  Effect.flip(
+    Effect.tryPromise({
+      try: thunk,
+      catch: (cause) => cause as { readonly _tag?: string; readonly code?: string } | null,
+    }),
+  ).pipe(
+    Effect.map((error) => {
       assertTrue(error !== null && typeof error === "object", "rejected with a non-object");
       strictEqual(error._tag, expected._tag);
       if (expected.code !== undefined) strictEqual(error.code, expected.code);

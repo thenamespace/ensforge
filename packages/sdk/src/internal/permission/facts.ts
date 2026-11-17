@@ -117,7 +117,7 @@ export const readPermissionFacts = Effect.fnUntraced(function* (
   const labelId = hexToBigInt(data.parts.labelhash);
   const nodeId = hexToBigInt(data.parts.node);
   const read = Rpc.readContractOrUndefined;
-  const none = Effect.succeed(undefined);
+  const none = Effect.undefined;
 
   const registryOwner = orNull(data.v1?.registryOwner);
   const wrapperOwner = orNull(data.v1?.wrapper.owner);

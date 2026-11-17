@@ -27,7 +27,7 @@ const scenarios: Readonly<Record<string, readonly [pkg: string, source: string]>
   "hca: hca() with owner()": ["hca", 'export { hca, owner } from "@ensforge/hca";'],
 };
 
-const Budgets = Schema.fromJsonString(Schema.Record(Schema.String, Schema.Number));
+const Budgets = Schema.fromJsonString(Schema.Record(Schema.String, Schema.Finite));
 const isExternal = (id: string) =>
   id === "viem" ||
   id.startsWith("viem/") ||

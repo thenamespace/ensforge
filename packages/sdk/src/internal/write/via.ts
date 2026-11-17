@@ -34,7 +34,7 @@ export const routeSender = (
   account: Address | undefined,
 ): Effect.Effect<Address | undefined, AnyError> => {
   const sender = via?.sender;
-  if (sender === undefined) return Effect.succeed(undefined);
+  if (sender === undefined) return Effect.undefined;
   return viaContext(client, account).pipe(
     Effect.flatMap((context) => fromPromise(() => sender(context))),
   );

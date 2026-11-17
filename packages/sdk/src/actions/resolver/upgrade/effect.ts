@@ -78,7 +78,7 @@ export const plan = Effect.fnUntraced(function* (
     // A target without code is not an implementation either.
     Effect.catchIf(
       (error: AnyError) => error._tag === "ConfigError" && error.code === "CONTRACT_NOT_DEPLOYED",
-      () => Effect.succeed(undefined),
+      () => Effect.undefined,
     ),
   );
   if (approved !== true) {

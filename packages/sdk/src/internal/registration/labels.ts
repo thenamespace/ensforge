@@ -14,17 +14,15 @@ export const parseEthNames = (
 ): Effect.Effect<readonly EthName[], AnyError> =>
   Effect.forEach(typeof names === "string" ? [names] : names, (name) =>
     parseName(name).pipe(
-      Effect.flatMap((parts) =>
-        parts.isEth2ld && !parts.encodedLabel
-          ? Effect.succeed(parts)
-          : Effect.fail(
-              new InvalidInputError({
-                code: "INVALID_NAME",
-                input: name,
-                shortMessage: `${parts.name} is not a .eth second-level name.`,
-                hint: "Register subnames with subname actions; only names like `alice.eth` are sold.",
-              }),
-            ),
+      Effect.filterOrFail(
+        (parts) => parts.isEth2ld && !parts.encodedLabel,
+        (parts) =>
+          new InvalidInputError({
+            code: "INVALID_NAME",
+            input: name,
+            shortMessage: `${parts.name} is not a .eth second-level name.`,
+            hint: "Register subnames with subname actions; only names like `alice.eth` are sold.",
+          }),
       ),
     ),
   ).pipe(

@@ -48,7 +48,7 @@ export const resolveCalls = Effect.fnUntraced(function* (
   const resolved = yield* Rpc.resolve(client, { ...options, data }).pipe(
     Effect.catchIf(
       (error: AnyError) => !options.strict && noRecordCodes.has(error.code),
-      () => Effect.succeed(undefined),
+      () => Effect.undefined,
     ),
   );
   if (resolved === undefined)

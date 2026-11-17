@@ -51,14 +51,14 @@ export const nameInput = (
 export const optionalName = (
   name: string | undefined,
 ): Effect.Effect<string | undefined, AnyError> =>
-  name === undefined ? Effect.succeed(undefined) : normalizeName(name);
+  name === undefined ? Effect.undefined : normalizeName(name);
 
 /** An optional address filter, checksummed. */
 export const optionalAddress = (
   address: string | undefined,
   field: string,
 ): Effect.Effect<Address | undefined, AnyError> =>
-  address === undefined ? Effect.succeed(undefined) : requireAddress(address, field);
+  address === undefined ? Effect.undefined : requireAddress(address, field);
 
 /** A contract on `chainId`, by default the client's chain. */
 export const contractInput = (

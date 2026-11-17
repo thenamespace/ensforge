@@ -42,7 +42,7 @@ export const capabilities = (config: HttpConfig) => {
               .map(([chainId]) => Number(chainId)),
           ) as ReadonlySet<number>,
       ),
-      Effect.catchTag("NotFoundError", () => Effect.succeed(undefined)),
+      Effect.catchTag("NotFoundError", () => Effect.undefined),
     );
     chains = { at: now, value };
     return value;
@@ -66,7 +66,7 @@ export const capabilities = (config: HttpConfig) => {
           );
           return ids.length > 0 ? ids : namespace === "basenames" ? [basenamesChainId] : [];
         }),
-        Effect.catchTag("NotFoundError", () => Effect.succeed(undefined)),
+        Effect.catchTag("NotFoundError", () => Effect.undefined),
       );
       networks.set(namespace, { at: now, value });
       return value;

@@ -7,13 +7,7 @@ import { runtime } from "./runtime.js";
 import { invalidationKeys, subjectsOf } from "./subjects.js";
 
 // The registry's `Reactivity`, the one read atoms subscribe to.
-const reactivity = runtime
-  .atom(
-    Effect.gen(function* () {
-      return yield* Reactivity.Reactivity;
-    }),
-  )
-  .pipe(Atom.keepAlive);
+const reactivity = runtime.atom(Effect.service(Reactivity.Reactivity)).pipe(Atom.keepAlive);
 
 /**
  * Refetches every cached read of the given names and accounts, chain and indexer reads alike.

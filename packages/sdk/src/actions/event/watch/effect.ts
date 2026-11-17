@@ -16,6 +16,7 @@ export const watch = Effect.fn("ensforge.event.watch")(function* (
   options: Promises.Options,
 ): Effect.fn.Return<Promises.ReturnType, Promises.ErrorType> {
   const name = yield* normalizeName(options.name);
+  const runPromise = Effect.runPromiseWith(yield* Effect.context<never>());
   let last: bigint | undefined;
   let running = false;
 
@@ -34,7 +35,7 @@ export const watch = Effect.fn("ensforge.event.watch")(function* (
       running = true;
       const poll = async () => {
         try {
-          const events = await Effect.runPromise(
+          const events = await runPromise(
             get(client, { name, fromBlock, toBlock: blockNumber, types: options.types }),
           );
           last = blockNumber;

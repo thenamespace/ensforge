@@ -38,7 +38,7 @@ const fakeWrite = () => {
 const settle = (
   registry: AtomRegistry.AtomRegistry,
   atom: Parameters<typeof AtomRegistry.getResult>[1],
-) => Effect.runPromise(Effect.exit(AtomRegistry.getResult(registry, atom)));
+) => Effect.runPromiseExit(AtomRegistry.getResult(registry, atom));
 
 describe("ensWriteAtom", () => {
   it("collects plan events in steps and passes them on to the caller's onStep", async () => {

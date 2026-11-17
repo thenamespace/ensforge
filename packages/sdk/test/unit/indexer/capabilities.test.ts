@@ -42,9 +42,7 @@ describe("capabilities.serve", () => {
   );
 
   it.effect("rejects a namespace the indexer does not know", () =>
-    Effect.gen(function* () {
-      yield* expectFailure(probe(fakeBigname()).serve("basenames", 1), unsupported);
-    }),
+    expectFailure(probe(fakeBigname()).serve("basenames", 1), unsupported),
   );
 
   it.effect("reads a namespace on its home chain (Basenames on Base)", () =>

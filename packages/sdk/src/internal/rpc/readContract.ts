@@ -98,6 +98,6 @@ export const readContractOrUndefined = <
   readContract(client, parameters).pipe(
     Effect.catchIf(
       (error: AnyError) => error.context.revert !== undefined,
-      () => Effect.succeed(undefined),
+      () => Effect.undefined,
     ),
   );
