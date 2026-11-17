@@ -37,6 +37,8 @@ packages/hca/       Hosted Contract Account route and executors
 tests/harness/      Shared test harness for every test suite
 tests/devnet/       ENS deployed on a local anvil for chain test suites
 tests/fixtures/     Name states seeded on the devnet, edge-case catalog and coverage ledger
+tests/integration/  ensforge's reads and writes against the fixtures
+tests/fuzz/         Random operation sequences, on-chain properties, viem and ensjs comparison
 tools/cli/          ensforge-dev: builds, verify checks, codegen and bundle budgets
 .config/            Lint, format, test, turbo and commit configuration
 ```
@@ -81,7 +83,9 @@ property tests from Schemas or `effect/Arbitrary`.
   `tests/harness`.
 - `tests/devnet` deploys ENS on a local anvil (Foundry, see its README); `tests/fixtures` seeds
   every name state on it and holds the edge-case catalog and coverage ledger; `tests/integration`
-  checks ensforge's reads and writes against them. `pnpm test:chain` runs the chain lane. Tag tests with the
+  checks ensforge's reads and writes against them. `pnpm test:chain` runs the chain lane.
+  `tests/fuzz` runs random operation sequences against a model, on-chain properties and a
+  comparison with viem and ensjs (`pnpm test:fuzz`, see its README). Tag tests with the
   catalog cases they cover (`meta: { cases: ["O08"] }`) and list them in
   `tests/fixtures/catalog/ledger.json`.
 - Every error code an action documents in `@throws` must be asserted by a test that names the

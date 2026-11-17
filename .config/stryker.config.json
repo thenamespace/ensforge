@@ -1,0 +1,17 @@
+{
+  "$schema": "https://raw.githubusercontent.com/stryker-mutator/stryker-js/master/packages/core/schema/stryker-schema.json",
+  "testRunner": "vitest",
+  "plugins": ["@stryker-mutator/vitest-runner"],
+  "vitest": { "configFile": "../../.config/vitest.sdk-unit.config.ts" },
+  "mutate": [
+    "src/internal/permission/evaluate.ts",
+    "src/internal/name/state.ts",
+    "src/internal/name/classify.ts",
+    "src/plan/*.ts"
+  ],
+  "inPlace": true,
+  "coverageAnalysis": "perTest",
+  "reporters": ["clear-text", "progress"],
+  "concurrency": 4,
+  "timeoutMS": 60000
+}
