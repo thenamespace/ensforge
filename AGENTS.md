@@ -40,7 +40,10 @@ logical blank lines; review grouping explicitly when writing code.
   concept (`fixtures.byId`, `services.indexerUrl`), not synonyms per file.
 - Prefer Effect services (`Context.Service` with a static `layer`, methods built with
   `Effect.fn`/`Effect.fnUntraced`) over free functions that take a client or instance as their
-  first argument. Shared behaviour belongs in a service other code yields.
+  first argument. Shared behaviour belongs in a service other code yields. The one exception is
+  the packages' public actions and the internal modules behind them: they take the client first
+  (`Actions.record.get(ens, options)`), which keeps them tree-shakeable and shared by the Promise
+  and Effect APIs.
 - Use what exists before writing a helper: viem, Effect (`Predicate`, `Schema`, `Array`, …), the
   SDK's own utilities (`Name.parse`, `CoinType`, `Role`), then the shared test services. When a
   helper is missing and generally useful, add it to the package that owns the concept, with tests.
