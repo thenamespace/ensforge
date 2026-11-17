@@ -21,6 +21,7 @@ import * as Impl from "./effect.js";
  *   (which also extends wrapped names); each route is one `renewBatch` call.
  * - Token approvals are added for each contract whose allowance is short.
  * - Anyone can renew any name; the payer is the signer.
+ * - A name listed twice is renewed once, for `duration`.
  *
  * **Example** (Renewing names)
  *
