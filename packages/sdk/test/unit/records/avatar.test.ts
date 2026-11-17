@@ -63,3 +63,22 @@ describe("resolveAvatar", () => {
     }),
   );
 });
+
+// What `record.getAvatar` fails with under `strict` when an owned NFT's metadata cannot be loaded.
+describe("record.getAvatar metadata", () => {
+  it.effect("fails with a typed gateway error when the metadata cannot be loaded", () =>
+    Effect.gen(function* () {
+      globalThis.fetch = (async () => new Response("down", { status: 500 })) as typeof fetch;
+      const down = yield* Effect.flip(avatarOf("erc721", alice));
+      globalThis.fetch = (async () => new Response("not json")) as typeof fetch;
+      const garbled = yield* Effect.flip(avatarOf("erc721", alice));
+
+      assert.deepInclude(down, {
+        _tag: "GatewayError",
+        code: "GATEWAY_REQUEST_FAILED",
+        status: 500,
+      });
+      assert.deepInclude(garbled, { _tag: "GatewayError", code: "GATEWAY_RESPONSE_INVALID" });
+    }),
+  );
+});

@@ -416,6 +416,18 @@ describe("indexer action input", () => {
       "INVALID_ADDRESS",
     ],
     [
+      "indexer.getPrimaryName with an unknown coin",
+      (client: Client) =>
+        EffectActions.indexer.getPrimaryName(client, { address: addresses.nick, coin: "nope" }),
+      "INVALID_COIN_TYPE",
+    ],
+    [
+      "indexer.getNamesForAddress with an unknown coin",
+      (client: Client) =>
+        EffectActions.indexer.getNamesForAddress(client, { address: addresses.nick, coin: "nope" }),
+      "INVALID_COIN_TYPE",
+    ],
+    [
       "search with a blank query",
       (client: Client) => EffectActions.indexer.search(client, { query: "  " }),
       "INVALID_RECORD_VALUE",

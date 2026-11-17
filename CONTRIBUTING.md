@@ -84,6 +84,9 @@ property tests from Schemas or `effect/Arbitrary`.
   checks ensforge's reads against them. `pnpm test:chain` runs the chain lane. Tag tests with the
   catalog cases they cover (`meta: { cases: ["O08"] }`) and list them in
   `tests/fixtures/catalog/ledger.json`.
+- Every error code a read action documents in `@throws` must be asserted by a test that names the
+  action (`packages/sdk/test/unit/conformance/throws-coverage.test.ts`, which lists the few still
+  open).
 
 Property tests use a fixed seed; reproduce a failure with `ENSFORGE_TEST_SEED=<seed> pnpm test`.
 
