@@ -294,42 +294,14 @@ importers:
         specifier: 'catalog:'
         version: 2.57.20(bufferutil@4.1.0)(typescript@6.0.3)(utf-8-validate@5.0.10)(zod@4.5.4)
 
-  packages/core:
-    dependencies:
-      '@ensdomains/address-encoder':
-        specifier: 'catalog:'
-        version: 3.0.0
-      '@ensdomains/content-hash':
-        specifier: 'catalog:'
-        version: 3.2.0
-      '@ensforge/contracts':
-        specifier: workspace:*
-        version: link:../contracts
-      cborg:
-        specifier: 'catalog:'
-        version: 7.0.0
-      effect:
-        specifier: ^4.1.4
-        version: 4.1.4
-      fflate:
-        specifier: 'catalog:'
-        version: 0.8.3
-      wagmi:
-        specifier: ^3.7.0
-        version: 3.7.11(@coinbase/wallet-sdk@4.3.6(@types/react@19.3.0)(bufferutil@4.1.0)(immer@11.1.18)(react@19.3.1)(typescript@6.0.3)(use-sync-external-store@1.4.0(react@19.3.1))(utf-8-validate@5.0.10)(zod@4.5.4))(@safe-global/safe-apps-provider@0.18.6(bufferutil@4.1.0)(typescript@6.0.3)(utf-8-validate@5.0.10)(zod@4.5.4))(@safe-global/safe-apps-sdk@9.1.0(bufferutil@4.1.0)(typescript@6.0.3)(utf-8-validate@5.0.10)(zod@4.5.4))(@tanstack/query-core@5.102.8)(@tanstack/react-query@5.102.8(react@19.3.1))(@types/react@19.3.0)(@walletconnect/ethereum-provider@2.21.1(@types/react@19.3.0)(bufferutil@4.1.0)(react@19.3.1)(typescript@6.0.3)(utf-8-validate@5.0.10)(zod@4.5.4))(immer@11.1.18)(react@19.3.1)(typescript@6.0.3)(viem@2.57.20(bufferutil@4.1.0)(typescript@6.0.3)(utf-8-validate@5.0.10)(zod@4.5.4))
-    devDependencies:
-      viem:
-        specifier: 'catalog:'
-        version: 2.57.20(bufferutil@4.1.0)(typescript@6.0.3)(utf-8-validate@5.0.10)(zod@4.5.4)
-
   packages/hca:
     dependencies:
       '@ensforge/contracts':
         specifier: workspace:*
         version: link:../contracts
-      '@ensforge/core':
+      '@ensforge/sdk':
         specifier: workspace:*
-        version: link:../core
+        version: link:../sdk
       effect:
         specifier: ^4.1.4
         version: 4.1.4
@@ -343,9 +315,9 @@ importers:
       '@effect/atom-react':
         specifier: 'catalog:'
         version: 4.1.4(effect@4.1.4)(react@19.3.1)(scheduler@0.28.0)
-      '@ensforge/core':
+      '@ensforge/sdk':
         specifier: workspace:*
-        version: link:../core
+        version: link:../sdk
       effect:
         specifier: ^4.1.4
         version: 4.1.4
@@ -374,12 +346,24 @@ importers:
 
   packages/sdk:
     dependencies:
-      '@ensforge/core':
+      '@ensdomains/address-encoder':
+        specifier: 'catalog:'
+        version: 3.0.0
+      '@ensdomains/content-hash':
+        specifier: 'catalog:'
+        version: 3.2.0
+      '@ensforge/contracts':
         specifier: workspace:*
-        version: link:../core
+        version: link:../contracts
+      cborg:
+        specifier: 'catalog:'
+        version: 7.0.0
       effect:
         specifier: ^4.1.4
         version: 4.1.4
+      fflate:
+        specifier: 'catalog:'
+        version: 0.8.3
       wagmi:
         specifier: ^3.7.0
         version: 3.7.11(@coinbase/wallet-sdk@4.3.6(@types/react@19.3.0)(bufferutil@4.1.0)(immer@11.1.18)(react@19.3.1)(typescript@6.0.3)(use-sync-external-store@1.4.0(react@19.3.1))(utf-8-validate@5.0.10)(zod@4.5.4))(@safe-global/safe-apps-provider@0.18.6(bufferutil@4.1.0)(typescript@6.0.3)(utf-8-validate@5.0.10)(zod@4.5.4))(@safe-global/safe-apps-sdk@9.1.0(bufferutil@4.1.0)(typescript@6.0.3)(utf-8-validate@5.0.10)(zod@4.5.4))(@tanstack/query-core@5.102.8)(@tanstack/react-query@5.102.8(react@19.3.1))(@types/react@19.3.0)(@walletconnect/ethereum-provider@2.21.1(@types/react@19.3.0)(bufferutil@4.1.0)(react@19.3.1)(typescript@6.0.3)(utf-8-validate@5.0.10)(zod@4.5.4))(immer@11.1.18)(react@19.3.1)(typescript@6.0.3)(viem@2.57.20(bufferutil@4.1.0)(typescript@6.0.3)(utf-8-validate@5.0.10)(zod@4.5.4))
@@ -396,9 +380,9 @@ importers:
       '@ensforge/contracts':
         specifier: workspace:*
         version: link:../contracts
-      '@ensforge/core':
+      '@ensforge/sdk':
         specifier: workspace:*
-        version: link:../core
+        version: link:../sdk
       effect:
         specifier: 'catalog:'
         version: 4.1.4

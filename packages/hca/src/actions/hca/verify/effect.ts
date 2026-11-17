@@ -1,6 +1,6 @@
 import { Effect } from "effect";
 
-import { Action, type Client } from "@ensforge/core/extension";
+import { Action, type Client } from "@ensforge/sdk/extension";
 
 import { HcaError } from "../../../errors/classes/HcaError.js";
 import { accountInput } from "../../../internal/input.js";

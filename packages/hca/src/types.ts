@@ -1,5 +1,5 @@
 import type { HcaSessionTerms } from "@ensforge/contracts/v2/experimental/hca";
-import type { Plan, Write } from "@ensforge/core";
+import type { Plan, Write } from "@ensforge/sdk";
 import type { Address, Hex } from "viem";
 
 /**

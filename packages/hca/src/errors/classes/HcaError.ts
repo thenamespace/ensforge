@@ -1,5 +1,5 @@
-import { Errors } from "@ensforge/core";
-import { withDefaults } from "@ensforge/core/extension";
+import { Errors } from "@ensforge/sdk";
+import { withDefaults } from "@ensforge/sdk/extension";
 
 const defaults: {
   readonly [code in HcaError.Code]: (options: HcaError.Options) => Errors.EnsforgeError.Defaults;

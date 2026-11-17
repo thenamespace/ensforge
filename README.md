@@ -16,20 +16,19 @@ Type-safe tools for reading, writing, and building applications on ENS.
 | Package                                                 | Description                                                |
 | ------------------------------------------------------- | ---------------------------------------------------------- |
 | [`@ensforge/contracts`](./packages/contracts/README.md) | Contract ABIs, deployment addresses, and shared interfaces |
-| [`@ensforge/core`](./packages/core/README.md)           | Framework-independent ENS actions and utilities            |
-| [`@ensforge/sdk`](./packages/sdk/README.md)             | Config-bound client with actions grouped by capability     |
+| [`@ensforge/sdk`](./packages/sdk/README.md)             | Framework-independent ENS actions and utilities            |
 | [`@ensforge/react`](./packages/react/README.md)         | Providers, queries, mutations, and cache primitives        |
 
 ## Quick start
 
 ```sh
-pnpm add @ensforge/core effect@^4 viem
+pnpm add @ensforge/sdk effect@^4 viem
 ```
 
 Create a client, then call actions grouped by domain:
 
 ```ts
-import { Ensforge, ensActions } from "@ensforge/core";
+import { Ensforge, ensActions } from "@ensforge/sdk";
 import { createPublicClient, http } from "viem";
 import { mainnet } from "viem/chains";
 
@@ -47,7 +46,7 @@ Add a `walletClient` to write:
 await ens.record.set({ name: "alice.eth", texts: { url: "https://alice.dev" } });
 ```
 
-Effect programs import the same actions from `@ensforge/core/effect`.
+Effect programs import the same actions from `@ensforge/sdk/effect`.
 
 ## Repository
 

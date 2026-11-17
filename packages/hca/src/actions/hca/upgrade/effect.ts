@@ -2,9 +2,9 @@ import { Effect } from "effect";
 
 import { Abis } from "@ensforge/contracts";
 import { standaloneSingleOwnerHcaV2Abi } from "@ensforge/contracts/v2/experimental/hca";
-import type { Errors, Plan, Write } from "@ensforge/core";
-import { Rpc, requireAddress } from "@ensforge/core/extension";
-import { Action, type Client } from "@ensforge/core/extension";
+import type { Errors, Plan, Write } from "@ensforge/sdk";
+import { Rpc, requireAddress } from "@ensforge/sdk/extension";
+import { Action, type Client } from "@ensforge/sdk/extension";
 import { encodeFunctionData } from "viem";
 
 import { HcaError } from "../../../errors/classes/HcaError.js";

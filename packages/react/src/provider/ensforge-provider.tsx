@@ -5,8 +5,8 @@ import { useRef, type ReactNode } from "react";
 import { RegistryContext, RegistryProvider } from "@effect/atom-react";
 import type { AtomRegistry } from "effect/reactivity";
 
-import type { CreateConfigParameters } from "@ensforge/core/legacy";
-import { createIndexedDbWorkflowStorage } from "@ensforge/core/legacy/storage/browser";
+import type { CreateConfigParameters } from "@ensforge/sdk/legacy";
+import { createIndexedDbWorkflowStorage } from "@ensforge/sdk/legacy/storage/browser";
 
 import { Ensforge } from "../legacy/ensforge.js";
 import {

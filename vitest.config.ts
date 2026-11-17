@@ -2,7 +2,7 @@ import { defineConfig } from "vitest/config";
 
 // Fast lanes (018): `<package>:unit` and `<package>:types`, network-free. Chain lanes
 // (integration, fuzz, services, fork, live) are added by phases 019–025.
-const packages = ["contracts", "core", "hca"] as const;
+const packages = ["contracts", "sdk", "hca"] as const;
 
 const unit = (name: (typeof packages)[number]) => ({
   extends: true as const,

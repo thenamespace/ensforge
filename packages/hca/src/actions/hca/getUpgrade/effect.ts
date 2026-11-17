@@ -2,8 +2,8 @@ import { Effect } from "effect";
 
 import { Abis } from "@ensforge/contracts";
 import { standaloneSingleOwnerHcaV2Abi } from "@ensforge/contracts/v2/experimental/hca";
-import { Rpc, requireAddress } from "@ensforge/core/extension";
-import { Action, type Client } from "@ensforge/core/extension";
+import { Rpc, requireAddress } from "@ensforge/sdk/extension";
+import { Action, type Client } from "@ensforge/sdk/extension";
 
 import { accountInput } from "../../../internal/input.js";
 import type { getUpgrade as Promises } from "./index.js";

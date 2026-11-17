@@ -1,7 +1,7 @@
 import { Effect } from "effect";
 
-import { Errors, type Plan } from "@ensforge/core";
-import { addressOf, makePlan, requireAddress, type Client } from "@ensforge/core/extension";
+import { Errors, type Plan } from "@ensforge/sdk";
+import { addressOf, makePlan, requireAddress, type Client } from "@ensforge/sdk/extension";
 import type { Account, Address } from "viem";
 
 import type { HcaError } from "../errors/classes/HcaError.js";

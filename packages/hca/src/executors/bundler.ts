@@ -2,8 +2,8 @@ import {
   standaloneHcaFactoryV2Abi,
   standaloneSingleOwnerHcaV2Abi,
 } from "@ensforge/contracts/v2/experimental/hca";
-import type { Write } from "@ensforge/core";
-import type { Client } from "@ensforge/core/extension";
+import type { Write } from "@ensforge/sdk";
+import type { Client } from "@ensforge/sdk/extension";
 import { encodeAbiParameters, encodeFunctionData, http, padHex, type Hex } from "viem";
 import {
   createBundlerClient,

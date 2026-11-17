@@ -10,7 +10,7 @@
 //    - a description; only the sections **When to use** / **Details** / **Gotchas** /
 //      **Example** (Title); **When to use** starts with "Use to|when|as|with";
 //    - examples with unique titles, one ```ts fence each, covering the bound (`ens.<domain>.`),
-//      standalone (`Actions.<domain>.<name>(`) and Effect (`@ensforge/core/effect`) forms;
+//      standalone (`Actions.<domain>.<name>(`) and Effect (`@ensforge/sdk/effect`) forms;
 //    - at least one `@throws` naming a real `Errors.<Class>`;
 //    - `@since` (semver), `@stability` (stable|unstable|experimental) and `@category`;
 //    - JSDoc on every namespace type and every member of `Options`.
@@ -44,11 +44,11 @@ const jsdocOf = (node, source) => {
     .join("\n");
 };
 
-// The package's own error classes plus core's, which extension packages also throw.
+// The package's own error classes plus the sdk's, which extension packages also throw.
 const errorClasses = (() => {
   const folders = [
     join(packageFolder, "src/errors/classes"),
-    join(packageFolder, "../core/src/errors/classes"),
+    join(packageFolder, "../sdk/src/errors/classes"),
   ];
   return new Set(
     folders.flatMap((folder) =>

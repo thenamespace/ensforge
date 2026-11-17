@@ -1,7 +1,7 @@
 import { Effect } from "effect";
 
-import { requireAddress, resolveSigner, addressOf } from "@ensforge/core/extension";
-import { Action, type Client } from "@ensforge/core/extension";
+import { requireAddress, resolveSigner, addressOf } from "@ensforge/sdk/extension";
+import { Action, type Client } from "@ensforge/sdk/extension";
 
 import { authorize } from "../../../internal/session.js";
 import type { authorizeSession as Promises } from "./index.js";

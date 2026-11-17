@@ -4,7 +4,7 @@ export type {
   CreateConfigParameters,
   CreateViemConfigParameters,
   EnsforgeConfig,
-} from "@ensforge/core/legacy";
+} from "@ensforge/sdk/legacy";
 export { Ensforge } from "./legacy/ensforge.js";
 export type { CreateWagmiConfigParameters } from "./legacy/wagmi.js";
 

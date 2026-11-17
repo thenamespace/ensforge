@@ -58,14 +58,14 @@
     "typecheck": "tsc --noEmit",
     "pack:check": "publint && attw --pack . --profile esm-only",
     "prepack": "pnpm build",
-    "codegen": "node ../core/scripts/codegen/main.ts --root .",
-    "codegen:check": "node ../core/scripts/codegen/main.ts --root . --check",
+    "codegen": "node ../sdk/scripts/codegen/main.ts --root .",
+    "codegen:check": "node ../sdk/scripts/codegen/main.ts --root . --check",
     "verify": "pnpm codegen:check && node ../../scripts/lint-jsdoc.mjs src/index.ts src/effect.ts && node ../../scripts/api-report.mjs --check index effect && node ../../scripts/check-dist-types.mjs index",
     "api:report": "node ../../scripts/api-report.mjs index effect"
   },
   "dependencies": {
     "@ensforge/contracts": "workspace:*",
-    "@ensforge/core": "workspace:*"
+    "@ensforge/sdk": "workspace:*"
   },
   "devDependencies": {
     "viem": "catalog:"

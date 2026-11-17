@@ -1,5 +1,5 @@
-import type { Errors, Plan, Write } from "@ensforge/core";
-import { Action, type Like } from "@ensforge/core/extension";
+import type { Errors, Plan, Write } from "@ensforge/sdk";
+import { Action, type Like } from "@ensforge/sdk/extension";
 import type { Address, Hex } from "viem";
 
 import type { HcaError } from "../../../errors/classes/HcaError.js";

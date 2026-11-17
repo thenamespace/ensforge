@@ -1,5 +1,5 @@
 import { Abis } from "@ensforge/contracts";
-import type { Plan } from "@ensforge/core";
+import type { Plan } from "@ensforge/sdk";
 import {
   decodeFunctionData,
   encodeFunctionData,

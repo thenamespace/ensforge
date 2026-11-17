@@ -5,12 +5,12 @@ Ensforge is a pnpm and Turborepo monorepo for Effect-native Ethereum Name Servic
 ## Workspace map
 
 - `packages/contracts`: runtime-neutral ENS ABIs, interfaces, addresses, and deployment metadata.
-- `packages/core`: framework-independent SDK types, services, and actions when introduced.
+- `packages/sdk`: framework-independent SDK client, types, services, and actions.
 - `apps/*`: runnable applications when a concrete application is introduced.
 - `packages/*`: additional publishable packages when they have an independent public boundary.
 
-Dependencies must point inward toward `@ensforge/core`. Framework adapters may depend on core; core
-must not depend on React or application runtimes.
+Dependencies must point inward toward `@ensforge/sdk`. Framework adapters may depend on the sdk; the
+sdk must not depend on React or application runtimes.
 
 ## Commands
 
@@ -23,7 +23,7 @@ lint-staged, tsup, or Rollup unless a demonstrated requirement cannot be met by 
 
 ## Readability
 
-Apply these conventions across all package source, including core, HCA, SDK, React, contracts, and
+Apply these conventions across all package source, including the SDK, HCA, React, contracts, and
 new packages. Oxfmt does not insert logical blank lines; review grouping explicitly when writing code.
 
 Separate validation, execution, state updates, and result construction with blank lines. Keep short,

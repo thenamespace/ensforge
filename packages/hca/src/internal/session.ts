@@ -10,8 +10,8 @@ import {
   hcaSignedSession,
   type HcaSessionTerms,
 } from "@ensforge/contracts/v2/experimental/hca";
-import type { Plan } from "@ensforge/core";
-import { Rpc, type AnyError, type Client, type ViemWalletClient } from "@ensforge/core/extension";
+import type { Plan } from "@ensforge/sdk";
+import { Rpc, type AnyError, type Client, type ViemWalletClient } from "@ensforge/sdk/extension";
 import {
   decodeFunctionData,
   isAddressEqual,

@@ -29,16 +29,15 @@ declaration files.
 ```text
 apps/docs/          Vocs documentation
 packages/contracts/ ENS ABIs, fragments, interfaces, and deployments
-packages/core/      Standalone ENS actions and Effect APIs
-packages/sdk/       Config-bound, grouped SDK
+packages/sdk/       Standalone ENS actions and Effect APIs
 packages/react/     Providers, hooks, atoms, and cache APIs
-packages/hca/       Pimlico and Rhinestone execution adapters
+packages/hca/       Hidden Contract Account route and executors
 packages/test-env/  Private deterministic ENS integration environment
 packages/template/  Starter for new packages
 ```
 
 Keep changes within the package that owns the behavior. Shared public types belong with their domain
-in Core, while implementation details should remain internal.
+in the SDK, while implementation details should remain internal.
 
 ## Development checks
 
@@ -56,8 +55,8 @@ package metadata, exports, and clean consumer installations.
 During development, run a focused package command when it provides a faster feedback loop:
 
 ```sh
-pnpm --filter @ensforge/core test
-pnpm --filter @ensforge/core typecheck
+pnpm --filter @ensforge/sdk test
+pnpm --filter @ensforge/sdk typecheck
 pnpm --filter @ensforge/react test:watch
 pnpm --filter @ensforge/docs dev
 ```
@@ -122,9 +121,9 @@ package READMEs should remain useful introductions.
 Use small [Conventional Commits](https://www.conventionalcommits.org/) with clear scopes when useful:
 
 ```text
-feat(core): add resolver action
+feat(sdk): add resolver action
 fix(react): preserve mutation failure state
-docs(sdk): explain Wagmi configuration
+docs(hca): explain executors
 ```
 
 A pull request should explain the behavior being changed and include appropriate tests. Avoid
@@ -150,8 +149,8 @@ pnpm changeset
 ```
 
 Choose the affected packages and describe the change from a package user's perspective. The public
-packages use a fixed version group, so Changesets releases `@ensforge/contracts`, `@ensforge/core`,
-`@ensforge/sdk`, `@ensforge/react`, and `@ensforge/hca` together. Tests, documentation-only changes, and private
+packages use a fixed version group, so Changesets releases `@ensforge/contracts`, `@ensforge/sdk`,
+`@ensforge/react`, and `@ensforge/hca` together. Tests, documentation-only changes, and private
 workspace packages generally do not require a changeset.
 
 ## License

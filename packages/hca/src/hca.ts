@@ -1,7 +1,7 @@
 import { Effect } from "effect";
 
-import type { Plan, Write } from "@ensforge/core";
-import type { Client } from "@ensforge/core/extension";
+import type { Plan, Write } from "@ensforge/sdk";
+import type { Client } from "@ensforge/sdk/extension";
 import { isAddressEqual, type Address } from "viem";
 
 import { HcaError } from "./errors/classes/HcaError.js";

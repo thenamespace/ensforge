@@ -1,6 +1,6 @@
 import { Effect } from "effect";
 
-import { Action, type Client } from "@ensforge/core/extension";
+import { Action, type Client } from "@ensforge/sdk/extension";
 
 import { accountInput } from "../../../internal/input.js";
 import type { get as Promises } from "./index.js";

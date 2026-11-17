@@ -35,7 +35,7 @@ import { EnsforgeProvider } from "@ensforge/react";
 </EnsforgeProvider>;
 ```
 
-Per-action hooks are being rebuilt on the `@ensforge/core` 1.0 actions (`ens.name.*`,
+Per-action hooks are being rebuilt on the `@ensforge/sdk` 1.0 actions (`ens.name.*`,
 `ens.record.*`, …); `makeQueryHook` and `makeMutationHook` build hooks from atoms meanwhile.
 
 An existing SDK instance can also be shared through the provider:

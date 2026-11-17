@@ -1,6 +1,6 @@
 import { Effect } from "effect";
 
-import { Action, type Client } from "@ensforge/core/extension";
+import { Action, type Client } from "@ensforge/sdk/extension";
 
 import { sessionProblem } from "../../../internal/session.js";
 import type { getSession as Promises } from "./index.js";

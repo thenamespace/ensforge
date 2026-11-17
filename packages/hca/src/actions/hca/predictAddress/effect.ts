@@ -1,7 +1,7 @@
 import { Effect } from "effect";
 
-import { requireAddress } from "@ensforge/core/extension";
-import { Action, type Client } from "@ensforge/core/extension";
+import { requireAddress } from "@ensforge/sdk/extension";
+import { Action, type Client } from "@ensforge/sdk/extension";
 
 import { predictAddress as predict } from "../../../internal/account.js";
 import { signerOf } from "../../../internal/input.js";

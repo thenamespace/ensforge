@@ -1,7 +1,7 @@
 import { Effect } from "effect";
 
 import type { Deployments } from "@ensforge/contracts";
-import type { Client } from "@ensforge/core/extension";
+import type { Client } from "@ensforge/sdk/extension";
 import type { Address } from "viem";
 
 import { HcaError } from "../errors/classes/HcaError.js";

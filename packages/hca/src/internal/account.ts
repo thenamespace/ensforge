@@ -8,7 +8,7 @@ import {
   standaloneHcaFactoryV2Abi,
   standaloneSingleOwnerHcaV2Abi,
 } from "@ensforge/contracts/v2/experimental/hca";
-import { Rpc, type Client } from "@ensforge/core/extension";
+import { Rpc, type Client } from "@ensforge/sdk/extension";
 import { getAddress, hexToBigInt, isAddressEqual, zeroAddress, type Address } from "viem";
 import { getCode } from "viem/actions";
 

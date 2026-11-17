@@ -4,8 +4,8 @@ import {
   EnsforgeConfigTypeId,
   type CreateConfigParameters,
   type EnsforgeConfig,
-} from "@ensforge/core/legacy";
-import { createMemoryWorkflowStorage } from "@ensforge/core/legacy/storage";
+} from "@ensforge/sdk/legacy";
+import { createMemoryWorkflowStorage } from "@ensforge/sdk/legacy/storage";
 
 export class Ensforge {
   readonly config: EnsforgeConfig;

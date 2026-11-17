@@ -1,7 +1,7 @@
 import { Effect } from "effect";
 
-import type { Errors, Plan, Write } from "@ensforge/core";
-import { Action, type Client } from "@ensforge/core/extension";
+import type { Errors, Plan, Write } from "@ensforge/sdk";
+import { Action, type Client } from "@ensforge/sdk/extension";
 
 import type { HcaError } from "../../../errors/classes/HcaError.js";
 import { deployCall } from "../../../internal/calls.js";

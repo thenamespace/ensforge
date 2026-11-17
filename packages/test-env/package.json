@@ -15,7 +15,7 @@
   "dependencies": {
     "@effect/vitest": "catalog:",
     "@ensforge/contracts": "workspace:*",
-    "@ensforge/core": "workspace:*",
+    "@ensforge/sdk": "workspace:*",
     "effect": "catalog:",
     "viem": "catalog:",
     "vitest": "catalog:"

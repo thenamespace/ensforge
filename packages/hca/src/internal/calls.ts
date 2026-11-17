@@ -2,7 +2,7 @@ import {
   standaloneHcaFactoryV2Abi,
   standaloneSingleOwnerHcaV2Abi,
 } from "@ensforge/contracts/v2/experimental/hca";
-import type { Plan } from "@ensforge/core";
+import type { Plan } from "@ensforge/sdk";
 import { decodeFunctionData, encodeFunctionData, type Address, type Hex } from "viem";
 
 /**

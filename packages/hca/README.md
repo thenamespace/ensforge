@@ -6,14 +6,14 @@ HCA as one atomic execution, gaslessly through a bundler, or without prompts thr
 ## Installation
 
 ```sh
-pnpm add @ensforge/hca @ensforge/core effect@^4 viem
+pnpm add @ensforge/hca @ensforge/sdk effect@^4 viem
 ```
 
 ## Overview
 
 ```ts
-import { Ensforge, ensActions } from "@ensforge/core";
 import { hca, hcaActions } from "@ensforge/hca";
+import { Ensforge, ensActions } from "@ensforge/sdk";
 
 const ens = Ensforge.create({ publicClient, walletClient })
   .extend(ensActions())

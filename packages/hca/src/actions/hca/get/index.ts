@@ -1,5 +1,5 @@
-import type { Errors } from "@ensforge/core";
-import { Action, type Like } from "@ensforge/core/extension";
+import type { Errors } from "@ensforge/sdk";
+import { Action, type Like } from "@ensforge/sdk/extension";
 
 import type { HcaError } from "../../../errors/classes/HcaError.js";
 import type { HcaAccount } from "../../../types.js";

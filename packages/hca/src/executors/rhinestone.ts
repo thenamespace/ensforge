@@ -1,7 +1,7 @@
 import { Abis } from "@ensforge/contracts";
 import { hcaSessionSalt } from "@ensforge/contracts/v2/experimental/hca";
-import type { Write } from "@ensforge/core";
-import type { Client } from "@ensforge/core/extension";
+import type { Write } from "@ensforge/sdk";
+import type { Client } from "@ensforge/sdk/extension";
 import { concat, isAddressEqual, zeroAddress, type Account, type Address, type Hex } from "viem";
 import { readContract } from "viem/actions";
 

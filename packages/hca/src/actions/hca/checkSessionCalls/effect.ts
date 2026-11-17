@@ -1,6 +1,6 @@
 import { Effect } from "effect";
 
-import { Action, type Client } from "@ensforge/core/extension";
+import { Action, type Client } from "@ensforge/sdk/extension";
 
 import { checkSessionCalls as check } from "../../../internal/session.js";
 import type { checkSessionCalls as Promises } from "./index.js";

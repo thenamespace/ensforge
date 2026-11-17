@@ -1,7 +1,7 @@
 {
   "name": "@ensforge/sdk",
   "version": "0.6.1",
-  "description": "A type-safe TypeScript SDK for ENS",
+  "description": "Type-safe actions and utilities for ENS",
   "keywords": [
     "ens",
     "ethereum",
@@ -33,11 +33,43 @@
       "workspace-source": "./src/index.ts",
       "default": "./dist/index.js"
     },
-    "./wagmi": {
-      "workspace-source": "./src/wagmi.ts",
-      "default": "./dist/wagmi.js"
+    "./actions": {
+      "workspace-source": "./src/actions/index.ts",
+      "default": "./dist/actions.js"
     },
-    "./package.json": "./package.json"
+    "./effect": {
+      "workspace-source": "./src/effect.ts",
+      "default": "./dist/effect.js"
+    },
+    "./extension": {
+      "workspace-source": "./src/extension.ts",
+      "default": "./dist/extension.js"
+    },
+    "./indexer": {
+      "workspace-source": "./src/indexer/index.ts",
+      "default": "./dist/indexer.js"
+    },
+    "./legacy": {
+      "workspace-source": "./src/legacy/index.ts",
+      "default": "./dist/legacy.js"
+    },
+    "./legacy/storage": {
+      "workspace-source": "./src/legacy/storage/index.ts",
+      "default": "./dist/legacy/storage.js"
+    },
+    "./legacy/storage/browser": {
+      "workspace-source": "./src/legacy/storage/browser.ts",
+      "default": "./dist/legacy/storage/browser.js"
+    },
+    "./legacy/wagmi": {
+      "workspace-source": "./src/legacy/wagmi/index.ts",
+      "default": "./dist/legacy/wagmi.js"
+    },
+    "./package.json": "./package.json",
+    "./legacy/testing": {
+      "workspace-source": "./src/legacy/testing/index.ts",
+      "default": "./dist/legacy/testing.js"
+    }
   },
   "publishConfig": {
     "imports": {
@@ -45,22 +77,38 @@
     },
     "exports": {
       ".": "./dist/index.js",
-      "./wagmi": "./dist/wagmi.js",
+      "./actions": "./dist/actions.js",
+      "./effect": "./dist/effect.js",
+      "./extension": "./dist/extension.js",
+      "./indexer": "./dist/indexer.js",
+      "./legacy": "./dist/legacy.js",
+      "./legacy/storage": "./dist/legacy/storage.js",
+      "./legacy/storage/browser": "./dist/legacy/storage/browser.js",
+      "./legacy/wagmi": "./dist/legacy/wagmi.js",
       "./package.json": "./package.json"
     },
     "access": "public",
     "provenance": true
   },
   "scripts": {
+    "api:report": "node ../../scripts/api-report.mjs index effect indexer",
     "build": "tsdown",
+    "codegen": "node scripts/codegen/main.ts",
+    "codegen:check": "node scripts/codegen/main.ts --check",
+    "indexer:openapi": "node scripts/indexer-openapi.ts",
     "dev": "tsdown --watch",
     "lint": "oxlint --deny-warnings .",
-    "pack:check": "publint && attw --pack . --profile esm-only",
+    "pack:check": "publint && attw --pack . --profile esm-only --exclude-entrypoints ./legacy/testing",
     "prepack": "pnpm build",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit && tsc --noEmit -p scripts",
+    "verify": "pnpm codegen:check && node ../../scripts/lint-jsdoc.mjs src/index.ts src/effect.ts src/indexer/index.ts && node ../../scripts/api-report.mjs --check index effect indexer && node ../../scripts/check-dist-types.mjs index actions indexer --consumer scripts/fixtures/consumer.ts && node scripts/indexer-openapi.ts check && typedoc"
   },
   "dependencies": {
-    "@ensforge/core": "workspace:*"
+    "@ensdomains/address-encoder": "catalog:",
+    "@ensdomains/content-hash": "catalog:",
+    "@ensforge/contracts": "workspace:*",
+    "cborg": "catalog:",
+    "fflate": "catalog:"
   },
   "devDependencies": {
     "viem": "catalog:"
