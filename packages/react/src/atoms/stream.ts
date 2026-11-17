@@ -1,9 +1,8 @@
 import { Data, Stream, type Cause } from "effect";
 import { Atom } from "effect/reactivity";
 
-import type { Ensforge } from "@ensforge/sdk";
-
 import { atomRuntime } from "../internal/runtime.js";
+import type { Ensforge } from "../legacy/ensforge.js";
 import { makeReactivityKeys } from "../query/keys.js";
 import { resolveEnsAtomOptions, type ResolvedEnsAtomOptions } from "../query/options.js";
 import { configureAtom, type EnsAtom, type EnsAtomFactory } from "./query.js";

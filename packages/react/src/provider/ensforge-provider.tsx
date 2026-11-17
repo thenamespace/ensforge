@@ -5,13 +5,14 @@ import { useRef, type ReactNode } from "react";
 import { RegistryContext, RegistryProvider } from "@effect/atom-react";
 import type { AtomRegistry } from "effect/reactivity";
 
+import type { CreateConfigParameters } from "@ensforge/core/legacy";
 import { createIndexedDbWorkflowStorage } from "@ensforge/core/legacy/storage/browser";
-import { Ensforge, type CreateConfigParameters } from "@ensforge/sdk";
+
+import { Ensforge } from "../legacy/ensforge.js";
 import {
   createEnsforge as createWagmiEnsforge,
   type CreateWagmiConfigParameters,
-} from "@ensforge/sdk/wagmi";
-
+} from "../legacy/wagmi.js";
 import {
   EnsforgeReactContext,
   type EnsforgeReactContextValue,

@@ -2,8 +2,7 @@
 
 import { createContext, useContext } from "react";
 
-import type { Ensforge } from "@ensforge/sdk";
-
+import type { Ensforge } from "../legacy/ensforge.js";
 import type { EnsMutationDefaults } from "../mutation/options.js";
 import type { EnsAtomDefaults } from "../query/options.js";
 

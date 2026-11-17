@@ -1,9 +1,8 @@
 import { Effect } from "effect";
 import { AtomRegistry, Reactivity } from "effect/reactivity";
 
-import type { Ensforge } from "@ensforge/sdk";
-
 import { atomRuntime } from "../internal/runtime.js";
+import type { Ensforge } from "../legacy/ensforge.js";
 import { queryKeys, type EnsforgeReactivityKeys } from "../query/keys.js";
 
 export interface Invalidation {

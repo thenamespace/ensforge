@@ -1,4 +1,4 @@
-import type { Ensforge } from "@ensforge/sdk";
+import type { Ensforge } from "../legacy/ensforge.js";
 
 export type EnsforgeReactivityKeys = Readonly<Record<string, ReadonlyArray<unknown>>>;
 

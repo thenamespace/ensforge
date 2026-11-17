@@ -1,8 +1,6 @@
 import { Data, Effect } from "effect";
 import { Atom, type AsyncResult } from "effect/reactivity";
 
-import type { Ensforge } from "@ensforge/sdk";
-
 import type {
   ActionParameters,
   ActionSuccess,
@@ -10,6 +8,7 @@ import type {
   BoundEffectAction,
 } from "../internal/action-types.js";
 import { atomRuntime } from "../internal/runtime.js";
+import type { Ensforge } from "../legacy/ensforge.js";
 import { makeReactivityKeys } from "../query/keys.js";
 import {
   resolveEnsAtomOptions,

@@ -1,12 +1,12 @@
 "use client";
 
-export {
-  Ensforge,
-  type CreateConfigParameters,
-  type CreateViemConfigParameters,
-  type EnsforgeConfig,
-} from "@ensforge/sdk";
-export type { CreateWagmiConfigParameters } from "@ensforge/sdk/wagmi";
+export type {
+  CreateConfigParameters,
+  CreateViemConfigParameters,
+  EnsforgeConfig,
+} from "@ensforge/core/legacy";
+export { Ensforge } from "./legacy/ensforge.js";
+export type { CreateWagmiConfigParameters } from "./legacy/wagmi.js";
 
 export * from "./cache/index.js";
 export * from "./hooks/index.js";

@@ -1,9 +1,8 @@
 import { Effect } from "effect";
 import { AtomRegistry } from "effect/reactivity";
 
-import type { Ensforge } from "@ensforge/sdk";
-
 import type { EnsAtomFactory } from "../atoms/query.js";
+import type { Ensforge } from "../legacy/ensforge.js";
 import type { EnsAtomOptions } from "../query/options.js";
 
 export const prefetchEffect = <Parameters, Success, Failure>(
