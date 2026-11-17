@@ -11,7 +11,7 @@ Type-safe, Effect-native actions and utilities for ENS applications, across ENSv
 - ENS events normalized across ENSv1 and ENSv2
 - Pluggable indexers (bigname, Goldsky, your own) for lists, history and search, ENS and Basenames
 - Name normalization, hashing, DNS encoding and record codecs
-- Promise and Effect APIs; bring your own viem clients
+- Promise and Effect APIs; bring your own viem clients, or a wagmi 2 or 3 config
 
 ## Installation
 
@@ -56,10 +56,23 @@ const plan = await ens.record.set.prepare({
 const { hash } = await ens.record.set({ name: "alice.eth", texts: { url: "https://alice.dev" } });
 
 // After a failure, continue where it stopped:
-await ens.plan.resume({ id: error.context.planId });
+await ens.plan.resume({ id: planId });
 ```
 
 The same actions run in Effect programs from `@ensforge/sdk/effect`.
+
+## wagmi
+
+Apps with a wagmi config (RainbowKit, ConnectKit, Dynamic, Privy, Reown AppKit) create the client
+from it. Reads use wagmi's transports; writes use whichever wallet is connected, switching it to
+the ENS chain when needed. Works with wagmi 2 and 3:
+
+```ts
+import { ensActions } from "@ensforge/sdk";
+import { Ensforge } from "@ensforge/sdk/wagmi";
+
+const ens = Ensforge.fromWagmi(wagmiConfig).extend(ensActions());
+```
 
 ## Indexer
 

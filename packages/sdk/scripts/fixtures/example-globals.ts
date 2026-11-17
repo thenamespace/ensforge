@@ -10,6 +10,7 @@ import type {
   indexerActions,
 } from "@ensforge/sdk/indexer";
 import type { Address, Hex, PublicClient, TransactionReceipt, WalletClient } from "viem";
+import type { Config as WagmiConfig } from "wagmi";
 
 type NameDraft = Awaited<ReturnType<NonNullable<Adapter["getName"]>>>;
 
@@ -18,6 +19,7 @@ type Callback = (...args: readonly unknown[]) => unknown;
 declare global {
   const publicClient: PublicClient;
   const walletClient: WalletClient;
+  const wagmiConfig: WagmiConfig;
   const anvil: PublicClient;
   const devnetV2: NonNullable<Parameters<typeof Deployments.define>[0]["v2"]>;
   const request: Parameters<WalletClient["writeContract"]>[0];

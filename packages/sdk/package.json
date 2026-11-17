@@ -65,6 +65,10 @@
       "workspace-source": "./src/legacy/wagmi/index.ts",
       "default": "./dist/legacy/wagmi.js"
     },
+    "./wagmi": {
+      "workspace-source": "./src/wagmi/index.ts",
+      "default": "./dist/wagmi.js"
+    },
     "./package.json": "./package.json",
     "./legacy/testing": {
       "workspace-source": "./src/legacy/testing/index.ts",
@@ -85,13 +89,14 @@
       "./legacy/storage": "./dist/legacy/storage.js",
       "./legacy/storage/browser": "./dist/legacy/storage/browser.js",
       "./legacy/wagmi": "./dist/legacy/wagmi.js",
+      "./wagmi": "./dist/wagmi.js",
       "./package.json": "./package.json"
     },
     "access": "public",
     "provenance": true
   },
   "scripts": {
-    "api:report": "node ../../scripts/api-report.mjs index effect indexer",
+    "api:report": "node ../../scripts/api-report.mjs index effect indexer wagmi",
     "build": "tsdown",
     "codegen": "node scripts/codegen/main.ts",
     "codegen:check": "node scripts/codegen/main.ts --check",
@@ -101,7 +106,7 @@
     "pack:check": "publint && attw --pack . --profile esm-only --exclude-entrypoints ./legacy/testing",
     "prepack": "pnpm build",
     "typecheck": "tsc --noEmit && tsc --noEmit -p scripts && tsc --noEmit -p test",
-    "verify": "pnpm codegen:check && node ../../scripts/lint-jsdoc.mjs src/index.ts src/effect.ts src/indexer/index.ts && node ../../scripts/api-report.mjs --check index effect indexer && node ../../scripts/check-dist-types.mjs index actions indexer --consumer scripts/fixtures/consumer.ts && node scripts/indexer-openapi.ts check && typedoc && node ../../scripts/check-examples.mjs scripts/fixtures/example-globals.ts"
+    "verify": "pnpm codegen:check && node ../../scripts/lint-jsdoc.mjs src/index.ts src/effect.ts src/indexer/index.ts src/wagmi/index.ts && node ../../scripts/api-report.mjs --check index effect indexer wagmi && node ../../scripts/check-dist-types.mjs index actions indexer wagmi --consumer scripts/fixtures/consumer.ts && node scripts/indexer-openapi.ts check && typedoc && node ../../scripts/check-examples.mjs scripts/fixtures/example-globals.ts"
   },
   "dependencies": {
     "@ensdomains/address-encoder": "catalog:",
@@ -113,12 +118,14 @@
   "devDependencies": {
     "@effect/vitest": "catalog:",
     "@ensforge/test-harness": "workspace:*",
-    "viem": "catalog:"
+    "viem": "catalog:",
+    "wagmi": "catalog:",
+    "wagmi-v2": "npm:wagmi@2.19.5"
   },
   "peerDependencies": {
     "effect": "^4.1.4",
     "viem": "^2.57.0",
-    "wagmi": "^3.7.0"
+    "wagmi": ">=2.14.0 <4"
   },
   "peerDependenciesMeta": {
     "wagmi": {

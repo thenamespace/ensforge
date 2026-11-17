@@ -9,6 +9,7 @@ export default defineConfig({
     indexer: "src/indexer/index.ts",
     extension: "src/extension.ts",
     index: "src/index.ts",
+    wagmi: "src/wagmi/index.ts",
     legacy: "src/legacy/index.ts",
     "legacy/storage": "src/legacy/storage/index.ts",
     "legacy/storage/browser": "src/legacy/storage/browser.ts",

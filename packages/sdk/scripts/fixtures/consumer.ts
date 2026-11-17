@@ -10,8 +10,10 @@ import {
   type Page,
   type Subname,
 } from "@ensforge/sdk/indexer";
+import { Ensforge as WagmiEnsforge } from "@ensforge/sdk/wagmi";
 import { createPublicClient, http } from "viem";
 import { mainnet } from "viem/chains";
+import { createConfig } from "wagmi";
 
 const publicClient = createPublicClient({ chain: mainnet, transport: http() });
 const ens = Ensforge.create({ publicClient, simulate: true }).extend(ensActions());
@@ -69,3 +71,10 @@ export const walk = async (): Promise<number> => {
   }
   return count;
 };
+
+const wagmiConfig = createConfig({ chains: [mainnet], transports: { [mainnet.id]: http() } });
+export const fromWagmi = WagmiEnsforge.fromWagmi(wagmiConfig).extend(ensActions());
+export const wagmiUrl: Promise<string | null> = fromWagmi.record.getText({
+  name: "nick.eth",
+  key: "url",
+});
