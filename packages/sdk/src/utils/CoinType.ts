@@ -3,7 +3,16 @@ import {
   coinTypeToNameMap,
   getCoderByCoinType,
 } from "@ensdomains/address-encoder";
-import { bytesToHex, getAddress, hexToBytes, isAddress, zeroAddress, type Hex } from "viem";
+import {
+  bytesToHex,
+  getAddress,
+  hexToBytes,
+  isAddress,
+  isHex,
+  size,
+  zeroAddress,
+  type Hex,
+} from "viem";
 
 import { InvalidInputError } from "../errors/classes/InvalidInputError.js";
 
@@ -134,17 +143,38 @@ export const encodeAddress = (coinType: bigint, address: string): Hex => {
  * zero address, for EVM coins).
  *
  * @throws `Errors.InvalidInputError` (`INVALID_COIN_TYPE`) when no codec exists for the coin.
+ * @throws `Errors.InvalidInputError` (`INVALID_ADDRESS`) when the bytes are not an address of the
+ * coin.
  * @category records
  * @since 1.0.0
  */
 export const decodeAddress = (coinType: bigint, data: Hex): string | null => {
   if (data === "0x") return null;
-  // ENSv1 resolvers delete an ETH address by storing the zero address.
-  if (isEvm(coinType)) return data === zeroAddress ? null : getAddress(data);
 
+  const malformed = (cause?: unknown) =>
+    new InvalidInputError({
+      code: "INVALID_ADDRESS",
+      input: data,
+      field: `coin ${coinType}`,
+      cause,
+    });
+
+  if (isEvm(coinType)) {
+    if (!isHex(data) || size(data) !== 20) throw malformed();
+    // ENSv1 resolvers delete an ETH address by storing the zero address.
+    return data === zeroAddress ? null : getAddress(data);
+  }
+
+  let coder: ReturnType<typeof getCoderByCoinType>;
   try {
-    return getCoderByCoinType(Number(coinType)).encode(hexToBytes(data));
+    coder = getCoderByCoinType(Number(coinType));
   } catch (cause) {
     throw invalid(coinType, cause);
+  }
+
+  try {
+    return coder.encode(hexToBytes(data));
+  } catch (cause) {
+    throw malformed(cause);
   }
 };
