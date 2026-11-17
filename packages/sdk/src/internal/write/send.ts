@@ -47,8 +47,9 @@ const known = (client: Client, hashes: readonly Hex[]) =>
  * Sends the steps of a plan in order, simulating first unless disabled, and saves progress to the
  * client's plan storage after every submission so `plan.resume` can continue it.
  *
- * - Each step waits for the previous one's receipts, so it can depend on them; a step's
- *   `waitFor` counts chain time from the block that confirmed the previous step.
+ * - Each step waits for the previous one's receipts, so it can depend on them, and without a
+ *   bundle each call of a step waits for the one before; a step's `waitFor` counts chain time
+ *   from the block that confirmed the previous step.
  * - With a wallet that sends atomic bundles, consecutive steps without a wait share one bundle,
  *   up to `maxBundleCalls` calls: they run in order inside it, as the up-front simulation did.
  * - Resuming (`resumed`), steps already submitted are confirmed instead of sent again; a dropped

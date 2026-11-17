@@ -68,7 +68,8 @@ export declare namespace Read {
 export declare namespace Write {
   /**
    * How a plan's calls are sent: `batch` uses one EIP-5792 wallet call, `sequential` sends one
-   * transaction per call, `auto` batches when the wallet supports atomic batches.
+   * transaction per call, each once the previous one is mined and with a fifth more gas than
+   * estimated, `auto` batches when the wallet supports atomic batches.
    */
   type Mode = "auto" | "batch" | "sequential";
 

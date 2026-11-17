@@ -2,6 +2,7 @@ import { Duration, Effect } from "effect";
 
 import { WaitForCallsStatusTimeoutError, type Hex } from "viem";
 import {
+  estimateGas,
   getBlock,
   getCallsStatus,
   getCapabilities,
@@ -17,6 +18,7 @@ import type { AnyError } from "../../errors/types.js";
 import type { Plan } from "../../plan/Plan.js";
 import type { Write } from "../../Types.js";
 import { fromPromise } from "../rpc/fromPromise.js";
+import { receiptsOf } from "./receipts.js";
 import { addressOf, type Signer } from "./signer.js";
 
 /** Whether the wallet sends atomic EIP-5792 bundles without asking to upgrade the account. */
@@ -33,10 +35,38 @@ export const supportsAtomicBatch = (signer: Signer, chainId: number): Effect.Eff
     Effect.orElseSucceed(() => false),
   );
 
-/** Sends a step's calls as one transaction each, in order. */
-export const sendSequential = (client: Client, signer: Signer, step: Plan.Step) =>
-  Effect.forEach(step.calls, (item) =>
-    fromPromise(
+/**
+ * Sends a step's calls as one transaction each, in order. Each waits for the previous one's
+ * receipt: a call may depend on the one before (a payment after its approval), and wallets
+ * estimate its gas against mined state, so a call sent early can run out of gas or be refused.
+ */
+export const sendSequential = Effect.fnUntraced(function* (
+  client: Client,
+  signer: Signer,
+  step: Plan.Step,
+) {
+  const hashes: Hex[] = [];
+  for (const item of step.calls) {
+    const previous = hashes.at(-1);
+    if (previous !== undefined) yield* receiptsOf(client, [previous]);
+    const context = {
+      contract: item.to,
+      account: addressOf(signer.account),
+      chainId: client.chain.id,
+    };
+    // Wallets often send exactly their estimate, and some costs change by the second (an ENSv2
+    // premium decays), so a call can run out of gas one block later; a fifth more covers it.
+    const estimate = yield* fromPromise(
+      () =>
+        estimateGas(client.publicClient, {
+          account: addressOf(signer.account),
+          to: item.to,
+          data: item.data,
+          value: item.value,
+        }),
+      context,
+    );
+    const hash = yield* fromPromise(
       () =>
         sendTransaction(signer.walletClient, {
           account: signer.account,
@@ -44,10 +74,14 @@ export const sendSequential = (client: Client, signer: Signer, step: Plan.Step) 
           to: item.to,
           data: item.data,
           value: item.value,
+          gas: (estimate * 6n) / 5n,
         }),
-      { contract: item.to, account: addressOf(signer.account), chainId: client.chain.id },
-    ),
-  );
+      context,
+    );
+    hashes.push(hash);
+  }
+  return hashes;
+});
 
 /** How long to wait for a bundle when the caller sets no `timeout`: it has no hash to check later. */
 const defaultBundleTimeout = 300_000;
