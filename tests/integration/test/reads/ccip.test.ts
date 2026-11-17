@@ -84,19 +84,22 @@ describe("CCIP-Read", () => {
       { meta: { cases: ["M:B10"] } },
     );
 
-    it.effect("does not contact the gateway when CCIP-Read is disabled", () =>
-      offchain(
-        () => ok,
-        ({ devnet, name, requests }) =>
-          Effect.gen(function* () {
-            const ens = ensforge(devnet, { ccipRead: false });
-            yield* expectRejection(() => ens.resolver.resolve({ name, data: addrCall(name) }), {
-              _tag: "ConfigError",
-              code: "CCIP_READ_DISABLED",
-            });
-            assert.strictEqual(requests(), 0);
-          }),
-      ),
+    it.effect(
+      "does not contact the gateway when CCIP-Read is disabled",
+      () =>
+        offchain(
+          () => ok,
+          ({ devnet, name, requests }) =>
+            Effect.gen(function* () {
+              const ens = ensforge(devnet, { ccipRead: false });
+              yield* expectRejection(() => ens.resolver.resolve({ name, data: addrCall(name) }), {
+                _tag: "ConfigError",
+                code: "CCIP_READ_DISABLED",
+              });
+              assert.strictEqual(requests(), 0);
+            }),
+        ),
+      { meta: { cases: ["X13", "M:F4"] } },
     );
 
     it.effect(

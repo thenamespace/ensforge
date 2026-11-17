@@ -87,13 +87,17 @@
     "na": "ENSIP-15 normalization: ens-normalize's behaviour, tested upstream; ensforge only calls it"
   },
   "L30": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/name.test.ts > normalizes input and rejects names that cannot be normalized"
+    ]
   },
   "L31": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/name.test.ts > normalizes input and rejects names that cannot be normalized"
+    ]
   },
   "L32": {
-    "status": "pending"
+    "tests": ["tests/integration/test/reads/name.test.ts > hierarchy.label-unnormalized"]
   },
   "L33": {
     "status": "pending"
@@ -102,22 +106,25 @@
     "na": "ENS app bulk-renew look-alike filter; ensforge does not filter user lists"
   },
   "H01": {
-    "status": "pending"
+    "tests": ["tests/integration/test/reads/name.test.ts > hierarchy.label-255"]
   },
   "H02": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/name.test.ts > hierarchy.label-63",
+      "tests/integration/test/reads/name.test.ts > hierarchy.label-64"
+    ]
   },
   "H03": {
     "status": "pending"
   },
   "H04": {
-    "status": "pending"
+    "tests": ["tests/integration/test/reads/name.test.ts > hierarchy.label-with-dot"]
   },
   "H05": {
-    "status": "pending"
+    "tests": ["tests/integration/test/reads/name.test.ts > hierarchy.label-literal-hex"]
   },
   "H06": {
-    "status": "pending"
+    "tests": ["tests/integration/test/reads/name.test.ts > hierarchy.label-invalid-utf8"]
   },
   "H07": {
     "status": "pending"
@@ -129,7 +136,9 @@
     "status": "pending"
   },
   "H10": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/name.test.ts > recovers ENSv2 labels from the LabelStore and leaves unknown ones null"
+    ]
   },
   "H11": {
     "status": "pending"
@@ -138,7 +147,7 @@
     "status": "pending"
   },
   "H13": {
-    "status": "pending"
+    "tests": ["tests/integration/test/reads/name.test.ts > hierarchy.depth-33"]
   },
   "H14": {
     "status": "pending"
@@ -171,70 +180,99 @@
     "status": "pending"
   },
   "H24": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/name.test.ts > v1.subname",
+      "tests/integration/test/reads/registry.test.ts > reads a registry by address, with its parent and canonical name"
+    ]
   },
   "H25": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/resolver.test.ts > resolves through the exact resolver first, then a parent's wildcard"
+    ]
   },
   "O01": {
-    "status": "pending"
+    "tests": ["tests/integration/test/reads/name.test.ts > v1.old-registry"]
   },
   "O02": {
-    "status": "pending"
+    "tests": ["tests/integration/test/reads/name.test.ts > v1.old-registry.migrated"]
   },
   "O03": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/name.test.ts > registrant, manager and expiry of ENSv1 names",
+      "tests/integration/test/reads/name.test.ts > v1.unwrapped.transferred"
+    ]
   },
   "O04": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/name.test.ts > registrant, manager and expiry of ENSv1 names",
+      "tests/integration/test/reads/name.test.ts > v1.unwrapped.registrar-only"
+    ]
   },
   "O05": {
-    "status": "pending"
+    "tests": ["tests/integration/test/reads/name.test.ts > v1.unwrapped.expired"]
   },
   "O06": {
-    "status": "pending"
+    "tests": ["tests/integration/test/reads/name.test.ts > v1.wrapped.implicit-unwrap"]
   },
   "O07": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/name.test.ts > v1.wrapped.desynced",
+      "tests/integration/test/reads/wrapper.test.ts > withholds what the wrapper withholds once a token expires"
+    ]
   },
   "O08": {
-    "status": "pending"
+    "tests": ["tests/integration/test/reads/name.test.ts > v1.wrapped.desynced"]
   },
   "O09": {
     "status": "pending"
   },
   "O10": {
-    "status": "pending"
+    "tests": ["tests/integration/test/reads/name.test.ts > v1.wrapped.sub.unwrapped-parent"]
   },
   "O11": {
-    "status": "pending"
+    "tests": ["tests/integration/test/reads/name.test.ts > v1.unwrapped.sub.wrapped-parent"]
   },
   "O12": {
-    "status": "pending"
+    "tests": ["tests/integration/test/reads/name.test.ts > v1.subname.deleted"]
   },
   "O13": {
-    "status": "pending"
+    "tests": ["tests/integration/test/reads/name.test.ts > v2.reserved.lapsed"]
   },
   "O14": {
-    "status": "pending"
+    "tests": ["tests/integration/test/reads/name.test.ts > v2.unregistered.renewed"]
   },
   "O15": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/name.test.ts > v2.grace",
+      "tests/integration/test/reads/name.test.ts > v2.expired"
+    ]
   },
   "O16": {
-    "status": "pending"
+    "tests": ["tests/integration/test/reads/name.test.ts > v2.unregistered"]
   },
   "O17": {
-    "status": "pending"
+    "tests": ["tests/integration/test/reads/name.test.ts > v2.re-registered"]
   },
   "O18": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/migration.test.ts > reports each name's route, blockers and state after migrating",
+      "tests/integration/test/reads/name.test.ts > v2.reserved",
+      "tests/integration/test/reads/registration.test.ts > prices renewals through the contract that renews each name"
+    ]
   },
   "O19": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/migration.test.ts > reports each name's route, blockers and state after migrating",
+      "tests/integration/test/reads/name.test.ts > v1.unwrapped",
+      "tests/integration/test/reads/registration.test.ts > isAvailable agrees with name.get for every .eth second-level name",
+      "tests/integration/test/reads/registration.test.ts > prices renewals through the contract that renews each name"
+    ]
   },
   "O20": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/name.test.ts > v2.linked",
+      "tests/integration/test/reads/registry.test.ts > follows a linked registry from both parents to one registry"
+    ]
   },
   "O21": {
     "status": "pending"
@@ -243,7 +281,10 @@
     "status": "pending"
   },
   "O23": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/name.test.ts > v2.replaced-subregistry",
+      "tests/integration/test/reads/registry.test.ts > reports a replaced subregistry as unreachable"
+    ]
   },
   "O24": {
     "status": "pending"
@@ -264,7 +305,7 @@
     "status": "pending"
   },
   "O30": {
-    "status": "pending"
+    "tests": ["tests/integration/test/reads/name.test.ts > v2.reserved"]
   },
   "O31": {
     "status": "pending"
@@ -291,19 +332,31 @@
     "status": "pending"
   },
   "W05": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/name.test.ts > v1.wrapped.sub.expired-emancipated",
+      "tests/integration/test/reads/wrapper.test.ts > withholds what the wrapper withholds once a token expires"
+    ]
   },
   "W06": {
     "status": "pending"
   },
   "W07": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/name.test.ts > v1.wrapped.grace",
+      "tests/integration/test/reads/wrapper.test.ts > withholds what the wrapper withholds once a token expires"
+    ]
   },
   "W08": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/name.test.ts > v1.wrapped.expired",
+      "tests/integration/test/reads/wrapper.test.ts > withholds what the wrapper withholds once a token expires"
+    ]
   },
   "W09": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/name.test.ts > v1.wrapped.sub.expired",
+      "tests/integration/test/reads/wrapper.test.ts > withholds what the wrapper withholds once a token expires"
+    ]
   },
   "W10": {
     "status": "pending"
@@ -312,7 +365,9 @@
     "status": "pending"
   },
   "W12": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/access.test.ts > reads ENSv1 operators, resolver delegates and token approvals"
+    ]
   },
   "W13": {
     "status": "pending"
@@ -348,7 +403,9 @@
     "status": "pending"
   },
   "W24": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/name.test.ts > token ID, resource, registry and expiry of ENSv2 names"
+    ]
   },
   "W25": {
     "status": "pending"
@@ -393,49 +450,79 @@
     "status": "pending"
   },
   "R01": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/resolver.test.ts > resolves through the exact resolver first, then a parent's wildcard"
+    ]
   },
   "R02": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/resolver.test.ts > describes each generation and kind of resolver"
+    ]
   },
   "R03": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/resolver.test.ts > resolves through the exact resolver first, then a parent's wildcard"
+    ]
   },
   "R04": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/resolver.test.ts > resolves through the exact resolver first, then a parent's wildcard"
+    ]
   },
   "R05": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/resolver.test.ts > describes each generation and kind of resolver",
+      "tests/integration/test/reads/resolver.test.ts > reads misbehaving resolvers as missing records, and fails strict reads with a typed error"
+    ]
   },
   "R06": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/resolver.test.ts > reads misbehaving resolvers as missing records, and fails strict reads with a typed error"
+    ]
   },
   "R07": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/resolver.test.ts > reads misbehaving resolvers as missing records, and fails strict reads with a typed error"
+    ]
   },
   "R08": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/resolver.test.ts > reads misbehaving resolvers as missing records, and fails strict reads with a typed error"
+    ]
   },
   "R09": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/resolver.test.ts > reads misbehaving resolvers as missing records, and fails strict reads with a typed error"
+    ]
   },
   "R10": {
     "status": "pending"
   },
   "R11": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/resolver.test.ts > describes each generation and kind of resolver",
+      "tests/integration/test/reads/resolver.test.ts > resolves through the exact resolver first, then a parent's wildcard"
+    ]
   },
   "R12": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/resolver.test.ts > describes each generation and kind of resolver"
+    ]
   },
   "R13": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/resolver.test.ts > reads misbehaving resolvers as missing records, and fails strict reads with a typed error"
+    ]
   },
   "R14": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/resolver.test.ts > reads misbehaving resolvers as missing records, and fails strict reads with a typed error"
+    ]
   },
   "R15": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/resolver.test.ts > reads misbehaving resolvers as missing records, and fails strict reads with a typed error"
+    ]
   },
   "R16": {
     "status": "pending"
@@ -447,19 +534,26 @@
     "status": "pending"
   },
   "R19": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/resolver.test.ts > fails with a typed error when a registry reverts during resolution"
+    ]
   },
   "R20": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/resolver.test.ts > fails with a typed error when a registry reverts during resolution"
+    ]
   },
   "R21": {
-    "status": "pending"
+    "tests": ["tests/integration/test/reads/records.test.ts > reads default and linked records"]
   },
   "R22": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/records.test.ts > reads default and linked records",
+      "tests/integration/test/reads/resolver.test.ts > describes ENSv2 resolvers and their record links"
+    ]
   },
   "R23": {
-    "status": "pending"
+    "tests": ["tests/integration/test/reads/records.test.ts > reads default and linked records"]
   },
   "R24": {
     "status": "pending"
@@ -468,7 +562,9 @@
     "status": "pending"
   },
   "R26": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/resolver.test.ts > describes ENSv2 resolvers and their record links"
+    ]
   },
   "R27": {
     "status": "pending"
@@ -492,43 +588,47 @@
     "status": "pending"
   },
   "X01": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/ccip.test.ts > reports a failing gateway with its HTTP status"
+    ]
   },
   "X02": {
-    "status": "pending"
+    "na": "viem's CCIP-Read client (EIP-3668 HTTP transport and local batch gateway), tested upstream; ensforge only passes gateway settings through"
   },
   "X03": {
-    "status": "pending"
+    "na": "viem's CCIP-Read client (EIP-3668 HTTP transport and local batch gateway), tested upstream; ensforge only passes gateway settings through"
   },
   "X04": {
-    "status": "pending"
+    "na": "viem's CCIP-Read client (EIP-3668 HTTP transport and local batch gateway), tested upstream; ensforge only passes gateway settings through"
   },
   "X05": {
     "status": "pending"
   },
   "X06": {
-    "status": "pending"
+    "na": "viem's CCIP-Read client (EIP-3668 HTTP transport and local batch gateway), tested upstream; ensforge only passes gateway settings through"
   },
   "X07": {
     "status": "pending"
   },
   "X08": {
-    "status": "pending"
+    "na": "viem's CCIP-Read client (EIP-3668 HTTP transport and local batch gateway), tested upstream; ensforge only passes gateway settings through"
   },
   "X09": {
-    "status": "pending"
+    "na": "viem's CCIP-Read client (EIP-3668 HTTP transport and local batch gateway), tested upstream; ensforge only passes gateway settings through"
   },
   "X10": {
     "status": "pending"
   },
   "X11": {
-    "status": "pending"
+    "na": "viem's CCIP-Read client (EIP-3668 HTTP transport and local batch gateway), tested upstream; ensforge only passes gateway settings through"
   },
   "X12": {
     "status": "pending"
   },
   "X13": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/ccip.test.ts > does not contact the gateway when CCIP-Read is disabled"
+    ]
   },
   "X14": {
     "status": "pending"
@@ -543,22 +643,33 @@
     "status": "pending"
   },
   "X18": {
-    "status": "pending"
+    "na": "viem's CCIP-Read client (EIP-3668 HTTP transport and local batch gateway), tested upstream; ensforge only passes gateway settings through"
   },
   "K01": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/records.test.ts > reads every profile of a PublicResolver"
+    ]
   },
   "K02": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/records.test.ts > reads every profile of a PublicResolver",
+      "tests/integration/test/reads/records.test.ts > reads a PermissionedResolver, where a zero address is a record"
+    ]
   },
   "K03": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/records.test.ts > reads every profile of a PublicResolver"
+    ]
   },
   "K04": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/records.test.ts > reads a PermissionedResolver, where a zero address is a record"
+    ]
   },
   "K05": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/records.test.ts > does not read the default EVM address as an ETH address"
+    ]
   },
   "K06": {
     "status": "pending"
@@ -570,7 +681,10 @@
     "status": "pending"
   },
   "K09": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/records.test.ts > reads every profile of a PublicResolver",
+      "tests/integration/test/reads/records.test.ts > decodes taproot addresses and every content hash codec"
+    ]
   },
   "K10": {
     "status": "pending"
@@ -588,10 +702,14 @@
     "status": "pending"
   },
   "K15": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/records.test.ts > reads every profile of a PublicResolver"
+    ]
   },
   "K16": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/records.test.ts > reads every profile of a PublicResolver"
+    ]
   },
   "K17": {
     "status": "pending"
@@ -600,28 +718,38 @@
     "status": "pending"
   },
   "K19": {
-    "status": "pending"
+    "tests": ["tests/integration/test/reads/records.test.ts > reads a 24 KB text in one call"]
   },
   "K20": {
     "status": "pending"
   },
   "K21": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/records.test.ts > reads every profile of a PublicResolver"
+    ]
   },
   "K22": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/records.test.ts > decodes taproot addresses and every content hash codec"
+    ]
   },
   "K23": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/records.test.ts > decodes taproot addresses and every content hash codec"
+    ]
   },
   "K24": {
     "status": "pending"
   },
   "K25": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/records.test.ts > reads every profile of a PublicResolver"
+    ]
   },
   "K26": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/records.test.ts > reads a PermissionedResolver, where a zero address is a record"
+    ]
   },
   "K27": {
     "status": "pending"
@@ -630,34 +758,48 @@
     "status": "pending"
   },
   "K29": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/records.test.ts > reads every profile of a PublicResolver"
+    ]
   },
   "K30": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/records.test.ts > reads every profile of a PublicResolver"
+    ]
   },
   "K31": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/records.test.ts > reads a PermissionedResolver, where a zero address is a record"
+    ]
   },
   "K32": {
     "status": "pending"
   },
   "K33": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/records.test.ts > returns avatars it can use and ignores the rest"
+    ]
   },
   "K34": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/records.test.ts > returns avatars it can use and ignores the rest"
+    ]
   },
   "K35": {
     "status": "pending"
   },
   "K36": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/records.test.ts > returns avatars it can use and ignores the rest"
+    ]
   },
   "K37": {
     "status": "pending"
   },
   "K38": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/records.test.ts > returns avatars it can use and ignores the rest"
+    ]
   },
   "K39": {
     "status": "pending"
@@ -666,10 +808,15 @@
     "status": "pending"
   },
   "K41": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/records.test.ts > reads every profile of a PublicResolver",
+      "tests/integration/test/reads/records.test.ts > reads a PermissionedResolver, where a zero address is a record"
+    ]
   },
   "P01": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/primary.test.ts > reads verified primary names from every reverse namespace and registrar generation"
+    ]
   },
   "P02": {
     "status": "pending"
@@ -681,16 +828,22 @@
     "status": "pending"
   },
   "P05": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/primary.test.ts > reads verified primary names from every reverse namespace and registrar generation"
+    ]
   },
   "P06": {
     "status": "pending"
   },
   "P07": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/primary.test.ts > returns null for names that do not verify, unless verification is off"
+    ]
   },
   "P08": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/primary.test.ts > returns null for names that do not verify, unless verification is off"
+    ]
   },
   "P09": {
     "status": "pending"
@@ -732,7 +885,9 @@
     "status": "pending"
   },
   "P22": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/primary.test.ts > reads verified primary names from every reverse namespace and registrar generation"
+    ]
   },
   "P23": {
     "status": "pending"
@@ -744,7 +899,9 @@
     "status": "pending"
   },
   "P26": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/primary.test.ts > returns null for names that do not verify, unless verification is off"
+    ]
   },
   "P27": {
     "status": "pending"
@@ -759,13 +916,17 @@
     "status": "pending"
   },
   "G01": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/registration.test.ts > prices labels by code point and refuses labels below the minimum"
+    ]
   },
   "G02": {
     "status": "pending"
   },
   "G03": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/registration.test.ts > prices labels by code point and refuses labels below the minimum"
+    ]
   },
   "G04": {
     "status": "pending"
@@ -774,7 +935,9 @@
     "status": "pending"
   },
   "G06": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/registration.test.ts > tracks a commitment through its window"
+    ]
   },
   "G07": {
     "status": "pending"
@@ -792,13 +955,18 @@
     "status": "pending"
   },
   "G12": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/name.test.ts > registration.v1-renewed-by-renewer",
+      "tests/integration/test/reads/registration.test.ts > prices renewals through the contract that renews each name"
+    ]
   },
   "G13": {
     "status": "pending"
   },
   "G14": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/registration.test.ts > quotes the premium curve of a released name at a given time"
+    ]
   },
   "G15": {
     "status": "pending"
@@ -834,10 +1002,14 @@
     "status": "pending"
   },
   "G26": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/registration.test.ts > applies the multi-year renewal discounts"
+    ]
   },
   "G27": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/registration.test.ts > converts prices to each token, rounding up"
+    ]
   },
   "G28": {
     "status": "pending"
@@ -849,19 +1021,29 @@
     "status": "pending"
   },
   "T01": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/name-time.test.ts > an ENSv1 .eth name expires at its expiry and is released one second after grace"
+    ]
   },
   "T02": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/name-time.test.ts > an ENSv1 .eth name expires at its expiry and is released one second after grace"
+    ]
   },
   "T03": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/name-time.test.ts > a wrapped .eth name keeps its owner until one second after the wrapper expiry"
+    ]
   },
   "T04": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/name-time.test.ts > an ENSv2 .eth name is in grace from its expiry and available at grace end"
+    ]
   },
   "T05": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/name-time.test.ts > an ENSv2 .eth name is in grace from its expiry and available at grace end"
+    ]
   },
   "T06": {
     "status": "pending"
@@ -873,7 +1055,7 @@
     "status": "pending"
   },
   "T09": {
-    "status": "pending"
+    "tests": ["tests/integration/test/reads/name.test.ts > registration.v2-renewed-in-grace"]
   },
   "T10": {
     "status": "pending"
@@ -939,7 +1121,7 @@
     "status": "pending"
   },
   "D15": {
-    "status": "pending"
+    "tests": ["tests/integration/test/reads/name.test.ts > dns.imported.wrapped"]
   },
   "D16": {
     "na": "ENS app UI (an out-of-sync banner); the DNS and ENS owners are read through D-axis cases"
@@ -1008,10 +1190,14 @@
     "status": "pending"
   },
   "A01": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/access.test.ts > reads ENSv1 operators, resolver delegates and token approvals"
+    ]
   },
   "A02": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/access.test.ts > reads ENSv1 operators, resolver delegates and token approvals"
+    ]
   },
   "A03": {
     "status": "pending"
@@ -1134,157 +1320,235 @@
     "status": "pending"
   },
   "M:A2": {
-    "status": "pending"
+    "tests": ["tests/integration/test/reads/name.test.ts > v1.unwrapped"]
   },
   "M:A3": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/name.test.ts > registrant, manager and expiry of ENSv1 names",
+      "tests/integration/test/reads/name.test.ts > v1.unwrapped.manager"
+    ]
   },
   "M:A4": {
-    "status": "pending"
+    "tests": ["tests/integration/test/reads/name.test.ts > v1.subname"]
   },
   "M:A5": {
-    "status": "pending"
+    "tests": ["tests/integration/test/reads/name.test.ts > v1.unwrapped.grace"]
   },
   "M:A6": {
-    "status": "pending"
+    "tests": ["tests/integration/test/reads/name.test.ts > v1.unwrapped.expired"]
   },
   "M:A7": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/name.test.ts > wrapped names report the wrapper's token and expiry",
+      "tests/integration/test/reads/name.test.ts > v1.wrapped"
+    ]
   },
   "M:A8": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/access.test.ts > reports what an account may do, and why not",
+      "tests/integration/test/reads/name.test.ts > v1.wrapped.locked"
+    ]
   },
   "M:A9": {
-    "status": "pending"
+    "tests": ["tests/integration/test/reads/name.test.ts > v1.wrapped.sub"]
   },
   "M:A10": {
-    "status": "pending"
+    "tests": ["tests/integration/test/reads/name.test.ts > v1.wrapped.sub.emancipated"]
   },
   "M:A11": {
-    "status": "pending"
+    "tests": ["tests/integration/test/reads/name.test.ts > v1.wrapped.sub.locked"]
   },
   "M:A12": {
-    "status": "pending"
+    "tests": ["tests/integration/test/reads/name.test.ts > v1.wrapped.sub.expired"]
   },
   "M:A13": {
-    "status": "pending"
+    "tests": ["tests/integration/test/reads/name.test.ts > v1.wrapped.grace"]
   },
   "M:A14": {
-    "status": "pending"
+    "tests": ["tests/integration/test/reads/name.test.ts > v2.registered"]
   },
   "M:A15": {
-    "status": "pending"
+    "tests": ["tests/integration/test/reads/name.test.ts > v2.grace"]
   },
   "M:A16": {
-    "status": "pending"
+    "tests": ["tests/integration/test/reads/name.test.ts > v2.expired"]
   },
   "M:A17": {
-    "status": "pending"
+    "tests": ["tests/integration/test/reads/name.test.ts > v2.re-registered"]
   },
   "M:A18": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/name.test.ts > token ID, resource, registry and expiry of ENSv2 names",
+      "tests/integration/test/reads/name.test.ts > v2.subnames",
+      "tests/integration/test/reads/registry.test.ts > identifies each kind of registry by the name whose children it holds",
+      "tests/integration/test/reads/registry.test.ts > reads a registry by address, with its parent and canonical name"
+    ]
   },
   "M:A19": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/name.test.ts > v2.unregistered",
+      "tests/integration/test/reads/registration.test.ts > isAvailable agrees with name.get for every .eth second-level name"
+    ]
   },
   "M:A20": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/migration.test.ts > reports each name's route, blockers and state after migrating",
+      "tests/integration/test/reads/name.test.ts > migration.unwrapped"
+    ]
   },
   "M:A21": {
-    "status": "pending"
+    "tests": ["tests/integration/test/reads/name.test.ts > migration.wrapped-unlocked"]
   },
   "M:A22": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/migration.test.ts > reports each name's route, blockers and state after migrating",
+      "tests/integration/test/reads/name.test.ts > migration.locked",
+      "tests/integration/test/reads/registry.test.ts > identifies each kind of registry by the name whose children it holds"
+    ]
   },
   "M:A23": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/migration.test.ts > reports each name's route, blockers and state after migrating",
+      "tests/integration/test/reads/name.test.ts > v2.reserved"
+    ]
   },
   "M:A24": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/access.test.ts > reads ENSv2 roles held by accounts other than the owner",
+      "tests/integration/test/reads/name.test.ts > v2.roles"
+    ]
   },
   "M:A25": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/name.test.ts > token ID, resource, registry and expiry of ENSv2 names",
+      "tests/integration/test/reads/name.test.ts > v2.regenerated"
+    ]
   },
   "M:A26": {
     "status": "pending"
   },
   "M:B1": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/records.test.ts > reads every profile of a PublicResolver"
+    ]
   },
   "M:B2": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/resolver.test.ts > describes each generation and kind of resolver"
+    ]
   },
   "M:B3": {
     "status": "pending"
   },
   "M:B4": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/resolver.test.ts > describes ENSv2 resolvers and their record links"
+    ]
   },
   "M:B5": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/records.test.ts > reads a PermissionedResolver, where a zero address is a record",
+      "tests/integration/test/reads/resolver.test.ts > describes ENSv2 resolvers and their record links"
+    ]
   },
   "M:B6": {
     "status": "pending"
   },
   "M:B7": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/records.test.ts > reads default and linked records",
+      "tests/integration/test/reads/resolver.test.ts > describes ENSv2 resolvers and their record links"
+    ]
   },
   "M:B8": {
     "status": "pending"
   },
   "M:B9": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/resolver.test.ts > describes each generation and kind of resolver",
+      "tests/integration/test/reads/resolver.test.ts > resolves through the exact resolver first, then a parent's wildcard"
+    ]
   },
   "M:B10": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/ccip.test.ts > follows an off-chain lookup through the resolver's gateway"
+    ]
   },
   "M:B11": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/ccip.test.ts > reports a failing gateway with its HTTP status"
+    ]
   },
   "M:B12": {
     "status": "pending"
   },
   "M:B13": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/resolver.test.ts > describes each generation and kind of resolver",
+      "tests/integration/test/reads/resolver.test.ts > reads misbehaving resolvers as missing records, and fails strict reads with a typed error"
+    ]
   },
   "M:B14": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/resolver.test.ts > describes each generation and kind of resolver",
+      "tests/integration/test/reads/resolver.test.ts > reads misbehaving resolvers as missing records, and fails strict reads with a typed error"
+    ]
   },
   "M:B15": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/resolver.test.ts > reads misbehaving resolvers as missing records, and fails strict reads with a typed error"
+    ]
   },
   "M:B16": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/name.test.ts > a name whose parent registry reverts fails with a typed error",
+      "tests/integration/test/reads/resolver.test.ts > fails with a typed error when a registry reverts during resolution"
+    ]
   },
   "M:B17": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/resolver.test.ts > reads misbehaving resolvers as missing records, and fails strict reads with a typed error"
+    ]
   },
   "M:C1": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/name.test.ts > normalizes input and rejects names that cannot be normalized",
+      "tests/integration/test/reads/registry.test.ts > identifies each kind of registry by the name whose children it holds"
+    ]
   },
   "M:C2": {
     "status": "pending"
   },
   "M:C3": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/primary.test.ts > reads verified primary names from every reverse namespace and registrar generation"
+    ]
   },
   "M:C4": {
-    "status": "pending"
+    "tests": ["tests/integration/test/reads/name.test.ts > dns.imported"]
   },
   "M:C5": {
     "status": "pending"
   },
   "M:C6": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/name.test.ts > recovers ENSv2 labels from the LabelStore and leaves unknown ones null",
+      "tests/integration/test/reads/name.test.ts > hierarchy.label-with-dot",
+      "tests/integration/test/reads/name.test.ts > hierarchy.label-unknown"
+    ]
   },
   "M:C7": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/name.test.ts > normalizes input and rejects names that cannot be normalized"
+    ]
   },
   "M:C8": {
-    "status": "pending"
+    "tests": ["tests/integration/test/reads/name.test.ts > hierarchy.label-unnormalized"]
   },
   "M:C9": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/registration.test.ts > prices labels by code point and refuses labels below the minimum"
+    ]
   },
   "M:D1": {
     "status": "pending"
@@ -1296,13 +1560,17 @@
     "status": "pending"
   },
   "M:D4": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/access.test.ts > reads ENSv1 operators, resolver delegates and token approvals"
+    ]
   },
   "M:D5": {
     "status": "pending"
   },
   "M:D6": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/access.test.ts > reads ENSv1 operators, resolver delegates and token approvals"
+    ]
   },
   "M:D7": {
     "status": "pending"
@@ -1314,7 +1582,9 @@
     "status": "pending"
   },
   "M:D10": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/primary.test.ts > reads verified primary names from every reverse namespace and registrar generation"
+    ]
   },
   "M:D11": {
     "status": "pending"
@@ -1323,13 +1593,22 @@
     "status": "pending"
   },
   "M:E1": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/name-time.test.ts > an ENSv1 .eth name expires at its expiry and is released one second after grace",
+      "tests/integration/test/reads/name-time.test.ts > an ENSv2 .eth name is in grace from its expiry and available at grace end"
+    ]
   },
   "M:E2": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/name-time.test.ts > an ENSv1 .eth name expires at its expiry and is released one second after grace",
+      "tests/integration/test/reads/name-time.test.ts > an ENSv2 .eth name is in grace from its expiry and available at grace end"
+    ]
   },
   "M:E3": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/name-time.test.ts > an ENSv1 .eth name expires at its expiry and is released one second after grace",
+      "tests/integration/test/reads/name-time.test.ts > an ENSv2 .eth name is in grace from its expiry and available at grace end"
+    ]
   },
   "M:E4": {
     "status": "pending"
@@ -1347,7 +1626,9 @@
     "status": "pending"
   },
   "M:F4": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/ccip.test.ts > does not contact the gateway when CCIP-Read is disabled"
+    ]
   },
   "M:F5": {
     "status": "pending"
