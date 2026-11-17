@@ -14,6 +14,7 @@ import { paymentCalls, paymentTokenAddress } from "../../../internal/registratio
 import { referrerOf } from "../../../internal/registration/referrer.js";
 import { quoteRenewals, type RenewalQuote } from "../../../internal/registration/renewal.js";
 import { addressOf } from "../../../internal/write/signer.js";
+import { routeSender } from "../../../internal/write/via.js";
 import { make as makePlan } from "../../../plan/make.js";
 import type { Plan } from "../../../plan/Plan.js";
 import type { Write } from "../../../Types.js";
@@ -55,13 +56,15 @@ const renewBatchSize = 25;
 /** @internal Builds the plan of `Actions.registration.renew`. */
 export const plan = Effect.fnUntraced(function* (
   client: Client,
-  options: Promises.Options & Pick<Write.Options, "account">,
+  options: Promises.Options & Pick<Write.Options, "account" | "via">,
 ): Effect.fn.Return<Plan, AnyError> {
   const signer = addressOf(options.account) ?? client.account;
   if (signer === undefined) {
     return yield* Effect.fail(new ConfigError({ code: "WALLET_NOT_CONFIGURED" }));
   }
 
+  // The account that sends `renew` pays: the signer, or the account a route (`via`) sends from.
+  const payer = (yield* routeSender(client, options.via, signer)) ?? signer;
   const names = yield* parseEthNames(options.names);
   const contracts = yield* requireRegistrationContracts(client);
   const referrer = yield* referrerOf(options.referrer);
@@ -82,7 +85,7 @@ export const plan = Effect.fnUntraced(function* (
     [...routes],
     ([spender, group]) =>
       paymentCalls(client, {
-        payer: signer,
+        payer,
         token,
         spender,
         amount: group.reduce((sum, quote) => sum + quote.amount, 0n),

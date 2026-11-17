@@ -1,6 +1,6 @@
 import { Effect } from "effect";
 
-import type { Address } from "viem";
+import { isAddressEqual, type Address } from "viem";
 
 import type { Client } from "../../../client/types.js";
 import { ConfigError } from "../../../errors/classes/ConfigError.js";
@@ -22,6 +22,7 @@ import {
 } from "../../../internal/registration/steps.js";
 import { ethPrimaryNameCall } from "../../../internal/reverse/calls.js";
 import { addressOf } from "../../../internal/write/signer.js";
+import { routeSender } from "../../../internal/write/via.js";
 import { make as makePlan } from "../../../plan/make.js";
 import type { Plan } from "../../../plan/Plan.js";
 import type { Write } from "../../../Types.js";
@@ -44,21 +45,24 @@ const recordsStep = Effect.fnUntraced(function* (
 /** @internal Builds the plan of `Actions.registration.register`. */
 export const plan = Effect.fnUntraced(function* (
   client: Client,
-  options: Promises.Options & Pick<Write.Options, "account">,
+  options: Promises.Options & Pick<Write.Options, "account" | "via">,
 ): Effect.fn.Return<Plan, AnyError> {
-  // The signer pays, and resolvers it deploys get CREATE2 addresses from its address.
+  // The sender pays, and resolvers it deploys get CREATE2 addresses from its address: the signer,
+  // or the account a route (`via`) sends `register` from.
   const signer = addressOf(options.account) ?? client.account;
   if (signer === undefined) {
     return yield* Effect.fail(new ConfigError({ code: "WALLET_NOT_CONFIGURED" }));
   }
 
-  const registration = yield* prepareRegistration(client, options, signer);
+  const sender = (yield* routeSender(client, options.via, signer)) ?? signer;
+  const routed = !isAddressEqual(sender, signer);
+  const registration = yield* prepareRegistration(client, options, signer, sender);
   const toCommit = yield* pendingCommitments(registration);
   // The registrar charges the price at `register`, which can drift from the quote (the premium
   // decays, the oracle can change), so the approval leaves 2% headroom; the balance check stays
   // exact.
   const approvals = yield* paymentCalls(client, {
-    payer: signer,
+    payer: sender,
     token: registration.token,
     spender: registration.contracts.registrar,
     amount: registration.total + registration.total / 50n,
@@ -78,11 +82,20 @@ export const plan = Effect.fnUntraced(function* (
   }
   // The registrar accepts a commitment `MIN_COMMITMENT_AGE` after the block that recorded it;
   // one extra second keeps `register` out of the boundary block.
+  // The signer's shared resolver gets its address from the signer, so the signer deploys it.
+  if (routed && registration.ownedDeploy !== undefined) {
+    steps.push({
+      id: "resolver",
+      description: "Deploy resolver",
+      calls: [registration.ownedDeploy],
+      from: "signer",
+    });
+  }
   steps.push({
     id: "register",
     description: "Register",
     calls: [
-      ...(registration.ownedDeploy === undefined ? [] : [registration.ownedDeploy]),
+      ...(registration.ownedDeploy === undefined || routed ? [] : [registration.ownedDeploy]),
       ...registration.names.flatMap((name) => [
         ...(name.deploy === undefined ? [] : [name.deploy]),
         registerCall(registration, name),
@@ -90,8 +103,10 @@ export const plan = Effect.fnUntraced(function* (
     ],
     ...(toCommit.length > 0 ? { waitFor: { seconds: registration.minCommitmentAge + 1n } } : {}),
   });
+  // Records on the owner's resolver and the owner's reverse record are the signer's to write.
   if (registration.explicitResolver !== undefined && registration.records !== undefined) {
-    steps.push(yield* recordsStep(client, registration, registration.explicitResolver));
+    const records = yield* recordsStep(client, registration, registration.explicitResolver);
+    steps.push(routed ? { ...records, from: "signer" } : records);
   }
   // `prepareRegistration` allows a primary name only for exactly one name owned by the signer.
   const [first] = registration.names;
@@ -100,6 +115,7 @@ export const plan = Effect.fnUntraced(function* (
       id: "primaryName",
       description: "Set primary name",
       calls: [yield* ethPrimaryNameCall(client, signer, true, first.name)],
+      ...(routed ? { from: "signer" as const } : {}),
     });
   }
 

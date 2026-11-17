@@ -5,7 +5,15 @@ import { Abis } from "@ensforge/contracts";
 import { Actions } from "@ensforge/sdk/effect";
 import { expectFailure, scriptedTransport } from "@ensforge/test-harness";
 import { contractScript } from "@ensforge/test-harness/contracts-eth-call";
-import { createPublicClient, decodeFunctionData, pad, zeroHash, type Abi } from "viem";
+import {
+  createPublicClient,
+  decodeFunctionData,
+  isAddressEqual,
+  pad,
+  zeroHash,
+  type Abi,
+  type Address,
+} from "viem";
 import { mainnet } from "viem/chains";
 
 import * as Ensforge from "#/client/Ensforge";
@@ -22,6 +30,7 @@ type Chain = {
   readonly v2: Readonly<Record<string, bigint>>;
   readonly v1: Readonly<Record<string, bigint>>;
   readonly balance?: bigint;
+  readonly balanceOf?: (holder: string) => bigint;
   readonly allowance?: (spender: string) => bigint;
 };
 
@@ -44,7 +53,8 @@ const clientFor = (chain: Chain) => {
           address: usdc,
           abi: Abis.shared.erc20 as Abi,
           functions: {
-            balanceOf: () => chain.balance ?? 10n ** 12n,
+            balanceOf: ([holder]) =>
+              chain.balanceOf?.(holder as string) ?? chain.balance ?? 10n ** 12n,
             allowance: ([, spender]) => chain.allowance?.(spender as string) ?? 0n,
           },
         },
@@ -151,5 +161,25 @@ describe("registration.renew.prepare", () => {
       }),
       { _tag: "InvalidInputError", code: "INVALID_NAME" },
     ),
+  );
+
+  // Regression: a route's account sends `renew` and pays, but the payment was planned for the signer.
+  it.effect("plans the payment for the account a route sends from", () =>
+    Effect.gen(function* () {
+      // Only the signer holds the token.
+      const ens = clientFor({
+        v2: { alice: 5n },
+        v1: {},
+        balanceOf: (holder) => (isAddressEqual(holder as Address, signer) ? 10n ** 12n : 0n),
+      });
+      const options = { names: "alice.eth", duration: year } as const;
+      const via = { id: "account", sender: async () => other };
+
+      yield* Actions.registration.renew.prepare(ens, options);
+      yield* expectFailure(Actions.registration.renew.prepare(ens, { ...options, via }), {
+        _tag: "InsufficientFundsError",
+        code: "INSUFFICIENT_TOKEN_BALANCE",
+      });
+    }),
   );
 });

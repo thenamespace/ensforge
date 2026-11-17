@@ -14,6 +14,7 @@ import { prepareRegistration } from "../../../internal/registration/prepare.js";
 import { commitCall, pendingCommitments } from "../../../internal/registration/steps.js";
 import * as Rpc from "../../../internal/rpc/index.js";
 import { addressOf } from "../../../internal/write/signer.js";
+import { routeSender } from "../../../internal/write/via.js";
 import { make as makePlan } from "../../../plan/make.js";
 import type { Plan } from "../../../plan/Plan.js";
 import type { Write } from "../../../Types.js";
@@ -22,14 +23,16 @@ import type { commit as Promises, commitSync as SyncPromises } from "./index.js"
 /** @internal Builds the plan of `Actions.registration.commit`. */
 export const plan = Effect.fnUntraced(function* (
   client: Client,
-  options: Promises.Options & Pick<Write.Options, "account">,
+  options: Promises.Options & Pick<Write.Options, "account" | "via">,
 ): Effect.fn.Return<Plan, AnyError> {
   const signer = addressOf(options.account) ?? client.account;
   if (signer === undefined) {
     return yield* Effect.fail(new ConfigError({ code: "WALLET_NOT_CONFIGURED" }));
   }
 
-  const registration = yield* prepareRegistration(client, options, signer);
+  // Resolver addresses in the commitment come from the account that will send `register`.
+  const sender = (yield* routeSender(client, options.via, signer)) ?? signer;
+  const registration = yield* prepareRegistration(client, options, signer, sender);
   const toCommit = yield* pendingCommitments(registration);
   if (toCommit.length === 0) {
     return yield* Effect.fail(

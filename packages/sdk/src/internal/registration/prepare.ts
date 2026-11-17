@@ -180,6 +180,8 @@ export const prepareRegistration = Effect.fnUntraced(function* (
   client: Client,
   input: RegistrationInput,
   signer: Address,
+  /** The account that sends `register` (an HCA through `via`): it deploys the names' resolvers. */
+  sender: Address = signer,
 ): Effect.fn.Return<PreparedRegistration, AnyError> {
   const names = yield* parseEthNames(input.names);
   const contracts = yield* requireRegistrationContracts(client);
@@ -273,7 +275,7 @@ export const prepareRegistration = Effect.fnUntraced(function* (
         contracts,
         name,
         options,
-        signer,
+        sender,
         referrer,
         duration: input.duration,
         price: (quoted[index]?.price ?? [0n, 0n]) as readonly [bigint, bigint],
@@ -314,7 +316,7 @@ const prepareName = Effect.fnUntraced(function* (
       readonly secret: Hex;
       readonly records: Omit<RecordWrites, "clear" | "pubkey"> | undefined;
     };
-    readonly signer: Address;
+    readonly sender: Address;
     readonly referrer: Hex;
     readonly duration: bigint;
     readonly price: readonly [bigint, bigint];
@@ -328,7 +330,7 @@ const prepareName = Effect.fnUntraced(function* (
     // The resolver address must be known for the commitment, so it is a CREATE2 proxy whose
     // salt comes from the secret: a resumed registration recomputes the same address.
     const deployment = yield* deployPermissionedResolver(client, {
-      deployer: context.signer,
+      deployer: context.sender,
       owner: options.owner,
       salt: resolverSalt(options.secret, name.label),
       name,
