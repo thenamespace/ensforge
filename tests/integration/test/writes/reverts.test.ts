@@ -2,7 +2,8 @@ import { assert, describe } from "@effect/vitest";
 import { Effect } from "effect";
 
 import { Abis, Roles } from "@ensforge/contracts";
-import { Actions } from "@ensforge/sdk/effect";
+import { Actions as HcaActions } from "@ensforge/hca/effect";
+import { Actions, type Errors } from "@ensforge/sdk/effect";
 import { Devnet, type DevnetInstance } from "@ensforge/test-devnet";
 import { Fixtures } from "@ensforge/test-fixtures";
 import {
@@ -70,14 +71,15 @@ const write = (devnet: DevnetInstance, { from, to, abi, functionName, args }: Ca
     await devnet.client.waitForTransactionReceipt({ hash });
   });
 
-/** The contract error an ensforge read failed with, from its error context. */
-const revertName = (read: () => Promise<unknown>) =>
-  Effect.promise(() =>
-    read().then(
-      () => "no revert",
-      (error: { readonly context?: { readonly revert?: { readonly errorName?: string } } }) =>
-        error.context?.revert?.errorName,
-    ),
+/** The contract error an ensforge call failed with, from its error context. */
+const revertName = <A>(effect: Effect.Effect<A, Errors.AnyError>) =>
+  effect.pipe(
+    Effect.match({
+      onSuccess: () => "no revert",
+      onFailure: (error) =>
+        (error.context as { readonly revert?: { readonly errorName?: string } } | undefined)?.revert
+          ?.errorName,
+    }),
   );
 
 describe("contract errors", () => {
@@ -370,8 +372,8 @@ describe("contract errors", () => {
         const fixtures = yield* Fixtures;
         const devnet = yield* Devnet;
         assert.strictEqual(
-          yield* revertName(() =>
-            ensforge(devnet).record.getText({
+          yield* revertName(
+            Actions.record.getText(ensforge(devnet), {
               name: fixtures.byId("resolver.none").name,
               key: "url",
               strict: true,
@@ -380,13 +382,34 @@ describe("contract errors", () => {
           "UnreachableName",
         );
         assert.strictEqual(
-          yield* revertName(() =>
-            ensforge(devnet, { ccipRead: false }).record.getText({
+          yield* revertName(
+            Actions.record.getText(ensforge(devnet, { ccipRead: false }), {
               name: fixtures.byId("resolver.offchain").name,
               key: "url",
             }),
           ),
           "OffchainLookup",
+        );
+      }),
+    );
+
+    it.effect("come from the HCA", () =>
+      Effect.gen(function* () {
+        const fixtures = yield* Fixtures;
+        const devnet = yield* Devnet;
+        const { name, facts } = fixtures.byId("v2.registered");
+        const ens = ensforge(devnet, { account: facts["owner"] as Address });
+
+        yield* isolated(
+          devnet,
+          Effect.gen(function* () {
+            yield* HcaActions.hca.deploySync(ens, {});
+            const account = yield* HcaActions.hca.predictAddress(ens, {});
+            assert.strictEqual(
+              yield* revertName(Actions.name.transferSync(ens, { name, to: account })),
+              "NoNFTAllowed",
+            );
+          }),
         );
       }),
     );

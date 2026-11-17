@@ -76,6 +76,11 @@ export const revertMap: Readonly<Record<string, Mapper>> = {
   NotApprovedOperator: notApproved,
   OperationProhibited: () => new UnauthorizedError({ code: "FUSE_BURNED" }),
   TransferDisallowed: transferDisallowed,
+  NoNFTAllowed: () =>
+    new UnauthorizedError({
+      code: "TRANSFER_DISALLOWED",
+      hint: "Hosted Contract Accounts accept no name tokens; send the name to the HCA's owner.",
+    }),
   TransferUnsafeWithMultipleAssignees: () =>
     new UnauthorizedError({
       code: "TRANSFER_DISALLOWED",

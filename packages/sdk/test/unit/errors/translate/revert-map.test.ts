@@ -27,6 +27,7 @@ const expected: Readonly<Record<string, { readonly _tag: string; readonly code: 
   NotApprovedOperator: { _tag: "UnauthorizedError", code: "NOT_APPROVED" },
   OperationProhibited: { _tag: "UnauthorizedError", code: "FUSE_BURNED" },
   TransferDisallowed: { _tag: "UnauthorizedError", code: "TRANSFER_DISALLOWED" },
+  NoNFTAllowed: { _tag: "UnauthorizedError", code: "TRANSFER_DISALLOWED" },
   TransferUnsafeWithMultipleAssignees: { _tag: "UnauthorizedError", code: "TRANSFER_DISALLOWED" },
   NameNotAvailable: { _tag: "NameStateError", code: "NAME_NOT_AVAILABLE" },
   LabelAlreadyRegistered: { _tag: "NameStateError", code: "NAME_NOT_AVAILABLE" },
