@@ -1,14 +1,4 @@
-/** HTTP gateways used to load decentralized storage. */
-export type Gateways = {
-  /** IPFS gateway origin. @default "https://ipfs.io" */
-  readonly ipfs?: string | undefined;
-  /** Arweave gateway origin. @default "https://arweave.net" */
-  readonly arweave?: string | undefined;
-};
-
-const defaults = { ipfs: "https://ipfs.io", arweave: "https://arweave.net" } as const;
-
-const trimSlash = (origin: string): string => origin.replace(/\/+$/, "");
+import type { Config } from "../../client/types.js";
 
 // CIDv0 (Qm…, 46 chars) or CIDv1 (base32 bafy…/bafk…) without a scheme.
 const bareCid = /^(Qm[1-9A-HJ-NP-Za-km-z]{44}|b[a-z2-7]{58,})(\/.*)?$/;
@@ -18,9 +8,9 @@ const bareCid = /^(Qm[1-9A-HJ-NP-Za-km-z]{44}|b[a-z2-7]{58,})(\/.*)?$/;
  * through; `ipfs://`, `ipns://`, `ar://` and bare CIDs go through a gateway. Returns `undefined`
  * for anything else.
  */
-export const toHttpUrl = (uri: string, gateways: Gateways = {}): string | undefined => {
+export const toHttpUrl = (uri: string, gateways: Config["gateways"]): string | undefined => {
   const value = uri.trim();
-  const ipfs = trimSlash(gateways.ipfs ?? defaults.ipfs);
+  const { ipfs, arweave: arweaveGateway } = gateways;
 
   if (/^(https?:|data:)/i.test(value)) return value;
 
@@ -31,7 +21,7 @@ export const toHttpUrl = (uri: string, gateways: Gateways = {}): string | undefi
   if (ipns !== null) return `${ipfs}/ipns/${ipns[1]}`;
 
   const arweave = /^ar:\/\/(.+)$/i.exec(value);
-  if (arweave !== null) return `${trimSlash(gateways.arweave ?? defaults.arweave)}/${arweave[1]}`;
+  if (arweave !== null) return `${arweaveGateway}/${arweave[1]}`;
 
   if (bareCid.test(value)) return `${ipfs}/ipfs/${value}`;
   return undefined;

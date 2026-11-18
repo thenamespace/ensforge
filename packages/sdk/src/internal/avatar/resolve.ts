@@ -3,12 +3,12 @@ import { Effect } from "effect";
 import { Abis } from "@ensforge/contracts";
 import { isAddressEqual, type Address } from "viem";
 
-import type { Client } from "../../client/types.js";
+import type { Client, Config } from "../../client/types.js";
 import { GatewayError } from "../../errors/classes/GatewayError.js";
 import type { AnyError } from "../../errors/types.js";
 import * as Rpc from "../rpc/index.js";
 import { fillTokenId, imageFromMetadata, parseNftReference, type NftReference } from "./nft.js";
-import { toHttpUrl, type Gateways } from "./uri.js";
+import { toHttpUrl } from "./uri.js";
 
 const fetchJson = (url: string, timeout: number): Effect.Effect<unknown, AnyError> =>
   Effect.tryPromise({
@@ -68,7 +68,7 @@ export const resolveAvatar = Effect.fnUntraced(function* (
   client: Client,
   value: string,
   options: {
-    readonly gateways: Gateways;
+    readonly gateways: Config["gateways"];
     readonly timeout: number;
     readonly owner: Address | null;
   },

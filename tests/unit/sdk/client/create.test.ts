@@ -120,6 +120,24 @@ describe("Ensforge.create config", () => {
     assert.strictEqual(config.simulate, true);
     assert.isUndefined(config.indexer);
     assert.isFunction(config.storage.get);
+    assert.deepStrictEqual(config.gateways, {
+      ipfs: "https://ipfs.io",
+      arweave: "https://arweave.net",
+      swarm: "https://api.gateway.ethswarm.org",
+    });
+  });
+
+  it("fills the gateways a client does not set", () => {
+    const { client } = publicClient();
+    const { config } = Ensforge.create({
+      publicClient: client,
+      gateways: { ipfs: "https://gateway.example/" },
+    });
+
+    assert.deepInclude(config.gateways, {
+      ipfs: "https://gateway.example",
+      arweave: "https://arweave.net",
+    });
   });
 
   it.each([

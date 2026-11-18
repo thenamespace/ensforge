@@ -6,7 +6,9 @@ import {
 } from "@ensdomains/content-hash";
 import type { Hex } from "viem";
 
+import type { Gateways } from "../client/types.js";
 import { InvalidInputError } from "../errors/classes/InvalidInputError.js";
+import { resolveGateways } from "../internal/gateways.js";
 
 /** URI scheme ↔ content-hash codec. */
 const schemes = {
@@ -97,28 +99,35 @@ export const decode = (data: Hex): Decoded | null => {
   }
 };
 
-/** Default public HTTP gateways per protocol. */
-const defaultGateways: Readonly<Partial<Record<Protocol, string>>> = {
-  ipfs: "https://ipfs.io/ipfs/",
-  ipns: "https://ipfs.io/ipns/",
-  bzz: "https://api.gateway.ethswarm.org/bzz/",
-  ar: "https://arweave.net/",
-};
-
 /**
- * HTTP URL for a content URI through a public gateway. URIs without a gateway are returned as-is.
+ * HTTP URL for a content URI through a gateway: `ipfs://` and `ipns://` through `gateways.ipfs`,
+ * `ar://` through `gateways.arweave` and `bzz://` through `gateways.swarm`. Unset gateways are the
+ * public defaults (`https://ipfs.io`, `https://arweave.net`, `https://api.gateway.ethswarm.org`).
+ * URIs without a gateway (`onion://`, `sia://`, anything else) are returned as-is.
+ *
+ * **Example** (Using the client's gateways)
+ *
+ * ```ts
+ * import { ContentHash } from "@ensforge/sdk"
+ *
+ * const contentHash = await ens.record.getContentHash({ name: "vitalik.eth" })
+ * const url = contentHash && ContentHash.toGatewayUrl(contentHash.uri, ens.config.gateways)
+ * ```
  *
  * @category records
  * @since 1.0.0
  */
-export const toGatewayUrl = (
-  uri: string,
-  gateways: Readonly<Partial<Record<Protocol, string>>> = {},
-): string => {
+export const toGatewayUrl = (uri: string, gateways?: Gateways | undefined): string => {
   const match = /^([a-z0-9]+):\/\/(.+)$/.exec(uri);
-  const protocol = match?.[1] as Protocol | undefined;
-  const gateway =
-    protocol === undefined ? undefined : (gateways[protocol] ?? defaultGateways[protocol]);
+  if (match === null) return uri;
 
-  return gateway === undefined || match === null ? uri : `${gateway}${match[2]}`;
+  const { ipfs, arweave, swarm } = resolveGateways(gateways);
+  const prefixes: Readonly<Partial<Record<Protocol, string>>> = {
+    ipfs: `${ipfs}/ipfs/`,
+    ipns: `${ipfs}/ipns/`,
+    bzz: `${swarm}/bzz/`,
+    ar: `${arweave}/`,
+  };
+  const scheme = match[1] as Protocol;
+  return Object.hasOwn(prefixes, scheme) ? `${prefixes[scheme]}${match[2]}` : uri;
 };

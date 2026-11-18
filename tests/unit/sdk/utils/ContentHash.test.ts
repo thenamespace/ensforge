@@ -89,20 +89,25 @@ describe("ContentHash.toGatewayUrl", () => {
     assert.strictEqual(ContentHash.toGatewayUrl(uri), expected);
   });
 
-  it("prefers custom gateways", () => {
-    const gateways = { ipfs: "https://dweb.link/ipfs/", onion: "https://tor.example/" };
+  it("uses the given gateways, and the defaults for the rest", () => {
+    const gateways = { ipfs: "https://gateway.example/", swarm: "https://swarm.example" };
 
-    assert.strictEqual(
-      ContentHash.toGatewayUrl(`ipfs://${ipfsV1}`, gateways),
-      `https://dweb.link/ipfs/${ipfsV1}`,
+    assert.deepStrictEqual(
+      [`ipfs://${ipfsV1}`, "ipns://app.eth", `bzz://${swarmHash}`, `ar://${arweaveTx}`].map((uri) =>
+        ContentHash.toGatewayUrl(uri, gateways),
+      ),
+      [
+        `https://gateway.example/ipfs/${ipfsV1}`,
+        "https://gateway.example/ipns/app.eth",
+        `https://swarm.example/bzz/${swarmHash}`,
+        `https://arweave.net/${arweaveTx}`,
+      ],
     );
+    // Schemes without a gateway stay as they are, even ones named like object members.
     assert.strictEqual(
       ContentHash.toGatewayUrl("onion://zqktlwi4fecvo6ri", gateways),
-      "https://tor.example/zqktlwi4fecvo6ri",
+      "onion://zqktlwi4fecvo6ri",
     );
-    assert.strictEqual(
-      ContentHash.toGatewayUrl("ipns://app.eth", gateways),
-      "https://ipfs.io/ipns/app.eth",
-    );
+    assert.strictEqual(ContentHash.toGatewayUrl("constructor://x"), "constructor://x");
   });
 });

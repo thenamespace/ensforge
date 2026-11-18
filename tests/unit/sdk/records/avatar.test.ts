@@ -39,7 +39,11 @@ const ens = Ensforge.create({
 });
 
 const avatarOf = (standard: "erc721" | "erc1155", owner: Address | null) =>
-  resolveAvatar(ens, `eip155:1/${standard}:${token}/1`, { gateways: {}, timeout: 1_000, owner });
+  resolveAvatar(ens, `eip155:1/${standard}:${token}/1`, {
+    gateways: ens.config.gateways,
+    timeout: 1_000,
+    owner,
+  });
 
 describe("resolveAvatar", () => {
   // ENSIP-12: an NFT avatar counts only when the name's ETH address holds the token.

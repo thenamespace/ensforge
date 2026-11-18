@@ -5,6 +5,7 @@ export type {
   ClientBase,
   Config,
   CreateOptions,
+  Gateways,
   Like,
   ViemClient,
   ViemWalletClient,

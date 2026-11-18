@@ -1,3 +1,4 @@
+import { resolveGateways } from "../internal/gateways.js";
 import { memoryStorage } from "../plan/storage.js";
 import type { Config, CreateOptions } from "./types.js";
 
@@ -26,5 +27,6 @@ export const resolveConfig = (options: CreateOptions): Config => {
     storage: options.storage ?? memoryStorage(),
     simulate: options.simulate ?? true,
     indexer: options.indexer,
+    gateways: Object.freeze(resolveGateways(options.gateways)),
   });
 };

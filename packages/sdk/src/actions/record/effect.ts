@@ -25,7 +25,8 @@ import type { set as setTypes, setSync as setSyncTypes } from "./set/index.js";
  * **Details**
  *
  * - One Universal Resolver call, whatever the selection (ENSv1, ENSv2, wildcard and off-chain
- *   names).
+ *   names). ENSv1 names answered through the ENSv1 bridge cost one more batched call, to report
+ *   the ENSv1 resolver behind it in `resolver`.
  * - The result has exactly the selected fields: `texts.url` exists only when `"url"` was
  *   requested.
  * - Missing records are `null`. A missing resolver gives `resolver: null` and every record `null`,
@@ -139,11 +140,17 @@ export declare namespace getAddress {
  * **Details**
  *
  * - `http(s)` and `data:` URIs are returned as-is; `ipfs://`, `ipns://`, `ar://` and bare CIDs go
- *   through `gateways`.
+ *   through `gateways`: the call's, else the client's (`Ensforge.create({ gateways })`), else
+ *   `https://ipfs.io` and `https://arweave.net`.
  * - NFT avatars (`eip155:1/erc721:…/…`, `erc1155`) read the token's metadata and return its image.
  *   They resolve only on the client's own chain, and only when the name's ETH address owns the
  *   token (ENSIP-12): `ownerOf` for ERC-721, a non-zero balance for ERC-1155.
  * - Returns `null` when the avatar is not set or cannot be loaded, unless `strict` is set.
+ *
+ * **Gotchas**
+ *
+ * - The public `ipfs.io` gateway is rate limited (HTTP 429 under load): set your own gateway in
+ *   production.
  *
  * **Example** (Showing a profile picture)
  *
@@ -156,7 +163,7 @@ export declare namespace getAddress {
  * ```ts
  * import { Actions } from "@ensforge/sdk"
  *
- * const src = await Actions.record.getAvatar(publicClient, { name: "nick.eth", gateways: { ipfs: "https://cloudflare-ipfs.com" } })
+ * const src = await Actions.record.getAvatar(publicClient, { name: "nick.eth", gateways: { ipfs: "https://gateway.pinata.cloud" } })
  * ```
  *
  * **Example** (Reading in an Effect program)
@@ -197,7 +204,8 @@ export declare namespace getAvatar {
  * **Details**
  *
  * - Supports `ipfs`, `ipns`, `bzz` (Swarm), `onion`, `onion3`, `sia` (Skynet) and `ar` (Arweave).
- * - Turn the URI into an HTTP URL with `ContentHash.toGatewayUrl`.
+ * - Turn the URI into an HTTP URL through the client's gateways with
+ *   `ContentHash.toGatewayUrl(uri, ens.config.gateways)`.
  * - Returns `null` when the record is not set or cannot be decoded, unless `strict` is set.
  *
  * **Example** (Reading a website)
@@ -317,6 +325,9 @@ export declare namespace getText {
  *   inherited from a parent.
  * - `resolver` writes the records to another resolver, then points the name at it, in one step:
  *   a rejected write never leaves the name on an empty resolver.
+ * - Each kind of record is checked against the profiles the resolver declares through ERC-165,
+ *   and `clear` against its record versions, before anything is simulated; a resolver without
+ *   ERC-165 is left to the simulation.
  * - The plan is simulated before the wallet prompt, so permission errors surface first.
  *
  * **Gotchas**
@@ -324,8 +335,10 @@ export declare namespace getText {
  * - The ENSv2 PermissionedResolver has no `pubkey` records. `clear` there links the name to record
  *   0 (needs the root `link` role), so it reads the resolver's default record until new records
  *   are written.
- * - Older resolvers lack newer profiles; the ENSv1 public resolver has no `data` records, so the
- *   simulation reverts.
+ * - Older resolvers lack newer profiles (the 2020 public resolver has no `data` records and cannot
+ *   `clear`), and resolvers that keep their records off-chain (EIP-3668, ERC-5559, ERC-7884) take
+ *   no on-chain writes. Both fail with `RESOLVER_PROFILE_UNSUPPORTED`; for an off-chain resolver,
+ *   `details` say where its records live.
  * - `resolver: "default"` (the ENSv1 public resolver) is for ENSv1 names only; ENSv2 names pass the
  *   address of a resolver such as their own PermissionedResolver.
  *
@@ -361,7 +374,7 @@ export declare namespace getText {
  *
  * @throws `Errors.InvalidInputError` (`INVALID_NAME`, `INVALID_ADDRESS`, `INVALID_COIN_TYPE`, `INVALID_CONTENT_HASH`, `INVALID_RECORD_VALUE`) for invalid input.
  * @throws `Errors.NotFoundError` (`RESOLVER_NOT_FOUND`) when the name has no resolver of its own.
- * @throws `Errors.UnsupportedError` (`RESOLVER_PROFILE_UNSUPPORTED`, `UNSUPPORTED_PROTOCOL`) for `pubkey` on a PermissionedResolver, `data` on a resolver without data records, or `resolver: "default"` on an ENSv2 name.
+ * @throws `Errors.UnsupportedError` (`RESOLVER_PROFILE_UNSUPPORTED`, `UNSUPPORTED_PROTOCOL`) for records the resolver does not support (`feature` names them), a resolver that keeps its records off-chain or takes no writes, or `resolver: "default"` on an ENSv2 name.
  * @throws `Errors.NameStateError` (`NAME_EXPIRED`, `NAME_RESERVED`, `NAME_NOT_REGISTERED`) when the name is not registered.
  * @throws `Errors.UnauthorizedError` (`NOT_OWNER`, `MISSING_ROLES`) when the account may not edit records.
  * @throws `Errors.ConfigError` (`WALLET_NOT_CONFIGURED`) when the client has no wallet.
@@ -414,7 +427,7 @@ export declare namespace set {
  *
  * @throws `Errors.InvalidInputError` (`INVALID_NAME`, `INVALID_ADDRESS`, `INVALID_COIN_TYPE`, `INVALID_CONTENT_HASH`, `INVALID_RECORD_VALUE`) for invalid input.
  * @throws `Errors.NotFoundError` (`RESOLVER_NOT_FOUND`) when the name has no resolver of its own.
- * @throws `Errors.UnsupportedError` (`RESOLVER_PROFILE_UNSUPPORTED`, `UNSUPPORTED_PROTOCOL`) for records or resolvers the name's resolver or protocol does not support.
+ * @throws `Errors.UnsupportedError` (`RESOLVER_PROFILE_UNSUPPORTED`, `UNSUPPORTED_PROTOCOL`) for records the resolver does not support, a resolver that keeps its records off-chain or takes no writes, or `resolver: "default"` on an ENSv2 name.
  * @throws `Errors.NameStateError` (`NAME_EXPIRED`, `NAME_RESERVED`, `NAME_NOT_REGISTERED`) when the name is not registered.
  * @throws `Errors.UnauthorizedError` (`NOT_OWNER`, `MISSING_ROLES`) when the account may not edit records.
  * @throws `Errors.TransactionError` (`TRANSACTION_REVERTED`, `RECEIPT_TIMEOUT`) when confirmation fails.

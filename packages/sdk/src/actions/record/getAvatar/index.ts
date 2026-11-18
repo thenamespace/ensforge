@@ -1,7 +1,6 @@
-import type { Like } from "../../../client/types.js";
+import type { Gateways, Like } from "../../../client/types.js";
 import type { AnyError } from "../../../errors/types.js";
 import * as Action from "../../../internal/action/index.js";
-import type { Gateways } from "../../../internal/avatar/uri.js";
 import type { Read } from "../../../Types.js";
 import * as Impl from "./effect.js";
 
@@ -15,11 +14,17 @@ import * as Impl from "./effect.js";
  * **Details**
  *
  * - `http(s)` and `data:` URIs are returned as-is; `ipfs://`, `ipns://`, `ar://` and bare CIDs go
- *   through `gateways`.
+ *   through `gateways`: the call's, else the client's (`Ensforge.create({ gateways })`), else
+ *   `https://ipfs.io` and `https://arweave.net`.
  * - NFT avatars (`eip155:1/erc721:…/…`, `erc1155`) read the token's metadata and return its image.
  *   They resolve only on the client's own chain, and only when the name's ETH address owns the
  *   token (ENSIP-12): `ownerOf` for ERC-721, a non-zero balance for ERC-1155.
  * - Returns `null` when the avatar is not set or cannot be loaded, unless `strict` is set.
+ *
+ * **Gotchas**
+ *
+ * - The public `ipfs.io` gateway is rate limited (HTTP 429 under load): set your own gateway in
+ *   production.
  *
  * **Example** (Showing a profile picture)
  *
@@ -32,7 +37,7 @@ import * as Impl from "./effect.js";
  * ```ts
  * import { Actions } from "@ensforge/sdk"
  *
- * const src = await Actions.record.getAvatar(publicClient, { name: "nick.eth", gateways: { ipfs: "https://cloudflare-ipfs.com" } })
+ * const src = await Actions.record.getAvatar(publicClient, { name: "nick.eth", gateways: { ipfs: "https://gateway.pinata.cloud" } })
  * ```
  *
  * **Example** (Reading in an Effect program)
@@ -63,7 +68,7 @@ export declare namespace getAvatar {
   type Options = Read.Options & {
     /** ENS name to read. Normalized automatically. */
     name: string;
-    /** HTTP gateways for IPFS and Arweave content. */
+    /** HTTP gateways for IPFS and Arweave content, overriding the client's `gateways`. */
     gateways?: Gateways | undefined;
     /**
      * Milliseconds to wait for NFT metadata.

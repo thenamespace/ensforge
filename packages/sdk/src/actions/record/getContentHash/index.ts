@@ -15,7 +15,8 @@ import * as Impl from "./effect.js";
  * **Details**
  *
  * - Supports `ipfs`, `ipns`, `bzz` (Swarm), `onion`, `onion3`, `sia` (Skynet) and `ar` (Arweave).
- * - Turn the URI into an HTTP URL with `ContentHash.toGatewayUrl`.
+ * - Turn the URI into an HTTP URL through the client's gateways with
+ *   `ContentHash.toGatewayUrl(uri, ens.config.gateways)`.
  * - Returns `null` when the record is not set or cannot be decoded, unless `strict` is set.
  *
  * **Example** (Reading a website)

@@ -5,6 +5,7 @@ import type { Address } from "viem";
 import type { Client } from "../../../client/types.js";
 import * as Action from "../../../internal/action/index.js";
 import { resolveAvatar } from "../../../internal/avatar/resolve.js";
+import { resolveGateways } from "../../../internal/gateways.js";
 import { readSingleRecord } from "../../../internal/records/single.js";
 import type { getAvatar as Promises } from "./index.js";
 
@@ -27,7 +28,7 @@ export const getAvatar = Effect.fn("ensforge.record.getAvatar")(
     if (record === null) return null;
 
     const resolved = resolveAvatar(client, record.avatar, {
-      gateways: options.gateways ?? {},
+      gateways: resolveGateways(options.gateways, client.config.gateways),
       timeout: options.timeout ?? 10_000,
       owner: record.owner,
     });

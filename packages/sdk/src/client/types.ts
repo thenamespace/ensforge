@@ -22,6 +22,35 @@ export type ViemClient = ViemBaseClient<Transport, Chain | undefined>;
 export type ViemWalletClient = ViemBaseClient<Transport, Chain | undefined, Account | undefined>;
 
 /**
+ * HTTP gateways that turn decentralized-storage URIs (avatars, content hashes) into URLs a
+ * browser can load. Each is an origin, such as `https://ipfs.io`.
+ *
+ * @category client
+ * @since 1.0.0
+ */
+export type Gateways = {
+  /**
+   * IPFS gateway, for `ipfs://`, `ipns://` and bare CIDs. The public `ipfs.io` is rate limited:
+   * use a dedicated gateway in production.
+   *
+   * @default "https://ipfs.io"
+   */
+  readonly ipfs?: string | undefined;
+  /**
+   * Arweave gateway, for `ar://`.
+   *
+   * @default "https://arweave.net"
+   */
+  readonly arweave?: string | undefined;
+  /**
+   * Swarm gateway, for `bzz://` content hashes.
+   *
+   * @default "https://api.gateway.ethswarm.org"
+   */
+  readonly swarm?: string | undefined;
+};
+
+/**
  * Behaviour settings, set once in `Ensforge.create` and rarely read back.
  *
  * @category client
@@ -42,6 +71,8 @@ export type Config = {
   readonly simulate: boolean;
   /** Indexer for `indexer.*` actions and migration discovery, when configured. */
   readonly indexer: Indexer | undefined;
+  /** Storage gateways for avatars and content-hash URLs, defaults filled in. */
+  readonly gateways: { readonly [protocol in keyof Gateways]-?: string };
 };
 
 /**
@@ -157,4 +188,11 @@ export type CreateOptions = {
    * @default none; indexer actions fail with `INDEXER_NOT_CONFIGURED`
    */
   indexer?: Indexer | undefined;
+  /**
+   * Storage gateways for avatars (`record.getAvatar`) and content-hash URLs
+   * (`ContentHash.toGatewayUrl(uri, ens.config.gateways)`). A call's own `gateways` override them.
+   *
+   * @default https://ipfs.io, https://arweave.net and https://api.gateway.ethswarm.org
+   */
+  gateways?: Gateways | undefined;
 };
