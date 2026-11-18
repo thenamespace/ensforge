@@ -5,10 +5,9 @@ import { useLocation } from "@tanstack/react-router";
 import { Link } from "fumadocs-core/link";
 import * as Twoslash from "fumadocs-twoslash/ui";
 import { Accordion, Accordions } from "fumadocs-ui/components/accordion";
+import { Card, Cards } from "fumadocs-ui/components/card";
 import { CodeBlock, Pre } from "fumadocs-ui/components/codeblock";
-import { Step, Steps } from "fumadocs-ui/components/steps";
 import { Tab, Tabs } from "fumadocs-ui/components/tabs";
-import { TypeTable } from "fumadocs-ui/components/type-table";
 import defaultMdxComponents from "fumadocs-ui/mdx";
 import type { MDXComponents } from "mdx/types";
 
@@ -16,6 +15,7 @@ import { track } from "@/lib/analytics/client";
 import { Icon } from "@/lib/docs-icons";
 
 import { useDocsSlug } from "./docs/analytics";
+import { Mermaid } from "./mermaid";
 
 /**
  * Docs pages and blog posts share these components; events go to the section they were read
@@ -145,12 +145,12 @@ export function getMDXComponents(components?: MDXComponents) {
     pre: TrackedPre,
     Accordion,
     Accordions,
+    Card,
+    Cards,
     Icon,
-    Step,
-    Steps,
+    Mermaid,
     Tab,
     Tabs,
-    TypeTable,
     ...components,
   } satisfies MDXComponents;
 }

@@ -61,6 +61,7 @@ catalog:
   rolldown: "1.3.2"
   scheduler: "0.28.0"
   shiki: "4.6.0"
+  mermaid: "12.3.0"
   # Exact compilers of the ENS builds the devnet reproduces byte for byte.
   solc-0.8.25: "npm:solc@0.8.25"
   solc-0.8.27: "npm:solc@0.8.27"
