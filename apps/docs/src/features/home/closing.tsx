@@ -8,9 +8,9 @@ import { useSectionView } from "@/components/marketing/hooks";
 import { Container, Eyebrow, Heading, Lede } from "@/components/marketing/section";
 import { site } from "@/lib/site";
 
-import { Forge } from "./figures/forge";
+import { RegistryTree } from "./figures/registry-tree";
 
-/** Closing call to action, beside the anvil forging names. */
+/** Closing call to action, beside a lookup travelling down the tree of registries. */
 export function Closing() {
   const root = useRef<HTMLElement>(null);
   useSectionView(root, "closing");
@@ -28,10 +28,10 @@ export function Closing() {
           <div className="ek-corners pointer-events-none absolute -inset-px" aria-hidden="true" />
           <div className="flex flex-col justify-center gap-7 p-8 md:p-14">
             <Eyebrow>Start here</Eyebrow>
-            <Heading id="closing-title">Forge your first name lookup.</Heading>
+            <Heading id="closing-title">Read your first ENS name.</Heading>
             <Lede>
-              Install the SDK, create a client from your viem client and read nick.eth. Five
-              minutes, no wallet, and every ENS name works the same way after that.
+              Install the SDK, create a client from your viem client and read nick.eth. It takes
+              five minutes and no wallet. Every other name works the same way.
             </Lede>
             <div className="flex flex-wrap items-center gap-3 pt-1">
               <ButtonLink
@@ -54,7 +54,7 @@ export function Closing() {
             </div>
           </div>
           <div className="ek-dotted flex items-center justify-center border-t border-(--ek-line) px-6 py-10 lg:border-t-0 lg:border-s">
-            <Forge className="max-w-[620px]" />
+            <RegistryTree className="max-w-[600px]" />
           </div>
         </div>
       </Container>
