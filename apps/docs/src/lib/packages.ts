@@ -37,11 +37,16 @@ export function getPackage(slug: string | undefined): PackageInfo | undefined {
   return packages.find((pkg) => pkg.slug === slug);
 }
 
-/** Resolve the package from a docs URL such as `/docs/sdk/getting-started`. */
+/**
+ * Resolve the package from a docs URL such as `/docs/sdk/getting-started`, or from its API
+ * reference, `/docs/reference/sdk/record/get`.
+ */
 export function getPackageFromUrl(url: string): PackageInfo | undefined {
   if (!url.startsWith(`${docsRoute}/`)) return undefined;
 
-  return getPackage(url.slice(docsRoute.length + 1).split("/")[0]);
+  const [first, second] = url.slice(docsRoute.length + 1).split("/");
+
+  return getPackage(first === "reference" ? second : first);
 }
 
 /** The package a docs path like `/docs/sdk/changelog` (as slugs) is the changelog of. */

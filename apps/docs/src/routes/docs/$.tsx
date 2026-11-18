@@ -1,6 +1,6 @@
-import { Suspense, use } from "react";
+import { lazy, Suspense, use } from "react";
 
-import { createFileRoute, notFound } from "@tanstack/react-router";
+import { createFileRoute, notFound, redirect } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
 
 import { useFumadocsLoader } from "fumadocs-core/source/client";
@@ -14,16 +14,22 @@ import {
 } from "fumadocs-ui/layouts/spacious/page";
 
 import { DocsChromeAnalytics, DocsPageAnalytics } from "@/components/docs/analytics";
-import { CopyMarkdownButton } from "@/components/docs/page-actions";
+import { CopyMarkdownButton, OpenInAssistantButtons } from "@/components/docs/page-actions";
 import { useMDXComponents } from "@/components/mdx";
+import { ApiMeta, ErrorMeta } from "@/components/reference/api-meta";
+import { ReferenceBreadcrumb } from "@/components/reference/breadcrumb";
 import { baseOptions } from "@/lib/layout.shared";
 import { docsImageUrl } from "@/lib/og/urls";
 import { getPackage } from "@/lib/packages";
-import { breadcrumbLd, SEPARATOR, seo, techArticleLd } from "@/lib/seo";
+import { movedReference } from "@/lib/reference-redirects";
+import { breadcrumbLd, seo, techArticleLd } from "@/lib/seo";
 import { getPageMarkdownUrl, gitConfig } from "@/lib/shared";
 import { absolute, site } from "@/lib/site";
 import { docs, source } from "@/lib/source";
 import { tabs } from "@/lib/tabs";
+
+// Only the reference landing renders it; lazy keeps its search data out of every other page.
+const ReferenceHome = lazy(() => import("@/components/reference/reference-home"));
 
 const serverLoader = createServerFn({ method: "GET" })
   .validator((slugs: string[]) => slugs)
@@ -31,14 +37,16 @@ const serverLoader = createServerFn({ method: "GET" })
     const page = source.getPage(slugs);
     if (!page) throw notFound();
 
-    const pkg = getPackage(page.slugs[0]);
+    // Reference pages belong to the package after `reference/` (errors and the landing to none).
+    const isReference = page.slugs[0] === "reference";
+    const pkg = getPackage(isReference ? page.slugs[1] : page.slugs[0]);
 
     // The git modified date ships with the compiled page in async mode.
     const { lastModified } = await page.data.load();
 
     return {
       path: page.path,
-      packageSlug: page.slugs[0],
+      packageSlug: pkg?.slug,
       pageTree: await source.serializePageTree(source.getPageTree()),
       meta: {
         url: page.url,
@@ -46,7 +54,8 @@ const serverLoader = createServerFn({ method: "GET" })
         title: page.data.title,
         description:
           page.data.description ?? `${page.data.title} in the ${pkg?.name ?? site.name} docs.`,
-        section: pkg?.name ?? "Docs",
+        section: isReference ? `${pkg?.name ?? "API"} Reference` : (pkg?.name ?? "Docs"),
+        isReference,
         keywords: page.data.keywords ?? [],
         published: page.data.published,
         modified: lastModified?.toISOString(),
@@ -58,6 +67,8 @@ export const Route = createFileRoute("/docs/$")({
   component: Page,
   loader: async ({ params }) => {
     const slugs = params._splat?.split("/").filter(Boolean) ?? [];
+    const moved = movedReference(slugs);
+    if (moved) throw redirect({ href: `/docs/${moved.join("/")}`, statusCode: 301 });
     const data = await serverLoader({ data: slugs });
 
     await docs.getPage(data.path)?.preload();
@@ -68,10 +79,6 @@ export const Route = createFileRoute("/docs/$")({
     if (!loaderData) return {};
     const { meta } = loaderData;
     const isIndex = meta.slugs.length <= 1;
-
-    const title = isIndex
-      ? `${meta.section} Docs`
-      : `${meta.title}${SEPARATOR}${meta.section} Docs`;
     const image = docsImageUrl(meta.slugs);
 
     const keywords = [
@@ -84,7 +91,7 @@ export const Route = createFileRoute("/docs/$")({
     ];
 
     const tags = seo({
-      title,
+      title: meta.title,
       description: meta.description,
       path: meta.url,
       type: "article",
@@ -106,7 +113,9 @@ export const Route = createFileRoute("/docs/$")({
         }),
         breadcrumbLd([
           { name: site.name, path: "/" },
-          { name: `${meta.section} Docs`, path: `/docs/${meta.slugs[0] ?? ""}` },
+          meta.isReference
+            ? { name: "API reference", path: "/docs/reference" }
+            : { name: `${meta.section} Docs`, path: `/docs/${meta.slugs[0] ?? ""}` },
           ...(isIndex ? [] : [{ name: meta.title, path: meta.url }]),
         ]),
       ],
@@ -123,7 +132,17 @@ export const Route = createFileRoute("/docs/$")({
   },
 });
 
-function Content({ path, slugs }: { path: string; slugs: readonly string[] }) {
+function Content({
+  path,
+  slugs,
+  packageSlug,
+  isReference,
+}: {
+  path: string;
+  slugs: readonly string[];
+  packageSlug: string | undefined;
+  isReference: boolean;
+}) {
   const markdownUrl = getPageMarkdownUrl({ slugs });
   const page = docs.getPage(path);
   if (!page) throw new Error(`Unknown page: ${path}`);
@@ -132,19 +151,20 @@ function Content({ path, slugs }: { path: string; slugs: readonly string[] }) {
   const MDX = page.body;
 
   return (
-    <DocsPage toc={toc}>
-      <DocsPageAnalytics packageSlug={slugs[0] ?? ""} title={page.title} />
+    <DocsPage toc={toc} {...(isReference ? { slots: { breadcrumb: ReferenceBreadcrumb } } : {})}>
+      <DocsPageAnalytics packageSlug={packageSlug ?? slugs[0] ?? ""} title={page.title} />
       <DocsTitle>{page.title}</DocsTitle>
       <DocsDescription className="mb-2">{page.description}</DocsDescription>
       <div className="flex flex-row flex-wrap items-center gap-2 border-b pb-6">
         <CopyMarkdownButton markdownUrl={markdownUrl} slug={slugs.join("/")} />
+        <OpenInAssistantButtons markdownUrl={markdownUrl} slug={slugs.join("/")} />
         <ViewOptionsPopover
           markdownUrl={markdownUrl}
           githubUrl={`https://github.com/${gitConfig.user}/${gitConfig.repo}/blob/${gitConfig.branch}/apps/docs/content/docs/${path}`}
         />
       </div>
       <DocsBody>
-        <MDX components={useMDXComponents()} />
+        <MDX components={useMDXComponents({ ApiMeta, ErrorMeta, ReferenceHome })} />
       </DocsBody>
     </DocsPage>
   );
@@ -159,7 +179,12 @@ function Page() {
     <DocsLayout {...baseOptions(getPackage(packageSlug))} tree={pageTree} tabs={tabs}>
       <DocsChromeAnalytics />
       <Suspense>
-        <Content path={path} slugs={slugs} />
+        <Content
+          path={path}
+          slugs={slugs}
+          packageSlug={packageSlug}
+          isReference={data.meta.isReference}
+        />
       </Suspense>
     </DocsLayout>
   );

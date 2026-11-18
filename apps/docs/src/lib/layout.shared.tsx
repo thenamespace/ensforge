@@ -1,6 +1,7 @@
 import type { BaseLayoutProps } from "fumadocs-ui/layouts/shared";
 
 import { EnsforgeLogo } from "@/components/logos";
+import { SectionTabs } from "@/components/reference/section-tabs";
 
 import type { PackageInfo } from "./packages";
 import { appName, gitConfig } from "./shared";
@@ -26,6 +27,12 @@ export function baseOptions(pkg?: PackageInfo): BaseLayoutProps {
         </>
       ),
     },
+    // The spacious layout has no top bar: the Guides / Reference switch and the Blog link head
+    // the sidebar, and GitHub sits with the page actions.
+    links: [
+      { type: "custom", children: <SectionTabs /> },
+      { text: "Blog", url: "/blog", active: "nested-url" },
+    ],
     githubUrl: `https://github.com/${gitConfig.user}/${gitConfig.repo}`,
     // Dark only, so the docs chrome has no theme switch.
     themeSwitch: { enabled: false },

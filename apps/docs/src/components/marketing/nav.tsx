@@ -54,6 +54,15 @@ export function MarketingNav() {
             Docs
           </Link>
           <Link
+            to="/docs/$"
+            params={{ _splat: "reference" }}
+            title="API reference"
+            className={link}
+            onClick={() => track("nav_link_clicked", { location: "header", target: "reference" })}
+          >
+            Reference
+          </Link>
+          <Link
             to="/blog"
             title="Blog"
             className={cn(link, "data-[status=active]:text-fd-foreground")}
