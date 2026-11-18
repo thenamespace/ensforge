@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="6 6 88 88" width="200" height="200">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="8 8 84 84" width="200" height="200">
   <title>ensforge</title>
-  <path fill="#f8f8f8" d="M8 33L30 26H90V39H38ZM42 43H66L59 55L72 63V72H28V63L41 55Z"/>
+  <g fill="#f8f8f8" stroke="#f8f8f8" stroke-width="6" stroke-linejoin="round"><path d="M15 33H31V49C23 49 17 43 15 33Z"/><path d="M43 31H85V49H72C71 56 73 61 80 63H83V73H45V63H48C55 61 57 56 56 49H43Z"/></g>
 </svg>
