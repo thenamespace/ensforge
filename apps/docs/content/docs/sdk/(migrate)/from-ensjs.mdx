@@ -1,6 +1,180 @@
 ---
 title: From ensjs
-description: Placeholder, to be written.
+description: Replace ensjs (@ensdomains/ensjs) public, wallet and subgraph actions with ensforge actions.
+keywords:
+  [ensjs, "@ensdomains/ensjs", addEnsContracts, getAddressRecord, getRecords, subgraph, migration]
 ---
 
-Placeholder: this page is not written yet.
+ensjs and ensforge are both action libraries on top of viem, so the move is mostly renaming. The
+differences are that ensforge needs no chain wrapper, routes between ENSv1 and ENSv2 for you, has
+one `record.set` for all record writes, and fails with typed errors. This guide maps the ensjs
+5.x actions.
+
+## Prerequisites
+
+- An app using `@ensdomains/ensjs`.
+- `@ensforge/sdk` installed. See [Installation](/docs/sdk/installation).
+
+## 1. Replace the client setup
+
+ensjs needs `addEnsContracts(chain)` so the viem chain knows the ENS addresses. ensforge picks the
+deployment from the chain ID (Ethereum mainnet and Sepolia), so the chain stays a plain viem chain.
+
+```ts title="client.ts"
+import { addEnsContracts } from "@ensdomains/ensjs"; // [!code --]
+import { Ensforge, ensActions } from "@ensforge/sdk"; // [!code ++]
+import { createPublicClient, http } from "viem";
+import { mainnet } from "viem/chains";
+
+const client = createPublicClient({ chain: addEnsContracts(mainnet), transport: http() }); // [!code --]
+const publicClient = createPublicClient({ chain: mainnet, transport: http() }); // [!code ++]
+const ens = Ensforge.create({ publicClient }).extend(ensActions()); // [!code ++]
+```
+
+ensjs actions are free functions you call with a client, and ensforge supports the same style:
+`Actions.record.getAddress(publicClient, options)`. Use that form to keep your call sites close to
+what they were. See [Ways to call actions](/docs/sdk/ways-to-call-actions).
+
+## 2. Reads
+
+ensjs read results are objects with a `value`, or `null`. ensforge returns the value.
+
+```ts title="reads.ts"
+import { getAddressRecord, getName, getTextRecord } from "@ensdomains/ensjs/public"; // [!code --]
+
+const record = await getAddressRecord(client, { name: "nick.eth" }); // [!code --]
+const address = record?.value ?? null; // [!code --]
+const address = await ens.record.getAddress({ name: "nick.eth" }); // [!code ++]
+
+const url = await getTextRecord(client, { name: "nick.eth", key: "url" }); // [!code --]
+const url = await ens.record.getText({ name: "nick.eth", key: "url" }); // [!code ++]
+
+const result = await getName(client, { address }); // [!code --]
+const primary = result?.match === true ? result.name : null; // [!code --]
+const primary = await ens.primaryName.get({ address }); // [!code ++]
+```
+
+`primaryName.get` returns the name only when it resolves back to the address, so the `match` check
+is built in.
+
+| ensjs                                                                                 | ensforge                                                                                                                                                |
+| ------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `getAddressRecord({ name, coin })`                                                    | [`record.getAddress({ name, coin })`](/docs/sdk/reference/actions/record/get-address)                                                                   |
+| `getTextRecord({ name, key })`                                                        | [`record.getText`](/docs/sdk/reference/actions/record/get-text)                                                                                         |
+| `getContentHashRecord`, `getAbiRecord`                                                | [`record.getContentHash`](/docs/sdk/reference/actions/record/get-content-hash), [`record.get`](/docs/sdk/reference/actions/record/get) with `abi: true` |
+| `getRecords({ name, texts, coins, contentHash, abi })`                                | [`record.get({ name, texts, addresses, contentHash, abi })`](/docs/sdk/reference/actions/record/get)                                                    |
+| `getName({ address })`                                                                | [`primaryName.get({ address })`](/docs/sdk/reference/actions/primary-name/get)                                                                          |
+| `getResolver({ name })`                                                               | [`resolver.get({ name })`](/docs/sdk/reference/actions/resolver/get)                                                                                    |
+| `resolveNameData`                                                                     | [`resolver.resolve({ name, data })`](/docs/sdk/reference/actions/resolver/resolve)                                                                      |
+| `getAvailable`, `isRenewable`                                                         | `registration.isAvailable`, or `name.get` (`available`, `renewable`)                                                                                    |
+| `getRegisterPrice`, `getRenewPrice`                                                   | `registration.getPrice`, `registration.getRenewalPrice`                                                                                                 |
+| `public/v1`: `getOwner`, `getExpiry`, `getWrapperData`                                | [`name.get`](/docs/sdk/reference/actions/name/get): `owner`, `manager`, `registrant`, `expiry`, `wrapped`                                               |
+| `public/v2`: `getNameRegistries`, `getExpiry`, `getTokenId`, `getNameRolesAccounts` … | `name.get`, `registry.get`, `role.get`, `permission.get`                                                                                                |
+| `getSupportedInterfaces`                                                              | `resolver.get`: `profiles` lists what the resolver supports                                                                                             |
+| `dns`: `getDnsImportData`                                                             | `dns.getProof`, `dns.getStatus`, `dns.claim`                                                                                                            |
+
+You do not pick `public/v1` or `public/v2`. ensforge finds which version a name lives on. See
+[ENS versions under the hood](/docs/sdk/ens-versions).
+
+## 3. Records in one call
+
+`getRecords` maps directly. The `coins` option is `addresses` in ensforge, and the result has exactly
+the fields you asked for.
+
+```ts title="records.ts"
+const records = await getRecords(client, {
+  name: "ens.eth",
+  texts: ["com.twitter", "avatar"],
+  contentHash: true,
+}); // [!code --]
+const records = await ens.record.get({
+  name: "ens.eth",
+  texts: ["com.twitter", "avatar"],
+  contentHash: true,
+}); // [!code ++]
+
+records.texts["com.twitter"]; // string | null
+```
+
+## 4. Writes
+
+ensjs has one write per record kind (`setTextRecord`, `setAddressRecord`, `setContentHashRecord`,
+`setAbiRecord`), a `setRecords` for ENSv1 and ENSv2, and wallet actions you call with a wallet client.
+ensforge has [`record.set`](/docs/sdk/reference/actions/record/set) for all of them, and sends with
+the wallet you gave the client.
+
+```ts title="writes.ts"
+await setTextRecord(walletClient, {
+  name: "alice.eth",
+  key: "url",
+  value: "https://alice.dev",
+  resolverAddress,
+}); // [!code --]
+await ens.record.setSync({ name: "alice.eth", texts: { url: "https://alice.dev" } }); // [!code ++]
+```
+
+ensforge reads the name's resolver itself, so you do not pass `resolverAddress`. Writes resolve when
+submitted. The `…Sync` form waits for the receipt. See
+[Send a transaction](/docs/sdk/send-a-transaction).
+
+| ensjs                                                                                                     | ensforge                                                                                                                                      |
+| --------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| `setTextRecord`, `setAddressRecord`, `setContentHashRecord`, `setAbiRecord`, `setRecords`, `clearRecords` | [`record.set`](/docs/sdk/reference/actions/record/set) (`clear: true` deletes everything first)                                               |
+| `commitName`, `registerName`                                                                              | [`registration.register`](/docs/sdk/reference/actions/registration/register) (one call runs commit, wait and register), `registration.commit` |
+| `renewName`                                                                                               | `registration.renew`                                                                                                                          |
+| `setPrimaryName`                                                                                          | [`primaryName.set`](/docs/sdk/reference/actions/primary-name/set)                                                                             |
+| `transferName`                                                                                            | [`name.transfer`](/docs/sdk/reference/actions/name/transfer)                                                                                  |
+| `setResolver`                                                                                             | `resolver.set`                                                                                                                                |
+| `createSubname`, `deleteSubname`                                                                          | `subname.create`, `subname.remove`                                                                                                            |
+| `wrapName`, `unwrapName`, `setFuses`, `setChildFuses`                                                     | `wrapper.wrap`, `wrapper.unwrap`, `wrapper.setFuses`, `wrapper.setChildFuses`                                                                 |
+| `grantRoles`, `revokeRoles`, `grantResolverRoles`, `revokeResolverRoles`                                  | `role.grant`, `role.revoke`                                                                                                                   |
+
+A registration does the commit, the wait and the register in one call, with progress through
+`onStep`. See [Register a name](/docs/sdk/register-a-name).
+
+## 5. Subgraph reads
+
+ensjs queries ENS's subgraph through `@ensdomains/ensjs/subgraph` (`getNamesForAddress`,
+`getSubnames`, `getNameHistory`, `getSubgraphRecords`) and needs `graphql`. ensforge reads lists from
+an indexer you connect to the client.
+
+| ensjs subgraph                                     | ensforge                                                                                  |
+| -------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| `getNamesForAddress`, `getResolvedNamesForAddress` | [`indexer.getNamesForAddress`](/docs/sdk/reference/actions/indexer/get-names-for-address) |
+| `getSubnames`                                      | `indexer.getSubnames`                                                                     |
+| `getNameHistory`                                   | `indexer.getHistory`, or `event.get` over RPC                                             |
+| `getSubgraphRecords`                               | `indexer.getRecords`                                                                      |
+
+See [Connect an indexer](/docs/sdk/connect-an-indexer) and
+[List names for an address](/docs/sdk/list-names-for-an-address).
+
+## 6. Errors
+
+ensjs throws viem and ensjs `BaseError`s. ensforge throws `Errors.*` with stable codes. See
+[Handle errors](/docs/sdk/handle-errors).
+
+## 7. Know what behaves differently
+
+- **Encoded labels.** ensjs refuses `[labelhash]` labels. ensforge resolves the name.
+- **A reverting resolver.** ensjs throws when a resolver reverts or answers malformed data.
+  ensforge reads no record.
+- **Gateways.** ensforge reports an unreachable or invalid gateway as a `GatewayError`. ensjs
+  returns `null`.
+
+## Check the result
+
+Compare old and new results for a few names, including one with no records. Values should match,
+and `null` should stay `null`.
+
+## Troubleshooting
+
+### `UNKNOWN_CHAIN`
+
+The chain is not mainnet or Sepolia, or it was wrapped with `addEnsContracts` for a custom setup.
+Pass a plain viem chain, or give `deployment`. See [`UNKNOWN_CHAIN`](/docs/sdk/errors/UNKNOWN_CHAIN).
+
+### An ensjs option has no equivalent
+
+ensjs `resolverAddress`, `universalResolverAddress` and similar overrides are not needed: ensforge
+reads them from the deployment. For a custom deployment, see
+[Create a client](/docs/sdk/create-a-client).

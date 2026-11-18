@@ -1,6 +1,209 @@
 ---
 title: The Effect API
-description: Placeholder, to be written.
+description: Use every ensforge action as an Effect with typed errors, a client service and streams.
+keywords:
+  [Effect, "@ensforge/sdk/effect", Layer, Context.Service, catchTag, Stream, Indexer.paginate]
 ---
 
-Placeholder: this page is not written yet.
+The Effect API is optional. Everything in ensforge works with Promises. Use `@ensforge/sdk/effect`
+when your program is already written with [Effect](https://effect.website): you get typed errors in
+the error channel, interruption, services and streams.
+
+## Prerequisites
+
+- `effect` version 4 (`^4.1.4`) installed. It is a peer dependency of `@ensforge/sdk`.
+- Familiarity with `Effect.gen`.
+
+## Same actions, returned as Effects
+
+`@ensforge/sdk/effect` exports the same action tree as the root entry. Each action takes a client
+first and returns an `Effect` whose error channel is the action's documented error union.
+
+**Example** (Reading an address in an Effect program)
+
+```ts twoslash title="read.ts"
+import { Actions, Ensforge } from "@ensforge/sdk/effect";
+import { Effect } from "effect";
+import { createPublicClient, http } from "viem";
+import { mainnet } from "viem/chains";
+
+const publicClient = createPublicClient({ chain: mainnet, transport: http() });
+const ens = Ensforge.create({ publicClient });
+
+const program = Actions.record.getAddress(ens, { name: "nick.eth" });
+//    ^?
+
+const address = await Effect.runPromise(program);
+```
+
+- The Effect client has no `ens.record.*` methods. Pass the client to `Actions.<domain>.<action>`.
+- Reads accept a bare viem client too, as in the Promise API.
+
+## Provide the client as a service
+
+`Ensforge.Ensforge` is an Effect `Context.Service`, and `Ensforge.layer(options)` builds a `Layer`
+for it. The layer fails with `ConfigError` when the options are invalid, such as an unknown chain.
+
+**Example** (Using the service)
+
+```ts twoslash title="service.ts"
+import { Actions, Ensforge } from "@ensforge/sdk/effect";
+import { Effect } from "effect";
+import { createPublicClient, http } from "viem";
+import { mainnet } from "viem/chains";
+
+const publicClient = createPublicClient({ chain: mainnet, transport: http() });
+
+const program = Effect.gen(function* () {
+  const ens = yield* Ensforge.Ensforge;
+  return yield* Actions.record.getText(ens, { name: "nick.eth", key: "url" });
+});
+
+await Effect.runPromise(program.pipe(Effect.provide(Ensforge.layer({ publicClient }))));
+```
+
+The service key is `@ensforge/sdk/Ensforge`. In tests, provide a different client with
+`Layer.succeed(Ensforge.Ensforge, client)`.
+
+## Handle typed errors
+
+Errors are the same instances Promise users catch, so `_tag` matches the class name. Use
+`Effect.catchTag` to handle one class and let the others stay in the error type.
+
+**Example** (Recovering from a missing record)
+
+```ts twoslash title="errors.ts"
+import { Actions, Ensforge } from "@ensforge/sdk/effect";
+import { Effect } from "effect";
+import { createPublicClient, http } from "viem";
+import { mainnet } from "viem/chains";
+
+const publicClient = createPublicClient({ chain: mainnet, transport: http() });
+const ens = Ensforge.create({ publicClient });
+
+const program = Actions.record
+  .getAddress(ens, { name: "nobody-here.eth", strict: true })
+  .pipe(Effect.catchTag("NotFoundError", () => Effect.succeed(null)));
+```
+
+After `catchTag`, `NotFoundError` is gone from the error type. See
+[Handle errors](/docs/sdk/handle-errors) for the codes.
+
+**Example** (Retrying only what is retryable)
+
+```ts twoslash title="retry.ts"
+import { Actions, Ensforge } from "@ensforge/sdk/effect";
+import { Effect } from "effect";
+import { createPublicClient, http } from "viem";
+import { mainnet } from "viem/chains";
+
+const publicClient = createPublicClient({ chain: mainnet, transport: http() });
+const ens = Ensforge.create({ publicClient });
+
+const program = Actions.record
+  .getAddress(ens, { name: "nick.eth" })
+  .pipe(Effect.retry({ times: 3, while: (error) => error.retryable }));
+```
+
+## Write, preview and resume
+
+Writes keep their methods as Effects: `Actions.record.set`, `Actions.record.set.prepare`,
+`.simulate` and `.estimateGas`, and the `…Sync` forms. Plans are plain data, so they are the same
+values as in the Promise API.
+
+**Example** (Preparing, simulating and sending)
+
+```ts twoslash title="write.ts"
+import { Actions, Ensforge } from "@ensforge/sdk/effect";
+import { Effect } from "effect";
+import { createPublicClient, http } from "viem";
+import { sepolia } from "viem/chains";
+
+const publicClient = createPublicClient({ chain: sepolia, transport: http() });
+const ens = Ensforge.create({
+  publicClient,
+  account: "0x225f137127d9067788314bc7fcc1f36746a3c3B5",
+});
+
+const options = { name: "alice.eth", texts: { url: "https://alice.dev" } };
+
+const program = Effect.gen(function* () {
+  const simulation = yield* Actions.record.set.simulate(ens, options);
+  if (!simulation.ok) return simulation;
+
+  const plan = yield* Actions.record.set.prepare(ens, options);
+  return yield* Actions.plan.send(ens, { plan });
+});
+```
+
+See [Preview before sending](/docs/sdk/preview-before-sending) and
+[Continue after a failure](/docs/sdk/continue-after-a-failure).
+
+## Batch reads
+
+`Actions.batch` is an Effect too. Build the requests with the Promise entry's `.request` helpers.
+
+```ts twoslash title="batch.ts"
+import { Actions as Requests } from "@ensforge/sdk";
+import { Actions, Ensforge } from "@ensforge/sdk/effect";
+import { createPublicClient, http } from "viem";
+import { mainnet } from "viem/chains";
+
+const publicClient = createPublicClient({ chain: mainnet, transport: http() });
+const ens = Ensforge.create({ publicClient });
+
+const program = Actions.batch(ens, {
+  requests: [Requests.name.get.request({ name: "nick.eth" })],
+});
+```
+
+## Validate names with a schema
+
+`Name.Normalized` is a branded `Schema` for names that are already normalised (ENSIP-15). It
+exists only in the Effect entry.
+
+```ts twoslash title="schema.ts"
+import { Name } from "@ensforge/sdk/effect";
+import { Schema } from "effect";
+
+const name = Schema.decodeUnknownSync(Name.Normalized)("nick.eth");
+```
+
+## Stream indexer pages
+
+`Indexer.paginate` turns a list into a `Stream` of pages, following `cursor` until the last page.
+`Indexer.define` is the Effect form of `defineIndexer`. See
+[Custom indexers](/docs/sdk/custom-indexers) and [Load more results](/docs/sdk/load-more-results).
+
+```ts twoslash title="stream.ts"
+import { Actions, Ensforge, Indexer } from "@ensforge/sdk/effect";
+import { bigname } from "@ensforge/sdk/indexer";
+import { Effect, Stream } from "effect";
+import { createPublicClient, http } from "viem";
+import { mainnet } from "viem/chains";
+
+const publicClient = createPublicClient({ chain: mainnet, transport: http() });
+const ens = Ensforge.create({ publicClient, indexer: bigname() });
+
+const subnames = Indexer.paginate((cursor) =>
+  Actions.indexer.getSubnames(ens, { name: "ens.eth", namespace: "ens", limit: 200, cursor }),
+).pipe(Stream.take(3));
+
+const pages = await Effect.runPromise(Stream.runCollect(subnames));
+```
+
+## Check the result
+
+Run the program with `Effect.runPromise`. A failure rejects with the error instance, with its
+`code` and `context`.
+
+## Troubleshooting
+
+### `ens.record` is undefined
+
+The Effect client does not carry action methods. Call `Actions.record.<action>(ens, options)`.
+
+### The error type is a long union
+
+Each action declares only the classes it can fail with, plus the common ones. Narrow with
+`Effect.catchTag`, or map to your own error at a boundary.
