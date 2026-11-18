@@ -1,6 +1,6 @@
 {
   "name": "@ensforge/sdk",
-  "version": "0.6.1",
+  "version": "1.0.0",
   "description": "Type-safe actions and utilities for ENS",
   "keywords": [
     "effect",
