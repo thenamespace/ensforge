@@ -33,6 +33,10 @@ const names: readonly Preset[] = [
   { label: "vitalik.eth", value: "vitalik.eth" },
   { label: "ens.eth", value: "ens.eth" },
   { label: "jesse.base.eth", value: "jesse.base.eth" },
+  { label: "envoy1084.eth", value: "envoy1084.eth" },
+  { label: "cap.eth", value: "cap.eth" },
+  { label: "artii.eth", value: "artii.eth" },
+  { label: "maxi.eth", value: "maxi.eth" },
 ];
 
 export const chainLabels: Record<Chain, string> = { eth: "Ethereum", btc: "Bitcoin", base: "Base" };
@@ -68,6 +72,10 @@ export const examples: readonly Example[] = [
       { label: "vitalik.eth", value: "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045" },
       { label: "nick.eth", value: "0xb8c2C29ee19D8307cb7255e1Cd9CbDE883A267d5" },
       { label: "jesse.base.eth", value: "0x2211d1D0020DAEA8039E46Cf1367962070d77DA9" },
+      { label: "envoy1084.eth", value: "0xc0d86456F6f2930b892f3DAD007CDBE32c081FE6" },
+      { label: "cap.eth", value: "0x035eBd096AFa6b98372494C7f08f3402324117D3" },
+      { label: "artii.eth", value: "0x1D84ad46F1ec91b4Bb3208F645aD2fA7aBEc19f8" },
+      { label: "maxi.eth", value: "0xc9E6eB83da7A627961b89acd4b6405941c36e2c8" },
     ],
     snippets: { eth: "home.primaryName" },
   },
