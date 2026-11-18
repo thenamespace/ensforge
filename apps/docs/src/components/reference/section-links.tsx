@@ -25,11 +25,14 @@ export function SectionLinks() {
 
   return (
     // A rule closes the links. The sidebar gives its last link a 1.5rem bottom margin; without the
-    // Blog link that is this wrapper, so cancel it and 1rem more, leaving the first section
-    // label's own top margin as the space below the rule.
+    // Blog link that is this wrapper, so take half of it back for a 0.75rem gap below the rule.
+    // `docs-section-links` in app.css trims the first section label's top margin to match.
     <nav
       aria-label="Docs sections"
-      className={cn("flex flex-col border-b border-fd-border pb-3", !site.blogEnabled && "-mb-10")}
+      className={cn(
+        "docs-section-links flex flex-col border-b border-fd-border pb-3",
+        !site.blogEnabled && "-mb-3",
+      )}
     >
       {links.map((item) => (
         <Link

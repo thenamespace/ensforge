@@ -93,3 +93,22 @@ pre,
 samp {
   font-feature-settings: "calt", "liga";
 }
+
+/* The first sidebar section label after the Guides / API reference links sits close to their rule. */
+.docs-section-links + * > p:first-child {
+  margin-top: 0.25rem;
+}
+
+/* Glossary links mark a term, not a destination: quiet dotted underline in the text colour. */
+.prose a[href^="/docs/reference/glossary"] {
+  color: inherit;
+  font-weight: inherit;
+  text-decoration-line: underline;
+  text-decoration-style: dotted;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+  text-decoration-color: color-mix(in oklab, var(--color-fd-muted-foreground) 70%, transparent);
+}
+.prose a[href^="/docs/reference/glossary"]:hover {
+  text-decoration-color: var(--ek-accent);
+}

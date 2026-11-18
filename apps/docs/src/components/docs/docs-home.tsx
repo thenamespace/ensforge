@@ -143,7 +143,7 @@ function SectionHeading({ children }: { readonly children: string }) {
 function Hero() {
   return (
     <section className="not-prose rounded-2xl border border-(--ek-line-strong) bg-fd-card/40 p-6 sm:p-8">
-      <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)] lg:items-center">
+      <div className="grid gap-8">
         <div>
           <EnsforgeLogo className="size-10" />
           <h1 className="mt-5 text-3xl font-semibold tracking-tight text-fd-foreground sm:text-4xl">
@@ -157,7 +157,7 @@ function Hero() {
             <span aria-hidden="true" className="font-mono text-[13px] text-ek-accent">
               $
             </span>
-            <code className="min-w-0 flex-1 truncate font-mono text-[13px] text-fd-foreground">
+            <code className="min-w-0 flex-1 overflow-x-auto whitespace-nowrap font-mono text-[13px] text-fd-foreground">
               {installCommand}
             </code>
             <CopyButton text={installCommand} label="Copy install command" surface="docs_home" />
