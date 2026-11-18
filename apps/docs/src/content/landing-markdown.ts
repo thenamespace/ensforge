@@ -14,7 +14,7 @@ const pages: Record<LandingPage, () => string> = {
 
 ${directive}
 
-Every ENS name, one API. ${site.description}
+${site.tagline}. ${site.description}
 
 ## Install
 

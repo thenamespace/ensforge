@@ -174,7 +174,7 @@ export function Forge({ className }: { readonly className?: string }) {
           x={10}
           y={142}
         >
-          ensforge · every ens name, one api
+          ensforge · the toolkit for building on ens
         </text>
       </g>
 

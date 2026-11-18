@@ -8,7 +8,7 @@ export const site = {
   /** Legal publisher and author of the site and the packages. */
   publisher: "Namespace Inc.",
   publisherUrl: "https://namespace.ninja",
-  tagline: "Every ENS name, one API",
+  tagline: "The toolkit for building on ENS",
   description:
     "Look up any ENS name, read and write records, and register and manage names with one typed TypeScript API that works for every name. Built on viem.",
   /** X handle with the `@`, for `twitter:site` and share text. Unset until the project has one. */

@@ -8,6 +8,9 @@ import { Heading, Lede } from "@/components/marketing/section";
 
 import { HeroFloor } from "./hero-floor/hero-floor";
 
+/** The headline's two lines, broken on purpose; swap the text here. */
+const headline = ["The toolkit for", "building on ENS."] as const;
+
 /**
  * Hero: the headline, one line on what ensforge does and where to start, over a floor of names
  * and the components ensforge powers.
@@ -45,11 +48,15 @@ export function Hero() {
           as="h1"
           className="animate-ek-rise font-normal [animation-delay:80ms] md:text-[92px]"
         >
-          <span className="ek-shine animate-ek-shine motion-reduce:animate-none">
-            <span className="whitespace-nowrap">Every ENS name,</span> one API.
+          <span className="ek-shine block animate-ek-shine motion-reduce:animate-none">
+            {headline.map((line) => (
+              <span key={line} className="block">
+                {line}
+              </span>
+            ))}
           </span>
         </Heading>
-        <Lede className="max-w-[46ch] animate-ek-rise text-balance [animation-delay:160ms] md:text-xl">
+        <Lede className="max-w-[40ch] animate-ek-rise text-balance [animation-delay:160ms] md:text-xl">
           Resolve, update and register any name with one typed TypeScript API, built on viem.
         </Lede>
         <div className="flex animate-ek-rise flex-wrap items-center justify-center gap-3 pt-2 [animation-delay:240ms]">
