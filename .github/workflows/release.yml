@@ -79,8 +79,8 @@ jobs:
     needs: plan
     if: ${{ inputs.dry-run || needs.plan.outputs.mode == 'publish' }}
     runs-on: ubuntu-latest
-    # release:prepare runs pnpm check and the chain, fuzz and services lanes (bigname builds from
-    # source on a cold runner).
+    # release:prepare runs pnpm check and the chain, fuzz and services lanes (bigname is pulled
+    # from the bigname-image workflow's registry, or built from source when not published).
     timeout-minutes: 120
     permissions:
       contents: read
@@ -111,6 +111,8 @@ jobs:
           git diff --stat
 
       - run: pnpm release:prepare
+        env:
+          ENSFORGE_BIGNAME_REGISTRY: ghcr.io/${{ github.repository_owner }}/ensforge-bigname-devnet
 
       # Packs the publish plan from the plan job; a dry run packs the versions made above.
       - uses: changesets/action/pack@v2.1.2

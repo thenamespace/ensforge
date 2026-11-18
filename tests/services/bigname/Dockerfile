@@ -32,6 +32,9 @@ RUN --mount=type=cache,target=/usr/local/cargo/registry \
 
 FROM ${RUNTIME_IMAGE} AS runtime
 
+# Links the published image (bigname-image workflow) to the repository, so its workflows can pull.
+LABEL org.opencontainers.image.source=https://github.com/thenamespace/ensforge
+
 RUN apt-get update \
     && apt-get install -y --no-install-recommends ca-certificates curl libgcc-s1 libstdc++6 tini \
     && rm -rf /var/lib/apt/lists/* \

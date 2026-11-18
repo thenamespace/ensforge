@@ -23,7 +23,9 @@ is reverted: every test writes its own names.
   clock, which runs ahead of real time. alto runs without safe mode (KL-51).
 
 Images are pinned by digest (`test/stack/images.ts`, `compose.yml`, the Dockerfiles) and pulled
-anonymously. The first run builds bigname (several minutes); later runs reuse the image.
+anonymously. The first run builds bigname (several minutes; 20–30 on a cold CI runner); later runs
+reuse the image. With `ENSFORGE_BIGNAME_REGISTRY` set (CI sets it), the stack first pulls the same
+build, tagged by its fingerprint, from that registry; the `bigname-image` workflow publishes it.
 
 ## What runs
 
