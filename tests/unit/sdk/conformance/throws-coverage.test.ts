@@ -60,7 +60,11 @@ const uncovered: Readonly<Record<string, readonly string[]>> = {};
 
 /** Documented codes of each write action without a test yet: `domain.action` → codes. */
 const uncoveredWrites: Readonly<Record<string, readonly string[]>> = {
-  "migration.migrate": ["NAME_NOT_LOCKED", "NAME_LOCKED", "PARENT_NOT_MIGRATED"],
+  // ensforge never sends a locked child through the MigrationHelper, whose `ParentNotMigrated`
+  // maps to this code: the controllers accept it, and an unmigrated parent is refused earlier as
+  // `NOT_ELIGIBLE`. ENSv2's registrar reads a missing commitment as `CommitmentTooOld`; only
+  // ENSv1's controller reverts `CommitmentNotFound`, which `registration.register` never calls.
+  "migration.migrate": ["PARENT_NOT_MIGRATED"],
   "registration.register": ["COMMITMENT_NOT_FOUND"],
 };
 

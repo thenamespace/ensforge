@@ -1,5 +1,5 @@
 import { assert, describe } from "@effect/vitest";
-import { Effect, Record as Rec, Array as Arr } from "effect";
+import { Effect, Record as Rec, Array as Arr, String as Str } from "effect";
 
 import { Abis } from "@ensforge/contracts";
 import { hca } from "@ensforge/hca";
@@ -583,6 +583,66 @@ describe("migration", () => {
           );
         }),
       { meta: { cases: ["M14"] } },
+    );
+
+    // ensforge sends each name to the controller its status asks for, so these reverts need a plan
+    // that went stale (or was edited) between preparing and sending it.
+    it.effect(
+      "decodes the controller errors of a migration plan that no longer fits its name",
+      () =>
+        Effect.gen(function* () {
+          const fixtures = yield* Fixtures;
+          const devnet = yield* Devnet;
+          const chain = yield* Chain;
+          const clients = yield* Clients;
+          const { alice } = devnet.accounts;
+          const ens = clients.make({ account: alice });
+          const unlocked = fixtures.byId("v1.wrapped").name;
+
+          // Locked after the plan sent it to the unlocked controller.
+          yield* chain.isolated(
+            Effect.gen(function* () {
+              const plan = yield* Actions.migration.migrate.prepare(ens, {
+                names: unlocked,
+                resolver: "keep",
+              });
+              yield* Actions.wrapper.setFusesSync(ens, { name: unlocked, fuses: ["cannotUnwrap"] });
+
+              yield* expectFailure(Actions.plan.send(ens, { plan }), {
+                _tag: "NameStateError",
+                code: "NAME_LOCKED",
+              });
+            }),
+          );
+
+          // A name no fuse locks cannot enter through the locked controller: the plan's transfer
+          // is redirected to it.
+          yield* chain.isolated(
+            Effect.gen(function* () {
+              const plan = yield* Actions.migration.migrate.prepare(ens, {
+                names: unlocked,
+                resolver: "keep",
+              });
+              const swap = Str.replace(
+                Str.toLowerCase(Str.slice(2)(devnet.contract("v2.unlockedMigrationController"))),
+                Str.toLowerCase(Str.slice(2)(devnet.contract("v2.lockedMigrationController"))),
+              );
+              const redirected = Arr.map(plan.steps, (step) => ({
+                ...step,
+                calls: Arr.map(step.calls, (call): Plan.Call => ({
+                  ...call,
+                  data: `0x${swap(Str.slice(2)(call.data))}`,
+                })),
+              }));
+
+              yield* expectFailure(
+                Actions.plan.send(ens, { plan: { ...plan, steps: redirected } }),
+                { _tag: "MigrationError", code: "NAME_NOT_LOCKED" },
+              );
+            }),
+          );
+        }),
+      { meta: { cases: ["M09"] } },
     );
 
     // ensforge refuses a name without a reservation before sending (`not-reserved`). Sent anyway,
