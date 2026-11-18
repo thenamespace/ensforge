@@ -21,6 +21,7 @@ on:
 
 permissions:
   contents: read
+  packages: read # _lanes.yml pulls the services lane's bigname image from GHCR
 
 concurrency:
   group: extended-${{ github.ref }}-${{ inputs.lane }}
