@@ -1,5 +1,5 @@
 import { assert, describe, it } from "@effect/vitest";
-import { Effect } from "effect";
+import { Array as Arr, Effect } from "effect";
 
 import type { Plan } from "@ensforge/sdk";
 import * as Ensforge from "@ensforge/sdk/internal/client/Ensforge";
@@ -10,13 +10,14 @@ import {
   createPublicClient,
   encodeErrorResult,
   getAddress,
+  isHex,
   pad,
   type Address,
   type Hex,
 } from "viem";
 import { mainnet } from "viem/chains";
 
-import { requestsOf } from "./wallet";
+import { paramsOf, recordOf, requestsOf, simulatedCalls } from "./wallet";
 
 const account = getAddress("0x00000000000000000000000000000000000a11ce");
 const target: Address = "0x00000000000000000000000000000000000000c0";
@@ -33,15 +34,10 @@ const reason = encodeErrorResult({
  */
 const node = (reverts: Readonly<Record<Hex, Hex>> = {}, sequential = true) => {
   const { transport, calls } = scriptedTransport(({ method, params }) => {
-    const [request] = params as readonly Record<string, unknown>[];
+    const request = recordOf(paramsOf(params)[0]);
     if (method === "eth_simulateV1") {
       if (!sequential)
         throw Object.assign(new Error("eth_simulateV1 does not exist"), { code: -32601 });
-      const block = (
-        request?.blockStateCalls as
-          | readonly { readonly calls: readonly { readonly data: Hex }[] }[]
-          | undefined
-      )?.[0];
       return [
         {
           number: "0x1",
@@ -50,8 +46,8 @@ const node = (reverts: Readonly<Record<Hex, Hex>> = {}, sequential = true) => {
           gasLimit: "0x1c9c380",
           gasUsed: "0x0",
           transactions: [],
-          calls: block?.calls.map(({ data }) => {
-            const revert = reverts[data];
+          calls: Arr.map(simulatedCalls(request) ?? [], ({ data }) => {
+            const revert = isHex(data) ? reverts[data] : undefined;
             return revert === undefined
               ? { status: "0x1", returnData: "0x", gasUsed: "0x5208", logs: [] }
               : {
@@ -66,7 +62,7 @@ const node = (reverts: Readonly<Record<Hex, Hex>> = {}, sequential = true) => {
       ];
     }
     if (method === "eth_call" || method === "eth_estimateGas") {
-      const revert = reverts[request?.data as Hex];
+      const revert = isHex(request.data) ? reverts[request.data] : undefined;
       if (revert !== undefined)
         throw Object.assign(new Error("execution reverted"), { code: -32000, data: revert });
       return method === "eth_call" ? "0x" : "0x5208";
@@ -103,7 +99,7 @@ describe("simulatePlan", () => {
       assert.strictEqual(simulation.ok, false);
       assert.strictEqual(simulation.plan, plan);
       assert.deepStrictEqual(
-        simulation.steps.map(({ id, ok }) => [id, ok]),
+        Arr.map(simulation.steps, ({ id, ok }) => [id, ok]),
         [
           ["commit", true],
           ["approve", false],
@@ -113,20 +109,16 @@ describe("simulatePlan", () => {
       const error = simulation.steps[1]?.error;
       assert.strictEqual(error?._tag, "ContractRevertError");
       assert.strictEqual(error?.code, "CONTRACT_REVERTED");
-      assert.strictEqual((error as { readonly data?: Hex } | undefined)?.data, "0x");
+      assert.strictEqual(Reflect.get(error ?? {}, "data"), "0x");
       assert.deepStrictEqual(error?.context.revert, { errorName: undefined, data: "0x" });
       assert.strictEqual(error?.context.contract, target);
       assert.strictEqual(error?.context.account, account);
       const [request] = requestsOf(calls, "eth_simulateV1");
-      const block = (
-        request?.blockStateCalls as
-          | readonly { readonly calls: readonly Record<string, unknown>[] }[]
-          | undefined
-      )?.[0];
+      const simulated = simulatedCalls(request ?? {});
       assert.deepStrictEqual(
         // viem appends a call of its own.
-        block?.calls.slice(0, 3).map(({ from, to, data }) => ({ from, to, data })),
-        ["0x01", "0x02", "0x03"].map((data) => ({ from: account, to: target, data })),
+        Arr.map(Arr.take(simulated ?? [], 3), ({ from, to, data }) => ({ from, to, data })),
+        Arr.map(["0x01", "0x02", "0x03"], (data) => ({ from: account, to: target, data })),
       );
     }),
   );
@@ -156,12 +148,11 @@ describe("simulatePlan", () => {
       yield* simulatePlan(client, plan, undefined);
 
       const [request] = requestsOf(calls, "eth_simulateV1");
-      const block = (
-        request?.blockStateCalls as
-          | readonly { readonly calls: readonly Record<string, unknown>[] }[]
-          | undefined
-      )?.[0];
-      assert.isTrue(block?.calls.every((simulated) => simulated.from === undefined));
+      const simulated = simulatedCalls(request ?? {});
+      assert.isDefined(simulated);
+      assert.isTrue(
+        Arr.every(simulated ?? [], (simulatedCall) => simulatedCall.from === undefined),
+      );
     }),
   );
 
@@ -173,19 +164,14 @@ describe("simulatePlan", () => {
       const simulation = yield* simulatePlan(client, plan, account);
 
       assert.deepStrictEqual(
-        simulation.steps.map(({ id, ok, error }) => [id, ok, error?.context.contract]),
+        Arr.map(simulation.steps, ({ id, ok, error }) => [id, ok, error?.context.contract]),
         [
           ["commit", true, undefined],
           ["approve", false, target],
         ],
       );
       assert.deepStrictEqual(
-        calls
-          .filter(({ method }) => method === "eth_call")
-          .map(({ params }) => {
-            const [request] = params as readonly Record<string, unknown>[];
-            return [request?.from, request?.data];
-          }),
+        Arr.map(requestsOf(calls, "eth_call"), (request) => [request.from, request.data]),
         [
           [account, "0x01"],
           [account, "0x02"],
@@ -196,11 +182,7 @@ describe("simulatePlan", () => {
       const { client: anonymous, calls: anonymousCalls } = node({}, false);
       yield* simulatePlan(anonymous, plan, undefined);
       assert.isTrue(
-        anonymousCalls
-          .filter(({ method }) => method === "eth_call")
-          .every(
-            ({ params }) => (params as readonly Record<string, unknown>[])[0]?.from === undefined,
-          ),
+        Arr.every(requestsOf(anonymousCalls, "eth_call"), (request) => request.from === undefined),
       );
     }),
   );
@@ -214,7 +196,7 @@ describe("estimatePlan", () => {
       const estimate = yield* estimatePlan(client, plan, account);
 
       assert.strictEqual(estimate.gas, 3n * 25_200n);
-      assert.strictEqual(calls.filter(({ method }) => method === "eth_estimateGas").length, 0);
+      assert.strictEqual(Arr.filter(calls, ({ method }) => method === "eth_estimateGas").length, 0);
     }),
   );
 
@@ -240,9 +222,7 @@ describe("estimatePlan", () => {
       yield* estimatePlan(anonymous, plan, undefined);
 
       const senders = (recorded: typeof calls) =>
-        recorded
-          .filter(({ method }) => method === "eth_estimateGas")
-          .map(({ params }) => (params as readonly Record<string, unknown>[])[0]?.from);
+        Arr.map(requestsOf(recorded, "eth_estimateGas"), (request) => request.from);
       assert.deepStrictEqual(senders(calls), [account, account, account]);
       assert.deepStrictEqual(senders(anonymousCalls), [undefined, undefined, undefined]);
     }),

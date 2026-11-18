@@ -1,5 +1,5 @@
 import { assert, describe, it } from "@effect/vitest";
-import { Effect } from "effect";
+import { Array, Effect } from "effect";
 
 import { Ensforge } from "@ensforge/sdk";
 import { scanLogs, type LogQuery } from "@ensforge/sdk/internal/internal/event/scan";
@@ -23,6 +23,8 @@ const ensAnswering = (answer: (from: bigint, to: bigint) => unknown) => {
   const ranges: [bigint, bigint][] = [];
   const { transport, calls } = scriptedTransport(({ method, params }) => {
     if (method !== "eth_getLogs") return undefined;
+    // Scripted RPC params are untyped; their shape is fixed by the call under test.
+    // oxlint-disable-next-line typescript/no-unsafe-type-assertion
     const filter = params[0] as Filter;
     const from = hexToBigInt(filter.fromBlock);
     const to = hexToBigInt(filter.toBlock);
@@ -56,7 +58,8 @@ describe("scanLogs", () => {
         [10n, 20n],
       ]);
       assert.deepStrictEqual(
-        calls.map((call) => (call.params as Filter[])[0]?.address),
+        // oxlint-disable-next-line typescript/no-unsafe-type-assertion
+        Array.map(calls, (call) => (call.params as Filter[])[0]?.address),
         [[emitter], [other]],
       );
     }),
@@ -101,7 +104,7 @@ describe("scanLogs", () => {
         [12n, 15n],
       ]);
       assert.deepStrictEqual(
-        logs.map((log) => log.blockNumber),
+        Array.map(logs, (log) => log.blockNumber),
         [1n],
       );
     }),
@@ -141,12 +144,12 @@ describe("scanLogs", () => {
       const b = logAt(5n, 1);
       const c = logAt(3n, 7);
       let request = 0;
-      const { ens } = ensAnswering(() => (request++ === 0 ? [a, b] : [c, a]).map(rpcLog));
+      const { ens } = ensAnswering(() => Array.map(request++ === 0 ? [a, b] : [c, a], rpcLog));
 
       const logs = yield* scanLogs(ens, [query, query], { fromBlock: 0n, toBlock: 9n });
 
       assert.deepStrictEqual(
-        logs.map((log) => [log.blockNumber, log.logIndex]),
+        Array.map(logs, (log) => [log.blockNumber, log.logIndex]),
         [
           [3n, 7],
           [5n, 1],

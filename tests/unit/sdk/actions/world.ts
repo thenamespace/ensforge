@@ -1,3 +1,5 @@
+import { Array as Arr, Option, Record as Rec, String as Str } from "effect";
+
 import { Abis, Deployments, InterfaceIds } from "@ensforge/contracts";
 import { Duration, Name } from "@ensforge/sdk/effect";
 import * as Ensforge from "@ensforge/sdk/internal/client/Ensforge";
@@ -18,6 +20,8 @@ import {
 } from "viem";
 import { mainnet } from "viem/chains";
 import { namehash } from "viem/ens";
+
+/* oxlint-disable typescript/no-unsafe-type-assertion -- stub arguments arrive as `unknown[]`, decoded against the stubbed ABI */
 
 // A mainnet "chain" answered from scripted contract state, so write planners can be exercised
 // route by route without a node. Names absent from the world are unregistered everywhere.
@@ -82,7 +86,7 @@ export type World = Entry & {
 
 /** A plan's calls as `[to, functionName, args]`, decoded with `abi` (ABIs may be concatenated). */
 export const decodeCalls = (calls: readonly Plan.Call[], abi: Abi) =>
-  calls.map(({ to, data }) => {
+  Arr.map(calls, ({ to, data }) => {
     const { functionName, args } = decodeFunctionData({ abi, data });
     return [getAddress(to), functionName, args ?? []] as const;
   });
@@ -93,41 +97,46 @@ const gracePeriod = 7_776_000n;
 const defaultExpiry = now + Duration.years(1);
 
 const includes = (addresses: readonly Address[] | undefined, address: Address) =>
-  (addresses ?? []).some((listed) => isAddressEqual(listed, address));
+  Arr.some(addresses ?? [], (listed) => isAddressEqual(listed, address));
 
 const stubs = (world: World): ContractStub[] => {
   const entries = new Map<string, Entry>([
-    ...Object.entries(world.names ?? {}),
+    ...Rec.toEntries(world.names ?? {}),
     [world.name, { v1: world.v1, v2: world.v2 }],
   ]);
   const names = [...entries.keys()];
-  const byNode = (node: unknown) => names.find((name) => namehash(name) === node);
+  const byNode = (node: unknown) =>
+    Option.getOrUndefined(Arr.findFirst(names, (name) => namehash(name) === node));
   const v1Of = (name: string | undefined) =>
     name === undefined ? undefined : entries.get(name)?.v1;
   const registryOwner = (state: V1Name | undefined) =>
     state === undefined ? zeroAddress : state.wrapper !== undefined ? v1.nameWrapper : state.owner;
   const byToken = (id: unknown) =>
-    names.find((name) => {
-      const { is2ld, tld } = Name.parse(name);
-      return is2ld && tld === "eth" && Name.toTokenId(name) === id;
-    });
+    Option.getOrUndefined(
+      Arr.findFirst(names, (name) => {
+        const { is2ld, tld } = Name.parse(name);
+        return is2ld && tld === "eth" && Name.toTokenId(name) === id;
+      }),
+    );
 
   // ENSv2: a name lives in its parent's subregistry, or in `v2Registry` when it is a TLD child.
   const parentRegistry = (name: string): Address | undefined => {
     const { parent } = Name.parse(name);
-    if (parent === null || !parent.includes(".")) return v2Registry;
+    if (parent === null || !Str.includes(".")(parent)) return v2Registry;
     return entries.get(parent)?.v2?.subregistry;
   };
   const inRegistry = (registry: Address, id: bigint, protocol: "v1" | "v2" = "v2") =>
-    names.find((name) => {
-      const parent = parentRegistry(name);
-      return (
-        entries.get(name)?.[protocol] !== undefined &&
-        parent !== undefined &&
-        isAddressEqual(parent, registry) &&
-        Name.toTokenId(name) === id
-      );
-    });
+    Option.getOrUndefined(
+      Arr.findFirst(names, (name) => {
+        const parent = parentRegistry(name);
+        return (
+          entries.get(name)?.[protocol] !== undefined &&
+          parent !== undefined &&
+          isAddressEqual(parent, registry) &&
+          Name.toTokenId(name) === id
+        );
+      }),
+    );
   const registryStub = (registry: Address): ContractStub => {
     const v2Of = (id: bigint) => {
       const name = inRegistry(registry, id);
@@ -137,7 +146,7 @@ const stubs = (world: World): ContractStub[] => {
 
     return {
       address: registry,
-      abi: Abis.v2.userRegistry as Abi,
+      abi: Abis.v2.userRegistry,
       functions: {
         getState: ([id]) => {
           const found = v2Of(id as bigint);
@@ -155,10 +164,12 @@ const stubs = (world: World): ContractStub[] => {
         getSubregistry: ([label]) =>
           v2Of(Name.toTokenId(label as string))?.v2.subregistry ?? zeroAddress,
         roles: ([, account]) =>
-          names
-            .map((name) => entries.get(name)?.v2)
-            .find((state) => state !== undefined && isAddressEqual(state.owner, account as Address))
-            ?.roles ?? 0n,
+          Option.getOrUndefined(
+            Arr.findFirst(
+              Arr.map(names, (name) => entries.get(name)?.v2),
+              (state) => state !== undefined && isAddressEqual(state.owner, account as Address),
+            ),
+          )?.roles ?? 0n,
         isOnlyAssignee: ([id]) => v2Of(id as bigint)?.v2.onlyAssignee ?? true,
         isEmancipated: () => true,
         isApprovedForAll: () => false,
@@ -168,15 +179,24 @@ const stubs = (world: World): ContractStub[] => {
 
   const registries = [
     v2Registry,
-    ...names.flatMap((name) => entries.get(name)?.v2?.subregistry ?? []),
+    ...Arr.flatMap(names, (name) =>
+      Option.toArray(Option.fromNullishOr(entries.get(name)?.v2?.subregistry)),
+    ),
   ];
   const resolvers = [
     resolverA,
     ...(world.permissioned ?? []),
     ...(world.extended ?? []),
     ...(world.found === undefined ? [] : [world.found.resolver]),
-    ...names.flatMap((name) => [entries.get(name)?.v1?.resolver, entries.get(name)?.v2?.resolver]),
-  ].filter((address): address is Address => address !== undefined && address !== zeroAddress);
+    ...Arr.flatMap(names, (name) => [
+      entries.get(name)?.v1?.resolver,
+      entries.get(name)?.v2?.resolver,
+    ]),
+  ];
+  const deployedResolvers = Arr.filter(
+    resolvers,
+    (address): address is Address => address !== undefined && address !== zeroAddress,
+  );
 
   return [
     {
@@ -199,7 +219,11 @@ const stubs = (world: World): ContractStub[] => {
       abi: Abis.v1.nameWrapper,
       functions: {
         getData: ([id]) => {
-          const wrapper = v1Of(names.find((name) => hexToBigInt(namehash(name)) === id))?.wrapper;
+          const wrapper = v1Of(
+            Option.getOrUndefined(
+              Arr.findFirst(names, (name) => hexToBigInt(namehash(name)) === id),
+            ),
+          )?.wrapper;
           return wrapper === undefined
             ? [zeroAddress, 0, 0n]
             : [wrapper.owner, wrapper.fuses, wrapper.expiry];
@@ -238,15 +262,15 @@ const stubs = (world: World): ContractStub[] => {
       abi: Abis.v2.ethRegistrar,
       functions: { GRACE_PERIOD: () => gracePeriod },
     },
-    ...registries.map(registryStub),
+    ...Arr.map(registries, (registry) => registryStub(registry)),
     {
       address: Deployments.mainnet.v2.migration.publicResolverSet,
-      abi: Abis.v2.permissionedAddressSet as Abi,
+      abi: Abis.v2.permissionedAddressSet,
       functions: { includes: () => false },
     },
     {
       address: v2.universalResolver,
-      abi: Abis.v2.universalResolver as Abi,
+      abi: Abis.v2.universalResolver,
       functions: {
         findResolver: ([dns]) => [
           world.found?.resolver ?? zeroAddress,
@@ -258,7 +282,7 @@ const stubs = (world: World): ContractStub[] => {
     // ENSv2 reserves every ENSv1 name, so its own resolution reaches them through the bridge.
     {
       address: Deployments.mainnet.v2.implementations.universalResolver,
-      abi: Abis.v2.universalResolver as Abi,
+      abi: Abis.v2.universalResolver,
       functions: {
         findResolver: ([dns]) => [
           Deployments.mainnet.v2.migration.ensV1Resolver,
@@ -267,17 +291,20 @@ const stubs = (world: World): ContractStub[] => {
         ],
       },
     },
-    ...Object.entries(world.contracts ?? {}).map(([address, { owner, namers }]): ContractStub => ({
-      address: address as Address,
-      abi: Abis.v2.contractNamer as Abi,
-      functions: {
-        owner: () => owner,
-        isContractNamer: ([namer]) => includes(namers, namer as Address),
-      },
-    })),
-    ...[...new Set(resolvers)].map((address): ContractStub => ({
+    ...Arr.map(
+      Rec.toEntries(world.contracts ?? {}),
+      ([address, { owner, namers }]): ContractStub => ({
+        address,
+        abi: Abis.v2.contractNamer,
+        functions: {
+          owner: () => owner,
+          isContractNamer: ([namer]) => includes(namers, namer as Address),
+        },
+      }),
+    ),
+    ...Arr.map([...new Set(deployedResolvers)], (address): ContractStub => ({
       address,
-      abi: [...Abis.shared.erc165, ...Abis.shared.versionableResolver] as Abi,
+      abi: [...Abis.shared.erc165, ...Abis.shared.versionableResolver],
       functions: {
         supportsInterface: ([id]) =>
           includes(world.permissioned, address) ||
@@ -293,7 +320,7 @@ export const clientFor = (world: World) => {
   const { transport, calls } = scriptedTransport(
     contractScript({
       contracts: stubs(world),
-      code: Object.keys(world.contracts ?? {}) as Address[],
+      code: Rec.keys(world.contracts ?? {}),
     }),
   );
   const { name, chainId, v1: deploymentV1 } = Deployments.mainnet;

@@ -2,7 +2,7 @@ import { fileURLToPath } from "node:url";
 
 import { NodeServices } from "@effect/platform-node";
 import { assert, layer } from "@effect/vitest";
-import { Effect, Layer } from "effect";
+import { Array as Arr, Effect, Layer } from "effect";
 
 import { brokenLinks, exportedPaths } from "@ensforge/tools/internal/lint-jsdoc/links";
 import { Tools } from "@ensforge/tools/internal/services/Tools";
@@ -10,7 +10,7 @@ import { TypeScript } from "@ensforge/tools/internal/services/TypeScript";
 
 const fixture = (file: string) =>
   fileURLToPath(new URL(`../fixtures/links/${file}`, import.meta.url));
-const files = ["index.ts", "lookup.ts", "guide.ts"].map(fixture);
+const files = Arr.map(["index.ts", "lookup.ts", "guide.ts"], fixture);
 
 layer(
   TypeScript.layer.pipe(Layer.provideMerge(Tools.layer), Layer.provideMerge(NodeServices.layer)),

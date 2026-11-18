@@ -1,4 +1,5 @@
 import { assert, describe, it } from "@effect/vitest";
+import { String as Str } from "effect";
 
 import type { Plan } from "@ensforge/sdk/internal/plan/Plan";
 import { deserialize, deserializeRecord, serialize } from "@ensforge/sdk/internal/plan/serialize";
@@ -41,7 +42,7 @@ describe("Plan.serialize ⇄ Plan.deserialize", () => {
     const record: Plan.Record = {
       plan: { ...minimal, requirements: [{ kind: "balance", amount: 5n }] },
       status: "pending",
-      submitted: { "0.commit": [`0x${"ab".repeat(32)}`] },
+      submitted: { "0.commit": [`0x${Str.repeat(32)("ab")}`] },
       bundles: { "0.commit": "bundle" },
       updatedAt: 1_700_000_000_000,
     };
@@ -63,8 +64,8 @@ describe("Plan.deserialize invalid input", () => {
     const error = expectThrow(() => deserialize(text), {
       _tag: "PlanError",
       code: "PLAN_INVALID",
-    }) as { cause?: unknown };
+    });
 
-    assert.instanceOf(error.cause, Error);
+    assert.instanceOf(Reflect.get(error, "cause"), Error);
   });
 });

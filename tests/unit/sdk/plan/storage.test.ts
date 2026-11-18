@@ -1,5 +1,5 @@
 import { afterEach, assert, describe, it, vi } from "@effect/vitest";
-import { Effect } from "effect";
+import { Effect, Record as Rec, Schema } from "effect";
 
 import { make } from "@ensforge/sdk/internal/plan/make";
 import type { Plan } from "@ensforge/sdk/internal/plan/Plan";
@@ -102,9 +102,10 @@ describe("localStorage", () => {
       const elsewhere = yield* Effect.promise(() => localStorage("other").list());
 
       assert.deepStrictEqual([...web.items.keys()], ["ensforge:plans"]);
-      assert.deepStrictEqual(Object.keys(JSON.parse(web.items.get("ensforge:plans") ?? "{}")), [
-        saved.plan.id,
-      ]);
+      const stored = yield* Schema.decodeEffect(
+        Schema.fromJsonString(Schema.Record(Schema.String, Schema.Unknown)),
+      )(web.items.get("ensforge:plans") ?? "{}");
+      assert.deepStrictEqual(Rec.keys(stored), [saved.plan.id]);
       assert.deepStrictEqual(elsewhere, []);
     }),
   );
@@ -122,8 +123,11 @@ describe("localStorage", () => {
       ];
 
       for (const call of calls) {
-        const error = yield* Effect.flip(Effect.tryPromise(call));
-        assert.include(String(error.cause), "localStorage is not available");
+        // A call that resolves instead of rejecting fails the test with `undefined`.
+        const error = yield* Effect.flip(
+          Effect.tryPromise({ try: () => call().then(() => undefined), catch: String }),
+        );
+        assert.include(error, "localStorage is not available");
       }
     }),
   );

@@ -1,5 +1,5 @@
 import { assert, describe, it } from "@effect/vitest";
-import { Effect } from "effect";
+import { Array as Arr, Effect } from "effect";
 
 import { Abis, Deployments, Roles } from "@ensforge/contracts";
 import { Actions } from "@ensforge/sdk/effect";
@@ -68,7 +68,7 @@ describe("subname.create.prepare", () => {
       });
 
       assert.deepStrictEqual(
-        plan.steps.map((step) => [step.id, step.description]),
+        Arr.map(plan.steps, (step) => [step.id, step.description]),
         [["create", "Create subname"]],
       );
       assert.deepStrictEqual(plan.deploys, []);
@@ -94,7 +94,7 @@ describe("subname.create.prepare", () => {
       });
 
       assert.deepStrictEqual(
-        plan.steps.map((step) => step.id),
+        Arr.map(plan.steps, (step) => step.id),
         ["create", "records"],
       );
       assert.deepStrictEqual(decodeCalls(plan.steps[1]?.calls ?? [], Abis.v1.publicResolver), [

@@ -1,18 +1,28 @@
 import { assert, describe, it } from "@effect/vitest";
-import { Effect } from "effect";
+import { Effect, String as Str } from "effect";
 
 import { hcaSessionSalt } from "@ensforge/contracts/v2/experimental/hca";
 import { Actions } from "@ensforge/hca/effect";
 import { rhinestone, type RhinestoneSdk } from "@ensforge/hca/internal/executors/rhinestone";
 import { hca } from "@ensforge/hca/internal/hca";
 import type { ExecutionRequest, HcaSession } from "@ensforge/hca/internal/types";
-import { expectFailure, expectRejection } from "@ensforge/test-harness";
-import { concat, encodeFunctionData, erc20Abi, zeroAddress, zeroHash, type Address } from "viem";
+import type { Write } from "@ensforge/sdk";
+import { expectFailure, expectRejection, noRpc, scriptedTransport } from "@ensforge/test-harness";
+import {
+  concat,
+  createWalletClient,
+  encodeFunctionData,
+  erc20Abi,
+  zeroAddress,
+  zeroHash,
+  type Address,
+} from "viem";
 import { privateKeyToAccount } from "viem/accounts";
+import { sepolia } from "viem/chains";
 
 import { hcaAddress, makeClient, owner, v2 } from "../fixtures";
 
-const signer = privateKeyToAccount(`0x${"22".repeat(32)}`);
+const signer = privateKeyToAccount(`0x${Str.repeat(32)("22")}`);
 
 const fakeSdk = (
   derived: Address,
@@ -20,28 +30,33 @@ const fakeSdk = (
 ) => {
   const prepared: unknown[] = [];
   const sdk: RhinestoneSdk = {
-    createAccount: async () => ({
-      getAddress: () => derived,
-      prepareTransaction: async (transaction) => {
-        prepared.push(transaction);
-        return transaction;
-      },
-      signTransaction: async (transaction) => transaction,
-      submitTransaction: async () => ({ id: 42n }),
-    }),
-    getIntentStatus: async () => intent,
+    createAccount: () =>
+      Promise.resolve({
+        getAddress: () => derived,
+        prepareTransaction: (transaction) => {
+          prepared.push(transaction);
+          return Promise.resolve(transaction);
+        },
+        signTransaction: (transaction) => Promise.resolve(transaction),
+        submitTransaction: () => Promise.resolve({ id: 42n }),
+      }),
+    getIntentStatus: () => Promise.resolve(intent),
   };
   return { sdk, prepared };
 };
 
-const contextFor = () => {
-  const { context } = makeClient({ deployed: true });
-  return { ...context, walletClient: { account: signer } as never };
-};
+const { transport } = scriptedTransport(noRpc);
 
-const session = {
+const contextFor = (): Write.Via.Context => ({
+  ...makeClient({ deployed: true }).context,
+  walletClient: createWalletClient({ account: signer, chain: sepolia, transport }),
+});
+
+const session: HcaSession = {
+  chainId: 11155111,
   hca: hcaAddress,
   owner,
+  sessionKey: signer.address,
   terms: {
     sessionNonce: 0n,
     validUntil: 4_000_000_000,
@@ -52,8 +67,11 @@ const session = {
     maxRefundAmount: 1n,
   },
   chains: [{ chainId: 11155111, sessionDigest: zeroHash }],
+  permissionId: zeroHash,
+  sessionDigest: zeroHash,
   ownerSignature: "0xabcd",
-} as unknown as HcaSession;
+  signingDomain: "smart-session",
+};
 
 const request: ExecutionRequest = {
   chainId: 11155111,
@@ -95,7 +113,7 @@ describe("rhinestone executor", () => {
       const { client } = makeClient({ deployed: true, wallet: true });
       const via = hca({
         executors: [rhinestone({ sdk: fakeSdk(hcaAddress, { status: "PENDING" }).sdk })],
-        session: { ...session, chainId: 11155111, signingDomain: "smart-session" },
+        session,
       });
       // A payment approval to the registrar: within the session policy.
       const approve = encodeFunctionData({
@@ -125,16 +143,12 @@ describe("rhinestone executor", () => {
       const id = yield* Effect.promise(() => send({ ...request, session }, contextFor()));
 
       assert.strictEqual(id, "42");
-      const [transaction] = prepared as unknown as readonly [
-        {
-          feeAsset?: Address;
-          signers: { session: { salt: string }; enableData: { userSignature: string } };
-        },
-      ];
-      assert.strictEqual(transaction.feeAsset, session.terms.refundToken);
-      assert.strictEqual(transaction.signers.session.salt, hcaSessionSalt(session.terms));
-      assert.strictEqual(
-        transaction.signers.enableData.userSignature,
+      const [transaction] = prepared;
+      assert.propertyVal(transaction, "feeAsset", session.terms.refundToken);
+      assert.nestedPropertyVal(transaction, "signers.session.salt", hcaSessionSalt(session.terms));
+      assert.nestedPropertyVal(
+        transaction,
+        "signers.enableData.userSignature",
         concat([zeroAddress, session.ownerSignature]),
       );
     }),
@@ -158,7 +172,9 @@ describe("rhinestone executor", () => {
       const { status } = rhinestone({ sdk: fakeSdk(hcaAddress, intent).sdk });
       assert.isDefined(status);
 
-      assert.deepStrictEqual(yield* Effect.promise(() => status("42", contextFor())), expected);
+      const reported = yield* Effect.promise(() => status("42", contextFor()));
+
+      assert.deepStrictEqual(reported, expected);
     }),
   );
 });

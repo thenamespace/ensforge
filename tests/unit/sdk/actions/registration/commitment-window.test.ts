@@ -21,37 +21,41 @@ const commitment = keccak256(toHex("commitment"));
 describe("registration.getCommitmentStatus", () => {
   it.effect("follows the registrar's window at its boundaries", () =>
     Effect.gen(function* () {
-      const statuses = yield* Effect.forEach([minAge - 1n, minAge, maxAge - 1n, maxAge], (age) => {
-        const { transport } = scriptedTransport(
-          contractScript({
-            contracts: [
-              {
-                address: Deployments.mainnet.v2.contracts.ethRegistrar,
-                abi: Abis.v2.ethRegistrar,
-                functions: {
-                  rentPriceOracle: () => "0x00000000000000000000000000000000000000fe",
-                  commitmentAt: () => committedAt,
-                  MIN_COMMITMENT_AGE: () => minAge,
-                  MAX_COMMITMENT_AGE: () => maxAge,
+      const statuses = yield* Effect.forEach(
+        [minAge - 1n, minAge, maxAge - 1n, maxAge],
+        (age) => {
+          const { transport } = scriptedTransport(
+            contractScript({
+              contracts: [
+                {
+                  address: Deployments.mainnet.v2.contracts.ethRegistrar,
+                  abi: Abis.v2.ethRegistrar,
+                  functions: {
+                    rentPriceOracle: () => "0x00000000000000000000000000000000000000fe",
+                    commitmentAt: () => committedAt,
+                    MIN_COMMITMENT_AGE: () => minAge,
+                    MAX_COMMITMENT_AGE: () => maxAge,
+                  },
                 },
-              },
-              {
-                address: mainnet.contracts.multicall3.address,
-                abi: multicall3Abi,
-                functions: { getCurrentBlockTimestamp: () => committedAt + age },
-              },
-            ],
-          }),
-        );
-        const ens = Ensforge.create({
-          publicClient: createPublicClient({ chain: mainnet, transport }),
-          batch: { multicall: false },
-        });
+                {
+                  address: mainnet.contracts.multicall3.address,
+                  abi: multicall3Abi,
+                  functions: { getCurrentBlockTimestamp: () => committedAt + age },
+                },
+              ],
+            }),
+          );
+          const ens = Ensforge.create({
+            publicClient: createPublicClient({ chain: mainnet, transport }),
+            batch: { multicall: false },
+          });
 
-        return Actions.registration
-          .getCommitmentStatus(ens, { commitment })
-          .pipe(Effect.map(({ status }) => status));
-      });
+          return Actions.registration
+            .getCommitmentStatus(ens, { commitment })
+            .pipe(Effect.map(({ status }) => status));
+        },
+        { concurrency: 1 },
+      );
 
       assert.deepStrictEqual(statuses, ["pending", "ready", "ready", "expired"]);
     }),
@@ -61,16 +65,20 @@ describe("registration.getCommitmentStatus", () => {
 describe("registration.register.prepare", () => {
   it.effect("rejects a commitment from the moment the registrar does", () =>
     Effect.gen(function* () {
-      const codes = yield* Effect.forEach([maxAge - 1n, maxAge], (age) =>
-        // Only the fields the commitment check reads.
-        pendingCommitments({
-          names: [{ committedAt, commitment }],
-          minCommitmentAge: minAge,
-          maxCommitmentAge: maxAge,
-          now: committedAt + age,
-        } as unknown as PreparedRegistration).pipe(
-          Effect.match({ onSuccess: () => "usable", onFailure: (error) => error.code }),
-        ),
+      const codes = yield* Effect.forEach(
+        [maxAge - 1n, maxAge],
+        (age) =>
+          // Only the fields the commitment check reads.
+          pendingCommitments(
+            // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- a partial fixture of the fields the check reads
+            {
+              names: [{ committedAt, commitment }],
+              minCommitmentAge: minAge,
+              maxCommitmentAge: maxAge,
+              now: committedAt + age,
+            } as unknown as PreparedRegistration,
+          ).pipe(Effect.match({ onSuccess: () => "usable", onFailure: (error) => error.code })),
+        { concurrency: 1 },
       );
 
       assert.deepStrictEqual(codes, ["usable", "COMMITMENT_TOO_OLD"]);

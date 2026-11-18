@@ -1,5 +1,5 @@
 import { assert, describe, it } from "@effect/vitest";
-import { Effect } from "effect";
+import { Array as Arr, Effect } from "effect";
 
 import { Abis } from "@ensforge/contracts";
 import { Actions } from "@ensforge/sdk/effect";
@@ -59,7 +59,7 @@ const clientFor = (options: Omit<CreateOptions, "publicClient"> = {}) => {
 };
 
 const ethCalls = (calls: readonly RecordedCall[]) =>
-  calls.filter((call) => call.method === "eth_call").length;
+  Arr.filter(calls, (call) => call.method === "eth_call").length;
 
 const operatorRequest = (operator: string, blockNumber?: bigint) =>
   getOperator.request({ owner, operator, contract, blockNumber });
@@ -207,7 +207,7 @@ describe("batch failure isolation", () => {
       });
 
       assert.deepStrictEqual(
-        results.map((result) => (result.status === "failure" ? result.error.code : "success")),
+        Arr.map(results, (result) => (result.status === "failure" ? result.error.code : "success")),
         ["CONTRACT_NOT_DEPLOYED", "CONTRACT_NOT_DEPLOYED"],
       );
       assert.strictEqual(ethCalls(calls), 1);

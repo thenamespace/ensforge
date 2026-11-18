@@ -1,5 +1,5 @@
 import { assert, describe, it } from "@effect/vitest";
-import { Effect } from "effect";
+import { Array as Arr, Effect, Option, Record as Rec, String as Str } from "effect";
 
 import { addressOf } from "@ensforge/sdk/internal/internal/address";
 import { chainClient } from "@ensforge/sdk/internal/internal/write/chain";
@@ -24,11 +24,11 @@ const requests: { chainId: number; method: string }[] = [];
 /** Answers the chain ID and block number, records every request, and fails loudly on the rest. */
 const chainTransport = (chain: Chain) =>
   custom({
-    request: async ({ method }: { method: string }) => {
+    request: ({ method }: { method: string }) => {
       requests.push({ chainId: chain.id, method });
-      if (method === "eth_chainId") return numberToHex(chain.id);
-      if (method === "eth_blockNumber") return "0x1";
-      throw new Error(`Unscripted RPC request on ${chain.name}: ${method}`);
+      if (method === "eth_chainId") return Promise.resolve(numberToHex(chain.id));
+      if (method === "eth_blockNumber") return Promise.resolve("0x1");
+      return Promise.reject(new Error(`Unscripted RPC request on ${chain.name}: ${method}`));
     },
   });
 
@@ -40,7 +40,9 @@ const wagmiConfig = (
     chains,
     // Two wallets, so `switchAccount` can move between them.
     connectors: [mock({ accounts: [alice], features }), mock({ accounts: [bob], features })],
-    transports: Object.fromEntries(chains.map((chain) => [chain.id, chainTransport(chain)])),
+    transports: Rec.fromEntries(
+      Arr.map(chains, (chain) => [chain.id.toString(), chainTransport(chain)]),
+    ),
     storage: null,
   });
 
@@ -101,8 +103,11 @@ describe("fromWagmi wallet", () => {
       yield* Effect.promise(() => switchAccount(config, { connector: wallet(config, 1) }));
       const second = yield* resolveSigner(ens, undefined);
 
-      assert.strictEqual(addressOf(first.account)?.toLowerCase(), alice);
-      assert.strictEqual(addressOf(second.account)?.toLowerCase(), bob);
+      const lowercased = (account: typeof first.account) =>
+        Option.map(Option.fromNullishOr(addressOf(account)), Str.toLowerCase);
+
+      assert.deepStrictEqual(lowercased(first.account), Option.some(alice));
+      assert.deepStrictEqual(lowercased(second.account), Option.some(bob));
     }),
   );
 

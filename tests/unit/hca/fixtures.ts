@@ -1,10 +1,11 @@
+import { assert } from "@effect/vitest";
+
 import { Deployments, Abis } from "@ensforge/contracts";
 import {
   standaloneHcaFactoryV2Abi,
   standaloneSingleOwnerHcaV2Abi,
 } from "@ensforge/contracts/v2/experimental/hca";
 import { Ensforge, type Write } from "@ensforge/sdk";
-import type { Client } from "@ensforge/sdk/extension";
 import { scriptedTransport } from "@ensforge/test-harness";
 import { contractScript, type ContractStub } from "@ensforge/test-harness/contracts-eth-call";
 import {
@@ -19,6 +20,12 @@ import {
   type Address,
 } from "viem";
 import { sepolia } from "viem/chains";
+
+/** An optional member (an executor's `send`, a route's `prepare`) the test expects to be defined. */
+export const defined = <Member>(member: Member | undefined): Member => {
+  assert.isDefined(member);
+  return member;
+};
 
 export const v2 = Deployments.sepolia.v2;
 export const v1 = Deployments.sepolia.v1.contracts;
@@ -117,7 +124,7 @@ export const makeClient = (world: World = {}) => {
     batch: { multicall: false },
     ...(world.deployment === undefined ? {} : { deployment: world.deployment }),
     simulate: false,
-  }) as unknown as Client;
+  });
   const context: Write.Via.Context = {
     client,
     chainId: sepolia.id,

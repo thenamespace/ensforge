@@ -1,4 +1,5 @@
 import { assert, describe, it } from "@effect/vitest";
+import { String as Str } from "effect";
 
 import * as Classes from "@ensforge/sdk/internal/errors/classes/index";
 
@@ -12,7 +13,7 @@ describe("error class defaults", () => {
     assert.strictEqual(error.name, error._tag);
     assert.strictEqual(error.constructor.name, error._tag);
     assert.isAbove(error.shortMessage.length, 0);
-    assert.isTrue(error.message.startsWith(error.shortMessage));
+    assert.isTrue(Str.startsWith(error.shortMessage)(error.message));
     assert.strictEqual(error.retryable, retryableCodes.has(code));
   });
 

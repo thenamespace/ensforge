@@ -1,5 +1,5 @@
 import { assert, describe, it } from "@effect/vitest";
-import { Effect } from "effect";
+import { Array as Arr, Effect, String as Str } from "effect";
 
 import { Abis, Deployments } from "@ensforge/contracts";
 import { Actions, Name } from "@ensforge/sdk/effect";
@@ -25,17 +25,17 @@ describe("record.set.prepare", () => {
       });
 
       assert.deepStrictEqual(
-        plan.steps.map((step) => [step.description, step.calls.length]),
+        Arr.map(plan.steps, (step) => [step.description, step.calls.length]),
         [["Set records", 1]],
       );
       const [multicall] = plan.calls;
-      const [setters = []] = decodeFunctionData({
+      const [setters] = decodeFunctionData({
         abi: Abis.shared.multicallResolver,
         data: multicall?.data ?? "0x",
       }).args;
       assert.strictEqual(getAddress(multicall?.to ?? "0x"), resolverA);
       assert.deepStrictEqual(
-        setters.map((data) => decodeFunctionData({ abi: Abis.v1.publicResolver, data })),
+        Arr.map(setters, (data) => decodeFunctionData({ abi: Abis.v1.publicResolver, data })),
         [
           { functionName: "clearRecords", args: [node] },
           { functionName: "setText", args: [node, "url", "https://alice.dev"] },
@@ -63,12 +63,12 @@ describe("record.set.prepare", () => {
       });
 
       const dns = Name.dnsEncode(name);
-      const [setters = []] = decodeFunctionData({
+      const [setters] = decodeFunctionData({
         abi: Abis.shared.multicallResolver,
         data: plan.calls[0]?.data ?? "0x",
       }).args;
       assert.deepStrictEqual(
-        setters.map((data) => decodeFunctionData({ abi: Abis.v2.permissionedResolver, data })),
+        Arr.map(setters, (data) => decodeFunctionData({ abi: Abis.v2.permissionedResolver, data })),
         [
           { functionName: "linkToRecord", args: [dns, 0n] },
           { functionName: "setText", args: [dns, "url", "https://alice.dev"] },
@@ -89,7 +89,7 @@ describe("record.set.prepare", () => {
       });
 
       assert.deepStrictEqual(
-        plan.steps.map((step) => step.description),
+        Arr.map(plan.steps, (step) => step.description),
         ["Set records and resolver"],
       );
       assert.deepStrictEqual(
@@ -124,7 +124,7 @@ describe("record.set.prepare", () => {
     [
       "a pubkey goes to a PermissionedResolver",
       { name, v2: { owner: signer, resolver: resolverA }, permissioned: [resolverA] },
-      { pubkey: { x: `0x${"11".repeat(32)}`, y: `0x${"22".repeat(32)}` } },
+      { pubkey: { x: `0x${Str.repeat(32)("11")}`, y: `0x${Str.repeat(32)("22")}` } },
       { _tag: "UnsupportedError", code: "RESOLVER_PROFILE_UNSUPPORTED" },
     ],
   ] as const)("fails when %s", ([, world, records, expected]) =>
@@ -147,6 +147,7 @@ describe("record.set.prepare", () => {
         }
         // The types rule content type 3 out; untyped callers reach the check.
         yield* expectFailure(
+          // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- the test sends a type-excluded content type
           Actions.record.set.prepare(ens, { name, abi: { contentType: 3n as 1n, value: "0x" } }),
           { _tag: "InvalidInputError", code: "INVALID_RECORD_VALUE" },
         );

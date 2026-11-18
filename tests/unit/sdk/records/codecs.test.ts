@@ -1,9 +1,8 @@
 import { assert, describe, it } from "@effect/vitest";
-import { Effect } from "effect";
+import { Effect, String as Str } from "effect";
 
 import { loadRecordCodecs } from "@ensforge/sdk/internal/internal/records/codecs";
 import { expectThrow } from "@ensforge/test-harness";
-import type { Hex } from "viem";
 
 const btc = 0n;
 const btcAddress = "1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa";
@@ -27,8 +26,10 @@ describe("loadRecordCodecs", () => {
       const codecs = yield* loadRecordCodecs({ coinTypes: [] });
       const address = "0x225f137127d9067788314bc7fcc1f36746a3c3B5";
 
-      assert.strictEqual(codecs.encodeAddress(base, address), address.toLowerCase());
-      assert.strictEqual(codecs.decodeAddress(base, address.toLowerCase() as Hex), address);
+      const lowercase = Str.toLowerCase(address);
+
+      assert.strictEqual(codecs.encodeAddress(base, address), lowercase);
+      assert.strictEqual(codecs.decodeAddress(base, lowercase), address);
     }),
   );
 

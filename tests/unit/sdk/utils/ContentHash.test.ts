@@ -1,4 +1,5 @@
 import { assert, describe, it } from "@effect/vitest";
+import { Array, String as Str } from "effect";
 
 import * as ContentHash from "@ensforge/sdk/internal/utils/ContentHash";
 import { expectThrow } from "@ensforge/test-harness";
@@ -18,7 +19,7 @@ describe("ContentHash.encode", () => {
     [`ipfs://${ipfsV1}`, ipfsBytes],
     [`bzz://${swarmHash}`, `0xe40101fa011b20${swarmHash}`],
     ["onion://zqktlwi4fecvo6ri", "0xbc037a716b746c776934666563766f367269"],
-    [`onion3://${onion3}`, `0xbd03${stringToHex(onion3).slice(2)}`],
+    [`onion3://${onion3}`, `0xbd03${Str.slice(2)(stringToHex(onion3))}`],
     [`ar://${arweaveTx}`, `0x90b2ca05${Buffer.from(arweaveTx, "base64url").toString("hex")}`],
   ])("encodes %s", (uri, expected) => {
     assert.strictEqual(ContentHash.encode(uri), expected);
@@ -68,7 +69,7 @@ describe("ContentHash.decode", () => {
     assert.isNull(ContentHash.decode("0x"));
   });
 
-  it.each(["0xff", "0x00", `0x90b2da05${"00".repeat(32)}`] as const)("rejects %s", (data) => {
+  it.each(["0xff", "0x00", `0x90b2da05${Str.repeat(32)("00")}`] as const)("rejects %s", (data) => {
     expectThrow(() => ContentHash.decode(data), {
       _tag: "InvalidInputError",
       code: "INVALID_CONTENT_HASH",
@@ -93,8 +94,9 @@ describe("ContentHash.toGatewayUrl", () => {
     const gateways = { ipfs: "https://gateway.example/", swarm: "https://swarm.example" };
 
     assert.deepStrictEqual(
-      [`ipfs://${ipfsV1}`, "ipns://app.eth", `bzz://${swarmHash}`, `ar://${arweaveTx}`].map((uri) =>
-        ContentHash.toGatewayUrl(uri, gateways),
+      Array.map(
+        [`ipfs://${ipfsV1}`, "ipns://app.eth", `bzz://${swarmHash}`, `ar://${arweaveTx}`],
+        (uri) => ContentHash.toGatewayUrl(uri, gateways),
       ),
       [
         `https://gateway.example/ipfs/${ipfsV1}`,

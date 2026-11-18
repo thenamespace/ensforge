@@ -1,5 +1,5 @@
 import { describe, it } from "@effect/vitest";
-import type { Effect } from "effect";
+import { String as Str, type Effect } from "effect";
 
 import { Deployments } from "@ensforge/contracts";
 import { Actions } from "@ensforge/sdk";
@@ -14,6 +14,8 @@ import {
 } from "@ensforge/test-harness";
 import { createPublicClient } from "viem";
 import { mainnet } from "viem/chains";
+
+import { asPromiseAction, propertyOf } from "./action-tree";
 
 // Read options that cannot be right fail with a typed error before any RPC request (`noRpc`).
 
@@ -38,7 +40,11 @@ const invalidValue: ExpectedError = { _tag: "InvalidInputError", code: "INVALID_
 // (`paths.test.ts`), and the Effect form must fail with the typed error, never a defect.
 type Call = (actions: typeof Actions) => Promise<unknown>;
 const asEffect = (call: Call) =>
-  call(EffectActions as unknown as typeof Actions) as unknown as Effect.Effect<unknown, unknown>;
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- the Effect actions take the same arguments but return Effects, not Promises
+  call(EffectActions as unknown as typeof Actions) as unknown as Effect.Effect<
+    object,
+    { readonly _tag: string }
+  >;
 
 const cases: readonly (readonly [string, Call, ExpectedError])[] = [
   [
@@ -105,6 +111,7 @@ const cases: readonly (readonly [string, Call, ExpectedError])[] = [
   ],
   [
     "resolver.resolve",
+    // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- deliberately invalid calldata
     (actions) => actions.resolver.resolve(client(), { name, data: "zz" as never }),
     invalidValue,
   ],
@@ -127,7 +134,7 @@ const cases: readonly (readonly [string, Call, ExpectedError])[] = [
     "name.getLabel",
     (actions) =>
       actions.name.getLabel(client({ name: "mainnet", chainId: 1, v1: Deployments.mainnet.v1 }), {
-        labelhash: `0x${"00".repeat(32)}`,
+        labelhash: `0x${Str.repeat(32)("00")}`,
       }),
     { _tag: "UnsupportedError", code: "UNSUPPORTED_ON_DEPLOYMENT" },
   ],
@@ -148,7 +155,8 @@ const cases: readonly (readonly [string, Call, ExpectedError])[] = [
 
 describe("read input errors", () => {
   it.effect.each(cases)("%s fails before reading the chain", ([, read, expected]) =>
-    expectRejection(() => read(Actions), expected),
+    // Only the rejection matters, so a success is not typed `unknown`.
+    expectRejection(() => read(Actions).then(() => undefined), expected),
   );
 
   it.effect.each(cases)("%s fails as an Effect with the same error", ([, read, expected]) =>
@@ -157,6 +165,7 @@ describe("read input errors", () => {
 });
 
 // Options that satisfy every indexer read, so only the missing indexer is wrong.
+// oxlint-disable-next-line typescript/no-unsafe-type-assertion -- one object stands in for the options of every indexer read
 const indexerOptions = {
   name,
   address,
@@ -189,10 +198,7 @@ const indexerReads = [
 
 describe("indexer reads", () => {
   it.effect.each(indexerReads)("%s fails without a configured indexer", (path) => {
-    const read = Actions.indexer[path.slice("indexer.".length) as keyof typeof Actions.indexer] as (
-      client: unknown,
-      options: unknown,
-    ) => Promise<unknown>;
+    const read = asPromiseAction(propertyOf(Actions.indexer, Str.slice("indexer.".length)(path)));
 
     // `getPermissions` takes exactly one subject.
     return expectRejection(

@@ -1,4 +1,5 @@
 import { assert, describe, it } from "@effect/vitest";
+import { Array as Arr } from "effect";
 
 import {
   hcaSessionApprovalDigest,
@@ -16,8 +17,9 @@ import {
   hashStruct,
   keccak256,
   maxUint256,
+  numberToHex,
+  pad,
   type Address,
-  type Hex,
 } from "viem";
 
 // Golden constants of contracts-v2 v1.0.1 `HCASmartSessionLib` (the deployed validator): the
@@ -45,8 +47,6 @@ const salt = hcaSessionSalt({
 });
 const session = hcaSignedSession({ account, sessionKey, salt });
 
-const word = (type: string, value: unknown): Hex =>
-  encodeAbiParameters([{ type }], [value as never]);
 const validatorInitData = encodeAbiParameters(
   [{ type: "uint256" }, { type: "address[]" }],
   [1n, [sessionKey]],
@@ -56,14 +56,14 @@ const validatorInitData = encodeAbiParameters(
 const solidityDigest = keccak256(
   concat([
     golden.signedSessionTypehash,
-    word("address", account),
-    word("uint256", maxUint256),
-    word("uint256", 0n),
+    pad(account),
+    numberToHex(maxUint256, { size: 32 }),
+    numberToHex(0n, { size: 32 }),
     golden.defaultPermissionsHash,
     salt,
-    word("address", golden.ownableSessionValidator),
+    pad(golden.ownableSessionValidator),
     keccak256(validatorInitData),
-    word("address", golden.smartSessionEmissary),
+    pad(golden.smartSessionEmissary),
   ]),
 );
 
@@ -108,15 +108,15 @@ describe("HCA session typed data", () => {
     ],
   ] as const)("approval digest over %s equals the validator's", (_, chains) => {
     // `HCASmartSessionLib.multiChainDigest` over `chainSessionHash(chainId, digest)` entries.
-    const chainHashes = chains.map(([chainId, digest]) =>
-      keccak256(concat([golden.chainSessionTypehash, word("uint64", BigInt(chainId)), digest])),
+    const chainHashes = Arr.map(chains, ([chainId, digest]) =>
+      keccak256(concat([golden.chainSessionTypehash, numberToHex(chainId, { size: 32 }), digest])),
     );
     const structHash = keccak256(
       concat([golden.multiChainSessionTypehash, keccak256(concat(chainHashes))]),
     );
 
     assert.strictEqual(
-      hcaSessionApprovalDigest(chains.map(([chainId]) => ({ chainId, session }))),
+      hcaSessionApprovalDigest(Arr.map(chains, ([chainId]) => ({ chainId, session }))),
       keccak256(concat(["0x1901", golden.domainSeparator, structHash])),
     );
   });
@@ -132,15 +132,18 @@ describe("HCA session typed data", () => {
       maxRefundAmount: 1n,
     };
     const base = hcaSessionSalt(terms);
-    const changed = [
-      { sessionNonce: 1n },
-      { validUntil: 2 },
-      { resolver: sessionKey },
-      { refundToken: account },
-      { maxRefundExchangeRate: 2n },
-      { maxRefundGasOverhead: 2n },
-      { maxRefundAmount: 2n },
-    ].map((change) => hcaSessionSalt({ ...terms, ...change }));
+    const changed = Arr.map(
+      [
+        { sessionNonce: 1n },
+        { validUntil: 2 },
+        { resolver: sessionKey },
+        { refundToken: account },
+        { maxRefundExchangeRate: 2n },
+        { maxRefundGasOverhead: 2n },
+        { maxRefundAmount: 2n },
+      ],
+      (change) => hcaSessionSalt({ ...terms, ...change }),
+    );
     assert.strictEqual(new Set([base, ...changed]).size, 8);
   });
 });

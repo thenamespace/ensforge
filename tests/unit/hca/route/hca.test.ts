@@ -1,5 +1,5 @@
 import { assert, describe, it } from "@effect/vitest";
-import { Effect } from "effect";
+import { Array as Arr, Effect, Option } from "effect";
 
 import { Abis } from "@ensforge/contracts";
 import {
@@ -38,7 +38,7 @@ const relayer = (capabilities: Partial<Executor["capabilities"]> = {}): Executor
   defineExecutor({
     id: "relayer",
     capabilities: { sessions: false, sponsorship: true, deploys: true, ...capabilities },
-    send: async () => "1",
+    send: () => Promise.resolve("1"),
   });
 
 const prepare = (
@@ -62,10 +62,9 @@ const executions = (executeByOwner: Plan.Call | undefined) => {
     abi: standaloneSingleOwnerHcaV2Abi,
     data: executeByOwner.data,
   });
-  assert.strictEqual(decoded.functionName, "executeByOwner");
-  return (
-    decoded.args as readonly [readonly { target: Address; value: bigint; callData: Hex }[]]
-  )[0];
+  if (decoded.functionName !== "executeByOwner")
+    return assert.fail(`expected executeByOwner, decoded ${decoded.functionName}`);
+  return decoded.args[0];
 };
 
 const approve = (id: bigint) => ({
@@ -84,7 +83,7 @@ describe("hca route: setup step", () => {
       const plan = yield* prepare([step("a", [call()])], { deployed: false });
 
       assert.deepStrictEqual(
-        plan.steps.map((s) => [s.id, s.from]),
+        Arr.map(plan.steps, (s) => [s.id, s.from]),
         [
           ["hca-setup", "signer"],
           ["a", undefined],
@@ -99,7 +98,7 @@ describe("hca route: setup step", () => {
       );
       assert.deepStrictEqual(
         plan.calls,
-        plan.steps.flatMap((s) => s.calls),
+        Arr.flatMap(plan.steps, (s) => s.calls),
       );
     }),
   );
@@ -111,10 +110,10 @@ describe("hca route: setup step", () => {
     Effect.gen(function* () {
       const plan = yield* prepare([step("a", [call()])], {
         deployed,
-        ...(executor ? { executor } : {}),
+        ...(executor === undefined ? {} : { executor }),
       });
       assert.deepStrictEqual(
-        plan.steps.map((s) => s.id),
+        Arr.map(plan.steps, (s) => s.id),
         ["a"],
       );
     }),
@@ -126,11 +125,18 @@ describe("hca route: setup step", () => {
     id: bigint,
   ) => ({
     to: v1.baseRegistrar,
-    data: encodeFunctionData({
-      abi: Abis.v1.baseRegistrar,
-      functionName,
-      args: [from, other, id],
-    } as never),
+    data:
+      functionName === "safeTransferFrom"
+        ? encodeFunctionData({
+            abi: Abis.v1.baseRegistrar,
+            functionName: "safeTransferFrom",
+            args: [from, other, id],
+          })
+        : encodeFunctionData({
+            abi: Abis.v1.baseRegistrar,
+            functionName: "transferFrom",
+            args: [from, other, id],
+          }),
     value: 0n,
   });
   const nameWrapper = (batch: boolean, from: Address) => ({
@@ -178,11 +184,17 @@ describe("hca route: setup step", () => {
   ] as const)("approves %s", ([, calls, expected, warns]) =>
     Effect.gen(function* () {
       const plan = yield* prepare([step("move", calls)]);
-      const setup = plan.steps.find((s) => s.id === "hca-setup");
+      const setup = Arr.findFirst(plan.steps, (s) => s.id === "hca-setup");
 
-      assert.deepStrictEqual(setup?.calls ?? [], expected);
+      assert.deepStrictEqual(
+        Option.getOrElse(
+          Option.map(setup, (s) => s.calls),
+          () => [],
+        ),
+        expected,
+      );
       assert.strictEqual(
-        plan.warnings.some((w) => w.code === "HCA_WRAPPER_APPROVAL"),
+        Arr.some(plan.warnings, (w) => w.code === "HCA_WRAPPER_APPROVAL"),
         warns,
       );
     }),
@@ -194,7 +206,7 @@ describe("hca route: setup step", () => {
         step("own", [baseRegistrar("safeTransferFrom", owner, 1n)], { from: "signer" }),
       ]);
       assert.deepStrictEqual(
-        plan.steps.map((s) => s.id),
+        Arr.map(plan.steps, (s) => s.id),
         ["own"],
       );
     }),
@@ -214,7 +226,7 @@ describe("hca route: executions", () => {
       ]);
 
       assert.deepStrictEqual(
-        plan.steps.map((s) => [s.id, s.calls.length, s.waitFor?.seconds]),
+        Arr.map(plan.steps, (s) => [s.id, s.calls.length, s.waitFor?.seconds]),
         [
           ["a+b", 1, undefined],
           ["approve", 1, undefined],
@@ -224,7 +236,7 @@ describe("hca route: executions", () => {
       );
       assert.strictEqual(plan.steps[0]?.description, "a, b");
       assert.deepStrictEqual(
-        executions(plan.steps[0]?.calls[0]).map((e) => e.value),
+        Arr.map(executions(plan.steps[0]?.calls[0]), (e) => e.value),
         [1n, 2n, 3n],
       );
       assert.strictEqual(plan.steps[1]?.calls[0]?.to, target);
@@ -240,7 +252,7 @@ describe("hca route: executions", () => {
       const steps = Array.from({ length: count }, (_, index) => step(`s${index}`, [call()]));
       const plan = yield* prepare(steps);
       assert.deepStrictEqual(
-        plan.steps.map((s) => executions(s.calls[0]).length),
+        Arr.map(plan.steps, (s) => executions(s.calls[0]).length),
         [...sizes],
       );
     }),
@@ -256,7 +268,7 @@ describe("hca route: executions", () => {
         step("next", [call()]),
       ]);
       assert.deepStrictEqual(
-        plan.steps.map((s) => executions(s.calls[0]).length),
+        Arr.map(plan.steps, (s) => executions(s.calls[0]).length),
         [40, 1],
       );
     }),
@@ -268,11 +280,14 @@ describe("hca route: executions", () => {
     ["an executor that sends", relayer(), 0n],
   ] as const)("forwards value with %s", ([, executor, forwarded]) =>
     Effect.gen(function* () {
-      const plan = yield* prepare([step("a", [call(1n), call(5n)])], executor ? { executor } : {});
+      const plan = yield* prepare(
+        [step("a", [call(1n), call(5n)])],
+        executor === undefined ? {} : { executor },
+      );
       const outer = plan.steps.at(-1)?.calls[0];
       assert.strictEqual(outer?.value, forwarded);
       assert.deepStrictEqual(
-        executions(outer).map((e) => e.value),
+        Arr.map(executions(outer), (e) => e.value),
         [1n, 5n],
       );
     }),
@@ -281,6 +296,8 @@ describe("hca route: executions", () => {
 
 describe("hca route: preconditions", () => {
   it("selects the first executor that can run sessions", () => {
+    // The route only checks that a session is present when it picks an executor.
+    // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- a partial session is enough for the precondition under test
     const session = { owner } as never;
     assert.strictEqual(
       hca({ executors: [relayer(), relayer({ sessions: true })] }).id,
@@ -330,7 +347,7 @@ describe("hca route: preconditions", () => {
         { _tag: "HcaError", code: "HCA_NOT_VERIFIED" },
       );
 
-      assert.deepStrictEqual((error as { details?: unknown }).details, [
+      assert.deepStrictEqual(Reflect.get(error, "details"), [
         "owner-mismatch",
         "unknown-account",
         "not-certified",

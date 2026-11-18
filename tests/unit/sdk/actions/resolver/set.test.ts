@@ -1,5 +1,5 @@
 import { assert, describe, it } from "@effect/vitest";
-import { Effect } from "effect";
+import { Array as Arr, Effect } from "effect";
 
 import { Abis, Deployments } from "@ensforge/contracts";
 import { Actions } from "@ensforge/sdk/effect";
@@ -39,7 +39,7 @@ describe("resolver.set.prepare", () => {
       assert.strictEqual(plan.operation, "resolver.set");
       assert.strictEqual(plan.account, signer);
       assert.deepStrictEqual(
-        plan.steps.map((step) => step.description),
+        Arr.map(plan.steps, (step) => step.description),
         ["Set resolver"],
       );
       assert.deepStrictEqual(decodeCalls(plan.calls, abis), [[to, "setResolver", args]]);
@@ -56,7 +56,7 @@ describe("resolver.set.prepare", () => {
       const plan = yield* Actions.resolver.set.prepare(ens, { name, resolver: option });
 
       assert.deepStrictEqual(
-        plan.steps.map((step) => step.description),
+        Arr.map(plan.steps, (step) => step.description),
         [description],
       );
       assert.deepStrictEqual(decodeCalls(plan.calls, abis), [

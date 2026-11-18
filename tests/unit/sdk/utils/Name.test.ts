@@ -1,9 +1,10 @@
 import { assert, describe, it } from "@effect/vitest";
+import { String as Str } from "effect";
 
 import * as Name from "@ensforge/sdk/internal/utils/Name";
 import { Arbitraries, expectThrow } from "@ensforge/test-harness";
 
-const encoded = `[${"ab".repeat(32)}]`;
+const encoded = `[${Str.repeat(32)("ab")}]`;
 
 describe("Name.normalize", () => {
   it.each([
@@ -17,10 +18,10 @@ describe("Name.normalize", () => {
   // The root is `""`; ensjs's `[root]` notation is not a name.
   it.each([
     "nick..eth",
-    `[${"AB".repeat(32)}].eth`,
-    `[0x${"ab".repeat(32)}].eth`,
-    `[${"ab".repeat(31)}].eth`,
-    `[${"ab".repeat(33)}].eth`,
+    `[${Str.repeat(32)("AB")}].eth`,
+    `[0x${Str.repeat(32)("ab")}].eth`,
+    `[${Str.repeat(31)("ab")}].eth`,
+    `[${Str.repeat(33)("ab")}].eth`,
     "[root]",
     "[root].eth",
   ])("rejects %j with INVALID_NAME", { meta: { cases: ["H09", "H15"] } }, (input) => {
@@ -31,7 +32,7 @@ describe("Name.normalize", () => {
 
 describe("Name.labelhash", () => {
   it("returns the hash of an encoded label", () => {
-    assert.strictEqual(Name.labelhash(encoded), `0x${"ab".repeat(32)}`);
+    assert.strictEqual(Name.labelhash(encoded), `0x${Str.repeat(32)("ab")}`);
   });
 
   it.each(["", "a.b"])("rejects %j", (label) => {
@@ -55,8 +56,9 @@ describe("Name DNS encoding", () => {
   // 0xC0 and up would be a compression pointer in DNS messages; names never compress.
   it("dnsDecode reads every length byte as a length", { meta: { cases: ["H08"] } }, () => {
     for (const length of [1, 63, 64, 192, 255]) {
-      const label = "a".repeat(length);
-      const data = `0x${length.toString(16).padStart(2, "0")}${"61".repeat(length)}00` as const;
+      const label = Str.repeat(length)("a");
+      const data =
+        `0x${Str.padStart(2, "0")(length.toString(16))}${Str.repeat(length)("61")}00` as const;
       assert.strictEqual(Name.dnsDecode(data), label);
     }
   });
@@ -96,6 +98,6 @@ describe("Name.parse", () => {
   });
 
   it("fromLabelhash produces a lowercase encoded label", () => {
-    assert.strictEqual(Name.fromLabelhash(`0x${"AB".repeat(32)}`), encoded);
+    assert.strictEqual(Name.fromLabelhash(`0x${Str.repeat(32)("AB")}`), encoded);
   });
 });

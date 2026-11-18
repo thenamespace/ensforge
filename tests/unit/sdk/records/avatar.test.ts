@@ -27,7 +27,7 @@ const ens = Ensforge.create({
             functions: {
               ownerOf: () => alice,
               tokenURI: () => "https://example.com/metadata.json",
-              balanceOf: ([account]) => ((account as Address) === alice ? 1n : 0n),
+              balanceOf: ([account]) => (account === alice ? 1n : 0n),
               uri: () => "https://example.com/{id}.json",
             },
           },
@@ -52,13 +52,16 @@ describe("resolveAvatar", () => {
       // The lane's setup restores the blocked fetch before each test.
       globalThis.fetch = () => Promise.resolve(Response.json({ image }));
 
-      const results = yield* Effect.all([
-        avatarOf("erc721", alice),
-        avatarOf("erc721", bob),
-        avatarOf("erc1155", alice),
-        avatarOf("erc1155", bob),
-        avatarOf("erc721", null),
-      ]);
+      const results = yield* Effect.all(
+        [
+          avatarOf("erc721", alice),
+          avatarOf("erc721", bob),
+          avatarOf("erc1155", alice),
+          avatarOf("erc1155", bob),
+          avatarOf("erc721", null),
+        ],
+        { concurrency: 1 },
+      );
 
       assert.deepStrictEqual(results, [image, null, image, null, null]);
     }),

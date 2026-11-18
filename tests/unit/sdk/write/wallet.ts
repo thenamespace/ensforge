@@ -1,4 +1,4 @@
-import { Effect, Fiber } from "effect";
+import { Array as Arr, Effect, Fiber, Predicate, String as Str } from "effect";
 import { TestClock } from "effect/testing";
 
 import { Plan } from "@ensforge/sdk";
@@ -9,6 +9,7 @@ import {
   createPublicClient,
   createWalletClient,
   getAddress,
+  isHex,
   numberToHex,
   pad,
   type Address,
@@ -55,6 +56,29 @@ export type WalletOptions = {
 /** A JSON-RPC error; viem retries uncoded errors, which would repeat requests. */
 const rpcError = (code: number, message: string) => Object.assign(new Error(message), { code });
 
+/** The parameters of a recorded or scripted request, which JSON-RPC does not type. */
+export const paramsOf = (params: unknown): readonly unknown[] =>
+  Arr.isArray(params) ? params : [];
+
+/** `value` as a record, or an empty one. */
+export const recordOf = (value: unknown): Record<PropertyKey, unknown> =>
+  Predicate.isObject(value) ? value : {};
+
+/** The calls of the first block an `eth_simulateV1` request simulates, if it has any. */
+export const simulatedCalls = (request: Record<PropertyKey, unknown>) => {
+  const blocks = request.blockStateCalls;
+  const blockCalls = recordOf(Arr.isArray(blocks) ? blocks[0] : undefined).calls;
+  return Arr.isArray(blockCalls) ? Arr.map(blockCalls, recordOf) : undefined;
+};
+
+/** The call data of each call in a bundle's `calls`. */
+const bundledData = (bundled: unknown): Hex[] =>
+  Arr.isArray(bundled)
+    ? Arr.flatMap(bundled, (call) =>
+        Predicate.isObject(call) && isHex(call.data) ? [call.data] : [],
+      )
+    : [];
+
 const receiptOf = (hash: Hex, reverted: boolean) => ({
   transactionHash: hash,
   transactionIndex: "0x0",
@@ -90,11 +114,15 @@ export const scriptedWallet = (options: WalletOptions = {}) => {
     return hash;
   };
   const reverted = (hash: Hex) =>
-    (data.get(hash) ?? []).some((call) => options.reverting?.includes(call) === true);
+    Arr.some(data.get(hash) ?? [], (call) => options.reverting?.includes(call) === true);
 
   const { transport, calls } = scriptedTransport(({ method, params }) => {
     // A transaction or call object, or a hash, block tag or bundle id, depending on the method.
-    const [first] = params as readonly [Record<string, unknown> & Hex];
+    const [first] = paramsOf(params);
+    const request = recordOf(first);
+    const callData = isHex(request.data) ? request.data : undefined;
+    const hash = isHex(first) ? first : "0x";
+    const key = Predicate.isString(first) ? first : "";
     switch (method) {
       case "eth_blockNumber":
         return "0x1";
@@ -103,21 +131,21 @@ export const scriptedWallet = (options: WalletOptions = {}) => {
       case "eth_simulateV1":
         throw rpcError(-32601, "the method eth_simulateV1 does not exist");
       case "eth_call":
-        if (options.failingSimulation?.includes(first.data as Hex) === true) {
+        if (callData !== undefined && options.failingSimulation?.includes(callData) === true) {
           throw rpcError(-32000, "execution reverted");
         }
         return options.callResult ?? "0x";
       case "eth_sendTransaction":
-        if (options.refused?.includes(first.data as Hex) === true) {
+        if (callData !== undefined && options.refused?.includes(callData) === true) {
           throw rpcError(4001, "the user rejected the transaction");
         }
-        return send([first.data as Hex]);
+        return send([callData ?? "0x"]);
       case "eth_getTransactionReceipt":
-        return options.unmined?.includes(first) === true ? null : receiptOf(first, reverted(first));
+        return options.unmined?.includes(hash) === true ? null : receiptOf(hash, reverted(hash));
       case "eth_getTransactionByHash":
-        if (options.dropped?.includes(first) === true) return null;
+        if (options.dropped?.includes(hash) === true) return null;
         return {
-          hash: first,
+          hash,
           from: account,
           to: target,
           input: "0x",
@@ -134,8 +162,8 @@ export const scriptedWallet = (options: WalletOptions = {}) => {
       case "eth_getBlockByNumber": {
         const latest = options.latest ?? [minedAt];
         const timestamp =
-          (first as string) === "latest"
-            ? (latest[Math.min(latestPolls++, latest.length - 1)] as bigint)
+          key === "latest"
+            ? (latest[Math.min(latestPolls++, latest.length - 1)] ?? minedAt)
             : minedAt;
         return {
           number: "0x1",
@@ -149,25 +177,24 @@ export const scriptedWallet = (options: WalletOptions = {}) => {
           throw rpcError(-32601, "the method wallet_getCapabilities does not exist");
         return { "0x1": { atomic: { status: options.atomic } } };
       case "wallet_sendCalls": {
-        const bundle = first as unknown as { readonly calls: readonly { readonly data: Hex }[] };
-        if (bundle.calls.some((call) => options.refused?.includes(call.data) === true)) {
+        const bundled = bundledData(request.calls);
+        if (Arr.some(bundled, (call) => options.refused?.includes(call) === true)) {
           throw rpcError(4001, "the user rejected the bundle");
         }
-        const hash = send(bundle.calls.map((call) => call.data));
-        return { id: `bundle-${hash}` };
+        return { id: `bundle-${send(bundled)}` };
       }
       case "wallet_getCallsStatus": {
-        const id = first as string;
+        const id = key;
         const statuses = options.bundleStatuses ?? [200];
         const poll = polls.get(id) ?? 0;
         polls.set(id, poll + 1);
-        const status = statuses[Math.min(poll, statuses.length - 1)];
+        const status = statuses[Math.min(poll, statuses.length - 1)] ?? 200;
         if (status === "unknown") throw rpcError(5730, `unknown bundle ${id}`);
-        const hash = id.slice("bundle-".length) as Hex;
+        const bundleHash = Str.slice("bundle-".length)(id);
         const { code, receipts } =
           typeof status === "number"
             ? { code: status, receipts: status >= 200 ? "some" : "none" }
-            : (status as Exclude<BundleStatus, number>);
+            : status;
         return {
           version: "2.0.0",
           id,
@@ -176,7 +203,12 @@ export const scriptedWallet = (options: WalletOptions = {}) => {
           status: code,
           ...(receipts === "omitted"
             ? {}
-            : { receipts: receipts === "some" ? [receiptOf(hash, code !== 200)] : [] }),
+            : {
+                receipts:
+                  receipts === "some"
+                    ? [receiptOf(isHex(bundleHash) ? bundleHash : "0x", code !== 200)]
+                    : [],
+              }),
         };
       }
       default:
@@ -198,9 +230,9 @@ export const scriptedWallet = (options: WalletOptions = {}) => {
     simulate: options.simulate ?? false,
     storage: {
       ...storage,
-      set: async (record) => {
+      set: (record) => {
         saved.push(structuredClone(record));
-        await storage.set(record);
+        return storage.set(record);
       },
     },
   });
@@ -208,14 +240,15 @@ export const scriptedWallet = (options: WalletOptions = {}) => {
 
   /** The calls of each transaction the wallet sent, in order: one each, or a bundle's calls. */
   const transactions = () =>
-    calls.flatMap(({ method, params }) => {
-      const [request] = (params ?? []) as readonly Record<string, unknown>[];
-      if (method === "eth_sendTransaction") return [[request?.data as Hex]];
+    Arr.flatMap(calls, ({ method, params }) => {
+      const [request] = paramsOf(params);
+      if (method === "eth_sendTransaction") {
+        return [Predicate.isObject(request) && isHex(request.data) ? [request.data] : []];
+      }
       if (method !== "wallet_sendCalls") return [];
-      const bundled = (request?.calls ?? []) as readonly { readonly data: Hex }[];
-      return [bundled.map((call) => call.data)];
+      return [bundledData(Predicate.isObject(request) ? request.calls : undefined)];
     });
-  const count = (method: string) => calls.filter((call) => call.method === method).length;
+  const count = (method: string) => Arr.filter(calls, (call) => call.method === method).length;
 
   return { client, signer, calls, saved, transactions, count };
 };
@@ -236,8 +269,6 @@ export const advancing = <A, E>(effect: Effect.Effect<A, E>): Effect.Effect<A, E
 
 /** The first parameter of each recorded `method` request: a transaction, a call or a bundle. */
 export const requestsOf = (calls: readonly RecordedCall[], method: string) =>
-  calls.flatMap((call) =>
-    call.method === method
-      ? [((call.params ?? []) as readonly Record<string, unknown>[])[0] ?? {}]
-      : [],
+  Arr.flatMap(calls, (call): Record<PropertyKey, unknown>[] =>
+    call.method === method ? [recordOf(paramsOf(call.params)[0])] : [],
   );

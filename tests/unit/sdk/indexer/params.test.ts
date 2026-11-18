@@ -1,10 +1,11 @@
 import { assert, describe, it } from "@effect/vitest";
+import { DateTime } from "effect";
 
 import * as Params from "@ensforge/sdk/internal/internal/indexer/params";
 import * as Fixture from "@ensforge/test-harness/indexer/fixtures/bigname";
 
 const { nick, registry } = Fixture.addresses;
-const at2024 = new Date("2024-01-01T00:00:00.900Z");
+const at2024 = DateTime.toDateUtc(DateTime.makeUnsafe("2024-01-01T00:00:00.900Z"));
 
 describe("Params", () => {
   it.each([

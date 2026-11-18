@@ -21,7 +21,7 @@ describe("Wire schemas", () => {
   ] as const)("decode a recorded %s", ([, schema, data]) =>
     Effect.gen(function* () {
       const envelope = yield* Wire.decode(
-        Wire.envelope(schema as Schema.Codec<unknown, unknown, never, never>),
+        Wire.envelope(schema as Schema.Codec<unknown, unknown>),
         {
           data,
           meta: Fixture.meta,

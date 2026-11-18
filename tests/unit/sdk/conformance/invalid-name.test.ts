@@ -1,6 +1,6 @@
 import { assert, describe, it } from "@effect/vitest";
 import { assertDefined } from "@effect/vitest/utils";
-import { Effect } from "effect";
+import { Array as Arr, Effect, Record as Rec, String as Str } from "effect";
 
 import { Actions, Duration } from "@ensforge/sdk";
 import { Actions as EffectActions } from "@ensforge/sdk/effect";
@@ -8,6 +8,8 @@ import * as Ensforge from "@ensforge/sdk/internal/client/Ensforge";
 import { expectFailure, expectRejection, noRpc, scriptedTransport } from "@ensforge/test-harness";
 import { createClient } from "viem";
 import { mainnet } from "viem/chains";
+
+import { actionsOf, asEffectAction, asPromiseAction, propertyOf } from "./action-tree";
 
 // Every action that takes an ENS name must reject an invalid one before touching the chain.
 // Cases come from the generated action index, so a new action is covered (or must be listed
@@ -70,39 +72,33 @@ const otherOptions: Readonly<Record<string, object>> = {
   "wrapper.setChildFuses": { expiry: 1n },
 };
 
-type Fn = ((client: unknown, options: unknown) => unknown) & {
-  readonly prepare?: (client: unknown, options: unknown) => Promise<unknown>;
-};
-type EffectFn = ((client: unknown, options: unknown) => Effect.Effect<unknown, unknown>) & {
-  readonly prepare?: (client: unknown, options: unknown) => Effect.Effect<unknown, unknown>;
-};
-
-const cases = Object.entries(Actions).flatMap(([domain, group]) =>
-  typeof group === "function"
-    ? []
-    : Object.entries(group as Record<string, Fn>).map(([action, fn]) => {
-        const path = `${domain}.${action}`;
-        const base = path.replace(/Sync$/, "");
-        const effectFn = (EffectActions as unknown as Record<string, Record<string, EffectFn>>)[
-          domain
-        ]?.[action];
-        return { path, base, fn, effectFn };
-      }),
+const effectActions = new Map(
+  Arr.map(actionsOf(EffectActions), ({ path, action }) => [path, action] as const),
 );
 
-const named = cases.filter(({ base }) => !withoutName.has(base));
+const cases = Arr.map(actionsOf(Actions), ({ path, action }) => {
+  const effectAction = effectActions.get(path);
+  return {
+    path,
+    base: Str.replace(/Sync$/, "")(path),
+    fn: asPromiseAction(action),
+    effectFn: effectAction === undefined ? undefined : asEffectAction(effectAction),
+  };
+});
+
+const named = Arr.filter(cases, ({ base }) => !withoutName.has(base));
 const invalid = { _tag: "InvalidInputError", code: "INVALID_NAME" };
 
 describe("invalid names fail before any RPC", () => {
   it("lists only existing actions as exempt", () => {
-    const bases = new Set(cases.map(({ base }) => base));
+    const bases = new Set(Arr.map(cases, ({ base }) => base));
     assert.deepStrictEqual(
-      [...withoutName, ...Object.keys(otherOptions)].filter((path) => !bases.has(path)),
+      Arr.filter([...withoutName, ...Rec.keys(otherOptions)], (path) => !bases.has(path)),
       [],
     );
   });
 
-  it.effect.each(named.map((entry) => [entry.path, entry] as const))(
+  it.effect.each(Arr.map(named, (entry) => [entry.path, entry] as const))(
     "%s",
     ([path, { base, fn, effectFn }]) =>
       Effect.gen(function* () {
@@ -114,14 +110,8 @@ describe("invalid names fail before any RPC", () => {
         const options = { name: invalidName, names: invalidName, ...otherOptions[base] };
         assertDefined(effectFn);
 
-        const rejected = yield* expectRejection(
-          () => fn(ens, options) as Promise<unknown>,
-          invalid,
-        );
-        assert.strictEqual(
-          (rejected as { context?: { operation?: string } }).context?.operation,
-          path,
-        );
+        const rejected = yield* expectRejection(() => fn(ens, options), invalid);
+        assert.strictEqual(propertyOf(propertyOf(rejected, "context"), "operation"), path);
         yield* expectFailure(effectFn(ens, options), invalid);
 
         const { prepare } = fn;

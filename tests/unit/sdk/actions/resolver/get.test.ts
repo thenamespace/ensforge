@@ -35,7 +35,8 @@ describe("resolver.get", () => {
     Effect.gen(function* () {
       const { ens } = clientFor({ ...subname, found: { resolver: resolverA, offset: 4n } });
 
-      assert.isNull(yield* Actions.resolver.get(ens, { name: subname.name }));
+      const resolver = yield* Actions.resolver.get(ens, { name: subname.name });
+      assert.isNull(resolver);
       yield* expectFailure(Actions.resolver.get(ens, { name: subname.name, strict: true }), {
         _tag: "NotFoundError",
         code: "RESOLVER_NOT_FOUND",
@@ -63,12 +64,11 @@ describe("resolver.get", () => {
         extended: [Deployments.mainnet.v2.contracts.ensV2Resolver],
       });
 
-      assert.deepInclude(yield* Actions.resolver.get(served.ens, { name: subname.name }), {
-        address: parentResolver,
-        inherited: true,
-      });
+      const inherited = yield* Actions.resolver.get(served.ens, { name: subname.name });
+      assert.deepInclude(inherited, { address: parentResolver, inherited: true });
       for (const { ens } of [unserved, looping]) {
-        assert.isNull(yield* Actions.resolver.get(ens, { name: subname.name }));
+        const resolver = yield* Actions.resolver.get(ens, { name: subname.name });
+        assert.isNull(resolver);
       }
     }),
   );
@@ -79,14 +79,10 @@ describe("resolver.get", () => {
       const reached = clientFor({ ...name, found: { resolver: resolverA, offset: 0n } });
       const unreached = clientFor(name);
 
-      assert.deepInclude(yield* Actions.resolver.get(reached.ens, { name: name.name }), {
-        address: resolverA,
-        serving: true,
-      });
-      assert.deepInclude(yield* Actions.resolver.get(unreached.ens, { name: name.name }), {
-        address: resolverA,
-        serving: false,
-      });
+      const servingResolver = yield* Actions.resolver.get(reached.ens, { name: name.name });
+      const idleResolver = yield* Actions.resolver.get(unreached.ens, { name: name.name });
+      assert.deepInclude(servingResolver, { address: resolverA, serving: true });
+      assert.deepInclude(idleResolver, { address: resolverA, serving: false });
     }),
   );
 });

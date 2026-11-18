@@ -1,5 +1,5 @@
 import { assert, describe, it } from "@effect/vitest";
-import { Effect, Stream } from "effect";
+import { Array, Cause, Effect, Stream } from "effect";
 
 import * as Actions from "@ensforge/sdk/internal/actions/effect";
 import { bigname } from "@ensforge/sdk/internal/indexer/bigname";
@@ -13,12 +13,13 @@ import { clientWith } from "./client.js";
 const bignameClient = () => {
   const fake = fakeBigname();
   const ens = clientWith(bigname({ url: fake.url, fetch: fake.fetch }));
-  const cursors = () => fake.requestsTo("/names/{name}/subnames").map((r) => r.query.get("cursor"));
+  const cursors = () =>
+    Array.map(fake.requestsTo("/names/{name}/subnames"), (r) => r.query.get("cursor"));
   return { ens, cursors };
 };
 
 const names = (pages: readonly { readonly items: readonly { readonly name: string }[] }[]) =>
-  pages.flatMap((page) => page.items.map((item) => item.name));
+  Array.flatMap(pages, (page) => Array.map(page.items, (item) => item.name));
 
 // `paginate` is the Promise API's async iterator; a stream drives it as `for await` would, and
 // taking fewer pages returns the iterator early, as `break` does.
@@ -30,7 +31,7 @@ describe("paginate", () => {
       const pages = yield* Stream.runCollect(
         Stream.fromAsyncIterable(
           paginate(ens.indexer.getSubnames, { name: "nick.eth", limit: 2 }),
-          (cause) => cause,
+          (cause) => new Cause.UnknownError(cause),
         ),
       );
 
@@ -46,7 +47,7 @@ describe("paginate", () => {
       const pages = yield* Stream.runCollect(
         Stream.fromAsyncIterable(
           paginate(ens.indexer.getSubnames, { name: "nick.eth", limit: 1, cursor: "c1" }),
-          (cause) => cause,
+          (cause) => new Cause.UnknownError(cause),
         ).pipe(Stream.take(1)),
       );
 

@@ -9,40 +9,43 @@ declare const ens: EnsActions;
 declare const client: Ensforge.Client;
 
 describe("record.get narrowing", () => {
-  it("has exactly the selected text keys", async () => {
-    const records = await ens.record.get({ name: "nick.eth", texts: ["url", "avatar"] });
+  it("has exactly the selected text keys", () => {
+    const promise = ens.record.get({ name: "nick.eth", texts: ["url", "avatar"] });
+    type Records = Awaited<typeof promise>;
 
-    expectTypeOf(records.texts).toEqualTypeOf<{
+    expectTypeOf<Records["texts"]>().toEqualTypeOf<{
       readonly url: string | null;
       readonly avatar: string | null;
     }>();
-    expectTypeOf(records.resolver).toEqualTypeOf<Address | null>();
-    expectTypeOf(records).not.toHaveProperty("addresses");
-    expectTypeOf(records).not.toHaveProperty("contentHash");
+    expectTypeOf<Records["resolver"]>().toEqualTypeOf<Address | null>();
+    expectTypeOf<Records>().not.toHaveProperty("addresses");
+    expectTypeOf<Records>().not.toHaveProperty("contentHash");
   });
 
-  it("types eth addresses as Address and other coins as strings", async () => {
-    const records = await ens.record.get({ name: "nick.eth", addresses: ["eth", "btc", 60n] });
+  it("types eth addresses as Address and other coins as strings", () => {
+    const promise = ens.record.get({ name: "nick.eth", addresses: ["eth", "btc", 60n] });
+    type Records = Awaited<typeof promise>;
 
-    expectTypeOf(records.addresses.eth).toEqualTypeOf<Address | null>();
-    expectTypeOf(records.addresses.btc).toEqualTypeOf<string | null>();
-    expectTypeOf(records.addresses["60"]).toEqualTypeOf<Address | null>();
-    expectTypeOf(records).not.toHaveProperty("texts");
+    expectTypeOf<Records["addresses"]["eth"]>().toEqualTypeOf<Address | null>();
+    expectTypeOf<Records["addresses"]["btc"]>().toEqualTypeOf<string | null>();
+    expectTypeOf<Records["addresses"]["60"]>().toEqualTypeOf<Address | null>();
+    expectTypeOf<Records>().not.toHaveProperty("texts");
   });
 
-  it("adds flag fields only when selected", async () => {
-    const records = await ens.record.get({
+  it("adds flag fields only when selected", () => {
+    const promise = ens.record.get({
       name: "nick.eth",
       contentHash: true,
       nameRecord: true,
       data: ["key"],
     });
+    type Records = Awaited<typeof promise>;
 
-    expectTypeOf(records).toHaveProperty("contentHash");
-    expectTypeOf(records.nameRecord).toEqualTypeOf<string | null>();
-    expectTypeOf(records.data).toEqualTypeOf<{ readonly key: Hex | null }>();
-    expectTypeOf(records).not.toHaveProperty("pubkey");
-    expectTypeOf(records).not.toHaveProperty("abi");
+    expectTypeOf<Records>().toHaveProperty("contentHash");
+    expectTypeOf<Records["nameRecord"]>().toEqualTypeOf<string | null>();
+    expectTypeOf<Records["data"]>().toEqualTypeOf<{ readonly key: Hex | null }>();
+    expectTypeOf<Records>().not.toHaveProperty("pubkey");
+    expectTypeOf<Records>().not.toHaveProperty("abi");
   });
 
   it("narrows the same way standalone and in Effect", () => {
@@ -57,9 +60,11 @@ describe("record.get narrowing", () => {
     }>();
   });
 
-  it("narrows record.getAddress by coin", async () => {
-    expectTypeOf(await ens.record.getAddress({ name: "nick.eth" })).toEqualTypeOf<Address | null>();
-    expectTypeOf(await ens.record.getAddress({ name: "nick.eth", coin: "btc" })).toEqualTypeOf<
+  it("narrows record.getAddress by coin", () => {
+    expectTypeOf(
+      ens.record.getAddress({ name: "nick.eth" }),
+    ).resolves.toEqualTypeOf<Address | null>();
+    expectTypeOf(ens.record.getAddress({ name: "nick.eth", coin: "btc" })).resolves.toEqualTypeOf<
       string | null
     >();
   });

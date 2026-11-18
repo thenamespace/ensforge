@@ -5,6 +5,7 @@ import { Actions, type EnsActions, type Plan, type Write } from "@ensforge/sdk";
 import { Actions as EffectActions } from "@ensforge/sdk/effect";
 
 type Equals<a, b> =
+  // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- the standard type-identity check needs a fresh `t` on each side
   (<t>() => t extends a ? 1 : 2) extends <t>() => t extends b ? 1 : 2 ? true : false;
 
 type Standalone = typeof Actions;
@@ -69,9 +70,9 @@ declare const ens: EnsActions;
 describe("Write.Via", () => {
   const via: Write.Via = {
     id: "test",
-    prepare: async (plan) => plan,
-    send: async () => "reference",
-    status: async () => ({ status: "pending" }),
+    prepare: (plan) => Promise.resolve(plan),
+    send: () => Promise.resolve("reference"),
+    status: () => Promise.resolve({ status: "pending" }),
   };
 
   it("is accepted by writes and their methods", () => {
@@ -92,7 +93,7 @@ describe("Write.Via", () => {
 
   it("is not an option of reads", () => {
     // @ts-expect-error reads have no `via`
-    ens.record.getText({ name: "a.eth", key: "url", via });
+    void ens.record.getText({ name: "a.eth", key: "url", via });
   });
 });
 

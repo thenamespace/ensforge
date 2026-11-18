@@ -1,3 +1,5 @@
+import { Record as Rec } from "effect";
+
 import * as Classes from "@ensforge/sdk/internal/errors/classes/index";
 import type { AnyError, Code } from "@ensforge/sdk/internal/errors/types";
 
@@ -109,7 +111,7 @@ export const errorsByCode: { readonly [code in Code]: () => AnyError } = {
 };
 
 /** Every code, in table order. */
-export const codes = Object.keys(errorsByCode) as readonly Code[];
+export const codes: readonly Code[] = Rec.keys(errorsByCode);
 
 /** Codes whose errors are retryable, as documented on each class. */
 export const retryableCodes: ReadonlySet<Code> = new Set<Code>([

@@ -1,4 +1,5 @@
 import { assert, describe, it } from "@effect/vitest";
+import { Array, Option, Record, String as Str } from "effect";
 
 import * as Convert from "@ensforge/sdk/internal/internal/indexer/map";
 import * as Fixture from "@ensforge/test-harness/indexer/fixtures/bigname";
@@ -22,7 +23,7 @@ describe("Convert.meta", () => {
       blockHash: "0xaa",
       timestamp: 240n,
     });
-    assert.deepStrictEqual(Object.keys(meta.snapshots), ["1", "8453"]);
+    assert.deepStrictEqual(Record.keys(meta.snapshots), ["1", "8453"]);
   });
 
   it("falls back to the first snapshot, then to null", () => {
@@ -80,8 +81,8 @@ describe("Convert names", () => {
   it("drops cleared records but keeps their keys", () => {
     const records = Convert.detail(Fixture.nick).records;
 
-    assert.deepStrictEqual(Object.keys(records?.texts ?? {}), ["avatar", "com.twitter"]);
-    assert.deepStrictEqual(records?.addresses, { "60": addresses.nick.toLowerCase() });
+    assert.deepStrictEqual(Record.keys(records?.texts ?? {}), ["avatar", "com.twitter"]);
+    assert.deepStrictEqual(records?.addresses, { "60": Str.toLowerCase(addresses.nick) });
     assert.deepStrictEqual(records?.textKeys, ["avatar", "com.twitter", "description"]);
     assert.deepStrictEqual(records?.coinTypes, ["60", "0"]);
   });
@@ -153,7 +154,7 @@ describe("Convert.event", () => {
   });
 
   it("fills in the queried name when the row leaves it out", () => {
-    const { name: _name, ...anonymous } = Fixture.nickEvents[0] as (typeof Fixture.nickEvents)[0];
+    const { name: _name, ...anonymous } = Option.getOrThrow(Array.head(Fixture.nickEvents));
 
     assert.strictEqual(Convert.event(anonymous, "nick.eth").name, "nick.eth");
     assert.strictEqual(Convert.event({ ...anonymous, name: "x.eth" }, "nick.eth").name, "x.eth");
@@ -174,7 +175,7 @@ describe("Convert.records", () => {
       avatar: "https://metadata.ens.domains/mainnet/avatar/nick.eth",
       "com.twitter": "nicksdjohnson",
     });
-    assert.deepStrictEqual(records.addresses, { "60": addresses.nick.toLowerCase() });
+    assert.deepStrictEqual(records.addresses, { "60": Str.toLowerCase(addresses.nick) });
     assert.strictEqual(records.contentHash, Fixture.nickRecords.records.contenthash?.value);
     assert.deepStrictEqual(records.answers["text:url"], {
       status: "notFound",
@@ -198,7 +199,7 @@ describe("Convert.records", () => {
 
 const answer = (source: string, status: string, name?: string) => ({ source, status, name });
 const primaryWire = (answers: ReturnType<typeof answer>[]) => ({
-  address: addresses.nick.toLowerCase(),
+  address: Str.toLowerCase(addresses.nick),
   coin_type: 60,
   answers,
 });
@@ -249,9 +250,7 @@ describe("Convert other resources", () => {
   });
 
   it("camelizes permission lineage", () => {
-    const permission = Convert.permission(
-      Fixture.permissionRows[0] as (typeof Fixture.permissionRows)[0],
-    );
+    const permission = Convert.permission(Option.getOrThrow(Array.head(Fixture.permissionRows)));
 
     assert.deepStrictEqual(permission.lineage, {
       grantedBy: Fixture.permissionRows[0]?.lineage?.granted_by,

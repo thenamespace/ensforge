@@ -38,10 +38,12 @@ describe("paginate", () => {
   });
 });
 
+type Load = (cursor: string | undefined) => Effect.Effect<Page<Subname>, "failed", "Service">;
+declare const load: Load;
+
 describe("Indexer.paginate", () => {
   it("streams pages with the loader's error and requirements", () => {
-    type Load = (cursor: string | undefined) => Effect.Effect<Page<Subname>, "failed", "Service">;
-    const stream = Indexer.paginate({} as Load);
+    const stream = Indexer.paginate(load);
 
     expectTypeOf(stream).toEqualTypeOf<Stream.Stream<Page<Subname>, "failed", "Service">>();
   });

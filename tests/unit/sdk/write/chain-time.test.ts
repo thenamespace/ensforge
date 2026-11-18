@@ -1,5 +1,5 @@
 import { assert, describe, it } from "@effect/vitest";
-import { Effect, Fiber } from "effect";
+import { Array as Arr, Effect, Fiber, String as Str } from "effect";
 import { TestClock } from "effect/testing";
 
 import * as Ensforge from "@ensforge/sdk/internal/client/Ensforge";
@@ -7,6 +7,8 @@ import { waitForChainTime } from "@ensforge/sdk/internal/internal/write/transpor
 import { scriptedTransport } from "@ensforge/test-harness";
 import { createPublicClient, numberToHex } from "viem";
 import { mainnet } from "viem/chains";
+
+import { paramsOf } from "./wallet";
 
 const committedAt = 1_800_000_000n;
 
@@ -20,7 +22,7 @@ describe("waitForChainTime", () => {
         method === "eth_getBlockByNumber"
           ? {
               number: "0x1",
-              hash: `0x${"11".repeat(32)}`,
+              hash: `0x${Str.repeat(32)("11")}`,
               timestamp: numberToHex(timestamp),
               transactions: [],
             }
@@ -36,7 +38,10 @@ describe("waitForChainTime", () => {
       yield* TestClock.adjust("4 seconds");
       yield* Fiber.join(wait);
 
-      assert.strictEqual(calls.filter((call) => call.method === "eth_getBlockByNumber").length, 2);
+      assert.strictEqual(
+        Arr.filter(calls, (call) => call.method === "eth_getBlockByNumber").length,
+        2,
+      );
     }),
   );
 
@@ -46,7 +51,7 @@ describe("waitForChainTime", () => {
         method === "eth_getBlockByNumber"
           ? {
               number: "0x1",
-              hash: `0x${"11".repeat(32)}`,
+              hash: `0x${Str.repeat(32)("11")}`,
               timestamp: numberToHex(committedAt),
               transactions: [],
             }
@@ -59,7 +64,7 @@ describe("waitForChainTime", () => {
       yield* waitForChainTime(client, committedAt);
 
       assert.deepStrictEqual(
-        calls.map(({ params }) => (params as readonly unknown[])[0]),
+        Arr.map(calls, ({ params }) => paramsOf(params)[0]),
         ["latest"],
       );
     }),
@@ -73,7 +78,7 @@ describe("waitForChainTime", () => {
         method === "eth_getBlockByNumber"
           ? {
               number: "0x1",
-              hash: `0x${"11".repeat(32)}`,
+              hash: `0x${Str.repeat(32)("11")}`,
               timestamp: numberToHex(timestamp),
               transactions: [],
             }

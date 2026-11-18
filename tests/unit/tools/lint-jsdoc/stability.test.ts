@@ -2,7 +2,7 @@ import { fileURLToPath } from "node:url";
 
 import { NodeServices } from "@effect/platform-node";
 import { assert, layer } from "@effect/vitest";
-import { Effect, Layer } from "effect";
+import { Array as Arr, Effect, Layer, pipe, String as Str } from "effect";
 
 import { untaggedExports } from "@ensforge/tools/internal/lint-jsdoc/stability";
 import { Tools } from "@ensforge/tools/internal/services/Tools";
@@ -17,12 +17,15 @@ layer(
   it.effect("reports every export reachable from the entries without a valid tag", () =>
     Effect.gen(function* () {
       const project = yield* (yield* TypeScript).open(
-        ["index.ts", "lookup.ts", "untagged.ts", "external.ts"].map(fixture),
+        Arr.map(["index.ts", "lookup.ts", "untagged.ts", "external.ts"], fixture),
       );
       const problems = untaggedExports(project, [{ name: "pkg", source: fixture("index.ts") }]);
 
       assert.sameDeepMembers(
-        problems.map(([file, message]) => [file.split("/").at(-1), message]),
+        Arr.map(problems, ([file, message]) => [
+          pipe(file, Str.split("/"), Arr.lastNonEmpty),
+          message,
+        ]),
         [
           [
             "index.ts",

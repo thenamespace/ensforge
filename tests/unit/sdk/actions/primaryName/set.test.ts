@@ -1,5 +1,5 @@
 import { assert, describe, it } from "@effect/vitest";
-import { Effect } from "effect";
+import { Effect, pipe, String as Str } from "effect";
 
 import { Abis, Deployments } from "@ensforge/contracts";
 import { Actions } from "@ensforge/sdk/effect";
@@ -85,7 +85,7 @@ describe("primaryName.set.prepare", () => {
         [
           resolverA,
           "setName",
-          [namehash(`${other.slice(2).toLowerCase()}.addr.reverse`), "alice.eth"],
+          [namehash(`${pipe(other, Str.slice(2), Str.toLowerCase)}.addr.reverse`), "alice.eth"],
         ],
       ]);
 

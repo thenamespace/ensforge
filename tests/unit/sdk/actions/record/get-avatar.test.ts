@@ -1,5 +1,5 @@
 import { assert, describe, it } from "@effect/vitest";
-import { Effect } from "effect";
+import { Array as Arr, Effect, String as Str } from "effect";
 
 import { Abis, Deployments } from "@ensforge/contracts";
 import { Actions } from "@ensforge/sdk/effect";
@@ -13,8 +13,7 @@ import {
   encodeAbiParameters,
   encodeFunctionResult,
   toFunctionSelector,
-  type Abi,
-  type Hex,
+  isHex,
 } from "viem";
 import { mainnet } from "viem/chains";
 
@@ -33,15 +32,16 @@ const clientWith = (gateways?: Gateways) =>
           contracts: [
             {
               address: Deployments.mainnet.v2.contracts.universalResolver,
-              abi: Abis.v2.universalResolver as Abi,
+              abi: Abis.v2.universalResolver,
               functions: {
                 resolve: ([, data]) => {
+                  if (!isHex(data)) throw new Error("resolve expects calldata");
                   const { args } = decodeFunctionData({
                     abi: Abis.shared.multicallResolver,
-                    data: data as Hex,
+                    data,
                   });
-                  const answers = (args[0] as readonly Hex[]).map((call) =>
-                    call.startsWith(textSelector)
+                  const answers = Arr.map(args[0], (call) =>
+                    Str.startsWith(textSelector)(call)
                       ? encodeAbiParameters([{ type: "string" }], [`ipfs://${cid}`])
                       : encodeAbiParameters([{ type: "bytes" }], ["0x"]),
                   );
@@ -70,8 +70,8 @@ describe("record.getAvatar", () => {
       const name = "alice.eth";
       const configured = clientWith({ ipfs: "https://client.example/" });
 
-      assert.deepStrictEqual(
-        yield* Effect.all([
+      const avatars = yield* Effect.all(
+        [
           Actions.record.getAvatar(clientWith(), { name }),
           Actions.record.getAvatar(configured, { name }),
           Actions.record.getAvatar(configured, {
@@ -83,14 +83,15 @@ describe("record.getAvatar", () => {
             name,
             gateways: { arweave: "https://ar.example" },
           }),
-        ]),
-        [
-          `https://ipfs.io/ipfs/${cid}`,
-          `https://client.example/ipfs/${cid}`,
-          `https://call.example/ipfs/${cid}`,
-          `https://client.example/ipfs/${cid}`,
         ],
+        { concurrency: 1 },
       );
+      assert.deepStrictEqual(avatars, [
+        `https://ipfs.io/ipfs/${cid}`,
+        `https://client.example/ipfs/${cid}`,
+        `https://call.example/ipfs/${cid}`,
+        `https://client.example/ipfs/${cid}`,
+      ]);
     }),
   );
 });

@@ -1,4 +1,5 @@
 import { assert, describe, it } from "@effect/vitest";
+import { Array as Arr, Record as Rec } from "effect";
 
 import { Roles } from "@ensforge/contracts";
 import type {
@@ -40,7 +41,9 @@ type Overrides = {
   readonly resolver?: PermissionFacts["resolver"];
 };
 
+// A partial fixture: only the facts `evaluate` reads are filled in.
 const factsOf = (o: Overrides = {}): PermissionFacts =>
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- partial fixture
   ({
     account: me,
     loaded: {
@@ -89,27 +92,27 @@ const factsOf = (o: Overrides = {}): PermissionFacts =>
   }) as unknown as PermissionFacts;
 
 /** What `evaluate` says about `operation`, in one comparable line. */
-const check = (overrides: Overrides, operation: Operation, withContracts = true) => {
-  return describeCheck(
-    evaluate(factsOf(overrides), operation, withContracts ? contracts : undefined),
-  );
-};
+const check = (overrides: Overrides, operation: Operation, withContracts = true) =>
+  describeCheck(evaluate(factsOf(overrides), operation, withContracts ? contracts : undefined));
 
 const describeCheck = (result: PermissionCheck) => {
   if (result.allowed === true) return `allowed via ${result.via}`;
   if (result.allowed === null) return "unknown";
 
-  const missing = result.missing.map((requirement) => {
+  const missing = Arr.map(result.missing, (requirement) => {
     if (requirement.type === "blocked") return `blocked ${requirement.reason}`;
     if (requirement.type === "roles")
-      return `roles ${requirement.roles.join("+")} on ${requirement.contract}`;
+      return `roles ${Arr.join(requirement.roles, "+")} on ${requirement.contract}`;
     return `${requirement.type} ${"owner" in requirement ? requirement.owner : ""} on ${requirement.contract}`;
   });
-  return `denied: ${missing.join(", ")}`;
+  return `denied: ${Arr.join(missing, ", ")}`;
 };
 
+// Partial fixtures: `evaluateChildRewrite` reads only the wrapped state and the fuses.
 const wrappedChild = (fuses = 0) =>
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- partial fixture
   ({ state: { wrapped: true }, data: { v1: { wrapper: { fuses } } } }) as unknown as LoadedName;
+// oxlint-disable-next-line typescript/no-unsafe-type-assertion -- partial fixture
 const unwrappedChild = { state: { wrapped: false }, data: {} } as unknown as LoadedName;
 
 const rewrite = (parent: Overrides, child: LoadedName) =>
@@ -274,10 +277,7 @@ describe("evaluate", () => {
         setTtl: "cannotSetTtl",
         createSubname: "cannotCreateSubdomain",
       } as const;
-      for (const [operation, fuse] of Object.entries(guarded) as [
-        keyof typeof guarded,
-        Fuse.Name,
-      ][]) {
+      for (const [operation, fuse] of Rec.toEntries(guarded)) {
         assert.strictEqual(check(wrapped, operation), "allowed via owner", operation);
         assert.strictEqual(
           check({ ...wrapped, owner }, operation),
@@ -489,8 +489,8 @@ describe("evaluate", () => {
         data: "setData",
         link: "link",
       } as const;
-      for (const [setRecord, role] of Object.entries(roles)) {
-        const operation = { setRecord } as Operation;
+      for (const [setRecord, role] of Rec.toEntries(roles)) {
+        const operation: Operation = { setRecord };
         assert.strictEqual(
           check({ resolver: permissioned({ root: Roles.resolver[role] }) }, operation),
           "allowed via roles",

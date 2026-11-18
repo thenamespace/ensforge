@@ -1,23 +1,24 @@
 import { assert, describe, it } from "@effect/vitest";
+import { Array as Arr } from "effect";
 
 import { Actions as Hca } from "@ensforge/hca";
 import { Actions } from "@ensforge/sdk";
 import { declaredErrors } from "@ensforge/test-harness/declared-errors";
+
+import { actionsOf } from "./action-tree";
 
 // The error-type check of the test lanes (`error-types.ts`) skips actions it finds no `ErrorType`
 // for; every public action must have one.
 describe("declared error types", () => {
   it("cover every public action, its Sync form and every HCA action", () => {
     const declared = declaredErrors();
-    const paths = [Actions, Hca].flatMap((tree) =>
-      Object.entries(tree as unknown as Record<string, Record<string, unknown>>)
-        .filter(([domain]) => domain !== "batch")
-        .flatMap(([domain, group]) => Object.keys(group).map((name) => `${domain}.${name}`)),
+    const paths = Arr.flatMap([Actions, Hca], (tree) =>
+      Arr.map(actionsOf(tree), ({ path }) => path),
     );
 
     assert.isAbove(paths.length, 150);
     assert.deepStrictEqual(
-      paths.filter((path) => !declared.has(path)),
+      Arr.filter(paths, (path) => !declared.has(path)),
       [],
     );
   });

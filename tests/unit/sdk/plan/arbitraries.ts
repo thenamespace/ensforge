@@ -1,4 +1,4 @@
-import { Arbitrary, Schema } from "effect";
+import { Arbitrary, Array as Arr, Schema, String as Str } from "effect";
 
 import type { Plan } from "@ensforge/sdk/internal/plan/Plan";
 import { Arbitraries } from "@ensforge/test-harness";
@@ -11,7 +11,11 @@ const address = Arbitrary.map(Arbitraries.uint(2 ** 31), (value): Address =>
 
 const hex = Arbitrary.map(
   Arbitrary.array(Arbitraries.uint(255), { maxLength: 40 }),
-  (bytes): Hex => `0x${bytes.map((byte) => byte.toString(16).padStart(2, "0")).join("")}`,
+  (bytes): Hex =>
+    `0x${Arr.join(
+      Arr.map(bytes, (byte) => Str.padStart(2, "0")(byte.toString(16))),
+      "",
+    )}`,
 );
 
 const bigint = Arbitrary.schema(Schema.BigInt);
@@ -65,5 +69,8 @@ export const plan = Arbitrary.map(
       { maxLength: 1 },
     ),
   }),
-  (fields): Plan => ({ ...fields, calls: fields.steps.flatMap((planStep) => planStep.calls) }),
+  (fields): Plan => ({
+    ...fields,
+    calls: Arr.flatMap(fields.steps, (planStep) => planStep.calls),
+  }),
 );

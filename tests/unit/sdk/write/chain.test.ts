@@ -33,8 +33,11 @@ describe("chain clients", () => {
       assert.strictEqual(first, second);
       assert.deepStrictEqual(first.chain, { id: 10, name: "OP Mainnet" });
       assert.strictEqual(first.account, alice);
-      assert.strictEqual(yield* chainClient(named, 1), named);
-      assert.deepStrictEqual((yield* chainClient(unnamed, 10)).chain, { id: 10, name: "chain 10" });
+      const own = yield* chainClient(named, 1);
+      const unnamedOther = yield* chainClient(unnamed, 10);
+
+      assert.strictEqual(own, named);
+      assert.deepStrictEqual(unnamedOther.chain, { id: 10, name: "chain 10" });
     }),
   );
 

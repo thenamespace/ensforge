@@ -1,4 +1,5 @@
 import { assert, describe, it } from "@effect/vitest";
+import { String as Str } from "effect";
 
 import { Deployments } from "@ensforge/contracts";
 import { Ensforge } from "@ensforge/sdk";
@@ -26,7 +27,7 @@ const devnet = Deployments.define({
   v2: { ...Deployments.mainnet.v2, chainId: 31337 },
 });
 
-const signer = privateKeyToAccount(`0x${"11".repeat(32)}`);
+const signer = privateKeyToAccount(`0x${Str.repeat(32)("11")}`);
 
 /** A viem public client that must not be asked anything. */
 const publicClient = (chain: Chain = mainnet) => {
@@ -53,9 +54,9 @@ describe("Ensforge.create deployment resolution", () => {
     const error = expectThrow(() => Ensforge.create({ publicClient: client }), {
       _tag: "ConfigError",
       code: "UNKNOWN_CHAIN",
-    }) as { readonly context: { readonly chainId?: number } };
+    });
 
-    assert.strictEqual(error.context.chainId, 31337);
+    assert.nestedPropertyVal(error, "context.chainId", 31337);
   });
 
   it("fails with UNKNOWN_CHAIN and a hint when the client has no chain", () => {
@@ -67,9 +68,9 @@ describe("Ensforge.create deployment resolution", () => {
         _tag: "ConfigError",
         code: "UNKNOWN_CHAIN",
       },
-    ) as { readonly hint?: string };
+    );
 
-    assert.match(error.hint ?? "", /deployment/);
+    assert.match(Reflect.get(error, "hint") ?? "", /deployment/);
   });
 
   it("accepts a custom deployment for its chain", () => {
@@ -103,9 +104,9 @@ describe("Ensforge.create deployment resolution", () => {
     const error = expectThrow(() => Ensforge.create({ publicClient: client, deployment: broken }), {
       _tag: "ConfigError",
       code: "INVALID_DEPLOYMENT",
-    }) as { readonly cause?: { readonly _tag?: string } };
+    });
 
-    assert.strictEqual(error.cause?._tag, "Deployments.InvalidProfileError");
+    assert.nestedPropertyVal(error, "cause._tag", "Deployments.InvalidProfileError");
   });
 });
 
@@ -118,9 +119,9 @@ describe("Ensforge.create chains", () => {
           chains: { 10: { publicClient: publicClient(sepolia).client } },
         }),
       { _tag: "ConfigError", code: "CHAIN_NOT_CONFIGURED" },
-    ) as { readonly context: { readonly chainId?: number } };
+    );
 
-    assert.strictEqual(error.context.chainId, 10);
+    assert.nestedPropertyVal(error, "context.chainId", 10);
   });
 });
 

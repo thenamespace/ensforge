@@ -9,6 +9,14 @@ export const tagged = 1;
 export const missing = 2;
 
 /**
+ * Tagged above a lint directive, which may sit between the block and its declaration.
+ *
+ * @stability stable
+ */
+// oxlint-disable-next-line effecttsgo/api-stability-leak
+export const directed = 6;
+
+/**
  * Renamed by the entry; the declaration's tag counts.
  *
  * @stability experimental

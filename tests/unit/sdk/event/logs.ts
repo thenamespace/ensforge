@@ -1,3 +1,5 @@
+import { Array, Option, Record, String as Str } from "effect";
+
 import { Abis } from "@ensforge/contracts";
 import {
   encodeAbiParameters,
@@ -17,13 +19,16 @@ import {
 export const events = Abis.shared.events as readonly AbiEvent[];
 
 export const signatureOf = (event: AbiEvent): string =>
-  `${event.name}(${event.inputs.map((input) => input.type).join(",")})`;
+  `${event.name}(${Array.join(
+    Array.map(event.inputs, (input) => input.type),
+    ",",
+  )})`;
 
 /** A fixed, valid value for each ABI type used by the ENS events. */
 const sample = (input: AbiParameter, index: number): unknown => {
   switch (input.type) {
     case "address":
-      return getAddress(`0x${(0xa000 + index).toString(16).padStart(40, "0")}`);
+      return getAddress(`0x${Str.padStart(40, "0")((0xa000 + index).toString(16))}`);
     case "bool":
       return true;
     case "bytes32":
@@ -39,7 +44,7 @@ const sample = (input: AbiParameter, index: number): unknown => {
     case "uint256[]":
       return [1n, 2n];
     default:
-      if (input.type.startsWith("uint")) return BigInt(100 + index);
+      if (Str.startsWith("uint")(input.type)) return BigInt(100 + index);
       throw new Error(`No sample for ${input.type}`);
   }
 };
@@ -50,23 +55,27 @@ export const logOf = (
   args: Readonly<Record<string, unknown>>,
   options: { readonly address: Address; readonly blockNumber?: bigint; readonly logIndex?: number },
 ): Log => {
-  const nonIndexed = event.inputs.filter((input) => input.indexed !== true);
-  const indexedArgs = Object.fromEntries(
-    event.inputs
-      .filter((input) => input.indexed === true)
-      .map((input) => [input.name, args[input.name ?? ""]]),
+  const nonIndexed = Array.filter(event.inputs, (input) => input.indexed !== true);
+  const indexedArgs = Record.fromEntries(
+    Array.map(
+      Array.filter(event.inputs, (input) => input.indexed === true),
+      (input) => [input.name ?? "", args[input.name ?? ""]],
+    ),
   );
+  // Every indexed argument is given, so no topic is null; viem's type cannot know that.
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion
+  const topics = encodeEventTopics({
+    abi: [event],
+    eventName: event.name,
+    args: indexedArgs,
+  }) as [Hex, ...Hex[]];
 
   return {
     address: options.address,
-    topics: encodeEventTopics({
-      abi: [event],
-      eventName: event.name,
-      args: indexedArgs,
-    } as never) as [Hex, ...Hex[]],
+    topics,
     data: encodeAbiParameters(
       nonIndexed,
-      nonIndexed.map((input) => args[input.name ?? ""]),
+      Array.map(nonIndexed, (input) => args[input.name ?? ""]),
     ),
     blockNumber: options.blockNumber ?? 10n,
     blockHash: keccak256(toHex(`block-${options.blockNumber ?? 10n}`)),
@@ -79,14 +88,16 @@ export const logOf = (
 
 /** Sample arguments for every input of `event`. */
 export const sampleArgs = (event: AbiEvent): Record<string, unknown> =>
-  Object.fromEntries(event.inputs.map((input, index) => [input.name ?? "", sample(input, index)]));
+  Record.fromEntries(
+    Array.map(event.inputs, (input, index) => [input.name ?? "", sample(input, index)]),
+  );
 
 /** The event whose signature is `signature`, such as `NewOwner(bytes32,bytes32,address)`. */
-export const eventBySignature = (signature: string): AbiEvent => {
-  const event = events.find((candidate) => signatureOf(candidate) === signature);
-  if (event === undefined) throw new Error(`Unknown event ${signature}`);
-  return event;
-};
+export const eventBySignature = (signature: string): AbiEvent =>
+  Option.getOrThrowWith(
+    Array.findFirst(events, (candidate) => signatureOf(candidate) === signature),
+    () => new Error(`Unknown event ${signature}`),
+  );
 
 /** A mined log as a node answers `eth_getLogs`, with its numbers hex-encoded. */
 export const rpcLog = (log: Log) => ({

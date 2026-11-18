@@ -1,10 +1,12 @@
 import { assert, describe, it } from "@effect/vitest";
+import { Array as Arr, Record as Rec, String as Str } from "effect";
 
 import { Deployments } from "@ensforge/contracts";
 import { getAddress, type Address } from "viem";
 
 const issuesOf = (profile: unknown): readonly string[] => {
   try {
+    // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- feeds define malformed profiles on purpose
     Deployments.define(profile as Deployments.Profile);
     return [];
   } catch (error) {
@@ -14,7 +16,7 @@ const issuesOf = (profile: unknown): readonly string[] => {
 };
 
 describe("Deployments built-in profiles", () => {
-  const profiles = Deployments.list().map((profile) => [profile.name, profile] as const);
+  const profiles = Arr.map(Deployments.list(), (profile) => [profile.name, profile] as const);
 
   it.each(profiles)("%s passes define", (_, profile) => {
     assert.deepStrictEqual(issuesOf(profile), []);
@@ -33,20 +35,21 @@ describe("Deployments built-in profiles", () => {
       v2?.paymentTokens,
     ];
     const all = [
-      ...groups.flatMap((group) => Object.values(group ?? {}) as Address[]),
+      ...Arr.flatMap(groups, (group) => Rec.values<string, Address | undefined>({ ...group })),
       ...(v1?.legacyPublicResolvers ?? []),
       ...(v1?.frozenPublicResolvers ?? []),
     ];
-    for (const address of all) assert.strictEqual(address, getAddress(address));
+    for (const address of all) {
+      assert.isDefined(address);
+      assert.strictEqual(address, getAddress(address));
+    }
   });
 
   // Within one group each role has its own contract; the shared EntryPoint and the public
   // Universal Resolver proxy are the documented exceptions across groups.
   it.each(profiles)("%s has one address per role within each group", (_, { v1, v2 }) => {
     for (const group of [v1?.contracts, v2?.contracts, v2?.migration, v2?.hca, v2?.dns]) {
-      const addresses = (Object.values(group ?? {}) as Address[]).map((address) =>
-        address.toLowerCase(),
-      );
+      const addresses = Arr.map(Rec.values<string, Address>({ ...group }), Str.toLowerCase);
       assert.strictEqual(new Set(addresses).size, addresses.length);
     }
   });

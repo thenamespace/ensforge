@@ -1,5 +1,5 @@
 import { assert, describe, it } from "@effect/vitest";
-import { Effect, Schema } from "effect";
+import { Array, Effect, Schema } from "effect";
 
 import * as Actions from "@ensforge/sdk/internal/actions/effect";
 import { IndexerError } from "@ensforge/sdk/internal/errors/classes/IndexerError";
@@ -47,7 +47,7 @@ const subnames = (indexers: readonly ReturnType<typeof adapter>[], options = {},
   Actions.indexer.getSubnames(
     clientWith(
       fallback(
-        indexers.map((entry) => entry.indexer),
+        Array.map(indexers, (entry) => entry.indexer),
         options,
       ),
     ),
@@ -160,7 +160,7 @@ describe("fallback routing", () => {
     [["INDEXER_UNSUPPORTED", "INDEXER_UNSUPPORTED"], "INDEXER_UNSUPPORTED"],
   ] as const)("when all fail with %j, reports %s", ([codes, expected]) =>
     Effect.gen(function* () {
-      const indexers = codes.map((code, index) =>
+      const indexers = Array.map(codes, (code, index) =>
         adapter(`i${index}`, () => Effect.fail(new IndexerError({ code }))),
       );
       yield* expectFailure(subnames(indexers), { _tag: "IndexerError", code: expected });
@@ -201,7 +201,7 @@ describe("fallback pinning", () => {
     [Schema.String, Arbitraries.uint(2)],
     ([cursor, issuer]) =>
       Effect.gen(function* () {
-        const indexers = [0, 1, 2].map((index) =>
+        const indexers = Array.map([0, 1, 2], (index) =>
           adapter(`i${index}`, (query) =>
             index < issuer
               ? Effect.fail(new IndexerError({ code: "INDEXER_UNAVAILABLE" }))
@@ -215,8 +215,8 @@ describe("fallback pinning", () => {
 
         assert.strictEqual(first.cursor, `f${issuer}:${cursor}`);
         assert.deepStrictEqual(
-          indexers.map((entry) => entry.seen.map((query) => query.cursor)),
-          [0, 1, 2].map((index) => (index === issuer ? [cursor] : [])),
+          Array.map(indexers, (entry) => Array.map(entry.seen, (query) => query.cursor)),
+          Array.map([0, 1, 2], (index) => (index === issuer ? [cursor] : [])),
         );
       }),
   );

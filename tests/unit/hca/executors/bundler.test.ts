@@ -1,13 +1,14 @@
 import { assert, describe, it } from "@effect/vitest";
-import { Effect } from "effect";
+import { Array as Arr, Effect, Option, Schema, String as Str } from "effect";
 
-import { Abis } from "@ensforge/contracts";
+import { Abis, Deployments } from "@ensforge/contracts";
 import {
   standaloneHcaFactoryV2Abi,
   standaloneSingleOwnerHcaV2Abi,
 } from "@ensforge/contracts/v2/experimental/hca";
 import { bundler, pimlico } from "@ensforge/hca/internal/executors/bundler";
-import type { ExecutionRequest } from "@ensforge/hca/internal/types";
+import type { ExecutionRequest, HcaSession } from "@ensforge/hca/internal/types";
+import type { Write } from "@ensforge/sdk";
 import { expectRejection, scriptedTransport } from "@ensforge/test-harness";
 import { contractScript } from "@ensforge/test-harness/contracts-eth-call";
 import {
@@ -15,6 +16,8 @@ import {
   decodeAbiParameters,
   decodeFunctionData,
   padHex,
+  zeroAddress,
+  zeroHash,
   recoverMessageAddress,
   type Hex,
 } from "viem";
@@ -27,28 +30,42 @@ import {
 import { privateKeyToAccount } from "viem/accounts";
 import { sepolia } from "viem/chains";
 
-import { contracts, hcaAddress, makeClient, owner, proxyLogic, v2 } from "../fixtures";
+import { contracts, defined, hcaAddress, makeClient, owner, proxyLogic, v2 } from "../fixtures";
 
 const bundlerUrl = "https://bundler.test/rpc";
 const paymasterUrl = "https://paymaster.test/rpc";
 
-type Rpc = { readonly method: string; readonly id: number };
+const Rpc = Schema.Struct({
+  method: Schema.String,
+  id: Schema.Finite,
+  params: Schema.optional(Schema.Array(Schema.Unknown)),
+});
+type Rpc = typeof Rpc.Type;
 type Answer = { readonly result: unknown } | { readonly error: { code: number; message: string } };
+
+const readRequests = Schema.decodeUnknownEffect(
+  Schema.fromJsonString(Schema.Union([Rpc, Schema.Array(Rpc)])),
+);
+const writeJson = Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown));
 
 // Bundler and paymaster JSON-RPC, answered in memory; no request leaves the process. The harness
 // setup blocks `fetch` again before the next test.
-const serveRpc = (answer: (url: string, method: string) => Answer) => {
-  globalThis.fetch = (async (input: string | URL | Request, init?: RequestInit) => {
-    const url = String(input);
-    const body = JSON.parse(String(init?.body)) as Rpc | readonly Rpc[];
-    const reply = (rpc: Rpc) => ({ jsonrpc: "2.0", id: rpc.id, ...answer(url, rpc.method) });
-    return new Response(
-      JSON.stringify(Array.isArray(body) ? body.map(reply) : reply(body as Rpc)),
-      {
-        headers: { "content-type": "application/json" },
-      },
+const installFetch = (handle: (url: string, rpc: Rpc) => unknown) => {
+  globalThis.fetch = (input, init) =>
+    Effect.runPromise(
+      Effect.gen(function* () {
+        const body = yield* readRequests(init?.body);
+        const url =
+          typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
+        const replies = Arr.map(Arr.ensure(body), (rpc) => handle(url, rpc));
+        const text = yield* writeJson(Arr.isArray(body) ? replies : replies[0]);
+        return new Response(text, { headers: { "content-type": "application/json" } });
+      }),
     );
-  }) as typeof fetch;
+};
+
+const serveRpc = (answer: (url: string, method: string) => Answer) => {
+  installFetch((url, rpc) => ({ jsonrpc: "2.0", id: rpc.id, ...answer(url, rpc.method) }));
 };
 
 const gas = {
@@ -59,8 +76,11 @@ const gas = {
   paymasterPostOpGasLimit: "0x1",
 };
 
-const contextFor = (deployed = true) => {
-  const { context } = makeClient({ deployed });
+const contextFor = (
+  deployed = true,
+  overrides: Parameters<typeof makeClient>[0] = {},
+): Write.Via.Context => {
+  const { context } = makeClient({ deployed, ...overrides });
   const chain = contractScript({
     code: deployed ? [hcaAddress] : [],
     contracts: [
@@ -86,9 +106,30 @@ const contextFor = (deployed = true) => {
   const walletClient = createWalletClient({
     chain: sepolia,
     transport,
-    account: privateKeyToAccount(`0x${"11".repeat(32)}`),
+    account: privateKeyToAccount(`0x${Str.repeat(32)("11")}`),
   });
   return { ...context, publicClient: walletClient, walletClient };
+};
+
+const session: HcaSession = {
+  chainId: sepolia.id,
+  hca: hcaAddress,
+  owner,
+  sessionKey: owner,
+  terms: {
+    sessionNonce: 0n,
+    validUntil: 4_000_000_000,
+    resolver: zeroAddress,
+    refundToken: zeroAddress,
+    maxRefundExchangeRate: 1n,
+    maxRefundGasOverhead: 1n,
+    maxRefundAmount: 1n,
+  },
+  permissionId: zeroHash,
+  sessionDigest: zeroHash,
+  chains: [],
+  ownerSignature: "0x",
+  signingDomain: "smart-session",
 };
 
 const request: ExecutionRequest = {
@@ -105,11 +146,11 @@ const estimateFails = (method: string): Answer =>
     ? { error: { code: -32500, message: "AA23 reverted" } }
     : { result: gas };
 const paymasterFails = (method: string): Answer =>
-  method.startsWith("pm_")
+  Str.startsWith("pm_")(method)
     ? { error: { code: -32500, message: "sponsorship policy rejected the operation" } }
     : { result: gas };
 const paymasterOk = (method: string): Answer =>
-  method.startsWith("pm_")
+  Str.startsWith("pm_")(method)
     ? {
         result: {
           paymaster: "0x0000000000000000000000000000000000000Fee",
@@ -133,7 +174,10 @@ describe("bundler executor: error classification", () => {
   ] as const)("classifies %s", ([, paymaster, answer, code]) =>
     Effect.gen(function* () {
       serveRpc((_, method) => answer(method));
-      const { send } = bundler({ url: bundlerUrl, ...(paymaster ? { paymaster } : {}) });
+      const { send } = bundler({
+        url: bundlerUrl,
+        ...(paymaster === undefined ? {} : { paymaster }),
+      });
       assert.isDefined(send);
 
       const error = yield* expectRejection(() => send(request, contextFor()), {
@@ -141,12 +185,12 @@ describe("bundler executor: error classification", () => {
         code,
       });
 
-      assert.strictEqual((error as { executor?: string }).executor, "bundler");
+      assert.strictEqual(Reflect.get(error, "executor"), "bundler");
     }),
   );
 
   it.effect.each([
-    ["a session request", { ...request, session: {} as never }, true],
+    ["a session request", { ...request, session }, true],
     ["a context without a wallet", request, false],
   ] as const)("refuses %s before any request", ([, sent, withWallet]) =>
     Effect.gen(function* () {
@@ -166,7 +210,7 @@ describe("bundler executor: error classification", () => {
 });
 
 describe("bundler executor: status", () => {
-  const hash: Hex = `0x${"ab".repeat(32)}`;
+  const hash: Hex = `0x${Str.repeat(32)("ab")}`;
   const receipt = (success: boolean) => ({
     result: {
       userOpHash: hash,
@@ -189,7 +233,7 @@ describe("bundler executor: status", () => {
         gasUsed: "0x1",
         effectiveGasPrice: "0x1",
         logs: [],
-        logsBloom: `0x${"00".repeat(256)}`,
+        logsBloom: `0x${Str.repeat(256)("00")}`,
         status: "0x1",
         type: "0x2",
         contractAddress: null,
@@ -207,7 +251,9 @@ describe("bundler executor: status", () => {
       const { status } = bundler({ url: bundlerUrl });
       assert.isDefined(status);
 
-      assert.deepStrictEqual(yield* Effect.promise(() => status(hash, contextFor())), expected);
+      const reported = yield* Effect.promise(() => status(hash, contextFor()));
+
+      assert.deepStrictEqual(reported, expected);
     }),
   );
 
@@ -224,28 +270,40 @@ describe("bundler executor: status", () => {
     }),
   );
 
+  it.effect("rejects a reference that is not a UserOperation hash without asking the bundler", () =>
+    Effect.gen(function* () {
+      serveRpc(() => {
+        throw new Error("the bundler must not be asked");
+      });
+      const { status } = bundler({ url: bundlerUrl });
+      assert.isDefined(status);
+
+      yield* expectRejection(() => status("not-a-hash", contextFor()), {
+        _tag: "HcaError",
+        code: "HCA_EXECUTION_FAILED",
+      });
+    }),
+  );
+
   it.effect("keeps waiting within its timeout, then reports the operation once it lands", () =>
     Effect.gen(function* () {
       const { status } = bundler({ url: bundlerUrl });
       assert.isDefined(status);
 
       serveRpc(() => ({ result: null }));
-      assert.deepStrictEqual(yield* Effect.promise(() => status(hash, contextFor())), {
-        status: "pending",
-      });
+      const waiting = yield* Effect.promise(() => status(hash, contextFor()));
+      assert.deepStrictEqual(waiting, { status: "pending" });
 
       serveRpc(() => receipt(true));
-      assert.deepStrictEqual(yield* Effect.promise(() => status(hash, contextFor())), {
-        status: "success",
-        hashes: [hash],
-      });
+      const landed = yield* Effect.promise(() => status(hash, contextFor()));
+      assert.deepStrictEqual(landed, { status: "success", hashes: [hash] });
     }),
   );
 });
 
 describe("bundler executor: UserOperations", () => {
-  const operationHash: Hex = `0x${"cd".repeat(32)}`;
-  const signer = privateKeyToAccount(`0x${"11".repeat(32)}`);
+  const operationHash: Hex = `0x${Str.repeat(32)("cd")}`;
+  const signer = privateKeyToAccount(`0x${Str.repeat(32)("11")}`);
   const calls = [
     { to: owner, data: "0xabcdef" as Hex, value: 5n },
     { to: hcaAddress, data: "0x01" as Hex, value: 0n },
@@ -258,11 +316,10 @@ describe("bundler executor: UserOperations", () => {
       readonly method: string;
       readonly params: readonly unknown[];
     }[] = [];
-    globalThis.fetch = (async (input: string | URL | Request, init?: RequestInit) => {
-      const body = JSON.parse(String(init?.body)) as Rpc & { readonly params: readonly unknown[] };
-      requests.push({ url: String(input), method: body.method, params: body.params });
+    installFetch((url, rpc) => {
+      requests.push({ url, method: rpc.method, params: rpc.params ?? [] });
       const result = (() => {
-        switch (body.method) {
+        switch (rpc.method) {
           case "eth_sendUserOperation":
             return operationHash;
           case "pm_getPaymasterStubData":
@@ -287,20 +344,23 @@ describe("bundler executor: UserOperations", () => {
             return gas;
         }
       })();
-      return new Response(JSON.stringify({ jsonrpc: "2.0", id: body.id, result }), {
-        headers: { "content-type": "application/json" },
-      });
-    }) as typeof fetch;
-    const sent = () => {
-      const params = requests.find(({ method }) => method === "eth_sendUserOperation")?.params;
-      return (params as readonly RpcUserOperation<"0.7">[])[0] as RpcUserOperation<"0.7">;
+      return { jsonrpc: "2.0", id: rpc.id, result };
+    });
+    // The fake bundler records raw JSON-RPC params; the first one of these methods is a UserOperation.
+    const operationOf = (method: string) => {
+      const [params] = Option.getOrThrow(
+        Arr.findFirst(requests, (rpc) => rpc.method === method),
+      ).params;
+      // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- the params are the UserOperation the executor sent
+      return params as RpcUserOperation<"0.7">;
     };
-    return { requests, sent };
+    const sent = () => operationOf("eth_sendUserOperation");
+    return { requests, sent, operationOf };
   };
 
   it.effect("sends the calls as one ERC-7579 batch, signed by the owner", () =>
     Effect.gen(function* () {
-      const { requests, sent } = serveBundler();
+      const { sent, operationOf } = serveBundler();
       const { send } = bundler({ url: bundlerUrl });
       assert.isDefined(send);
 
@@ -318,7 +378,8 @@ describe("bundler executor: UserOperations", () => {
         data: operation.callData,
       });
       assert.strictEqual(execute.functionName, "execute");
-      const [mode, executions] = execute.args as readonly [Hex, Hex];
+      if (execute.functionName !== "execute") return;
+      const [mode, executions] = execute.args;
       assert.strictEqual(mode, padHex("0x01", { size: 32, dir: "right" }));
       assert.deepStrictEqual(
         decodeAbiParameters(
@@ -334,24 +395,21 @@ describe("bundler executor: UserOperations", () => {
           ],
           executions,
         )[0],
-        calls.map(({ to, value, data }) => ({ target: to, value, callData: data })),
+        Arr.map(calls, ({ to, value, data }) => ({ target: to, value, callData: data })),
       );
       // Estimated with a well-formed stub signature, sent with the owner's over the operation.
-      const estimated = requests.find(({ method }) => method === "eth_estimateUserOperationGas")
-        ?.params[0] as RpcUserOperation<"0.7">;
-      assert.strictEqual(estimated.signature, `0x${"11".repeat(32)}${"22".repeat(32)}1b`);
+      const estimated = operationOf("eth_estimateUserOperationGas");
+      assert.strictEqual(estimated.signature, `0x${Str.repeat(32)("11")}${Str.repeat(32)("22")}1b`);
       const hash = getUserOperationHash({
         userOperation: formatUserOperation(operation),
         entryPointAddress: contracts.entryPoint,
         entryPointVersion: "0.7",
         chainId: sepolia.id,
       });
-      assert.strictEqual(
-        yield* Effect.promise(() =>
-          recoverMessageAddress({ message: { raw: hash }, signature: operation.signature }),
-        ),
-        signer.address,
+      const recovered = yield* Effect.promise(() =>
+        recoverMessageAddress({ message: { raw: hash }, signature: operation.signature }),
       );
+      assert.strictEqual(recovered, signer.address);
     }),
   );
 
@@ -365,9 +423,10 @@ describe("bundler executor: UserOperations", () => {
 
       const operation = sent();
       assert.strictEqual(operation.factory, contracts.standaloneFactory);
+      assert.isDefined(operation.factoryData);
       const deploy = decodeFunctionData({
         abi: standaloneHcaFactoryV2Abi,
-        data: operation.factoryData as Hex,
+        data: operation.factoryData,
       });
       assert.strictEqual(deploy.functionName, "deploy");
       assert.deepStrictEqual(deploy.args, [owner, contracts.standaloneImplementation, 0n]);
@@ -382,11 +441,7 @@ describe("bundler executor: UserOperations", () => {
         paymaster: paymasterUrl,
         paymasterContext: { policy: "p1" },
       });
-      assert.isDefined(executor.send);
-
-      yield* Effect.promise(() =>
-        (executor.send as NonNullable<typeof executor.send>)(request, contextFor()),
-      );
+      yield* Effect.promise(() => defined(executor.send)(request, contextFor()));
 
       assert.deepStrictEqual(executor.capabilities, {
         sessions: false,
@@ -394,9 +449,11 @@ describe("bundler executor: UserOperations", () => {
         deploys: true,
       });
       assert.strictEqual(sent().paymasterData, "0x02");
-      const stub = requests.find(({ method }) => method === "pm_getPaymasterStubData");
-      assert.strictEqual(stub?.url, paymasterUrl);
-      assert.deepStrictEqual(stub?.params[3], { policy: "p1" });
+      const stub = Option.getOrThrow(
+        Arr.findFirst(requests, ({ method }) => method === "pm_getPaymasterStubData"),
+      );
+      assert.strictEqual(stub.url, paymasterUrl);
+      assert.deepStrictEqual(stub.params[3], { policy: "p1" });
     }),
   );
 
@@ -416,14 +473,10 @@ describe("bundler executor: UserOperations", () => {
       const plain = pimlico({ apiKey: "key", sponsorshipPolicyId: "sp_1" });
       const endpoint = "https://api.pimlico.io/v2/11155111/rpc?apikey=key";
 
-      yield* Effect.promise(() =>
-        (sponsored.send as NonNullable<typeof sponsored.send>)(request, contextFor()),
-      );
+      yield* Effect.promise(() => defined(sponsored.send)(request, contextFor()));
       const sponsoredOperation = sent();
       const sponsoredRequests = requests.splice(0);
-      yield* Effect.promise(() =>
-        (plain.send as NonNullable<typeof plain.send>)(request, contextFor()),
-      );
+      yield* Effect.promise(() => defined(plain.send)(request, contextFor()));
 
       assert.strictEqual(sponsored.id, "pimlico");
       assert.deepStrictEqual(sponsored.capabilities, {
@@ -436,14 +489,14 @@ describe("bundler executor: UserOperations", () => {
         sponsorship: false,
         deploys: true,
       });
-      assert.isTrue(sponsoredRequests.every(({ url }) => url === endpoint));
-      assert.deepStrictEqual(
-        sponsoredRequests.find(({ method }) => method === "pm_getPaymasterStubData")?.params[3],
-        { sponsorshipPolicyId: "sp_1" },
+      assert.isTrue(Arr.every(sponsoredRequests, ({ url }) => url === endpoint));
+      const sponsoredStub = Option.getOrThrow(
+        Arr.findFirst(sponsoredRequests, ({ method }) => method === "pm_getPaymasterStubData"),
       );
+      assert.deepStrictEqual(sponsoredStub.params[3], { sponsorshipPolicyId: "sp_1" });
       assert.strictEqual(sponsoredOperation.paymasterData, "0x02");
-      assert.isFalse(requests.some(({ method }) => method.startsWith("pm_")));
-      assert.isTrue(requests.every(({ url }) => url === endpoint));
+      assert.isFalse(Arr.some(requests, ({ method }) => Str.startsWith("pm_")(method)));
+      assert.isTrue(Arr.every(requests, ({ url }) => url === endpoint));
     }),
   );
 
@@ -452,12 +505,10 @@ describe("bundler executor: UserOperations", () => {
       const { requests } = serveBundler();
       const executor = pimlico({ apiKey: "key" });
 
-      yield* Effect.promise(() =>
-        (executor.status as NonNullable<typeof executor.status>)(operationHash, contextFor()),
-      );
+      yield* Effect.promise(() => defined(executor.status)(operationHash, contextFor()));
 
       assert.deepStrictEqual(
-        requests.map(({ url, method, params }) => [url, method, params]),
+        Arr.map(requests, ({ url, method, params }) => [url, method, params]),
         [
           [
             "https://api.pimlico.io/v2/11155111/rpc?apikey=key",
@@ -470,21 +521,17 @@ describe("bundler executor: UserOperations", () => {
   );
 });
 
-/** The context of a client whose deployment `change` rewrites. */
-const withDeployment = (change: (deployment: { readonly v2?: object }) => object) => {
-  const context = contextFor();
-  const client = context.client as unknown as { readonly deployment: { readonly v2?: object } };
-  return { ...context, client: { ...client, deployment: change(client.deployment) } as never };
-};
-
 describe("bundler executor: deployments", () => {
-  it.effect.each([
-    ["ENSv2", withDeployment((deployment) => ({ ...deployment, v2: undefined }))],
+  const { hca: _hca, ...v2WithoutHca } = Deployments.sepolia.v2;
+  const { v2: _v2, ...withoutV2 } = Deployments.sepolia;
+
+  it.effect.each<readonly [string, Write.Via.Context]>([
+    ["ENSv2", contextFor(true, { deployment: withoutV2 })],
     [
       "an HCA deployment",
-      withDeployment((deployment) => ({ ...deployment, v2: { ...deployment.v2, hca: undefined } })),
+      contextFor(true, { deployment: { ...Deployments.sepolia, v2: v2WithoutHca } }),
     ],
-  ] as const)("refuses a chain without %s", ([, context]) =>
+  ])("refuses a chain without %s", ([, context]) =>
     Effect.gen(function* () {
       serveRpc(() => {
         throw new Error("no request expected");
@@ -497,7 +544,7 @@ describe("bundler executor: deployments", () => {
         code: "HCA_EXECUTOR_UNSUPPORTED",
       });
 
-      assert.strictEqual((error as { readonly executor?: string }).executor, "bundler");
+      assert.strictEqual(Reflect.get(error, "executor"), "bundler");
     }),
   );
 
@@ -506,43 +553,44 @@ describe("bundler executor: deployments", () => {
       serveRpc((_, method) => estimateFails(method));
       const executor = pimlico({ apiKey: "key" });
 
-      const error = yield* expectRejection(
-        () => (executor.send as NonNullable<typeof executor.send>)(request, contextFor()),
-        { _tag: "HcaError", code: "HCA_BUNDLER_REJECTED" },
-      );
+      const error = yield* expectRejection(() => defined(executor.send)(request, contextFor()), {
+        _tag: "HcaError",
+        code: "HCA_BUNDLER_REJECTED",
+      });
 
-      assert.strictEqual((error as { readonly executor?: string }).executor, "pimlico");
+      assert.strictEqual(Reflect.get(error, "executor"), "pimlico");
     }),
   );
 });
 
 describe("bundler executor: pending operations", () => {
-  const hash: Hex = `0x${"ef".repeat(32)}`;
-  const pause = Effect.promise(() => new Promise((resolve) => setTimeout(resolve, 60)));
+  const hash: Hex = `0x${Str.repeat(32)("ef")}`;
+  // The executor times operations with the wall clock, so these tests run on the real one.
+  const pause = Effect.sleep(60);
 
-  it.effect("times an operation from when it was first seen pending, and starts again after", () =>
+  it.live("times an operation from when it was first seen pending, and starts again after", () =>
     Effect.gen(function* () {
       serveRpc(() => ({ result: null }));
       const { status } = bundler({ url: bundlerUrl, timeout: 50 });
       assert.isDefined(status);
       const poll = Effect.promise(() => status(hash, contextFor()));
 
-      assert.deepStrictEqual(yield* poll, { status: "pending" });
+      const first = yield* poll;
+      assert.deepStrictEqual(first, { status: "pending" });
       yield* pause;
       const error = yield* expectRejection(() => status(hash, contextFor()), {
         _tag: "HcaError",
         code: "HCA_EXECUTION_TIMEOUT",
       });
       // Timed out, the operation is forgotten: asked again, it is newly pending.
-      assert.deepStrictEqual(yield* poll, { status: "pending" });
+      const again = yield* poll;
+      assert.deepStrictEqual(again, { status: "pending" });
 
-      assert.deepStrictEqual((error as { readonly details?: unknown }).details, [
-        `UserOperation ${hash}`,
-      ]);
+      assert.deepStrictEqual(Reflect.get(error, "details"), [`UserOperation ${hash}`]);
     }),
   );
 
-  it.effect("forgets an operation once it lands", () =>
+  it.live("forgets an operation once it lands", () =>
     Effect.gen(function* () {
       const { status } = bundler({ url: bundlerUrl, timeout: 50 });
       assert.isDefined(status);
@@ -573,7 +621,7 @@ describe("bundler executor: pending operations", () => {
                   gasUsed: "0x1",
                   effectiveGasPrice: "0x1",
                   logs: [],
-                  logsBloom: `0x${"00".repeat(256)}`,
+                  logsBloom: `0x${Str.repeat(256)("00")}`,
                   status: "0x1",
                   type: "0x2",
                   contractAddress: null,
@@ -591,7 +639,8 @@ describe("bundler executor: pending operations", () => {
         reason: "the UserOperation reverted",
         hashes: [hash],
       });
-      assert.deepStrictEqual(yield* poll, { status: "pending" });
+      const afterwards = yield* poll;
+      assert.deepStrictEqual(afterwards, { status: "pending" });
     }),
   );
 });

@@ -27,7 +27,9 @@ describe("capabilities.serve", () => {
   it.effect("serves ENS on the client's chain when the indexer declares it", () =>
     Effect.gen(function* () {
       const fake = fakeBigname();
-      assert.strictEqual(yield* probe(fake).serve("ens", 1), 1);
+      const chainId = yield* probe(fake).serve("ens", 1);
+
+      assert.strictEqual(chainId, 1);
     }),
   );
 
@@ -50,7 +52,9 @@ describe("capabilities.serve", () => {
 
   it.effect("reads a namespace on its home chain (Basenames on Base)", () =>
     Effect.gen(function* () {
-      assert.strictEqual(yield* probe(fakeGoldsky(), "/v2").serve("basenames", 1), 8453);
+      const chainId = yield* probe(fakeGoldsky(), "/v2").serve("basenames", 1);
+
+      assert.strictEqual(chainId, 8453);
     }),
   );
 
@@ -81,7 +85,9 @@ describe("capabilities.serve", () => {
       Effect.gen(function* () {
         const fake = fakeBigname({ without: ["/status", "/namespaces/{namespace}"] });
 
-        assert.strictEqual(yield* probe(fake).serve("ens", 11155111), 11155111);
+        const chainId = yield* probe(fake).serve("ens", 11155111);
+
+        assert.strictEqual(chainId, 11155111);
         yield* expectFailure(probe(fake).serve("basenames", 11155111), {
           _tag: "IndexerError",
           code: "INDEXER_UNSUPPORTED",
@@ -97,7 +103,9 @@ describe("capabilities.serve", () => {
         reply.envelope({ data: { namespace: "basenames", capabilities: {}, networks: [] } }),
       );
 
-      assert.strictEqual(yield* probe(fake, "/v2").serve("basenames", 1), 8453);
+      const chainId = yield* probe(fake, "/v2").serve("basenames", 1);
+
+      assert.strictEqual(chainId, 8453);
     }),
   );
 

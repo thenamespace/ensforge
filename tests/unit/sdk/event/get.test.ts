@@ -1,5 +1,5 @@
 import { assert, describe, it } from "@effect/vitest";
-import { Effect } from "effect";
+import { Array, Effect, Option } from "effect";
 
 import { Abis, Deployments } from "@ensforge/contracts";
 import { Ensforge } from "@ensforge/sdk";
@@ -79,9 +79,13 @@ const ensOver = (logs: readonly Log[], head = 100n) => {
     if (method === "eth_blockNumber") return numberToHex(head);
 
     if (method === "eth_call") {
+      // Scripted RPC params are untyped; their shape is fixed by the call under test.
+      // oxlint-disable-next-line typescript/no-unsafe-type-assertion
       const { to, data } = params[0] as { to: Address; data: Hex };
-      const contract = contracts.find((candidate) => isAddressEqual(candidate.address, to));
-      if (contract === undefined) throw new Error(`Unscripted contract ${to}`);
+      const contract = Option.getOrThrowWith(
+        Array.findFirst(contracts, (candidate) => isAddressEqual(candidate.address, to)),
+        () => new Error(`Unscripted contract ${to}`),
+      );
       const { functionName } = decodeFunctionData({ abi: contract.abi, data });
       if (!(functionName in contract.answers))
         throw new Error(`Unscripted ${functionName} on ${to}`);
@@ -89,27 +93,30 @@ const ensOver = (logs: readonly Log[], head = 100n) => {
         abi: contract.abi,
         functionName,
         result: contract.answers[functionName],
-      } as never);
+      });
     }
 
     if (method === "eth_getLogs") {
       // Matches as a node does: the address is one of the filter's, and each topic position too.
+      // oxlint-disable-next-line typescript/no-unsafe-type-assertion
       const filter = params[0] as {
         readonly address: readonly Address[];
         readonly topics: readonly (Hex | readonly Hex[] | null)[];
       };
-      return logs
-        .filter(
+      return Array.map(
+        Array.filter(
+          logs,
           (log) =>
-            filter.address.some((address) => isAddressEqual(address, log.address)) &&
-            filter.topics.every((topic, index) => {
+            Array.some(filter.address, (address) => isAddressEqual(address, log.address)) &&
+            Array.every(filter.topics, (topic, index) => {
               const actual = log.topics[index];
               if (topic === null) return true;
               if (actual === undefined) return false;
               return (typeof topic === "string" ? [topic] : topic).includes(actual);
             }),
-        )
-        .map(rpcLog);
+        ),
+        rpcLog,
+      );
     }
     return undefined;
   });
@@ -164,7 +171,7 @@ describe("event.get", () => {
       const events = yield* Actions.event.get(ens, { name: "Alice.eth", fromBlock: 0n });
 
       assert.deepStrictEqual(
-        events.map((event) => [event.event, event.type, event.blockNumber, event.logIndex]),
+        Array.map(events, (event) => [event.event, event.type, event.blockNumber, event.logIndex]),
         [
           ["NewOwner", "authority", 20n, 0],
           ["NameRegistered", "registration", 20n, 1],
@@ -197,11 +204,11 @@ describe("event.get", () => {
       });
 
       assert.deepStrictEqual(
-        records.map((event) => event.event),
+        Array.map(records, (event) => event.event),
         ["NewResolver", "TextChanged"],
       );
       assert.deepStrictEqual(
-        authority.map((event) => event.event),
+        Array.map(authority, (event) => event.event),
         ["NewOwner"],
       );
     }),
@@ -213,14 +220,15 @@ describe("event.get", () => {
 
       yield* Actions.event.get(ens, { name: "alice.eth", fromBlock: 21n, toBlock: 29n });
 
-      const filters = calls.filter((call) => call.method === "eth_getLogs");
+      const filters = Array.filter(calls, (call) => call.method === "eth_getLogs");
       assert.isAbove(filters.length, 0);
       for (const call of filters) {
+        // oxlint-disable-next-line typescript/no-unsafe-type-assertion
         const [filter] = call.params as [{ fromBlock: Hex; toBlock: Hex }];
         assert.strictEqual(filter.fromBlock, numberToHex(21n));
         assert.strictEqual(filter.toBlock, numberToHex(29n));
       }
-      assert.isFalse(calls.some((call) => call.method === "eth_blockNumber"));
+      assert.isFalse(Array.some(calls, (call) => call.method === "eth_blockNumber"));
     }),
   );
 });
@@ -250,7 +258,7 @@ describe("event.get validation", () => {
       });
 
       assert.deepStrictEqual(
-        calls.map((call) => call.method),
+        Array.map(calls, (call) => call.method),
         ["eth_blockNumber"],
       );
     }),

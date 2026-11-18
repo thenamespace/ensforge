@@ -1,5 +1,6 @@
 import { assert, describe, it } from "@effect/vitest";
-import { Effect } from "effect";
+/* oxlint-disable typescript/no-unsafe-type-assertion -- stub arguments arrive as `unknown[]`, decoded against the stubbed ABI */
+import { Array as Arr, Effect } from "effect";
 
 import { Abis, Deployments } from "@ensforge/contracts";
 import { Actions, Duration } from "@ensforge/sdk/effect";
@@ -12,7 +13,6 @@ import {
   isAddressEqual,
   numberToHex,
   zeroHash,
-  type Abi,
   type Address,
 } from "viem";
 import { mainnet } from "viem/chains";
@@ -35,8 +35,8 @@ type Renewal = {
 
 /** Scripted `isRenewable`/`getRenewPrice` of a renewal route accepting `prices`' labels. */
 const renewer = (prices: Readonly<Record<string, bigint>>) => ({
-  isRenewable: ([label]: readonly unknown[]) => (label as string) in prices,
-  getRenewPrice: ([label]: readonly unknown[]) => prices[label as string] ?? 0n,
+  isRenewable: ([label]: readonly unknown[]) => String(label) in prices,
+  getRenewPrice: ([label]: readonly unknown[]) => prices[String(label)] ?? 0n,
 });
 
 /** A client whose ENSv2 registrar and ENSv1 renewer accept the given labels at their prices. */
@@ -55,7 +55,7 @@ const clientFor = (renewal: Renewal) => {
         { address: ethRenewerV1, abi: Abis.v2.ethRegistrar, functions: renewer(renewal.v1) },
         {
           address: usdc,
-          abi: Abis.shared.erc20 as Abi,
+          abi: Abis.shared.erc20,
           functions: {
             balanceOf: ([holder]) => renewal.balanceOf?.(holder as Address) ?? 10n ** 12n,
             allowance: ([, spender]) => renewal.allowance?.(spender as Address) ?? 0n,
@@ -84,11 +84,11 @@ describe("registration.renew.prepare", () => {
 
       const [approve, renew] = plan.steps;
       assert.deepStrictEqual(
-        plan.steps.map((step) => step.id),
+        Arr.map(plan.steps, (step) => step.id),
         ["approve", "renew"],
       );
       assert.deepStrictEqual(
-        (approve?.calls ?? []).map((call) => [
+        Arr.map(approve?.calls ?? [], (call) => [
           call.to,
           decodeFunctionData({ abi: Abis.shared.erc20, data: call.data }).args,
         ]),
@@ -98,7 +98,7 @@ describe("registration.renew.prepare", () => {
         ],
       );
       assert.deepStrictEqual(
-        (renew?.calls ?? []).map((call) => [
+        Arr.map(renew?.calls ?? [], (call) => [
           call.to,
           decodeFunctionData({ abi: Abis.v2.ethRegistrar, data: call.data }),
         ]),
@@ -140,7 +140,7 @@ describe("registration.renew.prepare", () => {
       });
 
       assert.deepStrictEqual(
-        plan.steps.map((step) => step.id),
+        Arr.map(plan.steps, (step) => step.id),
         ["renew"],
       );
       assert.deepStrictEqual(
@@ -200,6 +200,7 @@ describe("registration.renew.prepare", () => {
         Actions.registration.renew.prepare(ens, {
           ...options,
           // `sender` is the route's adapter boundary, a Promise by contract.
+          // oxlint-disable-next-line effecttsgo/async-function -- the Promise-typed sender boundary under test
           via: { id: "account", sender: async () => other },
         }),
         { _tag: "InsufficientFundsError", code: "INSUFFICIENT_TOKEN_BALANCE" },

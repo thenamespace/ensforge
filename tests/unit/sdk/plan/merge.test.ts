@@ -1,4 +1,5 @@
 import { assert, describe, it } from "@effect/vitest";
+import { Array as Arr } from "effect";
 
 import { make } from "@ensforge/sdk/internal/plan/make";
 import { merge } from "@ensforge/sdk/internal/plan/merge";
@@ -57,7 +58,7 @@ describe("Plan.merge", () => {
     assert.strictEqual(merged.chainId, 1);
     assert.strictEqual(merged.account, alice);
     assert.deepStrictEqual(
-      merged.steps.map((step) => step.id),
+      Arr.map(merged.steps, (step) => step.id),
       ["0.set", "1.commit", "1.register"],
     );
     assert.deepStrictEqual(merged.steps[2]?.waitFor, { seconds: 60n });
@@ -72,7 +73,7 @@ describe("Plan.merge", () => {
     const merged = merge([recordsPlan, recordsPlan]);
 
     assert.deepStrictEqual(
-      merged.steps.map((step) => step.id),
+      Arr.map(merged.steps, (step) => step.id),
       ["0.set", "1.set"],
     );
   });

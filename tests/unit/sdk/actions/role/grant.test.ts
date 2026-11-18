@@ -1,5 +1,5 @@
 import { assert, describe, it } from "@effect/vitest";
-import { Effect } from "effect";
+import { Array as Arr, Effect } from "effect";
 
 import { Abis, Roles } from "@ensforge/contracts";
 import { Actions } from "@ensforge/sdk/effect";
@@ -73,7 +73,7 @@ describe("role.grant.prepare", () => {
         });
 
         assert.deepStrictEqual(
-          plan.warnings.map((warning) => warning.code),
+          Arr.map(plan.warnings, (warning) => warning.code),
           ["TOKEN_ID_REGENERATED"],
         );
       }),
@@ -113,6 +113,7 @@ describe("role.grant.prepare", () => {
       Actions.role.grant.prepare(clientFor(world).ens, {
         grantee: other,
         roles: ["setResolver"],
+        // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- the cases include inputs the types reject
         ...(options as { target: "registry" }),
       }),
       { _tag: tag, code },

@@ -1,6 +1,6 @@
 import { NodeServices } from "@effect/platform-node";
-import { assert, describe, it } from "@effect/vitest";
-import { Effect, FileSystem, Path } from "effect";
+import { assert, describe, it, layer } from "@effect/vitest";
+import { Effect, FileSystem, Path, Schema } from "effect";
 
 import {
   checksums,
@@ -67,8 +67,8 @@ describe("planProblems", () => {
   });
 });
 
-describe("readPackDir", () => {
-  it.effect("reads the plan with the tarballs' integrity, and checksums every other file", () =>
+layer(NodeServices.layer)("readPackDir", (readIt) => {
+  readIt.effect("reads the plan with the tarballs' integrity, and checksums every other file", () =>
     Effect.gen(function* () {
       const fs = yield* FileSystem.FileSystem;
       const path = yield* Path.Path;
@@ -76,22 +76,20 @@ describe("readPackDir", () => {
       const tarball = new TextEncoder().encode("tarball");
       yield* fs.makeDirectory(path.join(dir, "packages"));
       yield* fs.writeFile(path.join(dir, sdk.tarball), tarball);
-      yield* fs.writeFileString(
-        path.join(dir, "publish-plan.json"),
-        JSON.stringify({
-          version: 1,
-          plan: [
-            [
-              {
-                kind: "publish",
-                name: sdk.name,
-                version: sdk.version,
-                tarball: { path: sdk.tarball, integrity: integrityOf("sha256", tarball) },
-              },
-            ],
+      const publishPlan = yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))({
+        version: 1,
+        plan: [
+          [
+            {
+              kind: "publish",
+              name: sdk.name,
+              version: sdk.version,
+              tarball: { path: sdk.tarball, integrity: integrityOf("sha256", tarball) },
+            },
           ],
-        }),
-      );
+        ],
+      });
+      yield* fs.writeFileString(path.join(dir, "publish-plan.json"), publishPlan);
       yield* fs.writeFileString(path.join(dir, "verification.json"), "{}");
 
       const packed = yield* readPackDir(dir);
@@ -103,6 +101,6 @@ describe("readPackDir", () => {
         [...sums.keys()],
         ["packages/ensforge-sdk-1.0.0.tgz", "publish-plan.json"],
       );
-    }).pipe(Effect.scoped, Effect.provide(NodeServices.layer)),
+    }).pipe(Effect.scoped),
   );
 });

@@ -1,11 +1,11 @@
 import { assert, describe, it } from "@effect/vitest";
-import { Effect } from "effect";
+import { Array as Arr, Effect } from "effect";
 
 import { Abis, Deployments } from "@ensforge/contracts";
 import { nameWrapperFuses as fuses } from "@ensforge/contracts/v1";
 import { Actions, Name } from "@ensforge/sdk/effect";
 import { expectFailure } from "@ensforge/test-harness";
-import { decodeAbiParameters, decodeFunctionData, parseAbiParameters, type Hex } from "viem";
+import { decodeAbiParameters, decodeFunctionData, isHex, parseAbiParameters } from "viem";
 import { labelhash, namehash } from "viem/ens";
 
 import { clientFor, now, other, signer, type World } from "../world.js";
@@ -35,7 +35,7 @@ describe("wrapper.wrap.prepare", () => {
           data: call?.data ?? "0x",
         });
         assert.deepStrictEqual(
-          plan.steps.map((step) => step.id),
+          Arr.map(plan.steps, (step) => step.id),
           ["wrap"],
         );
         assert.strictEqual(call?.to, baseRegistrar);
@@ -45,10 +45,12 @@ describe("wrapper.wrap.prepare", () => {
           nameWrapper,
           BigInt(labelhash("alice")),
         ]);
+        const wrapData = args?.[3];
+        if (!isHex(wrapData)) assert.fail("the transfer carries no wrap data");
         assert.deepStrictEqual(
           decodeAbiParameters(
             parseAbiParameters("string, address, uint16, address"),
-            args?.[3] as Hex,
+            wrapData,
           ).slice(0, 3),
           ["alice", signer, fuses.cannotUnwrap],
         );
@@ -67,7 +69,7 @@ describe("wrapper.wrap.prepare", () => {
 
       const wrap = plan.calls.at(-1);
       assert.deepStrictEqual(
-        plan.steps.map((step) => step.id),
+        Arr.map(plan.steps, (step) => step.id),
         [...steps],
       );
       assert.strictEqual(wrap?.to, nameWrapper);

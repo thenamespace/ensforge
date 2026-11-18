@@ -1,5 +1,5 @@
 import { assert, describe, it } from "@effect/vitest";
-import { Effect, Tracer } from "effect";
+import { Array as Arr, Effect, Predicate, String as Str, Tracer } from "effect";
 
 import { Actions as PromiseActions, Plan, type Write } from "@ensforge/sdk";
 import { Actions } from "@ensforge/sdk/effect";
@@ -7,7 +7,7 @@ import { make as makePlan } from "@ensforge/sdk/internal/plan/make";
 import { expectFailure } from "@ensforge/test-harness";
 import { getAddress, pad, type Address, type Hex } from "viem";
 
-import { account, scriptedWallet, target } from "../write/wallet";
+import { account, requestsOf, scriptedWallet, target } from "../write/wallet";
 
 const bob = getAddress("0x0000000000000000000000000000000000000b0b");
 const elsewhere: Address = "0x00000000000000000000000000000000000000dd";
@@ -28,7 +28,7 @@ const planOf = (
       {
         id: "a",
         description: "a",
-        calls: (options.to ?? [target]).map((to) => ({ to, data: "0x01" as Hex, value: 0n })),
+        calls: Arr.map(options.to ?? [target], (to) => ({ to, data: "0x01" as Hex, value: 0n })),
       },
       { id: "b", description: "b", calls: [{ to: target, data: "0x02", value: 0n }] },
     ],
@@ -48,11 +48,13 @@ const recordOf = (plan: Plan, progress: Partial<Plan.Record> = {}): Plan.Record 
 const walletWith = (...records: readonly Plan.Record[]) =>
   Effect.gen(function* () {
     const storage = Plan.memoryStorage();
-    yield* Effect.forEach(records, (record) => Effect.promise(() => storage.set(record)));
+    yield* Effect.forEach(records, (record) => Effect.promise(() => storage.set(record)), {
+      concurrency: 1,
+    });
     return scriptedWallet({ storage });
   });
 
-const ids = (records: readonly Plan.Record[]) => records.map((record) => record.plan.id);
+const ids = (records: readonly Plan.Record[]) => Arr.map(records, (record) => record.plan.id);
 
 /** Storage that fails every request. */
 const brokenStorage: Plan.Storage = {
@@ -68,8 +70,11 @@ describe("plan.get", () => {
       const record = recordOf(planOf());
       const { client } = yield* walletWith(record);
 
-      assert.deepStrictEqual(yield* Actions.plan.get(client, { id: record.plan.id }), record);
-      assert.strictEqual(yield* Actions.plan.get(client, { id: "unknown" }), null);
+      const saved = yield* Actions.plan.get(client, { id: record.plan.id });
+      const unknown = yield* Actions.plan.get(client, { id: "unknown" });
+
+      assert.deepStrictEqual(saved, record);
+      assert.strictEqual(unknown, null);
     }),
   );
 });
@@ -84,19 +89,13 @@ describe("plan.list", () => {
       const elsewhereChain = recordOf(planOf({ chainId: 10 }), { updatedAt: 4 });
       const { client } = yield* walletWith(old, recent, bobs, elsewhereChain);
 
-      assert.deepStrictEqual(ids(yield* Actions.plan.list(client, {})), [
-        recent.plan.id,
-        bobs.plan.id,
-        old.plan.id,
-      ]);
-      assert.deepStrictEqual(ids(yield* Actions.plan.list(client, { status: "failed" })), [
-        recent.plan.id,
-        bobs.plan.id,
-      ]);
-      assert.deepStrictEqual(
-        ids(yield* Actions.plan.list(client, { account: bob.toLowerCase() })),
-        [bobs.plan.id],
-      );
+      const all = yield* Actions.plan.list(client, {});
+      const failed = yield* Actions.plan.list(client, { status: "failed" });
+      const ofBob = yield* Actions.plan.list(client, { account: Str.toLowerCase(bob) });
+
+      assert.deepStrictEqual(ids(all), [recent.plan.id, bobs.plan.id, old.plan.id]);
+      assert.deepStrictEqual(ids(failed), [recent.plan.id, bobs.plan.id]);
+      assert.deepStrictEqual(ids(ofBob), [bobs.plan.id]);
     }),
   );
 
@@ -133,8 +132,10 @@ describe("plan.reconcile", () => {
         hash,
       });
 
+      const reloaded = yield* Actions.plan.get(client, { id: record.plan.id });
+
       assert.deepStrictEqual(updated.submitted, { a: [hash], b: [recorded] });
-      assert.deepStrictEqual(yield* Actions.plan.get(client, { id: record.plan.id }), updated);
+      assert.deepStrictEqual(reloaded, updated);
     }),
   );
 
@@ -155,10 +156,8 @@ describe("plan.reconcile", () => {
           error.shortMessage,
           "The transaction is not from the plan's account or to the step's contracts.",
         );
-        assert.deepStrictEqual(
-          (yield* Actions.plan.get(client, { id: record.plan.id }))?.submitted,
-          {},
-        );
+        const reloaded = yield* Actions.plan.get(client, { id: record.plan.id });
+        assert.deepStrictEqual(reloaded?.submitted, {});
       }),
   );
 
@@ -189,7 +188,7 @@ describe("plan.reconcile", () => {
       assert.strictEqual(unknownStep.field, "step");
       assert.strictEqual(unknownStep.shortMessage, "The plan has no step z.");
       assert.strictEqual(
-        calls.filter(({ method }) => method === "eth_getTransactionByHash").length,
+        Arr.filter(calls, ({ method }) => method === "eth_getTransactionByHash").length,
         0,
       );
     }),
@@ -200,19 +199,28 @@ describe("plan.resume", () => {
   it.effect("sends the remaining steps, and resumeSync waits for every receipt", () =>
     Effect.gen(function* () {
       const plan = planOf();
-      const [submitted, synced] = yield* Effect.forEach([false, true], (sync) =>
-        Effect.gen(function* () {
-          const wallet = yield* walletWith(recordOf(plan, { submitted: { a: [recorded] } }));
-          const events: string[] = [];
-          const options = {
-            id: plan.id,
-            onStep: (event: Plan.Event) => events.push(`${event.step.id} ${event.status}`),
-          };
-          const result = sync
-            ? yield* Actions.plan.resumeSync(wallet.client, options)
-            : yield* Actions.plan.resume(wallet.client, options);
-          return { result, events, transactions: wallet.transactions() };
-        }),
+      const [submitted, synced] = yield* Effect.forEach(
+        [false, true],
+        (sync) =>
+          Effect.gen(function* () {
+            const wallet = yield* walletWith(recordOf(plan, { submitted: { a: [recorded] } }));
+            const events: string[] = [];
+            const options = {
+              id: plan.id,
+              onStep: (event: Plan.Event) => events.push(`${event.step.id} ${event.status}`),
+            };
+            const syncResult = sync
+              ? yield* Actions.plan.resumeSync(wallet.client, options)
+              : undefined;
+            const result = syncResult ?? (yield* Actions.plan.resume(wallet.client, options));
+            return {
+              result,
+              receipts: syncResult?.receipts,
+              events,
+              transactions: wallet.transactions(),
+            };
+          }),
+        { concurrency: 1 },
       );
 
       assert.deepStrictEqual(submitted?.transactions, [["0x02"]]);
@@ -220,9 +228,7 @@ describe("plan.resume", () => {
       assert.notProperty(submitted?.result, "receipts");
       assert.deepStrictEqual(synced?.events, ["a confirmed", "b submitted", "b confirmed"]);
       assert.deepStrictEqual(
-        (synced?.result as Write.SyncResult | undefined)?.receipts.map(
-          (receipt) => receipt.transactionHash,
-        ),
+        Arr.map(synced?.receipts ?? [], (receipt) => receipt.transactionHash),
         [recorded, pad("0x1")],
       );
     }),
@@ -251,20 +257,29 @@ describe("plan.send", () => {
   it.effect("submits with send, and waits for the receipts with sendSync", () =>
     Effect.gen(function* () {
       const plan = planOf();
-      const [sent, synced] = yield* Effect.forEach([false, true], (sync) =>
-        Effect.gen(function* () {
-          const wallet = scriptedWallet();
-          const events: string[] = [];
-          const options = {
-            plan,
-            mode: "sequential" as const,
-            onStep: (event: Plan.Event) => events.push(`${event.step.id} ${event.status}`),
-          };
-          const result = sync
-            ? yield* Actions.plan.sendSync(wallet.client, options)
-            : yield* Actions.plan.send(wallet.client, options);
-          return { result, events, capabilities: wallet.count("wallet_getCapabilities") };
-        }),
+      const [sent, synced] = yield* Effect.forEach(
+        [false, true],
+        (sync) =>
+          Effect.gen(function* () {
+            const wallet = scriptedWallet();
+            const events: string[] = [];
+            const options = {
+              plan,
+              mode: "sequential" as const,
+              onStep: (event: Plan.Event) => events.push(`${event.step.id} ${event.status}`),
+            };
+            const syncResult = sync
+              ? yield* Actions.plan.sendSync(wallet.client, options)
+              : undefined;
+            const result = syncResult ?? (yield* Actions.plan.send(wallet.client, options));
+            return {
+              result,
+              receipts: syncResult?.receipts,
+              events,
+              capabilities: wallet.count("wallet_getCapabilities"),
+            };
+          }),
+        { concurrency: 1 },
       );
 
       // The write's options reach the runtime: its mode and its listener.
@@ -277,7 +292,7 @@ describe("plan.send", () => {
         "b submitted",
         "b confirmed",
       ]);
-      assert.strictEqual((synced?.result as Write.SyncResult | undefined)?.receipts.length, 2);
+      assert.strictEqual(synced?.receipts?.length, 2);
     }),
   );
 
@@ -306,9 +321,9 @@ describe("plan.send", () => {
         const routed: (Address | undefined)[] = [];
         const via: Write.Via = {
           id: "rewrite",
-          prepare: async (prepared, context) => {
+          prepare: (prepared, context) => {
             routed.push(context.account);
-            return prepared;
+            return Promise.resolve(prepared);
           },
         };
 
@@ -318,9 +333,7 @@ describe("plan.send", () => {
         assert.isTrue(simulation.ok);
         assert.deepStrictEqual(routed, [account]);
         const senders = (method: string) =>
-          wallet.calls
-            .filter((call) => call.method === method)
-            .map(({ params }) => (params as readonly Record<string, unknown>[])[0]?.from);
+          Arr.map(requestsOf(wallet.calls, method), (request) => request.from);
         assert.deepStrictEqual(senders("eth_call"), [account, account]);
         assert.deepStrictEqual(senders("eth_estimateGas"), [account, account]);
       }),
@@ -334,7 +347,7 @@ describe("plan.send", () => {
 
       assert.isFalse(simulation.ok);
       assert.deepStrictEqual(
-        simulation.steps.map(({ id, ok }) => [id, ok]),
+        Arr.map(simulation.steps, ({ id, ok }) => [id, ok]),
         [
           ["a", true],
           ["b", false],
@@ -346,12 +359,17 @@ describe("plan.send", () => {
   );
 });
 
-/** The failure of a Promise-form action, as a value. */
-const promised = (thunk: () => Promise<unknown>) =>
+/** The operation a Promise-form action's failure reports; a call that resolves fails the test. */
+const failedOperation = (thunk: () => Promise<unknown>) =>
   Effect.flip(
     Effect.tryPromise({
-      try: thunk,
-      catch: (cause) => cause as { readonly context: { readonly operation?: string } },
+      try: () => thunk().then(() => undefined),
+      catch: (cause) =>
+        Predicate.isObject(cause) &&
+        Predicate.isObject(cause.context) &&
+        Predicate.isString(cause.context.operation)
+          ? cause.context.operation
+          : undefined,
     }),
   );
 
@@ -360,17 +378,18 @@ describe("plan actions, Promise forms", () => {
     Effect.gen(function* () {
       const client = scriptedWallet({ storage: brokenStorage }).client;
       const operations = [
-        yield* promised(() => PromiseActions.plan.get(client, { id: "a" })),
-        yield* promised(() =>
+        yield* failedOperation(() => PromiseActions.plan.get(client, { id: "a" })),
+        yield* failedOperation(() =>
           PromiseActions.plan.reconcile(client, { id: "a", step: "a", hash: recorded }),
         ),
-        yield* promised(() => PromiseActions.plan.resume(client, { id: "a" })),
-        yield* promised(() => PromiseActions.plan.resumeSync(client, { id: "a" })),
-        yield* promised(() =>
+        yield* failedOperation(() => PromiseActions.plan.resume(client, { id: "a" })),
+        yield* failedOperation(() => PromiseActions.plan.resumeSync(client, { id: "a" })),
+        yield* failedOperation(() =>
           PromiseActions.plan.sendSync(client, { plan: planOf({ account: bob }) }),
         ),
-      ].map((error) => error.context.operation);
-      const effects = [yield* Effect.flip(Actions.plan.get(client, { id: "a" }))].map(
+      ];
+      const effects = Arr.map(
+        [yield* Effect.flip(Actions.plan.get(client, { id: "a" }))],
         (error) => error.context.operation,
       );
 
@@ -400,34 +419,34 @@ describe("plan action spans", () => {
         },
       });
 
-      yield* Effect.all([
-        Actions.plan.get(client, { id: plan.id }),
-        Actions.plan.list(client, {}),
-        Effect.flip(Actions.plan.reconcile(client, { id: plan.id, step: "z", hash: recorded })),
-        Actions.plan.resume(client, { id: plan.id }),
-        Actions.plan.resumeSync(client, { id: plan.id }),
-        Actions.plan.send.prepare(client, { plan }),
-        Actions.plan.send.simulate(client, { plan }),
-        Actions.plan.send.estimateGas(client, { plan }),
-        Actions.plan.send(client, { plan }),
-        Actions.plan.sendSync(client, { plan }),
-      ]).pipe(Effect.withTracer(tracer));
-
-      assert.deepStrictEqual(
-        names.filter((name) => name.startsWith("ensforge.")),
+      yield* Effect.all(
         [
-          "ensforge.plan.get",
-          "ensforge.plan.list",
-          "ensforge.plan.reconcile",
-          "ensforge.plan.resume",
-          "ensforge.plan.resumeSync",
-          "ensforge.plan.send.prepare",
-          "ensforge.plan.send.simulate",
-          "ensforge.plan.send.estimateGas",
-          "ensforge.plan.send",
-          "ensforge.plan.sendSync",
+          Actions.plan.get(client, { id: plan.id }),
+          Actions.plan.list(client, {}),
+          Effect.flip(Actions.plan.reconcile(client, { id: plan.id, step: "z", hash: recorded })),
+          Actions.plan.resume(client, { id: plan.id }),
+          Actions.plan.resumeSync(client, { id: plan.id }),
+          Actions.plan.send.prepare(client, { plan }),
+          Actions.plan.send.simulate(client, { plan }),
+          Actions.plan.send.estimateGas(client, { plan }),
+          Actions.plan.send(client, { plan }),
+          Actions.plan.sendSync(client, { plan }),
         ],
-      );
+        { concurrency: 1 },
+      ).pipe(Effect.withTracer(tracer));
+
+      assert.deepStrictEqual(Arr.filter(names, Str.startsWith("ensforge.")), [
+        "ensforge.plan.get",
+        "ensforge.plan.list",
+        "ensforge.plan.reconcile",
+        "ensforge.plan.resume",
+        "ensforge.plan.resumeSync",
+        "ensforge.plan.send.prepare",
+        "ensforge.plan.send.simulate",
+        "ensforge.plan.send.estimateGas",
+        "ensforge.plan.send",
+        "ensforge.plan.sendSync",
+      ]);
     }),
   );
 });

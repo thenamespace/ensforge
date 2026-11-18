@@ -1,10 +1,11 @@
 import { assert, describe, it } from "@effect/vitest";
+import { Array as Arr } from "effect";
 
 import { consumerManifests, publicEntries } from "@ensforge/tools/internal/release/consumer";
 
 describe("consumerManifests", () => {
   it("installs the tarballs, overrides their dependencies on each other, and adds every peer", () => {
-    const releases = ["contracts", "sdk"].map((name) => ({
+    const releases = Arr.map(["contracts", "sdk"], (name) => ({
       name: `@ensforge/${name}`,
       version: "1.0.0",
       tarball: `packages/ensforge-${name}-1.0.0.tgz`,

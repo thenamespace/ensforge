@@ -3,12 +3,19 @@ import { Effect } from "effect";
 
 import { Abis, Deployments } from "@ensforge/contracts";
 import { standaloneSingleOwnerHcaV2Abi } from "@ensforge/contracts/v2/experimental/hca";
-import type { HcaSession } from "@ensforge/hca";
+import type { HcaError, HcaSession } from "@ensforge/hca";
 import { Actions } from "@ensforge/hca/effect";
+import type { Errors } from "@ensforge/sdk";
 import { expectFailure } from "@ensforge/test-harness";
-import { decodeFunctionData, zeroHash, type Address, type Hex } from "viem";
+import { decodeFunctionData, zeroHash, type Address } from "viem";
 
 import { contracts, hcaAddress, hcaOf, makeClient, owner } from "../fixtures";
+
+// A success type of `unknown` would turn `expectFailure`'s flipped error channel into `unknown`.
+type FailingAction = readonly [
+  string,
+  Effect.Effect<object | bigint | string | boolean, Errors.AnyError | HcaError>,
+];
 
 const other: Address = "0x00000000000000000000000000000000000000bb";
 
@@ -19,7 +26,8 @@ describe("hca.predictAddress", () => {
   ] as const)("derives the HCA of %s through the factory's CREATE2", ([, options, expected]) =>
     Effect.gen(function* () {
       const { client } = makeClient();
-      assert.strictEqual(yield* Actions.hca.predictAddress(client, options), expected);
+      const predicted = yield* Actions.hca.predictAddress(client, options);
+      assert.strictEqual(predicted, expected);
     }),
   );
 });
@@ -48,7 +56,7 @@ describe("hca without a deployment", () => {
     signingDomain: "smart-session",
   };
 
-  it.effect.each<readonly [string, Effect.Effect<unknown, unknown>]>([
+  it.effect.each<FailingAction>([
     ["hca.predictAddress", Actions.hca.predictAddress(client, {})],
     ["hca.get", Actions.hca.get(client, {})],
     ["hca.getDeposit", Actions.hca.getDeposit(client, {})],
@@ -103,7 +111,7 @@ describe("hca input validation", () => {
   const bad = "0x1234";
   const { client } = makeClient();
 
-  it.effect.each<readonly [string, Effect.Effect<unknown, unknown>]>([
+  it.effect.each<FailingAction>([
     ["predictAddress.owner", Actions.hca.predictAddress(client, { owner: bad })],
     ["get.address", Actions.hca.get(client, { address: bad })],
     ["get.owner", Actions.hca.get(client, { owner: bad })],
@@ -175,18 +183,14 @@ describe("hca verification", () => {
     ],
   });
 
-  it.effect.each<readonly [string, Effect.Effect<unknown, unknown>]>([
+  it.effect.each<FailingAction>([
     ["hca.verify", Actions.hca.verify(client, {})],
     ["hca.execute", Actions.hca.execute.prepare(client, { calls: [{ to: other }] })],
   ])("%s refuses an HCA that fails verification", ([, action]) =>
     Effect.gen(function* () {
       const error = yield* expectFailure(action, { _tag: "HcaError", code: "HCA_NOT_VERIFIED" });
 
-      assert.deepStrictEqual((error as { details?: unknown }).details, [
-        "owner-mismatch",
-        "unknown-account",
-        "not-certified",
-      ]);
+      assert.deepStrictEqual(error.details, ["owner-mismatch", "unknown-account", "not-certified"]);
     }),
   );
 });
@@ -259,9 +263,8 @@ describe("hca write preconditions", () => {
       assert.strictEqual(outer.value, 0n);
       const decoded = decodeFunctionData({ abi: standaloneSingleOwnerHcaV2Abi, data: outer.data });
       assert.strictEqual(decoded.functionName, "executeByOwner");
-      const [[inner]] = decoded.args as unknown as readonly [
-        readonly { target: Address; callData: Hex }[],
-      ];
+      if (decoded.functionName !== "executeByOwner") return;
+      const [[inner]] = decoded.args;
       assert.isDefined(inner);
       assert.strictEqual(inner.target, hcaAddress);
       assert.deepStrictEqual(

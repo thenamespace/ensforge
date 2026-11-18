@@ -1,5 +1,5 @@
 import { assert, describe, it } from "@effect/vitest";
-import { Effect, Fiber } from "effect";
+import { Array, DateTime, Effect, Fiber, Option, Schema } from "effect";
 import { TestClock } from "effect/testing";
 
 import {
@@ -37,9 +37,12 @@ describe("send: retries", () => {
       const fake = fakeBigname();
       fake.on("/status", reply.error(code));
 
-      yield* expectFailure(withClock(send(configOf(fake), statusRequest), 2_000), {
-        _tag: "IndexerError",
-      });
+      yield* expectFailure(
+        withClock(send(configOf(fake), statusRequest), 2_000).pipe(Effect.asVoid),
+        {
+          _tag: "IndexerError",
+        },
+      );
       assert.strictEqual(fake.requests.length, 3);
     }),
   );
@@ -49,7 +52,9 @@ describe("send: retries", () => {
       const fake = fakeBigname();
       fake.on("/status", reply.error(code));
 
-      yield* expectFailure(send(configOf(fake), statusRequest), { _tag: "IndexerError" });
+      yield* expectFailure(send(configOf(fake), statusRequest).pipe(Effect.asVoid), {
+        _tag: "IndexerError",
+      });
       assert.strictEqual(fake.requests.length, 1);
     }),
   );
@@ -62,10 +67,13 @@ describe("send: retries", () => {
       const body = yield* withClock(send(configOf(fake), statusRequest), 1_000);
 
       assert.deepStrictEqual(
-        fake.requests.map((request) => request.status),
+        Array.map(fake.requests, (request) => request.status),
         [503, undefined, 200],
       );
-      assert.strictEqual((body as { data: { status: string } }).data.status, "ready");
+      const { data } = yield* Schema.decodeUnknownEffect(
+        Schema.Struct({ data: Schema.Struct({ status: Schema.String }) }),
+      )(body);
+      assert.strictEqual(data.status, "ready");
     }),
   );
 
@@ -109,7 +117,10 @@ describe("send: retries", () => {
     Effect.gen(function* () {
       const fake = fakeBigname();
       // The test clock starts at 0: the date is 10 seconds after it.
-      fake.once("/status", reply.rateLimited(new Date(10_000).toUTCString()));
+      fake.once(
+        "/status",
+        reply.rateLimited(DateTime.toDateUtc(DateTime.makeUnsafe(10_000)).toUTCString()),
+      );
       const fiber = yield* Effect.forkChild(send(configOf(fake), statusRequest));
 
       yield* TestClock.adjust(8_000);
@@ -154,7 +165,10 @@ describe("send: retries", () => {
       fake.on("/status", reply.hang());
 
       const error = yield* expectFailure(
-        withClock(send(configOf(fake, { timeout: 1_000, retryCount: 0 }), statusRequest), 1_000),
+        withClock(
+          send(configOf(fake, { timeout: 1_000, retryCount: 0 }), statusRequest),
+          1_000,
+        ).pipe(Effect.asVoid),
         { _tag: "IndexerError", code: "INDEXER_UNAVAILABLE" },
       );
       assert.strictEqual(error.shortMessage, "The indexer did not answer in time.");
@@ -195,10 +209,10 @@ describe("send: error mapping", () => {
       const fake = fakeBigname();
       fake.on("/status", reply.error(code, indexerCode, "upstream says no"));
 
-      const error = yield* expectFailure(send(configOf(fake, { retryCount: 0 }), statusRequest), {
-        _tag: "IndexerError",
-        code: expected,
-      });
+      const error = yield* expectFailure(
+        send(configOf(fake, { retryCount: 0 }), statusRequest).pipe(Effect.asVoid),
+        { _tag: "IndexerError", code: expected },
+      );
       assert.strictEqual(error.status, code);
       assert.strictEqual(error.indexerCode, indexerCode);
       assert.strictEqual(error.route, "/status");
@@ -217,7 +231,11 @@ describe("send: error mapping", () => {
       fake.on("/names/{name}", answer);
 
       const error = yield* expectFailure(
-        send(configOf(fake), { route: "/names/{name}", path: "/names/x.eth", resource: "x.eth" }),
+        send(configOf(fake), {
+          route: "/names/{name}",
+          path: "/names/x.eth",
+          resource: "x.eth",
+        }).pipe(Effect.asVoid),
         { _tag: "NotFoundError", code: "INDEXER_NOT_FOUND" },
       );
       assert.strictEqual(error.resource, "x.eth");
@@ -230,7 +248,7 @@ describe("send: error mapping", () => {
       const fake = fakeBigname();
       fake.on("/status", reply.text("<html>maintenance</html>"));
 
-      yield* expectFailure(send(configOf(fake), statusRequest), {
+      yield* expectFailure(send(configOf(fake), statusRequest).pipe(Effect.asVoid), {
         _tag: "IndexerError",
         code: "INDEXER_RESPONSE_INVALID",
       });
@@ -243,10 +261,13 @@ describe("send: error mapping", () => {
       const fake = fakeBigname();
       fake.on("/status", reply.text("Bad Gateway", 502));
 
-      yield* expectFailure(send(configOf(fake, { retryCount: 0 }), statusRequest), {
-        _tag: "IndexerError",
-        code: "INDEXER_UNAVAILABLE",
-      });
+      yield* expectFailure(
+        send(configOf(fake, { retryCount: 0 }), statusRequest).pipe(Effect.asVoid),
+        {
+          _tag: "IndexerError",
+          code: "INDEXER_UNAVAILABLE",
+        },
+      );
     }),
   );
 
@@ -255,10 +276,13 @@ describe("send: error mapping", () => {
       const fake = fakeBigname();
       fake.on("/status", reply.network("getaddrinfo ENOTFOUND"));
 
-      yield* expectFailure(send(configOf(fake, { retryCount: 0 }), statusRequest), {
-        _tag: "IndexerError",
-        code: "INDEXER_UNAVAILABLE",
-      });
+      yield* expectFailure(
+        send(configOf(fake, { retryCount: 0 }), statusRequest).pipe(Effect.asVoid),
+        {
+          _tag: "IndexerError",
+          code: "INDEXER_UNAVAILABLE",
+        },
+      );
     }),
   );
 });
@@ -283,7 +307,7 @@ describe("send: requests", () => {
         repeat: ["expires_window"],
       });
 
-      const { query } = fake.requests[0] as { query: URLSearchParams };
+      const { query } = Option.getOrThrow(Array.head(fake.requests));
       assert.deepStrictEqual(query.getAll("expires_window"), ["1..2", "3..4"]);
       assert.strictEqual(query.get("include"), "data,total_count");
       assert.isFalse(query.has("authority"));
@@ -321,7 +345,7 @@ describe("send: ETag cache", () => {
 
       assert.deepStrictEqual(second, first);
       assert.deepStrictEqual(
-        fake.requests.map((request) => request.status),
+        Array.map(fake.requests, (request) => request.status),
         [200, 304],
       );
       assert.isDefined(fake.requests[1]?.headers["if-none-match"]);
@@ -340,7 +364,7 @@ describe("send: ETag cache", () => {
       yield* send(cached, lookup);
 
       assert.isTrue(
-        fake.requests.every((request) => request.headers["if-none-match"] === undefined),
+        Array.every(fake.requests, (request) => request.headers["if-none-match"] === undefined),
       );
       assert.strictEqual(cached.cache?.size, 0);
     }),

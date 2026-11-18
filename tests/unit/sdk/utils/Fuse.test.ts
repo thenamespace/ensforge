@@ -1,5 +1,5 @@
 import { assert, describe, it } from "@effect/vitest";
-import { Schema } from "effect";
+import { Record, Schema } from "effect";
 
 import * as Fuse from "@ensforge/sdk/internal/utils/Fuse";
 import { expectThrow } from "@ensforge/test-harness";
@@ -18,11 +18,11 @@ const values = {
   canExtendExpiry: 0x40000,
 } as const;
 
-const names = Object.keys(values) as Fuse.Name[];
-const noneBurned = Object.fromEntries(names.map((name) => [name, false])) as Fuse.Decoded;
+const names: readonly Fuse.Name[] = Record.keys(values);
+const noneBurned: Fuse.Decoded = Record.map(values, () => false);
 
 describe("Fuse.from", () => {
-  it.each(Object.entries(values) as [Fuse.Name, number][])("%s is %i", (name, value) => {
+  it.each(Record.toEntries(values))("%s is %i", (name, value) => {
     assert.strictEqual(Fuse.from([name]), value);
   });
 
@@ -37,6 +37,8 @@ describe("Fuse.from", () => {
   });
 
   it.each(["canDoEverything", "parentControlled", "userSettable", "nope"])("rejects %j", (name) => {
+    // The cast feeds an unknown fuse name on purpose.
+    // oxlint-disable-next-line typescript/no-unsafe-type-assertion
     expectThrow(() => Fuse.from([name as Fuse.Name]), {
       _tag: "InvalidInputError",
       code: "INVALID_RECORD_VALUE",
@@ -65,12 +67,8 @@ describe("Fuse.has and Fuse.decode", () => {
     assert.isFalse(Fuse.has(0, "cannotUnwrap"));
   });
 
-  it.prop(
-    "decode inverts from",
-    [Schema.Array(Schema.Literals(names as [Fuse.Name, ...Fuse.Name[]]))],
-    ([burned]) => {
-      const decoded = Fuse.decode(Fuse.from(burned));
-      for (const name of names) assert.strictEqual(decoded[name], burned.includes(name));
-    },
-  );
+  it.prop("decode inverts from", [Schema.Array(Schema.Literals(names))], ([burned]) => {
+    const decoded = Fuse.decode(Fuse.from(burned));
+    for (const name of names) assert.strictEqual(decoded[name], burned.includes(name));
+  });
 });

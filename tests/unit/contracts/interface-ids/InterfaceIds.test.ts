@@ -1,4 +1,5 @@
 import { assert, describe, it } from "@effect/vitest";
+import { Array as Arr, Record as Rec, String as Str } from "effect";
 
 import { Abis, InterfaceIds } from "@ensforge/contracts";
 import {
@@ -8,16 +9,21 @@ import {
 import { parseAbi, toFunctionSelector, type Abi, type AbiFunction } from "viem";
 
 const selectors = (abi: Abi): readonly string[] =>
-  abi.filter((entry): entry is AbiFunction => entry.type === "function").map(toFunctionSelector);
+  Arr.map(
+    Arr.filter(abi, (entry): entry is AbiFunction => entry.type === "function"),
+    toFunctionSelector,
+  );
 
 // Solidity's `type(I).interfaceId` XORs only the functions `I` declares; inherited ones are
 // subtracted by listing the parents from the contracts' `interface I is …` declarations.
 const interfaceId = (abi: Abi, parents: readonly Abi[] = []): string => {
-  const inherited = new Set(parents.flatMap(selectors));
-  const id = selectors(abi)
-    .filter((selector) => !inherited.has(selector))
-    .reduce((xor, selector) => xor ^ Number.parseInt(selector.slice(2), 16), 0);
-  return `0x${(id >>> 0).toString(16).padStart(8, "0")}`;
+  const inherited = new Set(Arr.flatMap(parents, selectors));
+  const id = Arr.reduce(
+    Arr.filter(selectors(abi), (selector) => !inherited.has(selector)),
+    0,
+    (xor, selector) => xor ^ Number.parseInt(Str.slice(2)(selector), 16),
+  );
+  return `0x${Str.padStart(8, "0")((id >>> 0).toString(16))}`;
 };
 
 const v2 = Abis.v2.interfaces;
@@ -88,14 +94,14 @@ describe("InterfaceIds.resolver and initializers", () => {
 });
 
 describe("InterfaceIds.resolverProfiles", () => {
-  const profiles = Object.entries(InterfaceIds.resolverProfiles);
+  const profiles = Rec.toEntries(InterfaceIds.resolverProfiles);
 
-  it.each(profiles.filter(([profile]) => profile !== "dnsRecord"))(
+  it.each(Arr.filter(profiles, ([profile]) => profile !== "dnsRecord"))(
     "%s matches its ABI",
     (profile, id) => {
       const abi = (Abis.shared as Readonly<Record<string, Abi>>)[`${profile}Resolver`];
       assert.isDefined(abi);
-      assert.strictEqual(interfaceId(abi as Abi), id);
+      assert.strictEqual(interfaceId(abi), id);
     },
   );
 

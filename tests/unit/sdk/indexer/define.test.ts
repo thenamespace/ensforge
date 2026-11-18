@@ -1,5 +1,5 @@
 import { assert, describe, it } from "@effect/vitest";
-import { Effect, Fiber } from "effect";
+import { Array, Effect, Fiber, Option } from "effect";
 
 import { Name } from "@ensforge/sdk";
 import * as Actions from "@ensforge/sdk/internal/actions/effect";
@@ -71,7 +71,7 @@ describe("defineIndexer", () => {
 
       yield* Actions.indexer.getName(ens, { name: "Jesse.Base.ETH" });
 
-      const [query, context] = calls[0] as [unknown, Context];
+      const [query, context] = Option.getOrThrow(Array.head(calls));
       assert.deepStrictEqual(query, { name: "jesse.base.eth", namespace: "basenames" });
       assert.strictEqual(context.chainId, 1);
       assert.instanceOf(context.signal, AbortSignal);
@@ -82,12 +82,12 @@ describe("defineIndexer", () => {
     "infers Basenames for subnames of base.eth, also when its labels are encoded",
     () =>
       Effect.gen(function* () {
-        const queries: unknown[] = [];
+        const namespaces: string[] = [];
         const ens = clientWith(
           defineIndexer({
             id: "x",
             getName: (query) => {
-              queries.push(query);
+              namespaces.push(query.namespace);
               return Promise.resolve(null);
             },
           }),
@@ -104,10 +104,7 @@ describe("defineIndexer", () => {
           yield* Actions.indexer.getName(ens, { name });
         }
 
-        assert.deepStrictEqual(
-          queries.map((query) => (query as { namespace: string }).namespace),
-          ["ens", "basenames", "basenames", "basenames"],
-        );
+        assert.deepStrictEqual(namespaces, ["ens", "basenames", "basenames", "basenames"]);
       }),
     { meta: { cases: ["H12", "H20"] } },
   );
@@ -120,7 +117,7 @@ describe("defineIndexer", () => {
           id: "x",
           getName: (_, context) => {
             signal = context.signal;
-            return new Promise(() => {});
+            return Promise.race([]);
           },
         }),
       );
@@ -140,16 +137,16 @@ describe("defineIndexer", () => {
     ["getSubnames", { items: "none" }, "INDEXER_RESPONSE_INVALID"],
   ] as const)("%s answering %j", ([method, draft, code]) =>
     Effect.gen(function* () {
-      const ens = clientWith(
-        defineIndexer({ id: "x", [method]: () => Promise.resolve(draft) } as never),
-      );
+      const ens = clientWith(defineIndexer({ id: "x", [method]: () => Promise.resolve(draft) }));
       const call: Effect.Effect<unknown, AnyError> =
         method === "getName"
           ? Actions.indexer.getName(ens, { name: "a.eth" })
           : Actions.indexer.getSubnames(ens, { name: "a.eth" });
 
-      if (code === null) assert.isNull(yield* call);
-      else yield* expectFailure(call, { _tag: "IndexerError", code });
+      if (code === null) {
+        const answer = yield* call;
+        assert.isNull(answer);
+      } else yield* expectFailure(call.pipe(Effect.asVoid), { _tag: "IndexerError", code });
     }),
   );
 

@@ -1,5 +1,5 @@
 import { assert, describe, it } from "@effect/vitest";
-import { Effect } from "effect";
+import { Array as Arr, Effect } from "effect";
 
 import { receiptsOf, waitForReceipts } from "@ensforge/sdk/internal/internal/write/receipts";
 import { sendSequential } from "@ensforge/sdk/internal/internal/write/transport";
@@ -21,7 +21,7 @@ describe("receipts", () => {
       const synced = yield* waitForReceipts(wallet.client, result, {});
 
       assert.deepStrictEqual(
-        synced.receipts.map((receipt) => receipt.transactionHash),
+        Arr.map(synced.receipts, (receipt) => receipt.transactionHash),
         [first, second, third],
       );
       assert.strictEqual(synced.receipt.transactionHash, third);

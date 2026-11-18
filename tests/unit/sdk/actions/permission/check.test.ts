@@ -1,5 +1,5 @@
 import { assert, describe, it } from "@effect/vitest";
-import { Effect } from "effect";
+import { Array as Arr, Effect } from "effect";
 
 import { Roles } from "@ensforge/contracts";
 import { Actions } from "@ensforge/sdk/effect";
@@ -12,20 +12,28 @@ describe("permission.check", () => {
   // (TransferUnsafeWithMultipleAssignees), which `name.transfer` sends by default.
   it.effect("blocks an ENSv2 transfer while other accounts hold roles on the name", () =>
     Effect.gen(function* () {
-      const [alone, shared] = yield* Effect.forEach([true, false], (onlyAssignee) =>
-        Actions.permission.check(
-          clientFor({
-            name: "alice.eth",
-            v2: { owner: signer, roles: Roles.registry.canTransferAdmin, onlyAssignee },
-          }).ens,
-          { name: "alice.eth", operation: "transfer", account: signer },
-        ),
+      const [alone, shared] = yield* Effect.forEach(
+        [true, false],
+        (onlyAssignee) =>
+          Actions.permission.check(
+            clientFor({
+              name: "alice.eth",
+              v2: { owner: signer, roles: Roles.registry.canTransferAdmin, onlyAssignee },
+            }).ens,
+            { name: "alice.eth", operation: "transfer", account: signer },
+          ),
+        { concurrency: 1 },
       );
 
       assert.isTrue(alone?.allowed);
       assert.isFalse(shared?.allowed);
       assert.deepStrictEqual(
-        shared?.missing.map((requirement) => requirement.type === "blocked" && requirement.reason),
+        shared === undefined
+          ? undefined
+          : Arr.map(
+              shared.missing,
+              (requirement) => requirement.type === "blocked" && requirement.reason,
+            ),
         ["transfer-disallowed"],
       );
     }),

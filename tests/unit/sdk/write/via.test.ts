@@ -28,10 +28,12 @@ const relay = (statuses: readonly Write.Via.Status[]) => {
   const polled: string[] = [];
   const via: Write.Via = {
     id: "relay",
-    send: async () => "ref-1",
-    status: async (reference) => {
+    send: () => Promise.resolve("ref-1"),
+    status: (reference) => {
       polled.push(reference);
-      return statuses[Math.min(polled.length - 1, statuses.length - 1)] as Write.Via.Status;
+      return Promise.resolve(
+        statuses[Math.min(polled.length - 1, statuses.length - 1)] ?? { status: "pending" },
+      );
     },
   };
   return { via, polled };
@@ -44,9 +46,9 @@ describe("route context", () => {
       const seen: Write.Via.Context[] = [];
       const via: Write.Via = {
         id: "relay",
-        sender: async (context) => {
+        sender: (context) => {
           seen.push(context);
-          return target;
+          return Promise.resolve(target);
         },
       };
 
@@ -62,7 +64,9 @@ describe("route context", () => {
           walletClient: wallet.signer.walletClient,
         },
       ]);
-      assert.strictEqual(yield* routeSender(wallet.client, undefined, account), undefined);
+      const unrouted = yield* routeSender(wallet.client, undefined, account);
+
+      assert.strictEqual(unrouted, undefined);
     }),
   );
 
@@ -86,12 +90,14 @@ describe("route context", () => {
       const prepared = yield* routePlan(
         wallet.client,
         plan,
-        { id: "rewrite", prepare: async () => rewritten },
+        { id: "rewrite", prepare: () => Promise.resolve(rewritten) },
         account,
       );
 
+      const unprepared = yield* routePlan(wallet.client, plan, { id: "none" }, account);
+
       assert.strictEqual(prepared, rewritten);
-      assert.strictEqual(yield* routePlan(wallet.client, plan, { id: "none" }, account), plan);
+      assert.strictEqual(unprepared, plan);
     }),
   );
 });
@@ -112,14 +118,16 @@ describe("route outcome", () => {
       const early = polled.length;
       yield* TestClock.adjust("1 millis");
 
-      assert.deepStrictEqual(yield* Fiber.join(fiber), [first]);
+      const hashes = yield* Fiber.join(fiber);
+
+      assert.deepStrictEqual(hashes, [first]);
       assert.strictEqual(early, 1);
       assert.deepStrictEqual(polled, ["ref-1", "ref-1"]);
     }),
   );
 
   it.effect.each<readonly [string, Write.Via]>([
-    ["has no status", { id: "relay", send: async () => "ref-1" }],
+    ["has no status", { id: "relay", send: () => Promise.resolve("ref-1") }],
     ["failed without transactions", relay([{ status: "failed", reason: "expired" }]).via],
     [
       "failed with an empty list of transactions",
@@ -130,7 +138,9 @@ describe("route outcome", () => {
       const wallet = scriptedWallet();
       const context = yield* viaContext(wallet.client, account);
 
-      assert.strictEqual(yield* routeOutcome(via, context, "ref-1"), undefined);
+      const outcome = yield* routeOutcome(via, context, "ref-1");
+
+      assert.strictEqual(outcome, undefined);
     }),
   );
 

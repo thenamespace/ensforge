@@ -1,16 +1,20 @@
-import { readdirSync, readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 
-import { assert, describe, it } from "@effect/vitest";
+import { NodeServices } from "@effect/platform-node";
+import { assert, layer } from "@effect/vitest";
+import { Array as Arr, Effect, FileSystem, String as Str } from "effect";
 
 import { Actions } from "@ensforge/sdk";
+
+import { actionsOf, propertyOf } from "./action-tree";
 
 // Every error code an action documents (`@throws … (`CODE`)`) must be asserted by a test that
 // names the action. Codes not covered yet are listed below and must shrink, never grow.
 
 const repository = new URL("../../../../", import.meta.url);
-const actionsFolder = new URL("packages/sdk/src/actions/", repository);
-const testFolders = ["tests/unit/sdk/", "tests/integration/test/"].map(
-  (folder) => new URL(folder, repository),
+const actionsFolder = fileURLToPath(new URL("packages/sdk/src/actions/", repository));
+const testFolders = Arr.map(["tests/unit/sdk/", "tests/integration/test/"], (folder) =>
+  fileURLToPath(new URL(folder, repository)),
 );
 
 // `conformance/invalid-name.test.ts` asserts these for every action generically.
@@ -30,70 +34,86 @@ const uncovered: Readonly<Record<string, readonly string[]>> = {};
 /** Documented codes of each write action without a test yet: `domain.action` → codes. */
 const uncoveredWrites: Readonly<Record<string, readonly string[]>> = {};
 
-const testSources = testFolders.flatMap((folder) =>
-  readdirSync(folder, { recursive: true, encoding: "utf8" })
-    // This file names every uncovered code; it does not cover them.
-    .filter((file) => file.endsWith(".ts") && !file.endsWith("throws-coverage.test.ts"))
-    .map((file) => readFileSync(new URL(file, folder), "utf8")),
+const testSources = Effect.gen(function* () {
+  const fs = yield* FileSystem.FileSystem;
+  const sources = yield* Effect.forEach(
+    testFolders,
+    (folder) =>
+      Effect.gen(function* () {
+        const files = yield* fs.readDirectory(folder, { recursive: true });
+        // This file names every uncovered code; it does not cover them.
+        const tests = Arr.filter(
+          files,
+          (file) => Str.endsWith(".ts")(file) && !Str.endsWith("throws-coverage.test.ts")(file),
+        );
+        return yield* Effect.forEach(tests, (file) => fs.readFileString(`${folder}${file}`), {
+          concurrency: 1,
+        });
+      }),
+    { concurrency: 1 },
+  );
+
+  return Arr.flatten(sources);
+});
+
+const readActions = Arr.filter(
+  actionsOf(Actions),
+  ({ action }) => propertyOf(action, "request") !== undefined,
 );
 
-const readActions = Object.entries(Actions as unknown as Record<string, Record<string, unknown>>)
-  .filter(([domain]) => domain !== "batch")
-  .flatMap(([domain, group]) =>
-    Object.entries(group)
-      .filter(([, action]) => (action as { readonly request?: unknown }).request !== undefined)
-      .map(([name]) => ({ domain, name, path: `${domain}.${name}` })),
-  );
+const writeActions = Arr.filter(
+  actionsOf(Actions),
+  ({ action }) => propertyOf(action, "prepare") !== undefined,
+);
 
-const writeActions = Object.entries(Actions as unknown as Record<string, Record<string, unknown>>)
-  .filter(([domain]) => domain !== "batch")
-  .flatMap(([domain, group]) =>
-    Object.entries(group)
-      .filter(([, action]) => (action as { readonly prepare?: unknown }).prepare !== undefined)
-      .map(([name]) => ({ domain, name, path: `${domain}.${name}` })),
-  );
+const documentedCodes = Effect.fn("documentedCodes")(function* (domain: string, name: string) {
+  const fs = yield* FileSystem.FileSystem;
+  const source = yield* fs.readFileString(`${actionsFolder}${domain}/${name}/index.ts`);
+  const throwsLines = Arr.filter(Str.split("\n")(source), Str.includes("@throws"));
 
-const documentedCodes = (domain: string, name: string): readonly string[] => {
-  const source = readFileSync(new URL(`${domain}/${name}/index.ts`, actionsFolder), "utf8");
   return [
     ...new Set(
-      source
-        .split("\n")
-        .filter((line) => line.includes("@throws"))
-        .flatMap((line) =>
-          [...line.matchAll(/`([A-Z][A-Z0-9_]+)`/g)].map(([, code]) => code ?? ""),
-        ),
+      Arr.flatMap(throwsLines, (line) =>
+        Arr.map([...Str.matchAll(/`([A-Z][A-Z0-9_]+)`/g)(line)], ([, code]) => code ?? ""),
+      ),
     ),
   ];
-};
+});
 
-const missingCodes = (
+const missingCodes = Effect.fn("missingCodes")(function* (
   actions: readonly { domain: string; name: string; path: string }[],
   covered: ReadonlySet<string>,
-) => {
+) {
+  const sources = yield* testSources;
   const missing: Record<string, string[]> = {};
   for (const { domain, name, path } of actions) {
-    const files = testSources.filter((source) => source.includes(path));
-    for (const code of documentedCodes(domain, name)) {
+    const files = Arr.filter(sources, Str.includes(path));
+    for (const code of yield* documentedCodes(domain, name)) {
       if (covered.has(code)) continue;
-      if (files.some((source) => source.includes(`"${code}"`))) continue;
+      if (Arr.some(files, Str.includes(`"${code}"`))) continue;
       (missing[path] ??= []).push(code);
     }
   }
   return missing;
-};
-
-describe("documented read errors", () => {
-  it("are asserted by a test that names the action", () => {
-    assert.deepStrictEqual(missingCodes(readActions, coveredEverywhere), uncovered);
-  });
 });
 
-describe("documented write errors", () => {
-  it("are asserted by a test that names the action", () => {
-    assert.deepStrictEqual(
-      missingCodes(writeActions, new Set([...coveredEverywhere, ...coveredForWrites])),
-      uncoveredWrites,
-    );
-  });
+layer(NodeServices.layer)("documented errors", (it) => {
+  it.effect("read errors are asserted by a test that names the action", () =>
+    Effect.gen(function* () {
+      const missing = yield* missingCodes(readActions, coveredEverywhere);
+
+      assert.deepStrictEqual(missing, uncovered);
+    }),
+  );
+
+  it.effect("write errors are asserted by a test that names the action", () =>
+    Effect.gen(function* () {
+      const missing = yield* missingCodes(
+        writeActions,
+        new Set([...coveredEverywhere, ...coveredForWrites]),
+      );
+
+      assert.deepStrictEqual(missing, uncoveredWrites);
+    }),
+  );
 });

@@ -1,4 +1,5 @@
 import { assert, describe, it } from "@effect/vitest";
+import { Array as Arr } from "effect";
 
 import { Abis } from "@ensforge/contracts";
 import { fromRevert } from "@ensforge/sdk/internal/errors/translate/revert";
@@ -70,17 +71,17 @@ describe("fromRevert unwrapping", () => {
   });
 
   it("unwraps eight levels of nesting", () => {
-    const data = Array.from({ length: 8 }).reduce<Hex>(resolverError, nameNotAvailable);
+    const data = Arr.reduce(Array.from({ length: 8 }), nameNotAvailable, resolverError);
 
     assert.strictEqual(fromRevert({ data }, {}).code, "NAME_NOT_AVAILABLE");
   });
 
   it("stops at the ninth level instead of recursing further", () => {
-    const data = Array.from({ length: 9 }).reduce<Hex>(resolverError, nameNotAvailable);
+    const data = Arr.reduce(Array.from({ length: 9 }), nameNotAvailable, resolverError);
     const error = fromRevert({ data }, {});
 
     assert.strictEqual(error.code, "CONTRACT_REVERTED");
-    assert.strictEqual((error as { errorName?: string }).errorName, "ResolverError");
+    assert.strictEqual("errorName" in error ? error.errorName : undefined, "ResolverError");
   });
 });
 
@@ -113,12 +114,11 @@ describe("fromRevert fallthrough", () => {
 
     assert.strictEqual(error._tag, "ContractRevertError");
     assert.strictEqual(error.code, "CONTRACT_REVERTED");
-    assert.strictEqual((error as { errorName?: string }).errorName, errorName);
-    assert.strictEqual((error as { data?: Hex }).data, (revert as { data?: Hex }).data);
-    assert.deepStrictEqual(error.context, {
-      operation: "x.y",
-      revert: { errorName, data: (revert as { data?: Hex }).data },
-    });
+    const data = "data" in revert ? revert.data : undefined;
+
+    assert.strictEqual("errorName" in error ? error.errorName : undefined, errorName);
+    assert.strictEqual("data" in error ? error.data : undefined, data);
+    assert.deepStrictEqual(error.context, { operation: "x.y", revert: { errorName, data } });
   });
 
   it("uses an already-decoded error name without decoding the data", () => {

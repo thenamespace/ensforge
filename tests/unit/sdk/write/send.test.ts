@@ -1,5 +1,5 @@
 import { assert, describe, it } from "@effect/vitest";
-import { Effect } from "effect";
+import { Array as Arr, Effect, Record as Rec } from "effect";
 
 import type { Plan, Write } from "@ensforge/sdk";
 import { sendPlan } from "@ensforge/sdk/internal/internal/write/send";
@@ -8,7 +8,15 @@ import { make as makePlan } from "@ensforge/sdk/internal/plan/make";
 import { expectFailure } from "@ensforge/test-harness";
 import { keccak256, numberToHex, pad, stringToHex, type Hex } from "viem";
 
-import { account, advancing, minedAt, requestsOf, scriptedWallet, target } from "./wallet";
+import {
+  account,
+  advancing,
+  minedAt,
+  paramsOf,
+  requestsOf,
+  scriptedWallet,
+  target,
+} from "./wallet";
 
 /** The hash of the `n`th transaction the scripted wallet sends. */
 const sent = (n: number) => pad(numberToHex(n));
@@ -17,7 +25,7 @@ const sent = (n: number) => pad(numberToHex(n));
 const step = (id: string, data: readonly Hex[], extra: Partial<Plan.Step> = {}): Plan.Step => ({
   id,
   description: `step ${id}`,
-  calls: data.map((callData) => ({ to: target, data: callData, value: 0n })),
+  calls: Arr.map(data, (callData) => ({ to: target, data: callData, value: 0n })),
   ...extra,
 });
 
@@ -55,17 +63,16 @@ describe("sendSequential", () => {
         step("pay", ["0x01", "0x02"]),
       );
 
-      const sends = wallet.calls.filter(({ method }) => method === "eth_sendTransaction");
-      const order = wallet.calls
-        .map(({ method }) => method)
-        .filter(
-          (method) => method === "eth_sendTransaction" || method === "eth_getTransactionReceipt",
-        );
+      const sends = requestsOf(wallet.calls, "eth_sendTransaction");
+      const order = Arr.filter(
+        Arr.map(wallet.calls, ({ method }) => method),
+        (method) => method === "eth_sendTransaction" || method === "eth_getTransactionReceipt",
+      );
       assert.deepStrictEqual(hashes, [sent(1), sent(2)]);
       // Sent with a fifth more gas than estimated (21,000 → 25,200), from the signer, to the call.
       assert.deepStrictEqual(
-        sends.map(({ params }) => (params as readonly Record<string, unknown>[])[0]),
-        ["0x01", "0x02"].map((data) => ({
+        sends,
+        Arr.map(["0x01", "0x02"], (data) => ({
           from: account,
           to: target,
           data,
@@ -79,9 +86,7 @@ describe("sendSequential", () => {
         "eth_sendTransaction",
       ]);
       assert.deepStrictEqual(
-        wallet.calls
-          .filter(({ method }) => method === "eth_estimateGas")
-          .map(({ params }) => (params as readonly Record<string, unknown>[])[0]?.from),
+        Arr.map(requestsOf(wallet.calls, "eth_estimateGas"), (request) => request.from),
         [account, account],
       );
     }),
@@ -105,7 +110,7 @@ describe("sendPlan", () => {
       });
       assert.deepStrictEqual(wallet.transactions(), [["0x01"], ["0x02"]]);
       assert.deepStrictEqual(events, ["a submitted", "a confirmed", "b submitted"]);
-      const methods = wallet.calls.map(({ method }) => method);
+      const methods = Arr.map(wallet.calls, ({ method }) => method);
       assert.isBelow(
         methods.indexOf("eth_getTransactionReceipt"),
         methods.lastIndexOf("eth_sendTransaction"),
@@ -113,7 +118,7 @@ describe("sendPlan", () => {
       // The wallet is asked once whether it sends bundles; the answer holds for the whole plan.
       assert.strictEqual(wallet.count("wallet_getCapabilities"), 1);
       assert.deepStrictEqual(
-        wallet.saved.map((record) => [record.status, Object.keys(record.submitted)]),
+        Arr.map(wallet.saved, (record) => [record.status, Rec.keys(record.submitted)]),
         [
           ["pending", []],
           ["pending", ["a"]],
@@ -138,17 +143,20 @@ describe("sendPlan", () => {
     Effect.gen(function* () {
       const plan = planOf(step("only", ["0x01"]));
 
-      const [waited, submitted] = yield* Effect.forEach([true, false], (confirmLast) =>
-        Effect.gen(function* () {
-          const wallet = scriptedWallet();
-          const { events, onStep } = recorder();
-          yield* sendPlan(wallet.client, plan, wallet.signer, {
-            mode: "sequential",
-            confirmLast,
-            onStep,
-          });
-          return events;
-        }),
+      const [waited, submitted] = yield* Effect.forEach(
+        [true, false],
+        (confirmLast) =>
+          Effect.gen(function* () {
+            const wallet = scriptedWallet();
+            const { events, onStep } = recorder();
+            yield* sendPlan(wallet.client, plan, wallet.signer, {
+              mode: "sequential",
+              confirmLast,
+              onStep,
+            });
+            return events;
+          }),
+        { concurrency: 1 },
       );
 
       assert.deepStrictEqual(waited, ["only submitted", "only confirmed"]);
@@ -197,9 +205,10 @@ describe("sendPlan", () => {
         "register submitted",
       ]);
       assert.deepStrictEqual(
-        wallet.calls
-          .filter(({ method }) => method === "eth_getBlockByNumber")
-          .map(({ params }) => (params as readonly unknown[])[0]),
+        Arr.map(
+          Arr.filter(wallet.calls, ({ method }) => method === "eth_getBlockByNumber"),
+          ({ params }) => paramsOf(params)[0],
+        ),
         ["0x1", "latest", "latest"],
       );
     }),
@@ -219,9 +228,7 @@ describe("sendPlan", () => {
 
       yield* advancing(sendPlan(wallet.client, plan, wallet.signer, {}));
 
-      const simulated = wallet.calls
-        .filter(({ method }) => method === "eth_call")
-        .map(({ params }) => (params as readonly { readonly data: Hex }[])[0]?.data);
+      const simulated = Arr.map(requestsOf(wallet.calls, "eth_call"), (request) => request.data);
       assert.deepStrictEqual(simulated, ["0x01", "0x02"]);
     }),
   );
@@ -376,7 +383,7 @@ describe("sendPlan bundles", () => {
       yield* advancing(sendPlan(wallet.client, planOf(...steps), wallet.signer, {}));
 
       assert.deepStrictEqual(
-        wallet.transactions().map((calls) => calls.length),
+        Arr.map(wallet.transactions(), (calls) => calls.length),
         [10, 1],
       );
     }),
@@ -513,9 +520,7 @@ describe("sendPlan resume", () => {
         ),
       );
 
-      const simulated = wallet.calls
-        .filter(({ method }) => method === "eth_call")
-        .map(({ params }) => (params as readonly { readonly data: Hex }[])[0]?.data);
+      const simulated = Arr.map(requestsOf(wallet.calls, "eth_call"), (request) => request.data);
       assert.deepStrictEqual(simulated, ["0x02", "0x03"]);
     }),
   );
@@ -627,18 +632,18 @@ const relay = (statuses: Readonly<Record<string, Write.Via.Status>> = {}) => {
   const polls = new Map<string, number>();
   const via: Write.Via = {
     id: "relay",
-    send: async (sentStep) => {
+    send: (sentStep) => {
       sentSteps.push(sentStep);
-      return `ref-${sentStep.id}`;
+      return Promise.resolve(`ref-${sentStep.id}`);
     },
-    status: async (reference) => {
+    status: (reference) => {
       const poll = polls.get(reference) ?? 0;
       polls.set(reference, poll + 1);
       const status = statuses[reference];
-      if (status !== undefined) return status;
-      return poll === 0
-        ? { status: "pending" }
-        : { status: "success", hashes: [routed(reference)] };
+      if (status !== undefined) return Promise.resolve(status);
+      return Promise.resolve(
+        poll === 0 ? { status: "pending" } : { status: "success", hashes: [routed(reference)] },
+      );
     },
   };
   return { via, sentSteps };
@@ -696,7 +701,7 @@ describe("sendPlan routes", () => {
       );
 
       assert.deepStrictEqual(
-        events.map(({ status, reference, hashes }) => ({ status, reference, hashes })),
+        Arr.map(events, ({ status, reference, hashes }) => ({ status, reference, hashes })),
         [{ status: "submitted", reference: "ref-a", hashes: undefined }],
       );
       // The reference is saved before the route reports the step mined.
@@ -709,7 +714,7 @@ describe("sendPlan routes", () => {
   it.effect("sends from the wallet with a route that does not send", () =>
     Effect.gen(function* () {
       const wallet = scriptedWallet({ atomic: "supported" });
-      const via: Write.Via = { id: "rewrite", prepare: async (plan) => plan };
+      const via: Write.Via = { id: "rewrite", prepare: (plan) => Promise.resolve(plan) };
 
       yield* advancing(
         sendPlan(wallet.client, planOf(step("a", ["0x01", "0x02"])), wallet.signer, { via }),

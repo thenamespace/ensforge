@@ -1,5 +1,5 @@
 import { assert, describe, it } from "@effect/vitest";
-import { Effect } from "effect";
+import { Effect, Predicate, Record as Rec } from "effect";
 
 import { Actions, Ensforge, ensActions } from "@ensforge/sdk";
 import { Ensforge as EffectEnsforge } from "@ensforge/sdk/effect";
@@ -58,12 +58,16 @@ describe("Client.extend", () => {
   it("binds every action group of ensActions to the client", () => {
     const ens = Ensforge.create({ publicClient: makeClient() }).extend(ensActions());
 
-    for (const [domain, group] of Object.entries(Actions)) {
+    for (const [domain, group] of Rec.toEntries(Actions)) {
       // The indexer group is added by `indexerActions` from `@ensforge/sdk/indexer`.
       if (domain === "indexer" || typeof group === "function") continue;
-      const bound = (ens as unknown as Record<string, Record<string, unknown>>)[domain];
+      const bound: unknown = Reflect.get(ens, domain);
       assert.isDefined(bound, domain);
-      assert.sameMembers(Object.keys(bound ?? {}), Object.keys(group), domain);
+      assert.sameMembers(
+        Predicate.isObject(bound) ? Rec.keys(bound) : [],
+        Rec.keys<string, unknown>(group),
+        domain,
+      );
     }
   });
 });
@@ -101,6 +105,7 @@ describe("Ensforge.layer", () => {
       const publicClient = makeClient();
 
       const ens = yield* EffectEnsforge.Ensforge.pipe(
+        // oxlint-disable-next-line effecttsgo/strict-effect-provide -- the test is the entry point
         Effect.provide(EffectEnsforge.layer({ publicClient })),
       );
 
@@ -121,6 +126,7 @@ describe("Ensforge.layer", () => {
 
       yield* expectFailure(
         EffectEnsforge.Ensforge.pipe(
+          // oxlint-disable-next-line effecttsgo/strict-effect-provide -- the test is the entry point
           Effect.provide(
             EffectEnsforge.layer({ publicClient: createPublicClient({ chain, transport }) }),
           ),

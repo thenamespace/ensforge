@@ -1,4 +1,5 @@
 import { afterEach, assert, describe, it } from "@effect/vitest";
+import { Array as Arr, Effect, Schema } from "effect";
 
 import { NameStateError, UnauthorizedError } from "@ensforge/sdk/internal/errors/classes/index";
 import { getConfig, setConfig } from "@ensforge/sdk/internal/errors/config";
@@ -22,20 +23,26 @@ describe("EnsforgeError message", () => {
 
     assert.strictEqual(
       error.message,
-      [
-        "Summary.",
-        "First detail\nSecond detail",
-        "Hint: Renew it.",
+      Arr.join(
         [
-          "Code: NAME_EXPIRED",
-          "Operation: record.set",
-          "Name: nick.eth",
-          `Contract: ${contract}`,
-          "Function: setText",
-          "Docs: https://ensforge.com/errors/NAME_EXPIRED",
-          `Version: @ensforge/sdk@${version}`,
-        ].join("\n"),
-      ].join("\n\n"),
+          "Summary.",
+          "First detail\nSecond detail",
+          "Hint: Renew it.",
+          Arr.join(
+            [
+              "Code: NAME_EXPIRED",
+              "Operation: record.set",
+              "Name: nick.eth",
+              `Contract: ${contract}`,
+              "Function: setText",
+              "Docs: https://ensforge.com/errors/NAME_EXPIRED",
+              `Version: @ensforge/sdk@${version}`,
+            ],
+            "\n",
+          ),
+        ],
+        "\n\n",
+      ),
     );
   });
 
@@ -44,14 +51,20 @@ describe("EnsforgeError message", () => {
 
     assert.strictEqual(
       error.message,
-      [
-        "Locked.",
+      Arr.join(
         [
-          "Code: NAME_LOCKED",
-          "Docs: https://ensforge.com/errors/NAME_LOCKED",
-          `Version: @ensforge/sdk@${version}`,
-        ].join("\n"),
-      ].join("\n\n"),
+          "Locked.",
+          Arr.join(
+            [
+              "Code: NAME_LOCKED",
+              "Docs: https://ensforge.com/errors/NAME_LOCKED",
+              `Version: @ensforge/sdk@${version}`,
+            ],
+            "\n",
+          ),
+        ],
+        "\n\n",
+      ),
     );
   });
 });
@@ -103,23 +116,28 @@ describe("EnsforgeError.withCause", () => {
 });
 
 describe("EnsforgeError.toJSON", () => {
-  it("serializes the plain fields without the cause", () => {
-    const error = new NameStateError({
-      code: "NAME_EXPIRED",
-      hint: "Renew it.",
-      context: { name: "a.eth" },
-      cause: new Error("hidden"),
-    });
+  it.effect("serializes the plain fields without the cause", () =>
+    Effect.gen(function* () {
+      const error = new NameStateError({
+        code: "NAME_EXPIRED",
+        hint: "Renew it.",
+        context: { name: "a.eth" },
+        cause: new Error("hidden"),
+      });
 
-    assert.deepStrictEqual(JSON.parse(JSON.stringify(error)), {
-      name: "NameStateError",
-      code: "NAME_EXPIRED",
-      shortMessage: error.shortMessage,
-      hint: "Renew it.",
-      details: [],
-      retryable: false,
-      context: { name: "a.eth" },
-      docsUrl: "https://ensforge.com/errors/NAME_EXPIRED",
-    });
-  });
+      const json = yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))(error);
+      const serialized = yield* Schema.decodeEffect(Schema.fromJsonString(Schema.Unknown))(json);
+
+      assert.deepStrictEqual(serialized, {
+        name: "NameStateError",
+        code: "NAME_EXPIRED",
+        shortMessage: error.shortMessage,
+        hint: "Renew it.",
+        details: [],
+        retryable: false,
+        context: { name: "a.eth" },
+        docsUrl: "https://ensforge.com/errors/NAME_EXPIRED",
+      });
+    }),
+  );
 });

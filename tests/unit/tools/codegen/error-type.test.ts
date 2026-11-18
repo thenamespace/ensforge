@@ -1,4 +1,5 @@
 import { assert, describe, it } from "@effect/vitest";
+import { Array as Arr } from "effect";
 
 import type { Action } from "@ensforge/tools/internal/codegen/discover";
 import { errorType, extensionProfile } from "@ensforge/tools/internal/codegen/render";
@@ -10,7 +11,8 @@ const action = (
 ): Action => ({
   name,
   folder: "set",
-  jsdoc: ["/**", " * Does it.", " *", ...throws.map((line) => ` * @throws ${line}`), " */"].join(
+  jsdoc: Arr.join(
+    ["/**", " * Does it.", " *", ...Arr.map(throws, (line) => ` * @throws ${line}`), " */"],
     "\n",
   ),
   properties: [],

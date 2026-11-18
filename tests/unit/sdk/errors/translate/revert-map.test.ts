@@ -1,16 +1,26 @@
-import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 
-import { assert, describe, it } from "@effect/vitest";
+import { NodeServices } from "@effect/platform-node";
+import { assert, describe, it, layer } from "@effect/vitest";
+import { assertDefined } from "@effect/vitest/utils";
+import { Array as Arr, Effect, FileSystem, Record as Rec, String as Str } from "effect";
 
 import { Abis, Roles } from "@ensforge/contracts";
 import { Name } from "@ensforge/sdk";
 import { UnauthorizedError } from "@ensforge/sdk/internal/errors/classes/index";
 import { fromRevert } from "@ensforge/sdk/internal/errors/translate/revert";
 import { revertMap } from "@ensforge/sdk/internal/errors/translate/revert-map";
-import { encodeErrorResult, getAddress, parseAbi, type AbiParameter, type Hex } from "viem";
+import {
+  encodeErrorResult,
+  getAddress,
+  parseAbi,
+  type Abi,
+  type AbiParameter,
+  type Hex,
+} from "viem";
 
 const account = getAddress("0x00000000000000000000000000000000000000a1");
-const commitment = `0x${"c0".repeat(32)}` as const;
+const commitment = `0x${Str.repeat(32)("c0")}` as const;
 
 type Expected = { readonly _tag: string; readonly code: string };
 
@@ -136,68 +146,80 @@ type ErrorFragment = {
 };
 
 const fragmentsOf = (errorName: string): readonly ErrorFragment[] =>
-  (Abis.shared.errors as readonly ErrorFragment[]).filter(
+  Arr.filter(
+    Abis.shared.errors as readonly ErrorFragment[],
     (item) => item.type === "error" && item.name === errorName,
   );
 
 const sample = (parameter: AbiParameter): unknown => {
   const { type } = parameter;
-  if (type.endsWith("[]")) return [sample({ ...parameter, type: type.slice(0, -2) })];
-  if (type === "tuple" && "components" in parameter) return parameter.components.map(sample);
+  if (Str.endsWith("[]")(type)) return [sample({ ...parameter, type: Str.slice(0, -2)(type) })];
+  if (type === "tuple" && "components" in parameter) return Arr.map(parameter.components, sample);
   if (type === "address") return account;
   if (type === "string") return "label";
   if (type === "bool") return true;
   if (type === "bytes") return "0x0102";
   if (type === "bytes32") return commitment;
   if (type === "bytes4") return "0x12345678";
-  if (type.startsWith("uint") || type.startsWith("int")) return 7n;
+  if (Str.startsWith("uint")(type) || Str.startsWith("int")(type)) return 7n;
   throw new Error(`No sample for ABI type ${type}`);
 };
 
 /** Every ABI overload of `errorName`, encoded with sample arguments. */
 const overloads = (errorName: string): readonly Hex[] =>
-  fragmentsOf(errorName).map((fragment) =>
+  Arr.map(fragmentsOf(errorName), (fragment) =>
     encodeErrorResult({
       abi: [fragment],
       errorName,
-      args: fragment.inputs.map(sample),
-    } as never),
+      args: Arr.map(fragment.inputs, sample),
+    }),
   );
 
+// Typed as a plain `Abi`, so the error name and arguments are not checked per error.
+const errorsAbi: Abi = Abis.shared.errors;
+
 const encode = (errorName: string, args: readonly unknown[]): Hex =>
-  encodeErrorResult({ abi: Abis.shared.errors, errorName, args } as never);
+  encodeErrorResult({ abi: errorsAbi, errorName, args });
 
 // Mapped errors no devnet contract is made to raise, each with the reason; keep it empty.
 const notRaisedOnChain: string[] = [];
 
-describe("revertMap coverage", () => {
-  it("documents every mapped contract error", () => {
-    assert.sameMembers(Object.keys(revertMap), Object.keys(expected));
+layer(NodeServices.layer)("revertMap coverage", (chain) => {
+  chain("documents every mapped contract error", () => {
+    assert.sameMembers(Rec.keys(revertMap), Rec.keys(expected));
   });
 
   // A name counts where the chain test expects it from a call: as a string it compares the
   // decoded error with, or as the key of a table of calls; never in a comment.
-  it("has each mapped error raised by a devnet contract, or listed as not yet", () => {
-    const chainTest = readFileSync(
-      new URL("../../../../integration/test/writes/reverts.test.ts", import.meta.url),
-      "utf8",
-    );
-    const missing = Object.keys(revertMap).filter(
-      (errorName) => !new RegExp(String.raw`"${errorName}"|\b${errorName}:`, "u").test(chainTest),
-    );
-    assert.sameMembers(missing, notRaisedOnChain);
-  });
+  chain.effect("has each mapped error raised by a devnet contract, or listed as not yet", () =>
+    Effect.gen(function* () {
+      const fs = yield* FileSystem.FileSystem;
+      const chainTest = yield* fs.readFileString(
+        fileURLToPath(
+          new URL("../../../../integration/test/writes/reverts.test.ts", import.meta.url),
+        ),
+      );
+      const missing = Arr.filter(
+        Rec.keys(revertMap),
+        (errorName) => !new RegExp(String.raw`"${errorName}"|\b${errorName}:`, "u").test(chainTest),
+      );
+
+      assert.sameMembers(missing, notRaisedOnChain);
+    }),
+  );
 });
 
 describe("revertMap from ABI-encoded revert data", () => {
-  it.each(Object.entries(expected))("%s → %o", (errorName, mapping) => {
+  it.each(Rec.toEntries(expected))("%s → %o", (errorName, mapping) => {
     const encoded = overloads(errorName);
 
     assert.isAbove(encoded.length, 0, `${errorName} is missing from the ENS errors ABI`);
     for (const [index, data] of encoded.entries()) {
       const error = fromRevert({ data }, { operation: "test.op" });
       const arity = fragmentsOf(errorName)[index]?.inputs.length ?? 0;
-      const { _tag, code } = "code" in mapping ? mapping : (mapping[arity] as Expected);
+      const mapped = "code" in mapping ? mapping : mapping[arity];
+      assertDefined(mapped);
+      const { _tag, code } = mapped;
 
       assert.strictEqual(error._tag, _tag);
       assert.strictEqual(error.code, code);
@@ -255,11 +277,11 @@ describe("revertMap fields", () => {
         abi: [fragment],
         errorName,
         args: bounded ? [commitment, 1_700n, 1_600n] : [commitment],
-      } as never);
-      const error = fromRevert({ data }, {}) as unknown as Record<string, unknown>;
+      });
+      const error = fromRevert({ data }, {});
 
-      assert.strictEqual(error["commitment"], commitment);
-      assert.strictEqual(error[field], bounded ? 1_700n : undefined);
+      assert.strictEqual("commitment" in error ? error.commitment : undefined, commitment);
+      assert.strictEqual(Reflect.get(error, field), bounded ? 1_700n : undefined);
     }
   });
 
@@ -332,7 +354,7 @@ describe("revertMap fields", () => {
     const error = fromRevert({ data: encode(errorName, args) }, {});
 
     assert.strictEqual(error.code, "RESOLVER_PROFILE_UNSUPPORTED");
-    assert.include(error.details.join("\n"), where);
+    assert.include(Arr.join(error.details, "\n"), where);
   });
 
   it.each([
@@ -341,7 +363,7 @@ describe("revertMap fields", () => {
   ])("HttpError keeps the status and message $message", ({ message, details }) => {
     const error = fromRevert({ data: encode("HttpError", [503, message]) }, {});
 
-    assert.strictEqual((error as { status?: number }).status, 503);
+    assert.strictEqual("status" in error ? error.status : undefined, 503);
     assert.deepStrictEqual(error.details, details);
     assert.isTrue(error.retryable);
   });
@@ -354,14 +376,14 @@ describe("revertMap fields", () => {
     const error = fromRevert({ data: encode(errorName, args) }, { name: "nick.eth" });
 
     assert.strictEqual(error.code, "RESOLVER_NOT_FOUND");
-    assert.strictEqual((error as { resource?: string }).resource, "pay.nick.eth");
+    assert.strictEqual("resource" in error ? error.resource : undefined, "pay.nick.eth");
     assert.include(error.shortMessage, "pay.nick.eth");
   });
 
   it("ResolverNotFound keeps a name that is not DNS-encoded as its bytes", () => {
     const error = fromRevert({ data: encode("ResolverNotFound", ["0x0561"]) }, {});
 
-    assert.strictEqual((error as { resource?: string }).resource, "0x0561");
+    assert.strictEqual("resource" in error ? error.resource : undefined, "0x0561");
   });
 
   it("UnsupportedResolverProfile keeps the selector of the missing profile", () => {

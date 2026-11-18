@@ -1,4 +1,5 @@
 import { assert, describe, it } from "@effect/vitest";
+import { String as Str } from "effect";
 
 import { Abis } from "@ensforge/contracts";
 import { GatewayError } from "@ensforge/sdk/internal/errors/classes/index";
@@ -85,7 +86,7 @@ describe("fromViemError wallet errors", () => {
     { cause: new NonceTooLowError(), _tag: "TransactionError", code: "NONCE_CONFLICT" },
     { cause: new NonceTooHighError(), _tag: "TransactionError", code: "NONCE_CONFLICT" },
     {
-      cause: new WaitForTransactionReceiptTimeoutError({ hash: `0x${"ab".repeat(32)}` }),
+      cause: new WaitForTransactionReceiptTimeoutError({ hash: `0x${Str.repeat(32)("ab")}` }),
       _tag: "TransactionError",
       code: "RECEIPT_TIMEOUT",
     },
@@ -148,7 +149,7 @@ describe("fromViemError contract errors", () => {
     const error = fromViemError(new ExecutionRevertedError());
 
     assert.strictEqual(error?.code, "CONTRACT_REVERTED");
-    assert.isUndefined((error as { data?: unknown }).data);
+    assert.isUndefined(error !== undefined && "data" in error ? error.data : undefined);
   });
 
   it("zero return data means the contract is not deployed", () => {
@@ -208,7 +209,7 @@ describe("fromViemError transport errors", () => {
 
     assert.strictEqual(error?._tag, "NetworkError");
     assert.strictEqual(error?.code, code);
-    assert.strictEqual((error as { status?: number }).status, status);
+    assert.strictEqual(error !== undefined && "status" in error ? error.status : undefined, status);
     assert.isTrue(error?.retryable);
   });
 });

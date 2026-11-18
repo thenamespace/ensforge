@@ -304,7 +304,7 @@ describe("sessionProblem", () => {
   ] as const)("reports a session that is %s", ([, change, world, expected]) =>
     Effect.gen(function* () {
       const { client } = makeClient({ deployed: true, ...world });
-      const problem = yield* sessionProblem(client, { ...session, ...change } as HcaSession);
+      const problem = yield* sessionProblem(client, { ...session, ...change });
       assert.strictEqual(problem, expected);
     }),
   );

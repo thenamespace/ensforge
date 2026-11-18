@@ -24,7 +24,8 @@ describe("name.get", () => {
       });
       const plain = clientFor({ ...subname, found: { resolver: parentResolver, offset: 4n } });
 
-      assert.deepInclude(yield* Actions.name.get(extended.ens, { name: subname.name }), {
+      const inherited = yield* Actions.name.get(extended.ens, { name: subname.name });
+      assert.deepInclude(inherited, {
         available: true,
         resolver: null,
         inheritedResolver: parentResolver,
@@ -54,7 +55,8 @@ describe("name.get", () => {
         extended: [parentResolver],
       });
 
-      assert.deepInclude(yield* Actions.name.get(ens, { name: "alice.eth" }), {
+      const own = yield* Actions.name.get(ens, { name: "alice.eth" });
+      assert.deepInclude(own, {
         resolver: resolverA,
         inheritedResolver: null,
       });

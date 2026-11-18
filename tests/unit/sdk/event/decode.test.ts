@@ -1,5 +1,5 @@
 import { assert, describe, it } from "@effect/vitest";
-import { Effect } from "effect";
+import { Array, Effect, Record, String as Str } from "effect";
 
 import { Deployments } from "@ensforge/contracts";
 import { Ensforge } from "@ensforge/sdk";
@@ -14,7 +14,6 @@ import {
   stringToHex,
   toHex,
   type Address,
-  type Hex,
   type Log,
 } from "viem";
 import { mainnet } from "viem/chains";
@@ -127,18 +126,21 @@ const unreported = new Set(["TokenResource(uint256,uint256)"]);
 
 describe("event.decode categories", () => {
   it("covers every event of the contracts ABI", () => {
-    const signatures = events.map(signatureOf);
+    const signatures = Array.map(events, signatureOf);
     assert.deepStrictEqual(
-      signatures.filter((signature) => !(signature in expected) && !unreported.has(signature)),
+      Array.filter(
+        signatures,
+        (signature) => !(signature in expected) && !unreported.has(signature),
+      ),
       [],
     );
     assert.deepStrictEqual(
-      Object.keys(expected).filter((signature) => !signatures.includes(signature)),
+      Array.filter(Record.keys(expected), (signature) => !signatures.includes(signature)),
       [],
     );
   });
 
-  it.effect.each(Object.entries(expected))("decodes %s", ([signature, [type, action, v2Only]]) =>
+  it.effect.each(Record.toEntries(expected))("decodes %s", ([signature, [type, action, v2Only]]) =>
     Effect.gen(function* () {
       const event = eventBySignature(signature);
       const args = sampleArgs(event);
@@ -162,12 +164,10 @@ describe("event.decode categories", () => {
   it.effect.each([...unreported])("skips %s, which has no category", (signature) =>
     Effect.gen(function* () {
       const event = eventBySignature(signature);
-      assert.deepStrictEqual(
-        yield* Actions.event.decode(ens, {
-          logs: [logOf(event, sampleArgs(event), { address: stranger })],
-        }),
-        [],
-      );
+      const decoded = yield* Actions.event.decode(ens, {
+        logs: [logOf(event, sampleArgs(event), { address: stranger })],
+      });
+      assert.deepStrictEqual(decoded, []);
     }),
   );
 
@@ -197,7 +197,7 @@ describe("event.decode protocol", () => {
   ] as const)("is decided by %s", ([, address, event, protocol]) =>
     Effect.gen(function* () {
       const [decoded] = yield* Actions.event.decode(ens, {
-        logs: [logOf(event, sampleArgs(event), { address: address as Address })],
+        logs: [logOf(event, sampleArgs(event), { address })],
       });
       assert.strictEqual(decoded?.protocol, protocol);
     }),
@@ -206,9 +206,7 @@ describe("event.decode protocol", () => {
   it.effect("matches emitters case-insensitively", () =>
     Effect.gen(function* () {
       const [decoded] = yield* Actions.event.decode(ens, {
-        logs: [
-          logOf(newOwner, sampleArgs(newOwner), { address: v1.registry.toLowerCase() as Address }),
-        ],
+        logs: [logOf(newOwner, sampleArgs(newOwner), { address: Str.toLowerCase(v1.registry) })],
       });
       assert.strictEqual(decoded?.protocol, "v1");
     }),
@@ -385,25 +383,26 @@ describe("event.decode skipping", () => {
 
   it.effect("skips logs that are not ENS events", () =>
     Effect.gen(function* () {
-      assert.deepStrictEqual(
-        yield* Actions.event.decode(ens, {
-          logs: [{ ...valid(), topics: [keccak256(toHex("Unknown(uint256)"))] }],
-        }),
-        [],
-      );
+      const decoded = yield* Actions.event.decode(ens, {
+        logs: [{ ...valid(), topics: [keccak256(toHex("Unknown(uint256)"))] }],
+      });
+      assert.deepStrictEqual(decoded, []);
     }),
   );
 
   it.effect("skips ERC-20 transfers that share the ERC-721 topic", () =>
     Effect.gen(function* () {
       const erc721 = eventBySignature("Transfer(address,address,uint256)");
-      const [topic0, from, to] = logOf(erc721, sampleArgs(erc721), { address: stranger }).topics;
+      // An ERC-20 transfer has the ERC-721 topics without the indexed token ID.
+      const topics = Array.take(logOf(erc721, sampleArgs(erc721), { address: stranger }).topics, 3);
+      assert.lengthOf(topics, 3);
       const erc20: Log = {
         ...valid(),
-        topics: [topic0 as Hex, from as Hex, to as Hex],
+        topics: Array.isArrayNonEmpty(topics) ? topics : [],
         data: encodeAbiParameters([{ type: "uint256" }], [5n]),
       };
-      assert.deepStrictEqual(yield* Actions.event.decode(ens, { logs: [erc20] }), []);
+      const decoded = yield* Actions.event.decode(ens, { logs: [erc20] });
+      assert.deepStrictEqual(decoded, []);
     }),
   );
 
@@ -411,36 +410,34 @@ describe("event.decode skipping", () => {
     Effect.gen(function* () {
       const event = eventBySignature("TextChanged(bytes32,string,string,string)");
       const log = logOf(event, sampleArgs(event), { address: stranger });
-      assert.deepStrictEqual(
-        yield* Actions.event.decode(ens, { logs: [{ ...log, data: "0x1234" }] }),
-        [],
-      );
+      const decoded = yield* Actions.event.decode(ens, { logs: [{ ...log, data: "0x1234" }] });
+      assert.deepStrictEqual(decoded, []);
     }),
   );
 
   it.effect("skips pending logs", () =>
     Effect.gen(function* () {
-      assert.deepStrictEqual(
-        yield* Actions.event.decode(ens, {
-          logs: [{ ...valid(), blockNumber: null } as unknown as Log],
-        }),
-        [],
-      );
+      const decoded = yield* Actions.event.decode(ens, {
+        logs: [{ ...valid(), blockNumber: null }],
+      });
+      assert.deepStrictEqual(decoded, []);
     }),
   );
 
   it.effect("keeps log order and decodes receipts", () =>
     Effect.gen(function* () {
       const node = pad("0x01", { size: 32 });
-      const logs = [0, 1, 2].map((logIndex) =>
+      const logs = Array.map(Array.make(0, 1, 2), (logIndex) =>
         logOf(addrChanged, { node, a: stranger }, { address: stranger, logIndex }),
       );
       const decoded = yield* Actions.event.decode(ens, {
-        logs: [logs[0] as Log],
-        receipts: [{ logs: logs.slice(1) } as never],
+        logs: [Array.headNonEmpty(logs)],
+        // The receipt carries only the logs the decoder reads.
+        // oxlint-disable-next-line typescript/no-unsafe-type-assertion
+        receipts: [{ logs: Array.tailNonEmpty(logs) } as never],
       });
       assert.deepStrictEqual(
-        decoded.map((event) => event.logIndex),
+        Array.map(decoded, (event) => event.logIndex),
         [0, 1, 2],
       );
     }),
@@ -448,7 +445,8 @@ describe("event.decode skipping", () => {
 
   it.effect("returns nothing without logs", () =>
     Effect.gen(function* () {
-      assert.deepStrictEqual(yield* Actions.event.decode(ens, {}), []);
+      const decoded = yield* Actions.event.decode(ens, {});
+      assert.deepStrictEqual(decoded, []);
     }),
   );
 });

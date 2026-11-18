@@ -1,4 +1,5 @@
 import { assert, describe, it } from "@effect/vitest";
+import { Array as Arr, Record as Rec } from "effect";
 
 import { Abis } from "@ensforge/contracts";
 import {
@@ -14,11 +15,13 @@ import {
   type AbiFunction,
 } from "viem";
 
-const abisOf = (prefix: string, group: object): [string, Abi][] =>
-  Object.entries(group).flatMap(([key, value]) =>
-    Array.isArray(value)
-      ? [[`${prefix}.${key}`, value as Abi] as [string, Abi]]
-      : abisOf(`${prefix}.${key}`, value),
+type AbiTree = { readonly [key: string]: Abi | AbiTree };
+
+const isAbi = (node: Abi | AbiTree): node is Abi => Arr.isArray(node);
+
+const abisOf = (prefix: string, group: AbiTree): [string, Abi][] =>
+  Arr.flatMap(Rec.toEntries(group), ([key, node]) =>
+    isAbi(node) ? [[`${prefix}.${key}`, node]] : abisOf(`${prefix}.${key}`, node),
   );
 
 const all: [string, Abi][] = [
@@ -32,12 +35,14 @@ const all: [string, Abi][] = [
 
 describe("ABI shape", () => {
   it.each(all)("%s has no duplicate function or event selectors", (_, abi) => {
-    const functions = abi
-      .filter((entry): entry is AbiFunction => entry.type === "function")
-      .map(toFunctionSelector);
-    const events = abi
-      .filter((entry): entry is AbiEvent => entry.type === "event")
-      .map((event) => toEventSelector(event));
+    const functions = Arr.map(
+      Arr.filter(abi, (entry): entry is AbiFunction => entry.type === "function"),
+      toFunctionSelector,
+    );
+    const events = Arr.map(
+      Arr.filter(abi, (entry): entry is AbiEvent => entry.type === "event"),
+      (event) => toEventSelector(event),
+    );
     assert.strictEqual(new Set(functions).size, functions.length);
     assert.strictEqual(new Set(events).size, events.length);
   });
@@ -169,7 +174,10 @@ describe("ABI coverage of SDK calls", () => {
     ],
   ] as const)("%#: has every called function", (abi, called) => {
     const present = new Set(
-      (abi as Abi).filter((entry) => entry.type === "function").map((entry) => entry.name),
+      Arr.map(
+        Arr.filter(abi as Abi, (entry) => entry.type === "function"),
+        (entry) => entry.name,
+      ),
     );
     for (const name of called) assert.isTrue(present.has(name), `missing ${name}`);
   });

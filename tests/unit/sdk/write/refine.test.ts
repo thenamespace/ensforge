@@ -1,5 +1,5 @@
 import { assert, describe, it } from "@effect/vitest";
-import { Effect } from "effect";
+import { Array as Arr, Effect, Option, Predicate, String as Str } from "effect";
 
 import { Abis, InterfaceIds } from "@ensforge/contracts";
 import type { Plan } from "@ensforge/sdk";
@@ -25,7 +25,7 @@ import {
 } from "viem";
 import { mainnet } from "viem/chains";
 
-import { requestsOf, scriptedWallet } from "./wallet";
+import { paramsOf, recordOf, requestsOf, scriptedWallet, simulatedCalls } from "./wallet";
 
 const account = getAddress("0x00000000000000000000000000000000000a11ce");
 const other = getAddress("0x0000000000000000000000000000000000000b0b");
@@ -84,10 +84,7 @@ const node = (options: {
     readonly params: readonly unknown[];
   }) => {
     if (method !== "eth_simulateV1") return undefined;
-    const [request] = params as readonly {
-      readonly blockStateCalls: readonly { readonly calls: readonly unknown[] }[];
-    }[];
-    const calls = request?.blockStateCalls[0]?.calls ?? [];
+    const calls = simulatedCalls(recordOf(params[0])) ?? [];
     return [
       {
         number: "0x1",
@@ -96,7 +93,7 @@ const node = (options: {
         gasLimit: "0x1c9c380",
         gasUsed: "0x0",
         transactions: [],
-        calls: calls.map((_, index) =>
+        calls: Arr.map(calls, (_, index) =>
           index === 0
             ? {
                 status: "0x0",
@@ -143,11 +140,11 @@ const node = (options: {
     batch: { multicall: false },
   });
   const reads = (functionName: string) =>
-    calls.filter(({ method, params }) => {
+    Arr.filter(calls, ({ method, params }) => {
       if (method !== "eth_call") return false;
-      const [request] = params as readonly { readonly data: Hex }[];
-      const selector = functionName === "getTokenId" ? grant.data.slice(0, 10) : "0x01ffc9a7";
-      return request?.data.startsWith(selector) === true;
+      const { data } = recordOf(paramsOf(params)[0]);
+      const selector = functionName === "getTokenId" ? Str.slice(0, 10)(grant.data) : "0x01ffc9a7";
+      return Predicate.isString(data) && Str.startsWith(selector)(data);
     });
   return { client, calls, reads };
 };
@@ -190,12 +187,9 @@ describe("stale transfers", () => {
       assert.strictEqual(error?.context.contract, registry);
       assert.strictEqual(error?.context.operation, "test.write.simulate");
       assert.strictEqual(error?.context.name, "alice.eth");
-      assert.strictEqual(
-        (
-          error?.cause as {
-            readonly context?: { readonly revert?: { readonly errorName?: string } };
-          }
-        )?.context?.revert?.errorName,
+      assert.nestedPropertyVal(
+        error?.cause,
+        "context.revert.errorName",
         "ERC1155InsufficientBalance",
       );
     }),
@@ -240,14 +234,7 @@ describe("resolvers that keep records off-chain", () => {
         "EIP-3668: the resolver answered with an OffchainLookup, which a transaction cannot follow.",
       ]);
       assert.strictEqual(error?.context.contract, setText.to);
-      assert.strictEqual(
-        (
-          error?.cause as {
-            readonly context?: { readonly revert?: { readonly errorName?: string } };
-          }
-        )?.context?.revert?.errorName,
-        "OffchainLookup",
-      );
+      assert.nestedPropertyVal(error?.cause, "context.revert.errorName", "OffchainLookup");
     }),
   );
 
@@ -263,7 +250,9 @@ describe("resolvers that keep records off-chain", () => {
       ]);
       assert.strictEqual(error?.context.contract, setText.to);
       // Bounded as EIP-165 bounds `supportsInterface`, asking for ENSIP-10.
-      const question = requestsOf(calls, "eth_call").find((request) => request.to === resolver);
+      const question = Option.getOrUndefined(
+        Arr.findFirst(requestsOf(calls, "eth_call"), (request) => request.to === resolver),
+      );
       assert.strictEqual(question?.gas, "0x7530");
       assert.strictEqual(
         question?.data,
@@ -314,7 +303,7 @@ describe("explainers", () => {
 
       assert.deepStrictEqual(seen, [["alice.eth", account, "0x"]]);
       assert.strictEqual(error?._tag, "UnauthorizedError");
-      assert.strictEqual((error?.cause as { readonly _tag?: string })?._tag, "ContractRevertError");
+      assert.nestedPropertyVal(error?.cause, "_tag", "ContractRevertError");
       assert.strictEqual(error?.context.operation, "test.write.simulate");
     }),
   );
@@ -391,10 +380,10 @@ describe("refinement preconditions", () => {
           Effect.fail(new Errors.NotFoundError({ code: "PLAN_NOT_FOUND" })),
         ).methods;
         const options = { name: "alice.eth" };
-        const effects: Record<typeof method, Effect.Effect<unknown, AnyError>> = {
-          prepare: methods.prepare(client, options),
-          simulate: methods.simulate(client, options),
-          estimateGas: methods.estimateGas(client, options),
+        const effects: Record<typeof method, Effect.Effect<void, AnyError>> = {
+          prepare: Effect.asVoid(methods.prepare(client, options)),
+          simulate: Effect.asVoid(methods.simulate(client, options)),
+          estimateGas: Effect.asVoid(methods.estimateGas(client, options)),
         };
 
         const error = yield* expectFailure(effects[method], { _tag: "NotFoundError" });
@@ -428,6 +417,7 @@ describe("isOpaqueRevert", () => {
       false,
     ],
   ] as const)("is %s opaque: %s", (_, error, opaque) => {
+    // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- partial error fixtures
     assert.strictEqual(isOpaqueRevert(error as never), opaque);
   });
 });

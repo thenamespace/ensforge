@@ -41,7 +41,11 @@ const unsupported: ExpectedError = { _tag: "UnsupportedError", code: "UNSUPPORTE
 // (`paths.test.ts`), and the Effect form must fail with the typed error, never a defect.
 type Call = (actions: typeof Actions) => Promise<unknown>;
 const asEffect = (call: Call) =>
-  call(EffectActions as unknown as typeof Actions) as unknown as Effect.Effect<unknown, unknown>;
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- the Effect actions take the same arguments but return Effects, not Promises
+  call(EffectActions as unknown as typeof Actions) as unknown as Effect.Effect<
+    object,
+    { readonly _tag: string }
+  >;
 
 const cases: readonly (readonly [string, Call, ExpectedError])[] = [
   [
@@ -251,7 +255,8 @@ const cases: readonly (readonly [string, Call, ExpectedError])[] = [
 
 describe("write input errors", () => {
   it.effect.each(cases)("%s fails before reading the chain", ([, write, expected]) =>
-    expectRejection(() => write(Actions), expected),
+    // Only the rejection matters, so a success is not typed `unknown`.
+    expectRejection(() => write(Actions).then(() => undefined), expected),
   );
 
   it.effect.each(cases)("%s fails as an Effect with the same error", ([, write, expected]) =>

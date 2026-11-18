@@ -1,5 +1,5 @@
 import { assert, describe, it } from "@effect/vitest";
-import { Effect } from "effect";
+import { Array as Arr, Effect, String as Str } from "effect";
 
 import { Actions as PromiseActions, Ensforge, type Plan } from "@ensforge/sdk";
 import { Actions } from "@ensforge/sdk/effect";
@@ -8,7 +8,7 @@ import { createClient, createPublicClient, createWalletClient, type Chain } from
 import { privateKeyToAccount } from "viem/accounts";
 import { base, mainnet, optimism, sepolia } from "viem/chains";
 
-const signer = privateKeyToAccount(`0x${"11".repeat(32)}`);
+const signer = privateKeyToAccount(`0x${Str.repeat(32)("11")}`);
 
 // `plan.send` plans without reading the chain, so the signer is the first thing it needs.
 const emptyPlan = (chainId: number): Plan => ({
@@ -53,7 +53,10 @@ describe("write signer resolution", () => {
   it.effect("fails with WALLET_NOT_CONFIGURED when the wallet getter returns nothing", () =>
     Effect.gen(function* () {
       const { client } = publicClient();
-      const ens = Ensforge.create({ publicClient: client, walletClient: async () => undefined });
+      const ens = Ensforge.create({
+        publicClient: client,
+        walletClient: () => Promise.resolve(undefined),
+      });
 
       yield* expectFailure(Actions.plan.sendSync(ens, { plan: emptyPlan(1) }), {
         _tag: "ConfigError",
@@ -114,7 +117,7 @@ describe("write signer resolution", () => {
       assert.strictEqual(error.expectedChainId, sepolia.id);
       assert.strictEqual(error.actualChainId, 1);
       assert.deepStrictEqual(
-        calls.map((call) => call.method),
+        Arr.map(calls, (call) => call.method),
         ["eth_chainId"],
       );
     }),

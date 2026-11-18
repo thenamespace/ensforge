@@ -1,7 +1,8 @@
 import { assert, describe, it } from "@effect/vitest";
-import { Effect } from "effect";
+import { Array as Arr, Effect } from "effect";
 
 import { Abis, Deployments } from "@ensforge/contracts";
+import { HcaError } from "@ensforge/hca";
 import { defineExecutor } from "@ensforge/hca/internal/executors/define";
 import { owner as ownerExecutor } from "@ensforge/hca/internal/executors/owner";
 import { hca } from "@ensforge/hca/internal/hca";
@@ -11,7 +12,7 @@ import { makePlan } from "@ensforge/sdk/extension";
 import { expectRejection } from "@ensforge/test-harness";
 import { encodeFunctionData, getAddress, zeroAddress, zeroHash, type Address } from "viem";
 
-import { hcaAddress, makeClient, owner, v1 } from "../fixtures";
+import { defined, hcaAddress, makeClient, owner, v1 } from "../fixtures";
 
 // Checksummed, as calls come back decoded from an execution.
 const target = getAddress("0x00000000000000000000000000000000000000aa");
@@ -28,13 +29,13 @@ const recording = (extra: Partial<Executor> = {}) => {
   const executor = defineExecutor({
     id: "relayer",
     capabilities: { sessions: true, sponsorship: true, deploys: true },
-    send: async (request) => {
+    send: (request) => {
       sent.push(request);
-      return `ref-${sent.length}`;
+      return Promise.resolve(`ref-${sent.length}`);
     },
-    quote: async (request) => {
+    quote: (request) => {
       quoted.push(request);
-      return fees;
+      return Promise.resolve(fees);
     },
     ...extra,
   });
@@ -45,7 +46,7 @@ const planOf = (steps: readonly Plan.Step[], warnings: readonly Plan.Warning[] =
   makePlan({ operation: "records.set", chainId: 11155111, account: owner, steps, warnings });
 
 const prepared = (via: Write.Via, plan: Plan, context = makeClient({ deployed: true }).context) =>
-  Effect.promise(() => (via.prepare as NonNullable<Write.Via["prepare"]>)(plan, context));
+  Effect.promise(() => defined(via.prepare)(plan, context));
 
 const session: HcaSession = {
   chainId: 11155111,
@@ -87,7 +88,7 @@ describe("hca route: prepared plans", () => {
       assert.strictEqual(routed.steps[0]?.description, "Set up your HCA");
       assert.deepStrictEqual(routed.steps[1]?.waitFor, { seconds: 60n });
       assert.deepStrictEqual(
-        routed.steps.map((step) => [step.id, "waitFor" in step]),
+        Arr.map(routed.steps, (step) => [step.id, "waitFor" in step]),
         [
           ["hca-setup", false],
           ["a", true],
@@ -101,10 +102,8 @@ describe("hca route: prepared plans", () => {
 
   it.effect("prepares on a deployment without ENSv1", () =>
     Effect.gen(function* () {
-      const { context } = makeClient({
-        deployed: true,
-        deployment: { ...Deployments.sepolia, v1: undefined } as never,
-      });
+      const { v1: _, ...withoutV1 } = Deployments.sepolia;
+      const { context } = makeClient({ deployed: true, deployment: withoutV1 });
 
       const routed = yield* prepared(
         hca(),
@@ -113,7 +112,7 @@ describe("hca route: prepared plans", () => {
       );
 
       assert.deepStrictEqual(
-        routed.steps.map((step) => step.id),
+        Arr.map(routed.steps, (step) => step.id),
         ["a"],
       );
     }),
@@ -146,6 +145,61 @@ describe("hca route: prepared plans", () => {
           description: "records.set",
         },
       ]);
+    }),
+  );
+
+  it.effect("quotes only the HCA's executions when a signer step has no calls", () =>
+    Effect.gen(function* () {
+      const { executor, quoted } = recording();
+      const plan = planOf([
+        { id: "a", description: "a", calls: [call] },
+        { id: "empty", description: "empty", calls: [], from: "signer" },
+      ]);
+
+      yield* prepared(hca({ executors: [executor] }), plan);
+
+      assert.deepStrictEqual(
+        Arr.map(quoted, (request) => request.calls),
+        [[call]],
+      );
+    }),
+  );
+
+  it.effect("passes an HcaError from the executor's quote through unchanged", () =>
+    Effect.gen(function* () {
+      const rejected = new HcaError({ code: "HCA_BUNDLER_REJECTED", executor: "relayer" });
+      const { executor } = recording({ quote: () => Promise.reject(rejected) });
+      const plan = planOf([{ id: "a", description: "a", calls: [call] }]);
+
+      const error = yield* expectRejection(
+        () =>
+          defined(hca({ executors: [executor] }).prepare)(
+            plan,
+            makeClient({ deployed: true }).context,
+          ),
+        { _tag: "HcaError", code: "HCA_BUNDLER_REJECTED" },
+      );
+
+      assert.strictEqual(error, rejected);
+    }),
+  );
+
+  it.effect("reports another failure of the executor's quote as a failed execution", () =>
+    Effect.gen(function* () {
+      const failure = new Error("quote service down");
+      const { executor } = recording({ quote: () => Promise.reject(failure) });
+      const plan = planOf([{ id: "a", description: "a", calls: [call] }]);
+
+      const error = yield* expectRejection(
+        () =>
+          defined(hca({ executors: [executor] }).prepare)(
+            plan,
+            makeClient({ deployed: true }).context,
+          ),
+        { _tag: "HcaError", code: "HCA_EXECUTION_FAILED" },
+      );
+
+      assert.strictEqual(Reflect.get(error, "cause"), failure);
     }),
   );
 });
@@ -190,9 +244,10 @@ describe("hca route: sending", () => {
         planOf([{ id: "a", description: "Set records", calls: [call] }]),
       );
 
-      const reference = yield* Effect.promise(() =>
-        (via.send as NonNullable<Write.Via["send"]>)(routed.steps[0] as Plan.Step, context),
-      );
+      const [routedStep] = routed.steps;
+      assert.isDefined(routedStep);
+      const reference = yield* Effect.promise(() => defined(via.send)(routedStep, context));
+      const sender = yield* Effect.promise(() => defined(via.sender)(context));
 
       assert.strictEqual(reference, "ref-1");
       assert.deepStrictEqual(sent, [
@@ -206,10 +261,7 @@ describe("hca route: sending", () => {
           description: "Set records",
         },
       ]);
-      assert.strictEqual(
-        yield* Effect.promise(() => (via.sender as NonNullable<Write.Via["sender"]>)(context)),
-        hcaAddress,
-      );
+      assert.strictEqual(sender, hcaAddress);
     }),
   );
 
@@ -220,13 +272,13 @@ describe("hca route: sending", () => {
     Effect.gen(function* () {
       const via = hca({ executors: [recording().executor] });
 
-      const error = yield* expectRejection(
-        () => (via.send as NonNullable<Write.Via["send"]>)(step, makeClient().context),
-        { _tag: "HcaError", code: "HCA_EXECUTION_FAILED" },
-      );
+      const error = yield* expectRejection(() => defined(via.send)(step, makeClient().context), {
+        _tag: "HcaError",
+        code: "HCA_EXECUTION_FAILED",
+      });
 
       assert.strictEqual(
-        (error as { readonly shortMessage?: string }).shortMessage,
+        Reflect.get(error, "shortMessage"),
         '"Set records" is not an HCA execution.',
       );
     }),
@@ -238,14 +290,18 @@ describe("hca route: sending", () => {
       const silent = hca({ executors: [recording().executor] });
       const reporting = hca({
         executors: [
-          recording({ status: async () => ({ status: "success", hashes: [zeroHash] }) }).executor,
+          recording({ status: () => Promise.resolve({ status: "success", hashes: [zeroHash] }) })
+            .executor,
         ],
       });
       const status = (via: Write.Via) =>
-        Effect.promise(() => (via.status as NonNullable<Write.Via["status"]>)("ref-1", context));
+        Effect.promise(() => defined(via.status)("ref-1", context));
 
-      assert.deepStrictEqual(yield* status(silent), { status: "pending" });
-      assert.deepStrictEqual(yield* status(reporting), { status: "success", hashes: [zeroHash] });
+      const silentStatus = yield* status(silent);
+      const reportedStatus = yield* status(reporting);
+
+      assert.deepStrictEqual(silentStatus, { status: "pending" });
+      assert.deepStrictEqual(reportedStatus, { status: "success", hashes: [zeroHash] });
     }),
   );
 
@@ -265,16 +321,12 @@ describe("hca route: sending", () => {
   it.effect("names the missing signer", () =>
     Effect.gen(function* () {
       const error = yield* expectRejection(
-        () =>
-          (hca().sender as NonNullable<Write.Via["sender"]>)({
-            ...makeClient().context,
-            account: undefined,
-          }),
+        () => defined(hca().sender)({ ...makeClient().context, account: undefined }),
         { _tag: "HcaError", code: "HCA_NOT_VERIFIED" },
       );
 
       assert.strictEqual(
-        (error as { readonly shortMessage?: string }).shortMessage,
+        Reflect.get(error, "shortMessage"),
         "An HCA write needs a signer: the HCA's owner.",
       );
     }),
@@ -291,14 +343,14 @@ describe("hca route: sessions", () => {
 
       const error = yield* expectRejection(
         () =>
-          (via.prepare as NonNullable<Write.Via["prepare"]>)(
+          defined(via.prepare)(
             planOf([{ id: "a", description: "a", calls: [call] }]),
             makeClient({ deployed: true }).context,
           ),
         { _tag: "HcaError", code: "HCA_SESSION_INVALID" },
       );
 
-      assert.deepStrictEqual((error as { readonly details?: unknown }).details, [detail]);
+      assert.deepStrictEqual(Reflect.get(error, "details"), [detail]);
     }),
   );
 
@@ -316,7 +368,7 @@ describe("hca route: sessions", () => {
       const routed = yield* prepared(via, planOf([signerStep]));
       yield* expectRejection(
         () =>
-          (via.prepare as NonNullable<Write.Via["prepare"]>)(
+          defined(via.prepare)(
             planOf([{ id: "a", description: "a", calls: [call] }]),
             makeClient({ deployed: true }).context,
           ),

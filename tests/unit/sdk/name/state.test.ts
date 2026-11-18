@@ -1,4 +1,5 @@
 import { assert, describe, it } from "@effect/vitest";
+import { Array as Arr } from "effect";
 
 import { classify, isMigrated } from "@ensforge/sdk/internal/internal/name/classify";
 import { nameParts } from "@ensforge/sdk/internal/internal/name/parts";
@@ -69,7 +70,10 @@ describe("ENSv2 name state", () => {
 
   it("is registered until expiry, in grace until its end, then expired", () => {
     assert.deepStrictEqual(
-      [expiry - 1n, expiry, expiry + v2Grace - 1n, expiry + v2Grace].map((time) => at(time).status),
+      Arr.map(
+        [expiry - 1n, expiry, expiry + v2Grace - 1n, expiry + v2Grace],
+        (time) => at(time).status,
+      ),
       ["registered", "grace", "grace", "expired"],
     );
   });
@@ -158,7 +162,8 @@ describe("ENSv1 name state", () => {
     const expiry = now + day;
 
     assert.deepStrictEqual(
-      [expiry - 1n, expiry, expiry + v1Grace, expiry + v1Grace + 1n].map(
+      Arr.map(
+        [expiry - 1n, expiry, expiry + v1Grace, expiry + v1Grace + 1n],
         (time) => stateOf(data({ now: time, v1: v1() }), true).status,
       ),
       ["registered", "grace", "grace", "expired"],

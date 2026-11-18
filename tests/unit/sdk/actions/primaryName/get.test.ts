@@ -1,5 +1,5 @@
 import { assert, describe, it } from "@effect/vitest";
-import { Effect } from "effect";
+import { Effect, pipe, String as Str } from "effect";
 
 import { Abis } from "@ensforge/contracts";
 import { Name } from "@ensforge/sdk";
@@ -13,6 +13,7 @@ import { mainnet } from "viem/chains";
 import { clientFor, other } from "../world.js";
 
 const revert = (errorName: string, args: readonly unknown[]) =>
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion, typescript/no-unnecessary-type-assertion -- the error name and arguments are deliberately loose
   encodeErrorResult({ abi: Abis.shared.errors, errorName, args } as never);
 
 /** `primaryName.get` against a Universal Resolver that reverts with `data`. */
@@ -61,20 +62,15 @@ describe("primaryName.get", () => {
     "reads each chain's reverse namespace",
     () =>
       Effect.gen(function* () {
-        const label = other.slice(2).toLowerCase();
+        const label = pipe(other, Str.slice(2), Str.toLowerCase);
 
-        assert.strictEqual(
-          reverseName(other, yield* primaryNameCoinType(undefined)),
-          `${label}.addr.reverse`,
-        );
-        assert.strictEqual(
-          reverseName(other, yield* primaryNameCoinType({ chainId: 84_532 })),
-          `${label}.80014a34.reverse`,
-        );
-        assert.strictEqual(
-          reverseName(other, yield* primaryNameCoinType("default")),
-          `${label}.default.reverse`,
-        );
+        const mainnetCoinType = yield* primaryNameCoinType(undefined);
+        const baseSepoliaCoinType = yield* primaryNameCoinType({ chainId: 84_532 });
+        const defaultCoinType = yield* primaryNameCoinType("default");
+
+        assert.strictEqual(reverseName(other, mainnetCoinType), `${label}.addr.reverse`);
+        assert.strictEqual(reverseName(other, baseSepoliaCoinType), `${label}.80014a34.reverse`);
+        assert.strictEqual(reverseName(other, defaultCoinType), `${label}.default.reverse`);
       }),
     { meta: { cases: ["P28"] } },
   );
@@ -130,7 +126,8 @@ describe("primaryName.get", () => {
           code,
         });
         assert.isDefined(error.cause, label);
-        assert.isNull(yield* readReverting(data, false), label);
+        const lenient = yield* readReverting(data, false);
+        assert.isNull(lenient, label);
       }
     }),
   );

@@ -1,9 +1,9 @@
 import { assert, describe, it } from "@effect/vitest";
-import { Arbitrary } from "effect";
+import { Arbitrary, String as Str } from "effect";
 
 import * as CoinType from "@ensforge/sdk/internal/utils/CoinType";
 import { Arbitraries, expectThrow } from "@ensforge/test-harness";
-import { checksumAddress, getAddress, keccak256, toHex, type Hex } from "viem";
+import { checksumAddress, getAddress, keccak256, toHex } from "viem";
 
 const base = 2_147_492_101n;
 const vitalik = "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045";
@@ -108,7 +108,7 @@ describe("CoinType exceptions to ENSIP-11", () => {
     assert.strictEqual(CoinType.toSymbol(61n), "etcLegacy");
     assert.strictEqual(CoinType.from("etc"), CoinType.fromChainId(61));
     assert.isFalse(CoinType.isEvm(61n));
-    assert.strictEqual(CoinType.decodeAddress(61n, vitalik.toLowerCase() as Hex), vitalik);
+    assert.strictEqual(CoinType.decodeAddress(61n, Str.toLowerCase(vitalik)), vitalik);
   });
 });
 
@@ -126,15 +126,18 @@ describe("CoinType EVM addresses", () => {
 
   it("accepts addresses without a checksum", { meta: { cases: ["K07"] } }, () => {
     assert.strictEqual(
-      CoinType.encodeAddress(60n, vitalik.toUpperCase().replace("0X", "0x")),
-      vitalik.toLowerCase(),
+      CoinType.encodeAddress(60n, Str.replace("0X", "0x")(Str.toUpperCase(vitalik))),
+      Str.toLowerCase(vitalik),
     );
-    assert.strictEqual(CoinType.encodeAddress(60n, vitalik.toLowerCase()), vitalik.toLowerCase());
+    assert.strictEqual(
+      CoinType.encodeAddress(60n, Str.toLowerCase(vitalik)),
+      Str.toLowerCase(vitalik),
+    );
   });
 
   // Mixed case is a checksum (EIP-55), so a wrong one is a typo.
   it("rejects a mixed-case address with a wrong checksum", { meta: { cases: ["K07"] } }, () => {
-    expectThrow(() => CoinType.encodeAddress(60n, vitalik.replace("d8dA", "D8dA")), {
+    expectThrow(() => CoinType.encodeAddress(60n, Str.replace("d8dA", "D8dA")(vitalik)), {
       _tag: "InvalidInputError",
       code: "INVALID_ADDRESS",
     });
@@ -166,7 +169,7 @@ describe("CoinType EVM addresses", () => {
       Arbitraries.uint(0x7fff_ffff),
     ],
     ([hash, chainId]) => {
-      const address = getAddress(hash.slice(0, 42));
+      const address = getAddress(Str.slice(0, 42)(hash));
       const coinType = CoinType.fromChainId(chainId);
       assert.strictEqual(
         CoinType.decodeAddress(coinType, CoinType.encodeAddress(coinType, address)),
@@ -175,7 +178,7 @@ describe("CoinType EVM addresses", () => {
     },
   );
 
-  it.each(["0x1234", `0x${"00".repeat(12)}${"ab".repeat(20)}`] as const)(
+  it.each(["0x1234", `0x${Str.repeat(12)("00")}${Str.repeat(20)("ab")}`] as const)(
     "decodeAddress rejects malformed EVM bytes %s with a typed error",
     { meta: { cases: ["K06"] } },
     (data) => {
@@ -214,7 +217,7 @@ describe("CoinType non-EVM addresses", () => {
 
   // RSK checksums with its chain ID 30 (RSKIP-60, EIP-1191), not EIP-55.
   it("checksums RSK addresses with chain ID 30", { meta: { cases: ["K08"] } }, () => {
-    const rsk = CoinType.decodeAddress(137n, vitalik.toLowerCase() as Hex);
+    const rsk = CoinType.decodeAddress(137n, Str.toLowerCase(vitalik));
 
     assert.strictEqual(rsk, checksumAddress(vitalik, 30));
     assert.notStrictEqual(rsk, vitalik);

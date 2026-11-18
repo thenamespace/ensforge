@@ -1,15 +1,17 @@
 import { assert, describe, it } from "@effect/vitest";
-import { Effect, Schema } from "effect";
+import { Effect, Schema, String as Str } from "effect";
 
 import * as Name from "@ensforge/sdk/internal/schemas/Name";
 import { Arbitraries } from "@ensforge/test-harness";
 
 describe("Name.Normalized", () => {
-  it.effect.each(["", "eth", "nick.eth", "名字.eth", `[${"ab".repeat(32)}].eth`])(
+  it.effect.each(["", "eth", "nick.eth", "名字.eth", `[${Str.repeat(32)("ab")}].eth`])(
     "accepts %j",
     (input) =>
       Effect.gen(function* () {
-        assert.strictEqual(yield* Schema.decodeEffect(Name.Normalized)(input), input);
+        const decoded = yield* Schema.decodeEffect(Name.Normalized)(input);
+
+        assert.strictEqual(decoded, input);
       }),
   );
 
@@ -26,7 +28,11 @@ describe("Name.Normalized", () => {
     }),
   );
 
-  it.prop("accepts generated normalized names", [Arbitraries.name], ([name]) => {
-    assert.strictEqual(Schema.decodeSync(Name.Normalized)(name), name);
-  });
+  it.effect.prop("accepts generated normalized names", [Arbitraries.name], ([name]) =>
+    Effect.gen(function* () {
+      const decoded = yield* Schema.decodeEffect(Name.Normalized)(name);
+
+      assert.strictEqual(decoded, name);
+    }),
+  );
 });

@@ -1,47 +1,52 @@
 import { assert, describe, it } from "@effect/vitest";
-import { Effect } from "effect";
+import { Effect, String as Str } from "effect";
 
+import { Deployments } from "@ensforge/contracts";
 import { hcaSessionSalt } from "@ensforge/contracts/v2/experimental/hca";
 import { rhinestone, type RhinestoneSdk } from "@ensforge/hca/internal/executors/rhinestone";
 import type { ExecutionRequest, HcaSession } from "@ensforge/hca/internal/types";
-import { expectRejection } from "@ensforge/test-harness";
-import { concat, zeroAddress, zeroHash, type Address } from "viem";
+import type { Write } from "@ensforge/sdk";
+import { expectRejection, noRpc, scriptedTransport } from "@ensforge/test-harness";
+import { concat, createWalletClient, zeroAddress, zeroHash, type Address } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
+import { sepolia } from "viem/chains";
 
-import { hcaAddress, makeClient, owner, proxyLogic, v2 } from "../fixtures";
+import { defined, hcaAddress, makeClient, owner, proxyLogic, v2 } from "../fixtures";
 
 // What the Rhinestone SDK is asked to do: the account it derives and the transactions it prepares.
 
-const ownerAccount = privateKeyToAccount(`0x${"22".repeat(32)}`);
-const sessionSigner = privateKeyToAccount(`0x${"33".repeat(32)}`);
+const ownerAccount = privateKeyToAccount(`0x${Str.repeat(32)("22")}`);
+const sessionSigner = privateKeyToAccount(`0x${Str.repeat(32)("33")}`);
 const refundToken: Address = "0x00000000000000000000000000000000000000cc";
 
 /** An SDK that derives `hcaAddress` and records every account config and transaction. */
 const recordingSdk = () => {
   const configs: unknown[] = [];
-  const prepared: Record<string, unknown>[] = [];
+  const prepared: unknown[] = [];
   const sdk: RhinestoneSdk = {
-    createAccount: async (config) => {
+    createAccount: (config) => {
       configs.push(config);
-      return {
+      return Promise.resolve({
         getAddress: () => hcaAddress,
-        prepareTransaction: async (transaction) => {
-          prepared.push(transaction as Record<string, unknown>);
-          return transaction;
+        prepareTransaction: (transaction) => {
+          prepared.push(transaction);
+          return Promise.resolve(transaction);
         },
-        signTransaction: async (transaction) => transaction,
-        submitTransaction: async () => ({ id: 7n }),
-      };
+        signTransaction: (transaction) => Promise.resolve(transaction),
+        submitTransaction: () => Promise.resolve({ id: 7n }),
+      });
     },
-    getIntentStatus: async () => ({ status: "PENDING" }),
+    getIntentStatus: () => Promise.resolve({ status: "PENDING" }),
   };
   return { sdk, configs, prepared };
 };
 
-const contextFor = () => {
-  const { context } = makeClient({ deployed: true });
-  return { ...context, walletClient: { account: ownerAccount } as never };
-};
+const { transport } = scriptedTransport(noRpc);
+
+const contextFor = (options: Parameters<typeof makeClient>[0] = {}): Write.Via.Context => ({
+  ...makeClient({ deployed: true, ...options }).context,
+  walletClient: createWalletClient({ account: ownerAccount, chain: sepolia, transport }),
+});
 
 const request: ExecutionRequest = {
   chainId: 11155111,
@@ -52,9 +57,11 @@ const request: ExecutionRequest = {
   description: "test",
 };
 
-const session = {
+const session: HcaSession = {
+  chainId: 11155111,
   hca: hcaAddress,
   owner,
+  sessionKey: sessionSigner.address,
   terms: {
     sessionNonce: 0n,
     validUntil: 4_000_000_000,
@@ -66,17 +73,20 @@ const session = {
   },
   chains: [
     { chainId: 11155111, sessionDigest: zeroHash },
-    { chainId: 1, sessionDigest: `0x${"01".repeat(32)}` },
+    { chainId: 1, sessionDigest: `0x${Str.repeat(32)("01")}` },
   ],
+  permissionId: zeroHash,
+  sessionDigest: zeroHash,
   ownerSignature: "0xabcd",
-} as unknown as HcaSession;
+  signingDomain: "smart-session",
+};
 
 describe("rhinestone executor: requests", () => {
   it.effect("derives the owner's standalone HCA, sponsored by default", () =>
     Effect.gen(function* () {
       const { sdk, configs, prepared } = recordingSdk();
       const executor = rhinestone({ sdk });
-      const send = executor.send as NonNullable<typeof executor.send>;
+      const send = defined(executor.send);
 
       const reference = yield* Effect.promise(() => send(request, contextFor()));
       yield* Effect.promise(() => send({ ...request, deployed: true }, contextFor()));
@@ -119,9 +129,7 @@ describe("rhinestone executor: requests", () => {
       const { sdk, prepared } = recordingSdk();
       const executor = rhinestone({ sdk, sessionSigner, sponsored: false });
 
-      yield* Effect.promise(() =>
-        (executor.send as NonNullable<typeof executor.send>)({ ...request, session }, contextFor()),
-      );
+      yield* Effect.promise(() => defined(executor.send)({ ...request, session }, contextFor()));
 
       const chain = contextFor().publicClient.chain;
       assert.deepStrictEqual(prepared[0], {
@@ -142,7 +150,7 @@ describe("rhinestone executor: requests", () => {
             userSignature: concat([zeroAddress, "0xabcd"]),
             hashesAndChainIds: [
               { chainId: 11155111n, sessionDigest: zeroHash },
-              { chainId: 1n, sessionDigest: `0x${"01".repeat(32)}` },
+              { chainId: 1n, sessionDigest: `0x${Str.repeat(32)("01")}` },
             ],
             sessionToEnableIndex: 0,
           },
@@ -157,9 +165,7 @@ describe("rhinestone executor: requests", () => {
       const { sdk, prepared } = recordingSdk();
       const executor = rhinestone({ sdk, sponsored: false });
 
-      yield* Effect.promise(() =>
-        (executor.send as NonNullable<typeof executor.send>)(request, contextFor()),
-      );
+      yield* Effect.promise(() => defined(executor.send)(request, contextFor()));
 
       assert.notProperty(prepared[0], "feeAsset");
       assert.notProperty(prepared[0], "signers");
@@ -171,66 +177,40 @@ describe("rhinestone executor: requests", () => {
       const executor = rhinestone({ sdk: recordingSdk().sdk });
 
       const error = yield* expectRejection(
-        () =>
-          (executor.send as NonNullable<typeof executor.send>)(
-            { ...request, session },
-            contextFor(),
-          ),
+        () => defined(executor.send)({ ...request, session }, contextFor()),
         { _tag: "HcaError", code: "HCA_EXECUTOR_UNSUPPORTED" },
       );
 
-      assert.strictEqual((error as { readonly executor?: string }).executor, "rhinestone");
+      assert.strictEqual(Reflect.get(error, "executor"), "rhinestone");
       assert.strictEqual(
-        (error as { readonly shortMessage?: string }).shortMessage,
+        Reflect.get(error, "shortMessage"),
         "Session executions need `sessionSigner`.",
       );
     }),
   );
 
-  it.effect.each<readonly [string, ReturnType<typeof contextFor>]>([
+  const { hca: _, ...v2WithoutHca } = Deployments.sepolia.v2;
+  const { v2: __, ...withoutV2 } = Deployments.sepolia;
+
+  it.effect.each<readonly [string, Write.Via.Context]>([
     [
       "a wallet with an account",
-      { ...contextFor(), walletClient: { account: undefined } as never },
+      { ...contextFor(), walletClient: createWalletClient({ chain: sepolia, transport }) },
     ],
-    ["a wallet", { ...contextFor(), walletClient: undefined as never }],
-    [
-      "an HCA deployment",
-      (() => {
-        const context = contextFor();
-        const client = context.client as unknown as {
-          readonly deployment: { readonly v2: object };
-        };
-        return {
-          ...context,
-          client: {
-            ...client,
-            deployment: { ...client.deployment, v2: { ...client.deployment.v2, hca: undefined } },
-          } as never,
-        };
-      })(),
-    ],
-    [
-      "ENSv2",
-      (() => {
-        const context = contextFor();
-        const client = context.client as unknown as { readonly deployment: object };
-        return {
-          ...context,
-          client: { ...client, deployment: { ...client.deployment, v2: undefined } } as never,
-        };
-      })(),
-    ],
+    ["a wallet", { ...contextFor(), walletClient: undefined }],
+    ["an HCA deployment", contextFor({ deployment: { ...Deployments.sepolia, v2: v2WithoutHca } })],
+    ["ENSv2", contextFor({ deployment: withoutV2 })],
   ])("needs %s", ([, context]) =>
     Effect.gen(function* () {
       const { sdk, configs } = recordingSdk();
       const executor = rhinestone({ sdk });
 
-      const error = yield* expectRejection(
-        () => (executor.send as NonNullable<typeof executor.send>)(request, context),
-        { _tag: "HcaError", code: "HCA_EXECUTOR_UNSUPPORTED" },
-      );
+      const error = yield* expectRejection(() => defined(executor.send)(request, context), {
+        _tag: "HcaError",
+        code: "HCA_EXECUTOR_UNSUPPORTED",
+      });
 
-      assert.strictEqual((error as { readonly executor?: string }).executor, "rhinestone");
+      assert.strictEqual(Reflect.get(error, "executor"), "rhinestone");
       assert.deepStrictEqual(configs, []);
     }),
   );
@@ -241,19 +221,17 @@ describe("rhinestone executor: requests", () => {
       const executor = rhinestone({
         sdk: {
           ...sdk,
-          createAccount: async (config) => ({
-            ...(await sdk.createAccount(config)),
-            getAddress: () => owner,
-          }),
+          createAccount: (config) =>
+            sdk.createAccount(config).then((account) => ({ ...account, getAddress: () => owner })),
         },
       });
 
-      const error = yield* expectRejection(
-        () => (executor.send as NonNullable<typeof executor.send>)(request, contextFor()),
-        { _tag: "HcaError", code: "HCA_SDK_UNSUPPORTED" },
-      );
+      const error = yield* expectRejection(() => defined(executor.send)(request, contextFor()), {
+        _tag: "HcaError",
+        code: "HCA_SDK_UNSUPPORTED",
+      });
 
-      assert.strictEqual((error as { readonly executor?: string }).executor, "rhinestone");
+      assert.strictEqual(Reflect.get(error, "executor"), "rhinestone");
     }),
   );
 });

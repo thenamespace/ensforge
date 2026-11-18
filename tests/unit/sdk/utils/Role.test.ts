@@ -1,5 +1,5 @@
 import { assert, describe, it } from "@effect/vitest";
-import { Schema } from "effect";
+import { Array, Record, Schema, String as Str } from "effect";
 
 import { Roles } from "@ensforge/contracts";
 import * as Role from "@ensforge/sdk/internal/utils/Role";
@@ -33,19 +33,16 @@ const resolverNybbles = {
   upgrade: 31n,
 } as const;
 
-const registryNames = Object.keys(Roles.registry) as Role.Name[];
-const resolverNames = Object.keys(Roles.resolver) as Role.Name[];
+const registryNames: readonly Role.Name[] = Record.keys(Roles.registry);
+const resolverNames: readonly Role.Name[] = Record.keys(Roles.resolver);
 
 describe("Role bits", () => {
-  it.each([...Object.entries(registryNybbles), ...Object.entries(resolverNybbles)])(
+  it.each([...Record.toEntries(registryNybbles), ...Record.toEntries(resolverNybbles)])(
     "%s is nybble %s with its admin 128 bits higher",
     (name, nybble) => {
-      assert.strictEqual(Role.from([name as Role.Name]), 1n << (4n * nybble));
+      assert.strictEqual(Role.from([name]), 1n << (4n * nybble));
       if (name === "wasReserved") return;
-      assert.strictEqual(
-        Role.from([Role.admin(name as Role.Name) as Role.Name]),
-        1n << (4n * nybble + 128n),
-      );
+      assert.strictEqual(Role.from([Role.admin(name)]), 1n << (4n * nybble + 128n));
     },
   );
 
@@ -55,12 +52,12 @@ describe("Role bits", () => {
       0n,
     );
     assert.sameMembers(
-      registryNames.filter((name) => !name.endsWith("Admin")),
-      Object.keys(registryNybbles),
+      Array.filter(registryNames, (name) => !Str.endsWith("Admin")(name)),
+      Record.keys(registryNybbles),
     );
     assert.sameMembers(
-      resolverNames.filter((name) => !name.endsWith("Admin")),
-      Object.keys(resolverNybbles),
+      Array.filter(resolverNames, (name) => !Str.endsWith("Admin")(name)),
+      Record.keys(resolverNybbles),
     );
   });
 });
@@ -85,12 +82,16 @@ describe("Role.from and Role.has", () => {
     assert.isFalse(Role.has(0n, "setAddr"));
   });
 
-  it.each(["", "nope", "setAddrAdminAdmin"])("rejects %j", (name) => {
-    expectThrow(() => Role.from([name as Role.Name]), {
+  it.each(["", "nope", "setAddrAdminAdmin"])("rejects %j", (input) => {
+    // The cast feeds an unknown role name on purpose.
+    // oxlint-disable-next-line typescript/no-unsafe-type-assertion
+    const name = input as Role.Name;
+
+    expectThrow(() => Role.from([name]), {
       _tag: "InvalidInputError",
       code: "INVALID_ROLES",
     });
-    expectThrow(() => Role.has(0n, name as Role.Name), {
+    expectThrow(() => Role.has(0n, name), {
       _tag: "InvalidInputError",
       code: "INVALID_ROLES",
     });
@@ -106,7 +107,7 @@ describe("Role.toNames", () => {
 
   it.prop(
     "inverts from for registry roles",
-    [Schema.Array(Schema.Literals(registryNames as [Role.Name, ...Role.Name[]]))],
+    [Schema.Array(Schema.Literals(registryNames))],
     ([names]) => {
       assert.sameMembers([...Role.toNames(Role.from(names), "registry")], [...new Set(names)]);
     },
@@ -114,7 +115,7 @@ describe("Role.toNames", () => {
 
   it.prop(
     "inverts from for resolver roles",
-    [Schema.Array(Schema.Literals(resolverNames as [Role.Name, ...Role.Name[]]))],
+    [Schema.Array(Schema.Literals(resolverNames))],
     ([names]) => {
       assert.sameMembers([...Role.toNames(Role.from(names), "resolver")], [...new Set(names)]);
     },
