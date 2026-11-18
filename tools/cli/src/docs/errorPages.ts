@@ -1,8 +1,19 @@
-import { Array as Arr, String as Str } from "effect";
+import { Array as Arr, Formatter } from "effect";
 
-import { fieldsTable } from "./actionPages.ts";
-import { code, type LinkResolver, page, plain, prose, table } from "./mdx.ts";
+import { cards, fieldsTable } from "./actionPages.ts";
+import {
+  apiMeta,
+  code,
+  firstSentence,
+  type LinkResolver,
+  page,
+  plain,
+  prose,
+  sourceAttribute,
+  table,
+} from "./mdx.ts";
 import type { ErrorClassDoc, ErrorCodeDoc, Thrower } from "./model.ts";
+import { errorClassUrl, errorUrl } from "./urls.ts";
 
 /** Classes every read can fail with (`Errors.CommonError`) and the ones every write adds. */
 const common = new Set(["ConfigError", "ContractRevertError", "InternalError", "NetworkError"]);
@@ -13,6 +24,15 @@ const writes = new Set([
   "UserRejectedError",
   "WalletError",
 ]);
+
+const packageOf = (root: string) => (root === "hca" ? "@ensforge/hca" : "@ensforge/sdk");
+
+const classScope = (name: string): string =>
+  common.has(name)
+    ? `Any action can fail with ${code(name)}: it is part of ${code("Errors.CommonError")}.`
+    : writes.has(name)
+      ? `Any write can fail with ${code(name)}: it is part of ${code("Errors.WriteError")}.`
+      : "";
 
 /** One page per error code, at the URL its `docsUrl` points to. */
 export const errorCodePage = (
@@ -28,11 +48,6 @@ export const errorCodePage = (
           ["Title", "Message", "Action"],
           [[error.user.title, error.user.message, error.user.action ?? ""]],
         );
-  const classScope = common.has(error.errorClass)
-    ? `Any action can fail with ${code(error.errorClass)}: it is part of ${code("Errors.CommonError")}.`
-    : writes.has(error.errorClass)
-      ? `Any write can fail with ${code(error.errorClass)}: it is part of ${code("Errors.WriteError")}.`
-      : "";
   const thrownBy =
     throwers.length === 0
       ? "No action names this code in its documented errors."
@@ -51,7 +66,7 @@ export const errorCodePage = (
       keywords: [error.code, error.errorClass],
     },
     [
-      `**Class** [${code(error.errorClass)}](/docs/sdk/errors#${Str.toLowerCase(error.errorClass)}) · **Code** ${code(error.code)} · **Package** ${code(error.root === "hca" ? "@ensforge/hca" : "@ensforge/sdk")}`,
+      `<ErrorMeta errorClass={${Formatter.formatJson(error.errorClass)}} href="${errorClassUrl(error.errorClass)}" package={${Formatter.formatJson(packageOf(error.root))}}${error.retryable ? " retryable" : ""} />`,
       `## What happened\n\n${prose(error.shortMessage || errorClass.summary, resolve)}`,
       `## What to show users\n\n${user}`,
       error.hint === undefined ? "" : `## How to fix\n\n${prose(error.hint, resolve)}`,
@@ -61,7 +76,7 @@ export const errorCodePage = (
           : "Retrying the same call fails the same way until the cause is fixed (`retryable: false`)."
       }`,
       `## Actions that throw it\n\n${Arr.join(
-        Arr.filter([thrownBy, classScope], (block) => block !== ""),
+        Arr.filter([thrownBy, classScope(error.errorClass)], (block) => block !== ""),
         "\n\n",
       )}`,
       `## Catch it\n\n${
@@ -73,37 +88,71 @@ export const errorCodePage = (
   );
 };
 
-/** All codes, grouped by class, with one line each. */
-export const errorsIndexPage = (classes: readonly ErrorClassDoc[], resolve: LinkResolver): string =>
+/** One page per error class: what it means, its fields and every code it carries. */
+export const errorClassPage = (errorClass: ErrorClassDoc, resolve: LinkResolver): string =>
   page(
+    {
+      title: errorClass.name,
+      description: `Look up ${errorClass.name}: ${plain(firstSentence(errorClass.summary)) || "an ensforge error class."} Lists its fields and codes.`,
+      keywords: [errorClass.name, ...Arr.map(errorClass.codes, (error) => error.code)],
+    },
+    [
+      apiMeta({
+        kind: "Error class",
+        summary: `${errorClass.codes.length} codes · ${packageOf(errorClass.root)}`,
+        source: sourceAttribute(errorClass.source),
+      }),
+      prose(errorClass.summary, resolve),
+      classScope(errorClass.name),
+      errorClass.fields.length === 0
+        ? ""
+        : `## Fields\n\n${fieldsTable(errorClass.fields, resolve)}`,
+      `## Codes\n\n${table(
+        ["Code", "Meaning", "Retryable"],
+        Arr.map(errorClass.codes, (error) => [
+          `[${code(error.code)}](${errorUrl(error.code)})`,
+          prose(error.shortMessage, resolve),
+          error.retryable ? "Yes" : "No",
+        ]),
+      )}`,
+      `## Catch it\n\n${
+        errorClass.root === "sdk"
+          ? `${code(`Effect.catchTag("${errorClass.name}", …)`)} or ${code(`error instanceof Errors.${errorClass.name}`)}.`
+          : `${code(`error instanceof ${errorClass.name}`)}.`
+      } See [Handle errors](/docs/sdk/handle-errors).`,
+    ],
+  );
+
+/** The errors home: one card per class, then every code in one table. */
+export const errorsIndexPage = (
+  classes: readonly ErrorClassDoc[],
+  resolve: LinkResolver,
+): string => {
+  const codes = Arr.flatMap(classes, (errorClass) => errorClass.codes);
+  return page(
     {
       title: "Errors",
       description: "Look up every error code ensforge throws, grouped by error class.",
       keywords: Arr.map(classes, (errorClass) => errorClass.name),
     },
     [
+      apiMeta({ summary: `${codes.length} codes · ${classes.length} classes` }),
       "Every error ensforge throws has a class (`_tag`) and a code. Each code has its own page, the one `error.docsUrl` points to. See [How errors work](/docs/sdk/errors-explained).",
-      ...Arr.map(classes, (errorClass) =>
-        Arr.join(
-          Arr.filter(
-            [
-              `## ${errorClass.name}`,
-              prose(errorClass.summary, resolve),
-              errorClass.fields.length === 0
-                ? ""
-                : `Fields:\n\n${fieldsTable(errorClass.fields, resolve)}`,
-              table(
-                ["Code", "Meaning"],
-                Arr.map(errorClass.codes, (error) => [
-                  `[${code(error.code)}](/docs/sdk/errors/${error.code})`,
-                  prose(error.shortMessage, resolve),
-                ]),
-              ),
-            ],
-            (block) => block !== "",
-          ),
-          "\n\n",
-        ),
-      ),
+      `## Classes\n\n${cards(
+        Arr.map(classes, (errorClass) => ({
+          title: errorClass.name,
+          url: errorClassUrl(errorClass.name),
+          description: `${errorClass.codes.length} codes. ${plain(firstSentence(errorClass.summary))}`,
+        })),
+      )}`,
+      `## Codes\n\n${table(
+        ["Code", "Class", "Meaning"],
+        Arr.map(codes, (error) => [
+          `[${code(error.code)}](${errorUrl(error.code)})`,
+          `[${code(error.errorClass)}](${errorClassUrl(error.errorClass)})`,
+          prose(error.shortMessage, resolve),
+        ]),
+      )}`,
     ],
   );
+};

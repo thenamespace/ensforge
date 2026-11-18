@@ -7,8 +7,17 @@ import { jsdocOf } from "../jsdoc.ts";
 import { isNamespace, stabilityOf } from "../lint-jsdoc/stability.ts";
 import type { Project } from "../services/TypeScript.ts";
 import { isWorkspaceFile, membersOf, textOf } from "./members.ts";
-import type { ExportDoc } from "./model.ts";
+import type { ExportDoc, SourceLocation } from "./model.ts";
 import { sectionsOf } from "./sections.ts";
+
+/** Where `node` starts (after its JSDoc), as a path from the repository root and a 1-based line. */
+export const sourceOf = (node: ts.Node): SourceLocation => {
+  const source = node.getSourceFile();
+  return {
+    file: Str.replace(/^.*?\/(?=packages\/)/, "")(source.fileName),
+    line: source.getLineAndCharacterOfPosition(node.getStart(source)).line + 1,
+  };
+};
 
 /** The statement a declaration's JSDoc sits on: `export const a = …` documents `a`. */
 const statementOf = (declaration: ts.Node): ts.Node =>
@@ -130,6 +139,7 @@ export const exportDocs = (project: Project, file: string): readonly ExportDoc[]
           doc: sectionsOf(jsdocOf(statementOf(declaration), source) ?? ""),
           signature: signatureOf(exported.name, declaration),
           members,
+          source: sourceOf(statementOf(declaration)),
         });
       }
       // Types declared in a function's namespace (`fromWagmi.Options`).

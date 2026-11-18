@@ -5,8 +5,8 @@ import { code, kebab, page, prose, table } from "@ensforge/tools/internal/docs/m
 describe("prose", () => {
   it("escapes JSX and expressions outside code, and links what the resolver knows", () => {
     const urls = new Map([
-      ["Actions.record.get", "/docs/sdk/reference/actions/record/get"],
-      ["NOT_OWNER", "/docs/sdk/errors/NOT_OWNER"],
+      ["Actions.record.get", "/docs/reference/sdk/record/get"],
+      ["NOT_OWNER", "/docs/reference/errors/NOT_OWNER"],
     ]);
 
     assert.strictEqual(
@@ -14,7 +14,7 @@ describe("prose", () => {
         "Pass `{ chainId }` or {chainId} <here>; see {@link Actions.record.get} and {@link Name.parse}. Fails with `NOT_OWNER`.",
         (target) => urls.get(target),
       ),
-      "Pass `{ chainId }` or \\{chainId\\} \\<here\\>; see [`record.get`](/docs/sdk/reference/actions/record/get) and `Name.parse`. Fails with [`NOT_OWNER`](/docs/sdk/errors/NOT_OWNER).",
+      "Pass `{ chainId }` or \\{chainId\\} \\<here\\>; see [`record.get`](/docs/reference/sdk/record/get) and `Name.parse`. Fails with [`NOT_OWNER`](/docs/reference/errors/NOT_OWNER).",
     );
   });
 

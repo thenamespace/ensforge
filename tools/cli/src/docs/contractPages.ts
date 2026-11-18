@@ -238,15 +238,15 @@ export const contractsReference = (
 
   return [
     [
-      "contracts/reference/meta.json",
+      "reference/contracts/meta.json",
       meta({
-        title: "Reference",
-        pages: ["abis", "deployments", "interface-ids", "roles", "entry-points"],
+        title: "Contracts",
+        pages: ["index", "abis", "deployments", "interface-ids", "roles", "entry-points"],
       }),
     ],
-    ["contracts/reference/abis.mdx", abisPage(runtime["Abis"], docs, resolve)],
+    ["reference/contracts/abis.mdx", abisPage(runtime["Abis"], docs, resolve)],
     [
-      "contracts/reference/deployments.mdx",
+      "reference/contracts/deployments.mdx",
       deploymentsPage(
         Arr.isArray(listed) ? listed : [],
         recordOf(deployments["l2ReverseRegistrars"]),
@@ -255,7 +255,7 @@ export const contractsReference = (
       ),
     ],
     [
-      "contracts/reference/interface-ids.mdx",
+      "reference/contracts/interface-ids.mdx",
       constantsPage(
         {
           title: "Interface IDs",
@@ -270,7 +270,7 @@ export const contractsReference = (
       ),
     ],
     [
-      "contracts/reference/roles.mdx",
+      "reference/contracts/roles.mdx",
       constantsPage(
         {
           title: "Roles",
@@ -283,6 +283,6 @@ export const contractsReference = (
         resolve,
       ),
     ],
-    ["contracts/reference/entry-points.mdx", entryPointsPage(entryPoints)],
+    ["reference/contracts/entry-points.mdx", entryPointsPage(entryPoints)],
   ];
 };

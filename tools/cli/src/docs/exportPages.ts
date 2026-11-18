@@ -4,6 +4,7 @@ import { fieldsTable, optionsTable } from "./actionPages.ts";
 import { code, examplesBlock, fence, type LinkResolver, page, prose } from "./mdx.ts";
 import type { ExportDoc } from "./model.ts";
 import { tagValues, throwsOf } from "./sections.ts";
+import { errorUrl } from "./urls.ts";
 
 /** The anchor Fumadocs gives a heading such as `` ### `Name.normalize` ``. */
 export const anchorOf = (heading: string): string =>
@@ -20,7 +21,7 @@ export const exportSection = (entry: ExportDoc, resolve: LinkResolver, level = 3
   const throws = Arr.map(tagValues(entry.doc, "throws"), (value) => {
     const thrown = throwsOf(value);
     const codes = Arr.join(
-      Arr.map(thrown.codes, (errorCode) => `[${code(errorCode)}](/docs/sdk/errors/${errorCode})`),
+      Arr.map(thrown.codes, (errorCode) => `[${code(errorCode)}](${errorUrl(errorCode)})`),
       ", ",
     );
     return `- ${code(thrown.errorClass)}${codes === "" ? "" : ` (${codes})`} ${prose(thrown.when, resolve)}`;

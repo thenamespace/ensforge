@@ -1,6 +1,9 @@
 import type { Member } from "./members.ts";
 import type { DocSections } from "./sections.ts";
 
+/** Where a declaration starts: a repository path and its 1-based line. */
+export type SourceLocation = { readonly file: string; readonly line: number };
+
 /** A value an action resolves to: its documented type and the members one level down. */
 export type Returns = {
   readonly type: string;
@@ -16,6 +19,9 @@ export type ActionDoc = {
   readonly folder: string;
   readonly name: string;
   readonly doc: DocSections;
+  /** The function's declaration as written, without its body. */
+  readonly signature: string;
+  readonly source: SourceLocation;
   /** `write`: has plan methods; `send`: signs or sends without them; `read` otherwise. */
   readonly kind: "read" | "write" | "send";
   readonly batchable: boolean;
@@ -42,6 +48,7 @@ export type ExportDoc = {
   /** Declaration as written: a signature or the type. */
   readonly signature: string;
   readonly members: readonly Member[];
+  readonly source: SourceLocation;
 };
 
 /** One error code with its developer and end-user copy. */
@@ -63,6 +70,7 @@ export type ErrorClassDoc = {
   readonly name: string;
   readonly root: string;
   readonly summary: string;
+  readonly source: SourceLocation;
   readonly fields: readonly Member[];
   readonly codes: readonly ErrorCodeDoc[];
 };

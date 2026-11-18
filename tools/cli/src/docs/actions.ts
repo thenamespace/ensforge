@@ -8,6 +8,7 @@ import * as ts from "typescript/unstable/ast";
 import { discover, isWrite, sends, writeMethods, type Layout } from "../codegen/discover.ts";
 import { jsdocOf, jsdocText } from "../jsdoc.ts";
 import type { Project } from "../services/TypeScript.ts";
+import { sourceOf } from "./exports.ts";
 import { optionsOf, resultMembersOf, textOf, type Member } from "./members.ts";
 import type { ActionDoc, Returns } from "./model.ts";
 import { sectionsOf } from "./sections.ts";
@@ -51,6 +52,30 @@ const returnsOf = (project: Project, source: ts.SourceFile, action: string): Ret
         : resultMembersOf(project, project.checker.getDeclaredTypeOfSymbol(symbol)),
   };
 };
+
+/** The exported function `action` of `source`. */
+const declarationOf = (source: ts.SourceFile, action: string) =>
+  Option.getOrUndefined(
+    Arr.findFirst(
+      source.statements,
+      (statement): statement is ts.FunctionDeclaration =>
+        ts.isFunctionDeclaration(statement) && statement.name?.text === action,
+    ),
+  );
+
+/** A function's declaration as written, from `function` to its body. */
+const signatureOf = (source: ts.SourceFile, declaration: ts.FunctionDeclaration): string =>
+  Str.trim(
+    Str.replace(
+      /^export\s+/,
+      "",
+    )(
+      Str.slice(
+        declaration.getStart(source),
+        declaration.body === undefined ? declaration.getEnd() : declaration.body.getStart(source),
+      )(source.text),
+    ),
+  );
 
 /** The one-line docs of `action.<property> = …` assignments (`prepare`, `request`). */
 const propertyDocs = (source: ts.SourceFile, action: string): Map<string, string> => {
@@ -108,6 +133,7 @@ export const actionDocs = (
             : optionsOf(project, project.checker.getDeclaredTypeOfSymbol(optionsSymbol), isShared);
         const write = isWrite(action);
         const docs = propertyDocs(source, action.name);
+        const declaration = declarationOf(source, action.name);
 
         // Writes take `Write.Options` beside their own options, in the function's signature.
         const shared = [
@@ -125,6 +151,8 @@ export const actionDocs = (
           folder,
           name: action.name,
           doc: sectionsOf(jsdocText(action.jsdoc)),
+          signature: declaration === undefined ? "" : signatureOf(source, declaration),
+          source: sourceOf(declaration ?? source),
           kind: write ? "write" : sends(action, actions) ? "send" : "read",
           batchable: action.properties.includes("request"),
           options: { variants: resolved.variants, shared },

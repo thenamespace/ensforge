@@ -155,6 +155,11 @@ export const meta = (entry: {
   readonly pages: readonly string[];
   readonly description?: string;
   readonly defaultOpen?: boolean;
+  /** Makes the folder a sidebar of its own; a string groups it apart from `root: true` folders. */
+  readonly root?: boolean | string;
+  readonly icon?: string;
+  /** A page of the folder that serves as its index instead of `index.mdx`. */
+  readonly pagesIndex?: string;
 }): string => `${Formatter.formatJson(entry, { space: 2 })}\n`;
 
 /** The first sentence of a summary, as a one-line description. */
@@ -174,3 +179,36 @@ export const plain = (text: string): string => {
       label === undefined ? Str.replace(/^Actions\./, "")(target) : Str.trim(label),
   );
 };
+
+/** A `source` attribute: a repository path, with `#L<line>` for a declaration. */
+export const sourceAttribute = (source: { readonly file: string; readonly line: number }): string =>
+  `${source.file}#L${source.line}`;
+
+/**
+ * The meta strip under a reference page's title (`<ApiMeta>` on the docs site): kind and
+ * stability badges, a count summary, the version it appeared in and a link to its source.
+ */
+export const apiMeta = (props: {
+  readonly kind?: string;
+  readonly batchable?: boolean;
+  readonly stability?: string;
+  readonly summary?: string;
+  readonly since?: string;
+  readonly source?: string;
+}): string =>
+  `<ApiMeta${Arr.join(
+    Arr.map(
+      Arr.filter(
+        [
+          ["kind", props.kind],
+          ["stability", props.stability],
+          ["summary", props.summary],
+          ["since", props.since],
+          ["source", props.source],
+        ] satisfies readonly (readonly [string, string | undefined])[],
+        (entry): entry is [string, string] => entry[1] !== undefined,
+      ),
+      ([name, value]) => ` ${name}={${Formatter.formatJson(value)}}`,
+    ),
+    "",
+  )}${props.batchable === true ? " batchable" : ""} />`;

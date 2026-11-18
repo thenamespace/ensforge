@@ -7,26 +7,21 @@ import { Workspace } from "../services/Workspace.ts";
 import { docsExamplesCommand } from "./docsExamples.ts";
 import { docsLintCommand } from "./docsLint.ts";
 
-/** Folders under `content/docs` the generator owns: generated pages there are replaced. */
-const ownedFolders = [
-  "sdk/reference",
-  "sdk/errors",
-  "react/reference",
-  "hca/reference",
-  "contracts/reference",
-];
+/** Folders under `apps/docs` the generator owns: generated pages there are replaced. */
+const ownedFolders = ["content/docs/reference"];
 
 /**
- * Writes the generated reference under `apps/docs/content/docs`; with `check`, regenerates in
- * memory and fails when a committed page differs or a generated page no longer has a source.
- * Hand-written pages in the same folders (without `generated: true`) are never touched. oxfmt
- * skips the generated files (`.config/oxfmtignore`): it would reformat the JSDoc examples.
+ * Writes the generated reference under `apps/docs/content/docs/reference` (and the data of its
+ * landing page); with `check`, regenerates in memory and fails when a committed file differs or
+ * a generated page no longer has a source. Hand-written pages in the same folders (without
+ * `generated: true`) are never touched. oxfmt skips the generated files (`.config/oxfmtignore`):
+ * it would reformat the JSDoc examples.
  */
 export const docs = Effect.fn("docs")(function* (check: boolean) {
   const workspace = yield* Workspace;
   const fs = yield* FileSystem.FileSystem;
   const path = yield* Path.Path;
-  const content = path.join(workspace.root, "apps/docs/content/docs");
+  const content = path.join(workspace.root, "apps/docs");
 
   const pages = yield* docsSite(workspace.root);
 

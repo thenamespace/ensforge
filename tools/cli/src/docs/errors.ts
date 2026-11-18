@@ -3,6 +3,7 @@ import { Array as Arr, Option, Predicate, String as Str } from "effect";
 import * as ts from "typescript/unstable/ast";
 
 import { isExported, jsdocOf } from "../jsdoc.ts";
+import { sourceOf } from "./exports.ts";
 import type { Member } from "./members.ts";
 import { textOf } from "./members.ts";
 import type { ErrorClassDoc, ErrorCodeDoc } from "./model.ts";
@@ -102,6 +103,7 @@ export const errorClassDocs = (
         name,
         root,
         summary: sectionsOf(jsdocOf(declaration.value, source) ?? "").summary,
+        source: sourceOf(declaration.value),
         fields,
         codes: Arr.map(codes, (code): ErrorCodeDoc => {
           const instance = instanceOf(runtime.classes[name], code);

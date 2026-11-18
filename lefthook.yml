@@ -9,15 +9,9 @@ pre-commit:
       # The generated API reference keeps its JSDoc examples verbatim (see .config/oxfmtignore).
       exclude:
         - "apps/docs/src/routeTree.gen.ts"
-        - "apps/docs/content/docs/sdk/reference/actions/**"
-        - "apps/docs/content/docs/sdk/reference/client.mdx"
-        - "apps/docs/content/docs/sdk/reference/utilities.mdx"
-        - "apps/docs/content/docs/sdk/reference/indexers.mdx"
-        - "apps/docs/content/docs/sdk/reference/meta.json"
-        - "apps/docs/content/docs/sdk/errors/**"
-        - "apps/docs/content/docs/react/reference/**"
-        - "apps/docs/content/docs/hca/reference/**"
-        - "apps/docs/content/docs/contracts/reference/**"
+        - "apps/docs/content/docs/reference/{sdk,react,hca,contracts,errors}/**"
+        - "apps/docs/content/docs/reference/{index.mdx,meta.json}"
+        - "apps/docs/src/content/reference.json"
       run: pnpm exec oxfmt -c .config/oxfmt.config.ts --write {staged_files}
       stage_fixed: true
     - name: lint
