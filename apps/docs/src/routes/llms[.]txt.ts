@@ -45,6 +45,22 @@ const pageLine = (page: {
   `- [${page.data.title}](${absolute(getPageMarkdownUrl(page))}): ${page.data.description ?? ""}`.trimEnd();
 
 /**
+ * Reference pages llms.txt lists: package and domain or class pages, and the few topical pages
+ * (client, utilities, indexers, executors, components, contracts tables). `docs lint` budgets the
+ * same set.
+ */
+function isReferenceIndex(slugs: readonly string[], path: string): boolean {
+  const [, pkg, page] = slugs;
+  if (page === undefined || path.endsWith("index.mdx")) return true;
+  if (pkg === "contracts") return true;
+  // Error class pages are kebab-case; codes are upper case.
+  if (pkg === "errors") return page === page.toLowerCase();
+  if (pkg === "react") return !page.startsWith("use");
+  if (pkg === "sdk" || pkg === "hca") return slugs.length === 3;
+  return false;
+}
+
+/**
  * The core pages first, then the hand-written reference pages. Every other docs page goes under
  * Optional: package guides by package, and the API reference (`reference/<package>`) under its own
  * heading with errors last.
@@ -69,6 +85,9 @@ function docsIndex() {
     } else if (second === undefined) {
       referenceRoot.push(pageLine(page));
     } else if (second === "errors" || getPackage(second)) {
+      // Individual actions, hooks and error codes are reachable from these index pages and their
+      // .md versions; listing them would push llms.txt far past what an agent reads at once.
+      if (!isReferenceIndex(page.slugs, page.path)) continue;
       reference.set(second, [...(reference.get(second) ?? []), pageLine(page)]);
     } else {
       core.push(page);
