@@ -29,7 +29,7 @@ const sourceMaps =
         posthog({
           personalApiKey,
           projectId,
-          host: "https://us.posthog.com",
+          host: "https://eu.posthog.com",
           sourcemaps: {
             enabled: true,
             releaseName: "ensforge-docs",

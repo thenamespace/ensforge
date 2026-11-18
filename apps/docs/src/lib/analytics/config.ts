@@ -9,7 +9,7 @@ export const analyticsConfig = {
    * Ingestion host. Point `VITE_POSTHOG_HOST` at a managed reverse proxy so ad blockers that list
    * PostHog's hosts do not drop events.
    */
-  host: import.meta.env.VITE_POSTHOG_HOST ?? "https://us.i.posthog.com",
-  uiHost: "https://us.posthog.com",
+  host: import.meta.env.VITE_POSTHOG_HOST ?? "https://eu.i.posthog.com",
+  uiHost: "https://eu.posthog.com",
   productionHost: "ensforge.com",
 } as const;
