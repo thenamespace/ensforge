@@ -107,7 +107,8 @@ const services = {
     include: ["test/**/*.test.ts"],
     setupFiles: ["../harness/src/error-types.ts"],
     testTimeout: 600_000,
-    hookTimeout: 900_000,
+    // The first stack compiles bigname from source, which takes most of this on a cold runner.
+    hookTimeout: 2_700_000,
     // One stack per file; several at once would compete for the emulated indexer.
     fileParallelism: false,
   },

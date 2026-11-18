@@ -1,6 +1,15 @@
 import { fileURLToPath } from "node:url";
 
-import { Effect, FileSystem, Order, Path, String as Str, pipe, Array as Arr } from "effect";
+import {
+  Console,
+  Effect,
+  FileSystem,
+  Order,
+  Path,
+  String as Str,
+  pipe,
+  Array as Arr,
+} from "effect";
 import { ChildProcess, ChildProcessSpawner } from "effect/process";
 
 import type { DevnetInstance } from "@ensforge/test-devnet";
@@ -108,6 +117,8 @@ export const bignameImage = Effect.fnUntraced(function* (devnet: DevnetInstance)
     yield* fs.makeDirectory(path.dirname(target), { recursive: true });
     yield* fs.writeFileString(target, text);
   }
+  // The build prints nothing until it ends; say why a cold run looks idle.
+  yield* Console.log(`building ${tag} (a cold build compiles bigname: up to ~30 minutes)`);
   yield* docker([
     "build",
     "--file",
