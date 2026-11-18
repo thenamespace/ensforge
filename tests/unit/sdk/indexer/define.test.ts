@@ -1,6 +1,7 @@
 import { assert, describe, it } from "@effect/vitest";
 import { Effect, Fiber } from "effect";
 
+import { Name } from "@ensforge/sdk";
 import * as Actions from "@ensforge/sdk/internal/actions/effect";
 import { IndexerError } from "@ensforge/sdk/internal/errors/classes/IndexerError";
 import type { AnyError } from "@ensforge/sdk/internal/errors/types";
@@ -8,6 +9,7 @@ import { defineIndexer } from "@ensforge/sdk/internal/indexer/define";
 import type { Context } from "@ensforge/sdk/internal/indexer/Indexer";
 import { define } from "@ensforge/sdk/internal/indexer/Indexer.effect";
 import { expectFailure } from "@ensforge/test-harness";
+import { labelhash } from "viem";
 
 import { clientWith } from "./client.js";
 
@@ -74,6 +76,40 @@ describe("defineIndexer", () => {
       assert.strictEqual(context.chainId, 1);
       assert.instanceOf(context.signal, AbortSignal);
     }),
+  );
+
+  it.effect(
+    "infers Basenames for subnames of base.eth, also when its labels are encoded",
+    () =>
+      Effect.gen(function* () {
+        const queries: unknown[] = [];
+        const ens = clientWith(
+          defineIndexer({
+            id: "x",
+            getName: (query) => {
+              queries.push(query);
+              return Promise.resolve(null);
+            },
+          }),
+        );
+        const base = Name.fromLabelhash(labelhash("base"));
+        const eth = Name.fromLabelhash(labelhash("eth"));
+
+        for (const name of [
+          "base.eth",
+          "jesse.base.eth",
+          `jesse.${base}.eth`,
+          `jesse.base.${eth}`,
+        ]) {
+          yield* Actions.indexer.getName(ens, { name });
+        }
+
+        assert.deepStrictEqual(
+          queries.map((query) => (query as { namespace: string }).namespace),
+          ["ens", "basenames", "basenames", "basenames"],
+        );
+      }),
+    { meta: { cases: ["H12", "H20"] } },
   );
 
   it.effect("aborts the adapter's signal when the call is interrupted", () =>

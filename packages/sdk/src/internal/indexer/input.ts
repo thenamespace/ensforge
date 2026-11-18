@@ -1,6 +1,6 @@
 import { Effect } from "effect";
 
-import type { Address } from "viem";
+import { namehash, type Address } from "viem";
 
 import type { Client } from "../../client/types.js";
 import { InvalidInputError } from "../../errors/classes/InvalidInputError.js";
@@ -10,9 +10,16 @@ import * as CoinType from "../../utils/CoinType.js";
 import { normalizeName } from "../name/normalize.js";
 import { requireAddress } from "../name/write.js";
 
-/** The namespace a name belongs to: Basenames are the subnames of `base.eth`. */
-export const namespaceOf = (name: string): Namespace =>
-  name.endsWith(".base.eth") ? "basenames" : "ens";
+/**
+ * The namespace a name belongs to: Basenames are the subnames of `base.eth`, whose labels may also
+ * be encoded (`x.[<labelhash of base>].eth`).
+ */
+export const namespaceOf = (name: string): Namespace => {
+  const labels = name.split(".");
+  return labels.length > 2 && namehash(labels.slice(-2).join(".")) === namehash("base.eth")
+    ? "basenames"
+    : "ens";
+};
 
 /** Options every indexer action takes that are not part of the indexer query. */
 type CallOptions = {
