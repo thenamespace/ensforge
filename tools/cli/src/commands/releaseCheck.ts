@@ -8,6 +8,7 @@ import {
   Order,
   Path,
   Record as Rec,
+  Result,
   Schema,
   String as Str,
 } from "effect";
@@ -153,8 +154,13 @@ export const releaseCheck = Effect.fn("releaseCheck")(
       if (installed) {
         for (const release of releases) {
           const dir = path.join(consumer, "node_modules", release.name);
-          const entries = yield* fs.readDirectory(dir, { recursive: true });
-          const files = Arr.map(entries, Str.replaceAll(path.sep, "/"));
+          // The tarball's listing, not the installed folder: pnpm adds node_modules/.bin there.
+          const listing = yield* tools.run("tar", ["-tzf", tarballOf(release)]);
+          const files = Arr.filterMap(Str.linesIterator(listing), (entry) =>
+            Str.startsWith("package/")(entry)
+              ? Result.succeed(Str.slice(8)(entry))
+              : Result.failVoid,
+          );
           const mapSources = new Map<string, readonly string[]>();
           for (const map of Arr.filter(files, Str.endsWith(".map"))) {
             const sourceMap = yield* fs.readFileString(path.join(dir, map)).pipe(
