@@ -27,7 +27,8 @@ import type { Executor } from "../types.js";
  * ```ts
  * import { hca, owner, pimlico } from "@ensforge/hca"
  *
- * // `hca()` uses the first executor only; pick one per request.
+ * // `hca()` uses the first executor only, so choose one per request.
+ * const gasless = true
  * const via = gasless ? hca({ executors: [pimlico({ apiKey })] }) : hca({ executors: [owner()] })
  * ```
  *
