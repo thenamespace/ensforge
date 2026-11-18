@@ -77,7 +77,8 @@ Resolves to `readonly Plan.Record[]`. The saved plans, newest first.
 | Error | Codes | When |
 | --- | --- | --- |
 | [`InvalidInputError`](/docs/sdk/errors#invalidinputerror) | [`INVALID_ADDRESS`](/docs/sdk/errors/INVALID_ADDRESS) | an invalid account. |
-| [`NetworkError`](/docs/sdk/errors#networkerror) |  | the RPC request fails. |
+| [`PlanError`](/docs/sdk/errors#planerror) | [`PLAN_INVALID`](/docs/sdk/errors/PLAN_INVALID) | a saved plan cannot be read. |
+| [`NetworkError`](/docs/sdk/errors#networkerror) | [`RPC_REQUEST_FAILED`](/docs/sdk/errors/RPC_REQUEST_FAILED), [`RPC_TIMEOUT`](/docs/sdk/errors/RPC_TIMEOUT), [`RATE_LIMITED`](/docs/sdk/errors/RATE_LIMITED) | the RPC request fails. |
 
 It can also fail with the errors every read can (`Errors.CommonError`: `ConfigError`, `ContractRevertError`, `InternalError`, `NetworkError`).
 

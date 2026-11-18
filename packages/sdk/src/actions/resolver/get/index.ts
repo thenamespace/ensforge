@@ -53,7 +53,7 @@ import type { ResolverInfo } from "./types.js";
  *
  * @throws `Errors.InvalidInputError` (`INVALID_NAME`) when the name cannot be normalized.
  * @throws `Errors.NotFoundError` (`RESOLVER_NOT_FOUND`) with `strict` when nothing resolves the name.
- * @throws `Errors.NetworkError` when the RPC request fails.
+ * @throws `Errors.NetworkError` (`RPC_REQUEST_FAILED`, `RPC_TIMEOUT`, `RATE_LIMITED`) when the RPC request fails.
  *
  * @see {@link Actions.resolver.set} to change it
  * @stability stable

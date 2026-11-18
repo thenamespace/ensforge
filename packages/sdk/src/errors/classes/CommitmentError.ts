@@ -35,6 +35,7 @@ const defaults: {
  * @since 1.0.0
  */
 export class CommitmentError extends EnsforgeError<"CommitmentError", CommitmentError.Code> {
+  /** Hash of the commitment the step concerns, when known. */
   readonly commitment: Hex | undefined;
   /** Unix time (seconds) from which `register` succeeds. */
   readonly readyAt: bigint | undefined;

@@ -53,9 +53,9 @@ export type { AbiRecord, Records, Selection } from "./types.js";
  * @throws `Errors.InvalidInputError` (`INVALID_NAME`, `INVALID_COIN_TYPE`) for invalid input.
  * @throws `Errors.NotFoundError` (`RESOLVER_NOT_FOUND`) with `strict` when the name has no resolver.
  * @throws `Errors.UnsupportedError` (`RESOLVER_PROFILE_UNSUPPORTED`) with `strict` when the resolver supports none of the records.
- * @throws `Errors.GatewayError` when an off-chain gateway fails.
+ * @throws `Errors.GatewayError` (`GATEWAY_REQUEST_FAILED`, `GATEWAY_RESPONSE_INVALID`, `OFFCHAIN_LOOKUP_INVALID`) when an off-chain gateway fails.
  * @throws `Errors.DnsError` when a DNS name's DNSSEC proof does not verify.
- * @throws `Errors.NetworkError` when the RPC request fails.
+ * @throws `Errors.NetworkError` (`RPC_REQUEST_FAILED`, `RPC_TIMEOUT`, `RATE_LIMITED`) when the RPC request fails.
  *
  * @see {@link Actions.record.set} to write records
  * @stability stable

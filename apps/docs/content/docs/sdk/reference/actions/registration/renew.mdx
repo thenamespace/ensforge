@@ -71,7 +71,7 @@ Resolves to `Write.Result`. Submitted transaction hashes and the plan that produ
 | `hash` | `Hex` | Hash of the last transaction. |
 | `hashes` | `readonly Hex[]` | Every submitted transaction, in order. |
 | `id` | `string` | EIP-5792 bundle id when the calls were sent as one batch. |
-| `plan` | `Plan` |  |
+| `plan` | `Plan` | The plan the write executed: its steps, in order, as they were submitted. |
 
 ## Errors
 
@@ -79,10 +79,12 @@ Resolves to `Write.Result`. Submitted transaction hashes and the plan that produ
 | --- | --- | --- |
 | [`InvalidInputError`](/docs/sdk/errors#invalidinputerror) | [`INVALID_NAME`](/docs/sdk/errors/INVALID_NAME), [`INVALID_ADDRESS`](/docs/sdk/errors/INVALID_ADDRESS), [`DURATION_TOO_SHORT`](/docs/sdk/errors/DURATION_TOO_SHORT) | invalid input. |
 | [`NameStateError`](/docs/sdk/errors#namestateerror) | [`NAME_NOT_RENEWABLE`](/docs/sdk/errors/NAME_NOT_RENEWABLE) | a name is neither registered nor in its grace period. |
-| [`InsufficientFundsError`](/docs/sdk/errors#insufficientfundserror) | [`INSUFFICIENT_TOKEN_BALANCE`](/docs/sdk/errors/INSUFFICIENT_TOKEN_BALANCE) | the signer cannot pay. |
+| [`InsufficientFundsError`](/docs/sdk/errors#insufficientfundserror) | [`INSUFFICIENT_TOKEN_BALANCE`](/docs/sdk/errors/INSUFFICIENT_TOKEN_BALANCE), [`INSUFFICIENT_ETH`](/docs/sdk/errors/INSUFFICIENT_ETH) | the signer cannot pay. |
 | [`UnsupportedError`](/docs/sdk/errors#unsupportederror) | [`PAYMENT_TOKEN_UNSUPPORTED`](/docs/sdk/errors/PAYMENT_TOKEN_UNSUPPORTED), [`UNSUPPORTED_ON_DEPLOYMENT`](/docs/sdk/errors/UNSUPPORTED_ON_DEPLOYMENT) | an unaccepted token or without ENSv2. |
 | [`ConfigError`](/docs/sdk/errors#configerror) | [`WALLET_NOT_CONFIGURED`](/docs/sdk/errors/WALLET_NOT_CONFIGURED) | no signing account is known. |
-| [`UserRejectedError`](/docs/sdk/errors#userrejectederror) |  | the user rejects the request. |
+| [`UserRejectedError`](/docs/sdk/errors#userrejectederror) | [`USER_REJECTED`](/docs/sdk/errors/USER_REJECTED) | the user rejects the request. |
+| [`WalletError`](/docs/sdk/errors#walleterror) | [`CHAIN_MISMATCH`](/docs/sdk/errors/CHAIN_MISMATCH), [`ACCOUNT_NOT_FOUND`](/docs/sdk/errors/ACCOUNT_NOT_FOUND) | the wallet is on another chain or has no account to sign with. |
+| [`UnsupportedError`](/docs/sdk/errors#unsupportederror) | [`WALLET_BATCH_UNSUPPORTED`](/docs/sdk/errors/WALLET_BATCH_UNSUPPORTED) | with `mode: "batch"` or a paymaster when the wallet cannot send calls as one batch. |
 
 It can also fail with the errors every write can (`Errors.WriteError`: the common errors plus `InsufficientFundsError`, `TransactionError`, `UnsupportedError`, `UserRejectedError`, `WalletError`).
 

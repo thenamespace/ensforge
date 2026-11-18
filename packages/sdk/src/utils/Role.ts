@@ -11,7 +11,7 @@ import { InvalidInputError } from "../errors/classes/InvalidInputError.js";
  * @category roles
  * @since 1.0.0
  */
-export const registry = Roles.registry;
+export const registry: typeof Roles.registry = Roles.registry;
 
 /**
  * PermissionedResolver role bits from contracts-v2 v1.0.1.
@@ -20,7 +20,7 @@ export const registry = Roles.registry;
  * @category roles
  * @since 1.0.0
  */
-export const resolver = Roles.resolver;
+export const resolver: typeof Roles.resolver = Roles.resolver;
 
 /**
  * A registry or resolver role name.

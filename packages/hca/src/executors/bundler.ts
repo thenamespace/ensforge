@@ -156,11 +156,13 @@ const isPaymasterError = (error: unknown): boolean => {
  *
  * **When to use**
  *
- * Use for gasless owner actions (renewals, transfers, migration) when the owner holds no ETH; the
+ * Use for gasless owner actions (renewals, registration, migration) when the owner holds no ETH; the
  * owner signs each operation instead of sending a transaction.
  *
  * **Details**
  *
+ * - Writes other than registration, migration and `hca.execute` succeed only where the HCA holds
+ *   the roles they need, so transfers and record edits through it usually fail.
  * - Owner operations only: HCA sessions run through Rhinestone's intent executor, not ERC-4337.
  * - EntryPoint v0.7; the first operation deploys the HCA through its factory.
  * - The owner signs with `personal_sign` over the UserOperation hash.
@@ -317,9 +319,9 @@ export type PimlicoOptions = {
  * **Example** (Sponsored)
  *
  * ```ts
- * import { hca, owner, pimlico } from "@ensforge/hca"
+ * import { hca, pimlico } from "@ensforge/hca"
  *
- * const via = hca({ executors: [pimlico({ apiKey, sponsor: true }), owner()] })
+ * const via = hca({ executors: [pimlico({ apiKey, sponsor: true })] })
  * ```
  *
  * **Example** (With a policy)

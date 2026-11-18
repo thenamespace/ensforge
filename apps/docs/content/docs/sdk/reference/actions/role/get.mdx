@@ -84,7 +84,7 @@ Resolves to `get.ReturnType`. The roles held, as a bitmap and as role names.
 | [`InvalidInputError`](/docs/sdk/errors#invalidinputerror) | [`INVALID_NAME`](/docs/sdk/errors/INVALID_NAME), [`INVALID_ADDRESS`](/docs/sdk/errors/INVALID_ADDRESS), [`INVALID_RECORD_VALUE`](/docs/sdk/errors/INVALID_RECORD_VALUE) | invalid input or targets. |
 | [`NotFoundError`](/docs/sdk/errors#notfounderror) | [`RESOLVER_NOT_FOUND`](/docs/sdk/errors/RESOLVER_NOT_FOUND) | the name has no resolver. |
 | [`UnsupportedError`](/docs/sdk/errors#unsupportederror) | [`UNSUPPORTED_PROTOCOL`](/docs/sdk/errors/UNSUPPORTED_PROTOCOL) | ENSv1 names. |
-| [`NetworkError`](/docs/sdk/errors#networkerror) |  | the RPC request fails. |
+| [`NetworkError`](/docs/sdk/errors#networkerror) | [`RPC_REQUEST_FAILED`](/docs/sdk/errors/RPC_REQUEST_FAILED), [`RPC_TIMEOUT`](/docs/sdk/errors/RPC_TIMEOUT), [`RATE_LIMITED`](/docs/sdk/errors/RATE_LIMITED) | the RPC request fails. |
 
 It can also fail with the errors every read can (`Errors.CommonError`: `ConfigError`, `ContractRevertError`, `InternalError`, `NetworkError`).
 

@@ -42,7 +42,7 @@ import * as Impl from "./effect.js";
  *
  * @throws `Errors.InvalidInputError` (`INVALID_NAME`) for names that are not `.eth` second-level names.
  * @throws `Errors.UnsupportedError` (`UNSUPPORTED_ON_DEPLOYMENT`) without ENSv2.
- * @throws `Errors.NetworkError` when the RPC request fails.
+ * @throws `Errors.NetworkError` (`RPC_REQUEST_FAILED`, `RPC_TIMEOUT`, `RATE_LIMITED`) when the RPC request fails.
  *
  * @see {@link Actions.registration.getPrice} to quote it
  * @stability stable

@@ -45,7 +45,9 @@ import * as Impl from "./effect.js";
  * @throws `Errors.UnsupportedError` (`UPGRADE_NOT_APPROVED`) when the target is not approved.
  * @throws `Errors.UnauthorizedError` (`MISSING_ROLES`) without the `upgrade` root role.
  * @throws `Errors.ConfigError` (`WALLET_NOT_CONFIGURED`) when no signing account is known.
- * @throws `Errors.UserRejectedError` when the user rejects the request.
+ * @throws `Errors.UserRejectedError` (`USER_REJECTED`) when the user rejects the request.
+ * @throws `Errors.WalletError` (`CHAIN_MISMATCH`, `ACCOUNT_NOT_FOUND`) when the wallet is on another chain or has no account to sign with.
+ * @throws `Errors.UnsupportedError` (`WALLET_BATCH_UNSUPPORTED`) with `mode: "batch"` or a paymaster when the wallet cannot send calls as one batch.
  *
  * @see {@link Actions.registry.get} to check eligibility
  * @stability stable
@@ -133,7 +135,7 @@ upgrade.estimateGas = Action.promiseOf(
  * @throws `Errors.UnsupportedError` (`UPGRADE_NOT_APPROVED`) when the target is not approved.
  * @throws `Errors.UnauthorizedError` (`MISSING_ROLES`) without the `upgrade` root role.
  * @throws `Errors.ConfigError` (`WALLET_NOT_CONFIGURED`) when no signing account is known.
- * @throws `Errors.TransactionError` (`TRANSACTION_REVERTED`, `RECEIPT_TIMEOUT`) when confirmation fails.
+ * @throws `Errors.TransactionError` (`TRANSACTION_REVERTED`, `RECEIPT_TIMEOUT`, `NONCE_CONFLICT`) when confirmation fails or the wallet's nonce is already used.
  *
  * @see {@link upgrade} to resolve on submission
  * @stability stable

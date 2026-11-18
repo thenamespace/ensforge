@@ -39,7 +39,8 @@ import * as Impl from "./effect.js";
  * ```
  *
  * @throws `Errors.InvalidInputError` (`INVALID_ADDRESS`) for an invalid account.
- * @throws `Errors.NetworkError` when the RPC request fails.
+ * @throws `Errors.PlanError` (`PLAN_INVALID`) when a saved plan cannot be read.
+ * @throws `Errors.NetworkError` (`RPC_REQUEST_FAILED`, `RPC_TIMEOUT`, `RATE_LIMITED`) when the RPC request fails.
  *
  * @see {@link Actions.plan.get} to read one
  * @stability stable
@@ -61,7 +62,7 @@ export declare namespace list {
   /** The saved plans, newest first. */
   type ReturnType = readonly Plan.Record[];
   /** Errors {@link list} can fail with. */
-  type ErrorType = Errors.CommonError | Errors.InvalidInputError;
+  type ErrorType = Errors.CommonError | Errors.InvalidInputError | Errors.PlanError;
 }
 
 /** Builds a deferred read for `Actions.batch`. */

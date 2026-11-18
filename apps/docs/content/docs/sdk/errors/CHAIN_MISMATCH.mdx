@@ -29,7 +29,43 @@ Retrying the same call fails the same way until the cause is fixed (`retryable: 
 
 ## Actions that throw it
 
-No action names this code in its documented errors.
+| Action | When |
+| --- | --- |
+| [`approval.setDelegate`](/docs/sdk/reference/actions/approval/set-delegate) | when the wallet is on another chain or has no account to sign with. |
+| [`approval.setOperator`](/docs/sdk/reference/actions/approval/set-operator) | when the wallet is on another chain or has no account to sign with. |
+| [`approval.setToken`](/docs/sdk/reference/actions/approval/set-token) | when the wallet is on another chain or has no account to sign with. |
+| [`dns.claim`](/docs/sdk/reference/actions/dns/claim) | when the wallet is on another chain or has no account to sign with. |
+| [`dns.setRecords`](/docs/sdk/reference/actions/dns/set-records) | when the wallet is on another chain or has no account to sign with. |
+| [`migration.migrate`](/docs/sdk/reference/actions/migration/migrate) | when the wallet is on another chain or has no account to sign with. |
+| [`name.reclaim`](/docs/sdk/reference/actions/name/reclaim) | when the wallet is on another chain or has no account to sign with. |
+| [`name.setManager`](/docs/sdk/reference/actions/name/set-manager) | when the wallet is on another chain or has no account to sign with. |
+| [`name.setTtl`](/docs/sdk/reference/actions/name/set-ttl) | when the wallet is on another chain or has no account to sign with. |
+| [`name.transfer`](/docs/sdk/reference/actions/name/transfer) | when the wallet is on another chain or has no account to sign with. |
+| [`permission.setRecordAccess`](/docs/sdk/reference/actions/permission/set-record-access) | when the wallet is on another chain or has no account to sign with. |
+| [`plan.send`](/docs/sdk/reference/actions/plan/send) | when the wallet is on another chain or has no account to sign with. |
+| [`primaryName.set`](/docs/sdk/reference/actions/primary-name/set) | when the wallet is on another chain or has no account to sign with. |
+| [`primaryName.signClaim`](/docs/sdk/reference/actions/primary-name/sign-claim) | when the wallet is on another chain or has no account to sign with. |
+| [`record.set`](/docs/sdk/reference/actions/record/set) | when the wallet is on another chain or has no account to sign with. |
+| [`registration.commit`](/docs/sdk/reference/actions/registration/commit) | when the wallet is on another chain or has no account to sign with. |
+| [`registration.register`](/docs/sdk/reference/actions/registration/register) | when the wallet is on another chain or has no account to sign with. |
+| [`registration.renew`](/docs/sdk/reference/actions/registration/renew) | when the wallet is on another chain or has no account to sign with. |
+| [`registry.attach`](/docs/sdk/reference/actions/registry/attach) | when the wallet is on another chain or has no account to sign with. |
+| [`registry.deploy`](/docs/sdk/reference/actions/registry/deploy) | when the wallet is on another chain or has no account to sign with. |
+| [`registry.setUri`](/docs/sdk/reference/actions/registry/set-uri) | when the wallet is on another chain or has no account to sign with. |
+| [`registry.upgrade`](/docs/sdk/reference/actions/registry/upgrade) | when the wallet is on another chain or has no account to sign with. |
+| [`resolver.create`](/docs/sdk/reference/actions/resolver/create) | when the wallet is on another chain or has no account to sign with. |
+| [`resolver.link`](/docs/sdk/reference/actions/resolver/link) | when the wallet is on another chain or has no account to sign with. |
+| [`resolver.set`](/docs/sdk/reference/actions/resolver/set) | when the wallet is on another chain or has no account to sign with. |
+| [`resolver.upgrade`](/docs/sdk/reference/actions/resolver/upgrade) | when the wallet is on another chain or has no account to sign with. |
+| [`role.grant`](/docs/sdk/reference/actions/role/grant) | when the wallet is on another chain or has no account to sign with. |
+| [`role.revoke`](/docs/sdk/reference/actions/role/revoke) | when the wallet is on another chain or has no account to sign with. |
+| [`subname.create`](/docs/sdk/reference/actions/subname/create) | when the wallet is on another chain or has no account to sign with. |
+| [`subname.remove`](/docs/sdk/reference/actions/subname/remove) | when the wallet is on another chain or has no account to sign with. |
+| [`subname.update`](/docs/sdk/reference/actions/subname/update) | when the wallet is on another chain or has no account to sign with. |
+| [`wrapper.setChildFuses`](/docs/sdk/reference/actions/wrapper/set-child-fuses) | when the wallet is on another chain or has no account to sign with. |
+| [`wrapper.setFuses`](/docs/sdk/reference/actions/wrapper/set-fuses) | when the wallet is on another chain or has no account to sign with. |
+| [`wrapper.unwrap`](/docs/sdk/reference/actions/wrapper/unwrap) | when the wallet is on another chain or has no account to sign with. |
+| [`wrapper.wrap`](/docs/sdk/reference/actions/wrapper/wrap) | when the wallet is on another chain or has no account to sign with. |
 
 Any write can fail with `WalletError`: it is part of `Errors.WriteError`.
 

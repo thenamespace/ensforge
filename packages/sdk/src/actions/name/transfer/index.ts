@@ -54,9 +54,13 @@ import * as Impl from "./effect.js";
  *
  * @throws `Errors.InvalidInputError` (`INVALID_NAME`, `INVALID_ADDRESS`) for invalid input.
  * @throws `Errors.NameStateError` (`NAME_EXPIRED`, `NAME_RESERVED`, `NAME_NOT_REGISTERED`) when the name cannot be sent.
+ * @throws `Errors.NameStateError` (`NAME_UNREACHABLE`) when ENSv2 resolution no longer reaches the name.
+ * @throws `Errors.NameStateError` (`REGISTRY_NOT_EMANCIPATED`) when the name's registry is not emancipated and `unsafe` is not set.
  * @throws `Errors.UnauthorizedError` (`NOT_OWNER`, `TRANSFER_DISALLOWED`) when the account may not send it, or the recipient (an HCA) refuses it.
  * @throws `Errors.UnsupportedError` (`UNSUPPORTED_PROTOCOL`) for `role: "registrant"` on names without a registrant.
- * @throws `Errors.UserRejectedError` when the user rejects the request.
+ * @throws `Errors.UserRejectedError` (`USER_REJECTED`) when the user rejects the request.
+ * @throws `Errors.WalletError` (`CHAIN_MISMATCH`, `ACCOUNT_NOT_FOUND`) when the wallet is on another chain or has no account to sign with.
+ * @throws `Errors.UnsupportedError` (`WALLET_BATCH_UNSUPPORTED`) with `mode: "batch"` or a paymaster when the wallet cannot send calls as one batch.
  *
  * @see {@link Actions.name.get} to read the current owner
  * @stability stable
@@ -158,9 +162,11 @@ transfer.estimateGas = Action.promiseOf(
  *
  * @throws `Errors.InvalidInputError` (`INVALID_NAME`, `INVALID_ADDRESS`) for invalid input.
  * @throws `Errors.NameStateError` (`NAME_EXPIRED`, `NAME_RESERVED`, `NAME_NOT_REGISTERED`) when the name cannot be sent.
+ * @throws `Errors.NameStateError` (`NAME_UNREACHABLE`) when ENSv2 resolution no longer reaches the name.
+ * @throws `Errors.NameStateError` (`REGISTRY_NOT_EMANCIPATED`) when the name's registry is not emancipated and `unsafe` is not set.
  * @throws `Errors.UnauthorizedError` (`NOT_OWNER`, `TRANSFER_DISALLOWED`) when the account may not send it, or the recipient (an HCA) refuses it.
  * @throws `Errors.UnsupportedError` (`UNSUPPORTED_PROTOCOL`) for `role: "registrant"` on names without a registrant.
- * @throws `Errors.TransactionError` (`TRANSACTION_REVERTED`, `RECEIPT_TIMEOUT`) when confirmation fails.
+ * @throws `Errors.TransactionError` (`TRANSACTION_REVERTED`, `RECEIPT_TIMEOUT`, `NONCE_CONFLICT`) when confirmation fails or the wallet's nonce is already used.
  *
  * @see {@link transfer} to resolve on submission
  * @stability stable

@@ -76,7 +76,7 @@ Resolves to `string | null`. An `http(s)` or `data:` URL, or `null`.
 | [`UnsupportedError`](/docs/sdk/errors#unsupportederror) | [`RESOLVER_PROFILE_UNSUPPORTED`](/docs/sdk/errors/RESOLVER_PROFILE_UNSUPPORTED) | with `strict` when the resolver supports none of the records. |
 | [`GatewayError`](/docs/sdk/errors#gatewayerror) | [`GATEWAY_REQUEST_FAILED`](/docs/sdk/errors/GATEWAY_REQUEST_FAILED), [`GATEWAY_RESPONSE_INVALID`](/docs/sdk/errors/GATEWAY_RESPONSE_INVALID) | with `strict` when NFT metadata cannot be loaded. |
 | [`DnsError`](/docs/sdk/errors#dnserror) |  | a DNS name's DNSSEC proof does not verify. |
-| [`NetworkError`](/docs/sdk/errors#networkerror) |  | the RPC request fails. |
+| [`NetworkError`](/docs/sdk/errors#networkerror) | [`RPC_REQUEST_FAILED`](/docs/sdk/errors/RPC_REQUEST_FAILED), [`RPC_TIMEOUT`](/docs/sdk/errors/RPC_TIMEOUT), [`RATE_LIMITED`](/docs/sdk/errors/RATE_LIMITED) | the RPC request fails. |
 
 It can also fail with the errors every read can (`Errors.CommonError`: `ConfigError`, `ContractRevertError`, `InternalError`, `NetworkError`).
 

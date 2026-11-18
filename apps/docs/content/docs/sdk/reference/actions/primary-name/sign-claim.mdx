@@ -96,7 +96,9 @@ Resolves to `{ readonly claim: Claim; readonly signature: Hex }`. The claim and 
 | [`UnsupportedError`](/docs/sdk/errors#unsupportederror) | [`UNSUPPORTED_ON_DEPLOYMENT`](/docs/sdk/errors/UNSUPPORTED_ON_DEPLOYMENT) | a chain without an L2 reverse registrar. |
 | [`NotFoundError`](/docs/sdk/errors#notfounderror) | [`PRIMARY_NAME_MISMATCH`](/docs/sdk/errors/PRIMARY_NAME_MISMATCH) | the name does not resolve to the address on a chain. |
 | [`ConfigError`](/docs/sdk/errors#configerror) | [`WALLET_NOT_CONFIGURED`](/docs/sdk/errors/WALLET_NOT_CONFIGURED) | no signing account is known. |
-| [`UserRejectedError`](/docs/sdk/errors#userrejectederror) |  | the user rejects the request. |
+| [`UserRejectedError`](/docs/sdk/errors#userrejectederror) | [`USER_REJECTED`](/docs/sdk/errors/USER_REJECTED) | the user rejects the request. |
+| [`WalletError`](/docs/sdk/errors#walleterror) | [`CHAIN_MISMATCH`](/docs/sdk/errors/CHAIN_MISMATCH), [`ACCOUNT_NOT_FOUND`](/docs/sdk/errors/ACCOUNT_NOT_FOUND) | the wallet is on another chain or has no account to sign with. |
+| [`UnsupportedError`](/docs/sdk/errors#unsupportederror) | [`WALLET_BATCH_UNSUPPORTED`](/docs/sdk/errors/WALLET_BATCH_UNSUPPORTED) | with `mode: "batch"` or a paymaster when the wallet cannot send calls as one batch. |
 
 It can also fail with the errors every write can (`Errors.WriteError`: the common errors plus `InsufficientFundsError`, `TransactionError`, `UnsupportedError`, `UserRejectedError`, `WalletError`).
 

@@ -68,15 +68,18 @@ Resolves to `Write.Result`. Submitted transaction hashes and the plan that produ
 | `hash` | `Hex` | Hash of the last transaction. |
 | `hashes` | `readonly Hex[]` | Every submitted transaction, in order. |
 | `id` | `string` | EIP-5792 bundle id when the calls were sent as one batch. |
-| `plan` | `Plan` |  |
+| `plan` | `Plan` | The plan the write executed: its steps, in order, as they were submitted. |
 
 ## Errors
 
 | Error | Codes | When |
 | --- | --- | --- |
-| [`PlanError`](/docs/sdk/errors#planerror) | [`PLAN_CHAIN_MISMATCH`](/docs/sdk/errors/PLAN_CHAIN_MISMATCH), [`PLAN_ACCOUNT_MISMATCH`](/docs/sdk/errors/PLAN_ACCOUNT_MISMATCH) | a plan prepared elsewhere; ([`PLAN_STALE`](/docs/sdk/errors/PLAN_STALE)) when a token it transfers was reissued since it was prepared. |
+| [`PlanError`](/docs/sdk/errors#planerror) | [`PLAN_CHAIN_MISMATCH`](/docs/sdk/errors/PLAN_CHAIN_MISMATCH), [`PLAN_ACCOUNT_MISMATCH`](/docs/sdk/errors/PLAN_ACCOUNT_MISMATCH) | a plan prepared elsewhere. |
+| [`PlanError`](/docs/sdk/errors#planerror) | [`PLAN_STALE`](/docs/sdk/errors/PLAN_STALE) | a token it transfers was reissued since it was prepared. |
 | [`ContractRevertError`](/docs/sdk/errors#contractreverterror) | [`CONTRACT_REVERTED`](/docs/sdk/errors/CONTRACT_REVERTED) | , or the failing step's own error (`Errors.AnyError`: a plan can hold any step), with `context.planId` and `context.step`. |
-| [`UserRejectedError`](/docs/sdk/errors#userrejectederror) |  | the user rejects the request. |
+| [`UserRejectedError`](/docs/sdk/errors#userrejectederror) | [`USER_REJECTED`](/docs/sdk/errors/USER_REJECTED) | the user rejects the request. |
+| [`WalletError`](/docs/sdk/errors#walleterror) | [`CHAIN_MISMATCH`](/docs/sdk/errors/CHAIN_MISMATCH), [`ACCOUNT_NOT_FOUND`](/docs/sdk/errors/ACCOUNT_NOT_FOUND) | the wallet is on another chain or has no account to sign with. |
+| [`UnsupportedError`](/docs/sdk/errors#unsupportederror) | [`WALLET_BATCH_UNSUPPORTED`](/docs/sdk/errors/WALLET_BATCH_UNSUPPORTED) | with `mode: "batch"` or a paymaster when the wallet cannot send calls as one batch. |
 
 It can also fail with the errors every write can (`Errors.WriteError`: the common errors plus `InsufficientFundsError`, `TransactionError`, `UnsupportedError`, `UserRejectedError`, `WalletError`).
 

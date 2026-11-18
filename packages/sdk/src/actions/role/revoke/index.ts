@@ -43,7 +43,9 @@ import * as Impl from "./effect.js";
  * @throws `Errors.InvalidInputError` (`INVALID_NAME`, `INVALID_ADDRESS`, `INVALID_ROLES`, `INVALID_RECORD_VALUE`) for invalid input or targets.
  * @throws `Errors.UnsupportedError` (`UNSUPPORTED_PROTOCOL`) for ENSv1 names.
  * @throws `Errors.UnauthorizedError` (`CANNOT_GRANT_ROLES`) without the admin roles.
- * @throws `Errors.UserRejectedError` when the user rejects the request.
+ * @throws `Errors.UserRejectedError` (`USER_REJECTED`) when the user rejects the request.
+ * @throws `Errors.WalletError` (`CHAIN_MISMATCH`, `ACCOUNT_NOT_FOUND`) when the wallet is on another chain or has no account to sign with.
+ * @throws `Errors.UnsupportedError` (`WALLET_BATCH_UNSUPPORTED`) with `mode: "batch"` or a paymaster when the wallet cannot send calls as one batch.
  *
  * @see {@link Actions.role.get} to read roles
  * @stability stable
@@ -131,7 +133,7 @@ revoke.estimateGas = Action.promiseOf(
  * @throws `Errors.InvalidInputError` (`INVALID_NAME`, `INVALID_ADDRESS`, `INVALID_ROLES`, `INVALID_RECORD_VALUE`) for invalid input or targets.
  * @throws `Errors.UnsupportedError` (`UNSUPPORTED_PROTOCOL`) for ENSv1 names.
  * @throws `Errors.UnauthorizedError` (`CANNOT_GRANT_ROLES`) without the admin roles.
- * @throws `Errors.TransactionError` (`TRANSACTION_REVERTED`, `RECEIPT_TIMEOUT`) when confirmation fails.
+ * @throws `Errors.TransactionError` (`TRANSACTION_REVERTED`, `RECEIPT_TIMEOUT`, `NONCE_CONFLICT`) when confirmation fails or the wallet's nonce is already used.
  *
  * @see {@link revoke} to resolve on submission
  * @stability stable

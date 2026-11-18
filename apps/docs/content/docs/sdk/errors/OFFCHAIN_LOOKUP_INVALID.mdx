@@ -25,7 +25,14 @@ Retrying the same call fails the same way until the cause is fixed (`retryable: 
 
 ## Actions that throw it
 
-No action names this code in its documented errors.
+| Action | When |
+| --- | --- |
+| [`primaryName.get`](/docs/sdk/reference/actions/primary-name/get) | when an off-chain gateway fails. |
+| [`record.get`](/docs/sdk/reference/actions/record/get) | when an off-chain gateway fails. |
+| [`record.getAddress`](/docs/sdk/reference/actions/record/get-address) | when an off-chain gateway fails. |
+| [`record.getContentHash`](/docs/sdk/reference/actions/record/get-content-hash) | when an off-chain gateway fails. |
+| [`record.getText`](/docs/sdk/reference/actions/record/get-text) | when an off-chain gateway fails. |
+| [`resolver.resolve`](/docs/sdk/reference/actions/resolver/resolve) | when an off-chain gateway fails. |
 
 ## Catch it
 

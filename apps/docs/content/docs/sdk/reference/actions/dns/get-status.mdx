@@ -82,7 +82,7 @@ Resolves to `Status`. Import state and the next step.
 | [`InvalidInputError`](/docs/sdk/errors#invalidinputerror) | [`INVALID_NAME`](/docs/sdk/errors/INVALID_NAME) | names that are not DNS names. |
 | [`GatewayError`](/docs/sdk/errors#gatewayerror) | [`GATEWAY_REQUEST_FAILED`](/docs/sdk/errors/GATEWAY_REQUEST_FAILED), [`GATEWAY_RESPONSE_INVALID`](/docs/sdk/errors/GATEWAY_RESPONSE_INVALID) | the DNSSEC gateway fails. |
 | [`UnsupportedError`](/docs/sdk/errors#unsupportederror) | [`UNSUPPORTED_ON_DEPLOYMENT`](/docs/sdk/errors/UNSUPPORTED_ON_DEPLOYMENT) | without a DNSSEC gateway or `gatewayUrls`. |
-| [`NetworkError`](/docs/sdk/errors#networkerror) |  | the RPC request fails. |
+| [`NetworkError`](/docs/sdk/errors#networkerror) | [`RPC_REQUEST_FAILED`](/docs/sdk/errors/RPC_REQUEST_FAILED), [`RPC_TIMEOUT`](/docs/sdk/errors/RPC_TIMEOUT), [`RATE_LIMITED`](/docs/sdk/errors/RATE_LIMITED) | the RPC request fails. |
 
 It can also fail with the errors every read can (`Errors.CommonError`: `ConfigError`, `ContractRevertError`, `InternalError`, `NetworkError`).
 

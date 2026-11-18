@@ -29,7 +29,43 @@ Retrying the same call fails the same way until the cause is fixed (`retryable: 
 
 ## Actions that throw it
 
-No action names this code in its documented errors.
+| Action | When |
+| --- | --- |
+| [`approval.setDelegate`](/docs/sdk/reference/actions/approval/set-delegate) | with `mode: "batch"` or a paymaster when the wallet cannot send calls as one batch. |
+| [`approval.setOperator`](/docs/sdk/reference/actions/approval/set-operator) | with `mode: "batch"` or a paymaster when the wallet cannot send calls as one batch. |
+| [`approval.setToken`](/docs/sdk/reference/actions/approval/set-token) | with `mode: "batch"` or a paymaster when the wallet cannot send calls as one batch. |
+| [`dns.claim`](/docs/sdk/reference/actions/dns/claim) | with `mode: "batch"` or a paymaster when the wallet cannot send calls as one batch. |
+| [`dns.setRecords`](/docs/sdk/reference/actions/dns/set-records) | with `mode: "batch"` or a paymaster when the wallet cannot send calls as one batch. |
+| [`migration.migrate`](/docs/sdk/reference/actions/migration/migrate) | with `mode: "batch"` or a paymaster when the wallet cannot send calls as one batch. |
+| [`name.reclaim`](/docs/sdk/reference/actions/name/reclaim) | with `mode: "batch"` or a paymaster when the wallet cannot send calls as one batch. |
+| [`name.setManager`](/docs/sdk/reference/actions/name/set-manager) | with `mode: "batch"` or a paymaster when the wallet cannot send calls as one batch. |
+| [`name.setTtl`](/docs/sdk/reference/actions/name/set-ttl) | with `mode: "batch"` or a paymaster when the wallet cannot send calls as one batch. |
+| [`name.transfer`](/docs/sdk/reference/actions/name/transfer) | with `mode: "batch"` or a paymaster when the wallet cannot send calls as one batch. |
+| [`permission.setRecordAccess`](/docs/sdk/reference/actions/permission/set-record-access) | with `mode: "batch"` or a paymaster when the wallet cannot send calls as one batch. |
+| [`plan.send`](/docs/sdk/reference/actions/plan/send) | with `mode: "batch"` or a paymaster when the wallet cannot send calls as one batch. |
+| [`primaryName.set`](/docs/sdk/reference/actions/primary-name/set) | with `mode: "batch"` or a paymaster when the wallet cannot send calls as one batch. |
+| [`primaryName.signClaim`](/docs/sdk/reference/actions/primary-name/sign-claim) | with `mode: "batch"` or a paymaster when the wallet cannot send calls as one batch. |
+| [`record.set`](/docs/sdk/reference/actions/record/set) | with `mode: "batch"` or a paymaster when the wallet cannot send calls as one batch. |
+| [`registration.commit`](/docs/sdk/reference/actions/registration/commit) | with `mode: "batch"` or a paymaster when the wallet cannot send calls as one batch. |
+| [`registration.register`](/docs/sdk/reference/actions/registration/register) | with `mode: "batch"` or a paymaster when the wallet cannot send calls as one batch. |
+| [`registration.renew`](/docs/sdk/reference/actions/registration/renew) | with `mode: "batch"` or a paymaster when the wallet cannot send calls as one batch. |
+| [`registry.attach`](/docs/sdk/reference/actions/registry/attach) | with `mode: "batch"` or a paymaster when the wallet cannot send calls as one batch. |
+| [`registry.deploy`](/docs/sdk/reference/actions/registry/deploy) | with `mode: "batch"` or a paymaster when the wallet cannot send calls as one batch. |
+| [`registry.setUri`](/docs/sdk/reference/actions/registry/set-uri) | with `mode: "batch"` or a paymaster when the wallet cannot send calls as one batch. |
+| [`registry.upgrade`](/docs/sdk/reference/actions/registry/upgrade) | with `mode: "batch"` or a paymaster when the wallet cannot send calls as one batch. |
+| [`resolver.create`](/docs/sdk/reference/actions/resolver/create) | with `mode: "batch"` or a paymaster when the wallet cannot send calls as one batch. |
+| [`resolver.link`](/docs/sdk/reference/actions/resolver/link) | with `mode: "batch"` or a paymaster when the wallet cannot send calls as one batch. |
+| [`resolver.set`](/docs/sdk/reference/actions/resolver/set) | with `mode: "batch"` or a paymaster when the wallet cannot send calls as one batch. |
+| [`resolver.upgrade`](/docs/sdk/reference/actions/resolver/upgrade) | with `mode: "batch"` or a paymaster when the wallet cannot send calls as one batch. |
+| [`role.grant`](/docs/sdk/reference/actions/role/grant) | with `mode: "batch"` or a paymaster when the wallet cannot send calls as one batch. |
+| [`role.revoke`](/docs/sdk/reference/actions/role/revoke) | with `mode: "batch"` or a paymaster when the wallet cannot send calls as one batch. |
+| [`subname.create`](/docs/sdk/reference/actions/subname/create) | with `mode: "batch"` or a paymaster when the wallet cannot send calls as one batch. |
+| [`subname.remove`](/docs/sdk/reference/actions/subname/remove) | with `mode: "batch"` or a paymaster when the wallet cannot send calls as one batch. |
+| [`subname.update`](/docs/sdk/reference/actions/subname/update) | with `mode: "batch"` or a paymaster when the wallet cannot send calls as one batch. |
+| [`wrapper.setChildFuses`](/docs/sdk/reference/actions/wrapper/set-child-fuses) | with `mode: "batch"` or a paymaster when the wallet cannot send calls as one batch. |
+| [`wrapper.setFuses`](/docs/sdk/reference/actions/wrapper/set-fuses) | with `mode: "batch"` or a paymaster when the wallet cannot send calls as one batch. |
+| [`wrapper.unwrap`](/docs/sdk/reference/actions/wrapper/unwrap) | with `mode: "batch"` or a paymaster when the wallet cannot send calls as one batch. |
+| [`wrapper.wrap`](/docs/sdk/reference/actions/wrapper/wrap) | with `mode: "batch"` or a paymaster when the wallet cannot send calls as one batch. |
 
 Any write can fail with `UnsupportedError`: it is part of `Errors.WriteError`.
 

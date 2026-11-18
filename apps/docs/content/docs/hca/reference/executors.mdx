@@ -23,9 +23,11 @@ upstream yet.
 function bundler(options: BundlerOptions): Executor
 ```
 
-Use for gasless owner actions (renewals, transfers, migration) when the owner holds no ETH; the
+Use for gasless owner actions (renewals, registration, migration) when the owner holds no ETH; the
 owner signs each operation instead of sending a transaction.
 
+- Writes other than registration, migration and `hca.execute` succeed only where the HCA holds
+  the roles they need, so transfers and record edits through it usually fail.
 - Owner operations only: HCA sessions run through Rhinestone's intent executor, not ERC-4337.
 - EntryPoint v0.7; the first operation deploys the HCA through its factory.
 - The owner signs with `personal_sign` over the UserOperation hash.
@@ -74,10 +76,10 @@ const relayer = defineExecutor({
 })
 ```
 
-```ts title="Used first, wallet as fallback"
-import { hca, owner } from "@ensforge/hca"
+```ts title="Used for the write"
+import { hca } from "@ensforge/hca"
 
-const via = hca({ executors: [relayer, owner()] })
+const via = hca({ executors: [relayer] })
 ```
 
 ```ts title="A test double"
@@ -168,10 +170,12 @@ import { hca, owner } from "@ensforge/hca"
 await ens.hca.executeSync({ calls, via: hca({ executors: [owner()] }) })
 ```
 
-```ts title="As the fallback"
+```ts title="Choosing the executor"
 import { hca, owner, pimlico } from "@ensforge/hca"
 
-const via = hca({ executors: [pimlico({ apiKey }), owner()] })
+// `hca()` uses the first executor only, so choose one per request.
+const gasless = true
+const via = gasless ? hca({ executors: [pimlico({ apiKey })] }) : hca({ executors: [owner()] })
 ```
 
 ```ts title="Sponsored by the wallet"
@@ -193,9 +197,9 @@ function pimlico(options: PimlicoOptions): Executor
 Use with a Pimlico API key for gasless owner actions on mainnet or Sepolia.
 
 ```ts title="Sponsored"
-import { hca, owner, pimlico } from "@ensforge/hca"
+import { hca, pimlico } from "@ensforge/hca"
 
-const via = hca({ executors: [pimlico({ apiKey, sponsor: true }), owner()] })
+const via = hca({ executors: [pimlico({ apiKey, sponsor: true })] })
 ```
 
 ```ts title="With a policy"
@@ -341,7 +345,7 @@ type HcaActions
 
 | Field | Type | Description |
 | --- | --- | --- |
-| `hca` | `{ /** Adds ETH to an HCA's ERC-4337 EntryPoint deposit. Resolves once the transaction is submitted. */ readonly addDeposit: BoundWrite<typeof hca.addDeposit>; /** Adds ETH to an HCA's ERC-4337 EntryPoint deposit. Resolves once the receipt is in. */ readonly addDepositSync: Bound<typeof hca.addDepositSync>; /** Asks the owner to approve a session key for their HCA, with one signature and no transaction. */ readonly authorizeSession: Bound<typeof hca.authorizeSession>; /** Checks calls against the HCA session policy before anything is signed. */ readonly checkSessionCalls: Bound<typeof hca.checkSessionCalls>; /** Deploys the signer's HCA through the ENS factory. Resolves once the transaction is submitted. */ readonly deploy: BoundWrite<typeof hca.deploy>; /** Deploys the signer's HCA through the ENS factory. Resolves once the receipt is in. */ readonly deploySync: Bound<typeof hca.deploySync>; /** Runs calls from the signer's HCA as one atomic execution. Resolves once the transaction is submitted. */ readonly execute: BoundWrite<typeof hca.execute>; /** Runs calls from the signer's HCA as one atomic execution. Resolves once the receipt is in. */ readonly executeSync: Bound<typeof hca.executeSync>; /** Reads an ENS HCA (Hosted Contract Account): its address, owner, implementation, session nonce and verification problems. */ readonly get: Bound<typeof hca.get>; /** Reads an HCA's ERC-4337 EntryPoint deposit, which pays for its UserOperations without a paymaster. */ readonly getDeposit: Bound<typeof hca.getDeposit>; /** Checks whether a stored HCA session can still be used. */ readonly getSession: Bound<typeof hca.getSession>; /** Checks whether an HCA may upgrade to an implementation: both DAO sets must allow it. */ readonly getUpgrade: Bound<typeof hca.getUpgrade>; /** Computes the address of an owner's ENS HCA, deployed or not. */ readonly predictAddress: Bound<typeof hca.predictAddress>; /** Invalidates every session approval of the signer's HCA. Resolves once the transaction is submitted. */ readonly revokeSessions: BoundWrite<typeof hca.revokeSessions>; /** Invalidates every session approval of the signer's HCA. Resolves once the receipt is in. */ readonly revokeSessionsSync: Bound<typeof hca.revokeSessionsSync>; /** Upgrades the signer's HCA to an implementation both DAO upgrade sets allow. Resolves once the transaction is submitted. */ readonly upgrade: BoundWrite<typeof hca.upgrade>; /** Upgrades the signer's HCA to an implementation both DAO upgrade sets allow. Resolves once the receipt is in. */ readonly upgradeSync: Bound<typeof hca.upgradeSync>; /** Checks that an address is a usable ENS HCA of its owner, and returns it. */ readonly verify: Bound<typeof hca.verify>; /** Withdraws ETH from the signer's HCA EntryPoint deposit. Resolves once the transaction is submitted. */ readonly withdrawDeposit: BoundWrite<typeof hca.withdrawDeposit>; /** Withdraws ETH from the signer's HCA EntryPoint deposit. Resolves once the receipt is in. */ readonly withdrawDepositSync: Bound<typeof hca.withdrawDepositSync>; }` |  |
+| `hca` | `` { /** Adds ETH to an HCA's ERC-4337 EntryPoint deposit. Resolves once the transaction is submitted. */ readonly addDeposit: BoundWrite<typeof hca.addDeposit>; /** Adds ETH to an HCA's ERC-4337 EntryPoint deposit. Resolves once the receipt is in. */ readonly addDepositSync: Bound<typeof hca.addDepositSync>; /** Asks the owner to approve a session key for their HCA, with one signature and no transaction. */ readonly authorizeSession: Bound<typeof hca.authorizeSession>; /** Checks calls against the HCA session policy before anything is signed. */ readonly checkSessionCalls: Bound<typeof hca.checkSessionCalls>; /** Deploys the signer's HCA through the ENS factory. Resolves once the transaction is submitted. */ readonly deploy: BoundWrite<typeof hca.deploy>; /** Deploys the signer's HCA through the ENS factory. Resolves once the receipt is in. */ readonly deploySync: Bound<typeof hca.deploySync>; /** Runs calls from the signer's HCA as one atomic execution. Resolves once the transaction is submitted. */ readonly execute: BoundWrite<typeof hca.execute>; /** Runs calls from the signer's HCA as one atomic execution. Resolves once the receipt is in. */ readonly executeSync: Bound<typeof hca.executeSync>; /** Reads an ENS HCA (Hosted Contract Account): its address, owner, implementation, session nonce and verification problems. */ readonly get: Bound<typeof hca.get>; /** Reads an HCA's ERC-4337 EntryPoint deposit, which pays for its UserOperations without a paymaster. */ readonly getDeposit: Bound<typeof hca.getDeposit>; /** Checks whether a stored HCA session can still be used. */ readonly getSession: Bound<typeof hca.getSession>; /** Checks whether an HCA may upgrade to an implementation: it must be in the DAO's upgrade set and accept the current implementation. */ readonly getUpgrade: Bound<typeof hca.getUpgrade>; /** Computes the address of an owner's ENS HCA, deployed or not. */ readonly predictAddress: Bound<typeof hca.predictAddress>; /** Invalidates every session approval of the signer's HCA. Resolves once the transaction is submitted. */ readonly revokeSessions: BoundWrite<typeof hca.revokeSessions>; /** Invalidates every session approval of the signer's HCA. Resolves once the receipt is in. */ readonly revokeSessionsSync: Bound<typeof hca.revokeSessionsSync>; /** Upgrades the signer's HCA to an implementation the DAO's upgrade set and its own `canUpgradeFrom` check allow. Resolves once the transaction is submitted. */ readonly upgrade: BoundWrite<typeof hca.upgrade>; /** Upgrades the signer's HCA to an implementation the DAO's upgrade set and its own `canUpgradeFrom` check allow. Resolves once the receipt is in. */ readonly upgradeSync: Bound<typeof hca.upgradeSync>; /** Checks that an address is a usable ENS HCA of its owner, and returns it. */ readonly verify: Bound<typeof hca.verify>; /** Withdraws ETH from the signer's HCA EntryPoint deposit. Resolves once the transaction is submitted. */ readonly withdrawDeposit: BoundWrite<typeof hca.withdrawDeposit>; /** Withdraws ETH from the signer's HCA EntryPoint deposit. Resolves once the receipt is in. */ readonly withdrawDepositSync: Bound<typeof hca.withdrawDepositSync>; } `` |  |
 
 ### `HcaAdminActions`
 
@@ -369,7 +373,7 @@ type HcaOptions
 
 | Option | Type | Default | Description |
 | --- | --- | --- | --- |
-| `executors` | `readonly Executor[]` | `[owner()]` | How executions run, in order of preference; the first that can run the request is used. |
+| `executors` | `readonly Executor[]` | `[owner()]` | How executions run. `hca()` picks the first executor that can run the request (one with sessions when `session` is set) once, and never falls back to another when a send fails. |
 | `session` | `HcaSession` |  | Run as this session (no owner prompts); needs an executor with sessions (`rhinestone()`). |
 
 ### `HcaProblem`

@@ -42,7 +42,7 @@ import * as Impl from "./effect.js";
  * ```
  *
  * @throws `Errors.InvalidInputError` (`INVALID_NAME`) for invalid names.
- * @throws `Errors.NetworkError` when the RPC request fails.
+ * @throws `Errors.NetworkError` (`RPC_REQUEST_FAILED`, `RPC_TIMEOUT`, `RATE_LIMITED`) when the RPC request fails.
  *
  * @see {@link Actions.dns.setRecords} to change them
  * @stability stable

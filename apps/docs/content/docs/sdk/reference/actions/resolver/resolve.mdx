@@ -81,7 +81,7 @@ Resolves to `{ readonly data: Hex; readonly resolver: Address }`. The ABI-encode
 | [`InvalidInputError`](/docs/sdk/errors#invalidinputerror) | [`INVALID_NAME`](/docs/sdk/errors/INVALID_NAME), [`INVALID_RECORD_VALUE`](/docs/sdk/errors/INVALID_RECORD_VALUE) | an invalid name or calldata. |
 | [`NotFoundError`](/docs/sdk/errors#notfounderror) | [`RESOLVER_NOT_FOUND`](/docs/sdk/errors/RESOLVER_NOT_FOUND) | nothing resolves the name. |
 | [`UnsupportedError`](/docs/sdk/errors#unsupportederror) | [`RESOLVER_PROFILE_UNSUPPORTED`](/docs/sdk/errors/RESOLVER_PROFILE_UNSUPPORTED) | the resolver does not answer the call. |
-| [`GatewayError`](/docs/sdk/errors#gatewayerror) |  | an off-chain gateway fails. |
+| [`GatewayError`](/docs/sdk/errors#gatewayerror) | [`GATEWAY_REQUEST_FAILED`](/docs/sdk/errors/GATEWAY_REQUEST_FAILED), [`GATEWAY_RESPONSE_INVALID`](/docs/sdk/errors/GATEWAY_RESPONSE_INVALID), [`OFFCHAIN_LOOKUP_INVALID`](/docs/sdk/errors/OFFCHAIN_LOOKUP_INVALID) | an off-chain gateway fails. |
 | [`DnsError`](/docs/sdk/errors#dnserror) |  | a DNS name's DNSSEC proof does not verify. |
 | [`ConfigError`](/docs/sdk/errors#configerror) | [`CCIP_READ_DISABLED`](/docs/sdk/errors/CCIP_READ_DISABLED) | off-chain names when CCIP-Read is disabled. |
 

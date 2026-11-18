@@ -69,7 +69,7 @@ Resolves to `Write.Result`. Submitted transaction hashes and the plan that produ
 | `hash` | `Hex` | Hash of the last transaction. |
 | `hashes` | `readonly Hex[]` | Every submitted transaction, in order. |
 | `id` | `string` | EIP-5792 bundle id when the calls were sent as one batch. |
-| `plan` | `Plan` |  |
+| `plan` | `Plan` | The plan the write executed: its steps, in order, as they were submitted. |
 
 ## Errors
 
@@ -79,7 +79,9 @@ Resolves to `Write.Result`. Submitted transaction hashes and the plan that produ
 | [`DnsError`](/docs/sdk/errors#dnserror) | [`DNS_RECORD_MISSING`](/docs/sdk/errors/DNS_RECORD_MISSING), [`PROOF_STALE`](/docs/sdk/errors/PROOF_STALE), [`DNSSEC_PROOF_FAILED`](/docs/sdk/errors/DNSSEC_PROOF_FAILED), [`TLD_NOT_PUBLIC`](/docs/sdk/errors/TLD_NOT_PUBLIC) | the name cannot be proven. |
 | [`GatewayError`](/docs/sdk/errors#gatewayerror) | [`GATEWAY_REQUEST_FAILED`](/docs/sdk/errors/GATEWAY_REQUEST_FAILED), [`GATEWAY_RESPONSE_INVALID`](/docs/sdk/errors/GATEWAY_RESPONSE_INVALID) | the proof cannot be fetched. |
 | [`UnauthorizedError`](/docs/sdk/errors#unauthorizederror) | [`NOT_OWNER`](/docs/sdk/errors/NOT_OWNER) | someone other than the DNS owner claims with a resolver. |
-| [`UserRejectedError`](/docs/sdk/errors#userrejectederror) |  | the user rejects the request. |
+| [`UserRejectedError`](/docs/sdk/errors#userrejectederror) | [`USER_REJECTED`](/docs/sdk/errors/USER_REJECTED) | the user rejects the request. |
+| [`WalletError`](/docs/sdk/errors#walleterror) | [`CHAIN_MISMATCH`](/docs/sdk/errors/CHAIN_MISMATCH), [`ACCOUNT_NOT_FOUND`](/docs/sdk/errors/ACCOUNT_NOT_FOUND) | the wallet is on another chain or has no account to sign with. |
+| [`UnsupportedError`](/docs/sdk/errors#unsupportederror) | [`WALLET_BATCH_UNSUPPORTED`](/docs/sdk/errors/WALLET_BATCH_UNSUPPORTED) | with `mode: "batch"` or a paymaster when the wallet cannot send calls as one batch. |
 
 It can also fail with the errors every write can (`Errors.WriteError`: the common errors plus `InsufficientFundsError`, `TransactionError`, `UnsupportedError`, `UserRejectedError`, `WalletError`).
 

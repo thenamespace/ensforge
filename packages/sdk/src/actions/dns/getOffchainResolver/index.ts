@@ -46,7 +46,7 @@ import * as Impl from "./effect.js";
  * @throws `Errors.InvalidInputError` (`INVALID_NAME`) for names that are not DNS names.
  * @throws `Errors.GatewayError` (`GATEWAY_REQUEST_FAILED`, `GATEWAY_RESPONSE_INVALID`) when the DNSSEC gateway fails.
  * @throws `Errors.UnsupportedError` (`UNSUPPORTED_ON_DEPLOYMENT`) without a DNSSEC gateway or `gatewayUrls`.
- * @throws `Errors.NetworkError` when the RPC request fails.
+ * @throws `Errors.NetworkError` (`RPC_REQUEST_FAILED`, `RPC_TIMEOUT`, `RATE_LIMITED`) when the RPC request fails.
  *
  * @see {@link Actions.record.get} to resolve its records
  * @stability stable

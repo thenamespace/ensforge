@@ -87,7 +87,7 @@ Resolves to `readonly Event[]`. The name's ENS events, in chain order.
 | --- | --- | --- |
 | [`InvalidInputError`](/docs/sdk/errors#invalidinputerror) | [`INVALID_NAME`](/docs/sdk/errors/INVALID_NAME), [`INVALID_RECORD_VALUE`](/docs/sdk/errors/INVALID_RECORD_VALUE) | invalid input. |
 | [`NetworkError`](/docs/sdk/errors#networkerror) | [`LOG_RANGE_TOO_LARGE`](/docs/sdk/errors/LOG_RANGE_TOO_LARGE) | the provider's log limits make the range too expensive. |
-| [`NetworkError`](/docs/sdk/errors#networkerror) |  | the RPC request fails. |
+| [`NetworkError`](/docs/sdk/errors#networkerror) | [`RPC_REQUEST_FAILED`](/docs/sdk/errors/RPC_REQUEST_FAILED), [`RPC_TIMEOUT`](/docs/sdk/errors/RPC_TIMEOUT), [`RATE_LIMITED`](/docs/sdk/errors/RATE_LIMITED) | the RPC request fails. |
 
 It can also fail with the errors every read can (`Errors.CommonError`: `ConfigError`, `ContractRevertError`, `InternalError`, `NetworkError`).
 

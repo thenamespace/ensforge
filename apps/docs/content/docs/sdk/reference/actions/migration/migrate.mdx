@@ -75,17 +75,20 @@ Resolves to `Write.Result`. Submitted transaction hashes and the plan that produ
 | `hash` | `Hex` | Hash of the last transaction. |
 | `hashes` | `readonly Hex[]` | Every submitted transaction, in order. |
 | `id` | `string` | EIP-5792 bundle id when the calls were sent as one batch. |
-| `plan` | `Plan` |  |
+| `plan` | `Plan` | The plan the write executed: its steps, in order, as they were submitted. |
 
 ## Errors
 
 | Error | Codes | When |
 | --- | --- | --- |
 | [`InvalidInputError`](/docs/sdk/errors#invalidinputerror) | [`INVALID_NAME`](/docs/sdk/errors/INVALID_NAME), [`INVALID_ADDRESS`](/docs/sdk/errors/INVALID_ADDRESS), [`INVALID_RECORD_VALUE`](/docs/sdk/errors/INVALID_RECORD_VALUE) | invalid input. |
-| [`MigrationError`](/docs/sdk/errors#migrationerror) | [`NOT_ELIGIBLE`](/docs/sdk/errors/NOT_ELIGIBLE), [`ALREADY_MIGRATED`](/docs/sdk/errors/ALREADY_MIGRATED), [`RECORDS_UNKNOWN`](/docs/sdk/errors/RECORDS_UNKNOWN) | a name cannot migrate as asked. |
+| [`MigrationError`](/docs/sdk/errors#migrationerror) | [`NOT_ELIGIBLE`](/docs/sdk/errors/NOT_ELIGIBLE), [`ALREADY_MIGRATED`](/docs/sdk/errors/ALREADY_MIGRATED), [`RECORDS_UNKNOWN`](/docs/sdk/errors/RECORDS_UNKNOWN), [`NAME_NOT_LOCKED`](/docs/sdk/errors/NAME_NOT_LOCKED) | a name cannot migrate as asked. |
+| [`NameStateError`](/docs/sdk/errors#namestateerror) | [`NAME_LOCKED`](/docs/sdk/errors/NAME_LOCKED), [`PARENT_NOT_MIGRATED`](/docs/sdk/errors/PARENT_NOT_MIGRATED) | the name is locked or its parent is not migrated yet. |
 | [`UnsupportedError`](/docs/sdk/errors#unsupportederror) | [`UNSUPPORTED_ON_DEPLOYMENT`](/docs/sdk/errors/UNSUPPORTED_ON_DEPLOYMENT) | where ENSv2 is not deployed. |
 | [`UnauthorizedError`](/docs/sdk/errors#unauthorizederror) | [`NOT_OWNER`](/docs/sdk/errors/NOT_OWNER), [`FUSE_BURNED`](/docs/sdk/errors/FUSE_BURNED) | the account may not move a token. |
-| [`UserRejectedError`](/docs/sdk/errors#userrejectederror) |  | the user rejects the request. |
+| [`UserRejectedError`](/docs/sdk/errors#userrejectederror) | [`USER_REJECTED`](/docs/sdk/errors/USER_REJECTED) | the user rejects the request. |
+| [`WalletError`](/docs/sdk/errors#walleterror) | [`CHAIN_MISMATCH`](/docs/sdk/errors/CHAIN_MISMATCH), [`ACCOUNT_NOT_FOUND`](/docs/sdk/errors/ACCOUNT_NOT_FOUND) | the wallet is on another chain or has no account to sign with. |
+| [`UnsupportedError`](/docs/sdk/errors#unsupportederror) | [`WALLET_BATCH_UNSUPPORTED`](/docs/sdk/errors/WALLET_BATCH_UNSUPPORTED) | with `mode: "batch"` or a paymaster when the wallet cannot send calls as one batch. |
 
 It can also fail with the errors every write can (`Errors.WriteError`: the common errors plus `InsufficientFundsError`, `TransactionError`, `UnsupportedError`, `UserRejectedError`, `WalletError`).
 

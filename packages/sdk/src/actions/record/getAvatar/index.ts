@@ -53,7 +53,7 @@ import * as Impl from "./effect.js";
  * @throws `Errors.UnsupportedError` (`RESOLVER_PROFILE_UNSUPPORTED`) with `strict` when the resolver supports none of the records.
  * @throws `Errors.GatewayError` (`GATEWAY_REQUEST_FAILED`, `GATEWAY_RESPONSE_INVALID`) with `strict` when NFT metadata cannot be loaded.
  * @throws `Errors.DnsError` when a DNS name's DNSSEC proof does not verify.
- * @throws `Errors.NetworkError` when the RPC request fails.
+ * @throws `Errors.NetworkError` (`RPC_REQUEST_FAILED`, `RPC_TIMEOUT`, `RATE_LIMITED`) when the RPC request fails.
  *
  * @see {@link Actions.record.getText} to read the raw avatar record
  * @stability stable

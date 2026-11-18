@@ -43,9 +43,21 @@ const ens = Ensforge.create({
 })
 ```
 
+```ts title="Adding an L2 for primary names"
+import { Ensforge, ensActions } from "@ensforge/sdk"
+
+const ens = Ensforge.create({
+  publicClient,
+  walletClient,
+  chains: { 10: { publicClient: optimismClient, walletClient: optimismWallet } },
+}).extend(ensActions())
+
+await ens.primaryName.set({ name: "alice.eth", coin: { chainId: 10 } })
+```
+
 Errors:
 
-- `ConfigError` ([`UNKNOWN_CHAIN`](/docs/sdk/errors/UNKNOWN_CHAIN)) when the chain has no built-in deployment and none is given. **Example** (Adding an L2 for primary names) ```ts import { Ensforge, ensActions } from "@ensforge/sdk" const ens = Ensforge.create({ publicClient, walletClient, chains: { 10: { publicClient: optimismClient, walletClient: optimismWallet } }, }).extend(ensActions()) await ens.primaryName.set({ name: "alice.eth", coin: { chainId: 10 } }) ```
+- `ConfigError` ([`UNKNOWN_CHAIN`](/docs/sdk/errors/UNKNOWN_CHAIN)) when the chain has no built-in deployment and none is given.
 - `ConfigError` ([`INVALID_DEPLOYMENT`](/docs/sdk/errors/INVALID_DEPLOYMENT)) when `deployment` is invalid or for another chain.
 - `ConfigError` ([`CHAIN_NOT_CONFIGURED`](/docs/sdk/errors/CHAIN_NOT_CONFIGURED)) when an entry of `chains` holds clients of another chain.
 
@@ -149,11 +161,11 @@ type Client<actions extends object = {}> = actions & ClientBase<actions>;
 
 | Field | Type | Description |
 | --- | --- | --- |
-| `chain` | `{ readonly id: number; readonly name: string }` |  |
+| `chain` | `{ readonly id: number; readonly name: string }` | The chain the client reads and writes ENS on. |
 | `account` | `Address` | Default signer address, or `undefined` without a wallet. |
 | `deployment` | `Deployments.Profile` | ENS deployments on this chain (addresses, capabilities, provenance). |
 | `publicClient` | `ViemClient` | The viem client used for reads, as an escape hatch. |
-| `config` | `Config` |  |
+| `config` | `Config` | The configuration the client was created with. |
 | `extend` | `<const added extends object>( decorator: (client: Client<object>) => added, ) => Client<object & added>` | Adds action groups; returns a new client. |
 
 ### `Ensforge.ClientBase`
@@ -166,11 +178,11 @@ interface ClientBase<actions extends object = {}>
 
 | Field | Type | Description |
 | --- | --- | --- |
-| `chain` | `{ readonly id: number; readonly name: string }` |  |
+| `chain` | `{ readonly id: number; readonly name: string }` | The chain the client reads and writes ENS on. |
 | `account` | `Address` | Default signer address, or `undefined` without a wallet. |
 | `deployment` | `Deployments.Profile` | ENS deployments on this chain (addresses, capabilities, provenance). |
 | `publicClient` | `ViemClient` | The viem client used for reads, as an escape hatch. |
-| `config` | `Config` |  |
+| `config` | `Config` | The configuration the client was created with. |
 | `extend` | `<const added extends object>( decorator: (client: Client<object>) => added, ) => Client<object & added>` | Adds action groups; returns a new client. |
 
 ### `Ensforge.Config`
@@ -183,7 +195,7 @@ type Config
 
 | Option | Type | Default | Description |
 | --- | --- | --- | --- |
-| `ccipRead` (required) | `{ readonly gatewayUrls: readonly string[] } \| false` |  | Off-chain resolution (CCIP-Read). `false` disables it. |
+| `ccipRead` (required) | `{ readonly gatewayUrls: readonly string[] } \| false` |  | Off-chain resolution (CCIP-Read) through the Universal Resolver's batch gateways. `false` disables it. |
 | `batch` (required) | `{ readonly multicall: false \| { readonly batchSize: number; readonly wait: number }; }` |  | Coalescing of concurrent contract reads into multicall. |
 | `blockTag` (required) | `BlockTag` |  | Default block tag for reads. |
 | `storage` (required) | `Plan.Storage` |  | Where multi-step plans save their progress. |
@@ -206,7 +218,7 @@ type CreateOptions
 | `chains` | `Readonly<Record<number, ChainClients>>` | none; writes for another chain fail with [`CHAIN_NOT_CONFIGURED`](/docs/sdk/errors/CHAIN_NOT_CONFIGURED) | Clients for other chains, by chain ID: writes ENS makes there (an L2 primary name) run on them, and plans for them resume on them. The signer is the same account on every chain. |
 | `account` | `Account \| Address` | the wallet client's account | Default signer for writes. |
 | `deployment` | `Deployments.Profile` | `Deployments.get({ chainId })` | ENS deployments. Required for chains ensforge does not ship (devnets, forks, other chains). |
-| `ccipRead` | `{ readonly gatewayUrls?: readonly string[] \| undefined } \| false` | the Universal Resolver's own batch gateway | Off-chain resolution. `false` disables CCIP-Read. |
+| `ccipRead` | `{ readonly gatewayUrls?: readonly string[] \| undefined } \| false` | the Universal Resolver's own batch gateway | Off-chain resolution. `false` disables CCIP-Read. `gatewayUrls` are the Universal Resolver's batch gateways and replace its default, not the gateways of individual resolvers. |
 | `batch` | `{ readonly multicall?: \| boolean \| { readonly batchSize?: number; readonly wait?: number } \| undefined; }` | `{ multicall: true }` | Coalesce concurrent reads into multicall. `wait` is in milliseconds. |
 | `blockTag` | `BlockTag` | `"latest"` | Default block tag for reads. |
 | `storage` | `Plan.Storage` | `Plan.memoryStorage()` | Where multi-step plans save their progress. |
@@ -267,7 +279,7 @@ type Options = Omit<CreateOptions, "publicClient" | "walletClient"> & { /** * Th
 | `chains` | `Readonly<Record<number, ChainClients>>` | none; writes for another chain fail with [`CHAIN_NOT_CONFIGURED`](/docs/sdk/errors/CHAIN_NOT_CONFIGURED) | Clients for other chains, by chain ID: writes ENS makes there (an L2 primary name) run on them, and plans for them resume on them. The signer is the same account on every chain. |
 | `account` | `Account \| Address` | the wallet client's account | Default signer for writes. |
 | `deployment` | `Deployments.Profile` | `Deployments.get({ chainId })` | ENS deployments. Required for chains ensforge does not ship (devnets, forks, other chains). |
-| `ccipRead` | `{ readonly gatewayUrls?: readonly string[] \| undefined } \| false` | the Universal Resolver's own batch gateway | Off-chain resolution. `false` disables CCIP-Read. |
+| `ccipRead` | `{ readonly gatewayUrls?: readonly string[] \| undefined } \| false` | the Universal Resolver's own batch gateway | Off-chain resolution. `false` disables CCIP-Read. `gatewayUrls` are the Universal Resolver's batch gateways and replace its default, not the gateways of individual resolvers. |
 | `batch` | `{ readonly multicall?: \| boolean \| { readonly batchSize?: number; readonly wait?: number } \| undefined; }` | `{ multicall: true }` | Coalesce concurrent reads into multicall. `wait` is in milliseconds. |
 | `blockTag` | `BlockTag` | `"latest"` | Default block tag for reads. |
 | `storage` | `Plan.Storage` | `Plan.memoryStorage()` | Where multi-step plans save their progress. |
@@ -790,7 +802,7 @@ type Result
 | `hash` | `Hex` | Hash of the last transaction. |
 | `hashes` | `readonly Hex[]` | Every submitted transaction, in order. |
 | `id` | `string` | EIP-5792 bundle id when the calls were sent as one batch. |
-| `plan` | `Plan` |  |
+| `plan` | `Plan` | The plan the write executed: its steps, in order, as they were submitted. |
 
 ## Sync options
 
@@ -828,7 +840,7 @@ type SyncResult = Result & { /** Receipt of the last transaction. */ readonly re
 | `hash` | `Hex` | Hash of the last transaction. |
 | `hashes` | `readonly Hex[]` | Every submitted transaction, in order. |
 | `id` | `string` | EIP-5792 bundle id when the calls were sent as one batch. |
-| `plan` | `Plan` |  |
+| `plan` | `Plan` | The plan the write executed: its steps, in order, as they were submitted. |
 | `receipt` | `TransactionReceipt` | Receipt of the last transaction. |
 | `receipts` | `readonly TransactionReceipt[]` |  |
 

@@ -233,6 +233,7 @@ export declare namespace Write {
     readonly hashes: readonly Hex[];
     /** EIP-5792 bundle id when the calls were sent as one batch. */
     readonly id: string | undefined;
+    /** The plan the write executed: its steps, in order, as they were submitted. */
     readonly plan: Plan;
   };
 
