@@ -1,6 +1,6 @@
 {
   "name": "@ensforge/hca",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Hosted Contract Accounts for ENS: one-transaction writes, sessions and gasless execution (experimental)",
   "keywords": [
     "account-abstraction",

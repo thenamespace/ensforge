@@ -1,6 +1,6 @@
 {
   "name": "@ensforge/contracts",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "ENS contract ABIs, deployment addresses and constants for viem",
   "keywords": [
     "abi",
