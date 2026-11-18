@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="200" height="200">
   <title>ensforge</title>
   <rect width="100" height="100" fill="#070707"/>
-  <g fill="#f8f8f8" stroke="#f8f8f8" stroke-width="6" stroke-linejoin="round"><path d="M15 33H31V49C23 49 17 43 15 33Z"/><path d="M43 31H85V49H72C71 56 73 61 80 63H83V73H45V63H48C55 61 57 56 56 49H43Z"/></g>
+  <path fill="#f8f8f8" d="M10 31L30 28H84L88 32V45H40L30 41ZM50 50H74L70 58L83 64V73H67V69H57V73H41V64L54 58Z"/>
 </svg>

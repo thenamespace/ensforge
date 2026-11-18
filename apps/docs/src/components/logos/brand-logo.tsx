@@ -1,4 +1,4 @@
-import type { ReactNode, SVGProps } from "react";
+import type { SVGProps } from "react";
 
 export const logoColors = {
   background: "#070707",
@@ -19,34 +19,16 @@ export interface LogoProps extends Omit<SVGProps<SVGSVGElement>, "children"> {
   readonly title?: string;
 }
 
-/** Filled shapes get a 3-unit corner radius from a same-color stroke with round joins. */
-export const rounded = {
-  fill: "currentColor",
-  stroke: "currentColor",
-  strokeWidth: 6,
-  strokeLinejoin: "round",
-} as const;
-
-/** Lines drawn with round caps and joins, `width` units thick. */
-export const line = (width: number) =>
-  ({
-    fill: "none",
-    stroke: "currentColor",
-    strokeWidth: width,
-    strokeLinecap: "round",
-    strokeLinejoin: "round",
-  }) as const;
-
 /**
- * Every mark is drawn on a 100 × 100 artboard with the same corner radius and line weights;
- * the glyph fits 12–88, so `mark` crops to 8–92.
+ * Every mark is one solid, sharp-edged glyph on a 100 × 100 artboard, fitting 10–90; `mark`
+ * crops to 8–92.
  */
 export function BrandLogo({
   variant = "mark",
   title,
-  children,
+  glyph,
   ...props
-}: LogoProps & { readonly children: ReactNode }) {
+}: LogoProps & { readonly glyph: string }) {
   const isBadge = variant === "badge";
 
   return (
@@ -60,7 +42,7 @@ export function BrandLogo({
     >
       {title ? <title>{title}</title> : null}
       {isBadge ? <rect width={100} height={100} fill={logoColors.background} /> : null}
-      {children}
+      <path fill="currentColor" fillRule="evenodd" d={glyph} />
     </svg>
   );
 }

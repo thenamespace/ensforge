@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 
-import { anvilPaths } from "@/components/logos";
+import { glyphs } from "@/components/logos";
 import { site } from "@/lib/site";
 
 import { type Accent, accents, BG, FAINT, INK, MUTED, OG } from "./primitives";
@@ -9,13 +9,7 @@ import { type Accent, accents, BG, FAINT, INK, MUTED, OG } from "./primitives";
 
 /** The ensforge mark as an SVG image (the OG renderer draws images, not inline SVG elements). */
 export function EnsforgeMark({ height = 32, color = INK }: { height?: number; color?: string }) {
-  const paths = anvilPaths
-    .map(
-      (d) =>
-        `<path d="${d}" fill="${color}" stroke="${color}" stroke-width="6" stroke-linejoin="round"/>`,
-    )
-    .join("");
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="8 8 84 84">${paths}</svg>`;
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="8 8 84 84"><path fill="${color}" d="${glyphs.ensforge}"/></svg>`;
 
   return (
     <img src={`data:image/svg+xml;base64,${btoa(svg)}`} width={height} height={height} alt="" />
