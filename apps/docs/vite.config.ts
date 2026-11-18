@@ -9,35 +9,15 @@ import { fumadocsMdx } from "fumadocs-mdx/vite";
 import { nitro } from "nitro/vite";
 import { defineConfig } from "vite";
 
-// On Vercel, prerendered pages are served as static files before the server runs, so the
-// content-negotiation middleware never sees them. These routes send `Accept: text/markdown`
-// requests to the prerendered `.md` version first.
-const acceptsMarkdown = [{ type: "header", key: "accept", value: "(?:.*[,\\s])?text/markdown.*" }];
-const markdownRoutes = [
-  { src: "^/$", has: acceptsMarkdown, dest: "/index.md", headers: { Vary: "Accept" } },
-  { src: "^/blog/?$", has: acceptsMarkdown, dest: "/blog.md", headers: { Vary: "Accept" } },
-  {
-    src: "^/blog/([a-z0-9-]+)/?$",
-    has: acceptsMarkdown,
-    dest: "/blog/$1.md",
-    headers: { Vary: "Accept" },
-  },
-  {
-    src: "^/docs/((?!.*\\.md$).+?)/?$",
-    has: acceptsMarkdown,
-    dest: "/docs/$1.md",
-    headers: { Vary: "Accept" },
-  },
-];
-
 // Package docs are only linked from the picker popover, so seed the crawler with each one,
 // along with their Markdown versions for agents.
 const packageDocs = readdirSync("content/docs", { withFileTypes: true }).flatMap((entry) =>
   entry.isDirectory() ? [{ path: `/docs/${entry.name}` }, { path: `/docs/${entry.name}.md` }] : [],
 );
 
-// The deploy's git SHA ties analytics events and error stack traces to a release.
-const release = (process.env.VERCEL_GIT_COMMIT_SHA ?? "dev").slice(0, 12);
+// The deploy's git SHA (the Docker build's GIT_SHA) ties analytics events and error stack traces
+// to a release.
+const release = (process.env.GIT_SHA ?? "dev").slice(0, 12);
 
 // Source maps go to PostHog error tracking only from builds that hold a personal API key and a
 // project id; they are deleted after upload, so the site never serves them.
@@ -67,6 +47,11 @@ export default defineConfig({
   server: {
     port: 3000,
   },
+  // Prerendering requests the preview server at 127.0.0.1; bound to `localhost`, it can listen on
+  // ::1 only (as in the Docker build), and every prerender request is refused.
+  preview: {
+    host: "127.0.0.1",
+  },
   plugins: [
     fumadocsMdx(),
     tailwindcss(),
@@ -89,9 +74,9 @@ export default defineConfig({
         { path: "/llms-full.txt" },
       ],
     }),
-    // Nitro builds the server for the host it detects (Vercel when deployed there).
+    // A Node server (`.output/server/index.mjs`) for the Docker image in apps/docs/Dockerfile.
     nitro({
-      vercel: { config: { version: 3, routes: markdownRoutes } },
+      preset: "node-server",
       // Takumi stays an external, fully traced package so it loads its native binary at
       // runtime. Bundled, it pulls in the WASM build and the server fails to start.
       wasm: false,

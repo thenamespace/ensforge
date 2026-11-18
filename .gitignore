@@ -15,7 +15,6 @@ research/
 .nitro/
 .tanstack/
 .source/
-.vercel/
 
 
 # codegen --check scratch output

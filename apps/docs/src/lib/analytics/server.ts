@@ -6,17 +6,17 @@ import { analyticsConfig } from "./config";
 
 /**
  * Agent reads (Markdown pages, llms.txt) never run browser JavaScript, so they are counted here.
- * Only production on Vercel sends; elsewhere these calls do nothing.
+ * Only production servers send; elsewhere these calls do nothing.
  */
 
-const enabled = analyticsConfig.key !== "" && process.env.VERCEL_ENV === "production";
+const enabled = analyticsConfig.key !== "" && process.env.NODE_ENV === "production";
 
 let client: PostHog | undefined;
 
 function getClient() {
   if (!enabled) return undefined;
 
-  // Serverless functions can freeze after responding, so events go out immediately.
+  // Events go out immediately: a container can be stopped at any time after responding.
   client ??= new PostHog(analyticsConfig.key, {
     host: analyticsConfig.host,
     flushAt: 1,

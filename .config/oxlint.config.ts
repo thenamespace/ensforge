@@ -23,7 +23,6 @@ export default defineConfig({
     "**/.nitro/**",
     "**/.tanstack/**",
     "**/.source/**",
-    "**/.vercel/**",
   ],
   rules: {
     // `_tag` is Effect's discriminant for tagged errors and services.

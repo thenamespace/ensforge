@@ -1,0 +1,96 @@
+# Builds the docs image (apps/docs/Dockerfile), pushes it to Artifact Registry and asks
+# thenamespace/infra to roll it out. Dispatch it from main.
+name: Deploy docs
+
+on:
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: deploy-docs-prod
+  cancel-in-progress: false
+
+env:
+  APP_NAME: ${{ github.event.repository.name }}
+  INFRA_APP: core
+  ENVIRONMENT: prod
+
+jobs:
+  build-and-push:
+    name: Build and push
+    if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: prod
+    permissions:
+      contents: read
+      id-token: write # Workload Identity Federation with Google Cloud
+    env:
+      REGION: ${{ secrets.GCP_REGION }}
+      PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+      WORKLOAD_IDENTITY_PROVIDER: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+    outputs:
+      image_tag: ${{ steps.meta.outputs.image_tag }}
+    steps:
+      - name: Require GCP secrets
+        run: |
+          for name in REGION PROJECT_ID WORKLOAD_IDENTITY_PROVIDER; do
+            if [[ -z "${!name}" ]]; then
+              echo "::error::Missing secret GCP_${name}."
+              exit 1
+            fi
+          done
+
+      # The whole history: the docs read each page's last change from git.
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: google-github-actions/auth@v3
+        with:
+          project_id: ${{ env.PROJECT_ID }}
+          workload_identity_provider: ${{ env.WORKLOAD_IDENTITY_PROVIDER }}
+      - uses: google-github-actions/setup-gcloud@v3
+      - name: Configure Docker for Artifact Registry
+        run: gcloud auth configure-docker "${REGION}-docker.pkg.dev" --quiet
+
+      - name: Image tag
+        id: meta
+        run: echo "image_tag=$(git rev-parse --short HEAD)-${ENVIRONMENT}" >> "$GITHUB_OUTPUT"
+
+      - name: Build and push the image
+        env:
+          IMAGE: ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.APP_NAME }}/${{ env.APP_NAME }}:${{ steps.meta.outputs.image_tag }}
+          DOTENV: ${{ secrets.DOCS_DOTENV }}
+        run: |
+          docker build \
+            -f apps/docs/Dockerfile \
+            --secret id=dotenv,env=DOTENV \
+            --build-arg DOTENV_SHA256="$(printf '%s' "$DOTENV" | sha256sum | cut -d' ' -f1)" \
+            --build-arg GIT_SHA="$GITHUB_SHA" \
+            --label "org.opencontainers.image.source=${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}" \
+            --label "org.opencontainers.image.revision=${GITHUB_SHA}" \
+            -t "$IMAGE" \
+            .
+          docker push "$IMAGE"
+
+  update-image-tag:
+    name: Update image tag in infra
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    environment: prod
+    permissions: {}
+    steps:
+      - uses: peter-evans/repository-dispatch@v4
+        with:
+          token: ${{ secrets.REPOSITORY_DISPATCH_PAT }}
+          repository: thenamespace/infra
+          event-type: image-tag-update
+          client-payload: >-
+            {"repository": "${{ env.APP_NAME }}",
+            "infra_app": "${{ env.INFRA_APP }}",
+            "image_tag": "${{ needs.build-and-push.outputs.image_tag }}",
+            "environment": "${{ env.ENVIRONMENT }}"}

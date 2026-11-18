@@ -7,10 +7,11 @@
   "type": "module",
   "scripts": {
     "build": "vite build",
-    "clean": "rm -rf dist .output .tanstack .source .vercel",
+    "clean": "rm -rf dist .output .tanstack .source",
     "dev": "vite dev",
     "lint": "oxlint -c ../../.config/oxlint.config.ts --deny-warnings .",
     "preview": "vite preview",
+    "start": "node .output/server/index.mjs",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

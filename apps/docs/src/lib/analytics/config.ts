@@ -1,7 +1,7 @@
 /**
  * PostHog project settings shared by the browser and server clients. The project key comes from
- * `VITE_POSTHOG_KEY` (`.env.local` locally, the Vercel project settings in production); without it
- * analytics stays off. Events only ever leave the production site.
+ * `VITE_POSTHOG_KEY` (`.env.local` locally, the deploy workflow's `DOCS_DOTENV` secret in
+ * production); without it analytics stays off. Events only ever leave the production site.
  */
 export const analyticsConfig = {
   key: import.meta.env.VITE_POSTHOG_KEY ?? "",

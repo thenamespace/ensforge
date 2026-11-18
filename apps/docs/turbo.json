@@ -3,8 +3,8 @@
   "extends": ["//"],
   "tasks": {
     "build": {
-      "env": ["VITE_*", "VERCEL_GIT_COMMIT_SHA"],
-      "passThroughEnv": ["VERCEL", "VERCEL_*", "POSTHOG_PERSONAL_API_KEY", "POSTHOG_PROJECT_ID"]
+      "env": ["VITE_*", "GIT_SHA"],
+      "passThroughEnv": ["POSTHOG_PERSONAL_API_KEY", "POSTHOG_PROJECT_ID"]
     }
   }
 }
