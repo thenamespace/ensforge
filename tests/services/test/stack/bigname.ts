@@ -1,6 +1,7 @@
 import { fileURLToPath } from "node:url";
 
 import {
+  Config,
   Console,
   Effect,
   FileSystem,
@@ -110,6 +111,24 @@ export const bignameImage = Effect.fnUntraced(function* (devnet: DevnetInstance)
   );
   if (present) return tag;
 
+  // A registry the `bigname-image` workflow published to: pull the same build instead of compiling.
+  const registry = yield* Config.String("ENSFORGE_BIGNAME_REGISTRY").pipe(
+    Config.withDefault(""),
+    Effect.orDie,
+  );
+  if (registry !== "") {
+    const published = `${registry}:${bignameSource.tag}-${fingerprint}`;
+    const pulled = yield* docker(["pull", "--quiet", published]).pipe(
+      Effect.as(true),
+      Effect.orElseSucceed(() => false),
+    );
+    if (pulled) {
+      yield* docker(["tag", published, tag]);
+      return tag;
+    }
+    yield* Console.log(`${published} is not published; building it here`);
+  }
+
   const root = path.join(checkout, "manifests", profileName);
   yield* fs.remove(root, { recursive: true, force: true });
   for (const [manifest, text] of profile) {
@@ -118,7 +137,9 @@ export const bignameImage = Effect.fnUntraced(function* (devnet: DevnetInstance)
     yield* fs.writeFileString(target, text);
   }
   // The build prints nothing until it ends; say why a cold run looks idle.
-  yield* Console.log(`building ${tag} (a cold build compiles bigname: up to ~30 minutes)`);
+  yield* Console.log(
+    `building ${tag} (a cold build compiles bigname: up to ~30 minutes; the bigname-image workflow publishes it)`,
+  );
   yield* docker([
     "build",
     "--file",

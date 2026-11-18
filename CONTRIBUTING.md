@@ -228,6 +228,7 @@ and the reusable workflows `_check.yml` and `_lanes.yml`.
 | `networks.yml`         | `_lanes.yml` with the RPC secrets: `fork`, `live` or `watch` (`pnpm release:watch`), one at a time                         | manual, default branch                     |
 | `release.yml`          | the release (below)                                                                                                        | manual, default branch                     |
 | `release-smoke.yml`    | published packages against the archives a release verified                                                                 | manual                                     |
+| `bigname-image.yml`    | the services lane, then its bigname images to `ghcr.io/<owner>/ensforge-bigname-devnet`, which the services lanes pull     | manual, default branch                     |
 
 Lanes upload their logs, JUnit reports, fuzz corpus and mutation reports as an artifact named
 `lane-<lane>-<run>-<attempt>` for 14 days; the network lanes redact the RPC URLs from them first.

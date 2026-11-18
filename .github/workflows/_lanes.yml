@@ -67,6 +67,8 @@ jobs:
           # Callers pass these only for the network lanes (networks.yml).
           ENSFORGE_MAINNET_RPC_URL: ${{ secrets.ENSFORGE_MAINNET_RPC_URL }}
           ENSFORGE_SEPOLIA_RPC_URL: ${{ secrets.ENSFORGE_SEPOLIA_RPC_URL }}
+          # The services lane pulls bigname from here (bigname-image.yml) instead of compiling it.
+          ENSFORGE_BIGNAME_REGISTRY: ghcr.io/${{ github.repository_owner }}/ensforge-bigname-devnet
         run: |
           set -o pipefail
           # Unset budgets keep the suites' defaults (an empty variable would read as 0).

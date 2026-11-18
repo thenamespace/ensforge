@@ -1,0 +1,51 @@
+# Builds the services lane's bigname images (bigname compiled from source with the devnet's
+# manifest profile) by running the lane, then publishes them to GHCR. The services lane in
+# extended.yml and in every release pulls an image by the same fingerprint instead of compiling
+# bigname for 20–30 minutes, and builds it only when none is published. Dispatch it after changing
+# the bigname pin, its Dockerfile or the devnet's contracts.
+name: bigname image
+
+on:
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: bigname-image
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    permissions:
+      contents: read
+      packages: write # push to ghcr.io/<owner>/ensforge-bigname-devnet
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+      - uses: ./.github/actions/setup-foundry
+
+      # Builds every image the lane needs, and checks them, before anything is published.
+      - run: pnpm test:services
+
+      - uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+      - name: Push the images
+        env:
+          REGISTRY: ghcr.io/${{ github.repository_owner }}/ensforge-bigname-devnet
+        run: |
+          images="$(docker image ls --format '{{.Repository}}:{{.Tag}}' ensforge-bigname-devnet)"
+          [ -n "$images" ] || { echo 'the services lane built no bigname image' >&2; exit 1; }
+          for image in $images; do
+            published="$REGISTRY:${image#*:}"
+            docker tag "$image" "$published"
+            docker push --quiet "$published"
+            echo "- \`$published\`" >> "$GITHUB_STEP_SUMMARY"
+          done
