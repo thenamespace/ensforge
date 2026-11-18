@@ -31,6 +31,9 @@ export interface AnalyticsEvents {
   install_command_copied: { package_manager: string; packages: string; option_id: string };
   package_manager_selected: { package_manager: string; previous: string };
   copy_failed: { surface: string };
+  /** A playground read settled (`cached` when it was answered without the network). */
+  playground_run_completed: { example_id: string; ok: boolean; cached: boolean; ms: number };
+  how_it_fits_step_reached: { step_id: string; index: number };
 
   // Docs
   docs_page_viewed: { package: string; slug: string; title: string };
