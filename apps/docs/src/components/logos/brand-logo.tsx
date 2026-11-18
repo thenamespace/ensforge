@@ -19,22 +19,26 @@ export interface LogoProps extends Omit<SVGProps<SVGSVGElement>, "children"> {
   readonly title?: string;
 }
 
-/**
- * The marks are drawn on a 100 × 100 artboard in one language: flat slabs sheared to the same
- * italic angle, white on the brand's black.
- */
+/** A mark's glyph: a filled path, or a stroked outline around an optional filled core. */
+export interface Glyph {
+  readonly d: string;
+  readonly stroke?: number;
+  readonly core?: string;
+}
+
+/** The marks share a 100 × 100 artboard and sharp, flat geometry, white on the brand's black. */
 export function BrandLogo({
   variant = "mark",
   title,
   glyph,
   ...props
-}: LogoProps & { readonly glyph: string }) {
+}: LogoProps & { readonly glyph: Glyph }) {
   const isBadge = variant === "badge";
 
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
-      viewBox={isBadge ? "0 0 100 100" : "14 14 72 72"}
+      viewBox={isBadge ? "0 0 100 100" : "6 6 88 88"}
       color={logoColors.foreground}
       role={title ? "img" : undefined}
       aria-hidden={title ? undefined : true}
@@ -42,7 +46,18 @@ export function BrandLogo({
     >
       {title ? <title>{title}</title> : null}
       {isBadge ? <rect width={100} height={100} fill={logoColors.background} /> : null}
-      <path fill="currentColor" fillRule="evenodd" d={glyph} />
+      {glyph.stroke === undefined ? (
+        <path fill="currentColor" fillRule="evenodd" d={glyph.d} />
+      ) : (
+        <path
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={glyph.stroke}
+          strokeLinejoin="miter"
+          d={glyph.d}
+        />
+      )}
+      {glyph.core === undefined ? null : <path fill="currentColor" d={glyph.core} />}
     </svg>
   );
 }

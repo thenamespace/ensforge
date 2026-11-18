@@ -9,7 +9,7 @@ import { type Accent, accents, BG, FAINT, INK, MUTED, OG } from "./primitives";
 
 /** The ensforge mark as an SVG image (the OG renderer draws images, not inline SVG elements). */
 export function EnsforgeMark({ height = 32, color = INK }: { height?: number; color?: string }) {
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="14 14 72 72"><path fill="${color}" d="${glyphs.ensforge}"/></svg>`;
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="6 6 88 88"><path fill="${color}" d="${glyphs.ensforge.d}"/></svg>`;
 
   return (
     <img src={`data:image/svg+xml;base64,${btoa(svg)}`} width={height} height={height} alt="" />
