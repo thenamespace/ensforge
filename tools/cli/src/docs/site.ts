@@ -355,7 +355,7 @@ export const docsSite = Effect.fn("docs.site")(function* (root: string) {
         `${packageRoot}/${kebab(domain)}/meta.json`,
         meta({
           title: domain,
-          pages: ["index", ...Arr.map(actions, (action) => kebab(action.folder))],
+          pages: Arr.map(actions, (action) => kebab(action.folder)),
         }),
       );
       for (const action of actions)
@@ -399,7 +399,6 @@ export const docsSite = Effect.fn("docs.site")(function* (root: string) {
       title: "SDK",
       icon: "code",
       pages: [
-        "index",
         "client",
         ...Arr.map(sdkExtra, (action) => kebab(action.folder)),
         "utilities",
@@ -491,7 +490,7 @@ export const docsSite = Effect.fn("docs.site")(function* (root: string) {
     meta({
       title: "Errors",
       icon: "errors",
-      pages: ["index", ...Arr.map(errorClasses, (errorClass) => `(${kebab(errorClass.name)})`)],
+      pages: Arr.map(errorClasses, (errorClass) => `(${kebab(errorClass.name)})`),
     }),
   );
   for (const errorClass of errorClasses) {
@@ -537,7 +536,7 @@ export const docsSite = Effect.fn("docs.site")(function* (root: string) {
     meta({
       title: "React",
       icon: "react",
-      pages: ["index", "(hooks)", "components", "server", "atoms"],
+      pages: ["(hooks)", "components", "server", "atoms"],
     }),
   );
   // Hooks sit at `/react/<hook>`; the route group only makes them a folder in the sidebar.
@@ -604,12 +603,7 @@ export const docsSite = Effect.fn("docs.site")(function* (root: string) {
     meta({
       title: "HCA",
       icon: "plug",
-      pages: [
-        "index",
-        "executors",
-        "---Domains---",
-        ...Arr.map(hcaDomains, (entry) => kebab(entry.domain)),
-      ],
+      pages: ["executors", "---Domains---", ...Arr.map(hcaDomains, (entry) => kebab(entry.domain))],
     }),
   );
   pages.set(

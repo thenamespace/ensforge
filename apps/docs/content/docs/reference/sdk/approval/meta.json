@@ -1,7 +1,6 @@
 {
   "title": "approval",
   "pages": [
-    "index",
     "get-delegate",
     "get-operator",
     "get-token",

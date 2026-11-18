@@ -1,7 +1,6 @@
 {
   "title": "record",
   "pages": [
-    "index",
     "get",
     "get-address",
     "get-avatar",

@@ -1,7 +1,6 @@
 {
   "title": "registration",
   "pages": [
-    "index",
     "commit",
     "get-commitment-status",
     "get-parameters",

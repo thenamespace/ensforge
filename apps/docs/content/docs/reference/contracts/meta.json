@@ -1,7 +1,6 @@
 {
   "title": "Contracts",
   "pages": [
-    "index",
     "abis",
     "deployments",
     "interface-ids",

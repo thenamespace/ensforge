@@ -1,7 +1,6 @@
 {
   "title": "subname",
   "pages": [
-    "index",
     "create",
     "remove",
     "update"

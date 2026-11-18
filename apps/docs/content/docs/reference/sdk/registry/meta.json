@@ -1,7 +1,6 @@
 {
   "title": "registry",
   "pages": [
-    "index",
     "attach",
     "deploy",
     "get",

@@ -2,7 +2,6 @@
   "title": "Errors",
   "icon": "errors",
   "pages": [
-    "index",
     "(commitment-error)",
     "(config-error)",
     "(contract-revert-error)",

@@ -173,7 +173,7 @@ describe("domainPage", () => {
     const page = domainPage("sdk", "record", [write], () => undefined);
     const has = (text: string) => assert.isTrue(Str.includes(text)(page), `missing: ${text}`);
 
-    has('summary={"1 actions · 1 writes"}');
+    has('summary={"1 action · 1 write"}');
     has('source={"packages/sdk/src/actions/record"}');
     has("## Writes");
     has("| [`set`](/docs/reference/sdk/record/set) | Writes records of an ENS name. |");

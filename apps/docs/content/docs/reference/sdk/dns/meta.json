@@ -1,7 +1,6 @@
 {
   "title": "dns",
   "pages": [
-    "index",
     "claim",
     "get-offchain-resolver",
     "get-proof",

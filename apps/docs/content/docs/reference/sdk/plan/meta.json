@@ -1,7 +1,6 @@
 {
   "title": "plan",
   "pages": [
-    "index",
     "get",
     "list",
     "reconcile",

@@ -1,7 +1,6 @@
 {
   "title": "hca",
   "pages": [
-    "index",
     "add-deposit",
     "authorize-session",
     "check-session-calls",

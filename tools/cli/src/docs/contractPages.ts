@@ -241,7 +241,7 @@ export const contractsReference = (
       "reference/contracts/meta.json",
       meta({
         title: "Contracts",
-        pages: ["index", "abis", "deployments", "interface-ids", "roles", "entry-points"],
+        pages: ["abis", "deployments", "interface-ids", "roles", "entry-points"],
       }),
     ],
     ["reference/contracts/abis.mdx", abisPage(runtime["Abis"], docs, resolve)],

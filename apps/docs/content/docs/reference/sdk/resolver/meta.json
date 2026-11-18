@@ -1,7 +1,6 @@
 {
   "title": "resolver",
   "pages": [
-    "index",
     "create",
     "get",
     "get-link",

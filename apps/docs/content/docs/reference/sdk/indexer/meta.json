@@ -1,7 +1,6 @@
 {
   "title": "indexer",
   "pages": [
-    "index",
     "get-events",
     "get-history",
     "get-name",

@@ -1,7 +1,6 @@
 {
   "title": "permission",
   "pages": [
-    "index",
     "check",
     "get",
     "set-record-access"

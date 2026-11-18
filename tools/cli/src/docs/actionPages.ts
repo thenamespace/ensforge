@@ -300,8 +300,11 @@ export const domainPage = (
   const byKind = Arr.groupBy(actions, (action) => kindLabel(action.kind));
   const counts = Arr.map(
     Arr.filter(["Read", "Write", "Signs"], (kind) => byKind[kind] !== undefined),
-    (kind) =>
-      `${byKind[kind]?.length ?? 0} ${kind === "Read" ? "reads" : kind === "Write" ? "writes" : "signing"}`,
+    (kind) => {
+      const count = byKind[kind]?.length ?? 0;
+      const noun = kind === "Read" ? "read" : kind === "Write" ? "write" : "signing";
+      return `${count} ${noun}${count === 1 || kind === "Signs" ? "" : "s"}`;
+    },
   );
   return page(
     {
@@ -311,7 +314,10 @@ export const domainPage = (
     },
     [
       apiMeta({
-        summary: Arr.join([`${actions.length} actions`, ...counts], " · "),
+        summary: Arr.join(
+          [`${actions.length} action${actions.length === 1 ? "" : "s"}`, ...counts],
+          " · ",
+        ),
         since:
           Arr.sort(
             Arr.map(actions, (action) => tagValue(action.doc, "since") ?? "1.0.0"),
