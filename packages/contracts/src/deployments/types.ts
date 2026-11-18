@@ -310,6 +310,8 @@ export interface Capabilities {
  * @stability stable
  * @since 1.0.0
  */
+// `hca` is the experimental `V2Hca`, as @ensforge/hca is for 1.0; the rest of V2 is stable.
+// oxlint-disable-next-line effecttsgo/api-stability-leak
 export interface V2 {
   /** Stable identifier, e.g. `mainnet-v2`. */
   readonly id: string;

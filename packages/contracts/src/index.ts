@@ -10,6 +10,8 @@ export * as Abis from "./Abis.js";
  *
  * @stability stable
  */
+// Stable apart from the HCA contracts (`V2Hca`, `V2.hca`), experimental like @ensforge/hca.
+// oxlint-disable-next-line effecttsgo/api-stability-leak
 export * as Deployments from "./Deployments.js";
 
 /**

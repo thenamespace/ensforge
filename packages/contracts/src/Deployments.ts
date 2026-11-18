@@ -46,6 +46,8 @@ export type {
   V2Hca,
   V2PaymentTokens,
   Capabilities,
+  // `V2.hca` is the experimental `V2Hca` (see `V2`).
+  // oxlint-disable-next-line effecttsgo/api-stability-leak
   V2,
   Profile,
 } from "./deployments/types.js";
@@ -101,6 +103,7 @@ export const list = (): readonly Profile[] => builtIn;
  * @stability stable
  * @since 1.0.0
  */
+// @ensforge/contracts is runtime-neutral (no Effect); `_tag` still lets Effect users catch it.
 export class InvalidProfileError extends Error {
   override readonly name = "Deployments.InvalidProfileError";
   readonly _tag = "Deployments.InvalidProfileError";
@@ -274,11 +277,11 @@ const validateGroup = (
     return;
   }
 
-  const entries = group as Readonly<Record<string, unknown>>;
   for (const key of keys.required) {
-    if (entries[key] === undefined) issues.push(`${path}.${key} is required`);
+    if (Reflect.get(group, key) === undefined) issues.push(`${path}.${key} is required`);
   }
-  for (const [key, value] of Object.entries(entries)) {
+  for (const key of Object.keys(group)) {
+    const value: unknown = Reflect.get(group, key);
     if (!keys.required.includes(key) && !keys.optional.includes(key))
       issues.push(`${path}.${key} is not a known contract`);
     else if (value !== undefined && (typeof value !== "string" || !addressPattern.test(value))) {
@@ -325,7 +328,7 @@ const validateV2 = (deployment: V2, chainId: number, issues: string[]): void => 
   if (deployment.protocol !== "v2") issues.push('v2.protocol must be "v2"');
 
   for (const [group, keys] of Object.entries(v2GroupKeys)) {
-    const value = deployment[group as keyof typeof v2GroupKeys];
+    const value: unknown = Reflect.get(deployment, group);
     if (value === undefined && ["dns", "hca", "paymentTokens"].includes(group)) continue;
     validateGroup(`v2.${group}`, value, keys, issues);
   }
@@ -336,9 +339,8 @@ const validateV2 = (deployment: V2, chainId: number, issues: string[]): void => 
     return;
   }
 
-  const flags = capabilities as Readonly<Record<string, unknown>>;
   for (const [flag, allowed] of Object.entries(capabilityValues)) {
-    if (!(allowed as readonly unknown[]).includes(flags[flag])) {
+    if (!(allowed as readonly unknown[]).includes(Reflect.get(capabilities, flag))) {
       issues.push(
         `v2.capabilities.${flag} must be one of ${allowed.map((value) => JSON.stringify(value)).join(", ")}`,
       );
