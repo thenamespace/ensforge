@@ -1,4 +1,4 @@
-import { isAddressEqual, type Address, type Hex } from "viem";
+import { isAddressEqual, zeroAddress, type Address, type Hex } from "viem";
 
 import {
   CommitmentError,
@@ -66,6 +66,20 @@ export const revertMap: Readonly<Record<string, Mapper>> = {
   EACCannotRevokeRoles: cannotGrantRoles,
   EACInvalidRoleBitmap: ([roleBitmap]) =>
     new InvalidInputError({ code: "INVALID_ROLES", input: roleBitmap }),
+  // Each role counts its holders in four bits.
+  EACMaxAssignees: ([, roleBitmap]) =>
+    new InvalidInputError({
+      code: "INVALID_ROLES",
+      input: roleBitmap,
+      shortMessage: "A role already has the maximum of 15 holders.",
+    }),
+  EACInvalidAccount: () =>
+    new InvalidInputError({
+      code: "INVALID_ADDRESS",
+      input: zeroAddress,
+      field: "account",
+      shortMessage: "Roles cannot be granted to the zero address.",
+    }),
   Unauthorised: notOwner,
   OwnableUnauthorizedAccount: notOwner,
   ERC1155InsufficientBalance: notOwner,

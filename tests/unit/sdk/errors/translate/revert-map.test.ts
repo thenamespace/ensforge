@@ -16,6 +16,8 @@ const expected: Readonly<Record<string, { readonly _tag: string; readonly code: 
   EACCannotGrantRoles: { _tag: "UnauthorizedError", code: "CANNOT_GRANT_ROLES" },
   EACCannotRevokeRoles: { _tag: "UnauthorizedError", code: "CANNOT_GRANT_ROLES" },
   EACInvalidRoleBitmap: { _tag: "InvalidInputError", code: "INVALID_ROLES" },
+  EACMaxAssignees: { _tag: "InvalidInputError", code: "INVALID_ROLES" },
+  EACInvalidAccount: { _tag: "InvalidInputError", code: "INVALID_ADDRESS" },
   Unauthorised: { _tag: "UnauthorizedError", code: "NOT_OWNER" },
   OwnableUnauthorizedAccount: { _tag: "UnauthorizedError", code: "NOT_OWNER" },
   ERC1155InsufficientBalance: { _tag: "UnauthorizedError", code: "NOT_OWNER" },
