@@ -32,7 +32,7 @@ export function Hero() {
       />
       <div
         data-hero-content=""
-        className="relative mx-auto flex min-h-[108svh] md:min-h-[92svh] w-full max-w-[1400px] flex-col items-center justify-center gap-7 px-5 pt-32 pb-24 text-center md:px-8"
+        className="relative mx-auto flex min-h-[135svh] md:min-h-[max(100svh,56.25rem)] w-full max-w-[1400px] flex-col items-center justify-center gap-7 px-5 pt-32 pb-24 text-center md:px-8 md:pt-44 md:pb-36"
       >
         <p className="flex animate-ek-rise items-center gap-2.5 rounded-full border border-(--ek-line) bg-fd-background px-3 py-1 text-sm text-fd-muted-foreground">
           <img

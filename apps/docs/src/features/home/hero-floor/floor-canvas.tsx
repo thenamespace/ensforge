@@ -3,7 +3,7 @@ import { useEffect, useRef } from "react";
 import { SIN } from "@/components/marketing/iso";
 import { cn } from "@/lib/cn";
 
-import { CELL, type FloorLayout, PLANE, toScreen } from "./layout";
+import { CELL, type FloorLayout, PLANE, toPlane, toScreen } from "./layout";
 import { type FloorName, floorNames } from "./names";
 
 /**
@@ -25,10 +25,40 @@ const TYPE_DELAY_MS = 250;
 const POP_MS = 320;
 const accentVars = ["--ens-blue", "--ens-sky", "--ens-contracts", "--ens-react", "--ens-hca"];
 
-interface Plate {
-  /** Its first grid cell. */
+/** A grid cell: a plate's first cell along u, and its row along v. */
+interface Cell {
   readonly i: number;
   readonly j: number;
+}
+
+/**
+ * Hand-picked spots for plates, as fractions of the hero's width and height: a loose ring round
+ * the headline, a little uneven so it does not look mirrored. Each snaps to the nearest grid cell.
+ */
+const desktopAnchors: readonly (readonly [x: number, y: number])[] = [
+  [0.115, 0.18],
+  [0.33, 0.18],
+  [0.67, 0.18],
+  [0.885, 0.18],
+  [0.115, 0.4],
+  [0.115, 0.62],
+  [0.115, 0.84],
+  [0.88, 0.38],
+  [0.87, 0.58],
+  [0.885, 0.81],
+  [0.3, 0.86],
+  [0.5, 0.89],
+  [0.7, 0.86],
+];
+/** Phones: two above the text and two below. */
+const phoneAnchors: readonly (readonly [x: number, y: number])[] = [
+  [0.4, 0.12],
+  [0.6, 0.27],
+  [0.4, 0.75],
+  [0.6, 0.9],
+];
+
+interface Plate extends Cell {
   readonly entry: FloorName;
   readonly accent: string;
   /** How bright it sits, so some plates read nearer than others. */
@@ -107,7 +137,12 @@ export function FloorCanvas({
     // A plate may sit where all its corners are on screen, clear of the headline, with no other
     // plate in its cells or the ring of cells around them.
     const plates: Plate[] = [];
-    const fits = (i: number, j: number) => {
+    /** Whether two plates' cells, with the ring of cells around them, overlap. */
+    const touch = (a: Cell, b: Cell) =>
+      !(a.i > b.i + SPAN || a.i + SPAN < b.i || a.j > b.j + 1 || a.j + 1 < b.j);
+
+    // A slot must have all its corners on screen and keep clear of the headline block.
+    const clearOfText = ({ i, j }: Cell) => {
       const u = i * CELL;
       const v = j * CELL;
       const corners = [
@@ -127,40 +162,55 @@ export function FloorCanvas({
           y > clear.top - 20 &&
           y < clear.bottom + 20,
       );
-      if (!onScreen || onHeadline) return false;
 
-      return plates.every(
-        (plate) => i > plate.i + SPAN || i + SPAN < plate.i || j > plate.j + 1 || j + 1 < plate.j,
-      );
+      return onScreen && !onHeadline;
+    };
+
+    // The curated slots, snapped to the grid cell whose plate centre is nearest the anchor.
+    // Slots that would leave the screen, cover the text or touch an earlier slot are dropped.
+    const slots: Cell[] = [];
+    for (const [fx, fy] of compact ? phoneAnchors : desktopAnchors) {
+      const [u, v] = toPlane(width, height, fx * width, fy * height);
+      const cell = {
+        i: Math.round((u - (SPAN * CELL) / 2) / CELL),
+        j: Math.round((v - CELL / 2) / CELL),
+      };
+      if (clearOfText(cell) && slots.every((slot) => !touch(slot, cell))) slots.push(cell);
+    }
+
+    // Quadrant of a slot around the hero's centre, so plates spread evenly round the text.
+    const quadrant = ({ i, j }: Cell) => {
+      const [x, y] = project(i * CELL + (SPAN * CELL) / 2, j * CELL + CELL / 2);
+      return (x < width / 2 ? 0 : 1) + (y < height / 2 ? 0 : 2);
     };
 
     let used = 0;
     const spawn = (time: number, random: () => number, age = 0): Plate | undefined => {
-      for (let attempt = 0; attempt < 200; attempt++) {
-        const i = Math.floor((random() * 2 - 1) * reach);
-        const j = Math.floor((random() * 2 - 1) * reach);
-        if (!fits(i, j)) continue;
+      const free = slots.filter((slot) => plates.every((plate) => !touch(plate, slot)));
+      if (free.length === 0) return undefined;
 
-        const entry = floorNames[used++ % floorNames.length];
-        if (!entry) return undefined;
+      // Prefer the quadrant with the fewest plates, so the floor never fills up on one side.
+      const counts = [0, 0, 0, 0];
+      for (const plate of plates) counts[quadrant(plate)] = (counts[quadrant(plate)] ?? 0) + 1;
+      const fewest = Math.min(...free.map((slot) => counts[quadrant(slot)] ?? 0));
+      const choices = free.filter((slot) => (counts[quadrant(slot)] ?? 0) === fewest);
+      const slot = choices[Math.floor(random() * choices.length)];
+      const entry = floorNames[used++ % floorNames.length];
+      if (!slot || !entry) return undefined;
 
-        return {
-          i,
-          j,
-          entry,
-          accent: accents[Math.floor(random() * accents.length)] ?? ink,
-          depth: 0.7 + random() * 0.3,
-          born: time - age,
-          life: 10_000 + random() * 4000,
-        };
-      }
-
-      return undefined;
+      return {
+        ...slot,
+        entry,
+        accent: accents[Math.floor(random() * accents.length)] ?? ink,
+        depth: 0.7 + random() * 0.3,
+        born: time - age,
+        life: 10_000 + random() * 4000,
+      };
     };
 
-    // The canvas draws only after mount, so plain randomness cannot upset hydration; every load
-    // starts from a different scatter.
-    const target = compact ? 4 : 9;
+    // The canvas draws only after mount, so plain randomness cannot upset hydration.
+    // Fewer plates than slots, so each new name rises somewhere else.
+    const target = compact ? 3 : 9;
     const start = performance.now();
     for (let index = 0; index < target; index++) {
       // Spread the first plates through their lives, so they do not all rise together.
