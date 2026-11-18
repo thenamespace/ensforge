@@ -10,7 +10,7 @@ import { Workspace } from "../services/Workspace.ts";
 
 // What typical apps import, bundled from the package that would install them (built `dist`,
 // published exports). viem and React are external: apps already ship them.
-const scenarios: Readonly<Record<string, readonly [pkg: string, source: string]>> = {
+export const scenarios: Readonly<Record<string, readonly [pkg: string, source: string]>> = {
   "sdk: Actions.record.getText": [
     "sdk",
     'import { Actions } from "@ensforge/sdk"; export const read = Actions.record.getText;',
@@ -29,8 +29,34 @@ const scenarios: Readonly<Record<string, readonly [pkg: string, source: string]>
 
 const Budgets = Schema.fromJsonString(Schema.Record(Schema.String, Schema.Finite));
 
-/** Gzipped bytes an app loads up front: the entry and its static imports, not lazy chunks. */
-const measure = Effect.fn("bundleSize.measure")(function* (folder: string, source: string) {
+/** `.config/bundle-budgets.json`. */
+export const readBudgets = Effect.fn("bundleSize.readBudgets")(function* (root: string) {
+  const fs = yield* FileSystem.FileSystem;
+  const path = yield* Path.Path;
+  const budgetsFile = path.join(root, ".config/bundle-budgets.json");
+  return yield* fs.readFileString(budgetsFile).pipe(
+    Effect.flatMap(Schema.decodeUnknownEffect(Budgets)),
+    Effect.mapError((cause) => new SetupError({ message: `${budgetsFile}: ${String(cause)}` })),
+  );
+});
+
+/** Scenarios more than 5% over their budget, or without one. */
+export const overBudget = (
+  sizes: ReadonlyArray<readonly [name: string, size: number]>,
+  budgets: Readonly<Record<string, number>>,
+) =>
+  sizes.flatMap(([name, size]) => {
+    const budget = budgets[name];
+    return budget === undefined || size > budget * 1.05
+      ? [`${name}: ${size} B gzip (budget ${budget ?? "none"} B)`]
+      : [];
+  });
+
+/**
+ * Gzipped bytes an app loads up front: the entry and its static imports, not lazy chunks. Imports
+ * resolve from `folder`, as they would in an app there.
+ */
+export const measure = Effect.fn("bundleSize.measure")(function* (folder: string, source: string) {
   const fs = yield* FileSystem.FileSystem;
   const path = yield* Path.Path;
   yield* fs.remove(folder, { recursive: true, force: true });
@@ -82,13 +108,7 @@ export const bundleSize = Effect.fn("bundleSize")(function* (write: boolean) {
   const workspace = yield* Workspace;
   const fs = yield* FileSystem.FileSystem;
   const path = yield* Path.Path;
-  const budgetsFile = path.join(workspace.root, ".config/bundle-budgets.json");
-  const budgets = write
-    ? {}
-    : yield* fs.readFileString(budgetsFile).pipe(
-        Effect.flatMap(Schema.decodeUnknownEffect(Budgets)),
-        Effect.mapError((cause) => new SetupError({ message: `${budgetsFile}: ${String(cause)}` })),
-      );
+  const budgets = write ? {} : yield* readBudgets(workspace.root);
 
   const sizes = yield* Effect.forEach(
     Object.entries(scenarios),
@@ -103,18 +123,13 @@ export const bundleSize = Effect.fn("bundleSize")(function* (write: boolean) {
   for (const [name, size] of sizes) yield* Console.log(`${String(size).padStart(8)} B  ${name}`);
   if (write) {
     yield* fs.writeFileString(
-      budgetsFile,
+      path.join(workspace.root, ".config/bundle-budgets.json"),
       `${JSON.stringify(Object.fromEntries(sizes), null, 2)}\n`,
     );
     return yield* Console.log("bundle-size: budgets written");
   }
 
-  const problems = sizes.flatMap(([name, size]) => {
-    const budget = budgets[name];
-    return budget === undefined || size > budget * 1.05
-      ? [`${name}: ${size} B gzip (budget ${budget ?? "none"} B)`]
-      : [];
-  });
+  const problems = overBudget(sizes, budgets);
   if (problems.length > 0) return yield* new CheckFailed({ check: "bundle-size", problems });
   yield* Console.log("bundle-size: ok");
 });
