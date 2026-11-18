@@ -968,6 +968,9 @@ importers:
       '@ensforge/contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
+      '@ensforge/docs':
+        specifier: workspace:*
+        version: link:../../apps/docs
       '@ensforge/hca':
         specifier: workspace:*
         version: link:../../packages/hca

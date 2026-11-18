@@ -42,6 +42,12 @@ const tools = {
   test: { name: "tools:unit", root: "tests/unit", include: ["tools/**/*.test.ts"] },
 };
 
+// Pure analytics helpers of the docs site.
+const docs = {
+  extends: true as const,
+  test: { name: "docs:unit", root: "tests/unit", include: ["docs/**/*.test.ts"] },
+};
+
 // Chain lane: every profile on a local anvil (`pnpm test:chain`; needs Foundry, see
 // tests/devnet/foundry-version). Not part of `pnpm test`.
 const devnet = {
@@ -168,6 +174,7 @@ export default defineConfig({
       ...Arr.flatMap(packages, (name) => [unit(name), types(name)]),
       wagmi2,
       tools,
+      docs,
       devnet,
       fixturesUnit,
       fixturesChain,

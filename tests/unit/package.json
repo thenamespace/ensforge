@@ -13,6 +13,7 @@
     "@effect/platform-node": "catalog:",
     "@effect/vitest": "catalog:",
     "@ensforge/contracts": "workspace:*",
+    "@ensforge/docs": "workspace:*",
     "@ensforge/hca": "workspace:*",
     "@ensforge/react": "workspace:*",
     "@ensforge/sdk": "workspace:*",
