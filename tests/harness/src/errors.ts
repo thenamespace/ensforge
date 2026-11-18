@@ -10,12 +10,22 @@ type Tagged<E, Tag extends string> = [Extract<E, { readonly _tag: Tag }>] extend
   : Extract<E, { readonly _tag: Tag }>;
 
 /**
+ * The tags `E` declares, so that a literal expected tag outside an action's `ErrorType` does not
+ * compile; a tag only known at runtime (`string`) is checked when the test runs.
+ */
+type Declared<E, Tag extends string> = string extends Tag
+  ? string
+  : E extends { readonly _tag: infer tag extends string }
+    ? tag
+    : string;
+
+/**
  * Runs `effect`, expects it to fail with an ensforge error matching `expected`, and returns that
  * error, narrowed to its class, for further assertions. A success fails the test with the value.
  */
 export const expectFailure = <A, E, const Tag extends string>(
   effect: Effect.Effect<A, E>,
-  expected: { readonly _tag: Tag; readonly code?: string | undefined },
+  expected: { readonly _tag: Tag & NoInfer<Declared<E, Tag>>; readonly code?: string | undefined },
 ): Effect.Effect<Tagged<E, Tag>, A> =>
   Effect.flip(effect).pipe(
     Effect.map((error) => {

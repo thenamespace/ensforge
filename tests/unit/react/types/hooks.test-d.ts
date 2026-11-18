@@ -1,6 +1,13 @@
 import { describe, expectTypeOf, it } from "@effect/vitest";
 
-import { useRead, useRecords, useSignClaim, useWrite, useInfiniteRead } from "@ensforge/react";
+import {
+  useRead,
+  useRecords,
+  useSignClaim,
+  useText,
+  useWrite,
+  useInfiniteRead,
+} from "@ensforge/react";
 import { Actions, type Errors, type Write } from "@ensforge/sdk";
 import { Actions as EffectActions } from "@ensforge/sdk/effect";
 
@@ -17,6 +24,12 @@ describe("read hooks", () => {
   it("type errors from an Effect action's error channel", () => {
     const { error } = useRead(EffectActions.record.getText, { name: "nick.eth", key: "url" });
     expectTypeOf(error).toEqualTypeOf<EffectActions.record.getText.ErrorType | undefined>();
+  });
+
+  it("type a named hook's errors from its action's ErrorType", () => {
+    expectTypeOf(useText({ name: "nick.eth", key: "url" }).error).toEqualTypeOf<
+      Actions.record.getText.ErrorType | undefined
+    >();
   });
 
   it("narrow records to the selection", () => {

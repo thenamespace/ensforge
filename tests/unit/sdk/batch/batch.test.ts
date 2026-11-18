@@ -17,6 +17,7 @@ import {
   encodeErrorResult,
   encodeFunctionResult,
   getAddress,
+  parseAbi,
 } from "viem";
 import { mainnet } from "viem/chains";
 
@@ -37,9 +38,9 @@ const clientFor = (options: Omit<CreateOptions, "publicClient"> = {}) => {
         return {
           success: false,
           returnData: encodeErrorResult({
-            abi: Abis.shared.errors,
-            errorName: "OwnableUnauthorizedAccount",
-            args: [owner],
+            abi: parseAbi(["error Error(string)"]),
+            errorName: "Error",
+            args: ["lookup failed"],
           }),
         };
       }
@@ -151,7 +152,7 @@ describe("batch failure isolation", () => {
       assert.deepStrictEqual(last, { status: "success", result: false });
       assert.strictEqual(failed.status, "failure");
       if (failed.status === "failure") {
-        assert.strictEqual(failed.error.code, "NOT_OWNER");
+        assert.strictEqual(failed.error.code, "CONTRACT_REVERTED");
         assert.strictEqual(failed.error.context.operation, "approval.getOperator");
         assert.strictEqual(failed.error.context.contract, contract);
       }
@@ -237,7 +238,7 @@ describe("batch with allowFailure: false", () => {
           requests: [operatorRequest(approved), operatorRequest(reverting)],
           allowFailure: false,
         }),
-        { _tag: "UnauthorizedError", code: "NOT_OWNER" },
+        { _tag: "ContractRevertError", code: "CONTRACT_REVERTED" },
       );
     }),
   );

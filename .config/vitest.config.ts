@@ -12,7 +12,7 @@ const unit = (name: (typeof packages)[number]) => ({
     root: "tests/unit",
     include: [`${name}/**/*.test.{ts,tsx}`],
     exclude: [`${name}/types/**`],
-    setupFiles: ["../harness/src/setup.ts"],
+    setupFiles: ["../harness/src/setup.ts", "../harness/src/error-types.ts"],
     // React hooks render in jsdom; files that check server rendering opt into `node` per file.
     ...(name === "react" ? { environment: "jsdom" } : {}),
   },
@@ -26,7 +26,7 @@ const wagmi2 = {
     name: "sdk-wagmi2:unit",
     root: "tests/unit",
     include: ["sdk/wagmi/**/*.test.ts"],
-    setupFiles: ["../harness/src/setup.ts"],
+    setupFiles: ["../harness/src/setup.ts", "../harness/src/error-types.ts"],
   },
 };
 
@@ -60,6 +60,7 @@ const fixturesChain = {
     name: "fixtures",
     root: "tests/fixtures",
     include: ["test/chain/**/*.test.ts"],
+    setupFiles: ["../harness/src/error-types.ts"],
     testTimeout: 60_000,
     hookTimeout: 300_000,
   },
@@ -72,6 +73,7 @@ const integration = {
     name: "integration",
     root: "tests/integration",
     include: ["test/**/*.test.ts"],
+    setupFiles: ["../harness/src/error-types.ts"],
     testTimeout: 60_000,
     hookTimeout: 300_000,
   },
@@ -84,6 +86,7 @@ const fuzz = {
     name: "fuzz",
     root: "tests/fuzz",
     include: ["test/**/*.test.ts"],
+    setupFiles: ["../harness/src/error-types.ts"],
     testTimeout: 3_600_000,
     hookTimeout: 300_000,
   },
@@ -96,6 +99,7 @@ const services = {
     name: "services",
     root: "tests/services",
     include: ["test/**/*.test.ts"],
+    setupFiles: ["../harness/src/error-types.ts"],
     testTimeout: 600_000,
     hookTimeout: 900_000,
     // One stack per file; several at once would compete for the emulated indexer.
