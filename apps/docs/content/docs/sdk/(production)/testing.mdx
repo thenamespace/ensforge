@@ -1,6 +1,178 @@
 ---
 title: Test your integration
-description: Placeholder, to be written.
+description: Test code that uses ensforge against a local anvil fork, with test doubles for indexers, storage and errors.
+keywords: [testing, anvil, fork, impersonateAccount, defineIndexer, memoryStorage, vitest]
 ---
 
-Placeholder: this page is not written yet.
+The most faithful test of an ENS integration runs it against a copy of the real chain. This guide
+sets up a local fork with anvil, sends a write on it, and shows what to replace with test doubles
+in unit tests.
+
+## Prerequisites
+
+- [Foundry](https://book.getfoundry.sh) for `anvil`.
+- An archive-capable RPC URL for the chain you fork.
+
+## 1. Start a fork
+
+A fork keeps the chain ID of the chain it copies, so ensforge picks the right ENS deployment with no
+extra configuration.
+
+```sh title="terminal"
+anvil --fork-url "$MAINNET_RPC_URL" --fork-block-number 26441000
+```
+
+Pin `--fork-block-number` so the state your tests read does not change. Anvil fetches state on
+demand, so a rate-limited RPC can slow a run. Anvil's `--compute-units-per-second` option throttles
+its requests.
+
+## 2. Point ensforge at the fork
+
+Create the clients against the local URL and use viem's test client to control the chain.
+
+**Example** (Clients for a mainnet fork)
+
+```ts twoslash title="fork.ts"
+import { Ensforge, ensActions } from "@ensforge/sdk";
+import { createPublicClient, createTestClient, createWalletClient, http } from "viem";
+import { mainnet } from "viem/chains";
+
+const transport = http("http://127.0.0.1:8545");
+
+export const publicClient = createPublicClient({ chain: mainnet, transport });
+export const testClient = createTestClient({ chain: mainnet, mode: "anvil", transport });
+
+export const forkEns = (account: `0x${string}`) =>
+  Ensforge.create({
+    publicClient,
+    walletClient: createWalletClient({ chain: mainnet, transport, account }),
+  }).extend(ensActions());
+```
+
+`createWalletClient` with an address as `account` makes viem ask the node to sign, which works for
+accounts the node controls or impersonates.
+
+## 3. Write as an existing owner
+
+Impersonate the owner of a real name, fund the account, and send the write.
+
+**Example** (Changing a record on a fork)
+
+```ts twoslash title="fork-write.ts"
+import { Ensforge, ensActions } from "@ensforge/sdk";
+import { createPublicClient, createTestClient, createWalletClient, http, parseEther } from "viem";
+import { mainnet } from "viem/chains";
+
+const transport = http("http://127.0.0.1:8545");
+const publicClient = createPublicClient({ chain: mainnet, transport });
+const testClient = createTestClient({ chain: mainnet, mode: "anvil", transport });
+const reader = Ensforge.create({ publicClient }).extend(ensActions());
+
+// ---cut---
+const state = await reader.name.get({ name: "nick.eth" });
+const owner = state.owner;
+if (owner === null) throw new Error("nick.eth has no owner on this fork");
+
+await testClient.impersonateAccount({ address: owner });
+await testClient.setBalance({ address: owner, value: parseEther("10") });
+
+const ens = Ensforge.create({
+  publicClient,
+  walletClient: createWalletClient({ chain: mainnet, transport, account: owner }),
+}).extend(ensActions());
+
+await ens.record.setSync({ name: "nick.eth", texts: { url: "https://example.com" } });
+
+await ens.record.getText({ name: "nick.eth", key: "url" }); // "https://example.com"
+```
+
+<Callout type="warn" title="Anvil's default accounts can have code on a real network">
+On a fork of a real network, anvil's well-known accounts may carry contract code (for example EIP-7702
+delegations), and then reject token callbacks. If a test that registers or receives a name reverts,
+clear the account's code first with `testClient.setCode({ address, bytecode: "0x" })`.
+</Callout>
+
+## 4. Move time forward
+
+A registration waits for the registrar's commitment age on chain time, and a fork's time only moves
+with its blocks. Use `onStep` to advance it when a step waits.
+
+**Example** (Skipping a registration wait)
+
+```ts twoslash title="fork-wait.ts"
+import { Duration, Ensforge, ensActions } from "@ensforge/sdk";
+import { createPublicClient, createTestClient, createWalletClient, http } from "viem";
+import { mainnet } from "viem/chains";
+
+const transport = http("http://127.0.0.1:8545");
+const publicClient = createPublicClient({ chain: mainnet, transport });
+const testClient = createTestClient({ chain: mainnet, mode: "anvil", transport });
+declare const account: `0x${string}`;
+const ens = Ensforge.create({
+  publicClient,
+  walletClient: createWalletClient({ chain: mainnet, transport, account }),
+}).extend(ensActions());
+
+// ---cut---
+await ens.registration.registerSync({
+  names: "my-test-name.eth",
+  duration: Duration.years(1),
+  onStep: async ({ status, step }) => {
+    if (status !== "waiting" || step.waitFor === undefined) return;
+    await testClient.increaseTime({ seconds: Number(step.waitFor.seconds) });
+    await testClient.mine({ blocks: 1 });
+  },
+});
+```
+
+Isolate tests from each other with `testClient.snapshot()` before and `testClient.revert({ id })`
+after.
+
+## Use test doubles in unit tests
+
+Fast tests should not need a chain. Replace the parts that reach outside:
+
+- **An indexer.** `defineIndexer` builds an indexer from your own functions. See
+  [Custom indexers](/docs/sdk/custom-indexers).
+- **Plan storage.** The default `Plan.memoryStorage()` is already a fresh store per client. Pass
+  your own `Plan.Storage` to check what a write saves.
+- **Errors.** Error classes can be built directly, so you can test how your UI reacts.
+
+**Example** (Testing UI copy for a failure)
+
+```ts twoslash title="errors.test.ts"
+import { Errors } from "@ensforge/sdk";
+
+const error = new Errors.NotFoundError({
+  code: "RECORD_NOT_FOUND",
+  context: { name: "alice.eth" },
+});
+
+Errors.describe(error).title;
+Errors.hasCode("RECORD_NOT_FOUND")(error); // true
+```
+
+To test your own wrapper around ensforge without any chain, depend on a small interface of the
+actions you use and fake it in tests. Run the real actions only in the fork lane.
+
+## Check the result
+
+Run your tests twice against the pinned fork. The second run should read the same state and pass.
+
+## Troubleshooting
+
+### `UNKNOWN_CHAIN`
+
+The fork or devnet has a chain ID ensforge does not ship. Pass `deployment` to `Ensforge.create`.
+See [`UNKNOWN_CHAIN`](/docs/sdk/errors/UNKNOWN_CHAIN) and
+[Create a client](/docs/sdk/create-a-client).
+
+### `CONTRACT_NOT_DEPLOYED`
+
+The fork has no ENS contracts at the pinned block, or the clients point at the wrong chain. See
+[`CONTRACT_NOT_DEPLOYED`](/docs/sdk/errors/CONTRACT_NOT_DEPLOYED).
+
+### `RATE_LIMITED` while forking
+
+Anvil reads state from the upstream RPC on demand. Pin the block so anvil can cache, and throttle
+it with `--compute-units-per-second`. See [`RATE_LIMITED`](/docs/sdk/errors/RATE_LIMITED).

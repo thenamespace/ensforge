@@ -1,6 +1,175 @@
 ---
 title: Extend the client
-description: Placeholder, to be written.
+description: Add your own action group to an ensforge client, or write a route for writes, with the unstable extension entry.
+keywords:
+  [extension, extend, decorator, Action.promise, Write.Via, route, "@ensforge/sdk/extension"]
 ---
 
-Placeholder: this page is not written yet.
+ensforge clients are extended with **decorators**: functions that add a group of actions, such as
+`ensActions()` or `hcaActions()`. This page shows how to write your own, and how to write a route
+(`via`) for writes.
+
+<Callout type="warn" title="Unstable API">
+  The exports of `@ensforge/sdk/extension` are marked `unstable`. They can change or be removed in
+  any minor release, and each change is described in its changeset. `Write.Via` and `client.extend`
+  are stable. Pin the SDK version if you depend on the extension entry.
+</Callout>
+
+## Prerequisites
+
+- Read [Ways to call actions](/docs/sdk/ways-to-call-actions) for the client, standalone and Effect
+  forms of an action.
+- Familiarity with Effect's `Effect.fn`. Actions are implemented as Effects and wrapped as Promises.
+
+## How an action is built
+
+Each ensforge action has three layers:
+
+1. An Effect implementation that takes the client and the options.
+2. A Promise function that runs the implementation with `Action.promise`, so a bare viem client
+   works and errors carry context.
+3. A decorator that binds the client, so `ens.group.action(options)` works.
+
+## 1. Write the Effect implementation
+
+The implementation fails only with ensforge errors (`AnyError`). `Action.withContext` adds the
+action's path, name, account and chain to every error, so Promise and Effect users see the same
+`error.context`.
+
+**Example** (A profile read built from two actions)
+
+```ts twoslash title="profile/effect.ts"
+import { Actions } from "@ensforge/sdk/effect";
+import { Action, type AnyError, type Client } from "@ensforge/sdk/extension";
+import { Effect } from "effect";
+
+export type Options = { name: string };
+
+export const get = Effect.fn("my.profile.get")(function* (
+  client: Client,
+  options: Options,
+): Effect.fn.Return<{ address: string | null; url: string | null }, AnyError> {
+  const address = yield* Actions.record.getAddress(client, { name: options.name });
+  const url = yield* Actions.record.getText(client, { name: options.name, key: "url" });
+  return { address, url };
+}, Action.withContext("profile.get"));
+```
+
+## 2. Wrap it as a Promise
+
+`Action.promise(path, implementation, client, options)` accepts an ensforge client or a bare viem
+client, rejects with `signal.reason` when the call is aborted, and otherwise rejects with an
+ensforge error.
+
+```ts twoslash title="profile/index.ts"
+import { Actions } from "@ensforge/sdk/effect";
+import { Action, type AnyError, type Client, type Like } from "@ensforge/sdk/extension";
+import { Effect } from "effect";
+
+type Options = { name: string };
+type Profile = { address: string | null; url: string | null };
+
+const getImpl = Effect.fn("my.profile.get")(function* (
+  client: Client,
+  options: Options,
+): Effect.fn.Return<Profile, AnyError> {
+  const address = yield* Actions.record.getAddress(client, { name: options.name });
+  const url = yield* Actions.record.getText(client, { name: options.name, key: "url" });
+  return { address, url };
+}, Action.withContext("profile.get"));
+
+// ---cut---
+export function get(client: Like, options: Options): Promise<Profile> {
+  return Action.promise("profile.get", getImpl, client, options);
+}
+
+get.path = "profile.get" as const;
+```
+
+## 3. Add the decorator
+
+A decorator is a function that takes the client and returns the groups to add. Add it with
+`client.extend`.
+
+```ts twoslash title="profile/decorator.ts"
+import { Ensforge, ensActions } from "@ensforge/sdk";
+import type { Client, Like } from "@ensforge/sdk/extension";
+import { createPublicClient, http } from "viem";
+import { mainnet } from "viem/chains";
+
+declare const get: (client: Like, options: { name: string }) => Promise<{ url: string | null }>;
+
+// ---cut---
+const profileActions = () => (client: Client<object>) => ({
+  profile: { get: (options: { name: string }) => get(client, options) },
+});
+
+const publicClient = createPublicClient({ chain: mainnet, transport: http() });
+const ens = Ensforge.create({ publicClient }).extend(ensActions()).extend(profileActions());
+
+const { url } = await ens.profile.get({ name: "nick.eth" });
+```
+
+Group names must not be `chain`, `account`, `deployment`, `publicClient`, `config` or `extend`. A
+decorator that uses one throws [`INVALID_ACTION_GROUP`](/docs/sdk/errors/INVALID_ACTION_GROUP).
+Groups with the same name merge, so you can add actions to an existing group.
+
+For a write, the same pattern applies with `Action.write(path, planner)`, which gives you the
+action, its `…Sync` form and `.prepare`, `.simulate` and `.estimateGas` from one planner, and
+`makePlan` to build the plan. `@ensforge/hca` is the reference extension: see its source.
+
+## Write a route
+
+A route (`via`) changes how a plan is sent. It is a plain object, and `Write.Via` is stable.
+
+| Member                       | Purpose                                                                                                                                             |
+| ---------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `id`                         | Name shown in progress and errors.                                                                                                                  |
+| `sender(context)`            | The account the calls run as (`msg.sender`), when it is not the signer.                                                                             |
+| `prepare(plan, context)`     | Rewrites the plan before it is simulated or sent. The plan's id stays the same. Steps marked `from: "signer"` must stay transactions of the signer. |
+| `send(step, context)`        | Sends one step itself and returns a reference to follow it, such as a UserOperation hash.                                                           |
+| `status(reference, context)` | Reports `pending`, `success` with hashes, or `failed` for a step sent with `send`.                                                                  |
+
+Without `send`, the signer sends the rewritten plan as usual.
+
+**Example** (A route that adds a warning)
+
+```ts twoslash title="route.ts"
+import type { Write } from "@ensforge/sdk";
+
+export const audited: Write.Via = {
+  id: "audited",
+  prepare: async (plan) => ({
+    ...plan,
+    warnings: [...plan.warnings, { code: "AUDITED", message: "Sent through the audit route." }],
+  }),
+};
+```
+
+Pass it as `via: audited` to any write, `.prepare`, `.simulate` or `.estimateGas`. A route fails with
+its own errors, which are outside the action's `ErrorType`. See
+[Use smart accounts](/docs/sdk/use-smart-accounts).
+
+## Other building blocks
+
+The entry also exports `from` (wrap a viem client), `withDefaults` and `fromCause` for errors,
+`requireAddress`, `Rpc` helpers, `receiptsOf` and `waitForReceipts`, `resolveSigner`,
+`simulatePlan` and `simulateStep`, and `makePlan`. They are not documented further because they can
+change.
+
+## Check the result
+
+Call `ens.profile.get` with an ensforge client and with a bare viem client through the standalone
+function. Both should return the same value.
+
+## Troubleshooting
+
+### `INVALID_ACTION_GROUP`
+
+The decorator returned a reserved group name. Rename the group. See
+[`INVALID_ACTION_GROUP`](/docs/sdk/errors/INVALID_ACTION_GROUP).
+
+### A type error after upgrading
+
+Extension exports are unstable and can change in a minor release. Read the changeset for the
+version you upgraded to.

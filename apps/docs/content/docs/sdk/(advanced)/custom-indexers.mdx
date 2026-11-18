@@ -1,6 +1,221 @@
 ---
 title: Custom indexers
-description: Placeholder, to be written.
+description: Build an indexer from your own data source with defineIndexer, and combine it with bigname or Goldsky.
+keywords: [defineIndexer, Indexer.define, adapter, fallback, paginate, test double, indexer]
 ---
 
-Placeholder: this page is not written yet.
+An **indexer** is a service that has already collected ENS data into a searchable form, so
+`ens.indexer.getSubnames` or `getNamesForAddress` can answer in one request. ensforge ships
+`bigname()` and `goldsky()`. `defineIndexer` lets you serve the same actions from your own API,
+database or test data.
+
+## Prerequisites
+
+- Know what an indexer is and how to connect one. See
+  [Connect an indexer](/docs/sdk/connect-an-indexer) and
+  [Name lists and indexers](/docs/sdk/name-lists-and-indexers).
+- A data source you can query from TypeScript.
+
+## When to write one
+
+Use `defineIndexer` when your data source does not speak bigname's REST API. If it does, such as a
+self-hosted bigname or a proxy, pass its URL to `bigname({ url })` instead.
+
+## 1. Define the adapter
+
+An adapter is an `id` and the queries it answers, as Promise functions. Implement only the queries
+you serve. The others fail with [`INDEXER_UNSUPPORTED`](/docs/sdk/errors/INDEXER_UNSUPPORTED), which
+lets `fallback` ask the next indexer.
+
+**Example** (An adapter for an in-house subnames API)
+
+```ts twoslash title="in-house.ts"
+import { defineIndexer } from "@ensforge/sdk/indexer";
+import { namehash } from "viem";
+
+declare const api: {
+  subnames(
+    name: string,
+    cursor: string | undefined,
+    options: { signal: AbortSignal | undefined },
+  ): Promise<{ names: string[]; next: string | null }>;
+};
+
+// ---cut---
+export const inHouse = defineIndexer({
+  id: "in-house",
+  getSubnames: async ({ name, cursor }, { signal }) => {
+    const page = await api.subnames(name, cursor, { signal });
+
+    return {
+      items: page.names.map((subname) => ({
+        name: subname,
+        displayName: subname,
+        namespace: "ens",
+        node: namehash(subname),
+        status: null,
+        authority: null,
+        owner: null,
+        manager: null,
+        registeredAt: null,
+        createdAt: null,
+        expiresAt: null,
+        graceEndsAt: null,
+        expiryReason: null,
+        ensV1: null,
+        labelhash: null,
+        subnameCount: null,
+        subregistry: null,
+      })),
+      cursor: page.next,
+      hasMore: page.next !== null,
+      totalCount: null,
+    };
+  },
+});
+```
+
+What the adapter gets and returns:
+
+- The first argument is the query. Actions validate it first: names are normalised, addresses
+  checksummed and the namespace resolved.
+- The second argument has `chainId` (the client's chain) and `signal`, aborted when the call is
+  cancelled. Pass `signal` to your fetches.
+- A page needs `items`, `cursor` (the value to pass back for the next page, or `null`),
+  `hasMore` and `totalCount`.
+- Every answer also has metadata (`asOf`, `snapshots`, `completeness`, `origin` and more). Leave it
+  out and ensforge fills it: no snapshot, `completeness: "full"`, and `indexer` set to your `id`.
+  Set `completeness` yourself when the answer is partial.
+
+The adapter can answer any of these queries: `getName`, `getNamesForAddress`, `getSubnames`,
+`getHistory`, `getEvents`, `search`, `lookup`, `getNamesByExpiry`, `getPrimaryName`, `getRecords`,
+`getPermissions`, `getRegistry`, `getRegistryLabels`, `getResolver`, `getResolverLinks`,
+`getResolverRoles`, `getResolvers`, `getNamespace` and `getStatus`.
+
+## 2. Report failures with the right error
+
+Throw an ensforge `IndexerError` to control how a failure is reported. Anything else you throw
+becomes [`INDEXER_UNAVAILABLE`](/docs/sdk/errors/INDEXER_UNAVAILABLE). Return `null` from
+`getName`, `getRecords`, `getRegistry`, `getResolver` and `getNamespace` when nothing exists. Other
+queries must return an object, or the call fails with
+[`INDEXER_RESPONSE_INVALID`](/docs/sdk/errors/INDEXER_RESPONSE_INVALID).
+
+**Example** (Reporting a rate limit)
+
+```ts twoslash title="errors.ts"
+import { Errors } from "@ensforge/sdk";
+import { defineIndexer } from "@ensforge/sdk/indexer";
+
+declare const fetchProfile: (name: string) => Promise<Response>;
+
+// ---cut---
+export const guarded = defineIndexer({
+  id: "guarded",
+  getName: async () => {
+    const response = await fetchProfile("nick.eth");
+    if (response.status === 429) {
+      throw new Errors.IndexerError({ code: "INDEXER_RATE_LIMITED", status: 429 });
+    }
+    return null;
+  },
+});
+```
+
+`INDEXER_RATE_LIMITED`, `INDEXER_UNAVAILABLE` and `INDEXER_BEHIND` are retryable and make
+`fallback` move on.
+
+## 3. Use it
+
+Pass the indexer to the client. Combine it with others using `fallback`: each query goes to the first
+indexer that can answer it.
+
+**Example** (Yours first, bigname after)
+
+```ts twoslash title="client.ts"
+import { Ensforge, ensActions } from "@ensforge/sdk";
+import { bigname, fallback, indexerActions, type Indexer } from "@ensforge/sdk/indexer";
+import { createPublicClient, http } from "viem";
+import { mainnet } from "viem/chains";
+
+declare const inHouse: Indexer;
+
+const publicClient = createPublicClient({ chain: mainnet, transport: http() });
+
+export const ens = Ensforge.create({
+  publicClient,
+  indexer: fallback([inHouse, bigname()]),
+})
+  .extend(ensActions())
+  .extend(indexerActions());
+```
+
+`fallback` asks the next indexer when one is unavailable, rate limiting, behind, or does not serve
+the query. Not found is an answer and is not retried. Cursors are tagged with the indexer that
+issued them, so the next page goes back to the same one.
+
+## Walk every page
+
+`paginate` follows `cursor` until the last page. `break` stops requesting pages.
+
+```ts twoslash title="paginate.ts"
+import { Ensforge, indexerActions } from "@ensforge/sdk";
+import { paginate, type Indexer } from "@ensforge/sdk/indexer";
+import { createPublicClient, http } from "viem";
+import { mainnet } from "viem/chains";
+
+declare const inHouse: Indexer;
+
+const publicClient = createPublicClient({ chain: mainnet, transport: http() });
+const ens = Ensforge.create({ publicClient, indexer: inHouse }).extend(indexerActions());
+
+// ---cut---
+for await (const page of paginate(ens.indexer.getSubnames, { name: "ens.eth" })) {
+  console.log(page.items.length);
+}
+```
+
+## Use one as a test double
+
+A small adapter makes tests independent of a live service. See
+[Test your integration](/docs/sdk/testing).
+
+```ts twoslash title="double.ts"
+import { defineIndexer } from "@ensforge/sdk/indexer";
+
+export const empty = defineIndexer({ id: "test", getName: async () => null });
+```
+
+## Effect adapters
+
+`Indexer.define` in `@ensforge/sdk/effect` takes Effect functions instead of Promises, and fails with
+ensforge errors in the error channel. `Indexer.paginate` returns a `Stream`. See
+[The Effect API](/docs/sdk/effect-api).
+
+## Limits
+
+ensforge checks that an answer is an object, and that a page has an `items` array. It trusts the
+types of the fields to your TypeScript types. Built-in adapters check every response against the
+indexer's schema. Two indexers can also disagree on semantics, so apps that compare answers should
+stick to one.
+
+## Check the result
+
+Call an action you implemented and read `indexer` on the answer. It should be your adapter's `id`.
+
+## Troubleshooting
+
+### `INDEXER_NOT_CONFIGURED`
+
+The client has no `indexer`. Pass it to `Ensforge.create`. See
+[`INDEXER_NOT_CONFIGURED`](/docs/sdk/errors/INDEXER_NOT_CONFIGURED).
+
+### `INDEXER_UNSUPPORTED`
+
+The adapter does not implement that query, or does not serve the namespace. Add the method, or put
+another indexer after it in `fallback`. See
+[`INDEXER_UNSUPPORTED`](/docs/sdk/errors/INDEXER_UNSUPPORTED).
+
+### `INDEXER_RESPONSE_INVALID`
+
+The adapter answered `null` for a query that cannot be `null`, or a page without `items`. See
+[`INDEXER_RESPONSE_INVALID`](/docs/sdk/errors/INDEXER_RESPONSE_INVALID).

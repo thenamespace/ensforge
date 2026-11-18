@@ -1,6 +1,92 @@
 ---
 title: Pay gas for users
-description: Placeholder, to be written.
+description: Sponsor a write's gas with an EIP-5792 paymaster service, or through an HCA bundler.
+keywords: [paymaster, paymasterService, sponsor, gasless, EIP-5792, gas]
 ---
 
-Placeholder: this page is not written yet.
+A **paymaster** pays the gas of a transaction on the user's behalf. ensforge supports two ways to
+sponsor a write: a paymaster service your wallet understands, and the sponsorship of an HCA
+bundler.
+
+## Prerequisites
+
+- A client with a wallet. See [Send a transaction](/docs/sdk/send-a-transaction).
+- For the first way, a wallet that supports the EIP-5792 `paymasterService` capability, and the URL
+  of a paymaster service (ERC-7677) that accepts your users.
+
+## Sponsor with a paymaster service
+
+Pass `paymaster` to any write. ensforge sends the write through `wallet_sendCalls` with the
+`paymasterService` capability, so the wallet asks the service to sponsor it.
+
+**Example** (Sponsoring a record update)
+
+```ts twoslash title="paymaster.ts"
+import type { EIP1193Provider } from "viem";
+
+declare global {
+  interface Window {
+    ethereum?: EIP1193Provider;
+  }
+}
+
+// ---cut---
+import { Ensforge, ensActions } from "@ensforge/sdk";
+import { createPublicClient, createWalletClient, custom, http } from "viem";
+import { sepolia } from "viem/chains";
+
+const publicClient = createPublicClient({ chain: sepolia, transport: http() });
+const walletClient = createWalletClient({ chain: sepolia, transport: custom(window.ethereum!) });
+const [account] = await walletClient.requestAddresses();
+const ens = Ensforge.create({ publicClient, walletClient, account }).extend(ensActions());
+
+const { id } = await ens.record.set({
+  name: "alice.eth",
+  texts: { url: "https://alice.dev" },
+  paymaster: {
+    url: "https://paymaster.example.com/rpc",
+    context: { policyId: "ens-profile-updates" },
+  },
+});
+```
+
+- `url` is the paymaster service the wallet calls.
+- `context` is passed to the service as it is, for example a sponsorship policy. It is optional.
+- The write goes out as a bundle even when it has one call, and the bundle is atomic. `id` is the
+  bundle id. See [Bundle transactions](/docs/sdk/bundle-transactions).
+
+`paymaster` is a write option, so `…Sync` forms, `plan.send` and `plan.resume` take it too.
+
+## Sponsor through an HCA bundler
+
+An HCA can run a write as a UserOperation through a bundler, and the bundler's paymaster can pay for
+it. The executors take their own sponsorship settings: `bundler({ paymaster })`,
+`pimlico({ sponsor, sponsorshipPolicyId })` and `rhinestone({ sponsored })`. This path is
+experimental. See [Bundlers](/docs/hca/bundlers), [Rhinestone](/docs/hca/rhinestone) and
+[Deposits and gas](/docs/hca/deposits-and-gas), and [Use smart accounts](/docs/sdk/use-smart-accounts)
+for `via`.
+
+A route's `plan.fees` shows each fee with `sponsored: true` when the sponsor pays it.
+
+## Check the result
+
+Use a `…Sync` write, then compare the account's ETH balance before and after. A sponsored write
+leaves it unchanged except for any `value` the calls send.
+
+## Troubleshooting
+
+### `WALLET_BATCH_UNSUPPORTED`
+
+The wallet does not support the `paymasterService` capability, or does not send atomic bundles.
+Remove `paymaster`, or let the user pay. See
+[`WALLET_BATCH_UNSUPPORTED`](/docs/sdk/errors/WALLET_BATCH_UNSUPPORTED).
+
+### `INSUFFICIENT_ETH`
+
+The wallet could not cover the gas, for example because the sponsor did not pay for the bundle.
+Check the paymaster service's policy. See [`INSUFFICIENT_ETH`](/docs/sdk/errors/INSUFFICIENT_ETH).
+
+### `HCA_PAYMASTER_REJECTED`
+
+An HCA bundler's paymaster refused the operation. See
+[`HCA_PAYMASTER_REJECTED`](/docs/sdk/errors/HCA_PAYMASTER_REJECTED).

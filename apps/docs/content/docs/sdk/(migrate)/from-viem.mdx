@@ -1,6 +1,126 @@
 ---
 title: From viem's ENS actions
-description: Placeholder, to be written.
+description: Replace viem's getEnsAddress, getEnsName, getEnsAvatar, getEnsText and getEnsResolver with ensforge actions.
+keywords:
+  [viem, getEnsAddress, getEnsName, getEnsAvatar, getEnsText, getEnsResolver, normalize, migration]
 ---
 
-Placeholder: this page is not written yet.
+ensforge is built on viem and takes viem clients, so you can move one call at a time. viem's ENS
+actions cover reads. ensforge adds the same reads with typed errors, plus records in one call,
+lists, and every write. You keep your viem transports and wallet.
+
+## Prerequisites
+
+- An app that calls viem's ENS actions.
+- `@ensforge/sdk` installed next to `viem`. See [Installation](/docs/sdk/installation).
+
+## 1. Start with a bare viem client
+
+Every ensforge action takes a client first, and a viem public client is accepted as it is. You do
+not have to create an ensforge client to replace a read.
+
+```ts title="addresses.ts"
+import { getEnsAddress } from "viem/actions"; // [!code --]
+import { Actions } from "@ensforge/sdk"; // [!code ++]
+import { normalize } from "viem/ens"; // [!code --]
+
+const address = await getEnsAddress(publicClient, { name: normalize("nick.eth") }); // [!code --]
+const address = await Actions.record.getAddress(publicClient, { name: "nick.eth" }); // [!code ++]
+```
+
+ensforge normalises the name for you, so you can drop `normalize`.
+
+**Example** (The same read, after)
+
+```ts twoslash title="addresses.ts"
+import { Actions } from "@ensforge/sdk";
+import { createPublicClient, http } from "viem";
+import { mainnet } from "viem/chains";
+
+const publicClient = createPublicClient({ chain: mainnet, transport: http() });
+
+const address = await Actions.record.getAddress(publicClient, { name: "nick.eth" });
+```
+
+## 2. Map each action
+
+| viem                                | ensforge                                                                              | Notes                                                                                            |
+| ----------------------------------- | ------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| `getEnsAddress({ name, coinType })` | [`record.getAddress({ name, coin })`](/docs/sdk/reference/actions/record/get-address) | `coin` is a symbol (`"btc"`), a chain (`{ chainId: 8453 }`) or a coin type. Default is Ethereum. |
+| `getEnsName({ address })`           | [`primaryName.get({ address })`](/docs/sdk/reference/actions/primary-name/get)        | Checks that the name resolves back to the address by default.                                    |
+| `getEnsAvatar({ name })`            | [`record.getAvatar({ name })`](/docs/sdk/reference/actions/record/get-avatar)         | Returns a URL a browser can load. Set storage gateways with `gateways`.                          |
+| `getEnsText({ name, key })`         | [`record.getText({ name, key })`](/docs/sdk/reference/actions/record/get-text)        |                                                                                                  |
+| `getEnsResolver({ name })`          | [`resolver.get({ name })`](/docs/sdk/reference/actions/resolver/get)                  | Returns the resolver's `address`, its `kind`, who may write to it and its profiles.              |
+| `normalize(name)` from `viem/ens`   | `Name.normalize(name)`                                                                | ensforge actions normalise their inputs already.                                                 |
+
+Every ensforge read takes `blockNumber` or `blockTag`, `gatewayUrls`, `strict` and `signal`.
+
+```ts title="reads.ts"
+const name = await getEnsName(publicClient, { address }); // [!code --]
+const name = await Actions.primaryName.get(publicClient, { address }); // [!code ++]
+
+const avatar = await getEnsAvatar(publicClient, { name: "nick.eth" }); // [!code --]
+const avatar = await Actions.record.getAvatar(publicClient, { name: "nick.eth" }); // [!code ++]
+
+const resolver = await getEnsResolver(publicClient, { name: "nick.eth" }); // [!code --]
+const resolver = (await Actions.resolver.get(publicClient, { name: "nick.eth" }))?.address; // [!code ++]
+```
+
+## 3. Know what behaves differently
+
+- **Gateway failures are errors.** For an off-chain name whose gateway is unreachable or invalid,
+  ensforge throws a `GatewayError` ([`GATEWAY_REQUEST_FAILED`](/docs/sdk/errors/GATEWAY_REQUEST_FAILED),
+  [`GATEWAY_RESPONSE_INVALID`](/docs/sdk/errors/GATEWAY_RESPONSE_INVALID)). viem returns `null`.
+- **`strict` means something else.** In ensforge, `strict: true` throws a `NotFoundError` when data
+  is missing instead of returning `null`.
+- **Errors carry codes.** Every action throws `Errors.*` classes with a stable `code`, so you can
+  branch without parsing messages. See [Handle errors](/docs/sdk/handle-errors).
+- **A name with a resolver that reverts reads as empty.** ensforge and viem read no record in that
+  case.
+
+## 4. Use what viem does not have
+
+Once reads work, move to the parts viem has no action for:
+
+- Several records in one request with [`record.get`](/docs/sdk/reference/actions/record/get).
+  See [Get text records](/docs/sdk/get-text-records).
+- A whole profile for many names with [`Actions.batch`](/docs/sdk/reference/actions/batch). See
+  [Look up many at once](/docs/sdk/look-up-many-at-once).
+- A name's owner, expiry and status in one call. See
+  [Get a name's owner, expiry and status](/docs/sdk/get-name-details).
+- Writes: [set records](/docs/sdk/set-records), [register a name](/docs/sdk/register-a-name),
+  [transfer a name](/docs/sdk/transfer-a-name), and the rest of
+  [Register and manage](/docs/sdk/check-if-a-name-is-available).
+
+For those, create a client once:
+
+```ts twoslash title="client.ts"
+import { Ensforge, ensActions } from "@ensforge/sdk";
+import { createPublicClient, http } from "viem";
+import { mainnet } from "viem/chains";
+
+const publicClient = createPublicClient({ chain: mainnet, transport: http() });
+
+export const ens = Ensforge.create({ publicClient }).extend(ensActions());
+
+await ens.record.getAddress({ name: "nick.eth" });
+```
+
+## Check the result
+
+Compare the old and the new result for a few names you know, such as `nick.eth` and one without an
+avatar. The values should match. A `GatewayError` instead of `null` for an off-chain name is the one
+expected difference.
+
+## Troubleshooting
+
+### `UNKNOWN_CHAIN`
+
+The viem client's chain is not Ethereum mainnet or Sepolia. Create an ensforge client with
+`deployment`. See [`UNKNOWN_CHAIN`](/docs/sdk/errors/UNKNOWN_CHAIN).
+
+### A read that returned `null` in viem throws
+
+You passed `strict: true`, or the name is off-chain and its gateway failed. See
+[`RECORD_NOT_FOUND`](/docs/sdk/errors/RECORD_NOT_FOUND) and
+[`GATEWAY_REQUEST_FAILED`](/docs/sdk/errors/GATEWAY_REQUEST_FAILED).

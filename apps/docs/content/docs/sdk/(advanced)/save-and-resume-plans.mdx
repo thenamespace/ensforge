@@ -1,6 +1,192 @@
 ---
 title: Save and resume plans
-description: Placeholder, to be written.
+description: Keep plan progress in browser storage or your own database so a write survives reloads and restarts.
+keywords:
+  [
+    Plan.Storage,
+    Plan.localStorage,
+    Plan.memoryStorage,
+    Plan.serialize,
+    Plan.deserialize,
+    storage,
+    resume,
+  ]
 ---
 
-Placeholder: this page is not written yet.
+Every write saves its **plan** and progress to the client's storage after each step. With storage
+that outlives your process, a registration or migration survives a page reload, a crash or a
+serverless cold start. This page shows the built-in stores, how to write your own, and how to
+serialise a plan.
+
+## Prerequisites
+
+- Know what [`plan.resume`](/docs/sdk/continue-after-a-failure) does.
+- Read [How writes work](/docs/sdk/writing-to-ens) for what a plan is.
+
+## What is saved
+
+A saved plan is a `Plan.Record`:
+
+| Field        | Description                                                                                            |
+| ------------ | ------------------------------------------------------------------------------------------------------ |
+| `plan`       | The plan: id, steps, calls, requirements, warnings, deployments and fees.                              |
+| `status`     | `"pending"` while steps remain, `"completed"` once every step is submitted, `"failed"` after an error. |
+| `submitted`  | Transaction hashes per submitted step id.                                                              |
+| `bundles`    | EIP-5792 bundle id per step sent in a bundle.                                                          |
+| `references` | Route references per step sent through `via`, such as UserOperation hashes.                            |
+| `error`      | Message of the last failure.                                                                           |
+| `updatedAt`  | Unix time in milliseconds.                                                                             |
+
+The record is written before the first step, after every submission, and when the write fails or
+completes. Saving is best effort: if the store throws, the write still runs, but it cannot be
+resumed.
+
+## Choose a store
+
+Pass `storage` to `Ensforge.create`.
+
+| Store                            | Survives reload | Where it works                                                                                                                                             |
+| -------------------------------- | --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Plan.memoryStorage()` (default) | No              | Everywhere. Lost when the process or page reloads.                                                                                                         |
+| `Plan.localStorage(key?)`        | Yes             | Browsers. Records are kept as JSON under one key, `ensforge:plans` by default. Calls reject where `localStorage` does not exist, such as server rendering. |
+| Your own `Plan.Storage`          | Yes             | Anywhere, such as a database or key-value store.                                                                                                           |
+
+**Example** (Plans that survive a page reload)
+
+```ts twoslash title="storage.ts"
+import { Ensforge, Plan, ensActions } from "@ensforge/sdk";
+import { createPublicClient, http } from "viem";
+import { sepolia } from "viem/chains";
+
+const publicClient = createPublicClient({ chain: sepolia, transport: http() });
+
+export const ens = Ensforge.create({
+  publicClient,
+  storage: Plan.localStorage("my-app:plans"),
+}).extend(ensActions());
+```
+
+After a reload, list what did not finish and resume it:
+
+```ts twoslash title="recover.ts"
+import { Ensforge, Plan, ensActions } from "@ensforge/sdk";
+import { createPublicClient, http } from "viem";
+import { sepolia } from "viem/chains";
+
+const publicClient = createPublicClient({ chain: sepolia, transport: http() });
+const ens = Ensforge.create({
+  publicClient,
+  storage: Plan.localStorage("my-app:plans"),
+}).extend(ensActions());
+
+// ---cut---
+const unfinished = await ens.plan.list({ status: "pending" });
+
+for (const record of unfinished) {
+  await ens.plan.resume({ id: record.plan.id });
+}
+```
+
+## Write your own store
+
+A store implements four Promise functions: `get`, `set`, `delete` and `list`. It holds `Plan.Record`
+values, which contain `bigint`s, so a store that writes JSON needs a bigint-safe encoding.
+`Plan.serialize` and `Plan.deserialize` give one for the plan inside the record.
+
+**Example** (A key-value store)
+
+```ts twoslash title="kv-storage.ts"
+import { Plan } from "@ensforge/sdk";
+
+type KeyValue = {
+  get(key: string): Promise<string | null>;
+  put(key: string, value: string): Promise<void>;
+  delete(key: string): Promise<void>;
+  keys(prefix: string): Promise<string[]>;
+};
+
+export const kvStorage = (kv: KeyValue, prefix = "ensforge:plan:"): Plan.Storage => {
+  const read = (text: string): Plan.Record => {
+    const row: Omit<Plan.Record, "plan"> & { plan: string } = JSON.parse(text);
+    return { ...row, plan: Plan.deserialize(row.plan) };
+  };
+
+  return {
+    get: async (id) => {
+      const text = await kv.get(prefix + id);
+      return text === null ? undefined : read(text);
+    },
+    set: async (record) => {
+      const row = { ...record, plan: Plan.serialize(record.plan) };
+      await kv.put(prefix + record.plan.id, JSON.stringify(row));
+    },
+    delete: (id) => kv.delete(prefix + id),
+    list: async () => {
+      const keys = await kv.keys(prefix);
+      const texts = await Promise.all(keys.map((key) => kv.get(key)));
+      return texts.flatMap((text) => (text === null ? [] : [read(text)]));
+    },
+  };
+};
+```
+
+- `set` stores the plan as `Plan.serialize` text, which keeps bigints exact, and the other fields as
+  plain JSON.
+- `get` returns `undefined` for an unknown id. `plan.get` reports it as `null`.
+- `list` returns every record.
+
+A store that keeps objects without JSON, such as IndexedDB or an in-process `Map`, needs none of
+this.
+
+## Serialise a plan
+
+Plans are plain data. `Plan.serialize` turns a plan or a record into JSON text with bigints
+preserved, and `Plan.deserialize` reads a plan back. Use them to send a prepared plan to another
+service, for review or signing elsewhere.
+
+**Example** (Sending a plan to another process)
+
+```ts twoslash title="serialize.ts"
+import { Ensforge, Plan, ensActions } from "@ensforge/sdk";
+import { createPublicClient, http } from "viem";
+import { sepolia } from "viem/chains";
+
+const publicClient = createPublicClient({ chain: sepolia, transport: http() });
+const account = "0x225f137127d9067788314bc7fcc1f36746a3c3B5";
+const ens = Ensforge.create({ publicClient, account }).extend(ensActions());
+
+// ---cut---
+const plan = await ens.record.set.prepare({
+  name: "alice.eth",
+  texts: { url: "https://alice.dev" },
+});
+
+const text = Plan.serialize(plan);
+const restored = Plan.deserialize(text);
+```
+
+`Plan.deserialize` throws [`PLAN_INVALID`](/docs/sdk/errors/PLAN_INVALID) when the text is not a
+serialised plan. A restored plan is for one chain and account: send it with
+[`plan.send`](/docs/sdk/reference/actions/plan/send) on a client for the same ones.
+
+## Check the result
+
+Start a write, reload the page or restart the process, and call `plan.list`. The plan should be
+there with the steps already submitted.
+
+## Troubleshooting
+
+### `PLAN_NOT_FOUND`
+
+The store has no plan with that id. With the default memory store, plans are lost on reload. See
+[`PLAN_NOT_FOUND`](/docs/sdk/errors/PLAN_NOT_FOUND).
+
+### `localStorage is not available in this environment`
+
+`Plan.localStorage()` ran where there is no `localStorage`. Use a custom store on the server.
+
+### Plans from two tabs overwrite each other
+
+`Plan.localStorage` keeps every record under one key and rewrites the whole value on each save. Two
+tabs writing at once can lose a record. Use a different key per tab, or a store that writes one row
+per plan.
