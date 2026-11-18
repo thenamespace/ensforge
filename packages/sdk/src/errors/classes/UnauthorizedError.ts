@@ -35,7 +35,7 @@ const defaults: {
   }),
   TRANSFER_DISALLOWED: () => ({
     shortMessage: "This name cannot be transferred right now.",
-    hint: "Other accounts still hold roles on it; revoke them or use an unsafe transfer.",
+    hint: "The owner lacks the role to transfer it, or other accounts hold roles on it (revoke them, or transfer with `unsafe: true`); `requirements` says which.",
   }),
 };
 

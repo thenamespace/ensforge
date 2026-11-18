@@ -180,7 +180,7 @@ export const messages: { readonly [code in Code]: Template<code> } = {
   }),
   TRANSFER_DISALLOWED: (error) => ({
     title: "Transfer blocked",
-    message: `${thisName(error)} cannot be transferred while others hold permissions on it.`,
+    message: `${thisName(error)} cannot be transferred with the roles held on it.`,
   }),
   RESOLVER_NOT_FOUND: (error) => ({
     title: "No resolver",
