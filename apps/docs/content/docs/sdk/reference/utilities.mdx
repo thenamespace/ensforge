@@ -38,6 +38,12 @@ DNS wire-format encoding of a name, as the Universal Resolver and ENSv2 registri
 function dnsEncode(name: string): Hex
 ```
 
+```ts title="Encoding a name for a resolver call"
+import { Name } from "@ensforge/sdk"
+
+const dnsName = Name.dnsEncode("alice.eth")
+```
+
 Errors:
 
 - `InvalidInputError` ([`INVALID_NAME`](/docs/sdk/errors/INVALID_NAME)) when the name cannot be normalized.
@@ -50,12 +56,25 @@ Encoded label for a labelhash whose plain label is unknown: `[af2c…]`.
 function fromLabelhash(hash: Hex): string
 ```
 
+```ts title="Showing an unknown label"
+import { Name } from "@ensforge/sdk"
+
+const label = Name.fromLabelhash(Name.labelhash("alice"))
+```
+
 ### `Name.getParent`
 
 Parent of a name, or `null` for top-level names and the root.
 
 ```ts
 function getParent(name: string): string | null
+```
+
+```ts title="Finding the parent"
+import { Name } from "@ensforge/sdk"
+
+Name.getParent("sub.alice.eth") // "alice.eth"
+Name.getParent("eth")           // null
 ```
 
 Errors:
@@ -70,12 +89,25 @@ Whether `name` normalizes without error. It may still differ from its normalized
 function isValid(name: string): boolean
 ```
 
+```ts title="Validating user input"
+import { Name } from "@ensforge/sdk"
+
+Name.isValid("alice.eth") // true
+Name.isValid("bad name")  // false
+```
+
 ### `Name.labelhash`
 
 Keccak-256 hash of one label, normalizing it first. Encoded labels return their hash.
 
 ```ts
 function labelhash(label: string): Hex
+```
+
+```ts title="Hashing a label"
+import { Name } from "@ensforge/sdk"
+
+const hash = Name.labelhash("alice")
 ```
 
 Errors:
@@ -88,6 +120,12 @@ ENS node (EIP-137 namehash) of a name, normalizing it first.
 
 ```ts
 function namehash(name: string): Hex
+```
+
+```ts title="Computing a node"
+import { Name } from "@ensforge/sdk"
+
+const node = Name.namehash("alice.eth")
 ```
 
 Errors:
@@ -144,6 +182,12 @@ number. ENSv2 token IDs change over time; read them with `name.getTokenId`.
 function toTokenId(name: string): bigint
 ```
 
+```ts title="Finding an ENSv1 token ID"
+import { Name } from "@ensforge/sdk"
+
+const tokenId = Name.toTokenId("alice.eth")
+```
+
 Errors:
 
 - `InvalidInputError` ([`INVALID_NAME`](/docs/sdk/errors/INVALID_NAME)) when the name cannot be normalized.
@@ -176,6 +220,12 @@ zero address, for EVM coins).
 function decodeAddress(coinType: bigint, data: Hex): string | null
 ```
 
+```ts title="Decoding an address record"
+import { CoinType } from "@ensforge/sdk"
+
+const shown = CoinType.decodeAddress(CoinType.from("eth"), data)
+```
+
 Errors:
 
 - `InvalidInputError` ([`INVALID_COIN_TYPE`](/docs/sdk/errors/INVALID_COIN_TYPE)) when no codec exists for the coin.
@@ -191,6 +241,12 @@ function encodeAddress(coinType: bigint, address: string): Hex
 
 EVM addresses are stored as 20 raw bytes for any EVM coin type, including chains the codec
 library does not list. Other coins use `@ensdomains/address-encoder`.
+
+```ts title="Encoding an address record"
+import { CoinType } from "@ensforge/sdk"
+
+const bytes = CoinType.encodeAddress(CoinType.from("eth"), address)
+```
 
 Errors:
 
@@ -223,6 +279,12 @@ ENSIP-11 coin type of an EVM chain. Ethereum mainnet is `60`.
 function fromChainId(chainId: number): bigint
 ```
 
+```ts title="Coin type of a chain"
+import { CoinType } from "@ensforge/sdk"
+
+CoinType.fromChainId(8453) // 2147492101n (Base)
+```
+
 Errors:
 
 - `InvalidInputError` ([`INVALID_COIN_TYPE`](/docs/sdk/errors/INVALID_COIN_TYPE)) when `chainId` is not a valid chain ID.
@@ -235,6 +297,13 @@ Whether a coin type is an EVM chain (Ethereum mainnet or ENSIP-11).
 function isEvm(coinType: bigint): boolean
 ```
 
+```ts title="Telling EVM coins apart"
+import { CoinType } from "@ensforge/sdk"
+
+CoinType.isEvm(CoinType.from("eth")) // true
+CoinType.isEvm(CoinType.from("btc")) // false
+```
+
 ### `CoinType.toChainId`
 
 EVM chain ID of a coin type, or `null` for non-EVM coins.
@@ -243,12 +312,24 @@ EVM chain ID of a coin type, or `null` for non-EVM coins.
 function toChainId(coinType: bigint): number | null
 ```
 
+```ts title="Recovering a chain ID"
+import { CoinType } from "@ensforge/sdk"
+
+CoinType.toChainId(2147492101n) // 8453
+```
+
 ### `CoinType.toSymbol`
 
 Symbol of a coin type, such as `btc`, or `null` when unknown.
 
 ```ts
 function toSymbol(coinType: bigint): string | null
+```
+
+```ts title="Naming a coin type"
+import { CoinType } from "@ensforge/sdk"
+
+CoinType.toSymbol(0n) // "btc"
 ```
 
 ### `CoinType.Input`
@@ -268,6 +349,13 @@ Decodes the bytes of an ENS `contenthash` record, or returns `null` when empty.
 
 ```ts
 function decode(data: Hex): Decoded | null
+```
+
+```ts title="Decoding a content hash"
+import { ContentHash } from "@ensforge/sdk"
+
+const decoded = ContentHash.decode(data)
+decoded?.uri // "ipfs://…"
 ```
 
 Errors:
@@ -342,6 +430,12 @@ type Protocol = keyof typeof schemes;
 function days(n: number | bigint): bigint
 ```
 
+```ts title="Extending by a month"
+import { Duration } from "@ensforge/sdk"
+
+await ens.registration.renew({ names: "alice.eth", duration: Duration.days(30) })
+```
+
 Errors:
 
 - `InvalidInputError` ([`INVALID_DURATION`](/docs/sdk/errors/INVALID_DURATION)) for negative or fractional values.
@@ -374,12 +468,24 @@ Every fuse in `mask`, by name.
 function decode(mask: number): Decoded
 ```
 
+```ts title="Reading a fuse mask"
+import { Fuse } from "@ensforge/sdk"
+
+const { cannotUnwrap, cannotTransfer } = Fuse.decode(Fuse.from(["cannotUnwrap"]))
+```
+
 ### `Fuse.from`
 
 Fuse mask with every fuse in `names` burned.
 
 ```ts
 function from(names: readonly Name[]): number
+```
+
+```ts title="Building a fuse mask"
+import { Fuse } from "@ensforge/sdk"
+
+const mask = Fuse.from(["cannotUnwrap", "cannotSetResolver"])
 ```
 
 Errors:
@@ -392,6 +498,12 @@ Whether `name` is burned in `mask`.
 
 ```ts
 function has(mask: number, name: Name): boolean
+```
+
+```ts title="Checking one fuse"
+import { Fuse } from "@ensforge/sdk"
+
+const locked = Fuse.has(Fuse.from(["cannotUnwrap"]), "cannotUnwrap")
 ```
 
 ### `Fuse.Decoded`
@@ -420,6 +532,12 @@ Admin role that grants and revokes `name`, e.g. `setResolver` → `setResolverAd
 function admin<const name extends Name>(name: name): `${name}Admin`
 ```
 
+```ts title="Granting a role with its admin"
+import { Role } from "@ensforge/sdk"
+
+const bitmap = Role.from(["setText", Role.admin("setText")])
+```
+
 ### `Role.from`
 
 Bitmap with every role in `names` set.
@@ -446,6 +564,14 @@ Whether `bitmap` has every role in `names`.
 function has(bitmap: bigint, names: Name | readonly Name[]): boolean
 ```
 
+```ts title="Checking roles"
+import { Role } from "@ensforge/sdk"
+
+const bitmap = Role.from(["setText", "setAddr"])
+Role.has(bitmap, "setText")                // true
+Role.has(bitmap, ["setText", "setAddr"])  // true
+```
+
 Errors:
 
 - `InvalidInputError` ([`INVALID_ROLES`](/docs/sdk/errors/INVALID_ROLES)) for unknown role names.
@@ -458,6 +584,12 @@ Registry role bits from contracts-v2 v1.0.1 (`canTransfer` is `1n << 28n`).
 const registry: typeof Roles.registry
 ```
 
+```ts title="Reading a registry role"
+import { Role } from "@ensforge/sdk"
+
+const canRenew = Role.registry.renew
+```
+
 ### `Role.resolver`
 
 PermissionedResolver role bits from contracts-v2 v1.0.1.
@@ -466,12 +598,24 @@ PermissionedResolver role bits from contracts-v2 v1.0.1.
 const resolver: typeof Roles.resolver
 ```
 
+```ts title="Reading a resolver role"
+import { Role } from "@ensforge/sdk"
+
+const canSetText = Role.resolver.setText
+```
+
 ### `Role.toNames`
 
 Names of the roles set in `bitmap` for a registry or resolver.
 
 ```ts
 function toNames(bitmap: bigint, target: Target): readonly Name[]
+```
+
+```ts title="Listing roles"
+import { Role } from "@ensforge/sdk"
+
+Role.toNames(Role.from(["setText"]), "resolver") // ["setText"]
 ```
 
 ### `Role.Name`
@@ -497,12 +641,14 @@ type Target = "registry" | "resolver";
 Turns any thrown value into a title, message and suggested action that are safe to show users.
 
 ```ts
-function describe(value: unknown, options: DescribeOptions = {}): Description
+function describe<error extends EnsforgeError = AnyError>(value: unknown, options: DescribeOptions<error> = {}): Description
 ```
 
 Use in UI error handlers instead of showing `error.message`, which is written for developers.
 
 - Accepts any value; non-ensforge errors go through `Errors.fromCause` first.
+- Packages that extend ensforge, such as `@ensforge/hca`, add copy for their own codes; a code
+  without copy gets the generic [`UNEXPECTED`](/docs/sdk/errors/UNEXPECTED) copy.
 - Override copy per code with `messages`, for example to translate.
 
 ```ts title="Showing an error toast"
@@ -601,7 +747,7 @@ type Code = AnyError["code"];
 ### `Errors.CommonError`
 
 Errors every action can fail with, besides the ones its `@throws` documents: a misconfigured
-client or a missing contract (`ConfigError`), a failing RPC (`NetworkError`), a contract call
+client or a contract missing on the chain (`ConfigError`, [`CONTRACT_NOT_DEPLOYED`](/docs/sdk/errors/CONTRACT_NOT_DEPLOYED)), a failing RPC (`NetworkError`), a contract call
 reverting with an error ensforge does not map (`ContractRevertError`), and anything ensforge
 could not translate (`InternalError` [`UNEXPECTED`](/docs/sdk/errors/UNEXPECTED)).
 
@@ -623,22 +769,24 @@ type Config
 
 ### `Errors.DescribeOptions`
 
-Options for `describe`.
+Options for `describe`. `error` is the union of error classes whose codes `messages`
+may override: every sdk error by default; add a package's class to override its codes too,
+e.g. `DescribeOptions<Errors.AnyError | HcaError>`.
 
 ```ts
-type DescribeOptions
+type DescribeOptions<error extends EnsforgeError = AnyError>
 ```
 
 | Option | Type | Default | Description |
 | --- | --- | --- | --- |
-| `messages` | `{ readonly [code in Code]?: (error: ErrorOf<code>) => Partial<Copy>; }` |  | Replacement copy by code, e.g. translations. Missing fields fall back to the English copy. |
+| `messages` | `{ readonly [code in EnsforgeError["code"]]?: ( EnsforgeError: EnsforgeError extends { readonly code: infer codes } ? code extends codes ? EnsforgeError : never : never, ) => Partial<Copy>; }` |  | Replacement copy by code, e.g. translations. Missing fields fall back to the English copy. |
 
 ### `Errors.Description`
 
 User-facing description of an error.
 
 ```ts
-type Description = Copy & { readonly code: Code; readonly retryable: boolean; /** `info`: expected outcome; `warning`: temporary, retry later; `error`: needs attention. */ readonly severity: "info" | "warning" | "error"; };
+type Description = Copy & { /** A code of `Errors.Code`, or of a package that extends ensforge (e.g. `HcaError`). */ readonly code: Code | (string & {}); readonly retryable: boolean; /** `info`: expected outcome; `warning`: temporary, retry later; `error`: needs attention. */ readonly severity: "info" | "warning" | "error"; };
 ```
 
 | Field | Type | Description |
@@ -646,7 +794,7 @@ type Description = Copy & { readonly code: Code; readonly retryable: boolean; /*
 | `title` | `string` |  |
 | `message` | `string` |  |
 | `action` (optional) | `string` |  |
-| `code` | `Code` |  |
+| `code` | `Code \| (string & {})` | A code of `Errors.Code`, or of a package that extends ensforge (e.g. `HcaError`). |
 | `retryable` | `boolean` |  |
 | `severity` | `"info" \| "warning" \| "error"` | `info`: expected outcome; `warning`: temporary, retry later; `error`: needs attention. |
 
@@ -670,7 +818,8 @@ type WriteError = | CommonError | Classes.InsufficientFundsError | Classes.Trans
 
 - `WalletError`, or `ConfigError` ([`WALLET_NOT_CONFIGURED`](/docs/sdk/errors/WALLET_NOT_CONFIGURED)), when the wallet cannot sign.
 - `UserRejectedError` when the wallet's user declines.
-- `InsufficientFundsError` ([`INSUFFICIENT_ETH`](/docs/sdk/errors/INSUFFICIENT_ETH)) when the account cannot pay for gas.
+- `InsufficientFundsError` ([`INSUFFICIENT_ETH`](/docs/sdk/errors/INSUFFICIENT_ETH)) when the account cannot pay for gas or the
+  ETH the call sends.
 - `UnsupportedError` ([`WALLET_BATCH_UNSUPPORTED`](/docs/sdk/errors/WALLET_BATCH_UNSUPPORTED)) when the wallet cannot send a batch.
-- `TransactionError` when a transaction reverts, is replaced, conflicts or is not mined in time.
+- `TransactionError` when a transaction reverts, conflicts or is not mined in time.
 - A `via` route can also fail with its own package's errors (e.g. `HcaError`).

@@ -11,7 +11,7 @@ Call them as `ens.hcaAdmin.<action>(options)` on a client, or `Actions.hcaAdmin.
 
 | Action | Kind | Description |
 | --- | --- | --- |
-| [`hcaAdmin.getGovernance`](/docs/hca/reference/actions/hca-admin/get-governance) | Read | Reads who governs ENS HCAs: the factory owner and whether implementations are approved. |
+| [`hcaAdmin.getGovernance`](/docs/hca/reference/actions/hca-admin/get-governance) | Read, batchable | Reads who governs ENS HCAs: the factory owner and whether implementations are approved. |
 | [`hcaAdmin.grantUpgradeSetRoles`](/docs/hca/reference/actions/hca-admin/grant-upgrade-set-roles) | Write | Grants root roles on the HCA upgrade set (role admins only). |
 | [`hcaAdmin.renounceGovernance`](/docs/hca/reference/actions/hca-admin/renounce-governance) | Write | Renounces ownership of the HCA factory, freezing its implementation approvals (factory owner only). |
 | [`hcaAdmin.revokeUpgradeSetRoles`](/docs/hca/reference/actions/hca-admin/revoke-upgrade-set-roles) | Write | Revokes root roles on the HCA upgrade set (role admins only). |

@@ -73,7 +73,6 @@ Fields:
 | Code | Meaning |
 | --- | --- |
 | [`DNS_RECORD_MISSING`](/docs/sdk/errors/DNS_RECORD_MISSING) | The `_ens` TXT record is missing. |
-| [`DNS_OWNER_MISMATCH`](/docs/sdk/errors/DNS_OWNER_MISMATCH) | The DNS owner differs from the on-chain owner. |
 | [`DNSSEC_PROOF_FAILED`](/docs/sdk/errors/DNSSEC_PROOF_FAILED) | The DNSSEC proof could not be built or verified. |
 | [`PROOF_STALE`](/docs/sdk/errors/PROOF_STALE) | The DNSSEC proof is older than the one on-chain. |
 | [`TLD_NOT_PUBLIC`](/docs/sdk/errors/TLD_NOT_PUBLIC) | The top-level domain is not a public suffix and cannot be imported. |
@@ -133,7 +132,6 @@ Fields:
 | --- | --- |
 | [`INSUFFICIENT_ETH`](/docs/sdk/errors/INSUFFICIENT_ETH) | The account does not have enough ETH. |
 | [`INSUFFICIENT_TOKEN_BALANCE`](/docs/sdk/errors/INSUFFICIENT_TOKEN_BALANCE) | The account does not have enough of the payment token. |
-| [`PRICE_ABOVE_MAXIMUM`](/docs/sdk/errors/PRICE_ABOVE_MAXIMUM) | The price is above the maximum you allowed. |
 
 ## InternalError
 
@@ -256,7 +254,7 @@ A prepared or saved plan can no longer be sent as-is.
 
 ## TransactionError
 
-A submitted transaction failed, was replaced, or did not confirm in time.
+A submitted transaction failed, conflicted with another, or did not confirm in time.
 
 Fields:
 
@@ -268,7 +266,6 @@ Fields:
 | Code | Meaning |
 | --- | --- |
 | [`TRANSACTION_REVERTED`](/docs/sdk/errors/TRANSACTION_REVERTED) | The transaction reverted on-chain. |
-| [`TRANSACTION_REPLACED`](/docs/sdk/errors/TRANSACTION_REPLACED) | The transaction was replaced or cancelled. |
 | [`RECEIPT_TIMEOUT`](/docs/sdk/errors/RECEIPT_TIMEOUT) | Timed out waiting for the transaction receipt. |
 | [`NONCE_CONFLICT`](/docs/sdk/errors/NONCE_CONFLICT) | The transaction nonce conflicts with another transaction. |
 
@@ -359,7 +356,6 @@ Fields:
 | [`HCA_EXECUTOR_UNSUPPORTED`](/docs/sdk/errors/HCA_EXECUTOR_UNSUPPORTED) | No configured executor can run this HCA operation. |
 | [`HCA_ACTION_NOT_ALLOWED`](/docs/sdk/errors/HCA_ACTION_NOT_ALLOWED) | The HCA session policy does not allow this call. |
 | [`HCA_SESSION_INVALID`](/docs/sdk/errors/HCA_SESSION_INVALID) | The HCA session is expired, revoked or for another resolver. |
-| [`HCA_SAME_CHAIN_SOURCE`](/docs/sdk/errors/HCA_SAME_CHAIN_SOURCE) | This deployment rejects funding from the chain the HCA is on. |
 | [`HCA_BUNDLER_REJECTED`](/docs/sdk/errors/HCA_BUNDLER_REJECTED) | The bundler rejected the HCA UserOperation. |
 | [`HCA_PAYMASTER_REJECTED`](/docs/sdk/errors/HCA_PAYMASTER_REJECTED) | The paymaster refused to sponsor the HCA UserOperation. |
 | [`HCA_EXECUTION_FAILED`](/docs/sdk/errors/HCA_EXECUTION_FAILED) | The HCA execution failed. |

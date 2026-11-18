@@ -475,6 +475,13 @@ Returns the built-in profile for a chain, or `undefined` when ensforge ships non
 function get(options: { readonly chainId: number }): Profile | undefined
 ```
 
+```ts title="Looking up the connected chain"
+import { Deployments } from "@ensforge/contracts"
+
+const profile = Deployments.get({ chainId: await client.getChainId() })
+const registry = profile?.v1?.contracts.registry
+```
+
 ### `Deployments.l2ReverseRegistrars`
 
 The ENSv1 `L2ReverseRegistrar` (ens-contracts v1.7.0) of each chain it is deployed on, by chain
@@ -488,6 +495,12 @@ Lists the built-in profiles.
 
 ```ts
 function list(): readonly Profile[]
+```
+
+```ts title="Listing supported chains"
+import { Deployments } from "@ensforge/contracts"
+
+const chainIds = Deployments.list().map((profile) => profile.chainId)
 ```
 
 ### `Deployments.mainnet`
