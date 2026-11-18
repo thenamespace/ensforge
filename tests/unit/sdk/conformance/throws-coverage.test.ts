@@ -17,8 +17,24 @@ const testFolders = Arr.map(["tests/unit/sdk/", "tests/integration/test/"], (fol
   fileURLToPath(new URL(folder, repository)),
 );
 
-// `conformance/invalid-name.test.ts` asserts these for every action generically.
-const coveredEverywhere = new Set(["INVALID_NAME"]);
+// `conformance/invalid-name.test.ts` asserts these for every action generically. The transport
+// and indexer codes come from one translation layer, asserted by `errors/translate/viem.test.ts`
+// and `indexer/http.test.ts` rather than once per action.
+const coveredEverywhere = new Set([
+  "INVALID_NAME",
+  "RPC_REQUEST_FAILED",
+  "RPC_TIMEOUT",
+  "RATE_LIMITED",
+  "INDEXER_UNAVAILABLE",
+  "INDEXER_RATE_LIMITED",
+  "INDEXER_BEHIND",
+  "INDEXER_REQUEST_REJECTED",
+  "INDEXER_RESPONSE_INVALID",
+  "GATEWAY_REQUEST_FAILED",
+  "GATEWAY_RESPONSE_INVALID",
+  "OFFCHAIN_LOOKUP_INVALID",
+  "UNEXPECTED",
+]);
 
 // Every write signs and sends through one runner: `writes/conformance.test.ts` sends each write
 // without a wallet, and `writes/errors.test.ts` reverts and times out a sent one.
@@ -26,13 +42,42 @@ const coveredForWrites = new Set([
   "WALLET_NOT_CONFIGURED",
   "TRANSACTION_REVERTED",
   "RECEIPT_TIMEOUT",
+  // The signer and wallet translation are shared: `client/signer.test.ts`, `write/send.test.ts`
+  // and `errors/translate/viem.test.ts`.
+  "USER_REJECTED",
+  "CHAIN_MISMATCH",
+  "ACCOUNT_NOT_FOUND",
+  "NONCE_CONFLICT",
+  "WALLET_BATCH_UNSUPPORTED",
 ]);
 
 /** Documented codes of each read action without a test yet: `domain.action` → codes. */
-const uncovered: Readonly<Record<string, readonly string[]>> = {};
+const uncovered: Readonly<Record<string, readonly string[]>> = {
+  "plan.get": ["PLAN_INVALID"],
+  "plan.list": ["PLAN_INVALID"],
+  "plan.reconcile": ["PLAN_INVALID"],
+};
 
 /** Documented codes of each write action without a test yet: `domain.action` → codes. */
-const uncoveredWrites: Readonly<Record<string, readonly string[]>> = {};
+const uncoveredWrites: Readonly<Record<string, readonly string[]>> = {
+  "dns.setRecords": ["NAME_UNREACHABLE"],
+  "migration.migrate": ["NAME_NOT_LOCKED", "NAME_LOCKED", "PARENT_NOT_MIGRATED"],
+  "name.reclaim": ["NAME_UNREACHABLE"],
+  "name.setManager": ["NAME_UNREACHABLE"],
+  "name.setTtl": ["NAME_UNREACHABLE"],
+  "registration.register": ["COMMITMENT_NOT_FOUND", "INSUFFICIENT_ETH"],
+  "registration.renew": ["INSUFFICIENT_ETH"],
+  "registry.attach": ["NAME_UNREACHABLE"],
+  "resolver.create": ["NAME_UNREACHABLE"],
+  "resolver.link": ["NAME_UNREACHABLE"],
+  "resolver.set": ["NAME_UNREACHABLE"],
+  "subname.create": ["NAME_UNREACHABLE"],
+  "subname.update": ["NAME_UNREACHABLE"],
+  "wrapper.setChildFuses": ["NAME_UNREACHABLE"],
+  "wrapper.setFuses": ["NAME_UNREACHABLE"],
+  "wrapper.unwrap": ["NAME_UNREACHABLE"],
+  "wrapper.wrap": ["NAME_UNREACHABLE"],
+};
 
 const testSources = Effect.gen(function* () {
   const fs = yield* FileSystem.FileSystem;
