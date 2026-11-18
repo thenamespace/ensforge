@@ -18,7 +18,7 @@ import { UnsupportedError } from "../../errors/classes/UnsupportedError.js";
 import type { AnyError } from "../../errors/types.js";
 import { dnsEncode } from "../../utils/Name.js";
 import * as Rpc from "../rpc/index.js";
-import { parseSignedSet, RecordType, txtStrings } from "./wire.js";
+import { parseSignedSet, RecordType, txtStrings, type SignedSet } from "./wire.js";
 
 /** Gateway URLs: the caller's, or those the deployment's DNSSEC gateway provider lists. */
 export const gatewayUrls = (
@@ -44,6 +44,14 @@ export const gatewayUrls = (
   });
 };
 
+/** The TXT records of `name` in a signed RRSet, each as its character-strings. */
+const txtRecordsIn = (name: string, signed: SignedSet): string[][] =>
+  signed.typeCovered === RecordType.txt
+    ? signed.records
+        .filter((record) => record.type === RecordType.txt && record.name === name)
+        .map((record) => txtStrings(record.data))
+    : [];
+
 /** Proof built from signed RRSets, reading the TXT strings of `name` from the last one. */
 export const toProof = (name: string, rrsets: readonly SignedRRSet[]): Proof => {
   // Gateways answer a missing record with an empty RRSet.
@@ -53,20 +61,23 @@ export const toProof = (name: string, rrsets: readonly SignedRRSet[]): Proof => 
   }
 
   const signed = parseSignedSet(last.rrset);
-  const txt =
-    signed.typeCovered === RecordType.txt
-      ? signed.records
-          .filter((record) => record.type === RecordType.txt && record.name === name)
-          .flatMap((record) => txtStrings(record.data))
-      : [];
-
   return {
     name,
     rrsets,
     inception: signed.inception,
     expiration: signed.expiration,
-    txt,
+    txt: txtRecordsIn(name, signed).flat(),
   };
+};
+
+/**
+ * The TXT records of a proof, each joined from its character-strings: DNS splits values over 255
+ * bytes, and the DNS TLD resolver reads an `ENS1` record whole.
+ */
+export const txtRecords = (proof: Proof): string[] => {
+  const last = proof.rrsets.at(-1);
+  if (last === undefined || last.rrset === "0x") return [];
+  return txtRecordsIn(proof.name, parseSignedSet(last.rrset)).map((strings) => strings.join(""));
 };
 
 /**
@@ -145,14 +156,12 @@ export const ownerFromTxt = (txt: readonly string[]): Address | null => {
   return null;
 };
 
-/** The first `ENS1 <resolver> [context]` TXT record, as `OffchainDNSResolver` reads it. */
-export const offchainResolverFromTxt = (txt: readonly string[]): OffchainResolver | null => {
-  for (const value of txt) {
-    if (!value.startsWith("ENS1 ")) continue;
+/** The `ENS1 <resolver> [context]` TXT records, in order. */
+export const offchainResolversFromTxt = (txt: readonly string[]): OffchainResolver[] =>
+  txt.flatMap((value) => {
+    if (!value.startsWith("ENS1 ")) return [];
     const [resolver = "", ...rest] = value.slice(5).trim().split(" ");
-    if (resolver === "") continue;
+    if (resolver === "") return [];
     const context = rest.join(" ").trim();
-    return { resolver, context: context === "" ? null : context };
-  }
-  return null;
-};
+    return [{ resolver, context: context === "" ? null : context }];
+  });

@@ -138,7 +138,10 @@ export declare namespace claimSync {
  *
  * - Reads the TXT records of the name itself through the DNSSEC gateway, without verifying
  *   them on-chain.
- * - `null` when the name has no `ENS1 <resolver> [context]` record.
+ * - Picks the record the DNS TLD resolver uses: the first `ENS1 <resolver> [context]` record whose
+ *   resolver is an address, or an ENS name with an address record. A record split into several
+ *   strings (DNS splits values over 255 bytes) is read whole.
+ * - `null` when the name has no such record.
  *
  * **Example** (Reading a gasless DNS resolver)
  *
