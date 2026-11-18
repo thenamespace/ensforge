@@ -2,8 +2,9 @@ import { createFileRoute } from "@tanstack/react-router";
 
 import { listPosts } from "@/lib/blog/posts";
 import { blogImageUrl, docsImageUrl, type SitePage, siteImageUrl } from "@/lib/og/urls";
+import { documentedPackages } from "@/lib/packages";
 import { absolute, site } from "@/lib/site";
-import { source } from "@/lib/source";
+import { legalSource, source } from "@/lib/source";
 
 interface Entry {
   readonly path: string;
@@ -13,10 +14,10 @@ interface Entry {
   readonly lastmod?: string;
 }
 
-const landing: readonly { path: string; page: SitePage; priority: string }[] = [
+const landing: readonly { path: string; page: SitePage; priority: string; legal?: string }[] = [
   { path: "/", page: "home", priority: "1.0" },
-  { path: "/terms", page: "home", priority: "0.3" },
-  { path: "/privacy", page: "home", priority: "0.3" },
+  { path: "/terms", page: "home", priority: "0.3", legal: "terms" },
+  { path: "/privacy", page: "home", priority: "0.3", legal: "privacy" },
 ];
 
 const escape = (value: string) =>
@@ -55,14 +56,31 @@ async function entries(): Promise<Entry[]> {
     changefreq: "weekly",
   }));
 
+  // Changelogs render GitHub releases at request time, so they have no lastmod of their own.
+  const changelogs = documentedPackages.map((pkg): Entry => ({
+    path: `/docs/${pkg.slug}/changelog`,
+    image: docsImageUrl([pkg.slug]),
+    priority: "0.4",
+    changefreq: "weekly",
+  }));
+
   return [
-    ...landing.map((entry) => ({
-      path: entry.path,
-      image: siteImageUrl(entry.page),
-      priority: entry.priority,
-      changefreq: "monthly" as const,
-    })),
+    ...landing.map((entry): Entry => {
+      const updated = entry.legal ? legalSource.getPage([entry.legal])?.data.updated : undefined;
+
+      const page: Entry = {
+        path: entry.path,
+        image: siteImageUrl(entry.page),
+        priority: entry.priority,
+        changefreq: "monthly",
+      };
+
+      return updated
+        ? Object.assign(page, { lastmod: new Date(`${updated}T00:00:00Z`).toISOString() })
+        : page;
+    }),
     ...docs,
+    ...changelogs,
     ...blogIndex,
     ...blog,
     ...tags,

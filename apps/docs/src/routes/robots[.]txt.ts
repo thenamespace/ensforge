@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 
-import { absolute } from "@/lib/site";
+import { absolute, site } from "@/lib/site";
 
 export const Route = createFileRoute("/robots.txt")({
   server: {
@@ -8,6 +8,9 @@ export const Route = createFileRoute("/robots.txt")({
       GET: () =>
         new Response(
           [
+            `# ${site.name} docs. For agents, a plain-text index is at ${absolute("/llms.txt")}`,
+            `# and every docs page in one file at ${absolute("/llms-full.txt")}.`,
+            "",
             "User-agent: *",
             "Allow: /",
             "Disallow: /api/",
