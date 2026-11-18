@@ -8,6 +8,7 @@ import { InvalidInputError } from "../../../errors/classes/InvalidInputError.js"
 import { UnsupportedError } from "../../../errors/classes/UnsupportedError.js";
 import type { AnyError } from "../../../errors/types.js";
 import * as Action from "../../../internal/action/index.js";
+import { addressOf } from "../../../internal/address.js";
 import { randomSalt } from "../../../internal/factory/verifiable-proxy.js";
 import { loadName } from "../../../internal/name/load.js";
 import { parseName } from "../../../internal/name/normalize.js";
@@ -16,7 +17,6 @@ import { requireAddress, requireRegistered } from "../../../internal/name/write.
 import { explainFor } from "../../../internal/permission/check.js";
 import { deployPermissionedResolver } from "../../../internal/resolver/deploy.js";
 import { roleBitmapOf } from "../../../internal/role/bitmap.js";
-import { addressOf } from "../../../internal/write/signer.js";
 import { make as makePlan } from "../../../plan/make.js";
 import type { Plan } from "../../../plan/Plan.js";
 import type { Write } from "../../../Types.js";

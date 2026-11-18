@@ -17,10 +17,11 @@ import { fromCause } from "../../errors/translate/fromCause.js";
 import type { AnyError } from "../../errors/types.js";
 import type { Plan } from "../../plan/Plan.js";
 import type { Write } from "../../Types.js";
+import { addressOf } from "../address.js";
 import { fromPromise } from "../rpc/fromPromise.js";
 import { withHeadroom } from "./gas.js";
 import { receiptsOf } from "./receipts.js";
-import { addressOf, type Signer } from "./signer.js";
+import type { Signer } from "./signer.js";
 
 /** Whether the wallet sends atomic EIP-5792 bundles without asking to upgrade the account. */
 export const supportsAtomicBatch = (signer: Signer, chainId: number): Effect.Effect<boolean> =>

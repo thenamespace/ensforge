@@ -6,6 +6,7 @@ import type { Client } from "../../../client/types.js";
 import { ConfigError } from "../../../errors/classes/ConfigError.js";
 import type { AnyError } from "../../../errors/types.js";
 import * as Action from "../../../internal/action/index.js";
+import { addressOf } from "../../../internal/address.js";
 import { recordsCall } from "../../../internal/records/write-call.js";
 import { randomSecret } from "../../../internal/registration/commitment.js";
 import { requireRegistrationContracts } from "../../../internal/registration/contracts.js";
@@ -18,7 +19,6 @@ import {
   registerCall,
 } from "../../../internal/registration/steps.js";
 import { ethPrimaryNameCall } from "../../../internal/reverse/calls.js";
-import { addressOf } from "../../../internal/write/signer.js";
 import { routeSender } from "../../../internal/write/via.js";
 import { make as makePlan } from "../../../plan/make.js";
 import type { Plan } from "../../../plan/Plan.js";

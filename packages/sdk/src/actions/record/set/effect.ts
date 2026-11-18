@@ -9,6 +9,7 @@ import { NotFoundError } from "../../../errors/classes/NotFoundError.js";
 import { UnsupportedError } from "../../../errors/classes/UnsupportedError.js";
 import type { AnyError } from "../../../errors/types.js";
 import * as Action from "../../../internal/action/index.js";
+import { addressOf } from "../../../internal/address.js";
 import { loadName } from "../../../internal/name/load.js";
 import { requestedResolver, setResolverCall } from "../../../internal/name/set-resolver.js";
 import { requireRegistered } from "../../../internal/name/write.js";
@@ -21,7 +22,6 @@ import {
   resolverCall,
 } from "../../../internal/records/write-profiles.js";
 import * as Rpc from "../../../internal/rpc/index.js";
-import { addressOf } from "../../../internal/write/signer.js";
 import { make as makePlan } from "../../../plan/make.js";
 import type { Plan } from "../../../plan/Plan.js";
 import type { Write } from "../../../Types.js";

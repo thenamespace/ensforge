@@ -6,6 +6,7 @@ import type { Client } from "../../../client/types.js";
 import { ConfigError } from "../../../errors/classes/ConfigError.js";
 import type { AnyError } from "../../../errors/types.js";
 import * as Action from "../../../internal/action/index.js";
+import { addressOf } from "../../../internal/address.js";
 import { randomSalt } from "../../../internal/factory/verifiable-proxy.js";
 import { loadName } from "../../../internal/name/load.js";
 import {
@@ -15,7 +16,6 @@ import {
 } from "../../../internal/name/write.js";
 import { attachCalls, deployUserRegistry } from "../../../internal/registry/deploy.js";
 import { roleBitmapOf } from "../../../internal/role/bitmap.js";
-import { addressOf } from "../../../internal/write/signer.js";
 import { make as makePlan } from "../../../plan/make.js";
 import type { Plan } from "../../../plan/Plan.js";
 import type { Write } from "../../../Types.js";

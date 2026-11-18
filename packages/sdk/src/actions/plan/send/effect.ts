@@ -1,7 +1,7 @@
 import type { Client } from "../../../client/types.js";
 import * as Action from "../../../internal/action/index.js";
+import { addressOf } from "../../../internal/address.js";
 import { requireSendable } from "../../../internal/plan/records.js";
-import { addressOf } from "../../../internal/write/signer.js";
 import type { Write } from "../../../Types.js";
 import type { send as Promises } from "./index.js";
 

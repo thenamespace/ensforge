@@ -7,6 +7,7 @@ import type { Client } from "../../../client/types.js";
 import { UnsupportedError } from "../../../errors/classes/UnsupportedError.js";
 import type { AnyError } from "../../../errors/types.js";
 import * as Action from "../../../internal/action/index.js";
+import { addressOf } from "../../../internal/address.js";
 import { loadName } from "../../../internal/name/load.js";
 import {
   requireAddress,
@@ -16,7 +17,6 @@ import {
   singleStepPlan,
 } from "../../../internal/name/write.js";
 import { explainFor } from "../../../internal/permission/check.js";
-import { addressOf } from "../../../internal/write/signer.js";
 import type { Plan } from "../../../plan/Plan.js";
 import type { Write } from "../../../Types.js";
 import type { reclaim as Promises } from "./index.js";

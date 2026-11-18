@@ -8,14 +8,13 @@ import { InvalidInputError } from "../../../errors/classes/InvalidInputError.js"
 import { NotFoundError } from "../../../errors/classes/NotFoundError.js";
 import type { AnyError } from "../../../errors/types.js";
 import * as Action from "../../../internal/action/index.js";
-import { sameAddress } from "../../../internal/address.js";
+import { addressOf, sameAddress } from "../../../internal/address.js";
 import { normalizeName } from "../../../internal/name/normalize.js";
 import { requireAddress } from "../../../internal/name/write.js";
 import { defaultEvmCoinType } from "../../../internal/records/read-profiles.js";
 import { readRecords } from "../../../internal/records/read.js";
 import { defaultPrimaryNameCall, ethPrimaryNameCall } from "../../../internal/reverse/calls.js";
 import { ethCoinType, reverseName } from "../../../internal/reverse/coin.js";
-import { addressOf } from "../../../internal/write/signer.js";
 import { make as makePlan } from "../../../plan/make.js";
 import type { Plan } from "../../../plan/Plan.js";
 import type { Write } from "../../../Types.js";

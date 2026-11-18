@@ -14,6 +14,7 @@ export * as Action from "./internal/action/index.js";
 export { requireAddress } from "./internal/name/write.js";
 export * as Rpc from "./internal/rpc/index.js";
 export { receiptsOf, waitForReceipts } from "./internal/write/receipts.js";
-export { addressOf, resolveSigner, type Signer } from "./internal/write/signer.js";
+export { addressOf } from "./internal/address.js";
+export { resolveSigner, type Signer } from "./internal/write/signer.js";
 export { simulatePlan, simulateStep } from "./internal/write/simulate.js";
 export { make as makePlan } from "./plan/make.js";

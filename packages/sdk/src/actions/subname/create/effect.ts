@@ -11,6 +11,7 @@ import { NotFoundError } from "../../../errors/classes/NotFoundError.js";
 import { UnsupportedError } from "../../../errors/classes/UnsupportedError.js";
 import type { AnyError } from "../../../errors/types.js";
 import * as Action from "../../../internal/action/index.js";
+import { addressOf } from "../../../internal/address.js";
 import { randomSalt } from "../../../internal/factory/verifiable-proxy.js";
 import { requireAddress, requireV1Contracts } from "../../../internal/name/write.js";
 import { explainFor } from "../../../internal/permission/check.js";
@@ -19,7 +20,6 @@ import { attachCalls, deployUserRegistry } from "../../../internal/registry/depl
 import { deployPermissionedResolver } from "../../../internal/resolver/deploy.js";
 import { roleBitmapOf } from "../../../internal/role/bitmap.js";
 import { loadSubname, type LoadedSubname } from "../../../internal/subname/load.js";
-import { addressOf } from "../../../internal/write/signer.js";
 import { make as makePlan } from "../../../plan/make.js";
 import type { Plan } from "../../../plan/Plan.js";
 import type { Write } from "../../../Types.js";

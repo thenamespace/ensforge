@@ -9,6 +9,7 @@ import { InvalidInputError } from "../../../errors/classes/InvalidInputError.js"
 import { UnauthorizedError } from "../../../errors/classes/UnauthorizedError.js";
 import type { AnyError } from "../../../errors/types.js";
 import * as Action from "../../../internal/action/index.js";
+import { addressOf } from "../../../internal/address.js";
 import { parseDnsName } from "../../../internal/dns/name.js";
 import { fetchTxtProof, gatewayUrls, ownerFromTxt, toProof } from "../../../internal/dns/proof.js";
 import {
@@ -17,7 +18,6 @@ import {
   singleStepPlan,
 } from "../../../internal/name/write.js";
 import * as Rpc from "../../../internal/rpc/index.js";
-import { addressOf } from "../../../internal/write/signer.js";
 import type { Plan } from "../../../plan/Plan.js";
 import type { Write } from "../../../Types.js";
 import type { claim as Promises } from "./index.js";

@@ -4,7 +4,7 @@ import type { Account, Address } from "viem";
 
 import type { Client } from "../../client/types.js";
 import type { EnsforgeError } from "../../errors/EnsforgeError.js";
-import { addressOf } from "../write/signer.js";
+import { addressOf } from "../address.js";
 
 type ContextOptions = {
   readonly name?: unknown;

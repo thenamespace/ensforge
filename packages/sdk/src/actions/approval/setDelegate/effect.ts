@@ -9,12 +9,11 @@ import { UnauthorizedError } from "../../../errors/classes/UnauthorizedError.js"
 import { UnsupportedError } from "../../../errors/classes/UnsupportedError.js";
 import type { AnyError } from "../../../errors/types.js";
 import * as Action from "../../../internal/action/index.js";
-import { sameAddress } from "../../../internal/address.js";
+import { addressOf, sameAddress } from "../../../internal/address.js";
 import { loadName } from "../../../internal/name/load.js";
 import { requireAddress, singleStepPlan } from "../../../internal/name/write.js";
 import { resolverOwnerOf } from "../../../internal/permission/facts.js";
 import { setterKeying } from "../../../internal/records/setter-keying.js";
-import { addressOf } from "../../../internal/write/signer.js";
 import type { Plan } from "../../../plan/Plan.js";
 import type { Write } from "../../../Types.js";
 import type { setDelegate as Promises } from "./index.js";

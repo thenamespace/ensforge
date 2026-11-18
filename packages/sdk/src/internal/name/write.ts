@@ -10,7 +10,7 @@ import { UnsupportedError } from "../../errors/classes/UnsupportedError.js";
 import type { AnyError } from "../../errors/types.js";
 import { make as makePlan } from "../../plan/make.js";
 import type { Plan } from "../../plan/Plan.js";
-import { addressOf } from "../write/signer.js";
+import { addressOf } from "../address.js";
 import type { LoadedName } from "./load.js";
 
 /**

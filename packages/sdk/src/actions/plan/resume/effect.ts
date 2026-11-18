@@ -3,10 +3,11 @@ import { Effect } from "effect";
 import type { Client } from "../../../client/types.js";
 import type { AnyError } from "../../../errors/types.js";
 import * as Action from "../../../internal/action/index.js";
+import { addressOf } from "../../../internal/address.js";
 import { requireRecord, requireSendable } from "../../../internal/plan/records.js";
 import { waitForReceipts } from "../../../internal/write/receipts.js";
 import { sendPlan } from "../../../internal/write/send.js";
-import { addressOf, resolveSigner } from "../../../internal/write/signer.js";
+import { resolveSigner } from "../../../internal/write/signer.js";
 import type { Write } from "../../../Types.js";
 import type { resume as Promises } from "./index.js";
 

@@ -1,4 +1,4 @@
-import { isAddressEqual, zeroAddress, type Address } from "viem";
+import { isAddressEqual, zeroAddress, type Account, type Address } from "viem";
 
 /** `address`, or `null` when it is missing or the zero address, which ENS contracts use for none. */
 export const nonZeroAddress = (address: Address | null | undefined): Address | null =>
@@ -9,3 +9,7 @@ export const nonZeroAddress = (address: Address | null | undefined): Address | n
 /** Whether `a` is the address `b`; a missing `a` is no address. */
 export const sameAddress = (a: Address | null | undefined, b: Address): boolean =>
   a !== null && a !== undefined && isAddressEqual(a, b);
+
+/** Address of an account option. */
+export const addressOf = (account: Account | Address | undefined): Address | undefined =>
+  typeof account === "object" ? account.address : account;

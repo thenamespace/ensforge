@@ -1,7 +1,7 @@
 import { Deployments } from "@ensforge/contracts";
 
 import { ConfigError } from "../errors/classes/ConfigError.js";
-import { addressOf } from "../internal/write/signer.js";
+import { addressOf } from "../internal/address.js";
 import { resolveConfig } from "./config.js";
 import { build } from "./extend.js";
 import type { State } from "./state.js";

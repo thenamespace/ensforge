@@ -8,6 +8,7 @@ import { InvalidInputError } from "../../../errors/classes/InvalidInputError.js"
 import { NameStateError } from "../../../errors/classes/NameStateError.js";
 import type { AnyError } from "../../../errors/types.js";
 import * as Action from "../../../internal/action/index.js";
+import { addressOf } from "../../../internal/address.js";
 import { loadName } from "../../../internal/name/load.js";
 import {
   requireAddress,
@@ -18,7 +19,6 @@ import {
 import { explainFor } from "../../../internal/permission/check.js";
 import * as Rpc from "../../../internal/rpc/index.js";
 import { fuseMask } from "../../../internal/wrapper/fuses.js";
-import { addressOf } from "../../../internal/write/signer.js";
 import { make as makePlan } from "../../../plan/make.js";
 import type { Plan } from "../../../plan/Plan.js";
 import type { Write } from "../../../Types.js";

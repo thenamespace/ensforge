@@ -10,11 +10,11 @@ import { UnauthorizedError } from "../../../errors/classes/UnauthorizedError.js"
 import { UnsupportedError } from "../../../errors/classes/UnsupportedError.js";
 import type { AnyError } from "../../../errors/types.js";
 import * as Action from "../../../internal/action/index.js";
+import { addressOf } from "../../../internal/address.js";
 import { requireAddress, singleStepPlan } from "../../../internal/name/write.js";
 import { inspectRegistry } from "../../../internal/registry/inspect.js";
 import { requireTargetRegistry } from "../../../internal/registry/target.js";
 import * as Rpc from "../../../internal/rpc/index.js";
-import { addressOf } from "../../../internal/write/signer.js";
 import type { Plan } from "../../../plan/Plan.js";
 import type { Write } from "../../../Types.js";
 import type { upgrade as Promises } from "./index.js";

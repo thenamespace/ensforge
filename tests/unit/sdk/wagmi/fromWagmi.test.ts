@@ -1,7 +1,8 @@
 import { assert, describe, it } from "@effect/vitest";
 import { Effect } from "effect";
 
-import { addressOf, resolveSigner } from "@ensforge/sdk/internal/internal/write/signer";
+import { addressOf } from "@ensforge/sdk/internal/internal/address";
+import { resolveSigner } from "@ensforge/sdk/internal/internal/write/signer";
 import { fromWagmi } from "@ensforge/sdk/internal/wagmi/fromWagmi";
 import { expectFailure, expectThrow } from "@ensforge/test-harness";
 import { custom, numberToHex, type Chain } from "viem";

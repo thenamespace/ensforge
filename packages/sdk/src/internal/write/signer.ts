@@ -41,7 +41,3 @@ export const resolveSigner = Effect.fnUntraced(function* (
 
   return { walletClient, account: signer };
 });
-
-/** Address of an account option. */
-export const addressOf = (account: Account | Address | undefined): Address | undefined =>
-  typeof account === "object" ? account.address : account;

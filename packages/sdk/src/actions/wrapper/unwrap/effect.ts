@@ -8,6 +8,7 @@ import { NameStateError } from "../../../errors/classes/NameStateError.js";
 import { UnauthorizedError } from "../../../errors/classes/UnauthorizedError.js";
 import type { AnyError } from "../../../errors/types.js";
 import * as Action from "../../../internal/action/index.js";
+import { addressOf } from "../../../internal/address.js";
 import { loadName } from "../../../internal/name/load.js";
 import {
   requireAddress,
@@ -16,7 +17,6 @@ import {
   requireV1Contracts,
   singleStepPlan,
 } from "../../../internal/name/write.js";
-import { addressOf } from "../../../internal/write/signer.js";
 import type { Plan } from "../../../plan/Plan.js";
 import type { Write } from "../../../Types.js";
 import * as Fuse from "../../../utils/Fuse.js";

@@ -8,9 +8,10 @@ import { PlanError } from "../../errors/classes/PlanError.js";
 import type { AnyError } from "../../errors/types.js";
 import type { Plan } from "../../plan/Plan.js";
 import type { Write } from "../../Types.js";
+import { addressOf } from "../address.js";
 import { fromPromise } from "../rpc/fromPromise.js";
 import { receiptsOf } from "./receipts.js";
-import { addressOf, type Signer } from "./signer.js";
+import type { Signer } from "./signer.js";
 import { simulatableSteps, simulatePlan, simulateStep } from "./simulate.js";
 import {
   bundleOutcome,
