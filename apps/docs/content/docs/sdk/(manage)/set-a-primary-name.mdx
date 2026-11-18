@@ -26,8 +26,7 @@ You will set the **primary name** of an address: the name wallets and apps show 
 
 **Example** (Setting Your Primary Name)
 
-```ts twoslash title="set-primary-name.ts"
-// @types: node
+```ts title="set-primary-name.ts"
 import { createPublicClient, createWalletClient, http, type Hex } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { sepolia } from "viem/chains";
@@ -71,8 +70,7 @@ An L2 primary name is a transaction on that L2, so the client needs clients for 
 
 **Example** (Setting a Primary Name on Base Sepolia)
 
-```ts twoslash title="set-primary-name-l2.ts"
-// @types: node
+```ts title="set-primary-name-l2.ts"
 import { createPublicClient, createWalletClient, http, type Hex } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { baseSepolia, sepolia } from "viem/chains";
@@ -109,8 +107,7 @@ Supported L2s are those with an L2 reverse registrar: OP Mainnet, Base, Arbitrum
 
 **Example** (Signing One Claim for Two Chains)
 
-```ts twoslash title="sign-claim.ts"
-// @types: node
+```ts title="sign-claim.ts"
 import { createPublicClient, createWalletClient, http, type Hex } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { baseSepolia, optimismSepolia, sepolia } from "viem/chains";
@@ -134,7 +131,6 @@ const ens = Ensforge.create({
   },
 }).extend(ensActions());
 
-// ---cut---
 const signed = await ens.primaryName.signClaim({
   name: "ensforge-docs-demo.eth",
   chainIds: [baseSepolia.id, optimismSepolia.id],
@@ -154,8 +150,7 @@ The claim is plain JSON. The app signs and posts it. A server with a funded wall
 
 **Example** (Relaying a Signed Claim)
 
-```ts twoslash title="relay-claim.ts"
-// @types: node
+```ts title="relay-claim.ts"
 import { createPublicClient, createWalletClient, http, type Hex } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { baseSepolia, sepolia } from "viem/chains";

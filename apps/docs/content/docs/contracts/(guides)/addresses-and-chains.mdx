@@ -12,7 +12,7 @@ keywords: [Deployments, mainnet, sepolia, get, list, capabilities, provenance, l
 
 **Example** (Reading Addresses From a Profile)
 
-```ts twoslash title="profiles.ts"
+```ts title="profiles.ts"
 import { Deployments } from "@ensforge/contracts";
 
 const registry = Deployments.mainnet.v2.contracts.ethRegistry;
@@ -62,11 +62,10 @@ The same ENSv2 release can behave differently on two chains, because ENS deploye
 
 **Example** (Branching on a Flag)
 
-```ts twoslash title="capabilities.ts"
+```ts title="capabilities.ts"
 import { Deployments } from "@ensforge/contracts";
 
 const { wrapperRegistryInitializer } = Deployments.mainnet.v2.capabilities;
-//      ^?
 ```
 
 `wrapperRegistryInitializer` is `"fuse-derived"` on mainnet and `"explicit"` on Sepolia.
@@ -77,7 +76,7 @@ const { wrapperRegistryInitializer } = Deployments.mainnet.v2.capabilities;
 
 **Example** (Reading Provenance)
 
-```ts twoslash title="provenance.ts"
+```ts title="provenance.ts"
 import { Deployments } from "@ensforge/contracts";
 
 const { repository, release, commit } = Deployments.sepolia.v2.provenance;
@@ -89,7 +88,7 @@ const { repository, release, commit } = Deployments.sepolia.v2.provenance;
 
 **Example** (Finding the Base Reverse Registrar)
 
-```ts twoslash title="l2-reverse.ts"
+```ts title="l2-reverse.ts"
 import { Deployments } from "@ensforge/contracts";
 
 const base = Deployments.l2ReverseRegistrars[8453];

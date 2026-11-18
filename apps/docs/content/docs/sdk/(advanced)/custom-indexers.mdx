@@ -29,7 +29,7 @@ lets `fallback` ask the next indexer.
 
 **Example** (An Adapter for an In-House Subnames API)
 
-```ts twoslash title="in-house.ts"
+```ts title="in-house.ts"
 import { defineIndexer } from "@ensforge/sdk/indexer";
 import { namehash } from "viem";
 
@@ -41,7 +41,6 @@ declare const api: {
   ): Promise<{ names: string[]; next: string | null }>;
 };
 
-// ---cut---
 export const inHouse = defineIndexer({
   id: "in-house",
   getSubnames: async ({ name, cursor }, { signal }) => {
@@ -102,13 +101,12 @@ queries must return an object, or the call fails with
 
 **Example** (Reporting a Rate Limit)
 
-```ts twoslash title="errors.ts"
+```ts title="errors.ts"
 import { Errors } from "@ensforge/sdk";
 import { defineIndexer } from "@ensforge/sdk/indexer";
 
 declare const fetchProfile: (name: string) => Promise<Response>;
 
-// ---cut---
 export const guarded = defineIndexer({
   id: "guarded",
   getName: async () => {
@@ -131,7 +129,7 @@ indexer that can answer it.
 
 **Example** (Yours First, bigname After)
 
-```ts twoslash title="client.ts"
+```ts title="client.ts"
 import { Ensforge, ensActions } from "@ensforge/sdk";
 import { bigname, fallback, indexerActions, type Indexer } from "@ensforge/sdk/indexer";
 import { createPublicClient, http } from "viem";
@@ -159,7 +157,7 @@ issued them, so the next page goes back to the same one.
 
 **Example** (Walking Every Page of a Custom Indexer)
 
-```ts twoslash title="paginate.ts"
+```ts title="paginate.ts"
 import { Ensforge, indexerActions } from "@ensforge/sdk";
 import { paginate, type Indexer } from "@ensforge/sdk/indexer";
 import { createPublicClient, http } from "viem";
@@ -170,7 +168,6 @@ declare const inHouse: Indexer;
 const publicClient = createPublicClient({ chain: mainnet, transport: http() });
 const ens = Ensforge.create({ publicClient, indexer: inHouse }).extend(indexerActions());
 
-// ---cut---
 for await (const page of paginate(ens.indexer.getSubnames, { name: "ens.eth" })) {
   console.log(page.items.length);
 }
@@ -183,7 +180,7 @@ A small adapter makes tests independent of a live service. See
 
 **Example** (An Indexer That Finds Nothing)
 
-```ts twoslash title="double.ts"
+```ts title="double.ts"
 import { defineIndexer } from "@ensforge/sdk/indexer";
 
 export const empty = defineIndexer({ id: "test", getName: async () => null });

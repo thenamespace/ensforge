@@ -35,7 +35,7 @@ step that failed. A write that finished has it on `result.plan.id`.
 
 **Example** (Catching a failed registration)
 
-```ts twoslash title="catch.ts"
+```ts title="catch.ts"
 import type { EIP1193Provider } from "viem";
 
 declare global {
@@ -44,7 +44,6 @@ declare global {
   }
 }
 
-// ---cut---
 import { Duration, Ensforge, Errors, ensActions } from "@ensforge/sdk";
 import { createPublicClient, createWalletClient, custom, http } from "viem";
 import { sepolia } from "viem/chains";
@@ -67,7 +66,7 @@ with [`plan.list`](/docs/sdk/reference/actions/plan/list), newest first.
 
 **Example** (Listing plans that did not finish)
 
-```ts twoslash title="list.ts"
+```ts title="list.ts"
 import { Ensforge, ensActions } from "@ensforge/sdk";
 import { createPublicClient, http } from "viem";
 import { sepolia } from "viem/chains";
@@ -76,7 +75,6 @@ const publicClient = createPublicClient({ chain: sepolia, transport: http() });
 const account = "0xA11Ce00000000000000000000000000000000000"; // the account that sent the plans
 const ens = Ensforge.create({ publicClient, account }).extend(ensActions());
 
-// ---cut---
 const failed = await ens.plan.list({ account, status: "failed" });
 ```
 
@@ -85,7 +83,7 @@ const failed = await ens.plan.list({ account, status: "failed" });
 [`plan.get`](/docs/sdk/reference/actions/plan/get) returns the saved record, or `null` when no plan
 has that id.
 
-```ts twoslash title="get.ts"
+```ts title="get.ts"
 import { Ensforge, ensActions } from "@ensforge/sdk";
 import { createPublicClient, http } from "viem";
 import { sepolia } from "viem/chains";
@@ -94,7 +92,6 @@ const publicClient = createPublicClient({ chain: sepolia, transport: http() });
 const ens = Ensforge.create({ publicClient }).extend(ensActions());
 declare const planId: string;
 
-// ---cut---
 const record = await ens.plan.get({ id: planId });
 
 record?.status; // "pending" | "completed" | "failed"
@@ -109,7 +106,7 @@ remaining transactions are submitted. Use `plan.resumeSync` to wait for the rece
 
 **Example** (Resuming and waiting)
 
-```ts twoslash title="resume.ts"
+```ts title="resume.ts"
 import type { EIP1193Provider } from "viem";
 
 declare global {
@@ -128,7 +125,6 @@ const [account] = await walletClient.requestAddresses();
 const ens = Ensforge.create({ publicClient, walletClient, account }).extend(ensActions());
 declare const planId: string;
 
-// ---cut---
 const { receipts } = await ens.plan.resumeSync({ id: planId });
 ```
 

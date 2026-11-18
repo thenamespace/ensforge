@@ -29,7 +29,7 @@ DNS names are imported into [ENSv1](/docs/sdk/reference/glossary#ensv1). [ENSv2]
 
 **Example** (Checking a DNS Name)
 
-```ts twoslash title="dns-status.ts"
+```ts title="dns-status.ts"
 import { createPublicClient, http } from "viem";
 import { sepolia } from "viem/chains";
 import { Ensforge, ensActions } from "@ensforge/sdk";
@@ -39,7 +39,6 @@ const ens = Ensforge.create({
 }).extend(ensActions());
 
 const status = await ens.dns.getStatus({ name: "example.com" });
-//    ^?
 ```
 
 `status.action` is the next step:
@@ -67,8 +66,7 @@ _ens.example.com.  TXT  "a=0xB0b0000000000000000000000000000000000000"
 
 **Example** (Claiming a DNS Name)
 
-```ts twoslash title="dns-claim.ts"
-// @types: node
+```ts title="dns-claim.ts"
 import { createPublicClient, createWalletClient, http, type Hex } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { sepolia } from "viem/chains";
@@ -106,7 +104,7 @@ A gasless DNS name resolves without being imported, as an [off-chain name](/docs
 
 **Example** (Reading a Gasless DNS Setup)
 
-```ts twoslash title="dns-offchain.ts"
+```ts title="dns-offchain.ts"
 import { createPublicClient, http } from "viem";
 import { sepolia } from "viem/chains";
 import { Ensforge, ensActions } from "@ensforge/sdk";

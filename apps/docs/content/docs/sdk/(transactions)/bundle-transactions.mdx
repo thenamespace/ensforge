@@ -47,7 +47,7 @@ Nothing changes in your code. A write with several calls bundles itself.
 
 **Example** (Forcing one bundle)
 
-```ts twoslash title="bundle.ts"
+```ts title="bundle.ts"
 import type { EIP1193Provider } from "viem";
 
 declare global {
@@ -56,7 +56,6 @@ declare global {
   }
 }
 
-// ---cut---
 import { Ensforge, ensActions } from "@ensforge/sdk";
 import { createPublicClient, createWalletClient, custom, http } from "viem";
 import { sepolia } from "viem/chains";
@@ -85,7 +84,7 @@ Consecutive steps without a chain-time wait join one bundle, up to `maxBundleCal
 10, the limit MetaMask accepts). A step that waits, such as a registration's register step, starts a
 new bundle. Raise `maxBundleCalls` for wallets that accept more.
 
-```ts twoslash title="max-bundle-calls.ts"
+```ts title="max-bundle-calls.ts"
 import type { EIP1193Provider } from "viem";
 
 declare global {
@@ -94,7 +93,6 @@ declare global {
   }
 }
 
-// ---cut---
 import { Ensforge, ensActions } from "@ensforge/sdk";
 import { createPublicClient, createWalletClient, custom, http } from "viem";
 import { sepolia } from "viem/chains";
@@ -118,7 +116,7 @@ ids get the plan's position as a prefix to stay unique.
 
 **Example** (Records and primary name in one prompt)
 
-```ts twoslash title="merge.ts"
+```ts title="merge.ts"
 import type { EIP1193Provider } from "viem";
 
 declare global {
@@ -127,7 +125,6 @@ declare global {
   }
 }
 
-// ---cut---
 import { Ensforge, ensActions, Plan } from "@ensforge/sdk";
 import { createPublicClient, createWalletClient, custom, http } from "viem";
 import { sepolia } from "viem/chains";

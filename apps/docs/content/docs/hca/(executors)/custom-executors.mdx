@@ -32,7 +32,7 @@ The `request` that `send` and `quote` receive carries the chain, the HCA address
 
 **Example** (An Executor for Your Relayer)
 
-```ts twoslash title="relayer.ts"
+```ts title="relayer.ts"
 import { defineExecutor, hca } from "@ensforge/hca";
 
 // Your relayer client: it takes a request and returns an id you can poll.
@@ -67,7 +67,7 @@ Return `{ status: "failed" }` without `hashes` for an execution that never reach
 
 A fake executor makes route tests fast and needs no service.
 
-```ts twoslash title="fake-executor.ts"
+```ts title="fake-executor.ts"
 import { defineExecutor } from "@ensforge/hca";
 
 const fake = defineExecutor({

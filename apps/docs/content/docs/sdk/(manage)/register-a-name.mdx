@@ -48,8 +48,7 @@ By default each name gets its own [resolver](/docs/sdk/reference/glossary#resolv
 
 **Example** (Registering With Records and a Primary Name)
 
-```ts twoslash title="register.ts"
-// @types: node
+```ts title="register.ts"
 import { createPublicClient, createWalletClient, http, type Hex } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { sepolia } from "viem/chains";
@@ -115,8 +114,7 @@ The approval covers the quote plus 2%, because the price is charged at `register
 
 **Example** (Committing Now and Registering Later)
 
-```ts twoslash title="commit-then-register.ts"
-// @types: node
+```ts title="commit-then-register.ts"
 import { createPublicClient, createWalletClient, http, type Hex } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { sepolia } from "viem/chains";
@@ -130,7 +128,6 @@ const ens = Ensforge.create({
   walletClient: createWalletClient({ account, chain: sepolia, transport }),
 }).extend(ensActions());
 
-// ---cut---
 const options = { names: "ensforge-docs-demo.eth", duration: Duration.years(1) };
 
 const { secret, commitments } = await ens.registration.commitSync(options);

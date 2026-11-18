@@ -28,7 +28,7 @@ You will check what an account may do, grant and revoke roles, and give an app a
 
 **Example** (Gating a UI)
 
-```ts twoslash title="permission-get.ts"
+```ts title="permission-get.ts"
 import { createPublicClient, http } from "viem";
 import { sepolia } from "viem/chains";
 import { Ensforge, ensActions } from "@ensforge/sdk";
@@ -54,7 +54,7 @@ if (can.setRecords) console.log("show the edit button");
 
 **Example** (Explaining a Disabled Button)
 
-```ts twoslash title="permission-check.ts"
+```ts title="permission-check.ts"
 import { createPublicClient, http } from "viem";
 import { sepolia } from "viem/chains";
 import { Ensforge, ensActions } from "@ensforge/sdk";
@@ -78,7 +78,7 @@ const { allowed, via, missing } = await ens.permission.check({
 
 **Example** (Reading Roles on a Name)
 
-```ts twoslash title="role-get.ts"
+```ts title="role-get.ts"
 import { createPublicClient, http } from "viem";
 import { sepolia } from "viem/chains";
 import { Ensforge, ensActions } from "@ensforge/sdk";
@@ -105,8 +105,7 @@ const { names, admin, rootRoles } = await ens.role.get({
 
 **Example** (Granting and Revoking a Role)
 
-```ts twoslash title="role-grant.ts"
-// @types: node
+```ts title="role-grant.ts"
 import { createPublicClient, createWalletClient, http, type Hex } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { sepolia } from "viem/chains";
@@ -120,7 +119,6 @@ const ens = Ensforge.create({
   walletClient: createWalletClient({ account, chain: sepolia, transport }),
 }).extend(ensActions());
 
-// ---cut---
 const bob = "0xB0b0000000000000000000000000000000000000";
 
 await ens.role.grantSync({
@@ -170,8 +168,7 @@ Some roles regenerate the name's token ID. The plan then carries a `TOKEN_ID_REG
 
 **Example** (Letting an App Edit One Text Record)
 
-```ts twoslash title="set-record-access.ts"
-// @types: node
+```ts title="set-record-access.ts"
 import { createPublicClient, createWalletClient, http, type Hex } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { sepolia } from "viem/chains";
@@ -185,7 +182,6 @@ const ens = Ensforge.create({
   walletClient: createWalletClient({ account, chain: sepolia, transport }),
 }).extend(ensActions());
 
-// ---cut---
 await ens.permission.setRecordAccessSync({
   name: "ensforge-docs-demo.eth",
   grantee: "0xB0b0000000000000000000000000000000000000",

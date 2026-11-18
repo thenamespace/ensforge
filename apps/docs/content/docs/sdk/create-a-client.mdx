@@ -15,7 +15,7 @@ ensforge ships them for Ethereum mainnet and Sepolia.
 
 **Example** (Creating a Client for Reads)
 
-```ts twoslash title="ens.ts"
+```ts title="ens.ts"
 import { Ensforge, ensActions } from "@ensforge/sdk";
 import { createPublicClient, http } from "viem";
 import { mainnet } from "viem/chains";
@@ -41,7 +41,7 @@ public client.
 
 **Example** (Adding a Wallet Client)
 
-```ts twoslash title="ens.ts"
+```ts title="ens.ts"
 import { Ensforge, ensActions } from "@ensforge/sdk";
 import { createPublicClient, createWalletClient, custom, http, type EIP1193Provider } from "viem";
 import { sepolia } from "viem/chains";
@@ -68,12 +68,7 @@ wagmi's client for the ENS chain. Writes use whichever wallet is connected when 
 
 **Example** (Creating a Client From wagmi)
 
-```ts twoslash title="ens.ts"
-// @filename: wagmi.ts
-import type { Ensforge as Wagmi } from "@ensforge/sdk/wagmi";
-export declare const wagmiConfig: Parameters<typeof Wagmi.fromWagmi>[0];
-// @filename: ens.ts
-// ---cut---
+```ts no-check title="ens.ts"
 import { ensActions } from "@ensforge/sdk";
 import { Ensforge } from "@ensforge/sdk/wagmi";
 import { wagmiConfig } from "./wagmi"; // your app's createConfig(...)
@@ -106,7 +101,7 @@ It works with wagmi 2 (2.14 or later) and wagmi 3. For React apps, see
 
 **Example** (Adding Indexer Actions)
 
-```ts twoslash title="ens.ts"
+```ts title="ens.ts"
 import { Ensforge, ensActions } from "@ensforge/sdk";
 import { bigname, indexerActions } from "@ensforge/sdk/indexer";
 import { createPublicClient, http } from "viem";
@@ -131,7 +126,7 @@ client without `indexer` fails with
 
 **Example** (Only the Record Actions)
 
-```ts twoslash title="ens.ts"
+```ts title="ens.ts"
 import { Ensforge, recordActions } from "@ensforge/sdk";
 import { createPublicClient, http } from "viem";
 import { mainnet } from "viem/chains";
@@ -169,7 +164,7 @@ See [Configure RPC and gateways](/docs/sdk/rpc-and-gateways).
 
 **Example** (Adding an L2 for Primary Names)
 
-```ts twoslash title="ens.ts"
+```ts title="ens.ts"
 import { Ensforge, ensActions } from "@ensforge/sdk";
 import { createPublicClient, createWalletClient, custom, http, type EIP1193Provider } from "viem";
 import { base, mainnet } from "viem/chains";
@@ -215,7 +210,7 @@ client for it with default options on first use, and reuses it for later calls.
 
 **Example** (Calling an Action With a viem Client)
 
-```ts twoslash title="viem-client.ts"
+```ts title="viem-client.ts"
 import { Actions } from "@ensforge/sdk";
 import { createPublicClient, http } from "viem";
 import { mainnet } from "viem/chains";

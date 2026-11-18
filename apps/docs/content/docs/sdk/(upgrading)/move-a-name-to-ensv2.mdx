@@ -44,8 +44,7 @@ After it, ENSv2 holds the name and its ENSv1 record is held by the Graveyard. Re
 
 **Example** (Checking a Name Before Migrating)
 
-```ts twoslash title="migration-get.ts"
-// @types: node
+```ts title="migration-get.ts"
 import { createPublicClient, createWalletClient, http, type Hex } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { sepolia } from "viem/chains";
@@ -60,7 +59,6 @@ const ens = Ensforge.create({
 }).extend(ensActions());
 
 const status = await ens.migration.get({ name: "ensforge-docs-demo.eth" });
-//    ^?
 ```
 
 `status.status` is one of:
@@ -104,8 +102,7 @@ const status = await ens.migration.get({ name: "ensforge-docs-demo.eth" });
 
 **Example** (Migrating a Name With Its Profile)
 
-```ts twoslash title="migrate.ts"
-// @types: node
+```ts title="migrate.ts"
 import { createPublicClient, createWalletClient, http, type Hex } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { sepolia } from "viem/chains";

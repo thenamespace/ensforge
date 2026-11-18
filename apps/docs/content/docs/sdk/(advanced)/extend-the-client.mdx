@@ -38,7 +38,7 @@ action's path, name, account and chain to every error, so Promise and Effect use
 
 **Example** (A Profile Read Built from Two Actions)
 
-```ts twoslash title="profile/effect.ts"
+```ts title="profile/effect.ts"
 import { Actions } from "@ensforge/sdk/effect";
 import { Action, type AnyError, type Client } from "@ensforge/sdk/extension";
 import { Effect } from "effect";
@@ -63,7 +63,7 @@ ensforge error.
 
 **Example** (Wrapping the Profile Read as a Promise)
 
-```ts twoslash title="profile/index.ts"
+```ts title="profile/index.ts"
 import { Actions } from "@ensforge/sdk/effect";
 import { Action, type AnyError, type Client, type Like } from "@ensforge/sdk/extension";
 import { Effect } from "effect";
@@ -80,7 +80,6 @@ const getImpl = Effect.fn("my.profile.get")(function* (
   return { address, url };
 }, Action.withContext("profile.get"));
 
-// ---cut---
 export function get(client: Like, options: Options): Promise<Profile> {
   return Action.promise("profile.get", getImpl, client, options);
 }
@@ -95,7 +94,7 @@ A decorator is a function that takes the client and returns the groups to add. A
 
 **Example** (Adding the Profile Group to a Client)
 
-```ts twoslash title="profile/decorator.ts"
+```ts title="profile/decorator.ts"
 import { Ensforge, ensActions } from "@ensforge/sdk";
 import type { Client, Like } from "@ensforge/sdk/extension";
 import { createPublicClient, http } from "viem";
@@ -103,7 +102,6 @@ import { mainnet } from "viem/chains";
 
 declare const get: (client: Like, options: { name: string }) => Promise<{ url: string | null }>;
 
-// ---cut---
 const profileActions = () => (client: Client<object>) => ({
   profile: { get: (options: { name: string }) => get(client, options) },
 });
@@ -138,7 +136,7 @@ Without `send`, the signer sends the rewritten plan as usual.
 
 **Example** (A Route That Adds a Warning)
 
-```ts twoslash title="route.ts"
+```ts title="route.ts"
 import type { Write } from "@ensforge/sdk";
 
 export const audited: Write.Via = {

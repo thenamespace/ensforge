@@ -16,7 +16,7 @@ An **avatar** is a text record named `avatar` ([ENSIP-12](https://docs.ens.domai
 
 **Example** (Showing a Profile Picture)
 
-```ts twoslash title="get-avatar.ts"
+```ts title="get-avatar.ts"
 import { ensActions, Ensforge } from "@ensforge/sdk";
 import { createPublicClient, http } from "viem";
 import { mainnet } from "viem/chains";
@@ -26,7 +26,6 @@ const ens = Ensforge.create({
 }).extend(ensActions());
 
 const src = await ens.record.getAvatar({ name: "nick.eth" });
-//    ^?
 ```
 
 The result is an `http(s)` or `data:` URL, or `null` when the avatar is not set or cannot be loaded. See [`record.getAvatar`](/docs/sdk/reference/actions/record/get-avatar).
@@ -51,7 +50,7 @@ Set the gateways once on the client, or per call.
 
 **Example** (Setting an IPFS Gateway)
 
-```ts twoslash title="avatar-gateway.ts"
+```ts title="avatar-gateway.ts"
 import { ensActions, Ensforge } from "@ensforge/sdk";
 import { createPublicClient, http } from "viem";
 import { mainnet } from "viem/chains";

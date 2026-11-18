@@ -16,7 +16,7 @@ The `owner()` [executor](/docs/sdk/reference/glossary#executor) sends each [HCA]
 
 **Example** (Running Calls From the HCA)
 
-```ts twoslash title="execute.ts"
+```ts title="execute.ts"
 import { hca, hcaActions, owner } from "@ensforge/hca";
 import { Ensforge, ensActions } from "@ensforge/sdk";
 import { createPublicClient, createWalletClient, http, parseEther } from "viem";
@@ -32,7 +32,6 @@ const ens = Ensforge.create({
 })
   .extend(ensActions())
   .extend(hcaActions());
-// ---cut---
 const { receipt } = await ens.hca.executeSync({
   calls: [{ to: "0x000000000000000000000000000000000000dEaD", value: parseEther("0.001") }],
   via: hca({ executors: [owner()] }),
@@ -52,7 +51,7 @@ const { receipt } = await ens.hca.executeSync({
 
 With a wallet that supports the EIP-5792 `paymasterService` capability, pass `paymaster` on the write. The wallet's [paymaster](/docs/sdk/reference/glossary#paymaster) service then pays for its transactions.
 
-```ts twoslash title="sponsored-by-wallet.ts"
+```ts title="sponsored-by-wallet.ts"
 import { hca, hcaActions } from "@ensforge/hca";
 import { Ensforge, ensActions } from "@ensforge/sdk";
 import { createPublicClient, createWalletClient, http } from "viem";
@@ -68,7 +67,6 @@ const ens = Ensforge.create({
 })
   .extend(ensActions())
   .extend(hcaActions());
-// ---cut---
 await ens.migration.migrate({
   names: ["alice.eth"],
   via: hca(),
@@ -84,7 +82,7 @@ See [Pay gas for users](/docs/sdk/pay-gas-for-users) for the wallet side.
 
 One list can serve both kinds of write: owner writes go through your wallet, and session writes through Rhinestone.
 
-```ts twoslash title="executors.ts"
+```ts title="executors.ts"
 import { hca, owner, rhinestone, type HcaSession, type RhinestoneSdk } from "@ensforge/hca";
 import type { Account } from "viem";
 

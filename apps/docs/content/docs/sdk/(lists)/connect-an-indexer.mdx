@@ -16,7 +16,7 @@ Pass an indexer to `Ensforge.create`, then add the `indexerActions()` group. `bi
 
 **Example** (Creating a Client with bigname)
 
-```ts twoslash title="indexer-client.ts"
+```ts title="indexer-client.ts"
 import { ensActions, Ensforge } from "@ensforge/sdk";
 import { bigname, indexerActions } from "@ensforge/sdk/indexer";
 import { createPublicClient, http } from "viem";
@@ -44,7 +44,7 @@ See [Name lists and indexers](/docs/sdk/name-lists-and-indexers) and [`bigname`]
 
 **Example** (Reading the Indexer Status)
 
-```ts twoslash title="indexer-status.ts"
+```ts title="indexer-status.ts"
 import { ensActions, Ensforge } from "@ensforge/sdk";
 import { bigname, indexerActions } from "@ensforge/sdk/indexer";
 import { createPublicClient, http } from "viem";
@@ -57,7 +57,6 @@ const ens = Ensforge.create({
   .extend(ensActions())
   .extend(indexerActions());
 
-// ---cut---
 const status = await ens.indexer.getStatus();
 
 console.log(status.status, status.indexer);
@@ -88,7 +87,7 @@ An indexer is fast but can lag the chain by a few blocks. For an authoritative a
 
 **Example** (Reading a Basename)
 
-```ts twoslash title="goldsky-client.ts"
+```ts title="goldsky-client.ts"
 import { ensActions, Ensforge } from "@ensforge/sdk";
 import { goldsky, indexerActions } from "@ensforge/sdk/indexer";
 import { createPublicClient, http } from "viem";
@@ -110,7 +109,7 @@ const name = await ens.indexer.getName({ name: "jesse.base.eth" });
 
 **Example** (bigname First, Goldsky After)
 
-```ts twoslash title="fallback-client.ts"
+```ts title="fallback-client.ts"
 import { ensActions, Ensforge } from "@ensforge/sdk";
 import { bigname, fallback, goldsky, indexerActions } from "@ensforge/sdk/indexer";
 import { createPublicClient, http } from "viem";
@@ -134,7 +133,7 @@ Both built-in indexers take the same connection options, for a self-hosted serve
 
 **Example** (A Self-Hosted bigname with a Header)
 
-```ts twoslash title="self-hosted.ts"
+```ts title="self-hosted.ts"
 import { bigname } from "@ensforge/sdk/indexer";
 
 const authorization = "Bearer <token>";

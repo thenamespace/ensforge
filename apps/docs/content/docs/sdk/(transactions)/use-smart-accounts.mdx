@@ -33,7 +33,7 @@ are added as owner transactions.
 
 **Example** (Migrating several names in one or two transactions)
 
-```ts twoslash title="route.ts"
+```ts title="route.ts"
 import type { EIP1193Provider } from "viem";
 
 declare global {
@@ -42,7 +42,6 @@ declare global {
   }
 }
 
-// ---cut---
 import { hca, hcaActions } from "@ensforge/hca";
 import { Ensforge, ensActions } from "@ensforge/sdk";
 import { createPublicClient, createWalletClient, custom, http } from "viem";
@@ -82,12 +81,11 @@ hash. Resume the plan with the same `via`, so the route can follow those steps. 
 A route fails with its own errors. `hca()` fails with `HcaError`, which is outside the SDK's
 per-action error types. Check for it separately.
 
-```ts twoslash title="route-errors.ts"
+```ts title="route-errors.ts"
 import { HcaError } from "@ensforge/hca";
 
 declare const error: unknown;
 
-// ---cut---
 if (error instanceof HcaError) {
   console.log(error.code, error.executor);
 }

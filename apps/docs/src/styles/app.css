@@ -2,7 +2,6 @@
 @import "fumadocs-ui/css/generated/spacious.css";
 @import "fumadocs-ui/css/neutral.css";
 @import "fumadocs-ui/css/preset.css";
-@import "fumadocs-twoslash/twoslash.css";
 @import "@fontsource-variable/inter";
 @import "@fontsource-variable/jetbrains-mono";
 /* Marketing pages: tokens and motion primitives, then the shared isometric scenes. */

@@ -12,7 +12,7 @@ Named hooks cover the common reads. Pass the same options as the matching [SDK a
 
 **Example** (Reading An Address And A Profile)
 
-```tsx twoslash title="Profile.tsx"
+```tsx title="Profile.tsx"
 import { useAddress, useRecords } from "@ensforge/react";
 
 export function Profile({ name }: { name: string }) {
@@ -70,7 +70,7 @@ Every read hook returns a `ReadResult`.
 
 **Example** (Reading An Account's Permissions)
 
-```tsx twoslash title="CanEdit.tsx"
+```tsx title="CanEdit.tsx"
 import type { Address } from "viem";
 
 import { useRead } from "@ensforge/react";
@@ -92,7 +92,7 @@ Pass `undefined` options, or `enabled: false`, to hold a read back until you hav
 
 **Example** (Reading After The User Types)
 
-```tsx twoslash title="Lookup.tsx"
+```tsx title="Lookup.tsx"
 import { useState } from "react";
 
 import { useAddress } from "@ensforge/react";
@@ -116,7 +116,7 @@ Every read hook takes a config as its last argument: `staleTime`, `idleTTL`, `re
 
 **Example** (Polling A Name's State)
 
-```tsx twoslash title="Expiry.tsx"
+```tsx title="Expiry.tsx"
 import { useName } from "@ensforge/react";
 
 export function Expiry({ name }: { name: string }) {

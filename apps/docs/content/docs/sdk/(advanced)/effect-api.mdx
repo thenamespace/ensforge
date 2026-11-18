@@ -21,7 +21,7 @@ first and returns an `Effect` whose error channel is the action's documented err
 
 **Example** (Reading an Address in an Effect Program)
 
-```ts twoslash title="read.ts"
+```ts title="read.ts"
 import { Actions, Ensforge } from "@ensforge/sdk/effect";
 import { Effect } from "effect";
 import { createPublicClient, http } from "viem";
@@ -31,8 +31,6 @@ const publicClient = createPublicClient({ chain: mainnet, transport: http() });
 const ens = Ensforge.create({ publicClient });
 
 const program = Actions.record.getAddress(ens, { name: "nick.eth" });
-//    ^?
-
 const address = await Effect.runPromise(program);
 ```
 
@@ -46,7 +44,7 @@ for it. The layer fails with `ConfigError` when the options are invalid, such as
 
 **Example** (Using the Service)
 
-```ts twoslash title="service.ts"
+```ts title="service.ts"
 import { Actions, Ensforge } from "@ensforge/sdk/effect";
 import { Effect } from "effect";
 import { createPublicClient, http } from "viem";
@@ -72,7 +70,7 @@ Errors are the same instances Promise users catch, so `_tag` matches the class n
 
 **Example** (Recovering from a Missing Record)
 
-```ts twoslash title="errors.ts"
+```ts title="errors.ts"
 import { Actions, Ensforge } from "@ensforge/sdk/effect";
 import { Effect } from "effect";
 import { createPublicClient, http } from "viem";
@@ -91,7 +89,7 @@ After `catchTag`, `NotFoundError` is gone from the error type. See
 
 **Example** (Retrying Only What Is Retryable)
 
-```ts twoslash title="retry.ts"
+```ts title="retry.ts"
 import { Actions, Ensforge } from "@ensforge/sdk/effect";
 import { Effect } from "effect";
 import { createPublicClient, http } from "viem";
@@ -113,7 +111,7 @@ values as in the Promise API.
 
 **Example** (Preparing, Simulating and Sending)
 
-```ts twoslash title="write.ts"
+```ts title="write.ts"
 import { Actions, Ensforge } from "@ensforge/sdk/effect";
 import { Effect } from "effect";
 import { createPublicClient, http } from "viem";
@@ -145,7 +143,7 @@ See [Preview before sending](/docs/sdk/preview-before-sending) and
 
 **Example** (Batching Reads in an Effect Program)
 
-```ts twoslash title="batch.ts"
+```ts title="batch.ts"
 import { Actions as Requests } from "@ensforge/sdk";
 import { Actions, Ensforge } from "@ensforge/sdk/effect";
 import { createPublicClient, http } from "viem";
@@ -166,7 +164,7 @@ exists only in the Effect entry.
 
 **Example** (Decoding a Normalised Name)
 
-```ts twoslash title="schema.ts"
+```ts title="schema.ts"
 import { Name } from "@ensforge/sdk/effect";
 import { Schema } from "effect";
 
@@ -181,7 +179,7 @@ const name = Schema.decodeUnknownSync(Name.Normalized)("nick.eth");
 
 **Example** (Streaming Three Pages of Subnames)
 
-```ts twoslash title="stream.ts"
+```ts title="stream.ts"
 import { Actions, Ensforge, Indexer } from "@ensforge/sdk/effect";
 import { bigname } from "@ensforge/sdk/indexer";
 import { Effect, Stream } from "effect";

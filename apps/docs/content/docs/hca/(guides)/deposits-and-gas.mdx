@@ -30,7 +30,7 @@ The address of an HCA is known before deployment. Predict it and send funds ther
 
 **Example** (Reading the Address to Fund)
 
-```ts twoslash title="fund.ts"
+```ts title="fund.ts"
 import { hcaActions } from "@ensforge/hca";
 import { Ensforge, ensActions } from "@ensforge/sdk";
 import { createPublicClient, createWalletClient, http, parseEther } from "viem";
@@ -45,7 +45,6 @@ const walletClient = createWalletClient({ account, chain: sepolia, transport: ht
 const ens = Ensforge.create({ publicClient, walletClient })
   .extend(ensActions())
   .extend(hcaActions());
-// ---cut---
 const address = await ens.hca.predictAddress({});
 
 await walletClient.sendTransaction({ to: address, value: parseEther("0.01") });
@@ -65,7 +64,7 @@ With a bundler and no paymaster, the HCA pays for its UserOperations. The ERC-43
 
 **Example** (Topping Up and Withdrawing)
 
-```ts twoslash title="deposit.ts"
+```ts title="deposit.ts"
 import { hcaActions } from "@ensforge/hca";
 import { Ensforge, ensActions } from "@ensforge/sdk";
 import { createPublicClient, createWalletClient, http, parseEther } from "viem";
@@ -81,7 +80,6 @@ const ens = Ensforge.create({
 })
   .extend(ensActions())
   .extend(hcaActions());
-// ---cut---
 const before = await ens.hca.getDeposit({});
 
 await ens.hca.addDepositSync({ amount: parseEther("0.01") });

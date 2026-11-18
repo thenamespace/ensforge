@@ -20,7 +20,7 @@ viem's `fallback` transport to add a second provider.
 
 **Example** (Two providers with fallback)
 
-```ts twoslash title="rpc.ts"
+```ts title="rpc.ts"
 import { Ensforge, ensActions } from "@ensforge/sdk";
 import { createPublicClient, fallback, http } from "viem";
 import { mainnet } from "viem/chains";
@@ -53,14 +53,13 @@ sets the batch gateways instead, and `ccipRead: false` turns off-chain lookups o
 
 **Example** (Answering Lookups Locally)
 
-```ts twoslash title="ccip.ts"
+```ts title="ccip.ts"
 import { Ensforge } from "@ensforge/sdk";
 import { createPublicClient, http } from "viem";
 import { mainnet } from "viem/chains";
 
 const publicClient = createPublicClient({ chain: mainnet, transport: http() });
 
-// ---cut---
 const ens = Ensforge.create({
   publicClient,
   ccipRead: { gatewayUrls: ["x-batch-gateway:true"] },
@@ -86,14 +85,13 @@ ensforge coalesces concurrent contract reads into Multicall3 calls ([batching](/
 | `batch.multicall.batchSize` | `16384` | Calldata bytes per multicall chunk.                         |
 | `batch.multicall.wait`      | `0`     | Milliseconds to wait for more reads before sending a chunk. |
 
-```ts twoslash title="batching.ts"
+```ts title="batching.ts"
 import { Ensforge } from "@ensforge/sdk";
 import { createPublicClient, http } from "viem";
 import { mainnet } from "viem/chains";
 
 const publicClient = createPublicClient({ chain: mainnet, transport: http() });
 
-// ---cut---
 const ens = Ensforge.create({
   publicClient,
   batch: { multicall: { batchSize: 8_192, wait: 10 } },
@@ -112,14 +110,13 @@ can load through gateways. The defaults are `https://ipfs.io`, `https://arweave.
 
 The public `ipfs.io` gateway is rate limited. Use a dedicated gateway in production.
 
-```ts twoslash title="gateways.ts"
+```ts title="gateways.ts"
 import { Ensforge } from "@ensforge/sdk";
 import { createPublicClient, http } from "viem";
 import { mainnet } from "viem/chains";
 
 const publicClient = createPublicClient({ chain: mainnet, transport: http() });
 
-// ---cut---
 const ens = Ensforge.create({
   publicClient,
   gateways: { ipfs: "https://gateway.pinata.cloud" },

@@ -50,7 +50,7 @@ The first seven are owner-controlled fuses. The owner burns them with `wrapper.s
 
 **Example** (Reading Fuses)
 
-```ts twoslash title="get-fuses.ts"
+```ts title="get-fuses.ts"
 import { createPublicClient, http } from "viem";
 import { sepolia } from "viem/chains";
 import { Ensforge, ensActions } from "@ensforge/sdk";
@@ -60,7 +60,6 @@ const ens = Ensforge.create({
 }).extend(ensActions());
 
 const wrapped = await ens.wrapper.getFuses({ name: "ensforge-docs-v1-demo.eth" });
-//    ^?
 ```
 
 It returns `null` when the name is not wrapped, or is an expired emancipated name. Expired names report no fuses.
@@ -71,8 +70,7 @@ It returns `null` when the name is not wrapped, or is an expired emancipated nam
 
 **Example** (Locking a Name)
 
-```ts twoslash title="set-fuses.ts"
-// @types: node
+```ts title="set-fuses.ts"
 import { createPublicClient, createWalletClient, http, type Hex } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { sepolia } from "viem/chains";
@@ -104,8 +102,7 @@ To burn fuses while wrapping a `.eth` name, pass `fuses` to `wrapper.wrap`.
 
 **Example** (Emancipating a Subname)
 
-```ts twoslash title="set-child-fuses.ts"
-// @types: node
+```ts title="set-child-fuses.ts"
 import { createPublicClient, createWalletClient, http, type Hex } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { sepolia } from "viem/chains";
@@ -119,7 +116,6 @@ const ens = Ensforge.create({
   walletClient: createWalletClient({ account, chain: sepolia, transport }),
 }).extend(ensActions());
 
-// ---cut---
 await ens.wrapper.setChildFusesSync({
   name: "pay.ensforge-docs-v1-demo.eth",
   fuses: ["parentCannotControl"],

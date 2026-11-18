@@ -46,7 +46,7 @@ Without `refund`, the token is the deployment's USDC and the ceilings are the EN
 
 **Example** (Authorizing a Session for One Day)
 
-```ts twoslash title="authorize.ts"
+```ts title="authorize.ts"
 import { hcaActions } from "@ensforge/hca";
 import { Ensforge, ensActions } from "@ensforge/sdk";
 import { createPublicClient, createWalletClient, http } from "viem";
@@ -62,7 +62,6 @@ const ens = Ensforge.create({
 })
   .extend(ensActions())
   .extend(hcaActions());
-// ---cut---
 const sessionAccount = privateKeyToAccount(generatePrivateKey());
 const resolver = "0x0000000000000000000000000000000000000001"; // placeholder: your session resolver
 
@@ -79,7 +78,7 @@ The returned `HcaSession` holds no secret: it has the owner's signature and the 
 
 [`hca.checkSessionCalls`](/docs/hca/reference/actions/hca/check-session-calls) tests calls against the policy before anything is signed. It returns `true`, or throws `HCA_ACTION_NOT_ALLOWED` for the first call outside the policy. Use it to tell users up front what runs without prompts. `hca({ session })` runs the same check on its own.
 
-```ts twoslash title="check.ts"
+```ts title="check.ts"
 import { hcaActions, type HcaSession } from "@ensforge/hca";
 import { Duration, Ensforge, ensActions } from "@ensforge/sdk";
 import { createPublicClient, createWalletClient, http } from "viem";
@@ -96,7 +95,6 @@ const ens = Ensforge.create({
   .extend(ensActions())
   .extend(hcaActions());
 declare const session: HcaSession;
-// ---cut---
 const plan = await ens.registration.register.prepare({
   names: "my-new-name.eth", // placeholder
   duration: Duration.years(1),
@@ -114,7 +112,7 @@ Pass the session to `hca()` with an executor that runs sessions. The write is si
 
 **Example** (Registering a Name Without a Prompt)
 
-```ts twoslash title="register-with-session.ts"
+```ts title="register-with-session.ts"
 import { hca, hcaActions, rhinestone, type HcaSession, type RhinestoneSdk } from "@ensforge/hca";
 import { Duration, Ensforge, ensActions } from "@ensforge/sdk";
 import { createPublicClient, createWalletClient, http } from "viem";
@@ -135,7 +133,6 @@ declare const session: HcaSession;
 const sessionSigner = privateKeyToAccount(
   "0x1123456789012345678901234567890123456789012345678901234567890123",
 );
-// ---cut---
 const via = hca({ executors: [rhinestone({ sdk, sessionSigner })], session });
 
 await ens.registration.registerSync({
@@ -154,7 +151,7 @@ To edit records, route `ens.record.set` the same way: `ens.record.set({ name, te
 
 [`hca.getSession`](/docs/hca/reference/actions/hca/get-session) tells you whether a stored session can still be used, and why not.
 
-```ts twoslash title="get-session.ts"
+```ts title="get-session.ts"
 import { hcaActions, type HcaSession } from "@ensforge/hca";
 import { Ensforge, ensActions } from "@ensforge/sdk";
 import { createPublicClient, createWalletClient, http } from "viem";
@@ -171,7 +168,6 @@ const ens = Ensforge.create({
   .extend(ensActions())
   .extend(hcaActions());
 declare const session: HcaSession;
-// ---cut---
 const { valid, problem } = await ens.hca.getSession({ session });
 ```
 
@@ -188,7 +184,7 @@ When `problem` is not `null`, authorize a new session.
 
 `revokeSessions` bumps the HCA's session nonce, which invalidates every session approval at once. Use it when a session key may be lost or when you want to end all prompt-free access. It is the owner's own transaction and is never routed through the HCA. It fails with `HCA_NOT_VERIFIED` when the HCA is not deployed, because an undeployed HCA has no sessions.
 
-```ts twoslash title="revoke.ts"
+```ts title="revoke.ts"
 import { hcaActions } from "@ensforge/hca";
 import { Ensforge, ensActions } from "@ensforge/sdk";
 import { createPublicClient, createWalletClient, http } from "viem";
@@ -204,7 +200,6 @@ const ens = Ensforge.create({
 })
   .extend(ensActions())
   .extend(hcaActions());
-// ---cut---
 await ens.hca.revokeSessionsSync({});
 ```
 

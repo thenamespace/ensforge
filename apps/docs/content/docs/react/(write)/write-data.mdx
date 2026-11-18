@@ -12,7 +12,7 @@ Use a write hook to send a transaction from an event handler. The hook tracks th
 
 **Example** (A Save Button)
 
-```tsx twoslash title="Save.tsx"
+```tsx title="Save.tsx"
 import { useSetRecords } from "@ensforge/react";
 
 export function Save({ name }: { name: string }) {
@@ -72,7 +72,7 @@ Multi-step writes, such as a registration (commit, wait, register), push an even
 
 **Example** (Registering With Progress)
 
-```tsx twoslash title="Register.tsx"
+```tsx title="Register.tsx"
 import { useRegister } from "@ensforge/react";
 import { Duration } from "@ensforge/sdk";
 
@@ -106,7 +106,7 @@ Use `mutateAsync` to run code after the write, such as closing a dialog. It reje
 
 **Example** (Waiting For The Receipt)
 
-```tsx twoslash title="SaveAndClose.tsx"
+```tsx title="SaveAndClose.tsx"
 import { useWrite } from "@ensforge/react";
 import { Actions } from "@ensforge/sdk";
 

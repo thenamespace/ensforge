@@ -16,7 +16,7 @@ By the end of this guide you can show an account's names, for a "my names" page 
 
 **Example** (Listing an Account's Names)
 
-```ts twoslash title="list-names.ts"
+```ts title="list-names.ts"
 import { ensActions, Ensforge } from "@ensforge/sdk";
 import { bigname, indexerActions } from "@ensforge/sdk/indexer";
 import { createPublicClient, http } from "viem";
@@ -60,7 +60,7 @@ The address can be all lowercase or checksummed. Without `namespace`, the list c
 
 **Example** (Listing Names that Point at an Address)
 
-```ts twoslash title="list-resolves-to.ts"
+```ts title="list-resolves-to.ts"
 import { ensActions, Ensforge } from "@ensforge/sdk";
 import { bigname, indexerActions } from "@ensforge/sdk/indexer";
 import { createPublicClient, http } from "viem";
@@ -73,7 +73,6 @@ const ens = Ensforge.create({
   .extend(ensActions())
   .extend(indexerActions());
 
-// ---cut---
 const address = "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045";
 
 const pointing = await ens.indexer.getNamesForAddress({ address, relation: "resolvesTo" });

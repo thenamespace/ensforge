@@ -53,7 +53,7 @@ Pass `storage` to `Ensforge.create`.
 
 **Example** (Plans That Survive a Page Reload)
 
-```ts twoslash title="storage.ts"
+```ts title="storage.ts"
 import { Ensforge, Plan, ensActions } from "@ensforge/sdk";
 import { createPublicClient, http } from "viem";
 import { sepolia } from "viem/chains";
@@ -70,7 +70,7 @@ After a reload, list what did not finish and resume it:
 
 **Example** (Resuming Unfinished Plans)
 
-```ts twoslash title="recover.ts"
+```ts title="recover.ts"
 import { Ensforge, Plan, ensActions } from "@ensforge/sdk";
 import { createPublicClient, http } from "viem";
 import { sepolia } from "viem/chains";
@@ -81,7 +81,6 @@ const ens = Ensforge.create({
   storage: Plan.localStorage("my-app:plans"),
 }).extend(ensActions());
 
-// ---cut---
 const unfinished = await ens.plan.list({ status: "pending" });
 
 for (const record of unfinished) {
@@ -97,7 +96,7 @@ values, which contain `bigint`s, so a store that writes JSON needs a bigint-safe
 
 **Example** (A Key-Value Store)
 
-```ts twoslash title="kv-storage.ts"
+```ts title="kv-storage.ts"
 import { Plan } from "@ensforge/sdk";
 
 type KeyValue = {
@@ -148,7 +147,7 @@ service, for review or signing elsewhere.
 
 **Example** (Sending a Plan to Another Process)
 
-```ts twoslash title="serialize.ts"
+```ts title="serialize.ts"
 import { Ensforge, Plan, ensActions } from "@ensforge/sdk";
 import { createPublicClient, http } from "viem";
 import { sepolia } from "viem/chains";
@@ -157,7 +156,6 @@ const publicClient = createPublicClient({ chain: sepolia, transport: http() });
 const account = "0x225f137127d9067788314bc7fcc1f36746a3c3B5";
 const ens = Ensforge.create({ publicClient, account }).extend(ensActions());
 
-// ---cut---
 const plan = await ens.record.set.prepare({
   name: "alice.eth",
   texts: { url: "https://alice.dev" },

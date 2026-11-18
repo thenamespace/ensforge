@@ -13,7 +13,7 @@ Create one ensforge client and pass it to `EnsforgeProvider` once, near the root
 
 **Example** (Providing A Client)
 
-```tsx twoslash title="providers.tsx"
+```tsx title="providers.tsx"
 import type { ReactNode } from "react";
 
 import { EnsforgeProvider } from "@ensforge/react";
@@ -39,7 +39,7 @@ export function Providers({ children }: { children: ReactNode }) {
 
 **Example** (Showing An Address)
 
-```tsx twoslash title="Address.tsx"
+```tsx title="Address.tsx"
 import { useAddress } from "@ensforge/react";
 
 export function Address() {
@@ -64,7 +64,7 @@ Every component that reads `nick.eth` shares this one request and result. See [R
 
 **Example** (Saving A Website Record)
 
-```tsx twoslash title="SaveUrl.tsx"
+```tsx title="SaveUrl.tsx"
 import { useSetRecords } from "@ensforge/react";
 
 export function SaveUrl({ name }: { name: string }) {

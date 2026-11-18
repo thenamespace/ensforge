@@ -1,13 +1,14 @@
-import { type ComponentProps, useEffect, useRef } from "react";
+import { type ComponentProps, isValidElement, type ReactNode, useMemo } from "react";
 
 import { useLocation } from "@tanstack/react-router";
 
 import { Link } from "fumadocs-core/link";
-import * as Twoslash from "fumadocs-twoslash/ui";
+import type * as PageTree from "fumadocs-core/page-tree";
 import { Accordion, Accordions } from "fumadocs-ui/components/accordion";
 import { Card, Cards } from "fumadocs-ui/components/card";
 import { CodeBlock, Pre } from "fumadocs-ui/components/codeblock";
 import { Tab, Tabs } from "fumadocs-ui/components/tabs";
+import { useTreeContext } from "fumadocs-ui/contexts/tree";
 import defaultMdxComponents from "fumadocs-ui/mdx";
 import type { MDXComponents } from "mdx/types";
 
@@ -54,7 +55,6 @@ function TrackedPre(props: ComponentProps<typeof CodeBlock>) {
           slug,
           language: language || "unknown",
           lines: figure.querySelectorAll("pre .line").length,
-          is_twoslash: figure.classList.contains("twoslash"),
         });
       }}
     >
@@ -63,10 +63,93 @@ function TrackedPre(props: ComponentProps<typeof CodeBlock>) {
   );
 }
 
-/** External links report a click; the rest behave as the stock link. */
+/** Link text as a plain string, the fallback title when the target page is unknown. */
+function textOf(node: ReactNode): string {
+  if (typeof node === "string" || typeof node === "number") return String(node);
+  if (Array.isArray(node)) return node.map(textOf).join("");
+  if (isValidElement<{ children?: ReactNode }>(node)) return textOf(node.props.children);
+
+  return "";
+}
+
+const pageTitles = new WeakMap<object, Map<string, string>>();
+
+/** Page titles by URL, from the page tree the docs layout provides. */
+function titlesOf(root: PageTree.Root) {
+  const cached = pageTitles.get(root);
+  if (cached) return cached;
+
+  const titles = new Map<string, string>();
+  const visit = (nodes: readonly PageTree.Node[]) => {
+    for (const node of nodes) {
+      if (node.type === "page" && typeof node.name === "string") titles.set(node.url, node.name);
+      if (node.type === "folder") {
+        if (node.index && typeof node.index.name === "string")
+          titles.set(node.index.url, node.index.name);
+        visit(node.children);
+      }
+    }
+  };
+
+  visit(root.children);
+  pageTitles.set(root, titles);
+
+  return titles;
+}
+
+function isExternal(href: string) {
+  return /^https?:\/\//.test(href);
+}
+
+/** Every link carries a `title`: the target page's title inside the docs, the host outside. */
+function linkTitle(href: string | undefined, text: string, titles?: Map<string, string>) {
+  if (!href) return text || undefined;
+  if (isExternal(href)) {
+    try {
+      return new URL(href).host;
+    } catch {
+      return href;
+    }
+  }
+
+  const path = href.split(/[#?]/)[0] ?? "";
+  return titles?.get(path.replace(/\/$/, "")) ?? (text || undefined);
+}
+
+/** External links report a click; every link gets a `title`. */
 function TrackedLink(props: ComponentProps<typeof Link>) {
   const { isBlog, slug } = useContentScope();
+  const pathname = useLocation({ select: (location) => location.pathname });
 
+  return pathname.startsWith("/docs/") ? (
+    <DocsTitledLink {...props} isBlog={isBlog} slug={slug} />
+  ) : (
+    <ReportingLink
+      {...props}
+      title={props.title ?? linkTitle(props.href, textOf(props.children))}
+      isBlog={isBlog}
+      slug={slug}
+    />
+  );
+}
+
+function DocsTitledLink(props: ComponentProps<typeof Link> & { isBlog: boolean; slug: string }) {
+  const { root } = useTreeContext();
+  const titles = useMemo(() => titlesOf(root), [root]);
+
+  return (
+    <ReportingLink
+      {...props}
+      title={props.title ?? linkTitle(props.href, textOf(props.children), titles)}
+    />
+  );
+}
+
+function ReportingLink({
+  isBlog,
+  slug,
+  ...props
+}: ComponentProps<typeof Link> & { isBlog: boolean; slug: string }) {
   return (
     <Link
       {...props}
@@ -89,58 +172,9 @@ function TrackedLink(props: ComponentProps<typeof Link>) {
   );
 }
 
-let hoverSlug: string | undefined;
-const hovered = new Set<string>();
-
-/** Reports a type popup once per identifier per page view, after a short hover or a tap. */
-function TrackedPopupTrigger(props: ComponentProps<typeof Twoslash.PopupTrigger>) {
-  const { isBlog, slug } = useContentScope();
-  const ref = useRef<HTMLButtonElement>(null);
-
-  useEffect(() => {
-    const element = ref.current;
-    if (!element) return undefined;
-
-    let timer: number | undefined;
-
-    const report = () => {
-      if (hoverSlug !== slug) {
-        hoverSlug = slug;
-        hovered.clear();
-      }
-
-      const identifier = (element.textContent ?? "").trim().slice(0, 80);
-      if (!identifier || hovered.has(identifier)) return;
-
-      hovered.add(identifier);
-      track(isBlog ? "blog_type_hovered" : "docs_type_hovered", { slug, identifier });
-    };
-
-    const onEnter = (event: PointerEvent) => {
-      if (event.pointerType !== "touch") timer = window.setTimeout(report, 300);
-    };
-    const onLeave = () => window.clearTimeout(timer);
-
-    element.addEventListener("pointerenter", onEnter);
-    element.addEventListener("pointerleave", onLeave);
-    element.addEventListener("click", report);
-
-    return () => {
-      window.clearTimeout(timer);
-      element.removeEventListener("pointerenter", onEnter);
-      element.removeEventListener("pointerleave", onLeave);
-      element.removeEventListener("click", report);
-    };
-  }, [isBlog, slug]);
-
-  return <Twoslash.PopupTrigger {...props} ref={ref} />;
-}
-
 export function getMDXComponents(components?: MDXComponents) {
   return {
     ...defaultMdxComponents,
-    ...Twoslash,
-    PopupTrigger: TrackedPopupTrigger,
     a: TrackedLink,
     pre: TrackedPre,
     Accordion,

@@ -32,7 +32,7 @@ Create the clients against the local URL and use viem's test client to control t
 
 **Example** (Clients for a mainnet fork)
 
-```ts twoslash title="fork.ts"
+```ts title="fork.ts"
 import { Ensforge, ensActions } from "@ensforge/sdk";
 import { createPublicClient, createTestClient, createWalletClient, http } from "viem";
 import { mainnet } from "viem/chains";
@@ -58,7 +58,7 @@ Impersonate the owner of a real name, fund the account, and send the write.
 
 **Example** (Changing a record on a fork)
 
-```ts twoslash title="fork-write.ts"
+```ts title="fork-write.ts"
 import { Ensforge, ensActions } from "@ensforge/sdk";
 import { createPublicClient, createTestClient, createWalletClient, http, parseEther } from "viem";
 import { mainnet } from "viem/chains";
@@ -68,7 +68,6 @@ const publicClient = createPublicClient({ chain: mainnet, transport });
 const testClient = createTestClient({ chain: mainnet, mode: "anvil", transport });
 const reader = Ensforge.create({ publicClient }).extend(ensActions());
 
-// ---cut---
 const state = await reader.name.get({ name: "nick.eth" });
 const owner = state.owner;
 if (owner === null) throw new Error("nick.eth has no owner on this fork");
@@ -99,7 +98,7 @@ with its blocks. Use `onStep` to advance it when a step waits.
 
 **Example** (Skipping a registration wait)
 
-```ts twoslash title="fork-wait.ts"
+```ts title="fork-wait.ts"
 import { Duration, Ensforge, ensActions } from "@ensforge/sdk";
 import { createPublicClient, createTestClient, createWalletClient, http } from "viem";
 import { mainnet } from "viem/chains";
@@ -113,7 +112,6 @@ const ens = Ensforge.create({
   walletClient: createWalletClient({ chain: mainnet, transport, account }),
 }).extend(ensActions());
 
-// ---cut---
 await ens.registration.registerSync({
   names: "my-test-name.eth",
   duration: Duration.years(1),
@@ -140,7 +138,7 @@ Fast tests should not need a chain. Replace the parts that reach outside:
 
 **Example** (Testing UI copy for a failure)
 
-```ts twoslash title="errors.test.ts"
+```ts title="errors.test.ts"
 import { Errors } from "@ensforge/sdk";
 
 const error = new Errors.NotFoundError({

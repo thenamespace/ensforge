@@ -31,7 +31,7 @@ chain of that client tells ensforge which ENS contracts to use.
 
 **Example** (Creating a Mainnet Client)
 
-```ts twoslash title="ens.ts"
+```ts title="ens.ts"
 import { Ensforge, ensActions } from "@ensforge/sdk";
 import { createPublicClient, http } from "viem";
 import { mainnet } from "viem/chains";
@@ -54,23 +54,10 @@ into the address it points to.
 
 **Example** (Getting an Address)
 
-```ts twoslash title="address.ts"
-// @filename: ens.ts
-import { Ensforge, ensActions } from "@ensforge/sdk";
-import { createPublicClient, http } from "viem";
-import { mainnet } from "viem/chains";
-
-export const ens = Ensforge.create({
-  publicClient: createPublicClient({ chain: mainnet, transport: http() }),
-}).extend(ensActions());
-
-// @filename: address.ts
-// ---cut---
+```ts no-check title="address.ts"
 import { ens } from "./ens";
 
 const address = await ens.record.getAddress({ name: "nick.eth" });
-//    ^?
-
 console.log(address);
 ```
 
@@ -96,18 +83,7 @@ requests to the chain as possible.
 
 **Example** (Loading a Profile in One Batch)
 
-```ts twoslash title="profile.ts"
-// @filename: ens.ts
-import { Ensforge, ensActions } from "@ensforge/sdk";
-import { createPublicClient, http } from "viem";
-import { mainnet } from "viem/chains";
-
-export const ens = Ensforge.create({
-  publicClient: createPublicClient({ chain: mainnet, transport: http() }),
-}).extend(ensActions());
-
-// @filename: profile.ts
-// ---cut---
+```ts no-check title="profile.ts"
 import { Actions } from "@ensforge/sdk";
 import { ens } from "./ens";
 
@@ -176,9 +152,7 @@ sending it. Replace `your-name.eth` with your Sepolia name.
 
 **Example** (Planning a Write on Sepolia)
 
-```ts twoslash title="write.ts"
-declare const process: { env: Record<string, string | undefined> };
-// ---cut---
+```ts title="write.ts"
 import { Ensforge, ensActions } from "@ensforge/sdk";
 import { createPublicClient, createWalletClient, http, type Hex } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
@@ -215,8 +189,7 @@ then you read the record back to see the change.
 
 **Example** (Setting a Text Record and Reading It Back)
 
-```ts twoslash title="write.ts"
-declare const process: { env: Record<string, string | undefined> };
+```ts title="write.ts"
 import { Ensforge, ensActions } from "@ensforge/sdk";
 import { createPublicClient, createWalletClient, http, type Hex } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
@@ -230,7 +203,6 @@ const ens = Ensforge.create({
 }).extend(ensActions());
 
 const records = { name: "your-name.eth", texts: { url: "https://example.com" } };
-// ---cut---
 const { hash } = await ens.record.setSync(records);
 console.log("Mined:", hash);
 

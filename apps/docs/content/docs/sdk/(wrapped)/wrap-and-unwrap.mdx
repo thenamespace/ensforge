@@ -17,8 +17,7 @@ This page is about [ENSv1](/docs/sdk/reference/glossary#ensv1) only, because the
 
 **Example** (Wrapping a Name)
 
-```ts twoslash title="wrap.ts"
-// @types: node
+```ts title="wrap.ts"
 import { createPublicClient, createWalletClient, http, type Hex } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { sepolia } from "viem/chains";
@@ -54,8 +53,7 @@ If the name's [manager](/docs/sdk/reference/glossary#manager) is not the signer,
 
 **Example** (Unwrapping a Name)
 
-```ts twoslash title="unwrap.ts"
-// @types: node
+```ts title="unwrap.ts"
 import { createPublicClient, createWalletClient, http, type Hex } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { sepolia } from "viem/chains";
@@ -69,7 +67,6 @@ const ens = Ensforge.create({
   walletClient: createWalletClient({ account, chain: sepolia, transport }),
 }).extend(ensActions());
 
-// ---cut---
 await ens.wrapper.unwrapSync({ name: "ensforge-docs-v1-demo.eth" });
 ```
 

@@ -17,7 +17,7 @@ You will check that a [`.eth` name](/docs/sdk/reference/glossary#eth-name) is fr
 
 **Example** (Checking One Name)
 
-```ts twoslash title="is-available.ts"
+```ts title="is-available.ts"
 import { createPublicClient, http } from "viem";
 import { sepolia } from "viem/chains";
 import { Ensforge, ensActions } from "@ensforge/sdk";
@@ -27,7 +27,6 @@ const ens = Ensforge.create({
 }).extend(ensActions());
 
 const free = await ens.registration.isAvailable({ name: "ensforge-docs-demo.eth" });
-//    ^?
 ```
 
 - The name is [normalised](/docs/sdk/reference/glossary#normalisation) for you, so `"ＱＱＱ.eth"` is checked as `qqq.eth`.
@@ -46,7 +45,7 @@ A name is not available in these cases:
 
 **Example** (Quoting One Year)
 
-```ts twoslash title="get-price.ts"
+```ts title="get-price.ts"
 import { createPublicClient, http } from "viem";
 import { sepolia } from "viem/chains";
 import { Duration, Ensforge, ensActions } from "@ensforge/sdk";
@@ -83,7 +82,7 @@ Amounts are in the token's smallest unit. USDC has 6 decimals, so `1_000_000n` i
 
 **Example** (Reading the Settings)
 
-```ts twoslash title="get-parameters.ts"
+```ts title="get-parameters.ts"
 import { createPublicClient, http } from "viem";
 import { sepolia } from "viem/chains";
 import { Ensforge, ensActions } from "@ensforge/sdk";

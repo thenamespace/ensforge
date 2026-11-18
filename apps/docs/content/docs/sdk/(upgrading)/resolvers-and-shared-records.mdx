@@ -29,8 +29,7 @@ You will create a resolver, link names to one record set and upgrade the resolve
 
 **Example** (Creating a Resolver for a Name)
 
-```ts twoslash title="resolver-create.ts"
-// @types: node
+```ts title="resolver-create.ts"
 import { createPublicClient, createWalletClient, http, type Hex } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { sepolia } from "viem/chains";
@@ -73,8 +72,7 @@ If you reuse a `salt` that the account already used, `resolver.create` fails wit
 
 **Example** (Making an Alias Share a Main Name's Records)
 
-```ts twoslash title="resolver-link.ts"
-// @types: node
+```ts title="resolver-link.ts"
 import { createPublicClient, createWalletClient, http, type Hex } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { sepolia } from "viem/chains";
@@ -88,7 +86,6 @@ const ens = Ensforge.create({
   walletClient: createWalletClient({ account, chain: sepolia, transport }),
 }).extend(ensActions());
 
-// ---cut---
 await ens.resolver.linkSync({
   name: "ensforge-docs-alias.eth",
   to: "ensforge-docs-demo.eth",
@@ -103,7 +100,7 @@ Check whether two names share records with [`resolver.getLink`](/docs/sdk/refere
 
 **Example** (Checking Whether Names Share Records)
 
-```ts twoslash title="resolver-get-link.ts"
+```ts title="resolver-get-link.ts"
 import { createPublicClient, http } from "viem";
 import { sepolia } from "viem/chains";
 import { Ensforge, ensActions } from "@ensforge/sdk";
@@ -134,8 +131,7 @@ const shared = a !== null && b !== null && a.resolver === b.resolver && a.record
 
 **Example** (Upgrading a Resolver)
 
-```ts twoslash title="resolver-upgrade.ts"
-// @types: node
+```ts title="resolver-upgrade.ts"
 import { createPublicClient, createWalletClient, http, type Hex } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { sepolia } from "viem/chains";
@@ -149,7 +145,6 @@ const ens = Ensforge.create({
   walletClient: createWalletClient({ account, chain: sepolia, transport }),
 }).extend(ensActions());
 
-// ---cut---
 await ens.resolver.upgradeSync({ name: "ensforge-docs-demo.eth" });
 ```
 

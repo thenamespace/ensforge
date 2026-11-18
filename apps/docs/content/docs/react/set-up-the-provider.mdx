@@ -13,7 +13,7 @@ Every hook needs a client from `EnsforgeProvider`, or a `client` option. Render 
 
 **Example** (A Provider Without Wagmi)
 
-```tsx twoslash title="providers.tsx"
+```tsx title="providers.tsx"
 import type { ReactNode } from "react";
 
 import { EnsforgeProvider } from "@ensforge/react";
@@ -53,7 +53,7 @@ ensforge hooks need an <EnsforgeProvider client={…}> above them, or a `client`
 
 **Example** (Refetching On Window Focus)
 
-```tsx twoslash title="providers.tsx"
+```tsx title="providers.tsx"
 import type { ReactNode } from "react";
 
 import { EnsforgeProvider } from "@ensforge/react";
@@ -83,7 +83,7 @@ The provider renders an atom registry, the cache every hook reads and writes. Ea
 
 **Example** (A Second Provider For Sepolia)
 
-```tsx twoslash title="sepolia-provider.tsx"
+```tsx title="sepolia-provider.tsx"
 import type { ReactNode } from "react";
 
 import { EnsforgeProvider } from "@ensforge/react";
@@ -112,7 +112,7 @@ Reads are cached per chain, account and indexer, so two clients never mix result
 
 **Example** (Calling An Action From A Click)
 
-```tsx twoslash title="Check.tsx"
+```tsx title="Check.tsx"
 import { useEnsforge } from "@ensforge/react";
 import { Actions } from "@ensforge/sdk";
 

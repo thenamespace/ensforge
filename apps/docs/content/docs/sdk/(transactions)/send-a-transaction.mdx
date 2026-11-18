@@ -20,7 +20,7 @@ public client and checks that the wallet is on the same chain before it sends an
 
 **Example** (A Sepolia client with a browser wallet)
 
-```ts twoslash title="client.ts"
+```ts title="client.ts"
 import type { EIP1193Provider } from "viem";
 
 declare global {
@@ -29,7 +29,6 @@ declare global {
   }
 }
 
-// ---cut---
 import { Ensforge, ensActions } from "@ensforge/sdk";
 import { createPublicClient, createWalletClient, custom, http } from "viem";
 import { sepolia } from "viem/chains";
@@ -53,7 +52,7 @@ is submitted, not mined.
 
 **Example** (Setting a text record)
 
-```ts twoslash title="send.ts"
+```ts title="send.ts"
 import type { EIP1193Provider } from "viem";
 
 declare global {
@@ -71,7 +70,6 @@ const walletClient = createWalletClient({ chain: sepolia, transport: custom(wind
 const [account] = await walletClient.requestAddresses();
 const ens = Ensforge.create({ publicClient, walletClient, account }).extend(ensActions());
 
-// ---cut---
 const { hash, hashes, plan } = await ens.record.set({
   name: "alice.eth",
   texts: { url: "https://alice.dev" },
@@ -95,7 +93,7 @@ takes the same options and adds `confirmations` and `timeout`.
 
 **Example** (Waiting for two confirmations)
 
-```ts twoslash title="send-sync.ts"
+```ts title="send-sync.ts"
 import type { EIP1193Provider } from "viem";
 
 declare global {
@@ -113,7 +111,6 @@ const walletClient = createWalletClient({ chain: sepolia, transport: custom(wind
 const [account] = await walletClient.requestAddresses();
 const ens = Ensforge.create({ publicClient, walletClient, account }).extend(ensActions());
 
-// ---cut---
 const { receipt, receipts } = await ens.record.setSync({
   name: "alice.eth",
   texts: { url: "https://alice.dev" },
@@ -137,7 +134,7 @@ Pass `onStep` to see each step of a write wait, submit, confirm or fail. It is h
 
 **Example** (Logging every step)
 
-```ts twoslash title="progress.ts"
+```ts title="progress.ts"
 import type { EIP1193Provider } from "viem";
 
 declare global {
@@ -155,7 +152,6 @@ const walletClient = createWalletClient({ chain: sepolia, transport: custom(wind
 const [account] = await walletClient.requestAddresses();
 const ens = Ensforge.create({ publicClient, walletClient, account }).extend(ensActions());
 
-// ---cut---
 await ens.record.setSync({
   name: "alice.eth",
   texts: { url: "https://alice.dev" },
@@ -192,7 +188,7 @@ An aborted write rejects with `signal.reason`, so its plan id is not on the erro
 
 Read the change back with the matching read. After `setSync` resolves, the new value is on chain.
 
-```ts twoslash title="check.ts"
+```ts title="check.ts"
 import { Ensforge, ensActions } from "@ensforge/sdk";
 import { createPublicClient, http } from "viem";
 import { sepolia } from "viem/chains";
@@ -200,7 +196,6 @@ import { sepolia } from "viem/chains";
 const publicClient = createPublicClient({ chain: sepolia, transport: http() });
 const ens = Ensforge.create({ publicClient }).extend(ensActions());
 
-// ---cut---
 const url = await ens.record.getText({ name: "alice.eth", key: "url" });
 ```
 

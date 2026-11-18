@@ -18,7 +18,7 @@ You will move a name to a different [resolver](/docs/sdk/reference/glossary#reso
 
 **Example** (Reading a Name's Resolver)
 
-```ts twoslash title="get-resolver.ts"
+```ts title="get-resolver.ts"
 import { createPublicClient, http } from "viem";
 import { sepolia } from "viem/chains";
 import { Ensforge, ensActions } from "@ensforge/sdk";
@@ -28,7 +28,6 @@ const ens = Ensforge.create({
 }).extend(ensActions());
 
 const resolver = await ens.resolver.get({ name: "ensforge-docs-demo.eth" });
-//    ^?
 ```
 
 - `kind` says what the contract is, for example `"public-resolver"` or `"permissioned-resolver"`.
@@ -42,8 +41,7 @@ const resolver = await ens.resolver.get({ name: "ensforge-docs-demo.eth" });
 
 **Example** (Switching Resolver and Copying a Profile)
 
-```ts twoslash title="switch-resolver.ts"
-// @types: node
+```ts title="switch-resolver.ts"
 import { createPublicClient, createWalletClient, http, type Hex } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { sepolia } from "viem/chains";
@@ -71,8 +69,7 @@ await ens.record.setSync({
 
 **Example** (Pointing a Name at Another Resolver)
 
-```ts twoslash title="set-resolver.ts"
-// @types: node
+```ts title="set-resolver.ts"
 import { createPublicClient, createWalletClient, http, type Hex } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { sepolia } from "viem/chains";
@@ -86,7 +83,6 @@ const ens = Ensforge.create({
   walletClient: createWalletClient({ account, chain: sepolia, transport }),
 }).extend(ensActions());
 
-// ---cut---
 await ens.resolver.setSync({
   name: "ensforge-docs-demo.eth",
   resolver: "0x1111111111111111111111111111111111111111",
@@ -107,8 +103,7 @@ ENSv2 names have no shared default resolver, so `resolver: "default"` fails for 
 
 **Example** (Creating a Resolver With Records)
 
-```ts twoslash title="create-resolver.ts"
-// @types: node
+```ts title="create-resolver.ts"
 import { createPublicClient, createWalletClient, http, type Hex } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { sepolia } from "viem/chains";
@@ -122,7 +117,6 @@ const ens = Ensforge.create({
   walletClient: createWalletClient({ account, chain: sepolia, transport }),
 }).extend(ensActions());
 
-// ---cut---
 const { resolver } = await ens.resolver.createSync({
   name: "ensforge-docs-demo.eth",
   records: { texts: { url: "https://example.com" } },

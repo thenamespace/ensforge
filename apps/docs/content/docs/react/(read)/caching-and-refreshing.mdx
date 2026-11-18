@@ -37,7 +37,7 @@ Hooks with different settings still share the read's value and requests. When ho
 
 **Example** (Refetching A Name's State In The Background)
 
-```tsx twoslash title="Expiry.tsx"
+```tsx title="Expiry.tsx"
 import { useName } from "@ensforge/react";
 
 export function Expiry({ name }: { name: string }) {
@@ -79,7 +79,7 @@ Every read hook returns `refresh()`. Call it to refetch one read now.
 
 **Example** (A Refresh Button)
 
-```tsx twoslash title="Refresh.tsx"
+```tsx title="Refresh.tsx"
 import { useAddress } from "@ensforge/react";
 
 export function Refresh({ name }: { name: string }) {

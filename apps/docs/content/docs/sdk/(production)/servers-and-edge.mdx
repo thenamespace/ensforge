@@ -34,10 +34,7 @@ load the key from a secret store or environment variable. Never put a key in sou
 
 **Example** (A server-side signer)
 
-```ts twoslash title="server.ts"
-declare const process: { env: Record<string, string | undefined> };
-
-// ---cut---
+```ts title="server.ts"
 import { Ensforge, ensActions } from "@ensforge/sdk";
 import { createPublicClient, createWalletClient, http } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
@@ -76,7 +73,7 @@ the Promise rejects with `signal.reason` when it aborts.
 
 **Example** (A five-second deadline)
 
-```ts twoslash title="deadline.ts"
+```ts title="deadline.ts"
 import { Ensforge, ensActions } from "@ensforge/sdk";
 import { createPublicClient, http } from "viem";
 import { mainnet } from "viem/chains";
@@ -84,7 +81,6 @@ import { mainnet } from "viem/chains";
 const publicClient = createPublicClient({ chain: mainnet, transport: http() });
 const ens = Ensforge.create({ publicClient }).extend(ensActions());
 
-// ---cut---
 const address = await ens.record.getAddress({
   name: "nick.eth",
   signal: AbortSignal.timeout(5_000),

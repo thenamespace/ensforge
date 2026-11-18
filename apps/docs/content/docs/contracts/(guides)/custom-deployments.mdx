@@ -19,7 +19,7 @@ The simplest start is to copy a built-in deployment and change the addresses you
 
 **Example** (A Devnet Profile Based on Mainnet)
 
-```ts twoslash title="devnet.ts"
+```ts title="devnet.ts"
 import { Deployments } from "@ensforge/contracts";
 
 export const devnet = Deployments.define({
@@ -46,7 +46,7 @@ export const devnet = Deployments.define({
 
 **Example** (Catching an Invalid Profile)
 
-```ts twoslash title="invalid.ts"
+```ts title="invalid.ts"
 import { Deployments } from "@ensforge/contracts";
 
 try {
@@ -64,7 +64,7 @@ Pass the profile as `deployment` when you create the client. The client's chain 
 
 **Example** (Creating a Client for the Devnet)
 
-```ts twoslash title="client.ts"
+```ts title="client.ts"
 import { Deployments } from "@ensforge/contracts";
 import { Ensforge, ensActions } from "@ensforge/sdk";
 import { createPublicClient, http } from "viem";

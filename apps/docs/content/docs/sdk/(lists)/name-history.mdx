@@ -17,7 +17,7 @@ By the end of this guide you can show an activity feed for a name or an account:
 
 **Example** (Reading a Name's History)
 
-```ts twoslash title="name-history.ts"
+```ts title="name-history.ts"
 import { ensActions, Ensforge } from "@ensforge/sdk";
 import { bigname, indexerActions } from "@ensforge/sdk/indexer";
 import { createPublicClient, http } from "viem";
@@ -48,7 +48,7 @@ See [`indexer.getHistory`](/docs/sdk/reference/actions/indexer/get-history) and 
 
 **Example** (Reading Transfers and Avatar Changes)
 
-```ts twoslash title="history-filters.ts"
+```ts title="history-filters.ts"
 import { ensActions, Ensforge } from "@ensforge/sdk";
 import { bigname, indexerActions } from "@ensforge/sdk/indexer";
 import { createPublicClient, http } from "viem";
@@ -61,7 +61,6 @@ const ens = Ensforge.create({
   .extend(ensActions())
   .extend(indexerActions());
 
-// ---cut---
 const transfers = await ens.indexer.getHistory({ name: "nick.eth", types: ["transfer"] });
 
 const avatarChanges = await ens.indexer.getHistory({
@@ -77,7 +76,7 @@ Pass an `address` instead of a `name` to read the events of every name the addre
 
 **Example** (Reading an Account's Activity)
 
-```ts twoslash title="account-history.ts"
+```ts title="account-history.ts"
 import { ensActions, Ensforge } from "@ensforge/sdk";
 import { bigname, indexerActions } from "@ensforge/sdk/indexer";
 import { createPublicClient, http } from "viem";
@@ -90,7 +89,6 @@ const ens = Ensforge.create({
   .extend(ensActions())
   .extend(indexerActions());
 
-// ---cut---
 const page = await ens.indexer.getHistory({
   address: "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045",
   types: ["registration", "renewal", "transfer"],
@@ -103,7 +101,7 @@ const page = await ens.indexer.getHistory({
 
 **Example** (Reading Recent Events)
 
-```ts twoslash title="recent-events.ts"
+```ts title="recent-events.ts"
 import { ensActions, Ensforge } from "@ensforge/sdk";
 import { createPublicClient, http } from "viem";
 import { mainnet } from "viem/chains";

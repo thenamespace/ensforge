@@ -16,7 +16,7 @@ By the end of this guide you can read the full state of a name in one call: who 
 
 **Example** (Showing a Renewal Banner)
 
-```ts twoslash title="get-name-details.ts"
+```ts title="get-name-details.ts"
 import { ensActions, Ensforge } from "@ensforge/sdk";
 import { createPublicClient, http } from "viem";
 import { mainnet } from "viem/chains";
@@ -26,8 +26,6 @@ const ens = Ensforge.create({
 }).extend(ensActions());
 
 const state = await ens.name.get({ name: "ens.eth" });
-//    ^?
-
 if (state.status === "grace") {
   console.log("In the grace period until", new Date(Number(state.gracePeriodEnd) * 1000));
 } else if (state.expiry !== null) {
@@ -66,7 +64,7 @@ See [`name.get`](/docs/sdk/reference/actions/name/get).
 
 **Example** (Checking Availability)
 
-```ts twoslash title="is-available.ts"
+```ts title="is-available.ts"
 import { ensActions, Ensforge } from "@ensforge/sdk";
 import { createPublicClient, http } from "viem";
 import { mainnet } from "viem/chains";
@@ -75,7 +73,6 @@ const ens = Ensforge.create({
   publicClient: createPublicClient({ chain: mainnet, transport: http() }),
 }).extend(ensActions());
 
-// ---cut---
 const { available, renewable } = await ens.name.get({ name: "nick.eth" });
 ```
 

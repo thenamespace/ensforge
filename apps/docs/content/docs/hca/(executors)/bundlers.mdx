@@ -31,7 +31,7 @@ A **bundler** collects ERC-4337 UserOperations and lands them on chain. The `bun
 
 **Example** (Gasless Renewal With Pimlico)
 
-```ts twoslash title="pimlico.ts"
+```ts title="pimlico.ts"
 import { hca, hcaActions, pimlico } from "@ensforge/hca";
 import { Ensforge, ensActions } from "@ensforge/sdk";
 import { createPublicClient, createWalletClient, http } from "viem";
@@ -47,7 +47,6 @@ const ens = Ensforge.create({
 })
   .extend(ensActions())
   .extend(hcaActions());
-// ---cut---
 const via = hca({
   executors: [pimlico({ apiKey: "pim_…", sponsor: true })],
 });
@@ -76,7 +75,7 @@ await ens.hca.executeSync({
 
 **Example** (A Sponsored Operation With a Policy)
 
-```ts twoslash title="bundler.ts"
+```ts title="bundler.ts"
 import { bundler, hca } from "@ensforge/hca";
 
 const url = "https://bundler.example.com/rpc"; // your bundler

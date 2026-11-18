@@ -17,8 +17,7 @@ You will create a **subname** (a name under one you own, such as `pay.alice.eth`
 
 **Example** (Creating a Subname With Records)
 
-```ts twoslash title="create-subname.ts"
-// @types: node
+```ts title="create-subname.ts"
 import { createPublicClient, createWalletClient, http, type Hex } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { sepolia } from "viem/chains";
@@ -75,8 +74,7 @@ const { hash } = await ens.subname.createSync({
 
 **Example** (Repointing a Subname)
 
-```ts twoslash title="update-subname.ts"
-// @types: node
+```ts title="update-subname.ts"
 import { createPublicClient, createWalletClient, http, type Hex } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { sepolia } from "viem/chains";
@@ -90,7 +88,6 @@ const ens = Ensforge.create({
   walletClient: createWalletClient({ account, chain: sepolia, transport }),
 }).extend(ensActions());
 
-// ---cut---
 await ens.subname.updateSync({
   name: "pay.ensforge-docs-demo.eth",
   resolver: "0x1111111111111111111111111111111111111111", // a resolver you control
@@ -107,8 +104,7 @@ await ens.subname.updateSync({
 
 **Example** (Removing a Subname)
 
-```ts twoslash title="remove-subname.ts"
-// @types: node
+```ts title="remove-subname.ts"
 import { createPublicClient, createWalletClient, http, type Hex } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { sepolia } from "viem/chains";
@@ -122,7 +118,6 @@ const ens = Ensforge.create({
   walletClient: createWalletClient({ account, chain: sepolia, transport }),
 }).extend(ensActions());
 
-// ---cut---
 await ens.subname.removeSync({ name: "pay.ensforge-docs-demo.eth" });
 ```
 

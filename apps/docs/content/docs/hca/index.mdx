@@ -15,7 +15,7 @@ By the end of this page you will have moved two names to ENSv2 ([migration](/doc
 
 Add `hcaActions()` to a client that has a wallet. The example uses Sepolia.
 
-```ts twoslash title="client.ts"
+```ts title="client.ts"
 import { hcaActions } from "@ensforge/hca";
 import { Ensforge, ensActions } from "@ensforge/sdk";
 import { createPublicClient, createWalletClient, http } from "viem";
@@ -43,7 +43,7 @@ Pass `via: hca()` to any write. `hca()` is a [route](/docs/sdk/reference/glossar
 
 **Example** (Migrating Two Names Through the HCA)
 
-```ts twoslash title="migrate.ts"
+```ts title="migrate.ts"
 import { hca, hcaActions } from "@ensforge/hca";
 import { Ensforge, ensActions } from "@ensforge/sdk";
 import { createPublicClient, createWalletClient, http } from "viem";
@@ -59,7 +59,6 @@ const ens = Ensforge.create({
 })
   .extend(ensActions())
   .extend(hcaActions());
-// ---cut---
 const result = await ens.migration.migrateSync({
   names: ["alice.eth", "bob.eth"], // placeholders: ENSv1 .eth names your wallet owns
   via: hca(),
@@ -79,7 +78,7 @@ With an EIP-5792 wallet, the owner's steps share one [bundle](/docs/sdk/referenc
 
 `ens.hca.get` reads the HCA's address, owner, implementation and any problems. It works before deployment, using the predicted address.
 
-```ts twoslash title="get-account.ts"
+```ts title="get-account.ts"
 import { hcaActions } from "@ensforge/hca";
 import { Ensforge, ensActions } from "@ensforge/sdk";
 import { createPublicClient, createWalletClient, http } from "viem";
@@ -95,9 +94,7 @@ const ens = Ensforge.create({
 })
   .extend(ensActions())
   .extend(hcaActions());
-// ---cut---
 const hcaAccount = await ens.hca.get({});
-//    ^?
 ```
 
 `problems` is empty for an account that is safe to use. See [`hca.get`](/docs/hca/reference/actions/hca/get).

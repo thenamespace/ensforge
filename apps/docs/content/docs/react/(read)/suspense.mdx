@@ -12,7 +12,7 @@ Call `useSuspenseRead(action, options, config)` in a component and wrap it in `<
 
 **Example** (A Website Link Behind Suspense)
 
-```tsx twoslash title="Url.tsx"
+```tsx title="Url.tsx"
 import { Suspense } from "react";
 
 import { useSuspenseRead } from "@ensforge/react";
@@ -43,7 +43,7 @@ Wrap the error boundary in `ReadErrorResetBoundary` and call `reset` when the bo
 
 **Example** (Retrying A Failed Read)
 
-```tsx twoslash title="Owner.tsx"
+```tsx title="Owner.tsx"
 import { Component, Suspense, type ReactNode } from "react";
 
 import { ReadErrorResetBoundary, useSuspenseRead } from "@ensforge/react";
@@ -105,7 +105,7 @@ export const View = ({ name }: { name: string }) => (
 
 **Example** (A Retry Button)
 
-```tsx twoslash title="RetryButton.tsx"
+```tsx title="RetryButton.tsx"
 import { useReadErrorReset } from "@ensforge/react";
 
 export function RetryButton({ onRetry }: { onRetry: () => void }) {

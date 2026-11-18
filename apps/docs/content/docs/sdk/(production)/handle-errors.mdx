@@ -19,7 +19,7 @@ read the fields.
 
 **Example** (Reading the fields of an error)
 
-```ts twoslash title="catch.ts"
+```ts title="catch.ts"
 import { Ensforge, Errors, ensActions } from "@ensforge/sdk";
 import { createPublicClient, http } from "viem";
 import { mainnet } from "viem/chains";
@@ -27,7 +27,6 @@ import { mainnet } from "viem/chains";
 const publicClient = createPublicClient({ chain: mainnet, transport: http() });
 const ens = Ensforge.create({ publicClient }).extend(ensActions());
 
-// ---cut---
 try {
   await ens.record.getAddress({ name: "nobody-here.eth", strict: true });
 } catch (error) {
@@ -62,7 +61,7 @@ tracker. `Errors.is` uses a brand, not `instanceof`, so it also works when two c
 
 **Example** (Offering alternatives for a taken name)
 
-```ts twoslash title="branch.ts"
+```ts title="branch.ts"
 import { Duration, Ensforge, Errors, ensActions } from "@ensforge/sdk";
 import { createPublicClient, http } from "viem";
 import { sepolia } from "viem/chains";
@@ -71,7 +70,6 @@ const publicClient = createPublicClient({ chain: sepolia, transport: http() });
 const account = "0xA11Ce00000000000000000000000000000000000";
 const ens = Ensforge.create({ publicClient, account }).extend(ensActions());
 
-// ---cut---
 try {
   await ens.registration.register({ names: "alice.eth", duration: Duration.years(1) });
 } catch (error) {
@@ -98,13 +96,12 @@ action.
 
 **Example** (An error toast)
 
-```ts twoslash title="describe.ts"
+```ts title="describe.ts"
 import { Errors } from "@ensforge/sdk";
 
 declare const toast: (toast: { title: string; description: string }) => void;
 declare const error: unknown;
 
-// ---cut---
 const { title, message, action, severity, retryable } = Errors.describe(error);
 
 toast({ title, description: action === undefined ? message : `${message} ${action}` });
@@ -115,12 +112,11 @@ errors), `"warning"` for a retryable failure, and `"error"` for anything that ne
 
 **Example** (Translating one code)
 
-```ts twoslash title="translate.ts"
+```ts title="translate.ts"
 import { Errors } from "@ensforge/sdk";
 
 declare const error: unknown;
 
-// ---cut---
 const copy = Errors.describe(error, {
   messages: {
     NAME_NOT_AVAILABLE: (e) => ({
@@ -167,7 +163,7 @@ flowchart TD
 
 **Example** (Retrying a read with backoff)
 
-```ts twoslash title="retry.ts"
+```ts title="retry.ts"
 import { Ensforge, Errors, ensActions } from "@ensforge/sdk";
 import { createPublicClient, http } from "viem";
 import { mainnet } from "viem/chains";
@@ -175,7 +171,6 @@ import { mainnet } from "viem/chains";
 const publicClient = createPublicClient({ chain: mainnet, transport: http() });
 const ens = Ensforge.create({ publicClient }).extend(ensActions());
 
-// ---cut---
 const withRetry = async <value>(run: () => Promise<value>, attempts = 3): Promise<value> => {
   for (let attempt = 1; ; attempt++) {
     try {

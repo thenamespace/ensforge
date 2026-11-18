@@ -16,7 +16,7 @@ By the end of this guide you can back a name search box: type `vitalik`, get a l
 
 **Example** (Searching Names)
 
-```ts twoslash title="search-names.ts"
+```ts title="search-names.ts"
 import { ensActions, Ensforge } from "@ensforge/sdk";
 import { bigname, indexerActions } from "@ensforge/sdk/indexer";
 import { createPublicClient, http } from "viem";
@@ -48,7 +48,7 @@ See [`indexer.search`](/docs/sdk/reference/actions/indexer/search).
 
 **Example** (Searching Anywhere in a Label)
 
-```ts twoslash title="search-contains.ts"
+```ts title="search-contains.ts"
 import { ensActions, Ensforge } from "@ensforge/sdk";
 import { bigname, indexerActions } from "@ensforge/sdk/indexer";
 import { createPublicClient, http } from "viem";
@@ -61,7 +61,6 @@ const ens = Ensforge.create({
   .extend(ensActions())
   .extend(indexerActions());
 
-// ---cut---
 const page = await ens.indexer.search({ query: "dao", match: "contains", namespace: "ens" });
 ```
 
@@ -71,7 +70,7 @@ Each keystroke starts a new search, so cancel the one before it with an `AbortSi
 
 **Example** (Cancelling the Previous Search)
 
-```ts twoslash title="search-as-you-type.ts"
+```ts title="search-as-you-type.ts"
 import { ensActions, Ensforge } from "@ensforge/sdk";
 import { bigname, indexerActions } from "@ensforge/sdk/indexer";
 import { createPublicClient, http } from "viem";
@@ -84,7 +83,6 @@ const ens = Ensforge.create({
   .extend(ensActions())
   .extend(indexerActions());
 
-// ---cut---
 let controller: AbortController | undefined;
 
 export async function suggest(text: string) {

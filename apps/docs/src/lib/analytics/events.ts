@@ -35,8 +35,7 @@ export interface AnalyticsEvents {
   // Docs
   docs_page_viewed: { package: string; slug: string; title: string };
   docs_scroll_depth_reached: { percent: 25 | 50 | 75 | 100; slug: string };
-  docs_code_copied: { slug: string; language: string; lines: number; is_twoslash: boolean };
-  docs_type_hovered: { slug: string; identifier: string };
+  docs_code_copied: { slug: string; language: string; lines: number };
   docs_markdown_copied: { slug: string };
   docs_view_option_clicked: { option: string; slug: string };
   docs_search_opened: { trigger: "button" | "hotkey"; package: string };
@@ -65,8 +64,7 @@ export interface AnalyticsEvents {
   blog_read_depth_reached: { percent: 25 | 50 | 75 | 100; slug: string };
   /** Reached three quarters of the post after at least 30 seconds on it. */
   blog_post_read: { slug: string; seconds: number };
-  blog_code_copied: { slug: string; language: string; lines: number; is_twoslash: boolean };
-  blog_type_hovered: { slug: string; identifier: string };
+  blog_code_copied: { slug: string; language: string; lines: number };
   blog_outbound_clicked: { slug: string; host: string };
   blog_tag_clicked: { slug: string; tag: string };
   blog_rss_clicked: { location: Location };

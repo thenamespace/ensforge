@@ -29,7 +29,7 @@ Keep the `cursor` and pass it back. This fits a "Load more" button.
 
 **Example** (Loading Pages with a Cursor)
 
-```ts twoslash title="load-more.ts"
+```ts title="load-more.ts"
 import { ensActions, Ensforge } from "@ensforge/sdk";
 import { bigname, indexerActions } from "@ensforge/sdk/indexer";
 import { createPublicClient, http } from "viem";
@@ -64,7 +64,7 @@ Send the same options with each request and change only `cursor`. A cursor belon
 
 **Example** (Collecting at Most 1,000 Names)
 
-```ts twoslash title="paginate.ts"
+```ts title="paginate.ts"
 import { ensActions, Ensforge } from "@ensforge/sdk";
 import { bigname, indexerActions, paginate } from "@ensforge/sdk/indexer";
 import { createPublicClient, http } from "viem";
@@ -77,7 +77,6 @@ const ens = Ensforge.create({
   .extend(ensActions())
   .extend(indexerActions());
 
-// ---cut---
 const names: string[] = [];
 
 for await (const page of paginate(ens.indexer.getNamesForAddress, {
@@ -101,7 +100,7 @@ Pass `includeTotal: true` to fill `totalCount` on the first request. It makes th
 
 **Example** (Counting Names)
 
-```ts twoslash title="total-count.ts"
+```ts title="total-count.ts"
 import { ensActions, Ensforge } from "@ensforge/sdk";
 import { bigname, indexerActions } from "@ensforge/sdk/indexer";
 import { createPublicClient, http } from "viem";
@@ -114,7 +113,6 @@ const ens = Ensforge.create({
   .extend(ensActions())
   .extend(indexerActions());
 
-// ---cut---
 const page = await ens.indexer.getNamesForAddress({
   address: "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045",
   includeTotal: true,

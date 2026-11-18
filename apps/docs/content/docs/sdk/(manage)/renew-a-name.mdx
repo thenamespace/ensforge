@@ -17,7 +17,7 @@ You will extend the registration of one or more [`.eth` names](/docs/sdk/referen
 
 **Example** (Quoting Two Names)
 
-```ts twoslash title="renewal-price.ts"
+```ts title="renewal-price.ts"
 import { createPublicClient, http } from "viem";
 import { sepolia } from "viem/chains";
 import { Duration, Ensforge, ensActions } from "@ensforge/sdk";
@@ -45,8 +45,7 @@ Each entry of `items` has the `name`, its `amount` and its `route`:
 
 **Example** (Renewing Two Names)
 
-```ts twoslash title="renew.ts"
-// @types: node
+```ts title="renew.ts"
 import { createPublicClient, createWalletClient, http, type Hex } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { sepolia } from "viem/chains";

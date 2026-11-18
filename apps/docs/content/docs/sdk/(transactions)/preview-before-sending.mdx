@@ -21,7 +21,7 @@ It reads the chain to plan but sends nothing.
 
 **Example** (Planning a record update)
 
-```ts twoslash title="prepare.ts"
+```ts title="prepare.ts"
 import { Ensforge, ensActions } from "@ensforge/sdk";
 import { createPublicClient, http } from "viem";
 import { sepolia } from "viem/chains";
@@ -30,7 +30,6 @@ const publicClient = createPublicClient({ chain: sepolia, transport: http() });
 const account = "0xA11Ce00000000000000000000000000000000000"; // the account that will send it
 const ens = Ensforge.create({ publicClient, account }).extend(ensActions());
 
-// ---cut---
 const plan = await ens.record.set.prepare({
   name: "alice.eth",
   texts: { url: "https://alice.dev" },
@@ -60,7 +59,7 @@ would succeed, with the typed error when it would not.
 
 **Example** (Checking a write before the wallet prompt)
 
-```ts twoslash title="simulate.ts"
+```ts title="simulate.ts"
 import { Ensforge, ensActions } from "@ensforge/sdk";
 import { createPublicClient, http } from "viem";
 import { sepolia } from "viem/chains";
@@ -69,7 +68,6 @@ const publicClient = createPublicClient({ chain: sepolia, transport: http() });
 const account = "0xA11Ce00000000000000000000000000000000000"; // the account that will send it
 const ens = Ensforge.create({ publicClient, account }).extend(ensActions());
 
-// ---cut---
 const simulation = await ens.record.set.simulate({
   name: "alice.eth",
   texts: { url: "https://alice.dev" },
@@ -102,7 +100,7 @@ even though sending would succeed. Send with `simulate: false` there.
 
 **Example** (Pricing a write)
 
-```ts twoslash title="estimate.ts"
+```ts title="estimate.ts"
 import { Ensforge, ensActions } from "@ensforge/sdk";
 import { createPublicClient, formatEther, http } from "viem";
 import { sepolia } from "viem/chains";
@@ -111,7 +109,6 @@ const publicClient = createPublicClient({ chain: sepolia, transport: http() });
 const account = "0xA11Ce00000000000000000000000000000000000"; // the account that will send it
 const ens = Ensforge.create({ publicClient, account }).extend(ensActions());
 
-// ---cut---
 const { gas, value } = await ens.record.set.estimateGas({
   name: "alice.eth",
   texts: { url: "https://alice.dev" },
@@ -132,7 +129,7 @@ plan again, sends it step by step and saves its progress, exactly as the write i
 
 **Example** (Reviewing, then sending)
 
-```ts twoslash title="review-then-send.ts"
+```ts title="review-then-send.ts"
 import type { EIP1193Provider } from "viem";
 
 declare global {
@@ -150,7 +147,6 @@ const walletClient = createWalletClient({ chain: sepolia, transport: custom(wind
 const [account] = await walletClient.requestAddresses();
 const ens = Ensforge.create({ publicClient, walletClient, account }).extend(ensActions());
 
-// ---cut---
 const plan = await ens.record.set.prepare({
   name: "alice.eth",
   texts: { url: "https://alice.dev" },

@@ -26,7 +26,7 @@ keywords: [rhinestone, intents, session, sponsored, refund token, HCA_SDK_UNSUPP
 
 **Example** (A Prompt-Free Route)
 
-```ts twoslash title="rhinestone.ts"
+```ts title="rhinestone.ts"
 import { hca, rhinestone, type HcaSession, type RhinestoneSdk } from "@ensforge/hca";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 
@@ -44,7 +44,7 @@ Pass `via` to a write the session allows. See [Sessions](/docs/hca/sessions) for
 
 Without a `session`, `rhinestone({ sdk })` sends owner-signed, sponsored intents.
 
-```ts twoslash title="owner-signed.ts"
+```ts title="owner-signed.ts"
 import { hca, rhinestone, type RhinestoneSdk } from "@ensforge/hca";
 
 declare const sdk: RhinestoneSdk;
@@ -56,7 +56,7 @@ const via = hca({ executors: [rhinestone({ sdk })] });
 
 With `sponsored: false`, a session execution pays its fees in the session's refund token. The session sets the token and its ceilings when you authorize it.
 
-```ts twoslash title="refund-token.ts"
+```ts title="refund-token.ts"
 import { rhinestone, type RhinestoneSdk } from "@ensforge/hca";
 import type { Account } from "viem";
 

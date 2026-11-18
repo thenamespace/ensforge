@@ -12,7 +12,7 @@ Pass `indexer` to `Ensforge.create`: `bigname()`, `goldsky()`, `fallback([...])`
 
 **Example** (A Client With An Indexer)
 
-```tsx twoslash title="providers.tsx"
+```tsx title="providers.tsx"
 import type { ReactNode } from "react";
 
 import { EnsforgeProvider } from "@ensforge/react";
@@ -37,7 +37,7 @@ export function Providers({ children }: { children: ReactNode }) {
 
 **Example** (Subnames With A Load More Button)
 
-```tsx twoslash title="Subnames.tsx"
+```tsx title="Subnames.tsx"
 import { useSubnames } from "@ensforge/react";
 
 export function Subnames({ name }: { name: string }) {
@@ -84,7 +84,7 @@ For any other paginated indexer action, use `useInfiniteRead(action, options, co
 
 **Example** (Any Paginated Action)
 
-```tsx twoslash title="SearchSubnames.tsx"
+```tsx title="SearchSubnames.tsx"
 import { useInfiniteRead } from "@ensforge/react";
 import { Actions } from "@ensforge/sdk";
 

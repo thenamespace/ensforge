@@ -16,7 +16,7 @@ The hook adds an `AbortSignal` as `options.signal`. Pass it on, so a refresh or 
 
 **Example** (A Profile Read)
 
-```tsx twoslash title="profile-action.tsx"
+```tsx title="profile-action.tsx"
 import { useRead } from "@ensforge/react";
 import { Actions, type Ensforge } from "@ensforge/sdk";
 
@@ -64,7 +64,7 @@ An action from `@ensforge/sdk/effect` works as it is. Its error type is the Effe
 
 **Example** (Reading With An Effect Action)
 
-```tsx twoslash title="Role.tsx"
+```tsx title="Role.tsx"
 import type { Address } from "viem";
 
 import { useRead } from "@ensforge/react";

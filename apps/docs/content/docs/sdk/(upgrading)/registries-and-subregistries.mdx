@@ -50,7 +50,7 @@ An **emancipated** registry is one whose root [role](/docs/sdk/reference/glossar
 
 **Example** (Inspecting a Name's Subregistry)
 
-```ts twoslash title="registry-get.ts"
+```ts title="registry-get.ts"
 import { createPublicClient, http } from "viem";
 import { sepolia } from "viem/chains";
 import { Ensforge, ensActions } from "@ensforge/sdk";
@@ -60,7 +60,6 @@ const ens = Ensforge.create({
 }).extend(ensActions());
 
 const registry = await ens.registry.get({ name: "ensforge-docs-demo.eth" });
-//    ^?
 ```
 
 It returns `null` when the name has no subregistry, unless you pass `strict: true`. The result has:
@@ -83,8 +82,7 @@ Pass `account` to include whether it holds the `upgrade` role.
 
 **Example** (Deploying and Attaching a Subregistry)
 
-```ts twoslash title="registry-deploy.ts"
-// @types: node
+```ts title="registry-deploy.ts"
 import { createPublicClient, createWalletClient, http, type Hex } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { sepolia } from "viem/chains";
@@ -117,8 +115,7 @@ const { registry } = await ens.registry.deploySync({
 
 **Example** (Attaching a Registry)
 
-```ts twoslash title="registry-attach.ts"
-// @types: node
+```ts title="registry-attach.ts"
 import { createPublicClient, createWalletClient, http, type Hex } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { sepolia } from "viem/chains";
@@ -132,7 +129,6 @@ const ens = Ensforge.create({
   walletClient: createWalletClient({ account, chain: sepolia, transport }),
 }).extend(ensActions());
 
-// ---cut---
 await ens.registry.attachSync({
   name: "ensforge-docs-demo.eth",
   registry: "0x1111111111111111111111111111111111111111", // a registry you deployed
@@ -145,8 +141,7 @@ await ens.registry.attachSync({
 
 **Example** (Upgrading a Subregistry)
 
-```ts twoslash title="registry-upgrade.ts"
-// @types: node
+```ts title="registry-upgrade.ts"
 import { createPublicClient, createWalletClient, http, type Hex } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { sepolia } from "viem/chains";
@@ -160,7 +155,6 @@ const ens = Ensforge.create({
   walletClient: createWalletClient({ account, chain: sepolia, transport }),
 }).extend(ensActions());
 
-// ---cut---
 const info = await ens.registry.get({ name: "ensforge-docs-demo.eth", account: account.address });
 
 if (info?.upgrade.eligible) {
@@ -189,8 +183,7 @@ When `upgrade.eligible` is `false`, `upgrade.blocker` says why:
 
 **Example** (Setting a Metadata URI)
 
-```ts twoslash title="registry-set-uri.ts"
-// @types: node
+```ts title="registry-set-uri.ts"
 import { createPublicClient, createWalletClient, http, type Hex } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { sepolia } from "viem/chains";
@@ -204,7 +197,6 @@ const ens = Ensforge.create({
   walletClient: createWalletClient({ account, chain: sepolia, transport }),
 }).extend(ensActions());
 
-// ---cut---
 await ens.registry.setUriSync({
   name: "ensforge-docs-demo.eth",
   uri: "https://example.com/names/{id}.json",

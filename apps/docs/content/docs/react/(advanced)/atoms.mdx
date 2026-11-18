@@ -24,7 +24,7 @@ Every hook reads atoms. The atom layer lets you build your own derived state fro
 
 **Example** (Composing Reads)
 
-```ts twoslash title="profile-atom.ts"
+```ts title="profile-atom.ts"
 import { Actions, Ensforge } from "@ensforge/sdk";
 import { ensAtom } from "@ensforge/react/atoms";
 import { Atom } from "effect/reactivity";
@@ -49,7 +49,7 @@ An atom registry runs atoms anywhere. Mount an atom to keep it alive, then read 
 
 **Example** (Reading With A Registry)
 
-```ts twoslash title="registry.ts"
+```ts title="registry.ts"
 import { Actions, Ensforge } from "@ensforge/sdk";
 import { ensAtom } from "@ensforge/react/atoms";
 import { AtomRegistry } from "effect/reactivity";
@@ -79,7 +79,7 @@ registry.subscribe(owner, (result) => console.log(result._tag));
 
 **Example** (Sending A Write)
 
-```ts twoslash title="write-atom.ts"
+```ts title="write-atom.ts"
 import { Actions, Ensforge } from "@ensforge/sdk";
 import { ensWriteAtom } from "@ensforge/react/atoms";
 import { AtomRegistry } from "effect/reactivity";
@@ -105,7 +105,7 @@ Mount `run` while you write through it. Writes never interrupt each other, and r
 
 **Example** (Loading Subnames Page By Page)
 
-```ts twoslash title="pages-atom.ts"
+```ts title="pages-atom.ts"
 import { Actions, Ensforge } from "@ensforge/sdk";
 import { goldsky } from "@ensforge/sdk/indexer";
 import { ensPagesAtom } from "@ensforge/react/atoms";

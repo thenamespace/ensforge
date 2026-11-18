@@ -27,8 +27,7 @@ You will write [records](/docs/sdk/reference/glossary#record) (a website, an ava
 
 **Example** (Updating a Profile)
 
-```ts twoslash title="set-records.ts"
-// @types: node
+```ts title="set-records.ts"
 import { createPublicClient, createWalletClient, http, type Hex } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { sepolia } from "viem/chains";
@@ -74,8 +73,7 @@ Pass `null` to delete a record. `clear: true` deletes every record first, then w
 
 **Example** (Deleting a Record)
 
-```ts twoslash title="delete-record.ts"
-// @types: node
+```ts title="delete-record.ts"
 import { createPublicClient, createWalletClient, http, type Hex } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { sepolia } from "viem/chains";
@@ -89,7 +87,6 @@ const ens = Ensforge.create({
   walletClient: createWalletClient({ account, chain: sepolia, transport }),
 }).extend(ensActions());
 
-// ---cut---
 await ens.record.setSync({
   name: "ensforge-docs-demo.eth",
   texts: { url: null },
@@ -104,8 +101,7 @@ On an ENSv2 PermissionedResolver, `clear` links the name to record 0 instead of 
 
 **Example** (Moving to a New Resolver With Records)
 
-```ts twoslash title="set-records-resolver.ts"
-// @types: node
+```ts title="set-records-resolver.ts"
 import { createPublicClient, createWalletClient, http, type Hex } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { sepolia } from "viem/chains";
@@ -119,7 +115,6 @@ const ens = Ensforge.create({
   walletClient: createWalletClient({ account, chain: sepolia, transport }),
 }).extend(ensActions());
 
-// ---cut---
 await ens.record.setSync({
   name: "ensforge-docs-demo.eth",
   resolver: "0x1111111111111111111111111111111111111111", // a resolver you control

@@ -17,7 +17,7 @@ By the end of this page you will have read a name's state from the [ENSv2](/docs
 
 **Example** (Reading a Name's State)
 
-```ts twoslash title="get-state.ts"
+```ts title="get-state.ts"
 import { Abis, Deployments } from "@ensforge/contracts";
 import { createPublicClient, hexToBigInt, http } from "viem";
 import { labelhash } from "viem/ens";
@@ -33,7 +33,6 @@ const state = await publicClient.readContract({
 });
 
 state;
-// ^?
 ```
 
 - `labelhash("vitalik")` hashes the label (the part before `.eth`), giving its [labelhash](/docs/sdk/reference/glossary#labelhash). [Normalise](/docs/sdk/reference/glossary#normalisation) a label before you hash it.
@@ -46,7 +45,7 @@ state;
 
 **Example** (Looking Up a Chain by ID)
 
-```ts twoslash title="by-chain.ts"
+```ts title="by-chain.ts"
 import { Deployments } from "@ensforge/contracts";
 
 const profile = Deployments.get({ chainId: 11155111 });

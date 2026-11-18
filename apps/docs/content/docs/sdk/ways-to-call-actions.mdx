@@ -32,7 +32,7 @@ default.
 
 **Example** (Calling a Client Method)
 
-```ts twoslash title="client-method.ts"
+```ts title="client-method.ts"
 import { Ensforge, ensActions } from "@ensforge/sdk";
 import { createPublicClient, http } from "viem";
 import { mainnet } from "viem/chains";
@@ -54,7 +54,7 @@ the actions you call, so this is the smallest form.
 
 **Example** (Calling a Standalone Action)
 
-```ts twoslash title="standalone.ts"
+```ts title="standalone.ts"
 import { Actions, Ensforge } from "@ensforge/sdk";
 import { createPublicClient, http } from "viem";
 import { mainnet } from "viem/chains";
@@ -81,7 +81,7 @@ error union, so you handle failures with `Effect.catchTag` and the other Effect 
 
 **Example** (Calling an Action in an Effect Program)
 
-```ts twoslash title="effect.ts"
+```ts title="effect.ts"
 import { Actions, Ensforge } from "@ensforge/sdk/effect";
 import { Effect } from "effect";
 import { createPublicClient, http } from "viem";
@@ -122,7 +122,7 @@ way of calling.
 
 **Example** (Batching Two Reads With Requests)
 
-```ts twoslash title="requests.ts"
+```ts title="requests.ts"
 import { Actions, Ensforge, ensActions } from "@ensforge/sdk";
 import { createPublicClient, http } from "viem";
 import { mainnet } from "viem/chains";
