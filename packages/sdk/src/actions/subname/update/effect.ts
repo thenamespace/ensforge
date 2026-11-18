@@ -59,11 +59,12 @@ const v2Calls = (
 
 /**
  * ENSv1: owner and resolver are rewritten from the parent with `setSubnodeRecord`, keeping what
- * is not changed; a wrapped child's expiry is extended with `extendExpiry`.
+ * is not changed; a wrapped child's expiry is extended with `extendExpiry`. An unwrapped parent
+ * rewrites the child in the registry, which unwraps a wrapped child.
  */
 const v1Calls = Effect.fnUntraced(function* (
   client: Client,
-  { parent, child, label }: LoadedSubname,
+  { parent, child, label, route }: LoadedSubname,
   changes: {
     readonly owner: Address | undefined;
     readonly resolver: Address | undefined;
@@ -76,7 +77,7 @@ const v1Calls = Effect.fnUntraced(function* (
   const resolver = changes.resolver ?? state.resolver ?? zeroAddress;
   const record = changes.owner !== undefined || changes.resolver !== undefined;
 
-  if (!state.wrapped) {
+  if (!state.wrapped || (route === "v1" && record)) {
     if (changes.expiry !== undefined) {
       return yield* Effect.fail(
         new UnsupportedError({

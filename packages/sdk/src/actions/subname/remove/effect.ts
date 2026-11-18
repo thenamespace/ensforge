@@ -20,11 +20,12 @@ import type { remove as Promises } from "./index.js";
 /**
  * The call that removes the child. ENSv2 unregisters it, which also clears its resolver and
  * subregistry. ENSv1 sets owner and resolver to zero, from the parent when the signer controls
- * the parent, otherwise as the child's owner.
+ * the parent, otherwise as the child's owner. An unwrapped parent clears the child in the
+ * registry, which unwraps a wrapped child.
  */
 const removeCall = Effect.fnUntraced(function* (
   client: Client,
-  { parent, child, label }: LoadedSubname,
+  { parent, child, label, route }: LoadedSubname,
   signer: Address,
 ): Effect.fn.Return<Plan.Call, AnyError> {
   const { node, labelhash } = child.data.parts;
@@ -41,7 +42,8 @@ const removeCall = Effect.fnUntraced(function* (
   }
 
   const contracts = yield* requireV1Contracts(client);
-  if (child.state.wrapped) {
+  const fromParentRegistry = sameAddress(parent.data.v1?.registryOwner, signer);
+  if (child.state.wrapped && !(route === "v1" && fromParentRegistry)) {
     return sameAddress(parent.state.owner, signer)
       ? {
           to: contracts.nameWrapper,
@@ -62,7 +64,7 @@ const removeCall = Effect.fnUntraced(function* (
           value: 0n,
         };
   }
-  return sameAddress(parent.data.v1?.registryOwner, signer)
+  return fromParentRegistry
     ? {
         to: contracts.registry,
         data: encodeFunctionData({

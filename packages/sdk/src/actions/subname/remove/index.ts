@@ -17,7 +17,8 @@ import * as Impl from "./effect.js";
  * - ENSv2: `unregister` in the parent's subregistry, which also clears the child's resolver and
  *   subregistry so nothing carries over to a later owner.
  * - ENSv1: owner and resolver are set to zero, from the parent when the signer controls it,
- *   otherwise as the child's owner.
+ *   otherwise as the child's owner. Under an unwrapped parent the registry clears a wrapped
+ *   child, which unwraps it.
  *
  * **Gotchas**
  *

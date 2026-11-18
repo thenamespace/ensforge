@@ -137,7 +137,8 @@ export declare namespace createSync {
  * - ENSv2: `unregister` in the parent's subregistry, which also clears the child's resolver and
  *   subregistry so nothing carries over to a later owner.
  * - ENSv1: owner and resolver are set to zero, from the parent when the signer controls it,
- *   otherwise as the child's owner.
+ *   otherwise as the child's owner. Under an unwrapped parent the registry clears a wrapped
+ *   child, which unwraps it.
  *
  * **Gotchas**
  *
@@ -249,7 +250,8 @@ export declare namespace removeSync {
  * - ENSv2: `setResolver` and `renew` in the parent's subregistry. The owner moves with
  *   {@link Actions.name.transfer}, or by removing and recreating the child.
  * - ENSv1: one `setSubnodeRecord` keeps what is not changed; wrapped children extend their
- *   expiry with `extendExpiry`. Unwrapped ENSv1 subnames have no expiry.
+ *   expiry with `extendExpiry`. Unwrapped ENSv1 subnames have no expiry. Under an unwrapped
+ *   parent the registry rewrites a wrapped child, which unwraps it.
  *
  * **Example** (Repointing a subname)
  *

@@ -17,7 +17,8 @@ import * as Impl from "./effect.js";
  * - ENSv2: `setResolver` and `renew` in the parent's subregistry. The owner moves with
  *   {@link Actions.name.transfer}, or by removing and recreating the child.
  * - ENSv1: one `setSubnodeRecord` keeps what is not changed; wrapped children extend their
- *   expiry with `extendExpiry`. Unwrapped ENSv1 subnames have no expiry.
+ *   expiry with `extendExpiry`. Unwrapped ENSv1 subnames have no expiry. Under an unwrapped
+ *   parent the registry rewrites a wrapped child, which unwraps it.
  *
  * **Example** (Repointing a subname)
  *
