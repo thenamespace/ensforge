@@ -1,5 +1,5 @@
 import { BrandLogo, type LogoProps } from "./brand-logo";
-import { glyphs } from "./glyphs";
+import { glyphs, reactOrbits } from "./glyphs";
 
 export { glyphs } from "./glyphs";
 export { type LogoProps, type LogoVariant, logoColors } from "./brand-logo";
@@ -17,7 +17,7 @@ export function ContractsLogo(props: LogoProps) {
 }
 
 export function ReactLogo(props: LogoProps) {
-  return <BrandLogo glyph={glyphs.react} {...props} />;
+  return <BrandLogo glyph={glyphs.react} outline={reactOrbits} {...props} />;
 }
 
 export function HcaLogo(props: LogoProps) {

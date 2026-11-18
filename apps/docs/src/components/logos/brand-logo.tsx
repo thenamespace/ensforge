@@ -20,15 +20,16 @@ export interface LogoProps extends Omit<SVGProps<SVGSVGElement>, "children"> {
 }
 
 /**
- * Every mark is one solid, sharp-edged glyph on a 100 × 100 artboard, fitting 10–90; `mark`
- * crops to 8–92.
+ * Every mark is a solid, sharp-edged glyph on a 100 × 100 artboard, fitting 10–90 (an `outline`
+ * adds mitered lines, as React's orbits); `mark` crops to 8–92.
  */
 export function BrandLogo({
   variant = "mark",
   title,
   glyph,
+  outline,
   ...props
-}: LogoProps & { readonly glyph: string }) {
+}: LogoProps & { readonly glyph: string; readonly outline?: string }) {
   const isBadge = variant === "badge";
 
   return (
@@ -42,6 +43,15 @@ export function BrandLogo({
     >
       {title ? <title>{title}</title> : null}
       {isBadge ? <rect width={100} height={100} fill={logoColors.background} /> : null}
+      {outline === undefined ? null : (
+        <path
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={4.5}
+          strokeLinejoin="miter"
+          d={outline}
+        />
+      )}
       <path fill="currentColor" fillRule="evenodd" d={glyph} />
     </svg>
   );
