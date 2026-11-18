@@ -1,4 +1,4 @@
-import { Effect } from "effect";
+import { Effect, Formatter, Record as Rec } from "effect";
 
 import { Chain } from "@ensforge/test-devnet";
 import { mintUsdc } from "@ensforge/test-integration/support/contracts";
@@ -10,8 +10,8 @@ import type { Model } from "./model.ts";
 import { initialModel } from "./sync.ts";
 
 const atStep = (step: number, command: Command) => (failure: SequenceFailure) =>
-  new SequenceFailure({
-    message: `step ${step} (${JSON.stringify(command)}): ${failure.message}`,
+  SequenceFailure.make({
+    message: `step ${step} (${Formatter.formatJson(command)}): ${failure.message}`,
   });
 
 /**
@@ -26,13 +26,10 @@ export const applySequence = Effect.fnUntraced(function* (
 ) {
   const chain = yield* Chain;
   // Registrations pay in the payment token.
-  yield* Effect.forEach(
-    Object.values(context.world.actors),
-    (actor) => mintUsdc(actor, 10n ** 18n),
-    {
-      discard: true,
-    },
-  ).pipe(Effect.orDie);
+  yield* Effect.forEach(Rec.values(context.world.actors), (actor) => mintUsdc(actor, 10n ** 18n), {
+    concurrency: 1,
+    discard: true,
+  }).pipe(Effect.orDie);
   let model = from ?? (yield* initialModel(context.world));
 
   for (const [step, command] of commands.entries()) {

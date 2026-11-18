@@ -1,12 +1,20 @@
 import { assert, describe } from "@effect/vitest";
-import { Effect } from "effect";
+import {
+  Effect,
+  Formatter,
+  Predicate,
+  Record as Rec,
+  String as Str,
+  Array as Arr,
+  pipe,
+} from "effect";
 
 import { Abis, Roles } from "@ensforge/contracts";
 import { Actions as HcaActions } from "@ensforge/hca/effect";
 import { Duration, Name } from "@ensforge/sdk";
 import { Actions, type Errors } from "@ensforge/sdk/effect";
 import { Chain, Devnet } from "@ensforge/test-devnet";
-import { Fixtures } from "@ensforge/test-fixtures";
+import { factAddress, Fixtures } from "@ensforge/test-fixtures";
 import {
   bytesToHex,
   decodeErrorResult,
@@ -29,9 +37,10 @@ import {
   toHex,
   zeroAddress,
   zeroHash,
+  isHex,
   type Abi,
   type Address,
-  type BaseError,
+  BaseError,
   type Hex,
 } from "viem";
 import { packetToBytes } from "viem/ens";
@@ -63,27 +72,30 @@ type Call = {
  */
 const revertOf = Effect.fnUntraced(function* ({ from, to, abi, functionName, args, value }: Call) {
   const chain = yield* Chain;
-  const data = encodeFunctionData({ abi, functionName, args } as never);
+  const data = encodeFunctionData({ abi, functionName, args });
 
   return yield* chain.call({ account: from, to, data, value }).pipe(
     Effect.match({
       onSuccess: () => "no revert",
       onFailure: (error) => {
-        const reverted = (error.cause as BaseError).walk(
-          (cause) => typeof (cause as { data?: unknown }).data === "string",
-        ) as { readonly data: Hex } | null;
-        if (reverted === null) return "no revert data";
+        const reverted =
+          error.cause instanceof BaseError
+            ? error.cause.walk(
+                (cause) => Predicate.hasProperty(cause, "data") && typeof cause.data === "string",
+              )
+            : null;
+        const revertData = Predicate.hasProperty(reverted, "data") ? reverted.data : undefined;
+        if (!isHex(revertData)) return "no revert data";
 
-        const decoded = decodeErrorResult({ abi: Abis.shared.errors, data: reverted.data });
+        const decoded = decodeErrorResult({ abi: Abis.shared.errors, data: revertData });
         const errorName: string = decoded.errorName;
         const [message] = decoded.args ?? [];
-        return errorName === "Error" &&
-          typeof message === "string" &&
-          message.startsWith("WrappedError::0x")
-          ? decodeErrorResult({
-              abi: Abis.shared.errors,
-              data: message.slice("WrappedError::".length) as Hex,
-            }).errorName
+        const wrapped =
+          typeof message === "string" && pipe(message, Str.startsWith("WrappedError::0x"))
+            ? pipe(message, Str.slice("WrappedError::".length))
+            : undefined;
+        return errorName === "Error" && isHex(wrapped)
+          ? decodeErrorResult({ abi: Abis.shared.errors, data: wrapped }).errorName
           : errorName;
       },
     }),
@@ -103,9 +115,14 @@ const revertName = <A>(effect: Effect.Effect<A, Errors.AnyError>) =>
   effect.pipe(
     Effect.match({
       onSuccess: () => "no revert",
-      onFailure: (error) =>
-        (error.context as { readonly revert?: { readonly errorName?: string } } | undefined)?.revert
-          ?.errorName,
+      onFailure: (error) => {
+        const revert = Predicate.hasProperty(error.context, "revert")
+          ? error.context.revert
+          : undefined;
+        return Predicate.hasProperty(revert, "errorName") && typeof revert.errorName === "string"
+          ? revert.errorName
+          : undefined;
+      },
     }),
   );
 
@@ -128,7 +145,7 @@ describe("contract errors", () => {
         const subregistry = yield* Actions.registry.get(reader, {
           name: child.parent ?? assert.fail("a subname has a parent"),
         });
-        if (subregistry === null) return assert.fail(`${child.parent} has no registry`);
+        if (subregistry === null) assert.fail(`${child.parent} has no registry`);
         const childToken = yield* chain.read({
           address: subregistry.address,
           abi: Abis.v2.permissionedRegistry,
@@ -138,7 +155,7 @@ describe("contract errors", () => {
 
         const registry = {
           to: devnet.contract("v2.ethRegistry"),
-          abi: Abis.v2.permissionedRegistry as Abi,
+          abi: Abis.v2.permissionedRegistry,
         };
         const childRegistry = { to: subregistry.address, abi: Abis.v2.permissionedRegistry as Abi };
         // `revived` is RESERVED in its registry: unregistered, then renewed by the root.
@@ -219,8 +236,8 @@ describe("contract errors", () => {
             args: [Name.parse(registeredName).label, user, zeroAddress, zeroAddress, 0n, maxUint64],
           },
           LabelAlreadyReserved: {
-            to: reserved.facts["registry"] as Address,
-            abi: Abis.v2.permissionedRegistry as Abi,
+            to: factAddress(reserved.facts, "registry"),
+            abi: Abis.v2.permissionedRegistry,
             from: alice,
             functionName: "register",
             args: [
@@ -256,8 +273,9 @@ describe("contract errors", () => {
           },
         };
 
-        for (const [error, call] of Object.entries(cases)) {
-          assert.strictEqual(yield* revertOf(call), error);
+        for (const [error, call] of Rec.toEntries(cases)) {
+          const revert = yield* revertOf(call);
+          assert.strictEqual(revert, error);
         }
 
         // Alice and carol hold setResolver; thirteen more fill its count of fifteen holders.
@@ -272,15 +290,13 @@ describe("contract errors", () => {
                 args: [delegated, Roles.registry.setResolver, numberToHex(holder, { size: 20 })],
               });
             }
-            assert.strictEqual(
-              yield* revertOf({
-                ...registry,
-                from: alice,
-                functionName: "grantRoles",
-                args: [delegated, Roles.registry.setResolver, numberToHex(14, { size: 20 })],
-              }),
-              "EACMaxAssignees",
-            );
+            const revert = yield* revertOf({
+              ...registry,
+              from: alice,
+              functionName: "grantRoles",
+              args: [delegated, Roles.registry.setResolver, numberToHex(14, { size: 20 })],
+            });
+            assert.strictEqual(revert, "EACMaxAssignees");
           }),
         );
 
@@ -292,15 +308,15 @@ describe("contract errors", () => {
         const target = "0x00000000000000000000000000000000000ce5e5";
         const upgrade = (implementation: Address, data: Hex): Call => ({
           to: subregistry.address,
-          abi: Abis.v2.userRegistry as Abi,
+          abi: Abis.v2.userRegistry,
           from: alice,
           functionName: "upgradeToAndCall",
           args: [implementation, data],
         });
-        assert.strictEqual(
-          yield* revertOf(upgrade(devnet.contract("v2.userRegistryImplementationV1_0_1"), "0x")),
-          "InvalidUpgradeTarget",
+        const invalidUpgradeRevert = yield* revertOf(
+          upgrade(devnet.contract("v2.userRegistryImplementationV1_0_1"), "0x"),
         );
+        assert.strictEqual(invalidUpgradeRevert, "InvalidUpgradeTarget");
         yield* chain.isolated(
           Effect.gen(function* () {
             yield* chain.setCode(target, (yield* chain.code(current)) ?? "0x");
@@ -311,12 +327,10 @@ describe("contract errors", () => {
               ),
               pad("0x01"),
             );
-            assert.strictEqual(
-              yield* revertOf(
-                upgrade(target, toFunctionSelector("upgradeToAndCall(address,bytes)")),
-              ),
-              "NestedUpgradeNotAllowed",
+            const revert = yield* revertOf(
+              upgrade(target, toFunctionSelector("upgradeToAndCall(address,bytes)")),
             );
+            assert.strictEqual(revert, "NestedUpgradeNotAllowed");
 
             // A UserRegistry upgrades anywhere until it is emancipated; then only to the upgrade
             // set's implementations. alice keeps `upgrade`, which emancipation does not need.
@@ -327,7 +341,8 @@ describe("contract errors", () => {
               functionName: "revokeRootRoles",
               args: [Roles.registryBitmaps.unemancipated, alice],
             });
-            assert.strictEqual(yield* revertOf(upgrade(target, "0x")), "UpgradeTargetNotApproved");
+            const upgradeRevert = yield* revertOf(upgrade(target, "0x"));
+            assert.strictEqual(upgradeRevert, "UpgradeTargetNotApproved");
           }),
         );
       }),
@@ -341,7 +356,7 @@ describe("contract errors", () => {
         const { alice, user } = devnet.accounts;
         const registrar = {
           to: devnet.contract("v2.ethRegistrar"),
-          abi: Abis.v2.ethRegistrar as Abi,
+          abi: Abis.v2.ethRegistrar,
         };
         const usdc = devnet.contract("v2.usdc");
         const secret = keccak256(toHex("reverts"));
@@ -383,7 +398,7 @@ describe("contract errors", () => {
         });
         const v1Controller = {
           to: devnet.contract("v1.ethRegistrarController"),
-          abi: Abis.v1.ethRegistrarController as Abi,
+          abi: Abis.v1.ethRegistrarController,
           from: alice,
         };
 
@@ -396,7 +411,7 @@ describe("contract errors", () => {
           },
           NotValid: {
             to: devnet.contract("v2.rentPriceOracle"),
-            abi: Abis.v2.standardRentPriceOracle as Abi,
+            abi: Abis.v2.standardRentPriceOracle,
             from: alice,
             functionName: "getRenewPrice",
             args: ["", 0n, Duration.years(1), usdc],
@@ -431,8 +446,9 @@ describe("contract errors", () => {
             value: parseEther("1"),
           },
         };
-        for (const [error, call] of Object.entries(cases)) {
-          assert.strictEqual(yield* revertOf(call), error, error);
+        for (const [error, call] of Rec.toEntries(cases)) {
+          const revert = yield* revertOf(call);
+          assert.strictEqual(revert, error, error);
         }
 
         yield* chain.isolated(
@@ -440,23 +456,20 @@ describe("contract errors", () => {
             const plain = yield* commit("qqqqq");
             yield* commit("rrrrr", 1n);
             yield* commit(taken);
-            assert.strictEqual(
-              yield* revertOf({
-                ...registrar,
-                from: alice,
-                functionName: "commit",
-                args: [plain],
-              }),
-              "UnexpiredCommitmentExists",
-            );
-            assert.strictEqual(yield* revertOf(register(alice, "qqqqq")), "CommitmentTooNew");
+            const revert = yield* revertOf({
+              ...registrar,
+              from: alice,
+              functionName: "commit",
+              args: [plain],
+            });
+            assert.strictEqual(revert, "UnexpiredCommitmentExists");
+            const tooNewRevert = yield* revertOf(register(alice, "qqqqq"));
+            assert.strictEqual(tooNewRevert, "CommitmentTooNew");
 
             yield* chain.increaseTime(120);
             yield* chain.mine();
-            assert.strictEqual(
-              yield* revertOf(register(user, "qqqqq")),
-              "ERC20InsufficientAllowance",
-            );
+            const allowanceRevert = yield* revertOf(register(user, "qqqqq"));
+            assert.strictEqual(allowanceRevert, "ERC20InsufficientAllowance");
             yield* chain.write({
               address: usdc,
               abi: erc20Abi,
@@ -464,23 +477,21 @@ describe("contract errors", () => {
               args: [registrar.to, 10n ** 30n],
               account: user,
             });
-            assert.strictEqual(
-              yield* revertOf(register(user, "qqqqq")),
-              "ERC20InsufficientBalance",
+            const balanceRevert = yield* revertOf(register(user, "qqqqq"));
+            assert.strictEqual(balanceRevert, "ERC20InsufficientBalance");
+            const unsupportedTokenRevert = yield* revertOf(
+              register(alice, "qqqqq", { token: stranger }),
             );
-            assert.strictEqual(
-              yield* revertOf(register(alice, "qqqqq", { token: stranger })),
-              "PaymentTokenNotSupported",
-            );
-            assert.strictEqual(
-              yield* revertOf(register(alice, "rrrrr", { duration: 1n })),
-              "DurationTooShort",
-            );
-            assert.strictEqual(yield* revertOf(register(alice, taken)), "NameNotAvailable");
+            assert.strictEqual(unsupportedTokenRevert, "PaymentTokenNotSupported");
+            const shortDurationRevert = yield* revertOf(register(alice, "rrrrr", { duration: 1n }));
+            assert.strictEqual(shortDurationRevert, "DurationTooShort");
+            const takenNameRevert = yield* revertOf(register(alice, taken));
+            assert.strictEqual(takenNameRevert, "NameNotAvailable");
 
             yield* chain.increaseTime(Number(Duration.days(8)));
             yield* chain.mine();
-            assert.strictEqual(yield* revertOf(register(alice, "qqqqq")), "CommitmentTooOld");
+            const tooOldRevert = yield* revertOf(register(alice, "qqqqq"));
+            assert.strictEqual(tooOldRevert, "CommitmentTooOld");
           }),
         );
       }),
@@ -491,20 +502,21 @@ describe("contract errors", () => {
         const devnet = yield* Devnet;
         const chain = yield* Chain;
         const { alice, bob } = devnet.accounts;
-        const at = Number(yield* chain.now);
+        const chainNow = yield* chain.now;
+        const at = Number(chainNow);
         const name = "reverts-dns.com";
         const owner = [`a=${alice}`];
         const proof = (tampered: Tampering = {}, inception = at - 60) =>
           txtProof(name, owner, inception, tampered);
         const oracle = {
           to: devnet.contract("v1.dnssecOracle"),
-          abi: Abis.v1.dnssecOracle as Abi,
+          abi: Abis.v1.dnssecOracle,
           from: alice,
           functionName: "verifyRRSet",
         };
         const registrar = {
           to: devnet.contract("v1.dnsRegistrar"),
-          abi: Abis.v1.dnsRegistrar as Abi,
+          abi: Abis.v1.dnsRegistrar,
           from: alice,
           functionName: "proveAndClaim",
         };
@@ -533,7 +545,9 @@ describe("contract errors", () => {
             }),
           ),
           // A TXT set cannot prove the next set: only DNSKEY and DS sets can.
-          InvalidProofType: verify([rootKeys, signed, signed].filter((set) => set !== undefined)),
+          InvalidProofType: verify(
+            Arr.filter([rootKeys, signed, signed], (set) => set !== undefined),
+          ),
           NoOwnerRecordFound: claim(name, txtProof(name, ["v=spf1 -all"], at - 60)),
           InvalidPublicSuffix: claim(
             "reverts-dns.test",
@@ -548,14 +562,15 @@ describe("contract errors", () => {
           },
           TLDNotPublic: {
             to: devnet.contract("v2.temporaryDnsRegistrar"),
-            abi: Abis.v2.temporaryDnsRegistrar as Abi,
+            abi: Abis.v2.temporaryDnsRegistrar,
             from: alice,
             functionName: "syncTLD",
             args: ["test"],
           },
         };
-        for (const [error, call] of Object.entries(cases)) {
-          assert.strictEqual(yield* revertOf(call), error, error);
+        for (const [error, call] of Rec.toEntries(cases)) {
+          const revert = yield* revertOf(call);
+          assert.strictEqual(revert, error, error);
         }
 
         // DNSRegistrar takes no proof older than the one it imported.
@@ -568,7 +583,8 @@ describe("contract errors", () => {
               args: [bytesToHex(packetToBytes(name)), proof()],
               account: alice,
             });
-            assert.strictEqual(yield* revertOf(claim(name, proof({}, at - 3600))), "StaleProof");
+            const revert = yield* revertOf(claim(name, proof({}, at - 3600)));
+            assert.strictEqual(revert, "StaleProof");
           }),
         );
       }),
@@ -589,7 +605,7 @@ describe("contract errors", () => {
           const nameWrapper = devnet.contract("v1.nameWrapper");
           const sendTo = (controller: string, name: string): Call => ({
             to: nameWrapper,
-            abi: Abis.v1.nameWrapper as Abi,
+            abi: Abis.v1.nameWrapper,
             from: alice,
             functionName: "safeTransferFrom",
             args: [
@@ -616,7 +632,7 @@ describe("contract errors", () => {
           // `migrate(unwrapped, unlockedGroups, lockedGroups, lockedChildrenGroups)`.
           const helper = (from: Address, groups: readonly unknown[]): Call => ({
             to: devnet.contract("v2.migrationHelper"),
-            abi: Abis.v2.migrationHelper as Abi,
+            abi: Abis.v2.migrationHelper,
             from,
             functionName: "migrate",
             args: groups,
@@ -627,12 +643,12 @@ describe("contract errors", () => {
             NameNotLocked: sendTo("v2.lockedMigrationController", plain),
             // The parent migrated; its locked child did not, and only migration may claim it.
             NameRequiresMigration: {
-              to: migrated["wrapperRegistry"] as Address,
-              abi: Abis.v2.wrapperRegistry as Abi,
+              to: factAddress(migrated, "wrapperRegistry"),
+              abi: Abis.v2.wrapperRegistry,
               from: alice,
               functionName: "register",
               args: [
-                Name.parse(migrated["child"] as string).label,
+                Name.parse(String(migrated["child"])).label,
                 alice,
                 zeroAddress,
                 zeroAddress,
@@ -648,8 +664,9 @@ describe("contract errors", () => {
               [{ parentName: Name.dnsEncode(locked), groups: [] }],
             ]),
           };
-          for (const [error, call] of Object.entries(cases)) {
-            assert.strictEqual(yield* revertOf(call), error, error);
+          for (const [error, call] of Rec.toEntries(cases)) {
+            const revert = yield* revertOf(call);
+            assert.strictEqual(revert, error, error);
           }
 
           // One group moves one owner's names: bob lets alice move his, which is no reason to
@@ -670,17 +687,10 @@ describe("contract errors", () => {
                 functionName: "setApprovalForAll",
                 args: [alice, true],
               });
-              assert.strictEqual(
-                yield* revertOf(
-                  helper(alice, [
-                    [],
-                    [[migration(locked, alice), migration(plain, alice)]],
-                    [],
-                    [],
-                  ]),
-                ),
-                "WrappedOwnerMismatch",
+              const revert = yield* revertOf(
+                helper(alice, [[], [[migration(locked, alice), migration(plain, alice)]], [], []]),
               );
+              assert.strictEqual(revert, "WrappedOwnerMismatch");
             }),
           );
         }),
@@ -696,35 +706,29 @@ describe("contract errors", () => {
           const fixtures = yield* Fixtures;
           const clients = yield* Clients;
 
-          assert.strictEqual(
-            yield* revertName(
-              Actions.record.getText(clients.reader, {
-                name: fixtures.byId("resolver.none").name,
-                key: "url",
-                strict: true,
-              }),
-            ),
-            "UnreachableName",
+          const unreachableRevert = yield* revertName(
+            Actions.record.getText(clients.reader, {
+              name: fixtures.byId("resolver.none").name,
+              key: "url",
+              strict: true,
+            }),
           );
-          assert.strictEqual(
-            yield* revertName(
-              Actions.record.getText(clients.reader, {
-                name: fixtures.byId("v2.registered").name,
-                key: "url",
-                strict: true,
-              }),
-            ),
-            "ResolverNotFound",
+          assert.strictEqual(unreachableRevert, "UnreachableName");
+          const resolverNotFoundRevert = yield* revertName(
+            Actions.record.getText(clients.reader, {
+              name: fixtures.byId("v2.registered").name,
+              key: "url",
+              strict: true,
+            }),
           );
-          assert.strictEqual(
-            yield* revertName(
-              Actions.record.getText(clients.make({ ccipRead: false }), {
-                name: fixtures.byId("resolver.offchain").name,
-                key: "url",
-              }),
-            ),
-            "OffchainLookup",
+          assert.strictEqual(resolverNotFoundRevert, "ResolverNotFound");
+          const offchainRevert = yield* revertName(
+            Actions.record.getText(clients.make({ ccipRead: false }), {
+              name: fixtures.byId("resolver.offchain").name,
+              key: "url",
+            }),
           );
+          assert.strictEqual(offchainRevert, "OffchainLookup");
         }),
       { meta: { cases: ["O24"] } },
     );
@@ -742,7 +746,7 @@ describe("contract errors", () => {
           const { alice, bob, deployer } = devnet.accounts;
           const universalResolver = {
             to: devnet.contract("v2.universalResolver"),
-            abi: Abis.v2.universalResolver as Abi,
+            abi: Abis.v2.universalResolver,
             from: alice,
           };
           const offchain = fixtures.byId("resolver.offchain");
@@ -777,7 +781,7 @@ describe("contract errors", () => {
           const batchGateway = (failures: readonly boolean[], responses: readonly Hex[]) =>
             gateways.serve(() => ({
               status: 200,
-              body: JSON.stringify({
+              body: Formatter.formatJson({
                 data: encodeAbiParameters(
                   [{ type: "bool[]" }, { type: "bytes[]" }],
                   [failures, responses],
@@ -801,18 +805,19 @@ describe("contract errors", () => {
             ),
             ResolverNotContract: resolveWith(bob, offchain.name, []),
             InvalidBatchGatewayResponse: resolveWith(
-              offchain.facts["resolver"] as Address,
+              factAddress(offchain.facts, "resolver"),
               offchain.name,
               [miscounted.url],
             ),
             UnsafeBatchGatewayResponse: resolveWith(
-              offchain.facts["resolver"] as Address,
+              factAddress(offchain.facts, "resolver"),
               offchain.name,
               [untrusted.url],
             ),
           };
-          for (const [error, call] of Object.entries(cases)) {
-            assert.strictEqual(yield* revertOf(call), error, error);
+          for (const [error, call] of Rec.toEntries(cases)) {
+            const revert = yield* revertOf(call);
+            assert.strictEqual(revert, error, error);
           }
           assert.isAbove(miscounted.requests(), 0);
           assert.isAbove(untrusted.requests(), 0);
@@ -822,18 +827,16 @@ describe("contract errors", () => {
               // viem's local batch gateway reports the resolver's failing gateway per request.
               yield* chain.write({
                 ...shapeshift,
-                address: offchain.facts["resolver"] as Address,
+                address: factAddress(offchain.facts, "resolver"),
                 functionName: "setRevertURL",
                 args: [failing.url],
               });
-              assert.strictEqual(
-                yield* revertOf(
-                  resolveWith(offchain.facts["resolver"] as Address, offchain.name, [
-                    "x-batch-gateway:true",
-                  ]),
-                ),
-                "HttpError",
+              const revert = yield* revertOf(
+                resolveWith(factAddress(offchain.facts, "resolver"), offchain.name, [
+                  "x-batch-gateway:true",
+                ]),
               );
+              assert.strictEqual(revert, "HttpError");
               assert.isAbove(failing.requests(), 0);
 
               // bob claims alice's primary name, whose address is hers.
@@ -844,29 +847,25 @@ describe("contract errors", () => {
                 functionName: "setName",
                 args: [fixtures.byId("primary.addr-reverse").name],
               });
-              assert.strictEqual(
-                yield* revertOf({
-                  ...universalResolver,
-                  functionName: "reverse",
-                  args: [bob, 60n],
-                }),
-                "ReverseAddressMismatch",
-              );
+              const reverseMismatchRevert = yield* revertOf({
+                ...universalResolver,
+                functionName: "reverse",
+                args: [bob, 60n],
+              });
+              assert.strictEqual(reverseMismatchRevert, "ReverseAddressMismatch");
 
               // An ERC-7996 resolver is called directly, without the batch gateway; a lookup it
               // raises in another contract's name ends the call there.
               yield* chain.write({
                 ...shapeshift,
-                address: spoofed.facts["resolver"] as Address,
+                address: factAddress(spoofed.facts, "resolver"),
                 functionName: "setFeature",
                 args: ["0x00000001", true],
               });
-              assert.strictEqual(
-                yield* revertOf(
-                  resolveWith(spoofed.facts["resolver"] as Address, spoofed.name, []),
-                ),
-                "InvalidOffchainLookup",
+              const invalidOffchainLookupRevert = yield* revertOf(
+                resolveWith(factAddress(spoofed.facts, "resolver"), spoofed.name, []),
               );
+              assert.strictEqual(invalidOffchainLookupRevert, "InvalidOffchainLookup");
 
               // An ENSIP-15 normalizer: the mock answers `normalize(label)` with what is set.
               const normalizer = devnet.contract("mock.shapeshiftResolver");
@@ -888,14 +887,12 @@ describe("contract errors", () => {
                   ],
                 });
               }
-              assert.strictEqual(
-                yield* revertOf({
-                  ...universalResolver,
-                  functionName: "reverseWithNormalization",
-                  args: [notNormalized["address"], 60n, normalizer],
-                }),
-                "PrimaryNameNotNormalized",
-              );
+              const notNormalizedRevert = yield* revertOf({
+                ...universalResolver,
+                functionName: "reverseWithNormalization",
+                args: [notNormalized["address"], 60n, normalizer],
+              });
+              assert.strictEqual(notNormalizedRevert, "PrimaryNameNotNormalized");
             }),
           );
         }).pipe(Effect.scoped),
@@ -915,8 +912,9 @@ describe("contract errors", () => {
           const { reader } = yield* Clients;
           const gateways = yield* Gateways;
           const { owner, alice } = devnet.accounts;
+          const offchain = (yield* Fixtures).byId("resolver.offchain");
           const resolver = {
-            address: (yield* Fixtures).byId("resolver.offchain").facts["resolver"] as Address,
+            address: factAddress(offchain.facts, "resolver"),
             abi: parseAbi(["function setRevertURL(string)", "function setResponse(bytes,bytes)"]),
             account: owner,
           } as const;
@@ -964,21 +962,21 @@ describe("contract errors", () => {
                     encodeFunctionData({
                       abi: Abis.shared.nameResolver,
                       functionName: "name",
-                      args: [namehash(`${alice.slice(2).toLowerCase()}.8000000a.reverse`)],
+                      args: [
+                        namehash(`${Str.toLowerCase(pipe(alice, Str.slice(2)))}.8000000a.reverse`),
+                      ],
                     }),
-                    encodeErrorResult({ abi: Abis.shared.errors, errorName, args } as never),
+                    encodeErrorResult({ abi: Abis.shared.errors, errorName, args }),
                   ],
                 });
-                assert.strictEqual(
-                  yield* revertName(
-                    Actions.primaryName.get(reader, {
-                      address: alice,
-                      coin: { chainId: 10 },
-                      strict: true,
-                    }),
-                  ),
-                  errorName,
+                const verifierRevert = yield* revertName(
+                  Actions.primaryName.get(reader, {
+                    address: alice,
+                    coin: { chainId: 10 },
+                    strict: true,
+                  }),
                 );
+                assert.strictEqual(verifierRevert, errorName);
               }
               assert.isAbove(gateway.requests(), 0);
             }),
@@ -993,16 +991,14 @@ describe("contract errors", () => {
         const { name, facts } = (yield* Fixtures).byId("records.v2.linked");
 
         // bob may link names on his resolver, but only to records it already has.
-        assert.strictEqual(
-          yield* revertOf({
-            to: facts["resolver"] as Address,
-            abi: Abis.v2.permissionedResolver as Abi,
-            from: devnet.accounts.bob,
-            functionName: "linkToRecord",
-            args: [Name.dnsEncode(name), 2n ** 64n],
-          }),
-          "InvalidRecord",
-        );
+        const revert = yield* revertOf({
+          to: factAddress(facts, "resolver"),
+          abi: Abis.v2.permissionedResolver,
+          from: devnet.accounts.bob,
+          functionName: "linkToRecord",
+          args: [Name.dnsEncode(name), 2n ** 64n],
+        });
+        assert.strictEqual(revert, "InvalidRecord");
       }),
     );
 
@@ -1018,7 +1014,7 @@ describe("contract errors", () => {
           const setText: Call = {
             from: alice,
             to: resolver,
-            abi: Abis.v1.publicResolver as Abi,
+            abi: Abis.v1.publicResolver,
             functionName: "setText",
             args: [zeroHash, "url", "x"],
           };
@@ -1039,7 +1035,8 @@ describe("contract errors", () => {
                   functionName: "setMode",
                   args: [mode],
                 });
-                assert.strictEqual(yield* revertOf(setText), error);
+                const revert = yield* revertOf(setText);
+                assert.strictEqual(revert, error);
               }
             }),
           );
@@ -1052,16 +1049,14 @@ describe("contract errors", () => {
         const devnet = yield* Devnet;
 
         // alice is neither LabelStore's Ownable owner nor its ContractNamer.
-        assert.strictEqual(
-          yield* revertOf({
-            from: devnet.accounts.alice,
-            to: devnet.contract("v2.reverseRegistrarAdapter"),
-            abi: Abis.v2.reverseRegistrarAdapter as Abi,
-            functionName: "claim",
-            args: [devnet.contract("v2.labelStore"), devnet.contract("v1.publicResolver")],
-          }),
-          "UnauthorizedNamer",
-        );
+        const revert = yield* revertOf({
+          from: devnet.accounts.alice,
+          to: devnet.contract("v2.reverseRegistrarAdapter"),
+          abi: Abis.v2.reverseRegistrarAdapter,
+          functionName: "claim",
+          args: [devnet.contract("v2.labelStore"), devnet.contract("v1.publicResolver")],
+        });
+        assert.strictEqual(revert, "UnauthorizedNamer");
       }),
     );
 
@@ -1078,7 +1073,7 @@ describe("contract errors", () => {
           const name = "claimed.eth";
           const registrar = {
             to: devnet.contract("v1.defaultReverseRegistrar"),
-            abi: Abis.v1.defaultReverseRegistrar as Abi,
+            abi: Abis.v1.defaultReverseRegistrar,
             from: carol,
             functionName: "setNameForAddrWithSignature",
           };
@@ -1099,7 +1094,7 @@ describe("contract errors", () => {
           });
           const l2Registrar = {
             to: devnet.contract("mock.l2ReverseRegistrar"),
-            abi: Abis.v1.l2ReverseRegistrar as Abi,
+            abi: Abis.v1.l2ReverseRegistrar,
             from: alice,
           };
           const anySignature = bytesToHex(new Uint8Array(65).fill(0x11));
@@ -1121,8 +1116,9 @@ describe("contract errors", () => {
             },
             Unauthorised: { ...l2Registrar, functionName: "setNameForAddr", args: [bob, name] },
           };
-          for (const [error, call] of Object.entries(cases)) {
-            assert.strictEqual(yield* revertOf(call), error, error);
+          for (const [error, call] of Rec.toEntries(cases)) {
+            const revert = yield* revertOf(call);
+            assert.strictEqual(revert, error, error);
           }
         }),
       { meta: { cases: ["P37", "P38"] } },
@@ -1133,16 +1129,16 @@ describe("contract errors", () => {
         const chain = yield* Chain;
         const clients = yield* Clients;
         const { name, facts } = (yield* Fixtures).byId("v2.registered");
-        const ens = clients.make({ account: facts["owner"] as Address });
+        const ens = clients.make({ account: factAddress(facts, "owner") });
 
         yield* chain.isolated(
           Effect.gen(function* () {
             yield* HcaActions.hca.deploySync(ens, {});
             const account = yield* HcaActions.hca.predictAddress(ens, {});
-            assert.strictEqual(
-              yield* revertName(Actions.name.transferSync(ens, { name, to: account })),
-              "NoNFTAllowed",
+            const transferRevert = yield* revertName(
+              Actions.name.transferSync(ens, { name, to: account }),
             );
+            assert.strictEqual(transferRevert, "NoNFTAllowed");
           }),
         );
       }),

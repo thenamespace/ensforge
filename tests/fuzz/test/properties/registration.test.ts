@@ -1,5 +1,5 @@
 import { describe } from "@effect/vitest";
-import { Arbitrary, Effect, Schema } from "effect";
+import { Array as Arr, Arbitrary, Effect, Option, Schema } from "effect";
 
 import { Abis } from "@ensforge/contracts";
 import { Duration } from "@ensforge/sdk";
@@ -47,20 +47,26 @@ describe("registration plans against the contracts", () => {
                 secret: input.secret,
                 referrer: input.referrer,
               });
-              const calls = plan.steps
-                .flatMap((step) => step.calls)
-                .map((call) => ({
+              const calls = Arr.map(
+                Arr.flatMap(plan.steps, (step) => step.calls),
+                (call) => ({
                   to: call.to,
                   decoded: decodeFunctionData({ abi, data: call.data }),
-                }));
+                }),
+              );
               const find = (functionName: string) =>
-                calls.find((call) => call.decoded.functionName === functionName);
+                Option.getOrUndefined(
+                  Arr.findFirst(calls, (call) => call.decoded.functionName === functionName),
+                );
               const commit = find("commit");
               const deploy = find("deployProxy");
               const register = find("register");
               if (commit === undefined || deploy === undefined || register === undefined)
                 return false;
 
+              // The calls are found by name among every function of the merged ABIs, so their
+              // decoded arguments are only known by the signatures these functions have.
+              /* oxlint-disable typescript/no-unsafe-type-assertion */
               const [, salt] = deploy.decoded.args as readonly [Address, bigint, Hex];
               const [label, owner, secret, subregistry, resolver, duration, , referrer] = register
                 .decoded.args as readonly [
@@ -73,6 +79,7 @@ describe("registration plans against the contracts", () => {
                 Address,
                 Hex,
               ];
+              /* oxlint-enable typescript/no-unsafe-type-assertion */
               const predicted = yield* chain.read({
                 address: deploy.to,
                 abi: Abis.v2.verifiableFactory,

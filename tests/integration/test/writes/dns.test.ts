@@ -1,5 +1,5 @@
 import { assert, describe } from "@effect/vitest";
-import { Effect } from "effect";
+import { Effect, String as Str } from "effect";
 
 import { Name } from "@ensforge/sdk";
 import { Actions } from "@ensforge/sdk/effect";
@@ -27,15 +27,17 @@ describe("DNS names", () => {
           const chain = yield* Chain;
           const clients = yield* Clients;
           const gateways = yield* Gateways;
-          const signedAt = Number(yield* chain.now) - 60;
+          const now = yield* chain.now;
+          const signedAt = Number(now) - 60;
           // DNSRegistrar parses the hex without a checksum, so neither does ensforge.
-          const txt = `a=${accounts.alice.toLowerCase()}`;
+          const txt = `a=${Str.toLowerCase(accounts.alice)}`;
           const { url } = yield* gateways.serveProof(txtProof(name, [txt], signedAt));
           const gatewayUrls = [url];
 
           const proof = yield* Actions.dns.getProof(clients.reader, { name, gatewayUrls });
           assert.deepStrictEqual(proof.txt, [txt]);
-          assert.include(yield* Actions.dns.getStatus(clients.reader, { name, gatewayUrls }), {
+          const status = yield* Actions.dns.getStatus(clients.reader, { name, gatewayUrls });
+          assert.include(status, {
             imported: false,
             dnsOwner: accounts.alice,
             proofValid: true,
@@ -61,7 +63,8 @@ describe("DNS names", () => {
         const clients = yield* Clients;
         const gateways = yield* Gateways;
         const { alice, bob } = devnet.accounts;
-        const signedAt = Number(yield* chain.now) - 60;
+        const now = yield* chain.now;
+        const signedAt = Number(now) - 60;
         const { url } = yield* gateways.serveProof(txtProof(name, [`a=${alice}`], signedAt));
         const resolver = devnet.contract("v1.publicResolver");
         const options = { name, gatewayUrls: [url], resolver };
@@ -75,7 +78,8 @@ describe("DNS names", () => {
           Effect.gen(function* () {
             const owner = clients.make({ account: alice });
             yield* Actions.dns.claimSync(owner, options);
-            assert.include(yield* Actions.name.get(clients.reader, { name }), {
+            const claimedName = yield* Actions.name.get(clients.reader, { name });
+            assert.include(claimedName, {
               owner: alice,
               resolver,
             });
@@ -102,7 +106,8 @@ describe("DNS names", () => {
           const clients = yield* Clients;
           const gateways = yield* Gateways;
           const ens = clients.make({ account: accounts.alice });
-          const now = Number(yield* chain.now);
+          const chainNow = yield* chain.now;
+          const now = Number(chainNow);
 
           // No `_ens` record (an empty answer, as for NXDOMAIN), no owner in it, a malformed owner,
           // or a proof for another name: there is no owner to import to.
@@ -117,13 +122,14 @@ describe("DNS names", () => {
               _tag: "DnsError",
               code: "DNS_RECORD_MISSING",
             });
-            assert.include(
-              yield* Actions.dns.getStatus(clients.reader, { name, gatewayUrls: [url] }),
-              {
-                dnsOwner: null,
-                action: "set-txt-record",
-              },
-            );
+            const statusAfterFailedClaim = yield* Actions.dns.getStatus(clients.reader, {
+              name,
+              gatewayUrls: [url],
+            });
+            assert.include(statusAfterFailedClaim, {
+              dnsOwner: null,
+              action: "set-txt-record",
+            });
           }
 
           // DNSRegistrar takes no proof older than the last one it imported.
@@ -164,7 +170,8 @@ describe("DNS names", () => {
           const clients = yield* Clients;
           const gateways = yield* Gateways;
           const ens = clients.make({ account: accounts.alice });
-          const now = Number(yield* chain.now);
+          const chainNow = yield* chain.now;
+          const now = Number(chainNow);
 
           // `.test` is not a public suffix the DNSRegistrar serves.
           const local = "ensforge-dns.test";
@@ -193,14 +200,15 @@ describe("DNS names", () => {
               _tag: "DnsError",
               code: "DNSSEC_PROOF_FAILED",
             });
-            assert.include(
-              yield* Actions.dns.getStatus(clients.reader, { name, gatewayUrls: [url] }),
-              {
-                dnsOwner: accounts.alice,
-                proofValid: false,
-                action: "proof-invalid",
-              },
-            );
+            const status = yield* Actions.dns.getStatus(clients.reader, {
+              name,
+              gatewayUrls: [url],
+            });
+            assert.include(status, {
+              dnsOwner: accounts.alice,
+              proofValid: false,
+              action: "proof-invalid",
+            });
           }
 
           yield* expectFailure(
@@ -235,7 +243,8 @@ describe("DNS names", () => {
           const gateways = yield* Gateways;
           const { alice, owner } = devnet.accounts;
           const nested = "ensforge-dns.co.nz";
-          const signedAt = Number(yield* chain.now) - 60;
+          const now = yield* chain.now;
+          const signedAt = Number(now) - 60;
           const { url } = yield* gateways.serveProof(txtProof(nested, [`a=${alice}`], signedAt));
 
           yield* chain.isolated(

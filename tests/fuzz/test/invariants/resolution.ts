@@ -26,7 +26,7 @@ export const resolutionAgrees = Effect.fnUntraced(function* (
   );
   const universalResolver = yield* viem.text(name, "url").pipe(Effect.orElseSucceed(() => null));
   if (ensforge !== universalResolver) {
-    return yield* new SequenceFailure({
+    return yield* SequenceFailure.make({
       message: `${name}: ensforge resolves url ${String(ensforge)}, viem's Universal Resolver ${String(universalResolver)}`,
     });
   }
@@ -38,11 +38,13 @@ export const resolutionAgrees = Effect.fnUntraced(function* (
       : v2Status(model, world.constants, target.label) === "registered";
   const resolver =
     target.protocol === "v1" ? target.entry.resolver : (model.v2[target.label]?.resolver ?? null);
-  if (!resolves || resolver === null) return;
+  if (!resolves || resolver === null) return undefined;
   const direct = yield* readUrl(resolver, name);
   if (ensforge !== direct) {
-    return yield* new SequenceFailure({
+    return yield* SequenceFailure.make({
       message: `${name}: ensforge resolves url ${String(ensforge)}, its resolver holds ${String(direct)}`,
     });
   }
+
+  return undefined;
 });

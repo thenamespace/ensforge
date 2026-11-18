@@ -1,5 +1,5 @@
 import { describe } from "@effect/vitest";
-import { Arbitrary, Effect, Schema } from "effect";
+import { Arbitrary, Effect, Option, Schema, Array as Arr } from "effect";
 
 import {
   hcaSessionApprovalDigest,
@@ -123,7 +123,7 @@ describe("HCA session approvals against the contracts", () => {
               abi: sessionHashesAbi,
               functionName: "multiChainDigest",
               args: [
-                sessions.map(({ chainId, session: sessionDigest }) => ({
+                Arr.map(sessions, ({ chainId, session: sessionDigest }) => ({
                   chainId: BigInt(chainId),
                   sessionDigest,
                 })),
@@ -132,23 +132,26 @@ describe("HCA session approvals against the contracts", () => {
 
           yield* holds(chainSessions, (input) =>
             Effect.gen(function* () {
-              const signed = input.map(({ chainId, session: terms }) => ({
+              const signed = Arr.map(input, ({ chainId, session: terms }) => ({
                 chainId,
                 session: hcaSignedSession(terms),
               }));
-              const digests = signed.map(({ chainId, session: signedSession }) => ({
+              const digests = Arr.map(signed, ({ chainId, session: signedSession }) => ({
                 chainId,
                 session: hcaSessionDigest(signedSession),
               }));
-              const reversed = signed.toReversed();
-              const [digest, reversedDigest] = yield* Effect.all([
-                onChain(digests),
-                onChain(digests.toReversed()),
-              ]);
+              const reversed = Arr.reverse(signed);
+              const [digest, reversedDigest] = yield* Effect.all(
+                [onChain(digests), onChain(Arr.reverse(digests))],
+                { concurrency: 1 },
+              );
               // Reversing reorders the chains unless they read the same both ways.
               const order = (list: typeof digests) =>
-                list.map(({ chainId, session: digestOf }) => `${chainId}:${digestOf}`).join();
-              const palindrome = order(digests) === order(digests.toReversed());
+                Arr.join(
+                  Arr.map(list, ({ chainId, session: digestOf }) => `${chainId}:${digestOf}`),
+                  ",",
+                );
+              const palindrome = order(digests) === order(Arr.reverse(digests));
               return (
                 digest === hcaSessionApprovalDigest(signed) &&
                 reversedDigest === hcaSessionApprovalDigest(reversed) &&
@@ -186,17 +189,17 @@ describe("HCA session approvals against the contracts", () => {
 
           yield* holds(approvals, (input) =>
             Effect.gen(function* () {
-              const others = input.others.filter(({ chainId }) => chainId !== devnet.chain.id);
+              const others = Arr.filter(input.others, ({ chainId }) => chainId !== devnet.chain.id);
               const selected = Math.min(input.selected, others.length);
               const entries = others.toSpliced(selected, 0, {
                 chainId: devnet.chain.id,
                 session: input.here,
               });
-              const signed = entries.map(({ chainId, session: terms }) => ({
+              const signed = Arr.map(entries, ({ chainId, session: terms }) => ({
                 chainId,
                 session: hcaSignedSession(terms),
               }));
-              const digests = signed.map(({ session: signedSession }) =>
+              const digests = Arr.map(signed, ({ session: signedSession }) =>
                 hcaSessionDigest(signedSession),
               );
               const owner = owners[input.owner] ?? alice;
@@ -204,28 +207,32 @@ describe("HCA session approvals against the contracts", () => {
                 account: owner,
                 ...hcaSessionTypedData(signed),
               });
+              const digestAt = (index: number) => Option.getOrThrow(Arr.get(digests, index));
               const validate = (packed: readonly Hex[], index: number) =>
                 chain.read({
                   address: devnet.contract("hca.sessionHashes"),
                   abi: sessionHashesAbi,
                   functionName: "validateMultiChainAuthorization",
-                  args: [owner, digests[selected] as Hex, BigInt(index), concat(packed), signature],
+                  args: [owner, digestAt(selected), BigInt(index), concat(packed), signature],
                 });
 
-              const packed = entries.map(({ chainId }, index) =>
-                entry(chainId, digests[index] as Hex),
+              const packed = Arr.map(entries, ({ chainId }, index) =>
+                entry(chainId, digestAt(index)),
               );
               const tampered = Math.min(input.tampered, packed.length - 1);
               const { chainId } = entries[tampered] ?? { chainId: 0 };
-              const digest = digests[tampered] as Hex;
-              const [accepted, ...rejected] = yield* Effect.all([
-                validate(packed, selected),
-                validate(packed.with(tampered, entry(chainId + 1, digest)), selected),
-                validate(packed.with(tampered, entry(chainId, keccak256(digest))), selected),
-                // Another chain's entry, or past the last one.
-                validate(packed, (selected + 1) % (packed.length + 1)),
-              ]);
-              return accepted === valid && rejected.every((status) => status !== valid);
+              const digest = digestAt(tampered);
+              const [accepted, ...rejected] = yield* Effect.all(
+                [
+                  validate(packed, selected),
+                  validate(packed.with(tampered, entry(chainId + 1, digest)), selected),
+                  validate(packed.with(tampered, entry(chainId, keccak256(digest))), selected),
+                  // Another chain's entry, or past the last one.
+                  validate(packed, (selected + 1) % (packed.length + 1)),
+                ],
+                { concurrency: 1 },
+              );
+              return accepted === valid && Arr.every(rejected, (status) => status !== valid);
             }),
           );
         }),

@@ -1,19 +1,12 @@
 import { assert, describe } from "@effect/vitest";
-import { Effect } from "effect";
+import { Effect, Record as Rec } from "effect";
 
 import { Abis } from "@ensforge/contracts";
 import { Actions } from "@ensforge/sdk/effect";
 import { Chain, Devnet } from "@ensforge/test-devnet";
-import { Fixtures } from "@ensforge/test-fixtures";
+import { factAddress, Fixtures } from "@ensforge/test-fixtures";
 import { expectFailure } from "@ensforge/test-harness";
-import {
-  concat,
-  encodeAbiParameters,
-  encodeFunctionData,
-  namehash,
-  parseAbi,
-  type Address,
-} from "viem";
+import { concat, encodeAbiParameters, encodeFunctionData, namehash, parseAbi } from "viem";
 
 import { Clients } from "../support/clients.ts";
 import { Gateways } from "../support/gateways.ts";
@@ -31,17 +24,20 @@ describe("resolver reads", () => {
             const resolverOf = (name: string) => Actions.resolver.get(reader, { name });
             const nameOf = (id: string) => fixtures.byId(id).name;
 
-            assert.deepInclude(yield* resolverOf(nameOf("records.v1")), {
+            const v1Resolver = yield* resolverOf(nameOf("records.v1"));
+            assert.deepInclude(v1Resolver, {
               kind: "public-resolver",
               authorization: "owner",
               version: 0n,
             });
-            assert.deepInclude(yield* resolverOf(nameOf("resolver.2020")), {
+            const resolver2020 = yield* resolverOf(nameOf("resolver.2020"));
+            assert.deepInclude(resolver2020, {
               kind: "public-resolver",
               authorization: "owner",
             });
             // Bound to the registry ENS replaced in 2020: readable, not writable.
-            assert.deepInclude(yield* resolverOf(nameOf("resolver.frozen-2019")), {
+            const frozen2019Resolver = yield* resolverOf(nameOf("resolver.frozen-2019"));
+            assert.deepInclude(frozen2019Resolver, {
               kind: "public-resolver",
               authorization: "none",
             });
@@ -52,24 +48,32 @@ describe("resolver reads", () => {
               "resolver.gas-burner",
               "resolver.returndata-bomb",
             ]) {
-              assert.deepInclude(yield* resolverOf(nameOf(id)), {
+              const customResolver = yield* resolverOf(nameOf(id));
+              assert.deepInclude(customResolver, {
                 kind: "custom",
                 inherited: false,
               });
             }
-            assert.deepInclude(yield* resolverOf(nameOf("resolver.unsupported-profile")), {
+            const unsupportedProfileResolver = yield* resolverOf(
+              nameOf("resolver.unsupported-profile"),
+            );
+            assert.deepInclude(unsupportedProfileResolver, {
               kind: "extended",
             });
 
             const wildcard = fixtures.byId("resolver.wildcard");
-            assert.deepInclude(yield* resolverOf(String(wildcard.facts["wildcardChild"])), {
-              address: wildcard.facts["resolver"] as Address,
+            const wildcardChildResolver = yield* resolverOf(
+              String(wildcard.facts["wildcardChild"]),
+            );
+            assert.deepInclude(wildcardChildResolver, {
+              address: factAddress(wildcard.facts, "resolver"),
               inherited: true,
               kind: "extended",
             });
 
             // The `eth` resolver is not extended, so it does not serve names below it.
-            assert.isNull(yield* resolverOf(nameOf("resolver.none")));
+            const missingResolver = yield* resolverOf(nameOf("resolver.none"));
+            assert.isNull(missingResolver);
             yield* expectFailure(
               Actions.resolver.get(reader, { name: nameOf("resolver.none"), strict: true }),
               { _tag: "NotFoundError", code: "RESOLVER_NOT_FOUND" },
@@ -90,7 +94,7 @@ describe("resolver reads", () => {
             const { reader } = yield* Clients;
 
             // The error a strict read gives; a non-strict read gives nulls.
-            for (const [id, code] of Object.entries({
+            for (const [id, code] of Rec.toEntries({
               "resolver.none": "RESOLVER_NOT_FOUND",
               "resolver.eoa": "RESOLVER_NOT_FOUND",
               "resolver.not-a-resolver": "RESOLVER_PROFILE_UNSUPPORTED",
@@ -169,10 +173,8 @@ describe("resolver reads", () => {
             const { reader } = yield* Clients;
             const name = fixtures.byId("resolver.no-erc165").name;
 
-            assert.strictEqual(
-              yield* Actions.record.getAddress(reader, { name, strict: true }),
-              devnet.accounts.alice,
-            );
+            const address = yield* Actions.record.getAddress(reader, { name, strict: true });
+            assert.strictEqual(address, devnet.accounts.alice);
             const records = yield* Actions.record.get(reader, {
               name,
               texts: ["url"],
@@ -209,12 +211,13 @@ describe("resolver reads", () => {
 
             // The parent's resolver is called with the child's own node. After the launch the
             // ENSv1 bridge serves premigrated ENSv1 names; before it, their own resolvers do.
-            assert.deepStrictEqual(yield* resolve(String(wildcard.facts["wildcardChild"])), {
+            const wildcardChildResolution = yield* resolve(String(wildcard.facts["wildcardChild"]));
+            assert.deepStrictEqual(wildcardChildResolution, {
               data: encodeAbiParameters([{ type: "address" }], [accounts.bob]),
               resolver:
                 profile === "mainnet-shaped"
                   ? devnet.contract("v2.ensV1Resolver")
-                  : (wildcard.facts["resolver"] as Address),
+                  : factAddress(wildcard.facts, "resolver"),
             });
             assert.strictEqual(
               (yield* resolve(String(wildcard.facts["exact"]))).data,
@@ -252,22 +255,24 @@ describe("resolver reads", () => {
           const { reader } = yield* Clients;
           const nameOf = (id: string) => fixtures.byId(id).name;
 
-          assert.deepInclude(yield* Actions.resolver.get(reader, { name: nameOf("records.v2") }), {
+          const v2Resolver = yield* Actions.resolver.get(reader, { name: nameOf("records.v2") });
+          assert.deepInclude(v2Resolver, {
             kind: "permissioned-resolver",
             authorization: "roles",
           });
-          assert.deepInclude(
-            yield* Actions.resolver.get(reader, {
-              name: nameOf("resolver.public-resolver-v2.unknown"),
-            }),
-            { kind: "public-resolver-v2" },
-          );
+          const unknownV2Resolver = yield* Actions.resolver.get(reader, {
+            name: nameOf("resolver.public-resolver-v2.unknown"),
+          });
+          assert.deepInclude(unknownV2Resolver, { kind: "public-resolver-v2" });
 
-          const [target, linked, unlinked] = yield* Effect.all([
-            Actions.resolver.getLink(reader, { name: nameOf("records.v2") }),
-            Actions.resolver.getLink(reader, { name: nameOf("records.v2.linked") }),
-            Actions.resolver.getLink(reader, { name: nameOf("records.v2.default") }),
-          ]);
+          const [target, linked, unlinked] = yield* Effect.all(
+            [
+              Actions.resolver.getLink(reader, { name: nameOf("records.v2") }),
+              Actions.resolver.getLink(reader, { name: nameOf("records.v2.linked") }),
+              Actions.resolver.getLink(reader, { name: nameOf("records.v2.default") }),
+            ],
+            { concurrency: 1 },
+          );
           assert.strictEqual(linked?.recordId, target?.recordId);
           assert.isNull(unlinked);
         }),
@@ -314,7 +319,8 @@ describe("resolver reads", () => {
           const offchain = fixtures.byId("resolver.offchain");
           const gateway = yield* gateways.serve(() => ({ status: 200, body: '{"data":"0x"}' }));
 
-          assert.deepInclude(yield* Actions.resolver.get(reader, { name: records }), {
+          const v1RecordsResolver = yield* Actions.resolver.get(reader, { name: records });
+          assert.deepInclude(v1RecordsResolver, {
             address: devnet.contract("v1.publicResolver"),
             kind: "public-resolver",
             inherited: false,
@@ -334,14 +340,15 @@ describe("resolver reads", () => {
           );
 
           // An off-chain resolver behind the bridge, as `jesse.base.eth` on mainnet.
-          assert.deepInclude(yield* Actions.resolver.get(reader, { name: offchain.name }), {
-            address: offchain.facts["resolver"] as Address,
+          const offchainResolver = yield* Actions.resolver.get(reader, { name: offchain.name });
+          assert.deepInclude(offchainResolver, {
+            address: factAddress(offchain.facts, "resolver"),
             kind: "extended",
           });
           yield* chain.isolated(
             Effect.gen(function* () {
               yield* chain.write({
-                address: offchain.facts["resolver"] as Address,
+                address: factAddress(offchain.facts, "resolver"),
                 abi: parseAbi(["function setRevertURL(string)"]),
                 functionName: "setRevertURL",
                 args: [gateway.url],
@@ -375,9 +382,12 @@ describe("resolver reads", () => {
               .pipe(Effect.map((resolver) => resolver?.serving));
 
           // Not premigrated: its ENSv1 resolver is kept but no longer resolves it.
-          assert.isFalse(yield* servingOf("v1.unwrapped"));
-          assert.isTrue(yield* servingOf("records.v1"));
-          assert.isTrue(yield* servingOf("records.v2"));
+          const unpremigratedServing = yield* servingOf("v1.unwrapped");
+          assert.isFalse(unpremigratedServing);
+          const v1Serving = yield* servingOf("records.v1");
+          assert.isTrue(v1Serving);
+          const v2Serving = yield* servingOf("records.v2");
+          assert.isTrue(v2Serving);
         }),
       { meta: { cases: ["O19"] } },
     );

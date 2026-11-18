@@ -1,5 +1,5 @@
 import { assert, describe } from "@effect/vitest";
-import { Effect } from "effect";
+import { Effect, Array as Arr } from "effect";
 
 import { Abis } from "@ensforge/contracts";
 import {
@@ -29,7 +29,7 @@ import {
   toHex,
   zeroAddress,
   type Address,
-  type BaseError,
+  BaseError,
   type Hex,
 } from "viem";
 
@@ -62,7 +62,11 @@ const sessionEnvelope = Effect.fnUntraced(function* (
   const operation = concat([
     "0x0201",
     numberToHex(calls.length, { size: 1 }),
-    ...calls.flatMap((call) => [call.to, numberToHex(size(call.data), { size: 3 }), call.data]),
+    ...Arr.flatMap(calls, (call) => [
+      call.to,
+      numberToHex(size(call.data), { size: 3 }),
+      call.data,
+    ]),
   ]);
   const operationHash = hashStruct({
     types: {
@@ -77,7 +81,10 @@ const sessionEnvelope = Effect.fnUntraced(function* (
       ],
     },
     primaryType: "Op",
-    data: { vt: mode, ops: calls.map((call) => ({ to: call.to, value: 0n, data: call.data })) },
+    data: {
+      vt: mode,
+      ops: Arr.map(calls, (call) => ({ to: call.to, value: 0n, data: call.data })),
+    },
   });
 
   // The IntentExecutor's single-chain digest, with the validator's type hashes.
@@ -166,7 +173,7 @@ const sessionEnvelope = Effect.fnUntraced(function* (
         session.chains.length,
       ],
     ),
-    ...session.chains.flatMap(({ chainId, sessionDigest }) => [
+    ...Arr.flatMap(session.chains, ({ chainId, sessionDigest }) => [
       numberToHex(chainId, { size: 8 }),
       sessionDigest,
     ]),
@@ -201,10 +208,13 @@ const verdict = Effect.fnUntraced(function* (
       Effect.match({
         onSuccess: (magicValue): string => magicValue,
         onFailure: (error) => {
-          const reverted = (error.cause as BaseError).walk(
-            (cause) => cause instanceof ContractFunctionRevertedError,
-          ) as ContractFunctionRevertedError | null;
-          return reverted?.data?.errorName ?? "no revert data";
+          const reverted =
+            error.cause instanceof BaseError
+              ? error.cause.walk((cause) => cause instanceof ContractFunctionRevertedError)
+              : null;
+          return reverted instanceof ContractFunctionRevertedError
+            ? (reverted.data?.errorName ?? "no revert data")
+            : "no revert data";
         },
       }),
     );
@@ -235,10 +245,11 @@ describe("HCA sessions on the validator", () => {
           yield* chain.isolated(
             Effect.gen(function* () {
               yield* HcaActions.hca.deploySync(ens, {});
+              const now = yield* chain.now;
               const session = yield* HcaActions.hca.authorizeSession(ens, {
                 sessionKey: bob,
                 resolver,
-                validUntil: Number(yield* chain.now) + 3600,
+                validUntil: Number(now) + 3600,
               });
               const envelope = yield* sessionEnvelope(session, { calls: [commit] });
 
@@ -251,7 +262,8 @@ describe("HCA sessions on the validator", () => {
                 account: devnet.contract("hca.intentExecutor"),
               });
               assert.strictEqual(magicValue, "0x1626ba7e");
-              assert.strictEqual(yield* verdict(session, envelope), "0x1626ba7e");
+              const sessionVerdict = yield* verdict(session, envelope);
+              assert.strictEqual(sessionVerdict, "0x1626ba7e");
 
               // Another signer's approval of the same session.
               const forged = yield* chain.signTypedData({
@@ -267,13 +279,12 @@ describe("HCA sessions on the validator", () => {
                   },
                 ]),
               });
-              assert.strictEqual(
-                yield* verdict(
-                  session,
-                  yield* sessionEnvelope(session, { calls: [commit], ownerSignature: forged }),
-                ),
-                "InvalidSigner",
-              );
+              const forgedEnvelope = yield* sessionEnvelope(session, {
+                calls: [commit],
+                ownerSignature: forged,
+              });
+              const forgedVerdict = yield* verdict(session, forgedEnvelope);
+              assert.strictEqual(forgedVerdict, "InvalidSigner");
 
               // A registration with a subregistry is outside the session policy.
               const register = {
@@ -293,36 +304,33 @@ describe("HCA sessions on the validator", () => {
                   ],
                 }),
               };
-              assert.strictEqual(
-                yield* verdict(session, yield* sessionEnvelope(session, { calls: [register] })),
-                "PolicyRuleFailed",
-              );
+              const registerEnvelope = yield* sessionEnvelope(session, { calls: [register] });
+              const registerVerdict = yield* verdict(session, registerEnvelope);
+              assert.strictEqual(registerVerdict, "PolicyRuleFailed");
 
               // A gas refund above the session's exchange-rate ceiling.
-              assert.strictEqual(
-                yield* verdict(
-                  session,
-                  yield* sessionEnvelope(session, {
-                    calls: [commit],
-                    refund: {
-                      token: session.terms.refundToken,
-                      exchangeRate: session.terms.maxRefundExchangeRate + 1n,
-                      amount: 1n,
-                    },
-                  }),
-                ),
-                "GasRefundNotAllowed",
-              );
+              const refundEnvelope = yield* sessionEnvelope(session, {
+                calls: [commit],
+                refund: {
+                  token: session.terms.refundToken,
+                  exchangeRate: session.terms.maxRefundExchangeRate + 1n,
+                  amount: 1n,
+                },
+              });
+              const refundVerdict = yield* verdict(session, refundEnvelope);
+              assert.strictEqual(refundVerdict, "GasRefundNotAllowed");
 
               yield* chain.atTimestamp(
                 BigInt(session.terms.validUntil) + 1n,
                 Effect.gen(function* () {
-                  assert.strictEqual(yield* verdict(session, envelope), "InvalidSessionData");
+                  const expiredVerdict = yield* verdict(session, envelope);
+                  assert.strictEqual(expiredVerdict, "InvalidSessionData");
                 }),
               );
 
               yield* HcaActions.hca.revokeSessionsSync(ens, {});
-              assert.strictEqual(yield* verdict(session, envelope), "InvalidSessionData");
+              const revokedVerdict = yield* verdict(session, envelope);
+              assert.strictEqual(revokedVerdict, "InvalidSessionData");
             }),
           );
         }),

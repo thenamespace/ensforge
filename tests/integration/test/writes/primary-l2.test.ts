@@ -1,5 +1,5 @@
 import { assert, describe, layer } from "@effect/vitest";
-import { Effect, Layer } from "effect";
+import { Effect, Layer, Array as Arr } from "effect";
 
 import { CoinType, Plan } from "@ensforge/sdk";
 import { Actions } from "@ensforge/sdk/effect";
@@ -48,12 +48,14 @@ describe("primaryName.set on an L2", () => {
               const { plan } = yield* Actions.primaryName.setSync(ens, { name, coin: optimism });
 
               assert.strictEqual(plan.chainId, op.chainId);
-              assert.strictEqual(yield* op.nameOf(alice), name);
+              const optimismName = yield* op.nameOf(alice);
+              assert.strictEqual(optimismName, name);
               for (const coin of [optimism, "op"] as const) {
-                assert.strictEqual(
-                  yield* Actions.primaryName.get(clients.reader, { address: alice, coin }),
-                  name,
-                );
+                const optimismPrimaryName = yield* Actions.primaryName.get(clients.reader, {
+                  address: alice,
+                  coin,
+                });
+                assert.strictEqual(optimismPrimaryName, name);
               }
 
               // The registrar lets only the address itself, or its Ownable owner, name it.
@@ -137,11 +139,13 @@ describe("primaryName.set on an L2", () => {
               );
               yield* Actions.primaryName.setSync(relayer, signed);
 
-              assert.strictEqual(yield* op.nameOf(named), name);
-              assert.strictEqual(
-                yield* Actions.primaryName.get(clients.reader, { address: named, coin: optimism }),
-                name,
-              );
+              const optimismName = yield* op.nameOf(named);
+              assert.strictEqual(optimismName, name);
+              const optimismPrimaryName = yield* Actions.primaryName.get(clients.reader, {
+                address: named,
+                coin: optimism,
+              });
+              assert.strictEqual(optimismPrimaryName, name);
               return signed;
             });
 
@@ -152,7 +156,8 @@ describe("primaryName.set on an L2", () => {
               assert.isUndefined(signed.claim.owner);
 
               yield* claimAndRead({ account: smartAccount }, wallet);
-              assert.isUndefined(yield* chain.code(counterfactual));
+              const counterfactualCode = yield* chain.code(counterfactual);
+              assert.isUndefined(counterfactualCode);
               const wrapped = yield* claimAndRead({ account: undeployedAccount }, counterfactual);
               assert.isTrue(isErc6492Signature(wrapped.signature));
               const byOwner = yield* claimAndRead({ account: user }, ownable);
@@ -293,11 +298,11 @@ describe("primaryName.set on an L2", () => {
 
               assert.strictEqual(plan.chainId, op.chainId);
               assert.strictEqual(receipt.status, "success");
-              assert.strictEqual(yield* op.nameOf(alice), name);
+              const optimismName = yield* op.nameOf(alice);
+              assert.strictEqual(optimismName, name);
+              const completed = yield* Actions.plan.list(ens, { status: "completed" });
               assert.include(
-                (yield* Actions.plan.list(ens, { status: "completed" })).map(
-                  (saved) => saved.plan.id,
-                ),
+                Arr.map(completed, (saved) => saved.plan.id),
                 id,
               );
             }),

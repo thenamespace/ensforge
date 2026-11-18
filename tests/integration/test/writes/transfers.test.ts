@@ -30,7 +30,8 @@ describe("transfers and managers", () => {
           yield* chain.isolated(
             Effect.gen(function* () {
               yield* Actions.name.transferSync(ens, { name: unwrapped, to: carol });
-              assert.deepInclude(yield* v1Owners(unwrapped), {
+              const v1Owners2 = yield* v1Owners(unwrapped);
+              assert.deepInclude(v1Owners2, {
                 registry: carol,
                 registrant: carol,
               });
@@ -43,7 +44,8 @@ describe("transfers and managers", () => {
                 to: carol,
                 role: "registrant",
               });
-              assert.deepInclude(yield* v1Owners(unwrapped), {
+              const v1Owners2 = yield* v1Owners(unwrapped);
+              assert.deepInclude(v1Owners2, {
                 registry: alice,
                 registrant: carol,
               });
@@ -254,13 +256,15 @@ describe("transfers and managers", () => {
           yield* chain.isolated(
             Effect.gen(function* () {
               yield* Actions.name.transferSync(ens, { name, to: accounts.carol });
-              assert.isNull(yield* Actions.approval.getToken(ens, { name }));
+              const token = yield* Actions.approval.getToken(ens, { name });
+              assert.isNull(token);
             }),
           );
           yield* chain.isolated(
             Effect.gen(function* () {
               yield* Actions.wrapper.unwrapSync(ens, { name });
-              assert.isNull(yield* Actions.approval.getToken(ens, { name }));
+              const token = yield* Actions.approval.getToken(ens, { name });
+              assert.isNull(token);
             }),
           );
         }),
@@ -315,10 +319,11 @@ describe("transfers and managers", () => {
                 name,
                 texts: { url: "https://carol.example" },
               });
-              assert.strictEqual(
-                yield* Actions.record.getText(recipient, { name, key: "url" }),
-                "https://carol.example",
-              );
+              const textAfterTransfer = yield* Actions.record.getText(recipient, {
+                name,
+                key: "url",
+              });
+              assert.strictEqual(textAfterTransfer, "https://carol.example");
               const former = yield* Actions.permission.check(sender, {
                 name,
                 operation: { setRecord: "text", key: "url" },

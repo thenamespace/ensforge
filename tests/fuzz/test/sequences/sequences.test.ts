@@ -1,5 +1,5 @@
 import { assert, describe } from "@effect/vitest";
-import { Arbitrary, Effect } from "effect";
+import { Array as Arr, Arbitrary, Effect, Order, pipe, Record as Rec, String as Str } from "effect";
 
 import { onProfile } from "@ensforge/test-integration/support/lane";
 
@@ -14,7 +14,8 @@ describe("random sequences", () => {
   onProfile("mainnet-shaped")("mainnet-shaped", (it) => {
     it.effect(`agree with the model and keep every invariant (seed ${seed})`, () =>
       Effect.gen(function* () {
-        const context = yield* makeContext(yield* makeWorld);
+        const world = yield* makeWorld;
+        const context = yield* makeContext(world);
         const result = yield* Arbitrary.checkEffect(
           Arbitrary.array(Arbitrary.schema(Command), { minLength: 1, maxLength }),
           (commands) => Effect.as(runSequence(context, commands), true),
@@ -23,7 +24,12 @@ describe("random sequences", () => {
 
         yield* Effect.logInfo(
           "outcomes",
-          Object.fromEntries([...context.outcomes].toSorted(([a], [b]) => a.localeCompare(b))),
+          Rec.fromEntries(
+            Arr.sort(
+              [...context.outcomes],
+              Order.make<readonly [string, unknown]>(([a], [b]) => pipe(a, Str.localeCompare(b))),
+            ),
+          ),
         );
         if (result._tag === "Falsified") {
           const failure =

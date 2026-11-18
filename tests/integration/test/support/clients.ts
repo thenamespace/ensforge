@@ -57,6 +57,8 @@ export class Clients extends Context.Service<
     readonly reader: Client;
     readonly make: (options: ClientOptions) => Client;
   }
+  // Service keys are `<package>/<Service>`; this file is not named after the service.
+  // oxlint-disable-next-line effecttsgo/deterministic-keys
 >()("@ensforge/test-integration/Clients") {
   static readonly layer = Layer.effect(
     Clients,

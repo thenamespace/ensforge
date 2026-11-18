@@ -1,5 +1,5 @@
 import { describe } from "@effect/vitest";
-import { Arbitrary, Effect, Schema } from "effect";
+import { Arbitrary, Effect, Schema, Array as Arr } from "effect";
 
 import { Abis } from "@ensforge/contracts";
 import { Name } from "@ensforge/sdk";
@@ -21,7 +21,7 @@ describe("names against the Universal Resolver", () => {
         );
         const names = Arbitrary.map(
           Arbitrary.array(label, { minLength: 1, maxLength: 4 }),
-          (labels) => labels.join("."),
+          (labels) => Arr.join(labels, "."),
         );
 
         yield* holds(names, (name) =>

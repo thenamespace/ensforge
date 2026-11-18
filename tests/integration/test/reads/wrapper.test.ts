@@ -53,13 +53,18 @@ describe("wrapper.getFuses", () => {
           const fusesOf = (id: string) =>
             Actions.wrapper.getFuses(reader, { name: fixtures.byId(id).name });
 
-          assert.isNull(yield* fusesOf("v1.wrapped.sub.expired-emancipated"));
-          assert.isNull(yield* fusesOf("v1.wrapped.expired"));
-          assert.isNull(yield* fusesOf("v1.wrapped.desynced"));
-          assert.isNull(yield* fusesOf("v1.unwrapped"));
+          const expiredEmancipatedFuses = yield* fusesOf("v1.wrapped.sub.expired-emancipated");
+          assert.isNull(expiredEmancipatedFuses);
+          const expiredFuses = yield* fusesOf("v1.wrapped.expired");
+          assert.isNull(expiredFuses);
+          const desyncedFuses = yield* fusesOf("v1.wrapped.desynced");
+          assert.isNull(desyncedFuses);
+          const unwrappedFuses = yield* fusesOf("v1.unwrapped");
+          assert.isNull(unwrappedFuses);
 
           // A plain child keeps its owner past expiry; the wrapper zeroes only its fuses.
-          assert.deepInclude(yield* fusesOf("v1.wrapped.sub.expired"), {
+          const expiredChildFuses = yield* fusesOf("v1.wrapped.sub.expired");
+          assert.deepInclude(expiredChildFuses, {
             owner: devnet.accounts.bob,
             fuses: 0,
           });

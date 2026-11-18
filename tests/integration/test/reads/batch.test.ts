@@ -1,5 +1,5 @@
 import { assert, describe } from "@effect/vitest";
-import { Effect } from "effect";
+import { Effect, Array as Arr } from "effect";
 
 import { Actions as Requests } from "@ensforge/sdk";
 import { Actions } from "@ensforge/sdk/effect";
@@ -30,12 +30,15 @@ describe("batch", () => {
               strict: Requests.record.get.request({ name: missing, texts: ["url"], strict: true }),
             },
           });
-          const direct = yield* Effect.all({
-            state: Actions.name.get(reader, { name }),
-            records: Actions.record.get(reader, { name, texts: ["url"], addresses: ["eth"] }),
-            resolver: Actions.resolver.get(reader, { name }),
-            primary: Actions.primaryName.get(reader, { address }),
-          });
+          const direct = yield* Effect.all(
+            {
+              state: Actions.name.get(reader, { name }),
+              records: Actions.record.get(reader, { name, texts: ["url"], addresses: ["eth"] }),
+              resolver: Actions.resolver.get(reader, { name }),
+              primary: Actions.primaryName.get(reader, { address }),
+            },
+            { concurrency: 1 },
+          );
 
           for (const key of ["state", "records", "resolver", "primary"] as const) {
             assert.deepStrictEqual<unknown>(
@@ -71,17 +74,21 @@ describe("batch", () => {
             const addressOf = (id: string) => String(fixtures.byId(id).facts["address"]);
             const named = addressOf("primary.addr-reverse");
 
-            assert.deepStrictEqual(yield* Actions.batch(reader, { requests: [] }), { results: [] });
+            const emptyBatch = yield* Actions.batch(reader, { requests: [] });
+            assert.deepStrictEqual(emptyBatch, { results: [] });
             const { results } = yield* Actions.batch(reader, {
-              requests: [
-                named,
-                "0x000000000000000000000000000000000000dEaD",
-                addressOf("primary.mismatch"),
-                named,
-              ].map((address) => Requests.primaryName.get.request({ address })),
+              requests: Arr.map(
+                [
+                  named,
+                  "0x000000000000000000000000000000000000dEaD",
+                  addressOf("primary.mismatch"),
+                  named,
+                ],
+                (address) => Requests.primaryName.get.request({ address }),
+              ),
             });
             assert.deepStrictEqual(
-              results.map((result) => (result.status === "success" ? result.result : result)),
+              Arr.map(results, (result) => (result.status === "success" ? result.result : result)),
               ["rev-alice.eth", null, null, "rev-alice.eth"],
             );
           }),

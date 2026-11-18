@@ -35,7 +35,7 @@ export const migrate: CommandSpec<typeof Migrate.Type> = {
   run: (context, model, command) =>
     Effect.gen(function* () {
       const { world } = context;
-      const name = pick(world.v1Names, command.name) as string;
+      const name = pick(world.v1Names, command.name);
       const actor = actorOf(world, command.actor);
       const entry = model.v1[name];
       if (entry === undefined) return model;
@@ -64,7 +64,7 @@ export const migrate: CommandSpec<typeof Migrate.Type> = {
       });
       const v2 = migrated.v2[label];
       if (v2 === undefined || v2.owner !== owner) {
-        return yield* new SequenceFailure({
+        return yield* SequenceFailure.make({
           message: `${name} migrated to ENSv2 owned by ${v2?.owner ?? "nobody"}, not its ENSv1 owner ${owner}`,
         });
       }

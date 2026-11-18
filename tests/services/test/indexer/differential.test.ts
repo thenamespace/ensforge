@@ -1,5 +1,5 @@
 import { assert, layer } from "@effect/vitest";
-import { Arbitrary, Effect } from "effect";
+import { Arbitrary, Config, Effect, Formatter, Array as Arr } from "effect";
 
 import { Command } from "@ensforge/test-fuzz/commands";
 import { targetsOf } from "@ensforge/test-fuzz/commands/names";
@@ -27,10 +27,14 @@ layer(Services.layer({ profile: "mainnet-shaped" }), { excludeTestServices: true
         const world = yield* makeWorld;
         const context = yield* makeContext(world);
         const ens = clients.make({ indexer: services.indexer });
-        const names = targetsOf(world).flatMap((name) => [name, `${subLabel}.${name}`]);
+        const names = Arr.flatMap(targetsOf(world), (name) => [name, `${subLabel}.${name}`]);
+        const count = yield* Config.Int("ENSFORGE_INDEXER_RUNS").pipe(
+          Config.withDefault(5),
+          Effect.orDie,
+        );
         const sequences = yield* Arbitrary.sampleEffect(
           Arbitrary.array(Arbitrary.schema(Command), { minLength: 1, maxLength }),
-          { count: Number(process.env["ENSFORGE_INDEXER_RUNS"] ?? 5), seed },
+          { count, seed },
         );
 
         // Each sequence continues from the state, and the model, the previous one left.
@@ -43,12 +47,17 @@ layer(Services.layer({ profile: "mainnet-shaped" }), { excludeTestServices: true
           const found: string[] = [];
           for (const name of names) {
             const differences = yield* nameDifferences(ens, name, name);
-            found.push(...differences.filter((d) => d.known === undefined).map((d) => d.entry));
+            found.push(
+              ...Arr.map(
+                Arr.filter(differences, (d) => d.known === undefined),
+                (d) => d.entry,
+              ),
+            );
           }
           assert.deepStrictEqual(
             found,
             [],
-            `sequence ${index} (seed ${seed}): ${JSON.stringify(commands)}`,
+            `sequence ${index} (seed ${seed}): ${Formatter.formatJson(commands)}`,
           );
         }
       }),

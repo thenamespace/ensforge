@@ -1,8 +1,6 @@
-import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { Effect } from "effect";
+import { Effect, FileSystem, Order, Path, String as Str, pipe, Array as Arr } from "effect";
 import { ChildProcess, ChildProcessSpawner } from "effect/process";
 
 import type { DevnetInstance } from "@ensforge/test-devnet";
@@ -23,16 +21,18 @@ const git = Effect.fnUntraced(function* (args: readonly string[]) {
   return yield* spawner
     .string(ChildProcess.make("git", args))
     .pipe(
-      Effect.mapError((cause) => new DockerError({ message: `git ${args[0]}: ${String(cause)}` })),
+      Effect.mapError((cause) => DockerError.make({ message: `git ${args[0]}: ${String(cause)}` })),
     );
 });
 
 /** The pinned bigname checkout, cloned once into `tests/services/.cache`. */
 const source = Effect.gen(function* () {
-  const dir = join(cacheDir, `bigname-${bignameSource.tag}`);
-  if (!existsSync(join(dir, "Cargo.toml"))) {
-    rmSync(dir, { recursive: true, force: true });
-    mkdirSync(cacheDir, { recursive: true });
+  const fs = yield* FileSystem.FileSystem;
+  const path = yield* Path.Path;
+  const dir = path.join(cacheDir, `bigname-${bignameSource.tag}`);
+  if (!(yield* fs.exists(path.join(dir, "Cargo.toml")))) {
+    yield* fs.remove(dir, { recursive: true, force: true });
+    yield* fs.makeDirectory(cacheDir, { recursive: true });
     yield* git([
       "clone",
       "--quiet",
@@ -44,9 +44,10 @@ const source = Effect.gen(function* () {
       dir,
     ]);
   }
-  const commit = (yield* git(["-C", dir, "rev-parse", "HEAD"])).trim();
+  const head = yield* git(["-C", dir, "rev-parse", "HEAD"]);
+  const commit = Str.trim(head);
   if (commit !== bignameSource.commit) {
-    return yield* new DockerError({
+    return yield* DockerError.make({
       message: `${dir} is at ${commit}, not bigname ${bignameSource.tag} (${bignameSource.commit})`,
     });
   }
@@ -59,26 +60,39 @@ const source = Effect.gen(function* () {
  * bigname (several minutes); later profiles reuse the cached build directory.
  */
 export const bignameImage = Effect.fnUntraced(function* (devnet: DevnetInstance) {
+  const fs = yield* FileSystem.FileSystem;
+  const path = yield* Path.Path;
   const checkout = yield* source;
   // bigname's Sepolia manifests (`<family>/v<n>.toml`), rewritten for the devnet.
-  const sepolia = join(checkout, "manifests", "sepolia", "ethereum", "ens");
+  const sepolia = path.join(checkout, "manifests", "sepolia", "ethereum", "ens");
   const manifests = new Map<string, string>();
-  for (const family of readdirSync(sepolia)) {
-    for (const file of readdirSync(join(sepolia, family))) {
-      manifests.set(`${family}/${file}`, readFileSync(join(sepolia, family, file), "utf8"));
+  for (const family of yield* fs.readDirectory(sepolia)) {
+    for (const file of yield* fs.readDirectory(path.join(sepolia, family))) {
+      const manifest = yield* fs.readFileString(path.join(sepolia, family, file));
+      manifests.set(`${family}/${file}`, manifest);
     }
   }
+  const recipe = yield* fs.readFileString(dockerfile);
   const profile = rewriteManifests(manifests, devnet.contracts);
 
   // The image changes with the profile or the build recipe.
-  const fingerprint = keccak256(
-    toHex(
-      [
-        readFileSync(dockerfile, "utf8"),
-        ...[...profile].toSorted(([a], [b]) => a.localeCompare(b)).flat(),
-      ].join("\0"),
+  const fingerprint = pipe(
+    keccak256(
+      toHex(
+        Arr.join(
+          [
+            recipe,
+            ...Arr.sort(
+              [...profile],
+              Order.make<readonly [string, unknown]>(([a], [b]) => pipe(a, Str.localeCompare(b))),
+            ).flat(),
+          ],
+          "\0",
+        ),
+      ),
     ),
-  ).slice(2, 14);
+    Str.slice(2, 14),
+  );
   const tag = `ensforge-bigname-devnet:${bignameSource.tag}-${fingerprint}`;
 
   const present = yield* docker(["image", "inspect", "--format", "{{.Id}}", tag]).pipe(
@@ -87,12 +101,12 @@ export const bignameImage = Effect.fnUntraced(function* (devnet: DevnetInstance)
   );
   if (present) return tag;
 
-  const root = join(checkout, "manifests", profileName);
-  rmSync(root, { recursive: true, force: true });
-  for (const [path, text] of profile) {
-    const target = join(root, "ethereum", "ens", path);
-    mkdirSync(join(target, ".."), { recursive: true });
-    writeFileSync(target, text);
+  const root = path.join(checkout, "manifests", profileName);
+  yield* fs.remove(root, { recursive: true, force: true });
+  for (const [manifest, text] of profile) {
+    const target = path.join(root, "ethereum", "ens", manifest);
+    yield* fs.makeDirectory(path.dirname(target), { recursive: true });
+    yield* fs.writeFileString(target, text);
   }
   yield* docker([
     "build",

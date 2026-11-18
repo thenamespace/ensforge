@@ -1,15 +1,7 @@
-import { Context, Effect, Layer } from "effect";
+import { Array as Arr, Context, Effect, Layer, Schema } from "effect";
 
 import { Chain, ChainError, Devnet } from "@ensforge/test-devnet";
-import {
-  custom,
-  http,
-  numberToHex,
-  type Address,
-  type EIP1193RequestFn,
-  type Hash,
-  type Hex,
-} from "viem";
+import { custom, http, numberToHex, type Address, type EIP1193RequestFn, type Hash } from "viem";
 
 /** How a test wallet behaves. */
 export type WalletOptions = {
@@ -29,7 +21,20 @@ export type TestWallet = {
   readonly prompted: () => boolean;
 };
 
-type Call = { readonly to: Address; readonly data?: Hex; readonly value?: Hex };
+const HexString = Schema.TemplateLiteral(["0x", Schema.String]);
+// `wallet_sendCalls` parameters (EIP-5792): one bundle of calls.
+const SendCalls = Schema.Tuple([
+  Schema.Struct({
+    calls: Schema.Array(
+      Schema.Struct({
+        to: HexString,
+        data: Schema.optional(HexString),
+        value: Schema.optional(HexString),
+      }),
+    ),
+  }),
+]);
+type Call = (typeof SendCalls.Type)[0]["calls"][number];
 type Bundle = { readonly hashes: readonly Hash[]; readonly ok: boolean };
 
 const signing = new Set(["eth_sendTransaction", "wallet_sendCalls", "eth_signTypedData_v4"]);
@@ -41,18 +46,20 @@ const walletError = (code: number, message: string) => Object.assign(new Error(m
 export class Wallets extends Context.Service<
   Wallets,
   { readonly make: (account: Address, options?: WalletOptions) => TestWallet }
+  // Service keys are `<package>/<Service>`; this file is not named after the service.
+  // oxlint-disable-next-line effecttsgo/deterministic-keys
 >()("@ensforge/test-integration/Wallets") {
   static readonly layer = Layer.effect(
     Wallets,
     Effect.gen(function* () {
       const devnet = yield* Devnet;
       const chain = yield* Chain;
-      const context = yield* Effect.context<never>();
+      const context = yield* Effect.context();
       const node = http(devnet.rpcUrl)({ chain: devnet.chain });
       const forward = (method: string, params?: unknown) =>
         Effect.tryPromise({
-          try: () => node.request({ method, params } as never) as Promise<unknown>,
-          catch: (cause) => new ChainError({ method, cause }),
+          try: () => node.request({ method, params }),
+          catch: (cause) => ChainError.make({ method, cause }),
         });
 
       const make = (account: Address, options: WalletOptions = {}): TestWallet => {
@@ -65,9 +72,9 @@ export class Wallets extends Context.Service<
           const snapshot = yield* forward("evm_snapshot");
           const hashes: Hash[] = [];
           for (const call of calls) {
-            const hash = (yield* forward("eth_sendTransaction", [
+            const hash = yield* forward("eth_sendTransaction", [
               { from: account, to: call.to, data: call.data, value: call.value },
-            ])) as Hash;
+            ]).pipe(Effect.flatMap(Schema.decodeUnknownEffect(HexString)));
             hashes.push(hash);
             if ((yield* chain.receipt(hash)).status === "success") continue;
 
@@ -77,9 +84,9 @@ export class Wallets extends Context.Service<
           return { hashes, ok: true } satisfies Bundle;
         });
 
-        const handle = Effect.fnUntraced(function* (method: string, params: readonly unknown[]) {
+        const handle = Effect.fnUntraced(function* (method: string, params: unknown) {
           methods.push(method);
-          const signed = methods.filter((asked) => signing.has(asked)).length;
+          const signed = Arr.filter(methods, (asked) => signing.has(asked)).length;
           const refused =
             options.reject === true ||
             (options.rejectAfter !== undefined && signed > options.rejectAfter);
@@ -100,13 +107,14 @@ export class Wallets extends Context.Service<
               if (options.atomic !== true) {
                 return yield* Effect.fail(walletError(-32601, "Method not found"));
               }
-              const [{ calls }] = params as readonly [{ readonly calls: readonly Call[] }];
-              const id = `0x${(bundles.size + 1).toString(16).padStart(64, "0")}`;
-              bundles.set(id, yield* sendBundle(calls));
+              const [{ calls }] = yield* Schema.decodeUnknownEffect(SendCalls)(params);
+              const id = numberToHex(bundles.size + 1, { size: 32 });
+              const bundle = yield* sendBundle(calls);
+              bundles.set(id, bundle);
               return { id };
             }
             case "wallet_getCallsStatus": {
-              const [id] = params as readonly [string];
+              const [id] = yield* Schema.decodeUnknownEffect(Schema.Tuple([Schema.String]))(params);
               const bundle = bundles.get(id);
               if (bundle === undefined) {
                 return yield* Effect.fail(walletError(5730, "Unknown bundle"));
@@ -117,8 +125,10 @@ export class Wallets extends Context.Service<
                 chainId: numberToHex(devnet.chain.id),
                 atomic: true,
                 status: bundle.ok ? 200 : 500,
-                receipts: yield* Effect.forEach(bundle.hashes, (hash) =>
-                  forward("eth_getTransactionReceipt", [hash]),
+                receipts: yield* Effect.forEach(
+                  bundle.hashes,
+                  (hash) => forward("eth_getTransactionReceipt", [hash]),
+                  { concurrency: 1 },
                 ),
               };
             }
@@ -128,15 +138,14 @@ export class Wallets extends Context.Service<
         });
 
         // viem calls the wallet through Promises; this is the one place they appear.
+        // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- EIP1193RequestFn is generic over every RPC method; a wallet answers untyped JSON-RPC
         const request = (({ method, params }: { method: string; params?: unknown }) =>
-          Effect.runPromiseWith(context)(
-            handle(method, (params ?? []) as readonly unknown[]),
-          )) as EIP1193RequestFn;
+          Effect.runPromiseWith(context)(handle(method, params ?? []))) as EIP1193RequestFn;
 
         return {
           transport: custom({ request }),
           methods,
-          prompted: () => methods.some((method) => signing.has(method)),
+          prompted: () => Arr.some(methods, (method) => signing.has(method)),
         };
       };
 

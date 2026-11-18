@@ -1,12 +1,12 @@
 import { assert, describe } from "@effect/vitest";
-import { Deferred, Effect, Exit, Fiber } from "effect";
+import { Deferred, Effect, Exit, Fiber, Array as Arr, Record as Rec } from "effect";
 
 import { Duration, Plan, type Write } from "@ensforge/sdk";
 import { Actions } from "@ensforge/sdk/effect";
 import { Chain, Devnet } from "@ensforge/test-devnet";
 import { Fixtures } from "@ensforge/test-fixtures";
 import { expectFailure } from "@ensforge/test-harness";
-import type { Hex } from "viem";
+import { isHex, type Hex } from "viem";
 
 import { Clients, type Client } from "../support/clients.ts";
 import { ethEntry } from "../support/contracts.ts";
@@ -17,7 +17,7 @@ import { Wallets } from "../support/wallets.ts";
 const unfinishedId = (ens: Client) =>
   Actions.plan.list(ens, {}).pipe(
     Effect.map((records) => {
-      const unfinished = records.filter((record) => record.status !== "completed");
+      const unfinished = Arr.filter(records, (record) => record.status !== "completed");
       assert.strictEqual(unfinished.length, 1);
       return unfinished[0]?.plan.id ?? "";
     }),
@@ -50,14 +50,14 @@ describe("plan runtime", () => {
               );
               const id = yield* unfinishedId(first);
               const record = yield* Actions.plan.get(first, { id });
-              assert.deepStrictEqual(Object.keys(record?.submitted ?? {}), ["commit"]);
+              assert.deepStrictEqual(Rec.keys(record?.submitted ?? {}), ["commit"]);
 
               const wallet = wallets.make(accounts.alice);
               const second = clients.make({ account: accounts.alice, wallet, storage });
               yield* Actions.plan.resumeSync(second, { id, onStep: chain.passWaits });
 
               assert.strictEqual(
-                wallet.methods.filter((method) => method === "eth_sendTransaction").length,
+                Arr.filter(wallet.methods, (method) => method === "eth_sendTransaction").length,
                 2,
                 "approve and register only",
               );
@@ -103,7 +103,7 @@ describe("plan runtime", () => {
                 );
                 const commit = yield* Deferred.await(submitted);
                 yield* Fiber.interrupt(run);
-                if (commit === undefined) return assert.fail("the commit was not submitted");
+                if (commit === undefined) assert.fail("the commit was not submitted");
                 if (dropped) yield* chain.dropTransaction(commit);
                 yield* chain.setAutomine(true);
 
@@ -114,7 +114,7 @@ describe("plan runtime", () => {
 
                 // approve + register, and the commit again only when it was dropped.
                 assert.strictEqual(
-                  wallet.methods.filter((method) => method === "eth_sendTransaction").length,
+                  Arr.filter(wallet.methods, (method) => method === "eth_sendTransaction").length,
                   dropped ? 3 : 2,
                   `dropped: ${dropped}`,
                 );
@@ -156,7 +156,7 @@ describe("plan runtime", () => {
             );
             const commit = yield* Deferred.await(submitted);
             yield* Fiber.interrupt(run);
-            if (commit === undefined) return assert.fail("the commit was not submitted");
+            if (commit === undefined) assert.fail("the commit was not submitted");
 
             // The user's wallet sped the commit up: same call, new transaction.
             const original = yield* chain.transaction(commit);
@@ -181,7 +181,7 @@ describe("plan runtime", () => {
             const second = clients.make({ account: accounts.alice, wallet, storage });
             yield* Actions.plan.resumeSync(second, { id, onStep: chain.passWaits });
             assert.strictEqual(
-              wallet.methods.filter((method) => method === "eth_sendTransaction").length,
+              Arr.filter(wallet.methods, (method) => method === "eth_sendTransaction").length,
               2,
             );
           }),
@@ -258,7 +258,8 @@ describe("plan runtime", () => {
         const ens = clients.make({ account: accounts.alice, storage: Plan.memoryStorage() });
         const options = { names: "qqqqq.eth", duration: Duration.years(1) } as const;
 
-        const run = Effect.runPromiseWith(yield* Effect.context<never>());
+        const context = yield* Effect.context();
+        const run = Effect.runPromiseWith(context);
 
         // A route that sends each step's calls as the signer's own transactions, each mined before
         // the next; it can go down. Routes are called through Promises, the SDK's adapter boundary.
@@ -269,14 +270,17 @@ describe("plan runtime", () => {
             run(
               Effect.gen(function* () {
                 if (down && step.id === "register") return yield* Effect.die("route down");
-                const receipts = yield* Effect.forEach(step.calls, (call) =>
-                  chain.send({
-                    account: accounts.alice,
-                    chain: null,
-                    to: call.to,
-                    data: call.data,
-                    value: call.value,
-                  }),
+                const receipts = yield* Effect.forEach(
+                  step.calls,
+                  (call) =>
+                    chain.send({
+                      account: accounts.alice,
+                      chain: null,
+                      to: call.to,
+                      data: call.data,
+                      value: call.value,
+                    }),
+                  { concurrency: 1 },
                 );
                 const last = receipts.at(-1);
                 if (last === undefined) return yield* Effect.die("empty step");
@@ -285,15 +289,17 @@ describe("plan runtime", () => {
             ),
           status: (reference) =>
             run(
-              chain
-                .receipt(reference as Hex)
-                .pipe(
-                  Effect.map((receipt) =>
-                    receipt.status === "success"
-                      ? { status: "success" as const, hashes: [receipt.transactionHash] }
-                      : { status: "failed" as const, reason: "reverted" },
-                  ),
+              Effect.suspend(() =>
+                isHex(reference)
+                  ? chain.receipt(reference)
+                  : Effect.die(`${reference} is not a transaction hash`),
+              ).pipe(
+                Effect.map((receipt) =>
+                  receipt.status === "success"
+                    ? { status: "success" as const, hashes: [receipt.transactionHash] }
+                    : { status: "failed" as const, reason: "reverted" },
                 ),
+              ),
             ),
         };
 

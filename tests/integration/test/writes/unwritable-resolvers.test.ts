@@ -1,5 +1,5 @@
 import { assert, describe } from "@effect/vitest";
-import { Effect } from "effect";
+import { Effect, Array as Arr } from "effect";
 
 import { Actions } from "@ensforge/sdk/effect";
 import { Chain, Devnet } from "@ensforge/test-devnet";
@@ -100,7 +100,7 @@ describe("writes a resolver cannot take", () => {
                   unsupported,
                 );
                 assert.strictEqual(error.feature, "on-chain records");
-                assert.include(error.details.join("\n"), where);
+                assert.include(Arr.join(error.details, "\n"), where);
                 assert.isFalse(wallet.prompted(), "refused before the wallet was asked");
 
                 const simulation = yield* Actions.record.set.simulate(ens, options);

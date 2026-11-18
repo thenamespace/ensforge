@@ -1,3 +1,5 @@
+import { String as Str, pipe } from "effect";
+
 import { keccak256, toHex, type Address } from "viem";
 
 /**
@@ -49,15 +51,17 @@ const addressPattern = "0x[0-9a-fA-F]{40}";
 const declaredAddresses = (manifest: string): readonly (readonly [string, string])[] => {
   const found: (readonly [string, string])[] = [];
   // Inline tables, e.g. `resolver_implementations = [ { role = "…", address = "0x…", … } ]`.
-  for (const [, role = "", address = ""] of manifest.matchAll(
-    new RegExp(`role = "([^"]+)", address = "(${addressPattern})"`, "g"),
+  for (const [, role = "", address = ""] of pipe(
+    manifest,
+    Str.matchAll(new RegExp(`role = "([^"]+)", address = "(${addressPattern})"`, "g")),
   )) {
     found.push([role, address]);
   }
-  for (const block of manifest.split(/^\[/m)) {
-    if (block.startsWith("correlation_addresses]")) {
-      for (const [, key = "", address = ""] of block.matchAll(
-        new RegExp(`^(\\w+) = "(${addressPattern})"`, "gm"),
+  for (const block of pipe(manifest, Str.split(/^\[/m))) {
+    if (pipe(block, Str.startsWith("correlation_addresses]"))) {
+      for (const [, key = "", address = ""] of pipe(
+        block,
+        Str.matchAll(new RegExp(`^(\\w+) = "(${addressPattern})"`, "gm")),
       )) {
         found.push([key, address]);
       }
@@ -79,7 +83,7 @@ const declaredAddresses = (manifest: string): readonly (readonly [string, string
 
 /** A stand-in for an address the devnet has no contract for: no code, no logs. */
 const placeholder = (address: string): Address =>
-  `0x${keccak256(toHex(address.toLowerCase())).slice(26)}`;
+  `0x${pipe(keccak256(toHex(Str.toLowerCase(address))), Str.slice(26))}`;
 
 /**
  * Rewrites a set of Sepolia manifests (`path → text`, paths `<family>/v<n>.toml`) for the devnet:
@@ -92,17 +96,17 @@ export const rewriteManifests = (
 ): Map<string, string> => {
   const replacement = new Map<string, Address>();
   for (const [path, text] of manifests) {
-    const family = path.split("/")[0] ?? "";
+    const family = pipe(path, Str.split("/"))[0] ?? "";
     for (const [label, address] of declaredAddresses(text)) {
       const key = devnetRoles[`${family}:${label}`];
       const target = (key === undefined ? undefined : ledger[key]) ?? placeholder(address);
-      const previous = replacement.get(address.toLowerCase());
-      if (previous !== undefined && previous.toLowerCase() !== target.toLowerCase()) {
+      const previous = replacement.get(Str.toLowerCase(address));
+      if (previous !== undefined && Str.toLowerCase(previous) !== Str.toLowerCase(target)) {
         throw new Error(
           `${address} is ${previous} and ${target} in the devnet manifests (${path})`,
         );
       }
-      replacement.set(address.toLowerCase(), target);
+      replacement.set(Str.toLowerCase(address), target);
     }
   }
 
@@ -110,12 +114,15 @@ export const rewriteManifests = (
   for (const [path, text] of manifests) {
     rewritten.set(
       path,
-      text
-        .replace(
+      pipe(
+        // Effect's `Str.replace` takes a string replacement; this one is computed per match.
+        // oxlint-disable-next-line effecttsgo/prefer-effect-string
+        text.replace(
           new RegExp(addressPattern, "g"),
-          (address) => replacement.get(address.toLowerCase()) ?? placeholder(address),
-        )
-        .replace(/start_block = \d+/g, "start_block = 0"),
+          (address) => replacement.get(Str.toLowerCase(address)) ?? placeholder(address),
+        ),
+        Str.replace(/start_block = \d+/g, "start_block = 0"),
+      ),
     );
   }
   return rewritten;

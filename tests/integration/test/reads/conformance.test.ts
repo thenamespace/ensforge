@@ -1,5 +1,5 @@
 import { assert, describe } from "@effect/vitest";
-import { Effect } from "effect";
+import { Effect, Predicate, String as Str, Array as Arr, pipe } from "effect";
 
 import { Duration, Ensforge, Actions as Promises } from "@ensforge/sdk";
 import { Actions } from "@ensforge/sdk/effect";
@@ -27,18 +27,24 @@ describe("read conformance", () => {
         const name = fixtures.byId("records.v2").name;
         const selection = { name, texts: ["url"], addresses: ["eth"] } as const;
 
-        const bound = yield* Effect.all([
-          Effect.promise(() => reader.name.get({ name })),
-          Effect.promise(() => reader.record.get(selection)),
-        ]);
-        const standalone = yield* Effect.all([
-          Effect.promise(() => Promises.name.get(reader, { name })),
-          Effect.promise(() => Promises.record.get(reader, selection)),
-        ]);
-        const effect = yield* Effect.all([
-          Actions.name.get(reader, { name }),
-          Actions.record.get(reader, selection),
-        ]);
+        const bound = yield* Effect.all(
+          [
+            Effect.promise(() => reader.name.get({ name })),
+            Effect.promise(() => reader.record.get(selection)),
+          ],
+          { concurrency: 1 },
+        );
+        const standalone = yield* Effect.all(
+          [
+            Effect.promise(() => Promises.name.get(reader, { name })),
+            Effect.promise(() => Promises.record.get(reader, selection)),
+          ],
+          { concurrency: 1 },
+        );
+        const effect = yield* Effect.all(
+          [Actions.name.get(reader, { name }), Actions.record.get(reader, selection)],
+          { concurrency: 1 },
+        );
         assert.deepStrictEqual(standalone, bound);
         assert.deepStrictEqual<unknown>(effect, bound);
       }),
@@ -64,26 +70,29 @@ describe("read conformance", () => {
           publicClient: createPublicClient({ chain: devnet.chain, transport }),
           deployment: devnet.deployments,
         });
-        const ethCalls = (read: Effect.Effect<unknown, unknown>) =>
+        const ethCalls = <E>(read: Effect.Effect<unknown, E>) =>
           Effect.sync(() => methods.splice(0)).pipe(
             Effect.andThen(read),
-            Effect.map(() => methods.filter((method) => method === "eth_call").length),
+            Effect.map(() => Arr.filter(methods, (method) => method === "eth_call").length),
           );
 
-        const budgets = yield* Effect.all([
-          ethCalls(Actions.name.get(ens, { name: fixtures.byId("v2.registered").name })),
-          ethCalls(Actions.name.get(ens, { name: fixtures.byId("v2.reserved").name })),
-          ethCalls(
-            Actions.record.get(ens, {
-              name: records,
-              texts: ["url", "description"],
-              addresses: ["eth", "base"],
-              contentHash: true,
-            }),
-          ),
-          ethCalls(Actions.resolver.get(ens, { name: records })),
-          ethCalls(Actions.primaryName.get(ens, { address: devnet.accounts.alice })),
-        ]);
+        const budgets = yield* Effect.all(
+          [
+            ethCalls(Actions.name.get(ens, { name: fixtures.byId("v2.registered").name })),
+            ethCalls(Actions.name.get(ens, { name: fixtures.byId("v2.reserved").name })),
+            ethCalls(
+              Actions.record.get(ens, {
+                name: records,
+                texts: ["url", "description"],
+                addresses: ["eth", "base"],
+                contentHash: true,
+              }),
+            ),
+            ethCalls(Actions.resolver.get(ens, { name: records })),
+            ethCalls(Actions.primaryName.get(ens, { address: devnet.accounts.alice })),
+          ],
+          { concurrency: 1 },
+        );
         assert.deepStrictEqual(budgets, [2, 2, 1, 3, 1]);
       }),
     );
@@ -103,8 +112,14 @@ describe("read conformance", () => {
           const upstream = http(devnet.rpcUrl)({ chain: devnet.chain });
           const transport = custom({
             request: (request) => {
-              const [call] = (request.params ?? []) as readonly { readonly data?: string }[];
-              if (request.method === "eth_call" && call?.data?.startsWith(aggregate3)) batched += 1;
+              const [call] = Arr.isArray(request.params) ? request.params : [];
+              const data = Predicate.hasProperty(call, "data") ? call.data : undefined;
+              if (
+                request.method === "eth_call" &&
+                typeof data === "string" &&
+                pipe(data, Str.startsWith(aggregate3))
+              )
+                batched += 1;
               return upstream.request(request);
             },
           });
@@ -124,18 +139,27 @@ describe("read conformance", () => {
             batch: { multicall: false },
           });
           const reads = (ens: typeof reader | typeof unbatched) =>
-            Effect.forEach(["records.v1", "records.v2", "v1.wrapped"], (id) => {
-              const { name } = fixtures.byId(id);
-              return Effect.all([
-                Actions.name.get(ens, { name }),
-                Actions.resolver.get(ens, { name }),
-                Actions.record.get(ens, { name, texts: ["url"], addresses: ["eth", "btc"] }),
-              ]);
-            });
+            Effect.forEach(
+              ["records.v1", "records.v2", "v1.wrapped"],
+              (id) => {
+                const { name } = fixtures.byId(id);
+                return Effect.all(
+                  [
+                    Actions.name.get(ens, { name }),
+                    Actions.resolver.get(ens, { name }),
+                    Actions.record.get(ens, { name, texts: ["url"], addresses: ["eth", "btc"] }),
+                  ],
+                  { concurrency: 1 },
+                );
+              },
+              { concurrency: 1 },
+            );
 
           const expected = yield* reads(reader);
-          assert.deepStrictEqual<unknown>(yield* reads(withoutMulticall), expected);
-          assert.deepStrictEqual<unknown>(yield* reads(unbatched), expected);
+          const withoutMulticallReads = yield* reads(withoutMulticall);
+          assert.deepStrictEqual<unknown>(withoutMulticallReads, expected);
+          const unbatchedReads = yield* reads(unbatched);
+          assert.deepStrictEqual<unknown>(unbatchedReads, expected);
           assert.strictEqual(batched, 0);
         }),
       { meta: { cases: ["M:F6", "M:F7"] } },
@@ -153,7 +177,9 @@ describe("read conformance", () => {
           const upstream = http(devnet.rpcUrl)({ chain: devnet.chain });
           const transport = custom({
             request: (request) => {
-              if (request.method === "eth_call") blocks.push((request.params as unknown[])[1]);
+              if (request.method === "eth_call" && Arr.isArray(request.params)) {
+                blocks.push(request.params[1]);
+              }
               return upstream.request(request);
             },
           });
@@ -164,12 +190,15 @@ describe("read conformance", () => {
           const blockNumber = yield* chain.blockNumber;
           const { name } = fixtures.byId("records.v1");
 
-          yield* Effect.all([
-            Actions.name.get(ens, { name, blockNumber }),
-            Actions.resolver.get(ens, { name, blockNumber }),
-            Actions.record.get(ens, { name, texts: ["url"], addresses: ["eth"], blockNumber }),
-            Actions.primaryName.get(ens, { address: devnet.accounts.alice, blockNumber }),
-          ]);
+          yield* Effect.all(
+            [
+              Actions.name.get(ens, { name, blockNumber }),
+              Actions.resolver.get(ens, { name, blockNumber }),
+              Actions.record.get(ens, { name, texts: ["url"], addresses: ["eth"], blockNumber }),
+              Actions.primaryName.get(ens, { address: devnet.accounts.alice, blockNumber }),
+            ],
+            { concurrency: 1 },
+          );
           assert.isNotEmpty(blocks);
           assert.deepStrictEqual(new Set(blocks), new Set([numberToHex(blockNumber)]));
         }),
@@ -189,10 +218,13 @@ describe("read conformance", () => {
 
           const [before, after] = yield* chain.atTimestamp(
             graceEnd,
-            Effect.all([
-              Actions.name.get(reader, { name: inGrace.name, blockNumber: pinned }),
-              Actions.name.get(reader, { name: inGrace.name }),
-            ]),
+            Effect.all(
+              [
+                Actions.name.get(reader, { name: inGrace.name, blockNumber: pinned }),
+                Actions.name.get(reader, { name: inGrace.name }),
+              ],
+              { concurrency: 1 },
+            ),
           );
           assert.deepStrictEqual([before.status, after.status], ["grace", "expired"]);
         }),

@@ -1,4 +1,4 @@
-import { Effect } from "effect";
+import { Array as Arr, Effect, Formatter, Option } from "effect";
 
 import { Actions } from "@ensforge/sdk/effect";
 import type { Client } from "@ensforge/test-integration/support/clients";
@@ -45,24 +45,31 @@ export const permissionOracle = Effect.fnUntraced(function* (
   const { world } = context;
   const name = choose(targetsOf(world));
   const actor = choose(actorNames);
-  const other = world.actors[choose(actorNames.filter((candidate) => candidate !== actor))];
+  const other = world.actors[choose(Arr.filter(actorNames, (candidate) => candidate !== actor))];
   const { operation, simulate } = choose(operations);
   const account = world.actors[actor];
 
   const check = yield* Actions.permission.check(context.reader, { name, operation, account });
   // `null`: the engine cannot tell (e.g. an unknown resolver); nothing to compare.
-  if (check.allowed === null) return;
+  if (check.allowed === null) return undefined;
   const simulated = yield* simulate(context.as[actor], name, other).pipe(
     Effect.map((simulation) => ({
       ok: simulation.ok,
-      code: simulation.steps.find((step) => !step.ok)?.error?.code,
+      code: Option.getOrUndefined(
+        Option.map(
+          Arr.findFirst(simulation.steps, (step) => !step.ok),
+          (step) => step.error?.code,
+        ),
+      ),
     })),
     Effect.catch((error) => Effect.succeed({ ok: false, code: error.code })),
     Effect.catchDefect((defect) => Effect.succeed({ ok: false, code: String(defect) })),
   );
   if (check.allowed !== simulated.ok) {
-    return yield* new SequenceFailure({
-      message: `permission.check(${name}, ${JSON.stringify(operation)}, ${actor}) says ${check.allowed ? "allowed" : `not allowed (${JSON.stringify(check.missing)})`}, but simulating it ${simulated.ok ? "succeeds" : `fails ${simulated.code}`}`,
+    return yield* SequenceFailure.make({
+      message: `permission.check(${name}, ${Formatter.formatJson(operation)}, ${actor}) says ${check.allowed ? "allowed" : `not allowed (${Formatter.formatJson(check.missing)})`}, but simulating it ${simulated.ok ? "succeeds" : `fails ${simulated.code}`}`,
     });
   }
+
+  return undefined;
 });

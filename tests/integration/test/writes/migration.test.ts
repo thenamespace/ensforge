@@ -1,12 +1,12 @@
 import { assert, describe } from "@effect/vitest";
-import { Effect } from "effect";
+import { Effect, Record as Rec, Array as Arr } from "effect";
 
 import { Abis } from "@ensforge/contracts";
 import { hca } from "@ensforge/hca";
 import { Duration, Name, Plan } from "@ensforge/sdk";
 import { Actions } from "@ensforge/sdk/effect";
 import { Chain, Devnet } from "@ensforge/test-devnet";
-import { Fixtures } from "@ensforge/test-fixtures";
+import { factAddress, Fixtures } from "@ensforge/test-fixtures";
 import { expectFailure } from "@ensforge/test-harness";
 import {
   encodeAbiParameters,
@@ -57,7 +57,8 @@ describe("migration", () => {
                 assert.strictEqual(entry.owner, alice, id);
                 // The name keeps its reservation's expiry exactly.
                 assert.strictEqual(entry.expiry, status.reservationExpiry, id);
-                assert.deepInclude(yield* Actions.name.get(ens, { name }), {
+                const migratedName = yield* Actions.name.get(ens, { name });
+                assert.deepInclude(migratedName, {
                   kind: "v2-migrated",
                   migrated: true,
                 });
@@ -91,7 +92,8 @@ describe("migration", () => {
                 resolver: "keep",
                 onStep: chain.passWaits,
               });
-              assert.deepInclude(yield* Actions.registry.get(clients.reader, { name: locked }), {
+              const lockedRegistry = yield* Actions.registry.get(clients.reader, { name: locked });
+              assert.deepInclude(lockedRegistry, {
                 kind: "wrapper",
               });
             }),
@@ -107,7 +109,8 @@ describe("migration", () => {
               );
 
               yield* Actions.migration.migrateSync(owner, { names: child, resolver: "keep" });
-              assert.deepInclude(yield* Actions.name.get(owner, { name: child }), {
+              const migratedChild = yield* Actions.name.get(owner, { name: child });
+              assert.deepInclude(migratedChild, {
                 kind: "v2-migrated",
                 owner: accounts.bob,
               });
@@ -163,7 +166,8 @@ describe("migration", () => {
                 owner: carol,
                 resolver: null,
               });
-              assert.deepInclude(yield* Actions.name.get(ens, { name: abandoned }), {
+              const abandonedName = yield* Actions.name.get(ens, { name: abandoned });
+              assert.deepInclude(abandonedName, {
                 kind: "v2-native",
                 owner: carol,
               });
@@ -203,11 +207,13 @@ describe("migration", () => {
 
               const parent = yield* Actions.name.get(ens, { name: a });
               assert.deepInclude(parent, { kind: "v2-native", owner: bob });
-              assert.deepInclude(yield* Actions.name.get(ens, { name: b }), {
+              const migratedB = yield* Actions.name.get(ens, { name: b });
+              assert.deepInclude(migratedB, {
                 kind: "v2-native",
                 owner: bob,
               });
-              assert.strictEqual(yield* Actions.record.getAddress(ens, { name: b }), carol);
+              const address = yield* Actions.record.getAddress(ens, { name: b });
+              assert.strictEqual(address, carol);
 
               // The migrating account keeps no roles on the registry it deployed for bob.
               const contract = parent.subregistry ?? undefined;
@@ -244,15 +250,16 @@ describe("migration", () => {
               });
 
               assert.deepStrictEqual(
-                plan.steps.map((step) => step.id),
+                Arr.map(plan.steps, (step) => step.id),
                 ["migrate", "wrapped-subnames"],
               );
               assert.include(
-                plan.warnings.map((warning) => warning.code),
+                Arr.map(plan.warnings, (warning) => warning.code),
                 "SUBNAMES_MIGRATE_SEPARATELY",
               );
               const registry = yield* Actions.registry.get(ens, { name: parent });
-              assert.deepInclude(yield* Actions.name.get(ens, { name: controlled }), {
+              const controlledName = yield* Actions.name.get(ens, { name: controlled });
+              assert.deepInclude(controlledName, {
                 kind: "v2-native",
                 owner: bob,
                 registry: registry?.address ?? null,
@@ -301,7 +308,7 @@ describe("migration", () => {
                 onStep: chain.passWaits,
               });
               assert.deepStrictEqual(
-                plan.steps.map((step) => step.id),
+                Arr.map(plan.steps, (step) => step.id),
                 ["migrate"],
               );
               assert.strictEqual(
@@ -338,10 +345,8 @@ describe("migration", () => {
 
               const resolver = yield* Actions.resolver.get(ens, { name: withRecords });
               assert.strictEqual(resolver?.kind, "permissioned-resolver");
-              assert.strictEqual(
-                yield* Actions.record.getText(ens, { name: withRecords, key: "url" }),
-                before,
-              );
+              const text = yield* Actions.record.getText(ens, { name: withRecords, key: "url" });
+              assert.strictEqual(text, before);
             }),
           );
 
@@ -357,7 +362,7 @@ describe("migration", () => {
               });
 
               assert.deepStrictEqual(
-                plan.steps.map((step) => step.id),
+                Arr.map(plan.steps, (step) => step.id),
                 ["migrate", "manager"],
               );
               const roles = yield* Actions.role.get(ens, {
@@ -384,7 +389,7 @@ describe("migration", () => {
               });
 
               assert.deepStrictEqual(
-                plan.steps.map((step) => step.id),
+                Arr.map(plan.steps, (step) => step.id),
                 ["renew", "migrate"],
               );
               assert.strictEqual(
@@ -426,8 +431,8 @@ describe("migration", () => {
               { _tag: "MigrationError", code: "NOT_ELIGIBLE" },
             );
 
-            assert.include([...error.blockers], blocker, names.join());
-            assert.isFalse(wallet.prompted(), names.join());
+            assert.include([...error.blockers], blocker, Arr.join(names, ","));
+            assert.isFalse(wallet.prompted(), Arr.join(names, ","));
           }
         }),
       { meta: { cases: ["O19", "W11", "M01", "M08"] } },
@@ -442,7 +447,7 @@ describe("migration", () => {
           const clients = yield* Clients;
           const gateways = yield* Gateways;
           const { name, facts } = (yield* Fixtures).byId("resolver.wildcard");
-          const resolver = facts["resolver"] as Address;
+          const resolver = factAddress(facts, "resolver");
           const child = String(facts["wildcardChild"]);
           const gateway = yield* gateways.serve(() => ({ status: 200, body: '{"data":"0x"}' }));
           const abi = parseAbi(["function setOffchain(bool)", "function setRevertURL(string)"]);
@@ -474,12 +479,11 @@ describe("migration", () => {
               });
               assert.strictEqual(gateway.requests(), 0);
 
-              assert.deepInclude(yield* Actions.name.get(ens, { name }), { migrated: true });
+              const migratedName = yield* Actions.name.get(ens, { name });
+              assert.deepInclude(migratedName, { migrated: true });
               assert.strictEqual((yield* Actions.resolver.get(ens, { name }))?.address, resolver);
-              assert.strictEqual(
-                yield* Actions.record.getAddress(ens, { name: child }),
-                facts["wildcardAddress"],
-              );
+              const childAddress = yield* Actions.record.getAddress(ens, { name: child });
+              assert.strictEqual(childAddress, facts["wildcardAddress"]);
               assert.isAbove(gateway.requests(), 0);
             }),
           );
@@ -501,10 +505,10 @@ describe("migration", () => {
           yield* chain.isolated(
             Effect.gen(function* () {
               yield* Actions.primaryName.setSync(ens, { name });
-              assert.strictEqual(
-                yield* Actions.primaryName.get(ens, { address: accounts.alice }),
-                name,
-              );
+              const primaryNameBeforeMigration = yield* Actions.primaryName.get(ens, {
+                address: accounts.alice,
+              });
+              assert.strictEqual(primaryNameBeforeMigration, name);
 
               yield* Actions.migration.migrateSync(ens, {
                 names: name,
@@ -513,10 +517,10 @@ describe("migration", () => {
               });
 
               assert.strictEqual((yield* Actions.name.get(ens, { name })).kind, "v2-migrated");
-              assert.strictEqual(
-                yield* Actions.primaryName.get(ens, { address: accounts.alice }),
-                name,
-              );
+              const primaryNameAfterMigration = yield* Actions.primaryName.get(ens, {
+                address: accounts.alice,
+              });
+              assert.strictEqual(primaryNameAfterMigration, name);
             }),
           );
         }),
@@ -554,8 +558,8 @@ describe("migration", () => {
                 { _tag: "UserRejectedError", code: "USER_REJECTED" },
               );
               const [record] = yield* Actions.plan.list(first, {});
-              if (record === undefined) return assert.fail("the plan was not saved");
-              assert.deepStrictEqual(Object.keys(record.submitted), ["hca-setup"]);
+              if (record === undefined) assert.fail("the plan was not saved");
+              assert.deepStrictEqual(Rec.keys(record.submitted), ["hca-setup"]);
 
               yield* chain.write({
                 address: devnet.contract("v1.baseRegistrar"),
@@ -649,7 +653,7 @@ describe("migration", () => {
                 texts: { url: "x" },
               });
               const [step] = plan.steps;
-              if (step === undefined) return assert.fail("the plan has no step");
+              if (step === undefined) assert.fail("the plan has no step");
 
               const error = yield* expectFailure(
                 Actions.plan.send(ens, {

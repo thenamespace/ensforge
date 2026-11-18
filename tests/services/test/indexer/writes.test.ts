@@ -1,5 +1,5 @@
 import { assert, layer } from "@effect/vitest";
-import { Effect } from "effect";
+import { Effect, Array as Arr, String as Str, pipe } from "effect";
 
 import { Duration } from "@ensforge/sdk";
 import { Actions } from "@ensforge/sdk/effect";
@@ -49,7 +49,7 @@ layer(Services.layer({ profile: "mainnet-shaped" }), { excludeTestServices: true
             relation: "owner",
           });
           assert.include(
-            owned.items.map((entry) => entry.name),
+            Arr.map(owned.items, (entry) => entry.name),
             name,
           );
         }),
@@ -87,12 +87,12 @@ layer(Services.layer({ profile: "mainnet-shaped" }), { excludeTestServices: true
               limit: 1,
               ...(cursor === undefined ? {} : { cursor }),
             });
-            listed.push(...page.items.map((item) => item.name));
+            listed.push(...Arr.map(page.items, (item) => item.name));
             cursor = page.hasMore ? (page.cursor ?? undefined) : undefined;
           } while (cursor !== undefined);
 
           // An unregistered child leaves the list at once; its name reads as released.
-          assert.deepStrictEqual(listed.toSorted(), [`a.${parent}`, `c.${parent}`]);
+          assert.deepStrictEqual(Arr.sort(listed, Str.Order), [`a.${parent}`, `c.${parent}`]);
           const removed = yield* Actions.indexer.getName(ens, { name: `b.${parent}` });
           assert.strictEqual(removed?.status, "released");
         }),
@@ -131,8 +131,9 @@ layer(Services.layer({ profile: "mainnet-shaped" }), { excludeTestServices: true
           assert.strictEqual(after?.registrationId, before?.registrationId);
           assert.notStrictEqual(after?.tokenId, before?.tokenId);
           const permissions = yield* Actions.indexer.getPermissions(ens, { name });
+          const bobRows = Arr.filter(permissions.items, (row) => row.address === bob);
           assert.include(
-            permissions.items.filter((row) => row.address === bob).flatMap((row) => row.powers),
+            Arr.flatMap(bobRows, (row) => row.powers),
             "set_resolver",
           );
 
@@ -204,7 +205,9 @@ layer(Services.layer({ profile: "mainnet-shaped" }), { excludeTestServices: true
             ["text:url", "text:unicode", "addr:0", "contenthash"],
           );
           // The ENSv1 registry stores only the child's labelhash: bigname knows it by hash.
-          assert.deepStrictEqual(discovered?.subnames, [`[${labelhash("kid").slice(2)}].${name}`]);
+          assert.deepStrictEqual(discovered?.subnames, [
+            `[${pipe(labelhash("kid"), Str.slice(2))}].${name}`,
+          ]);
 
           // No `allowIncompleteRecords`: the inventory is complete enough to copy from.
           const profile = {
@@ -221,7 +224,7 @@ layer(Services.layer({ profile: "mainnet-shaped" }), { excludeTestServices: true
           });
 
           assert.include(
-            migrated.plan.warnings.map((warning) => warning.code),
+            Arr.map(migrated.plan.warnings, (warning) => warning.code),
             "SUBNAMES_NOT_RECREATED",
           );
           const after = yield* Actions.record.get(ens, profile);
@@ -262,11 +265,12 @@ layer(Services.layer({ profile: "mainnet-shaped" }), { excludeTestServices: true
             onStep: chain.passWaits,
           });
           assert.notInclude(
-            migrated.plan.warnings.map((warning) => warning.code),
+            Arr.map(migrated.plan.warnings, (warning) => warning.code),
             "SUBNAMES_NOT_RECREATED",
           );
           for (const subname of [kid, deep]) {
-            assert.deepInclude(yield* Actions.name.get(ens, { name: subname }), {
+            const subnameState = yield* Actions.name.get(ens, { name: subname });
+            assert.deepInclude(subnameState, {
               kind: "v2-native",
               owner: bob,
             });

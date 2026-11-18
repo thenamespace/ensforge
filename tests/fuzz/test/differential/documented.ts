@@ -1,3 +1,4 @@
+import { Array as Arr } from "effect";
 /** Known differences: `profile fixture field: library` → why ensforge reads differently. */
 export const documented: Readonly<Record<string, string>> = {};
 
@@ -15,8 +16,8 @@ const encodedLabels = [
 ];
 add(
   "ensjs refuses encoded `[labelhash]` labels; ensforge and viem resolve the name (no record).",
-  ["v1-live", "v1-v2-greenfield", "mainnet-shaped", "v2-only"].flatMap((profile) =>
-    encodedLabels.map((id) => `${profile} ${id} address: ensjs`),
+  Arr.flatMap(["v1-live", "v1-v2-greenfield", "mainnet-shaped", "v2-only"], (profile) =>
+    Arr.map(encodedLabels, (id) => `${profile} ${id} address: ensjs`),
   ),
 );
 
@@ -41,7 +42,7 @@ add(
 
 add(
   "ensforge reports an unreachable or invalid gateway as a GatewayError; viem and ensjs return null.",
-  ["viem", "ensjs"].flatMap((library) => [
+  Arr.flatMap(["viem", "ensjs"], (library) => [
     `mainnet-shaped resolver.offchain address: ${library}`,
     `mainnet-shaped resolver.offchain url: ${library}`,
     `mainnet-shaped resolver.spoofed-offchain-lookup address: ${library}`,

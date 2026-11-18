@@ -1,14 +1,15 @@
+// A raw HTTP server that drops requests on purpose; `effect/http` is an unstable API.
+/* oxlint-disable effecttsgo/node-builtin-import */
 import { createServer, type Server } from "node:http";
-import type { AddressInfo } from "node:net";
 
 import { assert, describe } from "@effect/vitest";
-import { Deferred, Effect } from "effect";
+import { Deferred, Effect, Formatter } from "effect";
 
 import { Abis } from "@ensforge/contracts";
 import { Ensforge } from "@ensforge/sdk";
 import { Actions } from "@ensforge/sdk/effect";
 import { Chain, Devnet } from "@ensforge/test-devnet";
-import { Fixtures } from "@ensforge/test-fixtures";
+import { factAddress, Fixtures } from "@ensforge/test-fixtures";
 import { expectFailure } from "@ensforge/test-harness";
 import {
   concatBytes,
@@ -22,7 +23,6 @@ import {
   parseAbi,
   toBytes,
   toHex,
-  type Address,
 } from "viem";
 
 import { Clients } from "../support/clients.ts";
@@ -50,7 +50,7 @@ describe("CCIP-Read", () => {
             const answer = encodeAbiParameters([{ type: "address" }], [devnet.accounts.alice]);
             const gateway = yield* gateways.serve(() => ({
               status: 200,
-              body: JSON.stringify({ data: answer }),
+              body: Formatter.formatJson({ data: answer }),
             }));
             const data = encodeFunctionData({
               abi: Abis.shared.addrResolver,
@@ -58,7 +58,7 @@ describe("CCIP-Read", () => {
               args: [namehash(name)],
             });
             const resolver = {
-              address: facts["resolver"] as Address,
+              address: factAddress(facts, "resolver"),
               abi: parseAbi([
                 "function setResponse(bytes,bytes)",
                 "function setFeature(bytes4,bool)",
@@ -125,7 +125,7 @@ describe("CCIP-Read", () => {
             yield* chain.isolated(
               Effect.gen(function* () {
                 yield* chain.write({
-                  address: facts["resolver"] as Address,
+                  address: factAddress(facts, "resolver"),
                   abi: parseAbi(["function setRevertURL(string)"]),
                   functionName: "setRevertURL",
                   args: [gateway.url],
@@ -158,7 +158,7 @@ describe("CCIP-Read", () => {
             const { name, facts } = (yield* Fixtures).byId("resolver.offchain");
             const gateway = yield* gateways.serve(() => ({ status: 200, body: '{"data":"0x"}' }));
             const resolver = {
-              address: facts["resolver"] as Address,
+              address: factAddress(facts, "resolver"),
               abi: parseAbi([
                 "function setResponse(bytes,bytes)",
                 "function setRevertURL(string)",
@@ -249,7 +249,7 @@ describe("CCIP-Read", () => {
             yield* chain.isolated(
               Effect.gen(function* () {
                 yield* chain.write({
-                  address: facts["resolver"] as Address,
+                  address: factAddress(facts, "resolver"),
                   abi: parseAbi(["function setRevertURL(string)"]),
                   functionName: "setRevertURL",
                   args: [gateway.url],
@@ -290,7 +290,7 @@ describe("CCIP-Read", () => {
             yield* chain.isolated(
               Effect.gen(function* () {
                 yield* chain.write({
-                  address: facts["resolver"] as Address,
+                  address: factAddress(facts, "resolver"),
                   abi: parseAbi(["function setRevertURL(string)"]),
                   functionName: "setRevertURL",
                   args: [gateway.url],
@@ -334,7 +334,7 @@ describe("CCIP-Read", () => {
             yield* chain.isolated(
               Effect.gen(function* () {
                 const account = devnet.accounts.deployer;
-                const address = facts["resolver"] as Address;
+                const address = factAddress(facts, "resolver");
                 yield* chain.write({
                   address,
                   abi,
@@ -402,12 +402,15 @@ describe("CCIP-Read", () => {
               }),
               (server) => Effect.sync(() => server.close().closeAllConnections()),
             );
-            const { port } = gateway.address() as AddressInfo;
+            const gatewayAddress = gateway.address();
+            if (gatewayAddress === null || typeof gatewayAddress === "string")
+              assert.fail("the gateway has no port");
+            const { port } = gatewayAddress;
 
             yield* chain.isolated(
               Effect.gen(function* () {
                 yield* chain.write({
-                  address: facts["resolver"] as Address,
+                  address: factAddress(facts, "resolver"),
                   abi: parseAbi(["function setRevertURL(string)"]),
                   functionName: "setRevertURL",
                   args: [`http://127.0.0.1:${port}/`],
@@ -462,7 +465,7 @@ describe("CCIP-Read", () => {
               yield* chain.isolated(
                 Effect.gen(function* () {
                   yield* chain.write({
-                    address: facts["resolver"] as Address,
+                    address: factAddress(facts, "resolver"),
                     abi: parseAbi(["function setRevertURL(string)"]),
                     functionName: "setRevertURL",
                     args: [gateway.url],
@@ -496,10 +499,11 @@ describe("CCIP-Read", () => {
               const { reader } = yield* Clients;
               const gateways = yield* Gateways;
               const name = "ensforge-forged.com";
+              const now = yield* chain.now;
               const proof = txtProof(
                 name,
                 [`ENS1 ${devnet.contract("mock.nonCcipAwareResolver")}`],
-                Number(yield* chain.now) - 60,
+                Number(now) - 60,
                 // The records sit on the name itself, not on `_ens.<name>` as for a claim.
                 { recordNames: [name], labels: 2 },
               );

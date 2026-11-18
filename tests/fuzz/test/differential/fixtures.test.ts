@@ -1,5 +1,5 @@
 import { assert, describe } from "@effect/vitest";
-import { Effect } from "effect";
+import { Effect, String as Str, Record as Rec, pipe, Array as Arr } from "effect";
 
 import { profileNames } from "@ensforge/test-devnet";
 import { Fixtures } from "@ensforge/test-fixtures";
@@ -25,7 +25,8 @@ describe("ensforge, viem and ensjs", () => {
             const readings = [...(yield* readName(reader, fixture.name))];
             const address = fixture.facts["address"];
             if (typeof address === "string" && isAddress(address)) {
-              readings.push(yield* readPrimary(reader, address));
+              const primary = yield* readPrimary(reader, address);
+              readings.push(primary);
             }
             for (const reading of readings) {
               for (const library of disagreeing(reading)) {
@@ -34,7 +35,9 @@ describe("ensforge, viem and ensjs", () => {
             }
           }
 
-          const expected = Object.keys(documented).filter((key) => key.startsWith(`${profile} `));
+          const expected = Arr.filter(Rec.keys(documented), (key) =>
+            pipe(key, Str.startsWith(`${profile} `)),
+          );
           assert.sameMembers(found, expected);
         }),
       );

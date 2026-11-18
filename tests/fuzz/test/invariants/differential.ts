@@ -1,4 +1,4 @@
-import { Effect } from "effect";
+import { Effect, Array as Arr } from "effect";
 
 import { targetsOf } from "../commands/names.ts";
 import { disagreeing, readName, readPrimary } from "../differential/compare.ts";
@@ -22,8 +22,13 @@ export const librariesAgree = Effect.fnUntraced(function* (
   for (const reading of readings) {
     const libraries = disagreeing(reading);
     if (libraries.length === 0) continue;
-    return yield* new SequenceFailure({
-      message: `${reading.field === "primary name" ? actor : name} ${reading.field}: ensforge reads ${String(reading.ensforge)}, ${libraries.map((library) => `${library} ${String(reading[library])}`).join(", ")}`,
+    return yield* SequenceFailure.make({
+      message: `${reading.field === "primary name" ? actor : name} ${reading.field}: ensforge reads ${String(reading.ensforge)}, ${Arr.join(
+        Arr.map(libraries, (library) => `${library} ${String(reading[library])}`),
+        ", ",
+      )}`,
     });
   }
+
+  return undefined;
 });

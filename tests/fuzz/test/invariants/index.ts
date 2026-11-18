@@ -27,6 +27,6 @@ export const invariants = (context: Context, model: Model, step: number, command
   }).pipe(
     // A read that fails is a finding like a mismatch, so it is shrunk and reported.
     Effect.catchIf(Errors.is, (error) =>
-      Effect.fail(new SequenceFailure({ message: `read failed: ${error.code}` })),
+      Effect.fail(SequenceFailure.make({ message: `read failed: ${error.code}` })),
     ),
   );

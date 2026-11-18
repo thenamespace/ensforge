@@ -1,3 +1,5 @@
+import { Array as Arr, Option } from "effect";
+
 import { nameWrapperFuses } from "@ensforge/contracts/v1";
 import { Name } from "@ensforge/sdk";
 import type { Address } from "viem";
@@ -114,6 +116,9 @@ export const withV1 = (model: Model, name: string, entry: V1Name): Model => ({
   v1: { ...model.v1, [name]: entry },
 });
 
-/** Picks the `index`th of `items` (modulo), so any generated index names a live entity. */
-export const pick = <A>(items: readonly A[], index: number): A | undefined =>
-  items.length === 0 ? undefined : items[index % items.length];
+/**
+ * Picks the `index`th of `items` (modulo), so any generated index names a live entity. The lists
+ * picked from are never empty; an empty one is a defect.
+ */
+export const pick = <A>(items: readonly A[], index: number): A =>
+  Option.getOrThrowWith(Arr.get(items, index % items.length), () => new Error("pick from nothing"));

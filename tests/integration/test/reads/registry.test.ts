@@ -4,9 +4,9 @@ import { Effect } from "effect";
 import { Name } from "@ensforge/sdk";
 import { Actions } from "@ensforge/sdk/effect";
 import { Chain, Devnet } from "@ensforge/test-devnet";
-import { Fixtures } from "@ensforge/test-fixtures";
+import { factAddress, Fixtures } from "@ensforge/test-fixtures";
 import { expectFailure } from "@ensforge/test-harness";
-import { encodeAbiParameters, keccak256, pad, type Address } from "viem";
+import { encodeAbiParameters, keccak256, pad } from "viem";
 
 import { Clients } from "../support/clients.ts";
 import { onProfile } from "../support/lane.ts";
@@ -25,19 +25,22 @@ describe("registry.get", () => {
           const eth = yield* registryOf("eth");
           assert.deepInclude(eth, { kind: "eth", canonicalName: "eth", implementation: null });
           assert.strictEqual(eth?.upgrade.blocker, "not-upgradeable");
-          assert.deepInclude(yield* registryOf("v2-parent.eth"), {
+          const userRegistry = yield* registryOf("v2-parent.eth");
+          assert.deepInclude(userRegistry, {
             kind: "user",
             canonicalName: "v2-parent.eth",
             emancipated: false,
           });
           const migrated = fixtures.byId("migration.locked");
-          assert.deepInclude(yield* registryOf(migrated.name), {
-            address: migrated.facts["wrapperRegistry"] as Address,
+          const wrapperRegistry = yield* registryOf(migrated.name);
+          assert.deepInclude(wrapperRegistry, {
+            address: factAddress(migrated.facts, "wrapperRegistry"),
             kind: "wrapper",
             emancipated: true,
           });
           // A name without a subregistry has no registry for children.
-          assert.isNull(yield* registryOf(fixtures.byId("v2.registered").name));
+          const childlessRegistry = yield* registryOf(fixtures.byId("v2.registered").name);
+          assert.isNull(childlessRegistry);
 
           yield* expectFailure(Actions.registry.get(reader, { name: "" }), {
             _tag: "InvalidInputError",
@@ -61,7 +64,7 @@ describe("registry.get", () => {
           assert.deepInclude(registry, {
             kind: "user",
             canonicalName: "sub.v2-parent.eth",
-            parent: { registry: deep.facts["parentRegistry"] as Address, label: "sub" },
+            parent: { registry: factAddress(deep.facts, "parentRegistry"), label: "sub" },
           });
         }),
       { meta: { cases: ["M:A18", "H24"] } },
@@ -77,19 +80,25 @@ describe("registry.get", () => {
           const parent = Name.parse(linked.name).parent ?? "";
           const aliasParent = Name.parse(String(linked.facts["alias"])).parent ?? "";
 
-          const [canonical, alias] = yield* Effect.all([
-            Actions.registry.get(reader, { name: parent }),
-            Actions.registry.get(reader, { name: aliasParent }),
-          ]);
+          const [canonical, alias] = yield* Effect.all(
+            [
+              Actions.registry.get(reader, { name: parent }),
+              Actions.registry.get(reader, { name: aliasParent }),
+            ],
+            { concurrency: 1 },
+          );
           assert.strictEqual(canonical?.address, linked.facts["registry"]);
           assert.strictEqual(alias?.address, linked.facts["registry"]);
           // The canonical name follows `setParent`; the other path is an alias.
           assert.strictEqual(alias?.canonicalName, parent);
           // One registry, so every child appears under both parents.
-          assert.deepInclude(
-            yield* Actions.name.get(reader, { name: String(linked.facts["alias"]) }),
-            { status: "registered", owner: (yield* Devnet).accounts.bob },
-          );
+          const aliasName = yield* Actions.name.get(reader, {
+            name: String(linked.facts["alias"]),
+          });
+          assert.deepInclude(aliasName, {
+            status: "registered",
+            owner: (yield* Devnet).accounts.bob,
+          });
         }),
       { meta: { cases: ["O20", "O21"] } },
     );
@@ -102,10 +111,13 @@ describe("registry.get", () => {
           const { reader } = yield* Clients;
           const replaced = fixtures.byId("v2.replaced-subregistry");
 
-          const [stale, current] = yield* Effect.all([
-            Actions.registry.get(reader, { registry: String(replaced.facts["staleRegistry"]) }),
-            Actions.registry.get(reader, { name: "v2-replaced.eth" }),
-          ]);
+          const [stale, current] = yield* Effect.all(
+            [
+              Actions.registry.get(reader, { registry: String(replaced.facts["staleRegistry"]) }),
+              Actions.registry.get(reader, { name: "v2-replaced.eth" }),
+            ],
+            { concurrency: 1 },
+          );
           // Its `setParent` still names a parent that now mounts another registry.
           assert.isNull(stale?.canonicalName);
           assert.strictEqual(current?.address, replaced.facts["registry"]);
@@ -123,7 +135,7 @@ describe("registry.get", () => {
           const options = { name: "v2-parent.eth", account: accounts.alice };
           const current = yield* Actions.registry.get(reader, options);
           if (current === null || current.implementation === null) {
-            return assert.fail("not an upgradeable registry");
+            assert.fail("not an upgradeable registry");
           }
           const latest = current.implementation;
           assert.deepInclude(current.upgrade, { latest, eligible: false, blocker: "up-to-date" });
@@ -170,7 +182,7 @@ describe("registry.get", () => {
           const { reader } = yield* Clients;
           const options = { name: "v2-parent.eth", account: devnet.accounts.alice };
           const current = yield* Actions.registry.get(reader, options);
-          if (current === null) return assert.fail("v2-parent.eth has no registry");
+          if (current === null) assert.fail("v2-parent.eth has no registry");
 
           const upgrade = yield* chain.isolated(
             Effect.gen(function* () {

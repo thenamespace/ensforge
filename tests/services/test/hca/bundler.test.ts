@@ -37,7 +37,8 @@ layer(Services.layer({ profile: "mainnet-shaped", services: ["aa"] }), {
 
       assert.strictEqual((yield* chain.balance(bob)) - before, parseEther("0.1"));
       assert.isTrue((yield* HcaActions.hca.get(ens, {})).deployed);
-      assert.strictEqual(yield* chain.balance(user), 0n);
+      const userBalanceAfter = yield* chain.balance(user);
+      assert.strictEqual(userBalanceAfter, 0n);
       assert.isTrue((yield* chain.balance(address)) < parseEther("0.9"), "the HCA paid for gas");
     }),
   );
@@ -61,7 +62,8 @@ layer(Services.layer({ profile: "mainnet-shaped", services: ["aa"] }), {
       });
 
       assert.isTrue((yield* HcaActions.hca.get(ens, {})).deployed);
-      assert.strictEqual(yield* chain.balance(address), 0n);
+      const hcaBalanceAfter = yield* chain.balance(address);
+      assert.strictEqual(hcaBalanceAfter, 0n);
     }),
   );
 

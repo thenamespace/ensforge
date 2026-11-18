@@ -1,5 +1,5 @@
 import { assert, describe } from "@effect/vitest";
-import { Effect } from "effect";
+import { Effect, Array as Arr, Option, String as Str, pipe } from "effect";
 
 import { Abis } from "@ensforge/contracts";
 import { Duration } from "@ensforge/sdk";
@@ -116,7 +116,7 @@ describe("registration", () => {
 
                   // Only the reveal is left to send.
                   assert.deepStrictEqual(
-                    result.plan.steps.map((step) => step.id),
+                    Arr.map(result.plan.steps, (step) => step.id),
                     ["register"],
                   );
                   assert.strictEqual((yield* ethEntry("qqqqq.eth")).owner, accounts.alice);
@@ -144,8 +144,10 @@ describe("registration", () => {
             referrer,
           });
           assert.isTrue(
-            plan.steps.some((step) =>
-              step.calls.some((call) => call.data.includes(referrer.slice(2))),
+            Arr.some(plan.steps, (step) =>
+              Arr.some(step.calls, (call) =>
+                pipe(call.data, Str.includes(pipe(referrer, Str.slice(2)))),
+              ),
             ),
             "referrer in the calldata",
           );
@@ -163,14 +165,12 @@ describe("registration", () => {
                 onStep: chain.passWaits,
               });
 
-              assert.strictEqual(
-                yield* Actions.record.getText(ens, { name: "qqqqq.eth", key: "url" }),
-                "https://new.example",
-              );
-              assert.strictEqual(
-                yield* Actions.primaryName.get(ens, { address: accounts.alice }),
-                "qqqqq.eth",
-              );
+              const text = yield* Actions.record.getText(ens, { name: "qqqqq.eth", key: "url" });
+              assert.strictEqual(text, "https://new.example");
+              const primaryNameAfterRegistration = yield* Actions.primaryName.get(ens, {
+                address: accounts.alice,
+              });
+              assert.strictEqual(primaryNameAfterRegistration, "qqqqq.eth");
             }),
           );
         }),
@@ -190,8 +190,10 @@ describe("registration", () => {
 
           yield* chain.isolated(
             Effect.gen(function* () {
-              const quotes = yield* Effect.forEach(names, (name) =>
-                Actions.registration.getPrice(ens, { name, duration }),
+              const quotes = yield* Effect.forEach(
+                names,
+                (name) => Actions.registration.getPrice(ens, { name, duration }),
+                { concurrency: 1 },
               );
 
               const result = yield* Actions.registration.registerSync(ens, {
@@ -201,12 +203,12 @@ describe("registration", () => {
               });
 
               assert.deepStrictEqual(
-                result.names.map(({ name }) => name),
+                Arr.map(result.names, ({ name }) => name),
                 names,
               );
               assert.strictEqual(
                 result.paid,
-                quotes.reduce((sum, quote) => sum + quote.total, 0n),
+                Arr.reduce(quotes, 0n, (sum, quote) => sum + quote.total),
               );
               for (const name of names) {
                 assert.strictEqual((yield* ethEntry(name)).owner, accounts.alice);
@@ -308,11 +310,14 @@ describe("registration", () => {
               );
               assert.strictEqual(error.errorName, "ERC1155InvalidReceiver");
               assert.deepStrictEqual(
-                wallet.methods.filter((method) => method === "eth_sendTransaction"),
+                Arr.filter(wallet.methods, (method) => method === "eth_sendTransaction"),
                 ["eth_sendTransaction"],
                 "the commit only",
               );
-              assert.isTrue(yield* Actions.registration.isAvailable(ens, { name: "qqqqq.eth" }));
+              const availableAfterCommit = yield* Actions.registration.isAvailable(ens, {
+                name: "qqqqq.eth",
+              });
+              assert.isTrue(availableAfterCommit);
             }),
           );
         }),
@@ -430,7 +435,7 @@ describe("registration", () => {
               });
 
               assert.notInclude(
-                result.plan.steps.map((step) => step.id),
+                Arr.map(result.plan.steps, (step) => step.id),
                 "commit",
               );
               assert.strictEqual((yield* ethEntry("qqqqq.eth")).owner, alice);
@@ -462,7 +467,8 @@ describe("registration", () => {
             functionName: "getPaymentTokenRatio",
             args: [usdc],
           });
-          const fork = Effect.runForkWith(yield* Effect.context<never>());
+          const context = yield* Effect.context();
+          const fork = Effect.runForkWith(context);
           // Raises USDC's price by `percent` while the commitment matures, then passes the wait.
           const registerAsPriceRises = (percent: bigint) =>
             Actions.registration.registerSync(ens, {
@@ -646,17 +652,23 @@ describe("registration", () => {
 
               // The first reveal also deploys the resolver; the second only registers.
               const callsOf = (result: typeof first) =>
-                result.plan.steps.find((step) => step.id === "register")?.calls.length;
+                Option.getOrUndefined(
+                  Option.map(
+                    Arr.findFirst(result.plan.steps, (step) => step.id === "register"),
+                    (step) => step.calls.length,
+                  ),
+                );
               assert.deepStrictEqual([callsOf(first), callsOf(second)], [2, 1]);
-              const [one, two] = yield* Effect.all([
-                Actions.resolver.get(ens, { name: "qqqqq.eth" }),
-                Actions.resolver.get(ens, { name: "rrrrr.eth" }),
-              ]);
-              assert.strictEqual(one?.address, two?.address);
-              assert.strictEqual(
-                yield* Actions.record.getText(ens, { name: "rrrrr.eth", key: "url" }),
-                "https://rrrrr.eth",
+              const [one, two] = yield* Effect.all(
+                [
+                  Actions.resolver.get(ens, { name: "qqqqq.eth" }),
+                  Actions.resolver.get(ens, { name: "rrrrr.eth" }),
+                ],
+                { concurrency: 1 },
               );
+              assert.strictEqual(one?.address, two?.address);
+              const text = yield* Actions.record.getText(ens, { name: "rrrrr.eth", key: "url" });
+              assert.strictEqual(text, "https://rrrrr.eth");
             }),
           );
         }),

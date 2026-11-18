@@ -1,12 +1,12 @@
 import { assert, describe } from "@effect/vitest";
-import { Effect } from "effect";
+import { Effect, Array as Arr } from "effect";
 
 import { Duration } from "@ensforge/sdk";
 import { Actions } from "@ensforge/sdk/effect";
 import { Devnet, profileNames } from "@ensforge/test-devnet";
-import { allFixtures, Fixtures, seededOn } from "@ensforge/test-fixtures";
+import { allFixtures, factAddress, Fixtures, seededOn } from "@ensforge/test-fixtures";
 import { expectFailure } from "@ensforge/test-harness";
-import { labelhash, namehash, type Address } from "viem";
+import { labelhash, namehash } from "viem";
 
 import { Clients } from "../support/clients.ts";
 import {
@@ -164,7 +164,8 @@ describe("name.get", () => {
     onProfile(profile)(profile, (it) => {
       // A name whose parent registry reverts is a typed error, not a state; `v2-only` knows no
       // ENSv1, so only names that live in ENSv2 are read there.
-      const definitions = allFixtures.filter(
+      const definitions = Arr.filter(
+        allFixtures,
         (fixture) =>
           seededOn(fixture, profile) &&
           fixture.id !== "resolver.registry-reverts" &&
@@ -178,7 +179,7 @@ describe("name.get", () => {
           () =>
             Effect.gen(function* () {
               if (expectation === undefined) {
-                return assert.fail(`no expectation for ${definition.id}`);
+                assert.fail(`no expectation for ${definition.id}`);
               }
               const fixture = (yield* Fixtures).byId(definition.id);
               const { accounts } = yield* Devnet;
@@ -226,7 +227,10 @@ describe("name.get", () => {
           Effect.gen(function* () {
             const { reader } = yield* Clients;
 
-            assert.deepInclude(yield* Actions.name.get(reader, { name: "never-registered.eth" }), {
+            const neverRegistered = yield* Actions.name.get(reader, {
+              name: "never-registered.eth",
+            });
+            assert.deepInclude(neverRegistered, {
               kind: "available",
               status: "available",
               owner: null,
@@ -323,18 +327,17 @@ describe("name.get", () => {
           const name = String(wildcard.facts["wildcardChild"]);
           const stateOf = (target: string) => Actions.name.get(reader, { name: target });
 
-          assert.deepInclude(yield* stateOf(name), {
+          const state = yield* stateOf(name);
+          assert.deepInclude(state, {
             available: true,
             owner: null,
             expiry: null,
             gracePeriodEnd: null,
             resolver: null,
-            inheritedResolver: wildcard.facts["resolver"] as Address,
+            inheritedResolver: factAddress(wildcard.facts, "resolver"),
           });
-          assert.strictEqual(
-            yield* Actions.record.getAddress(reader, { name }),
-            wildcard.facts["wildcardAddress"],
-          );
+          const address = yield* Actions.record.getAddress(reader, { name });
+          assert.strictEqual(address, wildcard.facts["wildcardAddress"]);
 
           // A name with no resolver anywhere, and a registered name with its own.
           const none = yield* stateOf(fixtures.byId("resolver.none").name);
@@ -357,7 +360,8 @@ describe("name.get", () => {
           const synced = (yield* Fixtures).byId("dns.synced-tld");
           const { reader } = yield* Clients;
 
-          assert.deepInclude(yield* Actions.name.get(reader, { name: synced.name }), {
+          const syncedName = yield* Actions.name.get(reader, { name: synced.name });
+          assert.deepInclude(syncedName, {
             status: "registered",
             expiry: null,
             gracePeriodEnd: null,
@@ -374,7 +378,8 @@ describe("name.get", () => {
           const wrapped = (yield* Fixtures).byId("dns.imported.wrapped");
           const { reader } = yield* Clients;
 
-          assert.deepInclude(yield* Actions.name.get(reader, { name: wrapped.name }), {
+          const importedName = yield* Actions.name.get(reader, { name: wrapped.name });
+          assert.deepInclude(importedName, {
             kind: "v1-wrapped",
             status: "registered",
             expiry: null,
@@ -392,11 +397,13 @@ describe("name.get", () => {
           const { reader } = yield* Clients;
           const root = devnet.contract("v2.rootRegistry");
 
-          const states = yield* Effect.forEach(["eth", "reverse", "arpa", "org"], (name) =>
-            Actions.name.get(reader, { name }),
+          const states = yield* Effect.forEach(
+            ["eth", "reverse", "arpa", "org"],
+            (name) => Actions.name.get(reader, { name }),
+            { concurrency: 1 },
           );
           assert.deepStrictEqual(
-            states.map((state) => [state.name, state.status, state.registry]),
+            Arr.map(states, (state) => [state.name, state.status, state.registry]),
             [
               ["eth", "registered", root],
               ["reverse", "registered", root],
@@ -454,15 +461,12 @@ describe("name.getLabel", () => {
         Effect.gen(function* () {
           const { reader } = yield* Clients;
 
-          assert.strictEqual(
-            yield* Actions.name.getLabel(reader, { labelhash: labelhash("v2-plain") }),
-            "v2-plain",
-          );
-          assert.isNull(
-            yield* Actions.name.getLabel(reader, {
-              labelhash: labelhash("never revealed by ensforge"),
-            }),
-          );
+          const label = yield* Actions.name.getLabel(reader, { labelhash: labelhash("v2-plain") });
+          assert.strictEqual(label, "v2-plain");
+          const unrevealedLabel = yield* Actions.name.getLabel(reader, {
+            labelhash: labelhash("never revealed by ensforge"),
+          });
+          assert.isNull(unrevealedLabel);
         }),
       { meta: { cases: ["H10", "M:C6"] } },
     );

@@ -1,5 +1,5 @@
 import { assert, layer } from "@effect/vitest";
-import { Deferred, Effect, Fiber } from "effect";
+import { Deferred, Effect, Fiber, Option, Array as Arr } from "effect";
 
 import { hca } from "@ensforge/hca";
 import { Plan } from "@ensforge/sdk";
@@ -50,10 +50,11 @@ layer(Services.layer({ profile: "mainnet-shaped" }), { excludeTestServices: true
 
         // A new session finds the unfinished plan and finishes it without repeating the step.
         const session = clients.make({ account: alice, storage, indexer: services.indexer });
-        const unfinished = (yield* Actions.plan.list(session, {})).find(
-          (record) => record.status !== "completed",
+        const records = yield* Actions.plan.list(session, {});
+        const unfinished = Option.getOrUndefined(
+          Arr.findFirst(records, (record) => record.status !== "completed"),
         );
-        if (unfinished === undefined) return assert.fail("no unfinished migration plan");
+        if (unfinished === undefined) assert.fail("no unfinished migration plan");
         const events: string[] = [];
         yield* Actions.plan.resumeSync(session, {
           id: unfinished.plan.id,
@@ -68,7 +69,8 @@ layer(Services.layer({ profile: "mainnet-shaped" }), { excludeTestServices: true
         assert.notStrictEqual(after.resolver, before.resolver);
         assert.deepStrictEqual({ ...after, resolver: null }, { ...before, resolver: null });
         yield* services.waitForIndexed();
-        assert.include(yield* Actions.indexer.getName(session, { name }), {
+        const indexedName = yield* Actions.indexer.getName(session, { name });
+        assert.include(indexedName, {
           authority: "ensV2",
           owner: alice,
         });
@@ -93,7 +95,7 @@ layer(Services.layer({ profile: "mainnet-shaped" }), { excludeTestServices: true
           onStep: chain.passWaits,
         });
         assert.strictEqual(
-          result.plan.steps.filter((step) => step.id === "migrate").length,
+          Arr.filter(result.plan.steps, (step) => step.id === "migrate").length,
           1,
           "one execution",
         );
@@ -117,7 +119,8 @@ layer(Services.layer({ profile: "mainnet-shaped" }), { excludeTestServices: true
         const { carol } = accounts;
         const ens = clients.make({ account: carol, indexer: services.indexer });
         const name = "ensforge-journey.com";
-        const signedAt = Number(yield* chain.now) - 60;
+        const now = yield* chain.now;
+        const signedAt = Number(now) - 60;
         const { url } = yield* gateways.serveProof(txtProof(name, [`a=${carol}`], signedAt));
 
         yield* Actions.dns.claimSync(ens, { name, gatewayUrls: [url] });
@@ -125,7 +128,8 @@ layer(Services.layer({ profile: "mainnet-shaped" }), { excludeTestServices: true
         assert.strictEqual((yield* Actions.name.get(ens, { name })).owner, carol);
         yield* services.waitForIndexed();
         // DNS names stay in the ENSv1 registry, under the DNSRegistrar.
-        assert.include(yield* Actions.indexer.getName(ens, { name }), {
+        const indexedName = yield* Actions.indexer.getName(ens, { name });
+        assert.include(indexedName, {
           authority: "ensV1",
           owner: carol,
         });

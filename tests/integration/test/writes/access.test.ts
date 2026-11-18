@@ -1,11 +1,11 @@
 import { assert, describe } from "@effect/vitest";
-import { Effect } from "effect";
+import { Effect, String as Str, Array as Arr, pipe } from "effect";
 
 import { Abis, Roles } from "@ensforge/contracts";
 import { Name } from "@ensforge/sdk";
 import { Actions } from "@ensforge/sdk/effect";
 import { Chain, Devnet } from "@ensforge/test-devnet";
-import { Fixtures } from "@ensforge/test-fixtures";
+import { factAddress, Fixtures } from "@ensforge/test-fixtures";
 import { expectFailure } from "@ensforge/test-harness";
 import {
   decodeFunctionData,
@@ -36,10 +36,15 @@ describe("access writes", () => {
           yield* chain.isolated(
             Effect.gen(function* () {
               yield* Actions.primaryName.setSync(ens, { name });
-              assert.strictEqual(yield* Actions.primaryName.get(ens, { address: alice }), name);
+              const primaryNameAfterSet = yield* Actions.primaryName.get(ens, { address: alice });
+              assert.strictEqual(primaryNameAfterSet, name);
 
               yield* Actions.primaryName.setSync(ens, { name: null });
-              assert.isNull(yield* Actions.primaryName.get(ens, { address: alice, verify: false }));
+              const primaryNameAfterClear = yield* Actions.primaryName.get(ens, {
+                address: alice,
+                verify: false,
+              });
+              assert.isNull(primaryNameAfterClear);
             }),
           );
         }),
@@ -78,7 +83,7 @@ describe("access writes", () => {
                 verify: false,
               });
               assert.deepStrictEqual(
-                plan.calls.map(({ to }) => to),
+                Arr.map(plan.calls, ({ to }) => to),
                 [
                   devnet.contract("v2.reverseRegistrarAdapter"),
                   devnet.contract("v1.publicResolver"),
@@ -86,19 +91,19 @@ describe("access writes", () => {
               );
 
               yield* Actions.primaryName.setSync(ens, { name, address, verify: false });
-              assert.strictEqual(yield* read, name);
-              assert.strictEqual(
-                yield* chain.read({
-                  address: devnet.contract("v1.registry"),
-                  abi: Abis.v1.ensRegistry,
-                  functionName: "owner",
-                  args: [namehash(`${address.slice(2).toLowerCase()}.addr.reverse`)],
-                }),
-                owner,
-              );
+              const readAfterSet = yield* read;
+              assert.strictEqual(readAfterSet, name);
+              const reverseOwner = yield* chain.read({
+                address: devnet.contract("v1.registry"),
+                abi: Abis.v1.ensRegistry,
+                functionName: "owner",
+                args: [namehash(`${Str.toLowerCase(pipe(address, Str.slice(2)))}.addr.reverse`)],
+              });
+              assert.strictEqual(reverseOwner, owner);
 
               yield* Actions.primaryName.setSync(ens, { name: null, address });
-              assert.isNull(yield* read);
+              const readAfterClear = yield* read;
+              assert.isNull(readAfterClear);
             }),
           );
         }),
@@ -143,16 +148,17 @@ describe("access writes", () => {
                 approved: true,
               });
 
-              assert.isTrue(yield* registryApproves);
-              assert.strictEqual(yield* tokenApproved, carol);
-              assert.isTrue(
-                yield* chain.read({
-                  address: records.facts["resolver"] as Address,
-                  abi: Abis.v1.publicResolver,
-                  functionName: "isApprovedFor",
-                  args: [alice, namehash(records.name), carol],
-                }),
-              );
+              const registryApprovesAfterApproval = yield* registryApproves;
+              assert.isTrue(registryApprovesAfterApproval);
+              const tokenApprovedAfterApproval = yield* tokenApproved;
+              assert.strictEqual(tokenApprovedAfterApproval, carol);
+              const resolverApproved = yield* chain.read({
+                address: factAddress(records.facts, "resolver"),
+                abi: Abis.v1.publicResolver,
+                functionName: "isApprovedFor",
+                args: [alice, namehash(records.name), carol],
+              });
+              assert.isTrue(resolverApproved);
 
               yield* Actions.approval.setOperatorSync(ens, {
                 operator: carol,
@@ -161,8 +167,10 @@ describe("access writes", () => {
               });
               yield* Actions.approval.setTokenSync(ens, { name: wrapped, to: null });
 
-              assert.isFalse(yield* registryApproves);
-              assert.strictEqual(yield* tokenApproved, zeroAddress);
+              const registryApprovesAfterRevocation = yield* registryApproves;
+              assert.isFalse(registryApprovesAfterRevocation);
+              const tokenApprovedAfterRevocation = yield* tokenApproved;
+              assert.strictEqual(tokenApprovedAfterRevocation, zeroAddress);
             }),
           );
         }),
@@ -198,7 +206,8 @@ describe("access writes", () => {
                 target: "registry",
                 name,
               });
-              assert.isTrue(yield* carolHolds);
+              const carolHoldsAfterGrant = yield* carolHolds;
+              assert.isTrue(carolHoldsAfterGrant);
 
               yield* Actions.role.revokeSync(ens, {
                 holder: carol,
@@ -206,7 +215,8 @@ describe("access writes", () => {
                 target: "registry",
                 name,
               });
-              assert.isFalse(yield* carolHolds);
+              const carolHoldsAfterRevoke = yield* carolHolds;
+              assert.isFalse(carolHoldsAfterRevoke);
             }),
           );
         }),
@@ -320,7 +330,9 @@ describe("access writes", () => {
               .pipe(Effect.map((held) => held.roles));
 
           // The operator holds no roles of its own; the registry blends in the owner's.
-          assert.strictEqual(yield* rolesOf(operator), yield* rolesOf(carol));
+          const operatorRolesBefore = yield* rolesOf(operator);
+          const carolRolesBefore = yield* rolesOf(carol);
+          assert.strictEqual(operatorRolesBefore, carolRolesBefore);
           yield* chain.isolated(
             Effect.gen(function* () {
               yield* Actions.role.grantSync(clients.make({ account: operator }), {
@@ -329,7 +341,8 @@ describe("access writes", () => {
                 target: "registry",
                 name,
               });
-              assert.strictEqual(yield* rolesOf(user), Roles.registry.setResolver);
+              const userRoles = yield* rolesOf(user);
+              assert.strictEqual(userRoles, Roles.registry.setResolver);
 
               yield* Actions.role.revokeSync(clients.make({ account: carol }), {
                 holder: operator,
@@ -337,7 +350,9 @@ describe("access writes", () => {
                 target: "registry",
                 name,
               });
-              assert.strictEqual(yield* rolesOf(operator), yield* rolesOf(carol));
+              const operatorRolesAfterRevoke = yield* rolesOf(operator);
+              const carolRolesAfterRevoke = yield* rolesOf(carol);
+              assert.strictEqual(operatorRolesAfterRevoke, carolRolesAfterRevoke);
             }),
           );
         }),
@@ -442,10 +457,8 @@ describe("access writes", () => {
                 name,
                 texts: { url: "https://carol.example" },
               });
-              assert.strictEqual(
-                yield* Actions.record.getText(owner, { name, key: "url" }),
-                "https://carol.example",
-              );
+              const grantedUrl = yield* Actions.record.getText(owner, { name, key: "url" });
+              assert.strictEqual(grantedUrl, "https://carol.example");
               const other = yield* Actions.permission.check(grantee, {
                 name,
                 operation: { setRecord: "text", key: "description" },
@@ -494,19 +507,21 @@ describe("access writes", () => {
                 roles: ["renew"],
                 expiry: 4_000_000_000n,
               });
-              assert.deepInclude(yield* renew, { allowed: false, resource: 0n });
+              const renewalBeforeUpgrade = yield* renew;
+              assert.deepInclude(renewalBeforeUpgrade, { allowed: false, resource: 0n });
               yield* expectFailure(extend, { _tag: "UnauthorizedError", code: "MISSING_ROLES" });
 
               const registry = (yield* Actions.registry.get(owner, { name: "v2-parent.eth" }))
                 ?.address;
-              if (registry === undefined) return assert.fail("v2-parent.eth has no registry");
+              if (registry === undefined) assert.fail("v2-parent.eth has no registry");
               // ERC-1967 implementation slot.
               yield* chain.setStorage(
                 registry,
                 "0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc",
                 pad(devnet.contract("v2.userRegistryImplementationV1_0_1")),
               );
-              assert.deepInclude(yield* renew, { allowed: true, via: "roles" });
+              const renewalAfterUpgrade = yield* renew;
+              assert.deepInclude(renewalAfterUpgrade, { allowed: true, via: "roles" });
               yield* extend;
               assert.strictEqual((yield* Actions.name.get(owner, { name })).expiry, 4_100_000_000n);
             }),

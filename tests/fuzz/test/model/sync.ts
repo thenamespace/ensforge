@@ -1,4 +1,4 @@
-import { Effect } from "effect";
+import { Effect, Record as Rec } from "effect";
 
 import { Abis } from "@ensforge/contracts";
 import { Name } from "@ensforge/sdk";
@@ -83,14 +83,16 @@ const v1Entry = Effect.fnUntraced(function* (name: string, previous?: V1Name) {
 /** The model at the start of a sequence: the seeded ENSv1 names, no fuzz names yet. */
 export const initialModel = Effect.fnUntraced(function* (world: World) {
   const chain = yield* Chain;
-  const entries = yield* Effect.forEach(world.v1Names, (name) =>
-    Effect.map(v1Entry(name), (entry) => [name, entry] as const),
+  const entries = yield* Effect.forEach(
+    world.v1Names,
+    (name) => Effect.map(v1Entry(name), (entry) => [name, entry] as const),
+    { concurrency: 1 },
   );
 
   return {
     now: yield* Effect.orDie(chain.now),
     v2: {},
-    v1: Object.fromEntries(entries),
+    v1: Rec.fromEntries(entries),
     primary: {},
     operators: {},
   } satisfies Model;
@@ -98,7 +100,8 @@ export const initialModel = Effect.fnUntraced(function* (world: World) {
 
 /** Replaces an ENSv1 name's model with the chain's state, for outcomes the model leaves open. */
 export const resyncV1 = Effect.fnUntraced(function* (model: Model, name: string) {
-  return withV1(model, name, yield* v1Entry(name, model.v1[name]));
+  const entry = yield* v1Entry(name, model.v1[name]);
+  return withV1(model, name, entry);
 });
 
 /**

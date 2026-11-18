@@ -16,18 +16,21 @@ const timeline = Effect.fnUntraced(function* (fixtureId: string, offsets: readon
   const { reader } = yield* Clients;
   const expiry = BigInt(String(fixture.facts["expiry"]));
 
-  return yield* Effect.forEach(offsets, (offset) =>
-    chain.atTimestamp(
-      expiry + offset,
-      Actions.name.get(reader, { name: fixture.name }).pipe(
-        Effect.map((state) => ({
-          status: state.status,
-          owner: state.owner === null ? null : "owner",
-          available: state.available,
-          renewable: state.renewable,
-        })),
+  return yield* Effect.forEach(
+    offsets,
+    (offset) =>
+      chain.atTimestamp(
+        expiry + offset,
+        Actions.name.get(reader, { name: fixture.name }).pipe(
+          Effect.map((state) => ({
+            status: state.status,
+            owner: state.owner === null ? null : "owner",
+            available: state.available,
+            renewable: state.renewable,
+          })),
+        ),
       ),
-    ),
+    { concurrency: 1 },
   );
 });
 
@@ -102,13 +105,16 @@ describe("name.get over time", () => {
           const { reader } = yield* Clients;
           const reservedUntil = BigInt(String(reserved.facts["reservedUntil"]));
 
-          const reachable = yield* Effect.forEach([reservedUntil - 1n, reservedUntil], (at) =>
-            chain.atTimestamp(
-              at,
-              Actions.name
-                .get(reader, { name: reserved.name })
-                .pipe(Effect.map((state) => state.reachable)),
-            ),
+          const reachable = yield* Effect.forEach(
+            [reservedUntil - 1n, reservedUntil],
+            (at) =>
+              chain.atTimestamp(
+                at,
+                Actions.name
+                  .get(reader, { name: reserved.name })
+                  .pipe(Effect.map((state) => state.reachable)),
+              ),
+            { concurrency: 1 },
           );
           assert.deepStrictEqual(reachable, [true, false]);
         }),

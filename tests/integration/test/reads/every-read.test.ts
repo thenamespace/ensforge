@@ -1,8 +1,10 @@
+// This test walks every read action by name, so it indexes the API namespaces as records.
+/* oxlint-disable typescript/no-unsafe-type-assertion */
 import { assert, describe } from "@effect/vitest";
-import { Effect } from "effect";
+import { Effect, Array as Arr, Record as Rec } from "effect";
 
 import { Abis } from "@ensforge/contracts";
-import { Duration, Actions as Promises } from "@ensforge/sdk";
+import { Duration, type Errors, Actions as Promises } from "@ensforge/sdk";
 import { Actions } from "@ensforge/sdk/effect";
 import { Chain, Devnet } from "@ensforge/test-devnet";
 import { Fixtures } from "@ensforge/test-fixtures";
@@ -14,7 +16,7 @@ import { onProfile } from "../support/lane.ts";
 type PromiseRead = ((client: unknown, options: unknown) => Promise<unknown>) & {
   readonly request?: (options: unknown) => unknown;
 };
-type EffectRead = (client: unknown, options: unknown) => Effect.Effect<unknown, unknown>;
+type EffectRead = (client: unknown, options: unknown) => Effect.Effect<unknown, Errors.AnyError>;
 type BoundRead = (options: unknown) => Promise<unknown>;
 
 describe("every read", () => {
@@ -94,22 +96,25 @@ describe("every read", () => {
 
         // Every read action with a `.request`; reads that need an indexer, DNS gateways or stored
         // plans are covered in their own lanes.
-        const reads = Object.entries(Promises as unknown as Record<string, object>)
-          .filter(([domain]) => domain !== "batch")
-          .flatMap(([domain, group]) =>
-            Object.entries(group as Record<string, PromiseRead>).map(([name, read]) => ({
-              domain,
-              name,
-              read,
-              path: `${domain}.${name}`,
-            })),
-          )
-          .filter(
-            ({ read, path }) => read.request !== undefined && !/^(indexer|dns|plan)\./u.test(path),
-          );
+        const reads = Arr.filter(
+          Arr.flatMap(
+            Arr.filter(
+              Rec.toEntries(Promises as unknown as Record<string, object>),
+              ([domain]) => domain !== "batch",
+            ),
+            ([domain, group]) =>
+              Arr.map(Rec.toEntries(group as Record<string, PromiseRead>), ([name, read]) => ({
+                domain,
+                name,
+                read,
+                path: `${domain}.${name}`,
+              })),
+          ),
+          ({ read, path }) => read.request !== undefined && !/^(indexer|dns|plan)\./u.test(path),
+        );
         assert.sameMembers(
-          Object.keys(options),
-          reads.map(({ path }) => path),
+          Rec.keys(options),
+          Arr.map(reads, ({ path }) => path),
         );
 
         const effects = Actions as unknown as Record<string, Record<string, EffectRead>>;
@@ -119,20 +124,14 @@ describe("every read", () => {
           const asEffect = effects[domain]?.[name];
           const asBound = bound[domain]?.[name];
           if (asEffect === undefined || asBound === undefined || read.request === undefined) {
-            return assert.fail(`${path} is missing from the Effect API or the client`);
+            assert.fail(`${path} is missing from the Effect API or the client`);
           }
 
           const direct = yield* Effect.promise(() => read(reader, input));
-          assert.deepStrictEqual(
-            yield* Effect.promise(() => asBound(input)),
-            direct,
-            `${path} bound`,
-          );
-          assert.deepStrictEqual(
-            yield* Effect.orDie(asEffect(reader, input)),
-            direct,
-            `${path} Effect`,
-          );
+          const boundResult = yield* Effect.promise(() => asBound(input));
+          assert.deepStrictEqual(boundResult, direct, `${path} bound`);
+          const effectResult = yield* Effect.orDie(asEffect(reader, input));
+          assert.deepStrictEqual(effectResult, direct, `${path} Effect`);
           const { results } = yield* Actions.batch(reader, {
             requests: [read.request(input) as never],
           });

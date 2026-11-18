@@ -1,4 +1,4 @@
-import { Effect, Exit, Schema } from "effect";
+import { Effect, Exit, Formatter, Schema, Array as Arr } from "effect";
 
 import type { Errors, Plan, Write } from "@ensforge/sdk";
 import { Chain, type Devnet } from "@ensforge/test-devnet";
@@ -88,7 +88,7 @@ export const send = <Options>(
   Effect.gen(function* () {
     const chain = yield* Chain;
     const ens = context.as[actor];
-    const label = `${actor} ${write.path}(${JSON.stringify(options, (_, value) => (typeof value === "bigint" ? `${value}n` : value))})`;
+    const label = `${actor} ${write.path}(${Formatter.formatJson(options)})`;
 
     const estimated = yield* Effect.exit(write.estimateGas(ens, options));
     const outcome = yield* sync(ens, { ...options, onStep: chain.passWaits }).pipe(
@@ -101,30 +101,34 @@ export const send = <Options>(
     context.outcomes.set(key, (context.outcomes.get(key) ?? 0) + 1);
 
     if ("raw" in outcome) {
-      return yield* new SequenceFailure({
+      return yield* SequenceFailure.make({
         message: `${label} failed with an untyped error: ${String(outcome.raw)}`,
       });
     }
     if ("ok" in expected && !outcome.ok) {
-      return yield* new SequenceFailure({ message: `${label} was refused: ${outcome.code}` });
+      return yield* SequenceFailure.make({ message: `${label} was refused: ${outcome.code}` });
     }
     if ("refused" in expected && outcome.ok) {
-      return yield* new SequenceFailure({
-        message: `${label} succeeded; expected ${expected.refused.join(" | ")}`,
+      return yield* SequenceFailure.make({
+        message: `${label} succeeded; expected ${Arr.join(expected.refused, " | ")}`,
       });
     }
     const allowed =
       "refused" in expected ? expected.refused : "either" in expected ? expected.either : [];
     if (!outcome.ok && !allowed.includes(outcome.code) && !allowed.includes(anyCode)) {
-      return yield* new SequenceFailure({
-        message: `${label} failed ${outcome.code}; expected ${allowed.join(" | ") || "success"}`,
+      return yield* SequenceFailure.make({
+        message: `${label} failed ${outcome.code}; expected ${Arr.join(allowed, " | ") || "success"}`,
       });
     }
 
     if (outcome.ok && Exit.isSuccess(estimated) && outcome.result.plan.steps.length === 1) {
-      const used = outcome.result.receipts.reduce((total, receipt) => total + receipt.gasUsed, 0n);
+      const used = Arr.reduce(
+        outcome.result.receipts,
+        0n,
+        (total, receipt) => total + receipt.gasUsed,
+      );
       if (estimated.value.gas < used) {
-        return yield* new SequenceFailure({
+        return yield* SequenceFailure.make({
           message: `${label} was estimated at ${estimated.value.gas} gas and used ${used}`,
         });
       }

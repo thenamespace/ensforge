@@ -1,5 +1,5 @@
 import { describe } from "@effect/vitest";
-import { Effect } from "effect";
+import { Effect, String as Str, pipe } from "effect";
 
 import { onProfile } from "@ensforge/test-integration/support/lane";
 
@@ -12,9 +12,10 @@ import { makeWorld } from "../model/world.ts";
 describe("corpus", () => {
   onProfile("mainnet-shaped")("mainnet-shaped", (it) => {
     for (const [file, entry] of load()) {
-      it.effect(`${file}: ${entry.failure.split("\n")[0]}`, () =>
+      it.effect(`${file}: ${pipe(entry.failure, Str.split("\n"))[0]}`, () =>
         Effect.gen(function* () {
-          const context = yield* makeContext(yield* makeWorld);
+          const world = yield* makeWorld;
+          const context = yield* makeContext(world);
           yield* runSequence(context, entry.commands);
         }),
       );

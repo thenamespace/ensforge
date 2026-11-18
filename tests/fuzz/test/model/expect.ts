@@ -1,4 +1,4 @@
-import { Schema } from "effect";
+import { Formatter, Schema, Array as Arr, Record as Rec } from "effect";
 
 import type { Expectation } from "./command.ts";
 import type { Model } from "./model.ts";
@@ -25,7 +25,7 @@ export const anyCode = "*";
 export const stable = (model: Model, predict: (model: Model) => Expectation): Expectation => {
   const now = predict(model);
   const later = predict({ ...model, now: model.now + drift });
-  return JSON.stringify(now) === JSON.stringify(later) ? now : { either: [anyCode] };
+  return Formatter.formatJson(now) === Formatter.formatJson(later) ? now : { either: [anyCode] };
 };
 
 /**
@@ -33,13 +33,16 @@ export const stable = (model: Model, predict: (model: Model) => Expectation): Ex
  * time: a check made now and a simulation of the next block may then rightly disagree.
  */
 export const nearBoundary = (model: Model, world: World) => {
-  const v1 = Object.values(model.v1).flatMap((entry) => [
+  const v1 = Arr.flatMap(Rec.values(model.v1), (entry) => [
     entry.expiry,
     entry.expiry + world.constants.v1GracePeriod,
     entry.reservation,
   ]);
-  const v2 = Object.values(model.v2).flatMap((entry) =>
+  const v2 = Arr.flatMap(Rec.values(model.v2), (entry) =>
     entry === undefined ? [] : [entry.expiry, entry.expiry + world.constants.gracePeriod],
   );
-  return [...v1, ...v2].some((boundary) => boundary >= model.now && boundary <= model.now + drift);
+  return Arr.some(
+    [...v1, ...v2],
+    (boundary) => boundary >= model.now && boundary <= model.now + drift,
+  );
 };

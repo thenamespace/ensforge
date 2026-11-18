@@ -1,6 +1,9 @@
+// Corpus entries are read when the test file loads, to define one test per entry, so they use
+// synchronous file access rather than Effect's FileSystem and Schema.
+/* oxlint-disable effecttsgo/node-builtin-import, effecttsgo/schema-sync */
 import { mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 
-import { Schema } from "effect";
+import { Formatter, Schema, String as Str, pipe, Array as Arr } from "effect";
 
 import { keccak256, toHex } from "viem";
 
@@ -20,16 +23,17 @@ const folder = new URL("../../corpus/", import.meta.url);
 
 /** Saves `entry` under a name derived from its commands; returns the file name. */
 export const save = (entry: Entry) => {
-  const file = `${keccak256(toHex(JSON.stringify(entry.commands))).slice(2, 14)}.json`;
+  const file = `${pipe(keccak256(toHex(Formatter.formatJson(entry.commands))), Str.slice(2, 14))}.json`;
   mkdirSync(folder, { recursive: true });
-  writeFileSync(new URL(file, folder), `${JSON.stringify(entry, null, 2)}\n`);
+  writeFileSync(new URL(file, folder), `${Formatter.formatJson(entry, { space: 2 })}\n`);
   return file;
 };
 
 export const load = (): readonly (readonly [file: string, entry: Entry])[] =>
-  readdirSync(folder)
-    .filter((file) => file.endsWith(".json"))
-    .map((file) => [
+  Arr.map(
+    Arr.filter(readdirSync(folder), (file) => pipe(file, Str.endsWith(".json"))),
+    (file) => [
       file,
-      Schema.decodeUnknownSync(Entry)(JSON.parse(readFileSync(new URL(file, folder), "utf8"))),
-    ]);
+      Schema.decodeSync(Schema.fromJsonString(Entry))(readFileSync(new URL(file, folder), "utf8")),
+    ],
+  );

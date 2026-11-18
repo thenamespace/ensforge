@@ -1,5 +1,5 @@
 import { assert, describe } from "@effect/vitest";
-import { Effect } from "effect";
+import { Effect, Array as Arr } from "effect";
 
 import { Abis } from "@ensforge/contracts";
 import { nameWrapperFuses as fuse } from "@ensforge/contracts/v1";
@@ -8,7 +8,7 @@ import { Actions } from "@ensforge/sdk/effect";
 import { Chain, Devnet } from "@ensforge/test-devnet";
 import { Fixtures } from "@ensforge/test-fixtures";
 import { expectFailure } from "@ensforge/test-harness";
-import { parseEventLogs, zeroAddress, type Address } from "viem";
+import { parseEventLogs, zeroAddress } from "viem";
 
 import { Clients } from "../support/clients.ts";
 import { v1Owners } from "../support/contracts.ts";
@@ -266,11 +266,11 @@ describe("subnames, wrapper and registries", () => {
                 owner: carol,
               });
               assert.deepStrictEqual(
-                plan.steps.map((step) => step.id),
+                Arr.map(plan.steps, (step) => step.id),
                 ["deploy", "create"],
               );
               const registry = (yield* Actions.registry.get(ens, { name: parent }))?.address;
-              if (registry === undefined) return assert.fail("no registry");
+              if (registry === undefined) assert.fail("no registry");
               const owner = yield* chain.read({
                 address: registry,
                 abi: Abis.v2.permissionedRegistry,
@@ -306,7 +306,7 @@ describe("subnames, wrapper and registries", () => {
               const { registry } = yield* Actions.registry.deploySync(ens, { attachTo: name });
               const attached = yield* Actions.registry.get(ens, { name });
               assert.deepInclude(attached, {
-                address: registry as Address,
+                address: registry,
                 kind: "user",
                 canonicalName: name,
               });
@@ -335,7 +335,8 @@ describe("subnames, wrapper and registries", () => {
           yield* chain.isolated(
             Effect.gen(function* () {
               const { receipt } = yield* Actions.subname.updateSync(ens, { name, owner: carol });
-              assert.deepInclude(yield* Actions.name.get(ens, { name }), {
+              const updatedName = yield* Actions.name.get(ens, { name });
+              assert.deepInclude(updatedName, {
                 wrapped: false,
                 owner: carol,
               });

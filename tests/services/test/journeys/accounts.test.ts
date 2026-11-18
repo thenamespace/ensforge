@@ -1,5 +1,5 @@
 import { assert, layer } from "@effect/vitest";
-import { Effect, Schedule } from "effect";
+import { Effect, Schedule, Array as Arr } from "effect";
 
 import { bundler, hca } from "@ensforge/hca";
 import { Actions as HcaActions } from "@ensforge/hca/effect";
@@ -39,10 +39,10 @@ layer(Services.layer({ profile: "mainnet-shaped", services: ["indexer", "aa"] })
         onStep: chain.passWaits,
       });
 
-      const bundled = result.plan.steps.filter((step) => step.calls.length > 1).length;
+      const bundled = Arr.filter(result.plan.steps, (step) => step.calls.length > 1).length;
       assert.isAbove(bundled, 0);
       assert.strictEqual(
-        wallet.methods.filter((method) => method === "wallet_sendCalls").length,
+        Arr.filter(wallet.methods, (method) => method === "wallet_sendCalls").length,
         bundled,
       );
 
@@ -87,7 +87,8 @@ layer(Services.layer({ profile: "mainnet-shaped", services: ["indexer", "aa"] })
 
       const expiry = (registered.names[0]?.expiry ?? 0n) + Duration.years(1);
       assert.strictEqual((yield* Actions.name.get(ens, { name })).expiry, expiry);
-      assert.strictEqual(yield* chain.balance(user), 0n);
+      const userBalanceAfter = yield* chain.balance(user);
+      assert.strictEqual(userBalanceAfter, 0n);
       assert.isTrue((yield* usdcOf(account)) < before, "the HCA paid the renewal");
       yield* services.waitForIndexed();
       assert.strictEqual((yield* Actions.indexer.getName(ens, { name }))?.expiresAt, expiry);
@@ -126,6 +127,8 @@ layer(Services.layer({ profile: "mainnet-shaped", services: ["indexer", "aa"] })
 
       yield* services.waitForIndexed();
       const read = yield* profile.pipe(
+        // The test runs `profile` against its own client; this is the program's entry point.
+        // oxlint-disable-next-line effecttsgo/strict-effect-provide
         Effect.provide(
           Ensforge.layer({
             publicClient: createPublicClient({

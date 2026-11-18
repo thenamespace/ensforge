@@ -22,33 +22,38 @@ describe("access reads", () => {
           const name = fixtures.byId("account.resolver-delegate").name;
           const approved = fixtures.byId("v1.wrapped.approved");
 
-          const operators = yield* Effect.all([
-            Actions.approval.getOperator(reader, {
-              owner: accounts.alice,
-              operator: accounts.operator,
-              contract: "registry",
-            }),
-            Actions.approval.getOperator(reader, {
-              owner: accounts.bob,
-              operator: accounts.operator,
-              contract: "registry",
-            }),
-          ]);
+          const operators = yield* Effect.all(
+            [
+              Actions.approval.getOperator(reader, {
+                owner: accounts.alice,
+                operator: accounts.operator,
+                contract: "registry",
+              }),
+              Actions.approval.getOperator(reader, {
+                owner: accounts.bob,
+                operator: accounts.operator,
+                contract: "registry",
+              }),
+            ],
+            { concurrency: 1 },
+          );
           assert.deepStrictEqual(operators, [true, false]);
 
-          const delegates = yield* Effect.all([
-            Actions.approval.getDelegate(reader, { name, delegate: accounts.approved }),
-            Actions.approval.getDelegate(reader, { name, delegate: accounts.carol }),
-          ]);
+          const delegates = yield* Effect.all(
+            [
+              Actions.approval.getDelegate(reader, { name, delegate: accounts.approved }),
+              Actions.approval.getDelegate(reader, { name, delegate: accounts.carol }),
+            ],
+            { concurrency: 1 },
+          );
           assert.deepStrictEqual(delegates, [true, false]);
 
-          assert.strictEqual(
-            yield* Actions.approval.getToken(reader, { name: approved.name }),
-            approved.facts["approved"],
-          );
-          assert.isNull(
-            yield* Actions.approval.getToken(reader, { name: fixtures.byId("v1.wrapped").name }),
-          );
+          const token = yield* Actions.approval.getToken(reader, { name: approved.name });
+          assert.strictEqual(token, approved.facts["approved"]);
+          const unapprovedToken = yield* Actions.approval.getToken(reader, {
+            name: fixtures.byId("v1.wrapped").name,
+          });
+          assert.isNull(unapprovedToken);
         }),
       { meta: { cases: ["M:D4", "M:D6", "A01", "A02", "W12"] } },
     );
@@ -63,10 +68,13 @@ describe("access reads", () => {
           const plain = fixtures.byId("v1.unwrapped").name;
           const locked = fixtures.byId("v1.wrapped.locked.all").name;
 
-          const [owner, stranger] = yield* Effect.all([
-            Actions.permission.get(reader, { name: plain, account: accounts.alice }),
-            Actions.permission.get(reader, { name: plain, account: accounts.user }),
-          ]);
+          const [owner, stranger] = yield* Effect.all(
+            [
+              Actions.permission.get(reader, { name: plain, account: accounts.alice }),
+              Actions.permission.get(reader, { name: plain, account: accounts.user }),
+            ],
+            { concurrency: 1 },
+          );
           assert.deepInclude(owner.can, { transfer: true, setRecords: true, renew: true });
           // Anyone may renew a name; nothing else.
           assert.deepInclude(stranger.can, { transfer: false, setRecords: false, renew: true });
@@ -158,20 +166,25 @@ describe("access reads", () => {
               account,
             });
 
-          assert.deepInclude(yield* renew("v1.wrapped.sub", alice), {
+          const aliceRenewal = yield* renew("v1.wrapped.sub", alice);
+          assert.deepInclude(aliceRenewal, {
             allowed: true,
             via: "owner",
           });
           // Expired, but the NameWrapper keeps its owner: the parent can still extend it.
-          assert.deepInclude(yield* renew("v1.wrapped.sub.expired", alice), {
+          const aliceExpiredRenewal = yield* renew("v1.wrapped.sub.expired", alice);
+          assert.deepInclude(aliceExpiredRenewal, {
             allowed: true,
             via: "owner",
           });
-          assert.deepInclude(yield* renew("v1.wrapped.sub.expired-emancipated", alice), {
+          const aliceEmancipatedRenewal = yield* renew("v1.wrapped.sub.expired-emancipated", alice);
+          assert.deepInclude(aliceEmancipatedRenewal, {
             allowed: false,
           });
-          assert.deepInclude(yield* renew("v1.wrapped.sub", bob), { allowed: false });
-          assert.deepInclude(yield* renew("v1.wrapped.sub.can-extend", bob), {
+          const bobRenewal = yield* renew("v1.wrapped.sub", bob);
+          assert.deepInclude(bobRenewal, { allowed: false });
+          const bobCanExtendRenewal = yield* renew("v1.wrapped.sub.can-extend", bob);
+          assert.deepInclude(bobCanExtendRenewal, {
             allowed: true,
             via: "owner",
           });
@@ -195,7 +208,8 @@ describe("access reads", () => {
                 functionName: "approve",
                 args: [carol, childNode],
               });
-              assert.deepInclude(yield* renew("v1.wrapped.sub", carol), {
+              const carolRenewal = yield* renew("v1.wrapped.sub", carol);
+              assert.deepInclude(carolRenewal, {
                 allowed: true,
                 via: "approved",
               });
@@ -206,7 +220,8 @@ describe("access reads", () => {
                 functionName: "approve",
                 args: [zeroAddress, parentNode],
               });
-              assert.deepInclude(yield* renew("v1.wrapped.sub.can-extend", carol), {
+              const carolExtension = yield* renew("v1.wrapped.sub.can-extend", carol);
+              assert.deepInclude(carolExtension, {
                 allowed: false,
               });
             }),
@@ -222,12 +237,15 @@ describe("access reads", () => {
           const approved = (yield* Fixtures).byId("v1.wrapped.approved");
           const { reader } = yield* Clients;
 
-          const checks = yield* Effect.forEach(["transfer", "setResolver"] as const, (operation) =>
-            Actions.permission.check(reader, {
-              name: approved.name,
-              operation,
-              account: String(approved.facts["approved"]),
-            }),
+          const checks = yield* Effect.forEach(
+            ["transfer", "setResolver"] as const,
+            (operation) =>
+              Actions.permission.check(reader, {
+                name: approved.name,
+                operation,
+                account: String(approved.facts["approved"]),
+              }),
+            { concurrency: 1 },
           );
           for (const check of checks) {
             assert.deepInclude(check, { allowed: false });
@@ -246,10 +264,12 @@ describe("access reads", () => {
           const { reader } = yield* Clients;
 
           // The registry still stores alice's roles; it reports none once the name expires.
-          assert.deepInclude(
-            yield* Actions.role.get(reader, { account: accounts.alice, target: "registry", name }),
-            { roles: 0n, names: [], admin: [] },
-          );
+          const expiredRoles = yield* Actions.role.get(reader, {
+            account: accounts.alice,
+            target: "registry",
+            name,
+          });
+          assert.deepInclude(expiredRoles, { roles: 0n, names: [], admin: [] });
         }),
       { meta: { cases: ["W35"] } },
     );

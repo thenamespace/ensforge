@@ -44,14 +44,13 @@ describe("reachability", () => {
                   onStep: chain.passWaits,
                 });
 
-                assert.deepInclude(yield* Actions.name.get(ens, { name: child }), {
+                const childAfterMigration = yield* Actions.name.get(ens, { name: child });
+                assert.deepInclude(childAfterMigration, {
                   kind: "v1-unwrapped",
                   reachable,
                 });
-                assert.strictEqual(
-                  yield* Actions.record.getAddress(ens, { name: child }),
-                  reachable ? carol : null,
-                );
+                const address = yield* Actions.record.getAddress(ens, { name: child });
+                assert.strictEqual(address, reachable ? carol : null);
               }),
             );
           }
@@ -83,11 +82,13 @@ describe("reachability", () => {
                 onStep: chain.passWaits,
               });
 
-              assert.deepInclude(yield* Actions.name.get(holder, { name: child }), {
+              const childAfterMigration = yield* Actions.name.get(holder, { name: child });
+              assert.deepInclude(childAfterMigration, {
                 kind: "v1-wrapped",
                 reachable: true,
               });
-              assert.strictEqual(yield* Actions.record.getAddress(holder, { name: child }), bob);
+              const address = yield* Actions.record.getAddress(holder, { name: child });
+              assert.strictEqual(address, bob);
             }),
           );
         }),
@@ -118,7 +119,10 @@ describe("reachability", () => {
               yield* Actions.registry.deploySync(tldOwner, { attachTo: "com" });
 
               assert.isTrue((yield* Actions.name.get(clients.reader, { name })).reachable);
-              assert.strictEqual(yield* Actions.record.getAddress(clients.reader, { name }), alice);
+              const addressWithRegistry = yield* Actions.record.getAddress(clients.reader, {
+                name,
+              });
+              assert.strictEqual(addressWithRegistry, alice);
 
               yield* Actions.resolver.setSync(tldOwner, {
                 name: "com",
@@ -126,7 +130,10 @@ describe("reachability", () => {
               });
 
               assert.isFalse((yield* Actions.name.get(clients.reader, { name })).reachable);
-              assert.isNull(yield* Actions.record.getAddress(clients.reader, { name }));
+              const addressAfterResolverSet = yield* Actions.record.getAddress(clients.reader, {
+                name,
+              });
+              assert.isNull(addressAfterResolverSet);
             }),
           );
         }),
@@ -164,12 +171,16 @@ describe("reachability", () => {
                 account: alice,
               });
 
-              assert.deepInclude(yield* Actions.name.get(clients.reader, { name: child }), {
+              const unreachableChild = yield* Actions.name.get(clients.reader, { name: child });
+              assert.deepInclude(unreachableChild, {
                 kind: "v1-unwrapped",
                 owner: alice,
                 reachable: false,
               });
-              assert.isNull(yield* Actions.record.getAddress(clients.reader, { name: child }));
+              const unreachableChildAddress = yield* Actions.record.getAddress(clients.reader, {
+                name: child,
+              });
+              assert.isNull(unreachableChildAddress);
             }),
           );
         }),

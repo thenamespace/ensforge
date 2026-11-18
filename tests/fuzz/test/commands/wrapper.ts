@@ -88,9 +88,9 @@ export const wrapper: CommandSpec<typeof Wrapper.Type> = {
   run: (context, model, command) =>
     Effect.gen(function* () {
       const { world } = context;
-      const name = pick(world.v1Names, command.name) as string;
+      const name = pick(world.v1Names, command.name);
       const actor = actorOf(world, command.actor);
-      const fuse = pick(fuses, command.fuse) as (typeof fuses)[number];
+      const fuse = pick(fuses, command.fuse);
       const expected = expectation(model, world, name, actor.address, command.action, fuse);
 
       const outcome =

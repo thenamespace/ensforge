@@ -1,5 +1,5 @@
 import { assert, describe } from "@effect/vitest";
-import { Effect } from "effect";
+import { Effect, String as Str, Array as Arr, pipe } from "effect";
 
 import { Abis, Roles } from "@ensforge/contracts";
 import { Duration, Name, Plan, type Errors } from "@ensforge/sdk";
@@ -62,8 +62,8 @@ const refusals: readonly Refusal[] = [
     path: "wrapper.wrap",
     account: "alice",
     options: (f) => {
-      const [label = "", ...parent] = f.byId("records.v1").name.split(".");
-      return { name: [Name.fromLabelhash(labelhash(label)), ...parent].join(".") };
+      const [label, ...parent] = pipe(f.byId("records.v1").name, Str.split("."));
+      return { name: Arr.join([Name.fromLabelhash(labelhash(label)), ...parent], ".") };
     },
     expected: invalid("INVALID_NAME"),
     cases: ["H11"],
@@ -923,17 +923,23 @@ describe("write refusals", () => {
             const account = devnet.accounts[refusal.account];
             const wallet = (yield* Wallets).make(account);
             const ens = clients.make({ account, wallet });
-            const [domain = "", action = ""] = refusal.path.split(".");
+            const [domain, action = ""] = pipe(refusal.path, Str.split("."));
+            // Every write is looked up by its path, so the namespace is indexed as a record.
+            /* oxlint-disable typescript/no-unsafe-type-assertion */
             const sync = (
               Actions as unknown as Record<
                 string,
                 Record<
                   string,
-                  (ens: Client, options: unknown) => Effect.Effect<unknown, Errors.AnyError>
+                  (
+                    ens: Client,
+                    options: unknown,
+                  ) => Effect.Effect<{ readonly receipts: readonly unknown[] }, Errors.AnyError>
                 >
               >
             )[domain]?.[`${action}Sync`];
-            if (sync === undefined) return assert.fail(`${refusal.path} has no Sync form`);
+            /* oxlint-enable typescript/no-unsafe-type-assertion */
+            if (sync === undefined) assert.fail(`${refusal.path} has no Sync form`);
 
             yield* chain.isolated(
               Effect.gen(function* () {
@@ -1005,7 +1011,7 @@ describe("write refusals", () => {
         // A call the resolver has no function for reverts with empty data.
         const [step] = plan.steps;
         const [first] = step?.calls ?? [];
-        if (step === undefined || first === undefined) return assert.fail("the plan has no call");
+        if (step === undefined || first === undefined) assert.fail("the plan has no call");
         const garbled = {
           ...plan,
           steps: [{ ...step, calls: [{ ...first, data: "0xdeadbeef" as const }] }],
@@ -1069,7 +1075,7 @@ describe("send failures", () => {
         const devnet = yield* Devnet;
         const chain = yield* Chain;
         const clients = yield* Clients;
-        const context = yield* Effect.context<never>();
+        const context = yield* Effect.context();
         const { carol, alice } = devnet.accounts;
         const { name, facts } = fixtures.byId("v2.roles");
         const registry = {

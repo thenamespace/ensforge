@@ -1,5 +1,5 @@
 import { assert, describe } from "@effect/vitest";
-import { Effect } from "effect";
+import { Effect, Array as Arr } from "effect";
 
 import { Duration } from "@ensforge/sdk";
 import { Actions } from "@ensforge/sdk/effect";
@@ -54,7 +54,10 @@ describe("write send modes", () => {
               const wallet = wallets.make(accounts.alice, { atomic });
               const ens = clients.make({ account: accounts.alice, wallet });
               const result = yield* Actions.record.setSync(ens, { ...options, maxBundleCalls });
-              const sendCalls = wallet.methods.filter((method) => method === "wallet_sendCalls");
+              const sendCalls = Arr.filter(
+                wallet.methods,
+                (method) => method === "wallet_sendCalls",
+              );
               return { result, sendCalls: sendCalls.length };
             }),
           );
@@ -70,7 +73,8 @@ describe("write send modes", () => {
         assert.strictEqual(sequential.result.hashes.length, 2);
 
         // A step's calls stay together whatever the limit: they must not land apart.
-        assert.deepInclude(yield* sendWith(true, 1), { sendCalls: 1 });
+        const limitedSend = yield* sendWith(true, 1);
+        assert.deepInclude(limitedSend, { sendCalls: 1 });
       }),
     );
 
@@ -98,14 +102,17 @@ describe("write send modes", () => {
               });
               assert.strictEqual(result.hashes.length, 3);
 
-              const count = (method: string) => wallet.methods.filter((m) => m === method).length;
+              const count = (method: string) =>
+                Arr.filter(wallet.methods, (m) => m === method).length;
               return [count("wallet_sendCalls"), count("eth_sendTransaction")];
             }),
           );
 
-        assert.deepStrictEqual(yield* sendsWith(), [1, 0]);
+        const defaultSends = yield* sendsWith();
+        assert.deepStrictEqual(defaultSends, [1, 0]);
         // Over the limit, the one-call approval goes alone, as a plain transaction.
-        assert.deepStrictEqual(yield* sendsWith(2), [1, 1]);
+        const limitedSends = yield* sendsWith(2);
+        assert.deepStrictEqual(limitedSends, [1, 1]);
       }),
     );
   });

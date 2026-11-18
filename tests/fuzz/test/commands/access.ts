@@ -1,4 +1,4 @@
-import { Effect, Schema } from "effect";
+import { Effect, Schema, Array as Arr } from "effect";
 
 import { Actions } from "@ensforge/sdk/effect";
 import { Devnet } from "@ensforge/test-devnet";
@@ -29,7 +29,7 @@ export const role: CommandSpec<typeof Role.Type> = {
   run: (context, model, command) =>
     Effect.gen(function* () {
       const { world } = context;
-      const label = pick(v2Labels, command.name) as string;
+      const label = pick(v2Labels, command.name);
       const actor = actorOf(world, command.actor);
       const grantee = actorOf(world, command.grantee).address;
       const entry = model.v2[label];
@@ -76,7 +76,7 @@ export const role: CommandSpec<typeof Role.Type> = {
       // A grant on a lapsed name's old token is not the model's concern.
       if (v2Status(model, world.constants, label) !== "registered") return model;
 
-      const others = entry.delegates.filter((delegate) => delegate !== grantee);
+      const others = Arr.filter(entry.delegates, (delegate) => delegate !== grantee);
       return withV2(model, label, {
         ...entry,
         delegates: command.grant ? [...others, grantee] : others,
@@ -106,7 +106,8 @@ export const operator: CommandSpec<typeof Operator.Type> = {
       );
       if (!outcome.ok) return model;
 
-      const others = (model.operators[actor.address] ?? []).filter(
+      const others = Arr.filter(
+        model.operators[actor.address] ?? [],
         (address) => address !== operatorAddress,
       );
       return {

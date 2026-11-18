@@ -1,5 +1,5 @@
 import { assert, describe } from "@effect/vitest";
-import { Effect } from "effect";
+import { Effect, Option, String as Str, Array as Arr, pipe } from "effect";
 
 import { Abis } from "@ensforge/contracts";
 import { CoinType, Name } from "@ensforge/sdk";
@@ -69,7 +69,7 @@ describe("record writes", () => {
                   interfaces: { "0x01ffc9a7": accounts.carol },
                 });
                 const resolver = (yield* Actions.resolver.get(ens, { name }))?.address;
-                if (resolver === undefined) return assert.fail("no resolver");
+                if (resolver === undefined) assert.fail("no resolver");
 
                 // What the resolver stores, asked of the resolver itself. A PermissionedResolver
                 // answers only through ENSIP-10 `resolve(name, data)`; the others answer
@@ -79,7 +79,7 @@ describe("record writes", () => {
                     abi,
                     functionName,
                     args: [namehash(name), ...args],
-                  } as never);
+                  });
                   const answer =
                     id === "records.v2"
                       ? chain.read({
@@ -91,32 +91,36 @@ describe("record writes", () => {
                       : Effect.map(chain.call({ to: resolver, data }), (call) => call.data ?? "0x");
                   return Effect.map(
                     answer,
-                    (result) =>
-                      decodeFunctionResult({ abi, functionName, data: result } as never) as A,
+                    // The caller states the decoded type of `functionName`.
+                    // oxlint-disable-next-line typescript/no-unsafe-type-assertion
+                    (result) => decodeFunctionResult({ abi, functionName, data: result }) as A,
                   );
                 };
-                const stored = Effect.all({
-                  url: ask<string>(Abis.shared.textResolver, "text", ["url"]),
-                  unicode: ask<string>(Abis.shared.textResolver, "text", ["unicode"]),
-                  agent: ask<string>(Abis.shared.textResolver, "text", [agentKey]),
-                  eth: ask<Hex>(Abis.shared.addressResolver, "addr", [60n]),
-                  btc: ask<Hex>(Abis.shared.addressResolver, "addr", [0n]),
-                  base: ask<Hex>(Abis.shared.addressResolver, "addr", [base]),
-                  polygon: ask<Hex>(Abis.shared.addressResolver, "addr", [polygon]),
-                  abi: ask<readonly [bigint, Hex]>(Abis.shared.abiResolver, "ABI", [1n]),
-                  interface: ask<Address>(Abis.shared.interfaceResolver, "interfaceImplementer", [
-                    "0x01ffc9a7",
-                  ]),
-                });
+                const stored = Effect.all(
+                  {
+                    url: ask<string>(Abis.shared.textResolver, "text", ["url"]),
+                    unicode: ask<string>(Abis.shared.textResolver, "text", ["unicode"]),
+                    agent: ask<string>(Abis.shared.textResolver, "text", [agentKey]),
+                    eth: ask<Hex>(Abis.shared.addressResolver, "addr", [60n]),
+                    btc: ask<Hex>(Abis.shared.addressResolver, "addr", [0n]),
+                    base: ask<Hex>(Abis.shared.addressResolver, "addr", [base]),
+                    polygon: ask<Hex>(Abis.shared.addressResolver, "addr", [polygon]),
+                    abi: ask<readonly [bigint, Hex]>(Abis.shared.abiResolver, "ABI", [1n]),
+                    interface: ask<Address>(Abis.shared.interfaceResolver, "interfaceImplementer", [
+                      "0x01ffc9a7",
+                    ]),
+                  },
+                  { concurrency: 1 },
+                );
 
                 const raw = yield* stored;
                 assert.deepInclude(raw, {
                   url: "https://lifecycle.example",
                   unicode: "Ünïcødé 👋",
                   agent: "agent-2",
-                  eth: accounts.carol.toLowerCase() as Hex,
+                  eth: Str.toLowerCase(accounts.carol) as Hex,
                   btc: "0x512079be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
-                  base: accounts.user.toLowerCase() as Hex,
+                  base: Str.toLowerCase(accounts.user) as Hex,
                   polygon: zeroAddress,
                   interface: accounts.carol,
                 });
@@ -131,7 +135,8 @@ describe("record writes", () => {
                   texts: { url: null },
                   addresses: { btc: null },
                 });
-                assert.deepInclude(yield* stored, { url: "", btc: "0x" });
+                const storedAfterClear = yield* stored;
+                assert.deepInclude(storedAfterClear, { url: "", btc: "0x" });
               }),
             );
           }),
@@ -155,11 +160,14 @@ describe("record writes", () => {
             Effect.gen(function* () {
               // Clearing a linked name gives it an empty record of its own (`linkToRecord(name, 0)`).
               yield* Actions.record.setSync(ens, { name: linked, clear: true });
-              assert.isNull(yield* Actions.resolver.getLink(ens, { name: linked }));
-              assert.isNull(yield* url);
+              const link = yield* Actions.resolver.getLink(ens, { name: linked });
+              assert.isNull(link);
+              const urlAfterClear = yield* url;
+              assert.isNull(urlAfterClear);
 
               yield* Actions.resolver.linkSync(ens, { name: linked, to: target });
-              assert.strictEqual(yield* url, "https://ensforge.com");
+              const urlAfterLink = yield* url;
+              assert.strictEqual(urlAfterLink, "https://ensforge.com");
             }),
           );
         }),
@@ -188,13 +196,15 @@ describe("record writes", () => {
               yield* Actions.resolver.setSync(ens, { name, resolver });
 
               assert.strictEqual((yield* Actions.resolver.get(ens, { name }))?.address, resolver);
-              assert.deepInclude(
-                yield* Actions.record.get(ens, { name, texts: ["url"], data: ["eth.ens.example"] }),
-                {
-                  texts: { url: "https://created.example" },
-                  data: { "eth.ens.example": "0x1234" },
-                },
-              );
+              const createdRecord = yield* Actions.record.get(ens, {
+                name,
+                texts: ["url"],
+                data: ["eth.ens.example"],
+              });
+              assert.deepInclude(createdRecord, {
+                texts: { url: "https://created.example" },
+                data: { "eth.ens.example": "0x1234" },
+              });
             }),
           );
         }),
@@ -257,19 +267,20 @@ describe("record writes", () => {
           } as const;
 
           const plan = yield* Actions.record.set.prepare(ens, options);
-          const calls = plan.steps.flatMap((step) => step.calls);
+          const calls = Arr.flatMap(plan.steps, (step) => step.calls);
           const setResolver = toFunctionSelector("setResolver(bytes32,address)");
-          const pointed = calls.findIndex((item) => item.data.startsWith(setResolver));
+          const pointed = Option.getOrElse(
+            Arr.findFirstIndex(calls, (item) => pipe(item.data, Str.startsWith(setResolver))),
+            () => -1,
+          );
           assert.isAbove(pointed, 0, "records first, then setResolver");
 
           yield* chain.isolated(
             Effect.gen(function* () {
               yield* Actions.record.setSync(ens, options);
 
-              assert.strictEqual(
-                yield* Actions.record.getText(ens, { name, key: "url" }),
-                "https://moved.example",
-              );
+              const text = yield* Actions.record.getText(ens, { name, key: "url" });
+              assert.strictEqual(text, "https://moved.example");
             }),
           );
         }),
@@ -290,10 +301,12 @@ describe("record writes", () => {
           yield* chain.isolated(
             Effect.gen(function* () {
               yield* Actions.record.setSync(ens, { name, texts: { url: "https://own.example" } });
-              assert.strictEqual(yield* url, "https://own.example");
+              const ownUrl = yield* url;
+              assert.strictEqual(ownUrl, "https://own.example");
 
               yield* Actions.record.setSync(ens, { name, clear: true });
-              assert.strictEqual(yield* url, "https://default.example");
+              const defaultUrl = yield* url;
+              assert.strictEqual(defaultUrl, "https://default.example");
             }),
           );
         }),
@@ -311,7 +324,7 @@ describe("record writes", () => {
           const name = fixtures.byId("records.v1").name;
           // An A record for `www.<name>`, and the same with no data. Owner names are written in any
           // case and stored lowercase, as they are looked up.
-          const upper = aRecordHeader(`WWW.${name.toUpperCase()}`);
+          const upper = aRecordHeader(`WWW.${Str.toUpperCase(name)}`);
           const www = Actions.dns
             .getRecords(ens, { name, records: [{ name: `Www.${name}`, type: 1 }] })
             .pipe(Effect.map(({ records }) => records[0]?.data));
@@ -322,13 +335,15 @@ describe("record writes", () => {
                 name,
                 records: concat([upper, "0x0004", "0x7f000001"]),
               });
+              const wwwAfterSet = yield* www;
               assert.strictEqual(
-                yield* www,
+                wwwAfterSet,
                 concat([aRecordHeader(`www.${name}`), "0x0004", "0x7f000001"]),
               );
 
               yield* Actions.dns.setRecordsSync(ens, { name, records: concat([upper, "0x0000"]) });
-              assert.isNull(yield* www);
+              const wwwAfterEmptyRecord = yield* www;
+              assert.isNull(wwwAfterEmptyRecord);
             }),
           );
         }),

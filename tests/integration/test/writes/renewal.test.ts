@@ -1,5 +1,5 @@
 import { assert, describe } from "@effect/vitest";
-import { Effect } from "effect";
+import { Effect, Array as Arr } from "effect";
 
 import { Abis } from "@ensforge/contracts";
 import { Duration, Name, Plan } from "@ensforge/sdk";
@@ -83,11 +83,12 @@ describe("renewal", () => {
               });
 
               assert.isTrue(
-                plan.calls.some((call) =>
+                Arr.some(plan.calls, (call) =>
                   isAddressEqual(call.to, devnet.contract("v2.ethRenewerV1")),
                 ),
               );
-              assert.strictEqual(yield* expires, before + duration);
+              const expiryAfterRenewal = yield* expires;
+              assert.strictEqual(expiryAfterRenewal, before + duration);
               // An unwrapped name's renewal leaves the NameWrapper's entry for it as it was.
               assert.deepStrictEqual((yield* v1Owners(name)).wrapped, wrapperBefore);
             }),
@@ -153,7 +154,9 @@ describe("renewal", () => {
                 args: [devnet.contract("v2.ethRegistrar"), 0n],
                 account: accounts.carol,
               });
-              const before = yield* Effect.forEach(names, (name) => ethEntry(name));
+              const before = yield* Effect.forEach(names, (name) => ethEntry(name), {
+                concurrency: 1,
+              });
               const balance = yield* usdcOf(accounts.carol);
               const quote = yield* Actions.registration.getRenewalPrice(clients.reader, {
                 names,
@@ -171,21 +174,23 @@ describe("renewal", () => {
                 code: "USER_REJECTED",
               });
               const [record] = yield* Actions.plan.list(first, {});
-              if (record === undefined) return assert.fail("the plan was not saved");
+              if (record === undefined) assert.fail("the plan was not saved");
 
               const wallet = wallets.make(accounts.carol);
               const second = clients.make({ account: accounts.carol, wallet, storage });
               yield* Actions.plan.resumeSync(second, { id: record.plan.id });
 
               assert.strictEqual(
-                wallet.methods.filter((method) => method === "eth_sendTransaction").length,
+                Arr.filter(wallet.methods, (method) => method === "eth_sendTransaction").length,
                 1,
                 "the renewal only",
               );
-              const after = yield* Effect.forEach(names, (name) => ethEntry(name));
+              const after = yield* Effect.forEach(names, (name) => ethEntry(name), {
+                concurrency: 1,
+              });
               assert.deepStrictEqual(
-                after.map((entry) => entry.expiry),
-                before.map((entry) => entry.expiry + duration),
+                Arr.map(after, (entry) => entry.expiry),
+                Arr.map(before, (entry) => entry.expiry + duration),
               );
               assert.strictEqual(balance - (yield* usdcOf(accounts.carol)), quote.total);
             }),

@@ -1,5 +1,5 @@
 import { assert, describe } from "@effect/vitest";
-import { Effect } from "effect";
+import { Effect, Array as Arr, String as Str, Record as Rec, pipe } from "effect";
 
 import type { Errors } from "@ensforge/sdk";
 import { Actions } from "@ensforge/sdk/effect";
@@ -348,7 +348,7 @@ const rows: Readonly<Record<ProfileName, readonly Row[]>> = {
 };
 
 describe("access matrix", () => {
-  for (const [profile, profileRows] of Object.entries(rows) as [ProfileName, readonly Row[]][]) {
+  for (const [profile, profileRows] of Rec.toEntries(rows)) {
     if (profileRows.length === 0) continue;
     onProfile(profile)(profile, (it) => {
       for (const row of profileRows) {
@@ -363,26 +363,33 @@ describe("access matrix", () => {
               const account = devnet.accounts[row.account];
               const wallet = (yield* Wallets).make(account);
               const ens = clients.make({ account, wallet });
-              const [domain = "", action = ""] = row.path.split(".");
+              const [domain, action = ""] = pipe(row.path, Str.split("."));
+              // Every write is looked up by its path, so the namespace is indexed as a record.
+              /* oxlint-disable typescript/no-unsafe-type-assertion */
               const sync = (
                 Actions as unknown as Record<
                   string,
                   Record<
                     string,
-                    (ens: Client, options: unknown) => Effect.Effect<unknown, Errors.AnyError>
+                    (
+                      ens: Client,
+                      options: unknown,
+                    ) => Effect.Effect<
+                      { readonly receipts: readonly { readonly status: string }[] },
+                      Errors.AnyError
+                    >
                   >
                 >
               )[domain]?.[`${action}Sync`];
-              if (sync === undefined) return assert.fail(`${row.path} has no Sync form`);
+              /* oxlint-enable typescript/no-unsafe-type-assertion */
+              if (sync === undefined) assert.fail(`${row.path} has no Sync form`);
               const options = { ...row.options(fixtures, devnet), onStep: chain.passWaits };
 
               yield* chain.isolated(
                 Effect.gen(function* () {
                   if (row.expected === "allowed") {
-                    const { receipts } = (yield* sync(ens, options)) as {
-                      readonly receipts: readonly { readonly status: string }[];
-                    };
-                    assert.isTrue(receipts.every(({ status }) => status === "success"));
+                    const { receipts } = yield* sync(ens, options);
+                    assert.isTrue(Arr.every(receipts, ({ status }) => status === "success"));
                     return;
                   }
 

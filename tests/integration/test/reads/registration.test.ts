@@ -1,5 +1,5 @@
 import { assert, describe } from "@effect/vitest";
-import { Effect } from "effect";
+import { Effect, Array as Arr, String as Str, pipe } from "effect";
 
 import { Abis } from "@ensforge/contracts";
 import { Duration } from "@ensforge/sdk";
@@ -30,7 +30,7 @@ describe("registration reads", () => {
           gracePeriod: Duration.days(28),
         });
         assert.sameMembers(
-          parameters.paymentTokens.map((token) => `${token.symbol}/${token.decimals}`),
+          Arr.map(parameters.paymentTokens, (token) => `${token.symbol}/${token.decimals}`),
           ["DAI/18", "USDC/6"],
         );
       }),
@@ -45,21 +45,28 @@ describe("registration reads", () => {
           const { reader } = yield* Clients;
           const names = [
             ...new Set(
-              fixtures.all
-                .map((fixture) => fixture.name)
-                .filter((name) => /^[^.]+\.eth$/u.test(name)),
+              Arr.filter(
+                Arr.map(fixtures.all, (fixture) => fixture.name),
+                (name) => /^[^.]+\.eth$/u.test(name),
+              ),
             ),
           ];
 
-          const disagreements = yield* Effect.forEach(names, (name) =>
-            Effect.all([
-              Actions.registration.isAvailable(reader, { name }),
-              Actions.name.get(reader, { name }),
-            ]).pipe(
-              Effect.map(([available, state]) =>
-                available === state.available ? [] : [`${name}: ${available}`],
+          const disagreements = yield* Effect.forEach(
+            names,
+            (name) =>
+              Effect.all(
+                [
+                  Actions.registration.isAvailable(reader, { name }),
+                  Actions.name.get(reader, { name }),
+                ],
+                { concurrency: 1 },
+              ).pipe(
+                Effect.map(([available, state]) =>
+                  available === state.available ? [] : [`${name}: ${available}`],
+                ),
               ),
-            ),
+            { concurrency: 1 },
           );
           assert.deepStrictEqual(disagreements.flat(), []);
         }),
@@ -74,12 +81,15 @@ describe("registration reads", () => {
           const price = (name: string) =>
             Actions.registration.getPrice(reader, { name, duration: Duration.years(1) });
 
-          const [three, four, five, phoenix] = yield* Effect.all([
-            price("qqq.eth"),
-            price("qqqq.eth"),
-            price("qqqqq.eth"),
-            price("\u{1F426}\u200D\u{1F525}.eth"),
-          ]);
+          const [three, four, five, phoenix] = yield* Effect.all(
+            [
+              price("qqq.eth"),
+              price("qqqq.eth"),
+              price("qqqqq.eth"),
+              price("\u{1F426}\u200D\u{1F525}.eth"),
+            ],
+            { concurrency: 1 },
+          );
           assert.isTrue(three.base > four.base && four.base > five.base);
           // Three code points, one grapheme.
           assert.strictEqual(phoenix.base, three.base);
@@ -87,10 +97,11 @@ describe("registration reads", () => {
           // Length is counted in code points, not bytes: three CJK code points are nine bytes.
           assert.strictEqual((yield* price("你好吗.eth")).base, three.base);
           // 255 bytes is the longest label the oracle prices.
-          yield* price(`${"q".repeat(255)}.eth`);
+          yield* price(`${pipe("q", Str.repeat(255))}.eth`);
 
-          assert.isFalse(yield* Actions.registration.isAvailable(reader, { name: "qq.eth" }));
-          for (const name of ["qq.eth", "たこ.eth", `${"q".repeat(256)}.eth`]) {
+          const qqAvailable = yield* Actions.registration.isAvailable(reader, { name: "qq.eth" });
+          assert.isFalse(qqAvailable);
+          for (const name of ["qq.eth", "たこ.eth", `${pipe("q", Str.repeat(256))}.eth`]) {
             yield* expectFailure(price(name), { _tag: "InvalidInputError", code: "INVALID_NAME" });
           }
         }),
@@ -112,11 +123,14 @@ describe("registration reads", () => {
               at,
             });
 
-          const [start, nextDay, after] = yield* Effect.all([
-            priceAt(graceEnd),
-            priceAt(graceEnd + Duration.days(1)),
-            priceAt(graceEnd + Duration.days(21)),
-          ]);
+          const [start, nextDay, after] = yield* Effect.all(
+            [
+              priceAt(graceEnd),
+              priceAt(graceEnd + Duration.days(1)),
+              priceAt(graceEnd + Duration.days(21)),
+            ],
+            { concurrency: 1 },
+          );
           assert.isTrue(start.premium > nextDay.premium && nextDay.premium > 0n);
           assert.strictEqual(after.premium, 0n);
           assert.strictEqual(start.total, start.base + start.premium);
@@ -135,7 +149,9 @@ describe("registration reads", () => {
               duration: Duration.years(1),
               paymentToken,
             });
-          const [usdc, dai] = yield* Effect.all([priceIn("usdc"), priceIn("dai")]);
+          const [usdc, dai] = yield* Effect.all([priceIn("usdc"), priceIn("dai")], {
+            concurrency: 1,
+          });
 
           assert.strictEqual(dai.token.symbol, "DAI");
           assert.strictEqual(usdc.base, (dai.base + 10n ** 12n - 1n) / 10n ** 12n);
@@ -199,7 +215,7 @@ describe("registration reads", () => {
 
           const both = yield* renewal([v2Name, premigrated]);
           assert.deepStrictEqual(
-            both.items.map((item) => [item.name, item.route]),
+            Arr.map(both.items, (item) => [item.name, item.route]),
             [
               [v2Name, "v2-registrar"],
               [premigrated, "v1-renewer"],
@@ -207,7 +223,7 @@ describe("registration reads", () => {
           );
           assert.strictEqual(
             both.total,
-            both.items.reduce((sum, item) => sum + item.amount, 0n),
+            Arr.reduce(both.items, 0n, (sum, item) => sum + item.amount),
           );
 
           for (const id of ["v1.unwrapped", "v2.expired"]) {
@@ -232,12 +248,10 @@ describe("registration reads", () => {
               .getRenewalPrice(reader, { names: name, duration: Duration.years(years) })
               .pipe(Effect.map((price) => price.total));
 
-          const [one, two, three, six] = yield* Effect.all([
-            amountFor(1n),
-            amountFor(2n),
-            amountFor(3n),
-            amountFor(6n),
-          ]);
+          const [one, two, three, six] = yield* Effect.all(
+            [amountFor(1n), amountFor(2n), amountFor(3n), amountFor(6n)],
+            { concurrency: 1 },
+          );
           // 12.5%, 31.25% and 43.75% off, in sixteenths, rounded up.
           const discounted = (years: bigint, sixteenths: bigint) =>
             (one * years * sixteenths + 15n) / 16n;
@@ -273,7 +287,7 @@ describe("registration reads", () => {
                 account: devnet.accounts.alice,
               });
               const { committedAt } = yield* commitmentStatus;
-              if (committedAt === null) return assert.fail("commitment not recorded");
+              if (committedAt === null) assert.fail("commitment not recorded");
 
               return yield* Effect.forEach(
                 [59n, 60n, Duration.days(1) - 1n, Duration.days(1)],
@@ -282,6 +296,7 @@ describe("registration reads", () => {
                     committedAt + age,
                     Effect.map(commitmentStatus, (current) => current.status),
                   ),
+                { concurrency: 1 },
               );
             }),
           );

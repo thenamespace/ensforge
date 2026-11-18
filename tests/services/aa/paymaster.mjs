@@ -1,3 +1,5 @@
+// Plain Node inside the paymaster container, outside any Effect program.
+/* oxlint-disable effecttsgo/async-function, effecttsgo/global-fetch, effecttsgo/global-json, effecttsgo/global-timers */
 import { paymaster } from "@pimlico/mock-paymaster";
 
 // The mock paymaster signs `validUntil` from `Date.now()`, but the devnet's clock runs ahead of

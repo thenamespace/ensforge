@@ -1,4 +1,4 @@
-import { Effect, Schema } from "effect";
+import { Effect, Schema, Array as Arr } from "effect";
 
 import { Duration } from "@ensforge/sdk";
 import { Actions } from "@ensforge/sdk/effect";
@@ -26,7 +26,7 @@ import {
   type Model,
 } from "../model/model.ts";
 import { resyncV1 } from "../model/sync.ts";
-import { actorNames, readV2, v2Labels, type ActorName, type World } from "../model/world.ts";
+import { actorNames, readV2, v2Labels, type World } from "../model/world.ts";
 
 export const Register = Schema.Struct({
   kind: Schema.Literal("register"),
@@ -58,12 +58,12 @@ export const Wait = Schema.Struct({
 
 /** Every name commands can target: the ENSv2 labels as `.eth` names, then the ENSv1 names. */
 export const targetsOf = (world: World) => [
-  ...v2Labels.map((label) => `${label}.eth`),
+  ...Arr.map(v2Labels, (label) => `${label}.eth`),
   ...world.v1Names,
 ];
 
 export const actorOf = (world: World, index: number) => {
-  const name = pick(actorNames, index) as ActorName;
+  const name = pick(actorNames, index);
   return { name, address: world.actors[name] };
 };
 
@@ -82,7 +82,7 @@ export const register: CommandSpec<typeof Register.Type> = {
   run: (context, model, command) =>
     Effect.gen(function* () {
       const { world } = context;
-      const label = pick(v2Labels, command.name) as string;
+      const label = pick(v2Labels, command.name);
       const actor = actorOf(world, command.actor);
       const url = command.url ? `https://${label}.example/${model.now}` : null;
       const expected = stable(model, (at) =>
@@ -127,7 +127,7 @@ export const renew: CommandSpec<typeof Renew.Type> = {
   run: (context, model, command) =>
     Effect.gen(function* () {
       const { world } = context;
-      const label = pick(v2Labels, command.name) as string;
+      const label = pick(v2Labels, command.name);
       const duration = Duration.years(command.years);
       const expected = stable(model, (at) =>
         isFree(v2Status(at, world.constants, label)) ? refused("NAME_NOT_RENEWABLE") : succeeds,
@@ -159,7 +159,8 @@ const transferV2 = (model: Model, world: World, label: string, actor: Address, t
     if (actor !== entry.owner && !operator) {
       return refused("MISSING_ROLES", "NOT_OWNER", "NOT_APPROVED");
     }
-    if (entry.delegates.some((delegate) => delegate !== to)) return refused("TRANSFER_DISALLOWED");
+    if (Arr.some(entry.delegates, (delegate) => delegate !== to))
+      return refused("TRANSFER_DISALLOWED");
     return to === entry.owner || entry.delegates.length > 0
       ? either("TRANSFER_DISALLOWED")
       : succeeds;
@@ -201,7 +202,7 @@ export const transfer: CommandSpec<typeof Transfer.Type> = {
   run: (context, model, command) =>
     Effect.gen(function* () {
       const { world } = context;
-      const target = targetOf(model, world, pick(targetsOf(world), command.name) as string);
+      const target = targetOf(model, world, pick(targetsOf(world), command.name));
       const actor = actorOf(world, command.actor);
       const to = actorOf(world, command.to).address;
       const expected =
@@ -238,7 +239,7 @@ export const wait: CommandSpec<typeof Wait.Type> = {
   run: (context, model, command) =>
     Effect.gen(function* () {
       const { world } = context;
-      const target = targetOf(model, world, pick(targetsOf(world), command.name) as string);
+      const target = targetOf(model, world, pick(targetsOf(world), command.name));
       const expiry =
         target.protocol === "v1" ? target.entry.expiry : model.v2[target.label]?.expiry;
       const grace =

@@ -44,20 +44,24 @@ describe("migration.get", () => {
           );
 
           // Without premigration there is no reservation to claim.
-          assert.deepInclude(yield* statusOf("v1.unwrapped"), {
+          const unpremigratedStatus = yield* statusOf("v1.unwrapped");
+          assert.deepInclude(unpremigratedStatus, {
             status: "blocked",
             blockers: ["not-reserved"],
           });
           // Premigrated, but a burned CANNOT_TRANSFER keeps the token where it is.
-          assert.deepInclude(yield* statusOf("v1.wrapped.locked.all"), {
+          const lockedStatus = yield* statusOf("v1.wrapped.locked.all");
+          assert.deepInclude(lockedStatus, {
             route: "wrapped-locked",
             blockers: ["cannot-transfer"],
           });
-          assert.deepInclude(yield* statusOf("v1.wrapped"), {
+          const wrappedStatus = yield* statusOf("v1.wrapped");
+          assert.deepInclude(wrappedStatus, {
             status: "eligible",
             route: "wrapped-unlocked",
           });
-          assert.deepInclude(yield* statusOf("v1.wrapped.sub"), {
+          const wrappedSubStatus = yield* statusOf("v1.wrapped.sub");
+          assert.deepInclude(wrappedSubStatus, {
             blockers: ["unlocked-child", "not-owner"],
           });
 
@@ -77,14 +81,20 @@ describe("migration.get", () => {
           const { accounts } = yield* Devnet;
           const { reader } = yield* Clients;
 
-          assert.deepInclude(
-            yield* Actions.migration.get(reader, { name: managed, account: accounts.alice }),
-            { status: "eligible", owner: accounts.alice, manager: accounts.bob },
-          );
-          assert.deepInclude(
-            yield* Actions.migration.get(reader, { name: managed, account: accounts.bob }),
-            { status: "blocked", blockers: ["not-owner"] },
-          );
+          const ownerMigration = yield* Actions.migration.get(reader, {
+            name: managed,
+            account: accounts.alice,
+          });
+          assert.deepInclude(ownerMigration, {
+            status: "eligible",
+            owner: accounts.alice,
+            manager: accounts.bob,
+          });
+          const managerMigration = yield* Actions.migration.get(reader, {
+            name: managed,
+            account: accounts.bob,
+          });
+          assert.deepInclude(managerMigration, { status: "blocked", blockers: ["not-owner"] });
         }),
       { meta: { cases: ["M17"] } },
     );
@@ -99,12 +109,14 @@ describe("migration.get", () => {
           const statusOf = (id: string, account: Address) =>
             Actions.migration.get(reader, { name: fixtures.byId(id).name, account });
 
-          assert.deepInclude(yield* statusOf("v1.wrapped.sub.locked", accounts.bob), {
+          const status = yield* statusOf("v1.wrapped.sub.locked", accounts.bob);
+          assert.deepInclude(status, {
             route: "locked-child",
             blockers: ["parent-not-migrated"],
           });
           // The MigrationHelper's `WrappedOwnerMismatch` and `ParentNotMigrated`, as blockers.
-          assert.deepInclude(yield* statusOf("v1.wrapped.sub.locked", accounts.alice), {
+          const lockedChildStatus = yield* statusOf("v1.wrapped.sub.locked", accounts.alice);
+          assert.deepInclude(lockedChildStatus, {
             blockers: ["not-owner", "parent-not-migrated"],
           });
           // A child that can extend its own expiry never expires in ENSv2.

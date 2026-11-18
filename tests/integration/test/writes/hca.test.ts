@@ -1,14 +1,14 @@
 import { assert, describe } from "@effect/vitest";
-import { Effect } from "effect";
+import { Effect, Array as Arr } from "effect";
 
 import { hca } from "@ensforge/hca";
 import { Actions as HcaActions } from "@ensforge/hca/effect";
 import { Duration } from "@ensforge/sdk";
 import { Actions } from "@ensforge/sdk/effect";
 import { Chain, Devnet } from "@ensforge/test-devnet";
-import { Fixtures } from "@ensforge/test-fixtures";
+import { factAddress, Fixtures } from "@ensforge/test-fixtures";
 import { expectFailure } from "@ensforge/test-harness";
-import { parseEther, type Address } from "viem";
+import { parseEther } from "viem";
 
 import { Clients } from "../support/clients.ts";
 import { ethEntry, mintUsdc, usdcOf } from "../support/contracts.ts";
@@ -81,7 +81,7 @@ describe("HCA", () => {
 
               // The HCA's deployment and the token approvals, then one execution for both names.
               assert.deepStrictEqual(
-                result.plan.steps.map((step) => step.id),
+                Arr.map(result.plan.steps, (step) => step.id),
                 ["hca-setup", "migrate"],
               );
               for (const name of names) {
@@ -126,10 +126,10 @@ describe("HCA", () => {
               assert.strictEqual(before - (yield* usdcOf(account)), result.paid);
               // The reverse record is the owner's, so the owner sets it.
               assert.deepInclude(result.plan.steps.at(-1), { id: "primaryName", from: "signer" });
-              assert.strictEqual(
-                yield* Actions.primaryName.get(ens, { address: accounts.carol }),
-                name,
-              );
+              const primaryNameAfterRegistration = yield* Actions.primaryName.get(ens, {
+                address: accounts.carol,
+              });
+              assert.strictEqual(primaryNameAfterRegistration, name);
             }),
           );
         }),
@@ -143,7 +143,7 @@ describe("HCA", () => {
           const chain = yield* Chain;
           const clients = yield* Clients;
           const { name, facts } = (yield* Fixtures).byId("v2.registered");
-          const ens = clients.make({ account: facts["owner"] as Address });
+          const ens = clients.make({ account: factAddress(facts, "owner") });
 
           yield* chain.isolated(
             Effect.gen(function* () {
@@ -174,12 +174,14 @@ describe("HCA", () => {
           yield* chain.isolated(
             Effect.gen(function* () {
               yield* HcaActions.hca.deploySync(ens, {});
+              const now = yield* chain.now;
               const session = yield* HcaActions.hca.authorizeSession(ens, {
                 sessionKey: bob,
                 resolver,
-                validUntil: Number(yield* chain.now) + 3600,
+                validUntil: Number(now) + 3600,
               });
-              assert.deepStrictEqual(yield* HcaActions.hca.getSession(ens, { session }), {
+              const activeSession = yield* HcaActions.hca.getSession(ens, { session });
+              assert.deepStrictEqual(activeSession, {
                 valid: true,
                 problem: null,
               });
@@ -201,9 +203,11 @@ describe("HCA", () => {
                 resolver,
               };
               const plan = yield* Actions.registration.register.prepare(ens, registration);
-              assert.isTrue(
-                yield* HcaActions.hca.checkSessionCalls(ens, { session, calls: plan.calls }),
-              );
+              const registerCallsCheck = yield* HcaActions.hca.checkSessionCalls(ens, {
+                session,
+                calls: plan.calls,
+              });
+              assert.isTrue(registerCallsCheck);
               const withSubregistry = yield* Actions.registration.register.prepare(ens, {
                 ...registration,
                 subregistry: bob,
@@ -216,7 +220,8 @@ describe("HCA", () => {
               yield* chain.atTimestamp(
                 BigInt(session.terms.validUntil) + 1n,
                 Effect.gen(function* () {
-                  assert.deepStrictEqual(yield* HcaActions.hca.getSession(ens, { session }), {
+                  const storedSession = yield* HcaActions.hca.getSession(ens, { session });
+                  assert.deepStrictEqual(storedSession, {
                     valid: false,
                     problem: "expired",
                   });
@@ -224,7 +229,8 @@ describe("HCA", () => {
               );
 
               yield* HcaActions.hca.revokeSessionsSync(ens, {});
-              assert.deepStrictEqual(yield* HcaActions.hca.getSession(ens, { session }), {
+              const revokedSession = yield* HcaActions.hca.getSession(ens, { session });
+              assert.deepStrictEqual(revokedSession, {
                 valid: false,
                 problem: "revoked",
               });
@@ -243,11 +249,12 @@ describe("HCA", () => {
         const { alice, bob } = devnet.accounts;
         const ens = clients.make({ account: alice, wallet: wallets.make(alice, { reject: true }) });
 
+        const now = yield* chain.now;
         yield* expectFailure(
           HcaActions.hca.authorizeSession(ens, {
             sessionKey: bob,
             resolver: devnet.contract("v2.publicResolver"),
-            validUntil: Number(yield* chain.now) + 3600,
+            validUntil: Number(now) + 3600,
           }),
           { _tag: "UserRejectedError", code: "USER_REJECTED" },
         );
@@ -260,7 +267,7 @@ describe("HCA", () => {
         const { accounts } = yield* Devnet;
         const chain = yield* Chain;
         const clients = yield* Clients;
-        const context = yield* Effect.context<never>();
+        const context = yield* Effect.context();
         const ens = clients.make({ account: accounts.user });
         const target = "0x000000000000000000000000000000000000dEaD";
         // The target starts reverting (`PUSH1 0 PUSH1 0 REVERT`) once the execution is submitted.

@@ -1,3 +1,5 @@
+import { Array as Arr, Formatter, String as Str, pipe } from "effect";
+
 import { Abis } from "@ensforge/contracts";
 import {
   bytesToHex,
@@ -24,13 +26,13 @@ const u32 = (value: number) => numberToBytes(value, { size: 4 });
 /** A name in DNS wire format, lower-cased as canonical RRSets are. */
 const wireName = (name: string) =>
   concatBytes([
-    ...name
-      .split(".")
-      .filter((label) => label !== "")
-      .map((label) => {
-        const bytes = stringToBytes(label.toLowerCase());
+    ...Arr.map(
+      Arr.filter(pipe(name, Str.split(".")), (label) => label !== ""),
+      (label) => {
+        const bytes = stringToBytes(Str.toLowerCase(label));
         return concatBytes([u8(bytes.length), bytes]);
-      }),
+      },
+    ),
     u8(0),
   ]);
 
@@ -62,7 +64,10 @@ const signedSet = (options: {
     concatBytes([
       u16(options.covered),
       u8(algorithm),
-      u8(options.labels ?? options.name.split(".").filter((label) => label !== "").length),
+      u8(
+        options.labels ??
+          Arr.filter(pipe(options.name, Str.split(".")), (label) => label !== "").length,
+      ),
       u32(3600),
       u32(options.expiration),
       u32(options.inception),
@@ -121,7 +126,7 @@ export const txtRecordsProof = (
     signedSet({
       name: owner,
       covered: tampered.covered ?? RecordType.txt,
-      records: texts.map((text, index) => {
+      records: Arr.map(texts, (text, index) => {
         const bytes = stringToBytes(text);
         const strings = Array.from({ length: Math.max(1, Math.ceil(bytes.length / 255)) }, (_, i) =>
           bytes.subarray(i * 255, (i + 1) * 255),
@@ -129,7 +134,7 @@ export const txtRecordsProof = (
         return record(
           tampered.recordNames?.[index] ?? owner,
           RecordType.txt,
-          concatBytes(strings.flatMap((string) => [u8(string.length), string])),
+          concatBytes(Arr.flatMap(strings, (string) => [u8(string.length), string])),
           tampered.dnsClass,
         );
       }),
@@ -159,7 +164,7 @@ export type Proof = ReturnType<typeof txtProof>;
 /** An ENSIP-17 DNSSEC gateway answer (`IDNSGateway.resolve`) for `proof`. */
 export const gatewayAnswer = (proof: Proof) => ({
   status: 200,
-  body: JSON.stringify({
+  body: Formatter.formatJson({
     data: encodeFunctionResult({
       abi: Abis.shared.dnssecGateway,
       functionName: "resolve",

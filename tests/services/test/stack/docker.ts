@@ -1,4 +1,4 @@
-import { Effect, Schema, Stream } from "effect";
+import { Effect, Schema, Stream, Array as Arr } from "effect";
 import { ChildProcess, ChildProcessSpawner } from "effect/process";
 
 /** A Docker command that failed, with its output. */
@@ -28,15 +28,17 @@ export const docker = Effect.fnUntraced(function* (
         { concurrency: "unbounded" },
       );
       if (exitCode !== 0) {
-        return yield* new DockerError({
-          message: `docker ${args.join(" ")} exited ${exitCode}:\n${stdout}${stderr}`,
+        return yield* DockerError.make({
+          message: `docker ${Arr.join(args, " ")} exited ${exitCode}:\n${stdout}${stderr}`,
         });
       }
       return stdout;
     }),
   ).pipe(
     Effect.catchTag("PlatformError", (cause) =>
-      Effect.fail(new DockerError({ message: `docker ${args[0] ?? ""} failed: ${String(cause)}` })),
+      Effect.fail(
+        DockerError.make({ message: `docker ${args[0] ?? ""} failed: ${String(cause)}` }),
+      ),
     ),
   );
 });

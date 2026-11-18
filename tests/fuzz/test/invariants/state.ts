@@ -1,4 +1,4 @@
-import { Effect } from "effect";
+import { Effect, Record as Rec, Array as Arr } from "effect";
 
 import { Name } from "@ensforge/sdk";
 import { Actions, type Errors } from "@ensforge/sdk/effect";
@@ -13,7 +13,7 @@ const sameAddress = (actual: Address | null, expected: Address | null) =>
   actual === null || expected === null ? actual === expected : isAddressEqual(actual, expected);
 
 const mismatch = (name: string, field: string, actual: unknown, expected: unknown) =>
-  new SequenceFailure({
+  SequenceFailure.make({
     message: `${name}: ensforge reads ${field} ${String(actual)}, the model ${String(expected)}`,
   });
 
@@ -30,6 +30,8 @@ const checkSub = Effect.fnUntraced(function* (
   if (sub !== null && state.status === "registered" && !sameAddress(state.owner, sub)) {
     return yield* mismatch(name, "owner", state.owner, sub);
   }
+
+  return undefined;
 });
 
 /** ensforge's name, record and primary-name reads agree with the model. */
@@ -38,9 +40,9 @@ export const readsMatchModel = Effect.fnUntraced(function* (
   model: Model,
 ): Effect.fn.Return<void, SequenceFailure | Errors.AnyError> {
   const { reader, world } = context;
-  const migrated = world.v1Names.filter((name) => model.v1[name]?.migrated === true);
+  const migrated = Arr.filter(world.v1Names, (name) => model.v1[name]?.migrated === true);
 
-  for (const label of [...v2Labels, ...migrated.map((name) => Name.parse(name).label)]) {
+  for (const label of [...v2Labels, ...Arr.map(migrated, (name) => Name.parse(name).label)]) {
     const name = `${label}.eth`;
     const entry = model.v2[label];
     const status = v2Status(model, world.constants, label);
@@ -93,10 +95,12 @@ export const readsMatchModel = Effect.fnUntraced(function* (
   }
 
   // Only actors whose primary name a command set are known to the model.
-  for (const [address, primary] of Object.entries(model.primary) as [Address, string | null][]) {
+  for (const [address, primary] of Rec.toEntries(model.primary)) {
     const expected =
       primary !== null && forwardOf(model, world, primary) === address ? primary : null;
     const actual = yield* Actions.primaryName.get(reader, { address });
     if (actual !== expected) return yield* mismatch(address, "primary name", actual, expected);
   }
+
+  return undefined;
 });

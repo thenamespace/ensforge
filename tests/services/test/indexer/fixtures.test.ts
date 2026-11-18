@@ -1,11 +1,19 @@
 import { assert, layer } from "@effect/vitest";
-import { Effect, Result } from "effect";
+import {
+  Effect,
+  Option,
+  Predicate,
+  Result,
+  Array as Arr,
+  Record as Rec,
+  String as Str,
+} from "effect";
 
 import { Name } from "@ensforge/sdk";
 import { Actions, CoinType, ContentHash } from "@ensforge/sdk/effect";
 import { Fixtures } from "@ensforge/test-fixtures";
 import { Clients } from "@ensforge/test-integration/support/clients";
-import type { Address, Hex } from "viem";
+import { isAddress, isHex } from "viem";
 
 import { Services } from "../stack/stack.ts";
 import { nameDifferences } from "./compare.ts";
@@ -29,10 +37,13 @@ layer(Services.layer({ profile: "mainnet-shaped" }), { excludeTestServices: true
           const found: string[] = [];
           for (const fixture of fixtures.all) {
             const differences = yield* nameDifferences(ens, fixture.id, fixture.name);
-            found.push(...differences.map((difference) => difference.entry));
+            found.push(...Arr.map(differences, (difference) => difference.entry));
           }
 
-          assert.deepStrictEqual(found.toSorted(), Object.keys(indexedDifferences).toSorted());
+          assert.deepStrictEqual(
+            Arr.sort(found, Str.Order),
+            Arr.sort(Rec.keys(indexedDifferences), Str.Order),
+          );
         }),
       { meta: { cases: ["I01", "I19", "T06"] } },
     );
@@ -55,14 +66,16 @@ layer(Services.layer({ profile: "mainnet-shaped" }), { excludeTestServices: true
               .getRecords(ens, { name })
               .pipe(Effect.orElseSucceed(() => null));
             if (indexed === null || indexed.inventory === null) continue;
-            const texts = Object.keys(indexed.texts);
-            const coins = Object.keys(indexed.addresses).map(BigInt);
+            const texts = Rec.keys(indexed.texts);
+            const coins = Arr.map(Rec.keys(indexed.addresses), BigInt);
             if (texts.length === 0 && coins.length === 0 && indexed.contentHash === null) continue;
 
             // `record.get` refuses content hashes of unknown codecs (K23); read those without it.
-            const contentHash = yield* Effect.try(() =>
-              indexed.contentHash === null ? null : ContentHash.decode(indexed.contentHash),
-            ).pipe(Effect.orElseSucceed(() => undefined));
+            const contentHash = yield* Effect.try({
+              try: () =>
+                indexed.contentHash === null ? null : ContentHash.decode(indexed.contentHash),
+              catch: () => undefined,
+            }).pipe(Effect.orElseSucceed(() => undefined));
             const block = indexed.asOf?.blockNumber;
             const read = yield* Effect.result(
               Actions.record.get(ens, {
@@ -81,22 +94,35 @@ layer(Services.layer({ profile: "mainnet-shaped" }), { excludeTestServices: true
             const chain = read.success;
             compared += 1;
             for (const key of texts) {
-              const value = chain.texts[key] ?? null;
+              const value = Option.getOrNull(Rec.get(chain.texts, key));
               if (value !== indexed.texts[key]) found.push(`${fixture.id}: text ${key}`);
             }
             // bigname serves the record's bytes; `record.get` decodes them (a zero EVM address is null).
             for (const coin of coins) {
-              const value = chain.addresses[`${coin}`] ?? null;
-              const bytes = indexed.addresses[String(coin)] as Hex;
-              if (value?.toLowerCase() !== CoinType.decodeAddress(coin, bytes)?.toLowerCase()) {
+              const value = Option.getOrNull(Rec.get(chain.addresses, `${coin}`));
+              const bytes = indexed.addresses[String(coin)];
+              if (!isHex(bytes)) {
+                found.push(`${fixture.id}: addr ${coin} is not hex`);
+                continue;
+              }
+              const expected = Option.map(Option.fromNullishOr(value), Str.toLowerCase);
+              const actual = Option.map(
+                Option.fromNullishOr(CoinType.decodeAddress(coin, bytes)),
+                Str.toLowerCase,
+              );
+              if (Option.getOrUndefined(expected) !== Option.getOrUndefined(actual)) {
                 found.push(`${fixture.id}: addr ${coin}`);
               }
             }
-            if (
-              contentHash !== undefined &&
-              contentHash?.uri !==
-                (chain as { contentHash?: { uri: string } | null }).contentHash?.uri
-            ) {
+            // The conditional selection above leaves `contentHash` out of the result's type.
+            const chainContentHash = Predicate.hasProperty(chain, "contentHash")
+              ? chain.contentHash
+              : undefined;
+            const chainUri =
+              Predicate.isObject(chainContentHash) && Predicate.hasProperty(chainContentHash, "uri")
+                ? chainContentHash.uri
+                : undefined;
+            if (contentHash !== undefined && contentHash?.uri !== chainUri) {
               found.push(`${fixture.id}: contenthash`);
             }
           }
@@ -104,8 +130,8 @@ layer(Services.layer({ profile: "mainnet-shaped" }), { excludeTestServices: true
           // Fixtures with records exist on every profile; an empty comparison would prove nothing.
           assert.isAbove(compared, 5);
           assert.deepStrictEqual(
-            found.toSorted(),
-            Object.keys(indexedRecordDifferences).toSorted(),
+            Arr.sort(found, Str.Order),
+            Arr.sort(Rec.keys(indexedRecordDifferences), Str.Order),
           );
         }),
       { meta: { cases: ["I19"] } },
@@ -162,7 +188,7 @@ layer(Services.layer({ profile: "mainnet-shaped" }), { excludeTestServices: true
 
           const looked = yield* Actions.indexer.lookup(ens, { inputs: [linked.name, alias] });
           assert.deepStrictEqual(
-            looked.results.map((result) => result.status),
+            Arr.map(looked.results, (result) => result.status),
             ["ok", "notFound"],
           );
         }),
@@ -182,22 +208,26 @@ layer(Services.layer({ profile: "mainnet-shaped" }), { excludeTestServices: true
           const parent = Name.parse(wrapped).parent ?? assert.fail(`${wrapped} has no parent`);
 
           // By expiry, not status: bigname still calls the parent-controlled child active.
-          const all = (yield* Actions.indexer.getSubnames(ens, {
+          const withExpired = yield* Actions.indexer.getSubnames(ens, {
             name: parent,
             includeExpired: true,
-          })).items
-            .map((item) => item.name)
-            .toSorted();
-          const live = (yield* Actions.indexer.getSubnames(ens, {
+          });
+          const withoutExpired = yield* Actions.indexer.getSubnames(ens, {
             name: parent,
             includeExpired: false,
-          })).items
-            .map((item) => item.name)
-            .toSorted();
+          });
+          const all = Arr.sort(
+            Arr.map(withExpired.items, (item) => item.name),
+            Str.Order,
+          );
+          const live = Arr.sort(
+            Arr.map(withoutExpired.items, (item) => item.name),
+            Str.Order,
+          );
           assert.includeMembers(all, [wrapped, emancipated]);
           assert.deepStrictEqual(
             live,
-            all.filter((name) => name !== wrapped && name !== emancipated),
+            Arr.filter(all, (name) => name !== wrapped && name !== emancipated),
           );
 
           // A child whose ENSv1 owner was cleared stays listed, as `unregistered`.
@@ -207,7 +237,7 @@ layer(Services.layer({ profile: "mainnet-shaped" }), { excludeTestServices: true
             includeExpired: false,
           });
           assert.deepStrictEqual(
-            cleared.items.map((item) => [item.name, item.status]),
+            Arr.map(cleared.items, (item) => [item.name, item.status]),
             [[deleted, "unregistered"]],
           );
         }),
@@ -246,10 +276,15 @@ layer(Services.layer({ profile: "mainnet-shaped" }), { excludeTestServices: true
           // Not premigrated: ENSv2 holds nothing for it, so resolution no longer reaches it.
           const plain = fixtures.byId("v1.unwrapped");
 
+          const owner = plain.facts["owner"];
+          if (typeof owner !== "string" || !isAddress(owner)) {
+            assert.fail("v1.unwrapped has no owner fact");
+          }
+
           const indexed = yield* Actions.indexer.getName(ens, { name: plain.name });
           assert.deepInclude(indexed, {
             authority: "ensV1",
-            owner: plain.facts["owner"] as Address,
+            owner,
             resolver: null,
           });
           assert.strictEqual(indexed?.ensV1?.expiresAt, BigInt(String(plain.facts["expiry"])));

@@ -1,5 +1,5 @@
 import { assert, describe } from "@effect/vitest";
-import { Effect } from "effect";
+import { Effect, String as Str, Array as Arr, Record as Rec, pipe } from "effect";
 
 import { Abis } from "@ensforge/contracts";
 import { CoinType } from "@ensforge/sdk";
@@ -36,7 +36,7 @@ describe("record reads", () => {
 
             const records = yield* Actions.record.get(reader, {
               name: fixtures.byId("records.v1").name,
-              texts: [...Object.keys(texts), "missing"] as readonly string[],
+              texts: [...Rec.keys(texts), "missing"] as readonly string[],
               // Results are keyed by the coin as given: Polygon's reads back as "2147483785".
               addresses: ["eth", "btc", "base", CoinType.fromChainId(137), "op"],
               contentHash: true,
@@ -108,23 +108,28 @@ describe("record reads", () => {
             const { reader } = yield* Clients;
             const nameOf = (id: string) => fixtures.byId(id).name;
 
+            const address = yield* Actions.record.getAddress(reader, {
+              name: nameOf("records.btc-taproot"),
+              coin: "btc",
+            });
             assert.strictEqual(
-              yield* Actions.record.getAddress(reader, {
-                name: nameOf("records.btc-taproot"),
-                coin: "btc",
-              }),
+              address,
               "bc1p0xlxvlhemja6c4dqv22uapctqupfhlxm9h8z3k2e72q4k9hcz7vqzk5jj0",
             );
-            const decoded = yield* Effect.forEach(["ipns", "swarm", "onion3", "arweave"], (codec) =>
-              Actions.record
-                .getContentHash(reader, { name: nameOf(`records.contenthash.${codec}`) })
-                .pipe(Effect.map((hash) => hash?.protocol)),
+            const decoded = yield* Effect.forEach(
+              ["ipns", "swarm", "onion3", "arweave"],
+              (codec) =>
+                Actions.record
+                  .getContentHash(reader, { name: nameOf(`records.contenthash.${codec}`) })
+                  .pipe(Effect.map((hash) => hash?.protocol)),
+              { concurrency: 1 },
             );
             assert.deepStrictEqual(decoded, ["ipns", "bzz", "onion3", "ar"]);
 
             // An unknown codec is no content hash: null, or a typed error when strict.
             const unknown = nameOf("records.contenthash.unknown");
-            assert.isNull(yield* Actions.record.getContentHash(reader, { name: unknown }));
+            const contentHash = yield* Actions.record.getContentHash(reader, { name: unknown });
+            assert.isNull(contentHash);
             yield* expectFailure(
               Actions.record.getContentHash(reader, { name: unknown, strict: true }),
               {
@@ -160,20 +165,22 @@ describe("record reads", () => {
             const avatarOf = (id: string) =>
               Actions.record.getAvatar(reader, { name: fixtures.byId(id).name });
 
-            assert.strictEqual(
-              yield* avatarOf("records.avatar.https"),
-              "https://ensforge.com/avatar.png",
-            );
+            const httpsAvatar = yield* avatarOf("records.avatar.https");
+            assert.strictEqual(httpsAvatar, "https://ensforge.com/avatar.png");
             // Returned as data; consumers sanitize SVG.
             assert.match(
               (yield* avatarOf("records.avatar.data-svg")) ?? "",
               /^data:image\/svg\+xml/u,
             );
-            assert.isNull(yield* avatarOf("records.avatar.unknown-scheme"));
+            const unknownSchemeAvatar = yield* avatarOf("records.avatar.unknown-scheme");
+            assert.isNull(unknownSchemeAvatar);
             // NFTs count only when the name's ETH address holds them (ENSIP-12).
-            assert.strictEqual(yield* avatarOf("records.avatar.erc721-owned"), avatarImage);
-            assert.strictEqual(yield* avatarOf("records.avatar.erc1155"), avatarImage);
-            assert.isNull(yield* avatarOf("records.avatar.erc721-not-owned"));
+            const ownedErc721Avatar = yield* avatarOf("records.avatar.erc721-owned");
+            assert.strictEqual(ownedErc721Avatar, avatarImage);
+            const erc1155Avatar = yield* avatarOf("records.avatar.erc1155");
+            assert.strictEqual(erc1155Avatar, avatarImage);
+            const unownedErc721Avatar = yield* avatarOf("records.avatar.erc721-not-owned");
+            assert.isNull(unownedErc721Avatar);
           }),
         { meta: { cases: ["K33", "K34", "K35", "K36", "K38"] } },
       );
@@ -191,7 +198,7 @@ describe("record reads", () => {
 
           const records = yield* Actions.record.get(reader, {
             name: fixtures.byId("records.v2").name,
-            texts: Object.keys(texts) as readonly string[],
+            texts: Rec.keys(texts) as readonly string[],
             addresses: ["eth", "btc", "base", CoinType.fromChainId(137)],
             data: ["eth.ens.example", "missing"],
             abi: { contentTypes: 1n << 255n },
@@ -221,8 +228,10 @@ describe("record reads", () => {
           const urlOf = (id: string) =>
             Actions.record.getText(reader, { name: fixtures.byId(id).name, key: "url" });
 
-          assert.strictEqual(yield* urlOf("records.v2.default"), "https://default.example");
-          assert.strictEqual(yield* urlOf("records.v2.linked"), texts.url);
+          const defaultUrl = yield* urlOf("records.v2.default");
+          assert.strictEqual(defaultUrl, "https://default.example");
+          const linkedUrl = yield* urlOf("records.v2.linked");
+          assert.strictEqual(linkedUrl, texts.url);
         }),
       { meta: { cases: ["R21", "R22", "R23", "M:B7"] } },
     );
@@ -239,7 +248,7 @@ const createSubnames = (labels: readonly string[]) =>
     const resolver = devnet.contract("v1.publicResolver");
     let name = "v1-hierarchy.eth";
 
-    for (const label of labels.toReversed()) {
+    for (const label of Arr.reverse(labels)) {
       yield* chain.write({
         address: devnet.contract("v1.registry"),
         abi: Abis.v1.ensRegistry,
@@ -273,8 +282,9 @@ describe("record reads of names at the encoding limits", () => {
 
           yield* chain.isolated(
             Effect.gen(function* () {
-              const name = yield* createSubnames(["d".repeat(300)]);
-              assert.strictEqual(yield* Actions.record.getAddress(reader, { name }), accounts.bob);
+              const name = yield* createSubnames([pipe("d", Str.repeat(300))]);
+              const address = yield* Actions.record.getAddress(reader, { name });
+              assert.strictEqual(address, accounts.bob);
             }),
           );
         }),
@@ -292,9 +302,10 @@ describe("record reads of names at the encoding limits", () => {
           yield* chain.isolated(
             Effect.gen(function* () {
               const name = yield* createSubnames(
-                Array.from({ length: 10 }, (_, level) => `${level}`.padEnd(63, "e")),
+                Array.from({ length: 10 }, (_, level) => pipe(`${level}`, Str.padEnd(63, "e"))),
               );
-              assert.strictEqual(yield* Actions.record.getAddress(reader, { name }), accounts.bob);
+              const address = yield* Actions.record.getAddress(reader, { name });
+              assert.strictEqual(address, accounts.bob);
             }),
           );
         }),

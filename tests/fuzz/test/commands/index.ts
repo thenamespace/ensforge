@@ -42,4 +42,7 @@ const specs: { readonly [K in Command["kind"]]: CommandSpec<Extract<Command, { k
 };
 
 export const specOf = <C extends Command>(command: C) =>
+  // `specs` is keyed by `kind`, so the spec found for `command` is the one for `C`; TypeScript
+  // cannot correlate the two.
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion
   specs[command.kind] as unknown as CommandSpec<C>;

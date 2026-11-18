@@ -1,11 +1,11 @@
 import { assert, describe } from "@effect/vitest";
-import { Effect } from "effect";
+import { Effect, String as Str, Record as Rec, pipe } from "effect";
 
 import { Abis } from "@ensforge/contracts";
 import { CoinType, Ensforge, Name } from "@ensforge/sdk";
-import { Actions, type Errors } from "@ensforge/sdk/effect";
+import { Actions, Errors } from "@ensforge/sdk/effect";
 import { Chain, Devnet } from "@ensforge/test-devnet";
-import { Fixtures } from "@ensforge/test-fixtures";
+import { factAddress, Fixtures } from "@ensforge/test-fixtures";
 import { expectFailure } from "@ensforge/test-harness";
 import {
   concat,
@@ -38,7 +38,7 @@ describe("primaryName.get", () => {
             const fixtures = yield* Fixtures;
             const { reader } = yield* Clients;
 
-            for (const [id, name] of Object.entries({
+            for (const [id, name] of Rec.toEntries({
               "primary.addr-reverse": "rev-alice.eth",
               "primary.default-reverse": "rev-bob.eth",
               // `addr.reverse` takes priority over `default.reverse`.
@@ -48,8 +48,13 @@ describe("primaryName.get", () => {
               "primary.reverse-2020": "rev-2020.eth",
             })) {
               const address = String(fixtures.byId(id).facts["address"]);
-              assert.strictEqual(yield* Actions.primaryName.get(reader, { address }), name, id);
-              assert.isNull(yield* Actions.primaryName.get(reader, { address, coin: "base" }), id);
+              const defaultPrimaryName = yield* Actions.primaryName.get(reader, { address });
+              assert.strictEqual(defaultPrimaryName, name, id);
+              const basePrimaryName = yield* Actions.primaryName.get(reader, {
+                address,
+                coin: "base",
+              });
+              assert.isNull(basePrimaryName, id);
             }
           }),
         { meta: { cases: ["M:C3", "P01", "P05", "P22", "M:D10"] } },
@@ -70,14 +75,20 @@ describe("primaryName.get", () => {
             };
 
             // The forward address belongs to someone else.
-            assert.isNull(yield* read("primary.mismatch"));
-            assert.strictEqual(yield* read("primary.mismatch", false), "v1-plain.eth");
+            const mismatched = yield* read("primary.mismatch");
+            assert.isNull(mismatched);
+            const mismatchedUnverified = yield* read("primary.mismatch", false);
+            assert.strictEqual(mismatchedUnverified, "v1-plain.eth");
             // Registered with a reverse record but no forward address.
-            assert.isNull(yield* read("primary.at-registration"));
-            assert.strictEqual(yield* read("primary.at-registration", false), "rev-registered.eth");
+            const atRegistration = yield* read("primary.at-registration");
+            assert.isNull(atRegistration);
+            const atRegistrationUnverified = yield* read("primary.at-registration", false);
+            assert.strictEqual(atRegistrationUnverified, "rev-registered.eth");
             // `Rev-Approved.eth` is never normalized into a primary name.
-            assert.isNull(yield* read("primary.not-normalized"));
-            assert.isNull(yield* read("primary.not-normalized", false));
+            const notNormalized = yield* read("primary.not-normalized");
+            assert.isNull(notNormalized);
+            const notNormalizedUnverified = yield* read("primary.not-normalized", false);
+            assert.isNull(notNormalizedUnverified);
           }),
         { meta: { cases: ["P07", "P08", "P26"] } },
       );
@@ -97,7 +108,10 @@ describe("primaryName.get", () => {
                 address: devnet.contract("v1.registry"),
                 abi: Abis.v1.ensRegistry,
                 functionName: "setResolver",
-                args: [namehash(`${carol.slice(2).toLowerCase()}.addr.reverse`), resolver],
+                args: [
+                  namehash(`${Str.toLowerCase(pipe(carol, Str.slice(2)))}.addr.reverse`),
+                  resolver,
+                ],
                 account: carol,
               });
 
@@ -106,8 +120,11 @@ describe("primaryName.get", () => {
             yield* chain.isolated(
               Effect.gen(function* () {
                 yield* setResolver(zeroAddress);
+                const primaryNameAfterClear = yield* Actions.primaryName.get(reader, {
+                  address: carol,
+                });
                 assert.strictEqual(
-                  yield* Actions.primaryName.get(reader, { address: carol }),
+                  primaryNameAfterClear,
                   profile === "v1-live" ? "rev-carol-default.eth" : null,
                 );
               }),
@@ -117,13 +134,19 @@ describe("primaryName.get", () => {
               ["ENSIP-3 resolver", devnet.contract("legacy.defaultReverseResolver2017")],
               ["reverting resolver", devnet.contract("mock.hostile.revert")],
               ["resolver without code", devnet.accounts.bob],
-              ["resolver without name()", fixtures.byId("resolver.empty-answer").facts["resolver"]],
+              [
+                "resolver without name()",
+                factAddress(fixtures.byId("resolver.empty-answer").facts, "resolver"),
+              ],
             ] as const) {
               yield* chain.isolated(
                 Effect.gen(function* () {
-                  yield* setResolver(resolver as Address);
+                  yield* setResolver(resolver);
 
-                  assert.isNull(yield* Actions.primaryName.get(reader, { address: carol }), label);
+                  const primaryNameUnderResolver = yield* Actions.primaryName.get(reader, {
+                    address: carol,
+                  });
+                  assert.isNull(primaryNameUnderResolver, label);
                   yield* expectFailure(
                     Actions.primaryName.get(reader, { address: carol, strict: true }),
                     { _tag: "NotFoundError", code: "PRIMARY_NAME_NOT_SET" },
@@ -167,11 +190,15 @@ describe("primaryName.get", () => {
                     ]),
                   });
 
-                  assert.isNull(yield* Actions.primaryName.get(reader, { address: carol }), stored);
-                  assert.strictEqual(
-                    yield* Actions.primaryName.get(reader, { address: carol, verify: false }),
-                    unverified,
-                  );
+                  const verifiedPrimaryName = yield* Actions.primaryName.get(reader, {
+                    address: carol,
+                  });
+                  assert.isNull(verifiedPrimaryName, stored);
+                  const unverifiedPrimaryName = yield* Actions.primaryName.get(reader, {
+                    address: carol,
+                    verify: false,
+                  });
+                  assert.strictEqual(unverifiedPrimaryName, unverified);
                 }),
               );
             }
@@ -211,12 +238,16 @@ describe("primaryName.get", () => {
                     account: carol,
                   });
 
-                  assert.isNull(yield* Actions.primaryName.get(reader, { address: carol }), id);
+                  const primaryNameAfterSet = yield* Actions.primaryName.get(reader, {
+                    address: carol,
+                  });
+                  assert.isNull(primaryNameAfterSet, id);
                   const error = yield* expectFailure(
                     Actions.primaryName.get(reader, { address: carol, strict: true }),
                     { _tag: "NotFoundError", code },
                   );
-                  const cause = error.cause as Errors.AnyError;
+                  const cause = error.cause;
+                  if (!Errors.is(cause)) assert.fail("the cause is not an ensforge error");
                   if (cause._tag === "NotFoundError") assert.strictEqual(cause.resource, name, id);
                   else if (code === "PRIMARY_NAME_MISMATCH") {
                     assert.strictEqual(cause.context.selector, "0x3b3b57de", id);
@@ -244,10 +275,11 @@ describe("primaryName.get", () => {
                   addresses: { [String(CoinType.fromChainId(0))]: bob },
                 });
 
-                assert.strictEqual(
-                  yield* Actions.primaryName.get(ens, { address: bob, coin: "base" }),
-                  "rev-bob.eth",
-                );
+                const basePrimaryName = yield* Actions.primaryName.get(ens, {
+                  address: bob,
+                  coin: "base",
+                });
+                assert.strictEqual(basePrimaryName, "rev-bob.eth");
               }),
             );
           }),
@@ -269,7 +301,7 @@ describe("primaryName.get", () => {
             yield* chain.isolated(
               Effect.gen(function* () {
                 yield* chain.write({
-                  address: facts["resolver"] as Address,
+                  address: factAddress(facts, "resolver"),
                   abi: parseAbi(["function setRevertURL(string)"]),
                   functionName: "setRevertURL",
                   args: [gateway.url],
@@ -283,10 +315,10 @@ describe("primaryName.get", () => {
                   account: alice,
                 });
 
-                assert.strictEqual(
-                  yield* Actions.primaryName.get(reader, { address: alice }),
-                  name,
-                );
+                const primaryNameViaGateway = yield* Actions.primaryName.get(reader, {
+                  address: alice,
+                });
+                assert.strictEqual(primaryNameViaGateway, name);
                 assert.isAbove(gateway.requests(), 0);
               }),
             );
@@ -306,15 +338,16 @@ describe("primaryName.get", () => {
             const { reader } = yield* Clients;
             const gateways = yield* Gateways;
             const { owner, alice } = devnet.accounts;
+            const offchain = (yield* Fixtures).byId("resolver.offchain");
             const resolver = {
-              address: (yield* Fixtures).byId("resolver.offchain").facts["resolver"] as Address,
+              address: factAddress(offchain.facts, "resolver"),
               abi: parseAbi(["function setRevertURL(string)", "function setResponse(bytes,bytes)"]),
               account: owner,
             } as const;
             const nameCall = encodeFunctionData({
               abi: Abis.shared.nameResolver,
               functionName: "name",
-              args: [namehash(`${alice.slice(2).toLowerCase()}.8000000a.reverse`)],
+              args: [namehash(`${Str.toLowerCase(pipe(alice, Str.slice(2)))}.8000000a.reverse`)],
             });
             const failing = yield* gateways.serve(() => ({
               status: 500,
@@ -404,17 +437,20 @@ describe("primaryName.get", () => {
             yield* chain.isolated(
               Effect.gen(function* () {
                 yield* Actions.primaryName.setSync(ens, { name, verify: false });
-                assert.isNull(yield* primary);
+                const primaryUnforwarded = yield* primary;
+                assert.isNull(primaryUnforwarded);
 
                 yield* Actions.subname.createSync(ens, {
                   name,
                   resolver: "parent",
                   records: { addresses: { eth: alice } },
                 });
-                assert.strictEqual(yield* primary, name);
+                const primaryAfterSubname = yield* primary;
+                assert.strictEqual(primaryAfterSubname, name);
 
                 yield* Actions.subname.removeSync(ens, { name });
-                assert.isNull(yield* primary);
+                const primaryAfterRemoval = yield* primary;
+                assert.isNull(primaryAfterRemoval);
               }),
             );
           }),
@@ -446,10 +482,13 @@ describe("primaryName.get", () => {
                   account: alice,
                 });
 
-                assert.isNull(yield* Actions.primaryName.get(ens, { address: alice }));
-                assert.isNull(
-                  yield* Actions.primaryName.get(ens, { address: alice, verify: false }),
-                );
+                const verifiedPrimaryName = yield* Actions.primaryName.get(ens, { address: alice });
+                assert.isNull(verifiedPrimaryName);
+                const unverifiedPrimaryName = yield* Actions.primaryName.get(ens, {
+                  address: alice,
+                  verify: false,
+                });
+                assert.isNull(unverifiedPrimaryName);
               }),
             );
           }),

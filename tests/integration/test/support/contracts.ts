@@ -14,11 +14,14 @@ export const ethEntry = Effect.fnUntraced(function* (name: string) {
   const read = { address: devnet.contract("v2.ethRegistry"), abi: Abis.v2.permissionedRegistry };
   const label = Name.parse(name).label;
 
-  return yield* Effect.all({
-    owner: chain.read({ ...read, functionName: "findOwner", args: [label] }),
-    expiry: chain.read({ ...read, functionName: "findExpiry", args: [label] }),
-    tokenId: chain.read({ ...read, functionName: "findTokenId", args: [label] }),
-  });
+  return yield* Effect.all(
+    {
+      owner: chain.read({ ...read, functionName: "findOwner", args: [label] }),
+      expiry: chain.read({ ...read, functionName: "findExpiry", args: [label] }),
+      tokenId: chain.read({ ...read, functionName: "findTokenId", args: [label] }),
+    },
+    { concurrency: 1 },
+  );
 });
 
 /**
@@ -30,30 +33,33 @@ export const v1Owners = Effect.fnUntraced(function* (name: string) {
   const chain = yield* Chain;
   const node = namehash(name);
 
-  return yield* Effect.all({
-    registry: chain.read({
-      address: devnet.contract("v1.registry"),
-      abi: Abis.v1.ensRegistry,
-      functionName: "owner",
-      args: [node],
-    }),
-    registrant: chain
-      .read({
-        address: devnet.contract("v1.baseRegistrar"),
-        abi: Abis.v1.baseRegistrar,
-        functionName: "ownerOf",
-        args: [Name.toTokenId(name)],
-      })
-      .pipe(Effect.orElseSucceed(() => undefined)),
-    wrapped: chain
-      .read({
-        address: devnet.contract("v1.nameWrapper"),
-        abi: Abis.v1.nameWrapper,
-        functionName: "getData",
-        args: [hexToBigInt(node)],
-      })
-      .pipe(Effect.orElseSucceed(() => undefined)),
-  });
+  return yield* Effect.all(
+    {
+      registry: chain.read({
+        address: devnet.contract("v1.registry"),
+        abi: Abis.v1.ensRegistry,
+        functionName: "owner",
+        args: [node],
+      }),
+      registrant: chain
+        .read({
+          address: devnet.contract("v1.baseRegistrar"),
+          abi: Abis.v1.baseRegistrar,
+          functionName: "ownerOf",
+          args: [Name.toTokenId(name)],
+        })
+        .pipe(Effect.orElseSucceed(() => undefined)),
+      wrapped: chain
+        .read({
+          address: devnet.contract("v1.nameWrapper"),
+          abi: Abis.v1.nameWrapper,
+          functionName: "getData",
+          args: [hexToBigInt(node)],
+        })
+        .pipe(Effect.orElseSucceed(() => undefined)),
+    },
+    { concurrency: 1 },
+  );
 });
 
 /** `account`'s balance of the devnet's mock USDC. */

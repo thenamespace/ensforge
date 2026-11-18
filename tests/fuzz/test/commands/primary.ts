@@ -35,7 +35,7 @@ export const primary: CommandSpec<typeof Primary.Type> = {
   run: (context, model, command) =>
     Effect.gen(function* () {
       const { world } = context;
-      const name = command.clear ? null : (pick(targetsOf(world), command.name) as string);
+      const name = command.clear ? null : pick(targetsOf(world), command.name);
       const actor = actorOf(world, command.actor);
       const expected = stable(model, (at) =>
         name === null || forwardOf(at, world, name) === actor.address

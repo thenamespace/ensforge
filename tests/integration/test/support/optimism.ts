@@ -1,5 +1,5 @@
 import { NodeServices } from "@effect/platform-node";
-import { Context, Effect, Layer } from "effect";
+import { Context, Effect, Layer, Array as Arr } from "effect";
 
 import { Abis, Deployments } from "@ensforge/contracts";
 import type { Ensforge } from "@ensforge/sdk";
@@ -34,7 +34,7 @@ const resolveAbi = parseAbi(["function resolve(bytes name, bytes data) view retu
 
 /** An RPC request to the L2 (or the devnet), failing with `ChainError`. */
 const l2 = <A>(method: string, run: () => Promise<A>) =>
-  Effect.tryPromise({ try: run, catch: (cause) => new ChainError({ method, cause }) });
+  Effect.tryPromise({ try: run, catch: (cause) => ChainError.make({ method, cause }) });
 
 /** How a test's wallet on the L2 behaves. */
 export type L2WalletOptions = {
@@ -69,6 +69,8 @@ export class Optimism extends Context.Service<
       effect: Effect.Effect<A, E, R>,
     ) => Effect.Effect<A, E | ChainError, R>;
   }
+  // Service keys are `<package>/<Service>`; this file is not named after the service.
+  // oxlint-disable-next-line effecttsgo/deterministic-keys
 >()("@ensforge/test-integration/Optimism") {
   static readonly layer = Layer.effect(
     Optimism,
@@ -86,12 +88,15 @@ export class Optimism extends Context.Service<
       // factory (at the same address on both chains, so it predicts the same accounts).
       const copies = [
         [devnet.contract("mock.l2ReverseRegistrar"), registrar],
-        ...[
-          "mock.smartContractWallet",
-          "mock.ownable",
-          "mock.erc6492WalletFactory",
-          "canonical.universalSigValidator",
-        ].map((key) => [devnet.contract(key), devnet.contract(key)] as const),
+        ...Arr.map(
+          [
+            "mock.smartContractWallet",
+            "mock.ownable",
+            "mock.erc6492WalletFactory",
+            "canonical.universalSigValidator",
+          ],
+          (key) => [devnet.contract(key), devnet.contract(key)] as const,
+        ),
       ];
       for (const [from, to] of copies) {
         const code = (yield* chain.code(from)) ?? "0x";
@@ -114,10 +119,9 @@ export class Optimism extends Context.Service<
           }),
         );
       const passTime = (seconds: number) =>
-        l2("evm_increaseTime", async () => {
-          await client.increaseTime({ seconds });
-          await client.mine({ blocks: 1 });
-        });
+        l2("evm_increaseTime", () => client.increaseTime({ seconds })).pipe(
+          Effect.andThen(l2("evm_mine", () => client.mine({ blocks: 1 }))),
+        );
 
       // The gateway answers `name(node)` for `<address>.8000000a.reverse` from the registrar.
       const gateway = yield* gateways.serveLookups(({ data }) => {

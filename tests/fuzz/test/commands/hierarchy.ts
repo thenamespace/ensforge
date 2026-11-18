@@ -38,7 +38,7 @@ const expectation = (
   model: Model,
   world: World,
   target: Target,
-  actor: string,
+  actor: Address,
   remove: boolean,
 ): Expectation =>
   stable(model, (at) => {
@@ -75,7 +75,7 @@ const expectation = (
       return either("NAME_NOT_AVAILABLE", "MISSING_ROLES", "NOT_OWNER");
     }
     // An operator's reach is left to the permission oracle.
-    if (isOperator(at, entry.owner, actor as Address)) return either("MISSING_ROLES", "NOT_OWNER");
+    if (isOperator(at, entry.owner, actor)) return either("MISSING_ROLES", "NOT_OWNER");
     // The subregistry's roles belong to whoever deployed it.
     const admin = entry.subregistryAdmin ?? entry.owner;
     if (actor === entry.owner && actor === admin) return succeeds;
@@ -88,7 +88,7 @@ export const subname: CommandSpec<typeof Subname.Type> = {
   run: (context, model, command) =>
     Effect.gen(function* () {
       const { world } = context;
-      const target = targetOf(model, world, pick(targetsOf(world), command.name) as string);
+      const target = targetOf(model, world, pick(targetsOf(world), command.name));
       const actor = actorOf(world, command.actor);
       const name = `${subLabel}.${target.name}`;
       const expected = expectation(model, world, target, actor.address, command.remove);

@@ -1,5 +1,5 @@
 import { assert, layer } from "@effect/vitest";
-import { Effect } from "effect";
+import { Effect, Array as Arr } from "effect";
 
 import { Duration } from "@ensforge/sdk";
 import { Actions } from "@ensforge/sdk/effect";
@@ -37,7 +37,8 @@ layer(Services.layer({ profile: "mainnet-shaped" }), { excludeTestServices: true
         });
 
         // Resolution on-chain.
-        assert.strictEqual(yield* Actions.primaryName.get(ens, { address: carol }), name);
+        const primaryNameOnChain = yield* Actions.primaryName.get(ens, { address: carol });
+        assert.strictEqual(primaryNameOnChain, name);
         assert.deepStrictEqual(
           (yield* Actions.record.get(ens, { name, texts: ["url"], addresses: ["eth"] })).texts,
           { url: "https://carol.example" },
@@ -119,7 +120,7 @@ layer(Services.layer({ profile: "mainnet-shaped" }), { excludeTestServices: true
         });
         yield* Actions.subname.createSync(owner, { name: `docs.${parent}` });
         const registry = yield* Actions.registry.get(owner, { name: parent });
-        if (registry === null) return assert.fail(`${parent} has no subname registry`);
+        if (registry === null) assert.fail(`${parent} has no subname registry`);
 
         // Before the grant the teammate is refused; with the registrar role it registers children.
         yield* expectFailure(Actions.subname.create(teammate, { name: `api.${parent}` }), {
@@ -137,7 +138,7 @@ layer(Services.layer({ profile: "mainnet-shaped" }), { excludeTestServices: true
         yield* services.waitForIndexed();
         const page = yield* Actions.indexer.getSubnames(owner, { name: parent });
         assert.sameDeepMembers(
-          page.items.map((item) => [item.name, item.owner]),
+          Arr.map(page.items, (item) => [item.name, item.owner]),
           [
             [`docs.${parent}`, carol],
             [`api.${parent}`, bob],
@@ -170,7 +171,7 @@ layer(Services.layer({ profile: "mainnet-shaped" }), { excludeTestServices: true
 
         yield* services.waitForIndexed();
         const history = yield* Actions.indexer.getHistory(ens, { name, order: "asc" });
-        const types = history.items.map((event) => event.type);
+        const types = Arr.map(history.items, (event) => event.type);
         assert.includeMembers(types, ["registration", "renewal", "transfer"]);
         assert.isBelow(types.indexOf("registration"), types.indexOf("renewal"));
         assert.isBelow(types.indexOf("renewal"), types.lastIndexOf("transfer"));

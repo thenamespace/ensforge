@@ -1,7 +1,17 @@
 import { fileURLToPath } from "node:url";
 
 import { NodeServices } from "@effect/platform-node";
-import { Context, Effect, Layer, Schedule, Schema } from "effect";
+import {
+  Context,
+  Effect,
+  Formatter,
+  Layer,
+  Schedule,
+  Schema,
+  Array as Arr,
+  String as Str,
+  pipe,
+} from "effect";
 import { ChildProcessSpawner } from "effect/process";
 
 import { Actions } from "@ensforge/sdk/effect";
@@ -41,19 +51,21 @@ const until = <E extends { readonly message: string }>(
     Effect.retry({ schedule: Schedule.spaced("250 millis"), times: 1200 }),
     Effect.catch((error) =>
       Effect.flatMap(logs, (tail) =>
-        Effect.fail(new StackError({ message: `${error.message}\n${tail}` })),
+        Effect.fail(StackError.make({ message: `${error.message}\n${tail}` })),
       ),
     ),
   );
 
 const reachable = (url: string, init?: RequestInit) =>
   Effect.tryPromise({
+    // The probe only needs a status; `effect/http` is an unstable API.
+    // oxlint-disable-next-line effecttsgo/global-fetch-in-effect
     try: () => fetch(url, init),
-    catch: (cause) => new StackError({ message: `${url}: ${String(cause)}` }),
+    catch: (cause) => StackError.make({ message: `${url}: ${String(cause)}` }),
   }).pipe(
     Effect.filterOrFail(
       (response) => response.ok,
-      (response) => new StackError({ message: `${url} answered ${response.status}` }),
+      (response) => StackError.make({ message: `${url} answered ${response.status}` }),
     ),
   );
 
@@ -77,7 +89,9 @@ const startStack = Effect.fnUntraced(function* (services: readonly ServiceSet[])
   const indexer = services.includes("indexer");
   const aa = services.includes("aa");
   const port = Effect.promise(() => getPort());
-  const [bignamePort, altoPort, paymasterPort] = yield* Effect.all([port, port, port]);
+  const [bignamePort, altoPort, paymasterPort] = yield* Effect.all([port, port, port], {
+    concurrency: 1,
+  });
 
   const utility = altoAccount(20);
   const executor = altoAccount(21);
@@ -97,7 +111,7 @@ const startStack = Effect.fnUntraced(function* (services: readonly ServiceSet[])
     PAYMASTER_PORT: String(paymasterPort),
     ALTO_UTILITY_KEY: utility.key,
     ALTO_EXECUTOR_KEY: executor.key,
-    DEVNET_RPC_URL: devnet.rpcUrl.replace("127.0.0.1", "host.docker.internal"),
+    DEVNET_RPC_URL: pipe(devnet.rpcUrl, Str.replace("127.0.0.1", "host.docker.internal")),
   };
   const compose = (args: readonly string[]) =>
     docker(
@@ -107,7 +121,7 @@ const startStack = Effect.fnUntraced(function* (services: readonly ServiceSet[])
         composeFile,
         "--project-name",
         project,
-        ...services.flatMap((set) => ["--profile", set]),
+        ...Arr.flatMap(services, (set) => ["--profile", set]),
         ...args,
       ],
       env,
@@ -130,7 +144,7 @@ const startStack = Effect.fnUntraced(function* (services: readonly ServiceSet[])
         Effect.map((status) => status.chains[sepolia.id]?.indexed ?? null),
         Effect.filterOrFail(
           (indexed) => indexed !== null && indexed >= target,
-          (indexed) => new StackError({ message: `indexed ${indexed}, waiting for ${target}` }),
+          (indexed) => StackError.make({ message: `indexed ${indexed}, waiting for ${target}` }),
         ),
       ),
       logs,
@@ -144,7 +158,7 @@ const startStack = Effect.fnUntraced(function* (services: readonly ServiceSet[])
     const supportedEntryPoints = {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
+      body: Formatter.formatJson({
         jsonrpc: "2.0",
         id: 1,
         method: "eth_supportedEntryPoints",
@@ -184,6 +198,8 @@ export class Services extends Context.Service<
     /** The ERC-7677 paymaster's URL, which sponsors every UserOperation (`aa`). */
     readonly paymasterUrl: string;
   }
+  // Service keys are `<package>/<Service>`; this file is not named after the service.
+  // oxlint-disable-next-line effecttsgo/deterministic-keys
 >()("@ensforge/test-services/Services") {
   static readonly layer = (options: {
     readonly profile: ProfileName;

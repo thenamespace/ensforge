@@ -1,11 +1,12 @@
-import { Effect, Exit } from "effect";
+import { Effect, Exit, Formatter, Array as Arr, String as Str } from "effect";
 
+import type { Errors } from "@ensforge/sdk";
 import { Actions } from "@ensforge/sdk/effect";
 import type { Devnet } from "@ensforge/test-devnet";
 import type { Client } from "@ensforge/test-integration/support/clients";
 import { isAddress, zeroAddress, type Address } from "viem";
 
-import { ensjs, viem, type Reads } from "./libraries.ts";
+import { ensjs, viem, type LibraryError, type Reads } from "./libraries.ts";
 
 /** The libraries compared with ensforge. */
 export const libraries = ["viem", "ensjs"] as const;
@@ -20,19 +21,20 @@ export type Reading = { readonly field: string; readonly ensforge: Outcome } & R
   Outcome
 >;
 
-const settle = (read: Effect.Effect<unknown, unknown, Devnet>) =>
+const settle = (read: Effect.Effect<unknown, LibraryError | Errors.AnyError, Devnet>) =>
   Effect.map(Effect.exit(read), (exit): Outcome => {
     if (Exit.isFailure(exit)) return "error";
     const value = exit.value;
     if (value === null || value === undefined || value === "" || value === zeroAddress) return null;
-    return typeof value === "string" && isAddress(value) ? value.toLowerCase() : String(value);
+    if (typeof value !== "string") return Formatter.format(value);
+    return isAddress(value) ? Str.toLowerCase(value) : value;
   });
 
 /** Makes the same read with ensforge (as `ens`), viem and ensjs. */
 const readEach = (
   ens: Client,
   field: string,
-  read: (reads: Reads) => Effect.Effect<unknown, unknown, Devnet>,
+  read: (reads: Reads) => Effect.Effect<unknown, LibraryError | Errors.AnyError, Devnet>,
 ) => {
   const ensforge: Reads = {
     address: (name) => Actions.record.getAddress(ens, { name }),
@@ -48,10 +50,13 @@ const readEach = (
 
 /** The ETH address and `url` text of `name`, as each library reads them. */
 export const readName = (ens: Client, name: string) =>
-  Effect.all([
-    readEach(ens, "address", (reads) => reads.address(name)),
-    readEach(ens, "url", (reads) => reads.text(name, "url")),
-  ]);
+  Effect.all(
+    [
+      readEach(ens, "address", (reads) => reads.address(name)),
+      readEach(ens, "url", (reads) => reads.text(name, "url")),
+    ],
+    { concurrency: 1 },
+  );
 
 /** The primary name of `address`, as each library reads it. */
 export const readPrimary = (ens: Client, address: Address) =>
@@ -59,4 +64,4 @@ export const readPrimary = (ens: Client, address: Address) =>
 
 /** The libraries that read differently from ensforge. */
 export const disagreeing = (reading: Reading): readonly Library[] =>
-  libraries.filter((library) => reading[library] !== reading.ensforge);
+  Arr.filter(libraries, (library) => reading[library] !== reading.ensforge);

@@ -26,7 +26,7 @@ export const setText: CommandSpec<typeof SetText.Type> = {
   run: (context, model, command) =>
     Effect.gen(function* () {
       const { world } = context;
-      const target = targetOf(model, world, pick(targetsOf(world), command.name) as string);
+      const target = targetOf(model, world, pick(targetsOf(world), command.name));
       const actor = actorOf(world, command.actor);
       const url = `https://${command.value}.example`;
       const expected = stable(model, (at) => {
@@ -75,7 +75,7 @@ export const setResolver: CommandSpec<typeof SetResolver.Type> = {
   run: (context, model, command) =>
     Effect.gen(function* () {
       const { world } = context;
-      const target = targetOf(model, world, pick(targetsOf(world), command.name) as string);
+      const target = targetOf(model, world, pick(targetsOf(world), command.name));
       const actor = actorOf(world, command.actor);
       const own =
         target.protocol === "v1" ? target.entry.ownResolver : model.v2[target.label]?.ownResolver;

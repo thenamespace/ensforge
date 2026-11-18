@@ -1,4 +1,4 @@
-import { Effect } from "effect";
+import { Effect, Array as Arr } from "effect";
 
 import { Abis } from "@ensforge/contracts";
 import { Name } from "@ensforge/sdk";
@@ -37,23 +37,26 @@ export const makeWorld = Effect.gen(function* () {
   const devnet = yield* Devnet;
   const chain = yield* Chain;
   const fixtures = yield* Fixtures;
-  const [gracePeriod, v1GracePeriod] = yield* Effect.all([
-    chain.read({
-      address: devnet.contract("v2.ethRegistrar"),
-      abi: Abis.v2.ethRegistrar,
-      functionName: "GRACE_PERIOD",
-    }),
-    chain.read({
-      address: devnet.contract("v1.baseRegistrar"),
-      abi: Abis.v1.baseRegistrar,
-      functionName: "GRACE_PERIOD",
-    }),
-  ]).pipe(Effect.orDie);
+  const [gracePeriod, v1GracePeriod] = yield* Effect.all(
+    [
+      chain.read({
+        address: devnet.contract("v2.ethRegistrar"),
+        abi: Abis.v2.ethRegistrar,
+        functionName: "GRACE_PERIOD",
+      }),
+      chain.read({
+        address: devnet.contract("v1.baseRegistrar"),
+        abi: Abis.v1.baseRegistrar,
+        functionName: "GRACE_PERIOD",
+      }),
+    ],
+    { concurrency: 1 },
+  ).pipe(Effect.orDie);
   const { alice, bob, carol } = devnet.accounts;
 
   return {
     actors: { alice, bob, carol },
-    v1Names: v1Fixtures.map((id) => fixtures.byId(id).name),
+    v1Names: Arr.map(v1Fixtures, (id) => fixtures.byId(id).name),
     constants: { gracePeriod, v1GracePeriod },
   } satisfies World;
 });
@@ -67,12 +70,15 @@ export const readV2 = Effect.fnUntraced(function* (label: string) {
     abi: Abis.v2.permissionedRegistry,
   } as const;
 
-  const { owner, expiry, resolver, subregistry } = yield* Effect.all({
-    owner: chain.read({ ...registry, functionName: "findOwner", args: [label] }),
-    expiry: chain.read({ ...registry, functionName: "findExpiry", args: [label] }),
-    resolver: chain.read({ ...registry, functionName: "getResolver", args: [label] }),
-    subregistry: chain.read({ ...registry, functionName: "getSubregistry", args: [label] }),
-  }).pipe(Effect.orDie);
+  const { owner, expiry, resolver, subregistry } = yield* Effect.all(
+    {
+      owner: chain.read({ ...registry, functionName: "findOwner", args: [label] }),
+      expiry: chain.read({ ...registry, functionName: "findExpiry", args: [label] }),
+      resolver: chain.read({ ...registry, functionName: "getResolver", args: [label] }),
+      subregistry: chain.read({ ...registry, functionName: "getSubregistry", args: [label] }),
+    },
+    { concurrency: 1 },
+  ).pipe(Effect.orDie);
   return {
     owner: owner === zeroAddress ? null : owner,
     expiry,
@@ -86,21 +92,24 @@ export const readV1 = Effect.fnUntraced(function* (name: string) {
   const devnet = yield* Devnet;
   const chain = yield* Chain;
 
-  const [owners, resolver, expiry] = yield* Effect.all([
-    v1Owners(name),
-    chain.read({
-      address: devnet.contract("v1.registry"),
-      abi: Abis.v1.ensRegistry,
-      functionName: "resolver",
-      args: [namehash(name)],
-    }),
-    chain.read({
-      address: devnet.contract("v1.baseRegistrar"),
-      abi: Abis.v1.baseRegistrar,
-      functionName: "nameExpires",
-      args: [Name.toTokenId(name)],
-    }),
-  ]).pipe(Effect.orDie);
+  const [owners, resolver, expiry] = yield* Effect.all(
+    [
+      v1Owners(name),
+      chain.read({
+        address: devnet.contract("v1.registry"),
+        abi: Abis.v1.ensRegistry,
+        functionName: "resolver",
+        args: [namehash(name)],
+      }),
+      chain.read({
+        address: devnet.contract("v1.baseRegistrar"),
+        abi: Abis.v1.baseRegistrar,
+        functionName: "nameExpires",
+        args: [Name.toTokenId(name)],
+      }),
+    ],
+    { concurrency: 1 },
+  ).pipe(Effect.orDie);
   const wrapped = owners.registry === devnet.contract("v1.nameWrapper");
   return {
     manager: wrapped ? (owners.wrapped?.[0] ?? zeroAddress) : owners.registry,

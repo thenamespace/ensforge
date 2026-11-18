@@ -174,11 +174,13 @@ describe("wrapper writes", () => {
           yield* chain.atTimestamp(
             parentExpiry + 1n,
             Effect.gen(function* () {
-              assert.deepInclude(yield* Actions.name.get(ens, { name }), {
+              const expiredName = yield* Actions.name.get(ens, { name });
+              assert.deepInclude(expiredName, {
                 status: "expired",
                 owner: null,
               });
-              assert.isNull(yield* Actions.wrapper.getFuses(ens, { name }));
+              const fuses = yield* Actions.wrapper.getFuses(ens, { name });
+              assert.isNull(fuses);
               yield* expectFailure(
                 Actions.subname.update(ens, { name, expiry: parentExpiry + Duration.days(365) }),
                 { _tag: "NameStateError", code: "NAME_EXPIRED" },
@@ -202,8 +204,10 @@ describe("wrapper writes", () => {
           yield* chain.isolated(
             Effect.gen(function* () {
               yield* Actions.subname.removeSync(owner, { name });
-              assert.deepInclude(yield* v1Owners(name), { registry: zeroAddress });
-              assert.isNull(yield* Actions.wrapper.getFuses(owner, { name }));
+              const v1Owners2 = yield* v1Owners(name);
+              assert.deepInclude(v1Owners2, { registry: zeroAddress });
+              const fuses = yield* Actions.wrapper.getFuses(owner, { name });
+              assert.isNull(fuses);
             }),
           );
           yield* expectFailure(
@@ -342,7 +346,8 @@ describe("wrapper writes", () => {
           yield* chain.isolated(
             Effect.gen(function* () {
               yield* Actions.subname.updateSync(ens, { name: stale, expiry });
-              assert.deepInclude(yield* Actions.name.get(ens, { name: stale }), {
+              const refreshedName = yield* Actions.name.get(ens, { name: stale });
+              assert.deepInclude(refreshedName, {
                 status: "registered",
                 owner: accounts.bob,
                 expiry,
@@ -352,7 +357,8 @@ describe("wrapper writes", () => {
 
           // An emancipated child loses its owner when it expires: it can only be recreated.
           const lapsed = fixtures.byId("v1.wrapped.sub.expired-emancipated").name;
-          assert.deepInclude(yield* Actions.name.get(ens, { name: lapsed }), {
+          const expiredLapsedName = yield* Actions.name.get(ens, { name: lapsed });
+          assert.deepInclude(expiredLapsedName, {
             status: "expired",
             owner: null,
           });
@@ -372,7 +378,8 @@ describe("wrapper writes", () => {
                 fuses: ["parentCannotControl"],
                 expiry,
               });
-              assert.deepInclude(yield* Actions.name.get(ens, { name: lapsed }), {
+              const recreatedName = yield* Actions.name.get(ens, { name: lapsed });
+              assert.deepInclude(recreatedName, {
                 status: "registered",
                 owner: accounts.carol,
               });

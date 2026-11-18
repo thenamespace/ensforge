@@ -1,5 +1,5 @@
 import { assert, describe } from "@effect/vitest";
-import { Effect } from "effect";
+import { Effect, String as Str, pipe } from "effect";
 
 import { Abis } from "@ensforge/contracts";
 import { Actions } from "@ensforge/sdk/effect";
@@ -21,7 +21,8 @@ const serveTxt = (name: string, texts: readonly string[]) =>
     const devnet = yield* Devnet;
     const chain = yield* Chain;
     const gateways = yield* Gateways;
-    const signedAt = Number(yield* chain.now) - 60;
+    const now = yield* chain.now;
+    const signedAt = Number(now) - 60;
     const gateway = yield* gateways.serveProof(txtRecordsProof(name, texts, signedAt));
 
     yield* chain.write({
@@ -51,19 +52,26 @@ describe("gasless DNS names", () => {
           yield* chain.isolated(
             Effect.gen(function* () {
               yield* serveTxt(name, [`ENS1 ${txtResolver} a[60]=${bob}`]);
-              assert.deepStrictEqual(yield* Actions.dns.getOffchainResolver(reader, { name }), {
+              const offchainResolver = yield* Actions.dns.getOffchainResolver(reader, { name });
+              assert.deepStrictEqual(offchainResolver, {
                 resolver: txtResolver,
                 context: `a[60]=${bob}`,
               });
-              assert.strictEqual(yield* Actions.record.getAddress(reader, { name }), bob);
+              const addressWithContext = yield* Actions.record.getAddress(reader, { name });
+              assert.strictEqual(addressWithContext, bob);
 
               // Without context the resolver has nothing to answer with.
               yield* serveTxt(name, [`ENS1 ${txtResolver}`]);
-              assert.deepStrictEqual(yield* Actions.dns.getOffchainResolver(reader, { name }), {
+              const offchainResolverWithoutContext = yield* Actions.dns.getOffchainResolver(
+                reader,
+                { name },
+              );
+              assert.deepStrictEqual(offchainResolverWithoutContext, {
                 resolver: txtResolver,
                 context: null,
               });
-              assert.isNull(yield* Actions.record.getAddress(reader, { name }));
+              const addressWithoutContext = yield* Actions.record.getAddress(reader, { name });
+              assert.isNull(addressWithoutContext);
 
               // An ENS name stands for the address it resolves to.
               const named = fixtures.byId("records.v2").name;
@@ -72,11 +80,15 @@ describe("gasless DNS names", () => {
                 addresses: { eth: txtResolver },
               });
               yield* serveTxt(name, [`ENS1 ${named} a[60]=${carol}`]);
-              assert.deepStrictEqual(yield* Actions.dns.getOffchainResolver(reader, { name }), {
+              const offchainResolverByName = yield* Actions.dns.getOffchainResolver(reader, {
+                name,
+              });
+              assert.deepStrictEqual(offchainResolverByName, {
                 resolver: named,
                 context: `a[60]=${carol}`,
               });
-              assert.strictEqual(yield* Actions.record.getAddress(reader, { name }), carol);
+              const addressByName = yield* Actions.record.getAddress(reader, { name });
+              assert.strictEqual(addressByName, carol);
             }),
           );
         }),
@@ -102,15 +114,21 @@ describe("gasless DNS names", () => {
           yield* chain.isolated(
             Effect.gen(function* () {
               yield* serveTxt(name, [...unusable, `ENS1 ${txtResolver} a[60]=${bob}`]);
-              assert.deepStrictEqual(yield* Actions.dns.getOffchainResolver(reader, { name }), {
+              const offchainResolver = yield* Actions.dns.getOffchainResolver(reader, { name });
+              assert.deepStrictEqual(offchainResolver, {
                 resolver: txtResolver,
                 context: `a[60]=${bob}`,
               });
-              assert.strictEqual(yield* Actions.record.getAddress(reader, { name }), bob);
+              const address = yield* Actions.record.getAddress(reader, { name });
+              assert.strictEqual(address, bob);
 
               yield* serveTxt(name, unusable);
-              assert.isNull(yield* Actions.dns.getOffchainResolver(reader, { name }));
-              assert.isNull(yield* Actions.record.getAddress(reader, { name }));
+              const unusableOffchainResolver = yield* Actions.dns.getOffchainResolver(reader, {
+                name,
+              });
+              assert.isNull(unusableOffchainResolver);
+              const unusableAddress = yield* Actions.record.getAddress(reader, { name });
+              assert.isNull(unusableAddress);
               yield* expectFailure(Actions.record.getAddress(reader, { name, strict: true }), {
                 _tag: "NotFoundError",
                 code: "RESOLVER_NOT_FOUND",
@@ -132,16 +150,18 @@ describe("gasless DNS names", () => {
           const txtResolver = devnet.contract("v2.dnsTxtResolver");
           const name = "gasless.com";
           // DNS splits the record at 255 bytes; the address comes after the split.
-          const context = `t[notice]=${"x".repeat(300)} a[60]=${bob}`;
+          const context = `t[notice]=${pipe("x", Str.repeat(300))} a[60]=${bob}`;
 
           yield* chain.isolated(
             Effect.gen(function* () {
               yield* serveTxt(name, [`ENS1 ${txtResolver} ${context}`]);
-              assert.deepStrictEqual(yield* Actions.dns.getOffchainResolver(reader, { name }), {
+              const offchainResolver = yield* Actions.dns.getOffchainResolver(reader, { name });
+              assert.deepStrictEqual(offchainResolver, {
                 resolver: txtResolver,
                 context,
               });
-              assert.strictEqual(yield* Actions.record.getAddress(reader, { name }), bob);
+              const address = yield* Actions.record.getAddress(reader, { name });
+              assert.strictEqual(address, bob);
             }),
           );
         }),
@@ -156,17 +176,15 @@ describe("gasless DNS names", () => {
           const chain = yield* Chain;
           const target = (yield* Fixtures).byId("records.v2").name;
           const { reader } = yield* Clients;
-          const name = target.replace(/\.eth$/, ".com");
+          const name = pipe(target, Str.replace(/\.eth$/, ".com"));
 
           yield* chain.isolated(
             Effect.gen(function* () {
               yield* serveTxt(name, [`ENS1 ${devnet.contract("v2.dnsAliasResolver")} com eth`]);
               const address = yield* Actions.record.getAddress(reader, { name });
               assert.isNotNull(address);
-              assert.strictEqual(
-                address,
-                yield* Actions.record.getAddress(reader, { name: target }),
-              );
+              const targetAddress = yield* Actions.record.getAddress(reader, { name: target });
+              assert.strictEqual(address, targetAddress);
             }),
           );
         }),
@@ -190,7 +208,8 @@ describe("imported DNS names", () => {
           yield* chain.isolated(
             Effect.gen(function* () {
               yield* serveTxt(name, [`ENS1 ${devnet.contract("v2.dnsTxtResolver")} a[60]=${bob}`]);
-              assert.strictEqual(yield* Actions.record.getAddress(reader, { name }), alice);
+              const addressBeforeClear = yield* Actions.record.getAddress(reader, { name });
+              assert.strictEqual(addressBeforeClear, alice);
 
               yield* chain.write({
                 address: devnet.contract("v1.registry"),
@@ -199,7 +218,8 @@ describe("imported DNS names", () => {
                 args: [namehash(name), zeroAddress],
                 account: alice,
               });
-              assert.strictEqual(yield* Actions.record.getAddress(reader, { name }), bob);
+              const addressAfterClear = yield* Actions.record.getAddress(reader, { name });
+              assert.strictEqual(addressAfterClear, bob);
             }),
           );
         }),
@@ -218,7 +238,8 @@ describe("imported DNS names", () => {
           yield* chain.isolated(
             Effect.gen(function* () {
               yield* serveTxt(name, ["v=spf1 -all"]);
-              assert.isNull(yield* Actions.record.getAddress(reader, { name }));
+              const address = yield* Actions.record.getAddress(reader, { name });
+              assert.isNull(address);
               yield* expectFailure(Actions.record.getAddress(reader, { name, strict: true }), {
                 _tag: "NotFoundError",
                 code: "RESOLVER_NOT_FOUND",
