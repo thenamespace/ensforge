@@ -10,6 +10,13 @@ research/
 *.log
 *.tgz
 
+# TanStack Start, Nitro and Fumadocs generated output (apps/docs)
+.output/
+.nitro/
+.tanstack/
+.source/
+.vercel/
+
 
 # codegen --check scratch output
 .codegen-check/

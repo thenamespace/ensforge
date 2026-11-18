@@ -6,7 +6,10 @@ Ensforge is a pnpm and Turborepo monorepo for Effect-native Ethereum Name Servic
 
 - `packages/contracts`: runtime-neutral ENS ABIs, interfaces, addresses, and deployment metadata.
 - `packages/sdk`: framework-independent SDK client, types, services, and actions.
-- `apps/*`: runnable applications when a concrete application is introduced.
+- `apps/docs`: the documentation site and blog (`@ensforge/docs`, private): TanStack Start,
+  Fumadocs and Tailwind, deployed to Vercel. Content lives in `apps/docs/content`; docs code
+  blocks marked `twoslash` compile against the workspace packages' built types.
+- `apps/*`: other runnable applications when a concrete application is introduced.
 - `packages/*`: additional publishable packages when they have an independent public boundary.
 
 Dependencies must point inward toward `@ensforge/sdk`. Framework adapters may depend on the sdk; the

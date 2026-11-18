@@ -1,0 +1,6 @@
+{
+  "title": "HCA",
+  "description": "Hosted Contract Account route and executors",
+  "root": true,
+  "pages": ["---[intro]Getting started---", "index", "[history][Changelog](/docs/hca/changelog)"]
+}

@@ -1,0 +1,6 @@
+{
+  "title": "React",
+  "description": "Effect Atom hooks and atoms for ENS in React",
+  "root": true,
+  "pages": ["---[intro]Getting started---", "index", "[history][Changelog](/docs/react/changelog)"]
+}

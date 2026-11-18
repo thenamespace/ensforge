@@ -1,0 +1,12 @@
+{
+  "title": "SDK",
+  "description": "Effect-native ENS actions and utilities",
+  "root": true,
+  "pages": [
+    "---[intro]Getting started---",
+    "index",
+    "[history][Changelog](/docs/sdk/changelog)",
+    "---[guide]Guides---",
+    "...(guides)"
+  ]
+}

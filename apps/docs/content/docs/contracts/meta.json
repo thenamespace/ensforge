@@ -1,0 +1,10 @@
+{
+  "title": "Contracts",
+  "description": "ENS ABIs, interfaces, roles and deployments",
+  "root": true,
+  "pages": [
+    "---[intro]Getting started---",
+    "index",
+    "[history][Changelog](/docs/contracts/changelog)"
+  ]
+}

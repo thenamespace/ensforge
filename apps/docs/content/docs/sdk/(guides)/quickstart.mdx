@@ -1,0 +1,21 @@
+---
+title: Quickstart
+description: Placeholder guide that exercises twoslash against the workspace packages. Not real documentation yet.
+icon: rocket
+---
+
+This page is a placeholder. It shows a code block type-checked against `@ensforge/sdk` with
+twoslash; hover the identifiers to see their types.
+
+```ts twoslash
+import { Ensforge, ensActions } from "@ensforge/sdk";
+import { createPublicClient, http } from "viem";
+import { mainnet } from "viem/chains";
+
+const ens = Ensforge.create({
+  publicClient: createPublicClient({ chain: mainnet, transport: http() }),
+}).extend(ensActions());
+
+const address = await ens.record.getAddress({ name: "ens.eth" });
+//    ^?
+```
