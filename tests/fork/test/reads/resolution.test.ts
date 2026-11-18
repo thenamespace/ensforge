@@ -89,7 +89,7 @@ describe("fork resolution", () => {
     );
 
     it.effect(
-      "unwraps the Universal Resolver's ResolutionError for DNS names (KL-14)",
+      "unwraps the Universal Resolver's ResolutionError for DNS names (KL-14, KL-29)",
       () =>
         Effect.gen(function* () {
           const { reader } = yield* Clients;
@@ -98,7 +98,7 @@ describe("fork resolution", () => {
             kind: "dns",
             inherited: true,
           });
-          // No DNSSEC proof verifies since the root KSK rollover; the inner error comes back.
+          // No DNSSEC proof verifies since the root KSK rollover (KL-29); the inner error comes back.
           const failure = yield* expectFailure(
             Actions.record.getAddress(reader, { name: "ens.domains" }),
             { _tag: "DnsError", code: "DNSSEC_PROOF_FAILED" },

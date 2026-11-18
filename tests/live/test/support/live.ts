@@ -6,13 +6,14 @@ import { Context, Effect, Layer, Schema } from "effect";
 
 import { Ensforge, ensActions } from "@ensforge/sdk";
 import { bigname, goldsky, type Indexer } from "@ensforge/sdk/indexer";
-import { createPublicClient, http } from "viem";
+import { createPublicClient, http, type Address, type Hex } from "viem";
+import { getBlockNumber, getStorageAt } from "viem/actions";
 import { mainnet, sepolia } from "viem/chains";
 
 /** A live network the read-only suites check. */
 export type Network = "mainnet" | "sepolia";
 
-/** The live suites cannot run: no RPC URL. */
+/** The live suites cannot run (no RPC URL), or an RPC request failed. */
 export class LiveError extends Schema.TaggedError<LiveError, { readonly brand: unique symbol }>()(
   "LiveError",
   { message: Schema.String },
@@ -60,6 +61,10 @@ export class Live extends Context.Service<
     readonly withBigname: LiveClient;
     /** The same reads, with Goldsky as the client's indexer (mainnet only). */
     readonly withGoldsky: LiveClient | undefined;
+    /** The network's latest block number. */
+    readonly blockNumber: Effect.Effect<bigint, LiveError>;
+    /** The word at `slot` of `address`, `0x0…0` when unset. */
+    readonly storageAt: (address: Address, slot: Hex) => Effect.Effect<Hex, LiveError>;
   }
 >()("@ensforge/test-live/Live") {
   static readonly layer = (network: Network) =>
@@ -74,11 +79,24 @@ export class Live extends Context.Service<
           return yield* new LiveError({ message: `set ${variable} to read ${network}` });
         }
 
+        const reader = makeClient(network, url);
         return Live.of({
           network,
-          reader: makeClient(network, url),
+          reader,
           withBigname: makeClient(network, url, bigname()),
           withGoldsky: network === "mainnet" ? makeClient(network, url, goldsky()) : undefined,
+          blockNumber: Effect.tryPromise({
+            try: () => getBlockNumber(reader.publicClient),
+            catch: (cause) => new LiveError({ message: `block number: ${String(cause)}` }),
+          }),
+          storageAt: (address, slot) =>
+            Effect.tryPromise({
+              try: async () =>
+                (await getStorageAt(reader.publicClient, { address, slot })) ??
+                `0x${"0".repeat(64)}`,
+              catch: (cause) =>
+                new LiveError({ message: `storage of ${address}: ${String(cause)}` }),
+            }),
         });
       }),
     );
