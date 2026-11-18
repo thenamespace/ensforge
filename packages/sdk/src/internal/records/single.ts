@@ -5,7 +5,7 @@ import type { Client } from "../../client/types.js";
 import { NotFoundError } from "../../errors/classes/NotFoundError.js";
 import type { AnyError } from "../../errors/types.js";
 import type { Read } from "../../Types.js";
-import { readRecords } from "./read.js";
+import { readRecords, type ReadRecords } from "./read.js";
 
 /**
  * Reads one record and picks it from the result; `strict` turns a missing record into
@@ -18,7 +18,7 @@ export const readSingleRecord = <value>(
     readonly selection: Selection;
     readonly resource: string;
   } & Pick<Read.Options, "blockNumber" | "blockTag" | "gatewayUrls" | "strict">,
-  pick: (records: Record<string, unknown>) => value | null,
+  pick: (records: ReadRecords) => value | null,
 ): Effect.Effect<value | null, AnyError> =>
   readRecords(client, options).pipe(
     Effect.flatMap((records) => {

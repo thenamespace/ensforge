@@ -18,7 +18,7 @@ export const getAddress = Effect.fn("ensforge.record.getAddress")(
     return yield* readSingleRecord(
       client,
       { ...options, selection: { addresses: [coinType] }, resource: `address ${coinType}` },
-      (records) => (records.addresses as Record<string, string | null>)[String(coinType)] ?? null,
+      (records) => records.addresses?.[String(coinType)] ?? null,
     );
   },
   Action.withContext("record.getAddress", { contractKind: "resolver" }),

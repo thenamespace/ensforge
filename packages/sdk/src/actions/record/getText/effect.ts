@@ -14,7 +14,7 @@ export const getText = Effect.fn("ensforge.record.getText")(
     return yield* readSingleRecord(
       client,
       { ...options, selection: { texts: [options.key] }, resource: options.key },
-      (records) => (records.texts as Record<string, string | null>)[options.key] ?? null,
+      (records) => records.texts?.[options.key] ?? null,
     );
   },
   Action.withContext("record.getText", { contractKind: "resolver" }),

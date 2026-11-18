@@ -66,18 +66,14 @@ const readCopy = Effect.fnUntraced(function* (
     readonly contentHash: boolean;
   },
 ): Effect.fn.Return<CopiedRecords, AnyError> {
-  const read = (yield* readRecords(client, {
+  const read = yield* readRecords(client, {
     name,
     selection: {
       texts: selection.texts,
       addresses: selection.addresses,
       ...(selection.contentHash ? { contentHash: true } : {}),
     },
-  })) as {
-    readonly texts?: Readonly<Record<string, string | null>>;
-    readonly addresses?: Readonly<Record<string, string | null>>;
-    readonly contentHash?: { readonly uri: string } | null;
-  };
+  });
 
   const texts = Object.fromEntries(
     Object.entries(read.texts ?? {}).filter(

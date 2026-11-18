@@ -29,7 +29,7 @@ const differences = Effect.fnUntraced(function* (
 
   const copied = expected.records;
   if (copied === undefined) return found;
-  const read = (yield* readRecords(client, {
+  const read = yield* readRecords(client, {
     name: expected.name,
     selection: {
       texts: Object.keys(copied.texts ?? {}),
@@ -39,11 +39,7 @@ const differences = Effect.fnUntraced(function* (
       ),
       ...(copied.contentHash === undefined ? {} : { contentHash: true }),
     },
-  })) as {
-    readonly texts?: Readonly<Record<string, string | null>>;
-    readonly addresses?: Readonly<Record<string, string | null>>;
-    readonly contentHash?: { readonly uri: string } | null;
-  };
+  });
   for (const [key, value] of Object.entries(copied.texts ?? {})) {
     if ((read.texts?.[key] ?? null) !== value) found.push(`${expected.name} text ${key} differs`);
   }

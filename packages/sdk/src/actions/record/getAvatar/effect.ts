@@ -19,7 +19,7 @@ export const getAvatar = Effect.fn("ensforge.record.getAvatar")(
       client,
       { ...options, selection: { texts: ["avatar"], addresses: ["eth"] }, resource: "avatar" },
       (records) => {
-        const avatar = (records.texts as Record<string, string | null>).avatar ?? null;
+        const avatar = records.texts?.["avatar"] ?? null;
         const owner = (records.addresses as Record<string, Address | null>).eth ?? null;
         return avatar === null ? null : { avatar, owner };
       },
