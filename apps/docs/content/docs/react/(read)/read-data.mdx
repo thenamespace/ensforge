@@ -4,7 +4,7 @@ description: Read names, records and lists in components with hooks that share a
 keywords: [useRead, useAddress, useRecords, useText, useName, enabled, ReadResult]
 ---
 
-Use a read hook in a component to get a value for a name or an address. Every hook returns the same result object, and components that ask for the same thing share one request.
+Use a read hook in a component to get a value for a [name](/docs/sdk/reference/glossary#name) or an address. Every hook returns the same result object, and components that ask for the same thing share one request.
 
 ## Read with a named hook
 
@@ -31,7 +31,7 @@ export function Profile({ name }: { name: string }) {
 }
 ```
 
-`useRecords` reads several records in one call and returns them under `texts` and `addresses`.
+`useRecords` reads several [records](/docs/sdk/reference/glossary#record) in one call and returns them under `texts` and `addresses`.
 
 | Hook                                                                         | Reads                                                                   |
 | ---------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
@@ -46,7 +46,7 @@ export function Profile({ name }: { name: string }) {
 | [`usePermissions`](/docs/react/reference/hooks/use-permissions)              | What an account may do with a name.                                     |
 | [`useMigrationStatus`](/docs/react/reference/hooks/use-migration-status)     | Whether and how a name can move from ENSv1 to ENSv2.                    |
 
-Lists from an indexer have their own hooks. See [Infinite lists](/docs/react/infinite-lists).
+Lists from an [indexer](/docs/sdk/reference/glossary#indexer) have their own hooks. See [Infinite lists](/docs/react/infinite-lists).
 
 ## Read the result
 

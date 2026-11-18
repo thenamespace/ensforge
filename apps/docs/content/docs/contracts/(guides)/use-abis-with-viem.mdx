@@ -53,7 +53,7 @@ supported;
 
 ## Send a write
 
-Simulate first, then send. `simulateContract` returns a typed request that `writeContract` accepts, so a revert shows up before the wallet prompt. This example sets a text record on Sepolia with the ENSv2 public resolver.
+Simulate first, then send. `simulateContract` returns a typed request that `writeContract` accepts, so a revert shows up before the wallet prompt. This example sets a text [record](/docs/sdk/reference/glossary#record) on Sepolia with the [ENSv2](/docs/sdk/reference/glossary#ensv2) public [resolver](/docs/sdk/reference/glossary#resolver).
 
 **Example** (Setting a Text Record on Sepolia)
 
@@ -81,7 +81,7 @@ const { request } = await publicClient.simulateContract({
 const hash = await walletClient.writeContract(request);
 ```
 
-- `namehash(normalize(name))` is the node the resolver stores records under. Always normalise a name before you hash it, or the hash points to another node.
+- `namehash(normalize(name))` is the [namehash](/docs/sdk/reference/glossary#namehash), the node the resolver stores records under. Always [normalise](/docs/sdk/reference/glossary#normalisation) a name before you hash it, or the hash points to another node.
 - The call succeeds only when the name uses this resolver and the account may set its records.
 
 <Callout type="info" title="Prefer the SDK for ENS writes">
@@ -92,7 +92,7 @@ const hash = await walletClient.writeContract(request);
 
 ## Decode events
 
-`Abis.shared.events` holds the events that ENS contracts emit, across both versions. Pass it to `getContractEvents` or `parseEventLogs` to get typed logs.
+`Abis.shared.events` holds the events that ENS indexers consume, from registries, registrars, the Name Wrapper, resolvers, reverse registrars and the DNS registrar, across both versions. Pass it to `getContractEvents` or `parseEventLogs` to get typed logs. This example reads the `TextChanged` events of the last 1,000 blocks.
 
 **Example** (Reading Recent TextChanged Events)
 
@@ -115,7 +115,9 @@ const logs = await publicClient.getContractEvents({
 
 ## Import ABIs one by one
 
-Each ABI is also a flat named export, so a bundler can drop every ABI you do not use. The export name is the contract name plus the protocol: `permissionedRegistryV2Abi` from `@ensforge/contracts/v2`, `baseRegistrarV1Abi` from `@ensforge/contracts/v1`.
+Each ABI is also a flat named export, so a bundler can drop every ABI you do not use. The export name is the contract name plus the protocol: `permissionedRegistryV2Abi` from `@ensforge/contracts/v2`, `baseRegistrarV1Abi` from `@ensforge/contracts/v1`. Shared ABIs keep their plain name, such as `erc165Abi`.
+
+**Example** (Importing Flat ABIs)
 
 ```ts twoslash title="flat-import.ts"
 import { permissionedRegistryV2Abi } from "@ensforge/contracts/v2";

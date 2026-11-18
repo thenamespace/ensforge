@@ -9,11 +9,11 @@ keywords: [rhinestone, intents, session, sponsored, refund token, HCA_SDK_UNSUPP
   standalone HCA support, and ensforge only tests its wiring, not Rhinestone's orchestrator.
 </Callout>
 
-**Rhinestone** is an intent network. The `rhinestone()` executor sends HCA executions as Rhinestone intents, either signed by the owner or, with a [session](/docs/hca/sessions), signed by a session key without a wallet prompt. By the end of this page you will have an executor ready for both.
+**Rhinestone** is an intent network. The `rhinestone()` [executor](/docs/sdk/reference/glossary#executor) sends [HCA](/docs/sdk/reference/glossary#hca) executions as Rhinestone intents, either signed by the owner or, with a [session](/docs/hca/sessions), signed by a session key without a wallet prompt. By the end of this page you will have an executor ready for both.
 
 ## Prerequisites
 
-- A Rhinestone SDK instance that supports the standalone ENS HCA (account type `hca`, version `ens-standalone-1.1.0`). Stock SDK releases may derive another account type. Create the instance in your app. ensforge does not depend on the SDK.
+- A Rhinestone SDK instance that supports the standalone ENS HCA (account type `hca`, version `ens-standalone-1.1.0`). Stock `@rhinestone/sdk` 3.2.0 knows only an older HCA account type, so it needs a build with standalone HCA support, as the ENS app uses. Create the instance in your app. ensforge does not depend on the SDK.
 - For sessions, the session key's signer (a viem account) and an authorized session. See [Sessions](/docs/hca/sessions).
 
 ## Create the executor
@@ -68,9 +68,9 @@ const executor = rhinestone({ sdk, sessionSigner, sponsored: false });
 
 ## What ensforge checks
 
-- Before signing, ensforge checks every session call against the HCA policy. A call outside it fails with `HCA_ACTION_NOT_ALLOWED` and nothing is signed.
-- The SDK account must derive the same HCA address as ensforge. Otherwise the executor fails with `HCA_SDK_UNSUPPORTED`.
-- Status follows the intent until its fill transaction is mined. An intent that is `FAILED` or `EXPIRED` reports as failed.
+- Before signing, ensforge checks every session call against the HCA policy. A call outside it fails with [`HCA_ACTION_NOT_ALLOWED`](/docs/sdk/errors/HCA_ACTION_NOT_ALLOWED) and nothing is signed.
+- The SDK account must derive the same HCA address as ensforge. Otherwise the executor fails with `HCA_SDK_UNSUPPORTED` before it signs anything.
+- Status follows the intent until it has a fill transaction. An intent that is `FAILED` or `EXPIRED` reports as failed.
 
 ## Troubleshooting
 
@@ -80,4 +80,4 @@ The Rhinestone SDK derives a different address than the owner's HCA. Use an SDK 
 
 ### `HCA_EXECUTOR_UNSUPPORTED`
 
-The write has no wallet account, the chain has no HCA deployment, or a session execution has no `sessionSigner`. See [`HCA_EXECUTOR_UNSUPPORTED`](/docs/sdk/errors/HCA_EXECUTOR_UNSUPPORTED).
+The write has no wallet account, the chain has no HCA deployment, or a session execution has no `sessionSigner`. `hca()` also throws it when you pass a `session` and no executor in the list runs sessions. See [`HCA_EXECUTOR_UNSUPPORTED`](/docs/sdk/errors/HCA_EXECUTOR_UNSUPPORTED).

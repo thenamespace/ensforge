@@ -33,7 +33,7 @@ export function Save({ name }: { name: string }) {
 }
 ```
 
-`mutate` returns nothing. The outcome lands in `status`, `data` and `error`. The write resolves once the transaction is submitted. Use the `…Sync` action to wait for the receipt, shown below.
+`mutate` returns nothing. The outcome lands in `status`, `data` and `error`. `useSetRecords` runs `record.set`, which resolves once the transaction is submitted. Use the `…Sync` action to wait for the receipt, shown below.
 
 ## Pick a write hook
 
@@ -68,7 +68,7 @@ Each component gets its own state, so two buttons never share a result. The stat
 
 ## Show progress
 
-Multi-step writes, such as a registration (commit, wait, register), push an event to `steps` as each step changes. Each event names its `step` and its `status`. `submitted` events carry the transaction `hashes`, and `failed` events carry the `error`.
+Multi-step writes, such as a registration (commit, wait, register), push an event to `steps` as each [step](/docs/sdk/reference/glossary#step) changes. Each event names its `step` and its `status`. `submitted` events carry the transaction `hashes`, and `failed` events carry the `error`.
 
 **Example** (Registering With Progress)
 
@@ -140,4 +140,4 @@ export function SaveAndClose({ name, onDone }: { name: string; onDone: () => voi
 
 Once a write succeeds, every read of the names and accounts it touched refetches: chain reads once the transaction is mined, indexer reads once the indexer has caught up. Components that show the data update on their own. See [Caching and refreshing](/docs/react/caching-and-refreshing#refresh-after-a-write).
 
-To show what a write will do before the wallet prompt, see [Preview before sending](/docs/react/preview-before-sending). For how plans work, see [How writes work](/docs/sdk/writing-to-ens).
+To show what a write will do before the wallet prompt, see [Preview before sending](/docs/react/preview-before-sending). For how [plans](/docs/sdk/reference/glossary#plan) work, see [How writes work](/docs/sdk/writing-to-ens).

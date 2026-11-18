@@ -10,11 +10,11 @@ keywords: [bundler, pimlico, ERC-4337, UserOperation, paymaster, EntryPoint, gas
   check is still open. Test on Sepolia first.
 </Callout>
 
-A **bundler** collects ERC-4337 UserOperations and lands them on chain. The `bundler()` and `pimlico()` executors send each HCA execution as a UserOperation that the owner signs, so the owner needs no ETH when a paymaster sponsors it. By the end of this page you will run a write gaslessly.
+A **bundler** collects ERC-4337 UserOperations and lands them on chain. The `bundler()` and `pimlico()` [executors](/docs/sdk/reference/glossary#executor) send each [HCA](/docs/sdk/reference/glossary#hca) execution as a UserOperation that the owner signs, so the owner needs no ETH when a [paymaster](/docs/sdk/reference/glossary#paymaster) sponsors it. By the end of this page you will run a write gaslessly.
 
 ## What a bundler executor does
 
-- It sends owner operations only. HCA sessions run through [Rhinestone](/docs/hca/rhinestone), not ERC-4337, and a session with a bundler fails with `HCA_EXECUTOR_UNSUPPORTED`.
+- It sends owner operations only. HCA sessions run through [Rhinestone](/docs/hca/rhinestone), not ERC-4337, and `hca()` with a session and only bundler executors fails with [`HCA_EXECUTOR_UNSUPPORTED`](/docs/sdk/errors/HCA_EXECUTOR_UNSUPPORTED).
 - It targets EntryPoint v0.7.
 - The first operation deploys the HCA through its factory, so no setup transaction is needed.
 - The owner signs with `personal_sign` over the UserOperation hash. The wallet shows one signature prompt instead of a transaction.
@@ -32,7 +32,7 @@ A **bundler** collects ERC-4337 UserOperations and lands them on chain. The `bun
 **Example** (Gasless Renewal With Pimlico)
 
 ```ts twoslash title="pimlico.ts"
-import { hca, hcaActions, owner, pimlico } from "@ensforge/hca";
+import { hca, hcaActions, pimlico } from "@ensforge/hca";
 import { Ensforge, ensActions } from "@ensforge/sdk";
 import { createPublicClient, createWalletClient, http } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
@@ -49,7 +49,7 @@ const ens = Ensforge.create({
   .extend(hcaActions());
 // ---cut---
 const via = hca({
-  executors: [pimlico({ apiKey: "pim_…", sponsor: true }), owner()],
+  executors: [pimlico({ apiKey: "pim_…", sponsor: true })],
 });
 
 await ens.hca.executeSync({
@@ -59,7 +59,8 @@ await ens.hca.executeSync({
 ```
 
 - `sponsor: true` lets Pimlico's paymaster pay. Without it, the HCA pays its own gas.
-- `owner()` last keeps the write working with the owner's wallet when Pimlico cannot run it.
+- The owner signs the UserOperation. The wallet sends no transaction.
+- Replace `pim_…` with your Pimlico API key.
 
 ## Use any bundler
 
@@ -85,7 +86,7 @@ const via = hca({
 });
 ```
 
-Pass `via` to any write, for example `ens.registration.renewSync({ names, duration, via })`. Renewals, transfers and migration are the writes the HCA has authority for. See [How it works](/docs/hca/how-it-works#what-the-hca-can-do).
+Pass `via` to any write, for example `ens.registration.renewSync({ names, duration, via })`. Migration, registration, renewal and `hca.execute` work through the HCA. Other writes need the HCA to hold the roles they use. See [How it works](/docs/hca/how-it-works#what-the-hca-can-do).
 
 ## Who pays gas
 

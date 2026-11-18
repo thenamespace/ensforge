@@ -9,11 +9,11 @@ keywords: [hca, via, migrateSync, executeByOwner]
   `@ensforge/hca` is experimental for 1.0. Its API can change in a minor release.
 </Callout>
 
-By the end of this page you will have migrated two names in one HCA execution and read the account that ran it. Install the package first: [Installation](/docs/hca/installation).
+By the end of this page you will have moved two names to ENSv2 ([migration](/docs/sdk/reference/glossary#migration)) in one execution of your [HCA](/docs/sdk/reference/glossary#hca), and read the account that ran it. Install the package first: [Installation](/docs/hca/installation).
 
 ## 1. Create the client
 
-Add `hcaActions()` to a client that has a wallet. Use Sepolia and names your wallet owns.
+Add `hcaActions()` to a client that has a wallet. The example uses Sepolia.
 
 ```ts twoslash title="client.ts"
 import { hcaActions } from "@ensforge/hca";
@@ -34,9 +34,12 @@ export const ens = Ensforge.create({
   .extend(hcaActions());
 ```
 
+- Replace the placeholder key with your signer. Never commit a real key.
+- `hcaActions()` adds the `ens.hca` actions, such as `ens.hca.get`.
+
 ## 2. Send a write through the HCA
 
-Pass `via: hca()` to any write. `hca()` is a route: it rewrites the write's plan so that the HCA runs the calls. ensforge never selects it on its own, so the user agrees to it through the code you write.
+Pass `via: hca()` to any write. `hca()` is a [route](/docs/sdk/reference/glossary#route): it rewrites the write's [plan](/docs/sdk/reference/glossary#plan) so that the HCA runs the calls. ensforge never selects it on its own, so the user agrees to it through the code you write.
 
 **Example** (Migrating Two Names Through the HCA)
 
@@ -58,20 +61,19 @@ const ens = Ensforge.create({
   .extend(hcaActions());
 // ---cut---
 const result = await ens.migration.migrateSync({
-  names: ["alice.eth", "bob.eth"], // placeholders: use names you own
+  names: ["alice.eth", "bob.eth"], // placeholders: ENSv1 .eth names your wallet owns
   via: hca(),
 });
 
 console.log(result.plan.steps.map((step) => step.id));
 ```
 
-With the default executor your wallet sends every transaction:
+Replace the two names with names your wallet owns that are not on ENSv2 yet. With the default [executor](/docs/sdk/reference/glossary#executor), your wallet sends every transaction:
 
-1. The HCA is deployed on first use.
-2. The approvals it needs to move your names run as one owner step named `hca-setup`.
-3. Both migrations run as one atomic `executeByOwner` call, so either every name moves or none does.
+1. A first [step](/docs/sdk/reference/glossary#step) named `hca-setup` deploys the HCA, when it does not exist yet, and approves it to move your names.
+2. Both migrations run as one atomic `executeByOwner` call, so either every name moves or none does.
 
-With an EIP-5792 wallet, the owner's steps share one bundle. See [Your wallet](/docs/hca/your-wallet).
+With an EIP-5792 wallet, the owner's steps share one [bundle](/docs/sdk/reference/glossary#bundle). See [Your wallet](/docs/hca/your-wallet).
 
 ## 3. Read the account
 
@@ -101,9 +103,9 @@ const hcaAccount = await ens.hca.get({});
 `problems` is empty for an account that is safe to use. See [`hca.get`](/docs/hca/reference/actions/hca/get).
 
 <Callout type="warn" title="The HCA is msg.sender">
-  Through `via: hca()` the HCA, not your wallet, calls the contracts. Migration and registration
-  plan for that. Other writes, such as records or transfers, work only where the HCA holds the roles
-  they need, and fail at simulation otherwise.
+  Through `via: hca()` the HCA, not your wallet, calls the contracts. Migration, registration and
+  renewal work through it. Other writes, such as records or transfers, work only where the HCA holds
+  the [roles](/docs/sdk/reference/glossary#role) they need, and fail at simulation otherwise.
 </Callout>
 
 ## Learn more

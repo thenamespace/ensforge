@@ -4,11 +4,11 @@ description: Page through an account's names, a name's subnames or its history w
 keywords: [useInfiniteRead, useSubnames, useNamesForAddress, useNameHistory, pagination, indexer]
 ---
 
-List hooks load an indexer list one page at a time, for "load more" buttons and infinite scroll. They need an [indexer](/docs/sdk/connect-an-indexer) on the client. Without one, the read fails with `INDEXER_NOT_CONFIGURED`.
+List hooks load an indexer list one page at a time, for "load more" buttons and infinite scroll. They need an [indexer](/docs/sdk/reference/glossary#indexer) on the client. Without one, the read fails with [`INDEXER_NOT_CONFIGURED`](/docs/sdk/errors/INDEXER_NOT_CONFIGURED).
 
 ## Add an indexer to the client
 
-Pass `indexer` to `Ensforge.create`: `bigname()`, `goldsky()`, `fallback([...])` or `defineIndexer({...})` from `@ensforge/sdk/indexer`.
+Pass `indexer` to `Ensforge.create`: `bigname()`, `goldsky()`, `fallback([...])` or `defineIndexer({...})` from `@ensforge/sdk/indexer`. See [Connect an indexer](/docs/sdk/connect-an-indexer).
 
 **Example** (A Client With An Indexer)
 
@@ -33,7 +33,7 @@ export function Providers({ children }: { children: ReactNode }) {
 
 ## Show a list with "Load more"
 
-`useSubnames` lists a name's subnames. It returns every item loaded so far in `items`, and `loadMore` fetches the next page.
+`useSubnames` lists a name's [subnames](/docs/sdk/reference/glossary#subname). It returns every item loaded so far in `items`, and `loadMore` fetches the next page.
 
 **Example** (Subnames With A Load More Button)
 

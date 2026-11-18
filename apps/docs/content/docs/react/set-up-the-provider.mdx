@@ -30,9 +30,13 @@ export function Providers({ children }: { children: ReactNode }) {
 }
 ```
 
-Add a `walletClient` to `Ensforge.create` to send writes. See [Create a client](/docs/sdk/create-a-client) for every client option, including the indexer that list hooks need. With wagmi, see [Use with wagmi](/docs/react/with-wagmi).
+Add a `walletClient` to `Ensforge.create` to send writes. See [Create a client](/docs/sdk/create-a-client) for every client option, including the [indexer](/docs/sdk/reference/glossary#indexer) that list hooks need. With wagmi, see [Use with wagmi](/docs/react/with-wagmi).
 
-A hook that runs with no provider and no `client` option throws: "ensforge hooks need an `<EnsforgeProvider client={…}>` above them, or a `client` option."
+A hook that runs with no provider and no `client` option throws this error:
+
+```text title="Error"
+ensforge hooks need an <EnsforgeProvider client={…}> above them, or a `client` option.
+```
 
 ## Props
 

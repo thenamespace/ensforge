@@ -10,25 +10,25 @@ keywords:
   domain of session approvals can change when ENS deploys a dedicated one.
 </Callout>
 
-A **session** is an approval the HCA's owner signs once so that a session key can act for the HCA within fixed limits. After it, an app registers names and edits records without a wallet prompt for each step. By the end of this guide you will have authorized a session, used it, checked it and revoked it.
+A **session** is an approval the [HCA](/docs/sdk/reference/glossary#hca)'s owner signs once so that a session key can act for the HCA within fixed limits. After it, an app registers names and edits records without a wallet prompt for each step. By the end of this guide you will have authorized a session, used it, checked it and revoked it.
 
 ## What a session may do
 
 A session may do only these things:
 
-- Register names to the owner, with the session's resolver.
-- Deploy the session's resolver and set its records.
-- Set the owner's primary name.
-- Approve payments to the registrar for a registration.
+- Register `.eth` names to the owner, with the session's [resolver](/docs/sdk/reference/glossary#resolver) and no subregistry.
+- Deploy the session's resolver and set its [records](/docs/sdk/reference/glossary#record).
+- Set the owner's [primary name](/docs/sdk/reference/glossary#primary-name).
+- Approve token payments to the [registrar](/docs/sdk/reference/glossary#registrar) for a registration.
 
-Nothing else is allowed: renewals, transfers, subnames, registry approvals and calls to other contracts all fail with `HCA_ACTION_NOT_ALLOWED`. A session binds one resolver, the one it may deploy and edit.
+Nothing else is allowed. Renewals, transfers, [subnames](/docs/sdk/reference/glossary#subname), registry approvals, calls that send ETH and calls to other contracts all fail with [`HCA_ACTION_NOT_ALLOWED`](/docs/sdk/errors/HCA_ACTION_NOT_ALLOWED). A session binds one resolver, the one it may deploy and edit.
 
 ## Prerequisites
 
 - A client with a wallet and the HCA actions. See [Installation](/docs/hca/installation).
 - The owner's HCA deployed. See [`hca.deploy`](/docs/hca/reference/actions/hca/deploy).
 - A Rhinestone SDK with standalone HCA support and a session key. See [Rhinestone](/docs/hca/rhinestone).
-- A resolver address for the session. The session may deploy and edit this resolver, an HCA-deployed `PermissionedResolver`.
+- A resolver address for the session: the one resolver whose records the session may set. The HCA calls it, so the HCA must be allowed to write records there. The session may also deploy this resolver, but only when it is a PermissionedResolver that the HCA deploys at that address through ENS's VerifiableFactory.
 
 ## 1. Authorize the session
 
@@ -37,7 +37,7 @@ Nothing else is allowed: renewals, transfers, subnames, registry approvals and c
 | Option       | Type      | Description                                                                                           |
 | ------------ | --------- | ----------------------------------------------------------------------------------------------------- |
 | `sessionKey` | `string`  | Public address of the session key your app keeps.                                                     |
-| `resolver`   | `string`  | The one resolver the session may deploy and edit.                                                     |
+| `resolver`   | `string`  | The one resolver whose records the session may set.                                                   |
 | `validUntil` | `number`  | Unix seconds after which the session stops working.                                                   |
 | `refund`     | object    | Refund ceilings for Rhinestone executions: `token`, `maxExchangeRate`, `maxGasOverhead`, `maxAmount`. |
 | `account`    | `Address` | The HCA's owner. Defaults to the client's account.                                                    |
@@ -73,7 +73,7 @@ const session = await ens.hca.authorizeSession({
 });
 ```
 
-The returned `HcaSession` holds no secret: it has the owner's signature and the session terms, but the key stays with your app. Store it where the app can find it. It contains `bigint` values, so use a serializer that supports them. If the owner declines, the action fails with `USER_REJECTED`.
+The returned `HcaSession` holds no secret: it has the owner's signature and the session terms, but the key stays with your app. Store it where the app can find it. It contains `bigint` values, so use a serializer that supports them. If the owner declines, the action fails with [`USER_REJECTED`](/docs/sdk/errors/USER_REJECTED).
 
 ## 2. Check what a session can do
 
@@ -110,7 +110,7 @@ A registration that sets a `subregistry`, for example, is outside every session.
 
 ## 3. Run a write with the session
 
-Pass the session to `hca()` with an executor that runs sessions. The write is signed by the session key and delivered through Rhinestone.
+Pass the session to `hca()` with an executor that runs sessions. The write is signed by the session key and delivered through Rhinestone, with no wallet prompt.
 
 **Example** (Registering a Name Without a Prompt)
 
@@ -146,9 +146,9 @@ await ens.registration.registerSync({
 });
 ```
 
-A registration through a session must use the session's resolver, `session.terms.resolver`. The HCA pays for the registration, so it must hold the payment token. See [Deposits and gas](/docs/hca/deposits-and-gas).
+A registration through a session must use the session's resolver, `session.terms.resolver`. The HCA pays for the registration, so it must hold the payment token. Without it, the registration fails with `INSUFFICIENT_TOKEN_BALANCE` before anything is sent. See [Deposits and gas](/docs/hca/deposits-and-gas).
 
-To edit records, route `ens.record.set` the same way with the session's resolver: `ens.record.set({ name, texts: { url }, via })`.
+To edit records, route `ens.record.set` the same way: `ens.record.set({ name, texts: { url }, via })`. The name's resolver must be the session's resolver.
 
 ## 4. Check that a session still works
 
@@ -186,7 +186,7 @@ When `problem` is not `null`, authorize a new session.
 
 ## 5. Revoke every session
 
-`revokeSessions` bumps the HCA's session nonce, which invalidates every session approval at once. Use it when a session key may be lost or when you want to end all prompt-free access. It is the owner's own transaction and is never routed through the HCA.
+`revokeSessions` bumps the HCA's session nonce, which invalidates every session approval at once. Use it when a session key may be lost or when you want to end all prompt-free access. It is the owner's own transaction and is never routed through the HCA. It fails with `HCA_NOT_VERIFIED` when the HCA is not deployed, because an undeployed HCA has no sessions.
 
 ```ts twoslash title="revoke.ts"
 import { hcaActions } from "@ensforge/hca";
@@ -218,7 +218,7 @@ A call is outside the session policy. Send that call as the owner, without the s
 
 ### `HCA_SESSION_INVALID`
 
-The session is expired, revoked, for another chain or signing domain, or for another owner. Authorize a new session. See [`HCA_SESSION_INVALID`](/docs/sdk/errors/HCA_SESSION_INVALID).
+The session is expired, revoked, for another chain or signing domain, or for another owner. `authorizeSession` also throws it when the deployment has no default refund token and you pass no `refund.token`. Authorize a new session. See [`HCA_SESSION_INVALID`](/docs/sdk/errors/HCA_SESSION_INVALID).
 
 ### `HCA_EXECUTOR_UNSUPPORTED`
 
