@@ -13,7 +13,19 @@
         "diagnosticSeverity": {
           "experimentalApiUsage": "off",
           "unstableApiUsage": "off"
-        }
+        },
+        "keyPatterns": [{ "target": "service", "pattern": "package-identifier" }],
+        "allowedUnstableApis": [
+          "@effect/vitest",
+          "@effect/platform-node",
+          "effect/Arbitrary",
+          "effect/FileSystem",
+          "effect/Path",
+          "effect/cli",
+          "effect/http",
+          "effect/process"
+        ],
+        "allowedExperimentalApis": ["@ensforge/hca", "@ensforge/contracts/v2/experimental/hca"]
       }
     ]
   },

@@ -12,7 +12,16 @@
         "diagnosticSeverity": {
           "experimentalApiUsage": "off",
           "unstableApiUsage": "off"
-        }
+        },
+        "keyPatterns": [{ "target": "service", "pattern": "package-identifier" }],
+        "allowedUnstableApis": [
+          "@effect/platform-node",
+          "effect/FileSystem",
+          "effect/Path",
+          "effect/cli",
+          "effect/http",
+          "effect/process"
+        ]
       }
     ]
   },

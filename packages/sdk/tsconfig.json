@@ -12,7 +12,9 @@
         "diagnosticSeverity": {
           "experimentalApiUsage": "off",
           "unstableApiUsage": "off"
-        }
+        },
+        "keyPatterns": [{ "target": "service", "pattern": "package-identifier" }],
+        "allowedUnstableApis": ["@ensforge/sdk", "effect/crypto"]
       }
     ]
   },

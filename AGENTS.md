@@ -28,6 +28,12 @@ pnpm catalog. Tool configs live in `.config/`; repository scripts are `ensforge-
 `tsc` is patched with the Effect language service (`@effect/tsgo`), so typecheck reports Effect
 diagnostics. Fix them in the code rather than silencing them; disable one with an
 `@effect-diagnostics-next-line` comment only when the flagged pattern is the point of the code.
+`pnpm install` also patches oxlint (`effect-tsgo patch --oxlint`): lint is type-aware and runs the
+`@effect/tsgo` oxlint presets, whose rules `tsc` does not run. Silence those the same way, with a
+one-line reason and `// oxlint-disable-next-line effecttsgo/<rule>` (an `@effect-diagnostics`
+comment for a rule `tsc` does not run fails typecheck as having no effect). Unstable and
+experimental APIs used on purpose are allowlisted per package (`allowedUnstableApis`,
+`allowedExperimentalApis` in its tsconfig).
 
 ## Code guidelines
 

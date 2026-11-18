@@ -14,7 +14,20 @@
         "diagnosticSeverity": {
           "experimentalApiUsage": "off",
           "unstableApiUsage": "off"
-        }
+        },
+        "keyPatterns": [{ "target": "service", "pattern": "package-identifier" }],
+        "allowedUnstableApis": [
+          "@effect/vitest",
+          "@ensforge/sdk",
+          "@ensforge/react",
+          "@effect/atom-react",
+          "@effect/platform-node",
+          "effect/Arbitrary",
+          "effect/FileSystem",
+          "effect/Path",
+          "effect/reactivity"
+        ],
+        "allowedExperimentalApis": ["@ensforge/hca", "@ensforge/contracts/v2/experimental/hca"]
       }
     ]
   },

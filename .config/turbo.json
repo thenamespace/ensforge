@@ -10,6 +10,8 @@
       "persistent": true
     },
     "lint": {
+      "dependsOn": ["^build", "^lint"],
+      "inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/.config/oxlint.config.ts"],
       "outputs": []
     },
     "pack:check": {

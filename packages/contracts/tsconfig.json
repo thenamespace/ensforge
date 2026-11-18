@@ -10,7 +10,9 @@
         "diagnosticSeverity": {
           "experimentalApiUsage": "off",
           "unstableApiUsage": "off"
-        }
+        },
+        "keyPatterns": [{ "target": "service", "pattern": "package-identifier" }],
+        "allowedExperimentalApis": ["@ensforge/contracts"]
       }
     ]
   },
