@@ -17,6 +17,8 @@ There are two ways to read many values. Use `batch` for reads from the chain ([b
 
 Every read action has a `.request` form that builds a deferred read. `batch` runs a group of them together. Contract reads are combined into Multicall3 calls per block. Resolution reads (records and primary names) keep their own Universal Resolver call, so off-chain names still work.
 
+The [HCA](/docs/hca) reads (`hca.get`, `hca.predictAddress` and the others) have `.request` too, so they batch next to the SDK's reads.
+
 **Example** (Loading a Profile in One Batch)
 
 ```ts twoslash title="batch-profile.ts"
