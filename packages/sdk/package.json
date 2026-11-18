@@ -78,7 +78,6 @@
     "dev": "ensforge-dev build --watch",
     "lint": "oxlint -c ../../.config/oxlint.config.ts --deny-warnings .",
     "pack:check": "publint && attw --pack . --profile esm-only",
-    "prepack": "pnpm build",
     "typecheck": "tsc --noEmit",
     "verify": "ensforge-dev verify",
     "codegen": "ensforge-dev codegen",
