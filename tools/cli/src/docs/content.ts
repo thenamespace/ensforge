@@ -1,5 +1,5 @@
 /* oxlint-disable effecttsgo/prefer-effect-array, effecttsgo/prefer-effect-string -- synchronous text scanning of Markdown, where native string and array methods read more directly than curried Effect ones */
-import { Array as Arr, Effect, FileSystem, Path, String as Str } from "effect";
+import { Array as Arr, Effect, FileSystem, Order, Path, String as Str } from "effect";
 
 /** One `.mdx` page under `apps/docs/content/docs`. */
 export type DocsPage = {
@@ -61,5 +61,8 @@ export const readPages = Effect.fn("docs.readPages")(function* (root: string) {
       body,
     });
   }
-  return pages.toSorted((a, b) => a.file.localeCompare(b.file));
+  return Arr.sort(
+    pages,
+    Order.mapInput(Order.String, (page: DocsPage) => page.file),
+  );
 });
