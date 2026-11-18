@@ -17,14 +17,16 @@ import * as Impl from "./effect.js";
  * **Details**
  *
  * - Plan: renew names in grace (with `renew`) → create each name's resolver with its records,
- *   and a UserRegistry for its subnames → recreate the subnames → transfer the tokens to
- *   the migration controllers (parents before locked children) → restore ENSv1 managers.
+ *   and UserRegistries for its subnames → recreate the subnames → transfer the tokens to
+ *   the migration controllers (parents before locked children) → register a locked name's
+ *   subnames in its WrapperRegistry → restore ENSv1 managers.
  * - Direct token transfers from the holder: no approvals are needed.
  * - By default a name on an ENS public resolver gets its own PermissionedResolver; custom
  *   resolvers are kept. `resolver: "owned"` uses the signer's shared resolver (the ENS app's).
  * - Records and subnames are those given per name; otherwise, with an indexer, every record key
- *   it lists (values read on-chain) and the live direct subnames; without one,
+ *   it lists (values read on-chain) and the live subnames at every depth; without one,
  *   `allowIncompleteRecords` copies the common records. Locked names follow their fuses.
+ * - The sending account keeps no roles on a subname registry it deploys for someone else.
  * - An interrupted migration can run again: existing resolvers and registries are reused.
  *
  * **Gotchas**

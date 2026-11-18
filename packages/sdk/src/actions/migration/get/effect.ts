@@ -2,9 +2,9 @@ import { Effect } from "effect";
 
 import type { Client } from "../../../client/types.js";
 import * as Action from "../../../internal/action/index.js";
+import { discoverSubnames } from "../../../internal/migration/discover.js";
 import { inspectMigration, type ResolverChoice } from "../../../internal/migration/inspect.js";
 import { recordInventory } from "../../../internal/migration/records.js";
-import { discoverSubnames } from "../../../internal/migration/subnames.js";
 import { requireAddress } from "../../../internal/name/write.js";
 import { blockAt } from "../../../internal/rpc/block.js";
 import type { get as Promises } from "./index.js";
@@ -33,10 +33,9 @@ export const get = Effect.fn("ensforge.migration.get")(function* (
   }
 
   // The indexer reads the latest state, whatever block the inspection used.
-  const locked = status.route === "wrapped-locked" || status.route === "locked-child";
   const copies = ["new", "owned", "public-v2"].includes(status.resolver.plan);
   const inventory = copies ? yield* recordInventory(client, status.name) : null;
-  const subnames = locked ? null : yield* discoverSubnames(client, status.name);
+  const subnames = yield* discoverSubnames(client, status.name);
   if (inventory === null && subnames === null) return { ...status, discovered: null };
 
   return {

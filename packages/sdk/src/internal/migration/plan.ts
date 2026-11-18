@@ -26,9 +26,10 @@ import { requireAddress } from "../name/write.js";
 import { recordsCall } from "../records/write-call.js";
 import { deployPermissionedResolver } from "../resolver/deploy.js";
 import * as Rpc from "../rpc/index.js";
+import { discoverSubnames } from "./discover.js";
 import { inspectMigration, type Inspection, type ResolverChoice } from "./inspect.js";
 import { recordsToCopy, type CopiedRecords } from "./records.js";
-import { discoverSubnames, planRecreation } from "./subnames.js";
+import { planRecreation } from "./subnames.js";
 
 /** What `migration.migrate` takes, besides the signer. */
 export type MigrationInput = {
@@ -239,6 +240,8 @@ export const planMigration = Effect.fnUntraced(function* (
   const warnings: Plan.Warning[] = [];
   const expectations: Expectation[] = [];
   const moves: Move[] = [];
+  /** Registrations in each locked name's WrapperRegistry, sent after its migration step. */
+  const wrapped: { readonly depth: number; readonly calls: readonly Plan.Call[] }[] = [];
   /** WrapperRegistry each locked name migrating here gets, for its children. */
   const wrapperRegistries = new Map<
     string,
@@ -348,22 +351,32 @@ export const planMigration = Effect.fnUntraced(function* (
       resolver = zeroAddress;
     }
 
-    // Subnames: unlocked names recreate their children (listed, or found by the indexer) in a
-    // new UserRegistry.
+    // Where the token goes, and the WrapperRegistry a locked name gets for its children.
+    const parentRegistry = wrapperRegistries.get(parentOf(status.name));
+    const target =
+      route === "unwrapped" || route === "wrapped-unlocked"
+        ? v2.migration.unlockedMigrationController
+        : route === "wrapped-locked"
+          ? v2.migration.lockedMigrationController
+          : (parentRegistry?.address ?? (loaded.data.v2?.registry as Address));
+    const depth = route === "locked-child" ? (parentRegistry?.depth ?? -1) + 1 : 0;
+    const wrapperRegistry = locked
+      ? predictVerifiableProxyAddress({
+          factory: v2.contracts.verifiableFactory,
+          proxyLogic,
+          deployer: target,
+          salt: hexToBigInt(parts.node),
+        })
+      : undefined;
+    if (wrapperRegistry !== undefined) {
+      wrapperRegistries.set(status.name, { address: wrapperRegistry, depth });
+    }
+
+    // Subnames, listed or found by the indexer, at any depth: an unlocked name recreates them in
+    // a new UserRegistry, a locked one in its WrapperRegistry once it migrated.
     let subregistry: Address = zeroAddress;
     let subnames = config?.subnames;
-    if (subnames !== undefined && subnames.length > 0 && locked) {
-      return yield* Effect.fail(
-        new InvalidInputError({
-          code: "INVALID_NAME",
-          field: "subnames",
-          input: status.name,
-          shortMessage: `${status.name} is locked: its subnames move into its WrapperRegistry on their own.`,
-        }),
-      );
-    }
-    const discovered =
-      subnames === undefined && !locked ? yield* discoverSubnames(client, status.name) : null;
+    const discovered = subnames === undefined ? yield* discoverSubnames(client, status.name) : null;
     if (discovered !== null) {
       subnames = discovered.names;
       if (discovered.unknown.length > 0) {
@@ -378,8 +391,12 @@ export const planMigration = Effect.fnUntraced(function* (
         parent: { name: status.name, label: parts.label, node: parts.node },
         subnames,
         owner,
-        signer: sender,
+        sender,
         parentRegistry: v2.contracts.ethRegistry,
+        wrapperRegistry:
+          wrapperRegistry === undefined
+            ? undefined
+            : { address: wrapperRegistry, fuses: inspection.fuses },
       });
       if (recreation.leftBehind.length > 0 && input.allowLeavingSubnames !== true) {
         return yield* Effect.fail(
@@ -393,39 +410,21 @@ export const planMigration = Effect.fnUntraced(function* (
           }),
         );
       }
-      subregistry = recreation.registry;
-      if (recreation.deploy !== undefined) {
-        setup.push(recreation.deploy);
-        deploys.push({ contract: "registry", address: subregistry });
+      subregistry = recreation.registry ?? zeroAddress;
+      for (const deployment of recreation.deploys) {
+        setup.push(deployment.call);
+        deploys.push({ contract: "registry", address: deployment.address });
       }
       registries.push(...recreation.calls);
-    } else if (!locked && discovered === null && subnames === undefined) {
+      if (recreation.wrapped.length > 0) wrapped.push({ depth, calls: recreation.wrapped });
+      warnings.push(...recreation.warnings);
+    } else if (discovered === null && subnames === undefined) {
       warnings.push({
         code: "SUBNAMES_NOT_RECREATED",
         message: `Subnames of ${status.name} are not carried over unless listed in \`subnames\` or found by an indexer.`,
       });
     }
 
-    // Where the token goes, and the WrapperRegistry a locked name gets for its children.
-    const parentRegistry = wrapperRegistries.get(parentOf(status.name));
-    const target =
-      route === "unwrapped" || route === "wrapped-unlocked"
-        ? v2.migration.unlockedMigrationController
-        : route === "wrapped-locked"
-          ? v2.migration.lockedMigrationController
-          : (parentRegistry?.address ?? (loaded.data.v2?.registry as Address));
-    const depth = route === "locked-child" ? (parentRegistry?.depth ?? -1) + 1 : 0;
-    if (locked) {
-      wrapperRegistries.set(status.name, {
-        address: predictVerifiableProxyAddress({
-          factory: v2.contracts.verifiableFactory,
-          proxyLogic,
-          deployer: target,
-          salt: hexToBigInt(parts.node),
-        }),
-        depth,
-      });
-    }
     moves.push({
       depth,
       holder,
@@ -492,6 +491,11 @@ export const planMigration = Effect.fnUntraced(function* (
       depth === 0 ? "migrate" : `migrate-children-${depth}`,
       depth === 0 ? "Migrate names" : "Migrate locked subnames",
       transferCalls(v1, group),
+    );
+    chunked(
+      depth === 0 ? "wrapped-subnames" : `wrapped-subnames-children-${depth}`,
+      "Recreate subnames in WrapperRegistries",
+      wrapped.filter((registrations) => registrations.depth === depth).flatMap((r) => r.calls),
     );
   }
   chunked("records-after", "Copy records to PublicResolverV2", afterRecords);

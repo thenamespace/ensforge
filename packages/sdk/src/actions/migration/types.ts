@@ -118,7 +118,10 @@ export type Discovery = {
     /** `false` when the indexer could not list every key. */
     readonly complete: boolean;
   } | null;
-  /** Direct subnames recreated in the name's new UserRegistry; `null` for locked names. */
+  /**
+   * Live subnames at every depth that `migrate` recreates by default (in a new UserRegistry, or a
+   * locked name's WrapperRegistry), including those with unknown labels it cannot recreate.
+   */
   readonly subnames: readonly string[] | null;
 };
 
@@ -142,8 +145,15 @@ export type NameInput =
         | Omit<recordSet.Options, "name" | "resolver" | "clear" | "pubkey">
         | undefined;
       /**
-       * Direct subnames to recreate in a new UserRegistry, by label or full name. Without them
-       * the indexer's live subnames are recreated; `[]` recreates none.
+       * Subnames to recreate, at any depth: full names, or names relative to this one (`"pay"`,
+       * `"b.a"`). Every level between the name and a listed subname is recreated too, so it must
+       * be listed or exist on ENSv1. Each subname keeps its ENSv1 holder and resolver; one with
+       * subnames of its own gets a UserRegistry its holder owns. An unlocked name gets a new
+       * UserRegistry for its children; a locked one registers them in its WrapperRegistry after
+       * migrating, which only works when the account sending the migration becomes its owner and
+       * `cannotCreateSubdomain` is not burned. Emancipated children of a locked name migrate on
+       * their own (a warning). Without this list the indexer's live subnames are recreated
+       * (beyond 500 the list is required); `[]` recreates none.
        */
       readonly subnames?: readonly string[] | undefined;
     };
