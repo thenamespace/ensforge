@@ -1,6 +1,107 @@
 ---
 title: Renew a name
-description: Placeholder, to be written.
+description: Quote and renew one or more .eth names, including names in their grace period.
+keywords: [registration.renew, getRenewalPrice, grace period, ETHRenewerV1, renewBatch]
 ---
 
-Placeholder: this page is not written yet.
+You will extend the registration of one or more `.eth` names. Anyone can renew any name: the signer pays, and the owner does not change. ensforge picks the right contract for each name, so ENSv1 and ENSv2 names renew in the same call.
+
+## Prerequisites
+
+- A wallet client that holds the payment token and gas. See [Create a client](/docs/sdk/create-a-client).
+- Names that are registered or in their **grace period** (the time after expiry when only the previous owner can renew). Names past the grace period are registered again, not renewed. See [Register a name](/docs/sdk/register-a-name).
+
+## 1. Quote the renewal
+
+[`registration.getRenewalPrice`](/docs/sdk/reference/actions/registration/get-renewal-price) quotes any number of names in one batched call.
+
+**Example** (Quoting Two Names)
+
+```ts twoslash title="renewal-price.ts"
+import { createPublicClient, http } from "viem";
+import { sepolia } from "viem/chains";
+import { Duration, Ensforge, ensActions } from "@ensforge/sdk";
+
+const ens = Ensforge.create({
+  publicClient: createPublicClient({ chain: sepolia, transport: http() }),
+}).extend(ensActions());
+
+const { total, token, items } = await ens.registration.getRenewalPrice({
+  names: ["ensforge-docs-demo.eth", "ensforge-docs-demo-2.eth"],
+  duration: Duration.years(1),
+});
+```
+
+Each entry of `items` has the `name`, its `amount` and its `route`:
+
+| `route`          | Contract                  | Names                                          |
+| ---------------- | ------------------------- | ---------------------------------------------- |
+| `"v2-registrar"` | The ENSv2 `ETHRegistrar`. | Names registered on ENSv2.                     |
+| `"v1-renewer"`   | `ETHRenewerV1`.           | Names still on ENSv1, including wrapped names. |
+
+## 2. Renew
+
+[`registration.renew`](/docs/sdk/reference/actions/registration/renew) sends one `renewBatch` call per route, with a token approval for each contract whose allowance is short. `registration.renewSync` also waits for the receipts.
+
+**Example** (Renewing Two Names)
+
+```ts twoslash title="renew.ts"
+// @types: node
+import { createPublicClient, createWalletClient, http, type Hex } from "viem";
+import { privateKeyToAccount } from "viem/accounts";
+import { sepolia } from "viem/chains";
+import { Duration, Ensforge, ensActions } from "@ensforge/sdk";
+
+const account = privateKeyToAccount(process.env.PRIVATE_KEY as Hex);
+const transport = http(process.env.SEPOLIA_RPC_URL);
+
+const ens = Ensforge.create({
+  publicClient: createPublicClient({ chain: sepolia, transport }),
+  walletClient: createWalletClient({ account, chain: sepolia, transport }),
+}).extend(ensActions());
+
+const { hashes } = await ens.registration.renewSync({
+  names: ["ensforge-docs-demo.eth", "ensforge-docs-demo-2.eth"],
+  duration: Duration.years(1),
+});
+```
+
+| Option         | Type                        | Default  | Description                                                     |
+| -------------- | --------------------------- | -------- | --------------------------------------------------------------- |
+| `names`        | `string \| string[]`        | required | `.eth` second-level names. A name listed twice is renewed once. |
+| `duration`     | `bigint`                    | required | Renewal length in seconds.                                      |
+| `paymentToken` | `"usdc" \| "dai" \| string` | `"usdc"` | Token to pay with.                                              |
+| `referrer`     | `Hex`                       | none     | Referrer the registrar records.                                 |
+
+`renew` returns `{ hash, hashes, id, plan }`. `renewSync` adds `receipt` and `receipts`. All write options apply too. See [How writes work](/docs/sdk/writing-to-ens).
+
+## Check the result
+
+Read the name again to see its new `expiry`. See [Get a name's owner, expiry and status](/docs/sdk/get-name-details).
+
+<Callout type="info" title="Delegating renewal">
+  A `.eth` owner cannot grant the `renew` role to another account (`CANNOT_GRANT_ROLES`). It is not
+  needed: anyone can renew through the registrar.
+</Callout>
+
+## Troubleshooting
+
+### `NAME_NOT_RENEWABLE`
+
+A name is neither registered nor in its grace period. Register it instead. See [`NAME_NOT_RENEWABLE`](/docs/sdk/errors/NAME_NOT_RENEWABLE).
+
+### `INSUFFICIENT_TOKEN_BALANCE`
+
+The signer cannot pay the quote. See [`INSUFFICIENT_TOKEN_BALANCE`](/docs/sdk/errors/INSUFFICIENT_TOKEN_BALANCE).
+
+### `DURATION_TOO_SHORT`
+
+`duration` is shorter than the registrar's minimum. See [`DURATION_TOO_SHORT`](/docs/sdk/errors/DURATION_TOO_SHORT).
+
+### `PAYMENT_TOKEN_UNSUPPORTED`
+
+The registrar does not accept `paymentToken`. See [`PAYMENT_TOKEN_UNSUPPORTED`](/docs/sdk/errors/PAYMENT_TOKEN_UNSUPPORTED).
+
+### `UNSUPPORTED_ON_DEPLOYMENT`
+
+The chain has no ENSv2 deployment. See [`UNSUPPORTED_ON_DEPLOYMENT`](/docs/sdk/errors/UNSUPPORTED_ON_DEPLOYMENT).

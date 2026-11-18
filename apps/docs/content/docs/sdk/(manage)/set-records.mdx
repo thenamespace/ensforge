@@ -1,6 +1,162 @@
 ---
 title: Set records
-description: Placeholder, to be written.
+description: Write text, address and content hash records to a name you manage, or delete them, in one transaction.
+keywords:
+  [
+    record.set,
+    text records,
+    avatar,
+    addresses,
+    content hash,
+    clear,
+    resolver,
+    RESOLVER_PROFILE_UNSUPPORTED,
+  ]
 ---
 
-Placeholder: this page is not written yet.
+You will write **records** (a website, an avatar, an address, a content hash) to a name you can edit. ensforge writes them all in one `multicall` on the name's **resolver**, and detects whether that resolver is an ENSv1 resolver or an ENSv2 PermissionedResolver. You do not choose.
+
+## Prerequisites
+
+- A wallet client for an account that may edit the name's records. See [Create a client](/docs/sdk/create-a-client).
+- A registered name with a resolver of its own. See [Register a name](/docs/sdk/register-a-name).
+
+## 1. Write the records
+
+[`record.set`](/docs/sdk/reference/actions/record/set) takes the name and any mix of record kinds. `record.setSync` also waits for the receipt.
+
+**Example** (Updating a Profile)
+
+```ts twoslash title="set-records.ts"
+// @types: node
+import { createPublicClient, createWalletClient, http, type Hex } from "viem";
+import { privateKeyToAccount } from "viem/accounts";
+import { sepolia } from "viem/chains";
+import { Ensforge, ensActions } from "@ensforge/sdk";
+
+const account = privateKeyToAccount(process.env.PRIVATE_KEY as Hex);
+const transport = http(process.env.SEPOLIA_RPC_URL);
+
+const ens = Ensforge.create({
+  publicClient: createPublicClient({ chain: sepolia, transport }),
+  walletClient: createWalletClient({ account, chain: sepolia, transport }),
+}).extend(ensActions());
+
+const { hash } = await ens.record.setSync({
+  name: "ensforge-docs-demo.eth",
+  texts: { url: "https://example.com", avatar: "https://example.com/avatar.png" },
+  addresses: { eth: "0x225f137127d9067788314bc7fcc1f36746a3c3B5" },
+  contentHash: "ipfs://bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi",
+});
+```
+
+- `texts` maps a key to a string. The key `avatar` sets the name's avatar.
+- `addresses` maps a coin symbol (`eth`, `btc`) or a decimal **coin type** (`"2147492101"`) to an address. ensforge validates and encodes it for that chain.
+- `contentHash` takes a URI such as `ipfs://…`.
+
+| Option        | Type                             | Description                                        |
+| ------------- | -------------------------------- | -------------------------------------------------- |
+| `name`        | `string`                         | The name to update. Normalised automatically.      |
+| `texts`       | `Record<string, string \| null>` | Text records by key.                               |
+| `addresses`   | `Record<string, string \| null>` | Address records by coin symbol or coin type.       |
+| `contentHash` | `string \| null`                 | Content hash URI.                                  |
+| `abi`         | `{ contentType?, value }`        | ABI record (ENSIP-4). An `Abi` is stored as JSON.  |
+| `pubkey`      | `{ x, y } \| null`               | SECP256k1 public key. ENSv1 resolvers only.        |
+| `nameRecord`  | `string \| null`                 | The `name` record, used by reverse names.          |
+| `interfaces`  | `Record<Hex, Address \| null>`   | ERC-165 implementers by 4-byte interface ID.       |
+| `data`        | `Record<string, Hex \| null>`    | Data records (ENSIP-24) by key.                    |
+| `clear`       | `boolean`                        | Delete every existing record first.                |
+| `resolver`    | `Address \| "default"`           | Write to this resolver, then point the name at it. |
+
+## 2. Delete records
+
+Pass `null` to delete a record. `clear: true` deletes every record first, then writes the rest.
+
+**Example** (Deleting a Record)
+
+```ts twoslash title="delete-record.ts"
+// @types: node
+import { createPublicClient, createWalletClient, http, type Hex } from "viem";
+import { privateKeyToAccount } from "viem/accounts";
+import { sepolia } from "viem/chains";
+import { Ensforge, ensActions } from "@ensforge/sdk";
+
+const account = privateKeyToAccount(process.env.PRIVATE_KEY as Hex);
+const transport = http(process.env.SEPOLIA_RPC_URL);
+
+const ens = Ensforge.create({
+  publicClient: createPublicClient({ chain: sepolia, transport }),
+  walletClient: createWalletClient({ account, chain: sepolia, transport }),
+}).extend(ensActions());
+
+// ---cut---
+await ens.record.setSync({
+  name: "ensforge-docs-demo.eth",
+  texts: { url: null },
+});
+```
+
+On an ENSv2 PermissionedResolver, `clear` links the name to record 0 instead of deleting. The name then reads the resolver's default record, which is empty unless someone set it. It also needs the root `link` role.
+
+## 3. Write to a new resolver and switch to it
+
+`resolver` writes the records to another resolver, then points the name at it, in one step. A rejected write never leaves the name on an empty resolver.
+
+**Example** (Moving to a New Resolver With Records)
+
+```ts twoslash title="set-records-resolver.ts"
+// @types: node
+import { createPublicClient, createWalletClient, http, type Hex } from "viem";
+import { privateKeyToAccount } from "viem/accounts";
+import { sepolia } from "viem/chains";
+import { Ensforge, ensActions } from "@ensforge/sdk";
+
+const account = privateKeyToAccount(process.env.PRIVATE_KEY as Hex);
+const transport = http(process.env.SEPOLIA_RPC_URL);
+
+const ens = Ensforge.create({
+  publicClient: createPublicClient({ chain: sepolia, transport }),
+  walletClient: createWalletClient({ account, chain: sepolia, transport }),
+}).extend(ensActions());
+
+// ---cut---
+await ens.record.setSync({
+  name: "ensforge-docs-demo.eth",
+  resolver: "0x1111111111111111111111111111111111111111", // a resolver you control
+  texts: { url: "https://example.com" },
+});
+```
+
+`resolver: "default"` is the ENSv1 public resolver, for ENSv1 names only. ENSv2 names pass the address of a resolver such as their own PermissionedResolver. See [Change the resolver](/docs/sdk/change-the-resolver).
+
+## What ensforge checks first
+
+- Each kind of record is checked against the profiles the resolver declares through ERC-165, and `clear` against its record versions, before anything is simulated. A resolver that does not declare ERC-165 is left to the simulation.
+- The plan is simulated before the wallet prompt, so permission errors appear first.
+- Records go to the resolver set on the name in its registry, never to a wildcard resolver inherited from a parent.
+
+## Check the result
+
+Read the records back with [`record.get`](/docs/sdk/reference/actions/record/get). See [Get text records](/docs/sdk/get-text-records) and [Get a name's address](/docs/sdk/get-an-address).
+
+## Troubleshooting
+
+### `RESOLVER_PROFILE_UNSUPPORTED`
+
+The resolver cannot store this kind of record, or keeps its records off-chain. Older resolvers lack newer profiles: the 2020 public resolver has no `data` records and cannot `clear`. Resolvers that keep records off-chain (EIP-3668, ERC-5559, ERC-7884) take no on-chain writes, and the error's details say where the records live. Point the name at a resolver that supports the record. See [`RESOLVER_PROFILE_UNSUPPORTED`](/docs/sdk/errors/RESOLVER_PROFILE_UNSUPPORTED) and [Change the resolver](/docs/sdk/change-the-resolver).
+
+### `RESOLVER_NOT_FOUND`
+
+The name has no resolver of its own. Pass `resolver`, or create one. See [`RESOLVER_NOT_FOUND`](/docs/sdk/errors/RESOLVER_NOT_FOUND).
+
+### `NOT_OWNER` or `MISSING_ROLES`
+
+The account may not edit the records. On a PermissionedResolver the account needs the setter roles. See [Roles and permissions](/docs/sdk/roles-and-permissions), [`NOT_OWNER`](/docs/sdk/errors/NOT_OWNER) and [`MISSING_ROLES`](/docs/sdk/errors/MISSING_ROLES).
+
+### `INVALID_COIN_TYPE`, `INVALID_ADDRESS` or `INVALID_CONTENT_HASH`
+
+A coin, address or content hash does not parse. See [`INVALID_COIN_TYPE`](/docs/sdk/errors/INVALID_COIN_TYPE), [`INVALID_ADDRESS`](/docs/sdk/errors/INVALID_ADDRESS) and [`INVALID_CONTENT_HASH`](/docs/sdk/errors/INVALID_CONTENT_HASH).
+
+### `UNSUPPORTED_PROTOCOL`
+
+You passed `resolver: "default"` for an ENSv2 name. Pass a resolver address. See [`UNSUPPORTED_PROTOCOL`](/docs/sdk/errors/UNSUPPORTED_PROTOCOL).

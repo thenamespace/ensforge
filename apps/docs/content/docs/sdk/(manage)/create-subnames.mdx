@@ -1,6 +1,155 @@
 ---
 title: Create subnames
-description: Placeholder, to be written.
+description: Create, update and remove subnames such as pay.alice.eth under a name you control.
+keywords: [subname.create, subname.update, subname.remove, subregistry, upsert, emancipate, expiry]
 ---
 
-Placeholder: this page is not written yet.
+You will create a **subname** (a name under one you own, such as `pay.alice.eth`), change it and remove it. ensforge routes the write by the parent: an ENSv2 subregistry, the ENSv1 registry or the NameWrapper. You pass the same options.
+
+## Prerequisites
+
+- A wallet client for an account that may create children of the parent. See [Create a client](/docs/sdk/create-a-client).
+- A registered parent name. See [Register a name](/docs/sdk/register-a-name).
+
+## 1. Create a subname
+
+[`subname.create`](/docs/sdk/reference/actions/subname/create) takes the full name of the child. `subname.createSync` also waits for the receipt.
+
+**Example** (Creating a Subname With Records)
+
+```ts twoslash title="create-subname.ts"
+// @types: node
+import { createPublicClient, createWalletClient, http, type Hex } from "viem";
+import { privateKeyToAccount } from "viem/accounts";
+import { sepolia } from "viem/chains";
+import { Ensforge, ensActions } from "@ensforge/sdk";
+
+const account = privateKeyToAccount(process.env.PRIVATE_KEY as Hex);
+const transport = http(process.env.SEPOLIA_RPC_URL);
+
+const ens = Ensforge.create({
+  publicClient: createPublicClient({ chain: sepolia, transport }),
+  walletClient: createWalletClient({ account, chain: sepolia, transport }),
+}).extend(ensActions());
+
+const { hash } = await ens.subname.createSync({
+  name: "pay.ensforge-docs-demo.eth",
+  owner: "0xB0b0000000000000000000000000000000000000",
+  records: { texts: { url: "https://pay.example.com" } },
+});
+```
+
+- `owner` defaults to the signer.
+- By default the child gets its own PermissionedResolver, with `records` written at creation. `resolver: "parent"` shares the parent's resolver. `resolver: null` creates the child without one.
+- `upsert: true` updates an existing child's resolver and records instead of failing.
+
+| Option       | Type                         | Default                | Description                                                  |
+| ------------ | ---------------------------- | ---------------------- | ------------------------------------------------------------ |
+| `name`       | `string`                     | required               | Full name of the child.                                      |
+| `owner`      | `string`                     | the signer             | Owner of the child.                                          |
+| `resolver`   | `string \| "parent" \| null` | a new resolver         | Resolver of the child.                                       |
+| `records`    | `object`                     | none                   | Records of the child, in the `record.set` shape.             |
+| `expiry`     | `bigint`                     | see below              | Expiry as a Unix timestamp.                                  |
+| `fuses`      | `Fuse.Name[]`                | none                   | NameWrapper fuses to burn. Wrapped parents only.             |
+| `roles`      | `Role.Name[] \| bigint`      | the `.eth` owner roles | ENSv2 roles for the child's owner.                           |
+| `emancipate` | `boolean`                    | `false`                | Emancipate the parent's subregistry if this plan deploys it. |
+| `upsert`     | `boolean`                    | `false`                | Update the child if it exists.                               |
+
+## What differs by parent
+
+| Parent             | What happens                                                                                                                                                                                                                                                         |
+| ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| On ENSv2           | The child is registered in the parent's subregistry. A parent without one gets a UserRegistry deployed and attached in the same plan. Children never expire by default. Their owner gets the roles the `.eth` registrar grants: resolver, subregistry and transfers. |
+| Unwrapped on ENSv1 | One `setSubnodeRecord` call. `roles` and `fuses` are not supported.                                                                                                                                                                                                  |
+| Wrapped on ENSv1   | Takes `fuses` and an `expiry`. When `parentCannotControl` is burned, the default `expiry` is the maximum.                                                                                                                                                            |
+
+<Callout type="warn" title="A subregistry deployed here is not emancipated by default">
+  Owners of a subregistry that this plan deploys can remove and repoint its children, unless you
+  pass `emancipate: true`. See [Registries and
+  subregistries](/docs/sdk/registries-and-subregistries).
+</Callout>
+
+## 2. Change a subname from its parent
+
+[`subname.update`](/docs/sdk/reference/actions/subname/update) changes a child's resolver or expiry without asking its owner. `owner` changes only on ENSv1.
+
+**Example** (Extending a Subname)
+
+```ts twoslash title="update-subname.ts"
+// @types: node
+import { createPublicClient, createWalletClient, http, type Hex } from "viem";
+import { privateKeyToAccount } from "viem/accounts";
+import { sepolia } from "viem/chains";
+import { Ensforge, ensActions } from "@ensforge/sdk";
+
+const account = privateKeyToAccount(process.env.PRIVATE_KEY as Hex);
+const transport = http(process.env.SEPOLIA_RPC_URL);
+
+const ens = Ensforge.create({
+  publicClient: createPublicClient({ chain: sepolia, transport }),
+  walletClient: createWalletClient({ account, chain: sepolia, transport }),
+}).extend(ensActions());
+
+// ---cut---
+await ens.subname.updateSync({
+  name: "pay.ensforge-docs-demo.eth",
+  expiry: 1_900_000_000n,
+});
+```
+
+- `expiry` can only grow.
+- An ENSv2 child's owner moves with [`name.transfer`](/docs/sdk/transfer-a-name), not with `update`. `update({ owner })` on ENSv2 fails with [`UNSUPPORTED_PROTOCOL`](/docs/sdk/errors/UNSUPPORTED_PROTOCOL).
+- A child created with the default (never expires) cannot get an expiry later, because `renew` only extends. Pass `expiry` at creation when children should lapse.
+
+## 3. Remove a subname
+
+[`subname.remove`](/docs/sdk/reference/actions/subname/remove) takes a child back. On ENSv2 it also clears the child's resolver and subregistry, so nothing carries over to a later owner.
+
+**Example** (Removing a Subname)
+
+```ts twoslash title="remove-subname.ts"
+// @types: node
+import { createPublicClient, createWalletClient, http, type Hex } from "viem";
+import { privateKeyToAccount } from "viem/accounts";
+import { sepolia } from "viem/chains";
+import { Ensforge, ensActions } from "@ensforge/sdk";
+
+const account = privateKeyToAccount(process.env.PRIVATE_KEY as Hex);
+const transport = http(process.env.SEPOLIA_RPC_URL);
+
+const ens = Ensforge.create({
+  publicClient: createPublicClient({ chain: sepolia, transport }),
+  walletClient: createWalletClient({ account, chain: sepolia, transport }),
+}).extend(ensActions());
+
+// ---cut---
+await ens.subname.removeSync({ name: "pay.ensforge-docs-demo.eth" });
+```
+
+A parent cannot remove an emancipated child: an ENSv1 child with `parentCannotControl` burned, or a child of an emancipated ENSv2 subregistry.
+
+## Check the result
+
+Read the child with [`name.get`](/docs/sdk/reference/actions/name/get). See [Get a name's owner, expiry and status](/docs/sdk/get-name-details).
+
+## Troubleshooting
+
+### `NAME_NOT_AVAILABLE`
+
+The child already exists. Pass `upsert: true` to update it, or pick another label. See [`NAME_NOT_AVAILABLE`](/docs/sdk/errors/NAME_NOT_AVAILABLE).
+
+### `NAME_NOT_REGISTERED` or `NAME_EXPIRED`
+
+The parent is not registered. See [`NAME_NOT_REGISTERED`](/docs/sdk/errors/NAME_NOT_REGISTERED) and [`NAME_EXPIRED`](/docs/sdk/errors/NAME_EXPIRED).
+
+### `MISSING_ROLES`, `NOT_OWNER` or `FUSE_BURNED`
+
+The account may not create children, or a burned fuse forbids it. On a wrapped parent, an emancipated child cannot be updated until it expires. See [`MISSING_ROLES`](/docs/sdk/errors/MISSING_ROLES), [`NOT_OWNER`](/docs/sdk/errors/NOT_OWNER) and [`FUSE_BURNED`](/docs/sdk/errors/FUSE_BURNED).
+
+### `INVALID_RECORD_VALUE`
+
+`parentCannotControl` and `canExtendExpiry` need `cannotUnwrap` burned on a wrapped parent first. See [Lock permissions with fuses](/docs/sdk/fuses) and [`INVALID_RECORD_VALUE`](/docs/sdk/errors/INVALID_RECORD_VALUE).
+
+### `INVALID_ROLES` or `UNSUPPORTED_PROTOCOL`
+
+`roles` is for ENSv2 parents and `fuses` for wrapped parents. See [`INVALID_ROLES`](/docs/sdk/errors/INVALID_ROLES).

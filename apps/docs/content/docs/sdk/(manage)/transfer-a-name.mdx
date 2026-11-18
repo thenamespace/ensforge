@@ -1,6 +1,126 @@
 ---
 title: Transfer a name
-description: Placeholder, to be written.
+description: Send a name to another account, or hand its manager role or record control to someone else.
+keywords:
+  [name.transfer, setManager, reclaim, registrant, manager, handover, RECORD_CONTROL_RETAINED]
 ---
 
-Placeholder: this page is not written yet.
+You will send a name you own to another address. ensforge moves the right token for the name's kind, so one call works for ENSv2 names, unwrapped ENSv1 names and wrapped names.
+
+## Prerequisites
+
+- A wallet client for the account that owns the name. See [Create a client](/docs/sdk/create-a-client).
+- A registered name. Expired, reserved and unregistered names cannot be transferred.
+
+## 1. Send the name
+
+[`name.transfer`](/docs/sdk/reference/actions/name/transfer) takes the name and the recipient. `name.transferSync` also waits for the receipt.
+
+**Example** (Sending a Name)
+
+```ts twoslash title="transfer.ts"
+// @types: node
+import { createPublicClient, createWalletClient, http, type Hex } from "viem";
+import { privateKeyToAccount } from "viem/accounts";
+import { sepolia } from "viem/chains";
+import { Ensforge, ensActions } from "@ensforge/sdk";
+
+const account = privateKeyToAccount(process.env.PRIVATE_KEY as Hex);
+const transport = http(process.env.SEPOLIA_RPC_URL);
+
+const ens = Ensforge.create({
+  publicClient: createPublicClient({ chain: sepolia, transport }),
+  walletClient: createWalletClient({ account, chain: sepolia, transport }),
+}).extend(ensActions());
+
+const { hash } = await ens.name.transfer({
+  name: "ensforge-docs-demo.eth",
+  to: "0xB0b0000000000000000000000000000000000000",
+});
+```
+
+What moves depends on where the name lives:
+
+| Name                           | What `transfer` moves                                         |
+| ------------------------------ | ------------------------------------------------------------- |
+| On ENSv2                       | The name's registry token.                                    |
+| Wrapped on ENSv1               | The NameWrapper token.                                        |
+| Unwrapped `.eth` name on ENSv1 | The registrar token and the registry ownership (the manager). |
+| Other unwrapped ENSv1 name     | The registry owner.                                           |
+
+| Option    | Type                      | Default   | Description                                                                 |
+| --------- | ------------------------- | --------- | --------------------------------------------------------------------------- |
+| `name`    | `string`                  | required  | The name to send. Normalised automatically.                                 |
+| `to`      | `string`                  | required  | The recipient address.                                                      |
+| `role`    | `"owner" \| "registrant"` | `"owner"` | Unwrapped `.eth` names only. `"registrant"` moves only the registrar token. |
+| `unsafe`  | `boolean`                 | `false`   | ENSv2 only. Send even while other accounts still hold roles on the name.    |
+| `records` | `"keep" \| "handover"`    | `"keep"`  | ENSv2 only. What happens to the sender's roles on the name's resolver.      |
+
+## 2. Decide who keeps control of the records
+
+On ENSv2, a name's resolver has its own roles. By default they stay with the sender, who can still edit the records after the transfer. The plan carries a `RECORD_CONTROL_RETAINED` warning.
+
+Pass `records: "handover"` to grant them to the recipient and revoke the sender's in the same step.
+
+**Example** (Handing Over Record Control)
+
+```ts twoslash title="transfer-handover.ts"
+// @types: node
+import { createPublicClient, createWalletClient, http, type Hex } from "viem";
+import { privateKeyToAccount } from "viem/accounts";
+import { sepolia } from "viem/chains";
+import { Ensforge, ensActions } from "@ensforge/sdk";
+
+const account = privateKeyToAccount(process.env.PRIVATE_KEY as Hex);
+const transport = http(process.env.SEPOLIA_RPC_URL);
+
+const ens = Ensforge.create({
+  publicClient: createPublicClient({ chain: sepolia, transport }),
+  walletClient: createWalletClient({ account, chain: sepolia, transport }),
+}).extend(ensActions());
+
+// ---cut---
+await ens.name.transferSync({
+  name: "ensforge-docs-demo.eth",
+  to: "0xB0b0000000000000000000000000000000000000",
+  records: "handover",
+});
+```
+
+`"handover"` is refused for the sender's shared `"owned"` resolver, because its roles cover other names too. See [Resolvers and shared records](/docs/sdk/resolvers-and-shared-records).
+
+## Give only the registrar token (ENSv1)
+
+An unwrapped `.eth` name on ENSv1 has two holders. The **registrant** holds the registrar token and owns the name. The **manager** is the registry owner and edits records and subnames. See [Who can change a name](/docs/sdk/who-can-change-a-name).
+
+- `role: "registrant"` on `name.transfer` moves only the registrar token.
+- [`name.setManager`](/docs/sdk/reference/actions/name/set-manager) lets another account edit records and subnames while you keep ownership.
+- [`name.reclaim`](/docs/sdk/reference/actions/name/reclaim) resets the manager to the registrant (or to `owner`). Use it after receiving a registrar token, or to repair a lost manager.
+
+`setManager` and `reclaim` fail with [`UNSUPPORTED_PROTOCOL`](/docs/sdk/errors/UNSUPPORTED_PROTOCOL) for ENSv2 names, and for wrapped names. ENSv2 uses roles instead. See [Roles and permissions](/docs/sdk/roles-and-permissions).
+
+## Check the result
+
+Read the name with [`name.get`](/docs/sdk/reference/actions/name/get) and compare `owner` with the recipient. See [Get a name's owner, expiry and status](/docs/sdk/get-name-details).
+
+## Troubleshooting
+
+### `NOT_OWNER`
+
+The signer does not own the name. Send from the owner's account. See [`NOT_OWNER`](/docs/sdk/errors/NOT_OWNER).
+
+### `TRANSFER_DISALLOWED`
+
+The owner lacks the role to transfer, other accounts hold roles on an ENSv2 name, or the recipient (an HCA) refuses it. Revoke the other roles, or pass `unsafe: true`. See [`TRANSFER_DISALLOWED`](/docs/sdk/errors/TRANSFER_DISALLOWED).
+
+### `NAME_EXPIRED`, `NAME_RESERVED` or `NAME_NOT_REGISTERED`
+
+Only registered names can be sent. See [`NAME_EXPIRED`](/docs/sdk/errors/NAME_EXPIRED), [`NAME_RESERVED`](/docs/sdk/errors/NAME_RESERVED) and [`NAME_NOT_REGISTERED`](/docs/sdk/errors/NAME_NOT_REGISTERED).
+
+### `UNSUPPORTED_PROTOCOL`
+
+You passed `role: "registrant"` for a name that has no registrant. See [`UNSUPPORTED_PROTOCOL`](/docs/sdk/errors/UNSUPPORTED_PROTOCOL).
+
+### `INVALID_ADDRESS`
+
+`to` is not an address. See [`INVALID_ADDRESS`](/docs/sdk/errors/INVALID_ADDRESS).
