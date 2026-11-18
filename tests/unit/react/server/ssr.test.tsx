@@ -1,12 +1,20 @@
 // @vitest-environment node
+import { Suspense } from "react";
 import { renderToString } from "react-dom/server";
+import { prerender } from "react-dom/static";
 
 import { RegistryProvider } from "@effect/atom-react";
 import { assert, describe, it } from "@effect/vitest";
 import { Effect } from "effect";
 import { AsyncResult, AtomRegistry, Hydration } from "effect/reactivity";
 
-import { EnsforgeProvider, HydrationBoundary, useRead } from "@ensforge/react";
+import {
+  EnsforgeProvider,
+  HydrationBoundary,
+  useInfiniteRead,
+  useRead,
+  useSuspenseRead,
+} from "@ensforge/react";
 import { ensAtom } from "@ensforge/react/atoms";
 import { dehydrate, prefetch } from "@ensforge/react/server";
 
@@ -41,6 +49,21 @@ describe("prefetch and dehydrate", () => {
       yield* Effect.promise(() => prefetch(server, client(), action, { name: "nick.eth" }));
 
       assert.deepStrictEqual(dehydrate(server), []);
+    }),
+  );
+
+  // Regression: `refetchInterval` kept polling in the request's registry until it was disposed.
+  it.live("does not poll on the server", () =>
+    Effect.gen(function* () {
+      const { action, calls } = fakeRead("name.get", (_options: { name: string }) => profile);
+      const server = AtomRegistry.make();
+      yield* Effect.promise(() =>
+        prefetch(server, client(), action, { name: "nick.eth" }, { refetchInterval: 5 }),
+      );
+
+      yield* Effect.sleep(50);
+
+      assert.strictEqual(calls.length, 1);
     }),
   );
 });
@@ -112,4 +135,49 @@ describe("server rendering", () => {
     assert.include(html, "loading");
     assert.strictEqual(nameRead.calls.length, 0);
   });
+
+  // Regression: the list's first page was fetched on the server.
+  it("renders paginated lists as loading without calling them", () => {
+    const { action, calls } = fakeRead(
+      "indexer.getSubnames",
+      (_options: { name: string; cursor?: string }) => ({ items: ["a"], cursor: null }),
+    );
+    const Subnames = () => (
+      <p>{useInfiniteRead(action, { name: "ens.eth" }).isLoading && "loading"}</p>
+    );
+
+    const html = renderToString(
+      <EnsforgeProvider client={client()}>
+        <Subnames />
+      </EnsforgeProvider>,
+    );
+
+    assert.include(html, "loading");
+    assert.strictEqual(calls.length, 0);
+  });
+
+  // Regression: the read never settled, so a streamed or prerendered page never finished.
+  it.effect("renders the fallback of a Suspense read that was not prefetched", () =>
+    Effect.gen(function* () {
+      nameRead.calls.length = 0;
+      const Profile = () => (
+        <p>{useSuspenseRead(nameRead.action, { name: "nick.eth" }).data.name}</p>
+      );
+
+      const { prelude } = yield* Effect.promise(() =>
+        prerender(
+          <EnsforgeProvider client={client()}>
+            <Suspense fallback="loading">
+              <Profile />
+            </Suspense>
+          </EnsforgeProvider>,
+          { onError: () => undefined },
+        ),
+      ).pipe(Effect.timeout("2 seconds"));
+      const html = yield* Effect.promise(() => new Response(prelude).text());
+
+      assert.include(html, "loading");
+      assert.strictEqual(nameRead.calls.length, 0);
+    }),
+  );
 });

@@ -1,7 +1,6 @@
 import { assert, describe, it } from "@effect/vitest";
 
 import { subjectsOf, writeSubjects } from "@ensforge/react/internal/atoms/subjects";
-import type { Write } from "@ensforge/sdk";
 
 const alice = "0x00000000000000000000000000000000000A11CE";
 const bob = "0x0000000000000000000000000000000000000B0B";
@@ -30,9 +29,7 @@ describe("subjectsOf", () => {
 
 describe("writeSubjects", () => {
   it("adds parents, for subname and registry lists, and the signer", () => {
-    const result = { plan: { account: bob } } as unknown as Write.Result;
-
-    assert.deepStrictEqual(writeSubjects({ name: "pay.alice.eth", to: alice }, result), {
+    assert.deepStrictEqual(writeSubjects({ name: "pay.alice.eth", to: alice }, bob), {
       names: ["pay.alice.eth", "alice.eth"],
       addresses: [alice.toLowerCase(), bob.toLowerCase()],
     });

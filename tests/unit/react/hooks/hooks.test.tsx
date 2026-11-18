@@ -5,6 +5,7 @@ import { assert, describe, it } from "@effect/vitest";
 import { EnsforgeProvider, useInfiniteRead, useRead, useReads, useWrite } from "@ensforge/react";
 import type { Ensforge, Plan, Write } from "@ensforge/sdk";
 import { act, renderHook, waitFor } from "@testing-library/react";
+import type { Hex } from "viem";
 
 import { client, fakeRead } from "../fixtures.js";
 
@@ -97,6 +98,22 @@ describe("useInfiniteRead", () => {
   });
 });
 
+// A write that settles when the test says so, with its name as its hash.
+const heldWrite = () => {
+  const settle: Record<string, (outcome: "succeed" | "fail") => void> = {};
+  const action = Object.assign(
+    (_client: Ensforge.Client, options: { name: string }) =>
+      new Promise<Write.Result>((resolve, reject) => {
+        settle[options.name] = (outcome) =>
+          outcome === "succeed"
+            ? resolve({ hash: options.name as Hex, hashes: [], id: undefined, plan: {} as Plan })
+            : reject(Object.assign(new Error("reverted"), { code: "TRANSACTION_REVERTED" }));
+      }),
+    { path: "test.set" },
+  );
+  return { action, settle };
+};
+
 describe("useWrite", () => {
   const step = { id: "records", description: "Set records", calls: [] } as unknown as Plan.Step;
   const write = Object.assign(
@@ -141,6 +158,60 @@ describe("useWrite", () => {
 
     assert.include(error, { code: "USER_REJECTED" });
     assert.strictEqual(result.current.status, "error");
+  });
+
+  it("settles each mutateAsync with its own write, and shows the latest one started", async () => {
+    const { action, settle } = heldWrite();
+    const { result } = renderHook(() => useWrite(action), { wrapper: wrapper(client()) });
+
+    const first = result.current.mutateAsync({ name: "first" });
+    const second = result.current.mutateAsync({ name: "second" });
+    act(() => settle.second?.("succeed"));
+    await waitFor(() => assert.strictEqual(result.current.data?.hash, "second"));
+    act(() => settle.first?.("succeed"));
+
+    assert.strictEqual((await first).hash, "first");
+    assert.strictEqual((await second).hash, "second");
+    assert.strictEqual(result.current.data?.hash, "second");
+  });
+
+  it("clears the state on reset while a write is pending; the write still settles its promise", async () => {
+    const { action, settle } = heldWrite();
+    const { result } = renderHook(() => useWrite(action), { wrapper: wrapper(client()) });
+
+    const pending = result.current.mutateAsync({ name: "alice.eth" });
+    await waitFor(() => assert.strictEqual(result.current.status, "pending"));
+    act(() => result.current.reset());
+    assert.strictEqual(result.current.status, "idle");
+    act(() => settle["alice.eth"]?.("succeed"));
+
+    assert.strictEqual((await pending).hash, "alice.eth");
+    assert.strictEqual(result.current.status, "idle");
+  });
+
+  it("drops the previous data when a later write fails", async () => {
+    const { action, settle } = heldWrite();
+    const { result } = renderHook(() => useWrite(action), { wrapper: wrapper(client()) });
+
+    act(() => result.current.mutate({ name: "alice.eth" }));
+    act(() => settle["alice.eth"]?.("succeed"));
+    await waitFor(() => assert.strictEqual(result.current.status, "success"));
+    act(() => result.current.mutate({ name: "bob.eth" }));
+    act(() => settle["bob.eth"]?.("fail"));
+    await waitFor(() => assert.strictEqual(result.current.status, "error"));
+
+    assert.isUndefined(result.current.data);
+  });
+
+  it("keeps mutate, mutateAsync and reset stable across renders", () => {
+    const { result, rerender } = renderHook(() => useWrite(write), { wrapper: wrapper(client()) });
+    const { mutate, mutateAsync, reset } = result.current;
+
+    rerender();
+
+    assert.strictEqual(result.current.mutate, mutate);
+    assert.strictEqual(result.current.mutateAsync, mutateAsync);
+    assert.strictEqual(result.current.reset, reset);
   });
 
   it("gives each component its own state", async () => {

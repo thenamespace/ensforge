@@ -6,8 +6,11 @@ import { createPublicClient } from "viem";
 import { mainnet } from "viem/chains";
 
 /** A mainnet client that fails on any RPC call: actions under test are fakes. */
-export const client = (): Ensforge.Client =>
+export const client = (
+  options: Omit<Ensforge.CreateOptions, "publicClient"> = {},
+): Ensforge.Client =>
   Ensforge.create({
+    ...options,
     publicClient: createPublicClient({
       chain: mainnet,
       transport: scriptedTransport(noRpc).transport,

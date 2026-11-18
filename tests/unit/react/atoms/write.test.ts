@@ -3,7 +3,10 @@ import { Effect } from "effect";
 import { AsyncResult, AtomRegistry } from "effect/reactivity";
 
 import { ensAtom, ensWriteAtom } from "@ensforge/react/atoms";
-import type { Ensforge, Plan, Write } from "@ensforge/sdk";
+import { Ensforge, type Plan, type Write } from "@ensforge/sdk";
+import { scriptedTransport } from "@ensforge/test-harness";
+import { createPublicClient } from "viem";
+import { mainnet } from "viem/chains";
 
 import { client, fakeRead } from "../fixtures.js";
 
@@ -93,5 +96,77 @@ describe("ensWriteAtom", () => {
         );
         assert.strictEqual(indexedCalls.length, 1);
       }),
+  );
+
+  it.live("refetches chain reads when waiting for the write's receipt fails", () =>
+    Effect.gen(function* () {
+      const hash = `0x${"01".repeat(32)}` as const;
+      // The transaction is known, mined in block 16, but its receipt cannot be fetched.
+      const ens = Ensforge.create({
+        publicClient: createPublicClient({
+          chain: mainnet,
+          pollingInterval: 5,
+          transport: scriptedTransport(({ method }) => {
+            if (method === "eth_blockNumber") return "0x10";
+            if (method === "eth_getTransactionByHash")
+              return { hash, blockNumber: "0x10", from: signer, nonce: "0x0" };
+            throw Object.assign(new Error(`rpc down: ${method}`), { code: -32_000 });
+          }).transport,
+        }),
+      });
+      const write = Object.assign(
+        async (_client: Ensforge.Client, _options: { name: string }): Promise<Write.Result> => ({
+          hash,
+          hashes: [hash],
+          id: undefined,
+          plan: { account: signer } as unknown as Plan,
+        }),
+        { path: "test.set" },
+      );
+      const { action: read, calls } = fakeRead("record.get", (_options: { name: string }) => 1);
+      const registry = AtomRegistry.make();
+      const atom = ensAtom(ens, read, { name: "alice.eth" });
+      registry.mount(atom);
+      yield* AtomRegistry.getResult(registry, atom);
+      const atoms = ensWriteAtom(ens, write);
+      registry.mount(atoms.run);
+
+      yield* atoms
+        .send({ name: "alice.eth" })
+        .pipe(Effect.provideService(AtomRegistry.AtomRegistry, registry));
+      yield* Effect.sleep(100);
+
+      assert.strictEqual(calls.length, 2);
+    }),
+  );
+
+  it.live("refetches reads when a write fails after one of its steps was confirmed", () =>
+    Effect.gen(function* () {
+      const ens = client();
+      const step = { id: "approve", description: "Approve", calls: [] } as unknown as Plan.Step;
+      const write = Object.assign(
+        async (
+          _client: Ensforge.Client,
+          options: { readonly name: string; readonly onStep?: (event: Plan.Event) => void },
+        ): Promise<Write.Result> => {
+          options.onStep?.({ step, status: "confirmed", hashes: [] });
+          throw Object.assign(new Error("rejected"), { code: "USER_REJECTED" });
+        },
+        { path: "test.set" },
+      );
+      const { action: read, calls } = fakeRead("record.get", (_options: { name: string }) => 1);
+      const registry = AtomRegistry.make();
+      const atom = ensAtom(ens, read, { name: "alice.eth" });
+      registry.mount(atom);
+      yield* AtomRegistry.getResult(registry, atom);
+      const atoms = ensWriteAtom(ens, write);
+      registry.mount(atoms.run);
+
+      registry.set(atoms.run, { name: "alice.eth" });
+      yield* Effect.flip(AtomRegistry.getResult(registry, atoms.run));
+      yield* Effect.sleep(1);
+
+      assert.strictEqual(calls.length, 2);
+    }),
   );
 });

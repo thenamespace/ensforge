@@ -1,6 +1,6 @@
 import { describe, expectTypeOf, it } from "@effect/vitest";
 
-import { useRead, useRecords, useWrite, useInfiniteRead } from "@ensforge/react";
+import { useRead, useRecords, useSignClaim, useWrite, useInfiniteRead } from "@ensforge/react";
 import { Actions, type Errors, type Write } from "@ensforge/sdk";
 import { Actions as EffectActions } from "@ensforge/sdk/effect";
 
@@ -39,5 +39,12 @@ describe("write hooks", () => {
     ).resolves.toEqualTypeOf<Write.Result>();
     // @ts-expect-error a name is required
     void mutateAsync({ texts: { url: "x" } });
+  });
+
+  it("resolve signed claims with the claim and its signature", () => {
+    const { mutateAsync } = useSignClaim();
+    expectTypeOf(
+      mutateAsync({ name: "alice.eth", chainIds: [10] }),
+    ).resolves.toEqualTypeOf<Actions.primaryName.signClaim.ReturnType>();
   });
 });
