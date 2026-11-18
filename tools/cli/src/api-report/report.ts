@@ -9,16 +9,13 @@ import {
   type Symbol as TsSymbol,
 } from "typescript/unstable/sync";
 
+import { isNamespace, stabilityOf } from "../lint-jsdoc/stability.ts";
 import type { Project } from "../services/TypeScript.ts";
 import { formatAbiItem, isAbi } from "./abi.ts";
 
 // TypeFormatFlags (TypeScript 7 does not export the enum): NoTruncation | InTypeAlias |
 // UseSingleQuotesForStringLiteralType | WriteArrowStyleSignature.
 const typeFlags = 1 | 8_388_608 | 268_435_456 | 262_144;
-
-const isNamespace = (symbol: TsSymbol): boolean =>
-  (symbol.flags & (SymbolFlags.ValueModule | SymbolFlags.NamespaceModule)) !== 0 &&
-  (symbol.flags & (SymbolFlags.Function | SymbolFlags.Class | SymbolFlags.Variable)) === 0;
 
 const valueAt = (module: unknown, path: string): unknown =>
   path
@@ -31,7 +28,8 @@ const valueAt = (module: unknown, path: string): unknown =>
 
 /**
  * Every export of a declaration file, walking into namespaces (`export * as Errors`), with its
- * signature. `runtime` is the built module, so ABIs print as one signature per line.
+ * signature and, unless stable, its `@stability`. `runtime` is the built module, so ABIs print as
+ * one signature per line.
  */
 export const renderReport = (project: Project, file: string, runtime: unknown): string => {
   const { checker } = project;
@@ -105,7 +103,8 @@ export const renderReport = (project: Project, file: string, runtime: unknown): 
     }
   };
 
-  const walk = (prefix: string, symbols: Iterable<TsSymbol>) => {
+  // `inherited`: the tag of the function or class whose namespace is walked (`getText.Options`).
+  const walk = (prefix: string, symbols: Iterable<TsSymbol>, inherited?: string) => {
     // oxlint-disable-next-line unicorn/no-array-sort -- sorts a fresh array
     for (const exported of [...symbols].sort((a, b) => a.name.localeCompare(b.name))) {
       const symbol = resolve(exported);
@@ -121,13 +120,15 @@ export const renderReport = (project: Project, file: string, runtime: unknown): 
         continue;
       }
 
+      const stability = stabilityOf(checker, exported)?.value ?? inherited ?? "untagged";
+      if (stability !== (inherited ?? "stable")) lines.push(`// @stability ${stability}`);
       if ((symbol.flags & (SymbolFlags.Function | SymbolFlags.Class | SymbolFlags.Variable)) !== 0)
         describeValue(path, symbol);
       if ((symbol.flags & (SymbolFlags.Interface | SymbolFlags.TypeAlias)) !== 0)
         describeType(path, symbol);
       // Type-only namespaces merged with values (e.g. `getText.Options`).
       if ((symbol.flags & SymbolFlags.NamespaceModule) !== 0)
-        walk(path, symbol.getExports().values());
+        walk(path, symbol.getExports().values(), stability);
     }
   };
 

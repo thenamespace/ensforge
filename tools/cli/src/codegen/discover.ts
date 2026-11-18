@@ -18,6 +18,8 @@ export type Action = {
   readonly properties: readonly string[];
   /** Types declared in the action's namespace (`Options`, `ReturnType`, `Bound`, …). */
   readonly types: readonly string[];
+  /** Source range of the `ErrorType` alias's type in the action's namespace, which codegen writes. */
+  readonly errorType: { readonly start: number; readonly end: number } | undefined;
 };
 
 export type Domain = {
@@ -27,6 +29,33 @@ export type Domain = {
 
 export const isWrite = (action: Action): boolean =>
   writeMethods.every((method) => action.properties.includes(method));
+
+/**
+ * Whether `action` signs and sends: a write, the `…Sync` form of one in the same folder
+ * (`record.setSync`), or another action documented as writing (`plan.resume`).
+ */
+export const sends = (action: Action, actions: readonly Action[]): boolean =>
+  isWrite(action) ||
+  /^\s*\* @category writing$/m.test(action.jsdoc) ||
+  (action.name.endsWith("Sync") &&
+    actions.some(
+      (other) =>
+        other.folder === action.folder && `${other.name}Sync` === action.name && isWrite(other),
+    ));
+
+/**
+ * Error classes an action's `@throws` tags name, in order: `Errors.UnauthorizedError` →
+ * `UnauthorizedError`. A tag may name several, or `Errors.AnyError` for an action that runs
+ * arbitrary steps (`plan.send`).
+ */
+export const documentedErrors = (action: Action): readonly string[] => [
+  ...new Set(
+    action.jsdoc
+      .split("\n")
+      .filter((line) => line.includes("@throws"))
+      .flatMap((line) => [...line.matchAll(/`Errors\.(\w+)`/g)].map(([, name]) => name ?? "")),
+  ),
+];
 
 /** The action folders of each domain under `src/actions`, sorted, with the files they have. */
 export type Layout = readonly {
@@ -39,7 +68,14 @@ const readActions = (project: Project, file: string, folder: string): Action[] =
   const source = project.sourceFile(file);
   const actions = new Map<
     string,
-    { name: string; folder: string; jsdoc: string; properties: string[]; types: string[] }
+    {
+      name: string;
+      folder: string;
+      jsdoc: string;
+      properties: string[];
+      types: string[];
+      errorType: { start: number; end: number } | undefined;
+    }
   >();
 
   for (const statement of source.statements) {
@@ -55,6 +91,7 @@ const readActions = (project: Project, file: string, folder: string): Action[] =
         jsdoc: jsdocBlockOf(statement, source) ?? "",
         properties: [],
         types: [],
+        errorType: undefined,
       });
     }
   }
@@ -65,10 +102,13 @@ const readActions = (project: Project, file: string, folder: string): Action[] =
       !ts.isModuleBlock(statement.body)
     )
       continue;
-    const types = statement.body.statements
-      .filter(ts.isTypeAliasDeclaration)
-      .map((alias) => alias.name.text);
-    actions.get(statement.name.text)?.types.push(...types);
+    const aliases = statement.body.statements.filter(ts.isTypeAliasDeclaration);
+    const action = actions.get(statement.name.text);
+    if (action === undefined) continue;
+    action.types.push(...aliases.map((alias) => alias.name.text));
+    const errorType = aliases.find((alias) => alias.name.text === "ErrorType")?.type;
+    if (errorType !== undefined)
+      action.errorType = { start: errorType.getStart(source), end: errorType.getEnd() };
   }
   for (const statement of source.statements) {
     if (!ts.isExpressionStatement(statement) || !ts.isBinaryExpression(statement.expression))

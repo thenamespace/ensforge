@@ -6,6 +6,7 @@ import {
   decorators,
   domainBarrel,
   effectBarrel,
+  errorType,
   extensionProfile,
   requestsTable,
   sdkProfile,
@@ -67,7 +68,31 @@ export const codegen = Effect.fn("codegen")(function* (check: boolean) {
     ),
   );
   const { domains, problems } = discover(project, actionsDir, layout);
+  for (const { domain, actions } of domains) {
+    for (const action of actions) {
+      if (action.errorType === undefined)
+        problems.push(`${domain}/${action.folder}: namespace ${action.name} has no ErrorType`);
+    }
+  }
   if (problems.length > 0) return yield* new CheckFailed({ check: "codegen", problems });
+
+  // Each action's `ErrorType` in its hand-written index.ts is generated from its `@throws` tags.
+  const errorTypes = domains.flatMap(({ domain, actions }) =>
+    [...new Set(actions.map((action) => action.folder))].map((folder) => {
+      const file = `src/actions/${domain}/${folder}/index.ts`;
+      let text = project.sourceFile(path.join(workspace.packageDir, file)).text;
+      const ranges = actions
+        .flatMap((action) =>
+          action.folder === folder && action.errorType !== undefined
+            ? [{ ...action.errorType, type: errorType(action, actions, profile) }]
+            : [],
+        )
+        .toSorted((a, b) => b.start - a.start);
+      for (const { start, end, type } of ranges)
+        text = text.slice(0, start) + type + text.slice(end);
+      return [file, text] as const;
+    }),
+  );
 
   const outputs = new Map<string, string>([
     ["src/actions/index.ts", treeBarrel(domains, "index", profile)],
@@ -76,8 +101,9 @@ export const codegen = Effect.fn("codegen")(function* (check: boolean) {
     ...(profile.batch ? [["src/actions/requests.ts", requestsTable(domains)] as const] : []),
     ...domains.flatMap((entry) => [
       [`src/actions/${entry.domain}/index.ts`, domainBarrel(entry)] as const,
-      [`src/actions/${entry.domain}/effect.ts`, effectBarrel(entry)] as const,
+      [`src/actions/${entry.domain}/effect.ts`, effectBarrel(entry, profile)] as const,
     ]),
+    ...errorTypes,
   ]);
 
   // With `check`, format in a scratch copy so the comparison never touches src. It lives outside

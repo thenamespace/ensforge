@@ -5,12 +5,14 @@ import { CheckFailed } from "../errors.ts";
 import { actionFilesOf, checkActionFile } from "../lint-jsdoc/actions.ts";
 import { undocumentedExports } from "../lint-jsdoc/declarations.ts";
 import { brokenLinks, exportedPaths } from "../lint-jsdoc/links.ts";
+import { untaggedExports } from "../lint-jsdoc/stability.ts";
 import { TypeScript } from "../services/TypeScript.ts";
 import { Workspace } from "../services/Workspace.ts";
 
 /**
  * Checks the package's documentation: every export reachable from the API entries has JSDoc,
- * action files follow the Effect-style format, and every `{@link}` resolves.
+ * every export reachable from any published entry has a `@stability` tag, action files follow the
+ * Effect-style format, and every `{@link}` resolves.
  */
 export const lintJsdoc = Effect.fn("lintJsdoc")(function* () {
   const workspace = yield* Workspace;
@@ -48,8 +50,17 @@ export const lintJsdoc = Effect.fn("lintJsdoc")(function* () {
     workspace.entries.map((entry) => entry.source),
   );
 
+  const untagged = untaggedExports(
+    project,
+    workspace.entries.map((entry) => ({
+      name: `${workspace.name}${entry.subpath.slice(1)}`,
+      source: entry.source,
+    })),
+  );
+
   const problems = [
     ...declarations.problems.map(([file, message]) => [file, message] as const),
+    ...untagged,
     ...actionFiles.flatMap((file) =>
       checkActionFile(file, project.sourceFile(file), actionsFolder, errorClasses).map(
         (message) => [file, message] as const,
@@ -69,5 +80,7 @@ export const lintJsdoc = Effect.fn("lintJsdoc")(function* () {
 }, Effect.scoped);
 
 export const lintJsdocCommand = Command.make("lint-jsdoc", {}, () => lintJsdoc()).pipe(
-  Command.withDescription("Check JSDoc on exports, the action doc format and {@link} targets"),
+  Command.withDescription(
+    "Check JSDoc and @stability on exports, the action doc format and {@link} targets",
+  ),
 );

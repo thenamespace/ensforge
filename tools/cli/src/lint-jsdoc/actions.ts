@@ -98,9 +98,13 @@ export const checkActionFile = (
     }));
     const thrown = tags.filter((tag) => tag.tag === "throws");
     if (thrown.length === 0) fail("needs at least one @throws");
+    // Codegen builds `ErrorType` from every class a `@throws` names; `AnyError` is the whole set.
     for (const { value } of thrown) {
-      const className = /^`Errors\.(\w+)`/.exec(value)?.[1];
-      if (className === undefined || !errorClasses.has(className))
+      const named = [...value.matchAll(/`Errors\.(\w+)`/g)].map(([, error]) => error ?? "");
+      if (
+        !value.startsWith("`Errors.") ||
+        named.some((error) => error !== "AnyError" && !errorClasses.has(error))
+      )
         fail(`@throws must name an Errors class: ${value}`);
     }
     const tagValue = (tag: string) => tags.find((entry) => entry.tag === tag)?.value;
