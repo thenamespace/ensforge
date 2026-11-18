@@ -3,6 +3,7 @@ import { Command } from "effect/cli";
 
 import { deriveAll } from "../artifacts/derive.ts";
 import { artifactFile, writeArtifacts } from "../artifacts/files.ts";
+import { watchReleases } from "../artifacts/watch.ts";
 import { ArtifactError } from "../errors.ts";
 import { artifactsDir, cacheDir } from "../package.ts";
 
@@ -41,7 +42,24 @@ const check = Command.make("check", {}, () =>
   }),
 ).pipe(Command.withDescription("Fail when a committed artifact differs from its source"));
 
+const watch = Command.make("watch", {}, () =>
+  Effect.gen(function* () {
+    const changes = yield* watchReleases();
+    if (changes.length > 0) {
+      return yield* new ArtifactError({
+        artifact: "sources",
+        message: `ENS changed upstream; refresh the pins in artifacts/sources.ts, the deployments in @ensforge/contracts, and rerun every lane:\n${changes.join("\n")}`,
+      });
+    }
+    yield* Console.log("artifacts: sources are the latest releases and deployments");
+  }),
+).pipe(
+  Command.withDescription(
+    "Fail when ENS released contracts or redeployed since the pinned sources (network access)",
+  ),
+);
+
 export const artifactsCommand = Command.make("artifacts").pipe(
   Command.withDescription("Manage the committed contract artifacts"),
-  Command.withSubcommands([refresh, check]),
+  Command.withSubcommands([refresh, check, watch]),
 );
