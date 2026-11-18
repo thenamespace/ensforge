@@ -61,6 +61,32 @@ describe("batch", () => {
           );
         }),
       );
+
+      it.effect(
+        "aligns primary names with their addresses; an empty batch returns nothing",
+        () =>
+          Effect.gen(function* () {
+            const fixtures = yield* Fixtures;
+            const { reader } = yield* Clients;
+            const addressOf = (id: string) => String(fixtures.byId(id).facts["address"]);
+            const named = addressOf("primary.addr-reverse");
+
+            assert.deepStrictEqual(yield* Actions.batch(reader, { requests: [] }), { results: [] });
+            const { results } = yield* Actions.batch(reader, {
+              requests: [
+                named,
+                "0x000000000000000000000000000000000000dEaD",
+                addressOf("primary.mismatch"),
+                named,
+              ].map((address) => Requests.primaryName.get.request({ address })),
+            });
+            assert.deepStrictEqual(
+              results.map((result) => (result.status === "success" ? result.result : result)),
+              ["rev-alice.eth", null, null, "rev-alice.eth"],
+            );
+          }),
+        { meta: { cases: ["P17"] } },
+      );
     });
   }
 });

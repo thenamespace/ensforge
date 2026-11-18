@@ -84,17 +84,17 @@ describe("registration reads", () => {
           // Three code points, one grapheme.
           assert.strictEqual(phoenix.base, three.base);
           assert.strictEqual(three.premium, 0n);
+          // Length is counted in code points, not bytes: three CJK code points are nine bytes.
+          assert.strictEqual((yield* price("你好吗.eth")).base, three.base);
+          // 255 bytes is the longest label the oracle prices.
+          yield* price(`${"q".repeat(255)}.eth`);
 
           assert.isFalse(yield* Actions.registration.isAvailable(reader, { name: "qq.eth" }));
-          yield* expectFailure(
-            Actions.registration.getPrice(reader, { name: "qq.eth", duration: Duration.years(1) }),
-            {
-              _tag: "InvalidInputError",
-              code: "INVALID_NAME",
-            },
-          );
+          for (const name of ["qq.eth", "たこ.eth", `${"q".repeat(256)}.eth`]) {
+            yield* expectFailure(price(name), { _tag: "InvalidInputError", code: "INVALID_NAME" });
+          }
         }),
-      { meta: { cases: ["M:C9", "G01", "G03"] } },
+      { meta: { cases: ["M:C9", "G01", "G02", "G03", "G04"] } },
     );
 
     it.effect(
@@ -141,6 +141,49 @@ describe("registration reads", () => {
           assert.strictEqual(usdc.base, (dai.base + 10n ** 12n - 1n) / 10n ** 12n);
         }),
       { meta: { cases: ["G27"] } },
+    );
+
+    it.effect(
+      "refuses a payment token the oracle no longer accepts",
+      () =>
+        Effect.gen(function* () {
+          const devnet = yield* Devnet;
+          const chain = yield* Chain;
+          const fixtures = yield* Fixtures;
+          const { reader } = yield* Clients;
+          const duration = Duration.years(1);
+
+          yield* chain.isolated(
+            Effect.gen(function* () {
+              // A zero ratio removes the token.
+              yield* chain.write({
+                address: devnet.contract("v2.rentPriceOracle"),
+                abi: Abis.v2.standardRentPriceOracle,
+                functionName: "updatePaymentToken",
+                args: [devnet.contract("v2.dai"), 0n, 0n],
+                account: devnet.accounts.owner,
+              });
+
+              yield* expectFailure(
+                Actions.registration.getPrice(reader, {
+                  name: "qqqqq.eth",
+                  duration,
+                  paymentToken: "dai",
+                }),
+                { _tag: "UnsupportedError", code: "PAYMENT_TOKEN_UNSUPPORTED" },
+              );
+              yield* expectFailure(
+                Actions.registration.getRenewalPrice(reader, {
+                  names: fixtures.byId("v2.registered").name,
+                  duration,
+                  paymentToken: "dai",
+                }),
+                { _tag: "UnsupportedError", code: "PAYMENT_TOKEN_UNSUPPORTED" },
+              );
+            }),
+          );
+        }),
+      { meta: { cases: ["G28"] } },
     );
 
     it.effect(
@@ -249,15 +292,18 @@ describe("registration reads", () => {
   });
 
   onProfile("v1-live")("v1-live", (it) => {
-    it.effect("fails with a typed error where ENSv2 is not deployed", () =>
-      Effect.gen(function* () {
-        const { reader } = yield* Clients;
+    it.effect(
+      "fails with a typed error where ENSv2 is not deployed",
+      () =>
+        Effect.gen(function* () {
+          const { reader } = yield* Clients;
 
-        yield* expectFailure(Actions.registration.isAvailable(reader, { name: "v1-plain.eth" }), {
-          _tag: "UnsupportedError",
-          code: "UNSUPPORTED_ON_DEPLOYMENT",
-        });
-      }),
+          yield* expectFailure(Actions.registration.isAvailable(reader, { name: "v1-plain.eth" }), {
+            _tag: "UnsupportedError",
+            code: "UNSUPPORTED_ON_DEPLOYMENT",
+          });
+        }),
+      { meta: { cases: ["M:F8"] } },
     );
   });
 });

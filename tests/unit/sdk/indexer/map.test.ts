@@ -102,9 +102,21 @@ describe("Convert names", () => {
     ["not_set", "notSet"],
     ["released", "released"],
     ["paused", null],
-  ])("maps the expiry reason %s to %s", (wire, expected) => {
+  ])("maps the expiry reason %s to %s", { meta: { cases: ["T13"] } }, (wire, expected) => {
     assert.strictEqual(Convert.name({ ...row, expires_at_reason: wire }).expiryReason, expected);
   });
+
+  it(
+    "keeps expiries beyond 2^53 exact, up to bigname's saturated i64::MAX",
+    { meta: { cases: ["T15"] } },
+    () => {
+      const max = "9223372036854775807";
+      const name = Convert.name({ ...row, expires_at: max, ens_v1: { expires_at: max } });
+
+      assert.strictEqual(name.expiresAt, 2n ** 63n - 1n);
+      assert.strictEqual(name.ensV1?.expiresAt, 2n ** 63n - 1n);
+    },
+  );
 
   it("maps unknown enum values to null", () => {
     const name = Convert.name({ ...row, status: "frozen", authority: "ens_v9" });

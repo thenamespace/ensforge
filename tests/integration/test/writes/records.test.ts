@@ -7,6 +7,7 @@ import { Actions } from "@ensforge/sdk/effect";
 import { Chain, Devnet } from "@ensforge/test-devnet";
 import { Fixtures } from "@ensforge/test-fixtures";
 import {
+  concat,
   decodeFunctionResult,
   encodeFunctionData,
   namehash,
@@ -206,23 +207,32 @@ describe("record writes", () => {
 
           yield* chain.isolated(
             Effect.gen(function* () {
+              const before = yield* Actions.resolver.get(ens, { name });
+
               yield* Actions.record.setSync(ens, { name, clear: true });
 
+              // Clearing bumps the record version, which resets every profile at once.
+              const after = yield* Actions.resolver.get(ens, { name });
+              assert.strictEqual(after?.version, (before?.version ?? 0n) + 1n);
               const records = yield* Actions.record.get(ens, {
                 name,
                 texts: ["url", "description"],
                 addresses: ["eth", "btc"],
                 contentHash: true,
+                abi: true,
+                interfaces: ["0x01ffc9a7"],
               });
               assert.deepInclude(records, {
                 texts: { url: null, description: null },
                 addresses: { eth: null, btc: null },
                 contentHash: null,
+                abi: null,
+                interfaces: { "0x01ffc9a7": null },
               });
             }),
           );
         }),
-      { meta: { cases: ["M:B1"] } },
+      { meta: { cases: ["M:B1", "R28"] } },
     );
 
     it.effect(
@@ -258,6 +268,59 @@ describe("record writes", () => {
           );
         }),
       { meta: { cases: ["M:B3"] } },
+    );
+
+    it.effect(
+      "reveals a PermissionedResolver's default record when a name's records are cleared",
+      () =>
+        Effect.gen(function* () {
+          const fixtures = yield* Fixtures;
+          const { accounts } = yield* Devnet;
+          const chain = yield* Chain;
+          const ens = (yield* Clients).make({ account: accounts.carol });
+          const name = fixtures.byId("records.v2.default").name;
+          const url = Actions.record.getText(ens, { name, key: "url" });
+
+          yield* chain.isolated(
+            Effect.gen(function* () {
+              yield* Actions.record.setSync(ens, { name, texts: { url: "https://own.example" } });
+              assert.strictEqual(yield* url, "https://own.example");
+
+              yield* Actions.record.setSync(ens, { name, clear: true });
+              assert.strictEqual(yield* url, "https://default.example");
+            }),
+          );
+        }),
+      { meta: { cases: ["K40"] } },
+    );
+
+    it.effect(
+      "reads DNS records by owner name in any case, and deletes a record set with empty data",
+      () =>
+        Effect.gen(function* () {
+          const fixtures = yield* Fixtures;
+          const { accounts } = yield* Devnet;
+          const chain = yield* Chain;
+          const ens = (yield* Clients).make({ account: accounts.alice });
+          const name = fixtures.byId("records.v1").name;
+          // An A record for `www.<name>` (type 1, class IN, TTL 3600), and the same with no data.
+          const header = concat([Name.dnsEncode(`www.${name}`), "0x0001", "0x0001", "0x00000e10"]);
+          const record = concat([header, "0x0004", "0x7f000001"]);
+          const www = Actions.dns
+            .getRecords(ens, { name, records: [{ name: `WWW.${name.toUpperCase()}`, type: 1 }] })
+            .pipe(Effect.map(({ records }) => records[0]?.data));
+
+          yield* chain.isolated(
+            Effect.gen(function* () {
+              yield* Actions.dns.setRecordsSync(ens, { name, records: record });
+              assert.strictEqual(yield* www, record);
+
+              yield* Actions.dns.setRecordsSync(ens, { name, records: concat([header, "0x0000"]) });
+              assert.isNull(yield* www);
+            }),
+          );
+        }),
+      { meta: { cases: ["K32"] } },
     );
   });
 });

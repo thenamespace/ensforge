@@ -5,7 +5,15 @@ import { Duration, Ensforge, Actions as Promises } from "@ensforge/sdk";
 import { Actions } from "@ensforge/sdk/effect";
 import { Chain, Devnet } from "@ensforge/test-devnet";
 import { Fixtures } from "@ensforge/test-fixtures";
-import { createPublicClient, custom, http } from "viem";
+import {
+  createPublicClient,
+  custom,
+  getAbiItem,
+  http,
+  multicall3Abi,
+  numberToHex,
+  toFunctionSelector,
+} from "viem";
 
 import { Clients } from "../support/clients.ts";
 import { onProfile } from "../support/lane.ts";
@@ -78,6 +86,94 @@ describe("read conformance", () => {
         ]);
         assert.deepStrictEqual(budgets, [2, 2, 1, 3, 1]);
       }),
+    );
+
+    it.effect(
+      "reads the same without Multicall3 on the chain, and with batching off",
+      () =>
+        Effect.gen(function* () {
+          const fixtures = yield* Fixtures;
+          const devnet = yield* Devnet;
+          const { reader } = yield* Clients;
+          // Batches sent through Multicall3 (`aggregate3`), from either client.
+          const aggregate3 = toFunctionSelector(
+            getAbiItem({ abi: multicall3Abi, name: "aggregate3" }),
+          );
+          let batched = 0;
+          const upstream = http(devnet.rpcUrl)({ chain: devnet.chain });
+          const transport = custom({
+            request: (request) => {
+              const [call] = (request.params ?? []) as readonly { readonly data?: string }[];
+              if (request.method === "eth_call" && call?.data?.startsWith(aggregate3)) batched += 1;
+              return upstream.request(request);
+            },
+          });
+          const withoutMulticall = Ensforge.create({
+            publicClient: createPublicClient({
+              chain: {
+                ...devnet.chain,
+                contracts: { ...devnet.chain.contracts, multicall3: undefined },
+              },
+              transport,
+            }),
+            deployment: devnet.deployments,
+          });
+          const unbatched = Ensforge.create({
+            publicClient: createPublicClient({ chain: devnet.chain, transport }),
+            deployment: devnet.deployments,
+            batch: { multicall: false },
+          });
+          const reads = (ens: typeof reader | typeof unbatched) =>
+            Effect.forEach(["records.v1", "records.v2", "v1.wrapped"], (id) => {
+              const { name } = fixtures.byId(id);
+              return Effect.all([
+                Actions.name.get(ens, { name }),
+                Actions.resolver.get(ens, { name }),
+                Actions.record.get(ens, { name, texts: ["url"], addresses: ["eth", "btc"] }),
+              ]);
+            });
+
+          const expected = yield* reads(reader);
+          assert.deepStrictEqual<unknown>(yield* reads(withoutMulticall), expected);
+          assert.deepStrictEqual<unknown>(yield* reads(unbatched), expected);
+          assert.strictEqual(batched, 0);
+        }),
+      { meta: { cases: ["M:F6", "M:F7"] } },
+    );
+
+    it.effect(
+      "sends every contract read to the block it pins",
+      () =>
+        Effect.gen(function* () {
+          const fixtures = yield* Fixtures;
+          const devnet = yield* Devnet;
+          const chain = yield* Chain;
+          // The block each `eth_call` names.
+          const blocks: unknown[] = [];
+          const upstream = http(devnet.rpcUrl)({ chain: devnet.chain });
+          const transport = custom({
+            request: (request) => {
+              if (request.method === "eth_call") blocks.push((request.params as unknown[])[1]);
+              return upstream.request(request);
+            },
+          });
+          const ens = Ensforge.create({
+            publicClient: createPublicClient({ chain: devnet.chain, transport }),
+            deployment: devnet.deployments,
+          });
+          const blockNumber = yield* chain.blockNumber;
+          const { name } = fixtures.byId("records.v1");
+
+          yield* Effect.all([
+            Actions.name.get(ens, { name, blockNumber }),
+            Actions.resolver.get(ens, { name, blockNumber }),
+            Actions.record.get(ens, { name, texts: ["url"], addresses: ["eth"], blockNumber }),
+            Actions.primaryName.get(ens, { address: devnet.accounts.alice, blockNumber }),
+          ]);
+          assert.isNotEmpty(blocks);
+          assert.deepStrictEqual(new Set(blocks), new Set([numberToHex(blockNumber)]));
+        }),
+      { meta: { cases: ["F05"] } },
     );
 
     it.effect(

@@ -8,7 +8,7 @@ import { Actions } from "@ensforge/sdk/effect";
 import { Chain, Devnet } from "@ensforge/test-devnet";
 import { Fixtures } from "@ensforge/test-fixtures";
 import { expectFailure } from "@ensforge/test-harness";
-import { zeroAddress, type Address } from "viem";
+import { parseEventLogs, zeroAddress, type Address } from "viem";
 
 import { Clients } from "../support/clients.ts";
 import { v1Owners } from "../support/contracts.ts";
@@ -101,7 +101,7 @@ describe("subnames, wrapper and registries", () => {
             }),
           );
         }),
-      { meta: { cases: ["M:A9", "M:A10", "W02", "W05"] } },
+      { meta: { cases: ["M:A9", "M:A10", "M:D8", "W02", "W05"] } },
     );
 
     it.effect(
@@ -211,10 +211,12 @@ describe("subnames, wrapper and registries", () => {
           const ens = clients.make({ account: alice });
           const parent = fixtures.byId("v2.registered").name;
 
+          // A one-letter label: subnames have no length minimum, unlike `.eth` registrations.
+          const child = `k.${parent}`;
           yield* chain.isolated(
             Effect.gen(function* () {
               const { plan } = yield* Actions.subname.createSync(ens, {
-                name: `kid.${parent}`,
+                name: child,
                 owner: carol,
               });
               assert.deepStrictEqual(
@@ -227,19 +229,19 @@ describe("subnames, wrapper and registries", () => {
                 address: registry,
                 abi: Abis.v2.permissionedRegistry,
                 functionName: "findOwner",
-                args: ["kid"],
+                args: ["k"],
               });
               assert.strictEqual(owner, carol);
 
-              yield* Actions.subname.removeSync(ens, { name: `kid.${parent}` });
+              yield* Actions.subname.removeSync(ens, { name: child });
               assert.strictEqual(
-                (yield* Actions.name.get(ens, { name: `kid.${parent}` })).status,
+                (yield* Actions.name.get(ens, { name: child })).status,
                 "available",
               );
             }),
           );
         }),
-      { meta: { cases: ["M:A18"] } },
+      { meta: { cases: ["M:A18", "M:D8", "G05"] } },
     );
 
     it.effect(
@@ -266,6 +268,50 @@ describe("subnames, wrapper and registries", () => {
           );
         }),
       { meta: { cases: ["M:A18"] } },
+    );
+  });
+
+  onProfile("v1-live")("v1-live", (it) => {
+    // Regression: the child was rewritten through the NameWrapper, which only the owner of a
+    // wrapped parent may use, so the owner of an unwrapped parent could not touch it.
+    it.effect(
+      "rewrites a wrapped child of an unwrapped parent in the registry, unwrapping it",
+      () =>
+        Effect.gen(function* () {
+          const fixtures = yield* Fixtures;
+          const { accounts } = yield* Devnet;
+          const chain = yield* Chain;
+          const clients = yield* Clients;
+          const { alice, bob, carol } = accounts;
+          const ens = clients.make({ account: alice });
+          const { name } = fixtures.byId("v1.wrapped.sub.unwrapped-parent");
+
+          yield* chain.isolated(
+            Effect.gen(function* () {
+              const { receipt } = yield* Actions.subname.updateSync(ens, { name, owner: carol });
+              assert.deepInclude(yield* Actions.name.get(ens, { name }), {
+                wrapped: false,
+                owner: carol,
+              });
+              // The NameWrapper is not told: its token stays with bob, and no NameUnwrapped.
+              assert.strictEqual((yield* v1Owners(name)).wrapped?.[0], bob);
+              assert.isEmpty(
+                parseEventLogs({
+                  abi: Abis.v1.nameWrapper,
+                  eventName: "NameUnwrapped",
+                  logs: receipt.logs,
+                }),
+              );
+            }),
+          );
+          yield* chain.isolated(
+            Effect.gen(function* () {
+              yield* Actions.subname.removeSync(ens, { name });
+              assert.strictEqual((yield* v1Owners(name)).registry, zeroAddress);
+            }),
+          );
+        }),
+      { meta: { cases: ["O09"] } },
     );
   });
 });

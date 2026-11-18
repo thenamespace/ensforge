@@ -3,12 +3,20 @@ import { Effect } from "effect";
 
 import { Abis } from "@ensforge/contracts";
 import { Actions } from "@ensforge/sdk/effect";
-import { Devnet } from "@ensforge/test-devnet";
+import { Chain, Devnet } from "@ensforge/test-devnet";
 import { Fixtures } from "@ensforge/test-fixtures";
 import { expectFailure } from "@ensforge/test-harness";
-import { encodeAbiParameters, encodeFunctionData, namehash, type Address } from "viem";
+import {
+  concat,
+  encodeAbiParameters,
+  encodeFunctionData,
+  namehash,
+  parseAbi,
+  type Address,
+} from "viem";
 
 import { Clients } from "../support/clients.ts";
+import { Gateways } from "../support/gateways.ts";
 import { onProfile } from "../support/lane.ts";
 
 describe("resolver reads", () => {
@@ -218,7 +226,7 @@ describe("resolver reads", () => {
               encodeAbiParameters([{ type: "address" }], [accounts.alice]),
             );
           }),
-        { meta: { cases: ["M:B9", "R01", "R03", "R04", "R11", "H25"] } },
+        { meta: { cases: ["M:B8", "M:B9", "R01", "R03", "R04", "R11", "H25"] } },
       );
 
       it.effect("links records only on PermissionedResolvers", () =>
@@ -264,6 +272,85 @@ describe("resolver reads", () => {
           assert.isNull(unlinked);
         }),
       { meta: { cases: ["M:B4", "M:B5", "M:B7", "R22", "R26"] } },
+    );
+
+    it.effect(
+      "refuses calls a PermissionedResolver does not answer",
+      () =>
+        Effect.gen(function* () {
+          const fixtures = yield* Fixtures;
+          const { reader } = yield* Clients;
+          const name = fixtures.byId("records.v2").name;
+
+          yield* expectFailure(Actions.resolver.resolve(reader, { name, data: "0x" }), {
+            _tag: "InvalidInputError",
+            code: "INVALID_RECORD_VALUE",
+          });
+          yield* expectFailure(
+            Actions.resolver.resolve(reader, {
+              name,
+              data: concat(["0x12345678", namehash(name)]),
+            }),
+            { _tag: "UnsupportedError", code: "RESOLVER_PROFILE_UNSUPPORTED" },
+          );
+        }),
+      { meta: { cases: ["R24"] } },
+    );
+
+    // The Universal Resolver answers ENSv1 names through the ENSv1 bridge (`ENSV1Resolver`);
+    // `resolver.get` looks behind it, while reads report the contract that answered them.
+    it.effect(
+      "reports the ENSv1 resolver behind the bridge, and reads the bridge answered",
+      () =>
+        Effect.gen(function* () {
+          const fixtures = yield* Fixtures;
+          const devnet = yield* Devnet;
+          const chain = yield* Chain;
+          const { reader } = yield* Clients;
+          const gateways = yield* Gateways;
+          const bridge = devnet.contract("v2.ensV1Resolver");
+          const records = fixtures.byId("records.v1").name;
+          const offchain = fixtures.byId("resolver.offchain");
+          const gateway = yield* gateways.serve(() => ({ status: 200, body: '{"data":"0x"}' }));
+
+          assert.deepInclude(yield* Actions.resolver.get(reader, { name: records }), {
+            address: devnet.contract("v1.publicResolver"),
+            kind: "public-resolver",
+            inherited: false,
+          });
+          assert.strictEqual(
+            (yield* Actions.record.get(reader, { name: records, texts: ["url"] })).resolver,
+            bridge,
+          );
+
+          // An off-chain resolver behind the bridge, as `jesse.base.eth` on mainnet.
+          assert.deepInclude(yield* Actions.resolver.get(reader, { name: offchain.name }), {
+            address: offchain.facts["resolver"] as Address,
+            kind: "extended",
+          });
+          yield* chain.isolated(
+            Effect.gen(function* () {
+              yield* chain.write({
+                address: offchain.facts["resolver"] as Address,
+                abi: parseAbi(["function setRevertURL(string)"]),
+                functionName: "setRevertURL",
+                args: [gateway.url],
+                account: devnet.accounts.deployer,
+              });
+
+              const resolved = yield* Actions.resolver.resolve(reader, {
+                name: offchain.name,
+                data: encodeFunctionData({
+                  abi: Abis.shared.addrResolver,
+                  functionName: "addr",
+                  args: [namehash(offchain.name)],
+                }),
+              });
+              assert.strictEqual(resolved.resolver, bridge);
+            }),
+          );
+        }).pipe(Effect.scoped),
+      { meta: { cases: ["R29", "R31", "F02"] } },
     );
 
     it.effect(

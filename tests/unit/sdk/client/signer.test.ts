@@ -78,21 +78,24 @@ describe("write signer resolution", () => {
     }),
   );
 
-  it.effect("fails with CHAIN_MISMATCH for a wallet on another chain", () =>
-    Effect.gen(function* () {
-      const { client } = publicClient(mainnet);
-      const { transport } = scriptedTransport(noRpc);
-      const walletClient = createWalletClient({ chain: sepolia, transport, account: signer });
-      const ens = Ensforge.create({ publicClient: client, walletClient });
+  it.effect(
+    "fails with CHAIN_MISMATCH for a wallet on another chain",
+    () =>
+      Effect.gen(function* () {
+        const { client } = publicClient(mainnet);
+        const { transport } = scriptedTransport(noRpc);
+        const walletClient = createWalletClient({ chain: sepolia, transport, account: signer });
+        const ens = Ensforge.create({ publicClient: client, walletClient });
 
-      const error = yield* expectFailure(Actions.plan.send(ens, { plan: emptyPlan(1) }), {
-        _tag: "WalletError",
-        code: "CHAIN_MISMATCH",
-      });
+        const error = yield* expectFailure(Actions.plan.send(ens, { plan: emptyPlan(1) }), {
+          _tag: "WalletError",
+          code: "CHAIN_MISMATCH",
+        });
 
-      assert.strictEqual(error.expectedChainId, 1);
-      assert.strictEqual(error.actualChainId, sepolia.id);
-    }),
+        assert.strictEqual(error.expectedChainId, 1);
+        assert.strictEqual(error.actualChainId, sepolia.id);
+      }),
+    { meta: { cases: ["A10"] } },
   );
 
   it.effect("asks a wallet without a chain for its chain ID", () =>

@@ -133,4 +133,29 @@ describe("invalid names fail before any RPC", () => {
         assert.deepStrictEqual(calls, []);
       }),
   );
+
+  // Only `.eth` second-level names are sold, so `eth`, other TLDs and the root are not names here.
+  it.effect(
+    "registration actions refuse top-level names and the root",
+    () =>
+      Effect.gen(function* () {
+        const { transport, calls } = scriptedTransport(noRpc);
+        const ens = Ensforge.create({
+          publicClient: createClient({ chain: mainnet, transport, account: address }),
+        });
+        const registration = EffectActions.registration;
+
+        for (const name of ["eth", "com", ""]) {
+          const options = { name, names: name, duration: Duration.years(1) };
+          yield* expectFailure(registration.isAvailable(ens, options), invalid);
+          yield* expectFailure(registration.getPrice(ens, options), invalid);
+          yield* expectFailure(registration.getRenewalPrice(ens, options), invalid);
+          yield* expectFailure(registration.commit(ens, options), invalid);
+          yield* expectFailure(registration.register(ens, options), invalid);
+          yield* expectFailure(registration.renew(ens, options), invalid);
+        }
+        assert.deepStrictEqual(calls, []);
+      }),
+    { meta: { cases: ["H14"] } },
+  );
 });

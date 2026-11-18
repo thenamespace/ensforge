@@ -58,36 +58,39 @@ describe("HCA", () => {
       { meta: { cases: ["Z04"] } },
     );
 
-    it.effect("migrates several names in one execution", () =>
-      Effect.gen(function* () {
-        const { accounts } = yield* Devnet;
-        const chain = yield* Chain;
-        const clients = yield* Clients;
-        const fixtures = yield* Fixtures;
-        const ens = clients.make({ account: accounts.alice });
-        const names = [fixtures.byId("v2.reserved").name, fixtures.byId("v1.wrapped").name];
+    it.effect(
+      "migrates several names in one execution",
+      () =>
+        Effect.gen(function* () {
+          const { accounts } = yield* Devnet;
+          const chain = yield* Chain;
+          const clients = yield* Clients;
+          const fixtures = yield* Fixtures;
+          const ens = clients.make({ account: accounts.alice });
+          const names = [fixtures.byId("v2.reserved").name, fixtures.byId("v1.wrapped").name];
 
-        yield* chain.isolated(
-          Effect.gen(function* () {
-            const result = yield* Actions.migration.migrateSync(ens, {
-              names,
-              resolver: "keep",
-              via: hca(),
-              onStep: chain.passWaits,
-            });
+          yield* chain.isolated(
+            Effect.gen(function* () {
+              const result = yield* Actions.migration.migrateSync(ens, {
+                names,
+                resolver: "keep",
+                via: hca(),
+                onStep: chain.passWaits,
+              });
 
-            // The HCA's deployment and the token approvals, then one execution for both names.
-            assert.deepStrictEqual(
-              result.plan.steps.map((step) => step.id),
-              ["hca-setup", "migrate"],
-            );
-            for (const name of names) {
-              assert.strictEqual((yield* ethEntry(name)).owner, accounts.alice, name);
-              assert.isTrue((yield* Actions.name.get(ens, { name })).migrated, name);
-            }
-          }),
-        );
-      }),
+              // The HCA's deployment and the token approvals, then one execution for both names.
+              assert.deepStrictEqual(
+                result.plan.steps.map((step) => step.id),
+                ["hca-setup", "migrate"],
+              );
+              for (const name of names) {
+                assert.strictEqual((yield* ethEntry(name)).owner, accounts.alice, name);
+                assert.isTrue((yield* Actions.name.get(ens, { name })).migrated, name);
+              }
+            }),
+          );
+        }),
+      { meta: { cases: ["M:D9"] } },
     );
 
     it.effect(
@@ -129,6 +132,7 @@ describe("HCA", () => {
             }),
           );
         }),
+      { meta: { cases: ["M:D9"] } },
     );
 
     it.effect(

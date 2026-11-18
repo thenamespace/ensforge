@@ -6,6 +6,7 @@ import { Actions } from "@ensforge/sdk/effect";
 import { Chain, Devnet, type AccountName, type ProfileName } from "@ensforge/test-devnet";
 import { Fixtures, type FixturesApi } from "@ensforge/test-fixtures";
 import { expectFailure, type ExpectedError } from "@ensforge/test-harness";
+import { zeroAddress } from "viem";
 
 import { Clients, type Client } from "../support/clients.ts";
 import { onProfile } from "../support/lane.ts";
@@ -90,7 +91,8 @@ const rows: Readonly<Record<ProfileName, readonly Row[]>> = {
       account: "alice",
       options: text("v1.wrapped"),
       expected: "allowed",
-      cases: ["M:A7"],
+      // The registry owner is the NameWrapper; the PublicResolver authorizes its token owner.
+      cases: ["M:A7", "R27"],
     },
     {
       label: "token-approved",
@@ -266,6 +268,78 @@ const rows: Readonly<Record<ProfileName, readonly Row[]>> = {
       }),
       expected: notOwner,
       cases: ["A02"],
+    },
+    {
+      label: "wrapped owner, to self",
+      path: "approval.setDelegate",
+      account: "alice",
+      options: (fixtures, devnet) => ({
+        name: fixtures.byId("v1.wrapped").name,
+        delegate: devnet.accounts.alice,
+        approved: true,
+      }),
+      // "Setting delegate status for self", a `require` string (KL-02).
+      expected: { _tag: "ContractRevertError", code: "CONTRACT_REVERTED" },
+      cases: ["R27"],
+    },
+    {
+      label: "parent of an emancipated child",
+      path: "name.transfer",
+      account: "alice",
+      options: (fixtures, devnet) => ({
+        name: fixtures.byId("v1.wrapped.sub.emancipated").name,
+        to: devnet.accounts.carol,
+      }),
+      expected: notOwner,
+      cases: ["A07"],
+    },
+    {
+      label: "parent of an emancipated child",
+      path: "subname.remove",
+      account: "alice",
+      options: (fixtures) => ({ name: fixtures.byId("v1.wrapped.sub.emancipated").name }),
+      expected: { _tag: "UnauthorizedError", code: "FUSE_BURNED" },
+      cases: ["A08"],
+    },
+    // ensforge takes recipients as addresses only: callers resolve names and trim input.
+    {
+      label: "owner, to a name",
+      path: "name.transfer",
+      account: "alice",
+      options: (fixtures) => ({ name: fixtures.byId("v1.wrapped").name, to: "bob.eth" }),
+      expected: { _tag: "InvalidInputError", code: "INVALID_ADDRESS" },
+      cases: ["A09"],
+    },
+    {
+      label: "owner, to a padded address",
+      path: "name.transfer",
+      account: "alice",
+      options: (fixtures, devnet) => ({
+        name: fixtures.byId("v1.wrapped").name,
+        to: ` ${devnet.accounts.carol} `,
+      }),
+      expected: { _tag: "InvalidInputError", code: "INVALID_ADDRESS" },
+      cases: ["A09"],
+    },
+    {
+      label: "owner, to the zero address",
+      path: "name.transfer",
+      account: "alice",
+      options: (fixtures) => ({ name: fixtures.byId("v1.wrapped").name, to: zeroAddress }),
+      // The token contract refuses it in simulation (`ERC1155: transfer to the zero address`).
+      expected: { _tag: "ContractRevertError", code: "CONTRACT_REVERTED" },
+      cases: ["A09"],
+    },
+    {
+      label: "owner, to self",
+      path: "name.transfer",
+      account: "alice",
+      options: (fixtures, devnet) => ({
+        name: fixtures.byId("v1.wrapped").name,
+        to: devnet.accounts.alice,
+      }),
+      expected: "allowed",
+      cases: ["A09"],
     },
   ],
   "v1-v2-greenfield": [],

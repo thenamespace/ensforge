@@ -105,29 +105,31 @@ export type Tampering = {
 };
 
 /**
- * A DNSSEC proof that `_ens.<name>` holds the TXT strings `texts` (e.g. `a=0x…`), signed at
- * `inception` (Unix seconds) and valid for 28 days, unless `tampered`.
+ * A DNSSEC proof that `owner` holds one TXT record per text in `texts`, signed at `inception`
+ * (Unix seconds) and valid for 28 days, unless `tampered`. Texts over 255 bytes are split into
+ * several character-strings, as DNS stores them.
  */
-export const txtProof = (
-  name: string,
+export const txtRecordsProof = (
+  owner: string,
   texts: readonly string[],
   inception: number,
   tampered: Tampering = {},
 ) => {
   const window = { inception, expiration: inception + 28 * 86_400 };
-  const owner = `_ens.${name}`;
   return [
     rootKeys(window),
     signedSet({
       name: owner,
       covered: tampered.covered ?? RecordType.txt,
       records: texts.map((text, index) => {
-        // TXT rdata is one length-prefixed character string per text.
         const bytes = stringToBytes(text);
+        const strings = Array.from({ length: Math.max(1, Math.ceil(bytes.length / 255)) }, (_, i) =>
+          bytes.subarray(i * 255, (i + 1) * 255),
+        );
         return record(
           tampered.recordNames?.[index] ?? owner,
           RecordType.txt,
-          concatBytes([u8(bytes.length), bytes]),
+          concatBytes(strings.flatMap((string) => [u8(string.length), string])),
           tampered.dnsClass,
         );
       }),
@@ -139,6 +141,17 @@ export const txtProof = (
     }),
   ];
 };
+
+/**
+ * A DNSSEC proof that `_ens.<name>` holds the TXT strings `texts` (e.g. `a=0x…`), as
+ * `DNSRegistrar` reads them.
+ */
+export const txtProof = (
+  name: string,
+  texts: readonly string[],
+  inception: number,
+  tampered: Tampering = {},
+) => txtRecordsProof(`_ens.${name}`, texts, inception, tampered);
 
 /** A DNSSEC proof as `IDNSGateway.resolve` returns it: record sets, root keys first. */
 export type Proof = ReturnType<typeof txtProof>;

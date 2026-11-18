@@ -115,5 +115,22 @@ describe("access reads", () => {
         }),
       { meta: { cases: ["M:A24"] } },
     );
+
+    it.effect(
+      "reads no roles on an expired ENSv2 name",
+      () =>
+        Effect.gen(function* () {
+          const { name } = (yield* Fixtures).byId("v2.expired");
+          const { accounts } = yield* Devnet;
+          const { reader } = yield* Clients;
+
+          // The registry still stores alice's roles; it reports none once the name expires.
+          assert.deepInclude(
+            yield* Actions.role.get(reader, { account: accounts.alice, target: "registry", name }),
+            { roles: 0n, names: [], admin: [] },
+          );
+        }),
+      { meta: { cases: ["W35"] } },
+    );
   });
 });

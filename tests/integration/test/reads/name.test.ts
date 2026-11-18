@@ -213,6 +213,24 @@ describe("name.get", () => {
           { meta: { cases: [...(expectation?.cases ?? [])] } },
         );
       }
+
+      it.effect(
+        "a name never registered is available",
+        () =>
+          Effect.gen(function* () {
+            const { reader } = yield* Clients;
+
+            assert.deepInclude(yield* Actions.name.get(reader, { name: "never-registered.eth" }), {
+              kind: "available",
+              status: "available",
+              owner: null,
+              expiry: null,
+              available: true,
+              renewable: false,
+            });
+          }),
+        { meta: { cases: ["M:A1"] } },
+      );
     });
   }
 
@@ -285,6 +303,90 @@ describe("name.get", () => {
           assert.strictEqual(state.expiry, BigInt(String(wrapped.facts["expiry"])));
         }),
       { meta: { cases: ["M:A7"] } },
+    );
+
+    // KL-13: a name only a parent's wildcard (or off-chain) resolver answers is in no registry.
+    it.effect(
+      "a wildcard subname is available and has no expiry, yet resolves",
+      () =>
+        Effect.gen(function* () {
+          const wildcard = (yield* Fixtures).byId("resolver.wildcard");
+          const { reader } = yield* Clients;
+          const name = String(wildcard.facts["wildcardChild"]);
+
+          assert.deepInclude(yield* Actions.name.get(reader, { name }), {
+            available: true,
+            owner: null,
+            expiry: null,
+            gracePeriodEnd: null,
+          });
+          assert.strictEqual(
+            yield* Actions.record.getAddress(reader, { name }),
+            wildcard.facts["wildcardAddress"],
+          );
+        }),
+      { meta: { cases: ["X15"] } },
+    );
+
+    it.effect(
+      "a DNS TLD synced into ENSv2 never expires",
+      () =>
+        Effect.gen(function* () {
+          const synced = (yield* Fixtures).byId("dns.synced-tld");
+          const { reader } = yield* Clients;
+
+          assert.deepInclude(yield* Actions.name.get(reader, { name: synced.name }), {
+            status: "registered",
+            expiry: null,
+            gracePeriodEnd: null,
+          });
+        }),
+      { meta: { cases: ["D17"] } },
+    );
+
+    // A non-`.eth` name wrapped without its parent setting an expiry has wrapper expiry 0.
+    it.effect(
+      "a wrapped name whose expiry was never set has none, rather than 1970",
+      () =>
+        Effect.gen(function* () {
+          const wrapped = (yield* Fixtures).byId("dns.imported.wrapped");
+          const { reader } = yield* Clients;
+
+          assert.deepInclude(yield* Actions.name.get(reader, { name: wrapped.name }), {
+            kind: "v1-wrapped",
+            status: "registered",
+            expiry: null,
+            gracePeriodEnd: null,
+          });
+        }),
+      { meta: { cases: ["T13"] } },
+    );
+
+    it.effect(
+      "reads top-level names from the root registry",
+      () =>
+        Effect.gen(function* () {
+          const devnet = yield* Devnet;
+          const { reader } = yield* Clients;
+          const root = devnet.contract("v2.rootRegistry");
+
+          const states = yield* Effect.forEach(["eth", "reverse", "arpa", "org"], (name) =>
+            Actions.name.get(reader, { name }),
+          );
+          assert.deepStrictEqual(
+            states.map((state) => [state.name, state.status, state.registry]),
+            [
+              ["eth", "registered", root],
+              ["reverse", "registered", root],
+              // The devnet's root registry holds no `arpa`.
+              ["arpa", "available", root],
+              // A DNS TLD the TemporaryDNSRegistrar synced.
+              ["org", "registered", root],
+            ],
+          );
+          assert.strictEqual((yield* Actions.registry.get(reader, { name: "eth" }))?.kind, "eth");
+        }),
+      { meta: { cases: ["M:C2"] } },
     );
 
     it.effect(

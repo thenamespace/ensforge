@@ -100,7 +100,9 @@
     "tests": ["tests/integration/test/reads/name.test.ts > hierarchy.label-unnormalized"]
   },
   "L33": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/writes/registration.test.ts > registers the normalized name for input that normalization changes"
+    ]
   },
   "L34": {
     "na": "ENS app bulk-renew look-alike filter; ensforge does not filter user lists"
@@ -115,7 +117,9 @@
     ]
   },
   "H03": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/records.test.ts > reads a name with a label over 255 bytes, sent by its labelhash"
+    ]
   },
   "H04": {
     "tests": ["tests/integration/test/reads/name.test.ts > hierarchy.label-with-dot"]
@@ -127,13 +131,13 @@
     "tests": ["tests/integration/test/reads/name.test.ts > hierarchy.label-invalid-utf8"]
   },
   "H07": {
-    "status": "pending"
+    "tests": ["tests/unit/sdk/utils/Name.test.ts > dnsDecode inverts dnsEncode"]
   },
   "H08": {
-    "status": "pending"
+    "tests": ["tests/unit/sdk/utils/Name.test.ts > dnsDecode reads every length byte as a length"]
   },
   "H09": {
-    "status": "pending"
+    "tests": ["tests/unit/sdk/utils/Name.test.ts > rejects %j with INVALID_NAME"]
   },
   "H10": {
     "tests": [
@@ -141,43 +145,61 @@
     ]
   },
   "H11": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/writes/errors.test.ts > registration.commit refuses an encoded label",
+      "tests/integration/test/writes/errors.test.ts > subname.create refuses an encoded label",
+      "tests/integration/test/writes/errors.test.ts > wrapper.wrap refuses an encoded label"
+    ]
   },
   "H12": {
-    "status": "pending"
+    "tests": [
+      "tests/unit/sdk/indexer/define.test.ts > infers Basenames for subnames of base.eth, also when its labels are encoded"
+    ]
   },
   "H13": {
     "tests": ["tests/integration/test/reads/name.test.ts > hierarchy.depth-33"]
   },
   "H14": {
-    "status": "pending"
+    "tests": [
+      "tests/unit/sdk/conformance/invalid-name.test.ts > registration actions refuse top-level names and the root"
+    ]
   },
   "H15": {
-    "status": "pending"
+    "tests": ["tests/unit/sdk/utils/Name.test.ts > rejects %j with INVALID_NAME"]
   },
   "H16": {
-    "status": "pending"
+    "tests": [
+      "tests/unit/sdk/actions/primaryName/reverse-name.test.ts > spell the address in lowercase hex and the coin type without leading zeros"
+    ]
   },
   "H17": {
-    "status": "pending"
+    "tests": [
+      "tests/unit/sdk/actions/primaryName/reverse-name.test.ts > spell the address in lowercase hex and the coin type without leading zeros"
+    ]
   },
   "H18": {
-    "status": "pending"
+    "na": "ensforge reads primary names only for EVM coin types and 20-byte addresses (`INVALID_COIN_TYPE` / `INVALID_ADDRESS`); non-EVM reverse addresses are not exposed"
   },
   "H19": {
-    "status": "pending"
+    "na": "ensforge never parses reverse names (ENSIP-19 library behaviour); it only builds them (H16, H17)"
   },
   "H20": {
-    "status": "pending"
+    "tests": [
+      "tests/unit/sdk/indexer/define.test.ts > infers Basenames for subnames of base.eth, also when its labels are encoded"
+    ]
   },
   "H21": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/writes/dns.test.ts > imports a name under a public suffix of several labels"
+    ]
   },
   "H22": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/writes/dns.test.ts > refuses names and proofs the registrar cannot take"
+    ]
   },
   "H23": {
-    "status": "pending"
+    "tests": ["tests/integration/test/reads/records.test.ts > reads a name of ten 63-byte labels"]
   },
   "H24": {
     "tests": [
@@ -227,7 +249,9 @@
     "tests": ["tests/integration/test/reads/name.test.ts > v1.wrapped.desynced"]
   },
   "O09": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/writes/hierarchy.test.ts > rewrites a wrapped child of an unwrapped parent in the registry, unwrapping it"
+    ]
   },
   "O10": {
     "tests": ["tests/integration/test/reads/name.test.ts > v1.wrapped.sub.unwrapped-parent"]
@@ -288,10 +312,14 @@
     ]
   },
   "O21": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/registry.test.ts > follows a linked registry from both parents to one registry"
+    ]
   },
   "O22": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/registry.test.ts > reports a replaced subregistry as unreachable"
+    ]
   },
   "O23": {
     "tests": [
@@ -300,13 +328,15 @@
     ]
   },
   "O24": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/writes/reverts.test.ts > come from the Universal Resolver, through ensforge's reads"
+    ]
   },
   "O25": {
-    "status": "pending"
+    "na": "ENSV2Resolver's internal eth override, reached only through ENSV2Resolver; ensforge resolves through the v2 Universal Resolver and does not interpret it"
   },
   "O26": {
-    "status": "pending"
+    "na": "ensforge resolves through the deployment's Universal Resolver (the v2 proxy whenever ENSv2 is deployed); the v1 UR's ENSV2Resolver path is contract behaviour ensforge never selects"
   },
   "O27": {
     "tests": [
@@ -319,7 +349,9 @@
     ]
   },
   "O29": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/writes/migration.test.ts > registers an abandoned emancipated child afresh under its migrated parent"
+    ]
   },
   "O30": {
     "tests": [
@@ -328,19 +360,23 @@
     ]
   },
   "O31": {
-    "status": "pending"
+    "na": "bigname's tombstone rule needs the ETH registry's unregister role, which no account holds in any devnet profile (a DAO action on mainnet); bigname tests it upstream and ensforge reports bigname's status as given"
   },
   "O32": {
-    "status": "pending"
+    "tests": [
+      "tests/services/test/indexer/fixtures.test.ts > serves an ENSv1 name without a live ENSv2 entry with its owner and expiry, unresolved"
+    ]
   },
   "O33": {
-    "status": "pending"
+    "na": "root-only NameWrapper operation ensforge does not expose; the resulting wrapper-owner-0 state reads like O07"
   },
   "O34": {
-    "status": "pending"
+    "na": "Root contract TLD locking; ensforge exposes no root or TLD ownership writes"
   },
   "W01": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/writes/wrapper.test.ts > changes an expired child's fuses only by recreating it with a new expiry"
+    ]
   },
   "W02": {
     "tests": [
@@ -365,7 +401,9 @@
     ]
   },
   "W06": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/writes/wrapper.test.ts > lets an emancipated child lapse with its parent"
+    ]
   },
   "W07": {
     "tests": [
@@ -386,7 +424,9 @@
     ]
   },
   "W10": {
-    "status": "pending"
+    "tests": [
+      "tests/services/test/indexer/fixtures.test.ts > withholds a lapsed wrapped name's owner and fuses, keeping its wrapper expiry"
+    ]
   },
   "W11": {
     "tests": [
@@ -402,7 +442,9 @@
     ]
   },
   "W13": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/writes/transfers.test.ts > clears an ENSv1 token approval when the name moves or is unwrapped"
+    ]
   },
   "W14": {
     "tests": [
@@ -410,31 +452,45 @@
     ]
   },
   "W15": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/writes/wrapper.test.ts > renews .eth names through the registrar, not as a wrapped child"
+    ]
   },
   "W16": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/wrapper.test.ts > keeps fuses it has no name for in the mask"
+    ]
   },
   "W17": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/writes/wrapper.test.ts > wraps a .eth name only from its registrant, burning only owner fuses"
+    ]
   },
   "W18": {
-    "status": "pending"
+    "na": "ensforge DNS-encodes the normalized name itself; callers cannot append bytes"
   },
   "W19": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/writes/wrapper.test.ts > wraps a .eth name only from its registrant, burning only owner fuses"
+    ]
   },
   "W20": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/writes/wrapper.test.ts > wraps a .eth name only from its registrant, burning only owner fuses"
+    ]
   },
   "W21": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/writes/wrapper.test.ts > recreates an expired child that had cannotTransfer burned, with only its new fuses"
+    ]
   },
   "W22": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/writes/wrapper.test.ts > lets a child's owner burn it, unless cannotUnwrap is burned"
+    ]
   },
   "W23": {
-    "status": "pending"
+    "na": "ensforge does not expose NameWrapper.upgrade; migration goes through the migration controllers"
   },
   "W24": {
     "tests": [
@@ -442,43 +498,67 @@
     ]
   },
   "W25": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/writes/transfers.test.ts > refuses a prepared transfer once its token ID regenerates, and transfers it afresh"
+    ]
   },
   "W26": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/writes/access.test.ts > grants root roles with grantRootRoles, regenerating no token"
+    ]
   },
   "W27": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/writes/access.test.ts > refuses a 16th holder of a role, and still transfers the name"
+    ]
   },
   "W28": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/writes/access.test.ts > lets an operator act with the owner's roles, which revoking cannot take away"
+    ]
   },
   "W29": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/writes/transfers.test.ts > transfers an ENSv2 name only while it holds canTransferAdmin and is live"
+    ]
   },
   "W30": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/writes/transfers.test.ts > transfers an ENSv2 name only while it holds canTransferAdmin and is live"
+    ]
   },
   "W31": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/writes/transfers.test.ts > transfers an ENSv2 name only while it holds canTransferAdmin and is live"
+    ]
   },
   "W32": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/writes/access.test.ts > grants root roles with grantRootRoles, regenerating no token"
+    ]
   },
   "W33": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/writes/access.test.ts > refuses role grants to no account, and child registries to owners without the role"
+    ]
   },
   "W34": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/writes/access.test.ts > refuses role grants to no account, and child registries to owners without the role"
+    ]
   },
   "W35": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/access.test.ts > reads no roles on an expired ENSv2 name"
+    ]
   },
   "W36": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/writes/access.test.ts > grants roles through any version of a regenerated token ID"
+    ]
   },
   "W37": {
-    "status": "pending"
+    "na": "ERC-1155 receiver re-entry during mint is contract behaviour (contracts-v2 `mutatingReceiver_*` tests); ensforge reads ownership afterwards as for any transfer (A04)"
   },
   "W38": {
     "tests": [
@@ -532,7 +612,9 @@
     ]
   },
   "R10": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/ccip.test.ts > keeps the records that answer when another call of the read fails"
+    ]
   },
   "R11": {
     "tests": [
@@ -564,13 +646,13 @@
     ]
   },
   "R16": {
-    "status": "pending"
+    "na": "ensforge has no composite-resolver or latest-public-resolver concept and never reads a resolver's self-description; `kind` comes from deployment addresses (R02)"
   },
   "R17": {
-    "status": "pending"
+    "na": "ensforge has no composite-resolver or latest-public-resolver concept and never reads a resolver's self-description; `kind` comes from deployment addresses (R02)"
   },
   "R18": {
-    "status": "pending"
+    "na": "the repair offer is ENS app UI; ensforge reports the resolver kind (R02)"
   },
   "R19": {
     "tests": [
@@ -596,10 +678,12 @@
     "tests": ["tests/integration/test/reads/records.test.ts > reads default and linked records"]
   },
   "R24": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/resolver.test.ts > refuses calls a PermissionedResolver does not answer"
+    ]
   },
   "R25": {
-    "status": "pending"
+    "na": "ensforge reads through `resolve(name, multicall)`, which PermissionedResolver answers call by call; its own `multicall` is used only for writes, where atomicity is intended (per-entry failure: R10)"
   },
   "R26": {
     "tests": [
@@ -607,25 +691,36 @@
     ]
   },
   "R27": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/writes/access-matrix.test.ts > approval.setDelegate as wrapped owner, to self",
+      "tests/integration/test/writes/access-matrix.test.ts > record.set as wrapped owner"
+    ]
   },
   "R28": {
-    "status": "pending"
+    "tests": ["tests/integration/test/writes/records.test.ts > clears every record of a name"]
   },
   "R29": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/resolver.test.ts > reports the ENSv1 resolver behind the bridge, and reads the bridge answered"
+    ]
   },
   "R30": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/ccip.test.ts > keeps the records that answer when another call of the read fails"
+    ]
   },
   "R31": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/resolver.test.ts > reports the ENSv1 resolver behind the bridge, and reads the bridge answered"
+    ]
   },
   "R32": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/ccip.test.ts > follows an off-chain lookup through the resolver's gateway"
+    ]
   },
   "R33": {
-    "status": "pending"
+    "na": "ensforge has no direct path without a Universal Resolver; `Deployments.define` requires one"
   },
   "X01": {
     "tests": [
@@ -650,7 +745,9 @@
     "na": "viem's CCIP-Read client (EIP-3668 HTTP transport and local batch gateway), tested upstream; ensforge only passes gateway settings through"
   },
   "X07": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/ccip.test.ts > fails with a typed error when a DNS name's resolver forges an off-chain lookup"
+    ]
   },
   "X08": {
     "na": "viem's CCIP-Read client (EIP-3668 HTTP transport and local batch gateway), tested upstream; ensforge only passes gateway settings through"
@@ -659,13 +756,17 @@
     "na": "viem's CCIP-Read client (EIP-3668 HTTP transport and local batch gateway), tested upstream; ensforge only passes gateway settings through"
   },
   "X10": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/ccip.test.ts > keeps the records that answer when another call of the read fails"
+    ]
   },
   "X11": {
     "na": "viem's CCIP-Read client (EIP-3668 HTTP transport and local batch gateway), tested upstream; ensforge only passes gateway settings through"
   },
   "X12": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/ccip.test.ts > times out on a gateway that never answers, and an abort drops its request"
+    ]
   },
   "X13": {
     "tests": [
@@ -673,16 +774,22 @@
     ]
   },
   "X14": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/ccip.test.ts > fails with the resolver's error when it rejects the gateway's answer"
+    ]
   },
   "X15": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/name.test.ts > a wildcard subname is available and has no expiry, yet resolves"
+    ]
   },
   "X16": {
-    "status": "pending"
+    "na": "disabling the editor is ENS app UI; `resolver.get` reports `authorization: \"unknown\"` for extended resolvers (a write to one is not refused client-side: noted as a follow-up)"
   },
   "X17": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/writes/migration.test.ts > keeps an off-chain resolver without reading through its gateway"
+    ]
   },
   "X18": {
     "na": "viem's CCIP-Read client (EIP-3668 HTTP transport and local batch gateway), tested upstream; ensforge only passes gateway settings through"
@@ -714,13 +821,21 @@
     ]
   },
   "K06": {
-    "status": "pending"
+    "tests": [
+      "tests/unit/sdk/actions/record/set.test.ts > refuses addresses and ABI content types a resolver would reject",
+      "tests/unit/sdk/records/read-profiles.test.ts > reads undecodable records as missing and keeps the others",
+      "tests/unit/sdk/utils/CoinType.test.ts > decodeAddress inverts encodeAddress"
+    ]
   },
   "K07": {
-    "status": "pending"
+    "tests": [
+      "tests/unit/sdk/actions/record/set.test.ts > refuses addresses and ABI content types a resolver would reject",
+      "tests/unit/sdk/utils/CoinType.test.ts > accepts addresses without a checksum",
+      "tests/unit/sdk/utils/CoinType.test.ts > rejects a mixed-case address with a wrong checksum"
+    ]
   },
   "K08": {
-    "status": "pending"
+    "tests": ["tests/unit/sdk/utils/CoinType.test.ts > checksums RSK addresses with chain ID 30"]
   },
   "K09": {
     "tests": [
@@ -729,19 +844,28 @@
     ]
   },
   "K10": {
-    "status": "pending"
+    "tests": [
+      "tests/unit/sdk/utils/CoinType.test.ts > stores the same bytes for each format of an address"
+    ]
   },
   "K11": {
-    "status": "pending"
+    "tests": [
+      "tests/unit/sdk/actions/primaryName/get.test.ts > refuses coins that are not EVM chains before reading anything",
+      "tests/unit/sdk/utils/CoinType.test.ts > is ENSIP-11 and inverted by toChainId"
+    ]
   },
   "K12": {
-    "status": "pending"
+    "tests": [
+      "tests/unit/sdk/utils/CoinType.test.ts > reads the legacy SLIP-44 EVM coins by their own names"
+    ]
   },
   "K13": {
-    "status": "pending"
+    "tests": [
+      "tests/unit/sdk/utils/CoinType.test.ts > keeps the SLIP-44 types of Avalanche and RSK"
+    ]
   },
   "K14": {
-    "status": "pending"
+    "tests": ["tests/unit/sdk/utils/CoinType.test.ts > rejects coins without a codec"]
   },
   "K15": {
     "tests": [
@@ -754,16 +878,16 @@
     ]
   },
   "K17": {
-    "status": "pending"
+    "na": "ensforge reads text keys exactly as given and does not alias legacy `vnd.*` keys; ENSIP-5 leaves aliasing to the app"
   },
   "K18": {
-    "status": "pending"
+    "na": "text records come back as stored; validating ENSIP-18 values (colour, length, URL scheme) is the app's job"
   },
   "K19": {
     "tests": ["tests/integration/test/reads/records.test.ts > reads a 24 KB text in one call"]
   },
   "K20": {
-    "status": "pending"
+    "na": "the key grammar is bigname's; ensforge passes keys through and maps bigname's 400 to `INDEXER_REQUEST_REJECTED` (tests/unit/sdk/indexer/http.test.ts)"
   },
   "K21": {
     "tests": [
@@ -781,7 +905,9 @@
     ]
   },
   "K24": {
-    "status": "pending"
+    "tests": [
+      "tests/unit/sdk/actions/record/set.test.ts > refuses addresses and ABI content types a resolver would reject"
+    ]
   },
   "K25": {
     "tests": [
@@ -794,10 +920,12 @@
     ]
   },
   "K27": {
-    "status": "pending"
+    "tests": [
+      "tests/unit/sdk/records/read-profiles.test.ts > reads undecodable records as missing and keeps the others"
+    ]
   },
   "K28": {
-    "status": "pending"
+    "na": "ensforge's ABI read has no fallback to the reverse record; ENSIP-4 makes it optional"
   },
   "K29": {
     "tests": [
@@ -816,7 +944,9 @@
     ]
   },
   "K32": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/writes/records.test.ts > reads DNS records by owner name in any case, and deletes a record set with empty data"
+    ]
   },
   "K33": {
     "tests": [
@@ -839,7 +969,7 @@
     ]
   },
   "K37": {
-    "status": "pending"
+    "na": "ensforge reads avatars by name only (`record.getAvatar`); there is no avatar-by-address flow"
   },
   "K38": {
     "tests": [
@@ -847,10 +977,12 @@
     ]
   },
   "K39": {
-    "status": "pending"
+    "na": "ensforge registers only through the ENSv2 ETHRegistrar and writes records in its own resolver calls; it never passes `data[]` to the ENSv1 controller"
   },
   "K40": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/writes/records.test.ts > reveals a PermissionedResolver's default record when a name's records are cleared"
+    ]
   },
   "K41": {
     "tests": [
@@ -867,10 +999,14 @@
     "tests": ["tests/integration/test/writes/access.test.ts > sets and clears a primary name"]
   },
   "P03": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/primary.test.ts > stops at an addr.reverse resolver without a name, never falling back to the default"
+    ]
   },
   "P04": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/primary.test.ts > stops at an addr.reverse resolver without a name, never falling back to the default"
+    ]
   },
   "P05": {
     "tests": [
@@ -878,7 +1014,9 @@
     ]
   },
   "P06": {
-    "status": "pending"
+    "tests": [
+      "tests/unit/sdk/actions/primaryName/get.test.ts > refuses coins that are not EVM chains before reading anything"
+    ]
   },
   "P07": {
     "tests": [
@@ -892,43 +1030,59 @@
     ]
   },
   "P09": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/primary.test.ts > verifies a chain's primary name through the default EVM address alone"
+    ]
   },
   "P10": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/primary.test.ts > returns null for stored names that are not names, or whose resolver has no address"
+    ]
   },
   "P11": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/primary.test.ts > stops at an addr.reverse resolver without a name, never falling back to the default"
+    ]
   },
   "P12": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/primary.test.ts > verifies a primary name whose address is answered off-chain"
+    ]
   },
   "P13": {
-    "status": "pending"
+    "na": "same proof as P06: primary names are EVM-only, so coin 123 fails with `INVALID_COIN_TYPE` before any call"
   },
   "P14": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/primary.test.ts > returns null for stored names that are not names, or whose resolver has no address"
+    ]
   },
   "P15": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/primary.test.ts > returns null for stored names that are not names, or whose resolver has no address"
+    ]
   },
   "P16": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/primary.test.ts > neither sets nor returns a primary name with an encoded label"
+    ]
   },
   "P17": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/batch.test.ts > aligns primary names with their addresses; an empty batch returns nothing"
+    ]
   },
   "P18": {
-    "status": "pending"
+    "na": "ensforge does not set L2 primary names or use the L2ReverseRegistrar signature flows (KL-10)"
   },
   "P19": {
-    "status": "pending"
+    "na": "ensforge does not set L2 primary names or use the L2ReverseRegistrar signature flows (KL-10)"
   },
   "P20": {
-    "status": "pending"
+    "na": "ensforge does not set L2 primary names or use the L2ReverseRegistrar signature flows (KL-10)"
   },
   "P21": {
-    "status": "pending"
+    "na": "ensforge does not set L2 primary names or use the L2ReverseRegistrar signature flows (KL-10)"
   },
   "P22": {
     "tests": [
@@ -938,13 +1092,13 @@
     ]
   },
   "P23": {
-    "status": "pending"
+    "na": "`syncName` / ContractNamer on L2 is not exposed"
   },
   "P24": {
-    "status": "pending"
+    "na": "ensforge never writes a reverse record through an HCA; the owner sets it (writes/hca.test.ts); the adapter HCA checks are contract-only"
   },
   "P25": {
-    "status": "pending"
+    "na": "ensforge doesn't write to the L2ReverseRegistrar (KL-10); the L1 clear with `setName(\"\")` is P02's test"
   },
   "P26": {
     "tests": [
@@ -953,16 +1107,22 @@
     ]
   },
   "P27": {
-    "status": "pending"
+    "na": "an error in the ENSIP-23 document; ensforge builds `<coinType>.reverse` names itself (P28 shows `80014a34.reverse`)"
   },
   "P28": {
-    "status": "pending"
+    "tests": [
+      "tests/unit/sdk/actions/primaryName/get.test.ts > reads each chain's reverse namespace"
+    ]
   },
   "P29": {
-    "status": "pending"
+    "tests": [
+      "tests/unit/sdk/actions/primaryName/get.test.ts > refuses coins that are not EVM chains before reading anything"
+    ]
   },
   "P30": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/primary.test.ts > follows a primary name's subname as it is created and removed"
+    ]
   },
   "G01": {
     "tests": [
@@ -970,7 +1130,9 @@
     ]
   },
   "G02": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/registration.test.ts > prices labels by code point and refuses labels below the minimum"
+    ]
   },
   "G03": {
     "tests": [
@@ -978,10 +1140,14 @@
     ]
   },
   "G04": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/registration.test.ts > prices labels by code point and refuses labels below the minimum"
+    ]
   },
   "G05": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/writes/hierarchy.test.ts > creates ENSv2 subnames, deploying a registry where the parent has none"
+    ]
   },
   "G06": {
     "tests": [
@@ -990,19 +1156,28 @@
     ]
   },
   "G07": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/writes/errors.test.ts > registration.commit refuses a commitment already made"
+    ]
   },
   "G08": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/writes/registration.test.ts > reveals a commitment paying with another token than the one quoted"
+    ]
   },
   "G09": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/writes/registration.test.ts > refuses names that cannot be registered before the wallet is asked",
+      "tests/integration/test/writes/renewal.test.ts > refuses names that cannot be renewed before the wallet is asked"
+    ]
   },
   "G10": {
     "tests": ["tests/integration/test/writes/renewal.test.ts > renews a name listed twice once"]
   },
   "G11": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/writes/renewal.test.ts > renews an ENSv2 name until its grace period ends"
+    ]
   },
   "G12": {
     "tests": [
@@ -1013,7 +1188,9 @@
     ]
   },
   "G13": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/writes/renewal.test.ts > renews a premigrated ENSv1 name through ETHRenewerV1"
+    ]
   },
   "G14": {
     "tests": [
@@ -1022,10 +1199,14 @@
     ]
   },
   "G15": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/writes/registration.test.ts > pays a price that rose after the quote, up to the 2% its approval leaves"
+    ]
   },
   "G16": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/writes/registration.test.ts > pays with a token that returns nothing, and fails typed when a token refuses the payment"
+    ]
   },
   "G17": {
     "tests": [
@@ -1033,10 +1214,14 @@
     ]
   },
   "G18": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/writes/registration.test.ts > fails typed when the owner is a contract that refuses the name token"
+    ]
   },
   "G19": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/writes/registration.test.ts > refuses to reveal once someone else registered the name, without asking the wallet"
+    ]
   },
   "G20": {
     "tests": [
@@ -1051,10 +1236,14 @@
     ]
   },
   "G22": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/writes/registration.test.ts > refuses names that cannot be registered before the wallet is asked"
+    ]
   },
   "G23": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/writes/renewal.test.ts > refuses names that cannot be renewed before the wallet is asked"
+    ]
   },
   "G24": {
     "tests": [
@@ -1077,13 +1266,17 @@
     ]
   },
   "G28": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/registration.test.ts > refuses a payment token the oracle no longer accepts"
+    ]
   },
   "G29": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/writes/registration.test.ts > deploys the signer's shared resolver once, and reuses it for later names"
+    ]
   },
   "G30": {
-    "status": "pending"
+    "na": "ensforge takes a 32-byte or address referrer (ENSv2 `register` argument); it has no ENSIP-14 secret prefix or ensjs campaign number"
   },
   "T01": {
     "tests": [
@@ -1111,10 +1304,16 @@
     ]
   },
   "T06": {
-    "status": "pending"
+    "tests": [
+      "tests/services/test/indexer/fixtures.test.ts > indexes every fixture name as the chain holds it"
+    ]
   },
   "T07": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/migration.test.ts > reports each name's route, blockers and state after migrating",
+      "tests/integration/test/reads/name-time.test.ts > a premigrated ENSv1 name is reachable through ENSv2 until its reservation ends",
+      "tests/integration/test/writes/migration.test.ts > migrates unwrapped and wrapped names, leaving their ENSv1 husk to the Graveyard"
+    ]
   },
   "T08": {
     "tests": [
@@ -1133,19 +1332,28 @@
     ]
   },
   "T11": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/errors.test.ts > reads before ENSv2 was deployed take the ENSv1 path or fail typed"
+    ]
   },
   "T12": {
     "na": "ENS app UI polling cadence; ensforge reads chain time on demand (T10)"
   },
   "T13": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/name.test.ts > a wrapped name whose expiry was never set has none, rather than 1970",
+      "tests/unit/sdk/indexer/map.test.ts > fills defaults for a name with only its identity fields"
+    ]
   },
   "T14": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/migration.test.ts > blocks a locked child until its parent migrates, and for anyone but its owner"
+    ]
   },
   "T15": {
-    "status": "pending"
+    "tests": [
+      "tests/unit/sdk/indexer/map.test.ts > keeps expiries beyond 2^53 exact, up to bigname's saturated i64::MAX"
+    ]
   },
   "T16": {
     "tests": [
@@ -1153,46 +1361,72 @@
     ]
   },
   "D01": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/writes/dns.test.ts > imports a DNS name to the owner its TXT record names, from any sender"
+    ]
   },
   "D02": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/writes/dns.test.ts > refuses proofs that do not hold, and gateways that fail"
+    ]
   },
   "D03": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/writes/dns.test.ts > refuses names and proofs the registrar cannot take"
+    ]
   },
   "D04": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/dns.test.ts > resolve through the resolver an ENS1 record names, by address or by ENS name"
+    ]
   },
   "D05": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/dns.test.ts > use the first ENS1 record whose resolver is usable"
+    ]
   },
   "D06": {
-    "status": "pending"
+    "na": "ExtendedDNSResolver / DNSTXTResolver parse the context themselves; ensforge passes it through unchanged (D04 proves the path)"
   },
   "D07": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/dns.test.ts > resolve on-chain before their ENS1 record, which serves once the resolver is cleared"
+    ]
   },
   "D08": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/dns.test.ts > have no resolver for a subname still on ENSv1 without one"
+    ]
   },
   "D09": {
-    "status": "pending"
+    "na": "DNSTXTResolver's own context errors; ensforge passes its reverts through, and a failed call inside a multicall reads as unset, as for any resolver"
   },
   "D10": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/dns.test.ts > resolve as another name through the DNS alias resolver"
+    ]
   },
   "D11": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/writes/dns.test.ts > refuses names and proofs the registrar cannot take",
+      "tests/integration/test/writes/dns.test.ts > refuses proofs that do not hold, and gateways that fail"
+    ]
   },
   "D12": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/writes/dns.test.ts > refuses proofs that do not hold, and gateways that fail"
+    ]
   },
   "D13": {
-    "status": "pending"
+    "tests": [
+      "tests/fork/test/reads/resolution.test.ts > unwraps the Universal Resolver's ResolutionError for DNS names (KL-14, KL-29)"
+    ]
   },
   "D14": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/writes/dns.test.ts > needs gateways for DNSSEC reads, and reports the ones that fail",
+      "tests/integration/test/writes/dns.test.ts > refuses names and proofs the registrar cannot take"
+    ]
   },
   "D15": {
     "tests": ["tests/integration/test/reads/name.test.ts > dns.imported.wrapped"]
@@ -1201,28 +1435,40 @@
     "na": "ENS app UI (an out-of-sync banner); the DNS and ENS owners are read through D-axis cases"
   },
   "D17": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/name.test.ts > a DNS TLD synced into ENSv2 never expires"
+    ]
   },
   "D18": {
-    "status": "pending"
+    "tests": [
+      "tests/fork/test/reads/resolution.test.ts > unwraps the Universal Resolver's ResolutionError for DNS names (KL-14, KL-29)"
+    ]
   },
   "D19": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/dns.test.ts > read an ENS1 record split into several strings whole"
+    ]
   },
   "M01": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/writes/migration.test.ts > refuses blocked names before the wallet is asked"
+    ]
   },
   "M02": {
-    "status": "pending"
+    "na": "ensforge encodes the full LibMigration.Data itself; it never sends data shorter than 7×32 bytes"
   },
   "M03": {
-    "status": "pending"
+    "na": "ensforge derives the label and the token ID from the same parsed name, so they always match"
   },
   "M04": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/writes/migration.test.ts > migrates a locked name into a WrapperRegistry, then its locked child"
+    ]
   },
   "M05": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/writes/migration.test.ts > decodes the error a migration controller returns through the NameWrapper"
+    ]
   },
   "M06": {
     "tests": [
@@ -1235,7 +1481,9 @@
     ]
   },
   "M08": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/writes/migration.test.ts > refuses blocked names before the wallet is asked"
+    ]
   },
   "M09": {
     "tests": [
@@ -1243,10 +1491,12 @@
     ]
   },
   "M10": {
-    "status": "pending"
+    "na": "ensforge does not expose Graveyard `clear`"
   },
   "M11": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/migration.test.ts > blocks a locked child until its parent migrates, and for anyone but its owner"
+    ]
   },
   "M12": {
     "tests": [
@@ -1254,10 +1504,12 @@
     ]
   },
   "M13": {
-    "status": "pending"
+    "na": "app review flow; ensforge's equivalents are tested elsewhere: subnames come from an explicit list or the indexer (M12/M15) and plans are re-validated before sending (T16)"
   },
   "M14": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/writes/migration.test.ts > fails typed when a token approval is revoked between the steps of a migration"
+    ]
   },
   "M15": {
     "tests": [
@@ -1265,13 +1517,17 @@
     ]
   },
   "M16": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/writes/migration.test.ts > keeps the owner's primary name on a name it migrates"
+    ]
   },
   "M17": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/migration.test.ts > lets the registrant migrate, not the manager"
+    ]
   },
   "M18": {
-    "status": "pending"
+    "na": "contradicted by the contracts: once the reservation lapses ENSv2 resolution no longer reaches the ENSv1 name (README decided semantics); ensforge reports `reachable: false` and record reads return null from that second (T07 name-time test)"
   },
   "A01": {
     "tests": [
@@ -1286,28 +1542,43 @@
     ]
   },
   "A03": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/writes/registration.test.ts > fails the register step when the owner's delegated code rejects the name's token"
+    ]
   },
   "A04": {
-    "status": "pending"
+    "na": "contract re-entrancy handling, covered by contracts-v2 `mutatingReceiver_*` tests; ensforge does not interpret it"
   },
   "A05": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/writes/renewal.test.ts > resumes a bulk renewal the user stopped after approving, charging once"
+    ]
   },
   "A06": {
     "na": "ENS app UI state (a disabled editor); the permission behind it is M:D2/M:D3"
   },
   "A07": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/writes/access-matrix.test.ts > name.transfer as parent of an emancipated child"
+    ]
   },
   "A08": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/writes/access-matrix.test.ts > subname.remove as parent of an emancipated child"
+    ]
   },
   "A09": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/writes/access-matrix.test.ts > name.transfer as owner, to a name",
+      "tests/integration/test/writes/access-matrix.test.ts > name.transfer as owner, to a padded address",
+      "tests/integration/test/writes/access-matrix.test.ts > name.transfer as owner, to self",
+      "tests/integration/test/writes/access-matrix.test.ts > name.transfer as owner, to the zero address"
+    ]
   },
   "A10": {
-    "status": "pending"
+    "tests": [
+      "tests/unit/sdk/client/signer.test.ts > fails with CHAIN_MISMATCH for a wallet on another chain"
+    ]
   },
   "Z01": {
     "tests": [
@@ -1320,7 +1591,7 @@
     ]
   },
   "Z03": {
-    "status": "pending"
+    "na": "blocked by KL-52: FundingPolicyFailed, ClaimFieldMismatch and GasRefundNotAllowed come from the funding validator behind Rhinestone's orchestrator, which Rhinestone SDK 3.3.0 cannot reach for a standalone HCA; the expired-session pre-check is Z02's test"
   },
   "Z04": {
     "tests": [
@@ -1336,19 +1607,26 @@
     "na": "ensforge never builds delegatecall executions: `hca.execute` and the route encode batch call mode only"
   },
   "F01": {
-    "status": "pending"
+    "na": "ensforge resolves through the deployment's Universal Resolver at the read block; which path a chain's UR takes is the contracts' history (F05 pins reads to a block; the fork suites resolve on both networks)"
   },
   "F02": {
-    "status": "pending"
+    "tests": [
+      "tests/fork/test/reads/resolution.test.ts > reads only the profiles an old resolver without multicall supports, behind the bridge",
+      "tests/integration/test/reads/resolver.test.ts > reports the ENSv1 resolver behind the bridge, and reads the bridge answered"
+    ]
   },
   "F03": {
-    "status": "pending"
+    "tests": [
+      "tests/fork/test/reads/resolution.test.ts > follows CCIP-Read for off-chain names under an on-chain parent"
+    ]
   },
   "F04": {
-    "status": "pending"
+    "na": "live canaries assert invariants of long-lived names, not values, so a name that stops resolving is drift they tolerate by design (tests/live); no live test depends on a single DNS name"
   },
   "F05": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/conformance.test.ts > sends every contract read to the block it pins"
+    ]
   },
   "I01": {
     "tests": [
@@ -1431,7 +1709,7 @@
     "na": "About upstream documentation; ensforge decodes events from the contracts' ABIs, which its event tests check"
   },
   "M:A1": {
-    "status": "pending"
+    "tests": ["tests/integration/test/reads/name.test.ts > a name never registered is available"]
   },
   "M:A2": {
     "tests": [
@@ -1579,7 +1857,9 @@
     ]
   },
   "M:A26": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/registry.test.ts > offers an upgrade from an older implementation only when the latest accepts it"
+    ]
   },
   "M:B1": {
     "tests": [
@@ -1629,7 +1909,9 @@
     ]
   },
   "M:B8": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/resolver.test.ts > resolves through the exact resolver first, then a parent's wildcard"
+    ]
   },
   "M:B9": {
     "tests": [
@@ -1687,7 +1969,9 @@
     ]
   },
   "M:C2": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/name.test.ts > reads top-level names from the root registry"
+    ]
   },
   "M:C3": {
     "tests": [
@@ -1699,7 +1983,9 @@
     "tests": ["tests/integration/test/reads/name.test.ts > dns.imported"]
   },
   "M:C5": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/dns.test.ts > resolve through the resolver an ENS1 record names, by address or by ENS name"
+    ]
   },
   "M:C6": {
     "tests": [
@@ -1765,10 +2051,16 @@
     ]
   },
   "M:D8": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/writes/hierarchy.test.ts > creates ENSv2 subnames, deploying a registry where the parent has none",
+      "tests/integration/test/writes/hierarchy.test.ts > follows NameWrapper fuse rules for children"
+    ]
   },
   "M:D9": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/writes/hca.test.ts > migrates several names in one execution",
+      "tests/integration/test/writes/hca.test.ts > registers a name for the owner, paid by the HCA, with the owner's primary name"
+    ]
   },
   "M:D10": {
     "tests": [
@@ -1780,7 +2072,9 @@
     "tests": ["tests/integration/test/writes/access-matrix.test.ts > record.set as stranger"]
   },
   "M:D12": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/writes/conformance.test.ts > fails typed when the user rejects or there is no wallet"
+    ]
   },
   "M:E1": {
     "tests": [
@@ -1811,13 +2105,17 @@
     ]
   },
   "M:F1": {
-    "status": "pending"
+    "na": "the devnet lane itself: every tests/integration test runs on contracts-v2 v1.0.1 builds"
   },
   "M:F2": {
-    "status": "pending"
+    "tests": [
+      "tests/fork/test/reads/resolution.test.ts > unwraps the Universal Resolver's ResolutionError for DNS names (KL-14, KL-29)"
+    ]
   },
   "M:F3": {
-    "status": "pending"
+    "tests": [
+      "tests/fork/test/reads/resolution.test.ts > resolves wrapped ENSv1 names and DNS names through the cut-over Universal Resolver"
+    ]
   },
   "M:F4": {
     "tests": [
@@ -1825,18 +2123,28 @@
     ]
   },
   "M:F5": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/ccip.test.ts > sends lookups through the batch gateways the caller names"
+    ]
   },
   "M:F6": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/conformance.test.ts > reads the same without Multicall3 on the chain, and with batching off"
+    ]
   },
   "M:F7": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/conformance.test.ts > reads the same without Multicall3 on the chain, and with batching off"
+    ]
   },
   "M:F8": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/registration.test.ts > fails with a typed error where ENSv2 is not deployed"
+    ]
   },
   "M:F9": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/errors.test.ts > NameWrapper reads where ENSv1 is not deployed"
+    ]
   }
 }

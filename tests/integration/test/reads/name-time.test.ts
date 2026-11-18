@@ -92,5 +92,27 @@ describe("name.get over time", () => {
         }),
       { meta: { cases: ["T04", "T05", "M:E1", "M:E2", "M:E3"] } },
     );
+
+    it.effect(
+      "a premigrated ENSv1 name is reachable through ENSv2 until its reservation ends",
+      () =>
+        Effect.gen(function* () {
+          const reserved = (yield* Fixtures).byId("v2.reserved");
+          const chain = yield* Chain;
+          const { reader } = yield* Clients;
+          const reservedUntil = BigInt(String(reserved.facts["reservedUntil"]));
+
+          const reachable = yield* Effect.forEach([reservedUntil - 1n, reservedUntil], (at) =>
+            chain.atTimestamp(
+              at,
+              Actions.name
+                .get(reader, { name: reserved.name })
+                .pipe(Effect.map((state) => state.reachable)),
+            ),
+          );
+          assert.deepStrictEqual(reachable, [true, false]);
+        }),
+      { meta: { cases: ["T07"] } },
+    );
   });
 });

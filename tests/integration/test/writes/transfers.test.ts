@@ -9,6 +9,7 @@ import { expectFailure } from "@ensforge/test-harness";
 import { Clients } from "../support/clients.ts";
 import { ethEntry, v1Owners } from "../support/contracts.ts";
 import { onProfile } from "../support/lane.ts";
+import { Wallets } from "../support/wallets.ts";
 
 describe("transfers and managers", () => {
   onProfile("mainnet-shaped")("mainnet-shaped", (it) => {
@@ -129,6 +130,120 @@ describe("transfers and managers", () => {
           );
         }),
       { meta: { cases: ["M:A14", "M:A24"] } },
+    );
+
+    it.effect(
+      "transfers an ENSv2 name only while it holds canTransferAdmin and is live",
+      () =>
+        Effect.gen(function* () {
+          const fixtures = yield* Fixtures;
+          const { accounts } = yield* Devnet;
+          const chain = yield* Chain;
+          const clients = yield* Clients;
+          const { alice, bob, carol } = accounts;
+          const ens = clients.make({ account: alice });
+          const name = fixtures.byId("v2.registered").name;
+
+          yield* chain.isolated(
+            Effect.gen(function* () {
+              yield* Actions.role.revokeSync(ens, {
+                holder: alice,
+                roles: ["canTransferAdmin"],
+                target: "registry",
+                name,
+              });
+              for (const unsafe of [false, true]) {
+                yield* expectFailure(Actions.name.transfer(ens, { name, to: carol, unsafe }), {
+                  _tag: "UnauthorizedError",
+                  code: "TRANSFER_DISALLOWED",
+                });
+              }
+            }),
+          );
+          yield* expectFailure(
+            Actions.name.transfer(ens, { name: fixtures.byId("v2.expired").name, to: carol }),
+            { _tag: "NameStateError", code: "NAME_EXPIRED" },
+          );
+
+          // A child of a registry its parent still controls moves only unsafely.
+          const child = fixtures.byId("v2.subnames").name;
+          const owner = clients.make({ account: bob });
+          yield* expectFailure(Actions.name.transfer(owner, { name: child, to: carol }), {
+            _tag: "NameStateError",
+            code: "REGISTRY_NOT_EMANCIPATED",
+          });
+          yield* chain.isolated(
+            Effect.gen(function* () {
+              yield* Actions.name.transferSync(owner, { name: child, to: carol, unsafe: true });
+              assert.strictEqual((yield* Actions.name.get(owner, { name: child })).owner, carol);
+            }),
+          );
+        }),
+      { meta: { cases: ["W29", "W30", "W31"] } },
+    );
+
+    it.effect(
+      "refuses a prepared transfer once its token ID regenerates, and transfers it afresh",
+      () =>
+        Effect.gen(function* () {
+          const { accounts } = yield* Devnet;
+          const chain = yield* Chain;
+          const clients = yield* Clients;
+          const wallets = yield* Wallets;
+          const { name } = (yield* Fixtures).byId("v2.registered");
+          const wallet = wallets.make(accounts.alice);
+          const ens = clients.make({ account: accounts.alice, wallet });
+
+          yield* chain.isolated(
+            Effect.gen(function* () {
+              const plan = yield* Actions.name.transfer.prepare(ens, { name, to: accounts.carol });
+              // The seller changes a regeneration role first: the token gets a new ID.
+              yield* Actions.role.grantSync(ens, {
+                grantee: accounts.alice,
+                roles: ["canTransfer"],
+                target: "registry",
+                name,
+              });
+              const sent = wallet.methods.length;
+
+              const error = yield* expectFailure(Actions.plan.send(ens, { plan }), {
+                _tag: "UnauthorizedError",
+              });
+              assert.strictEqual(error.context.revert?.errorName, "ERC1155InsufficientBalance");
+              assert.notInclude(wallet.methods.slice(sent), "eth_sendTransaction");
+
+              yield* Actions.name.transferSync(ens, { name, to: accounts.carol });
+              assert.strictEqual((yield* ethEntry(name)).owner, accounts.carol);
+            }),
+          );
+        }),
+      { meta: { cases: ["W25"] } },
+    );
+
+    it.effect(
+      "clears an ENSv1 token approval when the name moves or is unwrapped",
+      () =>
+        Effect.gen(function* () {
+          const { accounts } = yield* Devnet;
+          const chain = yield* Chain;
+          const clients = yield* Clients;
+          const ens = clients.make({ account: accounts.alice });
+          const { name } = (yield* Fixtures).byId("v1.wrapped.approved");
+
+          yield* chain.isolated(
+            Effect.gen(function* () {
+              yield* Actions.name.transferSync(ens, { name, to: accounts.carol });
+              assert.isNull(yield* Actions.approval.getToken(ens, { name }));
+            }),
+          );
+          yield* chain.isolated(
+            Effect.gen(function* () {
+              yield* Actions.wrapper.unwrapSync(ens, { name });
+              assert.isNull(yield* Actions.approval.getToken(ens, { name }));
+            }),
+          );
+        }),
+      { meta: { cases: ["W13"] } },
     );
 
     it.effect(

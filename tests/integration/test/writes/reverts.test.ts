@@ -14,6 +14,7 @@ import {
   erc20Abi,
   keccak256,
   namehash,
+  numberToHex,
   toHex,
   zeroAddress,
   zeroHash,
@@ -130,6 +131,12 @@ describe("contract errors", () => {
             functionName: "revokeRoles",
             args: [delegated, Roles.registry.setResolver, carol],
           },
+          EACInvalidAccount: {
+            ...registry,
+            from: alice,
+            functionName: "grantRoles",
+            args: [registered, Roles.registry.setResolver, zeroAddress],
+          },
           ERC1155InsufficientBalance: transfer(user, user, registered),
           ERC1155MissingApprovalForAll: transfer(user, alice, registered),
           TransferUnsafeWithMultipleAssignees: transfer(alice, alice, delegated),
@@ -164,6 +171,30 @@ describe("contract errors", () => {
         for (const [error, call] of Object.entries(cases)) {
           assert.strictEqual(yield* revertOf(call), error);
         }
+
+        // Alice and carol hold setResolver; thirteen more fill its count of fifteen holders.
+        yield* chain.isolated(
+          Effect.gen(function* () {
+            for (let holder = 1; holder <= 13; holder++) {
+              yield* chain.write({
+                account: alice,
+                address: registry.to,
+                abi: Abis.v2.permissionedRegistry,
+                functionName: "grantRoles",
+                args: [delegated, Roles.registry.setResolver, numberToHex(holder, { size: 20 })],
+              });
+            }
+            assert.strictEqual(
+              yield* revertOf({
+                ...registry,
+                from: alice,
+                functionName: "grantRoles",
+                args: [delegated, Roles.registry.setResolver, numberToHex(14, { size: 20 })],
+              }),
+              "EACMaxAssignees",
+            );
+          }),
+        );
       }),
     );
 
@@ -348,31 +379,36 @@ describe("contract errors", () => {
       }),
     );
 
-    it.effect("come from the Universal Resolver, through ensforge's reads", () =>
-      Effect.gen(function* () {
-        const fixtures = yield* Fixtures;
-        const clients = yield* Clients;
+    // `resolver.none` is premigrated: ENSv2 hands it to the ENSv1 bridge, which finds no ENSv1
+    // resolver but `eth`'s, the ENSv2 bridge, which points back; the loop ends in UnreachableName.
+    it.effect(
+      "come from the Universal Resolver, through ensforge's reads",
+      () =>
+        Effect.gen(function* () {
+          const fixtures = yield* Fixtures;
+          const clients = yield* Clients;
 
-        assert.strictEqual(
-          yield* revertName(
-            Actions.record.getText(clients.reader, {
-              name: fixtures.byId("resolver.none").name,
-              key: "url",
-              strict: true,
-            }),
-          ),
-          "UnreachableName",
-        );
-        assert.strictEqual(
-          yield* revertName(
-            Actions.record.getText(clients.make({ ccipRead: false }), {
-              name: fixtures.byId("resolver.offchain").name,
-              key: "url",
-            }),
-          ),
-          "OffchainLookup",
-        );
-      }),
+          assert.strictEqual(
+            yield* revertName(
+              Actions.record.getText(clients.reader, {
+                name: fixtures.byId("resolver.none").name,
+                key: "url",
+                strict: true,
+              }),
+            ),
+            "UnreachableName",
+          );
+          assert.strictEqual(
+            yield* revertName(
+              Actions.record.getText(clients.make({ ccipRead: false }), {
+                name: fixtures.byId("resolver.offchain").name,
+                key: "url",
+              }),
+            ),
+            "OffchainLookup",
+          );
+        }),
+      { meta: { cases: ["O24"] } },
     );
 
     it.effect("come from the HCA", () =>

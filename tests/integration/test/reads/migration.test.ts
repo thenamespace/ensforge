@@ -1,10 +1,12 @@
 import { assert, describe } from "@effect/vitest";
 import { Effect } from "effect";
 
+import { Duration } from "@ensforge/sdk";
 import { Actions } from "@ensforge/sdk/effect";
 import { Devnet } from "@ensforge/test-devnet";
 import { Fixtures } from "@ensforge/test-fixtures";
 import { expectFailure } from "@ensforge/test-harness";
+import { maxUint64, type Address } from "viem";
 
 import { Clients } from "../support/clients.ts";
 import { onProfile } from "../support/lane.ts";
@@ -32,6 +34,14 @@ describe("migration.get", () => {
             reservationExpiry: reservedUntil,
           });
           assert.strictEqual(eligible.after.expiry, reservedUntil);
+          // Premigration reserves the ENSv1 expiry plus ENSv1's grace less ENSv2's, plus a second.
+          assert.strictEqual(
+            reservedUntil,
+            BigInt(String(fixtures.byId("v2.reserved").facts["expiry"])) +
+              Duration.days(90) -
+              Duration.days(28) +
+              1n,
+          );
 
           // Without premigration there is no reservation to claim.
           assert.deepInclude(yield* statusOf("v1.unwrapped"), {
@@ -56,7 +66,52 @@ describe("migration.get", () => {
           }
           assert.strictEqual((yield* statusOf("v2.registered")).status, "not-required");
         }),
-      { meta: { cases: ["O18", "O19", "M:A20", "M:A22", "M:A23"] } },
+      { meta: { cases: ["O18", "O19", "M:A20", "M:A22", "M:A23", "T07"] } },
+    );
+
+    it.effect(
+      "lets the registrant migrate, not the manager",
+      () =>
+        Effect.gen(function* () {
+          const managed = (yield* Fixtures).byId("v1.unwrapped.manager").name;
+          const { accounts } = yield* Devnet;
+          const { reader } = yield* Clients;
+
+          assert.deepInclude(
+            yield* Actions.migration.get(reader, { name: managed, account: accounts.alice }),
+            { status: "eligible", owner: accounts.alice, manager: accounts.bob },
+          );
+          assert.deepInclude(
+            yield* Actions.migration.get(reader, { name: managed, account: accounts.bob }),
+            { status: "blocked", blockers: ["not-owner"] },
+          );
+        }),
+      { meta: { cases: ["M17"] } },
+    );
+
+    it.effect(
+      "blocks a locked child until its parent migrates, and for anyone but its owner",
+      () =>
+        Effect.gen(function* () {
+          const fixtures = yield* Fixtures;
+          const { accounts } = yield* Devnet;
+          const { reader } = yield* Clients;
+          const statusOf = (id: string, account: Address) =>
+            Actions.migration.get(reader, { name: fixtures.byId(id).name, account });
+
+          assert.deepInclude(yield* statusOf("v1.wrapped.sub.locked", accounts.bob), {
+            route: "locked-child",
+            blockers: ["parent-not-migrated"],
+          });
+          // The MigrationHelper's `WrappedOwnerMismatch` and `ParentNotMigrated`, as blockers.
+          assert.deepInclude(yield* statusOf("v1.wrapped.sub.locked", accounts.alice), {
+            blockers: ["not-owner", "parent-not-migrated"],
+          });
+          // A child that can extend its own expiry never expires in ENSv2.
+          const extendable = yield* statusOf("v1.wrapped.sub.can-extend", accounts.bob);
+          assert.strictEqual(extendable.after.expiry, maxUint64);
+        }),
+      { meta: { cases: ["M11", "T14"] } },
     );
   });
 

@@ -1,11 +1,13 @@
-import { describe } from "@effect/vitest";
+import { assert, describe } from "@effect/vitest";
 import { Effect } from "effect";
 
-import { Duration } from "@ensforge/sdk";
+import { Deployments } from "@ensforge/contracts";
+import { Duration, Ensforge, ensActions } from "@ensforge/sdk";
 import { Actions } from "@ensforge/sdk/effect";
 import { Devnet } from "@ensforge/test-devnet";
 import { Fixtures } from "@ensforge/test-fixtures";
 import { expectFailure } from "@ensforge/test-harness";
+import { createPublicClient, http } from "viem";
 
 import { Clients } from "../support/clients.ts";
 import { onProfile } from "../support/lane.ts";
@@ -119,6 +121,42 @@ describe("read errors", () => {
         );
       }),
     );
+
+    // A client configured with ENSv2 reading a block from before ENSv2 was deployed: mainnet's
+    // ENSv2 addresses have no code on this chain.
+    it.effect(
+      "reads before ENSv2 was deployed take the ENSv1 path or fail typed",
+      () =>
+        Effect.gen(function* () {
+          const devnet = yield* Devnet;
+          const ens = Ensforge.create({
+            publicClient: createPublicClient({
+              chain: devnet.chain,
+              transport: http(devnet.rpcUrl),
+            }),
+            deployment: {
+              ...devnet.deployments,
+              v2: { ...Deployments.mainnet.v2, chainId: devnet.chain.id },
+            },
+          }).extend(ensActions());
+          const notDeployed = { _tag: "ConfigError", code: "CONTRACT_NOT_DEPLOYED" } as const;
+
+          assert.strictEqual(
+            (yield* Actions.name.get(ens, { name: "v1-plain.eth" })).kind,
+            "v1-unwrapped",
+          );
+          // The Universal Resolver answers no data at all; not a failure to decode it.
+          yield* expectFailure(
+            Actions.record.getText(ens, { name: "v1-plain.eth", key: "url" }),
+            notDeployed,
+          );
+          yield* expectFailure(
+            Actions.primaryName.get(ens, { address: devnet.accounts.alice }),
+            notDeployed,
+          );
+        }),
+      { meta: { cases: ["T11"] } },
+    );
   });
 
   onProfile("mainnet-shaped")("mainnet-shaped", (it) => {
@@ -199,15 +237,18 @@ describe("read errors", () => {
   });
 
   onProfile("v2-only")("v2-only", (it) => {
-    it.effect("NameWrapper reads where ENSv1 is not deployed", () =>
-      Effect.gen(function* () {
-        const { reader } = yield* Clients;
+    it.effect(
+      "NameWrapper reads where ENSv1 is not deployed",
+      () =>
+        Effect.gen(function* () {
+          const { reader } = yield* Clients;
 
-        yield* expectFailure(Actions.wrapper.getFuses(reader, { name: "v2-plain.eth" }), {
-          _tag: "UnsupportedError",
-          code: "UNSUPPORTED_ON_DEPLOYMENT",
-        });
-      }),
+          yield* expectFailure(Actions.wrapper.getFuses(reader, { name: "v2-plain.eth" }), {
+            _tag: "UnsupportedError",
+            code: "UNSUPPORTED_ON_DEPLOYMENT",
+          });
+        }),
+      { meta: { cases: ["M:F9"] } },
     );
   });
 });

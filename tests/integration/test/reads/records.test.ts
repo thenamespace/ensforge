@@ -1,12 +1,13 @@
 import { assert, describe } from "@effect/vitest";
 import { Effect } from "effect";
 
+import { Abis } from "@ensforge/contracts";
 import { CoinType } from "@ensforge/sdk";
 import { Actions } from "@ensforge/sdk/effect";
-import { avatarImage, Devnet } from "@ensforge/test-devnet";
+import { avatarImage, Chain, Devnet } from "@ensforge/test-devnet";
 import { Fixtures } from "@ensforge/test-fixtures";
 import { expectFailure } from "@ensforge/test-harness";
-import { stringToHex } from "viem";
+import { labelhash, namehash, stringToHex } from "viem";
 
 import { Clients } from "../support/clients.ts";
 import { onProfile } from "../support/lane.ts";
@@ -224,6 +225,80 @@ describe("record reads", () => {
           assert.strictEqual(yield* urlOf("records.v2.linked"), texts.url);
         }),
       { meta: { cases: ["R21", "R22", "R23", "M:B7"] } },
+    );
+  });
+});
+
+// Subnames under alice's parent of the hierarchy fixtures; the deepest gets bob's address on
+// the public resolver.
+const createSubnames = (labels: readonly string[]) =>
+  Effect.gen(function* () {
+    const devnet = yield* Devnet;
+    const chain = yield* Chain;
+    const { alice, bob } = devnet.accounts;
+    const resolver = devnet.contract("v1.publicResolver");
+    let name = "v1-hierarchy.eth";
+
+    for (const label of labels.toReversed()) {
+      yield* chain.write({
+        address: devnet.contract("v1.registry"),
+        abi: Abis.v1.ensRegistry,
+        functionName: "setSubnodeRecord",
+        args: [namehash(name), labelhash(label), alice, resolver, 0n],
+        account: alice,
+      });
+      name = `${label}.${name}`;
+    }
+
+    yield* chain.write({
+      address: resolver,
+      abi: Abis.v1.publicResolver,
+      functionName: "setAddr",
+      args: [namehash(name), bob],
+      account: alice,
+    });
+    return name;
+  });
+
+describe("record reads of names at the encoding limits", () => {
+  onProfile("v1-live")("v1-live", (it) => {
+    // The Universal Resolver receives the label as `[labelhash]` and hashes the same node.
+    it.effect(
+      "reads a name with a label over 255 bytes, sent by its labelhash",
+      () =>
+        Effect.gen(function* () {
+          const chain = yield* Chain;
+          const { accounts } = yield* Devnet;
+          const { reader } = yield* Clients;
+
+          yield* chain.isolated(
+            Effect.gen(function* () {
+              const name = yield* createSubnames(["d".repeat(300)]);
+              assert.strictEqual(yield* Actions.record.getAddress(reader, { name }), accounts.bob);
+            }),
+          );
+        }),
+      { meta: { cases: ["H03"] } },
+    );
+
+    it.effect(
+      "reads a name of ten 63-byte labels",
+      () =>
+        Effect.gen(function* () {
+          const chain = yield* Chain;
+          const { accounts } = yield* Devnet;
+          const { reader } = yield* Clients;
+
+          yield* chain.isolated(
+            Effect.gen(function* () {
+              const name = yield* createSubnames(
+                Array.from({ length: 10 }, (_, level) => `${level}`.padEnd(63, "e")),
+              );
+              assert.strictEqual(yield* Actions.record.getAddress(reader, { name }), accounts.bob);
+            }),
+          );
+        }),
+      { meta: { cases: ["H23"] } },
     );
   });
 });

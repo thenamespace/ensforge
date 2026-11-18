@@ -124,37 +124,40 @@ describe("every write", () => {
       }),
     );
 
-    it.effect("fails typed when the user rejects or there is no wallet", () =>
-      Effect.gen(function* () {
-        const devnet = yield* Devnet;
-        const chain = yield* Chain;
-        const clients = yield* Clients;
-        const wallets = yield* Wallets;
-        const cases = writeCases(yield* Fixtures, devnet);
+    it.effect(
+      "fails typed when the user rejects or there is no wallet",
+      () =>
+        Effect.gen(function* () {
+          const devnet = yield* Devnet;
+          const chain = yield* Chain;
+          const clients = yield* Clients;
+          const wallets = yield* Wallets;
+          const cases = writeCases(yield* Fixtures, devnet);
 
-        for (const [path, { account: holder, options }] of Object.entries(cases)) {
-          if (path in refused) continue;
-          const account = devnet.accounts[holder];
-          const rejecting = clients.make({
-            account,
-            wallet: wallets.make(account, { reject: true }),
-          });
-          const { write } = writesOf(rejecting, path);
-          const readOnly = writesOf(clients.reader, path).write;
-          if (write === undefined || readOnly === undefined) {
-            return assert.fail(`${path} is not on the client`);
+          for (const [path, { account: holder, options }] of Object.entries(cases)) {
+            if (path in refused) continue;
+            const account = devnet.accounts[holder];
+            const rejecting = clients.make({
+              account,
+              wallet: wallets.make(account, { reject: true }),
+            });
+            const { write } = writesOf(rejecting, path);
+            const readOnly = writesOf(clients.reader, path).write;
+            if (write === undefined || readOnly === undefined) {
+              return assert.fail(`${path} is not on the client`);
+            }
+
+            yield* expectRejection(() => write({ ...options, onStep: chain.passWaits }), {
+              _tag: "UserRejectedError",
+              code: "USER_REJECTED",
+            });
+            yield* expectRejection(() => readOnly(options), {
+              _tag: "ConfigError",
+              code: "WALLET_NOT_CONFIGURED",
+            });
           }
-
-          yield* expectRejection(() => write({ ...options, onStep: chain.passWaits }), {
-            _tag: "UserRejectedError",
-            code: "USER_REJECTED",
-          });
-          yield* expectRejection(() => readOnly(options), {
-            _tag: "ConfigError",
-            code: "WALLET_NOT_CONFIGURED",
-          });
-        }
-      }),
+        }),
+      { meta: { cases: ["M:D12"] } },
     );
   });
 });

@@ -2,12 +2,12 @@ import { assert, describe } from "@effect/vitest";
 import { Effect } from "effect";
 
 import { Abis, Roles } from "@ensforge/contracts";
-import { Duration, Plan, type Errors } from "@ensforge/sdk";
+import { Duration, Name, Plan, type Errors } from "@ensforge/sdk";
 import { Actions } from "@ensforge/sdk/effect";
 import { Chain, Devnet, type AccountName } from "@ensforge/test-devnet";
 import { Fixtures, type FixturesApi } from "@ensforge/test-fixtures";
 import { type ExpectedError, expectFailure } from "@ensforge/test-harness";
-import { parseGwei } from "viem";
+import { labelhash, parseGwei } from "viem";
 
 import { Clients, type Client } from "../support/clients.ts";
 import { onProfile } from "../support/lane.ts";
@@ -20,6 +20,7 @@ type Refusal = {
   readonly account: AccountName;
   readonly options: (fixtures: FixturesApi, devnet: Devnet["Service"]) => Record<string, unknown>;
   readonly expected: ExpectedError;
+  readonly cases?: readonly string[];
 };
 
 const bad = "0x1234";
@@ -34,6 +35,39 @@ const unauthorized = (code: string) => err("UnauthorizedError", code);
 const notFound = (code: string) => err("NotFoundError", code);
 
 const refusals: readonly Refusal[] = [
+  // A write needs the plain label; `[labelhash]` names only what is already on chain.
+  {
+    label: "an encoded label",
+    path: "registration.commit",
+    account: "alice",
+    options: () => ({
+      names: `${Name.fromLabelhash(labelhash("qqqqq"))}.eth`,
+      duration: Duration.years(1),
+    }),
+    expected: invalid("INVALID_NAME"),
+    cases: ["H11"],
+  },
+  {
+    label: "an encoded label",
+    path: "subname.create",
+    account: "alice",
+    options: (f) => ({
+      name: `${Name.fromLabelhash(labelhash("x"))}.${f.byId("records.v1").name}`,
+    }),
+    expected: invalid("INVALID_NAME"),
+    cases: ["H11"],
+  },
+  {
+    label: "an encoded label",
+    path: "wrapper.wrap",
+    account: "alice",
+    options: (f) => {
+      const [label = "", ...parent] = f.byId("records.v1").name.split(".");
+      return { name: [Name.fromLabelhash(labelhash(label)), ...parent].join(".") };
+    },
+    expected: invalid("INVALID_NAME"),
+    cases: ["H11"],
+  },
   // Input checked after reading the chain.
   {
     label: "a bad owner",
@@ -871,61 +905,67 @@ const refusals: readonly Refusal[] = [
 describe("write refusals", () => {
   onProfile("mainnet-shaped")("mainnet-shaped", (it) => {
     for (const refusal of refusals) {
-      it.effect(`${refusal.path} refuses ${refusal.label}`, () =>
-        Effect.gen(function* () {
-          const fixtures = yield* Fixtures;
-          const devnet = yield* Devnet;
-          const chain = yield* Chain;
-          const clients = yield* Clients;
-          const account = devnet.accounts[refusal.account];
-          const wallet = (yield* Wallets).make(account);
-          const ens = clients.make({ account, wallet });
-          const [domain = "", action = ""] = refusal.path.split(".");
-          const sync = (
-            Actions as unknown as Record<
-              string,
-              Record<
+      it.effect(
+        `${refusal.path} refuses ${refusal.label}`,
+        () =>
+          Effect.gen(function* () {
+            const fixtures = yield* Fixtures;
+            const devnet = yield* Devnet;
+            const chain = yield* Chain;
+            const clients = yield* Clients;
+            const account = devnet.accounts[refusal.account];
+            const wallet = (yield* Wallets).make(account);
+            const ens = clients.make({ account, wallet });
+            const [domain = "", action = ""] = refusal.path.split(".");
+            const sync = (
+              Actions as unknown as Record<
                 string,
-                (ens: Client, options: unknown) => Effect.Effect<unknown, Errors.AnyError>
+                Record<
+                  string,
+                  (ens: Client, options: unknown) => Effect.Effect<unknown, Errors.AnyError>
+                >
               >
-            >
-          )[domain]?.[`${action}Sync`];
-          if (sync === undefined) return assert.fail(`${refusal.path} has no Sync form`);
+            )[domain]?.[`${action}Sync`];
+            if (sync === undefined) return assert.fail(`${refusal.path} has no Sync form`);
 
-          yield* chain.isolated(
-            Effect.gen(function* () {
-              yield* expectFailure(
-                sync(ens, { ...refusal.options(fixtures, devnet), onStep: chain.passWaits }),
-                refusal.expected,
-              );
-              assert.isFalse(wallet.prompted(), "refused before the wallet was asked");
-            }),
-          );
-        }),
+            yield* chain.isolated(
+              Effect.gen(function* () {
+                yield* expectFailure(
+                  sync(ens, { ...refusal.options(fixtures, devnet), onStep: chain.passWaits }),
+                  refusal.expected,
+                );
+                assert.isFalse(wallet.prompted(), "refused before the wallet was asked");
+              }),
+            );
+          }),
+        { meta: { cases: [...(refusal.cases ?? [])] } },
       );
     }
 
-    it.effect("registration.commit refuses a commitment already made", () =>
-      Effect.gen(function* () {
-        const devnet = yield* Devnet;
-        const chain = yield* Chain;
-        const ens = (yield* Clients).make({ account: devnet.accounts.alice });
-        const options = { names: "qqqqq.eth", duration: Duration.years(1) } as const;
+    it.effect(
+      "registration.commit refuses a commitment already made",
+      () =>
+        Effect.gen(function* () {
+          const devnet = yield* Devnet;
+          const chain = yield* Chain;
+          const ens = (yield* Clients).make({ account: devnet.accounts.alice });
+          const options = { names: "qqqqq.eth", duration: Duration.years(1) } as const;
 
-        yield* chain.isolated(
-          Effect.gen(function* () {
-            const { secret, readyAt } = yield* Actions.registration.commitSync(ens, options);
-            // Until it is ready the commitment reads as too new; once ready, it must not be redone.
-            yield* chain.setNextBlockTimestamp(readyAt);
-            yield* chain.mine();
+          yield* chain.isolated(
+            Effect.gen(function* () {
+              const { secret, readyAt } = yield* Actions.registration.commitSync(ens, options);
+              // Until it is ready the commitment reads as too new; once ready, it must not be redone.
+              yield* chain.setNextBlockTimestamp(readyAt);
+              yield* chain.mine();
 
-            yield* expectFailure(Actions.registration.commit(ens, { ...options, secret }), {
-              _tag: "CommitmentError",
-              code: "COMMITMENT_EXISTS",
-            });
-          }),
-        );
-      }),
+              yield* expectFailure(Actions.registration.commit(ens, { ...options, secret }), {
+                _tag: "CommitmentError",
+                code: "COMMITMENT_EXISTS",
+              });
+            }),
+          );
+        }),
+      { meta: { cases: ["G07"] } },
     );
 
     it.effect("plan.send refuses a plan prepared for another account", () =>

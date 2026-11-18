@@ -108,7 +108,7 @@ describe("fork resolution", () => {
             yield* Actions.record.getAddress(reader, { name: "ensforge-no-such-name-0.com" }),
           );
         }),
-      { meta: { cases: ["D18", "R20", "M:F2"] } },
+      { meta: { cases: ["D13", "D18", "R20", "M:F2"] } },
     );
   });
 

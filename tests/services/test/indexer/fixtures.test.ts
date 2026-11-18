@@ -5,7 +5,7 @@ import { Name } from "@ensforge/sdk";
 import { Actions, CoinType, ContentHash } from "@ensforge/sdk/effect";
 import { Fixtures } from "@ensforge/test-fixtures";
 import { Clients } from "@ensforge/test-integration/support/clients";
-import type { Hex } from "viem";
+import type { Address, Hex } from "viem";
 
 import { Services } from "../stack/stack.ts";
 import { nameDifferences } from "./compare.ts";
@@ -34,7 +34,7 @@ layer(Services.layer({ profile: "mainnet-shaped" }), { excludeTestServices: true
 
           assert.deepStrictEqual(found.toSorted(), Object.keys(indexedDifferences).toSorted());
         }),
-      { meta: { cases: ["I01", "I19"] } },
+      { meta: { cases: ["I01", "I19", "T06"] } },
     );
 
     it.effect(
@@ -208,6 +208,49 @@ layer(Services.layer({ profile: "mainnet-shaped" }), { excludeTestServices: true
           );
         }),
       { meta: { cases: ["I18"] } },
+    );
+
+    it.effect(
+      "withholds a lapsed wrapped name's owner and fuses, keeping its wrapper expiry",
+      () =>
+        Effect.gen(function* () {
+          const services = yield* Services;
+          const fixtures = yield* Fixtures;
+          const clients = yield* Clients;
+          const ens = clients.make({ indexer: services.indexer });
+          const lapsed = fixtures.byId("v1.wrapped.sub.expired-emancipated");
+
+          const indexed = yield* Actions.indexer.getName(ens, { name: lapsed.name });
+          assert.deepInclude(indexed, { owner: null, manager: null });
+          assert.deepInclude(indexed?.ensV1, {
+            wrapperState: "lapsed",
+            wrapperFuses: null,
+            wrapperExpiresAt: BigInt(String(lapsed.facts["expiry"])),
+          });
+        }),
+      { meta: { cases: ["W10"] } },
+    );
+
+    it.effect(
+      "serves an ENSv1 name without a live ENSv2 entry with its owner and expiry, unresolved",
+      () =>
+        Effect.gen(function* () {
+          const services = yield* Services;
+          const fixtures = yield* Fixtures;
+          const clients = yield* Clients;
+          const ens = clients.make({ indexer: services.indexer });
+          // Not premigrated: ENSv2 holds nothing for it, so resolution no longer reaches it.
+          const plain = fixtures.byId("v1.unwrapped");
+
+          const indexed = yield* Actions.indexer.getName(ens, { name: plain.name });
+          assert.deepInclude(indexed, {
+            authority: "ensV1",
+            owner: plain.facts["owner"] as Address,
+            resolver: null,
+          });
+          assert.strictEqual(indexed?.ensV1?.expiresAt, BigInt(String(plain.facts["expiry"])));
+        }),
+      { meta: { cases: ["O32"] } },
     );
   },
 );
