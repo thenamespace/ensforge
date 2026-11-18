@@ -1,8 +1,10 @@
 /**
  * Every custom error of the ENS contracts in this package (ENSv1 ens-contracts v1.7.0 and
  * ENSv2 contracts-v2 v1.0.1), plus the OpenZeppelin `IERC20Errors` that ERC-20 payment tokens
- * raise, the verifiable proxy's `InvalidUpgradeTarget` and the HCA's `NoNFTAllowed` (raised when a
- * name token is sent to a Hosted Contract Account). Use it to decode a revert from any ENS call.
+ * raise, the verifiable proxy's `InvalidUpgradeTarget`, the HCA's `NoNFTAllowed` (raised when a
+ * name token is sent to a Hosted Contract Account) and the errors with which resolvers that keep
+ * their records elsewhere refuse on-chain writes (ERC-5559 `StorageHandledBy…`, ERC-7884
+ * `OperationHandled…`). Use it to decode a revert from any ENS call.
  *
  * Generated from the ABIs of this package; regenerate when they change.
  *
@@ -1452,6 +1454,87 @@ export const ensErrorsAbi = [
       {
         name: "newImplementation",
         type: "address",
+      },
+    ],
+  },
+  {
+    type: "error",
+    name: "StorageHandledByL2",
+    inputs: [
+      { name: "chainId", type: "uint256" },
+      { name: "contractAddress", type: "address" },
+    ],
+  },
+  {
+    type: "error",
+    name: "StorageHandledByOffChainDatabase",
+    inputs: [
+      {
+        name: "sender",
+        type: "tuple",
+        internalType: "struct IWriteDeferral.domainData",
+        components: [
+          { name: "name", type: "string" },
+          { name: "version", type: "string" },
+          { name: "chainId", type: "uint64" },
+          { name: "verifyingContract", type: "address" },
+        ],
+      },
+      { name: "url", type: "string" },
+      {
+        name: "data",
+        type: "tuple",
+        internalType: "struct IWriteDeferral.messageData",
+        components: [
+          { name: "functionSelector", type: "bytes4" },
+          { name: "sender", type: "address" },
+          {
+            name: "parameters",
+            type: "tuple[]",
+            internalType: "struct IWriteDeferral.parameter[]",
+            components: [
+              { name: "name", type: "string" },
+              { name: "value", type: "string" },
+            ],
+          },
+          { name: "expirationTimestamp", type: "uint256" },
+        ],
+      },
+    ],
+  },
+  {
+    type: "error",
+    name: "OperationHandledOnchain",
+    inputs: [
+      { name: "chainId", type: "uint256" },
+      { name: "contractAddress", type: "address" },
+    ],
+  },
+  {
+    type: "error",
+    name: "OperationHandledOffchain",
+    inputs: [
+      {
+        name: "sender",
+        type: "tuple",
+        internalType: "struct DomainData",
+        components: [
+          { name: "name", type: "string" },
+          { name: "version", type: "string" },
+          { name: "chainId", type: "uint64" },
+          { name: "verifyingContract", type: "address" },
+        ],
+      },
+      { name: "url", type: "string" },
+      {
+        name: "data",
+        type: "tuple",
+        internalType: "struct MessageData",
+        components: [
+          { name: "data", type: "bytes" },
+          { name: "sender", type: "address" },
+          { name: "expirationTimestamp", type: "uint256" },
+        ],
       },
     ],
   },

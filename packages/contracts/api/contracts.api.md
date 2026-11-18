@@ -229,6 +229,10 @@ const Abis.shared.errors: Abi
   error ERC20InvalidSender(address)
   error ERC20InvalidSpender(address)
   error InvalidUpgradeTarget(address,address)
+  error StorageHandledByL2(uint256,address)
+  error StorageHandledByOffChainDatabase((string,string,uint64,address),string,(bytes4,address,(string,string)[],uint256))
+  error OperationHandledOnchain(uint256,address)
+  error OperationHandledOffchain((string,string,uint64,address),string,(bytes,address,uint256))
 const Abis.shared.events: Abi
   event NewOwner(bytes32,bytes32,address)
   event Transfer(bytes32,address)
