@@ -1,4 +1,4 @@
-import { Effect } from "effect";
+import { Array as Arr, Effect } from "effect";
 
 import { Action, type AnyError, type Client } from "@ensforge/sdk/extension";
 
@@ -14,7 +14,7 @@ export const verify = Effect.fn("ensforge.hca.verify")(function* (
   const account = yield* accountInput(client, options);
   if (account.problems.length > 0) {
     return yield* Effect.fail(
-      new HcaError({ code: "HCA_NOT_VERIFIED", details: account.problems.map(String) }),
+      new HcaError({ code: "HCA_NOT_VERIFIED", details: Arr.map(account.problems, String) }),
     );
   }
   return account;

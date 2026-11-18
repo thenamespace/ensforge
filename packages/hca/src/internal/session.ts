@@ -1,4 +1,4 @@
-import { Effect } from "effect";
+import { Array as Arr, Effect, String as Str } from "effect";
 
 import { Abis } from "@ensforge/contracts";
 import { predictVerifiableProxyAddress } from "@ensforge/contracts/v2";
@@ -12,7 +12,7 @@ import {
 } from "@ensforge/contracts/v2/experimental/hca";
 import type { Plan } from "@ensforge/sdk";
 import { Rpc, type AnyError, type Client, type ViemWalletClient } from "@ensforge/sdk/extension";
-import { isAddressEqual, zeroAddress, type Abi, type Address, type Hex } from "viem";
+import { isAddressEqual, zeroAddress, type Address, type Hex } from "viem";
 import { signTypedData } from "viem/actions";
 
 import { HcaError } from "../errors/classes/HcaError.js";
@@ -126,21 +126,23 @@ const recordSetters = new Set([
 ]);
 
 const isRecordCall = (data: Hex): boolean => {
-  const decoded = decodeCall(Abis.v2.permissionedResolver as Abi, data);
+  const decoded = decodeCall(Abis.v2.permissionedResolver, data);
   if (decoded === undefined) return false;
   if (decoded.functionName === "multicall") {
-    const [inner] = decoded.args as readonly [readonly Hex[]];
-    return inner.every(isRecordCall);
+    const [inner] = decoded.args;
+    return Arr.every(inner, isRecordCall);
   }
   return recordSetters.has(decoded.functionName);
 };
 
-const notAllowed = (call: Plan.Call, reason: string) =>
-  new HcaError({
+const notAllowed = (call: Plan.Call, reason: string) => {
+  const selector = Str.slice(0, 10)(call.data);
+  return new HcaError({
     code: "HCA_ACTION_NOT_ALLOWED",
-    details: [`${call.to} ${call.data.slice(0, 10)}: ${reason}`],
-    context: { contract: call.to, functionName: call.data.slice(0, 10) },
+    details: [`${call.to} ${selector}: ${reason}`],
+    context: { contract: call.to, functionName: selector },
   });
+};
 
 /**
  * Checks calls against the session policy before anything is signed: registrations to the owner
@@ -160,16 +162,10 @@ export const checkSessionCalls = Effect.fnUntraced(function* (
     if (call.value !== 0n) return yield* Effect.fail(notAllowed(call, "sessions send no value"));
 
     if (isAddressEqual(call.to, registrar)) {
-      const decoded = decodeCall(Abis.v2.ethRegistrar as Abi, call.data);
+      const decoded = decodeCall(Abis.v2.ethRegistrar, call.data);
       if (decoded?.functionName === "commit") continue;
       if (decoded?.functionName === "register") {
-        const [, owner, , subregistry, registeredResolver] = decoded.args as readonly [
-          string,
-          Address,
-          Hex,
-          Address,
-          Address,
-        ];
+        const [, owner, , subregistry, registeredResolver] = decoded.args;
         if (!isAddressEqual(owner, session.owner))
           return yield* Effect.fail(notAllowed(call, "names must be registered to the HCA owner"));
         if (!isAddressEqual(subregistry, zeroAddress))
@@ -187,9 +183,9 @@ export const checkSessionCalls = Effect.fnUntraced(function* (
     }
 
     if (isAddressEqual(call.to, deployment.verifiableFactory)) {
-      const decoded = decodeCall(Abis.v2.verifiableFactory as Abi, call.data);
+      const decoded = decodeCall(Abis.v2.verifiableFactory, call.data);
       if (decoded?.functionName === "deployProxy") {
-        const [implementation, salt] = decoded.args as readonly [Address, bigint, Hex];
+        const [implementation, salt] = decoded.args;
         const permitted = deployment.v2.implementations.permissionedResolver;
         if (!isAddressEqual(implementation, permitted))
           return yield* Effect.fail(notAllowed(call, "only the approved PermissionedResolver"));
@@ -210,25 +206,20 @@ export const checkSessionCalls = Effect.fnUntraced(function* (
     }
 
     if (isAddressEqual(call.to, deployment.v2.contracts.defaultReverseRegistrarAdapter)) {
-      const decoded = decodeCall(Abis.v2.defaultReverseRegistrarAdapter as Abi, call.data);
-      const [account] = (decoded?.args ?? []) as readonly [Address?];
+      const decoded = decodeCall(Abis.v2.defaultReverseRegistrarAdapter, call.data);
       if (
         decoded?.functionName === "setNameWithHCA" &&
-        account !== undefined &&
-        isAddressEqual(account, session.owner)
+        isAddressEqual(decoded.args[0], session.owner)
       )
         continue;
       return yield* Effect.fail(notAllowed(call, "primary names are for the HCA owner only"));
     }
     if (isAddressEqual(call.to, deployment.v2.contracts.reverseRegistrarAdapter)) {
-      const decoded = decodeCall(Abis.v2.reverseRegistrarAdapter as Abi, call.data);
-      const [account, claimed] = (decoded?.args ?? []) as readonly [Address?, Address?];
+      const decoded = decodeCall(Abis.v2.reverseRegistrarAdapter, call.data);
       if (
         decoded?.functionName === "claimWithHCA" &&
-        account !== undefined &&
-        claimed !== undefined &&
-        isAddressEqual(account, session.owner) &&
-        (isAddressEqual(claimed, resolver) || isAddressEqual(claimed, zeroAddress))
+        isAddressEqual(decoded.args[0], session.owner) &&
+        (isAddressEqual(decoded.args[1], resolver) || isAddressEqual(decoded.args[1], zeroAddress))
       )
         continue;
       return yield* Effect.fail(
@@ -236,13 +227,15 @@ export const checkSessionCalls = Effect.fnUntraced(function* (
       );
     }
 
-    const approval = decodeCall(Abis.shared.erc20 as Abi, call.data);
+    const approval = decodeCall(Abis.shared.erc20, call.data);
     if (approval?.functionName === "approve") {
-      const [spender] = approval.args as readonly [Address, bigint];
+      const [spender] = approval.args;
       if (isAddressEqual(spender, registrar)) continue;
       return yield* Effect.fail(notAllowed(call, "payment approvals go to the registrar only"));
     }
 
     return yield* Effect.fail(notAllowed(call, "not part of the session policy"));
   }
+
+  return undefined;
 });

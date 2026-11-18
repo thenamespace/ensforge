@@ -30,20 +30,23 @@ export const getGovernance = Effect.fn("ensforge.hcaAdmin.getGovernance")(functi
   }
 
   const implementation = yield* requireAddress(options.implementation, "implementation");
-  const [deploymentApproved, upgradeApproved] = yield* Effect.all([
-    Rpc.readContract(client, {
-      address: deployment.contracts.standaloneFactory,
-      abi: standaloneHcaFactoryV2Abi,
-      functionName: "approvedImplementations",
-      args: [implementation],
-    }),
-    Rpc.readContract(client, {
-      address: deployment.contracts.upgradeSet,
-      abi: Abis.v2.permissionedAddressSet,
-      functionName: "includes",
-      args: [implementation],
-    }),
-  ]);
+  const [deploymentApproved, upgradeApproved] = yield* Effect.all(
+    [
+      Rpc.readContract(client, {
+        address: deployment.contracts.standaloneFactory,
+        abi: standaloneHcaFactoryV2Abi,
+        functionName: "approvedImplementations",
+        args: [implementation],
+      }),
+      Rpc.readContract(client, {
+        address: deployment.contracts.upgradeSet,
+        abi: Abis.v2.permissionedAddressSet,
+        functionName: "includes",
+        args: [implementation],
+      }),
+    ],
+    { concurrency: 1 },
+  );
 
   return {
     factoryOwner,

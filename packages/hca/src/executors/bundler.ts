@@ -1,10 +1,15 @@
+import { Array as Arr, String as Str } from "effect";
+
+// `Executor` is a Promise interface, so executors can wrap Promise SDKs without Effect: async
+// functions and the wall clock are the boundary here.
+/* oxlint-disable effecttsgo/async-function, effecttsgo/global-date */
 import {
   standaloneHcaFactoryV2Abi,
   standaloneSingleOwnerHcaV2Abi,
 } from "@ensforge/contracts/v2/experimental/hca";
 import type { Write } from "@ensforge/sdk";
 import type { Client } from "@ensforge/sdk/extension";
-import { encodeAbiParameters, encodeFunctionData, http, padHex, type Hex } from "viem";
+import { encodeAbiParameters, encodeFunctionData, http, isHex, padHex } from "viem";
 import {
   createBundlerClient,
   createPaymasterClient,
@@ -54,6 +59,8 @@ const hcaAccount = (request: ExecutionRequest, context: Write.Via.Context) => {
   const entryPoint = { address: hca.entryPoint, abi: entryPoint07Abi, version: "0.7" } as const;
 
   return toSmartAccount({
+    // viem's smart-account client type cannot express a public client with any account.
+    // oxlint-disable-next-line typescript/no-unsafe-type-assertion
     client: context.publicClient as Parameters<typeof toSmartAccount>[0]["client"],
     entryPoint,
     getAddress: async () => request.hca,
@@ -92,7 +99,7 @@ const hcaAccount = (request: ExecutionRequest, context: Write.Via.Context) => {
               },
             ],
             [
-              calls.map((call) => ({
+              Arr.map(calls, (call) => ({
                 target: call.to,
                 value: call.value ?? 0n,
                 callData: call.data ?? "0x",
@@ -102,7 +109,7 @@ const hcaAccount = (request: ExecutionRequest, context: Write.Via.Context) => {
         ],
       }),
     // A well-formed signature that is not the owner's, for gas estimation only.
-    getStubSignature: async () => `0x${"11".repeat(32)}${"22".repeat(32)}1b`,
+    getStubSignature: async () => `0x${Str.repeat(32)("11")}${Str.repeat(32)("22")}1b`,
     signMessage: async () => {
       throw new HcaError({ code: "HCA_EXECUTOR_UNSUPPORTED", executor: "bundler" });
     },
@@ -127,7 +134,7 @@ const hcaAccount = (request: ExecutionRequest, context: Write.Via.Context) => {
 
 // Errors thrown by the paymaster client itself. Bundler errors print the UserOperation,
 // `paymaster…` fields included, so their message cannot tell the two apart.
-const paymasterErrors = new WeakSet<object>();
+const paymasterErrors = new WeakSet();
 
 const markPaymasterError = (cause: unknown): never => {
   if (typeof cause === "object" && cause !== null) paymasterErrors.add(cause);
@@ -184,7 +191,14 @@ const isPaymasterError = (error: unknown): boolean => {
  * @category executors
  * @since 1.0.0
  */
-export const bundler = (options: BundlerOptions): Executor => {
+export const bundler = (options: BundlerOptions): Executor => bundlerExecutor(options);
+
+type BundlerExecutor = Executor & {
+  readonly send: NonNullable<Executor["send"]>;
+  readonly status: NonNullable<Executor["status"]>;
+};
+
+const bundlerExecutor = (options: BundlerOptions): BundlerExecutor => {
   const id = options.id ?? "bundler";
   const timeout = options.timeout ?? 180_000;
   // When each UserOperation was first seen pending; a resumed plan starts its wait afresh.
@@ -227,7 +241,11 @@ export const bundler = (options: BundlerOptions): Executor => {
       try {
         return await clientFor(context).sendUserOperation({
           account: await hcaAccount(request, context),
-          calls: request.calls.map((call) => ({ to: call.to, data: call.data, value: call.value })),
+          calls: Arr.map(request.calls, (call) => ({
+            to: call.to,
+            data: call.data,
+            value: call.value,
+          })),
         });
       } catch (cause) {
         if (cause instanceof HcaError) throw cause;
@@ -239,9 +257,16 @@ export const bundler = (options: BundlerOptions): Executor => {
       }
     },
     status: async (reference, context) => {
+      if (!isHex(reference)) {
+        throw new HcaError({
+          code: "HCA_EXECUTION_FAILED",
+          executor: id,
+          details: [`${reference} is not a UserOperation hash`],
+        });
+      }
       let receipt: UserOperationReceipt;
       try {
-        receipt = await clientFor(context).getUserOperationReceipt({ hash: reference as Hex });
+        receipt = await clientFor(context).getUserOperationReceipt({ hash: reference });
       } catch {
         const since = pendingSince.get(reference) ?? Date.now();
         pendingSince.set(reference, since);
@@ -320,11 +345,11 @@ export type PimlicoOptions = {
 export const pimlico = (options: PimlicoOptions): Executor => {
   const url = (chainId: number) =>
     `https://api.pimlico.io/v2/${chainId}/rpc?apikey=${options.apiKey}`;
-  const forChain = new Map<number, Executor>();
+  const forChain = new Map<number, BundlerExecutor>();
   const executorFor = (chainId: number) => {
     let executor = forChain.get(chainId);
     if (executor === undefined) {
-      executor = bundler({
+      executor = bundlerExecutor({
         id: "pimlico",
         url: url(chainId),
         ...(options.sponsor === true ? { paymaster: url(chainId) } : {}),
@@ -340,9 +365,7 @@ export const pimlico = (options: PimlicoOptions): Executor => {
   return {
     id: "pimlico",
     capabilities: { sessions: false, sponsorship: options.sponsor === true, deploys: true },
-    send: (request, context) =>
-      (executorFor(context.chainId).send as NonNullable<Executor["send"]>)(request, context),
-    status: (reference, context) =>
-      (executorFor(context.chainId).status as NonNullable<Executor["status"]>)(reference, context),
+    send: (request, context) => executorFor(context.chainId).send(request, context),
+    status: (reference, context) => executorFor(context.chainId).status(reference, context),
   };
 };

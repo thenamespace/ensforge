@@ -1,4 +1,4 @@
-import { Effect } from "effect";
+import { Array as Arr, Effect } from "effect";
 
 import type { Errors, Plan, Write } from "@ensforge/sdk";
 import { Action, type Client } from "@ensforge/sdk/extension";
@@ -19,7 +19,7 @@ export const plan = Effect.fnUntraced(function* (
     operation: "hca.execute",
     account: owner,
     description: "Run calls from your HCA",
-    calls: options.calls.map((call) => ({
+    calls: Arr.map(options.calls, (call) => ({
       to: call.to,
       data: call.data ?? "0x",
       value: call.value ?? 0n,

@@ -1,9 +1,11 @@
+import { Array as Arr } from "effect";
+
 import {
   standaloneHcaFactoryV2Abi,
   standaloneSingleOwnerHcaV2Abi,
 } from "@ensforge/contracts/v2/experimental/hca";
 import type { Plan } from "@ensforge/sdk";
-import { encodeFunctionData, type Address, type Hex } from "viem";
+import { encodeFunctionData, type Address } from "viem";
 
 import { decodeCall } from "./decode.js";
 
@@ -20,9 +22,9 @@ export const executeByOwnerCall = (
   data: encodeFunctionData({
     abi: standaloneSingleOwnerHcaV2Abi,
     functionName: "executeByOwner",
-    args: [calls.map((call) => ({ target: call.to, value: call.value, callData: call.data }))],
+    args: [Arr.map(calls, (call) => ({ target: call.to, value: call.value, callData: call.data }))],
   }),
-  value: fund ? calls.reduce((total, call) => total + call.value, 0n) : 0n,
+  value: fund ? Arr.reduce(calls, 0n, (total, call) => total + call.value) : 0n,
 });
 
 /** The calls inside an `executeByOwner` call, or `undefined` for any other call. */
@@ -30,10 +32,8 @@ export const innerCalls = (call: Plan.Call): readonly Plan.Call[] | undefined =>
   const decoded = decodeCall(standaloneSingleOwnerHcaV2Abi, call.data);
   if (decoded?.functionName !== "executeByOwner") return undefined;
 
-  const [executions] = decoded.args as readonly [
-    readonly { readonly target: Address; readonly value: bigint; readonly callData: Hex }[],
-  ];
-  return executions.map((execution) => ({
+  const [executions] = decoded.args;
+  return Arr.map(executions, (execution) => ({
     to: execution.target,
     data: execution.callData,
     value: execution.value,

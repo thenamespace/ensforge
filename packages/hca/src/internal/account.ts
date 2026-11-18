@@ -38,7 +38,7 @@ export const predictAddress = Effect.fnUntraced(function* (
   });
 });
 
-const optional = <value>(effect: Effect.Effect<value, unknown>) =>
+const optional = <value, error>(effect: Effect.Effect<value, error>) =>
   effect.pipe(Effect.orElseSucceed(() => undefined));
 
 /** Reads what the account is and who controls it, deployed or predicted. */
@@ -49,7 +49,8 @@ export const readAccount = Effect.fnUntraced(function* (
   const deployment = yield* requireHca(client);
   const predicted =
     options.owner === undefined ? undefined : yield* predictAddress(client, options.owner);
-  const address = options.address ?? (predicted as Address);
+  const address = options.address ?? predicted;
+  if (address === undefined) return yield* Effect.die("readAccount needs an owner or an address");
 
   const deployed = yield* Rpc.hasCode(client, address);
   if (!deployed) {
@@ -67,21 +68,29 @@ export const readAccount = Effect.fnUntraced(function* (
     };
   }
 
-  const read = <name extends "ownerAndSessionNonce" | "accountId" | "getImplementation">(
-    functionName: name,
-  ) =>
-    optional(
-      Rpc.readContract(client, {
-        address,
-        abi: standaloneSingleOwnerHcaV2Abi,
-        functionName,
-      } as never) as Effect.Effect<unknown, unknown>,
-    );
   const [state, accountId, implementation, authorized] = yield* Effect.all(
     [
-      read("ownerAndSessionNonce"),
-      read("accountId"),
-      read("getImplementation"),
+      optional(
+        Rpc.readContract(client, {
+          address,
+          abi: standaloneSingleOwnerHcaV2Abi,
+          functionName: "ownerAndSessionNonce",
+        }),
+      ),
+      optional(
+        Rpc.readContract(client, {
+          address,
+          abi: standaloneSingleOwnerHcaV2Abi,
+          functionName: "accountId",
+        }),
+      ),
+      optional(
+        Rpc.readContract(client, {
+          address,
+          abi: standaloneSingleOwnerHcaV2Abi,
+          functionName: "getImplementation",
+        }),
+      ),
       optional(
         Rpc.readContract(client, {
           address: deployment.contracts.standaloneFactory,
@@ -94,8 +103,8 @@ export const readAccount = Effect.fnUntraced(function* (
     { concurrency: "unbounded" },
   );
 
-  const [owner, sessionNonce] = (state as readonly [Address, bigint] | undefined) ?? [null, 0n];
-  const current = (implementation as Address | undefined) ?? null;
+  const [owner, sessionNonce] = state ?? [null, 0n];
+  const current = implementation ?? null;
   const authorizedOwner =
     authorized === undefined || isAddressEqual(authorized, zeroAddress) ? null : authorized;
   const trusted =
@@ -116,7 +125,7 @@ export const readAccount = Effect.fnUntraced(function* (
     owner: owner === null ? null : getAddress(owner),
     deployed: true,
     authorizedOwner,
-    accountId: (accountId as string | undefined) ?? null,
+    accountId: accountId ?? null,
     implementation: current,
     initialImplementation: deployment.contracts.standaloneImplementation,
     sessionNonce,
@@ -127,7 +136,7 @@ export const readAccount = Effect.fnUntraced(function* (
       deployed: true,
       owner,
       authorizedOwner,
-      accountId: accountId as string | undefined,
+      accountId,
       trusted,
       expectedOwner: options.owner,
     }),

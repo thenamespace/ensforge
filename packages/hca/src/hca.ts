@@ -1,4 +1,4 @@
-import { Effect } from "effect";
+import { Array as Arr, Effect, Option } from "effect";
 
 import type { Plan, Write } from "@ensforge/sdk";
 import type { Client } from "@ensforge/sdk/extension";
@@ -34,8 +34,8 @@ export type HcaOptions = {
 // Keeps one execution well inside a block's gas; the ENS app bounds its batches the same way.
 const maxCallsPerExecution = 32;
 
-const run = <value>(effect: Effect.Effect<value, unknown>): Promise<value> =>
-  Effect.runPromise(effect as Effect.Effect<value>);
+const run = <value, failure>(effect: Effect.Effect<value, failure>): Promise<value> =>
+  Effect.runPromise(effect);
 
 const ownerOf = (context: Write.Via.Context): Address => {
   if (context.account === undefined) {
@@ -96,8 +96,11 @@ const ownerOf = (context: Write.Via.Context): Address => {
 export const hca = (options: HcaOptions = {}): Write.Via => {
   const executors = options.executors ?? [ownerExecutor()];
   const { session } = options;
-  const executor = executors.find(
-    (candidate) => session === undefined || candidate.capabilities.sessions,
+  const executor = Option.getOrUndefined(
+    Arr.findFirst(
+      executors,
+      (candidate) => session === undefined || candidate.capabilities.sessions,
+    ),
   );
   if (executor === undefined) throw new HcaError({ code: "HCA_EXECUTOR_UNSUPPORTED" });
 
@@ -108,7 +111,7 @@ export const hca = (options: HcaOptions = {}): Write.Via => {
     const account = yield* readAccount(client, { owner });
     if (account.deployed && account.problems.length > 0) {
       return yield* Effect.fail(
-        new HcaError({ code: "HCA_NOT_VERIFIED", details: account.problems.map(String) }),
+        new HcaError({ code: "HCA_NOT_VERIFIED", details: Arr.map(account.problems, String) }),
       );
     }
     if (session !== undefined) {
@@ -124,9 +127,9 @@ export const hca = (options: HcaOptions = {}): Write.Via => {
     const warnings: Plan.Warning[] = [...plan.warnings];
 
     // One setup step first: deploy the HCA and approve it for every name token it moves.
-    const routed = plan.steps.filter((step) => step.from !== "signer");
+    const routed = Arr.filter(plan.steps, (step) => step.from !== "signer");
     const approvals = tokenApprovals(
-      routed.flatMap((step) => step.calls),
+      Arr.flatMap(routed, (step) => step.calls),
       {
         owner,
         hca: account.address,
@@ -160,10 +163,16 @@ export const hca = (options: HcaOptions = {}): Write.Via => {
     const flush = () => {
       const [first] = batch;
       if (first === undefined) return;
-      const calls = batch.flatMap((step) => step.calls);
+      const calls = Arr.flatMap(batch, (step) => step.calls);
       steps.push({
-        id: batch.map((step) => step.id).join("+"),
-        description: batch.map((step) => step.description).join(", "),
+        id: Arr.join(
+          Arr.map(batch, (step) => step.id),
+          "+",
+        ),
+        description: Arr.join(
+          Arr.map(batch, (step) => step.description),
+          ", ",
+        ),
         // The wallet funds its own executions; bundlers and intents spend the HCA's balance.
         calls: [executeByOwnerCall(account.address, calls, executor.send === undefined)],
         ...(first.waitFor === undefined ? {} : { waitFor: first.waitFor }),
@@ -177,7 +186,7 @@ export const hca = (options: HcaOptions = {}): Write.Via => {
         continue;
       }
       if (session !== undefined) yield* checkSessionCalls(client, session, step.calls);
-      const size = batch.reduce((total, member) => total + member.calls.length, 0);
+      const size = Arr.reduce(batch, 0, (total, member) => total + member.calls.length);
       if (step.waitFor !== undefined || size + step.calls.length > maxCallsPerExecution) flush();
       batch.push(step);
     }
@@ -195,25 +204,33 @@ export const hca = (options: HcaOptions = {}): Write.Via => {
     const fees =
       quote === undefined
         ? plan.fees
-        : yield* Effect.tryPromise(() =>
-            quote(
-              {
-                chainId: client.chain.id,
-                hca: account.address,
-                owner,
-                deployed: account.deployed,
-                calls: steps.flatMap((step) => innerCalls(step.calls[0] as Plan.Call) ?? []),
-                session,
-                description: plan.operation,
-              },
-              context,
-            ),
-          );
+        : yield* Effect.tryPromise({
+            try: () =>
+              quote(
+                {
+                  chainId: client.chain.id,
+                  hca: account.address,
+                  owner,
+                  deployed: account.deployed,
+                  calls: Arr.flatMap(steps, (step) => {
+                    const [first] = step.calls;
+                    return first === undefined ? [] : (innerCalls(first) ?? []);
+                  }),
+                  session,
+                  description: plan.operation,
+                },
+                context,
+              ),
+            catch: (cause) =>
+              cause instanceof HcaError
+                ? cause
+                : new HcaError({ code: "HCA_EXECUTION_FAILED", cause }),
+          });
 
     return {
       ...plan,
       steps,
-      calls: steps.flatMap((step) => step.calls),
+      calls: Arr.flatMap(steps, (step) => step.calls),
       warnings,
       ...(fees === undefined ? {} : { fees }),
     } satisfies Plan;
@@ -227,6 +244,8 @@ export const hca = (options: HcaOptions = {}): Write.Via => {
     ...(send === undefined
       ? {}
       : {
+          // `Write.Via` routes are Promise-based, like the executor they wrap.
+          // oxlint-disable-next-line effecttsgo/async-function
           send: async (step, context) => {
             const call = step.calls[0];
             const calls = call === undefined ? undefined : innerCalls(call);
@@ -249,6 +268,7 @@ export const hca = (options: HcaOptions = {}): Write.Via => {
             };
             return send(request, context);
           },
+          // oxlint-disable-next-line effecttsgo/async-function
           status: async (reference, context) =>
             executor.status === undefined
               ? { status: "pending" as const }

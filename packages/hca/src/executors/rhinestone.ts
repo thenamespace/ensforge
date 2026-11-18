@@ -1,3 +1,7 @@
+// `Executor` is a Promise interface, so executors can wrap Promise SDKs without Effect.
+/* oxlint-disable effecttsgo/async-function */
+import { Array as Arr, String as Str } from "effect";
+
 import { Abis } from "@ensforge/contracts";
 import { hcaSessionSalt } from "@ensforge/contracts/v2/experimental/hca";
 import type { Write } from "@ensforge/sdk";
@@ -153,7 +157,11 @@ export const rhinestone = (options: RhinestoneOptions): Executor => {
       const chain = context.publicClient.chain;
       const prepared = await created.prepareTransaction({
         chain,
-        calls: request.calls.map((call) => ({ to: call.to, data: call.data, value: call.value })),
+        calls: Arr.map(request.calls, (call) => ({
+          to: call.to,
+          data: call.data,
+          value: call.value,
+        })),
         sponsored,
         ...(sponsored || session === undefined ? {} : { feeAsset: session.terms.refundToken }),
         ...(session === undefined
@@ -171,7 +179,7 @@ export const rhinestone = (options: RhinestoneOptions): Executor => {
                 enableData: {
                   // Rhinestone prefixes owner signatures with the validator selector slot.
                   userSignature: concat([zeroAddress, session.ownerSignature]),
-                  hashesAndChainIds: session.chains.map((entry) => ({
+                  hashesAndChainIds: Arr.map(session.chains, (entry) => ({
                     chainId: BigInt(entry.chainId),
                     sessionDigest: entry.sessionDigest,
                   })),
@@ -189,7 +197,7 @@ export const rhinestone = (options: RhinestoneOptions): Executor => {
       const hash = intent.fill?.hash;
       if (hash !== undefined) return { status: "success", hashes: [hash] };
       if (intent.status === "FAILED" || intent.status === "EXPIRED") {
-        return { status: "failed", reason: `the intent is ${intent.status.toLowerCase()}` };
+        return { status: "failed", reason: `the intent is ${Str.toLowerCase(intent.status)}` };
       }
       return { status: "pending" };
     },

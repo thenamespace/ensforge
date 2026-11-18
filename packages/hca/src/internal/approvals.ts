@@ -1,6 +1,6 @@
 import { Abis } from "@ensforge/contracts";
 import type { Plan } from "@ensforge/sdk";
-import { encodeFunctionData, isAddressEqual, type Abi, type Address } from "viem";
+import { encodeFunctionData, isAddressEqual, type Address } from "viem";
 
 import { decodeCall } from "./decode.js";
 
@@ -22,15 +22,13 @@ export const tokenApprovals = (
 
   for (const call of calls) {
     if (options.baseRegistrar !== undefined && isAddressEqual(call.to, options.baseRegistrar)) {
-      const decoded = decodeCall(Abis.v1.baseRegistrar as Abi, call.data);
-      const [from, , tokenId] = (decoded?.args ?? []) as readonly [Address?, Address?, bigint?];
+      const decoded = decodeCall(Abis.v1.baseRegistrar, call.data);
       if (
-        decoded !== undefined &&
-        ["safeTransferFrom", "transferFrom"].includes(decoded.functionName) &&
-        from !== undefined &&
-        tokenId !== undefined &&
-        isAddressEqual(from, options.owner)
+        (decoded?.functionName === "safeTransferFrom" ||
+          decoded?.functionName === "transferFrom") &&
+        isAddressEqual(decoded.args[0], options.owner)
       ) {
+        const [, , tokenId] = decoded.args;
         approvals.push({
           to: options.baseRegistrar,
           data: encodeFunctionData({
@@ -47,13 +45,11 @@ export const tokenApprovals = (
       isAddressEqual(call.to, options.nameWrapper) &&
       !wrapper
     ) {
-      const decoded = decodeCall(Abis.v1.nameWrapper as Abi, call.data);
-      const [from] = (decoded?.args ?? []) as readonly [Address?];
+      const decoded = decodeCall(Abis.v1.nameWrapper, call.data);
       if (
-        decoded !== undefined &&
-        ["safeTransferFrom", "safeBatchTransferFrom"].includes(decoded.functionName) &&
-        from !== undefined &&
-        isAddressEqual(from, options.owner)
+        (decoded?.functionName === "safeTransferFrom" ||
+          decoded?.functionName === "safeBatchTransferFrom") &&
+        isAddressEqual(decoded.args[0], options.owner)
       ) {
         wrapper = true;
         approvals.push({
