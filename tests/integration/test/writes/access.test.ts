@@ -45,6 +45,65 @@ describe("access writes", () => {
       { meta: { cases: ["M:C3", "P02"] } },
     );
 
+    // LabelStore is no Ownable; it delegates `isContractNamer` to the shared ContractNamer, which
+    // `owner` owns. Naming it claims its reverse node through the ENSv2 adapter, then sets the name.
+    it.effect(
+      "sets and clears a contract's primary name as its ContractNamer",
+      () =>
+        Effect.gen(function* () {
+          const fixtures = yield* Fixtures;
+          const devnet = yield* Devnet;
+          const chain = yield* Chain;
+          const clients = yield* Clients;
+          const { owner, alice } = devnet.accounts;
+          const ens = clients.make({ account: owner });
+          const address = devnet.contract("v2.labelStore");
+          const name = fixtures.byId("records.v1").name;
+          const read = Actions.primaryName.get(ens, { address, verify: false });
+
+          yield* expectFailure(
+            Actions.primaryName.set.prepare(clients.make({ account: alice }), {
+              name,
+              address,
+              verify: false,
+            }),
+            { _tag: "UnauthorizedError", code: "NOT_APPROVED" },
+          );
+          yield* chain.isolated(
+            Effect.gen(function* () {
+              const plan = yield* Actions.primaryName.set.prepare(ens, {
+                name,
+                address,
+                verify: false,
+              });
+              assert.deepStrictEqual(
+                plan.calls.map(({ to }) => to),
+                [
+                  devnet.contract("v2.reverseRegistrarAdapter"),
+                  devnet.contract("v1.publicResolver"),
+                ],
+              );
+
+              yield* Actions.primaryName.setSync(ens, { name, address, verify: false });
+              assert.strictEqual(yield* read, name);
+              assert.strictEqual(
+                yield* chain.read({
+                  address: devnet.contract("v1.registry"),
+                  abi: Abis.v1.ensRegistry,
+                  functionName: "owner",
+                  args: [namehash(`${address.slice(2).toLowerCase()}.addr.reverse`)],
+                }),
+                owner,
+              );
+
+              yield* Actions.primaryName.setSync(ens, { name: null, address });
+              assert.isNull(yield* read);
+            }),
+          );
+        }),
+      { meta: { cases: ["P31"] } },
+    );
+
     it.effect(
       "grants and revokes ENSv1 operators, token approvals and delegates",
       () =>

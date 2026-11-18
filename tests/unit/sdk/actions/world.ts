@@ -74,6 +74,10 @@ export type World = Entry & {
   readonly extended?: readonly Address[] | undefined;
   /** A deployment without ENSv2, as before its launch. */
   readonly v1Only?: boolean | undefined;
+  /** Contract accounts, by address: their Ownable `owner()` and the accounts `isContractNamer` approves. */
+  readonly contracts?:
+    | Readonly<Record<Address, { readonly owner: Address; readonly namers: readonly Address[] }>>
+    | undefined;
 };
 
 /** A plan's calls as `[to, functionName, args]`, decoded with `abi` (ABIs may be concatenated). */
@@ -227,7 +231,7 @@ const stubs = (world: World): ContractStub[] => {
     {
       address: v1.reverseRegistrar,
       abi: Abis.v1.reverseRegistrar,
-      functions: { defaultResolver: () => resolverA },
+      functions: { defaultResolver: () => resolverA, controllers: () => false },
     },
     {
       address: v2.ethRegistrar,
@@ -251,6 +255,14 @@ const stubs = (world: World): ContractStub[] => {
         ],
       },
     },
+    ...Object.entries(world.contracts ?? {}).map(([address, { owner, namers }]): ContractStub => ({
+      address: address as Address,
+      abi: Abis.v2.contractNamer as Abi,
+      functions: {
+        owner: () => owner,
+        isContractNamer: ([namer]) => includes(namers, namer as Address),
+      },
+    })),
     ...[...new Set(resolvers)].map((address): ContractStub => ({
       address,
       abi: [...Abis.shared.erc165, ...Abis.shared.versionableResolver] as Abi,
@@ -266,7 +278,12 @@ const stubs = (world: World): ContractStub[] => {
 
 /** An ensforge client on mainnet, signing as `signer`, whose reads see `world`; `calls` records every request. */
 export const clientFor = (world: World) => {
-  const { transport, calls } = scriptedTransport(contractScript({ contracts: stubs(world) }));
+  const { transport, calls } = scriptedTransport(
+    contractScript({
+      contracts: stubs(world),
+      code: Object.keys(world.contracts ?? {}) as Address[],
+    }),
+  );
   const { name, chainId, v1: deploymentV1 } = Deployments.mainnet;
   const ens = Ensforge.create({
     publicClient: createPublicClient({ chain: mainnet, transport }),

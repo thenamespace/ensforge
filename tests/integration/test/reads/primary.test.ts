@@ -2,14 +2,18 @@ import { assert, describe } from "@effect/vitest";
 import { Effect } from "effect";
 
 import { Abis } from "@ensforge/contracts";
-import { CoinType, Name } from "@ensforge/sdk";
-import { Actions } from "@ensforge/sdk/effect";
+import { CoinType, Ensforge, Name } from "@ensforge/sdk";
+import { Actions, type Errors } from "@ensforge/sdk/effect";
 import { Chain, Devnet } from "@ensforge/test-devnet";
 import { Fixtures } from "@ensforge/test-fixtures";
 import { expectFailure } from "@ensforge/test-harness";
 import {
   concat,
+  createPublicClient,
   encodeAbiParameters,
+  encodeErrorResult,
+  encodeFunctionData,
+  http,
   labelhash,
   namehash,
   parseAbi,
@@ -175,6 +179,55 @@ describe("primaryName.get", () => {
         { meta: { cases: ["P10", "P14", "P15"] } },
       );
 
+      // The reverse side failing means no primary name (see above); the primary name's own
+      // resolver failing means a name that does not resolve back. After the launch the ENSv1
+      // bridge answers a missing `addr` with an empty revert, which names no profile.
+      it.effect(
+        "fails a primary name whose resolver is missing or has no address as a mismatch",
+        () =>
+          Effect.gen(function* () {
+            const fixtures = yield* Fixtures;
+            const devnet = yield* Devnet;
+            const chain = yield* Chain;
+            const { reader } = yield* Clients;
+            const carol = devnet.accounts.carol;
+
+            for (const [id, code] of [
+              ["resolver.none", "PRIMARY_NAME_MISMATCH"],
+              ["resolver.eoa", "PRIMARY_NAME_MISMATCH"],
+              [
+                "resolver.empty-answer",
+                profile === "v1-live" ? "PRIMARY_NAME_MISMATCH" : "PRIMARY_NAME_NOT_SET",
+              ],
+            ] as const) {
+              const { name } = fixtures.byId(id);
+              yield* chain.isolated(
+                Effect.gen(function* () {
+                  yield* chain.write({
+                    address: devnet.contract("v1.reverseRegistrar"),
+                    abi: Abis.v1.reverseRegistrar,
+                    functionName: "setName",
+                    args: [name],
+                    account: carol,
+                  });
+
+                  assert.isNull(yield* Actions.primaryName.get(reader, { address: carol }), id);
+                  const error = yield* expectFailure(
+                    Actions.primaryName.get(reader, { address: carol, strict: true }),
+                    { _tag: "NotFoundError", code },
+                  );
+                  const cause = error.cause as Errors.AnyError;
+                  if (cause._tag === "NotFoundError") assert.strictEqual(cause.resource, name, id);
+                  else if (code === "PRIMARY_NAME_MISMATCH") {
+                    assert.strictEqual(cause.context.selector, "0x3b3b57de", id);
+                  }
+                }),
+              );
+            }
+          }),
+        { meta: { cases: ["P08", "P10"] } },
+      );
+
       it.effect(
         "verifies a chain's primary name through the default EVM address alone",
         () =>
@@ -239,6 +292,102 @@ describe("primaryName.get", () => {
             );
           }).pipe(Effect.scoped),
         { meta: { cases: ["P12"] } },
+      );
+
+      // An L2 primary name is read through an off-chain resolver on `<coin>.reverse`, whose gateway
+      // proves L2 state that an unruggable verifier checks. The fixture's off-chain resolver
+      // stands in for it, with its gateway failing each way a real one does.
+      it.effect(
+        "reports an L2 primary name's failing gateway or proof as a gateway error",
+        () =>
+          Effect.gen(function* () {
+            const devnet = yield* Devnet;
+            const chain = yield* Chain;
+            const { reader } = yield* Clients;
+            const gateways = yield* Gateways;
+            const { owner, alice } = devnet.accounts;
+            const resolver = {
+              address: (yield* Fixtures).byId("resolver.offchain").facts["resolver"] as Address,
+              abi: parseAbi(["function setRevertURL(string)", "function setResponse(bytes,bytes)"]),
+              account: owner,
+            } as const;
+            const nameCall = encodeFunctionData({
+              abi: Abis.shared.nameResolver,
+              functionName: "name",
+              args: [namehash(`${alice.slice(2).toLowerCase()}.8000000a.reverse`)],
+            });
+            const failing = yield* gateways.serve(() => ({
+              status: 500,
+              body: '{"message":"down"}',
+            }));
+            const hanging = yield* gateways.hang;
+            const answering = yield* gateways.serve(() => ({ status: 200, body: '{"data":"0x"}' }));
+            const impatient = Ensforge.create({
+              publicClient: createPublicClient({
+                chain: devnet.chain,
+                transport: http(devnet.rpcUrl, { timeout: 500 }),
+              }),
+              deployment: devnet.deployments,
+            });
+
+            for (const [label, gateway, response, ens, code] of [
+              [
+                "HTTP 500",
+                failing,
+                encodeAbiParameters([{ type: "string" }], ["rev-alice.eth"]),
+                reader,
+                "GATEWAY_REQUEST_FAILED",
+              ],
+              [
+                "no answer",
+                hanging,
+                encodeAbiParameters([{ type: "string" }], ["rev-alice.eth"]),
+                impatient,
+                "GATEWAY_REQUEST_FAILED",
+              ],
+              // The callback reverts as Base's verifier does for a proof it cannot check.
+              [
+                "proof rejected",
+                answering,
+                encodeErrorResult({ abi: Abis.shared.errors, errorName: "InvalidGameTypeBitMask" }),
+                reader,
+                "GATEWAY_RESPONSE_INVALID",
+              ],
+            ] as const) {
+              yield* chain.isolated(
+                Effect.gen(function* () {
+                  yield* chain.write({
+                    address: devnet.contract("v1.registry"),
+                    abi: Abis.v1.ensRegistry,
+                    functionName: "setSubnodeRecord",
+                    args: [namehash("reverse"), labelhash("8000000a"), owner, resolver.address, 0n],
+                    account: owner,
+                  });
+                  yield* chain.write({
+                    ...resolver,
+                    functionName: "setRevertURL",
+                    args: [gateway.url],
+                  });
+                  yield* chain.write({
+                    ...resolver,
+                    functionName: "setResponse",
+                    args: [nameCall, response],
+                  });
+
+                  yield* expectFailure(
+                    Actions.primaryName.get(ens, {
+                      address: alice,
+                      coin: { chainId: 10 },
+                      strict: true,
+                    }),
+                    { _tag: "GatewayError", code },
+                  );
+                  assert.isAbove(gateway.requests(), 0, label);
+                }),
+              );
+            }
+          }).pipe(Effect.scoped),
+        { meta: { cases: ["X01", "X12", "P32"] } },
       );
 
       it.effect(

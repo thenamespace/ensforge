@@ -724,7 +724,8 @@
   },
   "X01": {
     "tests": [
-      "tests/integration/test/reads/ccip.test.ts > reports a failing gateway with its HTTP status"
+      "tests/integration/test/reads/ccip.test.ts > reports a failing gateway with its HTTP status",
+      "tests/integration/test/reads/primary.test.ts > reports an L2 primary name's failing gateway or proof as a gateway error"
     ]
   },
   "X02": {
@@ -765,7 +766,8 @@
   },
   "X12": {
     "tests": [
-      "tests/integration/test/reads/ccip.test.ts > times out on a gateway that never answers, and an abort drops its request"
+      "tests/integration/test/reads/ccip.test.ts > times out on a gateway that never answers, and an abort drops its request",
+      "tests/integration/test/reads/primary.test.ts > reports an L2 primary name's failing gateway or proof as a gateway error"
     ]
   },
   "X13": {
@@ -1030,17 +1032,20 @@
   },
   "P08": {
     "tests": [
+      "tests/integration/test/reads/primary.test.ts > fails a primary name whose resolver is missing or has no address as a mismatch",
       "tests/integration/test/reads/primary.test.ts > returns null for names that do not verify, unless verification is off",
       "tests/integration/test/writes/access-matrix.test.ts > primaryName.set as someone else's name as primary"
     ]
   },
   "P09": {
     "tests": [
-      "tests/integration/test/reads/primary.test.ts > verifies a chain's primary name through the default EVM address alone"
+      "tests/integration/test/reads/primary.test.ts > verifies a chain's primary name through the default EVM address alone",
+      "tests/integration/test/writes/primary-l2.test.ts > rejects expired, tampered and misdirected claims, and claims for other names"
     ]
   },
   "P10": {
     "tests": [
+      "tests/integration/test/reads/primary.test.ts > fails a primary name whose resolver is missing or has no address as a mismatch",
       "tests/integration/test/reads/primary.test.ts > returns null for stored names that are not names, or whose resolver has no address"
     ]
   },
@@ -1127,6 +1132,58 @@
   "P30": {
     "tests": [
       "tests/integration/test/reads/primary.test.ts > follows a primary name's subname as it is created and removed"
+    ]
+  },
+  "P31": {
+    "tests": [
+      "tests/integration/test/writes/access.test.ts > sets and clears a contract's primary name as its ContractNamer"
+    ]
+  },
+  "P32": {
+    "tests": [
+      "tests/integration/test/reads/primary.test.ts > reports an L2 primary name's failing gateway or proof as a gateway error"
+    ]
+  },
+  "P33": {
+    "tests": [
+      "tests/integration/test/writes/primary-l2.test.ts > sets the signer's L2 primary name on the L2, read back on Ethereum"
+    ]
+  },
+  "P34": {
+    "tests": [
+      "tests/integration/test/writes/primary-l2.test.ts > submits one signed claim from a relayer, for an EOA, ERC-1271 and ERC-6492 accounts and an Ownable"
+    ]
+  },
+  "P35": {
+    "tests": [
+      "tests/integration/test/writes/primary-l2.test.ts > submits one signed claim from a relayer, for an EOA, ERC-1271 and ERC-6492 accounts and an Ownable"
+    ]
+  },
+  "P36": {
+    "tests": [
+      "tests/integration/test/writes/primary-l2.test.ts > submits one signed claim from a relayer, for an EOA, ERC-1271 and ERC-6492 accounts and an Ownable"
+    ]
+  },
+  "P37": {
+    "tests": [
+      "tests/integration/test/writes/primary-l2.test.ts > rejects expired, tampered and misdirected claims, and claims for other names",
+      "tests/integration/test/writes/reverts.test.ts > come from the reverse registrars' signed name claims"
+    ]
+  },
+  "P38": {
+    "tests": [
+      "tests/integration/test/writes/primary-l2.test.ts > sets the signer's L2 primary name on the L2, read back on Ethereum",
+      "tests/integration/test/writes/reverts.test.ts > come from the reverse registrars' signed name claims"
+    ]
+  },
+  "P39": {
+    "tests": [
+      "tests/integration/test/writes/primary-l2.test.ts > fails before sending for chains it cannot reach and claims it cannot sign"
+    ]
+  },
+  "P40": {
+    "tests": [
+      "tests/integration/test/writes/primary-l2.test.ts > resumes a saved L2 plan on the L2"
     ]
   },
   "G01": {

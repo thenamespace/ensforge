@@ -57,6 +57,7 @@ const otherOptions: Readonly<Record<string, object>> = {
   "name.transfer": { to: address },
   "permission.check": { operation: "setResolver" },
   "permission.setRecordAccess": { grantee: address },
+  "primaryName.signClaim": { chainIds: [10] },
   "registration.commit": { duration: Duration.years(1) },
   "registration.getPrice": { duration: Duration.years(1) },
   "registration.register": { duration: Duration.years(1) },

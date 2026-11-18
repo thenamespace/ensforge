@@ -11,11 +11,14 @@ import {
   bytesToHex,
   decodeErrorResult,
   encodeFunctionData,
+  encodePacked,
   erc20Abi,
+  getAbiItem,
   keccak256,
   namehash,
   numberToHex,
   parseAbi,
+  toFunctionSelector,
   toHex,
   zeroAddress,
   zeroHash,
@@ -411,6 +414,16 @@ describe("contract errors", () => {
           );
           assert.strictEqual(
             yield* revertName(
+              Actions.record.getText(clients.reader, {
+                name: fixtures.byId("v2.registered").name,
+                key: "url",
+                strict: true,
+              }),
+            ),
+            "ResolverNotFound",
+          );
+          assert.strictEqual(
+            yield* revertName(
               Actions.record.getText(clients.make({ ccipRead: false }), {
                 name: fixtures.byId("resolver.offchain").name,
                 key: "url",
@@ -461,6 +474,87 @@ describe("contract errors", () => {
           );
         }),
       { meta: { cases: ["X16"] } },
+    );
+
+    it.effect("come from the ENSv2 reverse registrar adapter", () =>
+      Effect.gen(function* () {
+        const devnet = yield* Devnet;
+
+        // alice is neither LabelStore's Ownable owner nor its ContractNamer.
+        assert.strictEqual(
+          yield* revertOf({
+            from: devnet.accounts.alice,
+            to: devnet.contract("v2.reverseRegistrarAdapter"),
+            abi: Abis.v2.reverseRegistrarAdapter as Abi,
+            functionName: "claim",
+            args: [devnet.contract("v2.labelStore"), devnet.contract("v1.publicResolver")],
+          }),
+          "UnauthorizedNamer",
+        );
+      }),
+    );
+
+    // The ENSv1 reverse registrars check name claims signed by the account (`SignatureUtils`);
+    // the devnet's copy of OP Mainnet's L2 reverse registrar also checks coin types and owners.
+    it.effect(
+      "come from the reverse registrars' signed name claims",
+      () =>
+        Effect.gen(function* () {
+          const devnet = yield* Devnet;
+          const chain = yield* Chain;
+          const { alice, bob, carol } = devnet.accounts;
+          const now = yield* chain.now;
+          const name = "claimed.eth";
+          const registrar = {
+            to: devnet.contract("v1.defaultReverseRegistrar"),
+            abi: Abis.v1.defaultReverseRegistrar as Abi,
+            from: carol,
+            functionName: "setNameForAddrWithSignature",
+          };
+          const claim = Effect.fnUntraced(function* (expiry: bigint) {
+            const selector = toFunctionSelector(
+              getAbiItem({
+                abi: Abis.v1.defaultReverseRegistrar,
+                name: "setNameForAddrWithSignature",
+              }),
+            );
+            const message = keccak256(
+              encodePacked(
+                ["address", "bytes4", "address", "uint256", "string"],
+                [registrar.to, selector, alice, expiry, name],
+              ),
+            );
+            return { ...registrar, args: [alice, expiry, name, yield* chain.sign(alice, message)] };
+          });
+          const l2Registrar = {
+            to: devnet.contract("mock.l2ReverseRegistrar"),
+            abi: Abis.v1.l2ReverseRegistrar as Abi,
+            from: alice,
+          };
+          const anySignature = bytesToHex(new Uint8Array(65).fill(0x11));
+
+          const cases: Readonly<Record<string, Call>> = {
+            InvalidSignature: { ...registrar, args: [alice, now + 60n, name, anySignature] },
+            SignatureExpired: yield* claim(now - 10n),
+            SignatureExpiryTooHigh: yield* claim(now + 7200n),
+            // Checked before the signature: Ethereum's coin type is not OP Mainnet's.
+            CoinTypeNotFound: {
+              ...l2Registrar,
+              functionName: "setNameForAddrWithSignature",
+              args: [alice, now + 60n, name, [60n], anySignature],
+            },
+            NotOwnerOfContract: {
+              ...l2Registrar,
+              functionName: "setNameForOwnableWithSignature",
+              args: [devnet.contract("mock.ownable"), alice, now + 60n, name, [0x8000000an], "0x"],
+            },
+            Unauthorised: { ...l2Registrar, functionName: "setNameForAddr", args: [bob, name] },
+          };
+          for (const [error, call] of Object.entries(cases)) {
+            assert.strictEqual(yield* revertOf(call), error, error);
+          }
+        }),
+      { meta: { cases: ["P37", "P38"] } },
     );
 
     it.effect("come from the HCA", () =>

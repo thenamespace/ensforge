@@ -2,6 +2,7 @@ import { assert, describe, it } from "@effect/vitest";
 import { Effect } from "effect";
 
 import { addressOf } from "@ensforge/sdk/internal/internal/address";
+import { chainClient } from "@ensforge/sdk/internal/internal/write/chain";
 import { resolveSigner } from "@ensforge/sdk/internal/internal/write/signer";
 import { fromWagmi } from "@ensforge/sdk/internal/wagmi/fromWagmi";
 import { expectFailure, expectThrow } from "@ensforge/test-harness";
@@ -142,6 +143,32 @@ describe("fromWagmi wallet", () => {
       yield* expectFailure(resolveSigner(fromWagmi(config), undefined), {
         _tag: "UserRejectedError",
       });
+    }),
+  );
+});
+
+describe("fromWagmi chains", () => {
+  it.effect("adds every other configured chain, read and signed on through wagmi", () =>
+    Effect.gen(function* () {
+      const config = wagmiConfig([mainnet, base]);
+      const ens = fromWagmi(config);
+      yield* connectOn(config, mainnet.id);
+
+      const onBase = yield* chainClient(ens, base.id);
+      requests.length = 0;
+      yield* Effect.promise(() => getBlockNumber(onBase.publicClient, { cacheTime: 0 }));
+      const { walletClient } = yield* resolveSigner(onBase, undefined);
+
+      assert.strictEqual(onBase.chain.id, base.id);
+      assert.deepStrictEqual(requests, [{ chainId: base.id, method: "eth_blockNumber" }]);
+      assert.strictEqual(walletClient.chain?.id, base.id);
+    }),
+  );
+
+  it.effect("fails with CHAIN_NOT_CONFIGURED for a chain wagmi does not have", () =>
+    expectFailure(chainClient(fromWagmi(wagmiConfig([mainnet])), base.id), {
+      _tag: "ConfigError",
+      code: "CHAIN_NOT_CONFIGURED",
     }),
   );
 });

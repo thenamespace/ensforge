@@ -3,19 +3,22 @@ import { Context, Effect, Layer } from "effect";
 import { Ensforge, ensActions, type Plan } from "@ensforge/sdk";
 import type { Indexer } from "@ensforge/sdk/indexer";
 import { Devnet } from "@ensforge/test-devnet";
-import { createPublicClient, createWalletClient, http, type Address } from "viem";
+import { createPublicClient, createWalletClient, http, type Account, type Address } from "viem";
 
 import type { TestWallet } from "./wallets.ts";
 
 /** What a test varies about a client: the signer, its wallet, plan storage, indexer, CCIP-Read. */
 export type ClientOptions = {
-  readonly account?: Address | undefined;
+  /** The signer: a devnet account, or a local account that signs itself (a smart account). */
+  readonly account?: Account | Address | undefined;
   /** The account's wallet; the devnet's unlocked account by default. */
   readonly wallet?: TestWallet | undefined;
   /** Where plans are saved; shared between clients to resume across them. */
   readonly storage?: Plan.Storage | undefined;
   readonly indexer?: Indexer | undefined;
   readonly ccipRead?: false | { readonly gatewayUrls?: readonly string[] } | undefined;
+  /** Clients of other chains, e.g. an L2 from the `Optimism` service. */
+  readonly chains?: Ensforge.CreateOptions["chains"];
 };
 
 const makeClient = (devnet: Devnet["Service"], options: ClientOptions) => {
@@ -29,6 +32,7 @@ const makeClient = (devnet: Devnet["Service"], options: ClientOptions) => {
     ...(options.ccipRead === undefined ? {} : { ccipRead: options.ccipRead }),
     ...(options.storage === undefined ? {} : { storage: options.storage }),
     ...(options.indexer === undefined ? {} : { indexer: options.indexer }),
+    ...(options.chains === undefined ? {} : { chains: options.chains }),
     ...(options.account === undefined
       ? {}
       : {

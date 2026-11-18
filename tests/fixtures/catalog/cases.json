@@ -2046,6 +2046,86 @@
     "domains": ["primary"]
   },
   {
+    "id": "P31",
+    "axis": "P",
+    "title": "ContractNamer names a contract's `addr.reverse` through the ENSv2 adapter (claim + setName)",
+    "component": "ReverseRegistrarAdapter",
+    "expected": "Set in one step of two dependent calls; a non-namer is refused before sending",
+    "domains": ["primary"]
+  },
+  {
+    "id": "P32",
+    "axis": "P",
+    "title": "L2 primary name whose gateway fails (HTTP error, timeout) or whose proof the verifier rejects",
+    "component": "UR, unruggable verifier",
+    "expected": "`GATEWAY_REQUEST_FAILED` (retryable) / `GATEWAY_RESPONSE_INVALID`",
+    "domains": ["primary"]
+  },
+  {
+    "id": "P33",
+    "axis": "P",
+    "title": "Signer sets its L2 primary name on the L2; read back on Ethereum through `<coinType>.reverse`",
+    "component": "L2ReverseRegistrar",
+    "expected": "Round-trips",
+    "domains": ["primary"]
+  },
+  {
+    "id": "P34",
+    "axis": "P",
+    "title": "L2 name claim signed by an EOA, relayed by another account",
+    "component": "L2ReverseRegistrar",
+    "expected": "Set for the signer",
+    "domains": ["primary"]
+  },
+  {
+    "id": "P35",
+    "axis": "P",
+    "title": "L2 name claim signed by an ERC-1271 smart account (deployed, or counterfactual via ERC-6492)",
+    "component": "L2ReverseRegistrar, UniversalSigValidator",
+    "expected": "Set for the account",
+    "domains": ["primary"]
+  },
+  {
+    "id": "P36",
+    "axis": "P",
+    "title": "L2 name claim signed by a contract's Ownable owner",
+    "component": "L2ReverseRegistrar",
+    "expected": "Set for the contract",
+    "domains": ["primary"]
+  },
+  {
+    "id": "P37",
+    "axis": "P",
+    "title": "Expired, tampered or wrong-chain L2 name claim",
+    "component": "L2ReverseRegistrar",
+    "expected": "`SIGNATURE_EXPIRED` / `SIGNATURE_INVALID` / refused before sending",
+    "domains": ["primary"]
+  },
+  {
+    "id": "P38",
+    "axis": "P",
+    "title": "Unauthorized `setNameForAddr` on the L2 registrar",
+    "component": "L2ReverseRegistrar",
+    "expected": "`NOT_APPROVED`",
+    "domains": ["primary"]
+  },
+  {
+    "id": "P39",
+    "axis": "P",
+    "title": "L2 not in `chains`, chain without an L2 registrar, or invalid claim input",
+    "component": "sdk",
+    "expected": "`CHAIN_NOT_CONFIGURED` / `UNSUPPORTED_ON_DEPLOYMENT` / invalid input",
+    "domains": ["primary"]
+  },
+  {
+    "id": "P40",
+    "axis": "P",
+    "title": "Saved L2 primary-name plan resumes on the L2",
+    "component": "plan runtime",
+    "expected": "Resumes on that chain",
+    "domains": ["primary"]
+  },
+  {
     "id": "G01",
     "axis": "G",
     "title": "Length in code points vs graphemes: `💩💩` (2) invalid; `🇺🇸` = 2 cp; `🍄‍🟫` = 3 cp → valid 3-char price",

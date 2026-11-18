@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import { assert, describe, it } from "@effect/vitest";
 
 import { Abis, Roles } from "@ensforge/contracts";
+import { Name } from "@ensforge/sdk";
 import { UnauthorizedError } from "@ensforge/sdk/internal/errors/classes/index";
 import { fromRevert } from "@ensforge/sdk/internal/errors/translate/revert";
 import { revertMap } from "@ensforge/sdk/internal/errors/translate/revert-map";
@@ -11,14 +12,20 @@ import { encodeErrorResult, getAddress, parseAbi, type AbiParameter, type Hex } 
 const account = getAddress("0x00000000000000000000000000000000000000a1");
 const commitment = `0x${"c0".repeat(32)}` as const;
 
-const expected: Readonly<Record<string, { readonly _tag: string; readonly code: string }>> = {
+type Expected = { readonly _tag: string; readonly code: string };
+
+/** The error each mapped contract error becomes; overloads that differ, by argument count. */
+const expected: Readonly<Record<string, Expected | Readonly<Record<number, Expected>>>> = {
   EACUnauthorizedAccountRoles: { _tag: "UnauthorizedError", code: "MISSING_ROLES" },
   EACCannotGrantRoles: { _tag: "UnauthorizedError", code: "CANNOT_GRANT_ROLES" },
   EACCannotRevokeRoles: { _tag: "UnauthorizedError", code: "CANNOT_GRANT_ROLES" },
   EACInvalidRoleBitmap: { _tag: "InvalidInputError", code: "INVALID_ROLES" },
   EACMaxAssignees: { _tag: "InvalidInputError", code: "INVALID_ROLES" },
   EACInvalidAccount: { _tag: "InvalidInputError", code: "INVALID_ADDRESS" },
-  Unauthorised: { _tag: "UnauthorizedError", code: "NOT_OWNER" },
+  Unauthorised: {
+    0: { _tag: "UnauthorizedError", code: "NOT_APPROVED" },
+    2: { _tag: "UnauthorizedError", code: "NOT_OWNER" },
+  },
   OwnableUnauthorizedAccount: { _tag: "UnauthorizedError", code: "NOT_OWNER" },
   ERC1155InsufficientBalance: { _tag: "UnauthorizedError", code: "NOT_OWNER" },
   WrappedOwnerMismatch: { _tag: "UnauthorizedError", code: "NOT_OWNER" },
@@ -79,6 +86,24 @@ const expected: Readonly<Record<string, { readonly _tag: string; readonly code: 
   OperationHandledOffchain: { _tag: "UnsupportedError", code: "RESOLVER_PROFILE_UNSUPPORTED" },
   InvalidBatchGatewayResponse: { _tag: "GatewayError", code: "GATEWAY_RESPONSE_INVALID" },
   UnsafeBatchGatewayResponse: { _tag: "GatewayError", code: "GATEWAY_RESPONSE_INVALID" },
+  CommitTooOld: { _tag: "GatewayError", code: "GATEWAY_RESPONSE_INVALID" },
+  CommitTooNew: { _tag: "GatewayError", code: "GATEWAY_RESPONSE_INVALID" },
+  InvalidProof: { _tag: "GatewayError", code: "GATEWAY_RESPONSE_INVALID" },
+  GameNotFound: { _tag: "GatewayError", code: "GATEWAY_RESPONSE_INVALID" },
+  InvalidGameTypeBitMask: { _tag: "GatewayError", code: "GATEWAY_RESPONSE_INVALID" },
+  OutputNotFound: { _tag: "GatewayError", code: "GATEWAY_RESPONSE_INVALID" },
+  TooManyProofs: { _tag: "GatewayError", code: "GATEWAY_RESPONSE_INVALID" },
+  RequestOverflow: { _tag: "GatewayError", code: "GATEWAY_RESPONSE_INVALID" },
+  InvalidRequest: { _tag: "GatewayError", code: "GATEWAY_RESPONSE_INVALID" },
+  InvalidStackIndex: { _tag: "GatewayError", code: "GATEWAY_RESPONSE_INVALID" },
+  InvalidOutputIndex: { _tag: "GatewayError", code: "GATEWAY_RESPONSE_INVALID" },
+  StackOverflow: { _tag: "GatewayError", code: "GATEWAY_RESPONSE_INVALID" },
+  DataMissing: { _tag: "GatewayError", code: "GATEWAY_RESPONSE_INVALID" },
+  DataIsNotMod32: { _tag: "GatewayError", code: "GATEWAY_RESPONSE_INVALID" },
+  LengthNotMod32: { _tag: "GatewayError", code: "GATEWAY_RESPONSE_INVALID" },
+  MaxTreeLeafIndexExceed: { _tag: "GatewayError", code: "GATEWAY_RESPONSE_INVALID" },
+  WrongBytesLength: { _tag: "GatewayError", code: "GATEWAY_RESPONSE_INVALID" },
+  WrongProofLength: { _tag: "GatewayError", code: "GATEWAY_RESPONSE_INVALID" },
   NameNotLocked: { _tag: "MigrationError", code: "NAME_NOT_LOCKED" },
   TLDNotPublic: { _tag: "DnsError", code: "TLD_NOT_PUBLIC" },
   InvalidPublicSuffix: { _tag: "DnsError", code: "TLD_NOT_PUBLIC" },
@@ -88,11 +113,17 @@ const expected: Readonly<Record<string, { readonly _tag: string; readonly code: 
   InvalidLabelCount: { _tag: "DnsError", code: "DNSSEC_PROOF_FAILED" },
   InvalidProofType: { _tag: "DnsError", code: "DNSSEC_PROOF_FAILED" },
   InvalidRRSet: { _tag: "DnsError", code: "DNSSEC_PROOF_FAILED" },
-  InvalidSignature: { _tag: "DnsError", code: "DNSSEC_PROOF_FAILED" },
   InvalidSignerName: { _tag: "DnsError", code: "DNSSEC_PROOF_FAILED" },
   NoMatchingProof: { _tag: "DnsError", code: "DNSSEC_PROOF_FAILED" },
   ProofNameMismatch: { _tag: "DnsError", code: "DNSSEC_PROOF_FAILED" },
-  SignatureExpired: { _tag: "DnsError", code: "DNSSEC_PROOF_FAILED" },
+  SignatureExpired: {
+    0: { _tag: "UnauthorizedError", code: "SIGNATURE_EXPIRED" },
+    2: { _tag: "DnsError", code: "DNSSEC_PROOF_FAILED" },
+  },
+  InvalidSignature: { _tag: "UnauthorizedError", code: "SIGNATURE_INVALID" },
+  SignatureExpiryTooHigh: { _tag: "InvalidInputError", code: "INVALID_EXPIRY" },
+  CoinTypeNotFound: { _tag: "InvalidInputError", code: "INVALID_COIN_TYPE" },
+  NotOwnerOfContract: { _tag: "UnauthorizedError", code: "NOT_APPROVED" },
   SignatureNotValidYet: { _tag: "DnsError", code: "DNSSEC_PROOF_FAILED" },
   SignatureTypeMismatch: { _tag: "DnsError", code: "DNSSEC_PROOF_FAILED" },
 };
@@ -137,13 +168,31 @@ const encode = (errorName: string, args: readonly unknown[]): Hex =>
 
 // Mapped errors no devnet contract is made to raise yet; the list must shrink, never grow.
 const notRaisedOnChain = [
-  // The devnet's DNSSEC oracle checks signatures with DummyAlgorithm, which accepts every one.
-  "InvalidSignature",
   // Batch gateway failures: raised by the Universal Resolver's gateway, not reached here yet.
   "HttpError",
   "InvalidOffchainLookup",
   "InvalidBatchGatewayResponse",
   "UnsafeBatchGatewayResponse",
+  // unruggable verifiers check real L2 proofs, which only the fork lane has; primary.test.ts
+  // replays InvalidGameTypeBitMask through a mock resolver.
+  "CommitTooOld",
+  "CommitTooNew",
+  "InvalidProof",
+  "GameNotFound",
+  "InvalidGameTypeBitMask",
+  "OutputNotFound",
+  "TooManyProofs",
+  "RequestOverflow",
+  "InvalidRequest",
+  "InvalidStackIndex",
+  "InvalidOutputIndex",
+  "StackOverflow",
+  "DataMissing",
+  "DataIsNotMod32",
+  "LengthNotMod32",
+  "MaxTreeLeafIndexExceed",
+  "WrongBytesLength",
+  "WrongProofLength",
   // Not reached by a devnet scenario yet: ensforge refuses most of these states before sending,
   // or the devnet deploys no contract that raises them with revert data.
   "NameIsLocked",
@@ -162,12 +211,10 @@ const notRaisedOnChain = [
   "InvalidRecord",
   "PrimaryNameNotNormalized",
   "ReverseAddressMismatch",
-  "ResolverNotFound",
   "ResolverNotContract",
   "OwnableUnauthorizedAccount",
   "WrappedOwnerMismatch",
   "PermissionDenied",
-  "UnauthorizedNamer",
   "NotApprovedOperator",
   "CommitmentNotFound",
   "UpgradeTargetNotApproved",
@@ -192,12 +239,14 @@ describe("revertMap coverage", () => {
 });
 
 describe("revertMap from ABI-encoded revert data", () => {
-  it.each(Object.entries(expected))("%s → %o", (errorName, { _tag, code }) => {
+  it.each(Object.entries(expected))("%s → %o", (errorName, mapping) => {
     const encoded = overloads(errorName);
 
     assert.isAbove(encoded.length, 0, `${errorName} is missing from the ENS errors ABI`);
-    for (const data of encoded) {
+    for (const [index, data] of encoded.entries()) {
       const error = fromRevert({ data }, { operation: "test.op" });
+      const arity = fragmentsOf(errorName)[index]?.inputs.length ?? 0;
+      const { _tag, code } = "code" in mapping ? mapping : (mapping[arity] as Expected);
 
       assert.strictEqual(error._tag, _tag);
       assert.strictEqual(error.code, code);
@@ -344,6 +393,43 @@ describe("revertMap fields", () => {
     assert.strictEqual((error as { status?: number }).status, 503);
     assert.deepStrictEqual(error.details, details);
     assert.isTrue(error.retryable);
+  });
+
+  it.each([
+    { errorName: "ResolverNotFound", args: [Name.dnsEncode("pay.nick.eth")] },
+    { errorName: "ResolverNotContract", args: [Name.dnsEncode("pay.nick.eth"), account] },
+    { errorName: "UnreachableName", args: [Name.dnsEncode("pay.nick.eth")] },
+  ])("$errorName names the name without a resolver", ({ errorName, args }) => {
+    const error = fromRevert({ data: encode(errorName, args) }, { name: "nick.eth" });
+
+    assert.strictEqual(error.code, "RESOLVER_NOT_FOUND");
+    assert.strictEqual((error as { resource?: string }).resource, "pay.nick.eth");
+    assert.include(error.shortMessage, "pay.nick.eth");
+  });
+
+  it("ResolverNotFound keeps a name that is not DNS-encoded as its bytes", () => {
+    const error = fromRevert({ data: encode("ResolverNotFound", ["0x0561"]) }, {});
+
+    assert.strictEqual((error as { resource?: string }).resource, "0x0561");
+  });
+
+  it("UnsupportedResolverProfile keeps the selector of the missing profile", () => {
+    const error = fromRevert({ data: encode("UnsupportedResolverProfile", ["0x3b3b57de"]) }, {});
+
+    assert.strictEqual(error.code, "RESOLVER_PROFILE_UNSUPPORTED");
+    assert.strictEqual(error.context.selector, "0x3b3b57de");
+  });
+
+  it("an unruggable verifier error is an invalid gateway response, with a hint", () => {
+    const error = fromRevert(
+      { data: encode("ResolverError", [encode("InvalidGameTypeBitMask", [])]) },
+      {},
+    );
+
+    assert.include(error, { _tag: "GatewayError", code: "GATEWAY_RESPONSE_INVALID" });
+    assert.isFalse(error.retryable);
+    assert.isDefined(error.hint);
+    assert.strictEqual(encode("InvalidGameTypeBitMask", []), "0xeb57ceb9");
   });
 
   it.each(["TransferUnsafeWithMultipleAssignees", "TransferUnsafeUntilRegistryIsEmancipated"])(

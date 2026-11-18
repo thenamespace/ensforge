@@ -6,7 +6,7 @@ import { Actions } from "@ensforge/sdk/effect";
 import { expectFailure, expectRejection, noRpc, scriptedTransport } from "@ensforge/test-harness";
 import { createClient, createPublicClient, createWalletClient, type Chain } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
-import { mainnet, sepolia } from "viem/chains";
+import { base, mainnet, optimism, sepolia } from "viem/chains";
 
 const signer = privateKeyToAccount(`0x${"11".repeat(32)}`);
 
@@ -117,6 +117,30 @@ describe("write signer resolution", () => {
         calls.map((call) => call.method),
         ["eth_chainId"],
       );
+    }),
+  );
+
+  it.effect("checks a plan for one of the client's chains against that chain's wallet", () =>
+    Effect.gen(function* () {
+      const { transport } = scriptedTransport(noRpc);
+      const ens = Ensforge.create({
+        publicClient: publicClient(mainnet).client,
+        walletClient: createWalletClient({ chain: mainnet, transport, account: signer }),
+        chains: {
+          [optimism.id]: {
+            publicClient: publicClient(optimism).client,
+            walletClient: createWalletClient({ chain: base, transport, account: signer }),
+          },
+        },
+      });
+
+      const error = yield* expectFailure(Actions.plan.send(ens, { plan: emptyPlan(optimism.id) }), {
+        _tag: "WalletError",
+        code: "CHAIN_MISMATCH",
+      });
+
+      assert.strictEqual(error.expectedChainId, optimism.id);
+      assert.strictEqual(error.actualChainId, base.id);
     }),
   );
 

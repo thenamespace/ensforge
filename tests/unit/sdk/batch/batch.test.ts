@@ -36,7 +36,11 @@ const clientFor = (options: Omit<CreateOptions, "publicClient"> = {}) => {
       if (args[1] === reverting) {
         return {
           success: false,
-          returnData: encodeErrorResult({ abi: Abis.shared.errors, errorName: "Unauthorised" }),
+          returnData: encodeErrorResult({
+            abi: Abis.shared.errors,
+            errorName: "OwnableUnauthorizedAccount",
+            args: [owner],
+          }),
         };
       }
       return {

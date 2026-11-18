@@ -109,6 +109,21 @@ describe("Ensforge.create deployment resolution", () => {
   });
 });
 
+describe("Ensforge.create chains", () => {
+  it("rejects clients of another chain than their key with CHAIN_NOT_CONFIGURED", () => {
+    const error = expectThrow(
+      () =>
+        Ensforge.create({
+          publicClient: publicClient().client,
+          chains: { 10: { publicClient: publicClient(sepolia).client } },
+        }),
+      { _tag: "ConfigError", code: "CHAIN_NOT_CONFIGURED" },
+    ) as { readonly context: { readonly chainId?: number } };
+
+    assert.strictEqual(error.context.chainId, 10);
+  });
+});
+
 describe("Ensforge.create config", () => {
   it("fills every default", () => {
     const { client } = publicClient();

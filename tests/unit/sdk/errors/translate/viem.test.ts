@@ -30,7 +30,11 @@ import { mainnet } from "viem/chains";
 
 const url = "https://rpc.test";
 const contract = getAddress("0x00000000000000000000000000000000000000c3");
-const notOwner = encodeErrorResult({ abi: Abis.shared.errors, errorName: "Unauthorised" });
+const notOwner = encodeErrorResult({
+  abi: Abis.shared.errors,
+  errorName: "OwnableUnauthorizedAccount",
+  args: [contract],
+});
 
 /** An error that viem does not export from its entry point, matched by name like any other. */
 const named = (name: string, fields: object = {}) =>
@@ -110,7 +114,7 @@ describe("fromViemError contract errors", () => {
       operation: "record.set",
       contract,
       functionName: "setText",
-      revert: { errorName: "Unauthorised", data: notOwner },
+      revert: { errorName: "OwnableUnauthorizedAccount", data: notOwner },
     });
   });
 

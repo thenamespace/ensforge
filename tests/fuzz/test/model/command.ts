@@ -81,7 +81,7 @@ export const send = <Options>(
   context: Context,
   actor: ActorName,
   write: WriteAction<Options>,
-  sync: SyncAction<NoInfer<Options>>,
+  sync: SyncAction<Options>,
   options: NoInfer<Options>,
   expected: Expectation,
 ): Effect.Effect<Outcome, SequenceFailure, Chain | Devnet> =>

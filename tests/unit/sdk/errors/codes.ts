@@ -17,6 +17,7 @@ export const errorsByCode: { readonly [code in Code]: () => AnyError } = {
   INDEXER_NOT_CONFIGURED: () => new Classes.ConfigError({ code: "INDEXER_NOT_CONFIGURED" }),
   CCIP_READ_DISABLED: () => new Classes.ConfigError({ code: "CCIP_READ_DISABLED" }),
   INVALID_ACTION_GROUP: () => new Classes.ConfigError({ code: "INVALID_ACTION_GROUP" }),
+  CHAIN_NOT_CONFIGURED: () => new Classes.ConfigError({ code: "CHAIN_NOT_CONFIGURED" }),
   CONTRACT_REVERTED: () => new Classes.ContractRevertError({ code: "CONTRACT_REVERTED" }),
   DNS_RECORD_MISSING: () => new Classes.DnsError({ code: "DNS_RECORD_MISSING" }),
   DNS_OWNER_MISMATCH: () => new Classes.DnsError({ code: "DNS_OWNER_MISMATCH" }),
@@ -90,6 +91,8 @@ export const errorsByCode: { readonly [code in Code]: () => AnyError } = {
   NOT_APPROVED: () => new Classes.UnauthorizedError({ code: "NOT_APPROVED" }),
   FUSE_BURNED: () => new Classes.UnauthorizedError({ code: "FUSE_BURNED" }),
   TRANSFER_DISALLOWED: () => new Classes.UnauthorizedError({ code: "TRANSFER_DISALLOWED" }),
+  SIGNATURE_INVALID: () => new Classes.UnauthorizedError({ code: "SIGNATURE_INVALID" }),
+  SIGNATURE_EXPIRED: () => new Classes.UnauthorizedError({ code: "SIGNATURE_EXPIRED" }),
   UNSUPPORTED_PROTOCOL: () => new Classes.UnsupportedError({ code: "UNSUPPORTED_PROTOCOL" }),
   UNSUPPORTED_ON_DEPLOYMENT: () =>
     new Classes.UnsupportedError({ code: "UNSUPPORTED_ON_DEPLOYMENT" }),
