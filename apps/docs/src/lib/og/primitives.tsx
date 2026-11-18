@@ -29,9 +29,7 @@ export const marks: Record<Accent, { glyph: string; outline?: string }> = {
 
 export const INK = "#fafafa";
 export const MUTED = "#a1a1aa";
-export const SUBTLE = "#71717a";
 export const FAINT = "#52525b";
-export const RULE = "#27272a";
 export const PANEL = "#111113";
 export const BG = "#09090b";
 

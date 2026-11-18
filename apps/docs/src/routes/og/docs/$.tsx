@@ -3,44 +3,42 @@ import { createFileRoute } from "@tanstack/react-router";
 import { ogResponse } from "@/lib/og/render";
 import { accents, type Accent, type DocsCard, DocsImage } from "@/lib/og/templates";
 import { getPackage } from "@/lib/packages";
+import { site } from "@/lib/site";
 import { source } from "@/lib/source";
 
 const isAccent = (value: string): value is Accent => Object.hasOwn(accents, value);
 
-/** How a docs page is labelled: its package and accent, and what kind of page it is. */
+/**
+ * How a docs page is labelled: its package and accent, what kind of page it is, and its title. A
+ * package's index page takes the package's name as its title, so the four read apart.
+ */
 function docsCard(slugs: readonly string[], title: string): DocsCard {
   const [first, second] = slugs;
-  const identifier = !/\s/.test(title);
+  // API names and error codes (`batch`, `record.get`, `ConfigError`, `UNKNOWN_CHAIN`), not plain
+  // words such as "React" or "Deployments".
+  const identifier = !/\s/.test(title) && /^[a-z]|[._]|[a-z][A-Z]/.test(title);
 
   if (first !== "reference") {
     const pkg = getPackage(first);
     if (!pkg || !isAccent(pkg.slug))
-      return { accent: "kit", section: "Docs", kind: "Guide", label: "docs", code: false };
+      return { accent: "kit", section: "Docs", kind: "Guide", code: false, title };
+    if (slugs.length === 1) {
+      const name = pkg.slug === "sdk" ? `${site.name} SDK` : pkg.name;
+      return { accent: pkg.slug, section: pkg.name, kind: title, code: false, title: name };
+    }
 
-    return {
-      accent: pkg.slug,
-      section: pkg.name,
-      kind: slugs.length === 1 ? "Overview" : "Guide",
-      label: pkg.npm,
-      code: false,
-    };
+    return { accent: pkg.slug, section: pkg.name, kind: "Guide", code: false, title };
   }
   if (second === "errors") {
     const kind = /^[A-Z0-9_]+$/.test(title) ? "Error code" : "Error reference";
-    return { accent: "kit", section: "Errors", kind, label: "reference", code: identifier };
+    return { accent: "kit", section: "Errors", kind, code: identifier, title };
   }
 
   const pkg = getPackage(second);
   if (pkg && isAccent(pkg.slug))
-    return {
-      accent: pkg.slug,
-      section: pkg.name,
-      kind: "API reference",
-      label: pkg.npm,
-      code: identifier,
-    };
+    return { accent: pkg.slug, section: pkg.name, kind: "API reference", code: identifier, title };
 
-  return { accent: "kit", section: "Docs", kind: "Reference", label: "reference", code: false };
+  return { accent: "kit", section: "Docs", kind: "Reference", code: false, title };
 }
 
 export const Route = createFileRoute("/og/docs/$")({
@@ -55,9 +53,7 @@ export const Route = createFileRoute("/og/docs/$")({
         return ogResponse(
           <DocsImage
             card={docsCard(page.slugs, page.data.title)}
-            title={page.data.title}
             description={page.data.description}
-            path={page.url}
           />,
         );
       },

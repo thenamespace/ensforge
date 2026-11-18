@@ -2,6 +2,7 @@ import { site } from "@/lib/site";
 
 import { PackageTiles, PlateStack } from "./art";
 import { Description, Frame, Slash, Title } from "./frame";
+import { HomeImage } from "./home";
 import { type Accent, accents } from "./primitives";
 
 /**
@@ -11,53 +12,13 @@ import { type Accent, accents } from "./primitives";
 
 export { OG, accents, type Accent } from "./primitives";
 
-const host = new URL(site.url).host;
-
-/** The page's address for the footer; middle segments give way to "…" when it would not fit. */
-function address(path: string) {
-  const segments = path.split("/").filter(Boolean);
-  let shown = [host, ...segments].join("/");
-
-  for (let keep = segments.length - 2; shown.length > 72 && keep >= 1; keep--)
-    shown = [host, segments[0], "…", ...segments.slice(-keep)].join("/");
-
-  return shown;
-}
-
-const install = "npm i @ensforge/sdk";
-
 export function SiteImage({ page }: { page: "home" | "blog" }) {
-  if (page === "blog") {
-    return (
-      <Frame
-        label={{ accent: "kit", text: "blog" }}
-        eyebrow={<span style={{ color: accents.kit }}>Blog</span>}
-        path={address("/blog")}
-        note={install}
-        art={<PackageTiles />}
-      >
-        <Title text={`${site.name} blog`} />
-        <Description>Release notes, guides and engineering notes from {site.name}.</Description>
-      </Frame>
-    );
-  }
+  if (page === "home") return <HomeImage />;
 
   return (
-    <Frame
-      label={{ accent: "sdk", text: "@ensforge/sdk" }}
-      eyebrow={
-        <>
-          <span style={{ color: accents.kit }}>TypeScript</span>
-          <Slash />
-          Built on viem
-        </>
-      }
-      path={host}
-      note={install}
-      art={<PackageTiles />}
-    >
-      <Title text={`${site.tagline}.`} size={88} />
-      <Description>Read, write and register any name in TypeScript.</Description>
+    <Frame eyebrow={<span style={{ color: accents.kit }}>Blog</span>} art={<PackageTiles />}>
+      <Title text={`${site.name} blog`} />
+      <Description>Release notes, guides and engineering notes from {site.name}.</Description>
     </Frame>
   );
 }
@@ -68,26 +29,20 @@ export interface DocsCard {
   readonly section: string;
   /** What kind of page this is, e.g. "Guide" or "API reference". */
   readonly kind: string;
-  /** Header label: the package's npm name, or "docs". */
-  readonly label: string;
+  readonly title: string;
   /** Set the title in mono: API names and error codes. */
   readonly code: boolean;
 }
 
 export function DocsImage({
   card,
-  title,
   description,
-  path,
 }: {
   card: DocsCard;
-  title: string;
   description: string | undefined;
-  path: string;
 }) {
   return (
     <Frame
-      label={{ accent: card.accent, text: card.label }}
       eyebrow={
         <>
           <span style={{ color: accents[card.accent] }}>{card.section}</span>
@@ -95,11 +50,9 @@ export function DocsImage({
           {card.kind}
         </>
       }
-      path={address(path)}
-      note="Documentation"
       art={<PlateStack accent={card.accent} />}
     >
-      <Title text={title} code={card.code} />
+      <Title text={card.title} code={card.code} />
       {description ? <Description>{description}</Description> : null}
     </Frame>
   );
@@ -111,18 +64,15 @@ export function BlogImage({
   date,
   title,
   byline,
-  path,
 }: {
   accent: Accent;
   category: string;
   date: string;
   title: string;
   byline: string;
-  path: string;
 }) {
   return (
     <Frame
-      label={{ accent: "kit", text: "blog" }}
       eyebrow={
         <>
           <span style={{ color: accents[accent] }}>{category}</span>
@@ -130,8 +80,6 @@ export function BlogImage({
           {date}
         </>
       }
-      path={address(path)}
-      note="Blog"
       art={<PlateStack accent={accent} />}
     >
       <Title text={title} />

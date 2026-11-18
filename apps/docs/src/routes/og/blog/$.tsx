@@ -27,7 +27,6 @@ export const Route = createFileRoute("/og/blog/$")({
             date={formatShortDate(data.published)}
             title={data.title}
             byline={`By ${names.join(", ")}`}
-            path={page.url}
           />,
         );
       },
