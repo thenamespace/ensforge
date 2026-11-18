@@ -80,6 +80,7 @@ export declare namespace getDelegate {
 /** Builds a deferred read for `Actions.batch`. */
 getDelegate.request = Action.request(
   "approval.getDelegate",
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Action.Declared narrows errors to the documented @throws
   Impl.getDelegate as Action.Declared<typeof Impl.getDelegate, getDelegate.ErrorType>,
 );
 

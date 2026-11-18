@@ -93,6 +93,7 @@ export declare namespace getRenewalPrice {
 /** Builds a deferred read for `Actions.batch`. */
 getRenewalPrice.request = Action.request(
   "registration.getRenewalPrice",
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Action.Declared narrows errors to the documented @throws
   Impl.getRenewalPrice as Action.Declared<typeof Impl.getRenewalPrice, getRenewalPrice.ErrorType>,
 );
 

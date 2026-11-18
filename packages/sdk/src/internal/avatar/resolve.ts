@@ -12,11 +12,13 @@ import { toHttpUrl } from "./uri.js";
 
 const fetchJson = (url: string, timeout: number): Effect.Effect<unknown, AnyError> =>
   Effect.tryPromise({
+    // oxlint-disable-next-line effecttsgo/async-function -- the avatar gateway is read with the global `fetch`; the SDK has no HttpClient dependency
     try: async () => {
+      // oxlint-disable-next-line effecttsgo/global-fetch-in-effect -- see above
       const response = await fetch(url, { signal: AbortSignal.timeout(timeout) });
       if (!response.ok)
         throw new GatewayError({ code: "GATEWAY_REQUEST_FAILED", status: response.status, url });
-      return (await response.json()) as unknown;
+      return await response.json();
     },
     catch: (cause) =>
       cause instanceof GatewayError
@@ -85,6 +87,7 @@ export const resolveAvatar = Effect.fnUntraced(function* (
   const metadataUrl = toHttpUrl(fillTokenId(uri, nft.tokenId), options.gateways);
   if (metadataUrl === undefined) return null;
 
-  const image = imageFromMetadata(yield* fetchJson(metadataUrl, options.timeout));
+  const metadata = yield* fetchJson(metadataUrl, options.timeout);
+  const image = imageFromMetadata(metadata);
   return image === undefined ? null : (toHttpUrl(image, options.gateways) ?? null);
 });

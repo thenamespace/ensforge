@@ -1,4 +1,4 @@
-import { Effect } from "effect";
+import { Effect, Array as Arr } from "effect";
 
 import { Abis } from "@ensforge/contracts";
 import {
@@ -39,11 +39,14 @@ export const registeredNames = Effect.fnUntraced(function* (
   { readonly names: readonly RegisteredName[]; readonly paid: bigint },
   AnyError
 > {
-  const logs = parseEventLogs({
-    abi: Abis.v2.ethRegistrar,
-    eventName: "NameRegistered",
-    logs: options.receipts.flatMap((receipt) => receipt.logs),
-  }).filter((log) => isAddressEqual(log.address, options.registrar));
+  const logs = Arr.filter(
+    parseEventLogs({
+      abi: Abis.v2.ethRegistrar,
+      eventName: "NameRegistered",
+      logs: Arr.flatMap(options.receipts, (receipt) => receipt.logs),
+    }),
+    (log) => isAddressEqual(log.address, options.registrar),
+  );
 
   const names = yield* Effect.forEach(
     logs,
@@ -62,7 +65,7 @@ export const registeredNames = Effect.fnUntraced(function* (
       ),
     { concurrency: "unbounded" },
   );
-  const paid = logs.reduce((sum, log) => sum + log.args.base + log.args.premium, 0n);
+  const paid = Arr.reduce(logs, 0n, (sum, log) => sum + log.args.base + log.args.premium);
   return { names, paid };
 });
 
@@ -80,11 +83,12 @@ export const renewedNames = Effect.fnUntraced(function* (
     readonly baseRegistrar: Address | undefined;
   },
 ): Effect.fn.Return<{ readonly names: readonly RenewedName[]; readonly paid: bigint }, AnyError> {
-  const logs = parseEventLogs({
-    abi: Abis.v2.ethRegistrar,
-    eventName: "NameRenewed",
-    logs: options.receipts.flatMap((receipt) => receipt.logs),
-  }).filter(
+  const logs = Arr.filter(
+    parseEventLogs({
+      abi: Abis.v2.ethRegistrar,
+      eventName: "NameRenewed",
+      logs: Arr.flatMap(options.receipts, (receipt) => receipt.logs),
+    }),
     (log) =>
       isAddressEqual(log.address, options.registrar) ||
       isAddressEqual(log.address, options.renewer),
@@ -107,5 +111,5 @@ export const renewedNames = Effect.fnUntraced(function* (
     },
     { concurrency: "unbounded" },
   );
-  return { names, paid: logs.reduce((sum, log) => sum + log.args.amount, 0n) };
+  return { names, paid: Arr.reduce(logs, 0n, (sum, log) => sum + log.args.amount) };
 });

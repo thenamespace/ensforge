@@ -2,7 +2,7 @@
 /**
  * An action with its client argument bound: `ens.record.getText(options)`.
  *
- * @stability unstable
+ * @stability stable
  */
 export type Bound<action extends (client: never, options: never) => unknown> = (
   ...options: Parameters<action> extends readonly [unknown, ...infer rest] ? rest : never
@@ -11,7 +11,7 @@ export type Bound<action extends (client: never, options: never) => unknown> = (
 /**
  * A write action bound to a client, including `.prepare`, `.simulate` and `.estimateGas`.
  *
- * @stability unstable
+ * @stability stable
  */
 export type BoundWrite<
   action extends ((client: never, options: never) => unknown) & {

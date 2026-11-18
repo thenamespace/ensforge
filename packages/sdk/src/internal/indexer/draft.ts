@@ -1,4 +1,5 @@
-import { Effect, Predicate } from "effect";
+/* oxlint-disable typescript/no-unsafe-type-assertion -- adapter methods are looked up by name at runtime, so their query and result types are erased */
+import { Effect, Predicate, Array as Arr } from "effect";
 
 import { IndexerError } from "../../errors/classes/IndexerError.js";
 import { isEnsforgeError } from "../../errors/guards.js";
@@ -44,7 +45,7 @@ export const complete = <method extends Method>(
       : invalid(`${id}.${method} answered null.`);
   }
   if (!Predicate.isObject(draft)) return invalid(`${id}.${method} did not answer an object.`);
-  if ("items" in draft && !Array.isArray(draft.items)) {
+  if ("items" in draft && !Arr.isArray(draft.items)) {
     return invalid(`${id}.${method} answered a page without an items array.`);
   }
 

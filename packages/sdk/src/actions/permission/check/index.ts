@@ -79,6 +79,7 @@ export declare namespace check {
 /** Builds a deferred read for `Actions.batch`. */
 check.request = Action.request(
   "permission.check",
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Action.Declared narrows errors to the documented @throws
   Impl.check as Action.Declared<typeof Impl.check, check.ErrorType>,
 );
 

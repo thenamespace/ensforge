@@ -1,3 +1,5 @@
+import { Array as Arr, Record as Rec } from "effect";
+
 import { Deployments } from "@ensforge/contracts";
 
 import { ConfigError } from "../errors/classes/ConfigError.js";
@@ -33,15 +35,18 @@ const resolveDeployment = (
 };
 
 const resolveWallet = ({ walletClient, publicClient }: ChainClients): State["getWalletClient"] => {
+  // `getWalletClient` is a Promise boundary: a wallet can connect after the client is created.
+  /* oxlint-disable effecttsgo/async-function */
   if (typeof walletClient === "function") return async () => walletClient();
   if (walletClient !== undefined) return async () => walletClient;
   if (publicClient.account !== undefined) return async () => publicClient;
   return async () => undefined;
+  /* oxlint-enable effecttsgo/async-function */
 };
 
 const resolveChains = (options: CreateOptions): State["chains"] =>
   new Map(
-    Object.entries(options.chains ?? {}).map(([key, clients]) => {
+    Arr.map(Rec.toEntries(options.chains ?? {}), ([key, clients]) => {
       const chainId = Number(key);
       const actual = clients.publicClient.chain?.id;
       if (actual !== undefined && actual !== chainId) {

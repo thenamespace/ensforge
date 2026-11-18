@@ -52,12 +52,15 @@ export const plan = Effect.fnUntraced(function* (
   const owner =
     options.owner === undefined ? deployer : yield* requireAddress(options.owner, "owner");
   // The owner's grant is added by `deployPermissionedResolver`.
-  const grants = yield* Effect.forEach(options.grants ?? [], (grant) =>
-    Effect.gen(function* () {
-      const account = yield* requireAddress(grant.account, "grants.account");
-      const roleBitmap = yield* roleBitmapOf(grant.roles);
-      return { account, roleBitmap };
-    }),
+  const grants = yield* Effect.forEach(
+    options.grants ?? [],
+    (grant) =>
+      Effect.gen(function* () {
+        const account = yield* requireAddress(grant.account, "grants.account");
+        const roleBitmap = yield* roleBitmapOf(grant.roles);
+        return { account, roleBitmap };
+      }),
+    { concurrency: 1 },
   );
   const parts = options.name === undefined ? undefined : yield* parseName(options.name);
   const deployment = yield* deployPermissionedResolver(client, {
@@ -121,6 +124,7 @@ const write = Action.write(
 
 const withResolver = <result extends Write.Result>(result: result) => ({
   ...result,
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- the collection is known to be non-empty or the index in range here; `noUncheckedIndexedAccess` cannot see it
   resolver: (result.plan.deploys[0] as Plan.Deployment).address,
 });
 

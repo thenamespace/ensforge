@@ -1,3 +1,5 @@
+import { String as Str } from "effect";
+
 import type { Config } from "../../client/types.js";
 
 // CIDv0 (Qm…, 46 chars) or CIDv1 (base32 bafy…/bafk…) without a scheme.
@@ -9,7 +11,7 @@ const bareCid = /^(Qm[1-9A-HJ-NP-Za-km-z]{44}|b[a-z2-7]{58,})(\/.*)?$/;
  * for anything else.
  */
 export const toHttpUrl = (uri: string, gateways: Config["gateways"]): string | undefined => {
-  const value = uri.trim();
+  const value = Str.trim(uri);
   const { ipfs, arweave: arweaveGateway } = gateways;
 
   if (/^(https?:|data:)/i.test(value)) return value;

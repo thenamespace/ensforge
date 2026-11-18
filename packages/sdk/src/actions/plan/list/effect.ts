@@ -1,4 +1,4 @@
-import { Effect } from "effect";
+import { Effect, Array as Arr } from "effect";
 
 import type { Client } from "../../../client/types.js";
 import type { AnyError } from "../../../errors/types.js";
@@ -18,7 +18,8 @@ export const list = Effect.fn("ensforge.plan.list")(function* (
     options.account === undefined ? undefined : yield* requireAddress(options.account, "account");
   const records = yield* fromPromise(() => client.config.storage.list());
 
-  const matching = records.filter(
+  const matching = Arr.filter(
+    records,
     (record) =>
       hasChain(client, record.plan.chainId) &&
       (options.status === undefined || record.status === options.status) &&

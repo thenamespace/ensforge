@@ -72,6 +72,7 @@ export declare namespace getResolvers {
 /** Builds a deferred read for `Actions.batch`. */
 getResolvers.request = Action.request(
   "indexer.getResolvers",
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Action.Declared narrows errors to the documented @throws
   Impl.getResolvers as Action.Declared<typeof Impl.getResolvers, getResolvers.ErrorType>,
 );
 

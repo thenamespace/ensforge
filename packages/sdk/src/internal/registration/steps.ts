@@ -1,4 +1,4 @@
-import { Effect } from "effect";
+import { Effect, Array as Arr } from "effect";
 
 import { Abis } from "@ensforge/contracts";
 import { encodeFunctionData } from "viem";
@@ -30,7 +30,7 @@ export const pendingCommitments = (
       );
     }
   }
-  return Effect.succeed(registration.names.filter((name) => name.committedAt === 0n));
+  return Effect.succeed(Arr.filter(registration.names, (name) => name.committedAt === 0n));
 };
 
 /** The `commit` call of one name. */

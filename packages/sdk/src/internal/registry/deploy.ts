@@ -1,4 +1,4 @@
-import { Effect } from "effect";
+import { Effect, Array as Arr, Record as Rec } from "effect";
 
 import { Abis, Roles } from "@ensforge/contracts";
 import { encodeFunctionData, isAddressEqual, type Address } from "viem";
@@ -10,9 +10,8 @@ import type { Plan } from "../../plan/Plan.js";
 import { deployProxy } from "../factory/verifiable-proxy.js";
 
 // Every registry role and admin role, except the `wasReserved` marker the registry sets itself.
-const allRegistryRoles = Object.entries(Roles.registry).reduce(
-  (bitmap, [name, role]) => (name === "wasReserved" ? bitmap : bitmap | role),
-  0n,
+const allRegistryRoles = Arr.reduce(Rec.toEntries(Roles.registry), 0n, (bitmap, [name, role]) =>
+  name === "wasReserved" ? bitmap : bitmap | role,
 );
 
 /**
@@ -42,9 +41,7 @@ export const deployUserRegistry = Effect.fnUntraced(function* (
   }
 
   const roleBitmap = rootRoles(options.emancipated);
-  const owners = options.owners.filter(
-    (owner, index) => options.owners.findIndex((other) => isAddressEqual(other, owner)) === index,
-  );
+  const owners = Arr.dedupeWith(options.owners, isAddressEqual);
   return yield* deployProxy(client, {
     factory: v2.contracts.verifiableFactory,
     implementation: v2.implementations.userRegistry,
@@ -53,7 +50,9 @@ export const deployUserRegistry = Effect.fnUntraced(function* (
     data: encodeFunctionData({
       abi: Abis.v2.userRegistry,
       functionName: "initialize",
-      args: [[...owners.map((account) => ({ account, roleBitmap })), ...(options.grants ?? [])]],
+      args: [
+        [...Arr.map(owners, (account) => ({ account, roleBitmap })), ...(options.grants ?? [])],
+      ],
     }),
   });
 });

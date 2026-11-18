@@ -76,6 +76,7 @@ export declare namespace getEvents {
 /** Builds a deferred read for `Actions.batch`. */
 getEvents.request = Action.request(
   "indexer.getEvents",
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Action.Declared narrows errors to the documented @throws
   Impl.getEvents as Action.Declared<typeof Impl.getEvents, getEvents.ErrorType>,
 );
 

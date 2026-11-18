@@ -1,3 +1,5 @@
+import { Array as Arr, String as Str } from "effect";
+
 import { PlanError } from "../errors/classes/PlanError.js";
 import { make } from "./make.js";
 import type { Plan } from "./Plan.js";
@@ -25,21 +27,29 @@ import type { Plan } from "./Plan.js";
 export const merge = (plans: readonly [Plan, ...Plan[]]): Plan => {
   const [first] = plans;
 
-  if (plans.some((plan) => plan.chainId !== first.chainId))
+  if (!Arr.every(plans, (plan) => plan.chainId === first.chainId))
     throw new PlanError({ code: "PLAN_CHAIN_MISMATCH" });
-  if (plans.some((plan) => plan.account?.toLowerCase() !== first.account?.toLowerCase())) {
+  if (
+    !Arr.every(
+      plans,
+      (plan) => Str.toLowerCase(plan.account ?? "") === Str.toLowerCase(first.account ?? ""),
+    )
+  ) {
     throw new PlanError({ code: "PLAN_ACCOUNT_MISMATCH" });
   }
 
   return make({
-    operation: plans.map((plan) => plan.operation).join("+"),
+    operation: Arr.join(
+      Arr.map(plans, (plan) => plan.operation),
+      "+",
+    ),
     chainId: first.chainId,
     account: first.account,
-    steps: plans.flatMap((plan, index) =>
-      plan.steps.map((step) => ({ ...step, id: `${index}.${step.id}` })),
+    steps: Arr.flatMap(plans, (plan, index) =>
+      Arr.map(plan.steps, (step) => ({ ...step, id: `${index}.${step.id}` })),
     ),
-    requirements: plans.flatMap((plan) => plan.requirements),
-    warnings: plans.flatMap((plan) => plan.warnings),
-    deploys: plans.flatMap((plan) => plan.deploys),
+    requirements: Arr.flatMap(plans, (plan) => plan.requirements),
+    warnings: Arr.flatMap(plans, (plan) => plan.warnings),
+    deploys: Arr.flatMap(plans, (plan) => plan.deploys),
   });
 };

@@ -77,6 +77,7 @@ export declare namespace getPrimaryName {
 /** Builds a deferred read for `Actions.batch`. */
 getPrimaryName.request = Action.request(
   "indexer.getPrimaryName",
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Action.Declared narrows errors to the documented @throws
   Impl.getPrimaryName as Action.Declared<typeof Impl.getPrimaryName, getPrimaryName.ErrorType>,
 );
 

@@ -1,10 +1,11 @@
-import { Effect } from "effect";
+import { Effect, String as Str } from "effect";
 
 import type { Address } from "viem";
 
 import { InvalidInputError } from "../../errors/classes/InvalidInputError.js";
 import type { AnyError } from "../../errors/types.js";
 import * as CoinType from "../../utils/CoinType.js";
+import { toAnyError } from "../anyError.js";
 import { defaultEvmCoinType } from "../records/read-profiles.js";
 
 /** Ethereum mainnet's coin type, whose reverse names live under `addr.reverse`. */
@@ -15,6 +16,7 @@ export const ethCoinType = 60n;
  * (ENSIP-19). Non-EVM coins have no address-keyed reverse name.
  */
 export const primaryNameCoinType = (
+  // oxlint-disable-next-line typescript/no-redundant-type-constituents -- the literal or explicit type argument documents the public type
   coin: CoinType.Input | "default" | undefined,
 ): Effect.Effect<bigint, AnyError> =>
   Effect.try({
@@ -34,12 +36,12 @@ export const primaryNameCoinType = (
       }
       return coinType;
     },
-    catch: (error) => error as AnyError,
+    catch: toAnyError,
   });
 
 /** ENSIP-19 reverse name of an address for an EVM coin type. */
 export const reverseName = (address: Address, coinType: bigint): string => {
-  const label = address.slice(2).toLowerCase();
+  const label = Str.toLowerCase(Str.slice(2)(address));
   if (coinType === ethCoinType) return `${label}.addr.reverse`;
   if (coinType === defaultEvmCoinType) return `${label}.default.reverse`;
   return `${label}.${coinType.toString(16)}.reverse`;

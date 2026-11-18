@@ -1,4 +1,4 @@
-import { Effect } from "effect";
+import { Effect, Array as Arr, String as Str } from "effect";
 
 import { Abis } from "@ensforge/contracts";
 
@@ -69,11 +69,16 @@ export const discoverSubnames = Effect.fnUntraced(function* (
       }
 
       // Lists can include children that no longer exist (unregistered in the ENSv1 registry).
-      const live = page.items.filter((child) => child.status === "active" || child.status === null);
+      const live = Arr.filter(
+        page.items,
+        (child) => child.status === "active" || child.status === null,
+      );
       const known = yield* Effect.forEach(
         live,
         (child) =>
-          child.name.includes("[") ? wrappedName(client, child.name) : Effect.succeed(child.name),
+          Str.includes("[")(child.name)
+            ? wrappedName(client, child.name)
+            : Effect.succeed(child.name),
         { concurrency: "unbounded" },
       );
       for (const [index, child] of live.entries()) {

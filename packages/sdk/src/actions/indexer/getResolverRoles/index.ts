@@ -75,6 +75,7 @@ export declare namespace getResolverRoles {
 /** Builds a deferred read for `Actions.batch`. */
 getResolverRoles.request = Action.request(
   "indexer.getResolverRoles",
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Action.Declared narrows errors to the documented @throws
   Impl.getResolverRoles as Action.Declared<
     typeof Impl.getResolverRoles,
     getResolverRoles.ErrorType

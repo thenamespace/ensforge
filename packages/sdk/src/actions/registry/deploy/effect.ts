@@ -33,12 +33,15 @@ export const plan = Effect.fnUntraced(function* (
 
   const owner =
     options.owner === undefined ? signer : yield* requireAddress(options.owner, "owner");
-  const grants = yield* Effect.forEach(options.grants ?? [], (grant) =>
-    Effect.gen(function* () {
-      const account = yield* requireAddress(grant.account, "grants.account");
-      const roleBitmap = yield* roleBitmapOf(grant.roles);
-      return { account, roleBitmap };
-    }),
+  const grants = yield* Effect.forEach(
+    options.grants ?? [],
+    (grant) =>
+      Effect.gen(function* () {
+        const account = yield* requireAddress(grant.account, "grants.account");
+        const roleBitmap = yield* roleBitmapOf(grant.roles);
+        return { account, roleBitmap };
+      }),
+    { concurrency: 1 },
   );
   const attachTo =
     options.attachTo === undefined ? undefined : yield* loadName(client, options.attachTo);
@@ -63,6 +66,7 @@ export const plan = Effect.fnUntraced(function* (
       id: "attach",
       description: "Attach registry",
       calls: attachCalls({
+        // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- a v2 or wrapped name's state always carries this field; `Name.State` types it as nullable for every protocol
         parentRegistry: attachTo.state.registry as Address,
         tokenId: attachTo.state.tokenId ?? hexToBigInt(attachTo.data.parts.labelhash),
         label: attachTo.data.parts.label,
@@ -85,6 +89,7 @@ const write = Action.write("registry.deploy", plan, { contractKind: "registry" }
 
 const withRegistry = <result extends Write.Result>(result: result) => ({
   ...result,
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- the collection is known to be non-empty or the index in range here; `noUncheckedIndexedAccess` cannot see it
   registry: (result.plan.deploys[0] as Plan.Deployment).address,
 });
 

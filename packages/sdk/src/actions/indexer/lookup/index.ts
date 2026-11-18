@@ -68,6 +68,7 @@ export declare namespace lookup {
 /** Builds a deferred read for `Actions.batch`. */
 lookup.request = Action.request(
   "indexer.lookup",
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Action.Declared narrows errors to the documented @throws
   Impl.lookup as Action.Declared<typeof Impl.lookup, lookup.ErrorType>,
 );
 

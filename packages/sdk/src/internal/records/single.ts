@@ -23,7 +23,7 @@ export const readSingleRecord = <value>(
   readRecords(client, options).pipe(
     Effect.flatMap((records) => {
       const value = pick(records);
-      return value === null && options.strict
+      return value === null && options.strict === true
         ? Effect.fail(new NotFoundError({ code: "RECORD_NOT_FOUND", resource: options.resource }))
         : Effect.succeed(value);
     }),

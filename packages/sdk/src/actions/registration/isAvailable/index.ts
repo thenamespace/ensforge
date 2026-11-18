@@ -72,6 +72,7 @@ export declare namespace isAvailable {
 /** Builds a deferred read for `Actions.batch`. */
 isAvailable.request = Action.request(
   "registration.isAvailable",
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Action.Declared narrows errors to the documented @throws
   Impl.isAvailable as Action.Declared<typeof Impl.isAvailable, isAvailable.ErrorType>,
 );
 

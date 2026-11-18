@@ -1,4 +1,4 @@
-import { Effect } from "effect";
+import { Effect, Array as Arr } from "effect";
 
 import { Abis } from "@ensforge/contracts";
 import { encodeFunctionData, isAddressEqual, type Address } from "viem";
@@ -80,7 +80,7 @@ export const claimPlan = Effect.fnUntraced(function* (
   options: ClaimOptions & Pick<Write.Options, "account">,
 ): Effect.fn.Return<Plan, AnyError> {
   const { claim, signature } = options;
-  const coinTypes = claim.chainIds.map(CoinType.fromChainId);
+  const coinTypes = Arr.map(claim.chainIds, CoinType.fromChainId);
 
   let chainId = claim.chainIds.length === 1 ? claim.chainIds[0] : undefined;
   if (options.coin !== undefined) {
@@ -93,7 +93,7 @@ export const claimPlan = Effect.fnUntraced(function* (
           input: options.coin,
           field: "coin",
           shortMessage: "The claim does not cover this chain.",
-          hint: `The claim covers chains ${claim.chainIds.join(", ")}; sign one that includes this chain.`,
+          hint: `The claim covers chains ${Arr.join(Arr.map(claim.chainIds, String), ", ")}; sign one that includes this chain.`,
         }),
       );
     }

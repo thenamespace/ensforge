@@ -68,6 +68,7 @@ export declare namespace getNamesForAddress {
       /** The address, all lowercase or checksummed. */
       address: string;
       /** Coin type for `relation: "resolvesTo"`, or `evm` for every EVM chain. @default 60 */
+      // oxlint-disable-next-line typescript/no-redundant-type-constituents -- the literal or explicit type argument documents the public type
       coin?: CoinType.Input | "evm" | undefined;
       /** Only direct children of this name. */
       parent?: string | undefined;
@@ -81,6 +82,7 @@ export declare namespace getNamesForAddress {
 /** Builds a deferred read for `Actions.batch`. */
 getNamesForAddress.request = Action.request(
   "indexer.getNamesForAddress",
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Action.Declared narrows errors to the documented @throws
   Impl.getNamesForAddress as Action.Declared<
     typeof Impl.getNamesForAddress,
     getNamesForAddress.ErrorType

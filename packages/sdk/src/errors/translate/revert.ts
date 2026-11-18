@@ -1,3 +1,6 @@
+/* oxlint-disable typescript/no-unsafe-type-assertion -- revert arguments are decoded against the error's signature, which TypeScript cannot see */
+import { String as Str } from "effect";
+
 import { Abis } from "@ensforge/contracts";
 import { decodeErrorResult, isHex, type Address, type Hex } from "viem";
 
@@ -55,8 +58,8 @@ export const fromRevert = (
 
   if (depth < maxDepth && errorName === "Error" && typeof args[0] === "string") {
     const message = args[0];
-    const inner = message.slice(wrappedErrorPrefix.length - 2);
-    if (message.startsWith(wrappedErrorPrefix) && isHex(inner) && inner.length % 2 === 0) {
+    const inner = Str.slice(wrappedErrorPrefix.length - 2)(message);
+    if (Str.startsWith(wrappedErrorPrefix)(message) && isHex(inner) && inner.length % 2 === 0) {
       return fromRevert({ data: inner }, context, depth + 1);
     }
     const required = requireMap[message];

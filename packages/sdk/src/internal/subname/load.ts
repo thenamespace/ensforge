@@ -1,10 +1,11 @@
-import { Effect } from "effect";
+import { Effect, String as Str } from "effect";
 
 import type { Client } from "../../client/types.js";
 import { InvalidInputError } from "../../errors/classes/InvalidInputError.js";
 import type { AnyError } from "../../errors/types.js";
 import { loadName, type LoadedName } from "../name/load.js";
 import { parseName } from "../name/normalize.js";
+import { parentOf } from "../name/parts.js";
 import { requireRegistered } from "../name/write.js";
 
 /**
@@ -30,9 +31,8 @@ export const loadSubname = Effect.fnUntraced(function* (
   name: string,
 ): Effect.fn.Return<LoadedSubname, AnyError> {
   const parts = yield* parseName(name);
-  const dot = parts.name.indexOf(".");
-  const parentName = dot === -1 ? "" : parts.name.slice(dot + 1);
-  if (parentName === "" || !parentName.includes(".")) {
+  const parentName = Str.includes(".")(parts.name) ? parentOf(parts.name) : "";
+  if (parentName === "" || !Str.includes(".")(parentName)) {
     return yield* Effect.fail(
       new InvalidInputError({
         code: "INVALID_NAME",

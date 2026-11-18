@@ -1,3 +1,5 @@
+import { Array as Arr, Record as Rec } from "effect";
+
 import { Roles } from "@ensforge/contracts";
 
 import { InvalidInputError } from "../errors/classes/InvalidInputError.js";
@@ -58,11 +60,11 @@ const bits: Readonly<Record<string, bigint>> = { ...registry, ...resolver };
  * @since 1.0.0
  */
 export const from = (names: readonly Name[]): bigint =>
-  names.reduce((bitmap, name) => {
+  Arr.reduce(names, 0n, (bitmap, name) => {
     const bit = bits[name];
     if (bit === undefined) throw new InvalidInputError({ code: "INVALID_ROLES", input: name });
     return bitmap | bit;
-  }, 0n);
+  });
 
 /**
  * Whether `bitmap` has every role in `names`.
@@ -87,9 +89,11 @@ export const has = (bitmap: bigint, names: Name | readonly Name[]): boolean => {
 export const toNames = (bitmap: bigint, target: Target): readonly Name[] => {
   const table: Readonly<Record<string, bigint>> = target === "registry" ? registry : resolver;
 
-  return Object.entries(table)
-    .filter(([, bit]) => (bitmap & bit) === bit)
-    .map(([name]) => name as Name);
+  return Arr.map(
+    Arr.filter(Rec.toEntries(table), ([, bit]) => (bitmap & bit) === bit),
+    // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- `table` is the registry or resolver role table, so its keys are role names
+    ([name]) => name as Name,
+  );
 };
 
 /**

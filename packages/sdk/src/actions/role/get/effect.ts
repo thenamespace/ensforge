@@ -1,4 +1,4 @@
-import { Effect } from "effect";
+import { Effect, Array as Arr, String as Str } from "effect";
 
 import { Abis } from "@ensforge/contracts";
 
@@ -43,8 +43,8 @@ export const get = Effect.fn("ensforge.role.get")(
       resource,
       roles,
       rootRoles: root,
-      names: names.filter((name) => !name.endsWith("Admin")),
-      admin: names.filter((name) => name.endsWith("Admin")),
+      names: Arr.filter(names, (name) => !Str.endsWith("Admin")(name)),
+      admin: Arr.filter(names, (name) => Str.endsWith("Admin")(name)),
     };
   },
   Action.withContext("role.get", { contractKind: "registry" }),

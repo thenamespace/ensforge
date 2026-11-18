@@ -1,4 +1,4 @@
-import { Effect } from "effect";
+import { Effect, Array as Arr, Record as Rec, Option } from "effect";
 
 import { Abis, InterfaceIds } from "@ensforge/contracts";
 import { isAddressEqual, type Address, type Hex } from "viem";
@@ -62,7 +62,8 @@ const knownKind = (client: Client, resolver: Address): ResolverKind | undefined 
     [v2?.contracts.ensV2Resolver, "ens-v2-resolver"],
     [v2?.contracts.publicResolver, "public-resolver-v2"],
     [v1?.contracts.publicResolver, "public-resolver"],
-    ...[...(v1?.legacyPublicResolvers ?? []), ...(v1?.frozenPublicResolvers ?? [])].map(
+    ...Arr.map(
+      [...(v1?.legacyPublicResolvers ?? []), ...(v1?.frozenPublicResolvers ?? [])],
       (address) => [address, "public-resolver"] as const,
     ),
     [v1?.contracts.offchainDnsResolver, "dns"],
@@ -71,7 +72,9 @@ const knownKind = (client: Client, resolver: Address): ResolverKind | undefined 
     [v2?.dns?.aliasResolver, "dns"],
     [v2?.dns?.txtResolver, "dns"],
   ];
-  return known.find(([address]) => address !== undefined && isAddressEqual(address, resolver))?.[1];
+  return Option.getOrUndefined(
+    Arr.findFirst(known, ([address]) => address !== undefined && isAddressEqual(address, resolver)),
+  )?.[1];
 };
 
 // A resolver that is not a contract (e.g. an EOA), or not ERC-165, answers nothing. `gas` bounds
@@ -129,8 +132,9 @@ export const describeResolver = Effect.fnUntraced(function* (
     Effect.all(
       {
         profiles: Effect.all(
-          Object.fromEntries(
-            Object.entries(profileIds).map(([profile, id]) => [profile, supports(id, gas)]),
+          // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- `Rec.fromEntries` widens the profile keys it was built from
+          Rec.fromEntries(
+            Arr.map(Rec.toEntries(profileIds), ([profile, id]) => [profile, supports(id, gas)]),
           ) as { readonly [profile in keyof ResolverProfiles]: Effect.Effect<boolean, AnyError> },
           { concurrency: "unbounded" },
         ),
@@ -179,7 +183,7 @@ export const describeResolver = Effect.fnUntraced(function* (
           : "custom");
 
   // Resolvers bound to the registry ENS replaced in 2020 can no longer be written.
-  const frozen = (client.deployment.v1?.frozenPublicResolvers ?? []).some((address) =>
+  const frozen = Arr.some(client.deployment.v1?.frozenPublicResolvers ?? [], (address) =>
     isAddressEqual(address, resolver),
   );
 

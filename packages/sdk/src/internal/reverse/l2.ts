@@ -1,4 +1,4 @@
-import { Effect } from "effect";
+import { Effect, Array as Arr } from "effect";
 
 import { Deployments } from "@ensforge/contracts";
 import type { Address } from "viem";
@@ -36,15 +36,19 @@ export const requireForwardMatch = Effect.fnUntraced(function* (
   coinTypes: readonly bigint[],
 ): Effect.fn.Return<void, AnyError> {
   const records = yield* readRecords(client, { name, selection: { addresses: coinTypes } });
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- the `addresses` selection yields an address or null per coin type
   const resolved = (records.addresses ?? {}) as Readonly<Record<string, Address | null>>;
-  const missing = coinTypes.filter((coinType) => !sameAddress(resolved[String(coinType)], address));
-  if (missing.length === 0) return;
+  const missing = Arr.filter(
+    coinTypes,
+    (coinType) => !sameAddress(resolved[String(coinType)], address),
+  );
+  if (missing.length === 0) return undefined;
 
   return yield* Effect.fail(
     new NotFoundError({
       code: "PRIMARY_NAME_MISMATCH",
       shortMessage: `${name} does not resolve to ${address} on every chain it would name it on.`,
-      details: [`Coin types without that address: ${missing.join(", ")}`],
+      details: [`Coin types without that address: ${Arr.join(Arr.map(missing, String), ", ")}`],
       hint: "Set the name's address for those chains (or its default EVM address) first, or pass `verify: false`.",
     }),
   );

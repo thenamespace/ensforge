@@ -1,3 +1,6 @@
+import { Array as Arr } from "effect";
+import { SecureRandom } from "effect/crypto";
+
 import type { Address } from "viem";
 
 import type { Plan } from "./Plan.js";
@@ -17,12 +20,12 @@ export const make = (options: {
   readonly warnings?: readonly Plan.Warning[] | undefined;
   readonly deploys?: readonly Plan.Deployment[] | undefined;
 }): Plan => ({
-  id: crypto.randomUUID(),
+  id: SecureRandom.uuidV4Unsafe(),
   operation: options.operation,
   chainId: options.chainId,
   account: options.account,
   steps: options.steps,
-  calls: options.steps.flatMap((step) => step.calls),
+  calls: Arr.flatMap(options.steps, (step) => step.calls),
   requirements: options.requirements ?? [],
   warnings: options.warnings ?? [],
   deploys: options.deploys ?? [],

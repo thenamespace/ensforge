@@ -88,6 +88,7 @@ export declare namespace getRecords {
 /** Builds a deferred read for `Actions.batch`. */
 getRecords.request = Action.request(
   "indexer.getRecords",
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Action.Declared narrows errors to the documented @throws
   Impl.getRecords as Action.Declared<typeof Impl.getRecords, getRecords.ErrorType>,
 );
 

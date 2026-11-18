@@ -1,4 +1,4 @@
-import { Effect } from "effect";
+import { Effect, Array as Arr } from "effect";
 
 import { Abis } from "@ensforge/contracts";
 import { hexToBigInt, type Address } from "viem";
@@ -219,7 +219,7 @@ const readReachesV1 = (
   }).pipe(
     Effect.map((found) => {
       const resolver = nonZeroAddress(found?.[0]);
-      return resolver !== null && serving.some((address) => sameAddress(address, resolver));
+      return resolver !== null && Arr.some(serving, (address) => sameAddress(address, resolver));
     }),
     Effect.catchIf(
       (error: AnyError) => error._tag === "ConfigError" && error.code === "CONTRACT_NOT_DEPLOYED",

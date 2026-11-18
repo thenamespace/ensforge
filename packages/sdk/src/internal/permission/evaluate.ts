@@ -1,3 +1,6 @@
+import { Array as Arr, Option } from "effect";
+import { absurd } from "effect/Function";
+
 import { Roles } from "@ensforge/contracts";
 import type { Address } from "viem";
 
@@ -86,6 +89,7 @@ const byRole = (
 /** ENSv2: roles on the registry holding the name; transfers follow the ERC-1155 rules. */
 const evaluateV2 = (facts: PermissionFacts, operation: NameOperation): PermissionCheck => {
   const { state, data } = facts.loaded;
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- a v2 or wrapped name's state always carries this field; `Name.State` types it as nullable for every protocol
   const registry = state.registry as Address;
   const resource = state.resource ?? 0n;
   const role = (name: keyof typeof Roles.registry): PermissionCheck =>
@@ -165,6 +169,8 @@ const evaluateV2 = (facts: PermissionFacts, operation: NameOperation): Permissio
         "unsupported",
         `ENSv2 names have no ${operation === "setTtl" ? "TTL" : "manager"}.`,
       );
+    default:
+      return absurd(operation);
   }
 };
 
@@ -229,6 +235,8 @@ const evaluateWrapped = (
     case "setManager":
     case "reclaim":
       return blocked("unsupported", "Wrapped ENSv1 names have no manager or subregistry.");
+    default:
+      return absurd(operation);
   }
 };
 
@@ -271,6 +279,8 @@ const evaluateUnwrapped = (
         : blocked("unsupported", "ENSv1 subnames do not expire.");
     case "setSubregistry":
       return blocked("unsupported", "ENSv1 names have no subregistry.");
+    default:
+      return absurd(operation);
   }
 };
 
@@ -393,6 +403,7 @@ export const evaluateSelfRemoval = (
       facts.v2.roles,
       Roles.registry.unregister,
       "unregister",
+      // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- a v2 or wrapped name's state always carries this field; `Name.State` types it as nullable for every protocol
       state.registry as Address,
       state.resource ?? 0n,
     );
@@ -410,9 +421,12 @@ export const evaluateSelfRemoval = (
     );
   }
   const fuses = data.v1?.wrapper.fuses ?? 0;
-  const burned = (
-    ["cannotUnwrap", "cannotTransfer", "cannotSetResolver", "cannotSetTtl"] as const
-  ).find((fuse) => Fuse.has(fuses, fuse));
+  const burned = Option.getOrUndefined(
+    Arr.findFirst(
+      ["cannotUnwrap", "cannotTransfer", "cannotSetResolver", "cannotSetTtl"] as const,
+      (fuse) => Fuse.has(fuses, fuse),
+    ),
+  );
   return burned !== undefined
     ? blocked("fuse", `The ${burned} fuse is burned.`, contracts.nameWrapper)
     : byOwner(

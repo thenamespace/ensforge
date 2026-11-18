@@ -1,4 +1,5 @@
 import { Effect } from "effect";
+import { absurd } from "effect/Function";
 
 import type { Deployments } from "@ensforge/contracts";
 import { getAddress, isAddress, type Account, type Address } from "viem";
@@ -30,6 +31,8 @@ export const requireRegistered = ({ state }: LoadedName): Effect.Effect<void, An
       return Effect.fail(new NameStateError({ code: "NAME_RESERVED" }));
     case "available":
       return Effect.fail(new NameStateError({ code: "NAME_NOT_REGISTERED" }));
+    default:
+      return absurd(state.status);
   }
 };
 

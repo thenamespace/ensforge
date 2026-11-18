@@ -1,4 +1,4 @@
-import { Effect } from "effect";
+import { Effect, Array as Arr } from "effect";
 
 import type { Client } from "../../../client/types.js";
 import type { AnyError } from "../../../errors/types.js";
@@ -14,6 +14,6 @@ export const decode = (
   Effect.sync(() =>
     decodeLogs(knownContracts(client), [
       ...(options.logs ?? []),
-      ...(options.receipts ?? []).flatMap((receipt) => receipt.logs),
+      ...Arr.flatMap(options.receipts ?? [], (receipt) => receipt.logs),
     ]),
   );

@@ -23,7 +23,7 @@ import type { setRecordAccess as Promises } from "./index.js";
  * The setter call `grantSetterRoles` decodes into the resource and role of one keyed record.
  * The values are placeholders; only the setter and its argument matter.
  */
-const setterCall = (dns: Hex, operation: RecordOperation & { key: string | bigint | Hex }): Hex => {
+const setterCall = (dns: Hex, operation: RecordOperation & { key: string | bigint }): Hex => {
   const abi = Abis.v2.permissionedResolver;
   switch (operation.setRecord) {
     case "text":
@@ -54,6 +54,7 @@ const setterCall = (dns: Hex, operation: RecordOperation & { key: string | bigin
       return encodeFunctionData({
         abi,
         functionName: "setInterface",
+        // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- keyed operations carry their key
         args: [dns, operation.key as Hex, zeroAddress],
       });
   }
@@ -136,7 +137,8 @@ const permissionedCalls = Effect.fnUntraced(function* (
         ),
       );
     } else {
-      const keyed = operation as RecordOperation & { key: string | bigint | Hex };
+      // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- keyed operations carry their key
+      const keyed = operation as RecordOperation & { key: string | bigint };
       calls.push(
         call(
           encodeFunctionData({

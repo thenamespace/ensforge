@@ -3,9 +3,9 @@ import { Effect } from "effect";
 import { watchBlockNumber } from "viem/actions";
 
 import type { Client } from "../../../client/types.js";
-import { fromCause } from "../../../errors/translate/fromCause.js";
 import type { AnyError } from "../../../errors/types.js";
 import * as Action from "../../../internal/action/index.js";
+import { toAnyError } from "../../../internal/anyError.js";
 import { normalizeName } from "../../../internal/name/normalize.js";
 import { get } from "../get/effect.js";
 import type { watch as Promises } from "./index.js";
@@ -16,7 +16,8 @@ export const watch = Effect.fn("ensforge.event.watch")(function* (
   options: Promises.Options,
 ): Effect.fn.Return<Promises.ReturnType, AnyError> {
   const name = yield* normalizeName(options.name);
-  const runPromise = Effect.runPromiseWith(yield* Effect.context<never>());
+  const context = yield* Effect.context();
+  const runPromise = Effect.runPromiseWith(context);
   let last: bigint | undefined;
   let running = false;
 
@@ -33,6 +34,7 @@ export const watch = Effect.fn("ensforge.event.watch")(function* (
       if (running || blockNumber <= last) return;
       const fromBlock = last + 1n;
       running = true;
+      // oxlint-disable-next-line effecttsgo/async-function -- the watcher's callbacks are Promise-based, so a poll is a Promise
       const poll = async () => {
         try {
           const events = await runPromise(
@@ -41,14 +43,13 @@ export const watch = Effect.fn("ensforge.event.watch")(function* (
           last = blockNumber;
           if (events.length > 0) options.onEvents(events);
         } catch (error) {
-          options.onError?.(fromCause(error, { operation: "event.watch", name }) as AnyError);
+          options.onError?.(toAnyError(error, { operation: "event.watch", name }));
         } finally {
           running = false;
         }
       };
       void poll();
     },
-    onError: (error) =>
-      options.onError?.(fromCause(error, { operation: "event.watch", name }) as AnyError),
+    onError: (error) => options.onError?.(toAnyError(error, { operation: "event.watch", name })),
   });
 }, Action.withContext("event.watch"));

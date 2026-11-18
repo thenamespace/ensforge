@@ -1,4 +1,4 @@
-import { Effect } from "effect";
+import { Effect, String as Str } from "effect";
 
 import { isAddressEqual, type Address } from "viem";
 
@@ -35,6 +35,7 @@ const forwardMatch = Effect.fnUntraced(function* (
 ): Effect.fn.Return<readonly Plan.Warning[], AnyError> {
   const coins = coinType === ethCoinType ? [ethCoinType] : [coinType, ethCoinType];
   const records = yield* readRecords(client, { name, selection: { addresses: coins } });
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- the `addresses` selection yields an address or null per coin type
   const resolved = records.addresses as Record<string, Address | null>;
   const matches = (coin: bigint) => sameAddress(resolved[String(coin)], address);
 
@@ -91,7 +92,7 @@ export const plan = Effect.fnUntraced(function* (
   const coinType = yield* primaryNameCoinType(options.coin);
   const name = options.name === null ? "" : yield* normalizeName(options.name);
   // Readers show only ENSIP-15 names, which an encoded label (`[af2c…]`) is not.
-  if (name.includes("[")) {
+  if (Str.includes("[")(name)) {
     return yield* Effect.fail(
       new InvalidInputError({
         code: "INVALID_NAME",

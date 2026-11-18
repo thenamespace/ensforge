@@ -1,4 +1,4 @@
-import { Effect } from "effect";
+import { Effect, Array as Arr, String as Str } from "effect";
 
 import { Abis } from "@ensforge/contracts";
 import {
@@ -47,9 +47,13 @@ export const gatewayUrls = (
 /** The TXT records of `name` in a signed RRSet, each as its character-strings. */
 const txtRecordsIn = (name: string, signed: SignedSet): string[][] =>
   signed.typeCovered === RecordType.txt
-    ? signed.records
-        .filter((record) => record.type === RecordType.txt && record.name === name)
-        .map((record) => txtStrings(record.data))
+    ? Arr.map(
+        Arr.filter(
+          signed.records,
+          (record) => record.type === RecordType.txt && record.name === name,
+        ),
+        (record) => txtStrings(record.data),
+      )
     : [];
 
 /** Proof built from signed RRSets, reading the TXT strings of `name` from the last one. */
@@ -77,7 +81,9 @@ export const toProof = (name: string, rrsets: readonly SignedRRSet[]): Proof => 
 export const txtRecords = (proof: Proof): string[] => {
   const last = proof.rrsets.at(-1);
   if (last === undefined || last.rrset === "0x") return [];
-  return txtRecordsIn(proof.name, parseSignedSet(last.rrset)).map((strings) => strings.join(""));
+  return Arr.map(txtRecordsIn(proof.name, parseSignedSet(last.rrset)), (strings) =>
+    Arr.join(strings, ""),
+  );
 };
 
 /**
@@ -101,11 +107,12 @@ export const fetchTxtProof = Effect.fnUntraced(function* (
   const response = yield* Effect.tryPromise({
     try: () => request({ data, sender: zeroAddress, urls: [...urls] }),
     catch: (cause) => {
+      // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- viem's HTTP errors carry `status` and `url`
       const http = cause as { readonly status?: number; readonly url?: string };
       return new GatewayError({
         code: "GATEWAY_REQUEST_FAILED",
         status: http.status,
-        url: http.url ?? urls.join(", "),
+        url: http.url ?? Arr.join(urls, ", "),
         cause,
       });
     },
@@ -122,7 +129,7 @@ export const fetchTxtProof = Effect.fnUntraced(function* (
         }),
       ),
     catch: (cause) =>
-      new GatewayError({ code: "GATEWAY_RESPONSE_INVALID", url: urls.join(", "), cause }),
+      new GatewayError({ code: "GATEWAY_RESPONSE_INVALID", url: Arr.join(urls, ", "), cause }),
   });
 });
 
@@ -149,8 +156,8 @@ export const verifiesOnChain = (
 /** The owner in a `_ens` TXT record (`a=0x…`), parsed the way `DNSRegistrar` parses it. */
 export const ownerFromTxt = (txt: readonly string[]): Address | null => {
   for (const value of txt) {
-    if (!value.startsWith("a=0x")) continue;
-    const address = value.slice(2);
+    if (!Str.startsWith("a=0x")(value)) continue;
+    const address = Str.slice(2)(value);
     if (isAddress(address, { strict: false })) return getAddress(address);
   }
   return null;
@@ -158,10 +165,10 @@ export const ownerFromTxt = (txt: readonly string[]): Address | null => {
 
 /** The `ENS1 <resolver> [context]` TXT records, in order. */
 export const offchainResolversFromTxt = (txt: readonly string[]): OffchainResolver[] =>
-  txt.flatMap((value) => {
-    if (!value.startsWith("ENS1 ")) return [];
-    const [resolver = "", ...rest] = value.slice(5).trim().split(" ");
+  Arr.flatMap(txt, (value) => {
+    if (!Str.startsWith("ENS1 ")(value)) return [];
+    const [resolver, ...rest] = Str.split(" ")(Str.trim(Str.slice(5)(value)));
     if (resolver === "") return [];
-    const context = rest.join(" ").trim();
+    const context = Str.trim(Arr.join(rest, " "));
     return [{ resolver, context: context === "" ? null : context }];
   });

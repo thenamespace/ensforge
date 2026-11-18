@@ -1,3 +1,5 @@
+import { String as Str } from "effect";
+
 import {
   coinNameToTypeMap,
   coinTypeToNameMap,
@@ -81,7 +83,7 @@ export const from = (input: Input): bigint => {
   // Symbols are lowercase except the legacy SLIP-44 EVM coins (`etcLegacy`), so the exact
   // spelling is tried first.
   const coinTypes = coinNameToTypeMap as Readonly<Record<string, number>>;
-  const coinType = coinTypes[input] ?? coinTypes[input.toLowerCase()];
+  const coinType = coinTypes[input] ?? coinTypes[Str.toLowerCase(input)];
   if (coinType === undefined) throw new InvalidInputError({ code: "INVALID_COIN_TYPE", input });
   return BigInt(coinType);
 };

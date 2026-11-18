@@ -1,3 +1,5 @@
+import { Array as Arr, Record as Rec } from "effect";
+
 import { nameWrapperFuses } from "@ensforge/contracts/v1";
 
 import { InvalidInputError } from "../errors/classes/InvalidInputError.js";
@@ -43,12 +45,12 @@ export type Decoded = { readonly [name in Name]: boolean };
  * @since 1.0.0
  */
 export const from = (names: readonly Name[]): number =>
-  names.reduce((mask, name) => {
+  Arr.reduce(names, 0, (mask, name) => {
     const fuse = fuses[name] as number | undefined;
     if (fuse === undefined)
       throw new InvalidInputError({ code: "INVALID_RECORD_VALUE", input: name, field: "fuses" });
     return mask | fuse;
-  }, 0);
+  });
 
 /**
  * Whether `name` is burned in `mask`.
@@ -67,6 +69,5 @@ export const has = (mask: number, name: Name): boolean => (mask & fuses[name]) =
  * @since 1.0.0
  */
 export const decode = (mask: number): Decoded =>
-  Object.fromEntries(
-    (Object.keys(fuses) as Name[]).map((name) => [name, has(mask, name)]),
-  ) as Decoded;
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- every fuse name is a key of the result
+  Rec.fromEntries(Arr.map(Rec.keys(fuses), (name) => [name, has(mask, name)])) as Decoded;

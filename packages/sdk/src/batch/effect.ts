@@ -1,4 +1,5 @@
-import { Cause, Effect, Exit } from "effect";
+/* oxlint-disable typescript/no-unsafe-type-assertion -- the batch results are typed by the request map, which the implementation sees only as erased records */
+import { Cause, Effect, Exit, Array as Arr, Record as Rec } from "effect";
 
 import { requests as implementations } from "../actions/requests.js";
 import type { Client } from "../client/types.js";
@@ -21,7 +22,7 @@ const run = (client: Client, request: Request): Effect.Effect<unknown, AnyError>
       }),
     );
   }
-  return implementation(client, request.options as never) as Effect.Effect<unknown, AnyError>;
+  return implementation(client, request.options as never);
 };
 
 /**
@@ -54,12 +55,12 @@ export const batch = Effect.fn("ensforge.batch")(function* <
         )
       : run(client, request);
 
-  const input = options.requests as Requests;
-  const results = Array.isArray(input)
+  const input = options.requests;
+  const results = Arr.isArray(input)
     ? yield* Effect.forEach(input as readonly Request[], effectOf, { concurrency: "unbounded" })
     : yield* Effect.all(
-        Object.fromEntries(
-          Object.entries(input as Readonly<Record<string, Request>>).map(([key, request]) => [
+        Rec.fromEntries(
+          Arr.map(Rec.toEntries(input as Readonly<Record<string, Request>>), ([key, request]) => [
             key,
             effectOf(request),
           ]),

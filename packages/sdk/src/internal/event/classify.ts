@@ -1,6 +1,6 @@
-import { Predicate } from "effect";
+import { Predicate, Array as Arr, Option } from "effect";
 
-import { isAddressEqual, isHex, type Address, type Hex } from "viem";
+import { isAddress, isAddressEqual, isHex, type Address, type Hex } from "viem";
 
 import type { EventAction, EventType } from "../../actions/event/types.js";
 import type { Client } from "../../client/types.js";
@@ -100,19 +100,25 @@ export const knownContracts = (client: Client): KnownContracts => {
   const v1 = client.deployment.v1;
   const v2 = client.deployment.v2;
   return {
-    v1: [
-      ...Object.values(v1?.contracts ?? {}),
-      ...(v1?.legacyPublicResolvers ?? []),
-      ...(v1?.frozenPublicResolvers ?? []),
-    ].filter(Predicate.isNotUndefined),
-    v2: [...Object.values(v2?.contracts ?? {}), ...Object.values(v2?.migration ?? {})].filter(
+    v1: Arr.filter(
+      [
+        // oxlint-disable-next-line effecttsgo/prefer-effect-record -- contract maps have optional properties, which `Record.values` does not accept
+        ...Object.values(v1?.contracts ?? {}),
+        ...(v1?.legacyPublicResolvers ?? []),
+        ...(v1?.frozenPublicResolvers ?? []),
+      ],
+      Predicate.isNotUndefined,
+    ),
+    v2: Arr.filter(
+      // oxlint-disable-next-line effecttsgo/prefer-effect-record -- see above
+      [...Object.values(v2?.contracts ?? {}), ...Object.values(v2?.migration ?? {})],
       Predicate.isNotUndefined,
     ),
     graveyard: v2?.migration.graveyard,
-    migrationControllers: [
-      v2?.migration.unlockedMigrationController,
-      v2?.migration.lockedMigrationController,
-    ].filter(Predicate.isNotUndefined),
+    migrationControllers: Arr.filter(
+      [v2?.migration.unlockedMigrationController, v2?.migration.lockedMigrationController],
+      Predicate.isNotUndefined,
+    ),
     suffixes:
       v2 === undefined
         ? []
@@ -125,7 +131,8 @@ export const knownContracts = (client: Client): KnownContracts => {
 
 const includes = (addresses: readonly Address[], address: unknown): boolean =>
   typeof address === "string" &&
-  addresses.some((known) => isAddressEqual(known, address as Address));
+  isAddress(address, { strict: false }) &&
+  Arr.some(addresses, (known) => isAddressEqual(known, address));
 
 const toName = (encoded: unknown): string | null => {
   if (!isHex(encoded)) return null;
@@ -181,7 +188,9 @@ export const nameOf = (
   switch (eventName) {
     case "LabelRegistered":
     case "LabelReserved": {
-      const suffix = known.suffixes.find((entry) => isAddressEqual(entry.registry, contract));
+      const suffix = Option.getOrUndefined(
+        Arr.findFirst(known.suffixes, (entry) => isAddressEqual(entry.registry, contract)),
+      );
       return label === undefined || suffix === undefined ? null : `${label}${suffix.suffix}`;
     }
     case "NameRegistered":

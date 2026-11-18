@@ -1,4 +1,4 @@
-import { Effect } from "effect";
+import { Effect, Array as Arr } from "effect";
 
 import { isAddressEqual } from "viem";
 
@@ -58,7 +58,7 @@ export const plan = Effect.fnUntraced(function* (
     steps.push({
       id: "commit",
       description: approvals.length > 0 ? "Approve payment and commit" : "Commit to the names",
-      calls: [...approvals, ...toCommit.map((name) => commitCall(registration, name))],
+      calls: [...approvals, ...Arr.map(toCommit, (name) => commitCall(registration, name))],
     });
   } else if (approvals.length > 0) {
     steps.push({ id: "approve", description: "Approve payment", calls: approvals });
@@ -77,7 +77,7 @@ export const plan = Effect.fnUntraced(function* (
     description: "Register",
     calls: [
       ...(registration.ownedDeploy === undefined || routed ? [] : [registration.ownedDeploy]),
-      ...registration.names.flatMap((name) => [
+      ...Arr.flatMap(registration.names, (name) => [
         ...(name.deploy === undefined ? [] : [name.deploy]),
         registerCall(registration, name),
       ]),
@@ -94,8 +94,10 @@ export const plan = Effect.fnUntraced(function* (
     steps.push({
       id: "records",
       description: "Set records",
-      calls: yield* Effect.forEach(registration.names, (name) =>
-        recordsCall(client, explicitResolver, name, records, keying),
+      calls: yield* Effect.forEach(
+        registration.names,
+        (name) => recordsCall(client, explicitResolver, name, records, keying),
+        { concurrency: 1 },
       ),
       ...(routed ? { from: "signer" as const } : {}),
     });
@@ -117,7 +119,7 @@ export const plan = Effect.fnUntraced(function* (
     account: signer,
     steps,
     requirements: [{ kind: "balance", amount: registration.total, token: registration.token }],
-    deploys: registration.names.flatMap((name) =>
+    deploys: Arr.flatMap(registration.names, (name) =>
       name.deploy === undefined ? [] : [{ contract: "resolver" as const, address: name.resolver }],
     ),
   });

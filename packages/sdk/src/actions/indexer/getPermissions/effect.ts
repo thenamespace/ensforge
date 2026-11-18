@@ -1,4 +1,4 @@
-import { Effect } from "effect";
+import { Effect, Array as Arr } from "effect";
 
 import type { Client } from "../../../client/types.js";
 import { InvalidInputError } from "../../../errors/classes/InvalidInputError.js";
@@ -20,7 +20,7 @@ export const getPermissions = Effect.fn("ensforge.indexer.getPermissions")(funct
   options: Promises.Options,
 ): Effect.fn.Return<Promises.ReturnType, AnyError> {
   const subjects = [options.name, options.registrationId, options.address, options.registry];
-  if (subjects.filter((subject) => subject !== undefined).length !== 1) {
+  if (Arr.filter(subjects, (subject) => subject !== undefined).length !== 1) {
     return yield* Effect.fail(
       new InvalidInputError({
         code: "INVALID_RECORD_VALUE",
@@ -38,6 +38,7 @@ export const getPermissions = Effect.fn("ensforge.indexer.getPermissions")(funct
       ? undefined
       : yield* contractInput(client, options.registry, "registry");
 
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- `queryOf` leaves out exactly the fields set beside it
   return yield* callIndexer(client, "getPermissions", {
     ...queryOf(options),
     name,

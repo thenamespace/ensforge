@@ -1,4 +1,4 @@
-import { Effect } from "effect";
+import { Effect, Array as Arr, Option, Predicate, String as Str } from "effect";
 
 import { Abis } from "@ensforge/contracts";
 import {
@@ -16,14 +16,16 @@ import type { AnyError } from "../../errors/types.js";
 import { namehash } from "../../utils/Name.js";
 import { nonZeroAddress } from "../address.js";
 import type { LoadedName } from "../name/load.js";
+import { parentOf } from "../name/parts.js";
 import * as Rpc from "../rpc/index.js";
 import { scanLogs, type BlockRange, type LogQuery } from "./scan.js";
 
 /** Topic 0 of every variant of the named events. */
 const topics = (...names: readonly string[]): Hex[] =>
-  Abis.shared.events
-    .filter((item) => names.includes(item.name))
-    .map((item) => toEventSelector(item as Parameters<typeof toEventSelector>[0]));
+  Arr.map(
+    Arr.filter(Abis.shared.events, (item) => names.includes(item.name)),
+    (item) => toEventSelector(item as Parameters<typeof toEventSelector>[0]),
+  );
 
 const nodeKeyedResolverEvents = topics(
   "AddrChanged",
@@ -56,14 +58,14 @@ const canonical = (id: bigint): bigint => id ^ (id & 0xffffffffn);
 
 /** The addresses that are set: neither missing nor the zero address. */
 const known = (addresses: readonly (Address | null | undefined)[]): Address[] =>
-  addresses.flatMap((address) => nonZeroAddress(address) ?? []);
+  Arr.filter(Arr.map(addresses, nonZeroAddress), Predicate.isNotNull);
 
 /** ENSv1 queries: registry, `.eth` registrar and controllers, NameWrapper, resolver, DNS. */
 const v1Queries = (client: Client, loaded: LoadedName): LogQuery[] => {
   const v1 = client.deployment.v1?.contracts;
   if (v1 === undefined) return [];
   const { parts } = loaded.data;
-  const parent = namehash(parts.name.slice(parts.name.indexOf(".") + 1));
+  const parent = namehash(parentOf(parts.name));
   const resolvers = known([loaded.data.v1?.resolver, loaded.state.resolver]);
 
   return [
@@ -138,7 +140,7 @@ const v2Logs = Effect.fnUntraced(function* (
   const regenerated: Log[] = [];
   for (let round = 0; round < 8; round += 1) {
     const before = ids.size;
-    const idTopics = [...ids].map(word);
+    const idTopics = Arr.map([...ids], word);
     const found = yield* scan([
       { address: [registry], topics: [topics("TokenRegenerated"), idTopics] },
       { address: [registry], topics: [topics("TokenRegenerated"), null, idTopics] },
@@ -163,14 +165,14 @@ const v2Logs = Effect.fnUntraced(function* (
         });
   if (current !== undefined && current !== 0n) recordIds.add(word(current));
 
-  const idTopics = [...ids].map(word);
+  const idTopics = Arr.map([...ids], word);
   const registrars = known([v2.contracts.ethRegistrar, v2.migration.ethRenewerV1]);
   // Transfers have no indexed token id. The `.eth` and root registries are busy: past a short
   // range (a watch, a recent window) only transfers to or from the current owner are scanned.
   const busy =
     isAddressEqual(registry, v2.contracts.ethRegistry) ||
     isAddressEqual(registry, v2.contracts.rootRegistry);
-  const owner = state.owner === null ? undefined : (pad(state.owner, { size: 32 }) as Hex);
+  const owner = state.owner === null ? undefined : pad(state.owner, { size: 32 });
   const transferTopics = topics("TransferSingle", "TransferBatch");
   const transferQueries: LogQuery[] =
     !busy || range.toBlock - range.fromBlock <= 5_000n
@@ -201,17 +203,20 @@ const v2Logs = Effect.fnUntraced(function* (
     ...transferQueries,
   ]);
 
-  const canonicalIds = new Set([...ids].map(canonical));
+  const canonicalIds = new Set(Arr.map([...ids], canonical));
   return [
     ...first,
     ...regenerated,
     // Unfiltered transfer scans keep only this name's tokens. TransferSingle data is (id, value);
     // TransferBatch data holds dynamic arrays, so every word is checked.
-    ...second.filter(
+    ...Arr.filter(
+      second,
       (log) =>
+        // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- the collection is known to be non-empty or the index in range here; `noUncheckedIndexedAccess` cannot see it
         !transferTopics.includes(log.topics[0] as Hex) ||
-        (log.data.slice(2).match(/.{64}/g) ?? []).some((part) =>
-          canonicalIds.has(canonical(BigInt(`0x${part}`))),
+        Arr.some(
+          Option.getOrElse(Str.match(/.{64}/g)(Str.slice(2)(log.data)), () => []),
+          (part) => canonicalIds.has(canonical(BigInt(`0x${part}`))),
         ),
     ),
   ];

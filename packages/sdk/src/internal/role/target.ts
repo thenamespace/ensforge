@@ -75,6 +75,7 @@ export const resolveRoleTarget = Effect.fnUntraced(function* (
   }
   if (root) return { contract, resource: 0n, anyId: undefined };
 
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- a name target was loaded above
   const anyId = hexToBigInt((loaded as NonNullable<typeof loaded>).data.parts.labelhash);
   // An explicit registry may not be the one holding the name: ask it for the resource.
   const resource =

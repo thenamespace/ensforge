@@ -1,3 +1,5 @@
+import { Array as Arr, Option } from "effect";
+
 import { Deployments } from "@ensforge/contracts";
 import type { Config as WagmiConfig } from "wagmi";
 import { getConnectorClient, getPublicClient, switchChain } from "wagmi/actions";
@@ -9,13 +11,15 @@ import { ConfigError } from "../errors/classes/ConfigError.js";
 // The ENS chain: an explicit one, mainnet when the app has it, or the first chain ensforge
 // ships a deployment for.
 const chainIdOf = (config: WagmiConfig, options: fromWagmi.Options): number => {
-  const configured = config.chains.map((chain) => chain.id);
+  const configured = Arr.map(config.chains, (chain) => chain.id);
   const chainId =
     options.chainId ??
     options.deployment?.chainId ??
     (configured.includes(1)
       ? 1
-      : configured.find((id) => Deployments.get({ chainId: id }) !== undefined));
+      : Option.getOrUndefined(
+          Arr.findFirst(configured, (id) => Deployments.get({ chainId: id }) !== undefined),
+        ));
 
   if (chainId === undefined) {
     throw new ConfigError({
@@ -91,7 +95,9 @@ export const fromWagmi = (config: WagmiConfig, options: fromWagmi.Options = {}):
     });
   }
 
-  // The connected wallet, on `target` when it switches; looked up on every write.
+  // The connected wallet, on `target` when it switches; looked up on every write. wagmi's actions
+  // are Promises, and so is `getWalletClient`.
+  // oxlint-disable-next-line effecttsgo/async-function
   const walletOn = (target: number) => async (): Promise<ViemWalletClient | undefined> => {
     try {
       const connected = await getConnectorClient(config);
@@ -101,6 +107,7 @@ export const fromWagmi = (config: WagmiConfig, options: fromWagmi.Options = {}):
       return await getConnectorClient(config, { chainId: target });
     } catch (cause) {
       // wagmi 2 and 3 both throw this without a connected wallet: no wallet, not a failure.
+      // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- wagmi errors are untyped
       if ((cause as { readonly name?: unknown } | null)?.name === "ConnectorNotConnectedError") {
         return undefined;
       }

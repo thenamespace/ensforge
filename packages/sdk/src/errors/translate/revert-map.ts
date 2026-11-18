@@ -1,3 +1,4 @@
+/* oxlint-disable typescript/no-unsafe-type-assertion -- revert arguments are decoded against the error's signature, which TypeScript cannot see */
 import { isAddressEqual, zeroAddress, type Address, type Hex } from "viem";
 
 import { dnsDecode } from "../../utils/Name.js";
@@ -218,7 +219,7 @@ export const revertMap: Readonly<Record<string, Mapper>> = {
     new GatewayError({
       code: "GATEWAY_REQUEST_FAILED",
       status: Number(status),
-      details: message === undefined || message === "" ? [] : [`Gateway said: ${String(message)}`],
+      details: typeof message === "string" && message !== "" ? [`Gateway said: ${message}`] : [],
     }),
   InvalidOffchainLookup: () => new GatewayError({ code: "OFFCHAIN_LOOKUP_INVALID" }),
   // EIP-3668 clients follow only a lookup whose sender is the contract they called, so one from

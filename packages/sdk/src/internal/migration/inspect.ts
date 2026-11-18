@@ -1,4 +1,4 @@
-import { Effect } from "effect";
+import { Effect, String as Str, Array as Arr } from "effect";
 
 import { Abis, Roles } from "@ensforge/contracts";
 import { hexToBigInt, isAddressEqual, maxUint64, type Address } from "viem";
@@ -75,7 +75,7 @@ export const inspectMigration = Effect.fnUntraced(function* (
   const v1Contracts = client.deployment.v1?.contracts;
   const v2 = client.deployment.v2;
   const fuses = kind === "v1-wrapped" ? (v1?.wrapper.fuses ?? 0) : 0;
-  const isEth = state.name === "eth" || state.name.endsWith(".eth");
+  const isEth = state.name === "eth" || Str.endsWith(".eth")(state.name);
 
   const unmigratable = (status: Status["status"], blockers: readonly Blocker[] = []) => ({
     status: {
@@ -174,11 +174,14 @@ export const inspectMigration = Effect.fnUntraced(function* (
   const publicResolver =
     resolver !== null &&
     (reads.listed ||
-      [
-        v1Contracts.publicResolver,
-        ...(client.deployment.v1?.legacyPublicResolvers ?? []),
-        ...(client.deployment.v1?.frozenPublicResolvers ?? []),
-      ].some((address) => isAddressEqual(address, resolver)));
+      Arr.some(
+        [
+          v1Contracts.publicResolver,
+          ...(client.deployment.v1?.legacyPublicResolvers ?? []),
+          ...(client.deployment.v1?.frozenPublicResolvers ?? []),
+        ],
+        (address) => isAddressEqual(address, resolver),
+      ));
   const locked = route === "wrapped-locked" || route === "locked-child";
   const plan = resolverPlan(options.resolver, {
     resolver,

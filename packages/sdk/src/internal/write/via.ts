@@ -90,6 +90,7 @@ export const sendThroughRoute = Effect.fnUntraced(function* (
   step: Plan.Step,
   onReference: (reference: string) => Effect.Effect<void>,
 ): Effect.fn.Return<readonly Hex[], AnyError> {
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- a route that is sent through defines `send`
   const send = via.send as NonNullable<Write.Via["send"]>;
   const reference = yield* fromPromise(() => send(step, context));
   yield* onReference(reference);

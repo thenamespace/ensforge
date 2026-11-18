@@ -1,13 +1,13 @@
-import { Effect } from "effect";
+import { Effect, Array as Arr, Option } from "effect";
 
 import type { Address } from "viem";
 import { call as viemCall, estimateGas as viemEstimateGas, simulateCalls } from "viem/actions";
 
 import type { Client } from "../../client/types.js";
 import { ContractRevertError } from "../../errors/classes/ContractRevertError.js";
-import { fromCause } from "../../errors/translate/fromCause.js";
 import type { AnyError } from "../../errors/types.js";
 import type { Plan } from "../../plan/Plan.js";
+import { toAnyError } from "../anyError.js";
 import { fromPromise } from "../rpc/fromPromise.js";
 import { withHeadroom } from "./gas.js";
 
@@ -17,8 +17,8 @@ import { withHeadroom } from "./gas.js";
  * simulated right before they are sent.
  */
 export const simulatableSteps = (plan: Plan): readonly Plan.Step[] => {
-  const firstWait = plan.steps.findIndex((step) => step.waitFor !== undefined);
-  return firstWait === -1 ? plan.steps : plan.steps.slice(0, firstWait);
+  const firstWait = Arr.findFirstIndex(plan.steps, (step) => step.waitFor !== undefined);
+  return Option.isNone(firstWait) ? plan.steps : Arr.take(plan.steps, firstWait.value);
 };
 
 /** The outcome of one call: its error when it failed, and the gas it used. */
@@ -37,12 +37,12 @@ const simulateSequence = (
     () =>
       simulateCalls(client.publicClient, {
         ...(account === undefined ? {} : { account }),
-        calls: calls.map((call) => ({ to: call.to, data: call.data, value: call.value })),
+        calls: Arr.map(calls, (call) => ({ to: call.to, data: call.data, value: call.value })),
       }),
     { account, chainId: client.chain.id },
   ).pipe(
     Effect.map(({ results }) =>
-      results.map((result, index) => ({
+      Arr.map(results, (result, index) => ({
         error:
           result.status === "success"
             ? undefined
@@ -59,11 +59,11 @@ const simulateSequence = (
                     revert: { errorName: undefined, data: "0x" },
                   },
                 })
-              : (fromCause(result.error, {
+              : toAnyError(result.error, {
                   contract: calls[index]?.to,
                   account,
                   chainId: client.chain.id,
-                }) as AnyError),
+                }),
         gas: result.gasUsed,
       })),
     ),
@@ -75,22 +75,25 @@ const simulateEach = (
   account: Address | undefined,
   calls: readonly Plan.Call[],
 ): Effect.Effect<readonly CallOutcome[]> =>
-  Effect.forEach(calls, (call) =>
-    fromPromise(
-      () =>
-        viemCall(client.publicClient, {
-          to: call.to,
-          data: call.data,
-          value: call.value,
-          ...(account === undefined ? {} : { account }),
+  Effect.forEach(
+    calls,
+    (call) =>
+      fromPromise(
+        () =>
+          viemCall(client.publicClient, {
+            to: call.to,
+            data: call.data,
+            value: call.value,
+            ...(account === undefined ? {} : { account }),
+          }),
+        { contract: call.to, account, chainId: client.chain.id },
+      ).pipe(
+        Effect.match({
+          onFailure: (error): CallOutcome => ({ error, gas: undefined }),
+          onSuccess: (): CallOutcome => ({ error: undefined, gas: undefined }),
         }),
-      { contract: call.to, account, chainId: client.chain.id },
-    ).pipe(
-      Effect.match({
-        onFailure: (error): CallOutcome => ({ error, gas: undefined }),
-        onSuccess: (): CallOutcome => ({ error: undefined, gas: undefined }),
-      }),
-    ),
+      ),
+    { concurrency: 1 },
   );
 
 const simulateCallsInOrder = (
@@ -108,10 +111,12 @@ const stepResults = (
   outcomes: readonly CallOutcome[],
 ): Plan.Simulation["steps"] => {
   let offset = 0;
-  return steps.map((step) => {
+  return Arr.map(steps, (step) => {
     const own = outcomes.slice(offset, offset + step.calls.length);
     offset += step.calls.length;
-    const error = own.find((outcome) => outcome.error !== undefined)?.error;
+    const error = Option.getOrUndefined(
+      Arr.findFirst(own, (outcome) => outcome.error !== undefined),
+    )?.error;
     return error === undefined ? { id: step.id, ok: true } : { id: step.id, ok: false, error };
   });
 };
@@ -127,6 +132,7 @@ export const simulateStep = (
   account: Address | undefined,
 ): Effect.Effect<Plan.Simulation["steps"][number]> =>
   simulateCallsInOrder(client, account, step.calls).pipe(
+    // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- `stepResults` returns one entry per step
     Effect.map((outcomes) => stepResults([step], outcomes)[0] as Plan.Simulation["steps"][number]),
   );
 
@@ -139,16 +145,16 @@ export const simulatePlan = Effect.fnUntraced(function* (
   client: Client,
   plan: Plan,
   account: Address | undefined,
-): Effect.fn.Return<Plan.Simulation, never> {
+): Effect.fn.Return<Plan.Simulation> {
   const steps = simulatableSteps(plan);
   const outcomes = yield* simulateCallsInOrder(
     client,
     account,
-    steps.flatMap((step) => step.calls),
+    Arr.flatMap(steps, (step) => step.calls),
   );
   const results = stepResults(steps, outcomes);
 
-  return { ok: results.every((step) => step.ok), plan, steps: results };
+  return { ok: Arr.every(results, (step) => step.ok), plan, steps: results };
 });
 
 /**
@@ -161,34 +167,39 @@ export const estimatePlan = Effect.fnUntraced(function* (
   plan: Plan,
   account: Address | undefined,
 ): Effect.fn.Return<Plan.Estimate, AnyError> {
-  const calls = simulatableSteps(plan).flatMap((step) => step.calls);
+  const calls = Arr.flatMap(simulatableSteps(plan), (step) => step.calls);
   const simulated = yield* simulateSequence(client, account, calls).pipe(
     Effect.map((outcomes) =>
-      outcomes.every((outcome) => outcome.gas !== undefined) ? outcomes : undefined,
+      Arr.every(outcomes, (outcome) => outcome.gas !== undefined) ? outcomes : undefined,
     ),
     Effect.orElseSucceed(() => undefined),
   );
-  const failed = simulated?.find((outcome) => outcome.error !== undefined)?.error;
+  const failed = Option.getOrUndefined(
+    Arr.findFirst(simulated ?? [], (outcome) => outcome.error !== undefined),
+  )?.error;
   if (failed !== undefined) return yield* Effect.fail(failed);
 
   const gas =
-    simulated?.map((outcome) => outcome.gas ?? 0n) ??
-    (yield* Effect.forEach(calls, (call) =>
-      fromPromise(
-        () =>
-          viemEstimateGas(client.publicClient, {
-            to: call.to,
-            data: call.data,
-            value: call.value,
-            ...(account === undefined ? {} : { account }),
-          }),
-        { contract: call.to, account },
-      ),
+    (simulated === undefined ? undefined : Arr.map(simulated, (outcome) => outcome.gas ?? 0n)) ??
+    (yield* Effect.forEach(
+      calls,
+      (call) =>
+        fromPromise(
+          () =>
+            viemEstimateGas(client.publicClient, {
+              to: call.to,
+              data: call.data,
+              value: call.value,
+              ...(account === undefined ? {} : { account }),
+            }),
+          { contract: call.to, account },
+        ),
+      { concurrency: 1 },
     ));
 
   return {
     plan,
-    gas: gas.reduce((total, value) => total + withHeadroom(value), 0n),
-    value: plan.calls.reduce((total, call) => total + call.value, 0n),
+    gas: Arr.reduce(gas, 0n, (total, value) => total + withHeadroom(value)),
+    value: Arr.reduce(plan.calls, 0n, (total, call) => total + call.value),
   };
 });

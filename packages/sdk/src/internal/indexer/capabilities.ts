@@ -1,4 +1,4 @@
-import { Clock, Effect } from "effect";
+import { Clock, Effect, Array as Arr, Record as Rec } from "effect";
 
 import { IndexerError } from "../../errors/classes/IndexerError.js";
 import type { NotFoundError } from "../../errors/classes/NotFoundError.js";
@@ -30,11 +30,13 @@ export const capabilities = (config: HttpConfig) => {
       Effect.map(
         ({ data }) =>
           new Set(
-            Object.entries(data.chains)
-              .filter(
+            Arr.map(
+              Arr.filter(
+                Rec.toEntries(data.chains),
                 ([, chain]) => chain.indexed_block !== null && chain.indexed_block !== undefined,
-              )
-              .map(([chainId]) => Number(chainId)),
+              ),
+              ([chainId]) => Number(chainId),
+            ),
           ) as ReadonlySet<number>,
       ),
       Effect.catchTag("NotFoundError", () => Effect.undefined),
@@ -56,7 +58,7 @@ export const capabilities = (config: HttpConfig) => {
         Wire.decode(Wire.envelope(Wire.Namespace), body, { id: config.id, route }),
       ),
       Effect.map(({ data }) => {
-        const ids = (data.networks ?? []).flatMap((network) =>
+        const ids = Arr.flatMap(data.networks ?? [], (network) =>
           network.chain_id === null || network.chain_id === undefined ? [] : [network.chain_id],
         );
         // Basenames live on Base (8453) when the indexer does not list the networks.
@@ -89,19 +91,20 @@ export const capabilities = (config: HttpConfig) => {
     }
     if (namespace === "ens" && !declared.includes(clientChainId)) {
       return yield* unsupported(
-        `${config.id} serves ENS on chain ${declared.join(", ")}, but the client is on chain ${clientChainId}.`,
+        `${config.id} serves ENS on chain ${Arr.join(Arr.map(declared, String), ", ")}, but the client is on chain ${clientChainId}.`,
       );
     }
 
     // A namespace's home chains are those other than the client's (Basenames: Base); ENS
     // itself is served on the client's chain.
     const indexed = yield* indexedChains;
-    const own = declared.filter((id) => id !== clientChainId);
+    const own = Arr.filter(declared, (id) => id !== clientChainId);
     const home = namespace === "ens" || own.length === 0 ? [clientChainId] : own;
+    // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- the collection is known to be non-empty or the index in range here; `noUncheckedIndexedAccess` cannot see it
     const chainId = home[0] as number;
-    if (indexed !== undefined && !home.every((id) => indexed.has(id))) {
+    if (indexed !== undefined && !Arr.every(home, (id) => indexed.has(id))) {
       return yield* unsupported(
-        `${config.id} does not index ${namespace} yet (chain ${home.join(", ")}).`,
+        `${config.id} does not index ${namespace} yet (chain ${Arr.join(Arr.map(home, String), ", ")}).`,
       );
     }
     return chainId;

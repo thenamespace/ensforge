@@ -73,6 +73,7 @@ export declare namespace reconcile {
 /** Builds a deferred read for `Actions.batch`. */
 reconcile.request = Action.request(
   "plan.reconcile",
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Action.Declared narrows errors to the documented @throws
   Impl.reconcile as Action.Declared<typeof Impl.reconcile, reconcile.ErrorType>,
 );
 

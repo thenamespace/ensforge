@@ -1,4 +1,4 @@
-import { Effect } from "effect";
+import { Effect, Record as Rec, Array as Arr } from "effect";
 
 import { Abis } from "@ensforge/contracts";
 import type { Address } from "viem";
@@ -21,7 +21,8 @@ export const getParameters = Effect.fn("ensforge.registration.getParameters")(
     const contracts = yield* requireRegistrationContracts(client);
     const at = blockAt(options);
     const registrar = { address: contracts.registrar, abi: Abis.v2.ethRegistrar, ...at } as const;
-    const listed: readonly Address[] = Object.values(contracts.paymentTokens ?? {});
+    const listed: readonly Address[] =
+      contracts.paymentTokens === undefined ? [] : Rec.values(contracts.paymentTokens);
 
     const parameters = yield* Effect.all(
       {
@@ -68,7 +69,10 @@ export const getParameters = Effect.fn("ensforge.registration.getParameters")(
       maxCommitmentAge: parameters.maxCommitmentAge,
       minDuration: parameters.minDuration,
       gracePeriod: parameters.gracePeriod,
-      paymentTokens: parameters.tokens.filter((token) => token.accepted).map((token) => token.info),
+      paymentTokens: Arr.map(
+        Arr.filter(parameters.tokens, (token) => token.accepted),
+        (token) => token.info,
+      ),
     };
   },
   Action.withContext("registration.getParameters", { contractKind: "registrar" }),

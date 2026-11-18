@@ -1,15 +1,16 @@
-import { Effect } from "effect";
+/* oxlint-disable typescript/no-unsafe-type-assertion -- adapter methods are looked up by name at runtime, so their query and result types are erased */
+import { Effect, Array as Arr } from "effect";
 
 import { IndexerError } from "../errors/classes/IndexerError.js";
 import type { AnyError } from "../errors/types.js";
+import { toAnyError } from "../internal/anyError.js";
 import {
   implementationOf,
   makeIndexer,
   methodNames,
   type CallContext,
-  type Implementation,
 } from "../internal/indexer/registry.js";
-import type { Indexer, Method } from "./Indexer.js";
+import type { Indexer } from "./Indexer.js";
 
 /**
  * Failures after which `fallback` asks the next indexer.
@@ -35,6 +36,7 @@ const tag = (index: number, value: string | null): string | null =>
 
 const untag = (value: string | undefined): { index: number; value: string } | undefined => {
   const match = value === undefined ? null : tagPattern.exec(value);
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- the collection is known to be non-empty or the index in range here; `noUncheckedIndexedAccess` cannot see it
   return match === null ? undefined : { index: Number(match[1]), value: match[2] as string };
 };
 
@@ -116,7 +118,7 @@ export const fallback = (
   indexers: readonly Indexer[],
   options: { readonly on?: readonly FallbackReason[] | undefined } = {},
 ): Indexer => {
-  const implementations = indexers.map((indexer) => {
+  const implementations = Arr.map(indexers, (indexer) => {
     const implementation = implementationOf(indexer);
     if (implementation === undefined) {
       throw new TypeError(`fallback: ${indexer.id} was not built by ensforge.`);
@@ -126,16 +128,21 @@ export const fallback = (
   const moveOn = new Set<FallbackReason>(
     options.on ?? ["unavailable", "rateLimited", "unsupported", "behind"],
   );
-  const id = `fallback(${implementations.map((implementation) => implementation.id).join(", ")})`;
+  const id = `fallback(${Arr.join(
+    Arr.map(implementations, (implementation) => implementation.id),
+    ", ",
+  )})`;
 
   const methods: Record<string, unknown> = {};
   for (const method of methodNames) {
-    if (implementations.every((implementation) => implementation.methods[method] === undefined)) {
+    if (
+      Arr.every(implementations, (implementation) => implementation.methods[method] === undefined)
+    ) {
       continue;
     }
 
     const ask = (index: number, query: unknown, context: CallContext) => {
-      const run = implementations[index]?.methods[method as Method] as
+      const run = implementations[index]?.methods[method] as
         | ((query: unknown, context: CallContext) => Effect.Effect<unknown, AnyError>)
         | undefined;
       return run === undefined
@@ -180,13 +187,16 @@ export const fallback = (
           failure = outcome.error;
         }
       }
-      return yield* Effect.fail(failure as AnyError);
+      return yield* Effect.fail(toAnyError(failure));
     });
   }
 
   return makeIndexer({
     id,
-    key: `fallback(${indexers.map((indexer) => indexer.key).join(", ")})`,
-    methods: methods as Implementation["methods"],
+    key: `fallback(${Arr.join(
+      Arr.map(indexers, (indexer) => indexer.key),
+      ", ",
+    )})`,
+    methods,
   });
 };

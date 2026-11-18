@@ -75,6 +75,7 @@ export declare namespace getParameters {
 /** Builds a deferred read for `Actions.batch`. */
 getParameters.request = Action.request(
   "registration.getParameters",
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Action.Declared narrows errors to the documented @throws
   Impl.getParameters as Action.Declared<typeof Impl.getParameters, getParameters.ErrorType>,
 );
 

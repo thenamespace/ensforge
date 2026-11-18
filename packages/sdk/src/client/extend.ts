@@ -1,3 +1,5 @@
+import { Record as Rec } from "effect";
+
 import { ConfigError } from "../errors/classes/ConfigError.js";
 import { setState, type State } from "./state.js";
 import type { Client } from "./types.js";
@@ -13,11 +15,11 @@ const mergeGroups = (
 ): Record<string, object> => {
   const merged: Record<string, object> = { ...current };
 
-  for (const [group, actions] of Object.entries(added)) {
+  for (const [group, actions] of Rec.toEntries(added)) {
     if (reserved.has(group)) {
       throw new ConfigError({
         code: "INVALID_ACTION_GROUP",
-        shortMessage: `"${group}" is reserved on the ensforge client and cannot be an action group.`,
+        shortMessage: `"${String(group)}" is reserved on the ensforge client and cannot be an action group.`,
       });
     }
     // A top-level action such as `batch` is a function; action groups merge by key.
@@ -36,6 +38,7 @@ export const build = (
   state: State,
   groups: Readonly<Record<string, object>> = {},
 ): Client => {
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- the frozen client is assembled from its base fields and action groups, which `Client` is the intersection of
   const client = Object.freeze({
     ...base,
     ...groups,

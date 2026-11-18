@@ -1,4 +1,4 @@
-import { Effect } from "effect";
+import { Effect, Record as Rec, Array as Arr, String as Str } from "effect";
 
 import type { Address } from "viem";
 
@@ -32,20 +32,20 @@ const differences = Effect.fnUntraced(function* (
   const read = yield* readRecords(client, {
     name: expected.name,
     selection: {
-      texts: Object.keys(copied.texts ?? {}),
+      texts: Rec.keys(copied.texts ?? {}),
       // Copied coins are keyed by symbol or decimal coin type.
-      addresses: Object.keys(copied.addresses ?? {}).map((coin) =>
+      addresses: Arr.map(Rec.keys(copied.addresses ?? {}), (coin) =>
         /^\d+$/.test(coin) ? BigInt(coin) : coin,
       ),
       ...(copied.contentHash === undefined ? {} : { contentHash: true }),
     },
   });
-  for (const [key, value] of Object.entries(copied.texts ?? {})) {
+  for (const [key, value] of Rec.toEntries(copied.texts ?? {})) {
     if ((read.texts?.[key] ?? null) !== value) found.push(`${expected.name} text ${key} differs`);
   }
-  for (const [coin, value] of Object.entries(copied.addresses ?? {})) {
+  for (const [coin, value] of Rec.toEntries(copied.addresses ?? {})) {
     const actual = read.addresses?.[coin] ?? null;
-    if (actual?.toLowerCase() !== value?.toLowerCase())
+    if (Str.toLowerCase(actual ?? "") !== Str.toLowerCase(value ?? ""))
       found.push(`${expected.name} address ${coin} differs`);
   }
   if (copied.contentHash !== undefined && (read.contentHash?.uri ?? null) !== copied.contentHash)
@@ -61,7 +61,7 @@ export const verifyMigration = Effect.fnUntraced(function* (
   const found = (yield* Effect.forEach(expectations, (expected) => differences(client, expected), {
     concurrency: "unbounded",
   })).flat();
-  if (found.length > 0) {
-    return yield* Effect.fail(new MigrationError({ code: "VERIFICATION_FAILED", details: found }));
-  }
+  if (found.length === 0) return undefined;
+
+  return yield* Effect.fail(new MigrationError({ code: "VERIFICATION_FAILED", details: found }));
 });

@@ -46,6 +46,7 @@ import type { Page } from "./types.js";
  * @category indexer
  * @since 1.0.0
  */
+// oxlint-disable-next-line effecttsgo/async-function -- `paginate` is a Promise API: an async generator over Promise loaders
 export async function* paginate<options extends { cursor?: string | undefined }, item>(
   load: (options: options) => Promise<Page<item>>,
   options: options,

@@ -1,3 +1,5 @@
+import { String as Str, Record as Rec, Array as Arr, Option } from "effect";
+
 import {
   decode as decodeContentHash,
   encode as encodeContentHash,
@@ -90,13 +92,13 @@ export const decode = (data: Hex): Decoded | null => {
   if (data === "0x") return null;
 
   try {
-    const codec = getCodec(data.slice(2));
-    const protocol = (Object.keys(schemes) as Protocol[]).find(
-      (scheme) => schemes[scheme] === codec,
+    const codec = getCodec(Str.slice(2)(data));
+    const protocol = Option.getOrUndefined(
+      Arr.findFirst(Rec.keys(schemes), (scheme) => schemes[scheme] === codec),
     );
     if (protocol === undefined) throw new Error(`unsupported codec ${String(codec)}`);
 
-    const value = decodeContentHash(data.slice(2));
+    const value = decodeContentHash(Str.slice(2)(data));
     return { protocol, value, uri: `${protocol}://${value}` };
   } catch (cause) {
     throw new InvalidInputError({ code: "INVALID_CONTENT_HASH", input: data, cause });
@@ -122,17 +124,19 @@ export const decode = (data: Hex): Decoded | null => {
  * @category records
  * @since 1.0.0
  */
+// oxlint-disable-next-line typescript/no-duplicate-type-constituents -- the literal or explicit type argument documents the public type
 export const toGatewayUrl = (uri: string, gateways?: Gateways | undefined): string => {
   const match = /^([a-z0-9]+):\/\/(.+)$/.exec(uri);
   if (match === null) return uri;
 
   const { ipfs, arweave, swarm } = resolveGateways(gateways);
-  const prefixes: Readonly<Partial<Record<Protocol, string>>> = {
+  const prefixes: Readonly<Record<string, string>> = {
     ipfs: `${ipfs}/ipfs/`,
     ipns: `${ipfs}/ipns/`,
     bzz: `${swarm}/bzz/`,
     ar: `${arweave}/`,
   };
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- the collection is known to be non-empty or the index in range here; `noUncheckedIndexedAccess` cannot see it
   const scheme = match[1] as Protocol;
-  return Object.hasOwn(prefixes, scheme) ? `${prefixes[scheme]}${match[2]}` : uri;
+  return Rec.has(prefixes, scheme) ? `${prefixes[scheme]}${match[2]}` : uri;
 };

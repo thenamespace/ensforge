@@ -74,6 +74,7 @@ export declare namespace getProof {
 /** Builds a deferred read for `Actions.batch`. */
 getProof.request = Action.request(
   "dns.getProof",
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Action.Declared narrows errors to the documented @throws
   Impl.getProof as Action.Declared<typeof Impl.getProof, getProof.ErrorType>,
 );
 

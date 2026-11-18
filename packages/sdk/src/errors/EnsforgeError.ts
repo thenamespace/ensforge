@@ -1,3 +1,5 @@
+import { Array as Arr } from "effect";
+
 import type { Address, Hex } from "viem";
 
 import { version } from "../version.js";
@@ -18,6 +20,8 @@ import { getConfig } from "./config.js";
  * @category errors
  * @since 1.0.0
  */
+// Promise users get the same instances, so errors are native `Error`s; `_tag` keeps them distinct.
+// oxlint-disable-next-line effecttsgo/extends-native-error
 export abstract class EnsforgeError<
   tag extends string = string,
   code extends string = string,
@@ -94,24 +98,31 @@ export abstract class EnsforgeError<
 
   private render(): string {
     const { context } = this;
-    const footer = [
-      `Code: ${this.code}`,
-      context.operation === undefined ? undefined : `Operation: ${context.operation}`,
-      context.name === undefined ? undefined : `Name: ${context.name}`,
-      context.contract === undefined ? undefined : `Contract: ${context.contract}`,
-      context.functionName === undefined ? undefined : `Function: ${context.functionName}`,
-      `Docs: ${this.docsUrl}`,
-      `Version: @ensforge/sdk@${version}`,
-    ].filter((line) => line !== undefined);
+    const footer = Arr.filter(
+      [
+        `Code: ${this.code}`,
+        context.operation === undefined ? undefined : `Operation: ${context.operation}`,
+        context.name === undefined ? undefined : `Name: ${context.name}`,
+        context.contract === undefined ? undefined : `Contract: ${context.contract}`,
+        context.functionName === undefined ? undefined : `Function: ${context.functionName}`,
+        `Docs: ${this.docsUrl}`,
+        `Version: @ensforge/sdk@${version}`,
+      ],
+      (line) => line !== undefined,
+    );
 
-    return [
-      this.shortMessage,
-      this.details.length === 0 ? undefined : this.details.join("\n"),
-      this.hint === undefined ? undefined : `Hint: ${this.hint}`,
-      footer.join("\n"),
-    ]
-      .filter((block) => block !== undefined)
-      .join("\n\n");
+    return Arr.join(
+      Arr.filter(
+        [
+          this.shortMessage,
+          this.details.length === 0 ? undefined : Arr.join(this.details, "\n"),
+          this.hint === undefined ? undefined : `Hint: ${this.hint}`,
+          Arr.join(footer, "\n"),
+        ],
+        (block) => block !== undefined,
+      ),
+      "\n\n",
+    );
   }
 }
 

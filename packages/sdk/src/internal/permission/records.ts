@@ -1,12 +1,12 @@
-import { Effect } from "effect";
+import { Effect, Array as Arr, Record as Rec } from "effect";
 
 import type { Roles } from "@ensforge/contracts";
-import type { Hex } from "viem";
 
 import type { RecordOperation } from "../../actions/permission/get/types.js";
 import type { Selection } from "../../actions/record/get/types.js";
 import type { AnyError } from "../../errors/types.js";
 import * as CoinType from "../../utils/CoinType.js";
+import { toAnyError } from "../anyError.js";
 import type { RecordWrites } from "../records/write-profiles.js";
 
 /** The PermissionedResolver role each record needs; public keys are not stored there. */
@@ -26,8 +26,8 @@ export const recordRoles: Record<
 
 /** The record operations a `record.set` write performs. */
 export const writeOperations = (writes: RecordWrites): RecordOperation[] => [
-  ...Object.keys(writes.texts ?? {}).map((key) => ({ setRecord: "text" as const, key })),
-  ...Object.keys(writes.addresses ?? {}).map((key) => ({
+  ...Arr.map(Rec.keys(writes.texts ?? {}), (key) => ({ setRecord: "text" as const, key })),
+  ...Arr.map(Rec.keys(writes.addresses ?? {}), (key) => ({
     setRecord: "address" as const,
     key: /^\d+$/.test(key) ? BigInt(key) : key,
   })),
@@ -37,11 +37,11 @@ export const writeOperations = (writes: RecordWrites): RecordOperation[] => [
     : [{ setRecord: "abi" as const, key: writes.abi.contentType ?? 1n }]),
   ...(writes.pubkey === undefined ? [] : [{ setRecord: "pubkey" as const }]),
   ...(writes.nameRecord === undefined ? [] : [{ setRecord: "name" as const }]),
-  ...Object.keys(writes.interfaces ?? {}).map((key) => ({
+  ...Arr.map(Rec.keys(writes.interfaces ?? {}), (key) => ({
     setRecord: "interface" as const,
-    key: key as Hex,
+    key,
   })),
-  ...Object.keys(writes.data ?? {}).map((key) => ({ setRecord: "data" as const, key })),
+  ...Arr.map(Rec.keys(writes.data ?? {}), (key) => ({ setRecord: "data" as const, key })),
   ...(writes.clear === true ? [{ setRecord: "link" as const }] : []),
 ];
 
@@ -59,11 +59,11 @@ export const selectionOperations = (
 ): Effect.Effect<SelectionOperation[], AnyError> =>
   Effect.try({
     try: (): SelectionOperation[] => [
-      ...(selection.texts ?? []).map((key) => ({
+      ...Arr.map(selection.texts ?? [], (key) => ({
         path: ["texts", key] as const,
         operation: { setRecord: "text" as const, key },
       })),
-      ...(selection.addresses ?? []).map((coin) => ({
+      ...Arr.map(selection.addresses ?? [], (coin) => ({
         path: ["addresses", String(coin)] as const,
         operation: {
           setRecord: "address" as const,
@@ -82,14 +82,14 @@ export const selectionOperations = (
       ...(selection.nameRecord === true
         ? [{ path: ["nameRecord"] as const, operation: { setRecord: "name" as const } }]
         : []),
-      ...(selection.interfaces ?? []).map((id) => ({
+      ...Arr.map(selection.interfaces ?? [], (id) => ({
         path: ["interfaces", id] as const,
         operation: { setRecord: "interface" as const, key: id },
       })),
-      ...(selection.data ?? []).map((key) => ({
+      ...Arr.map(selection.data ?? [], (key) => ({
         path: ["data", key] as const,
         operation: { setRecord: "data" as const, key },
       })),
     ],
-    catch: (error) => error as AnyError,
+    catch: toAnyError,
   });

@@ -1,4 +1,4 @@
-import { Effect } from "effect";
+import { Effect, Array as Arr, String as Str } from "effect";
 
 import { Abis } from "@ensforge/contracts";
 import { bytesToHex, keccak256 } from "viem";
@@ -25,7 +25,7 @@ export const getRecords = Effect.fn("ensforge.dns.getRecords")(function* (
     return {
       resolver: null,
       zonehash: null,
-      records: queries.map(({ name, type }) => ({ name, type, data: null })),
+      records: Arr.map(queries, ({ name, type }) => ({ name, type, data: null })),
     };
   }
 
@@ -50,7 +50,7 @@ export const getRecords = Effect.fn("ensforge.dns.getRecords")(function* (
             // DNS owner names are case-insensitive and stored by the hash of their wire form.
             args: [
               node,
-              keccak256(bytesToHex(packetToBytes(query.name.toLowerCase()))),
+              keccak256(bytesToHex(packetToBytes(Str.toLowerCase(query.name)))),
               query.type,
             ],
             ...block,

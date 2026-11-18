@@ -1,3 +1,5 @@
+import { Array as Arr, String as Str } from "effect";
+
 import type { Hex } from "viem";
 import { labelhash } from "viem/ens";
 
@@ -18,8 +20,8 @@ export type NameParts = {
 
 /** Parts of a name that is already normalized and not the root. */
 export const nameParts = (name: string): NameParts => {
-  const labels = name.split(".");
-  const [label = ""] = labels;
+  const labels = Str.split(".")(name);
+  const [label] = labels;
 
   return {
     name,
@@ -27,7 +29,13 @@ export const nameParts = (name: string): NameParts => {
     labelhash: labelhash(label),
     node: namehash(name),
     dns: dnsEncode(name),
-    encodedLabel: label.startsWith("["),
+    encodedLabel: Str.startsWith("[")(label),
     isEth2ld: labels.length === 2 && labels[1] === "eth",
   };
+};
+
+/** The name without its first label; a single label is returned as it is. */
+export const parentOf = (name: string): string => {
+  const labels = Str.split(".")(name);
+  return labels.length === 1 ? name : Arr.join(Arr.drop(labels, 1), ".");
 };

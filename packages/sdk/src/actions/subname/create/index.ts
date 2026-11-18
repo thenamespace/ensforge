@@ -90,6 +90,7 @@ export declare namespace create {
      * Resolver of the child. By default it gets its own PermissionedResolver; `"parent"` uses
      * the parent's resolver and `null` none.
      */
+    // oxlint-disable-next-line typescript/no-redundant-type-constituents -- the literal or explicit type argument documents the public type
     resolver?: string | "parent" | null | undefined;
     /** Records of the child. */
     records?: Omit<recordSet.Options, "name" | "resolver" | "clear" | "pubkey"> | undefined;

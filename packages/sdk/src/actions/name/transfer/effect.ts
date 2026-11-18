@@ -43,6 +43,7 @@ const v1Calls = (
         encodeFunctionData({
           abi: Abis.v1.nameWrapper,
           functionName: "safeTransferFrom",
+          // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- a v2 or wrapped name's state always carries this field; `Name.State` types it as nullable for every protocol
           args: [state.owner as Address, to, hexToBigInt(data.parts.node), 1n, "0x"],
         }),
       ),
@@ -56,6 +57,7 @@ const v1Calls = (
       encodeFunctionData({
         abi: Abis.v1.baseRegistrar,
         functionName: "safeTransferFrom",
+        // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- a v2 or wrapped name's state always carries this field; `Name.State` types it as nullable for every protocol
         args: [state.registrant as Address, to, tokenId],
       }),
     );
@@ -197,13 +199,15 @@ export const plan = Effect.fnUntraced(function* (
   yield* requireRegistered(loaded);
 
   const { state } = loaded;
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- a v2 or wrapped name's state always carries this field; `Name.State` types it as nullable for every protocol
   const tokenId = state.tokenId as bigint;
   const calls =
     state.protocol === "v2"
       ? [
           call(
+            // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- a v2 or wrapped name's state always carries this field; `Name.State` types it as nullable for every protocol
             state.registry as Address,
-            options.unsafe
+            options.unsafe === true
               ? encodeFunctionData({
                   abi: Abis.v2.permissionedRegistry,
                   functionName: "unsafeTransfer",
@@ -212,11 +216,14 @@ export const plan = Effect.fnUntraced(function* (
               : encodeFunctionData({
                   abi: Abis.v2.permissionedRegistry,
                   functionName: "safeTransferFrom",
+                  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- a v2 or wrapped name's state always carries this field; `Name.State` types it as nullable for every protocol
                   args: [state.owner as Address, to, tokenId, 1n, "0x"],
                 }),
           ),
         ]
-      : yield* v1Calls(yield* requireV1Contracts(client), loaded, to, options.role ?? "owner");
+      : yield* requireV1Contracts(client).pipe(
+          Effect.flatMap((contracts) => v1Calls(contracts, loaded, to, options.role ?? "owner")),
+        );
   const sender = addressOf(options.account) ?? client.account;
   const control = yield* recordControl(client, loaded, sender, to, options.records ?? "keep");
 

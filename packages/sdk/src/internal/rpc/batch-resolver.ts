@@ -1,12 +1,12 @@
-import { Effect, Exit, Request, RequestResolver } from "effect";
+import { Effect, Exit, Request, RequestResolver, Array as Arr } from "effect";
 
 import type { Abi, Address, BlockTag, Hex } from "viem";
 import { multicall } from "viem/actions";
 
 import { stateOf, type State } from "../../client/state.js";
 import type { Client } from "../../client/types.js";
-import { fromCause } from "../../errors/translate/fromCause.js";
 import type { AnyError } from "../../errors/types.js";
+import { toAnyError } from "../anyError.js";
 
 /** One contract read waiting to be batched. */
 export class ContractRead extends Request.Class<
@@ -22,8 +22,7 @@ export class ContractRead extends Request.Class<
     readonly blockTag: BlockTag;
   },
   unknown,
-  AnyError,
-  never
+  AnyError
 > {}
 
 /** Splits reads into chunks of at most `batchSize` calldata bytes; a larger read goes alone. */
@@ -69,7 +68,7 @@ const makeResolver = (client: Client, batchSize: number, wait: number) =>
           Effect.tryPromise({
             try: () =>
               multicall(client.publicClient, {
-                contracts: group.map(({ request }) => ({
+                contracts: Arr.map(group, ({ request }) => ({
                   address: request.address,
                   abi: request.abi,
                   functionName: request.functionName,
@@ -79,7 +78,7 @@ const makeResolver = (client: Client, batchSize: number, wait: number) =>
                 batchSize: 0,
                 ...block,
               }),
-            catch: (cause) => fromCause(cause) as AnyError,
+            catch: toAnyError,
           }).pipe(
             Effect.match({
               onFailure: (error) => {
@@ -91,9 +90,7 @@ const makeResolver = (client: Client, batchSize: number, wait: number) =>
                   entry.completeUnsafe(
                     result?.status === "success"
                       ? Exit.succeed(result.result)
-                      : Exit.fail(
-                          fromCause(result?.error, { contract: entry.request.address }) as AnyError,
-                        ),
+                      : Exit.fail(toAnyError(result?.error, { contract: entry.request.address })),
                   );
                 }
               },

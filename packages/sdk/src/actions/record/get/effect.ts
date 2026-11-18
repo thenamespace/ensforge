@@ -1,3 +1,4 @@
+/* oxlint-disable typescript/no-unsafe-type-assertion -- the cast restores the action's generic, overloaded signature */
 import { Effect } from "effect";
 
 import type { Client } from "../../../client/types.js";
@@ -32,7 +33,8 @@ export const get = Effect.fn("ensforge.record.get")(
 
     // The ENSv1 bridge answers for ENSv1 names after the launch: report the ENSv1 resolver it
     // read, as `resolver.get` does. Only bridged names pay this extra read.
-    const served = yield* behindEnsV1Bridge(client, yield* normalizeName(name), options);
+    const normalized = yield* normalizeName(name);
+    const served = yield* behindEnsV1Bridge(client, normalized, options);
     return { ...records, resolver: served?.address ?? records.resolver };
   },
   Action.withContext("record.get", { contractKind: "resolver" }),

@@ -1,3 +1,4 @@
+/* oxlint-disable typescript/no-unsafe-type-assertion -- viem's generic overloads cannot relate a runtime ABI to its arguments */
 import { Effect } from "effect";
 
 import {
@@ -60,6 +61,7 @@ export const readContract = <
       () =>
         viemReadContract(client.publicClient, {
           address: parameters.address,
+          // oxlint-disable-next-line typescript/no-unnecessary-type-assertion -- tsc requires this assertion; tsgolint resolves the parameter type differently
           abi: parameters.abi as Abi,
           functionName: parameters.functionName,
           args,
@@ -78,6 +80,7 @@ export const readContract = <
     functionName: parameters.functionName,
     args,
     // `ReadContractParameters` already checks the arguments against the ABI.
+    // oxlint-disable-next-line typescript/no-unnecessary-type-assertion -- tsc requires this assertion; tsgolint resolves the parameter type differently
     callData: encodeFunctionData({
       abi: parameters.abi,
       functionName: parameters.functionName,

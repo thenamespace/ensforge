@@ -1,4 +1,4 @@
-import { Effect } from "effect";
+import { Effect, Array as Arr } from "effect";
 
 import type { Address } from "viem";
 
@@ -15,7 +15,7 @@ import { readPermissionFacts } from "./facts.js";
 
 /** The account has the authority a denied check needs, and something else blocks it. */
 const authorized = (check: PermissionCheck): boolean =>
-  check.missing.every((requirement) => requirement.type === "blocked");
+  Arr.every(check.missing, (requirement) => requirement.type === "blocked");
 
 /**
  * Explains a failed `subname.remove`: a parent expiring before the next block, else for an
@@ -80,5 +80,6 @@ export const explainUpdate = Effect.fnUntraced(function* (
     ...(options.resolver === undefined ? [] : ["setResolver" as const]),
     ...(options.expiry === undefined ? [] : ["renew" as const]),
   ];
-  return explainDenied(yield* checkLoaded(client, child, account, operations), account);
+  const checks = yield* checkLoaded(client, child, account, operations);
+  return explainDenied(checks, account);
 });

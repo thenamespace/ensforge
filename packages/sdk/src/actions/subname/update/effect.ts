@@ -25,6 +25,7 @@ const v2Calls = (
   { child }: LoadedSubname,
   changes: { readonly resolver: Address | undefined; readonly expiry: bigint | undefined },
 ): Plan.Call[] => {
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- a v2 or wrapped name's state always carries this field; `Name.State` types it as nullable for every protocol
   const registry = child.state.registry as Address;
   const labelId = hexToBigInt(child.data.parts.labelhash);
   return [

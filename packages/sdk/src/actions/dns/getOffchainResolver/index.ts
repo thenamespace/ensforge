@@ -81,6 +81,7 @@ export declare namespace getOffchainResolver {
 /** Builds a deferred read for `Actions.batch`. */
 getOffchainResolver.request = Action.request(
   "dns.getOffchainResolver",
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Action.Declared narrows errors to the documented @throws
   Impl.getOffchainResolver as Action.Declared<
     typeof Impl.getOffchainResolver,
     getOffchainResolver.ErrorType

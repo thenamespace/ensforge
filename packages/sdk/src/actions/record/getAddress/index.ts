@@ -97,6 +97,7 @@ export declare namespace getAddress {
 /** Builds a deferred read for `Actions.batch`. */
 getAddress.request = Action.request(
   "record.getAddress",
+  // oxlint-disable-next-line typescript/no-unnecessary-type-assertion -- Action.Declared narrows errors to the documented @throws; dropping it changes the generic request type
   Impl.getAddress as Action.Declared<typeof Impl.getAddress, getAddress.ErrorType>,
 );
 

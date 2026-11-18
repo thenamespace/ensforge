@@ -1,3 +1,5 @@
+import { Array as Arr, Option, String as Str } from "effect";
+
 import { jsdocText } from "../jsdoc.ts";
 import { stabilities } from "../lint-jsdoc/stability.ts";
 import {
@@ -74,48 +76,56 @@ export const errorType = (
   // `Errors.AnyError` covers every SDK class; the package's own classes are still listed.
   const base = documented.includes("AnyError") ? "AnyError" : write ? "WriteError" : "CommonError";
   const covered = base === "AnyError" ? [] : write ? writeErrors : commonErrors;
-  const listed = documented.filter((name) =>
+  const listed = Arr.filter(documented, (name) =>
     profile.ownErrors.includes(name)
       ? true
       : base !== "AnyError" && name !== base && !covered.includes(name),
   );
-  return [
-    `Errors.${base}`,
-    ...listed.map((name) => (profile.ownErrors.includes(name) ? name : `Errors.${name}`)),
-  ].join(" | ");
+  return Arr.join(
+    [
+      `Errors.${base}`,
+      ...Arr.map(listed, (name) => (profile.ownErrors.includes(name) ? name : `Errors.${name}`)),
+    ],
+    " | ",
+  );
 };
 
-const pascal = (name: string): string => `${name.charAt(0).toUpperCase()}${name.slice(1)}`;
+const pascal = (name: string): string => Str.capitalize(name);
 const indent = (text: string, spaces: number): string =>
-  text.replaceAll(/^(?=.)/gm, " ".repeat(spaces));
+  Str.replaceAll(/^(?=.)/gm, Str.repeat(spaces)(" "))(text);
 
 /**
  * A domain's `@stability`, for its namespace re-export and decorator: the most stable of its
  * actions' tags, since the namespace stays while any of its actions does.
  */
 const domainStability = ({ actions }: Domain): string => {
-  const tags = new Set(actions.map((action) => /^\s*\* @stability (\w+)/m.exec(action.jsdoc)?.[1]));
-  return stabilities.find((value) => tags.has(value)) ?? "stable";
+  const tags = new Set(
+    Arr.map(actions, (action) => /^\s*\* @stability (\w+)/m.exec(action.jsdoc)?.[1]),
+  );
+  return Option.getOrElse(
+    Arr.findFirst(stabilities, (value) => tags.has(value)),
+    () => "stable",
+  );
 };
 
 /** First paragraph of a JSDoc block, as a one-line doc comment for decorators. */
 const summary = (jsdoc: string): string => {
-  const lines = jsdocText(jsdoc).split("\n");
-  const end = lines.findIndex((line, index) => index > 0 && line.trim() === "");
-  return lines
-    .slice(0, end === -1 ? undefined : end)
-    .join(" ")
-    .trim();
+  const lines = Str.split(jsdocText(jsdoc), "\n");
+  const end = Arr.findFirstIndex(lines, (line, index) => index > 0 && Str.trim(line) === "");
+  return Str.trim(Arr.join(lines.slice(0, Option.getOrUndefined(end)), " "));
 };
 
 /** `actions/<domain>/index.ts`: re-exports the Promise actions. */
 export const domainBarrel = ({ actions }: Domain): string => {
-  const folders = [...new Set(actions.map((action) => action.folder))];
-  const lines = folders.map((folder) => {
-    const names = actions.filter((action) => action.folder === folder).map((action) => action.name);
-    return `export { ${names.join(", ")} } from "./${folder}/index.js";`;
+  const folders = [...new Set(Arr.map(actions, (action) => action.folder))];
+  const lines = Arr.map(folders, (folder) => {
+    const names = Arr.map(
+      Arr.filter(actions, (action) => action.folder === folder),
+      (action) => action.name,
+    );
+    return `export { ${Arr.join(names, ", ")} } from "./${folder}/index.js";`;
   });
-  return `${header}${lines.join("\n")}\n`;
+  return `${header}${Arr.join(lines, "\n")}\n`;
 };
 
 const effectExport = (domain: string, action: Action): string => {
@@ -131,15 +141,18 @@ const effectExport = (domain: string, action: Action): string => {
       ? `/* @__PURE__ */ Object.assign(${impl}.${action.name}, ${path})`
       : `/* @__PURE__ */ Object.assign(${declared(`${impl}.${action.name}`)}, ${path})`;
 
-  return [
-    action.jsdoc,
-    `export const ${action.name} = ${value};`,
-    `export declare namespace ${action.name} {`,
-    `  type Options = ${action.name}Types.Options;`,
-    `  type ReturnType = ${action.name}Types.ReturnType;`,
-    `  type ErrorType = ${action.name}Types.ErrorType;`,
-    "}",
-  ].join("\n");
+  return Arr.join(
+    [
+      action.jsdoc,
+      `export const ${action.name} = ${value};`,
+      `export declare namespace ${action.name} {`,
+      `  type Options = ${action.name}Types.Options;`,
+      `  type ReturnType = ${action.name}Types.ReturnType;`,
+      `  type ErrorType = ${action.name}Types.ErrorType;`,
+      "}",
+    ],
+    "\n",
+  );
 };
 
 /** `actions/<domain>/effect.ts`: the Effect mirror, with the Promise action's docs and types. */
@@ -147,16 +160,29 @@ export const effectBarrel = (
   { domain, actions }: Domain,
   profile: Profile = sdkProfile,
 ): string => {
-  const folders = [...new Set(actions.map((action) => action.folder))];
-  const imports = folders.flatMap((folder) => {
-    const names = actions.filter((action) => action.folder === folder).map((action) => action.name);
+  const folders = [...new Set(Arr.map(actions, (action) => action.folder))];
+  const imports = Arr.flatMap(folders, (folder) => {
+    const names = Arr.map(
+      Arr.filter(actions, (action) => action.folder === folder),
+      (action) => action.name,
+    );
     return [
-      `import type { ${names.map((name) => `${name} as ${name}Types`).join(", ")} } from "./${folder}/index.js";`,
+      `import type { ${Arr.join(
+        Arr.map(names, (name) => `${name} as ${name}Types`),
+        ", ",
+      )} } from "./${folder}/index.js";`,
       `import * as ${folder}Impl from "./${folder}/effect.js";`,
     ];
   });
 
-  return `${header}${profile.actionImport}\n${imports.join("\n")}\n\n${actions.map((action) => effectExport(domain, action)).join("\n\n")}\n`;
+  // `Action.Declared` narrows each action's error channel to its documented `@throws` set: the
+  // cast is the point, so the file opts out of the rule once rather than per export.
+  const disable =
+    "/* oxlint-disable typescript/no-unsafe-type-assertion -- Action.Declared narrows errors to @throws */\n";
+  return `${header}${disable}${profile.actionImport}\n${Arr.join(imports, "\n")}\n\n${Arr.join(
+    Arr.map(actions, (action) => effectExport(domain, action)),
+    "\n\n",
+  )}\n`;
 };
 
 /** `actions/index.ts` or `actions/effect.ts`: one namespace per domain, plus `batch` in the sdk. */
@@ -165,36 +191,40 @@ export const treeBarrel = (
   file: "index" | "effect",
   profile: Profile = sdkProfile,
 ): string => {
-  const namespaces = domains.map(
+  const namespaces = Arr.map(
+    domains,
     (entry) =>
       `/**\n * The \`${entry.domain}\` actions.\n *\n * @stability ${domainStability(entry)}\n */\nexport * as ${entry.domain} from "./${entry.domain}/${file}.js";`,
   );
   const batch = profile.batch ? [`export { batch } from "../batch/${file}.js";`] : [];
-  return `${header}${[...namespaces, ...batch].join("\n\n")}\n`;
+  return `${header}${Arr.join([...namespaces, ...batch], "\n\n")}\n`;
 };
 
 /** `actions/requests.ts`: the Effect implementation of every read with `.request`, by path. */
 export const requestsTable = (domains: readonly Domain[]): string => {
-  const reads = domains.flatMap(({ domain, actions }) =>
-    actions
-      .filter((action) => action.properties.includes("request"))
-      .map((action) => ({ domain, action })),
+  const reads = Arr.flatMap(domains, ({ domain, actions }) =>
+    Arr.map(
+      Arr.filter(actions, (action) => action.properties.includes("request")),
+      (action) => ({ domain, action }),
+    ),
   );
-  const imports = reads.map(
+  const imports = Arr.map(
+    reads,
     ({ domain, action }) =>
       `import { ${action.name} as ${domain}${pascal(action.name)} } from "./${domain}/${action.folder}/effect.js";`,
   );
-  const entries = reads.map(
+  const entries = Arr.map(
+    reads,
     ({ domain, action }) => `"${domain}.${action.name}": ${domain}${pascal(action.name)},`,
   );
-  return `${header}import type { Effect } from "effect";\n\nimport type { Client } from "../client/types.js";\n${imports.join("\n")}\n\n/**\n * Read implementations by action path, for \`Actions.batch\`.\n *\n * @internal\n */\nexport const requests: Readonly<\n  Record<string, (client: Client, options: never) => Effect.Effect<unknown, unknown>>\n> = {\n${indent(entries.join("\n"), 2)}\n};\n`;
+  return `${header}import type { Effect } from "effect";\n\nimport type { Client } from "../client/types.js";\nimport type { AnyError } from "../errors/types.js";\n${Arr.join(imports, "\n")}\n\n/**\n * Read implementations by action path, for \`Actions.batch\`.\n *\n * @internal\n */\nexport const requests: Readonly<\n  Record<string, (client: Client, options: never) => Effect.Effect<unknown, AnyError>>\n> = {\n${indent(Arr.join(entries, "\n"), 2)}\n};\n`;
 };
 
 const decoratorBlock = (entry: Domain): string => {
   const { domain, actions } = entry;
   const stability = domainStability(entry);
   const typeName = `${pascal(domain)}Actions`;
-  const members = actions.map((action) => {
+  const members = Arr.map(actions, (action) => {
     const ref = `${domain}.${action.name}`;
     // Generic actions declare their own bound signature, which `Parameters`/`ReturnType` would erase.
     const type = action.types.includes("Bound")
@@ -204,34 +234,44 @@ const decoratorBlock = (entry: Domain): string => {
         : `Bound<typeof ${ref}>`;
     return `/** ${summary(action.jsdoc)} */\nreadonly ${action.name}: ${type};`;
   });
-  const values = actions.map((action) => {
+  const values = Arr.map(actions, (action) => {
     const ref = `${domain}.${action.name}`;
     if (!isWrite(action)) return `${action.name}: (options) => ${ref}(client, options),`;
 
-    const methods = writeMethods.map(
+    const methods = Arr.map(
+      writeMethods,
       (method) =>
         `${method}: (options: Parameters<typeof ${ref}.${method}>[1]) => ${ref}.${method}(client, options),`,
     );
-    return `${action.name}: Object.assign((options: Parameters<typeof ${ref}>[1]) => ${ref}(client, options), {\n${indent(methods.join("\n"), 2)}\n}),`;
+    return `${action.name}: Object.assign((options: Parameters<typeof ${ref}>[1]) => ${ref}(client, options), {\n${indent(Arr.join(methods, "\n"), 2)}\n}),`;
   });
 
-  return [
-    `/**\n * \`${domain}\` actions bound to a client.\n *\n * @stability ${stability}\n */`,
-    `export type ${typeName} = {\n  readonly ${domain}: {\n${indent(members.join("\n"), 4)}\n  };\n};`,
-    "",
-    `/**\n * Adds the \`${domain}\` actions to a client.\n *\n * @stability ${stability}\n * @category decorators\n * @since 1.0.0\n */`,
-    `export const ${domain}Actions =\n  () =>\n  (client: Client<object>): ${typeName} => ({\n    ${domain}: {\n${indent(values.join("\n"), 6)}\n    },\n  });`,
-  ].join("\n");
+  return Arr.join(
+    [
+      `/**\n * \`${domain}\` actions bound to a client.\n *\n * @stability ${stability}\n */`,
+      `export type ${typeName} = {\n  readonly ${domain}: {\n${indent(Arr.join(members, "\n"), 4)}\n  };\n};`,
+      "",
+      `/**\n * Adds the \`${domain}\` actions to a client.\n *\n * @stability ${stability}\n * @category decorators\n * @since 1.0.0\n */`,
+      `export const ${domain}Actions =\n  () =>\n  (client: Client<object>): ${typeName} => ({\n    ${domain}: {\n${indent(Arr.join(values, "\n"), 6)}\n    },\n  });`,
+    ],
+    "\n",
+  );
 };
 
 /** `actions/decorators.ts`: one decorator per domain, plus `batchActions()` and `ensActions()` in the sdk. */
 export const decorators = (domains: readonly Domain[], profile: Profile = sdkProfile): string => {
-  const included = domains.filter(({ domain }) => !profile.optIn.includes(domain));
-  const all = included.map(({ domain }) => `${pascal(domain)}Actions`).join(" & ");
-  const spread = [
-    ...included.map(({ domain }) => `...${domain}Actions()(client),`),
-    "...batchActions()(client),",
-  ].join("\n");
+  const included = Arr.filter(domains, ({ domain }) => !profile.optIn.includes(domain));
+  const all = Arr.join(
+    Arr.map(included, ({ domain }) => `${pascal(domain)}Actions`),
+    " & ",
+  );
+  const spread = Arr.join(
+    [
+      ...Arr.map(included, ({ domain }) => `...${domain}Actions()(client),`),
+      "...batchActions()(client),",
+    ],
+    "\n",
+  );
 
   const batch = profile.batch
     ? [
@@ -255,16 +295,19 @@ export const decorators = (domains: readonly Domain[], profile: Profile = sdkPro
           `export const ${profile.aggregate.name} =\n  () =>\n  (client: Client<object>): ${profile.aggregate.type} => ({\n${indent(spread, 4)}\n  });`,
         ];
 
-  return [
-    header,
-    ...(profile.batch ? [`import { batch } from "../batch/index.js";`] : []),
-    `import type { Client } from "${profile.clientImport}";`,
-    `import type { Bound, BoundWrite } from "${profile.boundImport}";`,
-    ...domains.map(({ domain }) => `import * as ${domain} from "./${domain}/index.js";`),
-    "",
-    domains.map(decoratorBlock).join("\n\n"),
-    ...batch,
-    ...aggregate,
-    "",
-  ].join("\n");
+  return Arr.join(
+    [
+      header,
+      ...(profile.batch ? [`import { batch } from "../batch/index.js";`] : []),
+      `import type { Client } from "${profile.clientImport}";`,
+      `import type { Bound, BoundWrite } from "${profile.boundImport}";`,
+      ...Arr.map(domains, ({ domain }) => `import * as ${domain} from "./${domain}/index.js";`),
+      "",
+      Arr.join(Arr.map(domains, decoratorBlock), "\n\n"),
+      ...batch,
+      ...aggregate,
+      "",
+    ],
+    "\n",
+  );
 };

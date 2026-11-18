@@ -1,4 +1,4 @@
-import { Effect } from "effect";
+import { Effect, Array as Arr } from "effect";
 
 import type { Client } from "../../../client/types.js";
 import type { AnyError } from "../../../errors/types.js";
@@ -21,7 +21,8 @@ export const get = Effect.fn("ensforge.migration.get")(function* (
       : yield* requireAddress(options.account, "account");
   const resolver: ResolverChoice =
     options.resolver === undefined || ["new", "owned", "keep"].includes(options.resolver)
-      ? (options.resolver as ResolverChoice)
+      ? // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- narrowed by the keyword check above
+        (options.resolver as ResolverChoice)
       : yield* requireAddress(options.resolver, "resolver");
 
   const { status } = yield* inspectMigration(client, options.name, {
@@ -47,8 +48,8 @@ export const get = Effect.fn("ensforge.migration.get")(function* (
           ? null
           : {
               keys: [
-                ...inventory.texts.map((key) => `text:${key}`),
-                ...inventory.addresses.map((coin) => `addr:${coin}`),
+                ...Arr.map(inventory.texts, (key) => `text:${key}`),
+                ...Arr.map(inventory.addresses, (coin) => `addr:${coin}`),
                 ...(inventory.contentHash ? ["contenthash"] : []),
               ],
               skipped: inventory.skipped,

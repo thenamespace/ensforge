@@ -18,10 +18,12 @@ export const setResolverCall = (
 ): Effect.Effect<Plan.Call, AnyError> => {
   if (state.protocol === "v2") {
     return Effect.succeed({
+      // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- a v2 or wrapped name's state always carries this field; `Name.State` types it as nullable for every protocol
       to: state.registry as Address,
       data: encodeFunctionData({
         abi: Abis.v2.permissionedRegistry,
         functionName: "setResolver",
+        // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- a v2 or wrapped name's state always carries this field; `Name.State` types it as nullable for every protocol
         args: [state.tokenId as bigint, resolver],
       }),
       value: 0n,

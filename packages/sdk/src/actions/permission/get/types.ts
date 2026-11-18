@@ -39,6 +39,7 @@ export type RecordOperation = {
     | "interface"
     | "data"
     | "link";
+  // oxlint-disable-next-line typescript/no-redundant-type-constituents -- the literal or explicit type argument documents the public type
   readonly key?: string | bigint | Hex | undefined;
 };
 

@@ -1,7 +1,7 @@
 import { Effect } from "effect";
 
 import { Abis, Roles } from "@ensforge/contracts";
-import { encodeFunctionData, isAddressEqual } from "viem";
+import { encodeFunctionData, isAddressEqual, type Address } from "viem";
 
 import type { Client } from "../../../client/types.js";
 import { ConfigError } from "../../../errors/classes/ConfigError.js";
@@ -18,6 +18,24 @@ import * as Rpc from "../../../internal/rpc/index.js";
 import type { Plan } from "../../../plan/Plan.js";
 import type { Write } from "../../../Types.js";
 import type { upgrade as Promises } from "./index.js";
+
+/** Whether `target` accepts upgrading from `current`; an address without code accepts nothing. */
+const acceptsUpgradeFrom = (
+  client: Client,
+  target: Address,
+  current: Address,
+): Effect.Effect<boolean | undefined, AnyError> =>
+  Rpc.readContractOrUndefined(client, {
+    address: target,
+    abi: Abis.v2.userRegistry,
+    functionName: "canUpgradeFrom",
+    args: [current],
+  }).pipe(
+    Effect.catchIf(
+      (error: AnyError) => error.code === "CONTRACT_NOT_DEPLOYED",
+      () => Effect.undefined,
+    ),
+  );
 
 /** @internal Builds the plan of `Actions.registry.upgrade`. */
 export const plan = Effect.fnUntraced(function* (
@@ -54,18 +72,7 @@ export const plan = Effect.fnUntraced(function* (
             functionName: "hasRootRoles",
             args: [Roles.registry.upgrade, signer],
           }),
-          accepts: Rpc.readContractOrUndefined(client, {
-            address: target,
-            abi: Abis.v2.userRegistry,
-            functionName: "canUpgradeFrom",
-            args: [current],
-          }).pipe(
-            // An address without code is no implementation either.
-            Effect.catchIf(
-              (error) => error.code === "CONTRACT_NOT_DEPLOYED",
-              () => Effect.undefined,
-            ),
-          ),
+          accepts: acceptsUpgradeFrom(client, target, current),
         },
         { concurrency: "unbounded" },
       )
@@ -124,6 +131,7 @@ export const plan = Effect.fnUntraced(function* (
         data: encodeFunctionData({
           abi: Abis.v2.userRegistry,
           functionName: "upgradeToAndCall",
+          // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- `target` is set for an upgrade that has an implementation
           args: [target as `0x${string}`, "0x"],
         }),
         value: 0n,

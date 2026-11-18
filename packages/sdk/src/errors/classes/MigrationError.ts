@@ -1,3 +1,5 @@
+import { Array as Arr } from "effect";
+
 import { EnsforgeError, withDefaults } from "../EnsforgeError.js";
 
 const defaults: {
@@ -10,7 +12,7 @@ const defaults: {
     details:
       o.blockers === undefined || o.blockers.length === 0
         ? []
-        : [`Blockers: ${o.blockers.join(", ")}`],
+        : [`Blockers: ${Arr.join(o.blockers, ", ")}`],
   }),
   ALREADY_MIGRATED: () => ({ shortMessage: "The name is already on ENSv2." }),
   NAME_NOT_LOCKED: () => ({

@@ -1,4 +1,4 @@
-import { Effect } from "effect";
+import { Effect, Array as Arr } from "effect";
 
 import { coinTypeToNameMap } from "@ensdomains/address-encoder";
 import type { Hex } from "viem";
@@ -29,7 +29,7 @@ export const loadRecordCodecs = (needs: {
   readonly contentHash?: boolean | undefined;
   readonly abi?: boolean | undefined;
 }): Effect.Effect<RecordCodecs> => {
-  const nonEvm = [...new Set(needs.coinTypes.filter((coinType) => !isEvmCoinType(coinType)))];
+  const nonEvm = [...new Set(Arr.filter(needs.coinTypes, (coinType) => !isEvmCoinType(coinType)))];
   return Effect.all(
     {
       // Every non-EVM codec lives in one lazily loaded chunk. A coin without a codec stays out:
@@ -40,11 +40,13 @@ export const loadRecordCodecs = (needs: {
           ? Effect.succeed([])
           : Effect.promise(() => import("@ensdomains/address-encoder/coins")).pipe(
               Effect.map((coins) =>
-                nonEvm.flatMap((coinType) => {
+                Arr.flatMap(nonEvm, (coinType) => {
                   const name =
+                    // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- coin type names key the generated map, and the coins module exports address coders by name
                     coinTypeToNameMap[String(coinType) as keyof typeof coinTypeToNameMap]?.[0];
                   const coder =
                     name === undefined ? undefined : (coins as Record<string, unknown>)[name];
+                  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- coin type names key the generated map, and the coins module exports address coders by name
                   return coder === undefined ? [] : [[coinType, coder as AddressCoder] as const];
                 }),
               ),

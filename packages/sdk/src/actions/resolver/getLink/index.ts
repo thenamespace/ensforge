@@ -80,6 +80,7 @@ export declare namespace getLink {
 /** Builds a deferred read for `Actions.batch`. */
 getLink.request = Action.request(
   "resolver.getLink",
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Action.Declared narrows errors to the documented @throws
   Impl.getLink as Action.Declared<typeof Impl.getLink, getLink.ErrorType>,
 );
 

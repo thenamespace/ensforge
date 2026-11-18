@@ -1,3 +1,5 @@
+import { Array as Arr, Record as Rec } from "effect";
+
 import { Abis } from "@ensforge/contracts";
 import {
   encodeFunctionData,
@@ -44,7 +46,7 @@ const coinTypeOf = (key: string): bigint => (/^\d+$/.test(key) ? BigInt(key) : C
 export const recordWriteCodecs = (writes: RecordWrites) =>
   loadRecordCodecs({
     // Unknown coin names are left out here; encoding then rejects them with their own error.
-    coinTypes: Object.keys(writes.addresses ?? {}).flatMap((key) => {
+    coinTypes: Arr.flatMap(Rec.keys(writes.addresses ?? {}), (key) => {
       try {
         return [coinTypeOf(key)];
       } catch {
@@ -87,7 +89,7 @@ export const encodeRecordWrites = (
     );
   }
 
-  for (const [key, value] of Object.entries(writes.texts ?? {})) {
+  for (const [key, value] of Rec.toEntries(writes.texts ?? {})) {
     calls.push(
       byName
         ? encodeFunctionData({
@@ -103,7 +105,7 @@ export const encodeRecordWrites = (
     );
   }
 
-  for (const [key, value] of Object.entries(writes.addresses ?? {})) {
+  for (const [key, value] of Rec.toEntries(writes.addresses ?? {})) {
     const coinType = coinTypeOf(key);
     // ENSv1 PublicResolvers store coin 60 as a 20-byte address and revert on empty bytes, so a
     // deletion there writes the zero address; the PermissionedResolver accepts empty bytes.
@@ -165,6 +167,7 @@ export const encodeRecordWrites = (
       });
     }
 
+    // oxlint-disable-next-line effecttsgo/global-json -- Effect's Schema is large, and this is on every ENS write's static path
     const data = value === null ? "0x" : isHex(value) ? value : stringToHex(JSON.stringify(value));
     calls.push(
       byName
@@ -216,7 +219,7 @@ export const encodeRecordWrites = (
     );
   }
 
-  for (const [id, implementer] of Object.entries(writes.interfaces ?? {})) {
+  for (const [id, implementer] of Rec.toEntries(writes.interfaces ?? {})) {
     if (!isHex(id) || id.length !== 10) {
       throw new InvalidInputError({ code: "INVALID_RECORD_VALUE", field: "interfaces", input: id });
     }
@@ -243,7 +246,7 @@ export const encodeRecordWrites = (
     );
   }
 
-  for (const [key, value] of Object.entries(writes.data ?? {})) {
+  for (const [key, value] of Rec.toEntries(writes.data ?? {})) {
     calls.push(
       byName
         ? encodeFunctionData({
@@ -270,16 +273,16 @@ export const writtenProfiles = (
   writes: RecordWrites,
 ): readonly (readonly [profile: keyof ResolverProfiles, records: string])[] => {
   const profiles: readonly (readonly [keyof ResolverProfiles, string, boolean])[] = [
-    ["text", "text records", Object.keys(writes.texts ?? {}).length > 0],
-    ["addresses", "address records", Object.keys(writes.addresses ?? {}).length > 0],
+    ["text", "text records", Rec.keys(writes.texts ?? {}).length > 0],
+    ["addresses", "address records", Rec.keys(writes.addresses ?? {}).length > 0],
     ["contentHash", "content hash records", writes.contentHash !== undefined],
     ["abi", "ABI records", writes.abi !== undefined],
     ["pubkey", "public key records", writes.pubkey !== undefined],
     ["name", "name records", writes.nameRecord !== undefined],
-    ["interfaces", "interface records", Object.keys(writes.interfaces ?? {}).length > 0],
-    ["data", "data records", Object.keys(writes.data ?? {}).length > 0],
+    ["interfaces", "interface records", Rec.keys(writes.interfaces ?? {}).length > 0],
+    ["data", "data records", Rec.keys(writes.data ?? {}).length > 0],
   ];
-  return profiles.flatMap(([profile, records, isWritten]) =>
+  return Arr.flatMap(profiles, ([profile, records, isWritten]) =>
     isWritten ? [[profile, records] as const] : [],
   );
 };
@@ -289,7 +292,8 @@ export const resolverCall = (resolver: Address, calls: readonly Hex[]): Plan.Cal
   to: resolver,
   data:
     calls.length === 1
-      ? (calls[0] as Hex)
+      ? // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- the collection is known to be non-empty or the index in range here; `noUncheckedIndexedAccess` cannot see it
+        (calls[0] as Hex)
       : encodeFunctionData({
           abi: Abis.shared.multicallResolver,
           functionName: "multicall",

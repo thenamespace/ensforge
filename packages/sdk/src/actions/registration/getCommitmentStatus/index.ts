@@ -82,6 +82,7 @@ export declare namespace getCommitmentStatus {
 /** Builds a deferred read for `Actions.batch`. */
 getCommitmentStatus.request = Action.request(
   "registration.getCommitmentStatus",
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Action.Declared narrows errors to the documented @throws
   Impl.getCommitmentStatus as Action.Declared<
     typeof Impl.getCommitmentStatus,
     getCommitmentStatus.ErrorType

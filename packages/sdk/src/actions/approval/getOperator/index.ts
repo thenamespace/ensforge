@@ -76,6 +76,7 @@ export declare namespace getOperator {
 /** Builds a deferred read for `Actions.batch`. */
 getOperator.request = Action.request(
   "approval.getOperator",
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Action.Declared narrows errors to the documented @throws
   Impl.getOperator as Action.Declared<typeof Impl.getOperator, getOperator.ErrorType>,
 );
 

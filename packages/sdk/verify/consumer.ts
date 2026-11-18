@@ -1,3 +1,5 @@
+import { Array as Arr } from "effect";
+
 // Compiled by `ensforge-dev dist-types` against the built declarations, as a user would.
 import { Actions, Ensforge, Errors, Name, ensActions, type Plan, type Write } from "@ensforge/sdk";
 import {
@@ -37,7 +39,7 @@ export const request = Actions.record.getText.request({ name: "nick.eth", key: "
 export const node: `0x${string}` = Name.namehash("nick.eth");
 
 export const handle = (error: unknown): string => {
-  if (Errors.hasCode("MISSING_ROLES")(error)) return error.missingRoles.join(", ");
+  if (Errors.hasCode("MISSING_ROLES")(error)) return Arr.join(error.missingRoles, ", ");
   if (error instanceof Errors.CommitmentError && error.code === "COMMITMENT_TOO_NEW")
     return String(error.readyAt);
   return Errors.describe(error).title;

@@ -1,4 +1,4 @@
-import { Clock, Effect } from "effect";
+import { Clock, Effect, Record as Rec, Array as Arr, Option } from "effect";
 
 import type { Hex } from "viem";
 import { getBlock, getTransaction } from "viem/actions";
@@ -59,7 +59,7 @@ export const sendPlan = Effect.fnUntraced(function* (
 
   // Steps sent through a route are only known to that route; sending them again from the wallet
   // would execute them twice.
-  if (route === undefined && Object.keys(resumed?.references ?? {}).length > 0) {
+  if (route === undefined && Rec.keys(resumed?.references ?? {}).length > 0) {
     return yield* Effect.fail(new PlanError({ code: "PLAN_ROUTE_REQUIRED" }));
   }
 
@@ -81,7 +81,7 @@ export const sendPlan = Effect.fnUntraced(function* (
   // A resumed plan is simulated step by step: its earlier steps already changed the state.
   if (simulate && resumed === undefined) {
     const simulation = yield* simulatePlan(client, plan, account);
-    const failed = simulation.steps.find((step) => !step.ok);
+    const failed = Option.getOrUndefined(Arr.findFirst(simulation.steps, (step) => !step.ok));
     if (failed?.error !== undefined) return yield* Effect.fail(failed.error);
   }
 
@@ -107,6 +107,7 @@ export const sendPlan = Effect.fnUntraced(function* (
 
   const run = Effect.gen(function* () {
     while (index < plan.steps.length) {
+      // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- the collection is known to be non-empty or the index in range here; `noUncheckedIndexedAccess` cannot see it
       const step = plan.steps[index] as Plan.Step;
 
       // Resuming: a step submitted before is confirmed, unless its transactions vanished.
@@ -141,7 +142,7 @@ export const sendPlan = Effect.fnUntraced(function* (
           next !== undefined;
           next = plan.steps[index + group.length]
         ) {
-          const calls = group.reduce((total, member) => total + member.calls.length, 0);
+          const calls = Arr.reduce(group, 0, (total, member) => total + member.calls.length);
           if (
             next.waitFor !== undefined ||
             record.submitted[next.id] !== undefined ||
@@ -154,9 +155,15 @@ export const sendPlan = Effect.fnUntraced(function* (
       }
 
       const merged: Plan.Step = {
-        id: group.map((member) => member.id).join("+"),
-        description: group.map((member) => member.description).join(", "),
-        calls: group.flatMap((member) => member.calls),
+        id: Arr.join(
+          Arr.map(group, (member) => member.id),
+          "+",
+        ),
+        description: Arr.join(
+          Arr.map(group, (member) => member.description),
+          ", ",
+        ),
+        calls: Arr.flatMap(group, (member) => member.calls),
       };
 
       if (simulate && index + group.length > simulatedUpFront) {
@@ -182,7 +189,7 @@ export const sendPlan = Effect.fnUntraced(function* (
         yield* save({
           bundles: {
             ...record.bundles,
-            ...Object.fromEntries(group.map((member) => [member.id, batch.id])),
+            ...Rec.fromEntries(Arr.map(group, (member) => [member.id, batch.id])),
           },
         });
       } else {
@@ -192,7 +199,7 @@ export const sendPlan = Effect.fnUntraced(function* (
       yield* save({
         submitted: {
           ...record.submitted,
-          ...Object.fromEntries(group.map((member) => [member.id, sent])),
+          ...Rec.fromEntries(Arr.map(group, (member) => [member.id, sent])),
         },
       });
       // A routed step reported `submitted` with its reference as soon as it was sent.
@@ -210,6 +217,7 @@ export const sendPlan = Effect.fnUntraced(function* (
       for (const done of previous.steps)
         emit({ step: done, status: "confirmed", hashes: previous.hashes });
     }
+    return undefined;
   });
 
   yield* run.pipe(
@@ -218,9 +226,7 @@ export const sendPlan = Effect.fnUntraced(function* (
       if (step !== undefined) emit({ step, status: "failed", error });
       return save({ status: "failed", error: error.shortMessage });
     }),
-    Effect.mapError(
-      (error) => error.withContext({ planId: plan.id, step: plan.steps[index]?.id }) as AnyError,
-    ),
+    Effect.mapError((error) => error.withContext({ planId: plan.id, step: plan.steps[index]?.id })),
   );
   yield* save({ status: "completed", error: undefined });
 
@@ -246,13 +252,16 @@ const recordedHashes = Effect.fnUntraced(function* (
   const submitted = record.submitted[step.id];
   if (submitted !== undefined && submitted.length > 0) {
     // Each transaction must still be known to the chain, mined or in the mempool.
-    const known = yield* Effect.forEach(submitted, (hash) =>
-      fromPromise(() => getTransaction(client.publicClient, { hash })).pipe(
-        Effect.as(true),
-        Effect.orElseSucceed(() => false),
-      ),
+    const known = yield* Effect.forEach(
+      submitted,
+      (hash) =>
+        fromPromise(() => getTransaction(client.publicClient, { hash })).pipe(
+          Effect.as(true),
+          Effect.orElseSucceed(() => false),
+        ),
+      { concurrency: 1 },
     );
-    return known.every(Boolean) ? submitted : undefined;
+    return Arr.every(known, Boolean) ? submitted : undefined;
   }
 
   // Sent through a route: ask it; a failure before landing sends the step again.

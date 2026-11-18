@@ -1,3 +1,5 @@
+import { Array as Arr, String as Str } from "effect";
+
 import { bytesToHex, bytesToString, hexToBigInt, hexToBytes, type Hex } from "viem";
 import {
   labelhash as viemLabelhash,
@@ -42,10 +44,10 @@ export const normalize = (name: string): string => {
     const parts: string[] = [];
     let run: string[] = [];
     const flush = () => {
-      if (run.length > 0) parts.push(viemNormalize(run.join(".")));
+      if (run.length > 0) parts.push(viemNormalize(Arr.join(run, ".")));
       run = [];
     };
-    for (const label of name.split(".")) {
+    for (const label of Str.split(".")(name)) {
       if (encodedLabelPattern.test(label)) {
         flush();
         parts.push(label);
@@ -54,7 +56,7 @@ export const normalize = (name: string): string => {
       }
     }
     flush();
-    return parts.join(".");
+    return Arr.join(parts, ".");
   } catch (cause) {
     throw new InvalidInputError({ code: "INVALID_NAME", input: name, cause });
   }
@@ -100,7 +102,8 @@ export const labelhash = (label: string): Hex => {
 
   try {
     const normalized = viemNormalize(label);
-    if (normalized === "" || normalized.includes(".")) throw new Error("empty or composite label");
+    if (normalized === "" || Str.includes(".")(normalized))
+      throw new Error("empty or composite label");
     return viemLabelhash(normalized);
   } catch (cause) {
     throw new InvalidInputError({ code: "INVALID_NAME", input: label, cause });
@@ -144,13 +147,13 @@ export const dnsDecode = (data: Hex): string => {
     const length = bytes[offset] ?? 0;
     if (length === 0) {
       if (offset !== bytes.length - 1) break;
-      return labels.join(".");
+      return Arr.join(labels, ".");
     }
     const end = offset + 1 + length;
     if (end > bytes.length) break;
     // A label with a dot would read back as two labels (NameCoder refuses it too).
     const label = bytesToString(bytes.subarray(offset + 1, end));
-    if (label.includes(".")) break;
+    if (Str.includes(".")(label)) break;
     labels.push(label);
     offset = end;
   }
@@ -198,13 +201,13 @@ export type Parsed = {
  */
 export const parse = (name: string): Parsed => {
   const normalized = normalize(name);
-  const labels = normalized === "" ? [] : normalized.split(".");
+  const labels = normalized === "" ? [] : Str.split(".")(normalized);
 
   return {
     labels,
     label: labels[0] ?? "",
     tld: labels.at(-1) ?? "",
-    parent: labels.length > 1 ? labels.slice(1).join(".") : null,
+    parent: labels.length > 1 ? Arr.join(labels.slice(1), ".") : null,
     is2ld: labels.length === 2,
     isSubname: labels.length > 2,
   };
@@ -227,7 +230,7 @@ export const getParent = (name: string): string | null => parse(name).parent;
  * @category names
  * @since 1.0.0
  */
-export const fromLabelhash = (hash: Hex): string => `[${hash.slice(2).toLowerCase()}]`;
+export const fromLabelhash = (hash: Hex): string => `[${Str.toLowerCase(Str.slice(2)(hash))}]`;
 
 /**
  * ENSv1 `.eth` registrar token ID of a second-level name: the labelhash of its first label as a

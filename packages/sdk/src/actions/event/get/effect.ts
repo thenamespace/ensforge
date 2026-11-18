@@ -1,4 +1,4 @@
-import { Effect } from "effect";
+import { Effect, Array as Arr } from "effect";
 
 import { getBlockNumber } from "viem/actions";
 
@@ -46,7 +46,6 @@ export const get = Effect.fn("ensforge.event.get")(function* (
   );
 
   const events = decodeLogs(knownContracts(client), logs, loaded.data.parts.name);
-  return options.types === undefined
-    ? events
-    : events.filter((event) => options.types?.includes(event.type));
+  const { types } = options;
+  return types === undefined ? events : Arr.filter(events, (event) => types.includes(event.type));
 }, Action.withContext("event.get"));

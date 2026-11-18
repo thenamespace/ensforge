@@ -1,4 +1,4 @@
-import { Effect } from "effect";
+import { Effect, Array as Arr } from "effect";
 
 import type { Client } from "../../../client/types.js";
 import type { AnyError } from "../../../errors/types.js";
@@ -32,9 +32,9 @@ export const getRenewalPrice = Effect.fn("ensforge.registration.getRenewalPrice"
     const info = yield* Effect.fromResult(results.info);
 
     return {
-      total: quotes.reduce((sum, quote) => sum + quote.amount, 0n),
+      total: Arr.reduce(quotes, 0n, (sum, quote) => sum + quote.amount),
       token: info,
-      items: quotes.map(({ name, route, amount }) => ({ name, route, amount })),
+      items: Arr.map(quotes, ({ name, route, amount }) => ({ name, route, amount })),
     };
   },
   Action.withContext("registration.getRenewalPrice", { contractKind: "registrar" }),

@@ -1,4 +1,4 @@
-import { Effect } from "effect";
+import { Effect, Array as Arr } from "effect";
 
 import { Abis, Roles } from "@ensforge/contracts";
 import { encodeFunctionData, hexToBigInt, maxUint64, zeroAddress, type Address } from "viem";
@@ -13,7 +13,9 @@ import { UnsupportedError } from "../../../errors/classes/UnsupportedError.js";
 import type { AnyError } from "../../../errors/types.js";
 import * as Action from "../../../internal/action/index.js";
 import { addressOf } from "../../../internal/address.js";
+import { toAnyError } from "../../../internal/anyError.js";
 import { randomSalt } from "../../../internal/factory/verifiable-proxy.js";
+import { parentOf } from "../../../internal/name/parts.js";
 import { requireAddress, requireV1Contracts } from "../../../internal/name/write.js";
 import { explainFor } from "../../../internal/permission/check.js";
 import { recordsCall } from "../../../internal/records/write-call.js";
@@ -106,7 +108,9 @@ const v2Steps = Effect.fnUntraced(function* (
     registry = deployment.address;
     deployRegistry = deployment.call;
     attach = attachCalls({
+      // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- a v2 or wrapped name's state always carries this field; `Name.State` types it as nullable for every protocol
       parentRegistry: parent.state.registry as Address,
+      // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- a v2 or wrapped name's state always carries this field; `Name.State` types it as nullable for every protocol
       tokenId: parent.state.tokenId as bigint,
       label: parent.data.parts.label,
       registry,
@@ -183,7 +187,7 @@ const v1Call = Effect.fnUntraced(function* (
 
   const fuses = yield* Effect.try({
     try: () => Fuse.from(options.fuses ?? []),
-    catch: (error) => error as AnyError,
+    catch: toAnyError,
   });
   // An emancipated child is out of its parent's reach until it expires.
   if (
@@ -269,7 +273,10 @@ export const plan = Effect.fnUntraced(function* (
       resolver: resolver.address,
     });
     // Deployments come first, in one step: the attach and register calls need the code.
-    const deployCalls = [v2.deployRegistry, resolver.deploy].filter((call) => call !== undefined);
+    const deployCalls = Arr.filter(
+      [v2.deployRegistry, resolver.deploy],
+      (call) => call !== undefined,
+    );
     if (deployCalls.length > 0) {
       steps.push({ id: "deploy", description: "Deploy contracts", calls: deployCalls });
     }
@@ -310,7 +317,7 @@ const write = Action.write(
   plan,
   { contractKind: "registry" },
   explainFor(
-    (options: { readonly name: string }) => options.name.slice(options.name.indexOf(".") + 1),
+    (options: { readonly name: string }) => parentOf(options.name),
     () => ["createSubname" as const],
   ),
 );

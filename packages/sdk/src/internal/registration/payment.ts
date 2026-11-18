@@ -1,4 +1,4 @@
-import { Effect } from "effect";
+import { Effect, String as Str } from "effect";
 
 import { Abis } from "@ensforge/contracts";
 import { encodeFunctionData, type Address } from "viem";
@@ -22,6 +22,7 @@ export const paymentTokenAddress = (
   const symbol = input ?? "usdc";
   if (symbol !== "usdc" && symbol !== "dai") return requireAddress(symbol, "paymentToken");
 
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- narrowed to a payment token symbol by the check above
   const listed = contracts.paymentTokens?.[symbol as "usdc" | "dai"];
   return listed === undefined
     ? Effect.fail(
@@ -29,7 +30,7 @@ export const paymentTokenAddress = (
           code: "INVALID_ADDRESS",
           field: "paymentToken",
           input: symbol,
-          shortMessage: `This deployment lists no ${symbol.toUpperCase()} address.`,
+          shortMessage: `This deployment lists no ${Str.toUpperCase(symbol)} address.`,
           hint: "Pass the token address instead.",
         }),
       )

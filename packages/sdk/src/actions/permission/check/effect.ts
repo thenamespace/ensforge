@@ -13,5 +13,6 @@ export const check = Effect.fn("ensforge.permission.check")(function* (
 ): Effect.fn.Return<Promises.ReturnType, AnyError> {
   const account = yield* checkedAccount(client, options.account);
   const [result] = yield* checkName(client, options.name, account, [options.operation]);
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- one operation in, one check out
   return result as Promises.ReturnType;
 }, Action.withContext("permission.check"));

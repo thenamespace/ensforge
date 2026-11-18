@@ -1,4 +1,4 @@
-import { Effect } from "effect";
+import { Effect, Array as Arr } from "effect";
 
 import { formatLog, numberToHex, type Address, type Hex, type Log, type RpcLog } from "viem";
 
@@ -43,12 +43,13 @@ export const scanLogs = Effect.fnUntraced(function* (
       const result = yield* Effect.result(
         fromPromise(
           () =>
+            // oxlint-disable-next-line typescript/no-unnecessary-type-assertion, typescript/no-unsafe-type-assertion -- viem's typed `request` has no `eth_getLogs` overload taking address arrays; tsc needs the assertions
             client.publicClient.request({
               method: "eth_getLogs",
               params: [
                 {
                   address: [...query.address],
-                  topics: query.topics.map((topic) =>
+                  topics: Arr.map(query.topics, (topic) =>
                     topic === null ? null : typeof topic === "string" ? topic : [...topic],
                   ),
                   fromBlock: numberToHex(from),
@@ -58,9 +59,10 @@ export const scanLogs = Effect.fnUntraced(function* (
             } as never) as Promise<RpcLog[]>,
         ),
       );
-      if (result._tag === "Success") return result.success.map((log) => formatLog(log));
+      if (result._tag === "Success") return Arr.map(result.success, (log) => formatLog(log));
 
       const error = result.failure;
+      // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- viem wraps the original error as `cause`
       const message = `${error.shortMessage} ${String((error.cause as Error | undefined)?.message)}`;
       if (to === from || !rangeError.test(message)) return yield* Effect.fail(error);
       const middle = from + (to - from) / 2n;
@@ -83,7 +85,7 @@ export const scanLogs = Effect.fnUntraced(function* (
   }
 
   // One log can match several queries; order by chain position.
-  const unique = new Map(logs.map((log) => [`${log.transactionHash}:${log.logIndex}`, log]));
+  const unique = new Map(Arr.map(logs, (log) => [`${log.transactionHash}:${log.logIndex}`, log]));
   // oxlint-disable-next-line unicorn/no-array-sort -- sorts a fresh copy
   return [...unique.values()].sort((a, b) =>
     a.blockNumber === b.blockNumber

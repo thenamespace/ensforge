@@ -1,4 +1,4 @@
-import { Effect } from "effect";
+import { Effect, Array as Arr, Record as Rec } from "effect";
 
 import { Abis } from "@ensforge/contracts";
 import { encodeFunctionData, type Address } from "viem";
@@ -8,6 +8,7 @@ import { UnsupportedError } from "../../errors/classes/UnsupportedError.js";
 import type { AnyError } from "../../errors/types.js";
 import type { Plan } from "../../plan/Plan.js";
 import * as Role from "../../utils/Role.js";
+import { toAnyError } from "../anyError.js";
 import { deployProxy } from "../factory/verifiable-proxy.js";
 import type { NameParts } from "../name/parts.js";
 import {
@@ -47,7 +48,7 @@ export const deployPermissionedResolver = Effect.fnUntraced(function* (
           Effect.flatMap((codecs) =>
             Effect.try({
               try: () => encodeRecordWrites("name", name, records, codecs),
-              catch: (error) => error as AnyError,
+              catch: toAnyError,
             }),
           ),
         );
@@ -64,7 +65,7 @@ export const deployPermissionedResolver = Effect.fnUntraced(function* (
           // The owner gets every PermissionedResolver role and its admin role.
           {
             account: options.owner,
-            roleBitmap: Object.values(Role.resolver).reduce((bitmap, role) => bitmap | role, 0n),
+            roleBitmap: Arr.reduce(Rec.values(Role.resolver), 0n, (bitmap, role) => bitmap | role),
           },
           ...(options.grants ?? []),
         ],

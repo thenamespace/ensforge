@@ -1,4 +1,4 @@
-import { Effect } from "effect";
+import { Effect, Array as Arr, Option } from "effect";
 
 import { Abis, InterfaceIds } from "@ensforge/contracts";
 import { isAddressEqual, type Address } from "viem";
@@ -10,6 +10,7 @@ import { UnsupportedError } from "../../../errors/classes/UnsupportedError.js";
 import type { AnyError } from "../../../errors/types.js";
 import * as Action from "../../../internal/action/index.js";
 import { addressOf } from "../../../internal/address.js";
+import { toAnyError } from "../../../internal/anyError.js";
 import { loadName } from "../../../internal/name/load.js";
 import { requestedResolver, setResolverCall } from "../../../internal/name/set-resolver.js";
 import { requireRegistered } from "../../../internal/name/write.js";
@@ -47,7 +48,7 @@ export const plan = Effect.fnUntraced(function* (
       return yield* Effect.fail(new NotFoundError({ code: "RESOLVER_NOT_FOUND" }));
     }
     const frozen = client.deployment.v1?.frozenPublicResolvers ?? [];
-    if (frozen.some((address) => isAddressEqual(address, current))) {
+    if (Arr.some(frozen, (address) => isAddressEqual(address, current))) {
       return yield* Effect.fail(
         new UnsupportedError({
           code: "RESOLVER_PROFILE_UNSUPPORTED",
@@ -93,8 +94,11 @@ export const plan = Effect.fnUntraced(function* (
 
   // A resolver without ERC-165 predates the profiles it would declare, except that it surely
   // lacks `data` (ENSIP-24, newer than all of them); its other writes are left to simulation.
-  const missing = writtenProfiles(options).find(
-    ([profile]) => (erc165 === true || profile === "data") && !resolverInfo.profiles[profile],
+  const missing = Option.getOrUndefined(
+    Arr.findFirst(
+      writtenProfiles(options),
+      ([profile]) => (erc165 === true || profile === "data") && !resolverInfo.profiles[profile],
+    ),
   )?.[1];
   // Node-keyed resolvers clear by bumping the record version; older ones have neither.
   const unsupported =
@@ -115,7 +119,7 @@ export const plan = Effect.fnUntraced(function* (
   const codecs = yield* recordWriteCodecs(options);
   const calls = yield* Effect.try({
     try: () => encodeRecordWrites(keying, loaded.data.parts, options, codecs),
-    catch: (error) => error as AnyError,
+    catch: toAnyError,
   });
 
   // Records go to the new resolver before the name points at it, so a failed or rejected write

@@ -1,4 +1,4 @@
-import { Clock, Effect, Predicate } from "effect";
+import { Clock, Effect, Predicate, Result, Schema, Record as Rec, Array as Arr } from "effect";
 
 import { IndexerError } from "../../errors/classes/IndexerError.js";
 import { NotFoundError } from "../../errors/classes/NotFoundError.js";
@@ -55,13 +55,15 @@ const codeForStatus = (status: number): IndexerError.Code =>
 
 const urlOf = (config: HttpConfig, request: HttpRequest): string => {
   const params = new URLSearchParams();
-  for (const [key, value] of Object.entries(request.query ?? {})) {
+  for (const [key, value] of Rec.toEntries(request.query ?? {})) {
     if (value === undefined) continue;
-    if (Array.isArray(value)) {
+    if (Arr.isArray(value)) {
+      // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- `Arr.isArray` narrows to `unknown[]`, which loses the string element type
       const values = value as readonly string[];
       if (values.length === 0) continue;
-      if (request.repeat?.includes(key)) for (const item of values) params.append(key, item);
-      else params.set(key, values.join(","));
+      if (request.repeat?.includes(key) === true)
+        for (const item of values) params.append(key, item);
+      else params.set(key, Arr.join(values, ","));
     } else {
       params.set(key, String(value));
     }
@@ -94,31 +96,45 @@ const errorBody = (body: unknown): { code?: string; message?: string } => {
   };
 };
 
+const decodeJson = Schema.decodeResult(Schema.fromJsonString(Schema.Unknown));
+
 const attempt = (config: HttpConfig, request: HttpRequest, url: string): Effect.Effect<Attempt> => {
   const cached = request.body === undefined ? config.cache?.get(url) : undefined;
   const fail = (code: IndexerError.Code, extra: Partial<IndexerError.Options> = {}) =>
     new IndexerError({ code, route: request.route, source: config.id, ...extra });
 
-  return Effect.tryPromise({
-    try: async (signal) => {
-      const response = await config.fetch(url, {
-        method: request.body === undefined ? "GET" : "POST",
-        headers: {
-          accept: "application/json",
-          ...(request.body === undefined ? {} : { "content-type": "application/json" }),
-          ...(cached === undefined ? {} : { "if-none-match": cached.etag }),
-          ...config.headers,
+  const unreachable = (cause: unknown) =>
+    fail("INDEXER_UNAVAILABLE", { shortMessage: "The indexer could not be reached.", cause });
+  const encodedBody: Effect.Effect<string | undefined, IndexerError> =
+    request.body === undefined
+      ? Effect.undefined
+      : Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))(request.body).pipe(
+          Effect.mapError(unreachable),
+        );
+
+  return encodedBody.pipe(
+    Effect.flatMap((body) =>
+      Effect.tryPromise({
+        // oxlint-disable-next-line effecttsgo/async-function -- `config.fetch` is a user-supplied Promise function
+        try: async (signal) => {
+          const response = await config.fetch(url, {
+            method: request.body === undefined ? "GET" : "POST",
+            headers: {
+              accept: "application/json",
+              ...(request.body === undefined ? {} : { "content-type": "application/json" }),
+              ...(cached === undefined ? {} : { "if-none-match": cached.etag }),
+              ...config.headers,
+            },
+            ...(body === undefined ? {} : { body }),
+            signal,
+          });
+          const text = response.status === 304 ? "" : await response.text();
+          return { response, text };
         },
-        ...(request.body === undefined ? {} : { body: JSON.stringify(request.body) }),
-        signal,
-      });
-      const text = response.status === 304 ? "" : await response.text();
-      return { response, text };
-    },
-    // Network failures (DNS, reset, CORS) are retryable.
-    catch: (cause) =>
-      fail("INDEXER_UNAVAILABLE", { shortMessage: "The indexer could not be reached.", cause }),
-  }).pipe(
+        // Network failures (DNS, reset, CORS) are retryable.
+        catch: unreachable,
+      }),
+    ),
     Effect.timeoutOrElse({
       duration: config.timeout,
       orElse: () =>
@@ -130,14 +146,11 @@ const attempt = (config: HttpConfig, request: HttpRequest, url: string): Effect.
       Effect.map(Clock.currentTimeMillis, (now): Attempt => {
         if (response.status === 304 && cached !== undefined) return { ok: true, body: cached.body };
 
-        let body: unknown;
-        try {
-          body = text === "" ? undefined : JSON.parse(text);
-        } catch (cause) {
-          if (response.ok) {
-            return { ok: false, error: fail("INDEXER_RESPONSE_INVALID", { cause }) };
-          }
+        const parsed = text === "" ? Result.succeed(undefined) : decodeJson(text);
+        if (Result.isFailure(parsed) && response.ok) {
+          return { ok: false, error: fail("INDEXER_RESPONSE_INVALID", { cause: parsed.failure }) };
         }
+        const body: unknown = Result.getOrUndefined(parsed);
 
         if (response.ok) {
           const etag = response.headers.get("etag");

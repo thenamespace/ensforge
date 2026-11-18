@@ -77,6 +77,7 @@ export declare namespace getStatus {
 /** Builds a deferred read for `Actions.batch`. */
 getStatus.request = Action.request(
   "dns.getStatus",
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Action.Declared narrows errors to the documented @throws
   Impl.getStatus as Action.Declared<typeof Impl.getStatus, getStatus.ErrorType>,
 );
 

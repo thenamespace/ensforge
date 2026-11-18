@@ -1,3 +1,5 @@
+import { Array as Arr, String as Str } from "effect";
+
 import { isAddress } from "viem";
 
 import type { Query } from "../../indexer/Indexer.js";
@@ -18,8 +20,9 @@ const seconds = (value: bigint | Date | undefined): string | undefined =>
 const snakeList = <value extends string>(value: value | readonly value[] | undefined) =>
   value === undefined
     ? undefined
-    : (typeof value === "string" ? [value] : value).map((entry) =>
-        entry.replace(/[A-Z]/g, (char) => `_${char.toLowerCase()}`),
+    : Arr.map(typeof value === "string" ? [value] : value, (entry) =>
+        // oxlint-disable-next-line effecttsgo/prefer-effect-string -- `Str.replace` takes no replacer function
+        entry.replace(/[A-Z]/g, (char) => `_${Str.toLowerCase(char)}`),
       );
 
 const sortKeys: Readonly<Record<string, string>> = {
@@ -48,7 +51,7 @@ export const paging = (query: Query.List): Params => ({
 });
 
 const include = (...values: readonly (string | false | undefined)[]) => {
-  const included = values.filter((value): value is string => typeof value === "string");
+  const included = Arr.filter(values, (value): value is string => typeof value === "string");
   return included.length === 0 ? undefined : included;
 };
 
@@ -129,10 +132,11 @@ export const expiry = (query: Query.GetNamesByExpiry): Params => ({
   namespace: query.namespace,
   expires_after: seconds(query.expiresAfter),
   expires_before: seconds(query.expiresBefore),
-  expires_window: query.windows?.map(window),
+  expires_window: query.windows === undefined ? undefined : Arr.map(query.windows, window),
   grace_ends_after: seconds(query.graceEndsAfter),
   grace_ends_before: seconds(query.graceEndsBefore),
-  grace_ends_window: query.graceWindows?.map(window),
+  grace_ends_window:
+    query.graceWindows === undefined ? undefined : Arr.map(query.graceWindows, window),
   authority: snakeList(query.authority),
   parent: query.parent,
   sort: query.sort === undefined ? undefined : sortKeys[query.sort],
@@ -142,12 +146,12 @@ export const expiry = (query: Query.GetNamesByExpiry): Params => ({
 
 /** `avatar` → `text:avatar`; `addr:60`, `text:url` and `contenthash` pass through. */
 export const recordKey = (key: string): string =>
-  key.includes(":") || key === "contenthash" ? key : `text:${key}`;
+  Str.includes(":")(key) || key === "contenthash" ? key : `text:${key}`;
 
 export const records = (query: Query.GetRecords): Params => ({
   namespace: query.namespace,
   name: query.resolver === undefined ? undefined : query.name,
-  keys: query.keys?.map(recordKey),
+  keys: query.keys === undefined ? undefined : Arr.map(query.keys, recordKey),
   values: query.values,
   source: query.source,
   // The inventory is what migration copies; it is small, so it is always requested.
@@ -169,7 +173,9 @@ export const permissions = (query: Query.GetPermissions): Params => ({
 });
 
 export const lookup = (query: Query.Lookup) => ({
-  inputs: query.inputs.map((input) => (isAddress(input) ? { address: input } : { name: input })),
+  inputs: Arr.map(query.inputs, (input) =>
+    isAddress(input) ? { address: input } : { name: input },
+  ),
   ...(query.namespace === undefined ? {} : { namespace: query.namespace }),
   ...(query.profile === undefined ? {} : { profile: query.profile }),
 });

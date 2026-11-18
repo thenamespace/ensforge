@@ -1,4 +1,4 @@
-import { Effect } from "effect";
+import { Effect, Array as Arr, Record as Rec } from "effect";
 
 import type { Client } from "../../../client/types.js";
 import type { AnyError } from "../../../errors/types.js";
@@ -35,10 +35,10 @@ export const get = Effect.fn("ensforge.permission.get")(function* (
   const checks = yield* checkLoaded(client, loaded, account, [
     ...nameOperations,
     { setRecord: "text" },
-    ...records.map((record) => record.operation),
+    ...Arr.map(records, (record) => record.operation),
   ]);
-  const can = Object.fromEntries(
-    nameOperations.map((operation, index) => [operation, checks[index]?.allowed ?? null]),
+  const can = Rec.fromEntries(
+    Arr.map(nameOperations, (operation, index) => [operation, checks[index]?.allowed ?? null]),
   ) as Record<NameOperation, boolean | null>;
 
   const recordAccess: Record<string, unknown> = {};
@@ -46,6 +46,7 @@ export const get = Effect.fn("ensforge.permission.get")(function* (
     const allowed = checks[nameOperations.length + 1 + index]?.allowed ?? null;
     const [field, key] = path;
     if (key === undefined) recordAccess[field] = allowed;
+    // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- each record group holds an object once a key is set
     else recordAccess[field] = { ...(recordAccess[field] as object | undefined), [key]: allowed };
   }
 
@@ -55,7 +56,6 @@ export const get = Effect.fn("ensforge.permission.get")(function* (
     status: loaded.state.status,
     can: { ...can, setRecords: checks[nameOperations.length]?.allowed ?? null },
     ...(options.records === undefined ? {} : { records: recordAccess }),
-    fuses:
-      fuses === undefined ? [] : (Object.keys(fuses) as Fuse.Name[]).filter((fuse) => fuses[fuse]),
+    fuses: fuses === undefined ? [] : Arr.filter(Rec.keys(fuses), (fuse) => fuses[fuse]),
   };
 }, Action.withContext("permission.get"));

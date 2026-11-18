@@ -8,6 +8,7 @@ import type { AnyError } from "../../errors/types.js";
 import type { Read } from "../../Types.js";
 import type { Decoded as ContentHash } from "../../utils/ContentHash.js";
 import { namehash } from "../../utils/Name.js";
+import { toAnyError } from "../anyError.js";
 import { normalizeName } from "../name/normalize.js";
 import type { AbiRecord } from "./abi-record.js";
 import { planRecordReads } from "./read-profiles.js";
@@ -40,10 +41,11 @@ export const readRecords = Effect.fnUntraced(function* (
   const name = yield* normalizeName(options.name);
   const plan = yield* Effect.try({
     try: () => planRecordReads(namehash(name), options.selection),
-    catch: (error) => error as AnyError,
+    catch: toAnyError,
   });
   if (plan.calls.length === 0) {
-    return { resolver: null, ...plan.assemble([], yield* plan.codecs) };
+    const codecs = yield* plan.codecs;
+    return { resolver: null, ...plan.assemble([], codecs) };
   }
 
   // The codecs load while the resolver answers.

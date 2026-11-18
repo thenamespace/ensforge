@@ -88,6 +88,7 @@ export declare namespace resolve {
 /** Builds a deferred read for `Actions.batch`. */
 resolve.request = Action.request(
   "resolver.resolve",
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Action.Declared narrows errors to the documented @throws
   Impl.resolve as Action.Declared<typeof Impl.resolve, resolve.ErrorType>,
 );
 

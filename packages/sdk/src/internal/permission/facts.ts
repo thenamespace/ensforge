@@ -1,4 +1,5 @@
-import { Effect } from "effect";
+import { Effect, Array as Arr } from "effect";
+import { absurd } from "effect/Function";
 
 import { Abis, Roles } from "@ensforge/contracts";
 import { permissionedResolverResource } from "@ensforge/contracts/v2";
@@ -10,7 +11,9 @@ import type { AnyError } from "../../errors/types.js";
 import * as CoinType from "../../utils/CoinType.js";
 import { namehash } from "../../utils/Name.js";
 import { nonZeroAddress, sameAddress } from "../address.js";
+import { toAnyError } from "../anyError.js";
 import type { LoadedName } from "../name/load.js";
+import { parentOf } from "../name/parts.js";
 import { setterKeying } from "../records/setter-keying.js";
 import * as Rpc from "../rpc/index.js";
 
@@ -88,12 +91,15 @@ export const recordResource = (operation: RecordOperation): bigint => {
     case "abi":
       return permissionedResolverResource({ abi: BigInt(key) });
     case "interface":
+      // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- an `interface` record key is a hex interface id
       return permissionedResolverResource({ interface: key as `0x${string}` });
     case "contentHash":
     case "name":
     case "pubkey":
     case "link":
       return 0n;
+    default:
+      return absurd(kind);
   }
 };
 
@@ -130,7 +136,7 @@ export const readPermissionFacts = Effect.fnUntraced(function* (
   operations: readonly Operation[],
 ): Effect.fn.Return<PermissionFacts, AnyError> {
   const { state, data } = loaded;
-  const records = operations.filter((operation) => typeof operation !== "string");
+  const records = Arr.filter(operations, (operation) => typeof operation !== "string");
   const v1 = client.deployment.v1?.contracts;
   const v2 = client.deployment.v2;
   const labelId = hexToBigInt(data.parts.labelhash);
@@ -155,19 +161,20 @@ export const readPermissionFacts = Effect.fnUntraced(function* (
   // Wrapped subnames are extended through the NameWrapper by their parent, or by themselves.
   const parentNode =
     v1 !== undefined && state.wrapped && !data.parts.isEth2ld
-      ? namehash(data.parts.name.slice(data.parts.name.indexOf(".") + 1))
+      ? namehash(parentOf(data.parts.name))
       : null;
 
   const v2PublicResolver = isV2PublicResolver(client, resolver);
   const resolverOwner = resolverOwnerOf(client, loaded);
   // Coin keys are parsed here, so an unknown coin fails as InvalidInputError, not a defect.
   const resources = yield* Effect.try({
-    try: () => [...new Set(records.map(recordResource))].filter((resource) => resource !== 0n),
-    catch: (error) => error as AnyError,
+    try: () =>
+      Arr.filter([...new Set(Arr.map(records, recordResource))], (resource) => resource !== 0n),
+    catch: toAnyError,
   });
   // Frozen resolvers cannot be written, and the oldest burn all gas on unknown calls, which would
   // sink the whole multicall: they are never probed.
-  const frozen = (client.deployment.v1?.frozenPublicResolvers ?? []).some((address) =>
+  const frozen = Arr.some(client.deployment.v1?.frozenPublicResolvers ?? [], (address) =>
     sameAddress(resolver, address),
   );
   const probeResolver = resolver !== null && records.length > 0 && !frozen;
@@ -339,6 +346,7 @@ export const readPermissionFacts = Effect.fnUntraced(function* (
         probeResolver ? resources : [],
         (resource) =>
           read(client, {
+            // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- the resolver is probed only when the name has one
             address: resolver as Address,
             abi: Abis.v2.permissionedResolver,
             functionName: "roles",

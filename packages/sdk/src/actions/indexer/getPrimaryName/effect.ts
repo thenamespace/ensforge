@@ -14,6 +14,7 @@ export const getPrimaryName = Effect.fn("ensforge.indexer.getPrimaryName")(funct
   options: Promises.Options,
 ): Effect.fn.Return<Promises.ReturnType, AnyError> {
   const address = yield* requireAddress(options.address, "address");
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- this action's `coin` option does not accept `evm`
   const coinType = (yield* coinInput(options.coin)) as bigint | undefined;
   const { coin: _coin, ...query } = queryOf(options);
 

@@ -73,6 +73,7 @@ export declare namespace getNamesByExpiry {
 /** Builds a deferred read for `Actions.batch`. */
 getNamesByExpiry.request = Action.request(
   "indexer.getNamesByExpiry",
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Action.Declared narrows errors to the documented @throws
   Impl.getNamesByExpiry as Action.Declared<
     typeof Impl.getNamesByExpiry,
     getNamesByExpiry.ErrorType

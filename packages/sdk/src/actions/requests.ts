@@ -3,6 +3,7 @@
 import type { Effect } from "effect";
 
 import type { Client } from "../client/types.js";
+import type { AnyError } from "../errors/types.js";
 import { getDelegate as approvalGetDelegate } from "./approval/getDelegate/effect.js";
 import { getOperator as approvalGetOperator } from "./approval/getOperator/effect.js";
 import { getToken as approvalGetToken } from "./approval/getToken/effect.js";
@@ -63,7 +64,7 @@ import { getFuses as wrapperGetFuses } from "./wrapper/getFuses/effect.js";
  * @internal
  */
 export const requests: Readonly<
-  Record<string, (client: Client, options: never) => Effect.Effect<unknown, unknown>>
+  Record<string, (client: Client, options: never) => Effect.Effect<unknown, AnyError>>
 > = {
   "approval.getDelegate": approvalGetDelegate,
   "approval.getOperator": approvalGetOperator,

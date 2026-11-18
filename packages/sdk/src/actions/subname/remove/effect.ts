@@ -31,6 +31,7 @@ const removeCall = Effect.fnUntraced(function* (
   const { node, labelhash } = child.data.parts;
   if (child.state.protocol === "v2") {
     return {
+      // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- a v2 or wrapped name's state always carries this field; `Name.State` types it as nullable for every protocol
       to: child.state.registry as Address,
       data: encodeFunctionData({
         abi: Abis.v2.permissionedRegistry,

@@ -1,4 +1,4 @@
-import { Effect } from "effect";
+import { Effect, Array as Arr } from "effect";
 
 import { Abis } from "@ensforge/contracts";
 import { ownedResolverSalt } from "@ensforge/contracts/v2";
@@ -129,6 +129,7 @@ const validateOptions = Effect.fnUntraced(function* (
       );
     }
     const eth = records?.addresses?.["eth"] ?? records?.addresses?.["60"];
+    // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- `addresses` holds an address or null per coin type
     if (eth !== undefined && !sameAddress(eth as Address | null, owner)) {
       return yield* Effect.fail(
         new NotFoundError({
@@ -276,7 +277,7 @@ export const prepareRegistration = Effect.fnUntraced(function* (
         sender,
         referrer,
         duration: input.duration,
-        price: (quoted[index]?.price ?? [0n, 0n]) as readonly [bigint, bigint],
+        price: quoted[index]?.price ?? [0n, 0n],
       }),
     { concurrency: "unbounded" },
   );
@@ -291,7 +292,7 @@ export const prepareRegistration = Effect.fnUntraced(function* (
     subregistry: options.subregistry,
     referrer,
     token,
-    total: prepared.reduce((sum, name) => sum + name.price.base + name.price.premium, 0n),
+    total: Arr.reduce(prepared, 0n, (sum, name) => sum + name.price.base + name.price.premium),
     records: options.records,
     ownedDeploy: owned?.deploy,
     explicitResolver: options.resolver ?? undefined,

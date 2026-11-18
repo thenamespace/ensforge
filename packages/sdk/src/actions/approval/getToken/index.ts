@@ -69,6 +69,7 @@ export declare namespace getToken {
 /** Builds a deferred read for `Actions.batch`. */
 getToken.request = Action.request(
   "approval.getToken",
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Action.Declared narrows errors to the documented @throws
   Impl.getToken as Action.Declared<typeof Impl.getToken, getToken.ErrorType>,
 );
 

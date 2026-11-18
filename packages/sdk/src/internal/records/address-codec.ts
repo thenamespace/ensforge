@@ -1,3 +1,5 @@
+import { String as Str } from "effect";
+
 import {
   bytesToHex,
   getAddress,
@@ -32,11 +34,11 @@ export const encodeAddressWith = (
 ): Hex => {
   if (isEvmCoinType(coinType)) {
     // All-lowercase and all-uppercase addresses carry no checksum; mixed case must be EIP-55.
-    const digits = address.slice(2);
-    const unchecksummed = digits === digits.toLowerCase() || digits === digits.toUpperCase();
+    const digits = Str.slice(2)(address);
+    const unchecksummed = digits === Str.toLowerCase(digits) || digits === Str.toUpperCase(digits);
     if (!isAddress(address, { strict: !unchecksummed }))
       throw new InvalidInputError({ code: "INVALID_ADDRESS", input: address });
-    return address.toLowerCase() as Hex;
+    return Str.toLowerCase(address) as Hex;
   }
 
   try {

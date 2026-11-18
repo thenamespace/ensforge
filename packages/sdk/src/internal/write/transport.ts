@@ -1,4 +1,4 @@
-import { Duration, Effect } from "effect";
+import { Duration, Effect, Array as Arr } from "effect";
 
 import { WaitForCallsStatusTimeoutError, type Hex } from "viem";
 import {
@@ -13,11 +13,10 @@ import {
 
 import type { Client } from "../../client/types.js";
 import { TransactionError } from "../../errors/classes/TransactionError.js";
-import { fromCause } from "../../errors/translate/fromCause.js";
-import type { AnyError } from "../../errors/types.js";
 import type { Plan } from "../../plan/Plan.js";
 import type { Write } from "../../Types.js";
 import { addressOf } from "../address.js";
+import { toAnyError } from "../anyError.js";
 import { fromPromise } from "../rpc/fromPromise.js";
 import { withHeadroom } from "./gas.js";
 import { receiptsOf } from "./receipts.js";
@@ -98,7 +97,7 @@ export const sendBatch = Effect.fnUntraced(function* (
       sendCalls(signer.walletClient, {
         account: signer.account,
         ...(signer.walletClient.chain === undefined ? {} : { chain: signer.walletClient.chain }),
-        calls: step.calls.map((call) => ({ to: call.to, data: call.data, value: call.value })),
+        calls: Arr.map(step.calls, (call) => ({ to: call.to, data: call.data, value: call.value })),
         forceAtomic: true,
         ...(paymaster === undefined
           ? {}
@@ -126,10 +125,10 @@ export const sendBatch = Effect.fnUntraced(function* (
     catch: (cause) =>
       cause instanceof WaitForCallsStatusTimeoutError
         ? new TransactionError({ code: "RECEIPT_TIMEOUT", bundleId: id, cause })
-        : (fromCause(cause, context) as AnyError),
+        : toAnyError(cause, context),
   });
 
-  const hashes = (result.receipts ?? []).map((receipt) => receipt.transactionHash);
+  const hashes = Arr.map(result.receipts ?? [], (receipt) => receipt.transactionHash);
   // `failure` is a revert even when the transaction carrying the bundle succeeded (ERC-4337).
   if (result.status !== "success" || hashes.length === 0) {
     return yield* Effect.fail(
@@ -163,7 +162,7 @@ export const bundleOutcome = (
 ): Effect.Effect<readonly Hex[] | "pending" | "failed"> =>
   fromPromise(() => getCallsStatus(signer.walletClient, { id })).pipe(
     Effect.map((status) => {
-      const hashes = (status.receipts ?? []).map((receipt) => receipt.transactionHash);
+      const hashes = Arr.map(status.receipts ?? [], (receipt) => receipt.transactionHash);
       if (status.status === "success" && hashes.length > 0) return hashes;
       return status.status === "pending" ? ("pending" as const) : ("failed" as const);
     }),

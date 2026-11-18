@@ -1,4 +1,4 @@
-import { Effect } from "effect";
+import { Array as Arr, Effect, String as Str } from "effect";
 
 import { InvalidInputError } from "../../errors/classes/InvalidInputError.js";
 import type { AnyError } from "../../errors/types.js";
@@ -13,8 +13,8 @@ export const parseDnsName = (name: string): Effect.Effect<NameParts, AnyError> =
   parseName(name).pipe(
     Effect.filterOrFail(
       (parts) =>
-        !parts.name.includes("[") &&
-        !["eth", "reverse"].includes(parts.name.split(".").at(-1) as string),
+        !Str.includes("[")(parts.name) &&
+        !["eth", "reverse"].includes(Arr.lastNonEmpty(Str.split(".")(parts.name))),
       (parts) =>
         new InvalidInputError({
           code: "INVALID_NAME",

@@ -1,3 +1,5 @@
+import { Array as Arr, String as Str } from "effect";
+
 import { bytesToHex, bytesToString, hexToBytes, type Hex } from "viem";
 
 /** DNS record types ensforge reads. */
@@ -22,7 +24,7 @@ const malformed = () => new Error("Malformed DNS wire data.");
 
 const uint16 = (bytes: Uint8Array, offset: number): number => {
   if (offset + 2 > bytes.length) throw malformed();
-  return ((bytes[offset] as number) << 8) | (bytes[offset + 1] as number);
+  return ((bytes[offset] ?? 0) << 8) | (bytes[offset + 1] ?? 0);
 };
 
 const uint32 = (bytes: Uint8Array, offset: number): number =>
@@ -36,9 +38,9 @@ const readName = (bytes: Uint8Array, start: number): readonly [string, number] =
     const length = bytes[offset];
     if (length === undefined || length > 63) throw malformed();
     offset += 1;
-    if (length === 0) return [labels.join("."), offset];
+    if (length === 0) return [Arr.join(labels, "."), offset];
     if (offset + length > bytes.length) throw malformed();
-    labels.push(bytesToString(bytes.subarray(offset, offset + length)).toLowerCase());
+    labels.push(Str.toLowerCase(bytesToString(bytes.subarray(offset, offset + length))));
     offset += length;
   }
 };
@@ -85,7 +87,7 @@ export const lowercaseOwnerNames = (records: Hex): Hex => {
       if (length === 0) break;
       if (offset + length > bytes.length) throw malformed();
       for (let index = offset; index < offset + length; index += 1) {
-        const byte = bytes[index] as number;
+        const byte = bytes[index] ?? 0;
         if (byte >= 0x41 && byte <= 0x5a) bytes[index] = byte + 0x20;
       }
       offset += length;
@@ -102,7 +104,7 @@ export const txtStrings = (data: Uint8Array): string[] => {
   const strings: string[] = [];
   let offset = 0;
   while (offset < data.length) {
-    const length = data[offset] as number;
+    const length = data[offset] ?? 0;
     if (offset + 1 + length > data.length) throw malformed();
     strings.push(bytesToString(data.subarray(offset + 1, offset + 1 + length)));
     offset += 1 + length;

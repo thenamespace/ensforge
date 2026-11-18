@@ -1,3 +1,5 @@
+import { String as Str } from "effect";
+
 import type { Config, Gateways } from "../client/types.js";
 
 /**
@@ -11,7 +13,7 @@ export const defaultGateways: Config["gateways"] = {
   swarm: "https://api.gateway.ethswarm.org",
 };
 
-const trimSlash = (origin: string): string => origin.replace(/\/+$/, "");
+const trimSlash = (origin: string): string => Str.replace(/\/+$/, "")(origin);
 
 /** `gateways`, each one unset taken from `fallback`, as origins without a trailing slash. */
 export const resolveGateways = (

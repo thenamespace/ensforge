@@ -82,6 +82,7 @@ export declare namespace getContentHash {
 /** Builds a deferred read for `Actions.batch`. */
 getContentHash.request = Action.request(
   "record.getContentHash",
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Action.Declared narrows errors to the documented @throws
   Impl.getContentHash as Action.Declared<typeof Impl.getContentHash, getContentHash.ErrorType>,
 );
 

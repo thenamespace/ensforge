@@ -11,6 +11,7 @@ import { UnauthorizedError } from "../../../errors/classes/UnauthorizedError.js"
 import type { AnyError } from "../../../errors/types.js";
 import * as Action from "../../../internal/action/index.js";
 import { loadName } from "../../../internal/name/load.js";
+import { parentOf } from "../../../internal/name/parts.js";
 import {
   requireProtocol,
   requireRegistered,
@@ -75,7 +76,7 @@ export const plan = Effect.fnUntraced(function* (
       }),
     );
   }
-  const parentNode = namehash(parts.name.slice(parts.name.indexOf(".") + 1));
+  const parentNode = namehash(parentOf(parts.name));
 
   let expiry = options.expiry ?? 0n;
   if ((fuses & nameWrapperFuses.parentControlled) !== 0) {

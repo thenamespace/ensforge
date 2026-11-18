@@ -1,4 +1,4 @@
-import { Effect } from "effect";
+import { Effect, Array as Arr, String as Str } from "effect";
 
 import { namehash, type Address } from "viem";
 
@@ -7,6 +7,7 @@ import { InvalidInputError } from "../../errors/classes/InvalidInputError.js";
 import type { AnyError } from "../../errors/types.js";
 import type { Namespace } from "../../indexer/types.js";
 import * as CoinType from "../../utils/CoinType.js";
+import { toAnyError } from "../anyError.js";
 import { normalizeName } from "../name/normalize.js";
 import { requireAddress } from "../name/write.js";
 
@@ -15,8 +16,8 @@ import { requireAddress } from "../name/write.js";
  * be encoded (`x.[<labelhash of base>].eth`).
  */
 export const namespaceOf = (name: string): Namespace => {
-  const labels = name.split(".");
-  return labels.length > 2 && namehash(labels.slice(-2).join(".")) === namehash("base.eth")
+  const labels = Str.split(".")(name);
+  return labels.length > 2 && namehash(Arr.join(labels.slice(-2), ".")) === namehash("base.eth")
     ? "basenames"
     : "ens";
 };
@@ -79,8 +80,9 @@ export const contractInput = (
 
 /** A coin type option: a symbol, `{ chainId }`, a number, or `evm` for every EVM chain. */
 export const coinInput = (
+  // oxlint-disable-next-line typescript/no-redundant-type-constituents -- the literal or explicit type argument documents the public type
   coin: CoinType.Input | "evm" | undefined,
 ): Effect.Effect<bigint | "evm" | undefined, AnyError> =>
   coin === undefined || coin === "evm"
     ? Effect.succeed(coin)
-    : Effect.try({ try: () => CoinType.from(coin), catch: (error) => error as AnyError });
+    : Effect.try({ try: () => CoinType.from(coin), catch: toAnyError });

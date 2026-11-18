@@ -74,6 +74,7 @@ export declare namespace get {
      *
      * @default "eth"
      */
+    // oxlint-disable-next-line typescript/no-redundant-type-constituents -- the literal or explicit type argument documents the public type
     coin?: CoinType.Input | "default" | undefined;
     /**
      * Require the name to resolve back to the address.
@@ -96,6 +97,7 @@ export declare namespace get {
 /** Builds a deferred read for `Actions.batch`. */
 get.request = Action.request(
   "primaryName.get",
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Action.Declared narrows errors to the documented @throws
   Impl.get as Action.Declared<typeof Impl.get, get.ErrorType>,
 );
 

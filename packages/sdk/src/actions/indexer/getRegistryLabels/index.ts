@@ -77,6 +77,7 @@ export declare namespace getRegistryLabels {
 /** Builds a deferred read for `Actions.batch`. */
 getRegistryLabels.request = Action.request(
   "indexer.getRegistryLabels",
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Action.Declared narrows errors to the documented @throws
   Impl.getRegistryLabels as Action.Declared<
     typeof Impl.getRegistryLabels,
     getRegistryLabels.ErrorType

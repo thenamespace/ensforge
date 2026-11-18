@@ -1,4 +1,4 @@
-import { Effect } from "effect";
+import { Effect, String as Str, Array as Arr } from "effect";
 
 import { Abis, Roles } from "@ensforge/contracts";
 import { ownedResolverSalt, predictVerifiableProxyAddress } from "@ensforge/contracts/v2";
@@ -22,6 +22,7 @@ import { UnsupportedError } from "../../errors/classes/UnsupportedError.js";
 import type { AnyError } from "../../errors/types.js";
 import type { Plan } from "../../plan/Plan.js";
 import { nonZeroAddress } from "../address.js";
+import { parentOf } from "../name/parts.js";
 import { requireAddress } from "../name/write.js";
 import { recordsCall } from "../records/write-call.js";
 import { deployPermissionedResolver } from "../resolver/deploy.js";
@@ -115,8 +116,6 @@ const migrationResolverSalt = (node: Hex): bigint =>
     ),
   );
 
-const parentOf = (name: string): string => name.slice(name.indexOf(".") + 1);
-
 /** Inspects the names, adding unmigrated locked parents when `migrateParents` asks for them. */
 const inspectAll = Effect.fnUntraced(function* (
   client: Client,
@@ -139,13 +138,18 @@ const inspectAll = Effect.fnUntraced(function* (
   const entries = [...(yield* Effect.forEach(inputs, inspect, { concurrency: "unbounded" }))];
   // Parents first: each round adds the parents still on ENSv1 of the locked children so far.
   while (options.migrateParents) {
-    const known = new Set(entries.map((entry) => entry.inspection.status.name));
+    const known = new Set(Arr.map(entries, (entry) => entry.inspection.status.name));
     const missing = [
       ...new Set(
-        entries
-          .filter((entry) => entry.inspection.status.blockers.includes("parent-not-migrated"))
-          .map((entry) => parentOf(entry.inspection.status.name))
-          .filter((parent) => !known.has(parent)),
+        Arr.filter(
+          Arr.map(
+            Arr.filter(entries, (entry) =>
+              entry.inspection.status.blockers.includes("parent-not-migrated"),
+            ),
+            (entry) => parentOf(entry.inspection.status.name),
+          ),
+          (parent) => !known.has(parent),
+        ),
       ),
     ];
     if (missing.length === 0) break;
@@ -159,7 +163,7 @@ const requireEligible = (
   entries: readonly { readonly inspection: Inspection }[],
   options: { readonly renewing: boolean },
 ): Effect.Effect<void, AnyError> => {
-  const migrating = new Set(entries.map((entry) => entry.inspection.status.name));
+  const migrating = new Set(Arr.map(entries, (entry) => entry.inspection.status.name));
   for (const { inspection } of entries) {
     const { status } = inspection;
     if (status.status === "migrated") {
@@ -167,7 +171,8 @@ const requireEligible = (
         new MigrationError({ code: "ALREADY_MIGRATED", context: { name: status.name } }),
       );
     }
-    const blockers = status.blockers.filter(
+    const blockers = Arr.filter(
+      status.blockers,
       (blocker) =>
         !(blocker === "expired" && options.renewing) &&
         !(blocker === "parent-not-migrated" && migrating.has(parentOf(status.name))) &&
@@ -208,12 +213,15 @@ export const planMigration = Effect.fnUntraced(function* (
       new UnsupportedError({ code: "UNSUPPORTED_ON_DEPLOYMENT", feature: "ENSv2 migration" }),
     );
   }
-  const inputs = Array.isArray(input.names)
-    ? (input.names as readonly NameInput[])
-    : [input.names as NameInput];
+  const inputs = Arr.isArray(input.names)
+    ? // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- `names` is one input or a list, and `resolver` a keyword or an address, by their option types
+      (input.names as readonly NameInput[])
+    : // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- `names` is one input or a list, and `resolver` a keyword or an address, by their option types
+      [input.names as NameInput];
   const resolverChoice: ResolverChoice =
     input.resolver === undefined || ["new", "owned", "keep"].includes(input.resolver)
-      ? (input.resolver as ResolverChoice)
+      ? // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- `names` is one input or a list, and `resolver` a keyword or an address, by their option types
+        (input.resolver as ResolverChoice)
       : yield* requireAddress(input.resolver, "resolver");
   const newOwner =
     input.owner === undefined ? undefined : yield* requireAddress(input.owner, "owner");
@@ -325,9 +333,12 @@ export const planMigration = Effect.fnUntraced(function* (
           deploys.push({ contract: "resolver", address: resolver });
         }
       }
-      if (copied !== undefined)
-        records.push(yield* recordsCall(client, resolver, parts, copied, "name"));
+      if (copied !== undefined) {
+        const copiedRecords = yield* recordsCall(client, resolver, parts, copied, "name");
+        records.push(copiedRecords);
+      }
     } else if (plan === "address") {
+      // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- the `address` plan is chosen only for an address
       resolver = resolverChoice as Address;
     } else if (plan === "public-v2") {
       // The controller swaps the ENSv1 public resolver for PublicResolverV2, which starts empty.
@@ -339,7 +350,8 @@ export const planMigration = Effect.fnUntraced(function* (
             message: `${status.name} gets PublicResolverV2; its owner writes the records there after migrating.`,
           });
         } else {
-          afterRecords.push(yield* recordsCall(client, resolver, parts, copied, "node"));
+          const copiedRecords = yield* recordsCall(client, resolver, parts, copied, "node");
+          afterRecords.push(copiedRecords);
         }
       }
     } else if (plan === "keep" && inspection.publicResolver) {
@@ -358,7 +370,8 @@ export const planMigration = Effect.fnUntraced(function* (
         ? v2.migration.unlockedMigrationController
         : route === "wrapped-locked"
           ? v2.migration.lockedMigrationController
-          : (parentRegistry?.address ?? (loaded.data.v2?.registry as Address));
+          : // oxlint-disable-next-line typescript/no-unnecessary-type-assertion, typescript/no-unsafe-type-assertion -- a v2 name's state always carries its registry (`Name.State` types it as nullable); tsc needs the assertion
+            (parentRegistry?.address ?? (loaded.data.v2?.registry as Address));
     const depth = route === "locked-child" ? (parentRegistry?.depth ?? -1) + 1 : 0;
     const wrapperRegistry = locked
       ? predictVerifiableProxyAddress({
@@ -402,7 +415,8 @@ export const planMigration = Effect.fnUntraced(function* (
         return yield* Effect.fail(
           new MigrationError({
             code: "NOT_ELIGIBLE",
-            blockers: recreation.leftBehind.map(
+            blockers: Arr.map(
+              recreation.leftBehind,
               (child) => `subname ${child.name}: ${child.reason}`,
             ),
             context: { name: status.name },
@@ -483,9 +497,9 @@ export const planMigration = Effect.fnUntraced(function* (
   chunked("subnames", "Recreate subnames", registries);
   chunked("records", "Copy records", records);
   // Parents migrate before their locked children, whose WrapperRegistry they create.
-  const deepest = Math.max(0, ...moves.map((move) => move.depth));
+  const deepest = Math.max(0, ...Arr.map(moves, (move) => move.depth));
   for (let depth = 0; depth <= deepest; depth += 1) {
-    const group = moves.filter((move) => move.depth === depth);
+    const group = Arr.filter(moves, (move) => move.depth === depth);
     if (group.length === 0) continue;
     chunked(
       depth === 0 ? "migrate" : `migrate-children-${depth}`,
@@ -495,7 +509,10 @@ export const planMigration = Effect.fnUntraced(function* (
     chunked(
       depth === 0 ? "wrapped-subnames" : `wrapped-subnames-children-${depth}`,
       "Recreate subnames in WrapperRegistries",
-      wrapped.filter((registrations) => registrations.depth === depth).flatMap((r) => r.calls),
+      Arr.flatMap(
+        Arr.filter(wrapped, (registrations) => registrations.depth === depth),
+        (registrations: (typeof wrapped)[number]) => registrations.calls,
+      ),
     );
   }
   chunked("records-after", "Copy records to PublicResolverV2", afterRecords);
@@ -507,9 +524,10 @@ export const planMigration = Effect.fnUntraced(function* (
     deploys,
     warnings,
     expectations,
-    expired: entries
-      .filter((entry) => entry.inspection.status.blockers.includes("expired"))
-      .map((entry) => entry.inspection.status.name),
+    expired: Arr.map(
+      Arr.filter(entries, (entry) => entry.inspection.status.blockers.includes("expired")),
+      (entry) => entry.inspection.status.name,
+    ),
   };
 });
 
@@ -542,7 +560,7 @@ const transferCalls = (
       });
       continue;
     }
-    const key = `${holder.toLowerCase()}:${move.target.toLowerCase()}`;
+    const key = `${Str.toLowerCase(holder)}:${Str.toLowerCase(move.target)}`;
     wrapped.set(key, [...(wrapped.get(key) ?? []), move]);
   }
 
@@ -571,11 +589,11 @@ const transferCalls = (
               args: [
                 holder,
                 first.target,
-                group.map((move) => hexToBigInt(move.node)),
-                group.map(() => 1n),
+                Arr.map(group, (move) => hexToBigInt(move.node)),
+                Arr.map(group, () => 1n),
                 encodeAbiParameters(
                   [{ type: "tuple[]", components: dataTuple.components }],
-                  [group.map((move) => move.data)],
+                  [Arr.map(group, (move) => move.data)],
                 ),
               ],
             }),

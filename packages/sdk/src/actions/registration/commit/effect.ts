@@ -1,4 +1,4 @@
-import { Effect } from "effect";
+import { Effect, Array as Arr } from "effect";
 
 import { Abis } from "@ensforge/contracts";
 import { decodeFunctionData, type Hex } from "viem";
@@ -51,7 +51,7 @@ export const plan = Effect.fnUntraced(function* (
       {
         id: "commit",
         description: "Commit to the names",
-        calls: toCommit.map((name) => commitCall(registration, name)),
+        calls: Arr.map(toCommit, (name) => commitCall(registration, name)),
       },
     ],
   });
@@ -61,7 +61,9 @@ const write = Action.write("registration.commit", plan, { contractKind: "registr
 
 /** The commitments a commit plan sends, in order. */
 const commitmentsOf = (commitPlan: Plan): readonly Hex[] =>
-  commitPlan.calls.map(
+  Arr.map(
+    commitPlan.calls,
+    // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- a commit call's first argument is the commitment
     (call) => decodeFunctionData({ abi: Abis.v2.ethRegistrar, data: call.data }).args?.[0] as Hex,
   );
 
@@ -93,6 +95,7 @@ export const commitSync = (
             committedAt: Rpc.readContract(client, {
               ...registrar,
               functionName: "commitmentAt",
+              // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- the collection is known to be non-empty or the index in range here; `noUncheckedIndexedAccess` cannot see it
               args: [commitments[0] as Hex],
             }),
             minAge: Rpc.readContract(client, { ...registrar, functionName: "MIN_COMMITMENT_AGE" }),

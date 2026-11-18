@@ -1,4 +1,4 @@
-import { Effect } from "effect";
+import { Effect, Array as Arr } from "effect";
 
 import { Abis } from "@ensforge/contracts";
 import { encodeFunctionData, type Address } from "viem";
@@ -26,7 +26,7 @@ const renewCall = (
   quotes: readonly RenewalQuote[],
   options: { readonly duration: bigint; readonly token: Address; readonly referrer: `0x${string}` },
 ): Plan.Call => {
-  const data = quotes.map((quote) => ({
+  const data = Arr.map(quotes, (quote) => ({
     label: quote.label,
     duration: options.duration,
     referrer: options.referrer,
@@ -79,7 +79,7 @@ export const plan = Effect.fnUntraced(function* (
   for (const quote of quotes) {
     routes.set(quote.spender, [...(routes.get(quote.spender) ?? []), quote]);
   }
-  const total = quotes.reduce((sum, quote) => sum + quote.amount, 0n);
+  const total = Arr.reduce(quotes, 0n, (sum, quote) => sum + quote.amount);
   const approvals = (yield* Effect.forEach(
     [...routes],
     ([spender, group]) =>
@@ -87,7 +87,7 @@ export const plan = Effect.fnUntraced(function* (
         payer,
         token,
         spender,
-        amount: group.reduce((sum, quote) => sum + quote.amount, 0n),
+        amount: Arr.reduce(group, 0n, (sum, quote) => sum + quote.amount),
         balanceRequired: total,
       }),
     { concurrency: "unbounded" },
@@ -101,7 +101,7 @@ export const plan = Effect.fnUntraced(function* (
     id: "renew",
     description: "Renew",
     // At most 25 names per `renewBatch` call keeps each call's gas bounded.
-    calls: [...routes].flatMap(([spender, group]) =>
+    calls: Arr.flatMap([...routes], ([spender, group]) =>
       Array.from({ length: Math.ceil(group.length / 25) }, (_, index) =>
         renewCall(spender, group.slice(index * 25, (index + 1) * 25), {
           duration: options.duration,

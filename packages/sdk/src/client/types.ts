@@ -12,6 +12,7 @@ import type { Plan } from "../plan/Plan.js";
  * @category client
  * @since 1.0.0
  */
+// oxlint-disable-next-line typescript/no-unnecessary-type-arguments -- the literal or explicit type argument documents the public type
 export type ViemClient = ViemBaseClient<Transport, Chain | undefined>;
 
 /**
@@ -21,6 +22,7 @@ export type ViemClient = ViemBaseClient<Transport, Chain | undefined>;
  * @category client
  * @since 1.0.0
  */
+// oxlint-disable-next-line typescript/no-unnecessary-type-arguments -- the literal or explicit type argument documents the public type
 export type ViemWalletClient = ViemBaseClient<Transport, Chain | undefined, Account | undefined>;
 
 /**

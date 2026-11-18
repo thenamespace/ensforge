@@ -1,4 +1,4 @@
-import { Effect } from "effect";
+import { Effect, Array as Arr, Option } from "effect";
 
 import type { Address } from "viem";
 
@@ -22,7 +22,9 @@ export const checkLoaded = Effect.fnUntraced(function* (
   operations: readonly Operation[],
 ): Effect.fn.Return<readonly PermissionCheck[], AnyError> {
   const facts = yield* readPermissionFacts(client, loaded, account, operations);
-  return operations.map((operation) => evaluate(facts, operation, client.deployment.v1?.contracts));
+  return Arr.map(operations, (operation) =>
+    evaluate(facts, operation, client.deployment.v1?.contracts),
+  );
 });
 
 /** Like {@link checkLoaded}, loading the name first. */
@@ -32,7 +34,8 @@ export const checkName = Effect.fnUntraced(function* (
   account: Address,
   operations: readonly Operation[],
 ): Effect.fn.Return<readonly PermissionCheck[], AnyError> {
-  return yield* checkLoaded(client, yield* loadName(client, name), account, operations);
+  const loaded = yield* loadName(client, name);
+  return yield* checkLoaded(client, loaded, account, operations);
 });
 
 /**
@@ -44,14 +47,18 @@ export const explainDenied = (
   checks: readonly PermissionCheck[],
   account: Address,
 ): UnauthorizedError | undefined => {
-  const denied = checks.find(
-    (check) =>
-      check.allowed === false &&
-      !check.missing.some(
-        (requirement) =>
-          requirement.type === "blocked" &&
-          (requirement.reason === "status" || requirement.reason === "unsupported"),
-      ),
+  const denied = Option.getOrUndefined(
+    Arr.findFirst(
+      checks,
+      (check) =>
+        check.allowed === false &&
+        !Arr.some(
+          check.missing,
+          (requirement) =>
+            requirement.type === "blocked" &&
+            (requirement.reason === "status" || requirement.reason === "unsupported"),
+        ),
+    ),
   );
   if (denied === undefined) return undefined;
 
@@ -66,7 +73,7 @@ export const explainDenied = (
             : "TRANSFER_DISALLOWED"
           : "NOT_OWNER",
     account,
-    missingRoles: denied.missing.flatMap((requirement) =>
+    missingRoles: Arr.flatMap(denied.missing, (requirement) =>
       requirement.type === "roles" ? requirement.roles : [],
     ),
     requirements: denied.missing,
@@ -105,10 +112,8 @@ export const explainFor =
       const loaded = yield* loadName(client, nameOf(options));
       const expiring = expiringBeforeNextBlock(loaded);
       if (expiring !== undefined || !isOpaqueRevert(error)) return expiring;
-      return explainDenied(
-        yield* checkLoaded(client, loaded, account, operationsOf(options)),
-        account,
-      );
+      const checks = yield* checkLoaded(client, loaded, account, operationsOf(options));
+      return explainDenied(checks, account);
     });
 
 /** The account to check: the option, else the client's account. */

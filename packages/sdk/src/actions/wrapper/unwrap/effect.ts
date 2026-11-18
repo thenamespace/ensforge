@@ -10,6 +10,7 @@ import type { AnyError } from "../../../errors/types.js";
 import * as Action from "../../../internal/action/index.js";
 import { addressOf } from "../../../internal/address.js";
 import { loadName } from "../../../internal/name/load.js";
+import { parentOf } from "../../../internal/name/parts.js";
 import {
   requireAddress,
   requireProtocol,
@@ -58,7 +59,7 @@ export const plan = Effect.fnUntraced(function* (
     : encodeFunctionData({
         abi: Abis.v1.nameWrapper,
         functionName: "unwrap",
-        args: [namehash(parts.name.slice(parts.name.indexOf(".") + 1)), parts.labelhash, owner],
+        args: [namehash(parentOf(parts.name)), parts.labelhash, owner],
       });
 
   return singleStepPlan(client, {

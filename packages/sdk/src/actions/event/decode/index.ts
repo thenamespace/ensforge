@@ -71,6 +71,7 @@ export declare namespace decode {
 /** Builds a deferred read for `Actions.batch`. */
 decode.request = Action.request(
   "event.decode",
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Action.Declared narrows errors to the documented @throws
   Impl.decode as Action.Declared<typeof Impl.decode, decode.ErrorType>,
 );
 

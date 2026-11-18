@@ -26,6 +26,8 @@ import type { Client, CreateOptions } from "./types.js";
  * @since 1.0.0
  */
 export class Ensforge extends Context.Service<Ensforge, Client<object>>()(
+  // Public key (`<package>/<Service>`); this file is not named after the service.
+  // oxlint-disable-next-line effecttsgo/deterministic-keys
   "@ensforge/sdk/Ensforge",
 ) {}
 
@@ -39,5 +41,6 @@ export class Ensforge extends Context.Service<Ensforge, Client<object>>()(
 export const layer = (options: CreateOptions): Layer.Layer<Ensforge, ConfigError> =>
   Layer.effect(
     Ensforge,
+    // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- `create` throws only `ConfigError`
     Effect.try({ try: () => create(options), catch: (error) => error as ConfigError }),
   );

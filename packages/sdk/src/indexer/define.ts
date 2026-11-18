@@ -1,7 +1,8 @@
+/* oxlint-disable typescript/no-unsafe-type-assertion -- adapter methods are looked up by name at runtime, so their query and result types are erased */
 import { Effect } from "effect";
 
 import { adapterError, complete } from "../internal/indexer/draft.js";
-import { makeIndexer, methodNames, type Implementation } from "../internal/indexer/registry.js";
+import { makeIndexer, methodNames } from "../internal/indexer/registry.js";
 import type { Context, Indexer, Method, Methods } from "./Indexer.js";
 import type { Meta } from "./types.js";
 
@@ -106,5 +107,5 @@ export const defineIndexer = (adapter: Adapter): Indexer => {
       }).pipe(Effect.flatMap((draft) => complete(method, draft as never, id)));
   }
 
-  return makeIndexer({ id, key: adapter.key ?? id, methods: methods as Implementation["methods"] });
+  return makeIndexer({ id, key: adapter.key ?? id, methods });
 };

@@ -22,6 +22,7 @@ export const getAvatar = Effect.fn("ensforge.record.getAvatar")(
       { ...options, selection: { texts: ["avatar"], addresses: ["eth"] }, resource: "avatar" },
       (records) => {
         const avatar = records.texts?.["avatar"] ?? null;
+        // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- the `addresses` selection yields an address or null per coin type
         const owner = (records.addresses as Record<string, Address | null>).eth ?? null;
         return avatar === null ? null : { avatar, owner };
       },
@@ -34,7 +35,7 @@ export const getAvatar = Effect.fn("ensforge.record.getAvatar")(
       owner: record.owner,
     });
     // Without `strict`, an avatar that cannot be loaded (dead gateway, bad metadata) is `null`.
-    return yield* options.strict
+    return yield* options.strict === true
       ? resolved
       : resolved.pipe(Effect.orElseSucceed(() => null as string | null));
   },

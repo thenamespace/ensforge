@@ -27,12 +27,8 @@ export const get = Effect.fn("ensforge.name.get")(
     const { state, data } = loaded;
     if (state.resolver !== null) return { ...state, inheritedResolver: null };
 
-    const served = yield* servingResolver(
-      client,
-      data.parts.name,
-      yield* Effect.fromResult(found),
-      options,
-    );
+    const foundName = yield* Effect.fromResult(found);
+    const served = yield* servingResolver(client, data.parts.name, foundName, options);
     if (served === null) return { ...state, inheritedResolver: null };
     // A parent's resolver serves this name only as an ENSIP-10 extended resolver.
     const extended =

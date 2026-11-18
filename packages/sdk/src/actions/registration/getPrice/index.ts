@@ -97,6 +97,7 @@ export declare namespace getPrice {
 /** Builds a deferred read for `Actions.batch`. */
 getPrice.request = Action.request(
   "registration.getPrice",
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Action.Declared narrows errors to the documented @throws
   Impl.getPrice as Action.Declared<typeof Impl.getPrice, getPrice.ErrorType>,
 );
 

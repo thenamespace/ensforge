@@ -7,6 +7,7 @@ import type { Client } from "../../../client/types.js";
 import type { AnyError } from "../../../errors/types.js";
 import * as Action from "../../../internal/action/index.js";
 import { nonZeroAddress } from "../../../internal/address.js";
+import { toAnyError } from "../../../internal/anyError.js";
 import { parseDnsName } from "../../../internal/dns/name.js";
 import {
   fetchTxtProof,
@@ -29,7 +30,7 @@ const isUsable = (
 ): Effect.Effect<boolean, AnyError> =>
   isAddress(resolver, { strict: false })
     ? Effect.succeed(true)
-    : Effect.try({ try: () => namehash(resolver), catch: (error) => error as AnyError }).pipe(
+    : Effect.try({ try: () => namehash(resolver), catch: toAnyError }).pipe(
         Effect.flatMap((node) =>
           Rpc.resolve(client, {
             name: resolver,

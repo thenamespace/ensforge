@@ -1,4 +1,4 @@
-import { Effect } from "effect";
+import { Effect, String as Str } from "effect";
 
 import type { Client } from "../../../client/types.js";
 import { InvalidInputError } from "../../../errors/classes/InvalidInputError.js";
@@ -13,7 +13,7 @@ export const search = Effect.fn("ensforge.indexer.search")(function* (
   client: Client,
   options: Promises.Options,
 ): Effect.fn.Return<Promises.ReturnType, AnyError> {
-  const query = options.query.trim().toLowerCase();
+  const query = Str.toLowerCase(Str.trim(options.query));
   if (query === "") {
     return yield* Effect.fail(
       new InvalidInputError({ code: "INVALID_RECORD_VALUE", field: "query", input: options.query }),

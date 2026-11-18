@@ -1,4 +1,4 @@
-import { Effect } from "effect";
+import { Effect, String as Str } from "effect";
 
 import { Abis } from "@ensforge/contracts";
 import { decodeFunctionResult, encodeFunctionData, type Address } from "viem";
@@ -92,7 +92,7 @@ export const get = Effect.fn("ensforge.primaryName.get")(
     // The Universal Resolver returns the stored text; names that are not normalized are unsafe to
     // show. Encoded labels (`[af2c…]`) survive `normalizeName` but are no ENSIP-15 name.
     const normalized = yield* normalizeName(name).pipe(
-      Effect.map((normalizedName) => normalizedName === name && !name.includes("[")),
+      Effect.map((normalizedName) => normalizedName === name && !Str.includes("[")(name)),
       Effect.orElseSucceed(() => false),
     );
     if (!normalized) {

@@ -93,6 +93,7 @@ export declare namespace getAvatar {
 /** Builds a deferred read for `Actions.batch`. */
 getAvatar.request = Action.request(
   "record.getAvatar",
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Action.Declared narrows errors to the documented @throws
   Impl.getAvatar as Action.Declared<typeof Impl.getAvatar, getAvatar.ErrorType>,
 );
 

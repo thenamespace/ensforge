@@ -1,4 +1,4 @@
-import { Effect } from "effect";
+import { Effect, Array as Arr, String as Str } from "effect";
 
 import { Abis } from "@ensforge/contracts";
 import {
@@ -37,7 +37,7 @@ const selectorOf = (name: "setNameForAddrWithSignature" | "setNameForOwnableWith
  * registrar, the function, the account, the expiry, the name and the coin types, packed.
  */
 export const claimMessage = (claim: Promises.Claim): Hex => {
-  const coinTypes = claim.chainIds.map(CoinType.fromChainId);
+  const coinTypes = Arr.map(claim.chainIds, CoinType.fromChainId);
   const expiry = BigInt(claim.expiry);
   return keccak256(
     claim.owner === undefined
@@ -87,9 +87,10 @@ export const signClaim = Effect.fn("ensforge.primaryName.signClaim")(function* (
       ),
     );
   }
-  const registrars = yield* Effect.forEach(chainIds, l2Registrar);
+  const registrars = yield* Effect.forEach(chainIds, l2Registrar, { concurrency: 1 });
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- the collection is known to be non-empty or the index in range here; `noUncheckedIndexedAccess` cannot see it
   const registrar = registrars[0] as Address;
-  if (registrars.some((other) => !isAddressEqual(other, registrar))) {
+  if (Arr.some(registrars, (other) => !isAddressEqual(other, registrar))) {
     return yield* Effect.fail(
       invalidChains(
         chainIds,
@@ -111,7 +112,7 @@ export const signClaim = Effect.fn("ensforge.primaryName.signClaim")(function* (
   }
 
   const name = options.name === null ? "" : yield* normalizeName(options.name);
-  if (name.includes("[")) {
+  if (Str.includes("[")(name)) {
     return yield* Effect.fail(
       new InvalidInputError({
         code: "INVALID_NAME",
@@ -122,6 +123,7 @@ export const signClaim = Effect.fn("ensforge.primaryName.signClaim")(function* (
   }
 
   const signer = yield* resolveSigner(client, options.account);
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- a resolved signer has an account
   const signerAddress = addressOf(signer.account) as Address;
   const address =
     options.address === undefined
@@ -129,20 +131,23 @@ export const signClaim = Effect.fn("ensforge.primaryName.signClaim")(function* (
       : yield* requireAddress(options.address, "address");
 
   if (name !== "" && options.verify !== false) {
-    yield* requireForwardMatch(client, name, address, chainIds.map(CoinType.fromChainId));
+    yield* requireForwardMatch(client, name, address, Arr.map(chainIds, CoinType.fromChainId));
   }
 
   // Counted from the earliest clock among the chains, so the claim is valid on each of them; a
   // chain without its own clients counts from the ENS chain's.
-  const timestamps = yield* Effect.forEach(chainIds, (chainId) =>
-    (hasChain(client, chainId) ? chainClient(client, chainId) : Effect.succeed(client)).pipe(
-      Effect.flatMap((target) =>
-        fromPromise(() => getBlock(target.publicClient, { blockTag: "latest" })),
+  const timestamps = yield* Effect.forEach(
+    chainIds,
+    (chainId) =>
+      (hasChain(client, chainId) ? chainClient(client, chainId) : Effect.succeed(client)).pipe(
+        Effect.flatMap((target) =>
+          fromPromise(() => getBlock(target.publicClient, { blockTag: "latest" })),
+        ),
+        Effect.map((block) => block.timestamp),
       ),
-      Effect.map((block) => block.timestamp),
-    ),
+    { concurrency: 1 },
   );
-  const now = timestamps.reduce((earliest, timestamp) =>
+  const now = Arr.reduce(timestamps, timestamps[0] ?? 0n, (earliest, timestamp) =>
     timestamp < earliest ? timestamp : earliest,
   );
 

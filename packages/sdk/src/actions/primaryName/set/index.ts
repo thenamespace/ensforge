@@ -139,6 +139,7 @@ export declare namespace set {
      *
      * @default "eth"
      */
+    // oxlint-disable-next-line typescript/no-redundant-type-constituents -- the literal or explicit type argument documents the public type
     coin?: CoinType.Input | "default" | undefined;
     /**
      * Check that `name` resolves to the address before sending.

@@ -16,7 +16,8 @@ export const getToken = Effect.fn("ensforge.approval.getToken")(function* (
   client: Client,
   options: Promises.Options,
 ): Effect.fn.Return<Promises.ReturnType, AnyError> {
-  const token = yield* approvableToken(client, yield* loadName(client, options.name, options));
+  const loaded = yield* loadName(client, options.name, options);
+  const token = yield* approvableToken(client, loaded);
   // An expired BaseRegistrar token reverts on `getApproved`; it has no approval then.
   const approved = yield* Rpc.readContractOrUndefined(client, {
     address: token.contract,

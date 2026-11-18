@@ -30,7 +30,7 @@ const created = new WeakMap<ViemClient, Client>();
 export const from = (client: Like): Client => {
   if (is(client)) return client;
 
-  const viemClient = client as ViemClient;
+  const viemClient = client;
   const existing = created.get(viemClient);
   if (existing !== undefined) return existing;
 

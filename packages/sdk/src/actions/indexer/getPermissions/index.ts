@@ -86,6 +86,7 @@ export declare namespace getPermissions {
 /** Builds a deferred read for `Actions.batch`. */
 getPermissions.request = Action.request(
   "indexer.getPermissions",
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Action.Declared narrows errors to the documented @throws
   Impl.getPermissions as Action.Declared<typeof Impl.getPermissions, getPermissions.ErrorType>,
 );
 

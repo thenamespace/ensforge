@@ -39,7 +39,9 @@ export const promise = <options, value, error>(
   }
 
   return Effect.runPromise(implementation(ens, options), { signal }).catch((cause: unknown) => {
-    throw signal?.aborted ? signal.reason : fromCause(cause, contextOf(path, ens, options));
+    throw signal?.aborted === true
+      ? signal.reason
+      : fromCause(cause, contextOf(path, ens, options));
   });
 };
 

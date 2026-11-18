@@ -75,6 +75,7 @@ export declare namespace getFuses {
 /** Builds a deferred read for `Actions.batch`. */
 getFuses.request = Action.request(
   "wrapper.getFuses",
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Action.Declared narrows errors to the documented @throws
   Impl.getFuses as Action.Declared<typeof Impl.getFuses, getFuses.ErrorType>,
 );
 

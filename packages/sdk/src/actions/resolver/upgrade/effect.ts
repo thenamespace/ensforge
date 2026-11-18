@@ -33,11 +33,8 @@ export const plan = Effect.fnUntraced(function* (
     );
   }
 
-  const resolver = yield* requirePermissionedResolver(
-    client,
-    yield* loadName(client, options.name),
-    "upgrades",
-  );
+  const loaded = yield* loadName(client, options.name);
+  const resolver = yield* requirePermissionedResolver(client, loaded, "upgrades");
 
   // ERC-1967 implementation slot: bytes32(uint256(keccak256("eip1967.proxy.implementation")) - 1).
   const word = yield* Rpc.fromPromise(

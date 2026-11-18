@@ -1,3 +1,5 @@
+import { Array as Arr } from "effect";
+
 import type { Address } from "viem";
 
 import { toNames } from "../../utils/Role.js";
@@ -19,7 +21,7 @@ const defaults: {
     details:
       o.missingRoles === undefined || o.missingRoles.length === 0
         ? []
-        : [`Missing roles: ${o.missingRoles.join(", ")}`],
+        : [`Missing roles: ${Arr.join(o.missingRoles, ", ")}`],
     hint: "Ask the name's owner to grant the roles, or send from the owner's account.",
   }),
   CANNOT_GRANT_ROLES: (o: UnauthorizedError.Options) => ({
@@ -90,7 +92,7 @@ export class UnauthorizedError extends EnsforgeError<"UnauthorizedError", Unauth
       if (this.code === "MISSING_ROLES" && names.length > 0) {
         (this as { details: readonly string[] }).details = [
           ...this.details,
-          `Missing roles: ${names.join(", ")}`,
+          `Missing roles: ${Arr.join(names, ", ")}`,
         ];
       }
     }

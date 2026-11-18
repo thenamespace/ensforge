@@ -99,6 +99,7 @@ export declare namespace getHistory {
 /** Builds a deferred read for `Actions.batch`. */
 getHistory.request = Action.request(
   "indexer.getHistory",
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Action.Declared narrows errors to the documented @throws
   Impl.getHistory as Action.Declared<typeof Impl.getHistory, getHistory.ErrorType>,
 );
 

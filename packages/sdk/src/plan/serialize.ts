@@ -1,3 +1,6 @@
+import { Array as Arr } from "effect";
+
+/* oxlint-disable effecttsgo/global-json, typescript/no-unsafe-type-assertion -- plans carry bigints, so JSON needs a replacer and reviver, which Schema JSON codecs do not take; the parsed shape is checked by `deserialize` */
 import { PlanError } from "../errors/classes/PlanError.js";
 import type { Plan } from "./Plan.js";
 
@@ -32,7 +35,7 @@ export const serialize = (value: Plan | Plan.Record): string => JSON.stringify(v
 export const deserialize = (text: string): Plan => {
   try {
     const plan = JSON.parse(text, reviver) as Partial<Plan>;
-    if (typeof plan.id !== "string" || !Array.isArray(plan.steps))
+    if (typeof plan.id !== "string" || !Arr.isArray(plan.steps))
       throw new Error("missing id or steps");
     return plan as Plan;
   } catch (cause) {

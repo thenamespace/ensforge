@@ -97,6 +97,7 @@ export declare namespace get {
 /** Builds a deferred read for `Actions.batch`. */
 get.request = Action.request(
   "record.get",
+  // oxlint-disable-next-line typescript/no-unnecessary-type-assertion, typescript/no-unsafe-type-assertion -- Action.Declared narrows errors to the documented @throws; dropping it changes the generic request type
   Impl.get as Action.Declared<typeof Impl.get, get.ErrorType>,
 );
 

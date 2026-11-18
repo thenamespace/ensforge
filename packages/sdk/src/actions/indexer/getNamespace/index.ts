@@ -65,6 +65,7 @@ export declare namespace getNamespace {
 /** Builds a deferred read for `Actions.batch`. */
 getNamespace.request = Action.request(
   "indexer.getNamespace",
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Action.Declared narrows errors to the documented @throws
   Impl.getNamespace as Action.Declared<typeof Impl.getNamespace, getNamespace.ErrorType>,
 );
 

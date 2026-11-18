@@ -80,6 +80,7 @@ export declare namespace getText {
 /** Builds a deferred read for `Actions.batch`. */
 getText.request = Action.request(
   "record.getText",
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Action.Declared narrows errors to the documented @throws
   Impl.getText as Action.Declared<typeof Impl.getText, getText.ErrorType>,
 );
 

@@ -82,6 +82,7 @@ export declare namespace getName {
 /** Builds a deferred read for `Actions.batch`. */
 getName.request = Action.request(
   "indexer.getName",
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Action.Declared narrows errors to the documented @throws
   Impl.getName as Action.Declared<typeof Impl.getName, getName.ErrorType>,
 );
 

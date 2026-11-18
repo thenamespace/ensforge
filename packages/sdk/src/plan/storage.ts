@@ -1,3 +1,7 @@
+// `Plan.Storage` is a Promise interface, so custom stores can be written without Effect.
+/* oxlint-disable effecttsgo/async-function, effecttsgo/global-json, typescript/no-unsafe-type-assertion -- the store holds plain strings under one key; Effect's Schema is large for the static path */
+import { Array as Arr, Record as Rec } from "effect";
+
 import type { Plan } from "./Plan.js";
 import { deserializeRecord, serialize } from "./serialize.js";
 
@@ -62,6 +66,6 @@ export const localStorage = (key = "ensforge:plans"): Plan.Storage => {
       const { [id]: _removed, ...rest } = read();
       write(rest);
     },
-    list: async () => Object.values(read()).map(deserializeRecord),
+    list: async () => Arr.map(Rec.values(read()), deserializeRecord),
   };
 };

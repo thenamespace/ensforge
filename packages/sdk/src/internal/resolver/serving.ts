@@ -1,4 +1,4 @@
-import { Effect } from "effect";
+import { Effect, Array as Arr, Option, String as Str } from "effect";
 
 import { Abis } from "@ensforge/contracts";
 import { isAddressEqual, type Address } from "viem";
@@ -42,8 +42,8 @@ export const behindEnsV1Bridge = (
   if (registry === undefined) return Effect.succeed(null);
   const loop = client.deployment.v2?.contracts.ensV2Resolver;
 
-  const labels = name.split(".");
-  const levels = labels.map((_, index) => labels.slice(index).join("."));
+  const labels = Str.split(".")(name);
+  const levels = Arr.map(labels, (_, index) => Arr.join(labels.slice(index), "."));
   const at = blockAt(block);
   return Effect.forEach(
     levels,
@@ -57,13 +57,15 @@ export const behindEnsV1Bridge = (
       }),
     { concurrency: "unbounded" },
   ).pipe(
-    Effect.map((resolvers) => {
-      const index = resolvers.findIndex(
-        (resolver) => nonZeroAddress(resolver) !== null && !sameAddress(loop, resolver),
-      );
-      const address = resolvers[index];
-      return address === undefined ? null : { address, inherited: index > 0 };
-    }),
+    Effect.map((resolvers) =>
+      Option.match(
+        Arr.findFirstWithIndex(
+          resolvers,
+          (resolver) => nonZeroAddress(resolver) !== null && !sameAddress(loop, resolver),
+        ),
+        { onNone: () => null, onSome: ([address, index]) => ({ address, inherited: index > 0 }) },
+      ),
+    ),
   );
 };
 

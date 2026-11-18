@@ -1,3 +1,6 @@
+/* oxlint-disable typescript/no-unsafe-type-assertion -- the Wire schemas validate hex and enum fields as plain strings; the indexer guarantees their shape */
+import { String as Str, Array as Arr, Record as Rec, Option } from "effect";
+
 import { getAddress, type Address, type Hex } from "viem";
 
 import type { EventAction, EventType } from "../../actions/event/types.js";
@@ -18,14 +21,15 @@ const contract = (value: Of<typeof Wire.ContractRef> | null | undefined): T.Cont
     : { chainId: value.chain_id, address: getAddress(value.address) };
 
 const camel = (key: string): string =>
-  key.replace(/_([a-z0-9])/g, (_, char: string) => char.toUpperCase());
+  // oxlint-disable-next-line effecttsgo/prefer-effect-string -- `Str.replace` takes no replacer function
+  key.replace(/_([a-z0-9])/g, (_, char: string) => Str.toUpperCase(char));
 
 /** snake_case keys to camelCase, recursively; values are kept. */
 const camelize = (value: unknown): unknown => {
-  if (Array.isArray(value)) return value.map(camelize);
+  if (Arr.isArray(value)) return Arr.map(value, camelize);
   if (value === null || typeof value !== "object") return value;
-  return Object.fromEntries(
-    Object.entries(value).map(([key, entry]) => [camel(key), camelize(entry)]),
+  return Rec.fromEntries(
+    Arr.map(Rec.toEntries(value), ([key, entry]) => [camel(key), camelize(entry)]),
   );
 };
 
@@ -57,7 +61,7 @@ export const meta = (
   indexer: string,
 ): T.Meta => {
   const snapshots: Record<number, T.Snapshot> = {};
-  for (const [chain, asOf] of Object.entries(wire?.as_of ?? {})) {
+  for (const [chain, asOf] of Rec.toEntries(wire?.as_of ?? {})) {
     snapshots[Number(chain)] = {
       chainId: Number(chain),
       blockNumber: BigInt(asOf.block_number),
@@ -67,7 +71,7 @@ export const meta = (
   }
 
   return {
-    asOf: snapshots[chainId] ?? Object.values(snapshots)[0] ?? null,
+    asOf: snapshots[chainId] ?? Rec.values(snapshots)[0] ?? null,
     snapshots,
     asOfToken: wire?.as_of_token ?? null,
     completeness: oneOf(["full", "partial", "unsupported"], wire?.completeness) ?? "full",
@@ -130,8 +134,11 @@ export const name = (wire: Of<typeof Wire.SearchName>): T.IndexedName => ({
 });
 
 const present = (values: Readonly<Record<string, string | null>> | null | undefined) =>
-  Object.fromEntries(
-    Object.entries(values ?? {}).filter((entry): entry is [string, string] => entry[1] !== null),
+  Rec.fromEntries(
+    Arr.filter(
+      Rec.toEntries(values ?? {}),
+      (entry): entry is [string, string] => entry[1] !== null,
+    ),
   );
 
 const profile = (
@@ -144,8 +151,8 @@ const profile = (
     addresses: present(wire.addresses),
     contentHash: (wire.contenthash ?? null) as Hex | null,
     name: wire.name ?? null,
-    textKeys: wire.seen_texts ?? Object.keys(wire.texts ?? {}),
-    coinTypes: wire.seen_addresses ?? Object.keys(wire.addresses ?? {}),
+    textKeys: wire.seen_texts ?? Rec.keys(wire.texts ?? {}),
+    coinTypes: wire.seen_addresses ?? Rec.keys(wire.addresses ?? {}),
   };
 };
 
@@ -165,7 +172,7 @@ export const detail = (wire: Of<typeof Wire.NameRecord>): T.IndexedNameDetail =>
 
 export const addressName = (wire: Of<typeof Wire.AddressName>): T.AddressName => ({
   ...name(wire),
-  relations: (wire.relations ?? []).map((relation) => camel(relation) as T.Relation),
+  relations: Arr.map(wire.relations ?? [], (relation) => camel(relation) as T.Relation),
   isPrimary: wire.is_primary ?? false,
   migratedAt: big(wire.migrated_at),
   recordCount: wire.record_count ?? null,
@@ -216,7 +223,7 @@ export const records = (wire: Of<typeof Wire.NameRecords>): T.IndexedRecords => 
   const addresses: Record<string, string> = {};
   let contentHash: Hex | null = null;
 
-  for (const [key, answer] of Object.entries(wire.records ?? {})) {
+  for (const [key, answer] of Rec.toEntries(wire.records ?? {})) {
     const value = answer.value ?? null;
     answers[key] = {
       status: answerStatus(answer.status),
@@ -224,8 +231,8 @@ export const records = (wire: Of<typeof Wire.NameRecords>): T.IndexedRecords => 
       reason: answer.failure_reason ?? answer.unsupported_reason ?? null,
     };
     if (answer.status !== "ok" || value === null) continue;
-    if (key.startsWith("text:")) texts[key.slice(5)] = value;
-    else if (key.startsWith("addr:")) addresses[key.slice(5)] = value;
+    if (Str.startsWith("text:")(key)) texts[Str.slice(5)(key)] = value;
+    else if (Str.startsWith("addr:")(key)) addresses[Str.slice(5)(key)] = value;
     else if (key === "contenthash") contentHash = value as Hex;
   }
 
@@ -249,7 +256,7 @@ export const records = (wire: Of<typeof Wire.NameRecords>): T.IndexedRecords => 
 };
 
 export const primaryName = (wire: Of<typeof Wire.PrimaryName>): T.IndexedPrimaryName => {
-  const answers = (wire.answers ?? []).flatMap((answer): T.PrimaryNameAnswer[] => {
+  const answers = Arr.flatMap(wire.answers ?? [], (answer): T.PrimaryNameAnswer[] => {
     const source = oneOf(["indexed", "verified"], answer.source);
     return source === null
       ? []
@@ -264,8 +271,12 @@ export const primaryName = (wire: Of<typeof Wire.PrimaryName>): T.IndexedPrimary
   });
   // A verified answer wins; an indexed one is used when nothing was verified.
   const chosen =
-    answers.find((answer) => answer.source === "verified" && answer.status === "ok") ??
-    answers.find((answer) => answer.source === "indexed" && answer.status === "ok");
+    Option.getOrUndefined(
+      Arr.findFirst(answers, (answer) => answer.source === "verified" && answer.status === "ok"),
+    ) ??
+    Option.getOrUndefined(
+      Arr.findFirst(answers, (answer) => answer.source === "indexed" && answer.status === "ok"),
+    );
 
   return {
     address: getAddress(wire.address),
@@ -283,11 +294,11 @@ const lookupRecord = (wire: Of<typeof Wire.LookupRecord>) => ({
 });
 
 export const lookupResult = (wire: Of<typeof Wire.LookupResult>): T.LookupResult => {
-  const names = (wire.records ?? []).map(lookupRecord);
+  const names = Arr.map(wire.records ?? [], lookupRecord);
   // Name inputs answer one `record`; address inputs list their names, the primary one marked.
   const record =
     wire.record === null || wire.record === undefined
-      ? (names.find((row) => row.isPrimary === true) ?? null)
+      ? (Option.getOrUndefined(Arr.findFirst(names, (row) => row.isPrimary === true)) ?? null)
       : lookupRecord(wire.record);
   return {
     input: wire.input.name ?? wire.input.address ?? "",
@@ -329,13 +340,13 @@ export const registry = (wire: Of<typeof Wire.RegistryOverview>): T.IndexedRegis
           roles: wire.counts.roles ?? null,
           events: wire.counts.events ?? null,
         },
-  referencedBy: (wire.referenced_by?.data ?? []).map((entry) => entry.name),
+  referencedBy: Arr.map(wire.referenced_by?.data ?? [], (entry) => entry.name),
 });
 
 export const resolver = (wire: Of<typeof Wire.ResolverOverview>): T.IndexedResolver => ({
   chainId: wire.chain_id,
   address: getAddress(wire.address),
-  names: (wire.bound_names?.data ?? []).map((entry) => entry.name),
+  names: Arr.map(wire.bound_names?.data ?? [], (entry) => entry.name),
   cursor: wire.bound_names?.page?.next_cursor ?? null,
   hasMore: wire.bound_names?.page?.has_more ?? false,
   mirrors: contract(wire.mirror?.registry),
@@ -369,13 +380,13 @@ export const roleHolderResolver = (
 
 export const namespace = (wire: Of<typeof Wire.Namespace>): T.NamespaceInfo => ({
   namespace: wire.namespace,
-  capabilities: Object.fromEntries(
-    Object.entries(wire.capabilities ?? {}).map(([feature, capability]) => [
+  capabilities: Rec.fromEntries(
+    Arr.map(Rec.toEntries(wire.capabilities ?? {}), ([feature, capability]) => [
       feature,
       oneOf(["full", "partial", "unsupported"], capability.completeness) ?? "unsupported",
     ]),
   ),
-  networks: (wire.networks ?? []).map((network) => ({
+  networks: Arr.map(wire.networks ?? [], (network) => ({
     network: network.network,
     chainId: network.chain_id ?? null,
     protocol: authority(network.resolution?.protocol) as "ensV1" | "ensV2" | null,
@@ -388,9 +399,9 @@ const opsStatus = (value: string | null | undefined): T.ChainStatus["status"] =>
 
 export const status = (wire: Of<typeof Wire.StatusData>, indexer: string): T.IndexerStatus => ({
   status: opsStatus(wire.status),
-  chains: Object.fromEntries(
-    Object.entries(wire.chains).map(([chainId, chain]) => [
-      Number(chainId),
+  chains: Rec.fromEntries(
+    Arr.map(Rec.toEntries(wire.chains), ([chainId, chain]) => [
+      chainId,
       {
         status: opsStatus(chain.status),
         indexed: big(chain.indexed_block),

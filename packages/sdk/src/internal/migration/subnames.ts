@@ -1,4 +1,4 @@
-import { Effect } from "effect";
+import { Effect, String as Str, Array as Arr } from "effect";
 
 import { Abis, Roles } from "@ensforge/contracts";
 import { migrationUserRegistrySalt } from "@ensforge/contracts/v2";
@@ -18,6 +18,7 @@ import type { AnyError } from "../../errors/types.js";
 import type { Plan } from "../../plan/Plan.js";
 import * as Fuse from "../../utils/Fuse.js";
 import { loadName, type LoadedName } from "../name/load.js";
+import { parentOf } from "../name/parts.js";
 import { deployUserRegistry, rootRoles } from "../registry/deploy.js";
 import * as Rpc from "../rpc/index.js";
 
@@ -50,8 +51,6 @@ const recreationRoles =
   Roles.registry.setParent |
   Roles.registry.setParentAdmin;
 
-const parentOf = (name: string): string => name.slice(name.indexOf(".") + 1);
-
 /**
  * Plans the recreation of `parent`'s `subnames` (full names, or names relative to it, at any
  * depth), as the ENS app does: each keeps its ENSv1 holder and resolver, with every role and no
@@ -78,14 +77,14 @@ export const planRecreation = Effect.fnUntraced(function* (
 ): Effect.fn.Return<Recreation, AnyError> {
   const { parent, sender } = options;
   const suffix = `.${parent.name}`;
-  const tld = parent.name.slice(parent.name.lastIndexOf(".") + 1);
+  const tld = Arr.lastNonEmpty(Str.split(".")(parent.name));
 
   const listed: string[] = [];
   for (const input of options.subnames) {
-    const lowered = input.toLowerCase();
-    const name = lowered.endsWith(suffix) ? lowered : `${lowered}${suffix}`;
+    const lowered = Str.toLowerCase(input);
+    const name = Str.endsWith(suffix)(lowered) ? lowered : `${lowered}${suffix}`;
     // A full name under another parent would otherwise read as a relative one.
-    if (!lowered.endsWith(suffix) && (lowered === tld || lowered.endsWith(`.${tld}`))) {
+    if (!Str.endsWith(suffix)(lowered) && (lowered === tld || Str.endsWith(`.${tld}`)(lowered))) {
       return yield* Effect.fail(
         new InvalidInputError({
           code: "INVALID_NAME",
@@ -105,13 +104,12 @@ export const planRecreation = Effect.fnUntraced(function* (
     }
   }
 
-  const loaded = new Map<string, LoadedName>(
-    yield* Effect.forEach(
-      names,
-      (name) => loadName(client, name).pipe(Effect.map((child) => [name, child] as const)),
-      { concurrency: "unbounded" },
-    ),
+  const loadedEntries = yield* Effect.forEach(
+    names,
+    (name) => loadName(client, name).pipe(Effect.map((child) => [name, child] as const)),
+    { concurrency: "unbounded" },
   );
+  const loaded = new Map<string, LoadedName>(loadedEntries);
   for (const name of names) {
     const kind = loaded.get(name)?.kind;
     if (!listed.includes(name) && kind !== "v1-unwrapped" && kind !== "v1-wrapped") {
@@ -125,8 +123,9 @@ export const planRecreation = Effect.fnUntraced(function* (
       );
     }
   }
-  const childrenOf = (name: string) => names.filter((child) => parentOf(child) === name);
-  const descendantsOf = (name: string) => names.filter((child) => child.endsWith(`.${name}`));
+  const childrenOf = (name: string) => Arr.filter(names, (child) => parentOf(child) === name);
+  const descendantsOf = (name: string) =>
+    Arr.filter(names, (child) => Str.endsWith(`.${name}`)(child));
 
   const deploys: { readonly address: Address; readonly call: Plan.Call }[] = [];
   const registryCalls = new Map<Address, Plan.Call[]>();

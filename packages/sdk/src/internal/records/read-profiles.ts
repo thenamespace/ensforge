@@ -1,3 +1,6 @@
+/* oxlint-disable typescript/no-unsafe-type-assertion -- results are decoded against a profile ABI chosen by name at runtime */
+import { Array as Arr } from "effect";
+
 import { Abis } from "@ensforge/contracts";
 import { decodeFunctionResult, encodeFunctionData, zeroHash, type Address, type Hex } from "viem";
 
@@ -20,7 +23,7 @@ type Read = {
   ) => void;
 };
 
-type Output = Record<string, Record<string, unknown> | unknown>;
+type Output = Record<string, unknown>;
 type Results = {
   readonly defaultAddress: Hex | undefined;
   /** The legacy `addr(bytes32)` answer, for resolvers older than ENSIP-9. */
@@ -40,6 +43,7 @@ const profileAbis = {
 } as const;
 
 const decode = (functionName: keyof typeof profileAbis, data: Hex): unknown =>
+  // oxlint-disable-next-line typescript/no-unnecessary-type-assertion -- tsc requires this assertion; tsgolint resolves the parameter type differently
   decodeFunctionResult({ abi: profileAbis[functionName], functionName, data } as never);
 
 const orNull = <value>(read: () => value): value | null => {
@@ -51,7 +55,7 @@ const orNull = <value>(read: () => value): value | null => {
 };
 
 const textReads = (node: Hex, keys: readonly string[]): Read[] =>
-  keys.map((key) => ({
+  Arr.map(keys, (key) => ({
     call: encodeFunctionData({
       abi: Abis.shared.textResolver,
       functionName: "text",
@@ -84,7 +88,7 @@ const decodeLegacyEth = (codecs: RecordCodecs, result: Hex | undefined): string 
 };
 
 const addressReads = (node: Hex, coins: readonly (string | bigint)[]): Read[] =>
-  coins.map((coin) => {
+  Arr.map(coins, (coin) => {
     const coinType = CoinType.from(coin);
     const usesDefault = CoinType.isEvm(coinType) && coinType !== 60n;
     return {
@@ -108,13 +112,13 @@ const addressReads = (node: Hex, coins: readonly (string | bigint)[]): Read[] =>
     };
   });
 
-const keyedReads = <value>(
+const keyedReads = (
   keys: readonly string[],
   field: string,
   call: (key: string) => Hex,
-  read: (result: Hex) => value | null,
+  read: (result: Hex) => unknown,
 ): Read[] =>
-  keys.map((key) => ({
+  Arr.map(keys, (key) => ({
     call: call(key),
     apply: (result, output) => {
       (output[field] as Record<string, unknown>)[key] =
@@ -230,7 +234,7 @@ export const planRecordReads = (node: Hex, selection: Selection) => {
   }
 
   // EVM chains other than mainnet fall back to the default EVM address (ENSIP-19).
-  const needsDefault = (selection.addresses ?? []).some((coin) => {
+  const needsDefault = Arr.some(selection.addresses ?? [], (coin) => {
     const coinType = CoinType.from(coin);
     return CoinType.isEvm(coinType) && coinType !== 60n;
   });
@@ -240,21 +244,21 @@ export const planRecordReads = (node: Hex, selection: Selection) => {
     args: [node, defaultEvmCoinType],
   });
   // ETH also asks the legacy `addr(bytes32)` in the same request, for pre-ENSIP-9 resolvers.
-  const needsLegacyEth = (selection.addresses ?? []).some((coin) => CoinType.from(coin) === 60n);
+  const needsLegacyEth = Arr.some(selection.addresses ?? [], (coin) => CoinType.from(coin) === 60n);
   const legacyEthCall = encodeFunctionData({
     abi: Abis.shared.addrResolver,
     functionName: "addr",
     args: [node],
   });
   const calls = [
-    ...reads.map((read) => read.call),
+    ...Arr.map(reads, (read) => read.call),
     ...(needsDefault ? [defaultCall] : []),
     ...(needsLegacyEth ? [legacyEthCall] : []),
   ];
 
   // Only the codecs this selection decodes with are loaded.
   const codecs = loadRecordCodecs({
-    coinTypes: (selection.addresses ?? []).map((coin) => CoinType.from(coin)),
+    coinTypes: Arr.map(selection.addresses ?? [], (coin) => CoinType.from(coin)),
     contentHash: selection.contentHash === true,
     abi: selection.abi !== undefined,
   });

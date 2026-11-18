@@ -1,3 +1,6 @@
+/* oxlint-disable typescript/no-unsafe-type-assertion -- viem's error `data`, `cause` and `raw` fields are untyped */
+import { Array as Arr, Option } from "effect";
+
 import type { Address, Hex } from "viem";
 
 import {
@@ -33,7 +36,7 @@ const causeChain = (cause: unknown): readonly ViemErrorLike[] => {
 
   while (typeof current === "object" && current !== null && !seen.has(current)) {
     seen.add(current);
-    chain.push(current as ViemErrorLike);
+    chain.push(current);
     current = (current as ViemErrorLike).cause;
   }
 
@@ -41,7 +44,9 @@ const causeChain = (cause: unknown): readonly ViemErrorLike[] => {
 };
 
 const find = (chain: readonly ViemErrorLike[], ...names: readonly string[]) =>
-  chain.find((error) => error.name !== undefined && names.includes(error.name));
+  Option.getOrUndefined(
+    Arr.findFirst(chain, (error) => error.name !== undefined && names.includes(error.name)),
+  );
 
 const fromContractError = (
   chain: readonly ViemErrorLike[],
@@ -65,11 +70,15 @@ const fromContractError = (
 
   // `eth_call` reverts arrive as JSON-RPC code 3; the revert data is on the RPC error, if any.
   const executionReverted =
-    find(chain, "ExecutionRevertedError") ?? chain.find((error) => error.code === 3);
+    find(chain, "ExecutionRevertedError") ??
+    Option.getOrUndefined(Arr.findFirst(chain, (error) => error.code === 3));
   if (executionReverted !== undefined) {
-    const revertData = chain
-      .map((error) => error.data)
-      .find((data) => typeof data === "string" && data.length > 2);
+    const revertData = Option.getOrUndefined(
+      Arr.findFirst(
+        Arr.map(chain, (error) => error.data),
+        (data) => typeof data === "string" && data.length > 2,
+      ),
+    );
     return fromRevert({ data: revertData as Hex | undefined }, context);
   }
 
@@ -122,7 +131,7 @@ const fromTransportError = (chain: readonly ViemErrorLike[]): EnsforgeError | un
 const fromWalletError = (chain: readonly ViemErrorLike[]): EnsforgeError | undefined => {
   if (
     find(chain, "UserRejectedRequestError") !== undefined ||
-    chain.some((error) => error.code === 4001)
+    Arr.some(chain, (error) => error.code === 4001)
   ) {
     return new UserRejectedError({ code: "USER_REJECTED" });
   }

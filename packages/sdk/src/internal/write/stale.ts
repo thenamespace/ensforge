@@ -1,4 +1,4 @@
-import { Effect } from "effect";
+import { Effect, Array as Arr } from "effect";
 
 import { Abis } from "@ensforge/contracts";
 import { decodeFunctionData } from "viem";
@@ -22,7 +22,7 @@ export const staleTransfer = Effect.fnUntraced(function* (
 ): Effect.fn.Return<AnyError | undefined> {
   if (error.context.revert?.errorName !== "ERC1155InsufficientBalance") return undefined;
 
-  for (const call of plan.steps.flatMap((step) => step.calls)) {
+  for (const call of Arr.flatMap(plan.steps, (step) => step.calls)) {
     const transfer = (() => {
       try {
         return decodeFunctionData({ abi: Abis.v2.permissionedRegistry, data: call.data });

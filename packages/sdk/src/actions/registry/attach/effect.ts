@@ -33,6 +33,7 @@ export const plan = Effect.fnUntraced(function* (
     account: options.account,
     description: options.registry === null ? "Detach registry" : "Attach registry",
     calls: attachCalls({
+      // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- a v2 or wrapped name's state always carries this field; `Name.State` types it as nullable for every protocol
       parentRegistry: loaded.state.registry as Address,
       tokenId: loaded.state.tokenId ?? hexToBigInt(loaded.data.parts.labelhash),
       label: loaded.data.parts.label,

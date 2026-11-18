@@ -69,7 +69,7 @@ const explained = <options>(
     }
     return yield* explain(client, options, account, error).pipe(
       Effect.map((explanation) =>
-        explanation === undefined ? error : (explanation.withCause(error) as AnyError),
+        explanation === undefined ? error : explanation.withCause(error),
       ),
       // A failing explanation must not hide the original error.
       Effect.orElseSucceed(() => error),
@@ -128,12 +128,15 @@ export const write = <options, error extends EnsforgeError>(
       const simulation = yield* simulatePlan(target, plan, account);
       // Step errors are values, not failures, so they get the action's context here.
       const context = contextOf(`${path}.simulate`, client, options, extra);
-      const steps = yield* Effect.forEach(simulation.steps, (step) =>
-        step.error === undefined
-          ? Effect.succeed(step)
-          : explained(client, options, account, explain, extra, plan, step.error).pipe(
-              Effect.map((error) => ({ ...step, error: error.withContext(context) })),
-            ),
+      const steps = yield* Effect.forEach(
+        simulation.steps,
+        (step) =>
+          step.error === undefined
+            ? Effect.succeed(step)
+            : explained(client, options, account, explain, extra, plan, step.error).pipe(
+                Effect.map((error) => ({ ...step, error: error.withContext(context) })),
+              ),
+        { concurrency: 1 },
       );
       return { ...simulation, steps };
     },
@@ -185,6 +188,7 @@ export const write = <options, error extends EnsforgeError>(
       client: Client,
       options: options & Write.SyncOptions,
     ): Effect.fn.Return<Write.SyncResult, error | AnyError> {
+      // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- `sendPlanned` with `true` always returns the synchronous result
       return (yield* sendPlanned(client, options, true)) as Write.SyncResult;
     },
     withContext(`${path}Sync`, extra),

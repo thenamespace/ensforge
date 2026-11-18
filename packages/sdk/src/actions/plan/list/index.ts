@@ -67,6 +67,7 @@ export declare namespace list {
 /** Builds a deferred read for `Actions.batch`. */
 list.request = Action.request(
   "plan.list",
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Action.Declared narrows errors to the documented @throws
   Impl.list as Action.Declared<typeof Impl.list, list.ErrorType>,
 );
 

@@ -1,4 +1,4 @@
-import { Clock, Effect } from "effect";
+import { Clock, Effect, Array as Arr, Option } from "effect";
 
 import { isHash } from "viem";
 import { getTransaction } from "viem/actions";
@@ -29,7 +29,9 @@ export const reconcile = Effect.fn("ensforge.plan.reconcile")(function* (
     );
   }
   const record = yield* requireRecord(client, options.id);
-  const step = record.plan.steps.find((candidate) => candidate.id === options.step);
+  const step = Option.getOrUndefined(
+    Arr.findFirst(record.plan.steps, (candidate) => candidate.id === options.step),
+  );
   if (step === undefined) {
     return yield* Effect.fail(
       new InvalidInputError({
@@ -50,7 +52,7 @@ export const reconcile = Effect.fn("ensforge.plan.reconcile")(function* (
   );
   const plausible =
     sameAddress(record.plan.account, transaction.from) ||
-    step.calls.some((call) => sameAddress(transaction.to, call.to));
+    Arr.some(step.calls, (call) => sameAddress(transaction.to, call.to));
   if (!plausible) {
     return yield* Effect.fail(
       new InvalidInputError({

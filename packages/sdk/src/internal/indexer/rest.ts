@@ -1,7 +1,8 @@
-import { Effect, Schema } from "effect";
+/* oxlint-disable typescript/no-unsafe-type-assertion -- adapter methods are looked up by name at runtime, so their query and result types are erased */
+import { Effect, Schema, String as Str, Array as Arr } from "effect";
 
 import { IndexerError } from "../../errors/classes/IndexerError.js";
-import type { NotFoundError } from "../../errors/classes/NotFoundError.js";
+import { NotFoundError } from "../../errors/classes/NotFoundError.js";
 import type { Query } from "../../indexer/Indexer.js";
 import type { Namespace } from "../../indexer/types.js";
 import { capabilities } from "./capabilities.js";
@@ -42,9 +43,11 @@ type Envelope = {
 
 /** Not found as `null`, for single-resource reads. */
 const orNull = <value, error>(effect: Effect.Effect<value, error | NotFoundError>) =>
-  Effect.catchTag(effect as Effect.Effect<value, NotFoundError>, "NotFoundError", () =>
-    Effect.succeed(null),
-  ) as Effect.Effect<value | null, Exclude<error, NotFoundError>>;
+  Effect.catchIf(
+    effect,
+    (failure): failure is NotFoundError => failure instanceof NotFoundError,
+    () => Effect.succeed(null),
+  );
 
 /** An adapter for a server speaking bigname's REST API: bigname itself, Goldsky, a proxy. */
 export const restIndexer = (options: RestOptions): Implementation => {
@@ -69,7 +72,7 @@ export const restIndexer = (options: RestOptions): Implementation => {
       );
     }
     // A URL that already ends with a version path is used as is.
-    const trimmed = url.replace(/\/+$/, "");
+    const trimmed = Str.replace(/\/+$/, "")(url);
     const config: HttpConfig = {
       id,
       baseUrl: /\/v\d+$/.test(trimmed) ? trimmed : `${trimmed}${options.version}`,
@@ -142,7 +145,7 @@ export const restIndexer = (options: RestOptions): Implementation => {
     mapped(route, () =>
       Convert.page(
         envelope,
-        envelope.data.map((row) => toItem(row as never)),
+        Arr.map(envelope.data, (row) => toItem(row as never)),
         chainId,
         id,
       ),
@@ -245,7 +248,7 @@ export const restIndexer = (options: RestOptions): Implementation => {
         body: Params.lookup(query),
       });
       return yield* mapped(route, () => ({
-        results: envelope.data.map(Convert.lookupResult),
+        results: Arr.map(envelope.data, Convert.lookupResult),
         ...Convert.meta(envelope.meta, chainId, id),
       }));
     }),

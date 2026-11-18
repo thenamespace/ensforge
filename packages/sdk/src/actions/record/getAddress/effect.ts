@@ -1,8 +1,9 @@
+/* oxlint-disable typescript/no-unsafe-type-assertion -- the cast restores the action's generic, overloaded signature */
 import { Effect } from "effect";
 
 import type { Client } from "../../../client/types.js";
-import type { AnyError } from "../../../errors/types.js";
 import * as Action from "../../../internal/action/index.js";
+import { toAnyError } from "../../../internal/anyError.js";
 import { readSingleRecord } from "../../../internal/records/single.js";
 import * as CoinType from "../../../utils/CoinType.js";
 import type { getAddress as Promises } from "./index.js";
@@ -12,7 +13,7 @@ export const getAddress = Effect.fn("ensforge.record.getAddress")(
   function* (client: Client, options: Promises.Options) {
     const coinType = yield* Effect.try({
       try: () => CoinType.from(options.coin ?? "eth"),
-      catch: (error) => error as AnyError,
+      catch: toAnyError,
     });
 
     return yield* readSingleRecord(

@@ -1,4 +1,4 @@
-import { Effect } from "effect";
+import { Effect, Array as Arr, Record as Rec, String as Str } from "effect";
 
 import type { NameInput } from "../../actions/migration/types.js";
 import type { Client } from "../../client/types.js";
@@ -49,7 +49,7 @@ const commonCoins = [
   2n,
   3n,
   501n,
-  ...[10, 137, 324, 8453, 42161, 59144, 534352].map(CoinType.fromChainId),
+  ...Arr.map([10, 137, 324, 8453, 42161, 59144, 534352], CoinType.fromChainId),
   defaultEvm,
 ];
 
@@ -75,14 +75,16 @@ const readCopy = Effect.fnUntraced(function* (
     },
   });
 
-  const texts = Object.fromEntries(
-    Object.entries(read.texts ?? {}).filter(
+  const texts = Rec.fromEntries(
+    Arr.filter(
+      Rec.toEntries(read.texts ?? {}),
       (entry): entry is [string, string] => entry[1] !== null,
     ),
   );
   const fallback = read.addresses?.[String(defaultEvm)] ?? null;
-  const addresses = Object.fromEntries(
-    Object.entries(read.addresses ?? {}).filter(
+  const addresses = Rec.fromEntries(
+    Arr.filter(
+      Rec.toEntries(read.addresses ?? {}),
       (entry): entry is [string, string] =>
         entry[1] !== null &&
         (entry[0] === String(defaultEvm) ||
@@ -93,8 +95,8 @@ const readCopy = Effect.fnUntraced(function* (
   );
 
   return {
-    ...(Object.keys(texts).length > 0 ? { texts } : {}),
-    ...(Object.keys(addresses).length > 0 ? { addresses } : {}),
+    ...(Rec.keys(texts).length > 0 ? { texts } : {}),
+    ...(Rec.keys(addresses).length > 0 ? { addresses } : {}),
     ...(read.contentHash === null || read.contentHash === undefined
       ? {}
       : { contentHash: read.contentHash.uri }),
@@ -134,9 +136,9 @@ export const recordInventory = Effect.fnUntraced(function* (
   const skipped: string[] = [];
   let contentHash = false;
   for (const key of result.inventory.keys) {
-    if (key.startsWith("text:")) texts.push(key.slice(5));
-    else if (key.startsWith("addr:") && /^\d+$/.test(key.slice(5)))
-      addresses.push(BigInt(key.slice(5)));
+    if (Str.startsWith("text:")(key)) texts.push(Str.slice(5)(key));
+    else if (Str.startsWith("addr:")(key) && /^\d+$/.test(Str.slice(5)(key)))
+      addresses.push(BigInt(Str.slice(5)(key)));
     else if (key === "contenthash") contentHash = true;
     else skipped.push(key);
   }
@@ -178,7 +180,7 @@ export const recordsToCopy = Effect.fnUntraced(function* (
     if (inventory.skipped.length > 0) {
       warnings.push({
         code: "RECORDS_NOT_COPIED",
-        message: `${name}'s ${inventory.skipped.join(", ")} records are not copied; they stay on its ENSv1 resolver.`,
+        message: `${name}'s ${Arr.join(inventory.skipped, ", ")} records are not copied; they stay on its ENSv1 resolver.`,
       });
     }
     if (!inventory.complete) {
