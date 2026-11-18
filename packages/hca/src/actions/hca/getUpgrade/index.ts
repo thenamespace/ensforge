@@ -6,7 +6,7 @@ import type { HcaError } from "../../../errors/classes/HcaError.js";
 import * as Impl from "./effect.js";
 
 /**
- * Checks whether an HCA may upgrade to an implementation: both DAO sets must allow it.
+ * Checks whether an HCA may upgrade to an implementation: it must be in the DAO's upgrade set and accept the current implementation.
  *
  * **When to use**
  *

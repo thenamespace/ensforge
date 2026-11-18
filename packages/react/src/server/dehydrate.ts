@@ -5,8 +5,10 @@ import { Hydration, type AtomRegistry } from "effect/reactivity";
  *
  * **Details**
  *
- * - Values are JSON (bigints and bytes are tagged), so they pass through server components,
- *   loaders and `getServerSideProps`/`getStaticProps` alike.
+ * - Values are JSON (bigints and bytes are tagged), so they pass through server components and
+ *   loaders. Next.js `getServerSideProps`/`getStaticProps` reject the `resultPromise: undefined`
+ *   that `Hydration.dehydrate` leaves on each entry: pass
+ *   `JSON.parse(JSON.stringify(dehydrate(registry)))` there instead.
  * - `streaming: true` also sends reads still loading, as promises that resolve on the client
  *   (React 19 server components, streaming SSR).
  *

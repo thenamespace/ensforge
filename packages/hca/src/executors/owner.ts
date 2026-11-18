@@ -22,12 +22,13 @@ import type { Executor } from "../types.js";
  * await ens.hca.executeSync({ calls, via: hca({ executors: [owner()] }) })
  * ```
  *
- * **Example** (As the fallback)
+ * **Example** (Choosing the executor)
  *
  * ```ts
  * import { hca, owner, pimlico } from "@ensforge/hca"
  *
- * const via = hca({ executors: [pimlico({ apiKey }), owner()] })
+ * // `hca()` uses the first executor only; pick one per request.
+ * const via = gasless ? hca({ executors: [pimlico({ apiKey })] }) : hca({ executors: [owner()] })
  * ```
  *
  * **Example** (Sponsored by the wallet)

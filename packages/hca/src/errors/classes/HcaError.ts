@@ -41,7 +41,8 @@ const defaults: {
     hint: "It may still be included: `plan.resume` checks it again. Raise the executor's `timeout` to wait longer.",
   }),
   HCA_UPGRADE_NOT_ALLOWED: () => ({
-    shortMessage: "The DAO's upgrade sets do not allow this HCA upgrade.",
+    shortMessage:
+      "The upgrade set or the new implementation's `canUpgradeFrom` check does not allow this HCA upgrade.",
   }),
   HCA_SDK_UNSUPPORTED: () => ({
     shortMessage: "The Rhinestone SDK does not support the standalone ENS HCA.",
@@ -53,7 +54,7 @@ const retryable = new Set<string>(["HCA_BUNDLER_REJECTED"]);
 
 /**
  * An HCA (Hosted Contract Account) operation failed: the account, its session, an executor
- * (bundler, Rhinestone) or the DAO's upgrade sets.
+ * (bundler, Rhinestone) or the DAO's upgrade set.
  *
  * @stability experimental
  * @category errors
