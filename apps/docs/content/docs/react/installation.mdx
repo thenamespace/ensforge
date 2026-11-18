@@ -1,6 +1,36 @@
 ---
 title: Installation
-description: Placeholder, to be written.
+description: Install @ensforge/react with the SDK and its peers in a React 19 app.
+icon: Download
+keywords: [install, "@ensforge/react", React 19]
 ---
 
-Placeholder: this page is not written yet.
+`@ensforge/react` needs React 19 and the ensforge SDK. It installs `@effect/atom-react` for you.
+
+## Install the packages
+
+```package-install
+@ensforge/react @ensforge/sdk effect viem react
+```
+
+- `@ensforge/sdk` is the client the hooks run actions with. See [Create a client](/docs/sdk/create-a-client).
+- `effect` and `viem` are peer dependencies, as they are for the SDK.
+- `react` must be version 19 or newer.
+
+## Use wagmi? Add the adapter
+
+If your app already has a wagmi config, you do not need a separate wallet setup. `Ensforge.fromWagmi` from `@ensforge/sdk/wagmi` builds the client from it. wagmi 2 and 3 work. See [Use with wagmi](/docs/react/with-wagmi).
+
+## What each entry point holds
+
+| Import                   | Holds                                                                          |
+| ------------------------ | ------------------------------------------------------------------------------ |
+| `@ensforge/react`        | `EnsforgeProvider`, every hook, `ReadErrorResetBoundary`, `HydrationBoundary`. |
+| `@ensforge/react/server` | `prefetch` and `dehydrate` for server rendering (unstable).                    |
+| `@ensforge/react/atoms`  | The atom layer the hooks are built on (unstable).                              |
+
+The package is ESM only. Add `"use client"` to a component file that uses a hook when your framework has server components, as in the [Next.js App Router](/docs/react/nextjs-app-router).
+
+## Check the install
+
+Render `useAddress({ name: "nick.eth" })` under a provider. The [Quick start](/docs/react) walks through it.

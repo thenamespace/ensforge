@@ -1,6 +1,115 @@
 ---
 title: Quick start
-description: Placeholder, to be written.
+description: Show a name's address in a React app, then send a write, in a few minutes.
+icon: Rocket
+keywords: [EnsforgeProvider, useAddress, useSetRecords]
 ---
 
-Placeholder: this page is not written yet.
+You will read the address of `nick.eth` in a component and then send one write. You need a React 19 app with [the package installed](/docs/react/installation).
+
+## 1. Create a client and wrap your app
+
+Create one ensforge client and pass it to `EnsforgeProvider` once, near the root. Every hook below it uses that client. See [Set up the provider](/docs/react/set-up-the-provider) for wagmi and for the options.
+
+**Example** (Providing A Client)
+
+```tsx twoslash title="providers.tsx"
+import type { ReactNode } from "react";
+
+import { EnsforgeProvider } from "@ensforge/react";
+import { Ensforge } from "@ensforge/sdk";
+import { createPublicClient, http } from "viem";
+import { mainnet } from "viem/chains";
+
+const ens = Ensforge.create({
+  publicClient: createPublicClient({ chain: mainnet, transport: http() }),
+});
+
+export function Providers({ children }: { children: ReactNode }) {
+  return <EnsforgeProvider client={ens}>{children}</EnsforgeProvider>;
+}
+```
+
+- `Ensforge.create` builds the client from a viem public client. Add a `walletClient` to send writes.
+- Create the client outside any component, so every render uses the same one.
+
+## 2. Read an address
+
+`useAddress` reads the address a **name** points to. It returns `isLoading` until the first result, then `data`. It is a preset of [`useRead`](/docs/react/reference/hooks/use-read).
+
+**Example** (Showing An Address)
+
+```tsx twoslash title="Address.tsx"
+import { useAddress } from "@ensforge/react";
+
+export function Address() {
+  const { data: address, isLoading, error } = useAddress({ name: "nick.eth" });
+
+  if (isLoading) return <p>Loading...</p>;
+  if (error) return <p>{error.message}</p>;
+  return <p>{address}</p>;
+}
+```
+
+```text title="Output"
+Loading...
+0xb8c2C29ee19D8307cb7255e1Cd9CbDE883A267d5
+```
+
+Every component that reads `nick.eth` shares this one request and result. See [Read data](/docs/react/read-data).
+
+## 3. Send a write
+
+`useSetRecords` writes records to a name you manage. Call `mutate` from an event handler. `status` and `steps` follow the transaction. Use a testnet such as Sepolia and a name you own for writes.
+
+**Example** (Saving A Website Record)
+
+```tsx twoslash title="SaveUrl.tsx"
+import { useSetRecords } from "@ensforge/react";
+
+export function SaveUrl({ name }: { name: string }) {
+  const { mutate, status, steps, error } = useSetRecords();
+
+  return (
+    <>
+      <button
+        disabled={status === "pending"}
+        onClick={() => mutate({ name, texts: { url: "https://alice.xyz" } })}
+      >
+        Save
+      </button>
+      <p>
+        {status}, {steps.length} step(s)
+      </p>
+      {error && <p>{error.message}</p>}
+    </>
+  );
+}
+```
+
+Once the transaction is mined, every read of `name` on screen refetches, so a component that shows the record updates on its own. See [Write data](/docs/react/write-data).
+
+<Callout type="info" title="Writes need a wallet">
+  The client in step 1 has no wallet, so a write fails with `WALLET_NOT_CONFIGURED`. Pass a
+  `walletClient` to `Ensforge.create`, or use [wagmi](/docs/react/with-wagmi).
+</Callout>
+
+## Where to go next
+
+<Cards>
+  <Card
+    title="Read data"
+    href="/docs/react/read-data"
+    description="Options, status fields and hook presets."
+  />
+  <Card
+    title="Write data"
+    href="/docs/react/write-data"
+    description="Progress, errors and awaiting a write."
+  />
+  <Card
+    title="Use with wagmi"
+    href="/docs/react/with-wagmi"
+    description="Share your wagmi config and wallet."
+  />
+</Cards>

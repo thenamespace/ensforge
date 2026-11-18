@@ -1,6 +1,158 @@
 ---
 title: TanStack Start
-description: Placeholder, to be written.
+description: Prefetch ENS reads in a TanStack Start route loader, stream slow ones, and hydrate them with HydrationBoundary.
+icon: Server
+keywords:
+  [TanStack Start, TanStack Router, loader, prefetch, dehydrate, streaming, HydrationBoundary]
 ---
 
-Placeholder: this page is not written yet.
+In TanStack Start, prefetch the reads in a route `loader`, return the dehydrated state, and render `HydrationBoundary` in the route component. Reads that are still loading can stream to the browser.
+
+<Callout type="info" title="Server rendering helpers are unstable">
+  `prefetch`, `dehydrate` and `HydrationBoundary` are marked `unstable`. Their names and shapes can
+  change in a minor release.
+</Callout>
+
+## 1. Provide the client in the root route
+
+Render `EnsforgeProvider` in the root route, around the outlet. Create the client in a shared module.
+
+**Example** (The Root Route)
+
+```tsx twoslash title="routes/__root.tsx"
+import { createRootRoute, Outlet } from "@tanstack/react-router";
+
+import { EnsforgeProvider } from "@ensforge/react";
+import { Ensforge } from "@ensforge/sdk";
+import { createPublicClient, http } from "viem";
+import { mainnet } from "viem/chains";
+
+const ens = Ensforge.create({
+  publicClient: createPublicClient({ chain: mainnet, transport: http() }),
+});
+
+export const Route = createRootRoute({
+  component: () => (
+    <EnsforgeProvider client={ens}>
+      <Outlet />
+    </EnsforgeProvider>
+  ),
+});
+```
+
+## 2. Prefetch in the loader
+
+Create a new registry in each loader call, `prefetch` the reads, and return `dehydrate(registry)`. The state is plain JSON, so TanStack Start serializes it to the browser.
+
+**Example** (A Name Route)
+
+```tsx title="routes/$name.tsx"
+import { createFileRoute } from "@tanstack/react-router";
+import { AtomRegistry } from "effect/reactivity";
+
+import { HydrationBoundary, useName } from "@ensforge/react";
+import { dehydrate, prefetch } from "@ensforge/react/server";
+import { Actions, Ensforge } from "@ensforge/sdk";
+import { createPublicClient, http } from "viem";
+import { mainnet } from "viem/chains";
+
+const ens = Ensforge.create({
+  publicClient: createPublicClient({ chain: mainnet, transport: http() }),
+});
+
+export const Route = createFileRoute("/$name")({
+  loader: async ({ params }) => {
+    const registry = AtomRegistry.make();
+
+    await prefetch(registry, ens, Actions.name.get, { name: params.name });
+
+    return { state: dehydrate(registry) };
+  },
+  component: NamePage,
+});
+
+function Profile({ name }: { name: string }) {
+  const { data } = useName({ name });
+
+  return <p>{data?.owner}</p>;
+}
+
+function NamePage() {
+  const { name } = Route.useParams();
+  const { state } = Route.useLoaderData();
+
+  return (
+    <HydrationBoundary state={state}>
+      <Profile name={name} />
+    </HydrationBoundary>
+  );
+}
+```
+
+- `useName` reads the same action and options as `prefetch`, so it uses the prefetched value.
+- `prefetch` resolves once the read settles. A failed read is not sent, so the browser retries it.
+- Without `staleTime`, a hydrated value revalidates once it is 30 seconds old.
+
+## Stream slow reads
+
+Do not await a slow `prefetch`. Start it, and call `dehydrate(registry, { streaming: true })`. Reads that are still loading reach the browser as promises that resolve there. The loader returns at once with the fast data.
+
+**Example** (Streaming A Subname List)
+
+```tsx title="routes/$name.tsx"
+import { createFileRoute } from "@tanstack/react-router";
+import { AtomRegistry } from "effect/reactivity";
+import { Suspense } from "react";
+
+import { HydrationBoundary, useSuspenseRead } from "@ensforge/react";
+import { dehydrate, prefetch } from "@ensforge/react/server";
+import { Actions, Ensforge } from "@ensforge/sdk";
+import { goldsky } from "@ensforge/sdk/indexer";
+import { createPublicClient, http } from "viem";
+import { mainnet } from "viem/chains";
+
+const ens = Ensforge.create({
+  publicClient: createPublicClient({ chain: mainnet, transport: http() }),
+  indexer: goldsky(),
+});
+
+export const Route = createFileRoute("/$name")({
+  loader: ({ params }) => {
+    const registry = AtomRegistry.make();
+
+    void prefetch(registry, ens, Actions.indexer.getSubnames, { name: params.name });
+
+    return { state: dehydrate(registry, { streaming: true }) };
+  },
+  component: Subnames,
+});
+
+function List({ name }: { name: string }) {
+  const { data } = useSuspenseRead(Actions.indexer.getSubnames, { name });
+
+  return (
+    <ul>
+      {data.items.map((item) => (
+        <li key={item.name}>{item.name}</li>
+      ))}
+    </ul>
+  );
+}
+
+function Subnames() {
+  const { name } = Route.useParams();
+  const { state } = Route.useLoaderData();
+
+  return (
+    <HydrationBoundary state={state}>
+      <Suspense fallback={<p>Loading subnames...</p>}>
+        <List name={name} />
+      </Suspense>
+    </HydrationBoundary>
+  );
+}
+```
+
+Read a streamed value with [`useSuspenseRead`](/docs/react/suspense) inside `<Suspense>`: the fallback shows until the promise resolves. Prefetch the first page of a list this way. Paged hooks such as `useSubnames` fetch in the browser and do not read a prefetched value.
+
+See [Caching and refreshing](/docs/react/caching-and-refreshing) for how hydrated reads revalidate.

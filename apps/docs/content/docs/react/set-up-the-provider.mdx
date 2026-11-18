@@ -1,6 +1,124 @@
 ---
 title: Set up the provider
-description: Placeholder, to be written.
+description: Create one ensforge client and render EnsforgeProvider so every hook can read and write ENS.
+icon: Plug
+keywords: [EnsforgeProvider, useEnsforge, registry, defaults, idleTTL]
 ---
 
-Placeholder: this page is not written yet.
+Every hook needs a client from `EnsforgeProvider`, or a `client` option. Render the provider once, near the root of your app.
+
+## Pass a client
+
+`client` takes any ensforge client: `Ensforge.create(...)` or, with wagmi, `Ensforge.fromWagmi(config)`. Create it once, outside components, so renders share it.
+
+**Example** (A Provider Without Wagmi)
+
+```tsx twoslash title="providers.tsx"
+import type { ReactNode } from "react";
+
+import { EnsforgeProvider } from "@ensforge/react";
+import { Ensforge } from "@ensforge/sdk";
+import { createPublicClient, http } from "viem";
+import { mainnet } from "viem/chains";
+
+const ens = Ensforge.create({
+  publicClient: createPublicClient({ chain: mainnet, transport: http() }),
+});
+
+export function Providers({ children }: { children: ReactNode }) {
+  return <EnsforgeProvider client={ens}>{children}</EnsforgeProvider>;
+}
+```
+
+Add a `walletClient` to `Ensforge.create` to send writes. See [Create a client](/docs/sdk/create-a-client) for every client option, including the indexer that list hooks need. With wagmi, see [Use with wagmi](/docs/react/with-wagmi).
+
+A hook that runs with no provider and no `client` option throws: "ensforge hooks need an `<EnsforgeProvider client={…}>` above them, or a `client` option."
+
+## Props
+
+| Prop       | Type              | Default  | Description                                                 |
+| ---------- | ----------------- | -------- | ----------------------------------------------------------- |
+| `client`   | `Ensforge.Client` | required | The client every hook below uses.                           |
+| `defaults` | `Freshness`       | `{}`     | Freshness for every read below, unless a hook sets its own. |
+| `registry` | `boolean`         | `true`   | Render an atom registry for the subtree.                    |
+| `children` | `ReactNode`       | none     | Your app.                                                   |
+
+## Set freshness for every read
+
+`defaults` takes `staleTime`, `idleTTL`, `refetchInterval` and `refreshOnWindowFocus`. A hook's own config wins over `defaults`. See [Caching and refreshing](/docs/react/caching-and-refreshing) for what each one does.
+
+**Example** (Refetching On Window Focus)
+
+```tsx twoslash title="providers.tsx"
+import type { ReactNode } from "react";
+
+import { EnsforgeProvider } from "@ensforge/react";
+import { Ensforge } from "@ensforge/sdk";
+import { createPublicClient, http } from "viem";
+import { mainnet } from "viem/chains";
+
+const ens = Ensforge.create({
+  publicClient: createPublicClient({ chain: mainnet, transport: http() }),
+});
+const defaults = { staleTime: "30 seconds", refreshOnWindowFocus: true } as const;
+
+export function Providers({ children }: { children: ReactNode }) {
+  return (
+    <EnsforgeProvider client={ens} defaults={defaults}>
+      {children}
+    </EnsforgeProvider>
+  );
+}
+```
+
+Define `defaults` outside the component, as above, so the provider does not rebuild its context on every render.
+
+## Share a registry
+
+The provider renders an atom registry, the cache every hook reads and writes. Each server request therefore gets its own cache. Pass `registry={false}` when your app already renders a `RegistryProvider` (to share atoms with it), or when you nest a second provider, for example for another chain.
+
+**Example** (A Second Provider For Sepolia)
+
+```tsx twoslash title="sepolia-provider.tsx"
+import type { ReactNode } from "react";
+
+import { EnsforgeProvider } from "@ensforge/react";
+import { Ensforge } from "@ensforge/sdk";
+import { createPublicClient, http } from "viem";
+import { sepolia } from "viem/chains";
+
+const sepoliaEns = Ensforge.create({
+  publicClient: createPublicClient({ chain: sepolia, transport: http() }),
+});
+
+export function SepoliaProvider({ children }: { children: ReactNode }) {
+  return (
+    <EnsforgeProvider client={sepoliaEns} registry={false}>
+      {children}
+    </EnsforgeProvider>
+  );
+}
+```
+
+Reads are cached per chain, account and indexer, so two clients never mix results.
+
+## Get the client in your own code
+
+`useEnsforge()` returns the nearest provider's client. Use it to call an action from an event handler, outside the hooks.
+
+**Example** (Calling An Action From A Click)
+
+```tsx twoslash title="Check.tsx"
+import { useEnsforge } from "@ensforge/react";
+import { Actions } from "@ensforge/sdk";
+
+export function Check({ name }: { name: string }) {
+  const ens = useEnsforge();
+
+  return <button onClick={() => Actions.registration.isAvailable(ens, { name })}>Check</button>;
+}
+```
+
+## Override the client for one hook
+
+Every read and write hook takes a `client` in its config. It replaces the provider's client for that hook. The provider's `defaults` still apply to reads.

@@ -1,6 +1,87 @@
 ---
 title: Use your own actions
-description: Placeholder, to be written.
+description: Run a custom action, or an Effect action, through useRead and useWrite so it is cached, shared and refreshed like the built-in ones.
+icon: Puzzle
+keywords: [useRead, useWrite, custom action, path, Effect action, Action]
 ---
 
-Placeholder: this page is not written yet.
+`useRead` and `useWrite` accept any action: a function of a client and options with a unique `path`. Build one to combine several reads into one, or use an action from `@ensforge/sdk/effect` as it is.
+
+## What an action is
+
+An action is `(client, options) => Promise | Effect`, with a `path` string property. ensforge uses `path` in the cache key, so give each action its own. The built-in ones use `record.getAddress` and similar. Pick a prefix that is yours, such as `app.getProfile`.
+
+The hook adds an `AbortSignal` as `options.signal`. Pass it on, so a refresh or an unmount cancels the requests.
+
+## Combine reads into one action
+
+**Example** (A Profile Read)
+
+```tsx twoslash title="profile-action.tsx"
+import { useRead } from "@ensforge/react";
+import { Actions, type Ensforge } from "@ensforge/sdk";
+
+const getProfile = Object.assign(
+  async (client: Ensforge.Client, options: { name: string; signal?: AbortSignal }) => {
+    const [address, url] = await Promise.all([
+      Actions.record.getAddress(client, options),
+      Actions.record.getText(client, { ...options, key: "url" }),
+    ]);
+
+    return { address, url };
+  },
+  { path: "app.getProfile" },
+);
+
+export function Profile({ name }: { name: string }) {
+  const { data } = useRead(getProfile, { name });
+
+  return (
+    <p>
+      {data?.address} {data?.url}
+    </p>
+  );
+}
+```
+
+Value and error types come from the action. A Promise action fails with whatever it throws; ensforge's own actions throw typed errors. See [Handle errors](/docs/sdk/handle-errors).
+
+## Refresh after writes
+
+Writes refresh the reads whose options name something the write touched. ensforge looks for these option fields:
+
+| Kind     | Fields                                                                                          |
+| -------- | ----------------------------------------------------------------------------------------------- |
+| Names    | `name`, `names`, `parent`                                                                       |
+| Accounts | `address`, `account`, `owner`, `newOwner`, `to`, `recipient`, `operator`, `delegate`, `grantee` |
+
+Name your options with those fields, as `getProfile` does with `name`, and your read refetches after a write to that name. A read whose options use other field names is not refreshed by writes. Call `refresh()` or `invalidate` for it. See [Caching and refreshing](/docs/react/caching-and-refreshing).
+
+A read is refreshed too when its returned value mentions a touched name or account, such as a primary name.
+
+## Use an Effect action
+
+An action from `@ensforge/sdk/effect` works as it is. Its error type is the Effect error channel instead of the general ensforge error.
+
+**Example** (Reading With An Effect Action)
+
+```tsx twoslash title="Role.tsx"
+import type { Address } from "viem";
+
+import { useRead } from "@ensforge/react";
+import { Actions } from "@ensforge/sdk/effect";
+
+export function Role({ name, account }: { name: string; account: Address }) {
+  const { data } = useRead(Actions.role.get, { name, account, target: "registry" });
+
+  return <span>{data?.toString()}</span>;
+}
+```
+
+For how the Effect API relates to the Promise one, see [The Effect API](/docs/sdk/effect-api).
+
+## Write with a custom action
+
+`useWrite(action)` takes your own write the same way. The write refreshes reads only when its result is a plan result, which carries `hashes`. A custom write that returns something else never triggers a refresh, so call `invalidate` after it.
+
+For the atoms behind both hooks, see [Atoms](/docs/react/atoms).

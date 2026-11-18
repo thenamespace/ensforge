@@ -1,6 +1,138 @@
 ---
 title: Atoms
-description: Placeholder, to be written.
+description: Compose ENS reads and writes with your own Effect Atom state, outside the hooks.
+icon: Atom
+keywords: [ensAtom, ensWriteAtom, ensPagesAtom, invalidate, readKey, Effect Atom, registry]
 ---
 
-Placeholder: this page is not written yet.
+Every hook reads atoms. The atom layer lets you build your own derived state from the same reads, read ENS outside components, or send writes from a store.
+
+<Callout type="info" title="The atom layer is unstable">
+  Everything in `@ensforge/react/atoms` is marked `unstable`, except the `Action`, `Freshness` and
+  `PageAction` types. It is built on Effect's `effect/reactivity` Atom module, which is unstable
+  upstream. Names and shapes can change in a minor release. The hooks are stable.
+</Callout>
+
+## Prerequisites
+
+- [`@ensforge/react` installed](/docs/react/installation).
+- Some familiarity with Effect Atom: an atom holds a value, and `Atom.make((get) => ...)` derives one from others.
+
+## Read ENS in an atom
+
+`ensAtom(client, action, options, freshness?)` returns the atom of one read. It holds an `AsyncResult`. It is cached per client (chain, account and indexer), action and options, so it is the same atom `useRead` uses for that read.
+
+**Example** (Composing Reads)
+
+```ts twoslash title="profile-atom.ts"
+import { Actions, Ensforge } from "@ensforge/sdk";
+import { ensAtom } from "@ensforge/react/atoms";
+import { Atom } from "effect/reactivity";
+import { createPublicClient, http } from "viem";
+import { mainnet } from "viem/chains";
+
+const ens = Ensforge.create({
+  publicClient: createPublicClient({ chain: mainnet, transport: http() }),
+});
+
+export const profile = Atom.make((get) => ({
+  address: get(ensAtom(ens, Actions.record.getAddress, { name: "nick.eth" })),
+  avatar: get(ensAtom(ens, Actions.record.getAvatar, { name: "nick.eth" })),
+}));
+```
+
+Each field is an `AsyncResult`: initial, success or failure, with a `waiting` flag. Use `AsyncResult.match` to read it. The atom refreshes when a write touches `nick.eth`, like the hooks.
+
+## Read atoms outside components
+
+An atom registry runs atoms anywhere. Mount an atom to keep it alive, then read its result.
+
+**Example** (Reading With A Registry)
+
+```ts twoslash title="registry.ts"
+import { Actions, Ensforge } from "@ensforge/sdk";
+import { ensAtom } from "@ensforge/react/atoms";
+import { AtomRegistry } from "effect/reactivity";
+import { createPublicClient, http } from "viem";
+import { mainnet } from "viem/chains";
+
+const ens = Ensforge.create({
+  publicClient: createPublicClient({ chain: mainnet, transport: http() }),
+});
+
+const registry = AtomRegistry.make();
+const owner = ensAtom(ens, Actions.name.get, { name: "nick.eth" });
+
+registry.mount(owner);
+registry.subscribe(owner, (result) => console.log(result._tag));
+```
+
+## Send a write from an atom
+
+`ensWriteAtom(client, action)` returns three parts: `run`, `steps` and `send`. Each call makes new atoms, so every form or button has its own state. The `useWrite` hook keeps one per component.
+
+| Part            | What it is                                                                                            |
+| --------------- | ----------------------------------------------------------------------------------------------------- |
+| `run`           | The latest write's `AsyncResult`. Set it to the write's options to send, or to `Atom.Reset` to clear. |
+| `steps`         | The latest write's plan events: `waiting`, `submitted`, `confirmed`, `failed`.                        |
+| `send(options)` | An Effect that sends a write and ends with its own result, even when later writes start.              |
+
+**Example** (Sending A Write)
+
+```ts twoslash title="write-atom.ts"
+import { Actions, Ensforge } from "@ensforge/sdk";
+import { ensWriteAtom } from "@ensforge/react/atoms";
+import { AtomRegistry } from "effect/reactivity";
+import { createPublicClient, http } from "viem";
+import { sepolia } from "viem/chains";
+
+const ens = Ensforge.create({
+  publicClient: createPublicClient({ chain: sepolia, transport: http() }),
+});
+
+const registry = AtomRegistry.make();
+const setRecords = ensWriteAtom(ens, Actions.record.set);
+
+registry.mount(setRecords.run);
+registry.set(setRecords.run, { name: "alice.eth", texts: { url: "https://alice.xyz" } });
+```
+
+Mount `run` while you write through it. Writes never interrupt each other, and resetting interrupts none, because a sent transaction cannot be taken back. After a write, the reads it touched refresh, as with the hooks. See [Caching and refreshing](/docs/react/caching-and-refreshing#refresh-after-a-write).
+
+## Page through a list
+
+`ensPagesAtom(client, pageAction, options)` returns the atom of an indexer list. Its value holds every page loaded so far, and setting it loads the next page.
+
+**Example** (Loading Subnames Page By Page)
+
+```ts twoslash title="pages-atom.ts"
+import { Actions, Ensforge } from "@ensforge/sdk";
+import { goldsky } from "@ensforge/sdk/indexer";
+import { ensPagesAtom } from "@ensforge/react/atoms";
+import { AtomRegistry } from "effect/reactivity";
+import { createPublicClient, http } from "viem";
+import { mainnet } from "viem/chains";
+
+const ens = Ensforge.create({
+  publicClient: createPublicClient({ chain: mainnet, transport: http() }),
+  indexer: goldsky(),
+});
+
+const registry = AtomRegistry.make();
+const subnames = ensPagesAtom(ens, Actions.indexer.getSubnames, { name: "ens.eth" });
+
+registry.mount(subnames);
+registry.set(subnames, undefined); // load the next page
+```
+
+## Refresh and key helpers
+
+| Export                                               | Use                                                                                                                                                                                          |
+| ---------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `invalidate(registry, client, { names, addresses })` | Refetches every cached read of those names and addresses, chain and indexer reads alike. Use it after a change ensforge did not make.                                                        |
+| `readKey(client, action, options)`                   | The key a read is cached, hydrated and invalidated under: `ensforge:<chainId>:<account>:<indexer>:<path>:<options>`.                                                                         |
+| `optionsKey(options)`                                | A stable string for an action's options: keys sorted, `undefined`, callbacks and `signal` dropped, `name`, `names` and `parent` normalised, addresses lowercased, bigints written as `123n`. |
+
+The key names the client by what changes its answer, not by object, so it is the same on the server and in the browser. That is how a prefetched value finds its hook.
+
+For hooks, see [Read data](/docs/react/read-data). For adding your own actions, see [Use your own actions](/docs/react/custom-actions).

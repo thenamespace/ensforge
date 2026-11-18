@@ -1,6 +1,132 @@
 ---
 title: Use Suspense
-description: Placeholder, to be written.
+description: Read with useSuspenseRead inside Suspense and error boundaries, and retry failed reads with ReadErrorResetBoundary.
+icon: Hourglass
+keywords: [useSuspenseRead, Suspense, ReadErrorResetBoundary, useReadErrorReset, error boundary]
 ---
 
-Placeholder: this page is not written yet.
+`useSuspenseRead` suspends until its value is there, so `data` is never `undefined`. Loading shows the nearest `<Suspense>` fallback. A failure throws to the nearest error boundary.
+
+## Read inside Suspense
+
+Call `useSuspenseRead(action, options, config)` in a component and wrap it in `<Suspense>`. Options are required: there is no `enabled` switch, because a suspending read always runs.
+
+**Example** (A Website Link Behind Suspense)
+
+```tsx twoslash title="Url.tsx"
+import { Suspense } from "react";
+
+import { useSuspenseRead } from "@ensforge/react";
+import { Actions } from "@ensforge/sdk";
+
+function Url({ name }: { name: string }) {
+  const { data } = useSuspenseRead(Actions.record.getText, { name, key: "url" });
+
+  return <a href={data ?? "#"}>{data}</a>;
+}
+
+export function Website({ name }: { name: string }) {
+  return (
+    <Suspense fallback={<p>Loading...</p>}>
+      <Url name={name} />
+    </Suspense>
+  );
+}
+```
+
+It returns `{ data, isRefreshing, refresh }`. `isRefreshing` is `true` while a refetch runs and the current value stays on screen. The config takes the same freshness settings as `useRead`, without `enabled`. See [Caching and refreshing](/docs/react/caching-and-refreshing).
+
+## Handle failures with an error boundary
+
+A failed read throws the ensforge error to the nearest error boundary. The failure stays cached: until you reset, every render throws the same error again, so "try again" would show the old error instead of fetching.
+
+Wrap the error boundary in `ReadErrorResetBoundary` and call `reset` when the boundary resets. After that, the reads below read again. It works like React Query's `QueryErrorResetBoundary`.
+
+**Example** (Retrying A Failed Read)
+
+```tsx twoslash title="Owner.tsx"
+import { Component, Suspense, type ReactNode } from "react";
+
+import { ReadErrorResetBoundary, useSuspenseRead } from "@ensforge/react";
+import { Actions } from "@ensforge/sdk";
+
+// Any error boundary with a reset callback works, such as react-error-boundary's `onReset`.
+class Boundary extends Component<
+  { children: ReactNode; onReset: () => void },
+  { failed: boolean }
+> {
+  override state = { failed: false };
+
+  static getDerivedStateFromError() {
+    return { failed: true };
+  }
+
+  override render() {
+    if (!this.state.failed) return this.props.children;
+
+    return (
+      <button
+        onClick={() => {
+          this.props.onReset();
+          this.setState({ failed: false });
+        }}
+      >
+        Try again
+      </button>
+    );
+  }
+}
+
+function Owner({ name }: { name: string }) {
+  const { data } = useSuspenseRead(Actions.name.get, { name });
+
+  return <span>{data.owner}</span>;
+}
+
+export const View = ({ name }: { name: string }) => (
+  <ReadErrorResetBoundary>
+    {({ reset }) => (
+      <Boundary onReset={reset}>
+        <Suspense fallback="loading">
+          <Owner name={name} />
+        </Suspense>
+      </Boundary>
+    )}
+  </ReadErrorResetBoundary>
+);
+```
+
+- `ReadErrorResetBoundary` takes children, or a function of `{ reset }`.
+- Remounting the component alone does not retry a failure thrown to an error boundary. Only `reset` does.
+- Without a `ReadErrorResetBoundary`, `reset` applies to every read in the app. Use one boundary per region to retry only that region.
+
+## Reset from inside a component
+
+`useReadErrorReset()` returns the same `{ reset }` handle for the nearest `ReadErrorResetBoundary`, or for the whole app without one. Use it in a fallback component that you wire to an error boundary.
+
+**Example** (A Retry Button)
+
+```tsx twoslash title="RetryButton.tsx"
+import { useReadErrorReset } from "@ensforge/react";
+
+export function RetryButton({ onRetry }: { onRetry: () => void }) {
+  const { reset } = useReadErrorReset();
+
+  return (
+    <button
+      onClick={() => {
+        reset();
+        onRetry();
+      }}
+    >
+      Try again
+    </button>
+  );
+}
+```
+
+Call `reset` first, then reset your error boundary, so the re-render reads again.
+
+## Suspense with server rendering
+
+On the server, a suspending read that was not prefetched throws, so React renders the boundary's fallback there and the read runs in the browser. React reports that as a recoverable error. Prefetch the reads a page needs to render them on the server. See [Next.js App Router](/docs/react/nextjs-app-router).
