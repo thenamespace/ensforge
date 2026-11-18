@@ -35,7 +35,6 @@ const roles = await publicClient.readContract({
 ## Documentation
 
 - [Documentation](https://ensforge.com/docs/contracts)
-- [Quick start](https://ensforge.com/docs/sdk)
 
 ## License
 
