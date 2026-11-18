@@ -15,7 +15,7 @@ import { getConfig } from "./config.js";
  * - `code` says exactly what happened and is stable across releases.
  * - Promise and Effect users receive the same instance.
  *
- * @see https://ensforge.com/docs/sdk/errors
+ * @see https://ensforge.com/docs/reference/errors
  * @stability stable
  * @category errors
  * @since 1.0.0
@@ -56,7 +56,7 @@ export abstract class EnsforgeError<
 
   /** Documentation page for this error's code. */
   get docsUrl(): string {
-    return `${getConfig().docsOrigin}/docs/sdk/errors/${this.code}`;
+    return `${getConfig().docsOrigin}/docs/reference/errors/${this.code}`;
   }
 
   /**
