@@ -94,3 +94,34 @@ jobs:
             "infra_app": "${{ env.INFRA_APP }}",
             "image_tag": "${{ needs.build-and-push.outputs.image_tag }}",
             "environment": "${{ env.ENVIRONMENT }}"}
+
+  # A release line on PostHog charts (`release` on events is the same 12-character SHA). Uses the
+  # personal API key in DOCS_DOTENV (scope: annotation write); skipped when it is not there.
+  annotate-release:
+    name: Annotate the release in PostHog
+    needs: update-image-tag
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    environment: prod
+    permissions: {}
+    steps:
+      - name: Create the annotation
+        # The site is already rolling out; a missing annotation must not mark the deploy failed.
+        continue-on-error: true
+        env:
+          DOTENV: ${{ secrets.DOCS_DOTENV }}
+        run: |
+          value() { printf '%s\n' "$DOTENV" | sed -n "s/^$1=//p" | tail -n 1 | tr -d "\"'\r"; }
+          key="$(value POSTHOG_PERSONAL_API_KEY)"
+          project="$(value POSTHOG_PROJECT_ID)"
+          if [[ -z "$key" || -z "$project" ]]; then
+            echo "No PostHog personal API key or project id in DOCS_DOTENV; skipping."
+            exit 0
+          fi
+          echo "::add-mask::$key"
+          release="${GITHUB_SHA:0:12}"
+          curl --fail-with-body --silent --show-error \
+            -X POST "https://eu.posthog.com/api/projects/${project}/annotations/" \
+            -H "Authorization: Bearer ${key}" \
+            -H "Content-Type: application/json" \
+            -d "{\"content\": \"docs ${release}\", \"date_marker\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\", \"scope\": \"project\"}"
