@@ -127,7 +127,7 @@ export const messages: { readonly [code in Code]: Template<code> } = {
   }),
   NAME_UNREACHABLE: (error) => ({
     title: "Name unreachable",
-    message: `${thisName(error)} no longer resolves: its parent moved to ENSv2 without it.`,
+    message: `${thisName(error)} no longer resolves: ENSv2 resolution does not reach its ENSv1 records.`,
   }),
   NAME_WRAPPED: (error) => ({
     title: "Name already wrapped",

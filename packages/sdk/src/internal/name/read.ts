@@ -6,7 +6,7 @@ import { hexToBigInt, type Address } from "viem";
 import type { Client } from "../../client/types.js";
 import type { AnyError } from "../../errors/types.js";
 import type { Read } from "../../Types.js";
-import { nonZeroAddress } from "../address.js";
+import { nonZeroAddress, sameAddress } from "../address.js";
 import { blockAt } from "../rpc/block.js";
 import * as Rpc from "../rpc/index.js";
 import type { NameParts } from "./parts.js";
@@ -59,10 +59,10 @@ export type NameData = {
   /** `undefined` when the deployment has no ENSv2 or the name has no ENSv2 parent registry. */
   readonly v2: V2Data | undefined;
   /**
-   * Whether an ancestor below the top-level domain is registered on ENSv2 (it owns that subtree).
-   * Only read for names three or more labels deep.
+   * Whether ENSv2 resolution reaches ENSv1 for this name: the resolver ENSv2 finds for it is the
+   * ENSv1 bridge or a DNS TLD resolver. `undefined` without ENSv2 at the read block.
    */
-  readonly ownedAncestor: boolean;
+  readonly reachesV1: boolean | undefined;
 };
 
 const readV1 = (client: Client, parts: NameParts, at: Read.BlockOptions) => {
@@ -193,38 +193,38 @@ const readV2 = Effect.fnUntraced(function* (
   return { registry, gracePeriod, ...reads } satisfies V2Data;
 });
 
-/** Whether an ancestor of `parts` below its TLD has an ENSv2 owner. */
-const readOwnedAncestor = (
+/**
+ * Whether ENSv2 resolution of `parts` ends at a resolver that serves ENSv1 names: the ENSv1
+ * bridge, or a DNS TLD resolver (which reads ENSv1 first). `undefined` without ENSv2 at the block.
+ *
+ * Reads `findResolver` on the ENSv2 Universal Resolver implementation, not the public proxy: before
+ * the launch the proxy may still forward to ENSv1's. A revert (a name ENSv2 cannot walk) counts
+ * as reaching nothing.
+ */
+const readReachesV1 = (
   client: Client,
   parts: NameParts,
   at: Read.BlockOptions,
-): Effect.Effect<boolean, AnyError> => {
-  const helper = client.deployment.v2?.contracts.universalHelper;
-  const labels = parts.name.split(".");
-  if (helper === undefined || labels.length < 3) return Effect.succeed(false);
+): Effect.Effect<boolean | undefined, AnyError> => {
+  const v2 = client.deployment.v2;
+  if (v2 === undefined) return Effect.undefined;
 
+  const serving = [v2.migration.ensV1Resolver, v2.dns?.tldResolver, v2.dns?.legacyTldResolver];
   return Rpc.readContractOrUndefined(client, {
-    address: helper,
-    abi: Abis.v2.universalHelper,
-    functionName: "findNearestOwner",
+    address: v2.implementations.universalResolver,
+    abi: Abis.v2.universalResolver,
+    functionName: "findResolver",
     args: [parts.dns],
     ...at,
   }).pipe(
-    Effect.map((nearest) => {
-      if (nearest === undefined) return false;
-      const [owner, offset] = nearest;
-      if (nonZeroAddress(owner) === null || offset === 0n) return false;
-
-      // The owner belongs to the ancestor whose DNS encoding starts at byte `offset`; it counts
-      // when that ancestor is below the TLD (TLD owners hold reserved ENSv1 names too).
-      let bytes = 0n;
-      let start = 0;
-      while (start < labels.length && bytes < offset) {
-        bytes += BigInt(new TextEncoder().encode(labels[start]).length + 1);
-        start += 1;
-      }
-      return labels.length - start >= 2;
+    Effect.map((found) => {
+      const resolver = nonZeroAddress(found?.[0]);
+      return resolver !== null && serving.some((address) => sameAddress(address, resolver));
     }),
+    Effect.catchIf(
+      (error: AnyError) => error._tag === "ConfigError" && error.code === "CONTRACT_NOT_DEPLOYED",
+      () => Effect.undefined,
+    ),
   );
 };
 
@@ -244,8 +244,8 @@ export const readName = (
       now: Rpc.blockTimestamp(client, at),
       v1: readV1(client, parts, at),
       v2: readV2(client, parts, at),
-      ownedAncestor: readOwnedAncestor(client, parts, at),
+      reachesV1: readReachesV1(client, parts, at),
     },
     { concurrency: "unbounded" },
-  ).pipe(Effect.map(({ now, v1, v2, ownedAncestor }) => ({ parts, now, v1, v2, ownedAncestor })));
+  ).pipe(Effect.map(({ now, v1, v2, reachesV1 }) => ({ parts, now, v1, v2, reachesV1 })));
 };

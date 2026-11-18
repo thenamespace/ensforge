@@ -80,8 +80,12 @@ export type NameState = {
   /** Whether the name was migrated from ENSv1 to ENSv2. */
   readonly migrated: boolean;
   /**
-   * Whether ENSv2 resolution reaches the name. `false` for an ENSv1 name whose parent moved to
-   * ENSv2 without it (or that was never reserved there): its ENSv1 records no longer resolve.
+   * Whether ENSv2 resolution reaches the name. An ENSv1 name is reachable when the resolver ENSv2
+   * resolution finds for it reads ENSv1: the ENSv1 bridge (a reservation, a migrated parent that
+   * kept it as resolver, an emancipated child of a locked parent) or a DNS TLD resolver. `false`
+   * when ENSv2 answers from elsewhere, e.g. a parent that migrated without the name or a `.eth`
+   * name without a reservation: its ENSv1 records no longer resolve, nor do its children's.
+   * Always `true` for ENSv2 names and on deployments without ENSv2.
    */
   readonly reachable: boolean;
   /** Whether the name can be registered now. */

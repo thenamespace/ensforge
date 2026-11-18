@@ -172,14 +172,15 @@ export const toNameState = (
   kind: NameKind,
   registration: Registration,
 ): RegistryState => {
-  // ENSv2 resolution of an ENSv1 name stops early when ENSv2 has a registry for its siblings but
-  // no reservation for it (reserved names fall back to ENSv1), or when an ancestor below the TLD
-  // is registered on ENSv2 without a registry for its children.
+  // ENSv2 resolves an ENSv1 name only through a resolver that reads ENSv1. Resolution walks
+  // through the ancestors, so a child of an unreachable parent is unreachable too. ENSv2 looks
+  // labels up by text: for a label known only by its hash that the parent registry reserved, the
+  // reservation's resolver (the ENSv1 bridge) answers.
   const v1 = kind === "v1-unwrapped" || kind === "v1-wrapped";
-  const reachable = !(
-    v1 &&
-    (data.v2 !== undefined ? data.v2.state.status !== RegistryStatus.reserved : data.ownedAncestor)
-  );
+  const reachable =
+    !v1 ||
+    data.reachesV1 !== false ||
+    (data.parts.encodedLabel && data.v2?.state.status === RegistryStatus.reserved);
   const fields =
     (kind === "v2-native" || kind === "v2-migrated" || kind === "v2-reserved") &&
     data.v2 !== undefined

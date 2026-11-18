@@ -15,7 +15,7 @@ const defaults: {
   NAME_WRAPPED: () => ({ shortMessage: "The name is already wrapped in the NameWrapper." }),
   NAME_UNREACHABLE: () => ({
     shortMessage: "ENSv2 resolution no longer reaches this ENSv1 name.",
-    hint: "Its parent moved to ENSv2 without it; ask the parent's owner to recreate it there.",
+    hint: "ENSv2 resolves it elsewhere: an ancestor moved to ENSv2 without it, or ENSv2 holds no reservation for it. Ask the parent's owner to recreate it there.",
   }),
   NAME_REQUIRES_MIGRATION: () => ({
     shortMessage: "The name must be migrated to ENSv2 first.",
