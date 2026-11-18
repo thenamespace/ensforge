@@ -36,6 +36,7 @@ const expected: Readonly<Record<string, { readonly _tag: string; readonly code: 
   LabelExpired: { _tag: "NameStateError", code: "NAME_EXPIRED" },
   NameNotRenewable: { _tag: "NameStateError", code: "NAME_NOT_RENEWABLE" },
   NameIsLocked: { _tag: "NameStateError", code: "NAME_LOCKED" },
+  NameIsNotWrapped: { _tag: "NameStateError", code: "NAME_NOT_WRAPPED" },
   NameRequiresMigration: { _tag: "NameStateError", code: "NAME_REQUIRES_MIGRATION" },
   ParentNotMigrated: { _tag: "NameStateError", code: "PARENT_NOT_MIGRATED" },
   TransferUnsafeUntilRegistryIsEmancipated: {

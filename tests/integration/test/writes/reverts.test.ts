@@ -160,6 +160,16 @@ describe("contract errors", () => {
             functionName: "setResolver",
             args: [namehash(fixtures.byId("v1.wrapped").name), stranger],
           },
+          NameIsNotWrapped: {
+            ...wrapper,
+            from: alice,
+            functionName: "extendExpiry",
+            args: [
+              namehash(fixtures.byId("v1.wrapped").name),
+              keccak256(toHex("never-wrapped")),
+              1n,
+            ],
+          },
           OperationProhibited: {
             ...wrapper,
             from: alice,

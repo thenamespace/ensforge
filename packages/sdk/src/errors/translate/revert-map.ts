@@ -106,6 +106,8 @@ export const revertMap: Readonly<Record<string, Mapper>> = {
   LabelExpired: () => new NameStateError({ code: "NAME_EXPIRED" }),
   NameNotRenewable: () => new NameStateError({ code: "NAME_NOT_RENEWABLE" }),
   NameIsLocked: () => new NameStateError({ code: "NAME_LOCKED" }),
+  // The NameWrapper no longer holds the node: never wrapped, or an emancipated child that lapsed.
+  NameIsNotWrapped: () => new NameStateError({ code: "NAME_NOT_WRAPPED" }),
   NameRequiresMigration: () => new NameStateError({ code: "NAME_REQUIRES_MIGRATION" }),
   ParentNotMigrated: () => new NameStateError({ code: "PARENT_NOT_MIGRATED" }),
   TransferUnsafeUntilRegistryIsEmancipated: () =>
