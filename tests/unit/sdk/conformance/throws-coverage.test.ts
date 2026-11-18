@@ -56,30 +56,12 @@ const coveredForWrites = new Set([
 ]);
 
 /** Documented codes of each read action without a test yet: `domain.action` → codes. */
-const uncovered: Readonly<Record<string, readonly string[]>> = {
-  "plan.get": ["PLAN_INVALID"],
-  "plan.list": ["PLAN_INVALID"],
-  "plan.reconcile": ["PLAN_INVALID"],
-};
+const uncovered: Readonly<Record<string, readonly string[]>> = {};
 
 /** Documented codes of each write action without a test yet: `domain.action` → codes. */
 const uncoveredWrites: Readonly<Record<string, readonly string[]>> = {
-  "dns.setRecords": ["NAME_UNREACHABLE"],
   "migration.migrate": ["NAME_NOT_LOCKED", "NAME_LOCKED", "PARENT_NOT_MIGRATED"],
-  "name.reclaim": ["NAME_UNREACHABLE"],
-  "name.setManager": ["NAME_UNREACHABLE"],
-  "name.setTtl": ["NAME_UNREACHABLE"],
   "registration.register": ["COMMITMENT_NOT_FOUND"],
-  "registry.attach": ["NAME_UNREACHABLE"],
-  "resolver.create": ["NAME_UNREACHABLE"],
-  "resolver.link": ["NAME_UNREACHABLE"],
-  "resolver.set": ["NAME_UNREACHABLE"],
-  "subname.create": ["NAME_UNREACHABLE"],
-  "subname.update": ["NAME_UNREACHABLE"],
-  "wrapper.setChildFuses": ["NAME_UNREACHABLE"],
-  "wrapper.setFuses": ["NAME_UNREACHABLE"],
-  "wrapper.unwrap": ["NAME_UNREACHABLE"],
-  "wrapper.wrap": ["NAME_UNREACHABLE"],
 };
 
 const testSources = Effect.gen(function* () {
