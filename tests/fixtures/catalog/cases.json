@@ -2938,9 +2938,9 @@
   {
     "id": "Z03",
     "axis": "Z",
-    "title": "Session expired; claim mismatch; funding policy failure; gas refund",
+    "title": "Session expired; gas refund over the session limit",
     "component": "HCA validators",
-    "expected": "`SessionExpired`, `ClaimFieldMismatch`, `FundingPolicyFailed`, `GasRefundNotAllowed`",
+    "expected": "`InvalidSessionData` (v1.0.1 reports expiry this way), `GasRefundNotAllowed`",
     "domains": ["hca"]
   },
   {
@@ -2965,6 +2965,14 @@
     "title": "Delegatecall from HCA",
     "component": "HCA",
     "expected": "Blocked",
+    "domains": ["hca"]
+  },
+  {
+    "id": "Z07",
+    "axis": "Z",
+    "title": "Funding claim mismatch; funding policy failure",
+    "component": "HCA funding validator (Rhinestone)",
+    "expected": "`ClaimFieldMismatch`, `FundingPolicyFailed`",
     "domains": ["hca"]
   },
   {

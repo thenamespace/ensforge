@@ -3,7 +3,7 @@ import { Effect, Result } from "effect";
 import { Name } from "@ensforge/sdk";
 import { Actions } from "@ensforge/sdk/effect";
 import type { Client } from "@ensforge/test-integration/support/clients";
-import { isAddressEqual, type Address } from "viem";
+import { isAddressEqual, maxUint64, type Address } from "viem";
 
 const same = (a: Address | null | undefined, b: Address | null | undefined) =>
   a === null || a === undefined || b === null || b === undefined
@@ -105,8 +105,15 @@ export const nameDifferences = Effect.fnUntraced(function* (
   }
   // Subnames have no registrar lease; their NameWrapper expiry is the top-level one.
   const expiry = (v1 ? indexed.ensV1?.expiresAt : undefined) ?? indexed.expiresAt;
+  // Relative to the chain's: absolute timestamps move whenever the devnet build adds a block.
   if (state.expiry !== null && expiry !== state.expiry) {
-    found.push({ entry: `${label}: expiry ${expiry}, chain ${state.expiry}` });
+    const indexedExpiry =
+      expiry === null || expiry === undefined
+        ? "none"
+        : expiry === maxUint64
+          ? "never"
+          : `${expiry - state.expiry > 0n ? "+" : ""}${expiry - state.expiry}s`;
+    found.push({ entry: `${label}: expiry ${indexedExpiry} from the chain's` });
   }
   return found;
 });

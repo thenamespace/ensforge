@@ -753,7 +753,8 @@
   "X01": {
     "tests": [
       "tests/integration/test/reads/ccip.test.ts > reports a failing gateway with its HTTP status",
-      "tests/integration/test/reads/primary.test.ts > reports an L2 primary name's failing gateway or proof as a gateway error"
+      "tests/integration/test/reads/primary.test.ts > reports an L2 primary name's failing gateway or proof as a gateway error",
+      "tests/integration/test/writes/reverts.test.ts > come from the Universal Resolver and its batch gateway"
     ]
   },
   "X02": {
@@ -767,7 +768,8 @@
   },
   "X05": {
     "tests": [
-      "tests/integration/test/reads/ccip.test.ts > never answers from an off-chain lookup that names another contract as its sender"
+      "tests/integration/test/reads/ccip.test.ts > never answers from an off-chain lookup that names another contract as its sender",
+      "tests/integration/test/writes/reverts.test.ts > come from the Universal Resolver and its batch gateway"
     ]
   },
   "X06": {
@@ -1065,14 +1067,16 @@
   },
   "P07": {
     "tests": [
-      "tests/integration/test/reads/primary.test.ts > returns null for names that do not verify, unless verification is off"
+      "tests/integration/test/reads/primary.test.ts > returns null for names that do not verify, unless verification is off",
+      "tests/integration/test/writes/reverts.test.ts > come from the Universal Resolver and its batch gateway"
     ]
   },
   "P08": {
     "tests": [
       "tests/integration/test/reads/primary.test.ts > fails a primary name whose resolver is missing or has no address as a mismatch",
       "tests/integration/test/reads/primary.test.ts > returns null for names that do not verify, unless verification is off",
-      "tests/integration/test/writes/access-matrix.test.ts > primaryName.set as someone else's name as primary"
+      "tests/integration/test/writes/access-matrix.test.ts > primaryName.set as someone else's name as primary",
+      "tests/integration/test/writes/reverts.test.ts > come from the Universal Resolver and its batch gateway"
     ]
   },
   "P09": {
@@ -1179,7 +1183,8 @@
   },
   "P32": {
     "tests": [
-      "tests/integration/test/reads/primary.test.ts > reports an L2 primary name's failing gateway or proof as a gateway error"
+      "tests/integration/test/reads/primary.test.ts > reports an L2 primary name's failing gateway or proof as a gateway error",
+      "tests/integration/test/writes/reverts.test.ts > come from the L2 reverse resolvers' proof verifiers, through ensforge's reads"
     ]
   },
   "P33": {
@@ -1588,7 +1593,8 @@
   },
   "M09": {
     "tests": [
-      "tests/integration/test/writes/migration.test.ts > migrates a locked name into a WrapperRegistry, then its locked child"
+      "tests/integration/test/writes/migration.test.ts > migrates a locked name into a WrapperRegistry, then its locked child",
+      "tests/integration/test/writes/reverts.test.ts > come from the migration controllers and the migration helper"
     ]
   },
   "M10": {
@@ -1596,7 +1602,8 @@
   },
   "M11": {
     "tests": [
-      "tests/integration/test/reads/migration.test.ts > blocks a locked child until its parent migrates, and for anyone but its owner"
+      "tests/integration/test/reads/migration.test.ts > blocks a locked child until its parent migrates, and for anyone but its owner",
+      "tests/integration/test/writes/reverts.test.ts > come from the migration controllers and the migration helper"
     ]
   },
   "M12": {
@@ -1713,12 +1720,15 @@
   },
   "Z02": {
     "tests": [
+      "tests/integration/test/writes/hca-session.test.ts > accepts an authorized session's first use, and refuses one outside its approval",
       "tests/integration/test/writes/hca.test.ts > HCA > mainnet-shaped > authorizes a session, checks its calls, and revokes it",
       "tests/integration/test/writes/hca.test.ts > authorizes a session, checks its calls, and revokes it"
     ]
   },
   "Z03": {
-    "na": "blocked by KL-52: FundingPolicyFailed, ClaimFieldMismatch and GasRefundNotAllowed come from the funding validator behind Rhinestone's orchestrator, which Rhinestone SDK 3.3.0 cannot reach for a standalone HCA; the expired-session pre-check is Z02's test"
+    "tests": [
+      "tests/integration/test/writes/hca-session.test.ts > accepts an authorized session's first use, and refuses one outside its approval"
+    ]
   },
   "Z04": {
     "tests": [
@@ -1728,12 +1738,16 @@
   },
   "Z05": {
     "tests": [
+      "tests/integration/test/writes/hca-session.test.ts > accepts an authorized session's first use, and refuses one outside its approval",
       "tests/integration/test/writes/hca.test.ts > HCA > mainnet-shaped > authorizes a session, checks its calls, and revokes it",
       "tests/integration/test/writes/hca.test.ts > authorizes a session, checks its calls, and revokes it"
     ]
   },
   "Z06": {
     "na": "ensforge never builds delegatecall executions: `hca.execute` and the route encode batch call mode only"
+  },
+  "Z07": {
+    "na": "blocked by KL-52: ClaimFieldMismatch and FundingPolicyFailed come from the funding validator behind Rhinestone's orchestrator, which Rhinestone SDK 3.3.0 cannot reach for a standalone HCA"
   },
   "F01": {
     "na": "ensforge resolves through the deployment's Universal Resolver at the read block; which path a chain's UR takes is the contracts' history (F05 pins reads to a block; the fork suites resolve on both networks)"
@@ -2018,6 +2032,7 @@
   },
   "M:B2": {
     "tests": [
+      "tests/fork/test/reads/legacy-resolvers.test.ts > accept writes from the current registry's owner, unless frozen",
       "tests/integration/test/reads/resolver.test.ts > describes each generation and kind of resolver",
       "tests/integration/test/writes/access-matrix.test.ts > record.set as frozen 2019 resolver",
       "tests/integration/test/writes/unwritable-resolvers.test.ts > record.set refuses records and clearing the 2020 public resolver predates"
