@@ -18,11 +18,15 @@ import * as Impl from "./effect.js";
  * - `.eth` second-level names: one transaction from the registrant, which may burn owner
  *   fuses (`cannotUnwrap` first).
  * - Other names: the registry owner approves the NameWrapper, if needed, then wraps.
+ * - The wrapped name stays with its current holder (registrant or manager) unless `owner` is
+ *   given, also when an approved operator wraps it.
  * - Keeps the current resolver unless `resolver` is given.
  *
  * **Gotchas**
  *
  * - ENSv2 has no NameWrapper. Wrapped names migrate to ENSv2 like unwrapped ones.
+ * - An operator of a non-`.eth` name's manager cannot approve the NameWrapper for the manager:
+ *   the manager approves it first (`NOT_APPROVED`).
  *
  * **Example** (Wrapping a name)
  *
@@ -49,7 +53,7 @@ import * as Impl from "./effect.js";
  * @throws `Errors.InvalidInputError` (`INVALID_NAME`, `INVALID_ADDRESS`, `INVALID_RECORD_VALUE`) for invalid input or fuses.
  * @throws `Errors.NameStateError` (`NAME_EXPIRED`, `NAME_NOT_REGISTERED`, `NAME_WRAPPED`) when the name cannot be wrapped.
  * @throws `Errors.UnsupportedError` (`UNSUPPORTED_PROTOCOL`) for ENSv2 names; migrated names have no NameWrapper.
- * @throws `Errors.UnauthorizedError` (`NOT_OWNER`) when the account does not own the name.
+ * @throws `Errors.UnauthorizedError` (`NOT_OWNER`, `NOT_APPROVED`) when the account does not own the name, or the manager has not approved the NameWrapper.
  * @throws `Errors.UserRejectedError` when the user rejects the request.
  *
  * @see {@link Actions.wrapper.unwrap} to unwrap it
@@ -69,7 +73,7 @@ export declare namespace wrap {
   type Options = {
     /** ENSv1 name. Normalized automatically. */
     name: string;
-    /** Owner of the wrapped name. Defaults to the signer. */
+    /** Owner of the wrapped name. Defaults to its current holder, else the signer. */
     owner?: string | undefined;
     /** Fuses to burn while wrapping (`.eth` second-level names only). */
     fuses?: readonly Fuse.Name[] | undefined;
@@ -134,7 +138,7 @@ wrap.estimateGas = Action.promiseOf(
  * @throws `Errors.InvalidInputError` (`INVALID_NAME`, `INVALID_ADDRESS`, `INVALID_RECORD_VALUE`) for invalid input or fuses.
  * @throws `Errors.NameStateError` (`NAME_EXPIRED`, `NAME_NOT_REGISTERED`, `NAME_WRAPPED`) when the name cannot be wrapped.
  * @throws `Errors.UnsupportedError` (`UNSUPPORTED_PROTOCOL`) for ENSv2 names; migrated names have no NameWrapper.
- * @throws `Errors.UnauthorizedError` (`NOT_OWNER`) when the account does not own the name.
+ * @throws `Errors.UnauthorizedError` (`NOT_OWNER`, `NOT_APPROVED`) when the account does not own the name, or the manager has not approved the NameWrapper.
  * @throws `Errors.TransactionError` (`TRANSACTION_REVERTED`, `RECEIPT_TIMEOUT`) when confirmation fails.
  *
  * @see {@link wrap} to resolve on submission

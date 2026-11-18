@@ -5,9 +5,10 @@ import type { Address } from "viem";
 import type { Operation, PermissionCheck } from "../../actions/permission/get/types.js";
 import type { Client } from "../../client/types.js";
 import { ConfigError } from "../../errors/classes/ConfigError.js";
+import { NameStateError } from "../../errors/classes/NameStateError.js";
 import { UnauthorizedError } from "../../errors/classes/UnauthorizedError.js";
 import type { AnyError } from "../../errors/types.js";
-import type { Explainer } from "../action/write.js";
+import { isOpaqueRevert, type Explainer } from "../action/write.js";
 import { loadName, type LoadedName } from "../name/load.js";
 import { requireAddress } from "../name/write.js";
 import { evaluate } from "./evaluate.js";
@@ -20,8 +21,7 @@ export const checkLoaded = Effect.fnUntraced(function* (
   account: Address,
   operations: readonly Operation[],
 ): Effect.fn.Return<readonly PermissionCheck[], AnyError> {
-  const records = operations.filter((operation) => typeof operation !== "string");
-  const facts = yield* readPermissionFacts(client, loaded, account, records);
+  const facts = yield* readPermissionFacts(client, loaded, account, operations);
   return operations.map((operation) => evaluate(facts, operation, client.deployment.v1?.contracts));
 });
 
@@ -40,7 +40,7 @@ export const checkName = Effect.fnUntraced(function* (
  * when the engine finds no permission problem (the failure has another cause). Name status and
  * unsupported operations are left to the original error.
  */
-const explainDenied = (
+export const explainDenied = (
   checks: readonly PermissionCheck[],
   account: Address,
 ): UnauthorizedError | undefined => {
@@ -74,19 +74,42 @@ const explainDenied = (
   });
 };
 
+// Writes are simulated in the block after the latest one: a name expiring within this many
+// seconds of the latest block may already be expired there (12 s blocks on Ethereum).
+const nextBlockWindow = 60n;
+
+/** `NAME_EXPIRED` when `loaded` is live in the latest block but expires before the next one. */
+export const expiringBeforeNextBlock = (loaded: LoadedName): NameStateError | undefined => {
+  const { expiry } = loaded.state;
+  const { now } = loaded.data;
+  return expiry !== null && expiry > now && expiry - now <= nextBlockWindow
+    ? new NameStateError({
+        code: "NAME_EXPIRED",
+        hint: "It expires before the transaction can be mined; renew it first.",
+      })
+    : undefined;
+};
+
 /**
- * An explainer for `Action.write`: checks `operationsOf(options)` on `nameOf(options)` for the
- * signer and turns the first denied one into an `UnauthorizedError`.
+ * An explainer for `Action.write`. A revert on a name that expires before the next block is
+ * `NAME_EXPIRED`; an opaque revert becomes the first operation of `operationsOf(options)` on
+ * `nameOf(options)` the signer may not perform, as an `UnauthorizedError`.
  */
 export const explainFor =
   <options>(
     nameOf: (options: options) => string,
     operationsOf: (options: options) => readonly Operation[],
   ): Explainer<options> =>
-  (client, options, account) =>
-    checkName(client, nameOf(options), account, operationsOf(options)).pipe(
-      Effect.map((checks) => explainDenied(checks, account)),
-    );
+  (client, options, account, error) =>
+    Effect.gen(function* () {
+      const loaded = yield* loadName(client, nameOf(options));
+      const expiring = expiringBeforeNextBlock(loaded);
+      if (expiring !== undefined || !isOpaqueRevert(error)) return expiring;
+      return explainDenied(
+        yield* checkLoaded(client, loaded, account, operationsOf(options)),
+        account,
+      );
+    });
 
 /** The account to check: the option, else the client's account. */
 export const checkedAccount = (

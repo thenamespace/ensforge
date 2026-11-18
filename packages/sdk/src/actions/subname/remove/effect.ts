@@ -8,9 +8,10 @@ import { ConfigError } from "../../../errors/classes/ConfigError.js";
 import { NameStateError } from "../../../errors/classes/NameStateError.js";
 import type { AnyError } from "../../../errors/types.js";
 import * as Action from "../../../internal/action/index.js";
-import { addressOf, sameAddress } from "../../../internal/address.js";
+import { addressOf } from "../../../internal/address.js";
 import { requireV1Contracts, singleStepPlan } from "../../../internal/name/write.js";
-import { explainFor } from "../../../internal/permission/check.js";
+import { checkLoaded } from "../../../internal/permission/check.js";
+import { explainRemoval } from "../../../internal/permission/subname.js";
 import { loadSubname, type LoadedSubname } from "../../../internal/subname/load.js";
 import type { Plan } from "../../../plan/Plan.js";
 import type { Write } from "../../../Types.js";
@@ -18,9 +19,9 @@ import type { remove as Promises } from "./index.js";
 
 /**
  * The call that removes the child. ENSv2 unregisters it, which also clears its resolver and
- * subregistry. ENSv1 sets owner and resolver to zero, from the parent when the signer controls
- * the parent, otherwise as the child's owner. An unwrapped parent clears the child in the
- * registry, which unwraps a wrapped child.
+ * subregistry. ENSv1 sets owner and resolver to zero, from the parent when the signer has the
+ * parent's authority (owner or operator), otherwise as the child's owner. An unwrapped parent
+ * clears the child in the registry, which unwraps a wrapped child.
  */
 const removeCall = Effect.fnUntraced(function* (
   client: Client,
@@ -41,9 +42,11 @@ const removeCall = Effect.fnUntraced(function* (
   }
 
   const contracts = yield* requireV1Contracts(client);
-  const fromParentRegistry = sameAddress(parent.data.v1?.registryOwner, signer);
-  if (child.state.wrapped && !(route === "v1" && fromParentRegistry)) {
-    return sameAddress(parent.state.owner, signer)
+  const [parentCheck] =
+    route === "v2" ? [] : yield* checkLoaded(client, parent, signer, ["removeSubname"]);
+  const viaParent = parentCheck?.allowed === true;
+  if (child.state.wrapped && !(route === "v1" && viaParent)) {
+    return viaParent
       ? {
           to: contracts.nameWrapper,
           data: encodeFunctionData({
@@ -63,7 +66,7 @@ const removeCall = Effect.fnUntraced(function* (
           value: 0n,
         };
   }
-  return fromParentRegistry
+  return route === "v1" && viaParent
     ? {
         to: contracts.registry,
         data: encodeFunctionData({
@@ -112,15 +115,7 @@ export const plan = Effect.fnUntraced(function* (
   });
 });
 
-const write = Action.write(
-  "subname.remove",
-  plan,
-  { contractKind: "registry" },
-  explainFor(
-    (options: { readonly name: string }) => options.name.slice(options.name.indexOf(".") + 1),
-    () => ["removeSubname" as const],
-  ),
-);
+const write = Action.write("subname.remove", plan, { contractKind: "registry" }, explainRemoval);
 
 /** @internal Implementation of `Actions.subname.remove`. */
 export const remove = write.send;

@@ -30,6 +30,9 @@ import * as Impl from "./effect.js";
  *
  * - A subregistry deployed here is not emancipated unless `emancipate` is set: its owners can
  *   remove and repoint children.
+ * - Under a wrapped parent, `parentCannotControl` and `canExtendExpiry` need `cannotUnwrap`
+ *   burned on the parent (`INVALID_RECORD_VALUE`), and an emancipated child cannot be updated
+ *   until it expires (`FUSE_BURNED`).
  *
  * **Example** (Creating a subname)
  *

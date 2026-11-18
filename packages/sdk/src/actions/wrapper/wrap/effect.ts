@@ -6,9 +6,10 @@ import { encodeAbiParameters, encodeFunctionData, hexToBigInt, zeroAddress } fro
 import type { Client } from "../../../client/types.js";
 import { InvalidInputError } from "../../../errors/classes/InvalidInputError.js";
 import { NameStateError } from "../../../errors/classes/NameStateError.js";
+import { UnauthorizedError } from "../../../errors/classes/UnauthorizedError.js";
 import type { AnyError } from "../../../errors/types.js";
 import * as Action from "../../../internal/action/index.js";
-import { addressOf } from "../../../internal/address.js";
+import { addressOf, sameAddress } from "../../../internal/address.js";
 import { loadName } from "../../../internal/name/load.js";
 import {
   requireAddress,
@@ -58,7 +59,8 @@ export const plan = Effect.fnUntraced(function* (
   }
 
   const signer = addressOf(options.account) ?? client.account;
-  const owner = yield* requireAddress(options.owner ?? signer ?? state.owner ?? "", "owner");
+  // The name stays with its holder when an operator wraps it.
+  const owner = yield* requireAddress(options.owner ?? state.owner ?? signer ?? "", "owner");
   // A zero resolver keeps the name's current one.
   const resolver =
     options.resolver === undefined
@@ -96,15 +98,40 @@ export const plan = Effect.fnUntraced(function* (
   }
 
   // Other names: the NameWrapper takes over the registry entry, so the manager approves it first.
+  // An operator of the manager can wrap, but cannot approve the NameWrapper for the manager.
   const manager = state.manager ?? owner;
-  const approved = yield* Rpc.readContract(client, {
-    address: contracts.registry,
-    abi: Abis.v1.ensRegistry,
-    functionName: "isApprovedForAll",
-    args: [manager, contracts.nameWrapper],
-  });
+  const viaOperator = signer !== undefined && !sameAddress(signer, manager);
+  const approvals = yield* Effect.all(
+    {
+      wrapper: Rpc.readContract(client, {
+        address: contracts.registry,
+        abi: Abis.v1.ensRegistry,
+        functionName: "isApprovedForAll",
+        args: [manager, contracts.nameWrapper],
+      }),
+      signer: viaOperator
+        ? Rpc.readContract(client, {
+            address: contracts.registry,
+            abi: Abis.v1.ensRegistry,
+            functionName: "isApprovedForAll",
+            args: [manager, signer],
+          })
+        : Effect.succeed(false),
+    },
+    { concurrency: "unbounded" },
+  );
+  if (viaOperator && approvals.signer && !approvals.wrapper) {
+    return yield* Effect.fail(
+      new UnauthorizedError({
+        code: "NOT_APPROVED",
+        account: signer,
+        shortMessage: "The name's manager has not approved the NameWrapper in the ENS registry.",
+        hint: "The manager approves the NameWrapper (setApprovalForAll on the ENS registry) or wraps the name.",
+      }),
+    );
+  }
   const steps: Plan.Step[] = [];
-  if (!approved) {
+  if (!approvals.wrapper) {
     steps.push({
       id: "approve",
       description: "Approve the NameWrapper",

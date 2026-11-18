@@ -21,8 +21,9 @@ import * as Impl from "./effect.js";
  *
  * **Gotchas**
  *
- * - Burning `parentCannotControl` needs `cannotUnwrap` on the parent, and gives up the
- *   parent's control of the subname until it expires.
+ * - Burning `parentCannotControl` or `canExtendExpiry` needs `cannotUnwrap` on the parent
+ *   (`INVALID_RECORD_VALUE`). `parentCannotControl` gives up the parent's control of the
+ *   subname until it expires: the parent can then only extend it (`FUSE_BURNED` for new fuses).
  *
  * **Example** (Emancipating a subname)
  *

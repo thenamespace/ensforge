@@ -1,11 +1,13 @@
 import { Effect } from "effect";
 
 import { Abis } from "@ensforge/contracts";
+import { nameWrapperFuses } from "@ensforge/contracts/v1";
 import { encodeFunctionData, hexToBigInt, maxUint64 } from "viem";
 
 import type { Client } from "../../../client/types.js";
 import { InvalidInputError } from "../../../errors/classes/InvalidInputError.js";
 import { NameStateError } from "../../../errors/classes/NameStateError.js";
+import { UnauthorizedError } from "../../../errors/classes/UnauthorizedError.js";
 import type { AnyError } from "../../../errors/types.js";
 import * as Action from "../../../internal/action/index.js";
 import { loadName } from "../../../internal/name/load.js";
@@ -16,7 +18,7 @@ import {
   singleStepPlan,
 } from "../../../internal/name/write.js";
 import * as Rpc from "../../../internal/rpc/index.js";
-import { fuseMask } from "../../../internal/wrapper/fuses.js";
+import { fuseMask, requireLockedParent } from "../../../internal/wrapper/fuses.js";
 import type { Plan } from "../../../plan/Plan.js";
 import type { Write } from "../../../Types.js";
 import * as Fuse from "../../../utils/Fuse.js";
@@ -62,20 +64,33 @@ export const plan = Effect.fnUntraced(function* (
       }),
     );
   }
-  const fuses = yield* fuseMask(options.fuses ?? [], loaded.data.v1?.wrapper.fuses ?? 0, "parent");
+  const burned = loaded.data.v1?.wrapper.fuses ?? 0;
+  const fuses = yield* fuseMask(options.fuses ?? [], burned, "parent");
+  if (Fuse.has(burned, "parentCannotControl") && (fuses | burned) !== burned) {
+    return yield* Effect.fail(
+      new UnauthorizedError({
+        code: "FUSE_BURNED",
+        shortMessage: `${parts.name} is emancipated: its parent can no longer burn its fuses.`,
+        hint: "Its owner burns owner-controlled fuses with wrapper.setFuses.",
+      }),
+    );
+  }
   const parentNode = namehash(parts.name.slice(parts.name.indexOf(".") + 1));
 
-  // Emancipating with the child's current expiry (often 0) would expire it at once; the parent's
-  // expiry is the longest the NameWrapper allows.
   let expiry = options.expiry ?? 0n;
-  if (options.expiry === undefined && Fuse.has(fuses, "parentCannotControl")) {
-    const [, , parentExpiry] = yield* Rpc.readContract(client, {
+  if ((fuses & nameWrapperFuses.parentControlled) !== 0) {
+    const [, parentFuses, parentExpiry] = yield* Rpc.readContract(client, {
       address: contracts.nameWrapper,
       abi: Abis.v1.nameWrapper,
       functionName: "getData",
       args: [hexToBigInt(parentNode)],
     });
-    expiry = parentExpiry;
+    yield* requireLockedParent(options.fuses, fuses, parentFuses);
+    // Emancipating with the child's current expiry (often 0) would expire it at once; the
+    // parent's expiry is the longest the NameWrapper allows.
+    if (options.expiry === undefined && Fuse.has(fuses, "parentCannotControl")) {
+      expiry = parentExpiry;
+    }
   }
 
   return singleStepPlan(client, {

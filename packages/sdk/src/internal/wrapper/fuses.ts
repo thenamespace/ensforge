@@ -1,5 +1,7 @@
 import { Effect } from "effect";
 
+import { nameWrapperFuses } from "@ensforge/contracts/v1";
+
 import { InvalidInputError } from "../../errors/classes/InvalidInputError.js";
 import type { AnyError } from "../../errors/types.js";
 import * as Fuse from "../../utils/Fuse.js";
@@ -47,3 +49,26 @@ export const fuseMask = Effect.fnUntraced(function* (
   }
   return mask;
 });
+
+/**
+ * Fails when `mask` burns a parent-controlled fuse (`parentCannotControl`, `canExtendExpiry`)
+ * while the parent has not burned `cannotUnwrap`: the NameWrapper refuses it
+ * (`OperationProhibited`).
+ */
+export const requireLockedParent = (
+  names: readonly Fuse.Name[] | undefined,
+  mask: number,
+  parentFuses: number,
+): Effect.Effect<void, AnyError> =>
+  (mask & nameWrapperFuses.parentControlled) === 0 || Fuse.has(parentFuses, "cannotUnwrap")
+    ? Effect.void
+    : Effect.fail(
+        new InvalidInputError({
+          code: "INVALID_RECORD_VALUE",
+          field: "fuses",
+          input: names,
+          shortMessage:
+            "`parentCannotControl` and `canExtendExpiry` need `cannotUnwrap` burned on the parent.",
+          hint: "Burn `cannotUnwrap` on the parent with wrapper.setFuses first.",
+        }),
+      );

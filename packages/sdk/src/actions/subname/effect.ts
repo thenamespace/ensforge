@@ -29,6 +29,9 @@ import type { update as updateTypes, updateSync as updateSyncTypes } from "./upd
  *
  * - A subregistry deployed here is not emancipated unless `emancipate` is set: its owners can
  *   remove and repoint children.
+ * - Under a wrapped parent, `parentCannotControl` and `canExtendExpiry` need `cannotUnwrap`
+ *   burned on the parent (`INVALID_RECORD_VALUE`), and an emancipated child cannot be updated
+ *   until it expires (`FUSE_BURNED`).
  *
  * **Example** (Creating a subname)
  *
@@ -136,8 +139,8 @@ export declare namespace createSync {
  *
  * - ENSv2: `unregister` in the parent's subregistry, which also clears the child's resolver and
  *   subregistry so nothing carries over to a later owner.
- * - ENSv1: owner and resolver are set to zero, from the parent when the signer controls it,
- *   otherwise as the child's owner. Under an unwrapped parent the registry clears a wrapped
+ * - ENSv1: owner and resolver are set to zero, from the parent when the signer owns it or is
+ *   its operator, otherwise as the child's owner. Under an unwrapped parent the registry clears a wrapped
  *   child, which unwraps it.
  *
  * **Gotchas**
@@ -248,10 +251,18 @@ export declare namespace removeSync {
  * **Details**
  *
  * - ENSv2: `setResolver` and `renew` in the parent's subregistry. The owner moves with
- *   {@link Actions.name.transfer}, or by removing and recreating the child.
+ *   {@link Actions.name.transfer}, or by removing and recreating the child. On the deployment's
+ *   current UserRegistry, extending the expiry needs the `renew` role at the subregistry's root;
+ *   older registries also accept it on the child.
  * - ENSv1: one `setSubnodeRecord` keeps what is not changed; wrapped children extend their
  *   expiry with `extendExpiry`. Unwrapped ENSv1 subnames have no expiry. Under an unwrapped
  *   parent the registry rewrites a wrapped child, which unwraps it.
+ *
+ * **Gotchas**
+ *
+ * - An expired wrapped child the parent still controls keeps its owner, and the parent extends
+ *   it. An emancipated child loses its owner when it expires: recreate it with
+ *   {@link Actions.subname.create}.
  *
  * **Example** (Repointing a subname)
  *
@@ -276,7 +287,7 @@ export declare namespace removeSync {
  * ```
  *
  * @throws `Errors.InvalidInputError` (`INVALID_NAME`, `INVALID_ADDRESS`, `INVALID_RECORD_VALUE`, `INVALID_EXPIRY`) for invalid input.
- * @throws `Errors.NameStateError` (`NAME_NOT_REGISTERED`, `NAME_EXPIRED`) when the child or parent does not exist.
+ * @throws `Errors.NameStateError` (`NAME_NOT_REGISTERED`, `NAME_EXPIRED`) when the child or parent does not exist, or an emancipated child expired.
  * @throws `Errors.UnsupportedError` (`UNSUPPORTED_PROTOCOL`) for an ENSv2 owner change or an unwrapped ENSv1 expiry.
  * @throws `Errors.UnauthorizedError` (`MISSING_ROLES`, `NOT_OWNER`, `FUSE_BURNED`) when the account may not change it.
  * @throws `Errors.UserRejectedError` when the user rejects the request.
@@ -327,7 +338,7 @@ export declare namespace update {
  * ```
  *
  * @throws `Errors.InvalidInputError` (`INVALID_NAME`, `INVALID_ADDRESS`, `INVALID_RECORD_VALUE`, `INVALID_EXPIRY`) for invalid input.
- * @throws `Errors.NameStateError` (`NAME_NOT_REGISTERED`, `NAME_EXPIRED`) when the child or parent does not exist.
+ * @throws `Errors.NameStateError` (`NAME_NOT_REGISTERED`, `NAME_EXPIRED`) when the child or parent does not exist, or an emancipated child expired.
  * @throws `Errors.UnsupportedError` (`UNSUPPORTED_PROTOCOL`) for an ENSv2 owner change or an unwrapped ENSv1 expiry.
  * @throws `Errors.UnauthorizedError` (`MISSING_ROLES`, `NOT_OWNER`, `FUSE_BURNED`) when the account may not change it.
  * @throws `Errors.TransactionError` (`TRANSACTION_REVERTED`, `RECEIPT_TIMEOUT`) when confirmation fails.

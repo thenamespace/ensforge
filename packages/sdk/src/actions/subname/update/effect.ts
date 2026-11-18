@@ -14,7 +14,7 @@ import {
   requireV1Contracts,
   singleStepPlan,
 } from "../../../internal/name/write.js";
-import { explainFor } from "../../../internal/permission/check.js";
+import { explainUpdate } from "../../../internal/permission/subname.js";
 import { loadSubname, type LoadedSubname } from "../../../internal/subname/load.js";
 import type { Plan } from "../../../plan/Plan.js";
 import type { Write } from "../../../Types.js";
@@ -167,6 +167,18 @@ export const plan = Effect.fnUntraced(function* (
       }),
     );
   }
+  // An emancipated child loses its owner when it expires: the NameWrapper no longer holds it, and
+  // only recreating it from the parent brings it back.
+  const { state } = subname.child;
+  if (state.wrapped && state.status === "expired" && state.owner === null) {
+    return yield* Effect.fail(
+      new NameStateError({
+        code: "NAME_EXPIRED",
+        shortMessage: `${subname.child.data.parts.name} has expired and has no owner.`,
+        hint: "Recreate it with subname.create.",
+      }),
+    );
+  }
   const owner =
     options.owner === undefined ? undefined : yield* requireAddress(options.owner, "owner");
   const resolver =
@@ -201,15 +213,7 @@ export const plan = Effect.fnUntraced(function* (
   });
 });
 
-const write = Action.write(
-  "subname.update",
-  plan,
-  { contractKind: "registry" },
-  explainFor(
-    (options: { readonly name: string }) => options.name.slice(options.name.indexOf(".") + 1),
-    () => ["createSubname" as const],
-  ),
-);
+const write = Action.write("subname.update", plan, { contractKind: "registry" }, explainUpdate);
 
 /** @internal Implementation of `Actions.subname.update`. */
 export const update = write.send;

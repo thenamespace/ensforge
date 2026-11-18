@@ -84,8 +84,9 @@ export declare namespace getFuses {
  *
  * **Gotchas**
  *
- * - Burning `parentCannotControl` needs `cannotUnwrap` on the parent, and gives up the
- *   parent's control of the subname until it expires.
+ * - Burning `parentCannotControl` or `canExtendExpiry` needs `cannotUnwrap` on the parent
+ *   (`INVALID_RECORD_VALUE`). `parentCannotControl` gives up the parent's control of the
+ *   subname until it expires: the parent can then only extend it (`FUSE_BURNED` for new fuses).
  *
  * **Example** (Emancipating a subname)
  *
@@ -410,11 +411,15 @@ export declare namespace unwrapSync {
  * - `.eth` second-level names: one transaction from the registrant, which may burn owner
  *   fuses (`cannotUnwrap` first).
  * - Other names: the registry owner approves the NameWrapper, if needed, then wraps.
+ * - The wrapped name stays with its current holder (registrant or manager) unless `owner` is
+ *   given, also when an approved operator wraps it.
  * - Keeps the current resolver unless `resolver` is given.
  *
  * **Gotchas**
  *
  * - ENSv2 has no NameWrapper. Wrapped names migrate to ENSv2 like unwrapped ones.
+ * - An operator of a non-`.eth` name's manager cannot approve the NameWrapper for the manager:
+ *   the manager approves it first (`NOT_APPROVED`).
  *
  * **Example** (Wrapping a name)
  *
@@ -441,7 +446,7 @@ export declare namespace unwrapSync {
  * @throws `Errors.InvalidInputError` (`INVALID_NAME`, `INVALID_ADDRESS`, `INVALID_RECORD_VALUE`) for invalid input or fuses.
  * @throws `Errors.NameStateError` (`NAME_EXPIRED`, `NAME_NOT_REGISTERED`, `NAME_WRAPPED`) when the name cannot be wrapped.
  * @throws `Errors.UnsupportedError` (`UNSUPPORTED_PROTOCOL`) for ENSv2 names; migrated names have no NameWrapper.
- * @throws `Errors.UnauthorizedError` (`NOT_OWNER`) when the account does not own the name.
+ * @throws `Errors.UnauthorizedError` (`NOT_OWNER`, `NOT_APPROVED`) when the account does not own the name, or the manager has not approved the NameWrapper.
  * @throws `Errors.UserRejectedError` when the user rejects the request.
  *
  * @see {@link Actions.wrapper.unwrap} to unwrap it
@@ -492,7 +497,7 @@ export declare namespace wrap {
  * @throws `Errors.InvalidInputError` (`INVALID_NAME`, `INVALID_ADDRESS`, `INVALID_RECORD_VALUE`) for invalid input or fuses.
  * @throws `Errors.NameStateError` (`NAME_EXPIRED`, `NAME_NOT_REGISTERED`, `NAME_WRAPPED`) when the name cannot be wrapped.
  * @throws `Errors.UnsupportedError` (`UNSUPPORTED_PROTOCOL`) for ENSv2 names; migrated names have no NameWrapper.
- * @throws `Errors.UnauthorizedError` (`NOT_OWNER`) when the account does not own the name.
+ * @throws `Errors.UnauthorizedError` (`NOT_OWNER`, `NOT_APPROVED`) when the account does not own the name, or the manager has not approved the NameWrapper.
  * @throws `Errors.TransactionError` (`TRANSACTION_REVERTED`, `RECEIPT_TIMEOUT`) when confirmation fails.
  *
  * @see {@link wrap} to resolve on submission

@@ -15,10 +15,18 @@ import * as Impl from "./effect.js";
  * **Details**
  *
  * - ENSv2: `setResolver` and `renew` in the parent's subregistry. The owner moves with
- *   {@link Actions.name.transfer}, or by removing and recreating the child.
+ *   {@link Actions.name.transfer}, or by removing and recreating the child. On the deployment's
+ *   current UserRegistry, extending the expiry needs the `renew` role at the subregistry's root;
+ *   older registries also accept it on the child.
  * - ENSv1: one `setSubnodeRecord` keeps what is not changed; wrapped children extend their
  *   expiry with `extendExpiry`. Unwrapped ENSv1 subnames have no expiry. Under an unwrapped
  *   parent the registry rewrites a wrapped child, which unwraps it.
+ *
+ * **Gotchas**
+ *
+ * - An expired wrapped child the parent still controls keeps its owner, and the parent extends
+ *   it. An emancipated child loses its owner when it expires: recreate it with
+ *   {@link Actions.subname.create}.
  *
  * **Example** (Repointing a subname)
  *
@@ -43,7 +51,7 @@ import * as Impl from "./effect.js";
  * ```
  *
  * @throws `Errors.InvalidInputError` (`INVALID_NAME`, `INVALID_ADDRESS`, `INVALID_RECORD_VALUE`, `INVALID_EXPIRY`) for invalid input.
- * @throws `Errors.NameStateError` (`NAME_NOT_REGISTERED`, `NAME_EXPIRED`) when the child or parent does not exist.
+ * @throws `Errors.NameStateError` (`NAME_NOT_REGISTERED`, `NAME_EXPIRED`) when the child or parent does not exist, or an emancipated child expired.
  * @throws `Errors.UnsupportedError` (`UNSUPPORTED_PROTOCOL`) for an ENSv2 owner change or an unwrapped ENSv1 expiry.
  * @throws `Errors.UnauthorizedError` (`MISSING_ROLES`, `NOT_OWNER`, `FUSE_BURNED`) when the account may not change it.
  * @throws `Errors.UserRejectedError` when the user rejects the request.
@@ -128,7 +136,7 @@ update.estimateGas = Action.promiseOf(
  * ```
  *
  * @throws `Errors.InvalidInputError` (`INVALID_NAME`, `INVALID_ADDRESS`, `INVALID_RECORD_VALUE`, `INVALID_EXPIRY`) for invalid input.
- * @throws `Errors.NameStateError` (`NAME_NOT_REGISTERED`, `NAME_EXPIRED`) when the child or parent does not exist.
+ * @throws `Errors.NameStateError` (`NAME_NOT_REGISTERED`, `NAME_EXPIRED`) when the child or parent does not exist, or an emancipated child expired.
  * @throws `Errors.UnsupportedError` (`UNSUPPORTED_PROTOCOL`) for an ENSv2 owner change or an unwrapped ENSv1 expiry.
  * @throws `Errors.UnauthorizedError` (`MISSING_ROLES`, `NOT_OWNER`, `FUSE_BURNED`) when the account may not change it.
  * @throws `Errors.TransactionError` (`TRANSACTION_REVERTED`, `RECEIPT_TIMEOUT`) when confirmation fails.

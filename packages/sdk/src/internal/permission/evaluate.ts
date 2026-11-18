@@ -11,10 +11,17 @@ import type {
 import type { UnauthorizedError } from "../../errors/classes/UnauthorizedError.js";
 import * as Fuse from "../../utils/Fuse.js";
 import { sameAddress } from "../address.js";
+import type { LoadedName } from "../name/load.js";
 import { recordResource, type PermissionFacts } from "./facts.js";
 import { recordRoles } from "./records.js";
 
 type Requirement = UnauthorizedError.Requirement;
+
+type Contracts = {
+  readonly registry: Address;
+  readonly baseRegistrar: Address;
+  readonly nameWrapper: Address;
+};
 
 const allow = (
   via: Authority,
@@ -94,6 +101,14 @@ const evaluateV2 = (facts: PermissionFacts, operation: NameOperation): Permissio
           registry,
         );
       }
+      // Safe transfers wait until nobody holds unemancipated root roles on the registry.
+      if (!facts.v2.registryEmancipated) {
+        return blocked(
+          "transfer-disallowed",
+          "The registry is not emancipated; `name.transfer` with `unsafe: true` sends it anyway.",
+          registry,
+        );
+      }
       // A safe transfer would leave other holders' roles in place (GHSA-hvjh), so it reverts.
       if (!facts.v2.ownerOnlyAssignee) {
         return blocked(
@@ -137,7 +152,12 @@ const evaluateV2 = (facts: PermissionFacts, operation: NameOperation): Permissio
       );
     }
     case "renew":
-      return data.parts.isEth2ld ? allow("anyone", null) : role("renew");
+      if (data.parts.isEth2ld) return allow("anyone", null);
+      // An expired name is renewed (revived) only with `renew` at the registry's root, and
+      // contracts-v2 #505's UserRegistry ignores `renew` held on the name altogether.
+      return facts.v2.rootOnlyRenewal || facts.loaded.state.status === "expired"
+        ? byRole(facts.v2.rootRoles, Roles.registry.renew, "renew", registry, 0n)
+        : role("renew");
     case "setTtl":
     case "setManager":
     case "reclaim":
@@ -148,7 +168,37 @@ const evaluateV2 = (facts: PermissionFacts, operation: NameOperation): Permissio
   }
 };
 
-/** Wrapped ENSv1: the NameWrapper owner or approved accounts, limited by burned fuses. */
+/**
+ * NameWrapper `extendExpiry` of a wrapped subname: the parent's owner, operator or approved
+ * account (unless a `.eth` parent is in grace), or the name's own owner or operator once
+ * `canExtendExpiry` is burned.
+ */
+const evaluateWrappedRenewal = (facts: PermissionFacts, wrapper: Address): PermissionCheck => {
+  const { state, data } = facts.loaded;
+  const { account, v1 } = facts;
+  if (v1.canExtendSubnames) {
+    return allow(
+      sameAddress(v1.parentOwner, account)
+        ? "owner"
+        : sameAddress(v1.parentApproved, account)
+          ? "approved"
+          : "operator",
+      wrapper,
+    );
+  }
+  if (Fuse.has(data.v1?.wrapper.fuses ?? 0, "canExtendExpiry") && v1.canModifyName) {
+    return allow(sameAddress(state.owner, account) ? "owner" : "operator", wrapper);
+  }
+  if (sameAddress(v1.parentOwner, account)) {
+    return blocked("status", "The parent is in its grace period.", wrapper);
+  }
+  return deny([{ type: "owner", contract: wrapper, owner: v1.parentOwner }], wrapper);
+};
+
+/**
+ * Wrapped ENSv1: the NameWrapper owner or an operator, limited by burned fuses. A token-approved
+ * account only extends the name's children.
+ */
 const evaluateWrapped = (
   facts: PermissionFacts,
   operation: NameOperation,
@@ -156,12 +206,7 @@ const evaluateWrapped = (
 ): PermissionCheck => {
   const { state, data } = facts.loaded;
   const fuses = data.v1?.wrapper.fuses ?? 0;
-  const authority = ownerAuthority(
-    facts.account,
-    state.owner,
-    facts.v1.wrapperOperator,
-    facts.v1.wrapperApproved,
-  );
+  const authority = ownerAuthority(facts.account, state.owner, facts.v1.wrapperOperator);
   const guarded = (fuse: Fuse.Name): PermissionCheck =>
     Fuse.has(fuses, fuse)
       ? blocked("fuse", `The ${fuse} fuse is burned.`, wrapper)
@@ -179,15 +224,7 @@ const evaluateWrapped = (
     case "removeSubname":
       return byOwner(authority, wrapper, state.owner);
     case "renew":
-      if (data.parts.isEth2ld) return allow("anyone", null);
-      // Wrapped subnames are extended by the parent, or by their owner with canExtendExpiry.
-      return Fuse.has(fuses, "canExtendExpiry")
-        ? byOwner(authority, wrapper, state.owner)
-        : blocked(
-            "unsupported",
-            "The parent extends it (subname.update), or its owner with canExtendExpiry.",
-            wrapper,
-          );
+      return data.parts.isEth2ld ? allow("anyone", null) : evaluateWrappedRenewal(facts, wrapper);
     case "setSubregistry":
     case "setManager":
     case "reclaim":
@@ -286,17 +323,23 @@ const evaluateRecord = (facts: PermissionFacts, operation: RecordOperation): Per
 
 /**
  * Whether the account in `facts` may perform `operation`. Names that are not registered allow
- * nothing but renewing `.eth` names in their grace period.
+ * nothing but renewing `.eth` names in their grace period, expired ENSv2 subnames (revived with
+ * `renew` at the registry's root), and expired wrapped subnames the NameWrapper still holds for
+ * their owner (not emancipated).
  */
 export const evaluate = (
   facts: PermissionFacts,
   operation: Operation,
-  contracts:
-    | { readonly registry: Address; readonly baseRegistrar: Address; readonly nameWrapper: Address }
-    | undefined,
+  contracts: Contracts | undefined,
 ): PermissionCheck => {
-  const { state } = facts.loaded;
-  if (state.status !== "registered" && !(state.status === "grace" && operation === "renew")) {
+  const { state, data } = facts.loaded;
+  const renewable =
+    operation === "renew" &&
+    (state.status === "grace" ||
+      (state.status === "expired" &&
+        !data.parts.isEth2ld &&
+        (state.protocol === "v2" || (state.wrapped && state.owner !== null))));
+  if (state.status !== "registered" && !renewable) {
     return blocked("status", `The name is ${state.status}.`);
   }
 
@@ -308,4 +351,73 @@ export const evaluate = (
   return state.wrapped
     ? evaluateWrapped(facts, operation, contracts.nameWrapper)
     : evaluateUnwrapped(facts, operation, contracts);
+};
+
+/**
+ * Whether the parent's account may rewrite or clear an existing child with `setSubnodeRecord`
+ * (`subname.update`, `subname.remove`): it needs the parent's authority over children, and
+ * through the NameWrapper the child must not be emancipated. An unwrapped parent rewrites any
+ * child in the registry.
+ */
+export const evaluateChildRewrite = (
+  parentFacts: PermissionFacts,
+  child: LoadedName,
+  contracts: Contracts | undefined,
+): PermissionCheck => {
+  const check = evaluate(parentFacts, "removeSubname", contracts);
+  const throughWrapper =
+    parentFacts.loaded.state.protocol === "v1" &&
+    parentFacts.loaded.state.wrapped &&
+    child.state.wrapped;
+  return check.allowed === true &&
+    throughWrapper &&
+    Fuse.has(child.data.v1?.wrapper.fuses ?? 0, "parentCannotControl")
+    ? blocked("fuse", "The child is emancipated (parentCannotControl).", check.contract)
+    : check;
+};
+
+/**
+ * Whether the account in `facts` may remove the name as its own holder (`subname.remove`
+ * without the parent): ENSv2 `unregister` with the role on the name; a wrapped ENSv1 name's
+ * owner or operator clears it through the NameWrapper unless a fuse forbids unwrapping or
+ * changing its record; an unwrapped one's manager clears it in the registry.
+ */
+export const evaluateSelfRemoval = (
+  facts: PermissionFacts,
+  contracts: Contracts | undefined,
+): PermissionCheck => {
+  const { state, data } = facts.loaded;
+  if (state.status !== "registered") return blocked("status", `The name is ${state.status}.`);
+  if (state.protocol === "v2") {
+    return byRole(
+      facts.v2.roles,
+      Roles.registry.unregister,
+      "unregister",
+      state.registry as Address,
+      state.resource ?? 0n,
+    );
+  }
+  if (contracts === undefined) {
+    return blocked("unsupported", "The deployment has no ENSv1 contracts.");
+  }
+
+  if (!state.wrapped) {
+    const manager = data.v1?.registryOwner ?? null;
+    return byOwner(
+      ownerAuthority(facts.account, manager, facts.v1.registryOperator),
+      contracts.registry,
+      manager,
+    );
+  }
+  const fuses = data.v1?.wrapper.fuses ?? 0;
+  const burned = (
+    ["cannotUnwrap", "cannotTransfer", "cannotSetResolver", "cannotSetTtl"] as const
+  ).find((fuse) => Fuse.has(fuses, fuse));
+  return burned !== undefined
+    ? blocked("fuse", `The ${burned} fuse is burned.`, contracts.nameWrapper)
+    : byOwner(
+        ownerAuthority(facts.account, state.owner, facts.v1.wrapperOperator),
+        contracts.nameWrapper,
+        state.owner,
+      );
 };

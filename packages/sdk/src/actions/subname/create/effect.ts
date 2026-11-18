@@ -8,6 +8,7 @@ import { ConfigError } from "../../../errors/classes/ConfigError.js";
 import { InvalidInputError } from "../../../errors/classes/InvalidInputError.js";
 import { NameStateError } from "../../../errors/classes/NameStateError.js";
 import { NotFoundError } from "../../../errors/classes/NotFoundError.js";
+import { UnauthorizedError } from "../../../errors/classes/UnauthorizedError.js";
 import { UnsupportedError } from "../../../errors/classes/UnsupportedError.js";
 import type { AnyError } from "../../../errors/types.js";
 import * as Action from "../../../internal/action/index.js";
@@ -20,6 +21,7 @@ import { attachCalls, deployUserRegistry } from "../../../internal/registry/depl
 import { deployPermissionedResolver } from "../../../internal/resolver/deploy.js";
 import { roleBitmapOf } from "../../../internal/role/bitmap.js";
 import { loadSubname, type LoadedSubname } from "../../../internal/subname/load.js";
+import { requireLockedParent } from "../../../internal/wrapper/fuses.js";
 import { make as makePlan } from "../../../plan/make.js";
 import type { Plan } from "../../../plan/Plan.js";
 import type { Write } from "../../../Types.js";
@@ -183,6 +185,19 @@ const v1Call = Effect.fnUntraced(function* (
     try: () => Fuse.from(options.fuses ?? []),
     catch: (error) => error as AnyError,
   });
+  // An emancipated child is out of its parent's reach until it expires.
+  if (
+    child.state.status === "registered" &&
+    Fuse.has(child.data.v1?.wrapper.fuses ?? 0, "parentCannotControl")
+  ) {
+    return yield* Effect.fail(
+      new UnauthorizedError({
+        code: "FUSE_BURNED",
+        shortMessage: `${child.data.parts.name} is emancipated: its parent can no longer change it.`,
+      }),
+    );
+  }
+  yield* requireLockedParent(options.fuses, fuses, parent.data.v1?.wrapper.fuses ?? 0);
   // As in ensjs: an emancipated child needs an expiry (capped at the parent's by the wrapper).
   const expiry = options.expiry ?? (Fuse.has(fuses, "parentCannotControl") ? maxUint64 : 0n);
   return {

@@ -76,7 +76,8 @@ export declare namespace check {
  * **Details**
  *
  * - ENSv1: the owner, operators and approved addresses, limited by NameWrapper fuses.
- * - ENSv2: the account's roles on the name and at the root of its registry.
+ * - ENSv2: the account's roles on the name and at the root of its registry. The deployment's
+ *   current UserRegistry checks `renew` at its root only (contracts-v2 #505).
  * - Records: PermissionedResolver roles, or owner, operator and delegates on public resolvers.
  *   Pass `records` for per-record answers, e.g. which text keys the account may write.
  * - `null` means the permission model is unknown (a custom resolver).

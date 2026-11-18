@@ -1,8 +1,7 @@
 import { Effect } from "effect";
 
 import { Abis, InterfaceIds, Roles } from "@ensforge/contracts";
-import { getAddress, isAddressEqual, sliceHex, zeroHash, type Address } from "viem";
-import { getStorageAt } from "viem/actions";
+import { isAddressEqual, type Address } from "viem";
 
 import type {
   RegistryInfo,
@@ -16,9 +15,6 @@ import { dnsDecode } from "../../utils/Name.js";
 import { nonZeroAddress } from "../address.js";
 import { blockAt } from "../rpc/block.js";
 import * as Rpc from "../rpc/index.js";
-
-// ERC-1967 implementation slot: bytes32(uint256(keccak256("eip1967.proxy.implementation")) - 1).
-const implementationSlot = "0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc";
 
 /**
  * Inspects an ENSv2 registry in two batched rounds: identity, parent, canonical name, URI and
@@ -39,9 +35,7 @@ export const inspectRegistry = Effect.fnUntraced(function* (
 
   const read = yield* Effect.all(
     {
-      word: Rpc.fromPromise(() =>
-        getStorageAt(client.publicClient, { address, slot: implementationSlot, ...at }),
-      ),
+      implementation: Rpc.implementation(client, address, options),
       parent: Rpc.readContractOrUndefined(client, { ...registry, functionName: "getParent" }),
       emancipated: Rpc.readContractOrUndefined(client, {
         ...registry,
@@ -76,8 +70,7 @@ export const inspectRegistry = Effect.fnUntraced(function* (
     { concurrency: "unbounded" },
   );
 
-  // An empty ERC-1967 slot: the registry is not a proxy.
-  const implementation = nonZeroAddress(getAddress(sliceHex(read.word ?? zeroHash, 12)));
+  const { implementation } = read;
   const kind: RegistryKind =
     v2 !== undefined && isAddressEqual(address, v2.contracts.rootRegistry)
       ? "root"

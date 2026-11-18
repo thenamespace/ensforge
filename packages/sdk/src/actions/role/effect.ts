@@ -75,6 +75,11 @@ export declare namespace get {
  * - Granting needs the matching admin roles.
  * - Some roles regenerate the name's token ID; the plan carries a `TOKEN_ID_REGENERATED` warning.
  *
+ * **Gotchas**
+ *
+ * - `renew` granted on a name lets its holder renew it only in registries that predate
+ *   contracts-v2 #505; the deployment's current UserRegistry checks it at the root (`root: true`).
+ *
  * **Example** (Granting a role)
  *
  * ```ts

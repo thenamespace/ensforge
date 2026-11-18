@@ -4,10 +4,11 @@ import { Abis, Roles } from "@ensforge/contracts";
 import { permissionedResolverResource } from "@ensforge/contracts/v2";
 import { hexToBigInt, type Address } from "viem";
 
-import type { RecordOperation } from "../../actions/permission/get/types.js";
+import type { Operation, RecordOperation } from "../../actions/permission/get/types.js";
 import type { Client } from "../../client/types.js";
 import type { AnyError } from "../../errors/types.js";
 import * as CoinType from "../../utils/CoinType.js";
+import { namehash } from "../../utils/Name.js";
 import { nonZeroAddress, sameAddress } from "../address.js";
 import type { LoadedName } from "../name/load.js";
 import { setterKeying } from "../records/setter-keying.js";
@@ -23,14 +24,31 @@ export type PermissionFacts = {
     readonly registrarApproved: Address | null;
     readonly wrapperOperator: boolean;
     readonly wrapperApproved: Address | null;
+    /** Wrapped subnames: the parent's NameWrapper owner and approved account. */
+    readonly parentOwner: Address | null;
+    readonly parentApproved: Address | null;
+    /** NameWrapper `canExtendSubnames(parent, account)`: the parent's authority over expiries. */
+    readonly canExtendSubnames: boolean;
+    /** NameWrapper `canModifyName(name, account)`: owner or operator, outside a `.eth` grace. */
+    readonly canModifyName: boolean;
   };
   readonly v2: {
     /** Token and root roles of the account on the registry holding the name. */
     readonly roles: bigint;
+    /** Root roles alone, for the roles a registry checks only at its root. */
+    readonly rootRoles: bigint;
+    /**
+     * The registry runs the deployment's UserRegistry implementation, which checks `renew` at its
+     * root only (`capabilities.userRegistryRootRenewal`, contracts-v2 #505). Read only when
+     * `renew` is checked.
+     */
+    readonly rootOnlyRenewal: boolean;
     /** Token roles of the owner (`canTransferAdmin` decides transfers). */
     readonly ownerRoles: bigint;
     /** No one but the owner holds the name's unemancipated roles, so a safe transfer may go. */
     readonly ownerOnlyAssignee: boolean;
+    /** No one holds unemancipated root roles on the registry, so its tokens may move safely. */
+    readonly registryEmancipated: boolean;
     readonly operator: boolean;
     /** Root roles of the account on the name's subregistry. */
     readonly subregistryRoles: bigint | null;
@@ -100,17 +118,21 @@ export const resolverOwnerOf = (client: Client, { state, data }: LoadedName): Ad
 };
 
 /**
- * Reads the facts for `account` and a loaded name in one batched round: ENSv1 approvals, ENSv2
- * roles and operator, subregistry roles, and the resolver's approvals or roles for `records`.
+ * Reads the facts for `account` and a loaded name in one batched round: ENSv1 approvals (and a
+ * wrapped subname's parent authority), ENSv2 roles, operator and registry emancipation,
+ * subregistry roles, the registry's implementation when `renew` is among `operations`, and the
+ * resolver's approvals or roles for the record operations.
  */
 export const readPermissionFacts = Effect.fnUntraced(function* (
   client: Client,
   loaded: LoadedName,
   account: Address,
-  records: readonly RecordOperation[],
+  operations: readonly Operation[],
 ): Effect.fn.Return<PermissionFacts, AnyError> {
   const { state, data } = loaded;
+  const records = operations.filter((operation) => typeof operation !== "string");
   const v1 = client.deployment.v1?.contracts;
+  const v2 = client.deployment.v2;
   const labelId = hexToBigInt(data.parts.labelhash);
   const nodeId = hexToBigInt(data.parts.node);
   const read = Rpc.readContractOrUndefined;
@@ -120,7 +142,21 @@ export const readPermissionFacts = Effect.fnUntraced(function* (
   const wrapperOwner = nonZeroAddress(data.v1?.wrapper.owner);
   const registrant = state.registrant;
   const v2Registry = state.protocol === "v2" ? state.registry : null;
+  // Only the deployment's current UserRegistry checks `renew` at the root alone, so the registry's
+  // implementation is read only for a `renew` check below `.eth` on such a deployment.
+  const latestUserRegistry =
+    v2?.capabilities.userRegistryRootRenewal === true &&
+    v2Registry !== null &&
+    !data.parts.isEth2ld &&
+    operations.includes("renew")
+      ? v2.implementations.userRegistry
+      : null;
   const resolver = state.resolver;
+  // Wrapped subnames are extended through the NameWrapper by their parent, or by themselves.
+  const parentNode =
+    v1 !== undefined && state.wrapped && !data.parts.isEth2ld
+      ? namehash(data.parts.name.slice(data.parts.name.indexOf(".") + 1))
+      : null;
 
   const v2PublicResolver = isV2PublicResolver(client, resolver);
   const resolverOwner = resolverOwnerOf(client, loaded);
@@ -183,6 +219,42 @@ export const readPermissionFacts = Effect.fnUntraced(function* (
               functionName: "getApproved",
               args: [nodeId],
             }),
+      parentOwner:
+        v1 === undefined || parentNode === null
+          ? none
+          : read(client, {
+              address: v1.nameWrapper,
+              abi: Abis.v1.nameWrapper,
+              functionName: "ownerOf",
+              args: [hexToBigInt(parentNode)],
+            }),
+      parentApproved:
+        v1 === undefined || parentNode === null
+          ? none
+          : read(client, {
+              address: v1.nameWrapper,
+              abi: Abis.v1.nameWrapper,
+              functionName: "getApproved",
+              args: [hexToBigInt(parentNode)],
+            }),
+      canExtendSubnames:
+        v1 === undefined || parentNode === null
+          ? none
+          : read(client, {
+              address: v1.nameWrapper,
+              abi: Abis.v1.nameWrapper,
+              functionName: "canExtendSubnames",
+              args: [parentNode, account],
+            }),
+      canModifyName:
+        v1 === undefined || parentNode === null
+          ? none
+          : read(client, {
+              address: v1.nameWrapper,
+              abi: Abis.v1.nameWrapper,
+              functionName: "canModifyName",
+              args: [data.parts.node, account],
+            }),
       tokenRoles:
         v2Registry === null || state.resource === null
           ? none
@@ -218,6 +290,18 @@ export const readPermissionFacts = Effect.fnUntraced(function* (
               abi: Abis.v2.permissionedRegistry,
               functionName: "isOnlyAssignee",
               args: [state.tokenId, Roles.registryBitmaps.unemancipated, state.owner],
+            }),
+      implementation:
+        v2Registry === null || latestUserRegistry === null
+          ? none
+          : Rpc.implementation(client, v2Registry),
+      registryEmancipated:
+        v2Registry === null
+          ? none
+          : read(client, {
+              address: v2Registry,
+              abi: Abis.v2.permissionedRegistry,
+              functionName: "isEmancipated",
             }),
       v2Operator:
         v2Registry === null || state.owner === null
@@ -302,11 +386,19 @@ export const readPermissionFacts = Effect.fnUntraced(function* (
       registrarApproved: nonZeroAddress(facts.registrarApproved),
       wrapperOperator: facts.wrapperOperator === true,
       wrapperApproved: nonZeroAddress(facts.wrapperApproved),
+      parentOwner: nonZeroAddress(facts.parentOwner),
+      parentApproved: nonZeroAddress(facts.parentApproved),
+      canExtendSubnames: facts.canExtendSubnames === true,
+      canModifyName: facts.canModifyName === true,
     },
     v2: {
       roles: (facts.tokenRoles ?? 0n) | (facts.rootRoles ?? 0n),
+      rootRoles: facts.rootRoles ?? 0n,
+      rootOnlyRenewal:
+        latestUserRegistry !== null && sameAddress(facts.implementation, latestUserRegistry),
       ownerRoles: facts.ownerRoles ?? 0n,
       ownerOnlyAssignee: facts.ownerOnlyAssignee !== false,
+      registryEmancipated: facts.registryEmancipated !== false,
       operator: facts.v2Operator === true,
       subregistryRoles: state.subregistry === null ? null : (facts.subregistryRoles ?? 0n),
     },
