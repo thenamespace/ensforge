@@ -1,18 +1,8 @@
 ---
 title: How errors work
-description: Learn how ensforge errors are organised into classes and codes, what each one carries, and how to show them to users.
+description: Learn how ensforge errors are grouped into classes and codes, what each error carries, and how to turn one into a message for users.
 keywords:
-  [
-    errors,
-    Errors.hasCode,
-    Errors.describe,
-    ErrorType,
-    EnsforgeError,
-    code,
-    retryable,
-    docsUrl,
-    strict,
-  ]
+  [errors, Errors.hasCode, Errors.describe, ErrorType, EnsforgeError, code, retryable, strict]
 ---
 
 When an ENS call fails, ensforge never hands you a raw contract revert or an RPC message. It
@@ -163,6 +153,7 @@ For the error above, it returns:
 - `severity` is `"info"` for expected outcomes (a declined prompt, a taken name), `"warning"` for
   temporary problems worth retrying, and `"error"` for anything that needs attention.
 - Pass `messages` to replace the copy for some codes, for example to translate it.
+- Every code has copy, including the HCA codes. An unknown code gets a generic message; `describe` never throws.
 
 See [Handle errors](/docs/sdk/handle-errors).
 

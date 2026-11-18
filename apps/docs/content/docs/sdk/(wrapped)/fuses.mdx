@@ -1,6 +1,6 @@
 ---
 title: Lock permissions with fuses
-description: Read and burn Name Wrapper fuses on a name, and emancipate or extend a subname as its parent.
+description: Read and burn Name Wrapper fuses to lock a name's permissions, and emancipate or extend a subname as its parent on ENSv1.
 keywords:
   [
     wrapper.setFuses,
@@ -59,7 +59,7 @@ const ens = Ensforge.create({
   publicClient: createPublicClient({ chain: sepolia, transport: http() }),
 }).extend(ensActions());
 
-const wrapped = await ens.wrapper.getFuses({ name: "ensforge-docs-v1-demo.eth" });
+const wrapped = await ens.wrapper.getFuses({ name: "ensforge-docs-demo.eth" });
 ```
 
 It returns `null` when the name is not wrapped, or is an expired emancipated name. Expired names report no fuses.
@@ -85,7 +85,7 @@ const ens = Ensforge.create({
 }).extend(ensActions());
 
 await ens.wrapper.setFusesSync({
-  name: "ensforge-docs-v1-demo.eth",
+  name: "ensforge-docs-demo.eth",
   fuses: ["cannotUnwrap"],
 });
 ```
@@ -117,7 +117,7 @@ const ens = Ensforge.create({
 }).extend(ensActions());
 
 await ens.wrapper.setChildFusesSync({
-  name: "pay.ensforge-docs-v1-demo.eth",
+  name: "pay.ensforge-docs-demo.eth",
   fuses: ["parentCannotControl"],
   expiry: 1_900_000_000n,
 });

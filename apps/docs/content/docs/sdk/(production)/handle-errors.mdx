@@ -1,6 +1,6 @@
 ---
 title: Handle errors
-description: Catch ensforge's typed errors, show users safe messages with Errors.describe, and retry only what is safe to retry.
+description: Catch ensforge's typed errors, show users safe messages with Errors.describe, and retry only the failures that are safe to retry.
 keywords: [Errors.describe, Errors.hasCode, retryable, error codes, EnsforgeError, error handling]
 ---
 
@@ -71,7 +71,7 @@ const account = "0xA11Ce00000000000000000000000000000000000";
 const ens = Ensforge.create({ publicClient, account }).extend(ensActions());
 
 try {
-  await ens.registration.register({ names: "alice.eth", duration: Duration.years(1) });
+  await ens.registration.register({ names: "ensforge-docs-demo.eth", duration: Duration.years(1) });
 } catch (error) {
   if (Errors.hasCode("NAME_NOT_AVAILABLE", "NAME_RESERVED")(error)) {
     console.log(error.context.name, "cannot be registered");
@@ -87,6 +87,11 @@ Each action also lists the errors it can fail with, as `ErrorType` on its namesp
 (`record.set.ErrorType`). They are narrowed by class, so `switch (error._tag)` is exhaustive over
 the classes an action declares. [Route](/docs/reference/glossary#route) errors, such as `HcaError` from `via: hca()`, are outside
 those unions.
+
+Two codes can come from any action. [`CONTRACT_NOT_DEPLOYED`](/docs/reference/errors/CONTRACT_NOT_DEPLOYED)
+means the chain has no ENS contract at the address the action calls, usually a client on the wrong
+chain. [`INSUFFICIENT_ETH`](/docs/reference/errors/INSUFFICIENT_ETH) means the account cannot pay for a
+write's gas or value. Handle both in one place, next to your other generic errors.
 
 ## 3. Show users a safe message
 
@@ -128,6 +133,10 @@ const copy = Errors.describe(error, {
 ```
 
 An override returns only the fields it changes. The rest fall back to the English copy.
+
+`Errors.describe` has copy for every code, including the HCA codes. For a code it does not know,
+such as one from a newer release, it returns a generic message instead of throwing, so it is safe in
+an error boundary.
 
 ## 4. Decide whether to retry
 

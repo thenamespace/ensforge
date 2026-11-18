@@ -1,7 +1,7 @@
 ---
 title: Ways to call actions
 icon: code
-description: Choose between client methods, standalone actions and the Effect API; all three run the same actions.
+description: Choose between client methods, standalone actions and the Effect API; all three run the same actions with the same errors.
 keywords:
   [
     Actions,
@@ -111,14 +111,14 @@ const url = await Effect.runPromise(
 The three ways above call an action. Actions also carry a few related functions, the same in every
 way of calling.
 
-| Form                          | On         | What it does                                                               |
-| ----------------------------- | ---------- | -------------------------------------------------------------------------- |
-| `action.request(options)`     | Most reads | Describes the read without running it, for `batch` and React's `useReads`. |
-| `action.prepare(options)`     | Writes     | Builds the plan without sending anything.                                  |
-| `action.simulate(options)`    | Writes     | Simulates every call of the plan.                                          |
-| `action.estimateGas(options)` | Writes     | Estimates the gas and ETH the plan needs.                                  |
-| `actionSync(options)`         | Writes     | Sends, then waits for the receipts (`record.setSync`).                     |
-| `action.path`                 | All        | The action's name, such as `"record.get"`, for logs and cache keys.        |
+| Form                          | On         | What it does                                                        |
+| ----------------------------- | ---------- | ------------------------------------------------------------------- |
+| `action.request(options)`     | Most reads | Describes the read without running it, for `Actions.batch`.         |
+| `action.prepare(options)`     | Writes     | Builds the plan without sending anything.                           |
+| `action.simulate(options)`    | Writes     | Simulates every call of the plan.                                   |
+| `action.estimateGas(options)` | Writes     | Estimates the gas and ETH the plan needs.                           |
+| `actionSync(options)`         | Writes     | Sends, then waits for the receipts (`record.setSync`).              |
+| `action.path`                 | All        | The action's name, such as `"record.get"`, for logs and cache keys. |
 
 **Example** (Batching Two Reads With Requests)
 
@@ -154,5 +154,5 @@ See [Look up many at once](/docs/sdk/look-up-many-at-once) and
 
 The three ways share clients and errors, so you can mix them in one app: client methods in UI code,
 standalone actions in a small server function, the Effect API in an Effect service. The React hooks
-in `@ensforge/react` take the same actions, as in `useRead(Actions.record.getText, options)`. See
+in `@ensforge/react` take the action itself, as in `useRead(Actions.record.getText, options)` and `useReads`, not its `.request`. See
 [React](/docs/react).

@@ -1,6 +1,6 @@
 ---
 title: From ensforge 0.x
-description: Move an app from ensforge 0.x (@ensforge/core and the Ensforge class) to the 1.0 client and actions.
+description: Move an app from ensforge 0.x (@ensforge/core and the Ensforge class) to the 1.0 client and actions, with before and after code.
 keywords:
   [migration, 0.x, "@ensforge/core", createConfig, Ensforge class, upgrade, breaking changes]
 ---
@@ -8,6 +8,8 @@ keywords:
 ensforge 1.0 is a new API. Reads and writes are simpler and more uniform, and errors are typed by
 code. This guide maps every 0.x concept to its 1.0 form, with before and after code. The code
 marked `before` is the 0.x API as published in `@ensforge/sdk@0.6.1` and `@ensforge/core@0.6.1`.
+
+Code blocks that mark lines with `[!code --]` and `[!code ++]` are diffs: they show the old and the new line together, so the docs build does not compile them.
 
 ## What changed
 
@@ -38,7 +40,7 @@ Also update `@ensforge/react` and `@ensforge/contracts` to 1.x. The public packa
 The 0.x `network` option is gone. The public client's chain picks the deployment (Ethereum mainnet or
 Sepolia). For another chain, pass `deployment`.
 
-```ts title="client.ts"
+```ts no-check title="client.ts"
 import { Ensforge } from "@ensforge/sdk"; // [!code --]
 import { Ensforge, ensActions } from "@ensforge/sdk"; // [!code ++]
 import { createPublicClient, http } from "viem";
@@ -68,7 +70,7 @@ Other options moved too:
 
 Reads return the value, not a wrapper. A missing value is `null`.
 
-```ts title="reads.ts"
+```ts no-check title="reads.ts"
 const { address } = await sdk.records.getAddress({ name: "nick.eth" }); // [!code --]
 const address = await ens.record.getAddress({ name: "nick.eth" }); // [!code ++]
 
@@ -94,7 +96,7 @@ const primary = await ens.primaryName.get({ address }); // [!code ++]
 `{ status: "success", result }` or `{ status: "failure", error }` by default. `readBatchSettled`
 returned `{ status, value }` outcomes; 1.0 names the field `result`.
 
-```ts title="batch.ts"
+```ts no-check title="batch.ts"
 const profile = await sdk.batch.readBatch({
   // [!code --]
   owner: sdk.name.getOwner.request({ name: "nick.eth" }), // [!code --]
@@ -116,12 +118,16 @@ One `record.set` replaces the setters. 0.x writes waited for the receipt by defa
 (`confirmation: { type: "confirmed" }`). 1.0 writes resolve once submitted. Use `…Sync` to wait for
 the receipt, as the examples below do.
 
-```ts title="writes.ts"
-await sdk.records.setText({ name: "alice.eth", key: "url", value: "https://alice.dev" }); // [!code --]
-await ens.record.setSync({ name: "alice.eth", texts: { url: "https://alice.dev" } }); // [!code ++]
+```ts no-check title="writes.ts"
+await sdk.records.setText({
+  name: "ensforge-docs-demo.eth",
+  key: "url",
+  value: "https://example.com",
+}); // [!code --]
+await ens.record.setSync({ name: "ensforge-docs-demo.eth", texts: { url: "https://example.com" } }); // [!code ++]
 
-await sdk.records.setAddress({ name: "alice.eth", coinType: 60n, address }); // [!code --]
-await ens.record.setSync({ name: "alice.eth", addresses: { eth: address } }); // [!code ++]
+await sdk.records.setAddress({ name: "ensforge-docs-demo.eth", coinType: 60n, address }); // [!code --]
+await ens.record.setSync({ name: "ensforge-docs-demo.eth", addresses: { eth: address } }); // [!code ++]
 ```
 
 See [Set records](/docs/sdk/set-records) and [Send a transaction](/docs/sdk/send-a-transaction).
@@ -165,7 +171,7 @@ exists.
 codes (`CONTRACT_REVERTED`, `NOT_OWNER`, `RECORD_NOT_FOUND`) that Promise and Effect users receive as
 the same instance.
 
-```ts title="errors.ts"
+```ts no-check title="errors.ts"
 if (error._tag === "ContractError" && error.code === "REVERTED") {
   /* … */
 } // [!code --]
@@ -179,7 +185,7 @@ Each action now documents its errors, and `Errors.describe` gives user-safe copy
 
 ## 6. wagmi
 
-```ts title="wagmi.ts"
+```ts no-check title="wagmi.ts"
 import { createEnsforge } from "@ensforge/sdk/wagmi"; // [!code --]
 import { Ensforge } from "@ensforge/sdk/wagmi"; // [!code ++]
 import { ensActions } from "@ensforge/sdk"; // [!code ++]

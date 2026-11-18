@@ -1,6 +1,6 @@
 ---
 title: Pay gas for users
-description: Sponsor a write's gas with an EIP-5792 paymaster service, or through an HCA bundler.
+description: Sponsor the gas of a write with an EIP-5792 paymaster service, or through an HCA bundler, so users do not need ETH for fees.
 keywords: [paymaster, paymasterService, sponsor, gasless, EIP-5792, gas]
 ---
 
@@ -40,8 +40,8 @@ const [account] = await walletClient.requestAddresses();
 const ens = Ensforge.create({ publicClient, walletClient, account }).extend(ensActions());
 
 const { id } = await ens.record.set({
-  name: "alice.eth",
-  texts: { url: "https://alice.dev" },
+  name: "ensforge-docs-demo.eth",
+  texts: { url: "https://example.com" },
   paymaster: {
     url: "https://paymaster.example.com/rpc",
     context: { policyId: "ens-profile-updates" },

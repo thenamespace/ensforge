@@ -1,20 +1,7 @@
 ---
 title: Names and records
-description: Learn what an ENS name is, who holds it, and what records it can carry, in plain words.
-keywords:
-  [
-    ENS name,
-    label,
-    TLD,
-    subname,
-    resolver,
-    text record,
-    address record,
-    coin type,
-    content hash,
-    primary name,
-    ENSIP-15,
-  ]
+description: Learn what an ENS name is, who can hold it, and which records it can carry, such as addresses, text, avatars and content hashes.
+keywords: [ENS name, label, subname, resolver, text record, coin type, content hash, ENSIP-15]
 ---
 
 ENS, the Ethereum Name Service, maps human-readable names such as `nick.eth` to data: addresses on
@@ -67,9 +54,9 @@ resolver stores the records and answers questions about them.
 ```mermaid
 flowchart LR
   N["nick.eth"] -->|registry points to| R[Resolver]
-  R --> T["Text records: url, avatar, com.github"]
-  R --> A["Addresses: Ethereum, Bitcoin, Base, ..."]
-  R --> C["Content hash: website"]
+  R -->|stores| T["Text records: url, avatar, com.github"]
+  R -->|stores| A["Addresses: Ethereum, Bitcoin, Base, ..."]
+  R -->|stores| C["Content hash: website"]
 ```
 
 Most names use a public resolver that ENS deploys, so any owner can store records there. Some

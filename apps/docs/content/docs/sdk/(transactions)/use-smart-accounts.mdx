@@ -1,6 +1,6 @@
 ---
 title: Use smart accounts
-description: Send writes from a smart-contract wallet, or route them through an ENS Hosted Contract Account with via.
+description: Send writes from a smart-contract wallet, or route them through an ENS Hosted Contract Account (HCA) with the via option.
 keywords: [smart account, via, route, HCA, EIP-7702, EIP-5792, account abstraction]
 ---
 
@@ -55,7 +55,10 @@ const ens = Ensforge.create({ publicClient, walletClient, account })
   .extend(ensActions())
   .extend(hcaActions());
 
-await ens.migration.migrateSync({ names: ["alice.eth", "bob.eth"], via: hca() });
+await ens.migration.migrateSync({
+  names: ["ensforge-docs-demo.eth", "ensforge-docs-demo-2.eth"],
+  via: hca(),
+});
 ```
 
 - `hcaActions()` adds `ens.hca.*`, such as `ens.hca.get()` to read the account.

@@ -1,6 +1,6 @@
 ---
 title: From viem's ENS actions
-description: Replace viem's getEnsAddress, getEnsName, getEnsAvatar, getEnsText and getEnsResolver with ensforge actions.
+description: Replace viem's getEnsAddress, getEnsName, getEnsAvatar, getEnsText and getEnsResolver with ensforge actions, and see what changes.
 keywords:
   [viem, getEnsAddress, getEnsName, getEnsAvatar, getEnsText, getEnsResolver, normalize, migration]
 ---
@@ -8,6 +8,8 @@ keywords:
 ensforge is built on viem and takes viem clients, so you can move one call at a time. viem's ENS
 actions cover reads. ensforge adds the same reads with typed errors, plus records in one call,
 lists, and every write. You keep your viem transports and wallet.
+
+Code blocks that mark lines with `[!code --]` and `[!code ++]` are diffs: they show the old and the new line together, so the docs build does not compile them.
 
 ## Prerequisites
 
@@ -19,7 +21,7 @@ lists, and every write. You keep your viem transports and wallet.
 Every ensforge action takes a client first, and a viem public client is accepted as it is. You do
 not have to create an ensforge client to replace a read.
 
-```ts title="addresses.ts"
+```ts no-check title="addresses.ts"
 import { getEnsAddress } from "viem/actions"; // [!code --]
 import { Actions } from "@ensforge/sdk"; // [!code ++]
 import { normalize } from "viem/ens"; // [!code --]
@@ -55,7 +57,7 @@ const address = await Actions.record.getAddress(publicClient, { name: "nick.eth"
 
 These ensforge reads also take `blockNumber` or `blockTag`, `gatewayUrls`, `strict` and `signal`.
 
-```ts title="reads.ts"
+```ts no-check title="reads.ts"
 const name = await getEnsName(publicClient, { address }); // [!code --]
 const name = await Actions.primaryName.get(publicClient, { address }); // [!code ++]
 

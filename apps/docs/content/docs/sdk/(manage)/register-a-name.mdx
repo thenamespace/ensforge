@@ -1,6 +1,6 @@
 ---
 title: Register a name
-description: Register a .eth name with the commit, wait and register flow, optionally with records and a primary name.
+description: Register a .eth name with the commit, wait and register flow, optionally with records and a primary name, and resume it if it stops.
 keywords: [registration.register, registerSync, commit, commitment, secret, ETHRegistrar, USDC]
 ---
 
@@ -16,19 +16,26 @@ ensforge runs the whole flow as one [plan](/docs/reference/glossary#plan). Every
 
 ## How the flow works
 
-The plan has up to five steps. The wait is measured in chain time, so ensforge cannot skip it.
+A registration is a commit, a wait and a register, followed by optional steps. The plan has up to six
+steps. The wait is measured in chain time, so ensforge cannot skip it. In the diagram, your app asks the
+wallet to sign, and the wallet sends each transaction to the registrar.
 
 ```mermaid
 sequenceDiagram
-  participant You as Your app
+  participant App as Your app
   participant W as Wallet
   participant R as Registrar
-  You->>W: approve payment and commit
-  W->>R: commit
-  Note over You,R: wait for the commitment age (at least a minute)
-  You->>W: register
-  W->>R: register
-  You->>W: set records and primary name
+  App->>W: sign the commit step
+  activate W
+  W->>R: commit(commitment)
+  deactivate W
+  Note over App,R: the commitment must age (at least a minute of chain time)
+  App->>W: sign the register step
+  activate W
+  W->>R: register(name, owner, duration)
+  deactivate W
+  App->>W: sign the records and primary name steps, if you asked for them
+  W->>R: set records and primary name
 ```
 
 | Step id       | What it sends                                                                          |

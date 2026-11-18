@@ -1,19 +1,7 @@
 ---
 title: Who can change a name
 description: Learn how owners, approved accounts, managers and roles decide who may change a name, and how ensforge answers it in one call.
-keywords:
-  [
-    owner,
-    manager,
-    registrant,
-    operator,
-    delegate,
-    roles,
-    permissions,
-    permission.get,
-    permission.check,
-    fuses,
-  ]
+keywords: [owner, manager, registrant, roles, permissions, permission.get, permission.check, fuses]
 ---
 
 Every change to a name, from editing a record to creating a subname, is checked by a contract
@@ -54,7 +42,7 @@ and subnames. The registrant can always take management back.
 
 ```mermaid
 flowchart TD
-  R[Registrant] -->|holds the registration, can reclaim| N["alice.eth"]
+  R[Registrant] -->|holds the registration, can reclaim| N["ensforge-docs-demo.eth"]
   M[Manager] -->|sets resolver, records, subnames| N
 ```
 
@@ -74,7 +62,7 @@ resolver. Each role has an admin role that may grant and revoke it.
 flowchart LR
   O[Owner] -->|grants setText, setAddr| E[Editor account]
   O -->|grants setResolver| T[Team multisig]
-  E -->|can edit records only| N["alice.eth"]
+  E -->|can edit records only| N["ensforge-docs-demo.eth"]
   T -->|can change the resolver| N
 ```
 

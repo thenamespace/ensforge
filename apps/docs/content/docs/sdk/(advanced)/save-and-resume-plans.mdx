@@ -1,6 +1,6 @@
 ---
 title: Save and resume plans
-description: Keep plan progress in browser storage or your own database so a write survives reloads and restarts.
+description: Keep plan progress in browser storage or your own database, so a multi-step write survives reloads, crashes and restarts.
 keywords:
   [
     Plan.Storage,
@@ -8,7 +8,8 @@ keywords:
     Plan.memoryStorage,
     Plan.serialize,
     Plan.deserialize,
-    storage,
+    Plan.deserializeRecord,
+    PLAN_INVALID,
     resume,
   ]
 ---
@@ -91,8 +92,8 @@ for (const record of unfinished) {
 ## Write your own store
 
 A store implements four Promise functions: `get`, `set`, `delete` and `list`. It holds `Plan.Record`
-values, which contain `bigint`s, so a store that writes JSON needs a bigint-safe encoding.
-`Plan.serialize` and `Plan.deserialize` give one for the plan inside the record.
+values, which contain `bigint`s, so a store that writes text needs a bigint-safe encoding.
+`Plan.serialize` turns a record into text and `Plan.deserializeRecord` reads it back.
 
 **Example** (A Key-Value Store)
 
@@ -106,43 +107,33 @@ type KeyValue = {
   keys(prefix: string): Promise<string[]>;
 };
 
-export const kvStorage = (kv: KeyValue, prefix = "ensforge:plan:"): Plan.Storage => {
-  const read = (text: string): Plan.Record => {
-    const row: Omit<Plan.Record, "plan"> & { plan: string } = JSON.parse(text);
-    return { ...row, plan: Plan.deserialize(row.plan) };
-  };
-
-  return {
-    get: async (id) => {
-      const text = await kv.get(prefix + id);
-      return text === null ? undefined : read(text);
-    },
-    set: async (record) => {
-      const row = { ...record, plan: Plan.serialize(record.plan) };
-      await kv.put(prefix + record.plan.id, JSON.stringify(row));
-    },
-    delete: (id) => kv.delete(prefix + id),
-    list: async () => {
-      const keys = await kv.keys(prefix);
-      const texts = await Promise.all(keys.map((key) => kv.get(key)));
-      return texts.flatMap((text) => (text === null ? [] : [read(text)]));
-    },
-  };
-};
+export const kvStorage = (kv: KeyValue, prefix = "ensforge:plan:"): Plan.Storage => ({
+  get: async (id) => {
+    const text = await kv.get(prefix + id);
+    return text === null ? undefined : Plan.deserializeRecord(text);
+  },
+  set: (record) => kv.put(prefix + record.plan.id, Plan.serialize(record)),
+  delete: (id) => kv.delete(prefix + id),
+  list: async () => {
+    const keys = await kv.keys(prefix);
+    const texts = await Promise.all(keys.map((key) => kv.get(key)));
+    return texts.flatMap((text) => (text === null ? [] : [Plan.deserializeRecord(text)]));
+  },
+});
 ```
 
-- `set` stores the plan as `Plan.serialize` text, which keeps bigints exact, and the other fields as
-  plain JSON.
+- `set` stores the whole record as `Plan.serialize` text, which keeps bigints exact.
 - `get` returns `undefined` for an unknown id. `plan.get` reports it as `null`.
 - `list` returns every record.
+- `Plan.deserializeRecord` throws [`PLAN_INVALID`](/docs/reference/errors/PLAN_INVALID) when the text is not a serialised record.
 
-A store that keeps objects without JSON, such as IndexedDB or an in-process `Map`, needs none of
+A store that keeps objects without text, such as IndexedDB or an in-process `Map`, needs none of
 this.
 
 ## Serialise a plan
 
 Plans are plain data. `Plan.serialize` turns a plan or a record into JSON text with bigints
-preserved, and `Plan.deserialize` reads a plan back. Use them to send a prepared plan to another
+preserved. `Plan.deserialize` reads a plan back and `Plan.deserializeRecord` reads a record back. Use them to send a prepared plan to another
 service, for review or signing elsewhere.
 
 **Example** (Sending a Plan to Another Process)
@@ -157,8 +148,8 @@ const account = "0x225f137127d9067788314bc7fcc1f36746a3c3B5";
 const ens = Ensforge.create({ publicClient, account }).extend(ensActions());
 
 const plan = await ens.record.set.prepare({
-  name: "alice.eth",
-  texts: { url: "https://alice.dev" },
+  name: "ensforge-docs-demo.eth",
+  texts: { url: "https://example.com" },
 });
 
 const text = Plan.serialize(plan);
@@ -184,6 +175,12 @@ The store has no plan with that id. With the default memory store, plans are los
 ### `localStorage is not available in this environment`
 
 `Plan.localStorage()` ran where there is no `localStorage`. Use a custom store on the server.
+
+### `PLAN_INVALID`
+
+The stored text is not a serialised plan or record. `Plan.localStorage()` rejects a broken record
+with this error instead of returning bad data. Delete the entry, or clear the storage key. See
+[`PLAN_INVALID`](/docs/reference/errors/PLAN_INVALID).
 
 ### Plans from two tabs overwrite each other
 

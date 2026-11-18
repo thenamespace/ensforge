@@ -1,6 +1,6 @@
 ---
 title: Wrap and unwrap a name
-description: Wrap an ENSv1 name in the Name Wrapper, optionally burning fuses, and unwrap it again.
+description: Wrap an ENSv1 name in the Name Wrapper, optionally burning fuses on the way, and unwrap it again when you need the registry back.
 keywords: [wrapper.wrap, wrapper.unwrap, NameWrapper, NAME_WRAPPED, NAME_NOT_WRAPPED, cannotUnwrap]
 ---
 
@@ -31,7 +31,7 @@ const ens = Ensforge.create({
   walletClient: createWalletClient({ account, chain: sepolia, transport }),
 }).extend(ensActions());
 
-const { hash } = await ens.wrapper.wrapSync({ name: "ensforge-docs-v1-demo.eth" });
+const { hash } = await ens.wrapper.wrapSync({ name: "ensforge-docs-demo.eth" });
 ```
 
 | Option     | Type          | Default                             | Description                                                   |
@@ -67,7 +67,7 @@ const ens = Ensforge.create({
   walletClient: createWalletClient({ account, chain: sepolia, transport }),
 }).extend(ensActions());
 
-await ens.wrapper.unwrapSync({ name: "ensforge-docs-v1-demo.eth" });
+await ens.wrapper.unwrapSync({ name: "ensforge-docs-demo.eth" });
 ```
 
 <Callout type="warn" title="A locked name cannot be unwrapped">

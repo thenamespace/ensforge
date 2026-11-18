@@ -1,6 +1,6 @@
 ---
 title: Preview before sending
-description: Build, simulate and price a write without sending it, then send the exact plan you reviewed.
+description: Build, simulate and price a write without sending it, then send the exact plan you reviewed, for confirm screens and dry runs.
 keywords: [prepare, simulate, estimateGas, plan, dry run, gas]
 ---
 
@@ -31,8 +31,8 @@ const account = "0xA11Ce00000000000000000000000000000000000"; // the account tha
 const ens = Ensforge.create({ publicClient, account }).extend(ensActions());
 
 const plan = await ens.record.set.prepare({
-  name: "alice.eth",
-  texts: { url: "https://alice.dev" },
+  name: "ensforge-docs-demo.eth",
+  texts: { url: "https://example.com" },
 });
 
 plan.steps.map((step) => step.description);
@@ -69,8 +69,8 @@ const account = "0xA11Ce00000000000000000000000000000000000"; // the account tha
 const ens = Ensforge.create({ publicClient, account }).extend(ensActions());
 
 const simulation = await ens.record.set.simulate({
-  name: "alice.eth",
-  texts: { url: "https://alice.dev" },
+  name: "ensforge-docs-demo.eth",
+  texts: { url: "https://example.com" },
 });
 
 if (!simulation.ok) {
@@ -110,8 +110,8 @@ const account = "0xA11Ce00000000000000000000000000000000000"; // the account tha
 const ens = Ensforge.create({ publicClient, account }).extend(ensActions());
 
 const { gas, value } = await ens.record.set.estimateGas({
-  name: "alice.eth",
-  texts: { url: "https://alice.dev" },
+  name: "ensforge-docs-demo.eth",
+  texts: { url: "https://example.com" },
 });
 
 const gasPrice = await publicClient.getGasPrice();
@@ -148,8 +148,8 @@ const [account] = await walletClient.requestAddresses();
 const ens = Ensforge.create({ publicClient, walletClient, account }).extend(ensActions());
 
 const plan = await ens.record.set.prepare({
-  name: "alice.eth",
-  texts: { url: "https://alice.dev" },
+  name: "ensforge-docs-demo.eth",
+  texts: { url: "https://example.com" },
 });
 
 const approved = window.confirm(`Send ${plan.calls.length} call(s)?`);

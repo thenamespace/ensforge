@@ -1,7 +1,7 @@
 ---
 title: Quick start
 icon: rocket
-description: Read your first ENS name in under five minutes, then send your first write on Sepolia.
+description: Install ensforge, read your first ENS name in under five minutes, then preview and send your first write on the Sepolia test network.
 keywords: [quick start, getting started, record.getAddress, batch, record.setSync, Sepolia]
 ---
 
@@ -148,7 +148,7 @@ export PRIVATE_KEY=0x...
 ## 6. Preview the write
 
 Add a wallet client to a Sepolia client, then ask ensforge to plan a text record change without
-sending it. Replace `your-name.eth` with your Sepolia name.
+sending it. Replace `ensforge-docs-demo.eth` with your Sepolia name.
 
 **Example** (Planning a Write on Sepolia)
 
@@ -165,7 +165,7 @@ const ens = Ensforge.create({
   walletClient: createWalletClient({ account, chain: sepolia, transport: http() }),
 }).extend(ensActions());
 
-const records = { name: "your-name.eth", texts: { url: "https://example.com" } };
+const records = { name: "ensforge-docs-demo.eth", texts: { url: "https://example.com" } };
 
 const plan = await ens.record.set.prepare(records);
 console.log(plan.steps.map((step) => step.description));
@@ -202,11 +202,11 @@ const ens = Ensforge.create({
   walletClient: createWalletClient({ account, chain: sepolia, transport: http() }),
 }).extend(ensActions());
 
-const records = { name: "your-name.eth", texts: { url: "https://example.com" } };
+const records = { name: "ensforge-docs-demo.eth", texts: { url: "https://example.com" } };
 const { hash } = await ens.record.setSync(records);
 console.log("Mined:", hash);
 
-console.log(await ens.record.getText({ name: "your-name.eth", key: "url" }));
+console.log(await ens.record.getText({ name: "ensforge-docs-demo.eth", key: "url" }));
 ```
 
 ```text title="Output"

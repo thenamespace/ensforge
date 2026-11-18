@@ -1,6 +1,6 @@
 ---
 title: Send a transaction
-description: Send any ensforge write with a wallet client, then wait for its receipt when the next step needs it.
+description: Send any ensforge write with a wallet client, read the transaction hash, and wait for the receipt when the next step needs it.
 keywords: [wallet client, write, receipt, confirmations, setSync, onStep]
 ---
 
@@ -10,7 +10,7 @@ the same way. You pass a wallet, call the action, and read the transaction hash 
 ## Prerequisites
 
 - A client that can read and sign. See [Create a client](/docs/sdk/create-a-client).
-- A name your account may change. Examples use Sepolia and the placeholder `alice.eth`; replace it
+- A name your account may change. Examples use Sepolia and the name `ensforge-docs-demo.eth`; replace it
   with a name you own.
 
 ## 1. Create a client with a wallet
@@ -71,8 +71,8 @@ const [account] = await walletClient.requestAddresses();
 const ens = Ensforge.create({ publicClient, walletClient, account }).extend(ensActions());
 
 const { hash, hashes, plan } = await ens.record.set({
-  name: "alice.eth",
-  texts: { url: "https://alice.dev" },
+  name: "ensforge-docs-demo.eth",
+  texts: { url: "https://example.com" },
 });
 ```
 
@@ -112,8 +112,8 @@ const [account] = await walletClient.requestAddresses();
 const ens = Ensforge.create({ publicClient, walletClient, account }).extend(ensActions());
 
 const { receipt, receipts } = await ens.record.setSync({
-  name: "alice.eth",
-  texts: { url: "https://alice.dev" },
+  name: "ensforge-docs-demo.eth",
+  texts: { url: "https://example.com" },
   confirmations: 2,
   timeout: 120_000,
 });
@@ -153,8 +153,8 @@ const [account] = await walletClient.requestAddresses();
 const ens = Ensforge.create({ publicClient, walletClient, account }).extend(ensActions());
 
 await ens.record.setSync({
-  name: "alice.eth",
-  texts: { url: "https://alice.dev" },
+  name: "ensforge-docs-demo.eth",
+  texts: { url: "https://example.com" },
   onStep: ({ step, status, hashes }) => {
     console.log(step.description, status, hashes);
   },
@@ -196,7 +196,7 @@ import { sepolia } from "viem/chains";
 const publicClient = createPublicClient({ chain: sepolia, transport: http() });
 const ens = Ensforge.create({ publicClient }).extend(ensActions());
 
-const url = await ens.record.getText({ name: "alice.eth", key: "url" });
+const url = await ens.record.getText({ name: "ensforge-docs-demo.eth", key: "url" });
 ```
 
 ## Troubleshooting
@@ -220,5 +220,16 @@ a failure. See [`USER_REJECTED`](/docs/reference/errors/USER_REJECTED).
 
 `setSync` stopped waiting, but the transaction may still be pending. Check the hash before you
 send again. See [`RECEIPT_TIMEOUT`](/docs/reference/errors/RECEIPT_TIMEOUT).
+
+### `INSUFFICIENT_ETH`
+
+The account cannot pay for the gas or value of a step. Every write can fail this way. Fund the
+account, or sponsor the gas with a [paymaster](/docs/sdk/pay-gas-for-users). See
+[`INSUFFICIENT_ETH`](/docs/reference/errors/INSUFFICIENT_ETH).
+
+### `CONTRACT_NOT_DEPLOYED`
+
+The chain has no ENS contract at an address the write calls. Every action can fail this way when the
+client is on the wrong chain. See [`CONTRACT_NOT_DEPLOYED`](/docs/reference/errors/CONTRACT_NOT_DEPLOYED).
 
 For the rest of the codes and when a retry is safe, see [Handle errors](/docs/sdk/handle-errors).

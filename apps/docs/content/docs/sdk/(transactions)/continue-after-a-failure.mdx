@@ -1,6 +1,6 @@
 ---
 title: Continue after a failure
-description: Resume a multi-step write that stopped part-way, without sending the finished steps again.
+description: Resume a multi-step write that stopped part-way with plan.resume, without sending the steps that already finished a second time.
 keywords: [plan.resume, resume, plan id, storage, registration, recovery]
 ---
 
@@ -55,7 +55,7 @@ const ens = Ensforge.create({ publicClient, walletClient, account }).extend(ensA
 
 let planId: string | undefined;
 try {
-  await ens.registration.register({ names: "alice.eth", duration: Duration.years(1) });
+  await ens.registration.register({ names: "ensforge-docs-demo.eth", duration: Duration.years(1) });
 } catch (error) {
   if (Errors.is(error)) planId = error.context.planId;
 }

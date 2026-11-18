@@ -1,8 +1,7 @@
 ---
 title: Name lists and indexers
-description: Learn why lists, search and history come from an indexer instead of the chain, and how ensforge connects to one.
-keywords:
-  [indexer, bigname, Goldsky, fallback, indexerActions, paginate, completeness, snapshot, Basenames]
+description: Learn why name lists, search and history come from an indexer instead of the chain, and how ensforge connects to one for you.
+keywords: [indexer, bigname, Goldsky, fallback, indexerActions, paginate, completeness, snapshot]
 ---
 
 The chain answers questions about one name well: its owner, its resolver, its records. It cannot
@@ -29,7 +28,7 @@ flowchart LR
   C[Ethereum and L2s] -->|events| I[Indexer database]
   C -->|direct reads| S[ensforge]
   I -->|lists, search, history| S
-  S --> A[Your app]
+  S -->|answers| A[Your app]
 ```
 
 ## Connect an indexer

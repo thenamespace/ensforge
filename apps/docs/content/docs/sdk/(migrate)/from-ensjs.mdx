@@ -1,6 +1,6 @@
 ---
 title: From ensjs
-description: Replace ensjs (@ensdomains/ensjs) public, wallet and subgraph actions with ensforge actions.
+description: Replace ensjs (@ensdomains/ensjs) public, wallet and subgraph actions with ensforge actions, with before and after code for each one.
 keywords:
   [ensjs, "@ensdomains/ensjs", addEnsContracts, getAddressRecord, getRecords, subgraph, migration]
 ---
@@ -9,6 +9,8 @@ ensjs and ensforge are both action libraries on top of viem, so the move is most
 differences are that ensforge needs no chain wrapper, routes between [ENSv1](/docs/reference/glossary#ensv1) and [ENSv2](/docs/reference/glossary#ensv2) for you, has
 one `record.set` for all record writes, and fails with typed errors. This guide maps the ensjs
 5.x actions.
+
+Code blocks that mark lines with `[!code --]` and `[!code ++]` are diffs: they show the old and the new line together, so the docs build does not compile them.
 
 ## Prerequisites
 
@@ -20,7 +22,7 @@ one `record.set` for all record writes, and fails with typed errors. This guide 
 ensjs needs `addEnsContracts(chain)` so the viem chain knows the ENS addresses. ensforge picks the
 deployment from the chain ID (Ethereum mainnet and Sepolia), so the chain stays a plain viem chain.
 
-```ts title="client.ts"
+```ts no-check title="client.ts"
 import { addEnsContracts } from "@ensdomains/ensjs"; // [!code --]
 import { Ensforge, ensActions } from "@ensforge/sdk"; // [!code ++]
 import { createPublicClient, http } from "viem";
@@ -39,7 +41,7 @@ what they were. See [Ways to call actions](/docs/sdk/ways-to-call-actions).
 
 ensjs read results are objects with a `value`, or `null`. ensforge returns the value.
 
-```ts title="reads.ts"
+```ts no-check title="reads.ts"
 import { getAddressRecord, getName, getTextRecord } from "@ensdomains/ensjs/public"; // [!code --]
 
 const record = await getAddressRecord(client, { name: "nick.eth" }); // [!code --]
@@ -82,7 +84,7 @@ You do not pick `public/v1` or `public/v2`. ensforge finds which version a name 
 the fields you asked for. ensjs returns `texts` as an array of `{ key, value }`. ensforge returns an
 object keyed by the text key.
 
-```ts title="records.ts"
+```ts no-check title="records.ts"
 const records = await getRecords(client, {
   name: "ens.eth",
   texts: ["com.twitter", "avatar"],
@@ -104,14 +106,14 @@ ensjs has one write per record kind (`setTextRecord`, `setAddressRecord`, `setCo
 ensforge has [`record.set`](/docs/reference/sdk/record/set) for all of them, and sends with
 the wallet you gave the client.
 
-```ts title="writes.ts"
+```ts no-check title="writes.ts"
 await setTextRecord(walletClient, {
-  name: "alice.eth",
+  name: "ensforge-docs-demo.eth",
   key: "url",
-  value: "https://alice.dev",
+  value: "https://example.com",
   resolverAddress,
 }); // [!code --]
-await ens.record.setSync({ name: "alice.eth", texts: { url: "https://alice.dev" } }); // [!code ++]
+await ens.record.setSync({ name: "ensforge-docs-demo.eth", texts: { url: "https://example.com" } }); // [!code ++]
 ```
 
 ensforge reads the name's resolver itself, so you do not pass `resolverAddress`. Writes resolve when

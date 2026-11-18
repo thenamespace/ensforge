@@ -1,6 +1,6 @@
 ---
 title: Registries and subregistries
-description: Inspect, deploy, attach and upgrade the ENSv2 registries that hold a name's children.
+description: Inspect, deploy, attach and upgrade the ENSv2 registries and subregistries that hold the children of a name, with role checks.
 keywords:
   [
     registry.get,
@@ -25,8 +25,8 @@ A registry holds the names directly under it. Each name points to a subregistry 
 ```mermaid
 flowchart TD
   R[root registry] -->|eth| E[.eth registry]
-  E -->|alice| U[alice.eth subregistry]
-  U -->|pay| C[pay.alice.eth]
+  E -->|ensforge-docs-demo| U[ensforge-docs-demo.eth subregistry]
+  U -->|pay| C[pay.ensforge-docs-demo.eth]
 ```
 
 | `kind`    | What the registry is                                                                                                    |

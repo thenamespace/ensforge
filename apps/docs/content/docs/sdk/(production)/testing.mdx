@@ -1,6 +1,6 @@
 ---
 title: Test your integration
-description: Test code that uses ensforge against a local anvil fork, with test doubles for indexers, storage and errors.
+description: Test code that uses ensforge against a local anvil fork, with test doubles for indexers, plan storage and typed errors in unit tests.
 keywords: [testing, anvil, fork, impersonateAccount, defineIndexer, memoryStorage, vitest]
 ---
 
@@ -113,7 +113,7 @@ const ens = Ensforge.create({
 }).extend(ensActions());
 
 await ens.registration.registerSync({
-  names: "my-test-name.eth",
+  names: "ensforge-docs-demo.eth",
   duration: Duration.years(1),
   onStep: async ({ status, step }) => {
     if (status !== "waiting" || step.waitFor === undefined) return;
@@ -143,7 +143,7 @@ import { Errors } from "@ensforge/sdk";
 
 const error = new Errors.NotFoundError({
   code: "RECORD_NOT_FOUND",
-  context: { name: "alice.eth" },
+  context: { name: "ensforge-docs-demo.eth" },
 });
 
 Errors.describe(error).title;

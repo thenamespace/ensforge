@@ -1,7 +1,7 @@
 ---
 title: Create a client
 icon: plug
-description: Create an ensforge client from viem clients or a wagmi config, add the actions you need, and set its options.
+description: Create an ensforge client from viem clients or a wagmi config, add the actions you need, and set options such as indexer and storage.
 keywords: [Ensforge.create, extend, ensActions, indexerActions, fromWagmi, CreateOptions, client]
 ---
 
@@ -182,7 +182,7 @@ const ens = Ensforge.create({
   },
 }).extend(ensActions());
 
-await ens.primaryName.set({ name: "alice.eth", coin: { chainId: base.id } });
+await ens.primaryName.set({ name: "ensforge-docs-demo.eth", coin: { chainId: base.id } });
 ```
 
 Each key of `chains` must match the chain of its clients. A mismatch fails at creation with

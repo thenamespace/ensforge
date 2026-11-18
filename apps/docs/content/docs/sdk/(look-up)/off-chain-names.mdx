@@ -1,8 +1,7 @@
 ---
 title: Look up off-chain names
-description: Read records of names whose data lives off-chain, and control the gateways ensforge asks.
-keywords:
-  [CCIP-Read, EIP-3668, off-chain, gateway, ccipRead, gatewayUrls, wildcard, ENSIP-10, Basenames]
+description: Read records of names whose data lives off-chain (CCIP-Read, EIP-3668), such as Basenames, and choose which gateways ensforge asks.
+keywords: [CCIP-Read, EIP-3668, off-chain, gateway, ccipRead, gatewayUrls, ENSIP-10, Basenames]
 ---
 
 By the end of this guide you can read the records of an **off-chain name** (a name whose records are not stored on Ethereum, but served by a **gateway**) with the same calls you use for any other name, and configure or turn off the gateway lookup ([CCIP-Read](/docs/reference/glossary#ccip-read)).
@@ -64,6 +63,8 @@ ensforge only follows a lookup that the resolver it called asked for. If a resol
 
 The Universal Resolver sends off-chain lookups through a batch gateway, which collects them and forwards each one to the resolver's own gateway. By default, ensforge uses the Universal Resolver's own batch gateway. To use batch gateways you choose, set `ccipRead` when you create the client, or `gatewayUrls` on one call. The resolver's own gateway is set by the resolver and cannot be changed.
 
+`x-batch-gateway:true` makes viem answer the batch itself. A URL works too, for a batch gateway you run. See [Configure RPC and gateways](/docs/sdk/rpc-and-gateways#set-off-chain-lookup-gateways).
+
 **Example** (Setting Batch Gateways)
 
 ```ts title="gateways.ts"
@@ -76,13 +77,13 @@ const publicClient = createPublicClient({ chain: mainnet, transport: http() });
 // For every call made with this client.
 const ens = Ensforge.create({
   publicClient,
-  ccipRead: { gatewayUrls: ["https://ccip.example.com"] },
+  ccipRead: { gatewayUrls: ["x-batch-gateway:true"] },
 }).extend(ensActions());
 
 // For one call only.
 const address = await ens.record.getAddress({
   name: "jesse.base.eth",
-  gatewayUrls: ["https://ccip.example.com"],
+  gatewayUrls: ["x-batch-gateway:true"],
 });
 ```
 

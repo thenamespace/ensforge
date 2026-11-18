@@ -1,21 +1,7 @@
 ---
 title: How writes work
-description: Learn how ensforge turns every write into a plan it checks, simulates, sends in steps and can resume after a failure.
-keywords:
-  [
-    plan,
-    prepare,
-    simulate,
-    estimateGas,
-    Sync,
-    steps,
-    onStep,
-    EIP-5792,
-    bundle,
-    plan.resume,
-    Plan.merge,
-    storage,
-  ]
+description: Learn how ensforge turns every write into a plan that it checks, simulates, sends in steps and can resume after a failure.
+keywords: [plan, prepare, simulate, estimateGas, Sync, onStep, EIP-5792, plan.resume]
 ---
 
 A **write** changes ENS: it sets [records](/docs/reference/glossary#record), registers or transfers a name, creates a subname. Writes
@@ -74,7 +60,7 @@ const ens = Ensforge.create({
   walletClient: createWalletClient({ chain: sepolia, transport: custom(provider) }),
 }).extend(ensActions());
 
-const options = { name: "alice.eth", texts: { url: "https://alice.dev" } };
+const options = { name: "ensforge-docs-demo.eth", texts: { url: "https://example.com" } };
 
 const plan = await ens.record.set.prepare(options);
 const { gas } = await ens.record.set.estimateGas(options);
@@ -92,6 +78,11 @@ console.log(
 - A plan is plain data: you can save it, or send its `calls` with any tool.
 
 See [Preview before sending](/docs/sdk/preview-before-sending).
+
+Every write can also fail with [`INSUFFICIENT_ETH`](/docs/reference/errors/INSUFFICIENT_ETH) when
+the account cannot pay for a step, and every action with
+[`CONTRACT_NOT_DEPLOYED`](/docs/reference/errors/CONTRACT_NOT_DEPLOYED) when the chain has no ENS
+contract where the action calls.
 
 ## Steps, waits and bundles
 

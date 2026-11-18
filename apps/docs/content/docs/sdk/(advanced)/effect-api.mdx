@@ -1,6 +1,6 @@
 ---
 title: The Effect API
-description: Use every ensforge action as an Effect with typed errors, a client service and streams.
+description: Run every ensforge action as an Effect with typed errors, a client service and streams, when your app already uses Effect.
 keywords:
   [Effect, "@ensforge/sdk/effect", Layer, Context.Service, catchTag, Stream, Indexer.paginate]
 ---
@@ -123,7 +123,7 @@ const ens = Ensforge.create({
   account: "0x225f137127d9067788314bc7fcc1f36746a3c3B5",
 });
 
-const options = { name: "alice.eth", texts: { url: "https://alice.dev" } };
+const options = { name: "ensforge-docs-demo.eth", texts: { url: "https://example.com" } };
 
 const program = Effect.gen(function* () {
   const simulation = yield* Actions.record.set.simulate(ens, options);

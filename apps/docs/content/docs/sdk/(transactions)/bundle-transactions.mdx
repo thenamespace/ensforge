@@ -1,6 +1,6 @@
 ---
 title: Bundle transactions
-description: Send several calls in one wallet prompt with EIP-5792, and combine separate writes into one plan.
+description: Send several calls in one wallet prompt with EIP-5792 atomic batches, and combine separate writes into one plan with Plan.merge.
 keywords: [EIP-5792, wallet_sendCalls, batch, atomic, Plan.merge, mode, maxBundleCalls]
 ---
 
@@ -66,8 +66,8 @@ const [account] = await walletClient.requestAddresses();
 const ens = Ensforge.create({ publicClient, walletClient, account }).extend(ensActions());
 
 const { id, hashes } = await ens.record.set({
-  name: "alice.eth",
-  texts: { url: "https://alice.dev", "com.twitter": "alice" },
+  name: "ensforge-docs-demo.eth",
+  texts: { url: "https://example.com", "com.twitter": "alice" },
   mode: "batch",
 });
 ```
@@ -103,8 +103,8 @@ const [account] = await walletClient.requestAddresses();
 const ens = Ensforge.create({ publicClient, walletClient, account }).extend(ensActions());
 
 await ens.record.set({
-  name: "alice.eth",
-  texts: { url: "https://alice.dev" },
+  name: "ensforge-docs-demo.eth",
+  texts: { url: "https://example.com" },
   maxBundleCalls: 20,
 });
 ```
@@ -135,10 +135,10 @@ const [account] = await walletClient.requestAddresses();
 const ens = Ensforge.create({ publicClient, walletClient, account }).extend(ensActions());
 
 const records = await ens.record.set.prepare({
-  name: "alice.eth",
-  texts: { url: "https://alice.dev" },
+  name: "ensforge-docs-demo.eth",
+  texts: { url: "https://example.com" },
 });
-const primary = await ens.primaryName.set.prepare({ name: "alice.eth" });
+const primary = await ens.primaryName.set.prepare({ name: "ensforge-docs-demo.eth" });
 
 const { hashes } = await ens.plan.send({ plan: Plan.merge([records, primary]) });
 ```

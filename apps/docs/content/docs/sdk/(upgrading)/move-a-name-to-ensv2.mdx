@@ -1,6 +1,6 @@
 ---
 title: Move a name to ENSv2
-description: Check whether an ENSv1 name can migrate to ENSv2, then migrate it with its resolver records and subnames.
+description: Check whether an ENSv1 name can migrate to ENSv2, then migrate it together with its resolver records and subnames, step by step.
 keywords:
   [
     migration.get,
@@ -30,10 +30,10 @@ Migration transfers the name's token to the migration controllers, creates the E
 
 ```mermaid
 flowchart LR
-  A[ENSv1 name] -->|renew if in grace| B[Create resolver and records]
-  B --> C[Recreate subnames]
-  C --> D[Transfer tokens to the migration controllers]
-  D --> E[ENSv2 name]
+  A[ENSv1 name] -->|renews if in grace| B[Resolver and records]
+  B -->|recreates| C[Subnames]
+  C -->|sends the token to| D[Migration controllers]
+  D -->|creates| E[ENSv2 name]
 ```
 
 After it, ENSv2 holds the name and its ENSv1 record is held by the Graveyard. Resolver, subregistry and roles follow the route the name took.
