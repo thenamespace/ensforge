@@ -1,6 +1,7 @@
 import { Effect } from "effect";
 
 import type { Client } from "../../../client/types.js";
+import type { AnyError } from "../../../errors/types.js";
 import * as Action from "../../../internal/action/index.js";
 import { parseDnsName } from "../../../internal/dns/name.js";
 import { readDnsStatus } from "../../../internal/dns/status.js";
@@ -10,7 +11,7 @@ import type { getStatus as Promises } from "./index.js";
 export const getStatus = Effect.fn("ensforge.dns.getStatus")(function* (
   client: Client,
   options: Promises.Options,
-): Effect.fn.Return<Promises.ReturnType, Promises.ErrorType> {
+): Effect.fn.Return<Promises.ReturnType, AnyError> {
   const parts = yield* parseDnsName(options.name);
   const { status } = yield* readDnsStatus(client, parts, options.gatewayUrls);
   return status;

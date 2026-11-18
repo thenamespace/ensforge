@@ -1,6 +1,7 @@
 import { Effect } from "effect";
 
 import type { Client } from "../../../client/types.js";
+import type { AnyError } from "../../../errors/types.js";
 import * as Action from "../../../internal/action/index.js";
 import { sameAddress } from "../../../internal/address.js";
 import { requireAddress } from "../../../internal/name/write.js";
@@ -12,7 +13,7 @@ import type { list as Promises } from "./index.js";
 export const list = Effect.fn("ensforge.plan.list")(function* (
   client: Client,
   options: Promises.Options,
-): Effect.fn.Return<Promises.ReturnType, Promises.ErrorType> {
+): Effect.fn.Return<Promises.ReturnType, AnyError> {
   const account =
     options.account === undefined ? undefined : yield* requireAddress(options.account, "account");
   const records = yield* fromPromise(() => client.config.storage.list());

@@ -1,6 +1,7 @@
 import { Effect } from "effect";
 
 import type { Client } from "../../../client/types.js";
+import type { AnyError } from "../../../errors/types.js";
 import * as Action from "../../../internal/action/index.js";
 import { discoverSubnames } from "../../../internal/migration/discover.js";
 import { inspectMigration, type ResolverChoice } from "../../../internal/migration/inspect.js";
@@ -13,7 +14,7 @@ import type { get as Promises } from "./index.js";
 export const get = Effect.fn("ensforge.migration.get")(function* (
   client: Client,
   options: Promises.Options,
-): Effect.fn.Return<Promises.ReturnType, Promises.ErrorType> {
+): Effect.fn.Return<Promises.ReturnType, AnyError> {
   const account =
     options.account === undefined
       ? client.account

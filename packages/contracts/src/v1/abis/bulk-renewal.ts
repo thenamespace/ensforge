@@ -1,6 +1,7 @@
 /**
  * Complete IBulkRenewal ABI from @ensdomains/ens-contracts v1.7.0.
  *
+ * @stability stable
  * @since 1.0.0
  */
 export const bulkRenewalV1InterfaceAbi = [
@@ -56,6 +57,7 @@ export const bulkRenewalV1InterfaceAbi = [
 /**
  * Complete BulkRenewal ABI from @ensdomains/ens-contracts v1.7.0.
  *
+ * @stability stable
  * @since 1.0.0
  */
 export const bulkRenewalV1Abi = [
@@ -154,6 +156,7 @@ export const bulkRenewalV1Abi = [
 /**
  * Complete StaticBulkRenewal ABI from @ensdomains/ens-contracts v1.7.0.
  *
+ * @stability stable
  * @since 1.0.0
  */
 export const staticBulkRenewalV1Abi = [

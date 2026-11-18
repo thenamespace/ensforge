@@ -2,8 +2,9 @@ import { Effect } from "effect";
 
 import { Abis } from "@ensforge/contracts";
 import { standaloneHcaFactoryV2Abi } from "@ensforge/contracts/v2/experimental/hca";
-import { Action, type Client, requireAddress, Rpc } from "@ensforge/sdk/extension";
+import { Action, type AnyError, type Client, requireAddress, Rpc } from "@ensforge/sdk/extension";
 
+import type { HcaError } from "../../../errors/classes/HcaError.js";
 import { requireHca } from "../../../internal/deployment.js";
 import type { getGovernance as Promises } from "./index.js";
 
@@ -11,7 +12,7 @@ import type { getGovernance as Promises } from "./index.js";
 export const getGovernance = Effect.fn("ensforge.hcaAdmin.getGovernance")(function* (
   client: Client,
   options: Promises.Options,
-): Effect.fn.Return<Promises.ReturnType, Promises.ErrorType> {
+): Effect.fn.Return<Promises.ReturnType, AnyError | HcaError> {
   const deployment = yield* requireHca(client);
   const factoryOwner = yield* Rpc.readContract(client, {
     address: deployment.contracts.standaloneFactory,

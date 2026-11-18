@@ -7,6 +7,7 @@ import type { Ensforge, Errors } from "@ensforge/sdk";
  * `.prepare`, `.simulate` and `.estimateGas`: a function of a client and options, named by its
  * `path`.
  *
+ * @stability stable
  * @category actions
  * @since 1.0.0
  */
@@ -17,6 +18,7 @@ export type Action = ((client: Ensforge.Client, options: never) => unknown) & {
 /**
  * Options an action takes.
  *
+ * @stability stable
  * @category actions
  * @since 1.0.0
  */
@@ -25,6 +27,7 @@ export type ActionOptions<action extends Action> = Parameters<action>[1];
 /**
  * Value an action resolves with.
  *
+ * @stability stable
  * @category actions
  * @since 1.0.0
  */
@@ -39,6 +42,7 @@ export type ActionValue<action extends Action> =
  * Error an action fails with: the Effect action's error channel, or any ensforge error for
  * Promise actions.
  *
+ * @stability stable
  * @category actions
  * @since 1.0.0
  */

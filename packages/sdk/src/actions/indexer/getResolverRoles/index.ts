@@ -1,5 +1,5 @@
 import type { Like } from "../../../client/types.js";
-import type { AnyError } from "../../../errors/types.js";
+import type * as Errors from "../../../errors/index.js";
 import type { Query } from "../../../indexer/Indexer.js";
 import type { Page, ResolverRole } from "../../../indexer/types.js";
 import * as Action from "../../../internal/action/index.js";
@@ -69,11 +69,17 @@ export declare namespace getResolverRoles {
   /** One page of grants. */
   type ReturnType = Page<ResolverRole>;
   /** Errors {@link getResolverRoles} can fail with. */
-  type ErrorType = AnyError;
+  type ErrorType = Errors.CommonError | Errors.InvalidInputError | Errors.IndexerError;
 }
 
 /** Builds a deferred read for `Actions.batch`. */
-getResolverRoles.request = Action.request("indexer.getResolverRoles", Impl.getResolverRoles);
+getResolverRoles.request = Action.request(
+  "indexer.getResolverRoles",
+  Impl.getResolverRoles as Action.Declared<
+    typeof Impl.getResolverRoles,
+    getResolverRoles.ErrorType
+  >,
+);
 
 /** Path of the action, e.g. for cache keys. */
 getResolverRoles.path = "indexer.getResolverRoles" as const;

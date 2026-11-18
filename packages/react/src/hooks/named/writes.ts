@@ -1,6 +1,6 @@
 "use client";
 
-import { Actions, type Errors } from "@ensforge/sdk";
+import { Actions } from "@ensforge/sdk";
 
 import { useWrite, type WriteResult } from "../useWrite.js";
 
@@ -19,6 +19,7 @@ import { useWrite, type WriteResult } from "../useWrite.js";
  * }
  * ```
  *
+ * @stability stable
  * @category named writes
  * @since 1.0.0
  */
@@ -27,8 +28,13 @@ export const useRegister = (
 ): WriteResult<
   Parameters<typeof Actions.registration.register>[1],
   Actions.registration.register.ReturnType,
-  Errors.AnyError
-> => useWrite(Actions.registration.register, config);
+  Actions.registration.register.ErrorType
+> =>
+  useWrite(Actions.registration.register, config) as WriteResult<
+    Parameters<typeof Actions.registration.register>[1],
+    Actions.registration.register.ReturnType,
+    Actions.registration.register.ErrorType
+  >;
 
 /**
  * Renews names. Preset of `useWrite(Actions.registration.renew)`.
@@ -45,6 +51,7 @@ export const useRegister = (
  * }
  * ```
  *
+ * @stability stable
  * @category named writes
  * @since 1.0.0
  */
@@ -53,8 +60,13 @@ export const useRenew = (
 ): WriteResult<
   Parameters<typeof Actions.registration.renew>[1],
   Actions.registration.renew.ReturnType,
-  Errors.AnyError
-> => useWrite(Actions.registration.renew, config);
+  Actions.registration.renew.ErrorType
+> =>
+  useWrite(Actions.registration.renew, config) as WriteResult<
+    Parameters<typeof Actions.registration.renew>[1],
+    Actions.registration.renew.ReturnType,
+    Actions.registration.renew.ErrorType
+  >;
 
 /**
  * Sets, changes or clears a name's records in one write. Preset of `useWrite(Actions.record.set)`.
@@ -70,6 +82,7 @@ export const useRenew = (
  * }
  * ```
  *
+ * @stability stable
  * @category named writes
  * @since 1.0.0
  */
@@ -78,8 +91,13 @@ export const useSetRecords = (
 ): WriteResult<
   Parameters<typeof Actions.record.set>[1],
   Actions.record.set.ReturnType,
-  Errors.AnyError
-> => useWrite(Actions.record.set, config);
+  Actions.record.set.ErrorType
+> =>
+  useWrite(Actions.record.set, config) as WriteResult<
+    Parameters<typeof Actions.record.set>[1],
+    Actions.record.set.ReturnType,
+    Actions.record.set.ErrorType
+  >;
 
 /**
  * Points a name at a resolver. Preset of `useWrite(Actions.resolver.set)`.
@@ -95,6 +113,7 @@ export const useSetRecords = (
  * }
  * ```
  *
+ * @stability stable
  * @category named writes
  * @since 1.0.0
  */
@@ -103,8 +122,13 @@ export const useSetResolver = (
 ): WriteResult<
   Parameters<typeof Actions.resolver.set>[1],
   Actions.resolver.set.ReturnType,
-  Errors.AnyError
-> => useWrite(Actions.resolver.set, config);
+  Actions.resolver.set.ErrorType
+> =>
+  useWrite(Actions.resolver.set, config) as WriteResult<
+    Parameters<typeof Actions.resolver.set>[1],
+    Actions.resolver.set.ReturnType,
+    Actions.resolver.set.ErrorType
+  >;
 
 /**
  * Transfers a name to another account. Preset of `useWrite(Actions.name.transfer)`.
@@ -120,6 +144,7 @@ export const useSetResolver = (
  * }
  * ```
  *
+ * @stability stable
  * @category named writes
  * @since 1.0.0
  */
@@ -128,8 +153,13 @@ export const useTransferName = (
 ): WriteResult<
   Parameters<typeof Actions.name.transfer>[1],
   Actions.name.transfer.ReturnType,
-  Errors.AnyError
-> => useWrite(Actions.name.transfer, config);
+  Actions.name.transfer.ErrorType
+> =>
+  useWrite(Actions.name.transfer, config) as WriteResult<
+    Parameters<typeof Actions.name.transfer>[1],
+    Actions.name.transfer.ReturnType,
+    Actions.name.transfer.ErrorType
+  >;
 
 /**
  * Creates a subname, optionally with records. Preset of `useWrite(Actions.subname.create)`.
@@ -145,6 +175,7 @@ export const useTransferName = (
  * }
  * ```
  *
+ * @stability stable
  * @category named writes
  * @since 1.0.0
  */
@@ -153,8 +184,13 @@ export const useCreateSubname = (
 ): WriteResult<
   Parameters<typeof Actions.subname.create>[1],
   Actions.subname.create.ReturnType,
-  Errors.AnyError
-> => useWrite(Actions.subname.create, config);
+  Actions.subname.create.ErrorType
+> =>
+  useWrite(Actions.subname.create, config) as WriteResult<
+    Parameters<typeof Actions.subname.create>[1],
+    Actions.subname.create.ReturnType,
+    Actions.subname.create.ErrorType
+  >;
 
 /**
  * Sets the signer's primary name. Preset of `useWrite(Actions.primaryName.set)`.
@@ -170,6 +206,7 @@ export const useCreateSubname = (
  * }
  * ```
  *
+ * @stability stable
  * @category named writes
  * @since 1.0.0
  */
@@ -178,8 +215,13 @@ export const useSetPrimaryName = (
 ): WriteResult<
   Parameters<typeof Actions.primaryName.set>[1],
   Actions.primaryName.set.ReturnType,
-  Errors.AnyError
-> => useWrite(Actions.primaryName.set, config);
+  Actions.primaryName.set.ErrorType
+> =>
+  useWrite(Actions.primaryName.set, config) as WriteResult<
+    Parameters<typeof Actions.primaryName.set>[1],
+    Actions.primaryName.set.ReturnType,
+    Actions.primaryName.set.ErrorType
+  >;
 
 /**
  * Signs a claim to a primary name on L2s, with one signature and no transaction, for
@@ -202,6 +244,7 @@ export const useSetPrimaryName = (
  * }
  * ```
  *
+ * @stability stable
  * @category named writes
  * @since 1.0.0
  */
@@ -210,8 +253,13 @@ export const useSignClaim = (
 ): WriteResult<
   Parameters<typeof Actions.primaryName.signClaim>[1],
   Actions.primaryName.signClaim.ReturnType,
-  Errors.AnyError
-> => useWrite(Actions.primaryName.signClaim, config);
+  Actions.primaryName.signClaim.ErrorType
+> =>
+  useWrite(Actions.primaryName.signClaim, config) as WriteResult<
+    Parameters<typeof Actions.primaryName.signClaim>[1],
+    Actions.primaryName.signClaim.ReturnType,
+    Actions.primaryName.signClaim.ErrorType
+  >;
 
 /**
  * Moves names from ENSv1 to ENSv2. Preset of `useWrite(Actions.migration.migrate)`.
@@ -227,6 +275,7 @@ export const useSignClaim = (
  * }
  * ```
  *
+ * @stability stable
  * @category named writes
  * @since 1.0.0
  */
@@ -235,5 +284,10 @@ export const useMigrate = (
 ): WriteResult<
   Parameters<typeof Actions.migration.migrate>[1],
   Actions.migration.migrate.ReturnType,
-  Errors.AnyError
-> => useWrite(Actions.migration.migrate, config);
+  Actions.migration.migrate.ErrorType
+> =>
+  useWrite(Actions.migration.migrate, config) as WriteResult<
+    Parameters<typeof Actions.migration.migrate>[1],
+    Actions.migration.migrate.ReturnType,
+    Actions.migration.migrate.ErrorType
+  >;

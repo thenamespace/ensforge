@@ -3,6 +3,7 @@ import { Effect } from "effect";
 import { Abis } from "@ensforge/contracts";
 
 import type { Client } from "../../../client/types.js";
+import type { AnyError } from "../../../errors/types.js";
 import * as Action from "../../../internal/action/index.js";
 import { approvalContract } from "../../../internal/approval/contract.js";
 import { requireAddress } from "../../../internal/name/write.js";
@@ -14,7 +15,7 @@ import type { getOperator as Promises } from "./index.js";
 export const getOperator = Effect.fn("ensforge.approval.getOperator")(function* (
   client: Client,
   options: Promises.Options,
-): Effect.fn.Return<Promises.ReturnType, Promises.ErrorType> {
+): Effect.fn.Return<Promises.ReturnType, AnyError> {
   const owner = yield* requireAddress(options.owner, "owner");
   const operator = yield* requireAddress(options.operator, "operator");
   const contract = yield* approvalContract(client, options.contract);

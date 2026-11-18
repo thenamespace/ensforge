@@ -1,7 +1,7 @@
 import type { Log, TransactionReceipt } from "viem";
 
 import type { Like } from "../../../client/types.js";
-import type { AnyError } from "../../../errors/types.js";
+import type * as Errors from "../../../errors/index.js";
 import * as Action from "../../../internal/action/index.js";
 import type { Event } from "../types.js";
 import * as Impl from "./effect.js";
@@ -65,11 +65,14 @@ export declare namespace decode {
   /** The ENS events, in log order. */
   type ReturnType = readonly Event[];
   /** Errors {@link decode} can fail with. */
-  type ErrorType = AnyError;
+  type ErrorType = Errors.CommonError;
 }
 
 /** Builds a deferred read for `Actions.batch`. */
-decode.request = Action.request("event.decode", Impl.decode);
+decode.request = Action.request(
+  "event.decode",
+  Impl.decode as Action.Declared<typeof Impl.decode, decode.ErrorType>,
+);
 
 /** Path of the action, e.g. for cache keys. */
 decode.path = "event.decode" as const;

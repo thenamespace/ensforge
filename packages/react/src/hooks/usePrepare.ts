@@ -6,7 +6,11 @@ import type { Action, ActionError, ActionOptions } from "../atoms/types.js";
 import type { ReadResult } from "./result.js";
 import { useRead, type ReadConfig } from "./useRead.js";
 
-/** A write action, with the `.prepare` that plans it. */
+/**
+ * A write action, with the `.prepare` that plans it.
+ *
+ * @stability stable
+ */
 export type PreparableAction = Action & { readonly prepare: Action };
 
 /**
@@ -31,6 +35,7 @@ export type PreparableAction = Action & { readonly prepare: Action };
  * }
  * ```
  *
+ * @stability stable
  * @category writes
  * @since 1.0.0
  */

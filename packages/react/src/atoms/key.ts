@@ -35,6 +35,7 @@ const canonical = (value: unknown): unknown => {
  * and bigints written as `123n`. Nested fields are data (a text record called `name`), kept as
  * given.
  *
+ * @stability unstable
  * @category keys
  * @since 1.0.0
  */
@@ -65,6 +66,7 @@ export const optionsKey = (options: unknown): string => {
  * (lowercase) and indexer key (`Indexer.key`) empty when it has none. It names the client by what changes a
  * read's answer, not by object, so it is the same on the server and in the browser.
  *
+ * @stability unstable
  * @category keys
  * @since 1.0.0
  */

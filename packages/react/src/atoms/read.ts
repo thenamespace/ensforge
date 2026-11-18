@@ -15,6 +15,7 @@ import type { Action, ActionError, ActionOptions, ActionValue } from "./types.js
  * How long a read stays fresh and cached. Each hook's settings apply to it alone; hooks with
  * other settings still share the read's value and requests.
  *
+ * @stability stable
  * @category reads
  * @since 1.0.0
  */

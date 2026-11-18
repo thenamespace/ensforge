@@ -1,5 +1,11 @@
+/**
+ * Every HCA action, by domain: `Actions.hca.execute(ens, options)`.
+ *
+ * @stability experimental
+ */
 export * as Actions from "./actions/index.js";
 export * from "./actions/decorators.js";
+
 export { HcaError } from "./errors/index.js";
 export { bundler, pimlico, type BundlerOptions, type PimlicoOptions } from "./executors/bundler.js";
 export { defineExecutor } from "./executors/define.js";

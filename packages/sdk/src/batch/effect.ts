@@ -6,6 +6,7 @@ import { InvalidInputError } from "../errors/classes/InvalidInputError.js";
 import { fromCause } from "../errors/translate/fromCause.js";
 import type { AnyError } from "../errors/types.js";
 import type { Request } from "../Types.js";
+import type { batch as Promises } from "./index.js";
 import type { BatchOptions, Requests, Results } from "./types.js";
 
 const run = (client: Client, request: Request): Effect.Effect<unknown, AnyError> => {
@@ -27,6 +28,8 @@ const run = (client: Client, request: Request): Effect.Effect<unknown, AnyError>
  * @internal Implementation of `Actions.batch`. Every request runs at once: contract reads made
  * together coalesce into Multicall3 calls (per block), while resolution reads keep their own
  * Universal Resolver call, so CCIP-Read and per-request block options work as they do alone.
+ *
+ * @stability stable
  */
 export const batch = Effect.fn("ensforge.batch")(function* <
   const requests extends Requests,
@@ -64,4 +67,11 @@ export const batch = Effect.fn("ensforge.batch")(function* <
         { concurrency: "unbounded" },
       );
   return { results: results as Results<requests, allowFailure> };
-});
+  // Declared like every action's error type: the requests' implementations are typed `AnyError`.
+}) as <const requests extends Requests, allowFailure extends boolean = true>(
+  client: Client,
+  options: BatchOptions<requests, allowFailure>,
+) => Effect.Effect<
+  { readonly results: Results<requests, allowFailure> },
+  Promises.ErrorType<requests, allowFailure>
+>;

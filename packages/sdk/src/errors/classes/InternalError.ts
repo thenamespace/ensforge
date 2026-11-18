@@ -3,6 +3,7 @@ import { EnsforgeError, withDefaults } from "../EnsforgeError.js";
 /**
  * Something failed that ensforge does not recognise. The original error is in `cause`.
  *
+ * @stability stable
  * @category errors
  * @since 1.0.0
  */

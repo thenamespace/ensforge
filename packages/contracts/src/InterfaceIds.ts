@@ -24,4 +24,10 @@ export {
   type ResolverInterfaceId,
 } from "./v2/constants/index.js";
 export { erc165InterfaceId as erc165 } from "./shared/erc165.js";
+
+/**
+ * ERC-165 interface IDs of the resolver profiles, keyed by profile.
+ *
+ * @stability stable
+ */
 export * as resolverProfiles from "./interface-ids/resolver-profiles.js";

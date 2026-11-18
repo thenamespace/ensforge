@@ -45,6 +45,7 @@ import type { Indexer } from "./Indexer.js";
  * const indexer = goldsky({ headers: { "x-api-key": key } })
  * ```
  *
+ * @stability stable
  * @category indexer
  * @since 1.0.0
  */

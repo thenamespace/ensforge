@@ -1,4 +1,5 @@
 import type { Like } from "../../../client/types.js";
+import type * as Errors from "../../../errors/index.js";
 import type { AnyError } from "../../../errors/types.js";
 import * as Action from "../../../internal/action/index.js";
 import type { Event, EventType } from "../types.js";
@@ -67,7 +68,7 @@ export declare namespace watch {
   /** Stops watching. */
   type ReturnType = () => void;
   /** Errors {@link watch} can fail with. */
-  type ErrorType = AnyError;
+  type ErrorType = Errors.CommonError | Errors.InvalidInputError;
 }
 
 /** Path of the action, e.g. for cache keys. */

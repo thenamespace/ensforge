@@ -1,5 +1,5 @@
 import type { Gateways, Like } from "../../../client/types.js";
-import type { AnyError } from "../../../errors/types.js";
+import type * as Errors from "../../../errors/index.js";
 import * as Action from "../../../internal/action/index.js";
 import type { Read } from "../../../Types.js";
 import * as Impl from "./effect.js";
@@ -52,6 +52,7 @@ import * as Impl from "./effect.js";
  * @throws `Errors.NotFoundError` (`RECORD_NOT_FOUND`, `RESOLVER_NOT_FOUND`) with `strict`.
  * @throws `Errors.UnsupportedError` (`RESOLVER_PROFILE_UNSUPPORTED`) with `strict` when the resolver supports none of the records.
  * @throws `Errors.GatewayError` (`GATEWAY_REQUEST_FAILED`, `GATEWAY_RESPONSE_INVALID`) with `strict` when NFT metadata cannot be loaded.
+ * @throws `Errors.DnsError` when a DNS name's DNSSEC proof does not verify.
  * @throws `Errors.NetworkError` when the RPC request fails.
  *
  * @see {@link Actions.record.getText} to read the raw avatar record
@@ -80,11 +81,20 @@ export declare namespace getAvatar {
   /** An `http(s)` or `data:` URL, or `null`. */
   type ReturnType = string | null;
   /** Errors {@link getAvatar} can fail with. */
-  type ErrorType = AnyError;
+  type ErrorType =
+    | Errors.CommonError
+    | Errors.InvalidInputError
+    | Errors.NotFoundError
+    | Errors.UnsupportedError
+    | Errors.GatewayError
+    | Errors.DnsError;
 }
 
 /** Builds a deferred read for `Actions.batch`. */
-getAvatar.request = Action.request("record.getAvatar", Impl.getAvatar);
+getAvatar.request = Action.request(
+  "record.getAvatar",
+  Impl.getAvatar as Action.Declared<typeof Impl.getAvatar, getAvatar.ErrorType>,
+);
 
 /** Path of the action, e.g. for cache keys. */
 getAvatar.path = "record.getAvatar" as const;

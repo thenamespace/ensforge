@@ -1,5 +1,5 @@
 import type { Like } from "../../../client/types.js";
-import type { AnyError } from "../../../errors/types.js";
+import type * as Errors from "../../../errors/index.js";
 import * as Action from "../../../internal/action/index.js";
 import type { Read } from "../../../Types.js";
 import type * as CoinType from "../../../utils/CoinType.js";
@@ -52,6 +52,7 @@ import * as Impl from "./effect.js";
  * @throws `Errors.InvalidInputError` (`INVALID_ADDRESS`, `INVALID_COIN_TYPE`, `INVALID_NAME`) for invalid input, or with `strict` an unnormalized name.
  * @throws `Errors.NotFoundError` (`PRIMARY_NAME_NOT_SET`, `PRIMARY_NAME_MISMATCH`) with `strict` when there is no valid primary name.
  * @throws `Errors.GatewayError` when an off-chain gateway fails.
+ * @throws `Errors.DnsError` when a DNS name's DNSSEC proof does not verify.
  * @throws `Errors.NetworkError` when the RPC request fails.
  *
  * @see {@link Actions.primaryName.set} to set it
@@ -84,11 +85,19 @@ export declare namespace get {
   /** The primary name, or `null` when there is no valid one. */
   type ReturnType = string | null;
   /** Errors {@link get} can fail with. */
-  type ErrorType = AnyError;
+  type ErrorType =
+    | Errors.CommonError
+    | Errors.InvalidInputError
+    | Errors.NotFoundError
+    | Errors.GatewayError
+    | Errors.DnsError;
 }
 
 /** Builds a deferred read for `Actions.batch`. */
-get.request = Action.request("primaryName.get", Impl.get);
+get.request = Action.request(
+  "primaryName.get",
+  Impl.get as Action.Declared<typeof Impl.get, get.ErrorType>,
+);
 
 /** Path of the action, e.g. for cache keys. */
 get.path = "primaryName.get" as const;

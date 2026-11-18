@@ -14,6 +14,7 @@ import type { Action, ActionError, ActionOptions, ActionValue } from "./types.js
 /**
  * An indexer action that returns pages and takes a `cursor`, such as `indexer.getSubnames`.
  *
+ * @stability stable
  * @category reads
  * @since 1.0.0
  */

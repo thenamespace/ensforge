@@ -1,6 +1,7 @@
 /**
  * ENSIP-24 arbitrary data resolver profile.
  *
+ * @stability stable
  * @since 1.0.0
  */
 export const dataResolverAbi = [
@@ -30,6 +31,7 @@ export const dataResolverAbi = [
 /**
  * ERC-165 interface ID of {@link dataResolverAbi}.
  *
+ * @stability stable
  * @since 1.0.0
  */
 export const dataResolverInterfaceId = "0xecbfada3" as const;

@@ -43,7 +43,7 @@ export const get = Effect.fn("ensforge.primaryName.get")(
   function* (
     client: Client,
     options: Promises.Options,
-  ): Effect.fn.Return<Promises.ReturnType, Promises.ErrorType> {
+  ): Effect.fn.Return<Promises.ReturnType, AnyError> {
     const address = yield* requireAddress(options.address, "address");
     const coinType = yield* primaryNameCoinType(options.coin);
     const strict = options.strict === true;

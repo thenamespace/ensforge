@@ -1,7 +1,7 @@
 import type { Hex } from "viem";
 
 import type { Like } from "../../../client/types.js";
-import type { AnyError } from "../../../errors/types.js";
+import type * as Errors from "../../../errors/index.js";
 import * as Action from "../../../internal/action/index.js";
 import type { Read } from "../../../Types.js";
 import * as Impl from "./effect.js";
@@ -62,11 +62,14 @@ export declare namespace getLabel {
   /** The label, or `null` when unknown. */
   type ReturnType = string | null;
   /** Errors {@link getLabel} can fail with. */
-  type ErrorType = AnyError;
+  type ErrorType = Errors.CommonError | Errors.InvalidInputError | Errors.UnsupportedError;
 }
 
 /** Builds a deferred read for `Actions.batch`. */
-getLabel.request = Action.request("name.getLabel", Impl.getLabel);
+getLabel.request = Action.request(
+  "name.getLabel",
+  Impl.getLabel as Action.Declared<typeof Impl.getLabel, getLabel.ErrorType>,
+);
 
 /** Path of the action, e.g. for cache keys. */
 getLabel.path = "name.getLabel" as const;

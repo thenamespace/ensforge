@@ -1,5 +1,5 @@
 import type { Like } from "../../../client/types.js";
-import type { AnyError } from "../../../errors/types.js";
+import type * as Errors from "../../../errors/index.js";
 import * as Action from "../../../internal/action/index.js";
 import type { Read } from "../../../Types.js";
 import type { PaymentToken, TokenInfo } from "../types.js";
@@ -91,11 +91,14 @@ export declare namespace getPrice {
     readonly token: TokenInfo;
   };
   /** Errors {@link getPrice} can fail with. */
-  type ErrorType = AnyError;
+  type ErrorType = Errors.CommonError | Errors.InvalidInputError | Errors.UnsupportedError;
 }
 
 /** Builds a deferred read for `Actions.batch`. */
-getPrice.request = Action.request("registration.getPrice", Impl.getPrice);
+getPrice.request = Action.request(
+  "registration.getPrice",
+  Impl.getPrice as Action.Declared<typeof Impl.getPrice, getPrice.ErrorType>,
+);
 
 /** Path of the action, e.g. for cache keys. */
 getPrice.path = "registration.getPrice" as const;

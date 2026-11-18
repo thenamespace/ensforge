@@ -16,6 +16,7 @@ import { errorOf } from "./result.js";
 /**
  * What {@link useWrite} returns.
  *
+ * @stability stable
  * @category writes
  * @since 1.0.0
  */
@@ -76,6 +77,7 @@ export type WriteResult<options, value, error> = {
  * }
  * ```
  *
+ * @stability stable
  * @category writes
  * @since 1.0.0
  */

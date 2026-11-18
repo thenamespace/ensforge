@@ -1,7 +1,7 @@
 import type { Address } from "viem";
 
 import type { Like } from "../../../client/types.js";
-import type { AnyError } from "../../../errors/types.js";
+import type * as Errors from "../../../errors/index.js";
 import * as Action from "../../../internal/action/index.js";
 import type { Read } from "../../../Types.js";
 import type * as CoinType from "../../../utils/CoinType.js";
@@ -47,6 +47,7 @@ import * as Impl from "./effect.js";
  * @throws `Errors.NotFoundError` (`RECORD_NOT_FOUND`, `RESOLVER_NOT_FOUND`) with `strict`.
  * @throws `Errors.UnsupportedError` (`RESOLVER_PROFILE_UNSUPPORTED`) with `strict` when the resolver supports none of the records.
  * @throws `Errors.GatewayError` when an off-chain gateway fails.
+ * @throws `Errors.DnsError` when a DNS name's DNSSEC proof does not verify.
  * @throws `Errors.NetworkError` when the RPC request fails.
  *
  * @see {@link Actions.record.get} to read several records
@@ -80,7 +81,13 @@ export declare namespace getAddress {
       ? Address | null
       : string | null;
   /** Errors {@link getAddress} can fail with. */
-  type ErrorType = AnyError;
+  type ErrorType =
+    | Errors.CommonError
+    | Errors.InvalidInputError
+    | Errors.NotFoundError
+    | Errors.UnsupportedError
+    | Errors.GatewayError
+    | Errors.DnsError;
   /** {@link getAddress} bound to a client, keeping the result typed by `coin`. */
   type Bound = <const coin extends CoinType.Input | undefined = undefined>(
     options: Options<coin>,
@@ -88,7 +95,10 @@ export declare namespace getAddress {
 }
 
 /** Builds a deferred read for `Actions.batch`. */
-getAddress.request = Action.request("record.getAddress", Impl.getAddress);
+getAddress.request = Action.request(
+  "record.getAddress",
+  Impl.getAddress as Action.Declared<typeof Impl.getAddress, getAddress.ErrorType>,
+);
 
 /** Path of the action, e.g. for cache keys. */
 getAddress.path = "record.getAddress" as const;

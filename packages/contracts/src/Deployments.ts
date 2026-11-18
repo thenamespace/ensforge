@@ -53,6 +53,7 @@ export type {
 /**
  * ENSv1 and ENSv2 on Ethereum mainnet.
  *
+ * @stability stable
  * @since 1.0.0
  */
 export const mainnet = {
@@ -65,6 +66,7 @@ export const mainnet = {
 /**
  * ENSv1 (legacy) and ENSv2 on Sepolia.
  *
+ * @stability stable
  * @since 1.0.0
  */
 export const sepolia = {
@@ -79,6 +81,7 @@ const builtIn: readonly Profile[] = [mainnet, sepolia];
 /**
  * Returns the built-in profile for a chain, or `undefined` when ensforge ships none.
  *
+ * @stability stable
  * @since 1.0.0
  */
 export const get = (options: { readonly chainId: number }): Profile | undefined =>
@@ -87,6 +90,7 @@ export const get = (options: { readonly chainId: number }): Profile | undefined 
 /**
  * Lists the built-in profiles.
  *
+ * @stability stable
  * @since 1.0.0
  */
 export const list = (): readonly Profile[] => builtIn;
@@ -94,6 +98,7 @@ export const list = (): readonly Profile[] => builtIn;
 /**
  * Thrown by {@link define} with every problem found in a profile.
  *
+ * @stability stable
  * @since 1.0.0
  */
 export class InvalidProfileError extends Error {
@@ -131,6 +136,7 @@ export class InvalidProfileError extends Error {
  * ```
  *
  * @throws `Deployments.InvalidProfileError` listing every problem found.
+ * @stability stable
  * @since 1.0.0
  */
 export const define = <const profile extends Profile>(profile: profile): profile => {

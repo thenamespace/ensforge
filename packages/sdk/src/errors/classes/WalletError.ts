@@ -16,6 +16,7 @@ const defaults: {
 /**
  * The wallet is not in a state to sign: wrong chain or no account.
  *
+ * @stability stable
  * @category errors
  * @since 1.0.0
  */

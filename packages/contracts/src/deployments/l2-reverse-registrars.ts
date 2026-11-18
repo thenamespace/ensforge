@@ -9,6 +9,7 @@ const testnetL2s = "0x00000BeEF055f7934784D6d81b6BC86665630dbA";
  * `Abis.v1.l2ReverseRegistrar`. Every mainnet L2 shares one address, and every testnet another,
  * so one signed name claim covers all of them.
  *
+ * @stability stable
  * @since 1.0.0
  */
 export const l2ReverseRegistrars = {

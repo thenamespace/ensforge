@@ -15,6 +15,7 @@ import type { ReadConfig } from "./useRead.js";
 /**
  * What {@link useSuspenseRead} returns: the value is always there.
  *
+ * @stability stable
  * @category reads
  * @since 1.0.0
  */
@@ -55,6 +56,7 @@ const thrown = new WeakSet<AsyncResult.Failure<unknown, unknown>>();
  * }
  * ```
  *
+ * @stability stable
  * @category reads
  * @since 1.0.0
  */

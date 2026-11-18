@@ -1,5 +1,5 @@
 import type { Like } from "../../../client/types.js";
-import type { AnyError } from "../../../errors/types.js";
+import type * as Errors from "../../../errors/index.js";
 import * as Action from "../../../internal/action/index.js";
 import type { Read } from "../../../Types.js";
 import * as Impl from "./effect.js";
@@ -54,6 +54,7 @@ export type { AbiRecord, Records, Selection } from "./types.js";
  * @throws `Errors.NotFoundError` (`RESOLVER_NOT_FOUND`) with `strict` when the name has no resolver.
  * @throws `Errors.UnsupportedError` (`RESOLVER_PROFILE_UNSUPPORTED`) with `strict` when the resolver supports none of the records.
  * @throws `Errors.GatewayError` when an off-chain gateway fails.
+ * @throws `Errors.DnsError` when a DNS name's DNSSEC proof does not verify.
  * @throws `Errors.NetworkError` when the RPC request fails.
  *
  * @see {@link Actions.record.set} to write records
@@ -80,7 +81,13 @@ export declare namespace get {
   /** The selected records. */
   type ReturnType<selection extends Selection = Selection> = Records<selection>;
   /** Errors {@link get} can fail with. */
-  type ErrorType = AnyError;
+  type ErrorType =
+    | Errors.CommonError
+    | Errors.InvalidInputError
+    | Errors.NotFoundError
+    | Errors.UnsupportedError
+    | Errors.GatewayError
+    | Errors.DnsError;
   /** {@link get} bound to a client, keeping the result narrowed to the selection. */
   type Bound = <const selection extends Selection>(
     options: Options & selection,
@@ -88,7 +95,10 @@ export declare namespace get {
 }
 
 /** Builds a deferred read for `Actions.batch`. */
-get.request = Action.request("record.get", Impl.get);
+get.request = Action.request(
+  "record.get",
+  Impl.get as Action.Declared<typeof Impl.get, get.ErrorType>,
+);
 
 /** Path of the action, e.g. for cache keys. */
 get.path = "record.get" as const;

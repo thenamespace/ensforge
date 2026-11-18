@@ -1,4 +1,8 @@
-/** Global error settings. */
+/**
+ * Global error settings.
+ *
+ * @stability stable
+ */
 export type Config = {
   /** Origin of the documentation site used in `docsUrl`. @default "https://ensforge.com" */
   readonly docsOrigin: string;
@@ -9,6 +13,7 @@ let current: Config = { docsOrigin: "https://ensforge.com" };
 /**
  * Changes global error settings, e.g. to point `docsUrl` at a self-hosted docs mirror.
  *
+ * @stability stable
  * @category errors
  * @since 1.0.0
  */

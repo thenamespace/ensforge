@@ -15,6 +15,7 @@ import type { ReadConfig } from "./useRead.js";
 /**
  * One read of {@link useReads}: an action and its options.
  *
+ * @stability stable
  * @category reads
  * @since 1.0.0
  */
@@ -23,6 +24,7 @@ export type ReadSpec = readonly [action: Action, options: unknown];
 /**
  * Results of {@link useReads}, in the order of the reads.
  *
+ * @stability stable
  * @category reads
  * @since 1.0.0
  */
@@ -55,6 +57,7 @@ export type ReadsResult<reads extends readonly ReadSpec[]> = {
  * }
  * ```
  *
+ * @stability stable
  * @category reads
  * @since 1.0.0
  */

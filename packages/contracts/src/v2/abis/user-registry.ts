@@ -6,6 +6,7 @@
  * `NestedUpgradeNotAllowed`.
  *
  * @see https://github.com/ensdomains/contracts-v2/blob/v1.0.1/contracts/src/registry/UserRegistry.sol
+ * @stability stable
  * @since 1.0.0
  */
 export const userRegistryV2Abi = [

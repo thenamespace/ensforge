@@ -1,5 +1,5 @@
 import type { Like } from "../../../client/types.js";
-import type { AnyError } from "../../../errors/types.js";
+import type * as Errors from "../../../errors/index.js";
 import type { Query } from "../../../indexer/Indexer.js";
 import type { Namespace, Page, PermissionRow } from "../../../indexer/types.js";
 import * as Action from "../../../internal/action/index.js";
@@ -80,11 +80,14 @@ export declare namespace getPermissions {
   /** One page of grants. */
   type ReturnType = Page<PermissionRow>;
   /** Errors {@link getPermissions} can fail with. */
-  type ErrorType = AnyError;
+  type ErrorType = Errors.CommonError | Errors.InvalidInputError | Errors.IndexerError;
 }
 
 /** Builds a deferred read for `Actions.batch`. */
-getPermissions.request = Action.request("indexer.getPermissions", Impl.getPermissions);
+getPermissions.request = Action.request(
+  "indexer.getPermissions",
+  Impl.getPermissions as Action.Declared<typeof Impl.getPermissions, getPermissions.ErrorType>,
+);
 
 /** Path of the action, e.g. for cache keys. */
 getPermissions.path = "indexer.getPermissions" as const;

@@ -84,7 +84,11 @@ export declare namespace authorizeSession {
   /** The approved session, to store. */
   type ReturnType = HcaSession;
   /** Errors {@link authorizeSession} can fail with. */
-  type ErrorType = Errors.AnyError | HcaError;
+  type ErrorType =
+    | Errors.CommonError
+    | Errors.UserRejectedError
+    | Errors.InvalidInputError
+    | HcaError;
 }
 
 /** Path of the action, e.g. for cache keys. */

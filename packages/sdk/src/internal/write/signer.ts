@@ -10,13 +10,21 @@ import { WalletError } from "../../errors/classes/WalletError.js";
 import type { AnyError } from "../../errors/types.js";
 import { fromPromise } from "../rpc/fromPromise.js";
 
-/** A wallet client and the account it signs with, checked against the client's chain. */
+/**
+ * A wallet client and the account it signs with, checked against the client's chain.
+ *
+ * @stability unstable
+ */
 export type Signer = {
   readonly walletClient: ViemWalletClient;
   readonly account: Account | Address;
 };
 
-/** Resolves the wallet for a write: the per-call `account`, then the client's, then the wallet's. */
+/**
+ * Resolves the wallet for a write: the per-call `account`, then the client's, then the wallet's.
+ *
+ * @stability unstable
+ */
 export const resolveSigner = Effect.fnUntraced(function* (
   client: Client,
   account: Account | Address | undefined,

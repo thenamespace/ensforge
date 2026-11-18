@@ -1,6 +1,7 @@
 /**
  * EnhancedAccessControl masks covering every role and every admin role.
  *
+ * @stability stable
  * @since 1.0.0
  */
 export const enhancedAccessControlRoles = {
@@ -13,6 +14,7 @@ export const enhancedAccessControlRoles = {
  * role sits 128 bits higher.
  *
  * @see https://github.com/ensdomains/contracts-v2/blob/v1.0.1/contracts/src/registry/libraries/RegistryRolesLib.sol
+ * @stability stable
  * @since 1.0.0
  */
 export const registryRoles = {
@@ -44,6 +46,7 @@ export const registryRoles = {
 /**
  * A single registry role bit from {@link registryRoles}.
  *
+ * @stability stable
  * @since 1.0.0
  */
 export type RegistryRole = (typeof registryRoles)[keyof typeof registryRoles];
@@ -68,6 +71,7 @@ const unemancipatedRegistryRoles =
  *
  * Mainnet WrapperRegistry follows these sets; the Sepolia WrapperRegistry build predates them.
  *
+ * @stability stable
  * @since 1.0.0
  */
 export const registryRoleBitmaps = {

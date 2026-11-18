@@ -1,6 +1,7 @@
 /**
  * Complete HCAFundingSessionValidator ABI from ENSv2's experimental HCA layer.
  *
+ * @stability experimental
  * @since 1.0.0
  */
 export const hcaFundingSessionValidatorV2Abi = [

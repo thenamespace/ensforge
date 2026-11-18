@@ -48,6 +48,8 @@ export const requireProtocol = (
 /**
  * Validates an address option. Mixed-case addresses must match their checksum, which catches
  * typos before a name or record goes to the wrong account.
+ *
+ * @stability unstable
  */
 export const requireAddress = (value: string, field: string): Effect.Effect<Address, AnyError> =>
   isAddress(value)

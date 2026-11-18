@@ -28,6 +28,7 @@ const retryableCodes = new Set<string>([
 /**
  * An indexer request failed, or the indexer cannot serve the query (`INDEXER_UNSUPPORTED`).
  *
+ * @stability stable
  * @category errors
  * @since 1.0.0
  */

@@ -4,6 +4,7 @@ import { Abis } from "@ensforge/contracts";
 import { hexToBigInt } from "viem";
 
 import type { Client } from "../../../client/types.js";
+import type { AnyError } from "../../../errors/types.js";
 import * as Action from "../../../internal/action/index.js";
 import { nonZeroAddress } from "../../../internal/address.js";
 import { parseName } from "../../../internal/name/normalize.js";
@@ -17,7 +18,7 @@ import type { getFuses as Promises } from "./index.js";
 export const getFuses = Effect.fn("ensforge.wrapper.getFuses")(function* (
   client: Client,
   options: Promises.Options,
-): Effect.fn.Return<Promises.ReturnType, Promises.ErrorType> {
+): Effect.fn.Return<Promises.ReturnType, AnyError> {
   const parts = yield* parseName(options.name);
   const contracts = yield* requireV1Contracts(client);
 

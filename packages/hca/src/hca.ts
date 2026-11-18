@@ -16,6 +16,7 @@ import type { ExecutionRequest, Executor, HcaSession } from "./types.js";
 /**
  * Options of {@link hca}.
  *
+ * @stability experimental
  * @category hca
  * @since 1.0.0
  */
@@ -88,6 +89,7 @@ const ownerOf = (context: Write.Via.Context): Address => {
  * await ens.record.set({ name: "alice.eth", texts: { url }, via })
  * ```
  *
+ * @stability experimental
  * @category hca
  * @since 1.0.0
  */

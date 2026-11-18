@@ -4,6 +4,7 @@ import type { Address } from "viem";
  * Lifecycle of a deployment: `active` is the current protocol on that chain, `legacy` is kept for
  * compatibility and migration, `beta` is not yet recommended for production names.
  *
+ * @stability stable
  * @since 1.0.0
  */
 export type Status = "active" | "beta" | "legacy";
@@ -11,6 +12,7 @@ export type Status = "active" | "beta" | "legacy";
 /**
  * Where the addresses of a deployment come from.
  *
+ * @stability stable
  * @since 1.0.0
  */
 export interface Provenance {
@@ -35,6 +37,7 @@ export interface Provenance {
 /**
  * ENSv1 contract addresses.
  *
+ * @stability stable
  * @since 1.0.0
  */
 export interface V1Contracts {
@@ -71,6 +74,7 @@ export interface V1Contracts {
 /**
  * An ENSv1 deployment.
  *
+ * @stability stable
  * @since 1.0.0
  */
 export interface V1 {
@@ -96,6 +100,7 @@ export interface V1 {
 /**
  * ENSv2 entry points that applications call directly.
  *
+ * @stability stable
  * @since 1.0.0
  */
 export interface V2Contracts {
@@ -130,6 +135,7 @@ export interface V2Contracts {
 /**
  * ENSv2 implementation contracts that proxies and factory deployments point to.
  *
+ * @stability stable
  * @since 1.0.0
  */
 export interface V2Implementations {
@@ -150,6 +156,7 @@ export interface V2Implementations {
 /**
  * ENSv1 to ENSv2 migration contracts.
  *
+ * @stability stable
  * @since 1.0.0
  */
 export interface V2Migration {
@@ -174,6 +181,7 @@ export interface V2Migration {
 /**
  * ENSv2 supporting infrastructure.
  *
+ * @stability stable
  * @since 1.0.0
  */
 export interface V2Infrastructure {
@@ -192,6 +200,7 @@ export interface V2Infrastructure {
 /**
  * ENSv2 DNS integration contracts.
  *
+ * @stability stable
  * @since 1.0.0
  */
 export interface V2Dns {
@@ -215,6 +224,7 @@ export interface V2Dns {
 /**
  * Hosted contract account (HCA) contracts.
  *
+ * @stability experimental
  * @since 1.0.0
  */
 export interface V2Hca {
@@ -238,6 +248,7 @@ export interface V2Hca {
  * ERC-20 tokens the `.eth` registrar accepts: real stablecoins on mainnet, mocks on testnets.
  * The rent price oracle (`isPaymentToken`) stays the source of truth.
  *
+ * @stability stable
  * @since 1.0.0
  */
 export interface V2PaymentTokens {
@@ -249,6 +260,7 @@ export interface V2PaymentTokens {
  * Behaviour that differs between ENSv2 deployments of the same release. SDK code branches on
  * these flags instead of on the chain.
  *
+ * @stability stable
  * @since 1.0.0
  */
 export interface Capabilities {
@@ -295,6 +307,7 @@ export interface Capabilities {
 /**
  * An ENSv2 deployment.
  *
+ * @stability stable
  * @since 1.0.0
  */
 export interface V2 {
@@ -317,6 +330,7 @@ export interface V2 {
 /**
  * Every ENS deployment on one chain.
  *
+ * @stability stable
  * @since 1.0.0
  */
 export interface Profile {

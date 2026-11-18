@@ -16,7 +16,11 @@ import type { Read } from "../../Types.js";
 import { ContractRead, resolverOf } from "./batch-resolver.js";
 import { fromPromise } from "./fromPromise.js";
 
-/** Parameters of one contract read. */
+/**
+ * Parameters of one contract read.
+ *
+ * @stability unstable
+ */
 export type ReadContractParameters<
   abi extends Abi,
   functionName extends ContractFunctionName<abi, "pure" | "view">,
@@ -32,6 +36,8 @@ export type ReadContractParameters<
 /**
  * Reads a contract, coalesced into multicall with other reads made in the same tick unless the
  * client disables batching.
+ *
+ * @stability unstable
  */
 export const readContract = <
   const abi extends Abi,
@@ -91,6 +97,8 @@ export const readContract = <
  * {@link readContract} that returns `undefined` when the call reverts, e.g. `ownerOf` on an
  * expired token, including reverts translated into a specific class (`NameNotRenewable` →
  * `NameStateError`). Network and configuration failures still fail.
+ *
+ * @stability unstable
  */
 export const readContractOrUndefined = <
   const abi extends Abi,

@@ -28,6 +28,7 @@ const defaults: {
 /**
  * Importing or reading a DNS name failed.
  *
+ * @stability stable
  * @category errors
  * @since 1.0.0
  */

@@ -17,6 +17,7 @@ const defaults: {
 /**
  * Off-chain resolution (CCIP-Read, ERC-3668) failed.
  *
+ * @stability stable
  * @category errors
  * @since 1.0.0
  */

@@ -2,6 +2,7 @@
  * `IETHRenewer` interface ABI at contracts-v2 v1.0.1.
  *
  * @see https://github.com/ensdomains/contracts-v2/blob/v1.0.1/contracts/src/registrar/interfaces/IETHRenewer.sol
+ * @stability stable
  * @since 1.0.0
  */
 export const ethRenewerV2InterfaceAbi = [

@@ -14,6 +14,7 @@ import type { Indexer, Method } from "./Indexer.js";
 /**
  * Failures after which `fallback` asks the next indexer.
  *
+ * @stability stable
  * @category indexer
  * @since 1.0.0
  */
@@ -107,6 +108,7 @@ const tagged = (index: number, answer: unknown): unknown => {
  * const indexer = fallback([bigname({ url: "https://bigname.internal" }), bigname()])
  * ```
  *
+ * @stability stable
  * @category indexer
  * @since 1.0.0
  */

@@ -58,7 +58,7 @@ export declare namespace revokeSessions {
   /** Submitted transaction hashes and the plan that produced them. */
   type ReturnType = Write.Result;
   /** Errors {@link revokeSessions} can fail with. */
-  type ErrorType = Errors.AnyError | HcaError;
+  type ErrorType = Errors.WriteError | HcaError;
 }
 
 // Explicit types keep these declarations free of Effect types.
@@ -132,7 +132,7 @@ export declare namespace revokeSessionsSync {
   /** Receipts plus the submitted hashes and plan. */
   type ReturnType = Write.SyncResult;
   /** Errors {@link revokeSessionsSync} can fail with. */
-  type ErrorType = Errors.AnyError | HcaError;
+  type ErrorType = Errors.WriteError | HcaError;
 }
 
 /** Path of the action, e.g. for cache keys. */

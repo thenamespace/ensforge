@@ -3,6 +3,7 @@
  * resolver, reverse and DNS registrar events, following the ENSv2 indexing guide. Generated from
  * the contract ABIs (one entry per topic), plus the legacy `ContentChanged`.
  *
+ * @stability stable
  * @since 1.0.0
  */
 export const ensEventsAbi = [

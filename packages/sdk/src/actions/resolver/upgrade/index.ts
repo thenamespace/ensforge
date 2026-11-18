@@ -1,5 +1,5 @@
 import type { Like } from "../../../client/types.js";
-import type { AnyError } from "../../../errors/types.js";
+import type * as Errors from "../../../errors/index.js";
 import * as Action from "../../../internal/action/index.js";
 import type { Plan } from "../../../plan/Plan.js";
 import type { Write } from "../../../Types.js";
@@ -73,7 +73,11 @@ export declare namespace upgrade {
   /** Submitted transaction hashes and the plan that produced them. */
   type ReturnType = Write.Result;
   /** Errors {@link upgrade} can fail with. */
-  type ErrorType = AnyError;
+  type ErrorType =
+    | Errors.WriteError
+    | Errors.InvalidInputError
+    | Errors.NotFoundError
+    | Errors.UnauthorizedError;
 }
 
 // Explicit types keep these declarations free of Effect types.
@@ -149,7 +153,11 @@ export declare namespace upgradeSync {
   /** Receipts plus the submitted hashes and plan. */
   type ReturnType = Write.SyncResult;
   /** Errors {@link upgradeSync} can fail with. */
-  type ErrorType = AnyError;
+  type ErrorType =
+    | Errors.WriteError
+    | Errors.InvalidInputError
+    | Errors.NotFoundError
+    | Errors.UnauthorizedError;
 }
 
 /** Path of the action, e.g. for cache keys. */

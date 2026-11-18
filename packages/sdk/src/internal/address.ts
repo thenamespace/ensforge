@@ -10,6 +10,10 @@ export const nonZeroAddress = (address: Address | null | undefined): Address | n
 export const sameAddress = (a: Address | null | undefined, b: Address): boolean =>
   a !== null && a !== undefined && isAddressEqual(a, b);
 
-/** Address of an account option. */
+/**
+ * Address of an account option.
+ *
+ * @stability unstable
+ */
 export const addressOf = (account: Account | Address | undefined): Address | undefined =>
   typeof account === "object" ? account.address : account;

@@ -30,6 +30,7 @@ const defaults: {
 /**
  * The operation is not available for this name, resolver, deployment or wallet.
  *
+ * @stability stable
  * @category errors
  * @since 1.0.0
  */

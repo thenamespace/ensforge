@@ -1,5 +1,5 @@
 import type { Like } from "../../../client/types.js";
-import type { AnyError } from "../../../errors/types.js";
+import type * as Errors from "../../../errors/index.js";
 import type { Query } from "../../../indexer/Indexer.js";
 import type { IndexedName, Page } from "../../../indexer/types.js";
 import * as Action from "../../../internal/action/index.js";
@@ -59,11 +59,14 @@ export declare namespace search {
   /** One page of matching names. */
   type ReturnType = Page<IndexedName>;
   /** Errors {@link search} can fail with. */
-  type ErrorType = AnyError;
+  type ErrorType = Errors.CommonError | Errors.InvalidInputError | Errors.IndexerError;
 }
 
 /** Builds a deferred read for `Actions.batch`. */
-search.request = Action.request("indexer.search", Impl.search);
+search.request = Action.request(
+  "indexer.search",
+  Impl.search as Action.Declared<typeof Impl.search, search.ErrorType>,
+);
 
 /** Path of the action, e.g. for cache keys. */
 search.path = "indexer.search" as const;

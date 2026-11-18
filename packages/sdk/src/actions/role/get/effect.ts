@@ -3,6 +3,7 @@ import { Effect } from "effect";
 import { Abis } from "@ensforge/contracts";
 
 import type { Client } from "../../../client/types.js";
+import type { AnyError } from "../../../errors/types.js";
 import * as Action from "../../../internal/action/index.js";
 import { requireAddress } from "../../../internal/name/write.js";
 import { resolveRoleTarget } from "../../../internal/role/target.js";
@@ -16,7 +17,7 @@ export const get = Effect.fn("ensforge.role.get")(
   function* (
     client: Client,
     options: Promises.Options,
-  ): Effect.fn.Return<Promises.ReturnType, Promises.ErrorType> {
+  ): Effect.fn.Return<Promises.ReturnType, AnyError> {
     const account = yield* requireAddress(options.account, "account");
     const { contract, resource } = yield* resolveRoleTarget(client, options);
     const at = blockAt(options);

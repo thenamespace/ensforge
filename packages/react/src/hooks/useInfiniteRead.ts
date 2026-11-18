@@ -21,6 +21,7 @@ type ItemOf<page> = page extends { readonly items: readonly (infer item)[] } ? i
 /**
  * What {@link useInfiniteRead} returns.
  *
+ * @stability stable
  * @category reads
  * @since 1.0.0
  */
@@ -70,6 +71,7 @@ export type InfiniteReadResult<page, error> = {
  * }
  * ```
  *
+ * @stability stable
  * @category reads
  * @since 1.0.0
  */

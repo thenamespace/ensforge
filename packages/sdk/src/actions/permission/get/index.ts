@@ -1,7 +1,7 @@
 import type { Address } from "viem";
 
 import type { Like } from "../../../client/types.js";
-import type { AnyError } from "../../../errors/types.js";
+import type * as Errors from "../../../errors/index.js";
 import * as Action from "../../../internal/action/index.js";
 import type { Read } from "../../../Types.js";
 import type * as Fuse from "../../../utils/Fuse.js";
@@ -90,11 +90,14 @@ export declare namespace get {
     readonly fuses: readonly Fuse.Name[];
   };
   /** Errors {@link get} can fail with. */
-  type ErrorType = AnyError;
+  type ErrorType = Errors.CommonError | Errors.InvalidInputError;
 }
 
 /** Builds a deferred read for `Actions.batch`. */
-get.request = Action.request("permission.get", Impl.get);
+get.request = Action.request(
+  "permission.get",
+  Impl.get as Action.Declared<typeof Impl.get, get.ErrorType>,
+);
 
 /** Path of the action, e.g. for cache keys. */
 get.path = "permission.get" as const;

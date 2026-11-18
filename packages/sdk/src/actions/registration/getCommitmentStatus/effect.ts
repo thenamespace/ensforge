@@ -5,6 +5,7 @@ import { isHex } from "viem";
 
 import type { Client } from "../../../client/types.js";
 import { InvalidInputError } from "../../../errors/classes/InvalidInputError.js";
+import type { AnyError } from "../../../errors/types.js";
 import * as Action from "../../../internal/action/index.js";
 import { requireRegistrationContracts } from "../../../internal/registration/contracts.js";
 import { blockAt } from "../../../internal/rpc/block.js";
@@ -16,7 +17,7 @@ export const getCommitmentStatus = Effect.fn("ensforge.registration.getCommitmen
   function* (
     client: Client,
     options: Promises.Options,
-  ): Effect.fn.Return<Promises.ReturnType, Promises.ErrorType> {
+  ): Effect.fn.Return<Promises.ReturnType, AnyError> {
     if (!isHex(options.commitment) || options.commitment.length !== 66) {
       return yield* Effect.fail(
         new InvalidInputError({

@@ -3,6 +3,7 @@ import { EnsforgeError, withDefaults } from "../EnsforgeError.js";
 /**
  * The user declined the request in their wallet.
  *
+ * @stability stable
  * @category errors
  * @since 1.0.0
  */

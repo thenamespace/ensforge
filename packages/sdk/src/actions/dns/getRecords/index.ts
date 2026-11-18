@@ -1,7 +1,7 @@
 import type { Address, Hex } from "viem";
 
 import type { Like } from "../../../client/types.js";
-import type { AnyError } from "../../../errors/types.js";
+import type * as Errors from "../../../errors/index.js";
 import * as Action from "../../../internal/action/index.js";
 import type { Read } from "../../../Types.js";
 import * as Impl from "./effect.js";
@@ -76,11 +76,14 @@ export declare namespace getRecords {
     }[];
   };
   /** Errors {@link getRecords} can fail with. */
-  type ErrorType = AnyError;
+  type ErrorType = Errors.CommonError | Errors.InvalidInputError;
 }
 
 /** Builds a deferred read for `Actions.batch`. */
-getRecords.request = Action.request("dns.getRecords", Impl.getRecords);
+getRecords.request = Action.request(
+  "dns.getRecords",
+  Impl.getRecords as Action.Declared<typeof Impl.getRecords, getRecords.ErrorType>,
+);
 
 /** Path of the action, e.g. for cache keys. */
 getRecords.path = "dns.getRecords" as const;

@@ -1,6 +1,7 @@
 /**
  * Complete IPriceOracle ABI from @ensdomains/ens-contracts v1.7.0.
  *
+ * @stability stable
  * @since 1.0.0
  */
 export const priceOracleV1Abi = [
@@ -50,6 +51,7 @@ export const priceOracleV1Abi = [
 /**
  * Complete StablePriceOracle ABI from @ensdomains/ens-contracts v1.7.0.
  *
+ * @stability stable
  * @since 1.0.0
  */
 export const stablePriceOracleV1Abi = [
@@ -254,6 +256,7 @@ export const stablePriceOracleV1Abi = [
 /**
  * Complete ExponentialPremiumPriceOracle ABI from @ensdomains/ens-contracts v1.7.0.
  *
+ * @stability stable
  * @since 1.0.0
  */
 export const exponentialPremiumPriceOracleV1Abi = [
@@ -492,6 +495,7 @@ export const exponentialPremiumPriceOracleV1Abi = [
 /**
  * Complete ILinearPremiumPriceOracle ABI from @ensdomains/ens-contracts v1.7.0.
  *
+ * @stability stable
  * @since 1.0.0
  */
 export const linearPremiumPriceOracleV1InterfaceAbi = [
@@ -524,6 +528,7 @@ export const linearPremiumPriceOracleV1InterfaceAbi = [
 /**
  * Complete LinearPremiumPriceOracle ABI from @ensdomains/ens-contracts v1.7.0.
  *
+ * @stability stable
  * @since 1.0.0
  */
 export const linearPremiumPriceOracleV1Abi = [

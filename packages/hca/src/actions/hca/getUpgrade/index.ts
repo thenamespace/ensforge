@@ -70,7 +70,7 @@ export declare namespace getUpgrade {
     readonly predecessorAllowed: boolean;
   };
   /** Errors {@link getUpgrade} can fail with. */
-  type ErrorType = Errors.AnyError | HcaError;
+  type ErrorType = Errors.CommonError | Errors.InvalidInputError | HcaError;
 }
 
 /** Path of the action, e.g. for cache keys. */

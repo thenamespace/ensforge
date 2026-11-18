@@ -38,6 +38,7 @@ import type { Executor } from "../types.js";
  * await ens.migration.migrate({ names, via: hca(), paymaster: { url: paymasterUrl } })
  * ```
  *
+ * @stability experimental
  * @category executors
  * @since 1.0.0
  */

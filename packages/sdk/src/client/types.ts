@@ -8,6 +8,7 @@ import type { Plan } from "../plan/Plan.js";
  * A viem client used for reads. viem's base client type keeps type checking fast; any
  * `PublicClient` or `WalletClient` fits.
  *
+ * @stability stable
  * @category client
  * @since 1.0.0
  */
@@ -16,6 +17,7 @@ export type ViemClient = ViemBaseClient<Transport, Chain | undefined>;
 /**
  * A viem client that can sign: any `WalletClient`, or a client created with an account.
  *
+ * @stability stable
  * @category client
  * @since 1.0.0
  */
@@ -25,6 +27,7 @@ export type ViemWalletClient = ViemBaseClient<Transport, Chain | undefined, Acco
  * HTTP gateways that turn decentralized-storage URIs (avatars, content hashes) into URLs a
  * browser can load. Each is an origin, such as `https://ipfs.io`.
  *
+ * @stability stable
  * @category client
  * @since 1.0.0
  */
@@ -53,6 +56,7 @@ export type Gateways = {
 /**
  * Behaviour settings, set once in `Ensforge.create` and rarely read back.
  *
+ * @stability stable
  * @category client
  * @since 1.0.0
  */
@@ -79,6 +83,7 @@ export type Config = {
  * The ensforge client. Its top level holds what app code reads day to day and `extend`; action
  * groups added by `extend` sit beside them.
  *
+ * @stability stable
  * @category client
  * @since 1.0.0
  */
@@ -87,6 +92,7 @@ export type Client<actions extends object = {}> = actions & ClientBase<actions>;
 /**
  * Members every ensforge client has, whatever action groups it carries.
  *
+ * @stability stable
  * @category client
  * @since 1.0.0
  */
@@ -108,6 +114,7 @@ export interface ClientBase<actions extends object = {}> {
 /**
  * Anything an action accepts: an ensforge client or a bare viem client.
  *
+ * @stability stable
  * @category client
  * @since 1.0.0
  */
@@ -117,6 +124,7 @@ export type Like = Client<object> | ViemClient;
  * viem clients for a chain other than the ENS chain, e.g. an L2 where an address sets its primary
  * name for that chain.
  *
+ * @stability stable
  * @category client
  * @since 1.0.0
  */
@@ -137,6 +145,7 @@ export type ChainClients = {
 /**
  * Options for `Ensforge.create`.
  *
+ * @stability stable
  * @category client
  * @since 1.0.0
  */

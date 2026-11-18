@@ -40,6 +40,7 @@ const defaults: {
 /**
  * The ensforge client or a call is configured incorrectly. Fix the code; retrying does not help.
  *
+ * @stability stable
  * @category errors
  * @since 1.0.0
  */

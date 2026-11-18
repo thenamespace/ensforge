@@ -5,7 +5,11 @@ import type { Client, Like } from "../../client/types.js";
 import { fromCause } from "../../errors/translate/fromCause.js";
 import { contextOf } from "./context.js";
 
-/** The Effect implementation behind an action: data-first, no requirements. */
+/**
+ * The Effect implementation behind an action: data-first, no requirements.
+ *
+ * @stability unstable
+ */
 export type Implementation<options, value, error> = (
   client: Client,
   options: options,
@@ -16,6 +20,8 @@ export type Implementation<options, value, error> = (
  *
  * - Accepts a bare viem client (`Ensforge.from`).
  * - Rejects with `signal.reason` when aborted, otherwise with an ensforge error carrying context.
+ *
+ * @stability unstable
  */
 export const promise = <options, value, error>(
   path: string,
@@ -37,7 +43,11 @@ export const promise = <options, value, error>(
   });
 };
 
-/** Binds a path and an implementation into a Promise function, e.g. for `fn.prepare`. */
+/**
+ * Binds a path and an implementation into a Promise function, e.g. for `fn.prepare`.
+ *
+ * @stability unstable
+ */
 export const promiseOf = <options, value, error>(
   path: string,
   implementation: Implementation<options, value, error>,

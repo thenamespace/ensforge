@@ -1,5 +1,5 @@
 import type { Like } from "../../../client/types.js";
-import type { AnyError } from "../../../errors/types.js";
+import type * as Errors from "../../../errors/index.js";
 import * as Action from "../../../internal/action/index.js";
 import type { Read } from "../../../Types.js";
 import type { Operation, PermissionCheck } from "../get/types.js";
@@ -73,11 +73,14 @@ export declare namespace check {
   /** Whether it is allowed, how, and what is missing. */
   type ReturnType = PermissionCheck;
   /** Errors {@link check} can fail with. */
-  type ErrorType = AnyError;
+  type ErrorType = Errors.CommonError | Errors.InvalidInputError;
 }
 
 /** Builds a deferred read for `Actions.batch`. */
-check.request = Action.request("permission.check", Impl.check);
+check.request = Action.request(
+  "permission.check",
+  Impl.check as Action.Declared<typeof Impl.check, check.ErrorType>,
+);
 
 /** Path of the action, e.g. for cache keys. */
 check.path = "permission.check" as const;

@@ -5,6 +5,7 @@ import { getTransaction } from "viem/actions";
 
 import type { Client } from "../../../client/types.js";
 import { InvalidInputError } from "../../../errors/classes/InvalidInputError.js";
+import type { AnyError } from "../../../errors/types.js";
 import * as Action from "../../../internal/action/index.js";
 import { sameAddress } from "../../../internal/address.js";
 import { requireRecord } from "../../../internal/plan/records.js";
@@ -16,7 +17,7 @@ import type { reconcile as Promises } from "./index.js";
 export const reconcile = Effect.fn("ensforge.plan.reconcile")(function* (
   client: Client,
   options: Promises.Options,
-): Effect.fn.Return<Promises.ReturnType, Promises.ErrorType> {
+): Effect.fn.Return<Promises.ReturnType, AnyError> {
   if (!isHash(options.hash)) {
     return yield* Effect.fail(
       new InvalidInputError({

@@ -12,6 +12,7 @@ import type { ExecutionRequest, Executor } from "../types.js";
  * The parts of a Rhinestone SDK instance the executor uses; any SDK release with standalone
  * HCA support (`type: "hca"`, `version: "ens-standalone-1.1.0"`) fits.
  *
+ * @stability experimental
  * @category executors
  * @since 1.0.0
  */
@@ -26,6 +27,7 @@ export type RhinestoneSdk = {
 /**
  * A Rhinestone SDK account, as `createAccount` returns it.
  *
+ * @stability experimental
  * @category executors
  * @since 1.0.0
  */
@@ -39,6 +41,7 @@ export type RhinestoneAccount = {
 /**
  * Options of {@link rhinestone}.
  *
+ * @stability experimental
  * @category executors
  * @since 1.0.0
  */
@@ -91,6 +94,7 @@ export type RhinestoneOptions = {
  * rhinestone({ sdk, sessionSigner, sponsored: false })
  * ```
  *
+ * @stability experimental
  * @category executors
  * @since 1.0.0
  */

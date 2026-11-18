@@ -1,6 +1,7 @@
 /**
  * ERC-165 interface IDs of the ENSv2 registry interfaces, verified against contracts-v2 v1.0.1.
  *
+ * @stability stable
  * @since 1.0.0
  */
 export const registryInterfaceIds = {
@@ -16,6 +17,7 @@ export const registryInterfaceIds = {
 /**
  * An interface ID from {@link registryInterfaceIds}.
  *
+ * @stability stable
  * @since 1.0.0
  */
 export type RegistryInterfaceId = (typeof registryInterfaceIds)[keyof typeof registryInterfaceIds];
@@ -25,6 +27,7 @@ export type RegistryInterfaceId = (typeof registryInterfaceIds)[keyof typeof reg
  * `wrapperRegistryInitializer` capability: `explicit` for `initialize(bytes32,address,string,uint256)`
  * (Sepolia) and `fuseDerived` for `initialize(bytes32,address)` (mainnet).
  *
+ * @stability stable
  * @since 1.0.0
  */
 export const wrapperRegistryInitializableInterfaceIds = {

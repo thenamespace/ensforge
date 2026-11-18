@@ -4,6 +4,7 @@ import { AsyncResult } from "effect/reactivity";
 /**
  * What a read hook returns.
  *
+ * @stability stable
  * @category reads
  * @since 1.0.0
  */

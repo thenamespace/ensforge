@@ -1,5 +1,5 @@
 import type { Like } from "../../../client/types.js";
-import type { AnyError } from "../../../errors/types.js";
+import type * as Errors from "../../../errors/index.js";
 import type { Query } from "../../../indexer/Indexer.js";
 import type { IndexedResolver, Result } from "../../../indexer/types.js";
 import * as Action from "../../../internal/action/index.js";
@@ -71,11 +71,18 @@ export declare namespace getResolver {
   /** The resolver, or `null` when the indexer does not know it. */
   type ReturnType = Result<IndexedResolver> | null;
   /** Errors {@link getResolver} can fail with. */
-  type ErrorType = AnyError;
+  type ErrorType =
+    | Errors.CommonError
+    | Errors.InvalidInputError
+    | Errors.NotFoundError
+    | Errors.IndexerError;
 }
 
 /** Builds a deferred read for `Actions.batch`. */
-getResolver.request = Action.request("indexer.getResolver", Impl.getResolver);
+getResolver.request = Action.request(
+  "indexer.getResolver",
+  Impl.getResolver as Action.Declared<typeof Impl.getResolver, getResolver.ErrorType>,
+);
 
 /** Path of the action, e.g. for cache keys. */
 getResolver.path = "indexer.getResolver" as const;

@@ -1,6 +1,7 @@
 /**
  * Complete DNSSEC ABI from @ensdomains/ens-contracts v1.7.0.
  *
+ * @stability stable
  * @since 1.0.0
  */
 export const dnssecOracleV1InterfaceAbi = [
@@ -137,6 +138,7 @@ export const dnssecOracleV1InterfaceAbi = [
 /**
  * Complete DNSSECImpl ABI from @ensdomains/ens-contracts v1.7.0.
  *
+ * @stability stable
  * @since 1.0.0
  */
 export const dnssecOracleV1Abi = [

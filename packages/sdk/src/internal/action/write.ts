@@ -18,7 +18,11 @@ import { staleTransfer } from "../write/stale.js";
 import { routePlan } from "../write/via.js";
 import { contextOf, withContext } from "./context.js";
 
-/** Builds the plan of a write action from its options. */
+/**
+ * Builds the plan of a write action from its options.
+ *
+ * @stability unstable
+ */
 export type Planner<options, error> = (
   client: Client,
   options: options & Pick<Write.Options, "account">,
@@ -76,6 +80,8 @@ const explained = <options>(
  * Every Effect a write action exposes, built from one planner: `send` (the action itself),
  * `sendSync` (its `…Sync` sibling) and `methods` (`.prepare`, `.simulate`, `.estimateGas`).
  * Each gets one span and the action's error context.
+ *
+ * @stability unstable
  */
 export const write = <options, error extends EnsforgeError>(
   path: string,

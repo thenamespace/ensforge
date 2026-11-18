@@ -1,6 +1,7 @@
 /**
  * Complete IL2ReverseRegistrar ABI from @ensdomains/ens-contracts v1.7.0.
  *
+ * @stability stable
  * @since 1.0.0
  */
 export const l2ReverseRegistrarV1InterfaceAbi = [
@@ -111,6 +112,7 @@ export const l2ReverseRegistrarV1InterfaceAbi = [
 /**
  * Complete L2ReverseRegistrar ABI from @ensdomains/ens-contracts v1.7.0.
  *
+ * @stability stable
  * @since 1.0.0
  */
 export const l2ReverseRegistrarV1Abi = [
@@ -332,6 +334,7 @@ export const l2ReverseRegistrarV1Abi = [
 /**
  * Complete L2ReverseRegistrarWithMigration ABI from @ensdomains/ens-contracts v1.7.0.
  *
+ * @stability stable
  * @since 1.0.0
  */
 export const l2ReverseRegistrarWithMigrationV1Abi = [

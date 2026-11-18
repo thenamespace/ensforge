@@ -1,5 +1,5 @@
 import type { Like } from "../../../client/types.js";
-import type { AnyError } from "../../../errors/types.js";
+import type * as Errors from "../../../errors/index.js";
 import type { Query } from "../../../indexer/Indexer.js";
 import type { AddressName, Page } from "../../../indexer/types.js";
 import * as Action from "../../../internal/action/index.js";
@@ -75,11 +75,17 @@ export declare namespace getNamesForAddress {
   /** One page of names, each with how the address relates to it. */
   type ReturnType = Page<AddressName>;
   /** Errors {@link getNamesForAddress} can fail with. */
-  type ErrorType = AnyError;
+  type ErrorType = Errors.CommonError | Errors.InvalidInputError | Errors.IndexerError;
 }
 
 /** Builds a deferred read for `Actions.batch`. */
-getNamesForAddress.request = Action.request("indexer.getNamesForAddress", Impl.getNamesForAddress);
+getNamesForAddress.request = Action.request(
+  "indexer.getNamesForAddress",
+  Impl.getNamesForAddress as Action.Declared<
+    typeof Impl.getNamesForAddress,
+    getNamesForAddress.ErrorType
+  >,
+);
 
 /** Path of the action, e.g. for cache keys. */
 getNamesForAddress.path = "indexer.getNamesForAddress" as const;

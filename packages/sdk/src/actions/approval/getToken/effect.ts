@@ -3,6 +3,7 @@ import { Effect } from "effect";
 import { Abis } from "@ensforge/contracts";
 
 import type { Client } from "../../../client/types.js";
+import type { AnyError } from "../../../errors/types.js";
 import * as Action from "../../../internal/action/index.js";
 import { nonZeroAddress } from "../../../internal/address.js";
 import { approvableToken } from "../../../internal/approval/token.js";
@@ -14,7 +15,7 @@ import type { getToken as Promises } from "./index.js";
 export const getToken = Effect.fn("ensforge.approval.getToken")(function* (
   client: Client,
   options: Promises.Options,
-): Effect.fn.Return<Promises.ReturnType, Promises.ErrorType> {
+): Effect.fn.Return<Promises.ReturnType, AnyError> {
   const token = yield* approvableToken(client, yield* loadName(client, options.name, options));
   // An expired BaseRegistrar token reverts on `getApproved`; it has no approval then.
   const approved = yield* Rpc.readContractOrUndefined(client, {

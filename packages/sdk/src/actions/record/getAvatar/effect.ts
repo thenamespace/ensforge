@@ -3,6 +3,7 @@ import { Effect } from "effect";
 import type { Address } from "viem";
 
 import type { Client } from "../../../client/types.js";
+import type { AnyError } from "../../../errors/types.js";
 import * as Action from "../../../internal/action/index.js";
 import { resolveAvatar } from "../../../internal/avatar/resolve.js";
 import { resolveGateways } from "../../../internal/gateways.js";
@@ -14,7 +15,7 @@ export const getAvatar = Effect.fn("ensforge.record.getAvatar")(
   function* (
     client: Client,
     options: Promises.Options,
-  ): Effect.fn.Return<Promises.ReturnType, Promises.ErrorType> {
+  ): Effect.fn.Return<Promises.ReturnType, AnyError> {
     // The ETH address is read with the record: NFT avatars must belong to it.
     const record = yield* readSingleRecord(
       client,

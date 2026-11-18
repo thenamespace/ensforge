@@ -1,5 +1,5 @@
 import type { Like } from "../../../client/types.js";
-import type { AnyError } from "../../../errors/types.js";
+import type * as Errors from "../../../errors/index.js";
 import type { Query } from "../../../indexer/Indexer.js";
 import type { Page, ResolverLink } from "../../../indexer/types.js";
 import * as Action from "../../../internal/action/index.js";
@@ -68,11 +68,17 @@ export declare namespace getResolverLinks {
   /** One page of links. */
   type ReturnType = Page<ResolverLink>;
   /** Errors {@link getResolverLinks} can fail with. */
-  type ErrorType = AnyError;
+  type ErrorType = Errors.CommonError | Errors.InvalidInputError | Errors.IndexerError;
 }
 
 /** Builds a deferred read for `Actions.batch`. */
-getResolverLinks.request = Action.request("indexer.getResolverLinks", Impl.getResolverLinks);
+getResolverLinks.request = Action.request(
+  "indexer.getResolverLinks",
+  Impl.getResolverLinks as Action.Declared<
+    typeof Impl.getResolverLinks,
+    getResolverLinks.ErrorType
+  >,
+);
 
 /** Path of the action, e.g. for cache keys. */
 getResolverLinks.path = "indexer.getResolverLinks" as const;

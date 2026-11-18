@@ -10,6 +10,7 @@ import type { Meta } from "./types.js";
  * ensforge fills the missing ones (`completeness: "full"`, no snapshot) and sets `indexer` to the
  * adapter id.
  *
+ * @stability stable
  * @category indexer
  * @since 1.0.0
  */
@@ -18,6 +19,7 @@ export type Draft<answer> = answer extends null ? null : Omit<answer, keyof Meta
 /**
  * A custom adapter: an id and the queries it answers, as Promise functions.
  *
+ * @stability stable
  * @category indexer
  * @since 1.0.0
  */
@@ -83,6 +85,7 @@ export type Adapter = {
  * })
  * ```
  *
+ * @stability stable
  * @category indexer
  * @since 1.0.0
  */

@@ -1,5 +1,5 @@
 import type { Like } from "../../../client/types.js";
-import type { AnyError } from "../../../errors/types.js";
+import type * as Errors from "../../../errors/index.js";
 import * as Action from "../../../internal/action/index.js";
 import type { Read } from "../../../Types.js";
 import type { Decoded } from "../../../utils/ContentHash.js";
@@ -46,6 +46,7 @@ import * as Impl from "./effect.js";
  * @throws `Errors.NotFoundError` (`RECORD_NOT_FOUND`, `RESOLVER_NOT_FOUND`) with `strict`.
  * @throws `Errors.UnsupportedError` (`RESOLVER_PROFILE_UNSUPPORTED`) with `strict` when the resolver supports none of the records.
  * @throws `Errors.GatewayError` when an off-chain gateway fails.
+ * @throws `Errors.DnsError` when a DNS name's DNSSEC proof does not verify.
  * @throws `Errors.NetworkError` when the RPC request fails.
  *
  * @see {@link Actions.record.get} to read several records
@@ -69,11 +70,20 @@ export declare namespace getContentHash {
   /** The decoded content hash, or `null` when not set. */
   type ReturnType = Decoded | null;
   /** Errors {@link getContentHash} can fail with. */
-  type ErrorType = AnyError;
+  type ErrorType =
+    | Errors.CommonError
+    | Errors.InvalidInputError
+    | Errors.NotFoundError
+    | Errors.UnsupportedError
+    | Errors.GatewayError
+    | Errors.DnsError;
 }
 
 /** Builds a deferred read for `Actions.batch`. */
-getContentHash.request = Action.request("record.getContentHash", Impl.getContentHash);
+getContentHash.request = Action.request(
+  "record.getContentHash",
+  Impl.getContentHash as Action.Declared<typeof Impl.getContentHash, getContentHash.ErrorType>,
+);
 
 /** Path of the action, e.g. for cache keys. */
 getContentHash.path = "record.getContentHash" as const;

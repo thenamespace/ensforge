@@ -1,7 +1,7 @@
 import type { Hex } from "viem";
 
 import type { Like } from "../../../client/types.js";
-import type { AnyError } from "../../../errors/types.js";
+import type * as Errors from "../../../errors/index.js";
 import * as Action from "../../../internal/action/index.js";
 import type { Plan } from "../../../plan/Plan.js";
 import type { Write } from "../../../Types.js";
@@ -83,7 +83,7 @@ export declare namespace renew {
   /** Submitted transaction hashes and the plan that produced them. */
   type ReturnType = Write.Result;
   /** Errors {@link renew} can fail with. */
-  type ErrorType = AnyError;
+  type ErrorType = Errors.WriteError | Errors.InvalidInputError | Errors.NameStateError;
 }
 
 // Explicit types keep these declarations free of Effect types.
@@ -160,7 +160,7 @@ export declare namespace renewSync {
     readonly paid: bigint;
   };
   /** Errors {@link renewSync} can fail with. */
-  type ErrorType = AnyError;
+  type ErrorType = Errors.WriteError | Errors.InvalidInputError | Errors.NameStateError;
 }
 
 /** Path of the action, e.g. for cache keys. */

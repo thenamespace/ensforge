@@ -1,5 +1,5 @@
 import type { Like } from "../../../client/types.js";
-import type { AnyError } from "../../../errors/types.js";
+import type * as Errors from "../../../errors/index.js";
 import * as Action from "../../../internal/action/index.js";
 import type { Read } from "../../../Types.js";
 import type { Event, EventType } from "../types.js";
@@ -81,11 +81,14 @@ export declare namespace get {
   /** The name's ENS events, in chain order. */
   type ReturnType = readonly Event[];
   /** Errors {@link get} can fail with. */
-  type ErrorType = AnyError;
+  type ErrorType = Errors.CommonError | Errors.InvalidInputError;
 }
 
 /** Builds a deferred read for `Actions.batch`. */
-get.request = Action.request("event.get", Impl.get);
+get.request = Action.request(
+  "event.get",
+  Impl.get as Action.Declared<typeof Impl.get, get.ErrorType>,
+);
 
 /** Path of the action, e.g. for cache keys. */
 get.path = "event.get" as const;

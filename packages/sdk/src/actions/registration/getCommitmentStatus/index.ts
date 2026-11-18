@@ -1,7 +1,7 @@
 import type { Hex } from "viem";
 
 import type { Like } from "../../../client/types.js";
-import type { AnyError } from "../../../errors/types.js";
+import type * as Errors from "../../../errors/index.js";
 import * as Action from "../../../internal/action/index.js";
 import type { Read } from "../../../Types.js";
 import * as Impl from "./effect.js";
@@ -76,13 +76,16 @@ export declare namespace getCommitmentStatus {
     readonly expiresAt: bigint | null;
   };
   /** Errors {@link getCommitmentStatus} can fail with. */
-  type ErrorType = AnyError;
+  type ErrorType = Errors.CommonError | Errors.InvalidInputError | Errors.UnsupportedError;
 }
 
 /** Builds a deferred read for `Actions.batch`. */
 getCommitmentStatus.request = Action.request(
   "registration.getCommitmentStatus",
-  Impl.getCommitmentStatus,
+  Impl.getCommitmentStatus as Action.Declared<
+    typeof Impl.getCommitmentStatus,
+    getCommitmentStatus.ErrorType
+  >,
 );
 
 /** Path of the action, e.g. for cache keys. */

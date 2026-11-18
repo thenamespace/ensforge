@@ -1,7 +1,7 @@
 import type { Hex } from "viem";
 
 import type { Like } from "../../../client/types.js";
-import type { AnyError } from "../../../errors/types.js";
+import type * as Errors from "../../../errors/index.js";
 import * as Action from "../../../internal/action/index.js";
 import type { Plan } from "../../../plan/Plan.js";
 import type { Write } from "../../../Types.js";
@@ -115,7 +115,11 @@ export declare namespace register {
   /** Submitted hashes, the plan and the commitment secret. */
   type ReturnType = Write.Result & { readonly secret: Hex };
   /** Errors {@link register} can fail with. */
-  type ErrorType = AnyError;
+  type ErrorType =
+    | Errors.WriteError
+    | Errors.InvalidInputError
+    | Errors.NameStateError
+    | Errors.CommitmentError;
 }
 
 // Explicit types keep these declarations free of Effect types.
@@ -201,7 +205,11 @@ export declare namespace registerSync {
     readonly paid: bigint;
   };
   /** Errors {@link registerSync} can fail with. */
-  type ErrorType = AnyError;
+  type ErrorType =
+    | Errors.WriteError
+    | Errors.InvalidInputError
+    | Errors.NameStateError
+    | Errors.CommitmentError;
 }
 
 /** Path of the action, e.g. for cache keys. */

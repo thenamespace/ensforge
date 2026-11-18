@@ -1,5 +1,5 @@
 import type { Like } from "../../../client/types.js";
-import type { AnyError } from "../../../errors/types.js";
+import type * as Errors from "../../../errors/index.js";
 import type { Query } from "../../../indexer/Indexer.js";
 import type { IndexedPrimaryName, Result } from "../../../indexer/types.js";
 import * as Action from "../../../internal/action/index.js";
@@ -71,11 +71,14 @@ export declare namespace getPrimaryName {
   /** The primary name (`null` when none) and every answer. */
   type ReturnType = Result<IndexedPrimaryName>;
   /** Errors {@link getPrimaryName} can fail with. */
-  type ErrorType = AnyError;
+  type ErrorType = Errors.CommonError | Errors.InvalidInputError | Errors.IndexerError;
 }
 
 /** Builds a deferred read for `Actions.batch`. */
-getPrimaryName.request = Action.request("indexer.getPrimaryName", Impl.getPrimaryName);
+getPrimaryName.request = Action.request(
+  "indexer.getPrimaryName",
+  Impl.getPrimaryName as Action.Declared<typeof Impl.getPrimaryName, getPrimaryName.ErrorType>,
+);
 
 /** Path of the action, e.g. for cache keys. */
 getPrimaryName.path = "indexer.getPrimaryName" as const;

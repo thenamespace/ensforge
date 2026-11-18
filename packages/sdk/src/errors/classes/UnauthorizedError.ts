@@ -51,6 +51,7 @@ const defaults: {
  * The account lacks ownership, approval or roles for this change, or the signature that should
  * authorize it is invalid or expired.
  *
+ * @stability stable
  * @category errors
  * @since 1.0.0
  */

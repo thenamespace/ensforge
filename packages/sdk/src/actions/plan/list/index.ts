@@ -1,5 +1,5 @@
 import type { Like } from "../../../client/types.js";
-import type { AnyError } from "../../../errors/types.js";
+import type * as Errors from "../../../errors/index.js";
 import * as Action from "../../../internal/action/index.js";
 import type { Plan } from "../../../plan/Plan.js";
 import * as Impl from "./effect.js";
@@ -61,11 +61,14 @@ export declare namespace list {
   /** The saved plans, newest first. */
   type ReturnType = readonly Plan.Record[];
   /** Errors {@link list} can fail with. */
-  type ErrorType = AnyError;
+  type ErrorType = Errors.CommonError | Errors.InvalidInputError;
 }
 
 /** Builds a deferred read for `Actions.batch`. */
-list.request = Action.request("plan.list", Impl.list);
+list.request = Action.request(
+  "plan.list",
+  Impl.list as Action.Declared<typeof Impl.list, list.ErrorType>,
+);
 
 /** Path of the action, e.g. for cache keys. */
 list.path = "plan.list" as const;

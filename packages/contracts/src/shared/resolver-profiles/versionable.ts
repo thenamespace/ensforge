@@ -1,6 +1,7 @@
 /**
  * Resolver profile that clears all records by bumping a version.
  *
+ * @stability stable
  * @since 1.0.0
  */
 export const versionableResolverAbi = [
@@ -25,6 +26,7 @@ export const versionableResolverAbi = [
 /**
  * ERC-165 interface ID of {@link versionableResolverAbi}.
  *
+ * @stability stable
  * @since 1.0.0
  */
 export const versionableResolverInterfaceId = "0xd700ff33" as const;

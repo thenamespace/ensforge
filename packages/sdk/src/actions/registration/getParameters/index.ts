@@ -1,7 +1,7 @@
 import type { Address } from "viem";
 
 import type { Like } from "../../../client/types.js";
-import type { AnyError } from "../../../errors/types.js";
+import type * as Errors from "../../../errors/index.js";
 import * as Action from "../../../internal/action/index.js";
 import type { Read } from "../../../Types.js";
 import type { TokenInfo } from "../types.js";
@@ -69,11 +69,14 @@ export declare namespace getParameters {
     readonly paymentTokens: readonly TokenInfo[];
   };
   /** Errors {@link getParameters} can fail with. */
-  type ErrorType = AnyError;
+  type ErrorType = Errors.CommonError | Errors.UnsupportedError;
 }
 
 /** Builds a deferred read for `Actions.batch`. */
-getParameters.request = Action.request("registration.getParameters", Impl.getParameters);
+getParameters.request = Action.request(
+  "registration.getParameters",
+  Impl.getParameters as Action.Declared<typeof Impl.getParameters, getParameters.ErrorType>,
+);
 
 /** Path of the action, e.g. for cache keys. */
 getParameters.path = "registration.getParameters" as const;

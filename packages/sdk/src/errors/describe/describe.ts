@@ -5,6 +5,7 @@ import { messages, type Copy } from "./messages.js";
 /**
  * User-facing description of an error.
  *
+ * @stability stable
  * @category errors
  * @since 1.0.0
  */
@@ -18,6 +19,7 @@ export type Description = Copy & {
 /**
  * Options for {@link describe}.
  *
+ * @stability stable
  * @category errors
  * @since 1.0.0
  */
@@ -70,6 +72,7 @@ const expected = new Set<AnyError["_tag"]>([
  * })
  * ```
  *
+ * @stability stable
  * @category errors
  * @since 1.0.0
  */

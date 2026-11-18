@@ -10,6 +10,7 @@ declare const requestError: unique symbol;
  * A deferred read built with `action.request(options)`, run later by `Actions.batch`.
  * Plain data; the type parameters only carry the result types.
  *
+ * @stability stable
  * @category types
  * @since 1.0.0
  */
@@ -24,10 +25,16 @@ export interface Request<value = unknown, error = unknown> {
 /**
  * Options shared by read actions.
  *
+ * @stability stable
  * @category types
  * @since 1.0.0
  */
 export declare namespace Read {
+  /**
+   * Options every read action takes.
+   *
+   * @stability stable
+   */
   type Options = {
     /** Cancels the call; the Promise rejects with `signal.reason`. */
     signal?: AbortSignal | undefined;
@@ -41,7 +48,11 @@ export declare namespace Read {
     gatewayUrls?: readonly string[] | undefined;
   } & BlockOptions;
 
-  /** Read at one block, by number or by tag, never both. */
+  /**
+   * Read at one block, by number or by tag, never both.
+   *
+   * @stability stable
+   */
   type BlockOptions =
     | {
         /** Block number to read at. */
@@ -62,6 +73,7 @@ export declare namespace Read {
 /**
  * Options and results shared by write actions.
  *
+ * @stability stable
  * @category types
  * @since 1.0.0
  */
@@ -70,9 +82,16 @@ export declare namespace Write {
    * How a plan's calls are sent: `batch` uses one EIP-5792 wallet call, `sequential` sends one
    * transaction per call, each once the previous one is mined and with a fifth more gas than
    * estimated, `auto` batches when the wallet supports atomic batches.
+   *
+   * @stability stable
    */
   type Mode = "auto" | "batch" | "sequential";
 
+  /**
+   * Options every write action takes.
+   *
+   * @stability stable
+   */
   type Options = {
     /**
      * Signer for this write.
@@ -121,6 +140,8 @@ export declare namespace Write {
    * A route for writes: rewrites a plan (e.g. into smart-account executions) and, optionally, sends
    * its steps itself (a bundler, an intent network). Without `send`, the signer sends the rewritten
    * plan as usual. Built by extension packages; resumable through `plan.resume` like any write.
+   *
+   * @stability stable
    */
   type Via = {
     /** Shown in progress and errors, e.g. `hca`. */
@@ -144,7 +165,11 @@ export declare namespace Write {
   };
 
   namespace Via {
-    /** What a route knows about the write it carries. */
+    /**
+     * What a route knows about the write it carries.
+     *
+     * @stability stable
+     */
     type Context = {
       /** The ensforge client the write runs on (deployment, reads). */
       readonly client: Client<object>;
@@ -156,13 +181,22 @@ export declare namespace Write {
       readonly walletClient: ViemWalletClient | undefined;
     };
 
-    /** Where a sent step is: still pending, mined (with its transactions), or failed. */
+    /**
+     * Where a sent step is: still pending, mined (with its transactions), or failed.
+     *
+     * @stability stable
+     */
     type Status =
       | { readonly status: "pending" }
       | { readonly status: "success"; readonly hashes: readonly Hex[] }
       | { readonly status: "failed"; readonly reason: string; readonly hashes?: readonly Hex[] };
   }
 
+  /**
+   * Options of a write's `…Sync` form, which waits for receipts.
+   *
+   * @stability stable
+   */
   type SyncOptions = Options & {
     /**
      * Confirmations to wait for per transaction.
@@ -174,7 +208,11 @@ export declare namespace Write {
     timeout?: number | undefined;
   };
 
-  /** A write's `.prepare`, `.simulate` or `.estimateGas`: options plus `account` and `via`. */
+  /**
+   * A write's `.prepare`, `.simulate` or `.estimateGas`: options plus `account` and `via`.
+   *
+   * @stability stable
+   */
   type Method<options, value> = ((
     client: Like,
     options: options & Pick<Options, "account" | "via">,
@@ -183,7 +221,11 @@ export declare namespace Write {
     readonly path: string;
   };
 
-  /** Returned by every write: resolves once every call is submitted. */
+  /**
+   * Returned by every write: resolves once every call is submitted.
+   *
+   * @stability stable
+   */
   type Result = {
     /** Hash of the last transaction. */
     readonly hash: Hex;
@@ -194,7 +236,11 @@ export declare namespace Write {
     readonly plan: Plan;
   };
 
-  /** Returned by every `…Sync` write: resolves once every receipt is in. */
+  /**
+   * Returned by every `…Sync` write: resolves once every receipt is in.
+   *
+   * @stability stable
+   */
   type SyncResult = Result & {
     /** Receipt of the last transaction. */
     readonly receipt: TransactionReceipt;

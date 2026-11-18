@@ -4,6 +4,7 @@ import { Abis } from "@ensforge/contracts";
 
 import type { Client } from "../../../client/types.js";
 import { NotFoundError } from "../../../errors/classes/NotFoundError.js";
+import type { AnyError } from "../../../errors/types.js";
 import * as Action from "../../../internal/action/index.js";
 import { loadName } from "../../../internal/name/load.js";
 import { requireAddress } from "../../../internal/name/write.js";
@@ -16,7 +17,7 @@ export const getDelegate = Effect.fn("ensforge.approval.getDelegate")(
   function* (
     client: Client,
     options: Promises.Options,
-  ): Effect.fn.Return<Promises.ReturnType, Promises.ErrorType> {
+  ): Effect.fn.Return<Promises.ReturnType, AnyError> {
     const delegate = yield* requireAddress(options.delegate, "delegate");
     const loaded = yield* loadName(client, options.name, options);
     const resolver = loaded.state.resolver;

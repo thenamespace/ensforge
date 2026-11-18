@@ -2,6 +2,7 @@ import { Effect } from "effect";
 
 import type { Client } from "../../../client/types.js";
 import { NotFoundError } from "../../../errors/classes/NotFoundError.js";
+import type { AnyError } from "../../../errors/types.js";
 import * as Action from "../../../internal/action/index.js";
 import { requireAddress } from "../../../internal/name/write.js";
 import { inspectRegistry } from "../../../internal/registry/inspect.js";
@@ -13,7 +14,7 @@ export const get = Effect.fn("ensforge.registry.get")(
   function* (
     client: Client,
     options: Promises.Options,
-  ): Effect.fn.Return<Promises.ReturnType, Promises.ErrorType> {
+  ): Effect.fn.Return<Promises.ReturnType, AnyError> {
     const address = yield* findTargetRegistry(client, options, options);
     if (address === undefined) {
       if (options.strict === true) {

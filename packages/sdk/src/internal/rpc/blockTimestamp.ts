@@ -13,6 +13,8 @@ import { readContract } from "./readContract.js";
 /**
  * Timestamp of the block a read runs at. With Multicall3 it joins the same batch as the other
  * reads, so time-based status (expiry, grace) uses chain time, not the local clock.
+ *
+ * @stability unstable
  */
 export const blockTimestamp = (
   client: Client,

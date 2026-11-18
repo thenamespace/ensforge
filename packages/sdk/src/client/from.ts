@@ -5,6 +5,7 @@ import type { Client, Like, ViemClient } from "./types.js";
 /**
  * Whether `value` is an ensforge client.
  *
+ * @stability stable
  * @category client
  * @since 1.0.0
  */
@@ -22,6 +23,7 @@ const created = new WeakMap<ViemClient, Client>();
  *
  * @throws `Errors.ConfigError` (`UNKNOWN_CHAIN`) when a bare viem client is on a chain without a
  * built-in deployment.
+ * @stability stable
  * @category client
  * @since 1.0.0
  */

@@ -21,6 +21,7 @@ import type { ExecutionRequest, Executor } from "../types.js";
 /**
  * Options of {@link bundler}.
  *
+ * @stability experimental
  * @category executors
  * @since 1.0.0
  */
@@ -179,6 +180,7 @@ const isPaymasterError = (error: unknown): boolean => {
  * bundler({ url, paymaster: url, paymasterContext: { sponsorshipPolicyId: "sp_…" } })
  * ```
  *
+ * @stability experimental
  * @category executors
  * @since 1.0.0
  */
@@ -267,6 +269,7 @@ export const bundler = (options: BundlerOptions): Executor => {
 /**
  * Options of {@link pimlico}.
  *
+ * @stability experimental
  * @category executors
  * @since 1.0.0
  */
@@ -310,6 +313,7 @@ export type PimlicoOptions = {
  * pimlico({ apiKey })
  * ```
  *
+ * @stability experimental
  * @category executors
  * @since 1.0.0
  */

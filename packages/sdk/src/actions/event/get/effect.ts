@@ -4,6 +4,7 @@ import { getBlockNumber } from "viem/actions";
 
 import type { Client } from "../../../client/types.js";
 import { InvalidInputError } from "../../../errors/classes/InvalidInputError.js";
+import type { AnyError } from "../../../errors/types.js";
 import * as Action from "../../../internal/action/index.js";
 import { knownContracts } from "../../../internal/event/classify.js";
 import { decodeLogs } from "../../../internal/event/decode.js";
@@ -17,7 +18,7 @@ import type { get as Promises } from "./index.js";
 export const get = Effect.fn("ensforge.event.get")(function* (
   client: Client,
   options: Promises.Options,
-): Effect.fn.Return<Promises.ReturnType, Promises.ErrorType> {
+): Effect.fn.Return<Promises.ReturnType, AnyError> {
   // Validate the name before reading the head block.
   yield* parseName(options.name);
   const toBlock =

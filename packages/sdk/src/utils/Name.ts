@@ -29,6 +29,7 @@ const encodedLabelPattern = /^\[[0-9a-f]{64}\]$/;
  * ```
  *
  * @throws `Errors.InvalidInputError` (`INVALID_NAME`) when a label cannot be normalized.
+ * @stability stable
  * @category names
  * @since 1.0.0
  */
@@ -62,6 +63,7 @@ export const normalize = (name: string): string => {
 /**
  * Whether `name` normalizes without error. It may still differ from its normalized form.
  *
+ * @stability stable
  * @category names
  * @since 1.0.0
  */
@@ -78,6 +80,7 @@ export const isValid = (name: string): boolean => {
  * ENS node (EIP-137 namehash) of a name, normalizing it first.
  *
  * @throws `Errors.InvalidInputError` (`INVALID_NAME`) when the name cannot be normalized.
+ * @stability stable
  * @category names
  * @since 1.0.0
  */
@@ -88,6 +91,7 @@ export const namehash = (name: string): Hex => viemNamehash(normalize(name));
  *
  * @throws `Errors.InvalidInputError` (`INVALID_NAME`) when the label is empty, contains a dot or
  * cannot be normalized.
+ * @stability stable
  * @category names
  * @since 1.0.0
  */
@@ -107,6 +111,7 @@ export const labelhash = (label: string): Hex => {
  * DNS wire-format encoding of a name, as the Universal Resolver and ENSv2 registries expect.
  *
  * @throws `Errors.InvalidInputError` (`INVALID_NAME`) when the name cannot be normalized.
+ * @stability stable
  * @category names
  * @since 1.0.0
  */
@@ -126,6 +131,7 @@ export const dnsEncode = (name: string): Hex => bytesToHex(packetToBytes(normali
  *
  * @throws `Errors.InvalidInputError` (`INVALID_NAME`) when the bytes are not a DNS-encoded name, or
  * a label contains a dot.
+ * @stability stable
  * @category names
  * @since 1.0.0
  */
@@ -154,6 +160,7 @@ export const dnsDecode = (data: Hex): string => {
 /**
  * Parts of a name.
  *
+ * @stability stable
  * @category names
  * @since 1.0.0
  */
@@ -185,6 +192,7 @@ export type Parsed = {
  * ```
  *
  * @throws `Errors.InvalidInputError` (`INVALID_NAME`) when the name cannot be normalized.
+ * @stability stable
  * @category names
  * @since 1.0.0
  */
@@ -206,6 +214,7 @@ export const parse = (name: string): Parsed => {
  * Parent of a name, or `null` for top-level names and the root.
  *
  * @throws `Errors.InvalidInputError` (`INVALID_NAME`) when the name cannot be normalized.
+ * @stability stable
  * @category names
  * @since 1.0.0
  */
@@ -214,6 +223,7 @@ export const getParent = (name: string): string | null => parse(name).parent;
 /**
  * Encoded label for a labelhash whose plain label is unknown: `[af2c…]`.
  *
+ * @stability stable
  * @category names
  * @since 1.0.0
  */
@@ -224,6 +234,7 @@ export const fromLabelhash = (hash: Hex): string => `[${hash.slice(2).toLowerCas
  * number. ENSv2 token IDs change over time; read them with `name.getTokenId`.
  *
  * @throws `Errors.InvalidInputError` (`INVALID_NAME`) when the name cannot be normalized.
+ * @stability stable
  * @category names
  * @since 1.0.0
  */

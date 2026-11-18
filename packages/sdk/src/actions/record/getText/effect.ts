@@ -1,6 +1,7 @@
 import { Effect } from "effect";
 
 import type { Client } from "../../../client/types.js";
+import type { AnyError } from "../../../errors/types.js";
 import * as Action from "../../../internal/action/index.js";
 import { readSingleRecord } from "../../../internal/records/single.js";
 import type { getText as Promises } from "./index.js";
@@ -10,7 +11,7 @@ export const getText = Effect.fn("ensforge.record.getText")(
   function* (
     client: Client,
     options: Promises.Options,
-  ): Effect.fn.Return<Promises.ReturnType, Promises.ErrorType> {
+  ): Effect.fn.Return<Promises.ReturnType, AnyError> {
     return yield* readSingleRecord(
       client,
       { ...options, selection: { texts: [options.key] }, resource: options.key },

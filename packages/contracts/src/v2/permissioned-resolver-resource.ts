@@ -15,6 +15,7 @@ import { encodePacked, keccak256, stringToHex, type Hex } from "viem";
  * ```
  *
  * @see https://github.com/ensdomains/contracts-v2/blob/v1.0.1/contracts/src/resolver/PermissionedResolver.sol
+ * @stability stable
  * @since 1.0.0
  */
 export const permissionedResolverResource = (

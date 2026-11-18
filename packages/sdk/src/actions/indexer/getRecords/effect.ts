@@ -1,6 +1,7 @@
 import { Effect } from "effect";
 
 import type { Client } from "../../../client/types.js";
+import type { AnyError } from "../../../errors/types.js";
 import * as Action from "../../../internal/action/index.js";
 import { callIndexer, orNotFound } from "../../../internal/indexer/call.js";
 import { contractInput, nameInput, queryOf } from "../../../internal/indexer/input.js";
@@ -10,7 +11,7 @@ import type { getRecords as Promises } from "./index.js";
 export const getRecords = Effect.fn("ensforge.indexer.getRecords")(function* (
   client: Client,
   options: Promises.Options,
-): Effect.fn.Return<Promises.ReturnType, Promises.ErrorType> {
+): Effect.fn.Return<Promises.ReturnType, AnyError> {
   const input = yield* nameInput(options.name, options.namespace);
   const resolver =
     options.resolver === undefined

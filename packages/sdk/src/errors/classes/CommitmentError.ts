@@ -30,6 +30,7 @@ const defaults: {
 /**
  * A `.eth` commit-reveal registration step is out of order or out of time.
  *
+ * @stability stable
  * @category errors
  * @since 1.0.0
  */

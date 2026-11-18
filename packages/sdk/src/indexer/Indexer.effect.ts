@@ -10,6 +10,7 @@ import type { Page } from "./types.js";
 /**
  * A custom adapter whose queries are Effects.
  *
+ * @stability stable
  * @category indexer
  * @since 1.0.0
  */
@@ -65,6 +66,7 @@ export type Adapter = { readonly id: string } & {
  * const indexer = Indexer.define({ id: "test", getName: () => Effect.succeed(null) })
  * ```
  *
+ * @stability stable
  * @category indexer
  * @since 1.0.0
  */
@@ -128,6 +130,7 @@ export const define = (adapter: Adapter): Indexer => {
  * )
  * ```
  *
+ * @stability stable
  * @category indexer
  * @since 1.0.0
  */

@@ -4,6 +4,7 @@ import { Abis } from "@ensforge/contracts";
 import type { Address } from "viem";
 
 import type { Client } from "../../../client/types.js";
+import type { AnyError } from "../../../errors/types.js";
 import * as Action from "../../../internal/action/index.js";
 import { requireRegistrationContracts } from "../../../internal/registration/contracts.js";
 import { tokenInfo } from "../../../internal/registration/payment.js";
@@ -16,7 +17,7 @@ export const getParameters = Effect.fn("ensforge.registration.getParameters")(
   function* (
     client: Client,
     options: Promises.Options = {},
-  ): Effect.fn.Return<Promises.ReturnType, Promises.ErrorType> {
+  ): Effect.fn.Return<Promises.ReturnType, AnyError> {
     const contracts = yield* requireRegistrationContracts(client);
     const at = blockAt(options);
     const registrar = { address: contracts.registrar, abi: Abis.v2.ethRegistrar, ...at } as const;

@@ -14,6 +14,7 @@ import { getConfig } from "./config.js";
  * - Promise and Effect users receive the same instance.
  *
  * @see https://ensforge.com/errors
+ * @stability stable
  * @category errors
  * @since 1.0.0
  */
@@ -119,6 +120,7 @@ export abstract class EnsforgeError<
  * `undefined` never overwrites a default.
  *
  * @internal
+ * @stability unstable
  */
 export const withDefaults = <code extends string>(
   defaults: EnsforgeError.Defaults,

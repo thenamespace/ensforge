@@ -9,7 +9,11 @@ import type { AnyError } from "../../errors/types.js";
 import type { Write } from "../../Types.js";
 import { fromPromise } from "../rpc/fromPromise.js";
 
-/** Waits for the receipts of `hashes` in order and fails when one reverted. */
+/**
+ * Waits for the receipts of `hashes` in order and fails when one reverted.
+ *
+ * @stability unstable
+ */
 export const receiptsOf = Effect.fnUntraced(function* (
   client: Client,
   hashes: readonly Hex[],
@@ -33,7 +37,11 @@ export const receiptsOf = Effect.fnUntraced(function* (
   return receipts;
 });
 
-/** Waits for every receipt of a write and fails when one reverted. */
+/**
+ * Waits for every receipt of a write and fails when one reverted.
+ *
+ * @stability unstable
+ */
 export const waitForReceipts = Effect.fnUntraced(function* (
   client: Client,
   result: Write.Result,

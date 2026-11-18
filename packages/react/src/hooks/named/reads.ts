@@ -1,6 +1,6 @@
 "use client";
 
-import { Actions, type Errors } from "@ensforge/sdk";
+import { Actions } from "@ensforge/sdk";
 
 import type { ReadResult } from "../result.js";
 import { useInfiniteRead, type InfiniteReadResult } from "../useInfiniteRead.js";
@@ -20,14 +20,18 @@ import { useRead, type ReadConfig } from "../useRead.js";
  * }
  * ```
  *
+ * @stability stable
  * @category named reads
  * @since 1.0.0
  */
 export const useName = (
   options: Actions.name.get.Options | undefined,
   config?: ReadConfig,
-): ReadResult<Actions.name.get.ReturnType, Errors.AnyError> =>
-  useRead(Actions.name.get, options, config);
+): ReadResult<Actions.name.get.ReturnType, Actions.name.get.ErrorType> =>
+  useRead(Actions.name.get, options, config) as ReadResult<
+    Actions.name.get.ReturnType,
+    Actions.name.get.ErrorType
+  >;
 
 /**
  * One text record, such as `url`, `avatar` or `com.twitter`. Preset of `useRead(Actions.record.getText, …)`.
@@ -43,14 +47,18 @@ export const useName = (
  * }
  * ```
  *
+ * @stability stable
  * @category named reads
  * @since 1.0.0
  */
 export const useText = (
   options: Actions.record.getText.Options | undefined,
   config?: ReadConfig,
-): ReadResult<Actions.record.getText.ReturnType, Errors.AnyError> =>
-  useRead(Actions.record.getText, options, config);
+): ReadResult<Actions.record.getText.ReturnType, Actions.record.getText.ErrorType> =>
+  useRead(Actions.record.getText, options, config) as ReadResult<
+    Actions.record.getText.ReturnType,
+    Actions.record.getText.ErrorType
+  >;
 
 /**
  * The address a name points to, for ETH or another coin. Preset of `useRead(Actions.record.getAddress, …)`.
@@ -66,14 +74,18 @@ export const useText = (
  * }
  * ```
  *
+ * @stability stable
  * @category named reads
  * @since 1.0.0
  */
 export const useAddress = (
   options: Actions.record.getAddress.Options | undefined,
   config?: ReadConfig,
-): ReadResult<Actions.record.getAddress.ReturnType, Errors.AnyError> =>
-  useRead(Actions.record.getAddress, options, config);
+): ReadResult<Actions.record.getAddress.ReturnType, Actions.record.getAddress.ErrorType> =>
+  useRead(Actions.record.getAddress, options, config) as ReadResult<
+    Actions.record.getAddress.ReturnType,
+    Actions.record.getAddress.ErrorType
+  >;
 
 /**
  * A name's avatar as an image URL, with NFT avatars resolved. Preset of `useRead(Actions.record.getAvatar, …)`.
@@ -89,14 +101,18 @@ export const useAddress = (
  * }
  * ```
  *
+ * @stability stable
  * @category named reads
  * @since 1.0.0
  */
 export const useAvatar = (
   options: Actions.record.getAvatar.Options | undefined,
   config?: ReadConfig,
-): ReadResult<Actions.record.getAvatar.ReturnType, Errors.AnyError> =>
-  useRead(Actions.record.getAvatar, options, config);
+): ReadResult<Actions.record.getAvatar.ReturnType, Actions.record.getAvatar.ErrorType> =>
+  useRead(Actions.record.getAvatar, options, config) as ReadResult<
+    Actions.record.getAvatar.ReturnType,
+    Actions.record.getAvatar.ErrorType
+  >;
 
 /**
  * The primary name of an address, verified against its forward address. Preset of `useRead(Actions.primaryName.get, …)`.
@@ -112,14 +128,18 @@ export const useAvatar = (
  * }
  * ```
  *
+ * @stability stable
  * @category named reads
  * @since 1.0.0
  */
 export const usePrimaryName = (
   options: Actions.primaryName.get.Options | undefined,
   config?: ReadConfig,
-): ReadResult<Actions.primaryName.get.ReturnType, Errors.AnyError> =>
-  useRead(Actions.primaryName.get, options, config);
+): ReadResult<Actions.primaryName.get.ReturnType, Actions.primaryName.get.ErrorType> =>
+  useRead(Actions.primaryName.get, options, config) as ReadResult<
+    Actions.primaryName.get.ReturnType,
+    Actions.primaryName.get.ErrorType
+  >;
 
 /**
  * Whether a name can be registered now. Preset of `useRead(Actions.registration.isAvailable, …)`.
@@ -135,14 +155,21 @@ export const usePrimaryName = (
  * }
  * ```
  *
+ * @stability stable
  * @category named reads
  * @since 1.0.0
  */
 export const useAvailability = (
   options: Actions.registration.isAvailable.Options | undefined,
   config?: ReadConfig,
-): ReadResult<Actions.registration.isAvailable.ReturnType, Errors.AnyError> =>
-  useRead(Actions.registration.isAvailable, options, config);
+): ReadResult<
+  Actions.registration.isAvailable.ReturnType,
+  Actions.registration.isAvailable.ErrorType
+> =>
+  useRead(Actions.registration.isAvailable, options, config) as ReadResult<
+    Actions.registration.isAvailable.ReturnType,
+    Actions.registration.isAvailable.ErrorType
+  >;
 
 /**
  * What registering names for a duration costs. Preset of `useRead(Actions.registration.getPrice, …)`.
@@ -159,14 +186,18 @@ export const useAvailability = (
  * }
  * ```
  *
+ * @stability stable
  * @category named reads
  * @since 1.0.0
  */
 export const useRegistrationPrice = (
   options: Actions.registration.getPrice.Options | undefined,
   config?: ReadConfig,
-): ReadResult<Actions.registration.getPrice.ReturnType, Errors.AnyError> =>
-  useRead(Actions.registration.getPrice, options, config);
+): ReadResult<Actions.registration.getPrice.ReturnType, Actions.registration.getPrice.ErrorType> =>
+  useRead(Actions.registration.getPrice, options, config) as ReadResult<
+    Actions.registration.getPrice.ReturnType,
+    Actions.registration.getPrice.ErrorType
+  >;
 
 /**
  * What an account may do with a name. Preset of `useRead(Actions.permission.get, …)`.
@@ -182,14 +213,18 @@ export const useRegistrationPrice = (
  * }
  * ```
  *
+ * @stability stable
  * @category named reads
  * @since 1.0.0
  */
 export const usePermissions = (
   options: Actions.permission.get.Options | undefined,
   config?: ReadConfig,
-): ReadResult<Actions.permission.get.ReturnType, Errors.AnyError> =>
-  useRead(Actions.permission.get, options, config);
+): ReadResult<Actions.permission.get.ReturnType, Actions.permission.get.ErrorType> =>
+  useRead(Actions.permission.get, options, config) as ReadResult<
+    Actions.permission.get.ReturnType,
+    Actions.permission.get.ErrorType
+  >;
 
 /**
  * Whether and how a name can move from ENSv1 to ENSv2. Preset of `useRead(Actions.migration.get, …)`.
@@ -205,14 +240,18 @@ export const usePermissions = (
  * }
  * ```
  *
+ * @stability stable
  * @category named reads
  * @since 1.0.0
  */
 export const useMigrationStatus = (
   options: Actions.migration.get.Options | undefined,
   config?: ReadConfig,
-): ReadResult<Actions.migration.get.ReturnType, Errors.AnyError> =>
-  useRead(Actions.migration.get, options, config);
+): ReadResult<Actions.migration.get.ReturnType, Actions.migration.get.ErrorType> =>
+  useRead(Actions.migration.get, options, config) as ReadResult<
+    Actions.migration.get.ReturnType,
+    Actions.migration.get.ErrorType
+  >;
 
 /**
  * Any mix of a name's records in one request; the result has exactly the requested fields.
@@ -229,16 +268,17 @@ export const useMigrationStatus = (
  * }
  * ```
  *
+ * @stability stable
  * @category named reads
  * @since 1.0.0
  */
 export const useRecords = <const options extends Actions.record.get.Options>(
   options: options | undefined,
   config?: ReadConfig,
-): ReadResult<Actions.record.get.ReturnType<options>, Errors.AnyError> =>
+): ReadResult<Actions.record.get.ReturnType<options>, Actions.record.get.ErrorType> =>
   useRead(Actions.record.get, options, config) as ReadResult<
     Actions.record.get.ReturnType<options>,
-    Errors.AnyError
+    Actions.record.get.ErrorType
   >;
 
 /**
@@ -255,14 +295,21 @@ export const useRecords = <const options extends Actions.record.get.Options>(
  * }
  * ```
  *
+ * @stability stable
  * @category named reads
  * @since 1.0.0
  */
 export const useNamesForAddress = (
   options: Omit<Actions.indexer.getNamesForAddress.Options, "cursor">,
   config?: { readonly client?: ReadConfig["client"] },
-): InfiniteReadResult<Actions.indexer.getNamesForAddress.ReturnType, Errors.AnyError> =>
-  useInfiniteRead(Actions.indexer.getNamesForAddress, options, config);
+): InfiniteReadResult<
+  Actions.indexer.getNamesForAddress.ReturnType,
+  Actions.indexer.getNamesForAddress.ErrorType
+> =>
+  useInfiniteRead(Actions.indexer.getNamesForAddress, options, config) as InfiniteReadResult<
+    Actions.indexer.getNamesForAddress.ReturnType,
+    Actions.indexer.getNamesForAddress.ErrorType
+  >;
 
 /**
  * A name's subnames, page by page, from the indexer. Preset of `useInfiniteRead(Actions.indexer.getSubnames, …)`.
@@ -278,14 +325,21 @@ export const useNamesForAddress = (
  * }
  * ```
  *
+ * @stability stable
  * @category named reads
  * @since 1.0.0
  */
 export const useSubnames = (
   options: Omit<Actions.indexer.getSubnames.Options, "cursor">,
   config?: { readonly client?: ReadConfig["client"] },
-): InfiniteReadResult<Actions.indexer.getSubnames.ReturnType, Errors.AnyError> =>
-  useInfiniteRead(Actions.indexer.getSubnames, options, config);
+): InfiniteReadResult<
+  Actions.indexer.getSubnames.ReturnType,
+  Actions.indexer.getSubnames.ErrorType
+> =>
+  useInfiniteRead(Actions.indexer.getSubnames, options, config) as InfiniteReadResult<
+    Actions.indexer.getSubnames.ReturnType,
+    Actions.indexer.getSubnames.ErrorType
+  >;
 
 /**
  * A name's events (registrations, transfers, record changes), page by page, from the indexer. Preset of `useInfiniteRead(Actions.indexer.getHistory, …)`.
@@ -301,11 +355,18 @@ export const useSubnames = (
  * }
  * ```
  *
+ * @stability stable
  * @category named reads
  * @since 1.0.0
  */
 export const useNameHistory = (
   options: Omit<Actions.indexer.getHistory.Options, "cursor">,
   config?: { readonly client?: ReadConfig["client"] },
-): InfiniteReadResult<Actions.indexer.getHistory.ReturnType, Errors.AnyError> =>
-  useInfiniteRead(Actions.indexer.getHistory, options, config);
+): InfiniteReadResult<
+  Actions.indexer.getHistory.ReturnType,
+  Actions.indexer.getHistory.ErrorType
+> =>
+  useInfiniteRead(Actions.indexer.getHistory, options, config) as InfiniteReadResult<
+    Actions.indexer.getHistory.ReturnType,
+    Actions.indexer.getHistory.ErrorType
+  >;

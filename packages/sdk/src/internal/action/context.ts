@@ -11,7 +11,11 @@ type ContextOptions = {
   readonly account?: Account | Address | undefined;
 };
 
-/** Error context for one action call: its path, ENS name, account and chain. */
+/**
+ * Error context for one action call: its path, ENS name, account and chain.
+ *
+ * @stability unstable
+ */
 export const contextOf = (
   path: string,
   client: Client,
@@ -32,6 +36,8 @@ export const contextOf = (
 /**
  * `Effect.fn` combinator that adds the action's context to every error it fails with, so Promise
  * and Effect users see the same `error.context`.
+ *
+ * @stability unstable
  */
 export const withContext =
   (path: string, extra?: EnsforgeError.Context) =>

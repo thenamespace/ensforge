@@ -1,5 +1,5 @@
 import type { Like } from "../../../client/types.js";
-import type { AnyError } from "../../../errors/types.js";
+import type * as Errors from "../../../errors/index.js";
 import type { Namespace, NamespaceInfo, Result } from "../../../indexer/types.js";
 import * as Action from "../../../internal/action/index.js";
 import type { Read } from "../../../Types.js";
@@ -59,11 +59,14 @@ export declare namespace getNamespace {
   /** The namespace's coverage, or `null` when the indexer does not know it. */
   type ReturnType = Result<NamespaceInfo> | null;
   /** Errors {@link getNamespace} can fail with. */
-  type ErrorType = AnyError;
+  type ErrorType = Errors.CommonError | Errors.NotFoundError | Errors.IndexerError;
 }
 
 /** Builds a deferred read for `Actions.batch`. */
-getNamespace.request = Action.request("indexer.getNamespace", Impl.getNamespace);
+getNamespace.request = Action.request(
+  "indexer.getNamespace",
+  Impl.getNamespace as Action.Declared<typeof Impl.getNamespace, getNamespace.ErrorType>,
+);
 
 /** Path of the action, e.g. for cache keys. */
 getNamespace.path = "indexer.getNamespace" as const;

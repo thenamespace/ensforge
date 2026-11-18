@@ -1,5 +1,5 @@
 import type { Like } from "../../../client/types.js";
-import type { AnyError } from "../../../errors/types.js";
+import type * as Errors from "../../../errors/index.js";
 import * as Action from "../../../internal/action/index.js";
 import type { Read } from "../../../Types.js";
 import * as Impl from "./effect.js";
@@ -74,11 +74,14 @@ export declare namespace get {
   /** The resolver, or `null` when nothing resolves the name. */
   type ReturnType = ResolverInfo | null;
   /** Errors {@link get} can fail with. */
-  type ErrorType = AnyError;
+  type ErrorType = Errors.CommonError | Errors.InvalidInputError | Errors.NotFoundError;
 }
 
 /** Builds a deferred read for `Actions.batch`. */
-get.request = Action.request("resolver.get", Impl.get);
+get.request = Action.request(
+  "resolver.get",
+  Impl.get as Action.Declared<typeof Impl.get, get.ErrorType>,
+);
 
 /** Path of the action, e.g. for cache keys. */
 get.path = "resolver.get" as const;

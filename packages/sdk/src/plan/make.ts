@@ -6,6 +6,7 @@ import type { Plan } from "./Plan.js";
  * Builds a plan from its steps; `calls` is derived.
  *
  * @internal
+ * @stability unstable
  */
 export const make = (options: {
   readonly operation: string;

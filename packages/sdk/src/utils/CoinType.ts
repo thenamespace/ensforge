@@ -33,6 +33,7 @@ const coderOf = (coinType: bigint): AddressCoder | undefined => {
  * What identifies a coin: a symbol (`"btc"`), an EVM chain (`{ chainId: 8453 }`) or a numeric
  * coin type.
  *
+ * @stability stable
  * @category records
  * @since 1.0.0
  */
@@ -42,6 +43,7 @@ export type Input = string | bigint | { readonly chainId: number };
  * ENSIP-11 coin type of an EVM chain. Ethereum mainnet is `60`.
  *
  * @throws `Errors.InvalidInputError` (`INVALID_COIN_TYPE`) when `chainId` is not a valid chain ID.
+ * @stability stable
  * @category records
  * @since 1.0.0
  */
@@ -65,6 +67,7 @@ export const fromChainId = (chainId: number): bigint => {
  * ```
  *
  * @throws `Errors.InvalidInputError` (`INVALID_COIN_TYPE`) for unknown symbols or negative values.
+ * @stability stable
  * @category records
  * @since 1.0.0
  */
@@ -86,6 +89,7 @@ export const from = (input: Input): bigint => {
 /**
  * Whether a coin type is an EVM chain (Ethereum mainnet or ENSIP-11).
  *
+ * @stability stable
  * @category records
  * @since 1.0.0
  */
@@ -94,6 +98,7 @@ export const isEvm = (coinType: bigint): boolean => isEvmCoinType(coinType);
 /**
  * EVM chain ID of a coin type, or `null` for non-EVM coins.
  *
+ * @stability stable
  * @category records
  * @since 1.0.0
  */
@@ -106,6 +111,7 @@ export const toChainId = (coinType: bigint): number | null => {
 /**
  * Symbol of a coin type, such as `btc`, or `null` when unknown.
  *
+ * @stability stable
  * @category records
  * @since 1.0.0
  */
@@ -123,6 +129,7 @@ export const toSymbol = (coinType: bigint): string | null =>
  * library does not list. Other coins use `@ensdomains/address-encoder`.
  *
  * @throws `Errors.InvalidInputError` (`INVALID_ADDRESS`) when the address is invalid for the coin.
+ * @stability stable
  * @category records
  * @since 1.0.0
  */
@@ -136,6 +143,7 @@ export const encodeAddress = (coinType: bigint, address: string): Hex =>
  * @throws `Errors.InvalidInputError` (`INVALID_COIN_TYPE`) when no codec exists for the coin.
  * @throws `Errors.InvalidInputError` (`INVALID_ADDRESS`) when the bytes are not an address of the
  * coin.
+ * @stability stable
  * @category records
  * @since 1.0.0
  */

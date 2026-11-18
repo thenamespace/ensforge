@@ -32,6 +32,7 @@ const defaults: {
 /**
  * The name is in the wrong state for this operation (registered, expired, locked, …).
  *
+ * @stability stable
  * @category errors
  * @since 1.0.0
  */

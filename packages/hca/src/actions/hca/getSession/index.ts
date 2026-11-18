@@ -64,7 +64,7 @@ export declare namespace getSession {
     readonly problem: "chain" | "expired" | "revoked" | "signing-domain" | null;
   };
   /** Errors {@link getSession} can fail with. */
-  type ErrorType = Errors.AnyError | HcaError;
+  type ErrorType = Errors.CommonError | HcaError;
 }
 
 /** Path of the action, e.g. for cache keys. */

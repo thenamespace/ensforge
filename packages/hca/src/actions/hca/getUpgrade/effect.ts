@@ -2,8 +2,9 @@ import { Effect } from "effect";
 
 import { Abis } from "@ensforge/contracts";
 import { standaloneSingleOwnerHcaV2Abi } from "@ensforge/contracts/v2/experimental/hca";
-import { Action, type Client, requireAddress, Rpc } from "@ensforge/sdk/extension";
+import { Action, type AnyError, type Client, requireAddress, Rpc } from "@ensforge/sdk/extension";
 
+import type { HcaError } from "../../../errors/classes/HcaError.js";
 import { accountInput } from "../../../internal/input.js";
 import type { getUpgrade as Promises } from "./index.js";
 
@@ -11,7 +12,7 @@ import type { getUpgrade as Promises } from "./index.js";
 export const getUpgrade = Effect.fn("ensforge.hca.getUpgrade")(function* (
   client: Client,
   options: Promises.Options,
-): Effect.fn.Return<Promises.ReturnType, Promises.ErrorType> {
+): Effect.fn.Return<Promises.ReturnType, AnyError | HcaError> {
   const implementation = yield* requireAddress(options.implementation, "implementation");
   const account = yield* accountInput(client, options);
   const current = account.implementation;

@@ -22,6 +22,7 @@ const defaults: {
 /**
  * A submitted transaction failed, was replaced, or did not confirm in time.
  *
+ * @stability stable
  * @category errors
  * @since 1.0.0
  */

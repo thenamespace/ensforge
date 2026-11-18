@@ -12,6 +12,7 @@ import { EnsforgeContext } from "./context.js";
 /**
  * Props of {@link EnsforgeProvider}.
  *
+ * @stability stable
  * @category provider
  * @since 1.0.0
  */
@@ -60,6 +61,7 @@ export type EnsforgeProviderProps = {
  * }
  * ```
  *
+ * @stability stable
  * @category provider
  * @since 1.0.0
  */

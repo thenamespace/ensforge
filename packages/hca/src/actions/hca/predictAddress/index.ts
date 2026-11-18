@@ -61,7 +61,7 @@ export declare namespace predictAddress {
   /** The HCA address. */
   type ReturnType = Address;
   /** Errors {@link predictAddress} can fail with. */
-  type ErrorType = Errors.AnyError | HcaError;
+  type ErrorType = Errors.CommonError | Errors.InvalidInputError | HcaError;
 }
 
 /** Path of the action, e.g. for cache keys. */

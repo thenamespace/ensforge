@@ -1,5 +1,5 @@
 import type { Like } from "../../../client/types.js";
-import type { AnyError } from "../../../errors/types.js";
+import type * as Errors from "../../../errors/index.js";
 import type { Query } from "../../../indexer/Indexer.js";
 import type { Namespace, Page, Subname } from "../../../indexer/types.js";
 import * as Action from "../../../internal/action/index.js";
@@ -73,11 +73,18 @@ export declare namespace getSubnames {
   /** One page of subnames. */
   type ReturnType = Page<Subname>;
   /** Errors {@link getSubnames} can fail with. */
-  type ErrorType = AnyError;
+  type ErrorType =
+    | Errors.CommonError
+    | Errors.InvalidInputError
+    | Errors.NotFoundError
+    | Errors.IndexerError;
 }
 
 /** Builds a deferred read for `Actions.batch`. */
-getSubnames.request = Action.request("indexer.getSubnames", Impl.getSubnames);
+getSubnames.request = Action.request(
+  "indexer.getSubnames",
+  Impl.getSubnames as Action.Declared<typeof Impl.getSubnames, getSubnames.ErrorType>,
+);
 
 /** Path of the action, e.g. for cache keys. */
 getSubnames.path = "indexer.getSubnames" as const;

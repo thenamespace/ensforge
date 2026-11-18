@@ -10,6 +10,7 @@
  *
  * Generated from the ABIs of this package; regenerate when they change.
  *
+ * @stability stable
  * @since 1.0.0
  */
 export const ensErrorsAbi = [

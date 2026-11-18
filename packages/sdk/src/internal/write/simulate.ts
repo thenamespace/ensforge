@@ -116,7 +116,11 @@ const stepResults = (
   });
 };
 
-/** Simulates one step against current state, its calls in order. */
+/**
+ * Simulates one step against current state, its calls in order.
+ *
+ * @stability unstable
+ */
 export const simulateStep = (
   client: Client,
   step: Plan.Step,
@@ -126,7 +130,11 @@ export const simulateStep = (
     Effect.map((outcomes) => stepResults([step], outcomes)[0] as Plan.Simulation["steps"][number]),
   );
 
-/** Simulates every simulatable step in order, each seeing the effects of the ones before. */
+/**
+ * Simulates every simulatable step in order, each seeing the effects of the ones before.
+ *
+ * @stability unstable
+ */
 export const simulatePlan = Effect.fnUntraced(function* (
   client: Client,
   plan: Plan,

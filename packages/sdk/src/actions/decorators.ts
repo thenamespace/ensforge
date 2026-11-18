@@ -20,7 +20,11 @@ import * as role from "./role/index.js";
 import * as subname from "./subname/index.js";
 import * as wrapper from "./wrapper/index.js";
 
-/** `approval` actions bound to a client. */
+/**
+ * `approval` actions bound to a client.
+ *
+ * @stability stable
+ */
 export type ApprovalActions = {
   readonly approval: {
     /** Checks whether a delegate may edit a name's records on its public resolver (`isApprovedFor`). */
@@ -47,6 +51,7 @@ export type ApprovalActions = {
 /**
  * Adds the `approval` actions to a client.
  *
+ * @stability stable
  * @category decorators
  * @since 1.0.0
  */
@@ -98,7 +103,11 @@ export const approvalActions =
     },
   });
 
-/** `dns` actions bound to a client. */
+/**
+ * `dns` actions bound to a client.
+ *
+ * @stability stable
+ */
 export type DnsActions = {
   readonly dns: {
     /** Imports a DNS name into ENS with a DNSSEC proof of its `_ens` TXT record. Resolves once the transaction is submitted. */
@@ -123,6 +132,7 @@ export type DnsActions = {
 /**
  * Adds the `dns` actions to a client.
  *
+ * @stability stable
  * @category decorators
  * @since 1.0.0
  */
@@ -161,7 +171,11 @@ export const dnsActions =
     },
   });
 
-/** `event` actions bound to a client. */
+/**
+ * `event` actions bound to a client.
+ *
+ * @stability stable
+ */
 export type EventActions = {
   readonly event: {
     /** Normalizes the ENS events in logs or transaction receipts. */
@@ -176,6 +190,7 @@ export type EventActions = {
 /**
  * Adds the `event` actions to a client.
  *
+ * @stability stable
  * @category decorators
  * @since 1.0.0
  */
@@ -189,7 +204,11 @@ export const eventActions =
     },
   });
 
-/** `indexer` actions bound to a client. */
+/**
+ * `indexer` actions bound to a client.
+ *
+ * @stability stable
+ */
 export type IndexerActions = {
   readonly indexer: {
     /** Searches indexed ENS events by name, address, resolver, contract or block range. */
@@ -236,6 +255,7 @@ export type IndexerActions = {
 /**
  * Adds the `indexer` actions to a client.
  *
+ * @stability stable
  * @category decorators
  * @since 1.0.0
  */
@@ -265,7 +285,11 @@ export const indexerActions =
     },
   });
 
-/** `migration` actions bound to a client. */
+/**
+ * `migration` actions bound to a client.
+ *
+ * @stability stable
+ */
 export type MigrationActions = {
   readonly migration: {
     /** Reads whether an ENSv1 name can migrate to ENSv2, how, and what it becomes. */
@@ -280,6 +304,7 @@ export type MigrationActions = {
 /**
  * Adds the `migration` actions to a client.
  *
+ * @stability stable
  * @category decorators
  * @since 1.0.0
  */
@@ -303,7 +328,11 @@ export const migrationActions =
     },
   });
 
-/** `name` actions bound to a client. */
+/**
+ * `name` actions bound to a client.
+ *
+ * @stability stable
+ */
 export type NameActions = {
   readonly name: {
     /** Reads the full state of a name across ENSv1 and ENSv2: where it lives, who owns it, its resolver, expiry and whether it can be registered or renewed. */
@@ -332,6 +361,7 @@ export type NameActions = {
 /**
  * Adds the `name` actions to a client.
  *
+ * @stability stable
  * @category decorators
  * @since 1.0.0
  */
@@ -392,7 +422,11 @@ export const nameActions =
     },
   });
 
-/** `permission` actions bound to a client. */
+/**
+ * `permission` actions bound to a client.
+ *
+ * @stability stable
+ */
 export type PermissionActions = {
   readonly permission: {
     /** Checks whether an account may perform one operation on an ENS name, and lists exactly what it lacks when it may not. */
@@ -409,6 +443,7 @@ export type PermissionActions = {
 /**
  * Adds the `permission` actions to a client.
  *
+ * @stability stable
  * @category decorators
  * @since 1.0.0
  */
@@ -434,7 +469,11 @@ export const permissionActions =
     },
   });
 
-/** `plan` actions bound to a client. */
+/**
+ * `plan` actions bound to a client.
+ *
+ * @stability stable
+ */
 export type PlanActions = {
   readonly plan: {
     /** Reads a saved plan and its progress. */
@@ -457,6 +496,7 @@ export type PlanActions = {
 /**
  * Adds the `plan` actions to a client.
  *
+ * @stability stable
  * @category decorators
  * @since 1.0.0
  */
@@ -484,7 +524,11 @@ export const planActions =
     },
   });
 
-/** `primaryName` actions bound to a client. */
+/**
+ * `primaryName` actions bound to a client.
+ *
+ * @stability stable
+ */
 export type PrimaryNameActions = {
   readonly primaryName: {
     /** Reads the primary name of an address (ENSIP-19 reverse resolution), verified against the name's address record. */
@@ -501,6 +545,7 @@ export type PrimaryNameActions = {
 /**
  * Adds the `primaryName` actions to a client.
  *
+ * @stability stable
  * @category decorators
  * @since 1.0.0
  */
@@ -525,7 +570,11 @@ export const primaryNameActions =
     },
   });
 
-/** `record` actions bound to a client. */
+/**
+ * `record` actions bound to a client.
+ *
+ * @stability stable
+ */
 export type RecordActions = {
   readonly record: {
     /** Reads any mix of a name's records in one request: texts, addresses, content hash, ABI, public key, name record, interface implementers and data records. */
@@ -548,6 +597,7 @@ export type RecordActions = {
 /**
  * Adds the `record` actions to a client.
  *
+ * @stability stable
  * @category decorators
  * @since 1.0.0
  */
@@ -575,7 +625,11 @@ export const recordActions =
     },
   });
 
-/** `registration` actions bound to a client. */
+/**
+ * `registration` actions bound to a client.
+ *
+ * @stability stable
+ */
 export type RegistrationActions = {
   readonly registration: {
     /** Commits to registering `.eth` names, the first half of a registration. Resolves once the transaction is submitted. */
@@ -606,6 +660,7 @@ export type RegistrationActions = {
 /**
  * Adds the `registration` actions to a client.
  *
+ * @stability stable
  * @category decorators
  * @since 1.0.0
  */
@@ -659,7 +714,11 @@ export const registrationActions =
     },
   });
 
-/** `registry` actions bound to a client. */
+/**
+ * `registry` actions bound to a client.
+ *
+ * @stability stable
+ */
 export type RegistryActions = {
   readonly registry: {
     /** Sets or removes the subregistry of an ENSv2 name. Resolves once the transaction is submitted. */
@@ -686,6 +745,7 @@ export type RegistryActions = {
 /**
  * Adds the `registry` actions to a client.
  *
+ * @stability stable
  * @category decorators
  * @since 1.0.0
  */
@@ -745,7 +805,11 @@ export const registryActions =
     },
   });
 
-/** `resolver` actions bound to a client. */
+/**
+ * `resolver` actions bound to a client.
+ *
+ * @stability stable
+ */
 export type ResolverActions = {
   readonly resolver: {
     /** Deploys an ENSv2 PermissionedResolver, optionally with records, and points a name at it. Resolves once the transaction is submitted. */
@@ -776,6 +840,7 @@ export type ResolverActions = {
 /**
  * Adds the `resolver` actions to a client.
  *
+ * @stability stable
  * @category decorators
  * @since 1.0.0
  */
@@ -837,7 +902,11 @@ export const resolverActions =
     },
   });
 
-/** `role` actions bound to a client. */
+/**
+ * `role` actions bound to a client.
+ *
+ * @stability stable
+ */
 export type RoleActions = {
   readonly role: {
     /** Reads the ENSv2 roles an account holds on a name, or at the root of a registry or resolver. */
@@ -856,6 +925,7 @@ export type RoleActions = {
 /**
  * Adds the `role` actions to a client.
  *
+ * @stability stable
  * @category decorators
  * @since 1.0.0
  */
@@ -891,7 +961,11 @@ export const roleActions =
     },
   });
 
-/** `subname` actions bound to a client. */
+/**
+ * `subname` actions bound to a client.
+ *
+ * @stability stable
+ */
 export type SubnameActions = {
   readonly subname: {
     /** Creates a subname, routed by its parent: an ENSv2 subregistry, the ENSv1 registry or the NameWrapper. Resolves once the transaction is submitted. */
@@ -912,6 +986,7 @@ export type SubnameActions = {
 /**
  * Adds the `subname` actions to a client.
  *
+ * @stability stable
  * @category decorators
  * @since 1.0.0
  */
@@ -958,7 +1033,11 @@ export const subnameActions =
     },
   });
 
-/** `wrapper` actions bound to a client. */
+/**
+ * `wrapper` actions bound to a client.
+ *
+ * @stability stable
+ */
 export type WrapperActions = {
   readonly wrapper: {
     /** Reads the NameWrapper owner, fuses and expiry of an ENSv1 name. */
@@ -985,6 +1064,7 @@ export type WrapperActions = {
 /**
  * Adds the `wrapper` actions to a client.
  *
+ * @stability stable
  * @category decorators
  * @since 1.0.0
  */
@@ -1045,12 +1125,17 @@ export const wrapperActions =
     },
   });
 
-/** `batch` bound to a client. */
+/**
+ * `batch` bound to a client.
+ *
+ * @stability stable
+ */
 export type BatchActions = { readonly batch: batch.Bound };
 
 /**
  * Adds `batch` to a client.
  *
+ * @stability stable
  * @category decorators
  * @since 1.0.0
  */
@@ -1060,7 +1145,11 @@ export const batchActions =
     batch: (options) => batch(client, options),
   });
 
-/** Every action group bound to a client. */
+/**
+ * Every action group bound to a client.
+ *
+ * @stability stable
+ */
 export type EnsActions = ApprovalActions &
   DnsActions &
   EventActions &
@@ -1089,6 +1178,7 @@ export type EnsActions = ApprovalActions &
  * const ens = Ensforge.create({ publicClient, walletClient }).extend(ensActions())
  * ```
  *
+ * @stability stable
  * @category decorators
  * @since 1.0.0
  */

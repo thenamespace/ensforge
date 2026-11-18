@@ -5,6 +5,7 @@ import { bytesToHex, keccak256 } from "viem";
 import { packetToBytes } from "viem/ens";
 
 import type { Client } from "../../../client/types.js";
+import type { AnyError } from "../../../errors/types.js";
 import * as Action from "../../../internal/action/index.js";
 import { loadName } from "../../../internal/name/load.js";
 import { blockAt } from "../../../internal/rpc/block.js";
@@ -15,7 +16,7 @@ import type { getRecords as Promises } from "./index.js";
 export const getRecords = Effect.fn("ensforge.dns.getRecords")(function* (
   client: Client,
   options: Promises.Options,
-): Effect.fn.Return<Promises.ReturnType, Promises.ErrorType> {
+): Effect.fn.Return<Promises.ReturnType, AnyError> {
   const block = blockAt(options);
   const loaded = yield* loadName(client, options.name, block);
   const { resolver } = loaded.state;

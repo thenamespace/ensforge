@@ -27,6 +27,7 @@ const defaults: {
 /**
  * ENSv1 to ENSv2 migration is blocked for this name.
  *
+ * @stability stable
  * @category errors
  * @since 1.0.0
  */

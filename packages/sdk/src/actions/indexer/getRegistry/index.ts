@@ -1,5 +1,5 @@
 import type { Like } from "../../../client/types.js";
-import type { AnyError } from "../../../errors/types.js";
+import type * as Errors from "../../../errors/index.js";
 import type { Query } from "../../../indexer/Indexer.js";
 import type { IndexedRegistry, Result } from "../../../indexer/types.js";
 import * as Action from "../../../internal/action/index.js";
@@ -71,11 +71,18 @@ export declare namespace getRegistry {
   /** The registry, or `null` when the indexer does not know it. */
   type ReturnType = Result<IndexedRegistry> | null;
   /** Errors {@link getRegistry} can fail with. */
-  type ErrorType = AnyError;
+  type ErrorType =
+    | Errors.CommonError
+    | Errors.InvalidInputError
+    | Errors.NotFoundError
+    | Errors.IndexerError;
 }
 
 /** Builds a deferred read for `Actions.batch`. */
-getRegistry.request = Action.request("indexer.getRegistry", Impl.getRegistry);
+getRegistry.request = Action.request(
+  "indexer.getRegistry",
+  Impl.getRegistry as Action.Declared<typeof Impl.getRegistry, getRegistry.ErrorType>,
+);
 
 /** Path of the action, e.g. for cache keys. */
 getRegistry.path = "indexer.getRegistry" as const;

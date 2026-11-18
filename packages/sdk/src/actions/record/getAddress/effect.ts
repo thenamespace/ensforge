@@ -25,4 +25,4 @@ export const getAddress = Effect.fn("ensforge.record.getAddress")(
 ) as <const coin extends CoinType.Input | undefined = undefined>(
   client: Client,
   options: Promises.Options<coin>,
-) => Effect.Effect<Promises.ReturnType<coin>, AnyError>;
+) => Effect.Effect<Promises.ReturnType<coin>, Promises.ErrorType>;

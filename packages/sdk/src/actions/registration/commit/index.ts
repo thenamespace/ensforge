@@ -1,7 +1,7 @@
 import type { Hex } from "viem";
 
 import type { Like } from "../../../client/types.js";
-import type { AnyError } from "../../../errors/types.js";
+import type * as Errors from "../../../errors/index.js";
 import * as Action from "../../../internal/action/index.js";
 import type { Plan } from "../../../plan/Plan.js";
 import type { Write } from "../../../Types.js";
@@ -72,7 +72,11 @@ export declare namespace commit {
   /** Submitted hashes, the plan, the secret and the commitments. */
   type ReturnType = Write.Result & { readonly secret: Hex; readonly commitments: readonly Hex[] };
   /** Errors {@link commit} can fail with. */
-  type ErrorType = AnyError;
+  type ErrorType =
+    | Errors.WriteError
+    | Errors.InvalidInputError
+    | Errors.NameStateError
+    | Errors.CommitmentError;
 }
 
 // Explicit types keep these declarations free of Effect types.
@@ -153,7 +157,11 @@ export declare namespace commitSync {
     readonly readyAt: bigint;
   };
   /** Errors {@link commitSync} can fail with. */
-  type ErrorType = AnyError;
+  type ErrorType =
+    | Errors.WriteError
+    | Errors.InvalidInputError
+    | Errors.NameStateError
+    | Errors.CommitmentError;
 }
 
 /** Path of the action, e.g. for cache keys. */

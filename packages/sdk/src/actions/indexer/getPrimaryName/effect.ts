@@ -1,6 +1,7 @@
 import { Effect } from "effect";
 
 import type { Client } from "../../../client/types.js";
+import type { AnyError } from "../../../errors/types.js";
 import * as Action from "../../../internal/action/index.js";
 import { callIndexer } from "../../../internal/indexer/call.js";
 import { coinInput, queryOf } from "../../../internal/indexer/input.js";
@@ -11,7 +12,7 @@ import type { getPrimaryName as Promises } from "./index.js";
 export const getPrimaryName = Effect.fn("ensforge.indexer.getPrimaryName")(function* (
   client: Client,
   options: Promises.Options,
-): Effect.fn.Return<Promises.ReturnType, Promises.ErrorType> {
+): Effect.fn.Return<Promises.ReturnType, AnyError> {
   const address = yield* requireAddress(options.address, "address");
   const coinType = (yield* coinInput(options.coin)) as bigint | undefined;
   const { coin: _coin, ...query } = queryOf(options);

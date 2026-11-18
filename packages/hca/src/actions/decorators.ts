@@ -6,7 +6,11 @@ import type { Bound, BoundWrite } from "@ensforge/sdk/extension";
 import * as hca from "./hca/index.js";
 import * as hcaAdmin from "./hcaAdmin/index.js";
 
-/** `hca` actions bound to a client. */
+/**
+ * `hca` actions bound to a client.
+ *
+ * @stability experimental
+ */
 export type HcaActions = {
   readonly hca: {
     /** Adds ETH to an HCA's ERC-4337 EntryPoint deposit. Resolves once the transaction is submitted. */
@@ -55,6 +59,7 @@ export type HcaActions = {
 /**
  * Adds the `hca` actions to a client.
  *
+ * @stability experimental
  * @category decorators
  * @since 1.0.0
  */
@@ -146,7 +151,11 @@ export const hcaActions =
     },
   });
 
-/** `hcaAdmin` actions bound to a client. */
+/**
+ * `hcaAdmin` actions bound to a client.
+ *
+ * @stability experimental
+ */
 export type HcaAdminActions = {
   readonly hcaAdmin: {
     /** Reads who governs ENS HCAs: the factory owner and whether implementations are approved. */
@@ -181,6 +190,7 @@ export type HcaAdminActions = {
 /**
  * Adds the `hcaAdmin` actions to a client.
  *
+ * @stability experimental
  * @category decorators
  * @since 1.0.0
  */

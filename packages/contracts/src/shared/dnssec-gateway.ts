@@ -2,6 +2,7 @@
  * Off-chain DNSSEC gateway interface (`IDNSGateway`, ENSIP-17): returns the signed RRSets that
  * prove a DNS record, in the shape `DNSRegistrar.proveAndClaim` and DNSSEC oracles accept.
  *
+ * @stability stable
  * @since 1.0.0
  */
 export const dnssecGatewayAbi = [

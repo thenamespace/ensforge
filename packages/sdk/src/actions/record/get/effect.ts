@@ -1,7 +1,6 @@
 import { Effect } from "effect";
 
 import type { Client } from "../../../client/types.js";
-import type { AnyError } from "../../../errors/types.js";
 import * as Action from "../../../internal/action/index.js";
 import { normalizeName } from "../../../internal/name/normalize.js";
 import { readRecords } from "../../../internal/records/read.js";
@@ -40,4 +39,4 @@ export const get = Effect.fn("ensforge.record.get")(
 ) as <const selection extends Selection>(
   client: Client,
   options: Promises.Options & selection,
-) => Effect.Effect<Records<selection>, AnyError>;
+) => Effect.Effect<Records<selection>, Promises.ErrorType>;

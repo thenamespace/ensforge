@@ -1,6 +1,7 @@
 /**
  * ENSIP-3 reverse name resolver profile.
  *
+ * @stability stable
  * @since 1.0.0
  */
 export const nameResolverAbi = [
@@ -25,6 +26,7 @@ export const nameResolverAbi = [
 /**
  * ERC-165 interface ID of {@link nameResolverAbi}.
  *
+ * @stability stable
  * @since 1.0.0
  */
 export const nameResolverInterfaceId = "0x691f3431" as const;

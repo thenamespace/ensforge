@@ -2,6 +2,7 @@ import { Effect } from "effect";
 
 import type { Client } from "../../../client/types.js";
 import { InvalidInputError } from "../../../errors/classes/InvalidInputError.js";
+import type { AnyError } from "../../../errors/types.js";
 import * as Action from "../../../internal/action/index.js";
 import { callIndexer } from "../../../internal/indexer/call.js";
 import { queryOf } from "../../../internal/indexer/input.js";
@@ -11,7 +12,7 @@ import type { lookup as Promises } from "./index.js";
 export const lookup = Effect.fn("ensforge.indexer.lookup")(function* (
   client: Client,
   options: Promises.Options,
-): Effect.fn.Return<Promises.ReturnType, Promises.ErrorType> {
+): Effect.fn.Return<Promises.ReturnType, AnyError> {
   if (options.inputs.length === 0 || options.inputs.length > 1000) {
     return yield* Effect.fail(
       new InvalidInputError({

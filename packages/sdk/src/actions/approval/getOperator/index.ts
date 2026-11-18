@@ -1,5 +1,5 @@
 import type { Like } from "../../../client/types.js";
-import type { AnyError } from "../../../errors/types.js";
+import type * as Errors from "../../../errors/index.js";
 import * as Action from "../../../internal/action/index.js";
 import type { Read } from "../../../Types.js";
 import type { ApprovalContract } from "../types.js";
@@ -70,11 +70,14 @@ export declare namespace getOperator {
   /** Whether `operator` is approved for all of `owner`'s names on the contract. */
   type ReturnType = boolean;
   /** Errors {@link getOperator} can fail with. */
-  type ErrorType = AnyError;
+  type ErrorType = Errors.CommonError | Errors.InvalidInputError | Errors.UnsupportedError;
 }
 
 /** Builds a deferred read for `Actions.batch`. */
-getOperator.request = Action.request("approval.getOperator", Impl.getOperator);
+getOperator.request = Action.request(
+  "approval.getOperator",
+  Impl.getOperator as Action.Declared<typeof Impl.getOperator, getOperator.ErrorType>,
+);
 
 /** Path of the action, e.g. for cache keys. */
 getOperator.path = "approval.getOperator" as const;

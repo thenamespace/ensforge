@@ -14,6 +14,7 @@ import { concat, encodeAbiParameters, getContractAddress, keccak256, type Addres
  * ```
  *
  * @see https://github.com/ensdomains/contracts-v2/blob/v1.0.1/contracts/test/integration/fixtures/deployVerifiableProxy.ts
+ * @stability stable
  * @since 1.0.0
  */
 export const predictVerifiableProxyAddress = (options: {

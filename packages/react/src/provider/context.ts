@@ -42,6 +42,7 @@ export const useEnsforgeContext = (client?: Ensforge.Client): EnsforgeContextVal
  * }
  * ```
  *
+ * @stability stable
  * @category provider
  * @since 1.0.0
  */

@@ -1,6 +1,7 @@
 import { Effect } from "effect";
 
 import type { Client } from "../../../client/types.js";
+import type { AnyError } from "../../../errors/types.js";
 import { knownContracts } from "../../../internal/event/classify.js";
 import { decodeLogs } from "../../../internal/event/decode.js";
 import type { decode as Promises } from "./index.js";
@@ -9,7 +10,7 @@ import type { decode as Promises } from "./index.js";
 export const decode = (
   client: Client,
   options: Promises.Options,
-): Effect.Effect<Promises.ReturnType, Promises.ErrorType> =>
+): Effect.Effect<Promises.ReturnType, AnyError> =>
   Effect.sync(() =>
     decodeLogs(knownContracts(client), [
       ...(options.logs ?? []),

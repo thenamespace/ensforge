@@ -1,5 +1,5 @@
 import type { Like } from "../../../client/types.js";
-import type { AnyError } from "../../../errors/types.js";
+import type * as Errors from "../../../errors/index.js";
 import * as Action from "../../../internal/action/index.js";
 import type { Plan } from "../../../plan/Plan.js";
 import type { Write } from "../../../Types.js";
@@ -76,7 +76,7 @@ export declare namespace revoke {
   /** Submitted transaction hashes and the plan that produced them. */
   type ReturnType = Write.Result;
   /** Errors {@link revoke} can fail with. */
-  type ErrorType = AnyError;
+  type ErrorType = Errors.WriteError | Errors.InvalidInputError | Errors.UnauthorizedError;
 }
 
 // Explicit types keep these declarations free of Effect types.
@@ -151,7 +151,7 @@ export declare namespace revokeSync {
   /** Receipts plus the submitted hashes and plan. */
   type ReturnType = Write.SyncResult;
   /** Errors {@link revokeSync} can fail with. */
-  type ErrorType = AnyError;
+  type ErrorType = Errors.WriteError | Errors.InvalidInputError | Errors.UnauthorizedError;
 }
 
 /** Path of the action, e.g. for cache keys. */

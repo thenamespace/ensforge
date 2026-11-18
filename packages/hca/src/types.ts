@@ -5,6 +5,7 @@ import type { Address, Hex } from "viem";
 /**
  * A reason an address is not a usable HCA of its owner (HCA.md's checks).
  *
+ * @stability experimental
  * @category hca
  * @since 1.0.0
  */
@@ -19,6 +20,7 @@ export type HcaProblem =
 /**
  * An ENS Hosted Contract Account, deployed or predicted.
  *
+ * @stability experimental
  * @category hca
  * @since 1.0.0
  */
@@ -47,6 +49,7 @@ export type HcaAccount = {
  * A session the HCA owner approved: a key that may register names and edit one resolver's
  * records through Rhinestone without further prompts. Store it; it holds no secret.
  *
+ * @stability experimental
  * @category hca
  * @since 1.0.0
  */
@@ -71,6 +74,7 @@ export type HcaSession = {
 /**
  * What an executor is asked to run: owner-authorized (or session-authorized) calls from the HCA.
  *
+ * @stability experimental
  * @category executors
  * @since 1.0.0
  */
@@ -88,6 +92,7 @@ export type ExecutionRequest = {
  * Runs HCA executions: the owner's wallet (`owner()`), an ERC-4337 bundler (`bundler()`,
  * `pimlico()`), Rhinestone intents (`rhinestone()`), or your own (`defineExecutor`).
  *
+ * @stability experimental
  * @category executors
  * @since 1.0.0
  */

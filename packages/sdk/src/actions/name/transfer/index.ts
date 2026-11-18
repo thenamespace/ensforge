@@ -1,5 +1,5 @@
 import type { Like } from "../../../client/types.js";
-import type { AnyError } from "../../../errors/types.js";
+import type * as Errors from "../../../errors/index.js";
 import * as Action from "../../../internal/action/index.js";
 import type { Plan } from "../../../plan/Plan.js";
 import type { Write } from "../../../Types.js";
@@ -100,7 +100,11 @@ export declare namespace transfer {
   /** Submitted transaction hashes and the plan that produced them. */
   type ReturnType = Write.Result;
   /** Errors {@link transfer} can fail with. */
-  type ErrorType = AnyError;
+  type ErrorType =
+    | Errors.WriteError
+    | Errors.InvalidInputError
+    | Errors.NameStateError
+    | Errors.UnauthorizedError;
 }
 
 // Explicit types keep these declarations free of Effect types.
@@ -152,8 +156,10 @@ transfer.estimateGas = Action.promiseOf(
  * yield* Actions.name.transferSync(ens, { name: "alice.eth", to: bob })
  * ```
  *
+ * @throws `Errors.InvalidInputError` (`INVALID_NAME`, `INVALID_ADDRESS`) for invalid input.
  * @throws `Errors.NameStateError` (`NAME_EXPIRED`, `NAME_RESERVED`, `NAME_NOT_REGISTERED`) when the name cannot be sent.
  * @throws `Errors.UnauthorizedError` (`NOT_OWNER`, `TRANSFER_DISALLOWED`) when the account may not send it, or the recipient (an HCA) refuses it.
+ * @throws `Errors.UnsupportedError` (`UNSUPPORTED_PROTOCOL`) for `role: "registrant"` on names without a registrant.
  * @throws `Errors.TransactionError` (`TRANSACTION_REVERTED`, `RECEIPT_TIMEOUT`) when confirmation fails.
  *
  * @see {@link transfer} to resolve on submission
@@ -174,7 +180,11 @@ export declare namespace transferSync {
   /** Receipts plus the submitted hashes and plan. */
   type ReturnType = Write.SyncResult;
   /** Errors {@link transferSync} can fail with. */
-  type ErrorType = AnyError;
+  type ErrorType =
+    | Errors.WriteError
+    | Errors.InvalidInputError
+    | Errors.NameStateError
+    | Errors.UnauthorizedError;
 }
 
 /** Path of the action, e.g. for cache keys. */

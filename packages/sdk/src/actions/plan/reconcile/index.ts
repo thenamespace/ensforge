@@ -1,7 +1,7 @@
 import type { Hex } from "viem";
 
 import type { Like } from "../../../client/types.js";
-import type { AnyError } from "../../../errors/types.js";
+import type * as Errors from "../../../errors/index.js";
 import * as Action from "../../../internal/action/index.js";
 import type { Plan } from "../../../plan/Plan.js";
 import * as Impl from "./effect.js";
@@ -67,11 +67,14 @@ export declare namespace reconcile {
   /** The updated record. */
   type ReturnType = Plan.Record;
   /** Errors {@link reconcile} can fail with. */
-  type ErrorType = AnyError;
+  type ErrorType = Errors.CommonError | Errors.NotFoundError | Errors.InvalidInputError;
 }
 
 /** Builds a deferred read for `Actions.batch`. */
-reconcile.request = Action.request("plan.reconcile", Impl.reconcile);
+reconcile.request = Action.request(
+  "plan.reconcile",
+  Impl.reconcile as Action.Declared<typeof Impl.reconcile, reconcile.ErrorType>,
+);
 
 /** Path of the action, e.g. for cache keys. */
 reconcile.path = "plan.reconcile" as const;

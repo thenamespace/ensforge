@@ -1,6 +1,7 @@
 import { Effect } from "effect";
 
 import type { Client } from "../../../client/types.js";
+import type { AnyError } from "../../../errors/types.js";
 import * as Action from "../../../internal/action/index.js";
 import { loadName } from "../../../internal/name/load.js";
 import { checkedAccount, checkLoaded } from "../../../internal/permission/check.js";
@@ -25,7 +26,7 @@ const nameOperations: readonly NameOperation[] = [
 export const get = Effect.fn("ensforge.permission.get")(function* (
   client: Client,
   options: Promises.Options,
-): Effect.fn.Return<Promises.ReturnType, Promises.ErrorType> {
+): Effect.fn.Return<Promises.ReturnType, AnyError> {
   const account = yield* checkedAccount(client, options.account);
   const loaded = yield* loadName(client, options.name, options);
   const records = options.records === undefined ? [] : yield* selectionOperations(options.records);

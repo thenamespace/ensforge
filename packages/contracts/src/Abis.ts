@@ -16,6 +16,24 @@
  *
  * @since 1.0.0
  */
+
+/**
+ * ENSv1 ABIs from ens-contracts, keyed by contract.
+ *
+ * @stability stable
+ */
 export * as v1 from "./abis/v1.js";
+
+/**
+ * ENSv2 ABIs from contracts-v2, keyed by contract.
+ *
+ * @stability stable
+ */
 export * as v2 from "./abis/v2.js";
+
+/**
+ * ABIs shared by ENSv1 and ENSv2: token standards, resolver profiles, errors and events.
+ *
+ * @stability stable
+ */
 export * as shared from "./abis/shared.js";

@@ -62,7 +62,7 @@ export declare namespace getDeposit {
   /** Deposit in wei. */
   type ReturnType = bigint;
   /** Errors {@link getDeposit} can fail with. */
-  type ErrorType = Errors.AnyError | HcaError;
+  type ErrorType = Errors.CommonError | Errors.InvalidInputError | HcaError;
 }
 
 /** Path of the action, e.g. for cache keys. */

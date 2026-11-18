@@ -74,6 +74,7 @@ const chainIdOf = (config: WagmiConfig, options: fromWagmi.Options): number => {
  * config has no transport for it.
  * @throws `Errors.ConfigError` (`INVALID_DEPLOYMENT`) when `deployment` is invalid or for another chain.
  * @throws `Errors.ConfigError` (`CHAIN_NOT_CONFIGURED`) when an entry of `chains` holds clients of another chain.
+ * @stability stable
  * @category client
  * @since 1.0.0
  */

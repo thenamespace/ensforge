@@ -55,6 +55,7 @@ const retryable = new Set<string>(["HCA_BUNDLER_REJECTED"]);
  * An HCA (Hosted Contract Account) operation failed: the account, its session, an executor
  * (bundler, Rhinestone) or the DAO's upgrade sets.
  *
+ * @stability experimental
  * @category errors
  * @since 1.0.0
  */

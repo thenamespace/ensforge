@@ -1,5 +1,5 @@
 import type { Like } from "../../../client/types.js";
-import type { AnyError } from "../../../errors/types.js";
+import type * as Errors from "../../../errors/index.js";
 import type { Query } from "../../../indexer/Indexer.js";
 import type { IndexedRecords, Namespace, Result } from "../../../indexer/types.js";
 import * as Action from "../../../internal/action/index.js";
@@ -78,11 +78,18 @@ export declare namespace getRecords {
   /** The records, or `null` when the indexer does not know the name. */
   type ReturnType = Result<IndexedRecords> | null;
   /** Errors {@link getRecords} can fail with. */
-  type ErrorType = AnyError;
+  type ErrorType =
+    | Errors.CommonError
+    | Errors.InvalidInputError
+    | Errors.NotFoundError
+    | Errors.IndexerError;
 }
 
 /** Builds a deferred read for `Actions.batch`. */
-getRecords.request = Action.request("indexer.getRecords", Impl.getRecords);
+getRecords.request = Action.request(
+  "indexer.getRecords",
+  Impl.getRecords as Action.Declared<typeof Impl.getRecords, getRecords.ErrorType>,
+);
 
 /** Path of the action, e.g. for cache keys. */
 getRecords.path = "indexer.getRecords" as const;

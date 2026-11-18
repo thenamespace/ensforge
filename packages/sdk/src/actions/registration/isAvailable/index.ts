@@ -1,5 +1,5 @@
 import type { Like } from "../../../client/types.js";
-import type { AnyError } from "../../../errors/types.js";
+import type * as Errors from "../../../errors/index.js";
 import * as Action from "../../../internal/action/index.js";
 import type { Read } from "../../../Types.js";
 import * as Impl from "./effect.js";
@@ -66,11 +66,14 @@ export declare namespace isAvailable {
   /** Whether the name can be registered. */
   type ReturnType = boolean;
   /** Errors {@link isAvailable} can fail with. */
-  type ErrorType = AnyError;
+  type ErrorType = Errors.CommonError | Errors.InvalidInputError | Errors.UnsupportedError;
 }
 
 /** Builds a deferred read for `Actions.batch`. */
-isAvailable.request = Action.request("registration.isAvailable", Impl.isAvailable);
+isAvailable.request = Action.request(
+  "registration.isAvailable",
+  Impl.isAvailable as Action.Declared<typeof Impl.isAvailable, isAvailable.ErrorType>,
+);
 
 /** Path of the action, e.g. for cache keys. */
 isAvailable.path = "registration.isAvailable" as const;

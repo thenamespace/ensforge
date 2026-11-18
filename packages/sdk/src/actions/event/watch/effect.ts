@@ -14,7 +14,7 @@ import type { watch as Promises } from "./index.js";
 export const watch = Effect.fn("ensforge.event.watch")(function* (
   client: Client,
   options: Promises.Options,
-): Effect.fn.Return<Promises.ReturnType, Promises.ErrorType> {
+): Effect.fn.Return<Promises.ReturnType, AnyError> {
   const name = yield* normalizeName(options.name);
   const runPromise = Effect.runPromiseWith(yield* Effect.context<never>());
   let last: bigint | undefined;

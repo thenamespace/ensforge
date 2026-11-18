@@ -25,4 +25,10 @@ export { standaloneReverseRegistrarV1Abi as standaloneReverseRegistrar } from ".
 export { staticBulkRenewalV1Abi as staticBulkRenewal } from "../v1/abis/bulk-renewal.js";
 export { universalResolverV1Abi as universalResolver } from "../v1/abis/universal-resolver.js";
 export { wrappedEthRegistrarControllerV1Abi as wrappedEthRegistrarController } from "../v1/abis/wrapped-eth-registrar-controller.js";
+
+/**
+ * ENSv1 interface ABIs, keyed by contract.
+ *
+ * @stability stable
+ */
 export * as interfaces from "./v1-interfaces.js";

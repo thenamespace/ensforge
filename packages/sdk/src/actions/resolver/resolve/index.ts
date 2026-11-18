@@ -1,7 +1,7 @@
 import type { Address, Hex } from "viem";
 
 import type { Like } from "../../../client/types.js";
-import type { AnyError } from "../../../errors/types.js";
+import type * as Errors from "../../../errors/index.js";
 import * as Action from "../../../internal/action/index.js";
 import type { Read } from "../../../Types.js";
 import * as Impl from "./effect.js";
@@ -53,6 +53,7 @@ import * as Impl from "./effect.js";
  * @throws `Errors.NotFoundError` (`RESOLVER_NOT_FOUND`) when nothing resolves the name.
  * @throws `Errors.UnsupportedError` (`RESOLVER_PROFILE_UNSUPPORTED`) when the resolver does not answer the call.
  * @throws `Errors.GatewayError` when an off-chain gateway fails.
+ * @throws `Errors.DnsError` when a DNS name's DNSSEC proof does not verify.
  * @throws `Errors.ConfigError` (`CCIP_READ_DISABLED`) for off-chain names when CCIP-Read is disabled.
  *
  * @see {@link Actions.resolver.get} to inspect the resolver
@@ -75,11 +76,20 @@ export declare namespace resolve {
   /** The ABI-encoded result and the resolver that answered. */
   type ReturnType = { readonly data: Hex; readonly resolver: Address };
   /** Errors {@link resolve} can fail with. */
-  type ErrorType = AnyError;
+  type ErrorType =
+    | Errors.CommonError
+    | Errors.InvalidInputError
+    | Errors.NotFoundError
+    | Errors.UnsupportedError
+    | Errors.GatewayError
+    | Errors.DnsError;
 }
 
 /** Builds a deferred read for `Actions.batch`. */
-resolve.request = Action.request("resolver.resolve", Impl.resolve);
+resolve.request = Action.request(
+  "resolver.resolve",
+  Impl.resolve as Action.Declared<typeof Impl.resolve, resolve.ErrorType>,
+);
 
 /** Path of the action, e.g. for cache keys. */
 resolve.path = "resolver.resolve" as const;

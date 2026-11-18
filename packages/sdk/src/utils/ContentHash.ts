@@ -24,6 +24,7 @@ const schemes = {
 /**
  * URI scheme of a supported content hash, e.g. `ipfs` in `ipfs://bafy…`.
  *
+ * @stability stable
  * @category records
  * @since 1.0.0
  */
@@ -32,6 +33,7 @@ export type Protocol = keyof typeof schemes;
 /**
  * A decoded content hash.
  *
+ * @stability stable
  * @category records
  * @since 1.0.0
  */
@@ -55,6 +57,7 @@ export type Decoded = {
  * ```
  *
  * @throws `Errors.InvalidInputError` (`INVALID_CONTENT_HASH`) for unsupported schemes or values.
+ * @stability stable
  * @category records
  * @since 1.0.0
  */
@@ -79,6 +82,7 @@ export const encode = (uri: string): Hex => {
  *
  * @throws `Errors.InvalidInputError` (`INVALID_CONTENT_HASH`) when the bytes are malformed or use
  * an unsupported codec.
+ * @stability stable
  * @category records
  * @since 1.0.0
  */
@@ -114,6 +118,7 @@ export const decode = (data: Hex): Decoded | null => {
  * const url = contentHash && ContentHash.toGatewayUrl(contentHash.uri, ens.config.gateways)
  * ```
  *
+ * @stability stable
  * @category records
  * @since 1.0.0
  */

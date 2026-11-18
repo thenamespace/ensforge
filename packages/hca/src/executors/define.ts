@@ -43,6 +43,7 @@ import type { Executor } from "../types.js";
  * const fake = defineExecutor({ id: "fake", capabilities, send: async () => "1", status: async () => ({ status: "success", hashes: [hash] }) })
  * ```
  *
+ * @stability experimental
  * @category executors
  * @since 1.0.0
  */

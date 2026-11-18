@@ -5,6 +5,7 @@ import { EnsforgeError, withDefaults } from "../EnsforgeError.js";
 /**
  * A contract reverted with an error ensforge does not map to a more specific class.
  *
+ * @stability stable
  * @category errors
  * @since 1.0.0
  */

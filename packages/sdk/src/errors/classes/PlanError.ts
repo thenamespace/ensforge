@@ -19,6 +19,7 @@ const defaults: {
 /**
  * A prepared or saved plan can no longer be sent as-is.
  *
+ * @stability stable
  * @category errors
  * @since 1.0.0
  */

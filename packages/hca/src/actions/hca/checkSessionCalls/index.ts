@@ -68,7 +68,7 @@ export declare namespace checkSessionCalls {
   /** `true` when every call is allowed. */
   type ReturnType = true;
   /** Errors {@link checkSessionCalls} can fail with. */
-  type ErrorType = Errors.AnyError | HcaError;
+  type ErrorType = Errors.CommonError | HcaError;
 }
 
 /** Path of the action, e.g. for cache keys. */

@@ -1,5 +1,5 @@
 import type { Like } from "../../../client/types.js";
-import type { AnyError } from "../../../errors/types.js";
+import type * as Errors from "../../../errors/index.js";
 import * as Action from "../../../internal/action/index.js";
 import type { Write } from "../../../Types.js";
 import * as Impl from "./effect.js";
@@ -49,7 +49,7 @@ import * as Impl from "./effect.js";
  * ```
  *
  * @throws `Errors.NotFoundError` (`PLAN_NOT_FOUND`) or `Errors.PlanError` (`PLAN_CHAIN_MISMATCH`, `PLAN_ACCOUNT_MISMATCH`, `PLAN_ROUTE_REQUIRED`) when the plan cannot continue here.
- * @throws `Errors.ContractRevertError` (`CONTRACT_REVERTED`), or the failing step's own error, with `context.planId` and `context.step`.
+ * @throws `Errors.ContractRevertError` (`CONTRACT_REVERTED`), or the failing step's own error (`Errors.AnyError`: a plan can hold any step), with `context.planId` and `context.step`.
  *
  * @see {@link Actions.plan.get} to read its progress first
  * @stability stable
@@ -72,7 +72,7 @@ export declare namespace resume {
   /** Submitted transaction hashes (earlier steps included) and the plan. */
   type ReturnType = Write.Result;
   /** Errors {@link resume} can fail with. */
-  type ErrorType = AnyError;
+  type ErrorType = Errors.AnyError;
 }
 
 /**
@@ -105,6 +105,7 @@ export declare namespace resume {
  * ```
  *
  * @throws `Errors.NotFoundError` (`PLAN_NOT_FOUND`) or `Errors.PlanError` (`PLAN_CHAIN_MISMATCH`, `PLAN_ACCOUNT_MISMATCH`, `PLAN_ROUTE_REQUIRED`) when the plan cannot continue here.
+ * @throws `Errors.ContractRevertError` (`CONTRACT_REVERTED`), or the failing step's own error (`Errors.AnyError`: a plan can hold any step), with `context.planId` and `context.step`.
  * @throws `Errors.TransactionError` (`TRANSACTION_REVERTED`, `RECEIPT_TIMEOUT`) when confirmation fails.
  *
  * @see {@link resume} to resolve on submission
@@ -125,7 +126,7 @@ export declare namespace resumeSync {
   /** Receipts plus the submitted hashes and plan. */
   type ReturnType = Write.SyncResult;
   /** Errors {@link resumeSync} can fail with. */
-  type ErrorType = AnyError;
+  type ErrorType = Errors.AnyError;
 }
 
 /** Path of the action, e.g. for cache keys. */

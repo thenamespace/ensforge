@@ -5,6 +5,7 @@ import { hexToBigInt } from "viem";
 
 import type { Client } from "../../../client/types.js";
 import { InvalidInputError } from "../../../errors/classes/InvalidInputError.js";
+import type { AnyError } from "../../../errors/types.js";
 import * as Action from "../../../internal/action/index.js";
 import { requireRegistrationContracts } from "../../../internal/registration/contracts.js";
 import { parseEthName } from "../../../internal/registration/labels.js";
@@ -18,7 +19,7 @@ export const getPrice = Effect.fn("ensforge.registration.getPrice")(
   function* (
     client: Client,
     options: Promises.Options,
-  ): Effect.fn.Return<Promises.ReturnType, Promises.ErrorType> {
+  ): Effect.fn.Return<Promises.ReturnType, AnyError> {
     const { label, labelhash } = yield* parseEthName(options.name);
     const contracts = yield* requireRegistrationContracts(client);
     const token = yield* paymentTokenAddress(contracts, options.paymentToken);

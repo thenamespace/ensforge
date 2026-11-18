@@ -16,6 +16,7 @@ export * from "../utils/Name.js";
  * const name = Schema.decodeUnknownSync(Name.Normalized)("nick.eth")
  * ```
  *
+ * @stability stable
  * @category schemas
  * @since 1.0.0
  */

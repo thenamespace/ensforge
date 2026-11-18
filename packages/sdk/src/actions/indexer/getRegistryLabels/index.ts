@@ -1,5 +1,5 @@
 import type { Like } from "../../../client/types.js";
-import type { AnyError } from "../../../errors/types.js";
+import type * as Errors from "../../../errors/index.js";
 import type { Query } from "../../../indexer/Indexer.js";
 import type { Page, RegistryLabel } from "../../../indexer/types.js";
 import * as Action from "../../../internal/action/index.js";
@@ -71,11 +71,17 @@ export declare namespace getRegistryLabels {
   /** One page of labels. */
   type ReturnType = Page<RegistryLabel>;
   /** Errors {@link getRegistryLabels} can fail with. */
-  type ErrorType = AnyError;
+  type ErrorType = Errors.CommonError | Errors.InvalidInputError | Errors.IndexerError;
 }
 
 /** Builds a deferred read for `Actions.batch`. */
-getRegistryLabels.request = Action.request("indexer.getRegistryLabels", Impl.getRegistryLabels);
+getRegistryLabels.request = Action.request(
+  "indexer.getRegistryLabels",
+  Impl.getRegistryLabels as Action.Declared<
+    typeof Impl.getRegistryLabels,
+    getRegistryLabels.ErrorType
+  >,
+);
 
 /** Path of the action, e.g. for cache keys. */
 getRegistryLabels.path = "indexer.getRegistryLabels" as const;

@@ -5,6 +5,7 @@ import type { Indexer } from "./Indexer.js";
 /**
  * Connection options shared by the built-in REST indexers.
  *
+ * @stability stable
  * @category indexer
  * @since 1.0.0
  */
@@ -73,6 +74,7 @@ export type RestIndexerOptions = {
  * const indexer = fallback([bigname(), goldsky()])
  * ```
  *
+ * @stability stable
  * @category indexer
  * @since 1.0.0
  */

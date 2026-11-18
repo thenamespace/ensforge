@@ -36,4 +36,10 @@ export { unlockedMigrationControllerV2Abi as unlockedMigrationController } from 
 export { userRegistryV2Abi as userRegistry } from "../v2/abis/user-registry.js";
 export { verifiableFactoryV2Abi as verifiableFactory } from "../v2/abis/verifiable-factory.js";
 export { wrapperRegistryV2Abi as wrapperRegistry } from "../v2/abis/wrapper-registry.js";
+
+/**
+ * ENSv2 interface ABIs, keyed by interface.
+ *
+ * @stability stable
+ */
 export * as interfaces from "./v2-interfaces.js";

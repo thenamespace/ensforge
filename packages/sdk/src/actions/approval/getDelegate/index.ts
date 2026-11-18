@@ -1,5 +1,5 @@
 import type { Like } from "../../../client/types.js";
-import type { AnyError } from "../../../errors/types.js";
+import type * as Errors from "../../../errors/index.js";
 import * as Action from "../../../internal/action/index.js";
 import type { Read } from "../../../Types.js";
 import * as Impl from "./effect.js";
@@ -74,11 +74,14 @@ export declare namespace getDelegate {
   /** Whether `delegate` may edit the name's records. */
   type ReturnType = boolean;
   /** Errors {@link getDelegate} can fail with. */
-  type ErrorType = AnyError;
+  type ErrorType = Errors.CommonError | Errors.InvalidInputError | Errors.NotFoundError;
 }
 
 /** Builds a deferred read for `Actions.batch`. */
-getDelegate.request = Action.request("approval.getDelegate", Impl.getDelegate);
+getDelegate.request = Action.request(
+  "approval.getDelegate",
+  Impl.getDelegate as Action.Declared<typeof Impl.getDelegate, getDelegate.ErrorType>,
+);
 
 /** Path of the action, e.g. for cache keys. */
 getDelegate.path = "approval.getDelegate" as const;

@@ -18,6 +18,7 @@ const defaults: {
 /**
  * The RPC provider could not be reached or rejected the request. Usually worth retrying.
  *
+ * @stability stable
  * @category errors
  * @since 1.0.0
  */

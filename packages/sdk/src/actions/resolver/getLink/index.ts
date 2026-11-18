@@ -1,7 +1,7 @@
 import type { Address } from "viem";
 
 import type { Like } from "../../../client/types.js";
-import type { AnyError } from "../../../errors/types.js";
+import type * as Errors from "../../../errors/index.js";
 import * as Action from "../../../internal/action/index.js";
 import type { Read } from "../../../Types.js";
 import * as Impl from "./effect.js";
@@ -70,11 +70,18 @@ export declare namespace getLink {
   /** The resolver and the name's record ID, or `null` when it has no records there. */
   type ReturnType = { readonly resolver: Address; readonly recordId: bigint } | null;
   /** Errors {@link getLink} can fail with. */
-  type ErrorType = AnyError;
+  type ErrorType =
+    | Errors.CommonError
+    | Errors.InvalidInputError
+    | Errors.NotFoundError
+    | Errors.UnsupportedError;
 }
 
 /** Builds a deferred read for `Actions.batch`. */
-getLink.request = Action.request("resolver.getLink", Impl.getLink);
+getLink.request = Action.request(
+  "resolver.getLink",
+  Impl.getLink as Action.Declared<typeof Impl.getLink, getLink.ErrorType>,
+);
 
 /** Path of the action, e.g. for cache keys. */
 getLink.path = "resolver.getLink" as const;

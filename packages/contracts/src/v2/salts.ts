@@ -21,6 +21,7 @@ const migrationUserRegistryDomain = keccak256(stringToHex("ENSManagerMigrationUs
  * })
  * ```
  *
+ * @stability stable
  * @since 1.0.0
  */
 export const ownedResolverSalt = (owner: Hex): bigint =>
@@ -38,6 +39,7 @@ export const ownedResolverSalt = (owner: Hex): bigint =>
  * manager app derives it: `keccak256(abi.encode(keccak256("ENSManagerMigrationUserRegistry:v1"),
  * parentNode))`.
  *
+ * @stability stable
  * @since 1.0.0
  */
 export const migrationUserRegistrySalt = (parentNode: Hex): bigint =>

@@ -1,6 +1,7 @@
 /**
  * Complete IStandaloneHCAFactory ABI from ENSv2's experimental HCA layer.
  *
+ * @stability experimental
  * @since 1.0.0
  */
 export const standaloneHcaFactoryV2InterfaceAbi = [

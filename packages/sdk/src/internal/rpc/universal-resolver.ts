@@ -67,7 +67,11 @@ const callUniversalResolver = (
   );
 };
 
-/** Result of a Universal Resolver `resolve`. */
+/**
+ * Result of a Universal Resolver `resolve`.
+ *
+ * @stability unstable
+ */
 export type Resolved = {
   /** ABI-encoded return data of the resolver call. */
   readonly data: Hex;
@@ -78,6 +82,8 @@ export type Resolved = {
 /**
  * ENSIP-10 resolution through the Universal Resolver: finds the resolver of `name` (including
  * wildcards) and calls it with `data`.
+ *
+ * @stability unstable
  */
 export const resolve = (
   client: Client,
@@ -110,7 +116,11 @@ export const resolve = (
   );
 };
 
-/** Result of a Universal Resolver `reverse`. */
+/**
+ * Result of a Universal Resolver `reverse`.
+ *
+ * @stability unstable
+ */
 export type Reversed = {
   /** The primary name as stored; `""` when the reverse record is empty. */
   readonly name: string;
@@ -123,6 +133,8 @@ export type Reversed = {
 /**
  * ENSIP-19 primary name of an address, forward-verified by the Universal Resolver: it fails with
  * `ReverseAddressMismatch` when the name does not resolve back to the address.
+ *
+ * @stability unstable
  */
 export const reverse = (
   client: Client,
@@ -154,7 +166,11 @@ export const reverse = (
   );
 };
 
-/** The resolver the Universal Resolver reads from. */
+/**
+ * The resolver the Universal Resolver reads from.
+ *
+ * @stability unstable
+ */
 export type FoundResolver = {
   readonly address: Address;
   /** Whether it was found on a parent (an ENSIP-10 wildcard). */
@@ -165,6 +181,8 @@ export type FoundResolver = {
  * The resolver the Universal Resolver reads `name` from, or `null` when there is none. Never use
  * it as a write target: for names still on ENSv1, the ENSv2 Universal Resolver returns the
  * read-only `ENSV1Resolver` bridge rather than the name's own resolver.
+ *
+ * @stability unstable
  */
 export const findResolver = (
   client: Client,

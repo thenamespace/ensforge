@@ -12,5 +12,10 @@ export * from "./hooks/named/reads.js";
 export * from "./hooks/named/writes.js";
 
 export * from "./atoms/index.js";
-// Loads server-rendered reads (`dehydrate` from `@ensforge/react/server`) into the registry.
+/**
+ * Loads server-rendered reads (`dehydrate` from `@ensforge/react/server`) into the registry.
+ * Re-exported from `@effect/atom-react`.
+ *
+ * @stability unstable
+ */
 export { HydrationBoundary } from "@effect/atom-react";

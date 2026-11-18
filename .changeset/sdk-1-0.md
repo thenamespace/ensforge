@@ -9,4 +9,4 @@ ensforge 1.0: a rewrite of the SDK for ENSv1 and ENSv2. `@ensforge/core` is now 
 - Writes are plans: `.prepare`, `.simulate`, `.estimateGas`, EIP-5792 batching, resume after failures, `…Sync` variants that wait for receipts, pluggable routes (`via`) and paymasters.
 - Pluggable indexers: `bigname()`, `goldsky()`, `fallback()` and `defineIndexer()` for lists, history and search.
 - `Ensforge.fromWagmi` in `@ensforge/sdk/wagmi`, for wagmi 2 and 3.
-- Typed errors with codes, hints and `Errors.describe` for UI copy.
+- Typed errors with codes, hints and `Errors.describe` for UI copy. Each action's `ErrorType`, and its Effect error channel, is the classes its `@throws` documents plus `Errors.CommonError` (or `Errors.WriteError` for writes).

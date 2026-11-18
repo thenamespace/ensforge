@@ -14,6 +14,7 @@ import { getBlock, signMessage } from "viem/actions";
 
 import type { Client } from "../../../client/types.js";
 import { InvalidInputError } from "../../../errors/classes/InvalidInputError.js";
+import type { AnyError } from "../../../errors/types.js";
 import * as Action from "../../../internal/action/index.js";
 import { addressOf } from "../../../internal/address.js";
 import { normalizeName } from "../../../internal/name/normalize.js";
@@ -73,7 +74,7 @@ const invalidChains = (input: unknown, shortMessage: string) =>
 export const signClaim = Effect.fn("ensforge.primaryName.signClaim")(function* (
   client: Client,
   options: Promises.Options,
-): Effect.fn.Return<Promises.ReturnType, Promises.ErrorType> {
+): Effect.fn.Return<Promises.ReturnType, AnyError> {
   const { chainIds } = options;
   if (chainIds.length === 0) {
     return yield* Effect.fail(invalidChains(chainIds, "A claim needs at least one chain."));

@@ -1,6 +1,7 @@
 /**
  * Resolver-native batching used for resolving multiple records for one name.
  *
+ * @stability stable
  * @since 1.0.0
  */
 export const multicallResolverAbi = [

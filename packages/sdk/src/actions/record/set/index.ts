@@ -1,7 +1,7 @@
 import type { Abi, Address, Hex } from "viem";
 
 import type { Like } from "../../../client/types.js";
-import type { AnyError } from "../../../errors/types.js";
+import type * as Errors from "../../../errors/index.js";
 import * as Action from "../../../internal/action/index.js";
 import type { Plan } from "../../../plan/Plan.js";
 import type { Write } from "../../../Types.js";
@@ -126,7 +126,12 @@ export declare namespace set {
   /** Submitted transaction hashes and the plan that produced them. */
   type ReturnType = Write.Result;
   /** Errors {@link set} can fail with. */
-  type ErrorType = AnyError;
+  type ErrorType =
+    | Errors.WriteError
+    | Errors.InvalidInputError
+    | Errors.NotFoundError
+    | Errors.NameStateError
+    | Errors.UnauthorizedError;
 }
 
 // Explicit types keep these declarations free of Effect types.
@@ -200,7 +205,12 @@ export declare namespace setSync {
   /** Receipts plus the submitted hashes and plan. */
   type ReturnType = Write.SyncResult;
   /** Errors {@link setSync} can fail with. */
-  type ErrorType = AnyError;
+  type ErrorType =
+    | Errors.WriteError
+    | Errors.InvalidInputError
+    | Errors.NotFoundError
+    | Errors.NameStateError
+    | Errors.UnauthorizedError;
 }
 
 /** Path of the action, e.g. for cache keys. */

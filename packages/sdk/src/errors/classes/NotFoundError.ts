@@ -26,6 +26,7 @@ const defaults: {
  * Something the call requires does not exist. Reads only throw this with `strict: true`;
  * otherwise they return `null`.
  *
+ * @stability stable
  * @category errors
  * @since 1.0.0
  */

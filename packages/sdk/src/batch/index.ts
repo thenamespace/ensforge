@@ -1,8 +1,8 @@
 import type { Like } from "../client/types.js";
-import type { AnyError } from "../errors/types.js";
+import type * as Errors from "../errors/index.js";
 import * as Action from "../internal/action/index.js";
 import * as Impl from "./effect.js";
-import type { BatchOptions, Requests, Results } from "./types.js";
+import type { BatchOptions, RequestErrors, Requests, Results } from "./types.js";
 
 /**
  * Runs several reads together, in as few round trips as possible.
@@ -82,8 +82,13 @@ export declare namespace batch {
   type ReturnType<requests extends Requests = Requests, allowFailure extends boolean = true> = {
     readonly results: Results<requests, allowFailure>;
   };
-  /** Errors {@link batch} can fail with. */
-  type ErrorType = AnyError;
+  /**
+   * Errors {@link batch} can fail with: with `allowFailure: false`, a request that cannot be
+   * batched and the requests' own errors; otherwise each failure is in its result.
+   */
+  type ErrorType<requests extends Requests = Requests, allowFailure extends boolean = true> =
+    | Errors.CommonError
+    | (allowFailure extends false ? Errors.InvalidInputError | RequestErrors<requests> : never);
   /** {@link batch} bound to a client. */
   type Bound = <const requests extends Requests, allowFailure extends boolean = true>(
     options: BatchOptions<requests, allowFailure>,

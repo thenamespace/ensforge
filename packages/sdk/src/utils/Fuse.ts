@@ -19,6 +19,7 @@ const fuses = {
 /**
  * An ENSv1 NameWrapper fuse name.
  *
+ * @stability stable
  * @category wrapper
  * @since 1.0.0
  */
@@ -27,6 +28,7 @@ export type Name = keyof typeof fuses;
 /**
  * Every fuse with whether it is burned.
  *
+ * @stability stable
  * @category wrapper
  * @since 1.0.0
  */
@@ -36,6 +38,7 @@ export type Decoded = { readonly [name in Name]: boolean };
  * Fuse mask with every fuse in `names` burned.
  *
  * @throws `Errors.InvalidInputError` (`INVALID_RECORD_VALUE`) for unknown fuse names.
+ * @stability stable
  * @category wrapper
  * @since 1.0.0
  */
@@ -50,6 +53,7 @@ export const from = (names: readonly Name[]): number =>
 /**
  * Whether `name` is burned in `mask`.
  *
+ * @stability stable
  * @category wrapper
  * @since 1.0.0
  */
@@ -58,6 +62,7 @@ export const has = (mask: number, name: Name): boolean => (mask & fuses[name]) =
 /**
  * Every fuse in `mask`, by name.
  *
+ * @stability stable
  * @category wrapper
  * @since 1.0.0
  */

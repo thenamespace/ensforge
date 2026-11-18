@@ -1,6 +1,7 @@
 import { Effect } from "effect";
 
 import type { Client } from "../../../client/types.js";
+import type { AnyError } from "../../../errors/types.js";
 import * as Action from "../../../internal/action/index.js";
 import { requireRegistrationContracts } from "../../../internal/registration/contracts.js";
 import { parseEthNames } from "../../../internal/registration/labels.js";
@@ -13,7 +14,7 @@ export const getRenewalPrice = Effect.fn("ensforge.registration.getRenewalPrice"
   function* (
     client: Client,
     options: Promises.Options,
-  ): Effect.fn.Return<Promises.ReturnType, Promises.ErrorType> {
+  ): Effect.fn.Return<Promises.ReturnType, AnyError> {
     const names = yield* parseEthNames(options.names);
     const contracts = yield* requireRegistrationContracts(client);
     const token = yield* paymentTokenAddress(contracts, options.paymentToken);

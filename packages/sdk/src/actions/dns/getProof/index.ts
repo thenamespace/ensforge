@@ -1,5 +1,5 @@
 import type { Like } from "../../../client/types.js";
-import type { AnyError } from "../../../errors/types.js";
+import type * as Errors from "../../../errors/index.js";
 import * as Action from "../../../internal/action/index.js";
 import type { Read } from "../../../Types.js";
 import type { Proof } from "../types.js";
@@ -64,11 +64,18 @@ export declare namespace getProof {
   /** Signed RRSets, the record's TXT strings and its signature times. */
   type ReturnType = Proof;
   /** Errors {@link getProof} can fail with. */
-  type ErrorType = AnyError;
+  type ErrorType =
+    | Errors.CommonError
+    | Errors.InvalidInputError
+    | Errors.GatewayError
+    | Errors.UnsupportedError;
 }
 
 /** Builds a deferred read for `Actions.batch`. */
-getProof.request = Action.request("dns.getProof", Impl.getProof);
+getProof.request = Action.request(
+  "dns.getProof",
+  Impl.getProof as Action.Declared<typeof Impl.getProof, getProof.ErrorType>,
+);
 
 /** Path of the action, e.g. for cache keys. */
 getProof.path = "dns.getProof" as const;

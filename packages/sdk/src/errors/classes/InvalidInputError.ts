@@ -51,6 +51,7 @@ const defaults: {
 /**
  * An argument is invalid. Detected before any network request.
  *
+ * @stability stable
  * @category errors
  * @since 1.0.0
  */

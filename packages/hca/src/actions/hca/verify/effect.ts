@@ -1,6 +1,6 @@
 import { Effect } from "effect";
 
-import { Action, type Client } from "@ensforge/sdk/extension";
+import { Action, type AnyError, type Client } from "@ensforge/sdk/extension";
 
 import { HcaError } from "../../../errors/classes/HcaError.js";
 import { accountInput } from "../../../internal/input.js";
@@ -10,7 +10,7 @@ import type { verify as Promises } from "./index.js";
 export const verify = Effect.fn("ensforge.hca.verify")(function* (
   client: Client,
   options: Promises.Options,
-): Effect.fn.Return<Promises.ReturnType, Promises.ErrorType> {
+): Effect.fn.Return<Promises.ReturnType, AnyError | HcaError> {
   const account = yield* accountInput(client, options);
   if (account.problems.length > 0) {
     return yield* Effect.fail(

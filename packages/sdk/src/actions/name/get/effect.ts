@@ -1,6 +1,7 @@
 import { Effect } from "effect";
 
 import type { Client } from "../../../client/types.js";
+import type { AnyError } from "../../../errors/types.js";
 import * as Action from "../../../internal/action/index.js";
 import { loadName } from "../../../internal/name/load.js";
 import { describeResolver } from "../../../internal/resolver/describe.js";
@@ -13,7 +14,7 @@ export const get = Effect.fn("ensforge.name.get")(
   function* (
     client: Client,
     options: Promises.Options,
-  ): Effect.fn.Return<Promises.ReturnType, Promises.ErrorType> {
+  ): Effect.fn.Return<Promises.ReturnType, AnyError> {
     // `findResolver` shares the first multicall round with the registry reads; it matters only
     // for names without a resolver of their own, so only they fail when it does.
     const { loaded, found } = yield* Effect.all(

@@ -58,7 +58,7 @@ export declare namespace setUpgradeApproval {
   /** Submitted transaction hashes and the plan that produced them. */
   type ReturnType = Write.Result;
   /** Errors {@link setUpgradeApproval} can fail with. */
-  type ErrorType = Errors.AnyError | HcaError;
+  type ErrorType = Errors.WriteError | Errors.InvalidInputError | HcaError;
 }
 
 // Explicit types keep these declarations free of Effect types.
@@ -137,7 +137,7 @@ export declare namespace setUpgradeApprovalSync {
   /** Receipts plus the submitted hashes and plan. */
   type ReturnType = Write.SyncResult;
   /** Errors {@link setUpgradeApprovalSync} can fail with. */
-  type ErrorType = Errors.AnyError | HcaError;
+  type ErrorType = Errors.WriteError | Errors.InvalidInputError | HcaError;
 }
 
 /** Path of the action, e.g. for cache keys. */

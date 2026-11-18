@@ -4,4 +4,4 @@ export { describe, type DescribeOptions, type Description } from "./describe/des
 export { EnsforgeError } from "./EnsforgeError.js";
 export { hasCode, isEnsforgeError as is } from "./guards.js";
 export { fromCause } from "./translate/fromCause.js";
-export type { AnyError, Code, ErrorOf } from "./types.js";
+export type { AnyError, Code, CommonError, ErrorOf, WriteError } from "./types.js";

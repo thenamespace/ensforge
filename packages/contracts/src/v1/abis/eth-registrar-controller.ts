@@ -1,6 +1,7 @@
 /**
  * Complete IETHRegistrarController ABI from @ensdomains/ens-contracts v1.7.0.
  *
+ * @stability stable
  * @since 1.0.0
  */
 export const ethRegistrarControllerV1InterfaceAbi = [
@@ -216,6 +217,7 @@ export const ethRegistrarControllerV1InterfaceAbi = [
 /**
  * Complete ETHRegistrarController ABI from @ensdomains/ens-contracts v1.7.0.
  *
+ * @stability stable
  * @since 1.0.0
  */
 export const ethRegistrarControllerV1Abi = [

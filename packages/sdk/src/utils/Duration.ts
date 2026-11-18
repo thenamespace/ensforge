@@ -15,6 +15,7 @@ const count = (value: number | bigint): bigint => {
  * `n` days in seconds.
  *
  * @throws `Errors.InvalidInputError` (`INVALID_DURATION`) for negative or fractional values.
+ * @stability stable
  * @category durations
  * @since 1.0.0
  */
@@ -32,6 +33,7 @@ export const days = (n: number | bigint): bigint => count(n) * secondsPerDay;
  * ```
  *
  * @throws `Errors.InvalidInputError` (`INVALID_DURATION`) for negative or fractional values.
+ * @stability stable
  * @category durations
  * @since 1.0.0
  */

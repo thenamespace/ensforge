@@ -1,7 +1,7 @@
 import type { Account, Address, Hex } from "viem";
 
 import type { Like } from "../../../client/types.js";
-import type { AnyError } from "../../../errors/types.js";
+import type * as Errors from "../../../errors/index.js";
 import * as Action from "../../../internal/action/index.js";
 import * as Impl from "./effect.js";
 
@@ -138,7 +138,7 @@ export declare namespace signClaim {
   /** The claim and its signature, for `primaryName.set` on each chain. */
   type ReturnType = { readonly claim: Claim; readonly signature: Hex };
   /** Errors {@link signClaim} can fail with. */
-  type ErrorType = AnyError;
+  type ErrorType = Errors.WriteError | Errors.InvalidInputError | Errors.NotFoundError;
 }
 
 /** Path of the action, e.g. for cache keys. */

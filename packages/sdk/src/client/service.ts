@@ -21,6 +21,7 @@ import type { Client, CreateOptions } from "./types.js";
  * await Effect.runPromise(program.pipe(Effect.provide(Ensforge.layer({ publicClient }))))
  * ```
  *
+ * @stability stable
  * @category client
  * @since 1.0.0
  */
@@ -31,6 +32,7 @@ export class Ensforge extends Context.Service<Ensforge, Client<object>>()(
 /**
  * A layer that creates the client with `Ensforge.create`.
  *
+ * @stability stable
  * @category client
  * @since 1.0.0
  */

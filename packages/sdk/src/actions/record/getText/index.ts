@@ -1,5 +1,5 @@
 import type { Like } from "../../../client/types.js";
-import type { AnyError } from "../../../errors/types.js";
+import type * as Errors from "../../../errors/index.js";
 import * as Action from "../../../internal/action/index.js";
 import type { Read } from "../../../Types.js";
 import * as Impl from "./effect.js";
@@ -45,6 +45,7 @@ import * as Impl from "./effect.js";
  * @throws `Errors.NotFoundError` (`RECORD_NOT_FOUND`, `RESOLVER_NOT_FOUND`) with `strict`.
  * @throws `Errors.UnsupportedError` (`RESOLVER_PROFILE_UNSUPPORTED`) with `strict` when the resolver supports none of the records.
  * @throws `Errors.GatewayError` when an off-chain gateway fails.
+ * @throws `Errors.DnsError` when a DNS name's DNSSEC proof does not verify.
  * @throws `Errors.NetworkError` when the RPC request fails.
  *
  * @see {@link Actions.record.set} to write text records
@@ -67,11 +68,20 @@ export declare namespace getText {
   /** The record value, or `null` when it is not set. */
   type ReturnType = string | null;
   /** Errors {@link getText} can fail with. */
-  type ErrorType = AnyError;
+  type ErrorType =
+    | Errors.CommonError
+    | Errors.InvalidInputError
+    | Errors.NotFoundError
+    | Errors.UnsupportedError
+    | Errors.GatewayError
+    | Errors.DnsError;
 }
 
 /** Builds a deferred read for `Actions.batch`. */
-getText.request = Action.request("record.getText", Impl.getText);
+getText.request = Action.request(
+  "record.getText",
+  Impl.getText as Action.Declared<typeof Impl.getText, getText.ErrorType>,
+);
 
 /** Path of the action, e.g. for cache keys. */
 getText.path = "record.getText" as const;

@@ -3,6 +3,7 @@ import { Effect } from "effect";
 import { Abis } from "@ensforge/contracts";
 
 import type { Client } from "../../../client/types.js";
+import type { AnyError } from "../../../errors/types.js";
 import * as Action from "../../../internal/action/index.js";
 import { requireRegistrationContracts } from "../../../internal/registration/contracts.js";
 import { parseEthName } from "../../../internal/registration/labels.js";
@@ -15,7 +16,7 @@ export const isAvailable = Effect.fn("ensforge.registration.isAvailable")(
   function* (
     client: Client,
     options: Promises.Options,
-  ): Effect.fn.Return<Promises.ReturnType, Promises.ErrorType> {
+  ): Effect.fn.Return<Promises.ReturnType, AnyError> {
     const { label } = yield* parseEthName(options.name);
     const contracts = yield* requireRegistrationContracts(client);
     const at = blockAt(options);

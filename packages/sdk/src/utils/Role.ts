@@ -5,6 +5,7 @@ import { InvalidInputError } from "../errors/classes/InvalidInputError.js";
 /**
  * Registry role bits from contracts-v2 v1.0.1 (`canTransfer` is `1n << 28n`).
  *
+ * @stability stable
  * @category roles
  * @since 1.0.0
  */
@@ -13,6 +14,7 @@ export const registry = Roles.registry;
 /**
  * PermissionedResolver role bits from contracts-v2 v1.0.1.
  *
+ * @stability stable
  * @category roles
  * @since 1.0.0
  */
@@ -21,6 +23,7 @@ export const resolver = Roles.resolver;
 /**
  * A registry or resolver role name.
  *
+ * @stability stable
  * @category roles
  * @since 1.0.0
  */
@@ -29,6 +32,7 @@ export type Name = keyof typeof registry | keyof typeof resolver;
 /**
  * Which contract a role bitmap belongs to. Registry and resolver roles share bit positions.
  *
+ * @stability stable
  * @category roles
  * @since 1.0.0
  */
@@ -49,6 +53,7 @@ const bits: Readonly<Record<string, bigint>> = { ...registry, ...resolver };
  * ```
  *
  * @throws `Errors.InvalidInputError` (`INVALID_ROLES`) for unknown role names.
+ * @stability stable
  * @category roles
  * @since 1.0.0
  */
@@ -63,6 +68,7 @@ export const from = (names: readonly Name[]): bigint =>
  * Whether `bitmap` has every role in `names`.
  *
  * @throws `Errors.InvalidInputError` (`INVALID_ROLES`) for unknown role names.
+ * @stability stable
  * @category roles
  * @since 1.0.0
  */
@@ -74,6 +80,7 @@ export const has = (bitmap: bigint, names: Name | readonly Name[]): boolean => {
 /**
  * Names of the roles set in `bitmap` for a registry or resolver.
  *
+ * @stability stable
  * @category roles
  * @since 1.0.0
  */
@@ -88,6 +95,7 @@ export const toNames = (bitmap: bigint, target: Target): readonly Name[] => {
 /**
  * Admin role that grants and revokes `name`, e.g. `setResolver` → `setResolverAdmin`.
  *
+ * @stability stable
  * @category roles
  * @since 1.0.0
  */

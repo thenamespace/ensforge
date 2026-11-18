@@ -1,5 +1,5 @@
 import type { Like } from "../../../client/types.js";
-import type { AnyError } from "../../../errors/types.js";
+import type * as Errors from "../../../errors/index.js";
 import * as Action from "../../../internal/action/index.js";
 import type { Read } from "../../../Types.js";
 import type { PaymentToken, RenewalRoute, TokenInfo } from "../types.js";
@@ -83,11 +83,18 @@ export declare namespace getRenewalPrice {
     }[];
   };
   /** Errors {@link getRenewalPrice} can fail with. */
-  type ErrorType = AnyError;
+  type ErrorType =
+    | Errors.CommonError
+    | Errors.InvalidInputError
+    | Errors.NameStateError
+    | Errors.UnsupportedError;
 }
 
 /** Builds a deferred read for `Actions.batch`. */
-getRenewalPrice.request = Action.request("registration.getRenewalPrice", Impl.getRenewalPrice);
+getRenewalPrice.request = Action.request(
+  "registration.getRenewalPrice",
+  Impl.getRenewalPrice as Action.Declared<typeof Impl.getRenewalPrice, getRenewalPrice.ErrorType>,
+);
 
 /** Path of the action, e.g. for cache keys. */
 getRenewalPrice.path = "registration.getRenewalPrice" as const;

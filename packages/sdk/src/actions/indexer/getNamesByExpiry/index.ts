@@ -1,5 +1,5 @@
 import type { Like } from "../../../client/types.js";
-import type { AnyError } from "../../../errors/types.js";
+import type * as Errors from "../../../errors/index.js";
 import type { Query } from "../../../indexer/Indexer.js";
 import type { ExpiringName, Namespace, Page } from "../../../indexer/types.js";
 import * as Action from "../../../internal/action/index.js";
@@ -67,11 +67,17 @@ export declare namespace getNamesByExpiry {
   /** One page of names, soonest first unless `order` says otherwise. */
   type ReturnType = Page<ExpiringName>;
   /** Errors {@link getNamesByExpiry} can fail with. */
-  type ErrorType = AnyError;
+  type ErrorType = Errors.CommonError | Errors.InvalidInputError | Errors.IndexerError;
 }
 
 /** Builds a deferred read for `Actions.batch`. */
-getNamesByExpiry.request = Action.request("indexer.getNamesByExpiry", Impl.getNamesByExpiry);
+getNamesByExpiry.request = Action.request(
+  "indexer.getNamesByExpiry",
+  Impl.getNamesByExpiry as Action.Declared<
+    typeof Impl.getNamesByExpiry,
+    getNamesByExpiry.ErrorType
+  >,
+);
 
 /** Path of the action, e.g. for cache keys. */
 getNamesByExpiry.path = "indexer.getNamesByExpiry" as const;

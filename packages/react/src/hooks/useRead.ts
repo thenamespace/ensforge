@@ -13,6 +13,7 @@ import { toReadResult, type ReadResult } from "./result.js";
 /**
  * Settings of a read hook: its freshness, whether it runs, and an optional client.
  *
+ * @stability stable
  * @category reads
  * @since 1.0.0
  */
@@ -57,6 +58,7 @@ const idle = Atom.make(AsyncResult.initial<never, never>(false));
  * }
  * ```
  *
+ * @stability stable
  * @category reads
  * @since 1.0.0
  */

@@ -1,5 +1,5 @@
 import type { Like } from "../../../client/types.js";
-import type { AnyError } from "../../../errors/types.js";
+import type * as Errors from "../../../errors/index.js";
 import type { IndexerStatus } from "../../../indexer/types.js";
 import * as Action from "../../../internal/action/index.js";
 import type { Read } from "../../../Types.js";
@@ -60,11 +60,14 @@ export declare namespace getStatus {
   /** Overall status and per-chain progress. */
   type ReturnType = IndexerStatus;
   /** Errors {@link getStatus} can fail with. */
-  type ErrorType = AnyError;
+  type ErrorType = Errors.CommonError | Errors.IndexerError;
 }
 
 /** Builds a deferred read for `Actions.batch`. */
-getStatus.request = Action.request("indexer.getStatus", Impl.getStatus);
+getStatus.request = Action.request(
+  "indexer.getStatus",
+  Impl.getStatus as Action.Declared<typeof Impl.getStatus, getStatus.ErrorType>,
+);
 
 /** Path of the action, e.g. for cache keys. */
 getStatus.path = "indexer.getStatus" as const;

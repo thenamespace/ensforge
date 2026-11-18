@@ -11,6 +11,7 @@ import {
 /**
  * `accountId()` of the standalone single-owner HCA at contracts-v2 v1.0.1.
  *
+ * @stability experimental
  * @since 1.0.0
  */
 export const hcaAccountId = "ens-standalone-hca.1.1.0";
@@ -19,6 +20,7 @@ export const hcaAccountId = "ens-standalone-hca.1.1.0";
  * Rhinestone SmartSessionEmissary. HCA session approvals name it inside the signed session; the
  * HCA never calls it.
  *
+ * @stability experimental
  * @since 1.0.0
  */
 export const hcaSmartSessionEmissary: Address = "0xad568B3F825A8d5FFc06DD3253526B64D810Ae89";
@@ -26,6 +28,7 @@ export const hcaSmartSessionEmissary: Address = "0xad568B3F825A8d5FFc06DD3253526
 /**
  * Rhinestone one-of-one Ownable session validator named in HCA session approvals.
  *
+ * @stability experimental
  * @since 1.0.0
  */
 export const hcaOwnableSessionValidator: Address = "0x000000000013fdB5234E4E3162a810F54d9f7E98";
@@ -34,6 +37,7 @@ export const hcaOwnableSessionValidator: Address = "0x000000000013fdB5234E4E3162
  * EIP-712 domain of HCA session approvals at contracts-v2 v1.0.1 (Rhinestone's Smart Session
  * domain, without a chain ID: one signature covers several chains).
  *
+ * @stability experimental
  * @since 1.0.0
  */
 export const hcaSessionDomain = { name: "SmartSessionEmissary", version: "1" } as const;
@@ -41,6 +45,7 @@ export const hcaSessionDomain = { name: "SmartSessionEmissary", version: "1" } a
 /**
  * EIP-712 types of an HCA session approval (Rhinestone multi-chain Smart Session).
  *
+ * @stability experimental
  * @since 1.0.0
  */
 export const hcaSessionTypes = {
@@ -91,6 +96,7 @@ export const hcaSessionTypes = {
 /**
  * The fixed limits an HCA session approval binds besides its key and account.
  *
+ * @stability experimental
  * @since 1.0.0
  */
 export type HcaSessionTerms = {
@@ -110,6 +116,7 @@ export type HcaSessionTerms = {
 /**
  * The session salt: the terms an HCA session approval binds, as the validator hashes them.
  *
+ * @stability experimental
  * @since 1.0.0
  */
 export const hcaSessionSalt = (terms: HcaSessionTerms): Hex =>
@@ -170,6 +177,7 @@ const defaultPermissions = {
  * validator enforces its own fixed policy instead), the key in a one-of-one Ownable validator and
  * the terms in the salt.
  *
+ * @stability experimental
  * @since 1.0.0
  */
 export const hcaSignedSession = (options: {
@@ -194,6 +202,7 @@ export const hcaSignedSession = (options: {
 /**
  * Smart Session permission id of an HCA session, as the validator derives it.
  *
+ * @stability experimental
  * @since 1.0.0
  */
 export const hcaSessionPermissionId = (options: {
@@ -217,6 +226,7 @@ export const hcaSessionPermissionId = (options: {
 /**
  * Struct hash of one signed session: the per-chain digest a multi-chain approval lists.
  *
+ * @stability experimental
  * @since 1.0.0
  */
 export const hcaSessionDigest = (session: ReturnType<typeof hcaSignedSession>): Hex =>
@@ -225,6 +235,7 @@ export const hcaSessionDigest = (session: ReturnType<typeof hcaSignedSession>): 
 /**
  * EIP-712 typed data the HCA owner signs to approve sessions on one or more chains.
  *
+ * @stability experimental
  * @since 1.0.0
  */
 export const hcaSessionTypedData = (
@@ -248,6 +259,7 @@ export const hcaSessionTypedData = (
 /**
  * The digest an HCA owner signs for a multi-chain session approval.
  *
+ * @stability experimental
  * @since 1.0.0
  */
 export const hcaSessionApprovalDigest = (
@@ -258,6 +270,7 @@ export const hcaSessionApprovalDigest = (
  * `StandaloneHCAFactory` deployment salt: the HCA address is the VerifiableFactory proxy the
  * factory deploys with it.
  *
+ * @stability experimental
  * @since 1.0.0
  */
 export const hcaDeploymentSalt = (options: {

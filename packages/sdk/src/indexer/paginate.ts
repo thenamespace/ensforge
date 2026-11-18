@@ -42,6 +42,7 @@ import type { Page } from "./types.js";
  * )
  * ```
  *
+ * @stability stable
  * @category indexer
  * @since 1.0.0
  */

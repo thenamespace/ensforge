@@ -1,6 +1,7 @@
 import { Effect } from "effect";
 
 import type { Client } from "../../../client/types.js";
+import type { AnyError } from "../../../errors/types.js";
 import * as Action from "../../../internal/action/index.js";
 import { callIndexer } from "../../../internal/indexer/call.js";
 import type { getStatus as Promises } from "./index.js";
@@ -9,6 +10,6 @@ import type { getStatus as Promises } from "./index.js";
 export const getStatus = Effect.fn("ensforge.indexer.getStatus")(function* (
   client: Client,
   _options: Promises.Options = {},
-): Effect.fn.Return<Promises.ReturnType, Promises.ErrorType> {
+): Effect.fn.Return<Promises.ReturnType, AnyError> {
   return yield* callIndexer(client, "getStatus", {});
 }, Action.withContext("indexer.getStatus"));

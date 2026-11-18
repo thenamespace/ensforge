@@ -4,6 +4,7 @@ import { isAddressEqual } from "viem";
 
 import type { Client } from "../../../client/types.js";
 import { NotFoundError } from "../../../errors/classes/NotFoundError.js";
+import type { AnyError } from "../../../errors/types.js";
 import * as Action from "../../../internal/action/index.js";
 import { loadName } from "../../../internal/name/load.js";
 import { describeResolver } from "../../../internal/resolver/describe.js";
@@ -16,7 +17,7 @@ export const get = Effect.fn("ensforge.resolver.get")(
   function* (
     client: Client,
     options: Promises.Options,
-  ): Effect.fn.Return<Promises.ReturnType, Promises.ErrorType> {
+  ): Effect.fn.Return<Promises.ReturnType, AnyError> {
     // Both run in the first multicall round: the registry knows the name's own resolver, the
     // Universal Resolver knows which one serves it when there is none.
     const { loaded, found } = yield* Effect.all(

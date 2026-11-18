@@ -68,7 +68,7 @@ export declare namespace verify {
   /** The verified account. */
   type ReturnType = HcaAccount;
   /** Errors {@link verify} can fail with. */
-  type ErrorType = Errors.AnyError | HcaError;
+  type ErrorType = Errors.CommonError | HcaError | Errors.InvalidInputError;
 }
 
 /** Path of the action, e.g. for cache keys. */

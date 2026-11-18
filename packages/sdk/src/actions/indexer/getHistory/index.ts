@@ -1,5 +1,5 @@
 import type { Like } from "../../../client/types.js";
-import type { AnyError } from "../../../errors/types.js";
+import type * as Errors from "../../../errors/index.js";
 import type { Query } from "../../../indexer/Indexer.js";
 import type { IndexedEvent, Namespace, Page } from "../../../indexer/types.js";
 import * as Action from "../../../internal/action/index.js";
@@ -89,11 +89,18 @@ export declare namespace getHistory {
   /** One page of events. */
   type ReturnType = Page<IndexedEvent>;
   /** Errors {@link getHistory} can fail with. */
-  type ErrorType = AnyError;
+  type ErrorType =
+    | Errors.CommonError
+    | Errors.InvalidInputError
+    | Errors.NotFoundError
+    | Errors.IndexerError;
 }
 
 /** Builds a deferred read for `Actions.batch`. */
-getHistory.request = Action.request("indexer.getHistory", Impl.getHistory);
+getHistory.request = Action.request(
+  "indexer.getHistory",
+  Impl.getHistory as Action.Declared<typeof Impl.getHistory, getHistory.ErrorType>,
+);
 
 /** Path of the action, e.g. for cache keys. */
 getHistory.path = "indexer.getHistory" as const;

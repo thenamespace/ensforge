@@ -6,6 +6,7 @@ import { hexToBigInt, isHex } from "viem";
 import type { Client } from "../../../client/types.js";
 import { InvalidInputError } from "../../../errors/classes/InvalidInputError.js";
 import { UnsupportedError } from "../../../errors/classes/UnsupportedError.js";
+import type { AnyError } from "../../../errors/types.js";
 import * as Action from "../../../internal/action/index.js";
 import { blockAt } from "../../../internal/rpc/block.js";
 import * as Rpc from "../../../internal/rpc/index.js";
@@ -15,7 +16,7 @@ import type { getLabel as Promises } from "./index.js";
 export const getLabel = Effect.fn("ensforge.name.getLabel")(function* (
   client: Client,
   options: Promises.Options,
-): Effect.fn.Return<Promises.ReturnType, Promises.ErrorType> {
+): Effect.fn.Return<Promises.ReturnType, AnyError> {
   if (!isHex(options.labelhash) || options.labelhash.length !== 66) {
     return yield* Effect.fail(
       new InvalidInputError({

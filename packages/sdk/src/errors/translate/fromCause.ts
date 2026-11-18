@@ -31,6 +31,7 @@ import { fromViemError } from "./viem.js";
  * }
  * ```
  *
+ * @stability stable
  * @category errors
  * @since 1.0.0
  */

@@ -20,6 +20,7 @@ const defaults: {
 /**
  * The account cannot pay for the operation.
  *
+ * @stability stable
  * @category errors
  * @since 1.0.0
  */

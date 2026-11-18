@@ -31,6 +31,7 @@ import type {
  * An indexer ensforge reads through: `bigname()`, `goldsky()`, `fallback([...])` or
  * `defineIndexer({...})`. Pass it to `Ensforge.create({ indexer })`.
  *
+ * @stability stable
  * @category indexer
  * @since 1.0.0
  */
@@ -49,11 +50,16 @@ export interface Indexer {
  * The queries an adapter answers. Actions validate and normalize their options first: names are
  * normalized, addresses checksummed and the namespace resolved.
  *
+ * @stability stable
  * @category indexer
  * @since 1.0.0
  */
 export declare namespace Query {
-  /** Snapshot selection, on routes that read one snapshot (names, records, registries, resolvers). */
+  /**
+   * Snapshot selection, on routes that read one snapshot (names, records, registries, resolvers).
+   *
+   * @stability stable
+   */
   type Snapshot = {
     /** Read at a snapshot: an earlier answer's `asOfToken`, or a time. */
     at?: { readonly token: string } | { readonly timestamp: bigint | Date } | undefined;
@@ -61,7 +67,11 @@ export declare namespace Query {
     finality?: "latest" | "safe" | "finalized" | undefined;
   };
 
-  /** Paging, on list routes. */
+  /**
+   * Paging, on list routes.
+   *
+   * @stability stable
+   */
   type List = {
     /** Rows per page, 1–200. @default 50 */
     limit?: number | undefined;
@@ -71,6 +81,11 @@ export declare namespace Query {
     includeTotal?: boolean | undefined;
   };
 
+  /**
+   * The query of `getName`.
+   *
+   * @stability stable
+   */
   type GetName = Snapshot & {
     name: string;
     namespace: Namespace;
@@ -78,6 +93,11 @@ export declare namespace Query {
     source?: "indexed" | "verified" | undefined;
   };
 
+  /**
+   * The query of `getNamesForAddress`.
+   *
+   * @stability stable
+   */
   type GetNamesForAddress = List & {
     address: Address;
     /** Every namespace the indexer serves when omitted. */
@@ -106,6 +126,11 @@ export declare namespace Query {
     dedupe?: "name" | "registration" | undefined;
   };
 
+  /**
+   * The query of `getSubnames`.
+   *
+   * @stability stable
+   */
   type GetSubnames = List & {
     name: string;
     namespace: Namespace;
@@ -118,7 +143,11 @@ export declare namespace Query {
     includeExpired?: boolean | undefined;
   };
 
-  /** History filters shared by `getHistory` and `getEvents`. */
+  /**
+   * History filters shared by `getHistory` and `getEvents`.
+   *
+   * @stability stable
+   */
   type HistoryFilters = List & {
     types?: readonly EventType[] | undefined;
     excludeTypes?: readonly EventType[] | undefined;
@@ -133,6 +162,11 @@ export declare namespace Query {
     includeData?: boolean | undefined;
   };
 
+  /**
+   * The query of `getHistory`.
+   *
+   * @stability stable
+   */
   type GetHistory = HistoryFilters &
     (
       | {
@@ -154,6 +188,11 @@ export declare namespace Query {
         }
     );
 
+  /**
+   * The query of `getEvents`.
+   *
+   * @stability stable
+   */
   type GetEvents = HistoryFilters & {
     namespace?: Namespace | undefined;
     name?: string | undefined;
@@ -166,6 +205,11 @@ export declare namespace Query {
     toBlock?: bigint | undefined;
   };
 
+  /**
+   * The query of `search`.
+   *
+   * @stability stable
+   */
   type Search = List & {
     query: string;
     namespace?: Namespace | undefined;
@@ -173,6 +217,11 @@ export declare namespace Query {
     match?: "prefix" | "contains" | undefined;
   };
 
+  /**
+   * The query of `lookup`.
+   *
+   * @stability stable
+   */
   type Lookup = {
     /** Names and addresses, up to 1,000. */
     inputs: readonly string[];
@@ -181,9 +230,18 @@ export declare namespace Query {
     profile?: "feed" | "detail" | undefined;
   };
 
-  /** A half-open window `[after, before)`, Unix seconds or dates. */
+  /**
+   * A half-open window `[after, before)`, Unix seconds or dates.
+   *
+   * @stability stable
+   */
   type Window = { readonly after: bigint | Date; readonly before: bigint | Date };
 
+  /**
+   * The query of `getNamesByExpiry`.
+   *
+   * @stability stable
+   */
   type GetNamesByExpiry = List & {
     namespace: Namespace;
     expiresAfter?: bigint | Date | undefined;
@@ -199,6 +257,11 @@ export declare namespace Query {
     order?: "asc" | "desc" | undefined;
   };
 
+  /**
+   * The query of `getPrimaryName`.
+   *
+   * @stability stable
+   */
   type GetPrimaryName = {
     address: Address;
     /** @default 60n */
@@ -208,6 +271,11 @@ export declare namespace Query {
     source?: "indexed" | "verified" | undefined;
   };
 
+  /**
+   * The query of `getRecords`.
+   *
+   * @stability stable
+   */
   type GetRecords = Snapshot & {
     name: string;
     namespace: Namespace;
@@ -221,6 +289,11 @@ export declare namespace Query {
     resolver?: { readonly chainId: number; readonly address: Address } | undefined;
   };
 
+  /**
+   * The query of `getPermissions`.
+   *
+   * @stability stable
+   */
   type GetPermissions = List & {
     namespace?: Namespace | undefined;
     /** Include how each grant was obtained. */
@@ -237,17 +310,68 @@ export declare namespace Query {
         }
     );
 
-  /** A contract on the client's chain unless `chainId` says otherwise. */
+  /**
+   * A contract on the client's chain unless `chainId` says otherwise.
+   *
+   * @stability stable
+   */
   type Contract = { address: Address; chainId: number };
 
+  /**
+   * The query of `getRegistry`.
+   *
+   * @stability stable
+   */
   type GetRegistry = Snapshot & Contract & { includeCounts?: boolean | undefined };
+
+  /**
+   * The query of `getRegistryLabels`.
+   *
+   * @stability stable
+   */
   type GetRegistryLabels = List &
     Contract & { owner?: Address | undefined; excludeOwner?: Address | undefined };
+
+  /**
+   * The query of `getResolver`.
+   *
+   * @stability stable
+   */
   type GetResolver = Snapshot & Contract & List;
+
+  /**
+   * The query of `getResolverLinks`.
+   *
+   * @stability stable
+   */
   type GetResolverLinks = Snapshot & Contract & List;
+
+  /**
+   * The query of `getResolverRoles`.
+   *
+   * @stability stable
+   */
   type GetResolverRoles = Snapshot & Contract & List;
+
+  /**
+   * The query of `getResolvers`.
+   *
+   * @stability stable
+   */
   type GetResolvers = List & { roleHolder: Address; chainId?: number | undefined };
+
+  /**
+   * The query of `getNamespace`.
+   *
+   * @stability stable
+   */
   type GetNamespace = { namespace: Namespace };
+
+  /**
+   * The query of `getStatus`.
+   *
+   * @stability stable
+   */
   type GetStatus = {};
 }
 
@@ -255,6 +379,7 @@ export declare namespace Query {
  * Every query an adapter can answer, with its query and answer types. `null` answers mean
  * "not found".
  *
+ * @stability stable
  * @category indexer
  * @since 1.0.0
  */
@@ -283,6 +408,7 @@ export type Methods = {
 /**
  * Name of an indexer query.
  *
+ * @stability stable
  * @category indexer
  * @since 1.0.0
  */
@@ -291,6 +417,7 @@ export type Method = keyof Methods;
 /**
  * What an adapter knows about the call besides its query.
  *
+ * @stability stable
  * @category indexer
  * @since 1.0.0
  */

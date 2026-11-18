@@ -1,5 +1,5 @@
 import type { Like } from "../../../client/types.js";
-import type { AnyError } from "../../../errors/types.js";
+import type * as Errors from "../../../errors/index.js";
 import * as Action from "../../../internal/action/index.js";
 import type { Plan } from "../../../plan/Plan.js";
 import type { Write } from "../../../Types.js";
@@ -46,7 +46,7 @@ import * as Impl from "./effect.js";
  * ```
  *
  * @throws `Errors.PlanError` (`PLAN_CHAIN_MISMATCH`, `PLAN_ACCOUNT_MISMATCH`) for a plan prepared elsewhere; (`PLAN_STALE`) when a token it transfers was reissued since it was prepared.
- * @throws `Errors.ContractRevertError` (`CONTRACT_REVERTED`), or the failing step's own error, with `context.planId` and `context.step`.
+ * @throws `Errors.ContractRevertError` (`CONTRACT_REVERTED`), or the failing step's own error (`Errors.AnyError`: a plan can hold any step), with `context.planId` and `context.step`.
  * @throws `Errors.UserRejectedError` when the user rejects the request.
  *
  * @see {@link Actions.plan.resume} to continue a plan
@@ -70,7 +70,7 @@ export declare namespace send {
   /** Submitted transaction hashes and the plan that produced them. */
   type ReturnType = Write.Result;
   /** Errors {@link send} can fail with. */
-  type ErrorType = AnyError;
+  type ErrorType = Errors.AnyError;
 }
 
 // Explicit types keep these declarations free of Effect types.
@@ -125,7 +125,7 @@ send.estimateGas = Action.promiseOf(
  * ```
  *
  * @throws `Errors.PlanError` (`PLAN_CHAIN_MISMATCH`, `PLAN_ACCOUNT_MISMATCH`) for a plan prepared elsewhere; (`PLAN_STALE`) when a token it transfers was reissued since it was prepared.
- * @throws `Errors.ContractRevertError` (`CONTRACT_REVERTED`), or the failing step's own error, with `context.planId` and `context.step`.
+ * @throws `Errors.ContractRevertError` (`CONTRACT_REVERTED`), or the failing step's own error (`Errors.AnyError`: a plan can hold any step), with `context.planId` and `context.step`.
  * @throws `Errors.TransactionError` (`TRANSACTION_REVERTED`, `RECEIPT_TIMEOUT`) when confirmation fails.
  *
  * @see {@link send} to resolve on submission
@@ -143,7 +143,7 @@ export declare namespace sendSync {
   /** Receipts plus the submitted hashes and plan. */
   type ReturnType = Write.SyncResult;
   /** Errors {@link sendSync} can fail with. */
-  type ErrorType = AnyError;
+  type ErrorType = Errors.AnyError;
 }
 
 /** Path of the action, e.g. for cache keys. */

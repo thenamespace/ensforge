@@ -5,6 +5,7 @@ import type { EventAction, EventType } from "../actions/event/types.js";
 /**
  * A naming system an indexer serves: ENS, or Basenames (`*.base.eth`, on Base).
  *
+ * @stability stable
  * @category indexer
  * @since 1.0.0
  */
@@ -14,6 +15,7 @@ export type Namespace = "ens" | "basenames";
  * Which ENS protocol holds a name: `ensV0` is the pre-2020 registry, `ensV1` the current ENSv1
  * registry, `ensV2` an ENSv2 registry.
  *
+ * @stability stable
  * @category indexer
  * @since 1.0.0
  */
@@ -23,6 +25,7 @@ export type Authority = "ensV0" | "ensV1" | "ensV2";
  * How much of an answer the indexer could give. `partial` and `unsupported` come with a reason;
  * a partial answer is never presented as complete.
  *
+ * @stability stable
  * @category indexer
  * @since 1.0.0
  */
@@ -31,6 +34,7 @@ export type Completeness = "full" | "partial" | "unsupported";
 /**
  * A name's registration lifecycle.
  *
+ * @stability stable
  * @category indexer
  * @since 1.0.0
  */
@@ -39,6 +43,7 @@ export type NameStatus = "active" | "expired" | "released" | "unregistered";
 /**
  * Outcome of one answer inside a result (a record, a primary name, a lookup input).
  *
+ * @stability stable
  * @category indexer
  * @since 1.0.0
  */
@@ -54,6 +59,7 @@ export type AnswerStatus =
 /**
  * How an address relates to a name.
  *
+ * @stability stable
  * @category indexer
  * @since 1.0.0
  */
@@ -62,6 +68,7 @@ export type Relation = "owner" | "manager" | "roleHolder" | "resolvesTo" | "form
 /**
  * A contract on a chain.
  *
+ * @stability stable
  * @category indexer
  * @since 1.0.0
  */
@@ -70,6 +77,7 @@ export type ContractRef = { readonly chainId: number; readonly address: Address 
 /**
  * The chain state an answer was read at.
  *
+ * @stability stable
  * @category indexer
  * @since 1.0.0
  */
@@ -84,6 +92,7 @@ export type Snapshot = {
 /**
  * What every indexer answer carries besides its data.
  *
+ * @stability stable
  * @category indexer
  * @since 1.0.0
  */
@@ -111,6 +120,7 @@ export type Meta = {
 /**
  * One answer with its {@link Meta}.
  *
+ * @stability stable
  * @category indexer
  * @since 1.0.0
  */
@@ -119,6 +129,7 @@ export type Result<data> = data & Meta;
 /**
  * One page of a list, with its {@link Meta}.
  *
+ * @stability stable
  * @category indexer
  * @since 1.0.0
  */
@@ -134,6 +145,7 @@ export type Page<item> = Meta & {
 /**
  * ENSv1 facts about a name: its ENSv1 resolver and NameWrapper state.
  *
+ * @stability stable
  * @category indexer
  * @since 1.0.0
  */
@@ -156,6 +168,7 @@ export type EnsV1Facts = {
 /**
  * A name as lists return it.
  *
+ * @stability stable
  * @category indexer
  * @since 1.0.0
  */
@@ -186,6 +199,7 @@ export type IndexedName = {
 /**
  * A name's records as `getName` and `lookup` return them: values the indexer has seen.
  *
+ * @stability stable
  * @category indexer
  * @since 1.0.0
  */
@@ -205,6 +219,7 @@ export type IndexedProfile = {
 /**
  * One name in full.
  *
+ * @stability stable
  * @category indexer
  * @since 1.0.0
  */
@@ -227,6 +242,7 @@ export type IndexedNameDetail = IndexedName & {
 /**
  * A name an address is related to.
  *
+ * @stability stable
  * @category indexer
  * @since 1.0.0
  */
@@ -242,6 +258,7 @@ export type AddressName = IndexedName & {
 /**
  * A direct child of a name.
  *
+ * @stability stable
  * @category indexer
  * @since 1.0.0
  */
@@ -254,6 +271,7 @@ export type Subname = IndexedName & {
 /**
  * A name from `getNamesByExpiry`, with the window it matched.
  *
+ * @stability stable
  * @category indexer
  * @since 1.0.0
  */
@@ -265,6 +283,7 @@ export type ExpiringName = IndexedName & {
 /**
  * One event from an indexer's history, in the same vocabulary as `event.*`.
  *
+ * @stability stable
  * @category indexer
  * @since 1.0.0
  */
@@ -293,6 +312,7 @@ export type IndexedEvent = {
 /**
  * One record answer from `getRecords`.
  *
+ * @stability stable
  * @category indexer
  * @since 1.0.0
  */
@@ -305,6 +325,7 @@ export type RecordAnswer = {
 /**
  * A name's records from `getRecords`.
  *
+ * @stability stable
  * @category indexer
  * @since 1.0.0
  */
@@ -331,6 +352,7 @@ export type IndexedRecords = {
 /**
  * One primary name answer.
  *
+ * @stability stable
  * @category indexer
  * @since 1.0.0
  */
@@ -344,6 +366,7 @@ export type PrimaryNameAnswer = {
 /**
  * An address's primary name from `getPrimaryName`.
  *
+ * @stability stable
  * @category indexer
  * @since 1.0.0
  */
@@ -361,6 +384,7 @@ export type IndexedPrimaryName = {
 /**
  * One input's answer from `lookup`.
  *
+ * @stability stable
  * @category indexer
  * @since 1.0.0
  */
@@ -378,6 +402,7 @@ export type LookupResult = {
 /**
  * A permission one address holds over a name, registry or resolver.
  *
+ * @stability stable
  * @category indexer
  * @since 1.0.0
  */
@@ -398,6 +423,7 @@ export type PermissionRow = {
 /**
  * An ENSv2 registry.
  *
+ * @stability stable
  * @category indexer
  * @since 1.0.0
  */
@@ -422,6 +448,7 @@ export type IndexedRegistry = {
 /**
  * A label in an ENSv2 registry.
  *
+ * @stability stable
  * @category indexer
  * @since 1.0.0
  */
@@ -432,6 +459,7 @@ export type RegistryLabel = Subname & {
 /**
  * A resolver and the names bound to it.
  *
+ * @stability stable
  * @category indexer
  * @since 1.0.0
  */
@@ -449,6 +477,7 @@ export type IndexedResolver = {
 /**
  * A name linked to a record set on an ENSv2 resolver.
  *
+ * @stability stable
  * @category indexer
  * @since 1.0.0
  */
@@ -465,6 +494,7 @@ export type ResolverLink = {
 /**
  * A role grant on an ENSv2 resolver.
  *
+ * @stability stable
  * @category indexer
  * @since 1.0.0
  */
@@ -479,6 +509,7 @@ export type ResolverRole = {
 /**
  * A resolver on which an address holds roles.
  *
+ * @stability stable
  * @category indexer
  * @since 1.0.0
  */
@@ -490,6 +521,7 @@ export type RoleHolderResolver = ContractRef & {
 /**
  * What an indexer serves for one namespace.
  *
+ * @stability stable
  * @category indexer
  * @since 1.0.0
  */
@@ -509,6 +541,7 @@ export type NamespaceInfo = {
 /**
  * Indexing progress of one chain.
  *
+ * @stability stable
  * @category indexer
  * @since 1.0.0
  */
@@ -525,6 +558,7 @@ export type ChainStatus = {
 /**
  * An indexer's health.
  *
+ * @stability stable
  * @category indexer
  * @since 1.0.0
  */

@@ -16,6 +16,7 @@ import { localStorage, memoryStorage } from "./storage.js";
  * plan.calls // send with ensforge, or with viem's sendCalls
  * ```
  *
+ * @stability stable
  * @category plans
  * @since 1.0.0
  */
