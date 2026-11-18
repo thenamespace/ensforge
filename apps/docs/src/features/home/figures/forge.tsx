@@ -7,7 +7,7 @@ import { cn } from "@/lib/cn";
 
 /**
  * Closing figure: the ensforge anvil, extruded from its logo glyph, on a plinth. A name plate
- * lies on the anvil's face; every strike flashes, throws sparks, heats the face and forges the
+ * lies on the anvil's face; every strike lights the face's edge, throws sparks and forges the
  * next name, while names already forged float around it with their avatars.
  */
 
@@ -172,12 +172,13 @@ export function Forge({ className }: { readonly className?: string }) {
           d={glyphs.ensforge}
           transform={profile(ANVIL.v + ANVIL.depth)}
         />
-        {/* The face's flat top glows with heat after each strike, then cools. */}
-        <path
-          key={`heat-${strike}`}
-          className={cn("ens-forge-heat", reduced && "is-still")}
-          d={box(ANVIL.u + 30 * SCALE, ANVIL.v, FACE_Z - 0.5, 54 * SCALE, ANVIL.depth, 0.5).top}
-        />
+        {reduced ? null : (
+          <path
+            key={`edge-${strike}`}
+            className="ens-forge-strike-edge"
+            d={box(ANVIL.u + 30 * SCALE, ANVIL.v, FACE_Z, 54 * SCALE, ANVIL.depth, 0).top}
+          />
+        )}
       </g>
 
       <g key={current.name} className="ens-forge-current">
@@ -204,22 +205,12 @@ export function Forge({ className }: { readonly className?: string }) {
             const y = Math.sin(angle) * (12 + length) - 8;
 
             return (
-              <g key={`spark-${index}`}>
-                <path
-                  className={cn("ens-forge-spark", index % 3 === 0 && "is-cool")}
-                  style={{ animationDelay: `${(index % 4) * 30}ms` }}
-                  d={`M${Math.cos(angle) * 14} ${Math.sin(angle) * 8}L${x} ${y}`}
-                />
-                <circle
-                  className="ens-forge-ember"
-                  r={1.4}
-                  style={{
-                    "--x": `${(x * 1.5).toFixed(1)}px`,
-                    "--y": `${(y * 1.5 + 30).toFixed(1)}px`,
-                    animationDelay: `${(index % 5) * 40}ms`,
-                  }}
-                />
-              </g>
+              <path
+                key={`spark-${index}`}
+                className={cn("ens-forge-spark", index % 3 === 0 && "is-cool")}
+                style={{ animationDelay: `${(index % 4) * 30}ms` }}
+                d={`M${Math.cos(angle) * 14} ${Math.sin(angle) * 8}L${x} ${y}`}
+              />
             );
           })}
         </g>
