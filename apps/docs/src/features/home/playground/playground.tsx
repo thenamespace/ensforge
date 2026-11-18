@@ -179,7 +179,7 @@ export function Playground({ code }: { readonly code: HighlightedSnippets }) {
         <div
           role="tablist"
           aria-label="Examples"
-          className="grid grid-cols-2 border-b border-(--ek-line) sm:grid-cols-5"
+          className="flex overflow-x-auto border-b border-(--ek-line) [scrollbar-width:none] sm:grid sm:grid-cols-5 sm:overflow-visible"
         >
           {examples.map((entry, index) => (
             <button
@@ -196,7 +196,7 @@ export function Playground({ code }: { readonly code: HighlightedSnippets }) {
               onClick={() => setActive(index)}
               onKeyDown={onTabKey}
               className={cn(
-                "relative min-h-13 px-3 py-2.5 font-mono text-[13px] transition-colors",
+                "relative min-h-13 shrink-0 px-4 py-2.5 font-mono whitespace-nowrap sm:px-3 text-[13px] transition-colors",
                 focusRing,
                 index === active
                   ? "bg-zinc-900 text-fd-foreground after:absolute after:inset-x-0 after:bottom-0 after:h-px after:bg-ek-accent"
