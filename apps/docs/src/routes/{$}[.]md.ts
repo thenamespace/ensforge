@@ -4,6 +4,7 @@ import { isLandingPage, landingMarkdown } from "@/content/landing-markdown";
 import { markdownHeaders } from "@/lib/agent-headers";
 import { countAgentRead } from "@/lib/analytics/agent";
 import { blogIndexMarkdown } from "@/lib/blog/markdown";
+import { site } from "@/lib/site";
 
 /** The landing pages and the blog index as Markdown: `/index.md`, `/blog.md`. */
 export const Route = createFileRoute("/{$}.md")({
@@ -12,7 +13,7 @@ export const Route = createFileRoute("/{$}.md")({
       GET: async ({ params, request }) => {
         const page = params._splat ?? "";
 
-        if (page === "blog") {
+        if (page === "blog" && site.blogEnabled) {
           await countAgentRead(request, "md");
           return new Response(await blogIndexMarkdown(), { headers: markdownHeaders });
         }

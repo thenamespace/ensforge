@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, redirect } from "@tanstack/react-router";
 
 import { BlogHeader, PostGrid } from "@/components/blog/blog-index";
 import { Container } from "@/components/marketing/section";
@@ -9,6 +9,9 @@ import { breadcrumbLd, seo } from "@/lib/seo";
 import { site } from "@/lib/site";
 
 export const Route = createFileRoute("/_marketing/blog/tags/$tag")({
+  beforeLoad: () => {
+    if (!site.blogEnabled) throw redirect({ to: "/" });
+  },
   loader: ({ params }) => loadBlogTag({ data: params.tag }),
   head: ({ loaderData }) => {
     if (!loaderData) return {};

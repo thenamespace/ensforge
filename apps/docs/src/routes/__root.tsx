@@ -39,12 +39,16 @@ export const Route = createRootRoute({
       { rel: "stylesheet", href: appCss },
       { rel: "icon", type: "image/svg+xml", href: "/logo.svg" },
       { rel: "sitemap", type: "application/xml", href: "/sitemap.xml" },
-      {
-        rel: "alternate",
-        type: "application/rss+xml",
-        title: `${site.name} blog`,
-        href: absolute("/blog/rss.xml"),
-      },
+      ...(site.blogEnabled
+        ? [
+            {
+              rel: "alternate",
+              type: "application/rss+xml",
+              title: `${site.name} blog`,
+              href: absolute("/blog/rss.xml"),
+            },
+          ]
+        : []),
       { rel: "me", href: site.github },
     ],
   }),

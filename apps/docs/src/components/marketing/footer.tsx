@@ -5,7 +5,6 @@ import { Link } from "@tanstack/react-router";
 import { GitHubIcon } from "@/components/icons/github-icon";
 import { XIcon } from "@/components/icons/x-icon";
 import { EnsforgeLogo } from "@/components/logos";
-import { track } from "@/lib/analytics/client";
 import { documentedPackages } from "@/lib/packages";
 import { site } from "@/lib/site";
 
@@ -52,9 +51,11 @@ export function MarketingFooter() {
             <EnsforgeLogo className="size-6" />
             <span className="font-semibold">{site.name}</span>
           </Link>
-          <p className="max-w-64 text-sm leading-relaxed text-fd-muted-foreground">
-            {site.tagline}.
+          <p className="max-w-72 text-sm leading-relaxed text-fd-muted-foreground">
+            The SDK for ENS. Look up names, read and write records, register and manage names, with
+            one API for every name.
           </p>
+          <p className="text-sm text-fd-muted-foreground">Built by {site.publisher}</p>
           <div className="mt-2 flex flex-wrap gap-2">
             <a
               href={site.github}
@@ -95,41 +96,17 @@ export function MarketingFooter() {
                 </Link>
               </li>
             ))}
-          </Column>
-          <Column title="Updates">
             <li>
               <Link
-                to="/blog"
-                title={`${site.name} blog`}
+                to="/docs/$"
+                params={{ _splat: "reference" }}
+                title="API reference"
                 data-ph-capture-attribute-location="footer"
                 className={link}
               >
-                Blog
+                API reference
               </Link>
             </li>
-            <li>
-              <a
-                href="/blog/rss.xml"
-                title={`${site.name} blog RSS feed`}
-                onClick={() => track("blog_rss_clicked", { location: "footer" })}
-                className={link}
-              >
-                RSS feed
-              </a>
-            </li>
-            {documentedPackages.map((pkg) => (
-              <li key={pkg.slug}>
-                <Link
-                  to="/docs/$package/changelog/{-$page}"
-                  params={{ package: pkg.slug }}
-                  title={`${pkg.name} changelog`}
-                  data-ph-capture-attribute-location="footer"
-                  className={link}
-                >
-                  {pkg.name} changelog
-                </Link>
-              </li>
-            ))}
           </Column>
           <Column title="Resources">
             {external.map((item) => (

@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 
 import { PostPage } from "@/components/blog/post-page";
 import { categoryLabels } from "@/lib/blog/format";
@@ -10,6 +10,9 @@ import { absolute, site } from "@/lib/site";
 import { blog } from "@/lib/source";
 
 export const Route = createFileRoute("/_marketing/blog/$slug")({
+  beforeLoad: () => {
+    if (!site.blogEnabled) throw redirect({ to: "/" });
+  },
   loader: async ({ params }) => {
     const data = await loadBlogPost({ data: params.slug });
 

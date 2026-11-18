@@ -62,14 +62,16 @@ export function MarketingNav() {
           >
             Reference
           </Link>
-          <Link
-            to="/blog"
-            title="Blog"
-            className={cn(link, "data-[status=active]:text-fd-foreground")}
-            onClick={() => track("nav_link_clicked", { location: "header", target: "blog" })}
-          >
-            Blog
-          </Link>
+          {site.blogEnabled ? (
+            <Link
+              to="/blog"
+              title="Blog"
+              className={cn(link, "data-[status=active]:text-fd-foreground")}
+              onClick={() => track("nav_link_clicked", { location: "header", target: "blog" })}
+            >
+              Blog
+            </Link>
+          ) : null}
           <a
             href={site.github}
             title={`${site.name} on GitHub`}

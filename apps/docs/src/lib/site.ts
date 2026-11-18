@@ -14,6 +14,11 @@ export const site = {
   twitter: undefined as string | undefined,
   github: "https://github.com/thenamespace/ensforge",
   npm: "https://www.npmjs.com/org/ensforge",
+  /**
+   * Set to `true` with the first post: shows the blog links and serves the blog routes. Also add
+   * `/blog.md` and `/blog/rss.xml` back to the prerender `pages` in `vite.config.ts`.
+   */
+  blogEnabled: false as boolean,
   locale: "en_US",
   license: "https://www.apache.org/licenses/LICENSE-2.0",
   themeColor: "#09090b",

@@ -7,6 +7,7 @@ import { landingMarkdown, landingPaths } from "@/content/landing-markdown";
 import { markdownHeaders } from "./agent-headers";
 import { countAgentRead } from "./analytics/agent";
 import { defaultPackage, getChangelogPackage } from "./packages";
+import { site } from "./site";
 import { docsLlms, source } from "./source";
 
 /**
@@ -26,7 +27,7 @@ export const markdownNegotiation = createMiddleware({ type: "request" }).server(
       return new Response(landingMarkdown(landing), { headers: markdownHeaders });
     }
 
-    if (pathname === "/blog" || pathname.startsWith("/blog/")) {
+    if (site.blogEnabled && (pathname === "/blog" || pathname.startsWith("/blog/"))) {
       const { blogIndexMarkdown, postMarkdown } = await import("./blog/markdown");
       const slug = pathname.slice("/blog/".length).replace(/\/$/, "");
       const body = slug ? await postMarkdown(slug) : await blogIndexMarkdown();

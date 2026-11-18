@@ -123,11 +123,13 @@ export const Route = createFileRoute("/llms.txt")({
           "## Pages",
           [
             `- [Home](${absolute("/index.md")}): what ${site.name} is.`,
-            `- [Blog](${absolute("/blog.md")}): release notes and guides.`,
+            ...(site.blogEnabled
+              ? [`- [Blog](${absolute("/blog.md")}): release notes and guides.`]
+              : []),
             `- [Full docs as one file](${absolute("/llms-full.txt")})`,
           ].join("\n"),
           docsIndex(),
-          blogLlmsSection(),
+          site.blogEnabled ? blogLlmsSection() : "",
         ]
           .filter(Boolean)
           .join("\n\n");

@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 
 import { listPosts } from "@/lib/blog/posts";
 import { blogImageUrl, docsImageUrl, type SitePage, siteImageUrl } from "@/lib/og/urls";
-import { absolute } from "@/lib/site";
+import { absolute, site } from "@/lib/site";
 import { source } from "@/lib/source";
 
 interface Entry {
@@ -15,7 +15,6 @@ interface Entry {
 
 const landing: readonly { path: string; page: SitePage; priority: string }[] = [
   { path: "/", page: "home", priority: "1.0" },
-  { path: "/blog", page: "blog", priority: "0.7" },
   { path: "/terms", page: "home", priority: "0.3" },
   { path: "/privacy", page: "home", priority: "0.3" },
 ];
@@ -38,7 +37,10 @@ async function entries(): Promise<Entry[]> {
     }),
   );
 
-  const posts = await listPosts();
+  const posts = site.blogEnabled ? await listPosts() : [];
+  const blogIndex: readonly Entry[] = site.blogEnabled
+    ? [{ path: "/blog", image: siteImageUrl("blog"), priority: "0.7", changefreq: "weekly" }]
+    : [];
   const blog: Entry[] = posts.map((post) => ({
     path: post.url,
     image: post.cover?.url ?? blogImageUrl(post.slug),
@@ -61,6 +63,7 @@ async function entries(): Promise<Entry[]> {
       changefreq: "monthly" as const,
     })),
     ...docs,
+    ...blogIndex,
     ...blog,
     ...tags,
   ];

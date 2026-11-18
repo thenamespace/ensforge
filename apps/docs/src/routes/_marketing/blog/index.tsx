@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 
 import { z } from "zod";
 
@@ -14,6 +14,9 @@ import { absolute, site } from "@/lib/site";
 const search = z.object({ category: z.enum(blogCategories).optional().catch(undefined) });
 
 export const Route = createFileRoute("/_marketing/blog/")({
+  beforeLoad: () => {
+    if (!site.blogEnabled) throw redirect({ to: "/" });
+  },
   validateSearch: search,
   loader: () => loadBlogIndex(),
   head: ({ loaderData }) => {
