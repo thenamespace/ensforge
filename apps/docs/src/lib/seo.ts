@@ -23,7 +23,7 @@ export interface SeoInput {
   readonly section?: string;
   readonly jsonLd?: readonly Record<string, unknown>[];
   readonly noindex?: boolean;
-  /** Author profile URLs for `article:author`; defaults to the organisation. */
+  /** Author profile URLs; the first is `article:author`. Defaults to the publisher. */
   readonly authors?: readonly string[];
   /** X handle with the `@` for `twitter:creator`; defaults to the site's. */
   readonly twitterCreator?: string;
@@ -56,7 +56,11 @@ function docsTitle(title?: string) {
 
 /**
  * Head tags for a page: title, description, canonical, Open Graph, Twitter and JSON-LD.
- * Returns the `{ meta, links, scripts }` shape TanStack Router's `head` expects.
+ * Returns the `{ meta, links, scripts }` shape TanStack Router's `head` expects. The root route sets the
+ * site-wide tags (author, publisher, icons, default keywords) that every page shares.
+ *
+ * TanStack keeps one tag per `name` or `property` (the deepest route's), so a property such as
+ * `article:tag` cannot repeat.
  */
 export function seo(input: SeoInput) {
   const isDocs = input.path === "/docs" || input.path.startsWith("/docs/");
@@ -70,7 +74,6 @@ export function seo(input: SeoInput) {
   const meta: Record<string, string>[] = [
     { title },
     { name: "description", content: input.description },
-    { name: "author", content: site.publisher },
     {
       name: "robots",
       content: input.noindex
@@ -113,9 +116,7 @@ export function seo(input: SeoInput) {
 
     if (input.section) meta.push({ property: "article:section", content: input.section });
 
-    for (const author of input.authors ?? [site.github])
-      meta.push({ property: "article:author", content: author });
-    for (const tag of input.keywords ?? []) meta.push({ property: "article:tag", content: tag });
+    meta.push({ property: "article:author", content: input.authors?.[0] ?? site.publisherUrl });
   }
 
   return {
@@ -123,9 +124,21 @@ export function seo(input: SeoInput) {
     links: [{ rel: "canonical", href: canonical }],
     scripts: (input.jsonLd ?? []).map((data) => ({
       type: "application/ld+json",
-      children: JSON.stringify(data),
+      children: jsonForScript(data),
     })),
   };
+}
+
+/**
+ * JSON safe inside an inline `<script>`: escaping `<`, `>` and `&` stops page data from closing
+ * the tag, and U+2028/U+2029 are line breaks in older JavaScript parsers. The result still parses
+ * as the same JSON.
+ */
+function jsonForScript(data: unknown) {
+  return JSON.stringify(data).replace(
+    /[<>&\u2028\u2029]/g,
+    (char) => `\\u${char.charCodeAt(0).toString(16).padStart(4, "0")}`,
+  );
 }
 
 /* ------------------------------------------------------------------ JSON-LD */
@@ -133,17 +146,65 @@ export function seo(input: SeoInput) {
 const ids = {
   organization: `${site.url}/#organization`,
   website: `${site.url}/#website`,
+  software: `${site.url}/#software`,
+};
+
+/**
+ * The publisher and the website as other nodes reference them. Each carries its type, name and
+ * URL, so a page that does not include the full node still resolves the reference.
+ */
+export const organizationRef = {
+  "@type": "Organization",
+  "@id": ids.organization,
+  name: site.publisher,
+  url: site.publisherUrl,
+};
+
+export const websiteRef = {
+  "@type": "WebSite",
+  "@id": ids.website,
+  name: site.name,
+  url: absolute("/"),
 };
 
 export const organizationLd = {
   "@context": "https://schema.org",
-  "@type": "Organization",
-  "@id": ids.organization,
-  name: site.publisher,
+  ...organizationRef,
   legalName: site.publisher,
-  alternateName: site.name,
-  url: site.url,
-  logo: { "@type": "ImageObject", url: absolute("/logo.svg") },
+  description: site.publisherDescription,
+  logo: { "@type": "ImageObject", url: absolute("/icon-512.png"), width: 512, height: 512 },
+  sameAs: [site.publisherGithub],
+};
+
+export const websiteLd = {
+  "@context": "https://schema.org",
+  ...websiteRef,
+  alternateName: site.tagline,
+  description: site.description,
+  inLanguage: "en",
+  publisher: organizationRef,
+};
+
+/** ensforge itself, as software: what search engines show for libraries. */
+export const softwareLd = {
+  "@context": "https://schema.org",
+  "@type": ["SoftwareApplication", "SoftwareSourceCode"],
+  "@id": ids.software,
+  name: site.name,
+  description: site.description,
+  url: absolute("/"),
+  image: absolute("/icon-512.png"),
+  applicationCategory: "DeveloperApplication",
+  operatingSystem: "Cross-platform",
+  runtimePlatform: "Node.js",
+  isAccessibleForFree: true,
+  offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
+  codeRepository: site.github,
+  programmingLanguage: { "@type": "ComputerLanguage", name: "TypeScript" },
+  license: site.license,
+  keywords: site.keywords.join(", "),
+  author: organizationRef,
+  publisher: organizationRef,
   sameAs: [
     site.github,
     site.npm,
@@ -151,18 +212,7 @@ export const organizationLd = {
   ],
 };
 
-export const websiteLd = {
-  "@context": "https://schema.org",
-  "@type": "WebSite",
-  "@id": ids.website,
-  name: site.name,
-  alternateName: site.tagline,
-  url: site.url,
-  description: site.description,
-  inLanguage: "en",
-  publisher: { "@id": ids.organization },
-};
-
+/** Each item but the last needs a `path`; Google rejects a trail with unlinked middle items. */
 export function breadcrumbLd(items: readonly { name: string; path: string }[]) {
   return {
     "@context": "https://schema.org",
@@ -190,43 +240,9 @@ export function webPageLd(input: {
     name: input.name,
     description: input.description,
     inLanguage: "en",
-    isPartOf: { "@id": ids.website },
-    publisher: { "@id": ids.organization },
+    isPartOf: websiteRef,
+    publisher: organizationRef,
     primaryImageOfPage: { "@type": "ImageObject", url: input.image, width: 1200, height: 630 },
-  };
-}
-
-/** A package as software: what search engines show for libraries. */
-export function packageLd(input: {
-  name: string;
-  npm: string;
-  description: string;
-  path: string;
-  repository: string;
-  image: string;
-  keywords: readonly string[];
-}) {
-  return {
-    "@context": "https://schema.org",
-    "@type": ["SoftwareSourceCode", "SoftwareApplication"],
-    "@id": `${absolute(input.path)}#software`,
-    name: input.name,
-    alternateName: input.npm,
-    description: input.description,
-    url: absolute(input.path),
-    image: input.image,
-    codeRepository: input.repository,
-    programmingLanguage: { "@type": "ComputerLanguage", name: "TypeScript" },
-    runtimePlatform: "Node.js",
-    applicationCategory: "DeveloperApplication",
-    operatingSystem: "Cross-platform",
-    license: site.license,
-    isAccessibleForFree: true,
-    offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
-    keywords: input.keywords.join(", "),
-    author: { "@id": ids.organization },
-    publisher: { "@id": ids.organization },
-    sameAs: [input.repository, `https://www.npmjs.com/package/${input.npm}`],
   };
 }
 
@@ -239,6 +255,8 @@ export function techArticleLd(input: {
   modifiedTime?: string;
   publishedTime?: string;
   keywords?: readonly string[];
+  /** What the page documents, e.g. the package a reference page belongs to. */
+  about?: Record<string, unknown>;
 }) {
   return {
     "@context": "https://schema.org",
@@ -251,12 +269,12 @@ export function techArticleLd(input: {
     image: { "@type": "ImageObject", url: input.image, width: 1200, height: 630 },
     articleSection: input.section,
     inLanguage: "en",
-    proficiencyLevel: "Beginner",
     ...(input.publishedTime ? { datePublished: input.publishedTime } : {}),
     ...(input.modifiedTime ? { dateModified: input.modifiedTime } : {}),
     ...(input.keywords?.length ? { keywords: input.keywords.join(", ") } : {}),
-    author: { "@id": ids.organization },
-    publisher: { "@id": ids.organization },
-    isPartOf: { "@id": ids.website },
+    ...(input.about ? { about: input.about } : {}),
+    author: organizationRef,
+    publisher: organizationRef,
+    isPartOf: websiteRef,
   };
 }

@@ -8,9 +8,22 @@ export const site = {
   /** Legal publisher and author of the site and the packages. */
   publisher: "Namespace Inc.",
   publisherUrl: "https://namespace.ninja",
+  publisherGithub: "https://github.com/thenamespace",
+  publisherDescription: "Namespace Inc. is an official ENS Service Provider.",
   tagline: "The toolkit for building on ENS",
   description:
     "Look up any ENS name, read and write records, and register and manage names with one typed TypeScript API that works for every name. Built on viem.",
+  /** Default `keywords`, for pages that set none of their own. */
+  keywords: [
+    "ENS",
+    "ENS SDK",
+    "Ethereum Name Service",
+    "ENSv2",
+    "viem",
+    "TypeScript",
+    "React hooks",
+    "open source",
+  ],
   /** X handle with the `@`, for `twitter:site` and share text. Unset until the project has one. */
   twitter: undefined as string | undefined,
   github: "https://github.com/thenamespace/ensforge",

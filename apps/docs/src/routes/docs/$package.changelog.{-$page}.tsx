@@ -13,7 +13,7 @@ import { track } from "@/lib/analytics/client";
 import { baseOptions } from "@/lib/layout.shared";
 import { docsImageUrl } from "@/lib/og/urls";
 import { getChangelogPackage, getPackage, releasesUrl } from "@/lib/packages";
-import { breadcrumbLd, SEPARATOR, seo } from "@/lib/seo";
+import { breadcrumbLd, seo } from "@/lib/seo";
 import { site } from "@/lib/site";
 import { source } from "@/lib/source";
 import { tabs } from "@/lib/tabs";
@@ -60,15 +60,16 @@ export const Route = createFileRoute("/docs/$package/changelog/{-$page}")({
     const path = `/docs/${loaderData.slug}/changelog${loaderData.page > 1 ? `/${loaderData.page}` : ""}`;
 
     return seo({
-      title: `Changelog${SEPARATOR}${name} Docs`,
-      description: `Release notes for ${pkg?.npm ?? site.name}, newest first.`,
+      title: `${name} changelog${loaderData.page > 1 ? `, page ${loaderData.page}` : ""}`,
+      description: `Release notes for ${pkg?.npm ?? site.name}, newest first, from its GitHub releases: what changed in each published version of the ${name} package.`,
       path,
+      type: "article",
       image: { url: docsImageUrl([loaderData.slug]), alt: `${name} changelog` },
       section: name,
+      keywords: [name, "changelog", "release notes", pkg?.npm ?? site.name, "ENS"],
       jsonLd: [
         breadcrumbLd([
-          { name: site.name, path: "/" },
-          { name: `${name} Docs`, path: `/docs/${loaderData.slug}` },
+          { name: `${name} docs`, path: `/docs/${loaderData.slug}` },
           { name: "Changelog", path },
         ]),
       ],

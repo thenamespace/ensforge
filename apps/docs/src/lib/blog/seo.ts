@@ -1,17 +1,16 @@
+import { organizationRef, websiteRef } from "@/lib/seo";
 import { absolute, site } from "@/lib/site";
 
 import { blogDescription, isoDate } from "./format";
 import type { PostImage, PostSummary } from "./posts";
 
-/*
- * JSON-LD for the blog. The organisation and website nodes come from `seo.ts` by `@id`, so a
- * post names its publisher without repeating it.
- */
+/* JSON-LD for the blog. The publisher and website references come from `seo.ts`. */
 
-const ids = {
-  organization: `${site.url}/#organization`,
-  website: `${site.url}/#website`,
-  blog: `${site.url}/blog#blog`,
+const blogRef = {
+  "@type": "Blog",
+  "@id": `${site.url}/blog#blog`,
+  name: `${site.name} blog`,
+  url: absolute("/blog"),
 };
 
 const person = (author: PostSummary["authors"][number]) => ({
@@ -37,8 +36,8 @@ export function blogPostingLd(post: PostSummary, image: PostImage, keywords: rea
     datePublished: isoDate(post.published),
     dateModified: isoDate(post.updated ?? post.published),
     author: post.authors.map(person),
-    publisher: { "@id": ids.organization },
-    isPartOf: { "@id": ids.blog },
+    publisher: organizationRef,
+    isPartOf: blogRef,
     articleSection: post.category,
     keywords: keywords.join(", "),
     inLanguage: "en",
@@ -49,14 +48,11 @@ export function blogPostingLd(post: PostSummary, image: PostImage, keywords: rea
 export function blogLd(posts: readonly PostSummary[]) {
   return {
     "@context": "https://schema.org",
-    "@type": "Blog",
-    "@id": ids.blog,
-    name: `${site.name} blog`,
-    url: absolute("/blog"),
+    ...blogRef,
     description: blogDescription,
     inLanguage: "en",
-    publisher: { "@id": ids.organization },
-    isPartOf: { "@id": ids.website },
+    publisher: organizationRef,
+    isPartOf: websiteRef,
     blogPost: posts.slice(0, 20).map((post) => ({
       "@type": "BlogPosting",
       "@id": `${absolute(post.url)}#article`,

@@ -17,9 +17,11 @@ export const Route = createFileRoute("/_marketing/privacy")({
   head: () =>
     seo({
       title: "Privacy policy",
-      description: `What ${site.name} collects when you visit, and what it does not.`,
+      description:
+        "What ensforge.com collects when you visit, and what it does not. No cookies or ads, analytics keep no IP address, and the packages send nothing to Namespace.",
       path: "/privacy",
       image: { url: siteImageUrl("home"), alt: `${site.name}: ${site.tagline}` },
+      keywords: ["privacy policy", "analytics", "cookies", "ensforge", "Namespace Inc."],
     }),
   component: Page,
 });

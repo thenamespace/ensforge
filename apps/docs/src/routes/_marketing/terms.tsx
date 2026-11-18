@@ -17,9 +17,11 @@ export const Route = createFileRoute("/_marketing/terms")({
   head: () =>
     seo({
       title: "Terms of use",
-      description: `The rules for using ${site.name} and its documentation.`,
+      description:
+        "The terms for using ensforge.com and its documentation, run by Namespace Inc.: site content, the playground, no warranty, liability limits and contact.",
       path: "/terms",
       image: { url: siteImageUrl("home"), alt: `${site.name}: ${site.tagline}` },
+      keywords: ["terms of use", "ensforge", "Namespace Inc.", "ENS"],
     }),
   component: Page,
 });

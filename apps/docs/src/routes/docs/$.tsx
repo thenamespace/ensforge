@@ -3,6 +3,7 @@ import { lazy, Suspense, use } from "react";
 import { createFileRoute, notFound, redirect } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
 
+import { getBreadcrumbItems } from "fumadocs-core/breadcrumb";
 import { useFumadocsLoader } from "fumadocs-core/source/client";
 import { DocsLayout } from "fumadocs-ui/layouts/spacious";
 import {
@@ -44,6 +45,24 @@ const serverLoader = createServerFn({ method: "GET" })
     // The git modified date ships with the compiled page in async mode.
     const { lastModified } = await page.data.load();
 
+    // The trail the page shows: the reference breadcrumb starts at the reference landing and
+    // ends at the page; guides show their folders only, so theirs starts at the package's docs.
+    // Index pages repeat their folder's URL, and unlinked folders cannot be list items.
+    const trail = getBreadcrumbItems(page.url, source.getPageTree(), { includePage: true });
+    const breadcrumbs = [
+      isReference
+        ? { name: "Reference", path: "/docs/reference" }
+        : { name: `${pkg?.name ?? site.name} docs`, path: `/docs/${page.slugs[0] ?? ""}` },
+      ...trail.flatMap((item) =>
+        item.url && typeof item.name === "string" ? [{ name: item.name, path: item.url }] : [],
+      ),
+    ].filter((item, index, all) => item.path !== all[index - 1]?.path);
+
+    // A few guides share a title across packages (`Quick start`); name the package in those.
+    const shared = source
+      .getPages()
+      .some((other) => other.url !== page.url && other.data.title === page.data.title);
+
     return {
       path: page.path,
       packageSlug: pkg?.slug,
@@ -52,6 +71,8 @@ const serverLoader = createServerFn({ method: "GET" })
         url: page.url,
         slugs: page.slugs,
         title: page.data.title,
+        headTitle: shared ? `${page.data.title} (${pkg?.name ?? site.name})` : page.data.title,
+        breadcrumbs,
         description:
           page.data.description ?? `${page.data.title} in the ${pkg?.name ?? site.name} docs.`,
         section: isReference ? `${pkg?.name ?? "API"} Reference` : (pkg?.name ?? "Docs"),
@@ -78,7 +99,7 @@ export const Route = createFileRoute("/docs/$")({
   head: ({ loaderData }) => {
     if (!loaderData) return {};
     const { meta } = loaderData;
-    const isIndex = meta.slugs.length <= 1;
+    const pkg = getPackage(loaderData.packageSlug);
     const image = docsImageUrl(meta.slugs);
 
     const keywords = [
@@ -91,7 +112,7 @@ export const Route = createFileRoute("/docs/$")({
     ];
 
     const tags = seo({
-      title: meta.title,
+      title: meta.headTitle,
       description: meta.description,
       path: meta.url,
       type: "article",
@@ -110,14 +131,20 @@ export const Route = createFileRoute("/docs/$")({
           keywords,
           ...(meta.modified ? { modifiedTime: meta.modified } : {}),
           ...(meta.published ? { publishedTime: meta.published } : {}),
+          ...(meta.isReference && pkg
+            ? {
+                about: {
+                  "@type": "SoftwareSourceCode",
+                  name: pkg.npm,
+                  codeRepository: site.github,
+                  url: `https://www.npmjs.com/package/${pkg.npm}`,
+                  programmingLanguage: "TypeScript",
+                },
+              }
+            : {}),
         }),
-        breadcrumbLd([
-          { name: site.name, path: "/" },
-          meta.isReference
-            ? { name: "API reference", path: "/docs/reference" }
-            : { name: `${meta.section} Docs`, path: `/docs/${meta.slugs[0] ?? ""}` },
-          ...(isIndex ? [] : [{ name: meta.title, path: meta.url }]),
-        ]),
+        // Pages without a visible trail (the package and reference landings) get none.
+        ...(meta.breadcrumbs.length > 1 ? [breadcrumbLd(meta.breadcrumbs)] : []),
       ],
     });
 

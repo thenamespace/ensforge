@@ -22,36 +22,56 @@ import appCss from "@/styles/app.css?url";
 export const Route = createRootRoute({
   // Pages change with each deploy; let caches revalidate instead of holding them for long.
   headers: () => ({ "Cache-Control": "public, max-age=0, s-maxage=3600, must-revalidate" }),
-  head: () => ({
-    meta: [
-      { charSet: "utf-8" },
-      { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
-      { name: "theme-color", content: site.themeColor },
-      { name: "color-scheme", content: "dark" },
-      { name: "application-name", content: site.name },
-      { name: "apple-mobile-web-app-title", content: site.name },
-      { name: "format-detection", content: "telephone=no" },
-      { name: "generator", content: "TanStack Start" },
-      { title: pageTitle() },
-      { name: "description", content: site.description },
-    ],
-    links: [
-      { rel: "stylesheet", href: appCss },
-      { rel: "icon", type: "image/svg+xml", href: "/logo.svg" },
-      { rel: "sitemap", type: "application/xml", href: "/sitemap.xml" },
-      ...(site.blogEnabled
-        ? [
-            {
-              rel: "alternate",
-              type: "application/rss+xml",
-              title: `${site.name} blog`,
-              href: absolute("/blog/rss.xml"),
-            },
-          ]
-        : []),
-      { rel: "me", href: site.github },
-    ],
-  }),
+  head: ({ matches }) => {
+    // Child routes override these by name; a 404 or failed route sets none, so these stand.
+    // A URL no route matches leaves the root as the only match; a loader can also throw notFound.
+    const missing = matches.length === 1 || matches.some((match) => match.status === "notFound");
+    const failed = matches.some((match) => match.status === "error");
+
+    return {
+      meta: [
+        { charSet: "utf-8" },
+        { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
+        { name: "theme-color", content: site.themeColor },
+        { name: "color-scheme", content: "dark" },
+        { name: "application-name", content: site.name },
+        { name: "apple-mobile-web-app-title", content: site.name },
+        { name: "format-detection", content: "telephone=no" },
+        { name: "generator", content: "TanStack Start" },
+        {
+          title: missing
+            ? pageTitle("Page not found")
+            : failed
+              ? pageTitle("Something went wrong")
+              : pageTitle(),
+        },
+        { name: "description", content: site.description },
+        { name: "keywords", content: site.keywords.join(", ") },
+        { name: "author", content: site.publisher },
+        { name: "publisher", content: site.publisher },
+        ...(missing || failed ? [{ name: "robots", content: "noindex, nofollow" }] : []),
+      ],
+      links: [
+        { rel: "stylesheet", href: appCss },
+        { rel: "icon", href: "/favicon.ico", sizes: "32x32" },
+        { rel: "icon", type: "image/svg+xml", href: "/favicon.svg" },
+        { rel: "apple-touch-icon", href: "/apple-touch-icon.png" },
+        { rel: "manifest", href: "/site.webmanifest" },
+        { rel: "sitemap", type: "application/xml", href: "/sitemap.xml" },
+        ...(site.blogEnabled
+          ? [
+              {
+                rel: "alternate",
+                type: "application/rss+xml",
+                title: `${site.name} blog`,
+                href: absolute("/blog/rss.xml"),
+              },
+            ]
+          : []),
+        { rel: "me", href: site.github },
+      ],
+    };
+  },
   component: RootComponent,
 });
 
