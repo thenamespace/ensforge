@@ -1,16 +1,12 @@
-import type { CSSProperties, ReactNode } from "react";
-
-import { CheckIcon } from "lucide-react";
-
 import { cn } from "@/lib/cn";
 
-import { avatarSrc } from "../avatars";
-import { type Accent, type CardId, type FloorCard, PLANE } from "./layout";
+import type { Accent, CardSlot } from "./layout";
+import type { StoryCard } from "./stories";
 
 /**
- * The component cards lying on the hero floor: small, crisp mockups of what ensforge reads and
- * writes. Each is plain HTML laid onto the floor plane with a CSS matrix, so its text stays
- * sharp. Names, addresses and records are real mainnet values.
+ * The story cards: small upright UI cards floating above their pads on the hero floor, each
+ * joined to its pad by a thin stem in the card's accent. When the story changes, each card's
+ * content cross-fades while the cards themselves stay put.
  */
 
 const accentColor: Record<Accent, string> = {
@@ -21,177 +17,88 @@ const accentColor: Record<Accent, string> = {
   yellow: "var(--ens-hca)",
 };
 
-function Avatar({ name, size }: { readonly name: string; readonly size: number }) {
-  const src = avatarSrc(name);
-
-  return src ? (
-    <img
-      src={src}
-      alt=""
-      width={size}
-      height={size}
-      loading="lazy"
-      decoding="async"
-      className="shrink-0 rounded-full border border-(--card-accent)"
-    />
-  ) : (
-    <span
-      className="shrink-0 rounded-full border border-(--card-accent)"
-      style={{ width: size, height: size }}
-    />
-  );
-}
-
-function Shell({
-  accent,
-  label,
-  children,
-}: {
-  readonly accent: Accent;
-  readonly label: string;
-  readonly children: ReactNode;
-}) {
+function CardBody({ card }: { readonly card: StoryCard }) {
   return (
-    <div
-      className="flex size-full flex-col gap-2 rounded-lg border border-(--ek-line-strong) bg-fd-card px-3 py-2.5 font-mono text-[10px] leading-tight text-fd-muted-foreground"
-      style={{ "--card-accent": accentColor[accent] }}
-    >
-      <p className="flex items-center gap-1.5 text-[8.5px] tracking-[0.12em] text-(--card-accent) uppercase">
-        <span className="size-1.5 rounded-full bg-(--card-accent)" />
-        {label}
+    <div className="ens-card-in flex size-full flex-col gap-1.5">
+      <p className="text-[9px] tracking-[0.14em] text-(--card-accent) uppercase">● {card.label}</p>
+      <p className="flex items-center gap-2 text-[13px] font-semibold text-fd-foreground">
+        {card.avatar ? (
+          <img
+            src={card.avatar}
+            alt=""
+            width={20}
+            height={20}
+            loading="lazy"
+            decoding="async"
+            className="size-5 shrink-0 rounded-full"
+          />
+        ) : null}
+        <span className="truncate">{card.name}</span>
       </p>
-      {children}
+      {card.migrated ? (
+        <p className="flex items-center gap-2">
+          <span className="rounded border border-(--ek-line-strong) px-1.5">v1</span>
+          <span className="h-px w-6 bg-(--card-accent)" />
+          <span className="rounded border border-(--card-accent) px-1.5 text-(--card-accent)">
+            v2
+          </span>
+        </p>
+      ) : null}
+      {card.rows.map(([key, value]) => (
+        <p key={key} className="flex justify-between gap-3">
+          <span className="truncate">{key}</span>
+          <span className="shrink-0 text-fd-foreground">{value}</span>
+        </p>
+      ))}
+      {card.footer ? <p className="mt-auto text-fd-muted-foreground/80">{card.footer}</p> : null}
     </div>
   );
 }
 
-function Row({ name, value }: { readonly name: string; readonly value: string }) {
-  return (
-    <p className="grid grid-cols-[76px_1fr] gap-2">
-      <span>{name}</span>
-      <span className="truncate text-fd-foreground">{value}</span>
-    </p>
-  );
-}
-
-const content: Record<CardId, () => ReactNode> = {
-  profile: () => (
-    <Shell accent="sky" label="profile">
-      <div className="flex items-center gap-2">
-        <Avatar name="nick.eth" size={26} />
-        <div>
-          <p className="text-[12px] font-semibold text-fd-foreground">nick.eth</p>
-          <p>0xb8c2…67d5</p>
-        </div>
-      </div>
-      <Row name="com.github" value="arachnid" />
-      <Row name="com.twitter" value="nicksdjohnson" />
-      <Row name="url" value="ens.domains" />
-    </Shell>
-  ),
-  primary: () => (
-    <Shell accent="blue" label="primary name">
-      <div className="flex items-center justify-between gap-2">
-        <span className="text-fd-foreground">0xd8dA…6045</span>
-        <span className="text-(--card-accent)">⇄</span>
-        <span className="flex items-center gap-1.5 text-fd-foreground">
-          <Avatar name="vitalik.eth" size={16} />
-          vitalik.eth
-        </span>
-      </div>
-      <p>verified both ways</p>
-    </Shell>
-  ),
-  migrate: () => (
-    <Shell accent="blue" label="ensv1 → ensv2">
-      <div className="flex items-center gap-2">
-        <Avatar name="nick.eth" size={16} />
-        <span className="text-[11px] text-fd-foreground">nick.eth</span>
-      </div>
-      <div className="flex items-center gap-1.5">
-        <span className="rounded border border-(--ek-line-strong) px-1.5 py-0.5">v1</span>
-        <span className="text-(--card-accent)">→</span>
-        <span className="rounded border border-(--card-accent) px-1.5 py-0.5 text-fd-foreground">
-          v2
-        </span>
-        <span className="ms-auto">v2-migrated</span>
-      </div>
-    </Shell>
-  ),
-  records: () => (
-    <Shell accent="magenta" label="records · envoy1084.eth">
-      <p>
-        <span className="text-(--card-accent)">+ </span>url{" "}
-        <span className="text-fd-foreground">envoy1084.xyz</span>
-      </p>
-      <p>
-        <span className="text-(--card-accent)">+ </span>com.github{" "}
-        <span className="text-fd-foreground">envoy1084</span>
-      </p>
-      <p>
-        <span className="text-(--card-accent)">+ </span>contenthash{" "}
-        <span className="text-fd-foreground">ipfs://…</span>
-      </p>
-      <p className="mt-auto">3 changes · one plan</p>
-    </Shell>
-  ),
-  batch: () => (
-    <Shell accent="yellow" label="hca · one execution">
-      {["setText(url)", "setAddr(eth)", "setContenthash"].map((write) => (
-        <p key={write} className="flex items-center gap-1.5 text-fd-foreground">
-          <CheckIcon aria-hidden="true" className="size-3 text-(--card-accent)" />
-          {write}
-        </p>
-      ))}
-      <p className="mt-auto">3 writes · 1 signature</p>
-    </Shell>
-  ),
-  subname: () => (
-    <Shell accent="green" label="subname">
-      <p className="text-fd-foreground">base.eth</p>
-      <div className="flex items-center gap-1.5 ps-2">
-        <span className="text-(--card-accent)">└</span>
-        <Avatar name="jesse.base.eth" size={16} />
-        <span className="text-[11px] text-fd-foreground">jesse.base.eth</span>
-      </div>
-      <p className="ps-6">0x2211…7DA9</p>
-    </Shell>
-  ),
-  register: () => (
-    <Shell accent="green" label="register">
-      <p className="text-[12px] font-semibold text-fd-foreground">yourname.eth</p>
-      <Row name="duration" value="1 year" />
-      <Row name="price" value="$5 / year" />
-      <p className="mt-auto text-(--card-accent)">available</p>
-    </Shell>
-  ),
-};
-
-/** Lays one card onto the floor plane, its corner at plane point (u, v). */
-const placement = (card: FloorCard): CSSProperties => ({
-  width: card.w,
-  height: card.h,
-  transform: `matrix(${PLANE.ux}, ${PLANE.uy}, ${PLANE.vx}, ${PLANE.vy}, ${card.u * PLANE.ux + card.v * PLANE.vx}, ${card.u * PLANE.uy + card.v * PLANE.vy})`,
-});
-
-export function FloorCards({
+export function StoryCards({
+  slots,
   cards,
+  storyId,
   className,
 }: {
-  readonly cards: readonly FloorCard[];
+  readonly slots: readonly CardSlot[];
+  /** One card per slot, in slot order. */
+  readonly cards: readonly StoryCard[];
+  /** Changes when the story does, so each card's content fades in anew. */
+  readonly storyId: string;
   readonly className?: string;
 }) {
   return (
     <div aria-hidden="true" className={cn("pointer-events-none", className)}>
-      {cards.map((card, index) => (
-        <div
-          key={card.id}
-          className="absolute top-1/2 left-1/2 origin-top-left animate-ek-rise motion-reduce:animate-none"
-          style={{ ...placement(card), animationDelay: `${300 + index * 80}ms` }}
-        >
-          {content[card.id]()}
-        </div>
-      ))}
+      {slots.map((slot, index) => {
+        const card = cards[index];
+        if (!card) return null;
+
+        const style = { "--card-accent": accentColor[card.accent] };
+        const place = `${slot.pad[0]}:${slot.pad[1]}`;
+
+        return (
+          <div key={place} style={style}>
+            <span
+              className="ens-card-stem absolute w-px"
+              style={{
+                left: slot.padX,
+                top: slot.top + slot.height,
+                height: slot.padY - slot.top - slot.height,
+              }}
+            />
+            <div
+              className={cn(
+                "absolute overflow-hidden rounded-[10px] border border-(--ek-line-strong) bg-fd-card px-3 py-2.5 font-mono text-[10.5px] leading-snug text-fd-muted-foreground",
+                "border-t-(--card-accent) shadow-[0_12px_30px_-14px_#000] transition-[border-color] duration-700",
+              )}
+              style={{ left: slot.left, top: slot.top, width: slot.width, height: slot.height }}
+            >
+              <CardBody key={`${storyId}-${place}`} card={card} />
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }

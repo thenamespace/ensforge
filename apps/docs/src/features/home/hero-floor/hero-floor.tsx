@@ -1,18 +1,25 @@
 import { useEffect, useRef, useState } from "react";
 
-import { FloorCards } from "./cards";
-import { FloorCanvas } from "./floor-canvas";
+import { useInView, useReducedMotion } from "@/components/marketing/hooks";
+
+import { StoryCards } from "./cards";
+import { FloorCanvas, type StoryClock } from "./floor-canvas";
 import { type FloorLayout, placeFloor } from "./layout";
+import { phoneStories, STORY_MS, stories } from "./stories";
 
 /**
- * The hero's background: an isometric floor of ENS names with component cards lying on it,
- * joined by coloured traces. It measures the hero and its headline block, then lays the cards in
- * the bands above and below the headline so the text stays clear. Rendered after mount only, since
- * every position depends on the measured size.
+ * The hero's background: an isometric floor of ENS names, with story cards standing above it.
+ * It measures the hero and its headline block, places the cards in the bands above and below the
+ * headline, and moves to the next story every few seconds while the hero is on screen. Rendered
+ * after mount only, since every position depends on the measured size.
  */
 export function HeroFloor() {
   const root = useRef<HTMLDivElement>(null);
+  const clock = useRef<StoryClock>({ start: 0, accents: [] });
   const [layout, setLayout] = useState<FloorLayout>();
+  const [turn, setTurn] = useState(0);
+  const inView = useInView(root);
+  const reduced = useReducedMotion();
 
   useEffect(() => {
     const element = root.current;
@@ -42,12 +49,36 @@ export function HeroFloor() {
     return () => resize.disconnect();
   }, []);
 
+  useEffect(() => {
+    if (!inView || reduced) return undefined;
+
+    const timer = window.setInterval(() => setTurn((value) => value + 1), STORY_MS);
+
+    return () => window.clearInterval(timer);
+  }, [inView, reduced]);
+
+  const list = layout?.compact ? phoneStories : stories;
+  const story = list[turn % list.length] ?? stories[0];
+  const cards = layout?.compact ? story?.cards.slice(2) : story?.cards;
+
+  // The canvas times its pulses from the start of each story and colours traces by its cards.
+  const compact = layout?.compact ?? false;
+  useEffect(() => {
+    const shown = compact ? story?.cards.slice(2) : story?.cards;
+    clock.current = { start: performance.now(), accents: shown?.map((card) => card.accent) ?? [] };
+  }, [story, compact]);
+
   return (
     <div ref={root} aria-hidden="true" className="absolute inset-0">
-      {layout ? (
+      {layout && story && cards ? (
         <>
-          <FloorCanvas layout={layout} className="absolute inset-0 size-full" />
-          <FloorCards cards={layout.cards} className="absolute inset-0" />
+          <FloorCanvas layout={layout} clock={clock} className="absolute inset-0 size-full" />
+          <StoryCards
+            slots={layout.slots}
+            cards={cards}
+            storyId={story.id}
+            className="absolute inset-0"
+          />
         </>
       ) : null}
     </div>

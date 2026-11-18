@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { type RefObject, useEffect, useRef } from "react";
 
 import { cn } from "@/lib/cn";
 
@@ -14,18 +14,30 @@ import {
 import { type FloorName, floorNames } from "./names";
 
 /**
- * The hero floor itself: the isometric grid, ENS names on tiles in faint mono type, and the
- * coloured traces between the component cards. Every so often a tile lights up in its accent,
- * types its name and resolves an address or a text record; pulses travel the traces between
- * related cards. Hovering a tile resolves it too. Paused when offscreen; one still frame under
- * reduced motion.
+ * The hero floor itself: the isometric grid, ENS names on flat tiles, the pads under the story
+ * cards and the traces between them. Each tile changes to the next name on its own timer, and
+ * now and then one lights up and resolves an address or a text record. Pulses run the traces in
+ * story order from the moment each story starts. One canvas, one animation loop, paused when
+ * offscreen; a still frame under reduced motion.
  */
 
-/** A tile takes three cells along u. */
-const SPAN = 3;
+export interface StoryClock {
+  /** When the current story started, on the `performance.now()` clock. */
+  start: number;
+  /** The accent of each card in the story, in slot order. */
+  accents: readonly Accent[];
+}
+
+/** A tile's size at scale 1; tiles come in three sizes, scattered with a gap between them. */
+const TILE_WIDTH = 152;
+const TILE_HEIGHT = 52;
+const TILE_GAP = 22;
+const SCALES = [0.82, 0.94, 1.06] as const;
 const LIFE_MS = 4600;
-const MAX_LIT = 5;
-const PULSE_MS = 2200;
+const SWAP_MS = 1400;
+const MAX_LIT = 3;
+/** Time for a pulse to cross one trace; the story's traces pulse one after another. */
+const PULSE_MS = 1500;
 const accents: readonly Accent[] = ["blue", "sky", "green", "magenta", "yellow"];
 const accentVars: Record<Accent, string> = {
   blue: "--ens-blue",
@@ -36,22 +48,24 @@ const accentVars: Record<Accent, string> = {
 };
 
 interface Tile {
-  readonly u: number;
-  readonly v: number;
-  readonly accent: Accent;
+  u: number;
+  v: number;
+  scale: number;
+  /** How bright the tile sits at rest, so some read nearer than others. */
+  depth: number;
+  accent: Accent;
   entry: FloorName;
-  /** Which record the tile resolves to next: its address or its text record. */
   showText: boolean;
   litAt: number | undefined;
+  /** When the tile next fades to a new name, and when the current fade began. */
+  swapAt: number;
+  fadeFrom: number | undefined;
 }
 
 interface Trace {
-  readonly accent: Accent;
   readonly points: readonly Point[];
   readonly lengths: readonly number[];
   readonly length: number;
-  /** Offset so the traces pulse in turn rather than together. */
-  readonly delay: number;
 }
 
 const smooth = (edge0: number, edge1: number, value: number) => {
@@ -60,18 +74,26 @@ const smooth = (edge0: number, edge1: number, value: number) => {
   return t * t * (3 - 2 * t);
 };
 
-/** Deterministic hash so the tiles land in the same places every load. */
-const hash = (i: number, j: number) => {
-  const value = Math.sin(i * 127.1 + j * 311.7) * 43_758.5453;
+const pointAt = (trace: Trace, at: number): Point => {
+  const index = trace.lengths.findIndex((length) => length >= at);
+  if (index <= 0) return trace.points[0] ?? [0, 0];
 
-  return value - Math.floor(value);
+  const before = trace.lengths[index - 1] ?? 0;
+  const after = trace.lengths[index] ?? before;
+  const [au, av] = trace.points[index - 1] ?? [0, 0];
+  const [bu, bv] = trace.points[index] ?? [0, 0];
+  const t = after === before ? 0 : (at - before) / (after - before);
+
+  return [au + (bu - au) * t, av + (bv - av) * t];
 };
 
 export function FloorCanvas({
   layout,
+  clock,
   className,
 }: {
   readonly layout: FloorLayout;
+  readonly clock: RefObject<StoryClock>;
   readonly className?: string;
 }) {
   const canvas = useRef<HTMLCanvasElement>(null);
@@ -83,7 +105,7 @@ export function FloorCanvas({
     if (!element || !context || !host) return undefined;
 
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const { width, height, clear, cards } = layout;
+    const { width, height, clear, slots, compact } = layout;
     const ratio = Math.min(window.devicePixelRatio || 1, 2);
     element.width = Math.round(width * ratio);
     element.height = Math.round(height * ratio);
@@ -132,89 +154,113 @@ export function FloorCanvas({
       lines.push([ax, ay, bx, by], [cx, cy, dx, dy]);
     }
 
-    // Tiles stay whole on screen, and off the headline, the cards and the traces, with air
-    // around each so nothing crowds.
-    const tileWidth = CELL * SPAN;
-    const overlaps = (
-      u: number,
-      v: number,
-      left: number,
-      top: number,
-      right: number,
-      bottom: number,
-    ) => u < right && u + tileWidth > left && v < bottom && v + CELL > top;
-    const onCard = (u: number, v: number) =>
-      cards.some((card) =>
-        overlaps(u, v, card.u - 40, card.v - 40, card.u + card.w + 40, card.v + card.h + 40),
-      );
-    const onTrace = (u: number, v: number) =>
-      layout.traces.some(({ points }) =>
-        points.slice(1).some(([bu, bv], index) => {
-          const [au = 0, av = 0] = points[index] ?? [];
-          return overlaps(
-            u,
-            v,
-            Math.min(au, bu) - 20,
-            Math.min(av, bv) - 20,
-            Math.max(au, bu) + 20,
-            Math.max(av, bv) + 20,
-          );
-        }),
-      );
-    const corners = (u: number, v: number) =>
-      [
-        project(u, v),
-        project(u + tileWidth, v),
-        project(u, v + CELL),
-        project(u + tileWidth, v + CELL),
-      ] as const;
-    const onScreen = (u: number, v: number) =>
-      corners(u, v).every(([x, y]) => x > 12 && x < width - 12 && y > 76 && y < height - 24);
-    const onHeadline = (u: number, v: number) =>
-      corners(u, v).some(
-        ([x, y]) =>
-          x > clear.left - 40 &&
-          x < clear.right + 40 &&
-          y > clear.top - 24 &&
-          y < clear.bottom + 24,
-      );
-
-    const tiles: Tile[] = [];
-    let used = 0;
-    const nextName = () => floorNames[used++ % floorNames.length];
-    for (let i = -reach; i < reach; i += SPAN) {
-      for (let j = -reach; j < reach; j++) {
-        const roll = hash(i, j);
-        if (roll < 0.35) continue;
-
-        const u = i * CELL;
-        const v = j * CELL;
-        if (!onScreen(u, v) || onCard(u, v) || onTrace(u, v) || onHeadline(u, v)) continue;
-
-        const entry = nextName();
-        if (!entry) continue;
-
-        tiles.push({
-          u,
-          v,
-          accent: accents[Math.floor(hash(j, i) * accents.length)] ?? "blue",
-          entry,
-          showText: roll > 0.8,
-          litAt: undefined,
-        });
-      }
-    }
-
-    const traces: Trace[] = layout.traces.map((trace, index) => {
+    const traces: Trace[] = layout.traces.map((points) => {
       const lengths = [0];
-      for (let point = 1; point < trace.points.length; point++) {
-        const [au, av] = trace.points[point - 1] ?? [0, 0];
-        const [bu, bv] = trace.points[point] ?? [0, 0];
+      for (let point = 1; point < points.length; point++) {
+        const [au, av] = points[point - 1] ?? [0, 0];
+        const [bu, bv] = points[point] ?? [0, 0];
         lengths.push((lengths.at(-1) ?? 0) + Math.hypot(bu - au, bv - av));
       }
 
-      return { ...trace, lengths, length: lengths.at(-1) ?? 0, delay: index * 900 };
+      return { points, lengths, length: lengths.at(-1) ?? 0 };
     });
+
+    // Tiles stay whole on screen, and off the headline, the cards, the pads, the traces and each
+    // other.
+    const tiles: Tile[] = [];
+    const blocked = (u: number, v: number, w: number, h: number, self?: Tile) => {
+      const points = [project(u, v), project(u + w, v), project(u, v + h), project(u + w, v + h)];
+      const screen = points.every(
+        ([x, y]) => x > 12 && x < width - 12 && y > 76 && y < height - 24,
+      );
+      if (!screen) return true;
+
+      // A tile can straddle a box without a corner inside it, so test its centre too.
+      points.push(project(u + w / 2, v + h / 2));
+      const hits = (left: number, top: number, right: number, bottom: number) =>
+        points.some(([x, y]) => x > left && x < right && y > top && y < bottom);
+
+      if (hits(clear.left - 40, clear.top - 24, clear.right + 40, clear.bottom + 24)) return true;
+      if (
+        slots.some((slot) =>
+          hits(slot.left - 24, slot.top - 20, slot.left + slot.width + 24, slot.padY + 24),
+        )
+      ) {
+        return true;
+      }
+
+      const near = (left: number, top: number, right: number, bottom: number, gap: number) =>
+        u < right + gap && u + w > left - gap && v < bottom + gap && v + h > top - gap;
+
+      if (
+        tiles.some(
+          (tile) =>
+            tile !== self &&
+            near(
+              tile.u,
+              tile.v,
+              tile.u + TILE_WIDTH * tile.scale,
+              tile.v + TILE_HEIGHT * tile.scale,
+              TILE_GAP,
+            ),
+        )
+      ) {
+        return true;
+      }
+
+      return layout.traces.some((trace) =>
+        trace.slice(1).some(([bu, bv], index) => {
+          const [au = 0, av = 0] = trace[index] ?? [];
+          return near(Math.min(au, bu), Math.min(av, bv), Math.max(au, bu), Math.max(av, bv), 24);
+        }),
+      );
+    };
+
+    // A seeded scatter, so the first frame is the same on every load; later moves are random.
+    let seed = 1084;
+    const seeded = () => {
+      seed = (seed + 0x6d_2b_79_f5) | 0;
+      let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4_294_967_296;
+    };
+    const span = reach * CELL;
+
+    /** Somewhere free for a tile of this scale, or `undefined` after enough tries. */
+    const findSpot = (scale: number, random: () => number, self?: Tile) => {
+      for (let attempt = 0; attempt < 400; attempt++) {
+        const u = (random() * 2 - 1) * span;
+        const v = (random() * 2 - 1) * span;
+        if (!blocked(u, v, TILE_WIDTH * scale, TILE_HEIGHT * scale, self)) return [u, v] as const;
+      }
+
+      return undefined;
+    };
+
+    const now = performance.now();
+    let used = 0;
+    const nextName = () => floorNames[used++ % floorNames.length];
+    const target = compact ? 10 : 46;
+    for (let index = 0; index < target; index++) {
+      const scale = (SCALES[Math.floor(seeded() * SCALES.length)] ?? 1) * (compact ? 0.78 : 1);
+      const spot = findSpot(scale, seeded);
+      const entry = nextName();
+      if (!spot || !entry) continue;
+
+      const roll = seeded();
+      tiles.push({
+        u: spot[0],
+        v: spot[1],
+        scale,
+        depth: 0.6 + seeded() * 0.4,
+        accent: accents[Math.floor(seeded() * accents.length)] ?? "blue",
+        entry,
+        showText: roll > 0.6,
+        litAt: undefined,
+        swapAt: now + 1500 + roll * 14_000,
+        fadeFrom: undefined,
+      });
+    }
 
     let frame = 0;
     let visible = false;
@@ -243,130 +289,130 @@ export function FloorCanvas({
     };
 
     const drawTile = (tile: Tile, time: number) => {
-      const { u, v, entry } = tile;
+      context.save();
+      context.translate(tile.u, tile.v);
+      context.scale(tile.scale, tile.scale);
+      paintTile(tile, time);
+      context.restore();
+    };
+
+    /** Draws a tile in its own space: origin at its corner, at scale 1. */
+    const paintTile = (tile: Tile, time: number) => {
+      const u = 0;
+      const v = 0;
+      const { entry } = tile;
       const accent = color[tile.accent];
       const life = tile.litAt === undefined ? 1 : (time - tile.litAt) / LIFE_MS;
       const lit =
         tile.litAt === undefined ? 0 : smooth(0, 0.08, life) * (1 - smooth(0.86, 1, life));
-      const hasAvatar = Boolean(entry.avatar);
-      const left = u + (hasAvatar ? 40 : 18);
+      // A swap dips the tile out and back in with the new name.
+      const fade =
+        tile.fadeFrom === undefined ? 1 : Math.abs(1 - (2 * (time - tile.fadeFrom)) / SWAP_MS);
+      const rest = 0.4 * fade * tile.depth;
+      const left = u + (entry.avatar ? 34 : 19);
 
-      if (lit === 0) {
-        context.globalAlpha = 0.55;
-        context.fillStyle = accent;
-        context.fillRect(u + 3, v + 3, 4, 4);
-        if (!avatar(entry.avatar, u + 20, v + CELL / 2, 10, 0.35) && !hasAvatar) {
-          context.beginPath();
-          context.arc(u + 10, v + CELL / 2 - 4, 2, 0, Math.PI * 2);
-          context.fill();
-        }
-
-        context.globalAlpha = 0.2;
-        context.fillStyle = ink;
-        context.font = `500 12px ${font}`;
-        context.fillText(entry.name, left, v + 37);
-        return;
-      }
-
-      context.globalAlpha = lit * 0.08;
+      context.globalAlpha = 0.07 * fade + lit * 0.06;
       context.fillStyle = accent;
-      context.fillRect(u + 1, v + 1, tileWidth - 2, CELL - 2);
-      context.globalAlpha = lit * 0.55;
+      context.fillRect(u + 1, v + 1, TILE_WIDTH - 2, TILE_HEIGHT - 2);
+      context.globalAlpha = Math.max(rest * 0.5, lit * 0.55);
       context.strokeStyle = accent;
       context.lineWidth = 0.8;
-      context.strokeRect(u + 1, v + 1, tileWidth - 2, CELL - 2);
-      context.globalAlpha = lit;
-      context.fillRect(u + 1, v + 1, 3, CELL - 2);
+      context.strokeRect(u + 1, v + 1, TILE_WIDTH - 2, TILE_HEIGHT - 2);
+      context.globalAlpha = Math.max(rest, lit);
+      context.fillRect(u + 1, v + 1, 3, TILE_HEIGHT - 2);
 
-      if (avatar(entry.avatar, u + 22, v + CELL / 2, 12, lit)) {
-        context.globalAlpha = lit;
-        context.strokeStyle = accent;
+      if (!avatar(entry.avatar, u + 19, v + TILE_HEIGHT / 2, 9, Math.max(rest * 1.6, lit))) {
+        context.globalAlpha = Math.max(rest, lit);
         context.beginPath();
-        context.arc(u + 22, v + CELL / 2, 12, 0, Math.PI * 2);
-        context.stroke();
+        context.arc(u + 11, v + TILE_HEIGHT / 2, 2.5, 0, Math.PI * 2);
+        context.fill();
       }
 
       const text = tile.showText ? entry.text : undefined;
-      context.globalAlpha = lit * 0.9;
+      context.globalAlpha = Math.max(rest * 0.8, lit * 0.9);
       context.fillStyle = accent;
       context.font = `600 8.5px ${font}`;
-      context.fillText((text?.[0] ?? "addr").toUpperCase(), left, v + 20);
+      context.fillText((text?.[0] ?? "addr").toUpperCase(), left, v + 16);
 
-      const typed = entry.name.slice(0, Math.ceil(entry.name.length * smooth(0.08, 0.36, life)));
-      context.globalAlpha = Math.max(lit, 0.2) * 0.95;
+      const typed =
+        lit > 0
+          ? entry.name.slice(0, Math.ceil(entry.name.length * smooth(0.08, 0.36, life)))
+          : entry.name;
+      context.globalAlpha = Math.max(rest * 1.4, lit);
       context.fillStyle = ink;
-      context.font = `500 12px ${font}`;
-      context.fillText(typed, left, v + 37);
+      context.font = `500 11px ${font}`;
+      context.fillText(typed, left, v + 30);
 
-      if (life < 0.4) {
+      if (lit > 0 && life < 0.4) {
         const caret = left + context.measureText(typed).width + 1;
         context.globalAlpha = lit;
         context.fillStyle = accent;
-        context.fillRect(caret, v + 27, 6, 12);
+        context.fillRect(caret, v + 21, 5, 11);
         return;
       }
 
-      context.globalAlpha = smooth(0.4, 0.5, life) * lit * 0.85;
+      context.globalAlpha = Math.max(rest * 0.9, smooth(0.4, 0.5, life) * lit * 0.85);
       context.fillStyle = ink;
-      context.font = `400 9.5px ${font}`;
-      context.fillText(`→ ${text?.[1] ?? entry.address}`, left, v + 52);
+      context.font = `400 9px ${font}`;
+      context.fillText(`→ ${text?.[1] ?? entry.address}`, left, v + 43);
     };
 
-    const tracePoint = (trace: Trace, at: number): Point => {
-      const index = trace.lengths.findIndex((length) => length >= at);
-      if (index <= 0) return trace.points[0] ?? [0, 0];
+    const drawTraces = (time: number) => {
+      const story = clock.current;
+      const elapsed = time - story.start;
 
-      const before = trace.lengths[index - 1] ?? 0;
-      const after = trace.lengths[index] ?? before;
-      const [au, av] = trace.points[index - 1] ?? [0, 0];
-      const [bu, bv] = trace.points[index] ?? [0, 0];
-      const t = after === before ? 0 : (at - before) / (after - before);
+      for (const [index, trace] of traces.entries()) {
+        const accent = color[story.accents[index + 1] ?? "blue"];
 
-      return [au + (bu - au) * t, av + (bv - av) * t];
+        context.globalAlpha = 0.4;
+        context.strokeStyle = accent;
+        context.lineWidth = 1;
+        context.beginPath();
+        for (const [point, [u, v]] of trace.points.entries()) {
+          if (point === 0) context.moveTo(u, v);
+          else context.lineTo(u, v);
+        }
+        context.stroke();
+
+        if (reduced) continue;
+
+        // The story's traces pulse in order, twice per story: card 1 → 2, then 2 → 3, then 3 → 4.
+        const cycle = traces.length * PULSE_MS + 1500;
+        const phase = ((elapsed - 400) % cycle) / PULSE_MS - index;
+        if (elapsed < 400 || phase < 0 || phase > 1) continue;
+
+        const head = trace.length * smooth(0, 1, phase);
+        const tail = Math.max(0, head - 90);
+        context.globalAlpha = 1;
+        context.lineWidth = 1.8;
+        context.beginPath();
+        for (let at = tail; at <= head; at += 4) {
+          const [u, v] = pointAt(trace, at);
+          if (at === tail) context.moveTo(u, v);
+          else context.lineTo(u, v);
+        }
+        context.stroke();
+        const [hu, hv] = pointAt(trace, head);
+        context.fillStyle = accent;
+        context.beginPath();
+        context.arc(hu, hv, 3, 0, Math.PI * 2);
+        context.fill();
+      }
     };
 
-    const drawTrace = (trace: Trace, time: number) => {
-      const accent = color[trace.accent];
+    const drawPads = () => {
+      for (const [index, slot] of slots.entries()) {
+        const accent = color[clock.current.accents[index] ?? "blue"];
+        const [u, v] = slot.pad;
 
-      context.globalAlpha = 0.4;
-      context.strokeStyle = accent;
-      context.lineWidth = 1;
-      context.beginPath();
-      for (const [index, [u, v]] of trace.points.entries()) {
-        if (index === 0) context.moveTo(u, v);
-        else context.lineTo(u, v);
+        context.globalAlpha = 0.18;
+        context.fillStyle = accent;
+        context.fillRect(u - 14, v - 14, 28, 28);
+        context.globalAlpha = 0.9;
+        context.strokeStyle = accent;
+        context.lineWidth = 1.2;
+        context.strokeRect(u - 14, v - 14, 28, 28);
       }
-      context.stroke();
-
-      // Pads where the trace meets each card's edge.
-      context.globalAlpha = 0.9;
-      context.fillStyle = accent;
-      for (const pad of [trace.points[0], trace.points.at(-1)]) {
-        if (pad) context.fillRect(pad[0] - 4, pad[1] - 4, 8, 8);
-      }
-
-      if (reduced) return;
-
-      // One pulse per cycle: a short bright run with a solid head, and a pause before the next.
-      const cycle = PULSE_MS * 2;
-      const phase = ((time + trace.delay) % cycle) / PULSE_MS;
-      if (phase > 1) return;
-
-      const head = trace.length * smooth(0, 1, phase);
-      context.globalAlpha = 1;
-      context.lineWidth = 1.6;
-      context.beginPath();
-      for (let at = Math.max(0, head - 70); at <= head; at += 6) {
-        const [u, v] = tracePoint(trace, at);
-        if (at === Math.max(0, head - 70)) context.moveTo(u, v);
-        else context.lineTo(u, v);
-      }
-      context.stroke();
-      const [hu, hv] = tracePoint(trace, head);
-      context.fillStyle = accent;
-      context.beginPath();
-      context.arc(hu, hv, 2.6, 0, Math.PI * 2);
-      context.fill();
     };
 
     const draw = (time: number) => {
@@ -394,16 +440,38 @@ export function FloorCanvas({
       );
       context.textBaseline = "alphabetic";
 
-      for (const trace of traces) drawTrace(trace, time);
       for (const tile of tiles) {
-        if (tile.litAt !== undefined && time - tile.litAt >= LIFE_MS) {
-          // Settle back as the next name in the list, so the floor keeps changing.
-          tile.litAt = undefined;
+        if (tile.litAt !== undefined && time - tile.litAt >= LIFE_MS) tile.litAt = undefined;
+
+        if (tile.litAt === undefined && tile.fadeFrom === undefined && time > tile.swapAt) {
+          tile.fadeFrom = time;
+        }
+        // Halfway through the fade, while the tile is out, it moves somewhere new with a new name.
+        if (
+          tile.fadeFrom !== undefined &&
+          time - tile.fadeFrom > SWAP_MS / 2 &&
+          tile.swapAt <= time
+        ) {
+          const scale =
+            (SCALES[Math.floor(Math.random() * SCALES.length)] ?? 1) * (compact ? 0.78 : 1);
+          const spot = findSpot(scale, Math.random, tile);
+          if (spot) {
+            [tile.u, tile.v] = spot;
+            tile.scale = scale;
+            tile.depth = 0.6 + Math.random() * 0.4;
+            tile.accent = accents[Math.floor(Math.random() * accents.length)] ?? tile.accent;
+          }
           tile.entry = nextName() ?? tile.entry;
           tile.showText = !tile.showText && Boolean(tile.entry.text);
+          tile.swapAt = time + 6000 + Math.random() * 10_000;
         }
+        if (tile.fadeFrom !== undefined && time - tile.fadeFrom > SWAP_MS)
+          tile.fadeFrom = undefined;
+
         drawTile(tile, time);
       }
+      drawTraces(time);
+      drawPads();
 
       context.globalAlpha = 1;
     };
@@ -414,10 +482,12 @@ export function FloorCanvas({
         last = time;
 
         if (time > nextLight) {
-          const resting = tiles.filter((tile) => tile.litAt === undefined);
+          const resting = tiles.filter(
+            (tile) => tile.litAt === undefined && tile.fadeFrom === undefined,
+          );
           const pick = resting[Math.floor(Math.random() * resting.length)];
           if (pick && tiles.length - resting.length < MAX_LIT) pick.litAt = time;
-          nextLight = time + 700 + Math.random() * 600;
+          nextLight = time + 1400 + Math.random() * 1000;
         }
 
         draw(time);
@@ -426,22 +496,17 @@ export function FloorCanvas({
       if (visible) frame = requestAnimationFrame(tick);
     };
 
-    // A still frame: a few tiles already resolved, spread across the floor.
-    const still = () => {
-      const now = performance.now();
-      for (const [index, tile] of tiles.entries()) {
-        tile.litAt = index % 6 === 2 ? now - LIFE_MS * 0.6 : undefined;
-      }
-      draw(now);
-    };
-
     const onMove = (event: PointerEvent) => {
       if (reduced) return;
 
       const rect = element.getBoundingClientRect();
       const [u, v] = toPlane(width, height, event.clientX - rect.left, event.clientY - rect.top);
       const tile = tiles.find(
-        (entry) => u >= entry.u && u < entry.u + CELL * SPAN && v >= entry.v && v < entry.v + CELL,
+        (entry) =>
+          u >= entry.u &&
+          u < entry.u + TILE_WIDTH * entry.scale &&
+          v >= entry.v &&
+          v < entry.v + TILE_HEIGHT * entry.scale,
       );
 
       if (tile && tile.litAt === undefined) tile.litAt = performance.now();
@@ -457,20 +522,23 @@ export function FloorCanvas({
       }
     });
 
-    const repaint = () => (reduced ? still() : draw(performance.now()));
+    const repaint = () => draw(performance.now());
     for (const image of images.values()) image.addEventListener("load", repaint, { once: true });
 
     repaint();
+    // The story clock is set just after this effect runs; paint once more with its colours.
+    const settle = requestAnimationFrame(repaint);
     view.observe(element);
     host.addEventListener("pointermove", onMove);
 
     return () => {
       cancelAnimationFrame(frame);
+      cancelAnimationFrame(settle);
       view.disconnect();
       host.removeEventListener("pointermove", onMove);
       for (const image of images.values()) image.removeEventListener("load", repaint);
     };
-  }, [layout]);
+  }, [layout, clock]);
 
   return (
     <canvas

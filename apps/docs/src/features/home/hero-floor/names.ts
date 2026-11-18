@@ -21,6 +21,10 @@ const entry = (name: string, address: string, text?: readonly [string, string]):
 });
 
 export const floorNames: readonly FloorName[] = [
+  entry("envoy1084.eth", "0xc0d8…1FE6", ["url", "envoy1084.xyz"]),
+  entry("cap.eth", "0x035e…17D3", ["url", "namespace.ninja"]),
+  entry("artii.eth", "0x1D84…19f8", ["url", "app.namespace.ninja"]),
+  entry("maxi.eth", "0xc9E6…e2c8", ["com.twitter", "maxidoteth"]),
   entry("nick.eth", "0xb8c2…67d5", ["url", "ens.domains"]),
   entry("vitalik.eth", "0xd8dA…6045", ["url", "vitalik.ca"]),
   entry("brantly.eth", "0x9831…6744", ["url", "ethid.org"]),
@@ -59,10 +63,6 @@ export const floorNames: readonly FloorName[] = [
   entry("rainbowwallet.eth", "0x7a3d…384f", ["url", "rainbow.me"]),
   entry("uniswap.eth", "0x1a9C…35BC", ["url", "uniswap.org"]),
   entry("ens.eth", "0xFe89…44b7", ["url", "ens.domains"]),
-  entry("envoy1084.eth", "0xc0d8…1FE6", ["url", "envoy1084.xyz"]),
-  entry("cap.eth", "0x035e…17D3", ["url", "namespace.ninja"]),
-  entry("artii.eth", "0x1D84…19f8", ["url", "app.namespace.ninja"]),
-  entry("maxi.eth", "0xc9E6…e2c8", ["com.twitter", "maxidoteth"]),
   entry("dwr.eth", "0xD64a…698c"),
   entry("wilsoncusack.eth", "0x2239…23e4"),
   entry("dcinvestor.eth", "0x3786…d129"),
