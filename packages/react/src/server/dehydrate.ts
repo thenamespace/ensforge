@@ -1,3 +1,4 @@
+import { Array as Arr, Struct } from "effect";
 import { Hydration, type AtomRegistry } from "effect/reactivity";
 
 /**
@@ -6,9 +7,8 @@ import { Hydration, type AtomRegistry } from "effect/reactivity";
  * **Details**
  *
  * - Values are JSON (bigints and bytes are tagged), so they pass through server components and
- *   loaders. Next.js `getServerSideProps`/`getStaticProps` reject the `resultPromise: undefined`
- *   that `Hydration.dehydrate` leaves on each entry: pass
- *   `JSON.parse(JSON.stringify(dehydrate(registry)))` there instead.
+ *   loaders. Entries carry no `undefined` fields, so the result can be returned directly from
+ *   Next.js `getServerSideProps` and `getStaticProps`.
  * - `streaming: true` also sends reads still loading, as promises that resolve on the client
  *   (React 19 server components, streaming SSR).
  *
@@ -33,6 +33,12 @@ export const dehydrate = (
   registry: AtomRegistry.AtomRegistry,
   options: { readonly streaming?: boolean | undefined } = {},
 ): readonly Hydration.DehydratedAtom[] =>
-  Hydration.dehydrate(registry, {
-    encodeInitialAs: options.streaming === true ? "promise" : "ignore",
-  });
+  Arr.map(
+    Hydration.toValues(
+      Hydration.dehydrate(registry, {
+        encodeInitialAs: options.streaming === true ? "promise" : "ignore",
+      }),
+    ),
+    // `Hydration.dehydrate` sets `resultPromise: undefined` on settled reads, which Next.js props reject.
+    (entry) => (entry.resultPromise === undefined ? Struct.omit(entry, ["resultPromise"]) : entry),
+  );
