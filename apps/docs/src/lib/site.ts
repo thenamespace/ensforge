@@ -7,6 +7,7 @@ export const site = {
   url: (import.meta.env.VITE_SITE_URL ?? "https://ensforge.com").replace(/\/$/, ""),
   /** Legal publisher and author of the site and the packages. */
   publisher: "Namespace Inc.",
+  publisherUrl: "https://namespace.ninja",
   tagline: "Every ENS name, one API",
   description:
     "Look up any ENS name, read and write records, and register and manage names with one typed TypeScript API that works for every name. Built on viem.",

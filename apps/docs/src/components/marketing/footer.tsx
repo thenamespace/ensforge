@@ -2,6 +2,8 @@ import type { ReactNode } from "react";
 
 import { Link } from "@tanstack/react-router";
 
+import { BadgeCheckIcon } from "lucide-react";
+
 import { GitHubIcon } from "@/components/icons/github-icon";
 import { XIcon } from "@/components/icons/x-icon";
 import { EnsforgeLogo } from "@/components/logos";
@@ -55,7 +57,32 @@ export function MarketingFooter() {
             Look up names, read and write records, and register and manage names in TypeScript. One
             API, and every ENS name works the same way.
           </p>
-          <p className="text-sm text-fd-muted-foreground">Built by {site.publisher}</p>
+          <div className="flex flex-col items-start gap-3">
+            <p className="text-sm text-fd-muted-foreground">
+              Built by{" "}
+              <a
+                href={site.publisherUrl}
+                title="Namespace, an official ENS Service Provider"
+                target="_blank"
+                rel="noreferrer"
+                className="text-fd-foreground underline decoration-(--ek-line-strong) underline-offset-4 transition-colors hover:decoration-fd-foreground"
+              >
+                Namespace
+              </a>{" "}
+              Inc.
+            </p>
+            <p className="inline-flex items-center gap-2 rounded-full border border-(--ek-line-strong) bg-fd-card/60 py-1 ps-2 pe-2.5 text-xs text-fd-foreground">
+              <img
+                src="/brand/ens/ens-mark-Blue.svg"
+                alt="ENS"
+                width={12}
+                height={14}
+                className="h-3.5 w-auto"
+              />
+              ENS Service Provider
+              <BadgeCheckIcon aria-hidden="true" className="size-3.5 text-ek-accent" />
+            </p>
+          </div>
           <div className="mt-2 flex flex-wrap gap-2">
             <a
               href={site.github}
