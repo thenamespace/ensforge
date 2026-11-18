@@ -70,7 +70,7 @@ export function NameField({ className }: { readonly className?: string }) {
     let last = 0;
     let nextLight = 0;
 
-    const colors = { ink: "#fff", blue: "#5298ff", font: "monospace" };
+    const colors = { ink: "#fff", blue: "#41b0eb", font: "monospace" };
 
     const readColors = () => {
       const style = getComputedStyle(element);

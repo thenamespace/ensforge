@@ -4,12 +4,13 @@
 /* -------------------------------------------------------------------------- */
 
 .ens-home {
-  --ens-blue: #5298ff;
-  --ens-react: oklch(72% 0.15 293);
-  --ens-hca: oklch(81% 0.15 80);
-  --ens-contracts: oklch(67% 0.2 26);
+  /* The ENS brand palette lifted for the dark theme, as the package accents in marketing.css. */
+  --ens-blue: oklch(72% 0.13 236);
+  --ens-react: oklch(71% 0.19 356);
+  --ens-hca: oklch(90% 0.17 104);
+  --ens-contracts: oklch(76% 0.16 150);
   --ek-accent: var(--ens-blue);
-  --ek-accent-ink: oklch(16% 0.03 258);
+  --ek-accent-ink: oklch(16% 0.03 240);
 }
 
 /* The SDK card takes ENS blue; the other packages keep their accents from marketing.css. */
