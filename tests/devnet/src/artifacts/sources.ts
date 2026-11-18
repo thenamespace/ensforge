@@ -302,6 +302,11 @@ export const sources = {
     file: "AvatarToken.sol",
     contract: "AvatarToken",
   },
+  "mocks/OffchainWriteResolver": {
+    kind: "local",
+    file: "OffchainWriteResolver.sol",
+    contract: "OffchainWriteResolver",
+  },
 
   // Canonical singletons, placed at their mainnet addresses.
   "canonical/Multicall3": {

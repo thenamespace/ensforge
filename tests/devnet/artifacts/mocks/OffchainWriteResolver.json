@@ -1,0 +1,166 @@
+{
+  "abi": [
+    {
+      "inputs": [
+        { "internalType": "address", "name": "sender", "type": "address" },
+        { "internalType": "string[]", "name": "urls", "type": "string[]" },
+        { "internalType": "bytes", "name": "callData", "type": "bytes" },
+        { "internalType": "bytes4", "name": "callbackFunction", "type": "bytes4" },
+        { "internalType": "bytes", "name": "extraData", "type": "bytes" }
+      ],
+      "name": "OffchainLookup",
+      "type": "error"
+    },
+    {
+      "inputs": [
+        {
+          "components": [
+            { "internalType": "string", "name": "name", "type": "string" },
+            { "internalType": "string", "name": "version", "type": "string" },
+            { "internalType": "uint64", "name": "chainId", "type": "uint64" },
+            { "internalType": "address", "name": "verifyingContract", "type": "address" }
+          ],
+          "internalType": "struct OffchainWriteResolver.DomainData",
+          "name": "sender",
+          "type": "tuple"
+        },
+        { "internalType": "string", "name": "url", "type": "string" },
+        {
+          "components": [
+            { "internalType": "bytes", "name": "data", "type": "bytes" },
+            { "internalType": "address", "name": "sender", "type": "address" },
+            { "internalType": "uint256", "name": "expirationTimestamp", "type": "uint256" }
+          ],
+          "internalType": "struct OffchainWriteResolver.MessageData",
+          "name": "data",
+          "type": "tuple"
+        }
+      ],
+      "name": "OperationHandledOffchain",
+      "type": "error"
+    },
+    {
+      "inputs": [
+        { "internalType": "uint256", "name": "chainId", "type": "uint256" },
+        { "internalType": "address", "name": "contractAddress", "type": "address" }
+      ],
+      "name": "OperationHandledOnchain",
+      "type": "error"
+    },
+    {
+      "inputs": [
+        { "internalType": "uint256", "name": "chainId", "type": "uint256" },
+        { "internalType": "address", "name": "contractAddress", "type": "address" }
+      ],
+      "name": "StorageHandledByL2",
+      "type": "error"
+    },
+    {
+      "inputs": [
+        {
+          "components": [
+            { "internalType": "string", "name": "name", "type": "string" },
+            { "internalType": "string", "name": "version", "type": "string" },
+            { "internalType": "uint64", "name": "chainId", "type": "uint64" },
+            { "internalType": "address", "name": "verifyingContract", "type": "address" }
+          ],
+          "internalType": "struct OffchainWriteResolver.domainData",
+          "name": "sender",
+          "type": "tuple"
+        },
+        { "internalType": "string", "name": "url", "type": "string" },
+        {
+          "components": [
+            { "internalType": "bytes4", "name": "functionSelector", "type": "bytes4" },
+            { "internalType": "address", "name": "sender", "type": "address" },
+            {
+              "components": [
+                { "internalType": "string", "name": "name", "type": "string" },
+                { "internalType": "string", "name": "value", "type": "string" }
+              ],
+              "internalType": "struct OffchainWriteResolver.parameter[]",
+              "name": "parameters",
+              "type": "tuple[]"
+            },
+            { "internalType": "uint256", "name": "expirationTimestamp", "type": "uint256" }
+          ],
+          "internalType": "struct OffchainWriteResolver.messageData",
+          "name": "data",
+          "type": "tuple"
+        }
+      ],
+      "name": "StorageHandledByOffChainDatabase",
+      "type": "error"
+    },
+    { "stateMutability": "nonpayable", "type": "fallback" },
+    {
+      "inputs": [],
+      "name": "l2ChainId",
+      "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "lookupUrl",
+      "outputs": [{ "internalType": "string", "name": "", "type": "string" }],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "mode",
+      "outputs": [
+        { "internalType": "enum OffchainWriteResolver.Mode", "name": "", "type": "uint8" }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [{ "internalType": "bytes32", "name": "", "type": "bytes32" }],
+      "name": "recordVersions",
+      "outputs": [{ "internalType": "uint64", "name": "", "type": "uint64" }],
+      "stateMutability": "pure",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        { "internalType": "bytes", "name": "", "type": "bytes" },
+        { "internalType": "bytes", "name": "", "type": "bytes" }
+      ],
+      "name": "resolve",
+      "outputs": [{ "internalType": "bytes", "name": "", "type": "bytes" }],
+      "stateMutability": "pure",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        { "internalType": "enum OffchainWriteResolver.Mode", "name": "newMode", "type": "uint8" }
+      ],
+      "name": "setMode",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [{ "internalType": "bytes4", "name": "interfaceId", "type": "bytes4" }],
+      "name": "supportsInterface",
+      "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }],
+      "stateMutability": "pure",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "url",
+      "outputs": [{ "internalType": "string", "name": "", "type": "string" }],
+      "stateMutability": "view",
+      "type": "function"
+    }
+  ],
+  "bytecode": "0x6080604052348015600e575f5ffd5b50610b2e8061001c5f395ff3fe608060405234801561000f575f5ffd5b5060043610610085575f3560e01c80635600f04f116100595780635600f04f146104cf5780639061b9231461050b578063d6ae3cd51461052f578063d700ff331461054657610085565b80627d208e1461046057806301ffc9a71461047e57806321175b4a146104a1578063295a5212146104b6575b5f805460ff169081600581111561009e5761009e610656565b03610139576040805160018082528183019092525f91816020015b60608152602001906001900390816100b9579050509050604051806060016040528060238152602001610ad660239139815f815181106100fb576100fb61066a565b6020908102919091010152604051630556f18360e41b815261013090309083905f9036906301ffc9a760e01b906004016106d4565b60405180910390fd5b600181600581111561014d5761014d610656565b036101755760405163e0a0507160e01b81526121056004820152306024820152604401610130565b600281600581111561018957610189610656565b036102e15760405180608001604052806040518060400160405280601581526020017427b33331b430b4b72bb934ba32a932b9b7b63b32b960591b8152508152602001604051806040016040528060018152602001603160f81b81525081526020014667ffffffffffffffff168152602001306001600160a01b03168152506040518060400160405280601f81526020017f68747470733a2f2f676174657761792e6578616d706c652f7265636f7264730081525060405180608001604052805f3690610256919061077b565b6001600160e01b03191681523360208201526040015f6040519080825280602002602001820160405280156102b157816020015b604080518082019091526060808252602082015281526020019060019003908161028a5790505b5081526020016102c3426102586107b3565b9052604051634bd55edd60e01b815261013093929190600401610832565b60038160058111156102f5576102f5610656565b0361031d576040516302a3420360e01b81526121056004820152306024820152604401610130565b600481600581111561033157610331610656565b0361045c5760405180608001604052806040518060400160405280601581526020017427b33331b430b4b72bb934ba32a932b9b7b63b32b960591b8152508152602001604051806040016040528060018152602001603160f81b81525081526020014667ffffffffffffffff168152602001306001600160a01b03168152506040518060400160405280601f81526020017f68747470733a2f2f676174657761792e6578616d706c652f7265636f7264730081525060405180606001604052805f368080601f0160208091040260200160405190810160405280939291908181526020018383808284375f9201919091525050509082525033602082015260400161043e426102586107b3565b905260405163174c93f160e21b81526101309392919060040161091e565b5f5ffd5b610468610572565b6040516104759190610989565b60405180910390f35b61049161048c3660046109a2565b61058e565b6040519015158152602001610475565b6104b46104af3660046109c9565b610630565b005b5f546104c29060ff1681565b60405161047591906109e7565b6104686040518060400160405280601f81526020017f68747470733a2f2f676174657761792e6578616d706c652f7265636f7264730081525081565b610468610519366004610a52565b60408051602081019091525f8152949350505050565b61053861210581565b604051908152602001610475565b610559610554366004610abe565b505f90565b60405167ffffffffffffffff9091168152602001610475565b604051806060016040528060238152602001610ad66023913981565b5f6301ffc9a760e01b6001600160e01b0319831614806105be5750639061b92360e01b6001600160e01b03198316145b806105d95750631d9dabef60e11b6001600160e01b03198316145b806105f457506378e5bf0360e11b6001600160e01b03198316145b8061060f5750631674750f60e21b6001600160e01b03198316145b8061062a575063bc1c58d160e01b6001600160e01b03198316145b92915050565b5f805482919060ff1916600183600581111561064e5761064e610656565b021790555050565b634e487b7160e01b5f52602160045260245ffd5b634e487b7160e01b5f52603260045260245ffd5b5f81518084528060208401602086015e5f602082860101526020601f19601f83011685010191505092915050565b81835281816020850137505f828201602090810191909152601f909101601f19169091010190565b5f60a0820160018060a01b038816835260a0602084015280875180835260c08501915060c08160051b8601019250602089015f5b828110156107395760bf1987860301845261072485835161067e565b94506020938401939190910190600101610708565b5050505082810360408401526107508186886106ac565b6001600160e01b031994909416606084015250508082036080909101525f8152602001949350505050565b80356001600160e01b031981169060048410156107ac576001600160e01b0319600485900360031b81901b82161691505b5092915050565b8082018082111561062a57634e487b7160e01b5f52601160045260245ffd5b5f8151608084526107e6608085018261067e565b9050602083015184820360208601526107ff828261067e565b60408581015167ffffffffffffffff16908701526060948501516001600160a01b03169490950193909352509192915050565b606081525f61084460608301866107d2565b8281036020840152610856818661067e565b905082810360408401526080810163ffffffff60e01b855116825260018060a01b03602086015116602083015260408501516080604084015281815180845260a08501915060a08160051b86010193506020830192505f5b8181101561090657609f1986860301835283518051604087526108d4604088018261067e565b90506020820151915086810360208801526108ef818361067e565b9650505060209384019392909201916001016108ae565b50505050606094850151919094015250909392505050565b606081525f61093060608301866107d2565b8281036020840152610942818661067e565b9050828103604084015283516060825261095f606083018261067e565b6020868101516001600160a01b031690840152604095860151959092019490945295945050505050565b602081525f61099b602083018461067e565b9392505050565b5f602082840312156109b2575f5ffd5b81356001600160e01b03198116811461099b575f5ffd5b5f602082840312156109d9575f5ffd5b81356006811061099b575f5ffd5b6020810160068310610a0757634e487b7160e01b5f52602160045260245ffd5b91905290565b5f5f83601f840112610a1d575f5ffd5b50813567ffffffffffffffff811115610a34575f5ffd5b602083019150836020828501011115610a4b575f5ffd5b9250929050565b5f5f5f5f60408587031215610a65575f5ffd5b843567ffffffffffffffff811115610a7b575f5ffd5b610a8787828801610a0d565b909550935050602085013567ffffffffffffffff811115610aa6575f5ffd5b610ab287828801610a0d565b95989497509550505050565b5f60208284031215610ace575f5ffd5b503591905056fe646174613a6170706c69636174696f6e2f6a736f6e2c7b2264617461223a223078227da2646970667358221220e5b45ff82ab3ba595801c7185a2415a18117f93b8170d786230598a3ac7a37c964736f6c634300081b0033",
+  "source": {
+    "kind": "local",
+    "file": "OffchainWriteResolver.sol",
+    "contract": "OffchainWriteResolver"
+  }
+}

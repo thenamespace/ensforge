@@ -42,6 +42,9 @@ export const mockSteps: readonly Step[] = [
         if (mode !== 0) yield* c.write(key, "setMode", [mode]);
       }
 
+      // A resolver that keeps its records off-chain and refuses writes; tests pick the mode.
+      yield* c.deploy("mock.offchainWriter", "mocks/OffchainWriteResolver");
+
       // A token for NFT avatars, whose metadata is a `data:` URL with an image.
       yield* c.deploy("mock.avatarToken", "mocks/AvatarToken");
       yield* c.write("mock.avatarToken", "setMetadata", [
