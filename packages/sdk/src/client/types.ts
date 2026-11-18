@@ -63,7 +63,7 @@ export type Gateways = {
  * @since 1.0.0
  */
 export type Config = {
-  /** Off-chain resolution (CCIP-Read). `false` disables it. */
+  /** Off-chain resolution (CCIP-Read) through the Universal Resolver's batch gateways. `false` disables it. */
   readonly ccipRead: { readonly gatewayUrls: readonly string[] } | false;
   /** Coalescing of concurrent contract reads into multicall. */
   readonly batch: {
@@ -185,7 +185,8 @@ export type CreateOptions = {
    */
   deployment?: Deployments.Profile | undefined;
   /**
-   * Off-chain resolution. `false` disables CCIP-Read.
+   * Off-chain resolution. `false` disables CCIP-Read. `gatewayUrls` are the Universal Resolver's
+   * batch gateways and replace its default, not the gateways of individual resolvers.
    *
    * @default the Universal Resolver's own batch gateway
    */

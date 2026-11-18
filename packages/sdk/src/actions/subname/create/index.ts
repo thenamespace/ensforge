@@ -58,7 +58,7 @@ import * as Impl from "./effect.js";
  *
  * @throws `Errors.InvalidInputError` (`INVALID_NAME`, `INVALID_ADDRESS`, `INVALID_ROLES`, `INVALID_RECORD_VALUE`) for invalid input.
  * @throws `Errors.NameStateError` (`NAME_NOT_AVAILABLE`, `NAME_NOT_REGISTERED`, `NAME_EXPIRED`) when the child exists or the parent is not registered.
- * @throws `Errors.NameStateError` (`NAME_UNREACHABLE`) when ENSv2 resolution no longer reaches the parent.
+ * @throws `Errors.NameStateError` (`NAME_RESERVED`, `NAME_UNREACHABLE`) when the parent is reserved or ENSv2 resolution no longer reaches it.
  * @throws `Errors.UnsupportedError` (`UNSUPPORTED_PROTOCOL`) for `roles` on ENSv1 or `fuses` on unwrapped parents.
  * @throws `Errors.UnauthorizedError` (`MISSING_ROLES`, `NOT_OWNER`, `FUSE_BURNED`) when the account may not create children.
  * @throws `Errors.ConfigError` (`WALLET_NOT_CONFIGURED`) when no signing account is known.
@@ -173,7 +173,7 @@ create.estimateGas = Action.promiseOf(
  *
  * @throws `Errors.InvalidInputError` (`INVALID_NAME`, `INVALID_ADDRESS`, `INVALID_ROLES`, `INVALID_RECORD_VALUE`) for invalid input.
  * @throws `Errors.NameStateError` (`NAME_NOT_AVAILABLE`, `NAME_NOT_REGISTERED`, `NAME_EXPIRED`) when the child exists or the parent is not registered.
- * @throws `Errors.NameStateError` (`NAME_UNREACHABLE`) when ENSv2 resolution no longer reaches the parent.
+ * @throws `Errors.NameStateError` (`NAME_RESERVED`, `NAME_UNREACHABLE`) when the parent is reserved or ENSv2 resolution no longer reaches it.
  * @throws `Errors.UnsupportedError` (`UNSUPPORTED_PROTOCOL`) for `roles` on ENSv1 or `fuses` on unwrapped parents.
  * @throws `Errors.UnauthorizedError` (`MISSING_ROLES`, `NOT_OWNER`, `FUSE_BURNED`) when the account may not create children.
  * @throws `Errors.ConfigError` (`WALLET_NOT_CONFIGURED`) when no signing account is known.

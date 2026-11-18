@@ -195,7 +195,7 @@ type Config
 
 | Option | Type | Default | Description |
 | --- | --- | --- | --- |
-| `ccipRead` (required) | `{ readonly gatewayUrls: readonly string[] } \| false` |  | Off-chain resolution (CCIP-Read). `false` disables it. |
+| `ccipRead` (required) | `{ readonly gatewayUrls: readonly string[] } \| false` |  | Off-chain resolution (CCIP-Read) through the Universal Resolver's batch gateways. `false` disables it. |
 | `batch` (required) | `{ readonly multicall: false \| { readonly batchSize: number; readonly wait: number }; }` |  | Coalescing of concurrent contract reads into multicall. |
 | `blockTag` (required) | `BlockTag` |  | Default block tag for reads. |
 | `storage` (required) | `Plan.Storage` |  | Where multi-step plans save their progress. |
@@ -218,7 +218,7 @@ type CreateOptions
 | `chains` | `Readonly<Record<number, ChainClients>>` | none; writes for another chain fail with [`CHAIN_NOT_CONFIGURED`](/docs/sdk/errors/CHAIN_NOT_CONFIGURED) | Clients for other chains, by chain ID: writes ENS makes there (an L2 primary name) run on them, and plans for them resume on them. The signer is the same account on every chain. |
 | `account` | `Account \| Address` | the wallet client's account | Default signer for writes. |
 | `deployment` | `Deployments.Profile` | `Deployments.get({ chainId })` | ENS deployments. Required for chains ensforge does not ship (devnets, forks, other chains). |
-| `ccipRead` | `{ readonly gatewayUrls?: readonly string[] \| undefined } \| false` | the Universal Resolver's own batch gateway | Off-chain resolution. `false` disables CCIP-Read. |
+| `ccipRead` | `{ readonly gatewayUrls?: readonly string[] \| undefined } \| false` | the Universal Resolver's own batch gateway | Off-chain resolution. `false` disables CCIP-Read. `gatewayUrls` are the Universal Resolver's batch gateways and replace its default, not the gateways of individual resolvers. |
 | `batch` | `{ readonly multicall?: \| boolean \| { readonly batchSize?: number; readonly wait?: number } \| undefined; }` | `{ multicall: true }` | Coalesce concurrent reads into multicall. `wait` is in milliseconds. |
 | `blockTag` | `BlockTag` | `"latest"` | Default block tag for reads. |
 | `storage` | `Plan.Storage` | `Plan.memoryStorage()` | Where multi-step plans save their progress. |
@@ -279,7 +279,7 @@ type Options = Omit<CreateOptions, "publicClient" | "walletClient"> & { /** * Th
 | `chains` | `Readonly<Record<number, ChainClients>>` | none; writes for another chain fail with [`CHAIN_NOT_CONFIGURED`](/docs/sdk/errors/CHAIN_NOT_CONFIGURED) | Clients for other chains, by chain ID: writes ENS makes there (an L2 primary name) run on them, and plans for them resume on them. The signer is the same account on every chain. |
 | `account` | `Account \| Address` | the wallet client's account | Default signer for writes. |
 | `deployment` | `Deployments.Profile` | `Deployments.get({ chainId })` | ENS deployments. Required for chains ensforge does not ship (devnets, forks, other chains). |
-| `ccipRead` | `{ readonly gatewayUrls?: readonly string[] \| undefined } \| false` | the Universal Resolver's own batch gateway | Off-chain resolution. `false` disables CCIP-Read. |
+| `ccipRead` | `{ readonly gatewayUrls?: readonly string[] \| undefined } \| false` | the Universal Resolver's own batch gateway | Off-chain resolution. `false` disables CCIP-Read. `gatewayUrls` are the Universal Resolver's batch gateways and replace its default, not the gateways of individual resolvers. |
 | `batch` | `{ readonly multicall?: \| boolean \| { readonly batchSize?: number; readonly wait?: number } \| undefined; }` | `{ multicall: true }` | Coalesce concurrent reads into multicall. `wait` is in milliseconds. |
 | `blockTag` | `BlockTag` | `"latest"` | Default block tag for reads. |
 | `storage` | `Plan.Storage` | `Plan.memoryStorage()` | Where multi-step plans save their progress. |

@@ -84,7 +84,7 @@ Resolves to `Write.Result`. Submitted transaction hashes and the plan that produ
 | --- | --- | --- |
 | [`InvalidInputError`](/docs/sdk/errors#invalidinputerror) | [`INVALID_NAME`](/docs/sdk/errors/INVALID_NAME), [`INVALID_ADDRESS`](/docs/sdk/errors/INVALID_ADDRESS), [`INVALID_ROLES`](/docs/sdk/errors/INVALID_ROLES), [`INVALID_RECORD_VALUE`](/docs/sdk/errors/INVALID_RECORD_VALUE) | invalid input. |
 | [`NameStateError`](/docs/sdk/errors#namestateerror) | [`NAME_NOT_AVAILABLE`](/docs/sdk/errors/NAME_NOT_AVAILABLE), [`NAME_NOT_REGISTERED`](/docs/sdk/errors/NAME_NOT_REGISTERED), [`NAME_EXPIRED`](/docs/sdk/errors/NAME_EXPIRED) | the child exists or the parent is not registered. |
-| [`NameStateError`](/docs/sdk/errors#namestateerror) | [`NAME_UNREACHABLE`](/docs/sdk/errors/NAME_UNREACHABLE) | ENSv2 resolution no longer reaches the parent. |
+| [`NameStateError`](/docs/sdk/errors#namestateerror) | [`NAME_RESERVED`](/docs/sdk/errors/NAME_RESERVED), [`NAME_UNREACHABLE`](/docs/sdk/errors/NAME_UNREACHABLE) | the parent is reserved or ENSv2 resolution no longer reaches it. |
 | [`UnsupportedError`](/docs/sdk/errors#unsupportederror) | [`UNSUPPORTED_PROTOCOL`](/docs/sdk/errors/UNSUPPORTED_PROTOCOL) | `roles` on ENSv1 or `fuses` on unwrapped parents. |
 | [`UnauthorizedError`](/docs/sdk/errors#unauthorizederror) | [`MISSING_ROLES`](/docs/sdk/errors/MISSING_ROLES), [`NOT_OWNER`](/docs/sdk/errors/NOT_OWNER), [`FUSE_BURNED`](/docs/sdk/errors/FUSE_BURNED) | the account may not create children. |
 | [`ConfigError`](/docs/sdk/errors#configerror) | [`WALLET_NOT_CONFIGURED`](/docs/sdk/errors/WALLET_NOT_CONFIGURED) | no signing account is known. |

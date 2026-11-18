@@ -21,8 +21,8 @@ export type NameKind =
   | "v2-reserved";
 
 /**
- * Registration status. `grace` applies to `.eth` second-level names after expiry, while only the
- * previous owner can renew; `expired` names can be registered again.
+ * Registration status. `grace` applies to `.eth` second-level names after expiry, while anyone can
+ * still renew; `expired` names can be registered again.
  *
  * @category names
  * @since 1.0.0
