@@ -4,6 +4,8 @@ import { Command } from "effect/cli";
 import { docsSite } from "../docs/site.ts";
 import { CheckFailed } from "../errors.ts";
 import { Workspace } from "../services/Workspace.ts";
+import { docsExamplesCommand } from "./docsExamples.ts";
+import { docsLintCommand } from "./docsLint.ts";
 
 /** Folders under `content/docs` the generator owns: generated pages there are replaced. */
 const ownedFolders = [
@@ -77,5 +79,5 @@ const checkCommand = Command.make("check", {}, () => docs(true)).pipe(
 
 export const docsCommand = Command.make("docs").pipe(
   Command.withDescription("Generate or check the API reference pages of the docs site"),
-  Command.withSubcommands([generateCommand, checkCommand]),
+  Command.withSubcommands([generateCommand, checkCommand, docsExamplesCommand, docsLintCommand]),
 );

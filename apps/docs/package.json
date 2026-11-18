@@ -14,7 +14,7 @@
     "preview": "vite preview",
     "start": "node .output/server/index.mjs",
     "typecheck": "tsc --noEmit",
-    "verify": "ensforge-dev docs check"
+    "verify": "ensforge-dev docs check && ensforge-dev docs lint && ensforge-dev docs examples"
   },
   "dependencies": {
     "@fontsource-variable/inter": "catalog:",
