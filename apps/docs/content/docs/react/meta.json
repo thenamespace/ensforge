@@ -1,8 +1,10 @@
 {
   "title": "React",
   "description": "React hooks for ENS",
+  "icon": "package-react",
   "root": true,
   "pages": [
+    "---[rocket]Getting started---",
     "installation",
     "index",
     "set-up-the-provider",

@@ -32,6 +32,8 @@ import {
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon, type IconSvgElement } from "@hugeicons/react";
 
+import { ContractsLogo, HcaLogo, ReactLogo, SdkLogo } from "@/components/logos";
+
 /**
  * Docs icons by semantic name, for `icon:` in frontmatter and `meta.json`, separators
  * (`---[rocket]Getting started---`) and `<Icon name="..." />` in MDX. An explicit map keeps
@@ -68,16 +70,34 @@ const icons = {
   flow: FlowConnectionIcon,
 } satisfies Record<string, IconSvgElement>;
 
-export type DocsIconName = keyof typeof icons;
+/** The package logos, tinted with each package's accent, for the package folders. */
+const packageLogos = {
+  "package-sdk": { Logo: SdkLogo, accent: "sdk" },
+  "package-contracts": { Logo: ContractsLogo, accent: "contracts" },
+  "package-react": { Logo: ReactLogo, accent: "react" },
+  "package-hca": { Logo: HcaLogo, accent: "hca" },
+} as const;
 
-const isIconName = (name: string): name is DocsIconName => name in icons;
+export type DocsIconName = keyof typeof icons | keyof typeof packageLogos;
+
+const isIcon = (name: string): name is keyof typeof icons => name in icons;
+const isPackageLogo = (name: string): name is keyof typeof packageLogos => name in packageLogos;
 
 /** The icon for a docs name. An unknown name is an authoring mistake, so it fails the build. */
 export function docsIcon(name: string | undefined): ReactNode {
   if (!name) return undefined;
-  if (!isIconName(name)) throw new Error(`Unknown docs icon "${name}"`);
 
-  return createElement(HugeiconsIcon, { icon: icons[name], size: 16, strokeWidth: 1.75 });
+  if (isPackageLogo(name)) {
+    const { Logo, accent } = packageLogos[name];
+
+    return <Logo data-accent={accent} className="size-4 text-ek-accent" />;
+  }
+
+  if (isIcon(name)) {
+    return createElement(HugeiconsIcon, { icon: icons[name], size: 16, strokeWidth: 1.75 });
+  }
+
+  throw new Error(`Unknown docs icon "${name}"`);
 }
 
 /** `<Icon name="rocket" />` in MDX, for Cards. */

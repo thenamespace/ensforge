@@ -1,10 +1,11 @@
 import type { BaseLayoutProps } from "fumadocs-ui/layouts/shared";
 
 import { EnsforgeLogo } from "@/components/logos";
-import { SectionTabs } from "@/components/reference/section-tabs";
+import { SectionLinks } from "@/components/reference/section-links";
 
 import type { PackageInfo } from "./packages";
 import { appName, gitConfig } from "./shared";
+import { site } from "./site";
 
 /**
  * Shared layout options. Pass the active package on docs pages to brand the nav
@@ -27,11 +28,11 @@ export function baseOptions(pkg?: PackageInfo): BaseLayoutProps {
         </>
       ),
     },
-    // The spacious layout has no top bar: the Guides / Reference switch and the Blog link head
-    // the sidebar, and GitHub sits with the page actions.
+    // The spacious layout has no top bar: the Guides and API reference links head the sidebar,
+    // and GitHub sits with the page actions.
     links: [
-      { type: "custom", children: <SectionTabs /> },
-      { text: "Blog", url: "/blog", active: "nested-url" },
+      { type: "custom", children: <SectionLinks /> },
+      ...(site.blogEnabled ? [{ text: "Blog", url: "/blog", active: "nested-url" as const }] : []),
     ],
     githubUrl: `https://github.com/${gitConfig.user}/${gitConfig.repo}`,
     // Dark only, so the docs chrome has no theme switch.

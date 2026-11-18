@@ -1,8 +1,10 @@
 {
   "title": "SDK",
   "description": "Look up, register and manage ENS names",
+  "icon": "package-sdk",
   "root": true,
   "pages": [
+    "---[rocket]Getting started---",
     "installation",
     "index",
     "why-ensforge",
