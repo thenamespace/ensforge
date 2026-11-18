@@ -1,0 +1,43 @@
+# The PR title becomes the squash commit: Conventional Commits with the types commitlint accepts
+# (.config/commitlint.config.ts, klarity's preset). pull_request_target runs this workflow from
+# the base branch for forks too; it never checks out or runs PR code.
+name: PR title
+
+on:
+  # Only the title is read: nothing is checked out, installed or run.
+  pull_request_target: # zizmor: ignore[dangerous-triggers]
+    types: [opened, edited, synchronize, reopened, ready_for_review]
+
+permissions:
+  pull-requests: read # the PR title
+
+concurrency:
+  group: pr-title-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  title:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: amannn/action-semantic-pull-request@v6
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        with:
+          types: |
+            build
+            chore
+            ci
+            docs
+            feat
+            fix
+            perf
+            refactor
+            revert
+            style
+            test
+          # commitlint: kebab-case scopes, no trailing full stop.
+          scopes: |
+            [a-z0-9]+(-[a-z0-9]+)*
+          subjectPattern: ^.*[^.]$
+          subjectPatternError: The subject "{subject}" must not end with a full stop.

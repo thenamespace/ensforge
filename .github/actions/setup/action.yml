@@ -1,0 +1,45 @@
+name: Workspace setup
+description: Install Node from .node-version, pnpm from packageManager, and the frozen workspace dependencies
+
+inputs:
+  node-version:
+    description: Override the Node version in .node-version
+    default: ""
+  cache:
+    description: Dependency cache to enable (pnpm or empty)
+    default: ""
+  ignore-scripts:
+    description: Disable dependency lifecycle scripts (true for jobs that only version or publish)
+    default: "false"
+
+runs:
+  using: composite
+  steps:
+    - name: Validate setup inputs
+      shell: bash
+      env:
+        SETUP_CACHE: ${{ inputs.cache }}
+        SETUP_IGNORE_SCRIPTS: ${{ inputs.ignore-scripts }}
+      run: |
+        case "$SETUP_IGNORE_SCRIPTS" in true|false) ;; *) echo 'ignore-scripts must be true or false' >&2; exit 1 ;; esac
+        case "$SETUP_CACHE" in pnpm|'') ;; *) echo 'cache must be pnpm or empty' >&2; exit 1 ;; esac
+
+    - uses: pnpm/action-setup@v6
+
+    - uses: actions/setup-node@v7
+      with:
+        node-version: ${{ inputs.node-version }}
+        node-version-file: .node-version
+        cache: ${{ inputs.cache }}
+        package-manager-cache: false
+
+    - name: Install dependencies
+      shell: bash
+      env:
+        SETUP_IGNORE_SCRIPTS: ${{ inputs.ignore-scripts }}
+      run: |
+        install_args=(--frozen-lockfile)
+        if [ "$SETUP_IGNORE_SCRIPTS" = true ]; then
+          install_args+=(--ignore-scripts)
+        fi
+        pnpm install "${install_args[@]}"

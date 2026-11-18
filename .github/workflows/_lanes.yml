@@ -1,0 +1,115 @@
+# One test lane by name, with the tools it needs. Logs, JUnit reports, fuzz corpora and mutation
+# reports are uploaded under a name unique to the lane, run and attempt.
+name: Lane
+
+on:
+  workflow_call:
+    inputs:
+      lane:
+        description: chain, fuzz, services, fork, live, watch, mutation or mutation-chain
+        type: string
+        required: true
+      seed:
+        description: Fuzz and property seed (an integer, or random for the fuzz lane); empty for the default
+        type: string
+        default: ""
+      runs:
+        description: Fuzz sequences per run (ENSFORGE_FUZZ_RUNS); empty for the default
+        type: string
+        default: ""
+      timeout-minutes:
+        description: Timeout of the lane job
+        type: number
+        default: 60
+    secrets:
+      ENSFORGE_MAINNET_RPC_URL:
+        description: Archive RPC for mainnet (fork, live and watch lanes only)
+        required: false
+      ENSFORGE_SEPOLIA_RPC_URL:
+        description: Archive RPC for Sepolia (fork, live and watch lanes only)
+        required: false
+
+permissions:
+  contents: read
+
+jobs:
+  lane:
+    name: ${{ inputs.lane }}
+    runs-on: ubuntu-latest
+    timeout-minutes: ${{ inputs.timeout-minutes }}
+    steps:
+      - name: Validate lane inputs
+        env:
+          LANE: ${{ inputs.lane }}
+          LANE_SEED: ${{ inputs.seed }}
+          LANE_RUNS: ${{ inputs.runs }}
+        run: |
+          case "$LANE" in chain|fuzz|services|fork|live|watch|mutation|mutation-chain) ;; *) echo "unknown lane: $LANE" >&2; exit 1 ;; esac
+          if [ -n "$LANE_SEED" ] && ! [[ "$LANE_SEED" =~ ^([0-9]+|random)$ ]]; then echo 'seed must be an integer or random' >&2; exit 1; fi
+          if [ -n "$LANE_RUNS" ] && ! [[ "$LANE_RUNS" =~ ^[1-9][0-9]*$ ]]; then echo 'runs must be a positive integer' >&2; exit 1; fi
+
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+        with:
+          cache: pnpm
+      - uses: ./.github/actions/setup-foundry
+        if: inputs.lane != 'live' && inputs.lane != 'mutation'
+        with:
+          rpc-cache: ${{ inputs.lane == 'fork' }}
+
+      - name: Run the ${{ inputs.lane }} lane
+        env:
+          LANE: ${{ inputs.lane }}
+          LANE_SEED: ${{ inputs.seed }}
+          LANE_RUNS: ${{ inputs.runs }}
+          # Callers pass these only for the network lanes (networks.yml).
+          ENSFORGE_MAINNET_RPC_URL: ${{ secrets.ENSFORGE_MAINNET_RPC_URL }}
+          ENSFORGE_SEPOLIA_RPC_URL: ${{ secrets.ENSFORGE_SEPOLIA_RPC_URL }}
+        run: |
+          set -o pipefail
+          # Unset budgets keep the suites' defaults (an empty variable would read as 0).
+          if [ -n "$LANE_SEED" ]; then
+            export ENSFORGE_FUZZ_SEED="$LANE_SEED"
+            if [ "$LANE_SEED" != random ]; then export ENSFORGE_TEST_SEED="$LANE_SEED"; fi
+          fi
+          if [ -n "$LANE_RUNS" ]; then export ENSFORGE_FUZZ_RUNS="$LANE_RUNS"; fi
+
+          mkdir -p reports/lanes
+          junit=(--reporter=default --reporter=junit "--outputFile.junit=reports/lanes/$LANE.junit.xml")
+          case "$LANE" in
+            chain) command=(pnpm test:chain "${junit[@]}") ;;
+            fuzz) command=(pnpm test:fuzz "${junit[@]}") ;;
+            services) command=(pnpm test:services "${junit[@]}") ;;
+            fork) command=(pnpm test:fork "${junit[@]}") ;;
+            live) command=(pnpm test:live "${junit[@]}") ;;
+            watch) command=(pnpm release:watch) ;;
+            mutation) command=(pnpm test:mutation) ;;
+            mutation-chain) command=(pnpm test:mutation:chain) ;;
+          esac
+          "${command[@]}" 2>&1 | tee "reports/lanes/$LANE.log"
+
+      # GitHub masks secrets in the job log, not in uploaded files, and RPC errors quote the URL.
+      - name: Redact RPC URLs from the reports
+        if: always() && (inputs.lane == 'fork' || inputs.lane == 'live' || inputs.lane == 'watch')
+        env:
+          ENSFORGE_MAINNET_RPC_URL: ${{ secrets.ENSFORGE_MAINNET_RPC_URL }}
+          ENSFORGE_SEPOLIA_RPC_URL: ${{ secrets.ENSFORGE_SEPOLIA_RPC_URL }}
+        run: |
+          if [ -d reports ]; then
+            find reports -type f -exec perl -pi -e '
+              for my $url (grep { length } @ENV{qw(ENSFORGE_MAINNET_RPC_URL ENSFORGE_SEPOLIA_RPC_URL)}) {
+                s/\Q$url\E/[redacted RPC URL]/g;
+              }' {} +
+          fi
+
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: lane-${{ inputs.lane }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            reports/
+            tests/fuzz/corpus/
+          if-no-files-found: warn
+          retention-days: 14

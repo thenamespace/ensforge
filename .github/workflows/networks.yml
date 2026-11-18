@@ -1,0 +1,31 @@
+# The lanes that read mainnet and Sepolia through the RPC secrets: forks at pinned blocks, live
+# canaries, and the watch for newer ENS releases and indexer OpenAPI drift. Manual only, from the
+# default branch, one at a time: the RPCs are rate-limited.
+name: Networks
+
+on:
+  workflow_dispatch:
+    inputs:
+      lane:
+        description: Lane to run
+        type: choice
+        options: [fork, live, watch]
+        default: fork
+
+permissions:
+  contents: read
+
+concurrency:
+  group: networks
+  cancel-in-progress: false
+
+jobs:
+  lane:
+    if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+    uses: ./.github/workflows/_lanes.yml
+    with:
+      lane: ${{ inputs.lane }}
+      timeout-minutes: 90
+    secrets:
+      ENSFORGE_MAINNET_RPC_URL: ${{ secrets.ENSFORGE_MAINNET_RPC_URL }}
+      ENSFORGE_SEPOLIA_RPC_URL: ${{ secrets.ENSFORGE_SEPOLIA_RPC_URL }}

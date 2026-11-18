@@ -1,0 +1,45 @@
+name: Foundry setup
+description: Install the Foundry version in tests/devnet/foundry-version and restore the devnet and fork caches
+
+inputs:
+  rpc-cache:
+    description: Restore and save anvil's fork cache (~/.foundry/cache/rpc) for the fork lane
+    default: "false"
+
+runs:
+  using: composite
+  steps:
+    - name: Read the pinned Foundry version
+      id: foundry
+      shell: bash
+      env:
+        SETUP_RPC_CACHE: ${{ inputs.rpc-cache }}
+      run: |
+        case "$SETUP_RPC_CACHE" in true|false) ;; *) echo 'rpc-cache must be true or false' >&2; exit 1 ;; esac
+        version="$(tr -d '[:space:]' < tests/devnet/foundry-version)"
+        if ! [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+          echo "tests/devnet/foundry-version is not a release version: $version" >&2
+          exit 1
+        fi
+        echo "version=v$version" >> "$GITHUB_OUTPUT"
+
+    # The toolchain's own cache keys on the job and commit; the caches below key on their inputs.
+    - uses: foundry-rs/foundry-toolchain@v1
+      with:
+        version: ${{ steps.foundry.outputs.version }}
+        cache: false
+
+    # Profile state dumps are keyed by their inputs inside the cache folder too, so an exact key
+    # keeps the cache from accumulating stale dumps.
+    - uses: actions/cache@v6
+      with:
+        path: tests/devnet/.cache/dumps
+        key: devnet-${{ runner.os }}-${{ steps.foundry.outputs.version }}-${{ hashFiles('tests/devnet/src/**', 'tests/devnet/contracts/**', 'tests/devnet/artifacts/**', 'tests/fixtures/src/**', 'pnpm-lock.yaml') }}
+
+    # Fork reads at the pinned blocks never change; the key follows the pins.
+    - uses: actions/cache@v6
+      if: inputs.rpc-cache == 'true'
+      with:
+        path: ~/.foundry/cache/rpc
+        key: foundry-rpc-${{ runner.os }}-${{ hashFiles('tests/fork/test/support/fork.ts') }}
+        restore-keys: foundry-rpc-${{ runner.os }}-
