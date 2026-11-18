@@ -11,6 +11,7 @@ import {
 import { call } from "viem/actions";
 
 import type { Client } from "../../client/types.js";
+import { ConfigError } from "../../errors/classes/ConfigError.js";
 import type { AnyError } from "../../errors/types.js";
 import type { Read } from "../../Types.js";
 import { dnsEncode } from "../../utils/Name.js";
@@ -38,17 +39,32 @@ const callUniversalResolver = (
   const { ccipRead } = client.config;
 
   return fromPromise(
-    () =>
-      // viem reads `ccipRead` from the client, not from the call.
+    (signal) =>
+      // viem reads `ccipRead` from the client, not from the call. The signal fires when the read
+      // is interrupted (an aborted Promise call), and cancels the gateway requests in flight.
       call(ccipRead === false ? { ...client.publicClient, ccipRead: false } : client.publicClient, {
         to: universalResolver,
         data,
+        requestOptions: { signal },
         ...(options.blockNumber === undefined
           ? { blockTag: options.blockTag ?? client.config.blockTag }
           : { blockNumber: options.blockNumber }),
       }),
     { contract: universalResolver, functionName },
-  ).pipe(Effect.map((result) => result.data ?? "0x"));
+  ).pipe(
+    // `resolve` and `reverse` always return data: none means no code at the read block (a block
+    // before the Universal Resolver was deployed, or a profile for another chain).
+    Effect.flatMap((result) =>
+      result.data === undefined || result.data === "0x"
+        ? Effect.fail(
+            new ConfigError({
+              code: "CONTRACT_NOT_DEPLOYED",
+              context: { contract: universalResolver, functionName },
+            }),
+          )
+        : Effect.succeed(result.data),
+    ),
+  );
 };
 
 /** Result of a Universal Resolver `resolve`. */
