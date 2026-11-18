@@ -65,6 +65,15 @@ export const normalize = (name: string): string => {
 /**
  * Whether `name` normalizes without error. It may still differ from its normalized form.
  *
+ * **Example** (Validating user input)
+ *
+ * ```ts
+ * import { Name } from "@ensforge/sdk"
+ *
+ * Name.isValid("alice.eth") // true
+ * Name.isValid("bad name")  // false
+ * ```
+ *
  * @stability stable
  * @category names
  * @since 1.0.0
@@ -81,6 +90,14 @@ export const isValid = (name: string): boolean => {
 /**
  * ENS node (EIP-137 namehash) of a name, normalizing it first.
  *
+ * **Example** (Computing a node)
+ *
+ * ```ts
+ * import { Name } from "@ensforge/sdk"
+ *
+ * const node = Name.namehash("alice.eth")
+ * ```
+ *
  * @throws `Errors.InvalidInputError` (`INVALID_NAME`) when the name cannot be normalized.
  * @stability stable
  * @category names
@@ -90,6 +107,14 @@ export const namehash = (name: string): Hex => viemNamehash(normalize(name));
 
 /**
  * Keccak-256 hash of one label, normalizing it first. Encoded labels return their hash.
+ *
+ * **Example** (Hashing a label)
+ *
+ * ```ts
+ * import { Name } from "@ensforge/sdk"
+ *
+ * const hash = Name.labelhash("alice")
+ * ```
  *
  * @throws `Errors.InvalidInputError` (`INVALID_NAME`) when the label is empty, contains a dot or
  * cannot be normalized.
@@ -112,6 +137,14 @@ export const labelhash = (label: string): Hex => {
 
 /**
  * DNS wire-format encoding of a name, as the Universal Resolver and ENSv2 registries expect.
+ *
+ * **Example** (Encoding a name for a resolver call)
+ *
+ * ```ts
+ * import { Name } from "@ensforge/sdk"
+ *
+ * const dnsName = Name.dnsEncode("alice.eth")
+ * ```
  *
  * @throws `Errors.InvalidInputError` (`INVALID_NAME`) when the name cannot be normalized.
  * @stability stable
@@ -216,6 +249,15 @@ export const parse = (name: string): Parsed => {
 /**
  * Parent of a name, or `null` for top-level names and the root.
  *
+ * **Example** (Finding the parent)
+ *
+ * ```ts
+ * import { Name } from "@ensforge/sdk"
+ *
+ * Name.getParent("sub.alice.eth") // "alice.eth"
+ * Name.getParent("eth")           // null
+ * ```
+ *
  * @throws `Errors.InvalidInputError` (`INVALID_NAME`) when the name cannot be normalized.
  * @stability stable
  * @category names
@@ -226,6 +268,14 @@ export const getParent = (name: string): string | null => parse(name).parent;
 /**
  * Encoded label for a labelhash whose plain label is unknown: `[af2c…]`.
  *
+ * **Example** (Showing an unknown label)
+ *
+ * ```ts
+ * import { Name } from "@ensforge/sdk"
+ *
+ * const label = Name.fromLabelhash(Name.labelhash("alice"))
+ * ```
+ *
  * @stability stable
  * @category names
  * @since 1.0.0
@@ -235,6 +285,14 @@ export const fromLabelhash = (hash: Hex): string => `[${Str.toLowerCase(Str.slic
 /**
  * ENSv1 `.eth` registrar token ID of a second-level name: the labelhash of its first label as a
  * number. ENSv2 token IDs change over time; read them with `name.getTokenId`.
+ *
+ * **Example** (Finding an ENSv1 token ID)
+ *
+ * ```ts
+ * import { Name } from "@ensforge/sdk"
+ *
+ * const tokenId = Name.toTokenId("alice.eth")
+ * ```
  *
  * @throws `Errors.InvalidInputError` (`INVALID_NAME`) when the name cannot be normalized.
  * @stability stable

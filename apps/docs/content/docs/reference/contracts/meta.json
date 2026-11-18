@@ -1,0 +1,11 @@
+{
+  "title": "Contracts",
+  "icon": "package-contracts",
+  "pages": [
+    "abis",
+    "deployments",
+    "interface-ids",
+    "roles",
+    "entry-points"
+  ]
+}

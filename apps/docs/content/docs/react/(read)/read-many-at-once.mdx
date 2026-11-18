@@ -1,0 +1,73 @@
+---
+title: Read many at once
+description: Run a changing list of reads with useReads, such as an avatar for every row, and share multicall batches between components.
+keywords: [useReads, ReadSpec, multicall, batch]
+---
+
+Use `useReads` when the number of reads changes, such as one address or [avatar](/docs/reference/glossary#avatar) per row of a list. Their RPC calls share the client's multicall [batches](/docs/reference/glossary#batch), so a long list does not send a request per row.
+
+## Pass a list of reads
+
+Each read is a pair of an action and its options. Mark the array `as const` so each pair keeps its types. Results come back in the same order.
+
+**Example** (Addresses Of Several Names)
+
+```tsx title="Addresses.tsx"
+import { useReads } from "@ensforge/react";
+import { Actions } from "@ensforge/sdk";
+
+export function Addresses({ names }: { names: readonly string[] }) {
+  const results = useReads(names.map((name) => [Actions.record.getAddress, { name }] as const));
+
+  return (
+    <ul>
+      {results.map((result, index) => (
+        <li key={names[index]}>
+          {names[index]}: {result.isLoading ? "..." : result.data}
+        </li>
+      ))}
+    </ul>
+  );
+}
+```
+
+Each entry is a [`ReadResult`](/docs/react/read-data#read-the-result) with its own `data`, `error`, `status` and `refresh`. One failed read does not fail the others.
+
+## Mix actions in a fixed set
+
+For a fixed set, separate hooks work equally well. Use `useReads` with different actions when you want them in one tuple. Each result is typed by its own action.
+
+**Example** (An Address And An Avatar Together)
+
+```tsx title="Card.tsx"
+import { useReads } from "@ensforge/react";
+import { Actions } from "@ensforge/sdk";
+
+export function Card({ name }: { name: string }) {
+  const [address, avatar] = useReads([
+    [Actions.record.getAddress, { name }],
+    [Actions.record.getAvatar, { name }],
+  ] as const);
+
+  return (
+    <figure>
+      <img src={avatar.data ?? undefined} alt="" />
+      <figcaption>{address.data}</figcaption>
+    </figure>
+  );
+}
+```
+
+## Read an HCA account
+
+The `@ensforge/hca` reads, such as `Actions.hca.get`, work in `useReads` like any other read. Pass the pair `[Actions.hca.get, {}]`.
+
+## Settings
+
+`useReads` takes a config as its second argument: `staleTime`, `idleTTL`, `refetchInterval`, `refreshOnWindowFocus` and `client`. It applies to every read in the list. There is no `enabled`: leave a read out of the list instead.
+
+## Reads are shared with other hooks
+
+A read in `useReads` is the same read a `useAddress` elsewhere makes for that name. Both share one request and one cached result. See [Caching and refreshing](/docs/react/caching-and-refreshing).
+
+Outside React, the SDK batches reads the same way. See [Look up many at once](/docs/sdk/look-up-many-at-once).

@@ -1,0 +1,69 @@
+---
+title: Preview before sending
+description: Plan a write with usePrepare to show its steps and warnings before anything is sent, and disable the send button while the write cannot run.
+keywords: [usePrepare, plan, prepare, review screen, warnings]
+---
+
+`usePrepare` plans a write without sending it. It never sends a transaction and never opens the wallet. Use it for a review screen: how many transactions, what warnings, and whether the account is allowed to send at all.
+
+## Plan a write
+
+Pass a write action and its options. `usePrepare` runs the action's `.prepare` and returns a [`ReadResult`](/docs/react/read-data#read-the-result) whose `data` is the [plan](/docs/reference/glossary#plan). See [How writes work](/docs/sdk/writing-to-ens).
+
+**Example** (Reviewing A Records Update)
+
+```tsx title="Review.tsx"
+import { usePrepare } from "@ensforge/react";
+import { Actions } from "@ensforge/sdk";
+
+export function Review({ name, url }: { name: string; url: string }) {
+  const { data: plan, error, isLoading } = usePrepare(Actions.record.set, { name, texts: { url } });
+
+  if (isLoading) return <p>Planning...</p>;
+  if (error) return <p>{error.message}</p>;
+  return (
+    <>
+      <p>{plan?.steps.length} transaction step(s)</p>
+      <ul>
+        {plan?.warnings.map((warning) => (
+          <li key={warning.code}>{warning.message}</li>
+        ))}
+      </ul>
+    </>
+  );
+}
+```
+
+A plan lists `steps` and `calls`, `requirements` (such as a balance or an approval) and `warnings` (non-blocking notes for the user).
+
+## Disable the button while the plan fails
+
+Planning surfaces permission errors early, so the same hook can gate the submit button. Pair it with `useSetRecords` (or any write hook) with the same options.
+
+**Example** (Review And Send)
+
+```tsx title="ReviewAndSend.tsx"
+import { usePrepare, useSetRecords } from "@ensforge/react";
+import { Actions } from "@ensforge/sdk";
+
+export function ReviewAndSend({ name, url }: { name: string; url: string }) {
+  const options = { name, texts: { url } };
+  const plan = usePrepare(Actions.record.set, options);
+  const { mutate, isPending } = useSetRecords();
+
+  return (
+    <>
+      {plan.error && <p>{plan.error.message}</p>}
+      <button disabled={plan.data === undefined || isPending} onClick={() => mutate(options)}>
+        Send
+      </button>
+    </>
+  );
+}
+```
+
+## Pass undefined to wait
+
+Like read hooks, `usePrepare` waits when its options are `undefined`, and takes the same config (`enabled`, freshness, `client`). Plans are cached and shared like any read. See [Caching and refreshing](/docs/react/caching-and-refreshing).
+
+For the full plan type, simulation and gas estimates outside React, see [Preview before sending](/docs/sdk/preview-before-sending).

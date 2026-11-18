@@ -1,21 +1,25 @@
 {
   "name": "@ensforge/react",
   "version": "1.0.0",
-  "description": "Effect Atom hooks and atoms for ENS in React",
+  "description": "React hooks for ENS: look up names, read and write records, and render on the server",
   "keywords": [
-    "effect",
-    "effect-atom",
     "ens",
+    "ensv2",
     "ethereum",
+    "ethereum-name-service",
     "hooks",
+    "names",
     "react",
+    "resolver",
     "ssr",
     "viem",
-    "wagmi"
+    "wagmi",
+    "web3"
   ],
-  "homepage": "https://ensforge.com",
+  "homepage": "https://ensforge.com/docs/react",
   "bugs": "https://github.com/thenamespace/ensforge/issues",
   "license": "Apache-2.0",
+  "author": "Namespace Inc.",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/thenamespace/ensforge.git",

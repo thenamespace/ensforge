@@ -67,5 +67,12 @@ export declare namespace getSession {
   type ErrorType = Errors.CommonError | HcaError;
 }
 
+/** Builds a deferred read for `Actions.batch`. */
+getSession.request = Action.request(
+  "hca.getSession",
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Action.Declared narrows errors to the documented @throws
+  Impl.getSession as Action.Declared<typeof Impl.getSession, getSession.ErrorType>,
+);
+
 /** Path of the action, e.g. for cache keys. */
 getSession.path = "hca.getSession" as const;

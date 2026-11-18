@@ -1,0 +1,164 @@
+/* Error and not-found illustrations, built on the closing sections' isometric styles. */
+
+/* The empty slot on the routes board. */
+.ek-err-slot {
+  fill: color-mix(in oklab, var(--ek-accent) 8%, transparent);
+  stroke: var(--ek-accent);
+  stroke-width: 1;
+  stroke-dasharray: 4 4;
+  vector-effect: non-scaling-stroke;
+  animation: ek-err-pulse 2.4s ease-in-out infinite;
+}
+
+/* The page that was asked for, as an outline hovering over its slot. */
+.ek-err-ghost {
+  fill: color-mix(in oklab, var(--color-fd-background) 70%, transparent);
+  stroke: var(--ek-accent);
+  stroke-width: 1;
+  stroke-dasharray: 4 3;
+  vector-effect: non-scaling-stroke;
+}
+.ek-err-ghost.is-top {
+  fill: color-mix(in oklab, var(--ek-accent) 10%, var(--color-fd-background));
+}
+.ek-err-path {
+  fill: var(--ek-accent);
+}
+.ek-err-mark {
+  fill: color-mix(in oklab, var(--ek-accent) 70%, transparent);
+}
+.ek-err-float {
+  animation: ek-err-bob 3.6s ease-in-out infinite;
+}
+
+/* The cut line and the failing module. */
+.ek-err-end {
+  fill: var(--color-fd-background);
+  stroke: color-mix(in oklab, var(--color-fd-foreground) 55%, transparent);
+  stroke-width: 1.2;
+}
+.ek-err-spark {
+  stroke: var(--ek-error);
+  stroke-width: 1.4;
+  stroke-linecap: round;
+}
+.ek-err-sparks {
+  animation: ek-err-flicker 1.8s steps(1) infinite;
+}
+.ek-err-module-top {
+  fill: color-mix(in oklab, var(--ek-error) 16%, var(--color-fd-card));
+  stroke: color-mix(in oklab, var(--ek-error) 70%, var(--color-fd-foreground));
+  stroke-width: 1;
+}
+.ek-err-module-side {
+  fill: color-mix(
+    in oklab,
+    var(--ek-error) 10%,
+    color-mix(in oklab, var(--color-fd-background) 74%, var(--color-fd-foreground))
+  );
+  stroke: color-mix(in oklab, var(--ek-error) 60%, var(--color-fd-foreground));
+  stroke-width: 1;
+}
+.ek-err-module-side-dark {
+  fill: color-mix(
+    in oklab,
+    var(--ek-error) 8%,
+    color-mix(in oklab, var(--color-fd-background) 84%, var(--color-fd-foreground))
+  );
+  stroke: color-mix(in oklab, var(--ek-error) 60%, var(--color-fd-foreground));
+  stroke-width: 1;
+}
+.ek-err-warn {
+  fill: none;
+  stroke: var(--ek-error);
+  stroke-width: 2;
+  stroke-linejoin: round;
+}
+.ek-err-warn-mark {
+  stroke: var(--ek-error);
+  stroke-width: 2.4;
+  stroke-linecap: round;
+}
+.ek-err-warn-dot {
+  fill: var(--ek-error);
+}
+.ek-err-fault {
+  animation: ek-err-jolt 3.2s ease-in-out infinite;
+}
+
+/* Page backdrop: the closing sections' dot grid, faded towards the edges. */
+.ek-err-backdrop {
+  background-image: var(--ek-dots);
+  background-size: 22px 22px;
+  mask-image: radial-gradient(ellipse 60% 55% at 50% 42%, #000 20%, transparent 80%);
+}
+
+:root {
+  --ek-error: oklch(58% 0.21 27);
+}
+.dark {
+  --ek-error: oklch(67% 0.2 26);
+}
+
+@keyframes ek-err-bob {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-7px);
+  }
+}
+
+@keyframes ek-err-pulse {
+  0%,
+  100% {
+    stroke-opacity: 1;
+  }
+  50% {
+    stroke-opacity: 0.35;
+  }
+}
+
+@keyframes ek-err-flicker {
+  0%,
+  22%,
+  58% {
+    opacity: 1;
+  }
+  12%,
+  40%,
+  76%,
+  100% {
+    opacity: 0.15;
+  }
+}
+
+@keyframes ek-err-jolt {
+  0%,
+  70%,
+  100% {
+    transform: translate(0, 0);
+  }
+  74% {
+    transform: translate(-2px, 1px);
+  }
+  78% {
+    transform: translate(2px, -1px);
+  }
+  82% {
+    transform: translate(-1px, 0);
+  }
+  86% {
+    transform: translate(0, -3px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ek-err-slot,
+  .ek-err-float,
+  .ek-err-sparks,
+  .ek-err-fault {
+    animation: none;
+  }
+}

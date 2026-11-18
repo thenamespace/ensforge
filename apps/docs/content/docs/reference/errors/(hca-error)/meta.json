@@ -1,0 +1,17 @@
+{
+  "title": "HcaError",
+  "pagesIndex": "hca-error",
+  "pages": [
+    "HCA_UNAVAILABLE",
+    "HCA_NOT_VERIFIED",
+    "HCA_EXECUTOR_UNSUPPORTED",
+    "HCA_ACTION_NOT_ALLOWED",
+    "HCA_SESSION_INVALID",
+    "HCA_BUNDLER_REJECTED",
+    "HCA_PAYMASTER_REJECTED",
+    "HCA_EXECUTION_FAILED",
+    "HCA_EXECUTION_TIMEOUT",
+    "HCA_UPGRADE_NOT_ALLOWED",
+    "HCA_SDK_UNSUPPORTED"
+  ]
+}

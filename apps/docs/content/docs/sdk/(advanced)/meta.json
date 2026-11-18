@@ -1,0 +1,10 @@
+{
+  "pages": [
+    "ens-versions",
+    "effect-api",
+    "extend-the-client",
+    "custom-indexers",
+    "save-and-resume-plans",
+    "use-with-ai-agents"
+  ]
+}

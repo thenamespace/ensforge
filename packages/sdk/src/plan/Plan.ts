@@ -2,7 +2,7 @@ import type { Address, Hex } from "viem";
 
 import type { AnyError } from "../errors/types.js";
 import { merge } from "./merge.js";
-import { deserialize, serialize } from "./serialize.js";
+import { deserialize, deserializeRecord, serialize } from "./serialize.js";
 import { localStorage, memoryStorage } from "./storage.js";
 
 /**
@@ -162,4 +162,11 @@ export declare namespace Plan {
  * @category plans
  * @since 1.0.0
  */
-export const Plan = { merge, serialize, deserialize, memoryStorage, localStorage } as const;
+export const Plan = {
+  merge,
+  serialize,
+  deserialize,
+  deserializeRecord,
+  memoryStorage,
+  localStorage,
+} as const;

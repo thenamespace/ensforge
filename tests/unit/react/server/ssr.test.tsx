@@ -5,7 +5,7 @@ import { prerender } from "react-dom/static";
 
 import { RegistryProvider } from "@effect/atom-react";
 import { assert, describe, it } from "@effect/vitest";
-import { Effect, Schema } from "effect";
+import { Effect, Record, Schema } from "effect";
 import { AsyncResult, AtomRegistry, Hydration } from "effect/reactivity";
 
 import {
@@ -41,6 +41,30 @@ describe("prefetch and dehydrate", () => {
       const result = browser.get(ensAtom(client(), action, { name: "Nick.eth" }));
 
       assert.isTrue(AsyncResult.isSuccess(result));
+      assert.deepStrictEqual(AsyncResult.getOrThrow(result), profile);
+    }),
+  );
+
+  // Regression: Next.js props reject `undefined`, which `Hydration.dehydrate` left in `resultPromise`.
+  it.effect("returns plain JSON with no undefined fields that still hydrates", () =>
+    Effect.gen(function* () {
+      const { action } = fakeRead("name.get", (_options: { name: string }) => profile);
+      const server = AtomRegistry.make();
+      yield* Effect.promise(() => prefetch(server, client(), action, { name: "nick.eth" }));
+      const state = dehydrate(server);
+
+      assert.isAbove(state.length, 0);
+      const json = Schema.fromJsonString(Schema.Unknown);
+      const wire = yield* Schema.encodeEffect(json)(state);
+      const roundTripped = yield* Schema.decodeEffect(json)(wire);
+
+      assert.deepStrictEqual(roundTripped, state);
+      for (const entry of state) assert.notInclude(Record.values(entry), undefined);
+
+      const browser = AtomRegistry.make();
+      Hydration.hydrate(browser, state);
+      const result = browser.get(ensAtom(client(), action, { name: "Nick.eth" }));
+
       assert.deepStrictEqual(AsyncResult.getOrThrow(result), profile);
     }),
   );

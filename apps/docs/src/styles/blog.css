@@ -1,0 +1,83 @@
+/* Blog: drawn covers, cards and the reading column. */
+
+/* Drawn covers sit on a quiet card surface with the closing sections' dot grid. */
+.ek-blog-art {
+  background:
+    radial-gradient(
+      ellipse 70% 60% at 50% 45%,
+      color-mix(in oklab, var(--ek-accent) 9%, transparent),
+      transparent 70%
+    ),
+    var(--color-fd-card);
+}
+.ek-blog-art-dots {
+  background-image: var(--ek-dots);
+  background-size: 22px 22px;
+  mask-image: radial-gradient(ellipse 65% 60% at 50% 50%, #000 30%, transparent 85%);
+}
+.ek-blog-float {
+  animation: ek-blog-bob 4.2s ease-in-out infinite;
+}
+.ek-blog-code-accent {
+  stroke: var(--ek-accent);
+  stroke-width: 1.5;
+  stroke-linecap: round;
+}
+.ek-blog-dot {
+  fill: color-mix(in oklab, var(--color-fd-foreground) 28%, transparent);
+}
+
+@keyframes ek-blog-bob {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
+/* Reading progress under the sticky header. */
+.ek-blog-progress {
+  transform-origin: 0 50%;
+  transform: scaleX(var(--progress, 0));
+}
+
+/* Post body: a little more air than docs pages, and the accent for links and markers. */
+.ek-blog-prose {
+  --tw-prose-links: var(--color-fd-foreground);
+  font-size: 1.0625rem;
+  line-height: 1.75;
+}
+.ek-blog-prose :where(p, ul, ol) {
+  color: color-mix(in oklab, var(--color-fd-foreground) 86%, var(--color-fd-muted-foreground));
+}
+.ek-blog-prose :where(a:not([class])) {
+  text-decoration-color: color-mix(in oklab, var(--ek-accent) 60%, transparent);
+  text-underline-offset: 4px;
+}
+.ek-blog-prose :where(a:not([class])):hover {
+  text-decoration-color: var(--ek-accent);
+}
+.ek-blog-prose :where(ul > li)::marker {
+  color: var(--ek-accent);
+}
+.ek-blog-prose :where(h2) {
+  margin-top: 1.75em;
+  padding-top: 1.25em;
+  border-top: 1px solid var(--ek-line);
+  font-weight: 500;
+  letter-spacing: -0.02em;
+}
+.ek-blog-prose :where(h3) {
+  font-weight: 500;
+}
+.ek-blog-prose :where(h2, h3) {
+  scroll-margin-top: 5rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ek-blog-float {
+    animation: none;
+  }
+}

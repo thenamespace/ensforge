@@ -71,5 +71,12 @@ export declare namespace verify {
   type ErrorType = Errors.CommonError | HcaError | Errors.InvalidInputError;
 }
 
+/** Builds a deferred read for `Actions.batch`. */
+verify.request = Action.request(
+  "hca.verify",
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Action.Declared narrows errors to the documented @throws
+  Impl.verify as Action.Declared<typeof Impl.verify, verify.ErrorType>,
+);
+
 /** Path of the action, e.g. for cache keys. */
 verify.path = "hca.verify" as const;

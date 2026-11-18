@@ -65,5 +65,12 @@ export declare namespace getDeposit {
   type ErrorType = Errors.CommonError | Errors.InvalidInputError | HcaError;
 }
 
+/** Builds a deferred read for `Actions.batch`. */
+getDeposit.request = Action.request(
+  "hca.getDeposit",
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Action.Declared narrows errors to the documented @throws
+  Impl.getDeposit as Action.Declared<typeof Impl.getDeposit, getDeposit.ErrorType>,
+);
+
 /** Path of the action, e.g. for cache keys. */
 getDeposit.path = "hca.getDeposit" as const;

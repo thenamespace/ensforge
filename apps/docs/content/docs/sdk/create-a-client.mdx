@@ -1,0 +1,224 @@
+---
+title: Create a client
+icon: plug
+description: Create an ensforge client from viem clients or a wagmi config, add the actions you need, and set options such as indexer and storage.
+keywords: [Ensforge.create, extend, ensActions, indexerActions, fromWagmi, CreateOptions, client]
+---
+
+The **client** is the object you call ENS actions on. You create it once, at app start, from the
+viem clients your app already has, then add groups of actions to it with `extend`.
+
+## Create a client for reads
+
+A viem public client is all a client needs to read. Its chain selects the ENS contracts:
+ensforge ships them for Ethereum mainnet and Sepolia.
+
+**Example** (Creating a Client for Reads)
+
+```ts title="ens.ts"
+import { Ensforge, ensActions } from "@ensforge/sdk";
+import { createPublicClient, http } from "viem";
+import { mainnet } from "viem/chains";
+
+const ens = Ensforge.create({
+  publicClient: createPublicClient({ chain: mainnet, transport: http("https://your-rpc.example") }),
+}).extend(ensActions());
+
+const name = await ens.primaryName.get({ address: "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045" });
+```
+
+- `Ensforge.create` returns a client with no actions yet.
+- `extend(ensActions())` returns a new client with every ENS action on it. The original client is
+  left unchanged: clients are frozen.
+
+A viem client on another chain fails with [`UNKNOWN_CHAIN`](/docs/reference/errors/UNKNOWN_CHAIN) unless
+you pass `deployment`. See [Custom deployments](/docs/contracts/custom-deployments).
+
+## Add a wallet for writes
+
+Writes need a signer. Pass a viem wallet client as `walletClient`. Reads still go through the
+public client.
+
+**Example** (Adding a Wallet Client)
+
+```ts title="ens.ts"
+import { Ensforge, ensActions } from "@ensforge/sdk";
+import { createPublicClient, createWalletClient, custom, http, type EIP1193Provider } from "viem";
+import { sepolia } from "viem/chains";
+
+declare const provider: EIP1193Provider; // e.g. window.ethereum
+
+const ens = Ensforge.create({
+  publicClient: createPublicClient({ chain: sepolia, transport: http() }),
+  walletClient: createWalletClient({ chain: sepolia, transport: custom(provider) }),
+}).extend(ensActions());
+```
+
+- When the public client was created with an `account`, it is also used as the wallet, so
+  `walletClient` can be left out.
+- `walletClient` can also be a function that returns the wallet, or `undefined` while none is
+  connected. ensforge calls it on every write, so a wallet that connects later works.
+- Without a wallet, writes fail with
+  [`WALLET_NOT_CONFIGURED`](/docs/reference/errors/WALLET_NOT_CONFIGURED). Reads keep working.
+
+## From a wagmi config
+
+Apps on wagmi create the client with `Ensforge.fromWagmi`, from `@ensforge/sdk/wagmi`. Reads use
+wagmi's client for the ENS chain. Writes use whichever wallet is connected when they run.
+
+**Example** (Creating a Client From wagmi)
+
+```ts no-check title="ens.ts"
+import { ensActions } from "@ensforge/sdk";
+import { Ensforge } from "@ensforge/sdk/wagmi";
+import { wagmiConfig } from "./wagmi"; // your app's createConfig(...)
+
+const ens = Ensforge.fromWagmi(wagmiConfig).extend(ensActions());
+```
+
+- The ENS chain is mainnet when the wagmi config has it, otherwise the first configured chain
+  ensforge has contracts for. Pass `{ chainId: 11155111 }` to pick Sepolia.
+- A wallet connected to another chain is asked to switch first. Pass `{ switchChain: false }` to
+  turn that off.
+- Every other chain in the wagmi config is added to `chains`, so a
+  [primary name](/docs/reference/glossary#primary-name) on an L2 uses wagmi's client and
+  wallet there.
+- `fromWagmi` takes every option of `Ensforge.create` except the viem clients.
+
+It works with wagmi 2 (2.14 or later) and wagmi 3. For React apps, see
+[Use with wagmi](/docs/react/with-wagmi).
+
+## Add actions with extend
+
+`extend` adds a group of actions and returns a new client. Choose the groups by what your app does.
+
+| Decorator                             | From                                           | Adds                                                                                                         |
+| ------------------------------------- | ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| `ensActions()`                        | `@ensforge/sdk`                                | Every ENS action (`ens.name`, `ens.record`, `ens.registration`, …) and `ens.batch`. Not the indexer actions. |
+| `recordActions()`, `nameActions()`, … | `@ensforge/sdk`                                | One group each, for smaller bundles. There is one per group, plus `batchActions()`.                          |
+| `indexerActions()`                    | `@ensforge/sdk/indexer` (also `@ensforge/sdk`) | `ens.indexer.*`: lists, search and history. Needs an `indexer`.                                              |
+| `hcaActions()`                        | `@ensforge/hca`                                | Smart-account actions (experimental). See [HCA](/docs/hca).                                                  |
+
+**Example** (Adding Indexer Actions)
+
+```ts title="ens.ts"
+import { Ensforge, ensActions } from "@ensforge/sdk";
+import { bigname, indexerActions } from "@ensforge/sdk/indexer";
+import { createPublicClient, http } from "viem";
+import { mainnet } from "viem/chains";
+
+const ens = Ensforge.create({
+  publicClient: createPublicClient({ chain: mainnet, transport: http() }),
+  indexer: bigname(),
+})
+  .extend(ensActions())
+  .extend(indexerActions());
+
+const page = await ens.indexer.getNamesForAddress({
+  address: "0xb8c2C29ee19D8307cb7255e1Cd9CbDE883A267d5",
+});
+```
+
+The indexer actions are a separate group because they need an indexer service. Calling them on a
+client without `indexer` fails with
+[`INDEXER_NOT_CONFIGURED`](/docs/reference/errors/INDEXER_NOT_CONFIGURED). See
+[Name lists and indexers](/docs/sdk/name-lists-and-indexers).
+
+**Example** (Only the Record Actions)
+
+```ts title="ens.ts"
+import { Ensforge, recordActions } from "@ensforge/sdk";
+import { createPublicClient, http } from "viem";
+import { mainnet } from "viem/chains";
+
+const ens = Ensforge.create({
+  publicClient: createPublicClient({ chain: mainnet, transport: http() }),
+}).extend(recordActions());
+
+const url = await ens.record.getText({ name: "nick.eth", key: "url" });
+```
+
+A client with only `recordActions()` has `ens.record` and nothing else, so the other groups stay out
+of your bundle. See [Keep bundles small](/docs/sdk/bundle-size).
+
+## Options
+
+Every option except `publicClient` is optional.
+
+| Option         | Type                                               | Default                                                                      | Description                                                                                                                                                                                      |
+| -------------- | -------------------------------------------------- | ---------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `publicClient` | viem client                                        | (required)                                                                   | Client for reads. Its chain selects the ENS deployment.                                                                                                                                          |
+| `walletClient` | viem wallet client, or a function returning one    | `publicClient` when it has an account                                        | Client for writes. A function is called on every write.                                                                                                                                          |
+| `account`      | `Account \| Address`                               | the wallet client's account                                                  | Default signer for writes. A write's own `account` overrides it.                                                                                                                                 |
+| `chains`       | `Record<chainId, { publicClient, walletClient? }>` | none                                                                         | Clients for other chains, for writes ENS makes there, such as a primary name on an L2. Without one, such writes fail with [`CHAIN_NOT_CONFIGURED`](/docs/reference/errors/CHAIN_NOT_CONFIGURED). |
+| `deployment`   | `Deployments.Profile`                              | the built-in deployment for the chain                                        | ENS contract addresses. Required for devnets, forks and other chains.                                                                                                                            |
+| `ccipRead`     | `{ gatewayUrls? } \| false`                        | the Universal Resolver's own batch gateway                                   | Off-chain lookups ([CCIP-Read](/docs/reference/glossary#ccip-read)): the batch gateways the Universal Resolver sends them through. `false` turns them off.                                       |
+| `batch`        | `{ multicall?: boolean \| { batchSize?, wait? } }` | `{ multicall: true }`                                                        | Groups reads made at the same time into multicall requests. `wait` is in milliseconds.                                                                                                           |
+| `blockTag`     | `BlockTag`                                         | `"latest"`                                                                   | Block that reads run at.                                                                                                                                                                         |
+| `storage`      | `Plan.Storage`                                     | `Plan.memoryStorage()`                                                       | Where multi-step writes save their [plan](/docs/reference/glossary#plan) progress. Use `Plan.localStorage()` to survive a reload.                                                                |
+| `simulate`     | `boolean`                                          | `true`                                                                       | Simulate writes before the wallet prompt.                                                                                                                                                        |
+| `indexer`      | `Indexer`                                          | none                                                                         | [Indexer](/docs/reference/glossary#indexer) for `indexer.*` actions and for finding records and subnames during migration, from `@ensforge/sdk/indexer`.                                         |
+| `gateways`     | `{ ipfs?, arweave?, swarm? }`                      | `https://ipfs.io`, `https://arweave.net`, `https://api.gateway.ethswarm.org` | HTTP gateways for avatars and website links. The public IPFS gateway is rate limited: set your own in production.                                                                                |
+
+See [Configure RPC and gateways](/docs/sdk/rpc-and-gateways).
+
+**Example** (Adding an L2 for Primary Names)
+
+```ts title="ens.ts"
+import { Ensforge, ensActions } from "@ensforge/sdk";
+import { createPublicClient, createWalletClient, custom, http, type EIP1193Provider } from "viem";
+import { base, mainnet } from "viem/chains";
+
+declare const provider: EIP1193Provider;
+
+const ens = Ensforge.create({
+  publicClient: createPublicClient({ chain: mainnet, transport: http() }),
+  walletClient: createWalletClient({ chain: mainnet, transport: custom(provider) }),
+  chains: {
+    [base.id]: {
+      publicClient: createPublicClient({ chain: base, transport: http() }),
+      walletClient: createWalletClient({ chain: base, transport: custom(provider) }),
+    },
+  },
+}).extend(ensActions());
+
+await ens.primaryName.set({ name: "ensforge-docs-demo.eth", coin: { chainId: base.id } });
+```
+
+Each key of `chains` must match the chain of its clients. A mismatch fails at creation with
+`CHAIN_NOT_CONFIGURED`. See [Set a primary name](/docs/sdk/set-a-primary-name).
+
+## What the client holds
+
+Besides its actions, every client has a few fields you can read.
+
+| Field          | Description                                                       |
+| -------------- | ----------------------------------------------------------------- |
+| `chain`        | `{ id, name }` of the ENS chain.                                  |
+| `account`      | The default signer's address, or `undefined` without a wallet.    |
+| `deployment`   | The ENS contracts on this chain: addresses and what they support. |
+| `publicClient` | The viem client used for reads.                                   |
+| `config`       | The resolved options, with defaults filled in.                    |
+| `extend`       | Adds a group of actions and returns a new client.                 |
+
+These names are reserved: an action group cannot use them.
+
+## Use a bare viem client
+
+Every action also accepts a plain viem client in place of an ensforge client. ensforge creates a
+client for it with default options on first use, and reuses it for later calls.
+
+**Example** (Calling an Action With a viem Client)
+
+```ts title="viem-client.ts"
+import { Actions } from "@ensforge/sdk";
+import { createPublicClient, http } from "viem";
+import { mainnet } from "viem/chains";
+
+const publicClient = createPublicClient({ chain: mainnet, transport: http() });
+
+const address = await Actions.record.getAddress(publicClient, { name: "nick.eth" });
+```
+
+`Ensforge.from(client)` does the same in your own helpers: it returns an ensforge client for either
+kind of client. See [Ways to call actions](/docs/sdk/ways-to-call-actions).

@@ -1,0 +1,369 @@
+/* -------------------------------------------------------------------------- */
+/* Home: ENS blue on the dark theme, the hero floor, the closing anvil, the   */
+/* layer stack (after Effect Kit's) and the playground.                        */
+/* -------------------------------------------------------------------------- */
+
+.ens-home {
+  /* The ENS brand palette lifted for the dark theme, as the package accents in marketing.css. */
+  --ens-blue: oklch(72% 0.13 236);
+  --ens-react: oklch(71% 0.19 356);
+  --ens-hca: oklch(90% 0.17 104);
+  --ens-contracts: oklch(76% 0.16 150);
+  /* ENS light blue (#cee1e8), lifted to read as names on the dark background. */
+  --ens-sky: oklch(87% 0.045 225);
+  --ek-accent: var(--ens-blue);
+  --ek-accent-ink: oklch(16% 0.03 240);
+}
+
+/* The SDK card takes ENS blue; the other packages keep their accents from marketing.css. */
+.ens-home [data-accent="sdk"] {
+  --ek-accent: var(--ens-blue);
+}
+
+/* --- Layer stack ---------------------------------------------------------- */
+
+.ek-step-0 {
+  --step: var(--ens-blue);
+}
+.ek-step-1 {
+  --step: oklch(82% 0.11 215);
+}
+.ek-step-2 {
+  --step: var(--ens-react);
+}
+.ek-step-3 {
+  --step: var(--ens-hca);
+}
+
+.ek-dotted {
+  background-image: radial-gradient(circle, var(--ek-line-strong) 1px, transparent 1.2px);
+  background-size: 22px 22px;
+}
+
+.ek-plate {
+  --plate-ink: color-mix(in oklab, var(--color-fd-foreground) 30%, transparent);
+  --plate-detail: color-mix(in oklab, var(--color-fd-foreground) 26%, transparent);
+}
+.ek-plate[data-state="active"] {
+  --plate-ink: color-mix(in oklab, var(--color-fd-foreground) 72%, transparent);
+  --plate-detail: color-mix(in oklab, var(--color-fd-foreground) 62%, transparent);
+}
+.ek-plate[data-state="idle"] {
+  --plate-ink: color-mix(in oklab, var(--color-fd-foreground) 22%, transparent);
+  --plate-detail: color-mix(in oklab, var(--color-fd-foreground) 17%, transparent);
+}
+.ek-plate-top {
+  fill: var(--color-fd-background);
+  stroke: var(--plate-ink);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+.ek-plate-side {
+  fill: color-mix(in oklab, var(--color-fd-background) 80%, var(--color-fd-foreground));
+}
+.ek-plate-edge {
+  stroke: var(--plate-ink);
+  stroke-width: 1;
+}
+.ek-plate .ek-line {
+  stroke: var(--plate-detail);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+.ek-plate .ek-fill {
+  fill: color-mix(in oklab, var(--color-fd-foreground) 7%, var(--color-fd-background));
+  stroke: var(--plate-detail);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+.ek-plate .ek-fill-strong {
+  fill: var(--plate-detail);
+}
+.ek-plate .ek-mark,
+.ek-plate .ek-engrave {
+  fill: var(--plate-detail);
+  color: var(--plate-detail);
+}
+.ek-plate[data-state="active"] .ek-mark {
+  color: var(--step);
+  fill: var(--step);
+}
+
+.ek-note-line {
+  stroke: color-mix(in oklab, var(--color-fd-foreground) 45%, transparent);
+  stroke-width: 1;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: ek-dash 0.7s var(--ease-out-expo) 0.15s forwards;
+}
+.ek-note-dot {
+  fill: var(--step);
+  animation: ek-rise 0.4s var(--ease-out-expo) both;
+}
+.ek-note-text {
+  fill: var(--color-fd-foreground);
+  animation: ek-rise 0.5s var(--ease-out-expo) 0.45s both;
+}
+
+/* The stack's side rail fills with the step colour as you scroll, with a bright head. */
+.ek-rail-fill {
+  background: linear-gradient(
+    to bottom,
+    transparent,
+    color-mix(in oklab, var(--step) 45%, transparent) 70%,
+    var(--step)
+  );
+  box-shadow: 0 0 10px 0 color-mix(in oklab, var(--step) 60%, transparent);
+  transition: background 0.4s ease;
+}
+
+/* --- Hero: the floor of names, quiet in the middle under the headline ------- */
+
+.ens-name-field {
+  mask-image: radial-gradient(ellipse 50% 46% at 50% 50%, transparent 25%, #000 85%);
+}
+
+/* --- Closing: the anvil forging names -------------------------------------- */
+
+.ens-forge {
+  overflow: visible;
+}
+.ens-forge-anvil-body {
+  fill: color-mix(in oklab, var(--color-fd-background) 80%, var(--color-fd-foreground));
+  stroke: color-mix(in oklab, var(--color-fd-foreground) 14%, transparent);
+  stroke-width: 0.25;
+}
+.ens-forge-anvil-face {
+  fill: color-mix(in oklab, var(--color-fd-background) 92%, var(--color-fd-foreground));
+  stroke: color-mix(in oklab, var(--color-fd-foreground) 55%, transparent);
+  stroke-width: 0.4;
+}
+/* A strike lights the face's edge for a moment; nothing else changes colour. */
+.ens-forge-strike-edge {
+  fill: none;
+  stroke: var(--color-fd-foreground);
+  stroke-width: 1.2;
+  stroke-linejoin: round;
+  opacity: 0;
+  animation: ens-forge-strike-edge 0.6s ease-out 0.3s both;
+}
+@keyframes ens-forge-strike-edge {
+  0% {
+    opacity: 0.9;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+.ens-forge-tag-top {
+  fill: color-mix(in oklab, var(--ens-blue) 14%, var(--color-fd-card));
+  stroke: color-mix(in oklab, var(--ens-blue) 80%, transparent);
+  stroke-width: 1;
+}
+.ens-forge-tag-side {
+  fill: color-mix(in oklab, var(--ens-blue) 34%, var(--color-fd-background));
+  stroke: color-mix(in oklab, var(--ens-blue) 80%, transparent);
+  stroke-width: 1;
+}
+.ens-forge-tag-side-dark {
+  fill: color-mix(in oklab, var(--ens-blue) 18%, var(--color-fd-background));
+  stroke: color-mix(in oklab, var(--ens-blue) 80%, transparent);
+  stroke-width: 1;
+}
+.ens-forge-avatar {
+  fill: color-mix(in oklab, var(--avatar) 35%, var(--color-fd-background));
+  stroke: var(--avatar);
+  stroke-width: 1;
+}
+.ens-forge-avatar-initial {
+  fill: var(--color-fd-foreground);
+  font-weight: 600;
+}
+.ens-forge-tag-name {
+  fill: var(--color-fd-foreground);
+  font-weight: 600;
+}
+.ens-forge-current {
+  animation: ens-forge-in 0.5s var(--ease-pop) both;
+}
+.ens-forge-current .ens-forge-tag-top {
+  animation: ens-forge-glow 2.4s ease-out both;
+}
+@keyframes ens-forge-in {
+  from {
+    opacity: 0;
+    translate: 0 -40px;
+  }
+}
+@keyframes ens-forge-glow {
+  0%,
+  20% {
+    fill: color-mix(in oklab, var(--ens-blue) 55%, var(--color-fd-card));
+  }
+}
+/* The strike: crisp rays that flash and fade, and sparks thrown upwards off the face. */
+.ens-forge-ray {
+  fill: none;
+  stroke: var(--color-fd-foreground);
+  stroke-width: 1;
+  stroke-linecap: round;
+  opacity: 0;
+  animation: ens-forge-ray 0.35s ease-out 0.3s both;
+}
+@keyframes ens-forge-ray {
+  0% {
+    opacity: 0.9;
+    scale: 0.7;
+  }
+  100% {
+    opacity: 0;
+    scale: 1.25;
+  }
+}
+.ens-forge-spark {
+  fill: none;
+  stroke: var(--ens-hca);
+  stroke-width: 1.3;
+  stroke-linecap: round;
+  opacity: 0;
+  animation: ens-spark 0.6s var(--ease-out-expo) 0.35s both;
+}
+.ens-forge-spark.is-cool {
+  stroke: var(--ens-react);
+}
+@keyframes ens-spark {
+  0% {
+    opacity: 1;
+    scale: 0.4;
+  }
+  100% {
+    opacity: 0;
+    scale: 1.5;
+  }
+}
+.ens-forge-float {
+  animation: ens-float 6s ease-in-out infinite;
+}
+@keyframes ens-float {
+  50% {
+    translate: 0 -6px;
+  }
+}
+.ens-forge-float .ens-forge-tag-top {
+  fill: var(--color-fd-card);
+  stroke: color-mix(in oklab, var(--color-fd-foreground) 40%, transparent);
+}
+.ens-forge-float .ens-forge-tag-side,
+.ens-forge-float .ens-forge-tag-side-dark {
+  fill: color-mix(in oklab, var(--color-fd-background) 82%, var(--color-fd-foreground));
+  stroke: color-mix(in oklab, var(--color-fd-foreground) 40%, transparent);
+}
+
+/* --- Playground ------------------------------------------------------------ */
+
+.ens-flow-node {
+  border-color: var(--ek-line-strong);
+  background: linear-gradient(
+    to bottom,
+    color-mix(in oklab, var(--color-fd-foreground) 7%, var(--color-fd-background)),
+    color-mix(in oklab, var(--color-fd-foreground) 2%, var(--color-fd-background))
+  );
+  color: var(--color-fd-muted-foreground);
+  transition:
+    border-color 0.3s ease,
+    background 0.3s ease,
+    color 0.3s ease,
+    box-shadow 0.3s ease;
+}
+.ens-flow[data-state="running"] .ens-flow-node,
+.ens-flow[data-state="done"] .ens-flow-node {
+  border-color: color-mix(in oklab, var(--ens-blue) 60%, transparent);
+  color: var(--color-fd-foreground);
+}
+.ens-flow[data-state="running"] .ens-flow-node[data-node="ens"] {
+  box-shadow: 0 0 0 4px color-mix(in oklab, var(--ens-blue) 18%, transparent);
+}
+.ens-flow[data-state="done"] .ens-flow-node[data-node="result"] {
+  background: color-mix(in oklab, var(--color-ek-live) 18%, var(--color-fd-background));
+  border-color: var(--color-ek-live);
+  color: var(--color-ek-live);
+  animation: ek-pop 0.4s var(--ease-pop);
+}
+.ens-flow[data-state="failed"] .ens-flow-node[data-node="result"] {
+  background: color-mix(in oklab, var(--color-ek-fail) 18%, var(--color-fd-background));
+  border-color: var(--color-ek-fail);
+  color: var(--color-ek-fail);
+  animation: ek-shake 0.42s ease-in-out;
+}
+.ens-flow-wire {
+  position: relative;
+  height: 1px;
+  margin-inline: 0.25rem;
+  background: var(--ek-line-strong);
+  overflow: visible;
+}
+.ens-flow[data-state="done"] .ens-flow-wire {
+  background: color-mix(in oklab, var(--ens-blue) 55%, transparent);
+}
+.ens-flow-packet {
+  position: absolute;
+  top: -3px;
+  left: 0;
+  width: 7px;
+  height: 7px;
+  border-radius: 9999px;
+  background: var(--ens-blue);
+  box-shadow: 0 0 8px var(--ens-blue);
+  opacity: 0;
+}
+.ens-flow[data-state="running"] .ens-flow-packet {
+  animation: ens-packet 1.2s ease-in-out infinite;
+}
+.ens-flow[data-state="running"] [data-wire="1"] .ens-flow-packet {
+  animation-delay: 0.4s;
+}
+.ens-flow[data-state="running"] [data-wire="2"] .ens-flow-packet {
+  animation-delay: 0.8s;
+}
+@keyframes ens-packet {
+  0% {
+    left: 0;
+    opacity: 0;
+  }
+  15%,
+  85% {
+    opacity: 1;
+  }
+  100% {
+    left: calc(100% - 7px);
+    opacity: 0;
+  }
+}
+
+.ens-avatar {
+  background: linear-gradient(135deg, var(--ens-blue), oklch(55% 0.18 280));
+}
+.ens-chip {
+  border-color: var(--ek-line-strong);
+}
+a.ens-chip:hover {
+  border-color: color-mix(in oklab, var(--ens-blue) 60%, transparent);
+}
+
+/* JSON output: the token colours of the site's dark code theme (Vesper). */
+.ens-json {
+  color: #a1a1aa;
+}
+.ens-json [data-token="key"] {
+  color: #e4e4e7;
+}
+.ens-json [data-token="string"] {
+  color: #99ffe4;
+}
+.ens-json [data-token="number"],
+.ens-json [data-token="literal"] {
+  color: #ffc799;
+}
+.ens-json [data-token="null"] {
+  color: #71717a;
+}

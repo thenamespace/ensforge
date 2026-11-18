@@ -9,7 +9,7 @@ import { useInfiniteRead, type InfiniteReadResult } from "../useInfiniteRead.js"
 import { useRead, type ReadConfig } from "../useRead.js";
 
 /**
- * A name's state: owner, manager, expiry, resolver, registry and wrapper status. Preset of `useRead(Actions.name.get, …)`.
+ * Reads a name's state: owner, manager, expiry, resolver, registry and wrapper status. Preset of `useRead(Actions.name.get, …)`.
  *
  * **Example** (Reading in a component)
  *
@@ -36,7 +36,7 @@ export const useName = (
   >;
 
 /**
- * One text record, such as `url`, `avatar` or `com.twitter`. Preset of `useRead(Actions.record.getText, …)`.
+ * Reads one text record, such as `url`, `avatar` or `com.twitter`. Preset of `useRead(Actions.record.getText, …)`.
  *
  * **Example** (Reading in a component)
  *
@@ -63,7 +63,7 @@ export const useText = (
   >;
 
 /**
- * The address a name points to, for ETH or another coin. Preset of `useRead(Actions.record.getAddress, …)`.
+ * Reads the address a name points to, for ETH or another coin. Preset of `useRead(Actions.record.getAddress, …)`.
  *
  * **Example** (Reading in a component)
  *
@@ -90,7 +90,7 @@ export const useAddress = (
   >;
 
 /**
- * A name's avatar as an image URL, with NFT avatars resolved. Preset of `useRead(Actions.record.getAvatar, …)`.
+ * Reads a name's avatar as an image URL, with NFT avatars resolved. Preset of `useRead(Actions.record.getAvatar, …)`.
  *
  * **Example** (Reading in a component)
  *
@@ -117,7 +117,7 @@ export const useAvatar = (
   >;
 
 /**
- * The primary name of an address, verified against its forward address. Preset of `useRead(Actions.primaryName.get, …)`.
+ * Reads the primary name of an address, verified against its forward address. Preset of `useRead(Actions.primaryName.get, …)`.
  *
  * **Example** (Reading in a component)
  *
@@ -144,7 +144,7 @@ export const usePrimaryName = (
   >;
 
 /**
- * Whether a name can be registered now. Preset of `useRead(Actions.registration.isAvailable, …)`.
+ * Checks whether a name can be registered now. Preset of `useRead(Actions.registration.isAvailable, …)`.
  *
  * **Example** (Reading in a component)
  *
@@ -174,7 +174,7 @@ export const useAvailability = (
   >;
 
 /**
- * What registering names for a duration costs. Preset of `useRead(Actions.registration.getPrice, …)`.
+ * Reads what registering names for a duration costs. Preset of `useRead(Actions.registration.getPrice, …)`.
  *
  * **Example** (Reading in a component)
  *
@@ -202,7 +202,7 @@ export const useRegistrationPrice = (
   >;
 
 /**
- * What an account may do with a name. Preset of `useRead(Actions.permission.get, …)`.
+ * Reads what an account may do with a name. Preset of `useRead(Actions.permission.get, …)`.
  *
  * **Example** (Reading in a component)
  *
@@ -229,7 +229,7 @@ export const usePermissions = (
   >;
 
 /**
- * Whether and how a name can move from ENSv1 to ENSv2. Preset of `useRead(Actions.migration.get, …)`.
+ * Reads whether and how a name can move from ENSv1 to ENSv2. Preset of `useRead(Actions.migration.get, …)`.
  *
  * **Example** (Reading in a component)
  *
@@ -256,7 +256,7 @@ export const useMigrationStatus = (
   >;
 
 /**
- * Any mix of a name's records in one request; the result has exactly the requested fields.
+ * Reads any mix of a name's records in one request; the result has exactly the requested fields.
  * Preset of `useRead(Actions.record.get, …)`.
  *
  * **Example** (A profile card)
@@ -284,7 +284,7 @@ export const useRecords = <const options extends Actions.record.get.Options>(
   >;
 
 /**
- * Names an address owns, manages or is the primary name of, page by page, from the indexer. Preset of `useInfiniteRead(Actions.indexer.getNamesForAddress, …)`.
+ * Lists the names an address owns, manages or is the primary name of, page by page, from the indexer. Preset of `useInfiniteRead(Actions.indexer.getNamesForAddress, …)`.
  *
  * **Example** (A list with "Load more")
  *
@@ -314,7 +314,7 @@ export const useNamesForAddress = (
   >;
 
 /**
- * A name's subnames, page by page, from the indexer. Preset of `useInfiniteRead(Actions.indexer.getSubnames, …)`.
+ * Lists a name's subnames, page by page, from the indexer. Preset of `useInfiniteRead(Actions.indexer.getSubnames, …)`.
  *
  * **Example** (A list with "Load more")
  *
@@ -344,7 +344,7 @@ export const useSubnames = (
   >;
 
 /**
- * A name's events (registrations, transfers, record changes), page by page, from the indexer. Preset of `useInfiniteRead(Actions.indexer.getHistory, …)`.
+ * Lists a name's events (registrations, transfers, record changes), page by page, from the indexer. Preset of `useInfiniteRead(Actions.indexer.getHistory, …)`.
  *
  * **Example** (A list with "Load more")
  *

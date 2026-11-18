@@ -1,0 +1,11 @@
+{
+  "title": "record",
+  "pages": [
+    "get",
+    "get-address",
+    "get-avatar",
+    "get-content-hash",
+    "get-text",
+    "set"
+  ]
+}

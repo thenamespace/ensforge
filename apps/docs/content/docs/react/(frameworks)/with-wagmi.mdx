@@ -1,0 +1,77 @@
+---
+title: Use with wagmi
+description: Build the ensforge client from your wagmi config, so hooks read through wagmi's clients and write with the wallet the user connected.
+keywords: [wagmi, fromWagmi, RainbowKit, ConnectKit, Dynamic, Privy, Reown AppKit]
+---
+
+If your app already uses wagmi, create the ensforge client from the wagmi config. Reads go through wagmi's client, and writes use whichever wallet is connected when they run. It works the same with RainbowKit, ConnectKit, Dynamic, Privy and Reown AppKit, because they all sit on a wagmi config.
+
+## Prerequisites
+
+- A wagmi 2 or 3 config, with a transport for the ENS chain.
+- [`@ensforge/react` installed](/docs/react/installation).
+
+## Create the client and render the provider
+
+`Ensforge.fromWagmi(config)` lives on the `Ensforge` from `@ensforge/sdk/wagmi`, so apps without wagmi never load it. Render `EnsforgeProvider` inside the wagmi providers.
+
+**Example** (Ensforge Inside The Wagmi Providers)
+
+```tsx no-check title="providers.tsx"
+import type { ReactNode } from "react";
+
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { createConfig, http, WagmiProvider } from "wagmi";
+import { mainnet } from "wagmi/chains";
+
+import { EnsforgeProvider } from "@ensforge/react";
+import { Ensforge } from "@ensforge/sdk/wagmi";
+
+const wagmiConfig = createConfig({
+  chains: [mainnet],
+  transports: { [mainnet.id]: http() },
+});
+const queryClient = new QueryClient();
+const ens = Ensforge.fromWagmi(wagmiConfig);
+
+export function Providers({ children }: { children: ReactNode }) {
+  return (
+    <WagmiProvider config={wagmiConfig}>
+      <QueryClientProvider client={queryClient}>
+        <EnsforgeProvider client={ens}>{children}</EnsforgeProvider>
+      </QueryClientProvider>
+    </WagmiProvider>
+  );
+}
+```
+
+With RainbowKit or another wallet kit, put its provider around `EnsforgeProvider` in the same place.
+
+## What `fromWagmi` does for you
+
+- The ENS chain is the `chainId` option, else mainnet when the config has it, else the first configured chain ensforge has a deployment for. Its transport must be in the wagmi config. Otherwise it throws [`UNKNOWN_CHAIN`](/docs/reference/errors/UNKNOWN_CHAIN).
+- The wallet is looked up on every write, so account and connector changes are followed. With no wallet connected, a write fails with [`WALLET_NOT_CONFIGURED`](/docs/reference/errors/WALLET_NOT_CONFIGURED).
+- A wallet on another chain is asked to switch first, as wagmi's own `writeContract` does. Pass `switchChain: false` to turn that off. A wallet on another chain then fails with [`CHAIN_MISMATCH`](/docs/reference/errors/CHAIN_MISMATCH).
+- Every other chain of the wagmi config becomes one of the client's `chains`, so writes ENS makes there (an L2 [primary name](/docs/reference/glossary#primary-name)) use wagmi's clients and wallet.
+
+**Example** (A Sepolia Client Without Chain Switching)
+
+```ts no-check title="ens.ts"
+import { Ensforge } from "@ensforge/sdk/wagmi";
+
+import { wagmiConfig } from "./wagmi";
+
+export const ens = Ensforge.fromWagmi(wagmiConfig, { chainId: 11155111, switchChain: false });
+```
+
+## Troubleshooting
+
+### A write fails with `WALLET_NOT_CONFIGURED`
+
+No wallet is connected. Connect one first, then send the write.
+
+### `fromWagmi` throws `UNKNOWN_CHAIN`
+
+The wagmi config has no chain ensforge can use, or no transport for it. Add mainnet, or another chain ensforge has a deployment for, with a transport. For any other chain, pass `chainId` with a `deployment`.
+
+See [Create a client](/docs/sdk/create-a-client) for every client option, and [Set up the provider](/docs/react/set-up-the-provider) for the provider's props.

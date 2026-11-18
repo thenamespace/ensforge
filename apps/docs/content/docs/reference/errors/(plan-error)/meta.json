@@ -1,0 +1,11 @@
+{
+  "title": "PlanError",
+  "pagesIndex": "plan-error",
+  "pages": [
+    "PLAN_STALE",
+    "PLAN_CHAIN_MISMATCH",
+    "PLAN_ACCOUNT_MISMATCH",
+    "PLAN_INVALID",
+    "PLAN_ROUTE_REQUIRED"
+  ]
+}

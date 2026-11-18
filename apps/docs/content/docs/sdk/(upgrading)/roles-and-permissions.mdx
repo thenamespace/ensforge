@@ -1,0 +1,218 @@
+---
+title: Roles and permissions
+description: Read, grant and revoke ENSv2 roles, and check what an account may do with a name before it tries to change anything on it.
+keywords:
+  [
+    role.get,
+    role.grant,
+    role.revoke,
+    permission.get,
+    permission.check,
+    setRecordAccess,
+    EnhancedAccessControl,
+  ]
+---
+
+This page is about [ENSv2](/docs/reference/glossary#ensv2) roles. On [ENSv1](/docs/reference/glossary#ensv1) an [owner](/docs/reference/glossary#owner), a [manager](/docs/reference/glossary#manager) and operators control a name, limited by [Name Wrapper](/docs/reference/glossary#name-wrapper) [fuses](/docs/reference/glossary#fuse). ENSv2 replaces that with **roles**: each account holds specific powers, such as changing the resolver, on a name or at the root of a [registry](/docs/reference/glossary#registry) or [resolver](/docs/reference/glossary#resolver). The [permission](/docs/reference/glossary#permission) reads below answer for both versions, so UIs need no branch.
+
+You will check what an account may do, grant and revoke roles, and give an app access to some records.
+
+## Prerequisites
+
+- A client. Reads need only a public client. Writes need a wallet client. See [Create a client](/docs/sdk/create-a-client).
+- An ENSv2 name for the role actions. See [Who can change a name](/docs/sdk/who-can-change-a-name).
+
+## 1. Check what an account may do
+
+[`permission.get`](/docs/reference/sdk/permission/get) answers every operation at once. Use it to show or hide buttons.
+
+**Example** (Gating a UI)
+
+```ts title="permission-get.ts"
+import { createPublicClient, http } from "viem";
+import { sepolia } from "viem/chains";
+import { Ensforge, ensActions } from "@ensforge/sdk";
+
+const ens = Ensforge.create({
+  publicClient: createPublicClient({ chain: sepolia, transport: http() }),
+}).extend(ensActions());
+
+const { can, fuses } = await ens.permission.get({
+  name: "ensforge-docs-demo.eth",
+  account: "0xB0b0000000000000000000000000000000000000",
+});
+
+if (can.setRecords) console.log("show the edit button");
+```
+
+- `can` maps each operation to `true`, `false` or `null`. `null` means the permission model is unknown, as with a custom resolver.
+- `fuses` lists burned NameWrapper fuses on wrapped ENSv1 names.
+- Pass `records` for per-record answers, such as which text keys the account may write.
+- On ENSv2 the answer uses the account's roles on the name and at the root of its registry.
+
+[`permission.check`](/docs/reference/sdk/permission/check) checks one operation and lists what is missing.
+
+**Example** (Explaining a Disabled Button)
+
+```ts title="permission-check.ts"
+import { createPublicClient, http } from "viem";
+import { sepolia } from "viem/chains";
+import { Ensforge, ensActions } from "@ensforge/sdk";
+
+const ens = Ensforge.create({
+  publicClient: createPublicClient({ chain: sepolia, transport: http() }),
+}).extend(ensActions());
+
+const { allowed, via, missing } = await ens.permission.check({
+  name: "ensforge-docs-demo.eth",
+  account: "0xB0b0000000000000000000000000000000000000",
+  operation: "setResolver",
+});
+```
+
+`via` says how the account is allowed: owner, operator, approved, delegate, roles or anyone. `missing` lists the ownership, approvals or roles it lacks, or what blocks the change for everyone, such as a burned fuse.
+
+## 2. Read an account's roles
+
+[`role.get`](/docs/reference/sdk/role/get) reads the roles directly. `target` is `"registry"` or `"resolver"`.
+
+**Example** (Reading Roles on a Name)
+
+```ts title="role-get.ts"
+import { createPublicClient, http } from "viem";
+import { sepolia } from "viem/chains";
+import { Ensforge, ensActions } from "@ensforge/sdk";
+
+const ens = Ensforge.create({
+  publicClient: createPublicClient({ chain: sepolia, transport: http() }),
+}).extend(ensActions());
+
+const { names, admin, rootRoles } = await ens.role.get({
+  name: "ensforge-docs-demo.eth",
+  account: "0xB0b0000000000000000000000000000000000000",
+  target: "registry",
+});
+```
+
+- `names` lists the roles held, including root roles, which apply to every name.
+- `admin` lists the roles the account may grant and revoke.
+- `rootRoles` is the bitmap of the root roles alone.
+- `root: true` reads root roles alone. `contract` reads another registry or resolver than the name's.
+
+## 3. Grant and revoke roles
+
+[`role.grant`](/docs/reference/sdk/role/grant) and [`role.revoke`](/docs/reference/sdk/role/revoke) take role names or a bitmap. Granting or revoking needs the matching admin roles.
+
+**Example** (Granting and Revoking a Role)
+
+```ts title="role-grant.ts"
+import { createPublicClient, createWalletClient, http, type Hex } from "viem";
+import { privateKeyToAccount } from "viem/accounts";
+import { sepolia } from "viem/chains";
+import { Ensforge, ensActions } from "@ensforge/sdk";
+
+const account = privateKeyToAccount(process.env.PRIVATE_KEY as Hex);
+const transport = http(process.env.SEPOLIA_RPC_URL);
+
+const ens = Ensforge.create({
+  publicClient: createPublicClient({ chain: sepolia, transport }),
+  walletClient: createWalletClient({ account, chain: sepolia, transport }),
+}).extend(ensActions());
+
+const bob = "0xB0b0000000000000000000000000000000000000";
+
+await ens.role.grantSync({
+  name: "ensforge-docs-demo.eth",
+  grantee: bob,
+  roles: ["setResolver"],
+  target: "registry",
+});
+
+await ens.role.revokeSync({
+  name: "ensforge-docs-demo.eth",
+  holder: bob,
+  roles: ["setResolver"],
+  target: "registry",
+});
+```
+
+| Option               | Description                                                   |
+| -------------------- | ------------------------------------------------------------- |
+| `grantee` / `holder` | The account that gains or loses the roles.                    |
+| `roles`              | Role names such as `["setResolver"]`, or a bitmap.            |
+| `target`             | `"registry"` or `"resolver"`. Resolver roles are root only.   |
+| `name`               | The name whose registry or resolver to use.                   |
+| `contract`           | A registry or resolver address, instead of the name's.        |
+| `root`               | Root roles, which apply to every name, instead of the name's. |
+
+Each role has an admin role named `<role>Admin`. `Role.admin("setResolver")` returns `"setResolverAdmin"`.
+
+Some roles regenerate the name's token ID. The plan then carries a `TOKEN_ID_REGENERATED` warning, so read the token ID again afterwards.
+
+### Registry roles
+
+`registrar`, `registerReserved`, `setParent`, `unregister`, `renew`, `setSubregistry`, `setResolver`, `canTransfer`, `setUri`, `canName` and `upgrade`, each with an `Admin` form. The `.eth` registrar grants a new owner the roles for the resolver, the subregistry and transfers.
+
+### Resolver roles
+
+`setAddr`, `setText`, `setContenthash`, `setAbi`, `setInterface`, `setName`, `setData`, `link`, `canName` and `upgrade`, each with an `Admin` form.
+
+<Callout type="info" title="Renewal needs no role on .eth">
+  A `.eth` owner cannot grant `renew` (`CANNOT_GRANT_ROLES`). Anyone can renew a `.eth` name through
+  the registrar. See [Renew a name](/docs/sdk/renew-a-name).
+</Callout>
+
+## 4. Let an app edit some records
+
+[`permission.setRecordAccess`](/docs/reference/sdk/permission/set-record-access) gives an account access to the records you list, or to all of them. `revoke: true` takes it back.
+
+**Example** (Letting an App Edit One Text Record)
+
+```ts title="set-record-access.ts"
+import { createPublicClient, createWalletClient, http, type Hex } from "viem";
+import { privateKeyToAccount } from "viem/accounts";
+import { sepolia } from "viem/chains";
+import { Ensforge, ensActions } from "@ensforge/sdk";
+
+const account = privateKeyToAccount(process.env.PRIVATE_KEY as Hex);
+const transport = http(process.env.SEPOLIA_RPC_URL);
+
+const ens = Ensforge.create({
+  publicClient: createPublicClient({ chain: sepolia, transport }),
+  walletClient: createWalletClient({ account, chain: sepolia, transport }),
+}).extend(ensActions());
+
+await ens.permission.setRecordAccessSync({
+  name: "ensforge-docs-demo.eth",
+  grantee: "0xB0b0000000000000000000000000000000000000",
+  records: { texts: ["url"] },
+});
+```
+
+- On a PermissionedResolver it grants the exact setter roles for each record. With `records: "all"` it grants every setter role.
+- On a public resolver it sets a per-name delegate, which can edit every record of the name.
+- Delegates and `"all"` need `allowScopeWidening: true`.
+
+<Callout type="warn" title="Resolver roles cover every name on that resolver">
+  Setter roles are per record kind, not per name. If names share a resolver (`resolver: "parent"`),
+  the grantee edits the same records on all of them. By default each name has its own resolver. See
+  [Resolvers and shared records](/docs/sdk/resolvers-and-shared-records).
+</Callout>
+
+## Troubleshooting
+
+### `MISSING_ROLES`
+
+The account lacks a role. The error lists them. See [`MISSING_ROLES`](/docs/reference/errors/MISSING_ROLES).
+
+### `CANNOT_GRANT_ROLES`
+
+The signer lacks the admin role for what it tries to grant or revoke. See [`CANNOT_GRANT_ROLES`](/docs/reference/errors/CANNOT_GRANT_ROLES).
+
+### `INVALID_ROLES`
+
+A role name or bitmap is not valid. See [`INVALID_ROLES`](/docs/reference/errors/INVALID_ROLES).
+
+### `permission.get` returns `null` for an operation
+
+The resolver is custom, so ensforge cannot know its permission model.

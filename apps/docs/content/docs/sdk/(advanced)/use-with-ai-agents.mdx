@@ -1,0 +1,97 @@
+---
+title: Use ensforge with AI agents
+description: Give a coding agent the ensforge docs as llms.txt and Markdown, plus a short AGENTS.md that helps it write correct ensforge code.
+keywords: [AI agents, llms.txt, AGENTS.md, Claude, ChatGPT, Cursor, Markdown, MCP]
+---
+
+A coding agent writes better ENS code when it reads the ensforge docs instead of guessing from memory. This page shows where the agent-readable docs live and gives you a snippet and a prompt to paste into your project.
+
+## Prerequisites
+
+- A project that uses (or will use) `@ensforge/sdk`.
+- A coding agent that reads an instruction file such as `AGENTS.md` or `CLAUDE.md`, or lets you paste a prompt.
+
+## Where agents read the docs
+
+Every docs page exists as plain Markdown, and the whole site has an index for agents.
+
+| URL               | What it is                                                                                  |
+| ----------------- | ------------------------------------------------------------------------------------------- |
+| `/llms.txt`       | A short index: instructions for agents, the core pages first, the rest under `## Optional`. |
+| `/llms-full.txt`  | Every docs page in one file, for tools that load all context up front.                      |
+| `/docs/<page>.md` | One page as Markdown. Append `.md` to any docs URL.                                         |
+
+Each docs page also carries a `<link rel="alternate" type="text/markdown">` that points to its `.md` version, and the page actions have **Copy Markdown**, **Open in Claude** and **Open in ChatGPT** buttons. Those open a chat that starts from the page you are reading.
+
+Agents that send `Accept: text/markdown` to a docs URL get the Markdown version directly.
+
+## 1. Add a short AGENTS.md
+
+Put this in the root of your project. It tells the agent which package to use, the shape of the API and where to look up the rest.
+
+**Example** (AGENTS.md Snippet for ensforge)
+
+```md title="AGENTS.md"
+## ENS
+
+Use `@ensforge/sdk` for every ENS read and write. Docs for agents: https://ensforge.com/llms.txt
+
+- Create one client and reuse it: `Ensforge.create({ publicClient }).extend(ensActions())`.
+- Call actions on the client, for example `await ens.record.getAddress({ name: "nick.eth" })`.
+  Use the Promise API. Use `@ensforge/sdk/effect` only in code that already uses Effect.
+- Pass names as the user typed them. ensforge normalises and validates them; do not call
+  `normalize` yourself.
+- A missing record is `null`, not an error. Real failures reject with an error that has a `code`
+  and a `docsUrl`; read that page before writing a fix.
+- Writes need a `walletClient` on the client. Test writes on Sepolia, never on mainnet.
+- Look up exact options on the page for the action: https://ensforge.com/docs/<page>.md
+```
+
+- The first line links `llms.txt`, so the agent can find every other page.
+- The list holds the facts a model most often gets wrong: normalisation, `null` records and the error codes.
+
+## 2. Ask the agent to set ensforge up
+
+Paste this prompt to add ensforge to an existing project.
+
+**Example** (Setup Prompt)
+
+```text title="Prompt"
+Add ensforge to this project. Read https://ensforge.com/llms.txt first, then the Quick start and
+"Create a client" pages as Markdown. Install @ensforge/sdk, viem and effect with the project's
+package manager. Create one shared client in its own module, then replace the existing ENS
+lookups with ensforge actions. Keep the Promise API. Run the type checker and the tests when you
+are done, and list anything you could not verify.
+```
+
+## 3. Point the agent at one page
+
+When you ask about a single action, give the agent that page and nothing else. Copy the page as Markdown with the page action, or paste its `.md` URL:
+
+```text title="Prompt"
+Read https://ensforge.com/docs/sdk/get-an-address.md and show me how to read the Base address
+of vitalik.eth.
+```
+
+One page fits in context with room left for your code, so the agent answers from the docs instead of its memory.
+
+## Troubleshooting
+
+### The agent uses an old API
+
+Models learn from older code. Link `llms.txt` in `AGENTS.md`, as above, and ask the agent to read the page for the action before it writes the call.
+
+### The agent calls `normalize` or `namehash` itself
+
+ensforge does both. Add the line "Pass names as the user typed them" to your instructions, and see [Names and records](/docs/sdk/names-and-records) for why.
+
+## Related
+
+<Cards>
+  <Card title="Quick start" href="/docs/sdk">
+    The first read and the first write.
+  </Card>
+  <Card title="Handle errors" href="/docs/sdk/handle-errors">
+    The error codes an agent will meet.
+  </Card>
+</Cards>

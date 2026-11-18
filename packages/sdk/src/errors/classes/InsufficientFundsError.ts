@@ -11,10 +11,6 @@ const defaults: {
   INSUFFICIENT_TOKEN_BALANCE: () => ({
     shortMessage: "The account does not have enough of the payment token.",
   }),
-  PRICE_ABOVE_MAXIMUM: () => ({
-    shortMessage: "The price is above the maximum you allowed.",
-    hint: "Fetch the price again and raise the maximum, or try later.",
-  }),
 };
 
 /**
@@ -42,7 +38,7 @@ export class InsufficientFundsError extends EnsforgeError<
 }
 
 export declare namespace InsufficientFundsError {
-  type Code = "INSUFFICIENT_ETH" | "INSUFFICIENT_TOKEN_BALANCE" | "PRICE_ABOVE_MAXIMUM";
+  type Code = "INSUFFICIENT_ETH" | "INSUFFICIENT_TOKEN_BALANCE";
   type Options = EnsforgeError.ClassOptions<Code> & {
     readonly required?: bigint | undefined;
     readonly available?: bigint | undefined;

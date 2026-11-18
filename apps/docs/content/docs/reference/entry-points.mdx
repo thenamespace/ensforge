@@ -1,0 +1,82 @@
+---
+title: Entry points
+description: Find every import path of every ensforge package, what each one exports, and how stable it is, so you import only what you use.
+keywords:
+  [
+    entry points,
+    exports,
+    subpath,
+    "@ensforge/sdk/actions",
+    "@ensforge/sdk/effect",
+    "@ensforge/sdk/indexer",
+    "@ensforge/sdk/wagmi",
+    "@ensforge/sdk/extension",
+    stability,
+  ]
+---
+
+Each package exposes a few import paths (subpath exports). Import from these paths only; anything
+else is private and can change in any release.
+
+## Stability
+
+Every export carries one of three stability levels.
+
+| Level        | Promise                                                                                                                                                                 |
+| ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Stable       | Breaking changes only in a major release, after a deprecation in a minor one.                                                                                           |
+| Experimental | A complete feature whose design may still change with the protocol or services it depends on. Breaking changes can land in a minor release, described in its changelog. |
+| Unstable     | Building blocks for adapters and extension packages. Can change or be removed in any minor release, described in its changelog.                                         |
+
+Patch releases never break any level.
+
+## `@ensforge/sdk`
+
+| Import path               | Exports                                                                                                                                                                                                                                                                                                                                                                          | Stability |
+| ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- |
+| `@ensforge/sdk`           | `Ensforge` (`create`, `from`, `is`, client types), `Actions` (every action and `Actions.batch`), `ensActions()` and one decorator per action group (`recordActions()`, `nameActions()`, …, `batchActions()`, `indexerActions()`), `Errors`, `Plan`, the types `Read`, `Write` and `Request`, and the utilities `Name`, `CoinType`, `ContentHash`, `Duration`, `Fuse` and `Role`. | Stable    |
+| `@ensforge/sdk/actions`   | The same actions as `Actions`, as one named export per group (`record`, `name`, `registration`, …) plus `batch`: `import { record } from "@ensforge/sdk/actions"`.                                                                                                                                                                                                               | Stable    |
+| `@ensforge/sdk/effect`    | The Effect API: `Actions` returning Effects, `Ensforge` with the `Ensforge.Ensforge` service and `Ensforge.layer`, `Errors`, `Plan`, the utilities, `Name.Normalized` (a schema) and `Indexer` (`Indexer.define`, `Indexer.paginate` as a `Stream`). No decorators.                                                                                                              | Stable    |
+| `@ensforge/sdk/indexer`   | `bigname()`, `goldsky()`, `fallback()`, `defineIndexer()`, `paginate()`, `indexerActions()`, and the indexer query and result types.                                                                                                                                                                                                                                             | Stable    |
+| `@ensforge/sdk/wagmi`     | `Ensforge`, with everything from the root `Ensforge` plus `Ensforge.fromWagmi(config, options)`. Needs `wagmi` 2.14 or later, or wagmi 3.                                                                                                                                                                                                                                        | Stable    |
+| `@ensforge/sdk/extension` | Building blocks for packages that add action groups, such as `@ensforge/hca`: action builders, route helpers, plan helpers.                                                                                                                                                                                                                                                      | Unstable  |
+
+Every path except `@ensforge/sdk/effect` can be used without writing Effect code; their types never
+mention Effect. See [Ways to call actions](/docs/sdk/ways-to-call-actions).
+
+## `@ensforge/react`
+
+| Import path              | Exports                                                                                                                                                                                                                                                                                                           | Stability                                                        |
+| ------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
+| `@ensforge/react`        | `EnsforgeProvider`, `useEnsforge`, the generic hooks (`useRead`, `useReads`, `useSuspenseRead`, `useInfiniteRead`, `useWrite`, `usePrepare`), the named hooks (`useAddress`, `useName`, `useRegister`, …), `ReadErrorResetBoundary`, `useReadErrorReset`. Also re-exports the atom layer and `HydrationBoundary`. | Stable, except the atom layer and `HydrationBoundary` (unstable) |
+| `@ensforge/react/atoms`  | The atom layer: `ensAtom`, `ensWriteAtom`, `ensPagesAtom`, `invalidate`, `readKey`, `optionsKey`.                                                                                                                                                                                                                 | Unstable                                                         |
+| `@ensforge/react/server` | `prefetch` and `dehydrate`, for server rendering.                                                                                                                                                                                                                                                                 | Unstable                                                         |
+
+See [React](/docs/react).
+
+## `@ensforge/hca`
+
+| Import path            | Exports                                                                                                                                                                         | Stability    |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------ |
+| `@ensforge/hca`        | `hca()` (a route for `via`), the executors `owner()`, `bundler()`, `pimlico()`, `rhinestone()`, `defineExecutor()`, `Actions`, `hcaActions()`, `hcaAdminActions()`, `HcaError`. | Experimental |
+| `@ensforge/hca/effect` | `Actions` returning Effects, and `HcaError`.                                                                                                                                    | Experimental |
+
+See [HCA](/docs/hca).
+
+## `@ensforge/contracts`
+
+| Import path                               | Exports                                                                                                                           | Stability                                         |
+| ----------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------- |
+| `@ensforge/contracts`                     | `Abis` (ENSv1, ENSv2 and shared ABIs), `Deployments` (`mainnet`, `sepolia`, `get`, `list`, `define`, …), `InterfaceIds`, `Roles`. | Stable, except `Deployments.V2Hca` (experimental) |
+| `@ensforge/contracts/shared`              | ABIs and interface IDs shared by both versions, as flat constants (`textResolverAbi`, …).                                         | Stable                                            |
+| `@ensforge/contracts/v1`                  | ENSv1 ABIs as flat constants, and the Name Wrapper fuses.                                                                         | Stable                                            |
+| `@ensforge/contracts/v2`                  | ENSv2 ABIs as flat constants, role bits, interface IDs and salts.                                                                 | Stable                                            |
+| `@ensforge/contracts/v2/experimental/hca` | HCA ABIs and session helpers.                                                                                                     | Experimental                                      |
+
+See [Contracts](/docs/contracts).
+
+## Paths not to import
+
+Every package also has `internal/*` paths. They exist only inside the ensforge repository, for its
+tests, and are not published. Import paths not listed on this page do not exist in the published
+packages.

@@ -1,0 +1,9 @@
+{
+  "title": "TransactionError",
+  "pagesIndex": "transaction-error",
+  "pages": [
+    "TRANSACTION_REVERTED",
+    "RECEIPT_TIMEOUT",
+    "NONCE_CONFLICT"
+  ]
+}

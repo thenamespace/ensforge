@@ -28,6 +28,19 @@ export { erc165InterfaceId as erc165 } from "./shared/erc165.js";
 /**
  * ERC-165 interface IDs of the resolver profiles, keyed by profile.
  *
+ * **Example** (Checking for text record support)
+ *
+ * ```ts
+ * import { Abis, InterfaceIds } from "@ensforge/contracts"
+ *
+ * const supportsText = await client.readContract({
+ *   address: resolver,
+ *   abi: Abis.shared.erc165,
+ *   functionName: "supportsInterface",
+ *   args: [InterfaceIds.resolverProfiles.text],
+ * })
+ * ```
+ *
  * @stability stable
  */
 export * as resolverProfiles from "./interface-ids/resolver-profiles.js";

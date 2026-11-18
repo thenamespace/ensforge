@@ -1,0 +1,114 @@
+---
+title: Infinite lists
+description: Page through an account's names, a name's subnames or a name's history with load-more hooks that read from an ENS indexer.
+keywords: [useInfiniteRead, useSubnames, useNamesForAddress, useNameHistory, pagination, indexer]
+---
+
+List hooks load an indexer list one page at a time, for "load more" buttons and infinite scroll. They need an [indexer](/docs/reference/glossary#indexer) on the client. Without one, the read fails with [`INDEXER_NOT_CONFIGURED`](/docs/reference/errors/INDEXER_NOT_CONFIGURED).
+
+## Add an indexer to the client
+
+Pass `indexer` to `Ensforge.create`: `bigname()`, `goldsky()`, `fallback([...])` or `defineIndexer({...})` from `@ensforge/sdk/indexer`. See [Connect an indexer](/docs/sdk/connect-an-indexer).
+
+**Example** (A Client With An Indexer)
+
+```tsx title="providers.tsx"
+import type { ReactNode } from "react";
+
+import { EnsforgeProvider } from "@ensforge/react";
+import { Ensforge } from "@ensforge/sdk";
+import { goldsky } from "@ensforge/sdk/indexer";
+import { createPublicClient, http } from "viem";
+import { mainnet } from "viem/chains";
+
+const ens = Ensforge.create({
+  publicClient: createPublicClient({ chain: mainnet, transport: http() }),
+  indexer: goldsky(),
+});
+
+export function Providers({ children }: { children: ReactNode }) {
+  return <EnsforgeProvider client={ens}>{children}</EnsforgeProvider>;
+}
+```
+
+## Show a list with "Load more"
+
+`useSubnames` lists a name's [subnames](/docs/reference/glossary#subname). It returns every item loaded so far in `items`, and `loadMore` fetches the next page.
+
+**Example** (Subnames With A Load More Button)
+
+```tsx title="Subnames.tsx"
+import { useSubnames } from "@ensforge/react";
+
+export function Subnames({ name }: { name: string }) {
+  const { items, hasMore, loadMore, isLoading, isLoadingMore, error } = useSubnames({ name });
+
+  if (isLoading) return <p>Loading...</p>;
+  if (error) return <p>{error.message}</p>;
+  return (
+    <>
+      <ul>
+        {items.map((item) => (
+          <li key={item.name}>{item.name}</li>
+        ))}
+      </ul>
+      {hasMore && (
+        <button disabled={isLoadingMore} onClick={loadMore}>
+          Load more
+        </button>
+      )}
+    </>
+  );
+}
+```
+
+| Field           | Meaning                            |
+| --------------- | ---------------------------------- |
+| `pages`         | Every page loaded so far.          |
+| `items`         | The items of every page, in order. |
+| `hasMore`       | More pages remain.                 |
+| `loadMore`      | Loads the next page.               |
+| `isLoading`     | The first page is loading.         |
+| `isLoadingMore` | A further page is loading.         |
+| `error`         | The action's error when it failed. |
+
+## Pick a list hook
+
+| Hook                                                                | Lists                                                         |
+| ------------------------------------------------------------------- | ------------------------------------------------------------- |
+| [`useSubnames`](/docs/reference/react/use-subnames)                 | A name's subnames.                                            |
+| [`useNamesForAddress`](/docs/reference/react/use-names-for-address) | Names an address owns, manages or is the primary name of.     |
+| [`useNameHistory`](/docs/reference/react/use-name-history)          | A name's events: registrations, transfers and record changes. |
+
+For any other paginated indexer action, use `useInfiniteRead(action, options, config)`. The action must return `{ items, cursor }` and take a `cursor`, as `Actions.indexer.getSubnames` does. Leave `cursor` out of the options: the hook manages it.
+
+**Example** (Any Paginated Action)
+
+```tsx title="SearchSubnames.tsx"
+import { useInfiniteRead } from "@ensforge/react";
+import { Actions } from "@ensforge/sdk";
+
+export function SearchSubnames({ name, search }: { name: string; search: string }) {
+  const { items, hasMore, loadMore } = useInfiniteRead(Actions.indexer.getSubnames, {
+    name,
+    search,
+  });
+
+  return (
+    <>
+      {items.map((item) => (
+        <p key={item.name}>{item.name}</p>
+      ))}
+      {hasMore && <button onClick={loadMore}>Load more</button>}
+    </>
+  );
+}
+```
+
+## Wait for input and keep lists fresh
+
+Pass `undefined` options, or `enabled: false` in the config, to hold the list back, as with [read hooks](/docs/react/read-data#wait-for-input). The config takes `enabled` and `client` only.
+
+A write that touches the list's name or account starts the list over once the indexer has caught up, so a new subname appears without a manual refresh. See [Caching and refreshing](/docs/react/caching-and-refreshing#refresh-after-a-write).
+
+For the same lists outside React, see [Load more results](/docs/sdk/load-more-results).

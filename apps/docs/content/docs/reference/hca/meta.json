@@ -1,0 +1,10 @@
+{
+  "title": "HCA",
+  "icon": "package-hca",
+  "pages": [
+    "executors",
+    "---Domains---",
+    "hca",
+    "hca-admin"
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "title": "plan",
+  "pages": [
+    "get",
+    "list",
+    "reconcile",
+    "resume",
+    "send"
+  ]
+}

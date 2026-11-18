@@ -1,0 +1,19 @@
+{
+  "title": "hca",
+  "pages": [
+    "add-deposit",
+    "authorize-session",
+    "check-session-calls",
+    "deploy",
+    "execute",
+    "get",
+    "get-deposit",
+    "get-session",
+    "get-upgrade",
+    "predict-address",
+    "revoke-sessions",
+    "upgrade",
+    "verify",
+    "withdraw-deposit"
+  ]
+}

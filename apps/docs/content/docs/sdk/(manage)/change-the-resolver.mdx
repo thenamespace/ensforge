@@ -1,0 +1,148 @@
+---
+title: Change the resolver
+description: Point a name at another resolver, or create a new one, without losing its records, and check that lookups still resolve afterwards.
+keywords:
+  [resolver.set, resolver.get, resolver.create, public resolver, PermissionedResolver, default]
+---
+
+You will move a name to a different [resolver](/docs/reference/glossary#resolver), the contract that stores its [records](/docs/reference/glossary#record). The records stay on the old resolver, so you copy them in the same step or before you switch.
+
+## Prerequisites
+
+- A wallet client for an account that may change the name's resolver. See [Create a client](/docs/sdk/create-a-client).
+- A registered name.
+
+## 1. Read the current resolver
+
+[`resolver.get`](/docs/reference/sdk/resolver/get) tells you where the records live, who may write to them and which record kinds the resolver supports.
+
+**Example** (Reading a Name's Resolver)
+
+```ts title="get-resolver.ts"
+import { createPublicClient, http } from "viem";
+import { sepolia } from "viem/chains";
+import { Ensforge, ensActions } from "@ensforge/sdk";
+
+const ens = Ensforge.create({
+  publicClient: createPublicClient({ chain: sepolia, transport: http() }),
+}).extend(ensActions());
+
+const resolver = await ens.resolver.get({ name: "ensforge-docs-demo.eth" });
+```
+
+- `kind` says what the contract is, for example `"public-resolver"` or `"permissioned-resolver"`.
+- `authorization` says who may change records: the name's `"owner"`, accounts holding `"roles"`, `"none"` (read-only) or `"unknown"`.
+- `profiles` lists the record kinds the resolver supports.
+- `inherited: true` means the name has no resolver of its own and a parent's wildcard or off-chain resolver serves it. You cannot write records there for this name.
+
+## 2. Move the name and its records together
+
+[`record.set`](/docs/reference/sdk/record/set) with `resolver` writes the records to the new resolver, then points the name at it, in one step. A rejected write never leaves the name on an empty resolver.
+
+**Example** (Switching Resolver and Copying a Profile)
+
+```ts title="switch-resolver.ts"
+import { createPublicClient, createWalletClient, http, type Hex } from "viem";
+import { privateKeyToAccount } from "viem/accounts";
+import { sepolia } from "viem/chains";
+import { Ensforge, ensActions } from "@ensforge/sdk";
+
+const account = privateKeyToAccount(process.env.PRIVATE_KEY as Hex);
+const transport = http(process.env.SEPOLIA_RPC_URL);
+
+const ens = Ensforge.create({
+  publicClient: createPublicClient({ chain: sepolia, transport }),
+  walletClient: createWalletClient({ account, chain: sepolia, transport }),
+}).extend(ensActions());
+
+await ens.record.setSync({
+  name: "ensforge-docs-demo.eth",
+  resolver: "0x1111111111111111111111111111111111111111", // the new resolver
+  texts: { url: "https://example.com" },
+  addresses: { eth: account.address },
+});
+```
+
+## 3. Or only change the pointer
+
+[`resolver.set`](/docs/reference/sdk/resolver/set) changes the resolver and nothing else. `resolver.setSync` also waits for the receipt.
+
+**Example** (Pointing a Name at Another Resolver)
+
+```ts title="set-resolver.ts"
+import { createPublicClient, createWalletClient, http, type Hex } from "viem";
+import { privateKeyToAccount } from "viem/accounts";
+import { sepolia } from "viem/chains";
+import { Ensforge, ensActions } from "@ensforge/sdk";
+
+const account = privateKeyToAccount(process.env.PRIVATE_KEY as Hex);
+const transport = http(process.env.SEPOLIA_RPC_URL);
+
+const ens = Ensforge.create({
+  publicClient: createPublicClient({ chain: sepolia, transport }),
+  walletClient: createWalletClient({ account, chain: sepolia, transport }),
+}).extend(ensActions());
+
+await ens.resolver.setSync({
+  name: "ensforge-docs-demo.eth",
+  resolver: "0x1111111111111111111111111111111111111111",
+});
+```
+
+| `resolver` value | Effect                                                          |
+| ---------------- | --------------------------------------------------------------- |
+| An address       | Points the name at that resolver.                               |
+| `"default"`      | Points the name at the ENSv1 public resolver. ENSv1 names only. |
+| `null`           | Removes the resolver.                                           |
+
+The change is made in the [registry](/docs/reference/glossary#registry) that holds the name: the ENS registry on [ENSv1](/docs/reference/glossary#ensv1) (through the NameWrapper when the name is wrapped), or the name's registry on [ENSv2](/docs/reference/glossary#ensv2).
+
+## Create a resolver for an ENSv2 name
+
+ENSv2 names have no shared default resolver, so `resolver: "default"` fails for them with [`UNSUPPORTED_PROTOCOL`](/docs/reference/errors/UNSUPPORTED_PROTOCOL). [`resolver.create`](/docs/reference/sdk/resolver/create) deploys a PermissionedResolver, optionally writes records into it and points the name at it, in one plan.
+
+**Example** (Creating a Resolver With Records)
+
+```ts title="create-resolver.ts"
+import { createPublicClient, createWalletClient, http, type Hex } from "viem";
+import { privateKeyToAccount } from "viem/accounts";
+import { sepolia } from "viem/chains";
+import { Ensforge, ensActions } from "@ensforge/sdk";
+
+const account = privateKeyToAccount(process.env.PRIVATE_KEY as Hex);
+const transport = http(process.env.SEPOLIA_RPC_URL);
+
+const ens = Ensforge.create({
+  publicClient: createPublicClient({ chain: sepolia, transport }),
+  walletClient: createWalletClient({ account, chain: sepolia, transport }),
+}).extend(ensActions());
+
+const { resolver } = await ens.resolver.createSync({
+  name: "ensforge-docs-demo.eth",
+  records: { texts: { url: "https://example.com" } },
+});
+```
+
+`resolver` is the new contract's address, known before the transaction is sent. See [Resolvers and shared records](/docs/sdk/resolvers-and-shared-records) for the options and for sharing one resolver between names.
+
+## Check the result
+
+Call `resolver.get` again and compare `address` with the one you set. See [Get a name's owner, expiry and status](/docs/sdk/get-name-details).
+
+## Troubleshooting
+
+### `NOT_OWNER`, `MISSING_ROLES` or `FUSE_BURNED`
+
+The account may not change the resolver. On ENSv2 it needs the `setResolver` [role](/docs/reference/glossary#role). On a wrapped name, a burned `cannotSetResolver` fuse forbids it for good. See [`NOT_OWNER`](/docs/reference/errors/NOT_OWNER), [`MISSING_ROLES`](/docs/reference/errors/MISSING_ROLES), [`FUSE_BURNED`](/docs/reference/errors/FUSE_BURNED) and [Lock permissions with fuses](/docs/sdk/fuses).
+
+### `UNSUPPORTED_PROTOCOL`
+
+You passed `"default"` for an ENSv2 name. Pass an address, or create a resolver with `resolver.create`. See [`UNSUPPORTED_PROTOCOL`](/docs/reference/errors/UNSUPPORTED_PROTOCOL).
+
+### `NAME_EXPIRED`, `NAME_RESERVED` or `NAME_NOT_REGISTERED`
+
+Only registered names can change their resolver. See [`NAME_NOT_REGISTERED`](/docs/reference/errors/NAME_NOT_REGISTERED).
+
+### Records disappeared after the switch
+
+`resolver.set` does not copy records. Read them from the old resolver and write them with `record.set` and `resolver`, as in step 2.

@@ -1,0 +1,17 @@
+{
+  "title": "HCA",
+  "description": "Hosted contract accounts for ENS (experimental)",
+  "icon": "package-hca",
+  "root": true,
+  "pages": [
+    "---[rocket]Getting started---",
+    "installation",
+    "index",
+    "how-it-works",
+    "[history][Changelog](/docs/hca/changelog)",
+    "---[plug]Executors---",
+    "...(executors)",
+    "---[guide]Guides---",
+    "...(guides)"
+  ]
+}

@@ -1,0 +1,9 @@
+{
+  "title": "GatewayError",
+  "pagesIndex": "gateway-error",
+  "pages": [
+    "GATEWAY_REQUEST_FAILED",
+    "GATEWAY_RESPONSE_INVALID",
+    "OFFCHAIN_LOOKUP_INVALID"
+  ]
+}

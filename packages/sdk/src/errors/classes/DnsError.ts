@@ -9,9 +9,6 @@ const defaults: {
     shortMessage: "The `_ens` TXT record is missing.",
     hint: 'Add a TXT record `_ens.<name>` with the value "a=<owner address>".',
   }),
-  DNS_OWNER_MISMATCH: () => ({
-    shortMessage: "The DNS owner differs from the on-chain owner.",
-  }),
   DNSSEC_PROOF_FAILED: () => ({
     shortMessage: "The DNSSEC proof could not be built or verified.",
     hint: "Check that DNSSEC is enabled for the domain.",
@@ -44,12 +41,7 @@ export class DnsError extends EnsforgeError<"DnsError", DnsError.Code> {
 }
 
 export declare namespace DnsError {
-  type Code =
-    | "DNS_RECORD_MISSING"
-    | "DNS_OWNER_MISMATCH"
-    | "DNSSEC_PROOF_FAILED"
-    | "PROOF_STALE"
-    | "TLD_NOT_PUBLIC";
+  type Code = "DNS_RECORD_MISSING" | "DNSSEC_PROOF_FAILED" | "PROOF_STALE" | "TLD_NOT_PUBLIC";
   type Options = EnsforgeError.ClassOptions<Code> & {
     readonly onchainOwner?: Address | undefined;
     readonly dnsOwner?: Address | undefined;

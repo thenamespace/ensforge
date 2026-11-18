@@ -1,0 +1,151 @@
+---
+title: Load more results
+description: Walk through every page of a name list with a cursor, or let the paginate helper fetch all pages, for infinite scroll and exports.
+keywords: [paginate, cursor, hasMore, limit, includeTotal, pagination, infinite scroll]
+---
+
+By the end of this guide you can load a long list one page at a time, or walk every page in a loop.
+
+## Prerequisites
+
+- A client with an [indexer](/docs/reference/glossary#indexer) and `indexerActions()`. See [Connect an indexer](/docs/sdk/connect-an-indexer).
+
+## How pages work
+
+Every indexer list (names for an address, search, subnames, history) returns a page:
+
+| Field        | Description                                                                                             |
+| ------------ | ------------------------------------------------------------------------------------------------------- |
+| `items`      | The rows of this page.                                                                                  |
+| `hasMore`    | Whether there is another page.                                                                          |
+| `cursor`     | Pass it as `cursor` to get the next page. `null` on the last page.                                      |
+| `totalCount` | The total across pages, when you pass `includeTotal: true` and the indexer can count. Otherwise `null`. |
+
+`limit` sets the page size: 1 to 200, 50 by default.
+
+## Load the next page on demand
+
+Keep the `cursor` and pass it back. This fits a "Load more" button.
+
+**Example** (Loading Pages with a Cursor)
+
+```ts title="load-more.ts"
+import { ensActions, Ensforge } from "@ensforge/sdk";
+import { bigname, indexerActions } from "@ensforge/sdk/indexer";
+import { createPublicClient, http } from "viem";
+import { mainnet } from "viem/chains";
+
+const ens = Ensforge.create({
+  publicClient: createPublicClient({ chain: mainnet, transport: http() }),
+  indexer: bigname(),
+})
+  .extend(ensActions())
+  .extend(indexerActions());
+
+const address = "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045";
+
+const first = await ens.indexer.getNamesForAddress({ address, limit: 20 });
+
+if (first.hasMore && first.cursor !== null) {
+  const second = await ens.indexer.getNamesForAddress({
+    address,
+    limit: 20,
+    cursor: first.cursor,
+  });
+  console.log(second.items.length);
+}
+```
+
+Send the same options with each request and change only `cursor`. A cursor belongs to the query that produced it. When you use `fallback`, it also belongs to the indexer that issued it, so the next page always comes from that indexer.
+
+## Walk every page
+
+`paginate` follows the cursor for you. It is an async generator that yields one page at a time. `break` stops it from requesting more.
+
+**Example** (Collecting at Most 1,000 Names)
+
+```ts title="paginate.ts"
+import { ensActions, Ensforge } from "@ensforge/sdk";
+import { bigname, indexerActions, paginate } from "@ensforge/sdk/indexer";
+import { createPublicClient, http } from "viem";
+import { mainnet } from "viem/chains";
+
+const ens = Ensforge.create({
+  publicClient: createPublicClient({ chain: mainnet, transport: http() }),
+  indexer: bigname(),
+})
+  .extend(ensActions())
+  .extend(indexerActions());
+
+const names: string[] = [];
+
+for await (const page of paginate(ens.indexer.getNamesForAddress, {
+  address: "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045",
+  limit: 200,
+})) {
+  names.push(...page.items.map((item) => item.name));
+  if (names.length >= 1000) break;
+}
+```
+
+- The first argument is the action that loads a page. The second is its options.
+- Pages load one at a time, because each depends on the previous cursor.
+- A larger `limit` means fewer requests.
+
+`paginate` works with any list action, such as `indexer.getSubnames`. With a standalone action, wrap it so it takes the options: `paginate((options) => Actions.indexer.getSubnames(ens, options), { name: "ens.eth" })`. For the Effect form, see [The Effect API](/docs/sdk/effect-api).
+
+## Show a total
+
+Pass `includeTotal: true` to fill `totalCount` on the first request. It makes the request slower, so ask for it once and keep the number.
+
+**Example** (Counting Names)
+
+```ts title="total-count.ts"
+import { ensActions, Ensforge } from "@ensforge/sdk";
+import { bigname, indexerActions } from "@ensforge/sdk/indexer";
+import { createPublicClient, http } from "viem";
+import { mainnet } from "viem/chains";
+
+const ens = Ensforge.create({
+  publicClient: createPublicClient({ chain: mainnet, transport: http() }),
+  indexer: bigname(),
+})
+  .extend(ensActions())
+  .extend(indexerActions());
+
+const page = await ens.indexer.getNamesForAddress({
+  address: "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045",
+  includeTotal: true,
+  limit: 1,
+});
+
+console.log(page.totalCount);
+```
+
+## Options
+
+| Option         | Type      | Default | Description                                |
+| -------------- | --------- | ------- | ------------------------------------------ |
+| `limit`        | `number`  | `50`    | Rows per page, 1 to 200.                   |
+| `cursor`       | `string`  | none    | The previous page's `cursor`.              |
+| `includeTotal` | `boolean` | `false` | Count every row into `totalCount`. Slower. |
+
+See [`indexer.getNamesForAddress`](/docs/reference/sdk/indexer/get-names-for-address), [`indexer.search`](/docs/reference/sdk/indexer/search) and [`indexer.getSubnames`](/docs/reference/sdk/indexer/get-subnames).
+
+## Troubleshooting
+
+### `totalCount` is `null`
+
+You did not pass `includeTotal: true`, or the indexer cannot count. The page still works without it.
+
+### The next page fails or repeats
+
+Check that you send the same options and only change `cursor`. A cursor from one query is not valid for another.
+
+### `INDEXER_UNSUPPORTED` with a cursor under `fallback`
+
+The cursor was issued by an indexer that cannot serve this method. [`INDEXER_UNSUPPORTED`](/docs/reference/errors/INDEXER_UNSUPPORTED) is thrown instead of asking another indexer, because it could not read the cursor. Start the list again.
+
+### `INDEXER_RATE_LIMITED` while walking many pages
+
+Raise `limit` to 200 to use fewer requests, or add a second indexer. See [Connect an indexer](/docs/sdk/connect-an-indexer#use-more-than-one-indexer) and [`INDEXER_RATE_LIMITED`](/docs/reference/errors/INDEXER_RATE_LIMITED).

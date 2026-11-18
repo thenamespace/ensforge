@@ -65,7 +65,7 @@ export declare namespace authorizeSession {
   type Options = {
     /** Public address of the session key the app keeps. */
     sessionKey: string;
-    /** The one resolver the session may deploy and edit (an HCA-deployed PermissionedResolver). */
+    /** The one resolver the session may deploy and edit (an existing resolver, or a PermissionedResolver proxy the session deploys from the HCA at that address). */
     resolver: string;
     /** Unix seconds after which the session stops working. */
     validUntil: number;

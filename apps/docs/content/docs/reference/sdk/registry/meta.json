@@ -1,0 +1,10 @@
+{
+  "title": "registry",
+  "pages": [
+    "attach",
+    "deploy",
+    "get",
+    "set-uri",
+    "upgrade"
+  ]
+}

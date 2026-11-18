@@ -47,8 +47,9 @@ import type { send as sendTypes, sendSync as sendSyncTypes } from "./send/index.
  * const record = yield* Actions.plan.get(ens, { id: planId })
  * ```
  *
- * @throws `Errors.InternalError` when the storage fails.
- * @throws `Errors.NetworkError` when the RPC request fails.
+ * @throws `Errors.InternalError` (`UNEXPECTED`) when the storage fails.
+ * @throws `Errors.PlanError` (`PLAN_INVALID`) when a saved plan cannot be read.
+ * @throws `Errors.NetworkError` (`RPC_REQUEST_FAILED`, `RPC_TIMEOUT`, `RATE_LIMITED`) when the RPC request fails.
  *
  * @see {@link Actions.plan.resume} to continue it
  * @stability stable
@@ -100,7 +101,8 @@ export declare namespace get {
  * ```
  *
  * @throws `Errors.InvalidInputError` (`INVALID_ADDRESS`) for an invalid account.
- * @throws `Errors.NetworkError` when the RPC request fails.
+ * @throws `Errors.PlanError` (`PLAN_INVALID`) when a saved plan cannot be read.
+ * @throws `Errors.NetworkError` (`RPC_REQUEST_FAILED`, `RPC_TIMEOUT`, `RATE_LIMITED`) when the RPC request fails.
  *
  * @see {@link Actions.plan.get} to read one
  * @stability stable
@@ -153,8 +155,9 @@ export declare namespace list {
  * ```
  *
  * @throws `Errors.NotFoundError` (`PLAN_NOT_FOUND`) for an unknown plan.
+ * @throws `Errors.PlanError` (`PLAN_INVALID`) when a saved plan cannot be read.
  * @throws `Errors.InvalidInputError` (`INVALID_RECORD_VALUE`) for an unknown step or an unrelated transaction.
- * @throws `Errors.NetworkError` when the RPC request fails.
+ * @throws `Errors.NetworkError` (`RPC_REQUEST_FAILED`, `RPC_TIMEOUT`, `RATE_LIMITED`) when the RPC request fails.
  *
  * @see {@link Actions.plan.resume} to continue the plan
  * @stability stable
@@ -218,7 +221,9 @@ export declare namespace reconcile {
  * yield* Actions.plan.resume(ens, { id })
  * ```
  *
- * @throws `Errors.NotFoundError` (`PLAN_NOT_FOUND`) or `Errors.PlanError` (`PLAN_CHAIN_MISMATCH`, `PLAN_ACCOUNT_MISMATCH`, `PLAN_ROUTE_REQUIRED`) when the plan cannot continue here.
+ * @throws `Errors.NotFoundError` (`PLAN_NOT_FOUND`) for an unknown plan.
+ * @throws `Errors.PlanError` (`PLAN_CHAIN_MISMATCH`, `PLAN_ACCOUNT_MISMATCH`, `PLAN_ROUTE_REQUIRED`) when the plan cannot continue here.
+ * @throws `Errors.PlanError` (`PLAN_INVALID`) when a saved plan cannot be read.
  * @throws `Errors.ContractRevertError` (`CONTRACT_REVERTED`), or the failing step's own error (`Errors.AnyError`: a plan can hold any step), with `context.planId` and `context.step`.
  *
  * @see {@link Actions.plan.get} to read its progress first
@@ -265,9 +270,11 @@ export declare namespace resume {
  * yield* Actions.plan.resumeSync(ens, { id })
  * ```
  *
- * @throws `Errors.NotFoundError` (`PLAN_NOT_FOUND`) or `Errors.PlanError` (`PLAN_CHAIN_MISMATCH`, `PLAN_ACCOUNT_MISMATCH`, `PLAN_ROUTE_REQUIRED`) when the plan cannot continue here.
+ * @throws `Errors.NotFoundError` (`PLAN_NOT_FOUND`) for an unknown plan.
+ * @throws `Errors.PlanError` (`PLAN_CHAIN_MISMATCH`, `PLAN_ACCOUNT_MISMATCH`, `PLAN_ROUTE_REQUIRED`) when the plan cannot continue here.
+ * @throws `Errors.PlanError` (`PLAN_INVALID`) when a saved plan cannot be read.
  * @throws `Errors.ContractRevertError` (`CONTRACT_REVERTED`), or the failing step's own error (`Errors.AnyError`: a plan can hold any step), with `context.planId` and `context.step`.
- * @throws `Errors.TransactionError` (`TRANSACTION_REVERTED`, `RECEIPT_TIMEOUT`) when confirmation fails.
+ * @throws `Errors.TransactionError` (`TRANSACTION_REVERTED`, `RECEIPT_TIMEOUT`, `NONCE_CONFLICT`) when confirmation fails or the wallet's nonce is already used.
  *
  * @see {@link resume} to resolve on submission
  * @stability stable
@@ -324,9 +331,12 @@ export declare namespace resumeSync {
  * yield* Actions.plan.send(ens, { plan: Plan.merge([recordsPlan, primaryNamePlan]) })
  * ```
  *
- * @throws `Errors.PlanError` (`PLAN_CHAIN_MISMATCH`, `PLAN_ACCOUNT_MISMATCH`) for a plan prepared elsewhere; (`PLAN_STALE`) when a token it transfers was reissued since it was prepared.
+ * @throws `Errors.PlanError` (`PLAN_CHAIN_MISMATCH`, `PLAN_ACCOUNT_MISMATCH`) for a plan prepared elsewhere.
+ * @throws `Errors.PlanError` (`PLAN_STALE`) when a token it transfers was reissued since it was prepared.
  * @throws `Errors.ContractRevertError` (`CONTRACT_REVERTED`), or the failing step's own error (`Errors.AnyError`: a plan can hold any step), with `context.planId` and `context.step`.
- * @throws `Errors.UserRejectedError` when the user rejects the request.
+ * @throws `Errors.UserRejectedError` (`USER_REJECTED`) when the user rejects the request.
+ * @throws `Errors.WalletError` (`CHAIN_MISMATCH`, `ACCOUNT_NOT_FOUND`) when the wallet is on another chain or has no account to sign with.
+ * @throws `Errors.UnsupportedError` (`WALLET_BATCH_UNSUPPORTED`) with `mode: "batch"` or a paymaster when the wallet cannot send calls as one batch.
  *
  * @see {@link Actions.plan.resume} to continue a plan
  * @stability stable
@@ -378,9 +388,10 @@ export declare namespace send {
  * yield* Actions.plan.sendSync(ens, { plan: Plan.merge([recordsPlan, primaryNamePlan]) })
  * ```
  *
- * @throws `Errors.PlanError` (`PLAN_CHAIN_MISMATCH`, `PLAN_ACCOUNT_MISMATCH`) for a plan prepared elsewhere; (`PLAN_STALE`) when a token it transfers was reissued since it was prepared.
+ * @throws `Errors.PlanError` (`PLAN_CHAIN_MISMATCH`, `PLAN_ACCOUNT_MISMATCH`) for a plan prepared elsewhere.
+ * @throws `Errors.PlanError` (`PLAN_STALE`) when a token it transfers was reissued since it was prepared.
  * @throws `Errors.ContractRevertError` (`CONTRACT_REVERTED`), or the failing step's own error (`Errors.AnyError`: a plan can hold any step), with `context.planId` and `context.step`.
- * @throws `Errors.TransactionError` (`TRANSACTION_REVERTED`, `RECEIPT_TIMEOUT`) when confirmation fails.
+ * @throws `Errors.TransactionError` (`TRANSACTION_REVERTED`, `RECEIPT_TIMEOUT`, `NONCE_CONFLICT`) when confirmation fails or the wallet's nonce is already used.
  *
  * @see {@link send} to resolve on submission
  * @stability stable

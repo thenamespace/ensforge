@@ -5,7 +5,7 @@ import type { HcaError } from "../../../errors/classes/HcaError.js";
 import * as Impl from "./effect.js";
 
 /**
- * Upgrades the signer's HCA to an implementation both DAO upgrade sets allow. Resolves once the transaction is submitted.
+ * Upgrades the signer's HCA to an implementation the DAO's upgrade set and its own `canUpgradeFrom` check allow. Resolves once the transaction is submitted.
  *
  * **When to use**
  *
@@ -81,7 +81,7 @@ upgrade.estimateGas = Action.promiseOf(
 ) as Write.Method<upgrade.Options, Plan.Estimate>;
 
 /**
- * Upgrades the signer's HCA to an implementation both DAO upgrade sets allow. Resolves once the receipt is in.
+ * Upgrades the signer's HCA to an implementation the DAO's upgrade set and its own `canUpgradeFrom` check allow. Resolves once the receipt is in.
  *
  * **When to use**
  *

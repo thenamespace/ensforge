@@ -1,5 +1,7 @@
 import { Errors } from "@ensforge/sdk";
-import { withDefaults } from "@ensforge/sdk/extension";
+import { registerMessages, withDefaults } from "@ensforge/sdk/extension";
+
+import { messages } from "../messages.js";
 
 const defaults: {
   readonly [code in HcaError.Code]: (options: HcaError.Options) => Errors.EnsforgeError.Defaults;
@@ -24,10 +26,6 @@ const defaults: {
     shortMessage: "The HCA session is expired, revoked or for another resolver.",
     hint: "Authorize a new session with hca.authorizeSession.",
   }),
-  HCA_SAME_CHAIN_SOURCE: () => ({
-    shortMessage: "This deployment rejects funding from the chain the HCA is on.",
-    hint: "Choose another source chain, or fund the HCA directly.",
-  }),
   HCA_BUNDLER_REJECTED: () => ({
     shortMessage: "The bundler rejected the HCA UserOperation.",
     hint: "Check the bundler URL and EntryPoint v0.7 support; HCA UserOperations must be signed by the owner.",
@@ -41,7 +39,8 @@ const defaults: {
     hint: "It may still be included: `plan.resume` checks it again. Raise the executor's `timeout` to wait longer.",
   }),
   HCA_UPGRADE_NOT_ALLOWED: () => ({
-    shortMessage: "The DAO's upgrade sets do not allow this HCA upgrade.",
+    shortMessage:
+      "The upgrade set or the new implementation's `canUpgradeFrom` check does not allow this HCA upgrade.",
   }),
   HCA_SDK_UNSUPPORTED: () => ({
     shortMessage: "The Rhinestone SDK does not support the standalone ENS HCA.",
@@ -53,7 +52,7 @@ const retryable = new Set<string>(["HCA_BUNDLER_REJECTED"]);
 
 /**
  * An HCA (Hosted Contract Account) operation failed: the account, its session, an executor
- * (bundler, Rhinestone) or the DAO's upgrade sets.
+ * (bundler, Rhinestone) or the DAO's upgrade set.
  *
  * @stability experimental
  * @category errors
@@ -72,6 +71,9 @@ export class HcaError extends Errors.EnsforgeError<"HcaError", HcaError.Code> {
   }
 }
 
+// Registered beside the class, so `Errors.describe` has the copy wherever an `HcaError` is thrown.
+registerMessages<HcaError>(messages);
+
 export declare namespace HcaError {
   type Code =
     | "HCA_UNAVAILABLE"
@@ -79,7 +81,6 @@ export declare namespace HcaError {
     | "HCA_EXECUTOR_UNSUPPORTED"
     | "HCA_ACTION_NOT_ALLOWED"
     | "HCA_SESSION_INVALID"
-    | "HCA_SAME_CHAIN_SOURCE"
     | "HCA_BUNDLER_REJECTED"
     | "HCA_PAYMASTER_REJECTED"
     | "HCA_EXECUTION_FAILED"

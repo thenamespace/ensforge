@@ -27,12 +27,12 @@ import type { Executor } from "../types.js";
  * })
  * ```
  *
- * **Example** (Used first, wallet as fallback)
+ * **Example** (Used for the write)
  *
  * ```ts
- * import { hca, owner } from "@ensforge/hca"
+ * import { hca } from "@ensforge/hca"
  *
- * const via = hca({ executors: [relayer, owner()] })
+ * const via = hca({ executors: [relayer] })
  * ```
  *
  * **Example** (A test double)

@@ -48,7 +48,9 @@ import * as Impl from "./effect.js";
  * yield* Actions.plan.resume(ens, { id })
  * ```
  *
- * @throws `Errors.NotFoundError` (`PLAN_NOT_FOUND`) or `Errors.PlanError` (`PLAN_CHAIN_MISMATCH`, `PLAN_ACCOUNT_MISMATCH`, `PLAN_ROUTE_REQUIRED`) when the plan cannot continue here.
+ * @throws `Errors.NotFoundError` (`PLAN_NOT_FOUND`) for an unknown plan.
+ * @throws `Errors.PlanError` (`PLAN_CHAIN_MISMATCH`, `PLAN_ACCOUNT_MISMATCH`, `PLAN_ROUTE_REQUIRED`) when the plan cannot continue here.
+ * @throws `Errors.PlanError` (`PLAN_INVALID`) when a saved plan cannot be read.
  * @throws `Errors.ContractRevertError` (`CONTRACT_REVERTED`), or the failing step's own error (`Errors.AnyError`: a plan can hold any step), with `context.planId` and `context.step`.
  *
  * @see {@link Actions.plan.get} to read its progress first
@@ -104,9 +106,11 @@ export declare namespace resume {
  * yield* Actions.plan.resumeSync(ens, { id })
  * ```
  *
- * @throws `Errors.NotFoundError` (`PLAN_NOT_FOUND`) or `Errors.PlanError` (`PLAN_CHAIN_MISMATCH`, `PLAN_ACCOUNT_MISMATCH`, `PLAN_ROUTE_REQUIRED`) when the plan cannot continue here.
+ * @throws `Errors.NotFoundError` (`PLAN_NOT_FOUND`) for an unknown plan.
+ * @throws `Errors.PlanError` (`PLAN_CHAIN_MISMATCH`, `PLAN_ACCOUNT_MISMATCH`, `PLAN_ROUTE_REQUIRED`) when the plan cannot continue here.
+ * @throws `Errors.PlanError` (`PLAN_INVALID`) when a saved plan cannot be read.
  * @throws `Errors.ContractRevertError` (`CONTRACT_REVERTED`), or the failing step's own error (`Errors.AnyError`: a plan can hold any step), with `context.planId` and `context.step`.
- * @throws `Errors.TransactionError` (`TRANSACTION_REVERTED`, `RECEIPT_TIMEOUT`) when confirmation fails.
+ * @throws `Errors.TransactionError` (`TRANSACTION_REVERTED`, `RECEIPT_TIMEOUT`, `NONCE_CONFLICT`) when confirmation fails or the wallet's nonce is already used.
  *
  * @see {@link resume} to resolve on submission
  * @stability stable
