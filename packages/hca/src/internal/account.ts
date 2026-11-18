@@ -10,7 +10,6 @@ import {
 } from "@ensforge/contracts/v2/experimental/hca";
 import { Rpc, type Client } from "@ensforge/sdk/extension";
 import { getAddress, hexToBigInt, isAddressEqual, zeroAddress, type Address } from "viem";
-import { getCode } from "viem/actions";
 
 import type { HcaError } from "../errors/classes/HcaError.js";
 import type { HcaAccount, HcaProblem } from "../types.js";
@@ -52,8 +51,7 @@ export const readAccount = Effect.fnUntraced(function* (
     options.owner === undefined ? undefined : yield* predictAddress(client, options.owner);
   const address = options.address ?? (predicted as Address);
 
-  const code = yield* Rpc.fromPromise(() => getCode(client.publicClient, { address }));
-  const deployed = code !== undefined && code !== "0x";
+  const deployed = yield* Rpc.hasCode(client, address);
   if (!deployed) {
     return {
       address,

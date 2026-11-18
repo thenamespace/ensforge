@@ -13,7 +13,6 @@ import {
   type Address,
   type Hex,
 } from "viem";
-import { getCode } from "viem/actions";
 
 import type { NameInput, Status } from "../../actions/migration/types.js";
 import type { Client } from "../../client/types.js";
@@ -116,11 +115,6 @@ const migrationResolverSalt = (node: Hex): bigint =>
   );
 
 const parentOf = (name: string): string => name.slice(name.indexOf(".") + 1);
-
-const deployed = (client: Client, address: Address) =>
-  Rpc.fromPromise(() => getCode(client.publicClient, { address })).pipe(
-    Effect.map((code) => code !== undefined && code !== "0x"),
-  );
 
 /** Inspects the names, adding unmigrated locked parents when `migrateParents` asks for them. */
 const inspectAll = Effect.fnUntraced(function* (
@@ -299,7 +293,7 @@ export const planMigration = Effect.fnUntraced(function* (
         records: copied,
       });
       resolver = deployment.address;
-      if (!(yield* deployed(client, resolver))) {
+      if (!(yield* Rpc.hasCode(client, resolver))) {
         setup.push(deployment.call);
         deploys.push({ contract: "resolver", address: resolver });
       }
@@ -323,7 +317,7 @@ export const planMigration = Effect.fnUntraced(function* (
       resolver = deployment.address;
       if (owned === undefined) {
         owned = resolver;
-        if (!(yield* deployed(client, resolver))) {
+        if (!(yield* Rpc.hasCode(client, resolver))) {
           setup.push(deployment.call);
           deploys.push({ contract: "resolver", address: resolver });
         }

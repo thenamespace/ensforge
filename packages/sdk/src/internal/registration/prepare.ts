@@ -3,7 +3,6 @@ import { Effect } from "effect";
 import { Abis } from "@ensforge/contracts";
 import { ownedResolverSalt } from "@ensforge/contracts/v2";
 import { isAddressEqual, isHex, zeroAddress, type Address, type Hex } from "viem";
-import { getCode } from "viem/actions";
 
 import type { PaymentToken } from "../../actions/registration/types.js";
 import type { Client } from "../../client/types.js";
@@ -166,10 +165,7 @@ const ownedResolver = Effect.fnUntraced(function* (
     owner: signer,
     salt: ownedResolverSalt(signer),
   });
-  const code = yield* Rpc.fromPromise(() =>
-    getCode(client.publicClient, { address: deployment.address }),
-  );
-  const exists = code !== undefined && code !== "0x";
+  const exists = yield* Rpc.hasCode(client, deployment.address);
   return { address: deployment.address, deploy: exists ? undefined : deployment.call };
 });
 
@@ -361,11 +357,7 @@ const prepareName = Effect.fnUntraced(function* (
     args: [commitment],
   });
   const deployed =
-    committedAt !== 0n && deploy !== undefined
-      ? yield* Rpc.fromPromise(() => getCode(client.publicClient, { address: resolver })).pipe(
-          Effect.map((code) => code !== undefined && code !== "0x"),
-        )
-      : false;
+    committedAt !== 0n && deploy !== undefined ? yield* Rpc.hasCode(client, resolver) : false;
 
   return {
     ...name,

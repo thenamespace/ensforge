@@ -3,7 +3,6 @@ import { Effect } from "effect";
 import { Abis } from "@ensforge/contracts";
 import { migrationUserRegistrySalt } from "@ensforge/contracts/v2";
 import { encodeFunctionData, getAddress, maxUint64, zeroAddress, type Address } from "viem";
-import { getCode } from "viem/actions";
 
 import type { Client } from "../../client/types.js";
 import { InvalidInputError } from "../../errors/classes/InvalidInputError.js";
@@ -102,15 +101,13 @@ export const planRecreation = Effect.fnUntraced(function* (
     emancipated: false,
     salt: migrationUserRegistrySalt(parent.node),
   });
-  const code = yield* Rpc.fromPromise(() =>
-    getCode(client.publicClient, { address: deployment.address }),
-  );
+  const deployed = yield* Rpc.hasCode(client, deployment.address);
   const registry = deployment.address;
   const call = (data: `0x${string}`): Plan.Call => ({ to: registry, data, value: 0n });
 
   return {
     registry,
-    deploy: code !== undefined && code !== "0x" ? undefined : deployment.call,
+    deploy: deployed ? undefined : deployment.call,
     calls: [
       call(
         encodeFunctionData({

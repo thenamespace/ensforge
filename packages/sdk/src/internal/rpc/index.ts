@@ -1,5 +1,6 @@
 export { blockTimestamp } from "./blockTimestamp.js";
 export { fromPromise } from "./fromPromise.js";
+export { hasCode } from "./hasCode.js";
 export {
   readContract,
   readContractOrUndefined,
