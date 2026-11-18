@@ -44,7 +44,11 @@ const pageLine = (page: {
 }) =>
   `- [${page.data.title}](${absolute(getPageMarkdownUrl(page))}): ${page.data.description ?? ""}`.trimEnd();
 
-/** The core pages first; every other docs page goes under Optional, grouped by package. */
+/**
+ * The core pages first, then the hand-written reference pages. Every other docs page goes under
+ * Optional: package guides by package, and the API reference (`reference/<package>`) under its own
+ * heading with errors last.
+ */
 function docsIndex() {
   const core = corePages.flatMap((slugs) => {
     const page = source.getPage([...slugs]);
@@ -52,21 +56,39 @@ function docsIndex() {
   });
   const coreUrls = new Set(core.map((page) => page.url));
   const groups = new Map<string, string[]>();
+  const reference = new Map<string, string[]>();
+  const referenceRoot: string[] = [];
 
   for (const page of source.getPages()) {
     if (coreUrls.has(page.url)) continue;
-    const pkg = page.slugs[0] ?? "docs";
+    const [first, second] = page.slugs;
 
-    groups.set(pkg, [...(groups.get(pkg) ?? []), pageLine(page)]);
+    if (first !== "reference") {
+      const pkg = first ?? "docs";
+      groups.set(pkg, [...(groups.get(pkg) ?? []), pageLine(page)]);
+    } else if (second === undefined) {
+      referenceRoot.push(pageLine(page));
+    } else if (second === "errors" || getPackage(second)) {
+      reference.set(second, [...(reference.get(second) ?? []), pageLine(page)]);
+    } else {
+      core.push(page);
+    }
   }
 
   const optional = [...groups].map(
     ([slug, lines]) => `### ${getPackage(slug)?.npm ?? slug}\n\n${lines.join("\n")}`,
   );
+  const referenceGroups = [...reference]
+    .toSorted(([a], [b]) => Number(a === "errors") - Number(b === "errors"))
+    .map(
+      ([slug, lines]) =>
+        `#### ${slug === "errors" ? "Errors" : (getPackage(slug)?.npm ?? slug)}\n\n${lines.join("\n")}`,
+    );
+  const apiReference = [...referenceRoot, ...referenceGroups].join("\n\n");
 
   return [
     `## Core docs\n\n${core.map(pageLine).join("\n")}`,
-    `## Optional\n\n${optional.join("\n\n")}`,
+    `## Optional\n\n${[...optional, `### API reference\n\n${apiReference}`].join("\n\n")}`,
   ].join("\n\n");
 }
 
