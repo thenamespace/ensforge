@@ -130,4 +130,27 @@ describe("record.set.prepare", () => {
   ] as const)("fails when %s", ([, world, records, expected]) =>
     expectFailure(Actions.record.set.prepare(clientFor(world).ens, { name, ...records }), expected),
   );
+
+  // PublicResolver reverts `InvalidEVMAddress` and both resolvers refuse ABI content types that
+  // are not one power of two; ensforge refuses them first, as it does a mistyped checksum.
+  it.effect(
+    "refuses addresses and ABI content types a resolver would reject",
+    () =>
+      Effect.gen(function* () {
+        const { ens } = clientFor({ name, v1: { owner: signer, resolver: resolverA } });
+
+        for (const address of ["0x1234", "0x00000000000000000000000000000000000a11CE"]) {
+          yield* expectFailure(
+            Actions.record.set.prepare(ens, { name, addresses: { eth: address } }),
+            { _tag: "InvalidInputError", code: "INVALID_ADDRESS" },
+          );
+        }
+        // The types rule content type 3 out; untyped callers reach the check.
+        yield* expectFailure(
+          Actions.record.set.prepare(ens, { name, abi: { contentType: 3n as 1n, value: "0x" } }),
+          { _tag: "InvalidInputError", code: "INVALID_RECORD_VALUE" },
+        );
+      }),
+    { meta: { cases: ["K06", "K07", "K24"] } },
+  );
 });

@@ -52,4 +52,41 @@ describe("planRecordReads", () => {
       );
     }),
   );
+
+  // A record that does not decode reads as missing (or as raw bytes, for an ABI); the rest of the
+  // read keeps its values.
+  it.effect(
+    "reads undecodable records as missing and keeps the others",
+    () =>
+      Effect.gen(function* () {
+        const plan = planRecordReads(namehash("nick.eth"), {
+          texts: ["url"],
+          addresses: ["eth"],
+          abi: true,
+        });
+        const codecs = yield* plan.codecs;
+        const text = encodeAbiParameters([{ type: "string" }], ["https://nick.example"]);
+
+        for (const [contentType, data] of [
+          [2n, "0x789c0102030405"],
+          [4n, "0xbf61"],
+        ] as const) {
+          const output = plan.assemble(
+            [
+              text,
+              addrResult("0x1234"),
+              encodeAbiParameters([{ type: "uint256" }, { type: "bytes" }], [contentType, data]),
+              undefined,
+            ],
+            codecs,
+          );
+          assert.deepStrictEqual(output, {
+            texts: { url: "https://nick.example" },
+            addresses: { eth: null },
+            abi: { contentType, data, abi: null, uri: null },
+          });
+        }
+      }),
+    { meta: { cases: ["K06", "K27"] } },
+  );
 });

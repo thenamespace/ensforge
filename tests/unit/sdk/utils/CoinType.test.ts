@@ -3,7 +3,7 @@ import { Arbitrary } from "effect";
 
 import * as CoinType from "@ensforge/sdk/internal/utils/CoinType";
 import { Arbitraries, expectThrow } from "@ensforge/test-harness";
-import { getAddress, keccak256, toHex } from "viem";
+import { checksumAddress, getAddress, keccak256, toHex, type Hex } from "viem";
 
 const base = 2_147_492_101n;
 const vitalik = "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045";
@@ -80,6 +80,36 @@ describe("CoinType classification", () => {
     assert.strictEqual(CoinType.toChainId(coinType), chainId);
     assert.strictEqual(CoinType.toSymbol(coinType), symbol);
   });
+
+  // ENSIP-11 coin types stop at `0x80000000 | (2^31 - 1)`: a larger chain ID has no coin type, and a
+  // larger coin type is no EVM chain (the resolvers' `ENSIP19.isEVMCoinType` agrees).
+  it.each([0x1_0000_0000n, 0x1_8000_0000n, 2n ** 255n])(
+    "%s is not an EVM coin type",
+    { meta: { cases: ["K11"] } },
+    (coinType) => {
+      assert.isFalse(CoinType.isEvm(coinType));
+      assert.isNull(CoinType.toChainId(coinType));
+    },
+  );
+});
+
+describe("CoinType exceptions to ENSIP-11", () => {
+  it("keeps the SLIP-44 types of Avalanche and RSK", { meta: { cases: ["K13"] } }, () => {
+    assert.strictEqual(CoinType.from("avax"), 9000n);
+    assert.strictEqual(CoinType.from("rbtc"), 137n);
+    assert.isFalse(CoinType.isEvm(9000n));
+    assert.isFalse(CoinType.isEvm(137n));
+  });
+
+  // The EVM chains' SLIP-44 types read records written before ENSIP-11, under `…Legacy` names.
+  it("reads the legacy SLIP-44 EVM coins by their own names", { meta: { cases: ["K12"] } }, () => {
+    assert.strictEqual(CoinType.from("etcLegacy"), 61n);
+    assert.strictEqual(CoinType.from("gnoLegacy"), 700n);
+    assert.strictEqual(CoinType.toSymbol(61n), "etcLegacy");
+    assert.strictEqual(CoinType.from("etc"), CoinType.fromChainId(61));
+    assert.isFalse(CoinType.isEvm(61n));
+    assert.strictEqual(CoinType.decodeAddress(61n, vitalik.toLowerCase() as Hex), vitalik);
+  });
 });
 
 describe("CoinType EVM addresses", () => {
@@ -94,11 +124,20 @@ describe("CoinType EVM addresses", () => {
     );
   });
 
-  it("accepts addresses without a checksum", () => {
+  it("accepts addresses without a checksum", { meta: { cases: ["K07"] } }, () => {
     assert.strictEqual(
       CoinType.encodeAddress(60n, vitalik.toUpperCase().replace("0X", "0x")),
       vitalik.toLowerCase(),
     );
+    assert.strictEqual(CoinType.encodeAddress(60n, vitalik.toLowerCase()), vitalik.toLowerCase());
+  });
+
+  // Mixed case is a checksum (EIP-55), so a wrong one is a typo.
+  it("rejects a mixed-case address with a wrong checksum", { meta: { cases: ["K07"] } }, () => {
+    expectThrow(() => CoinType.encodeAddress(60n, vitalik.replace("d8dA", "D8dA")), {
+      _tag: "InvalidInputError",
+      code: "INVALID_ADDRESS",
+    });
   });
 
   it.each(["", "0x123", "nope", "1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa"])(
@@ -138,6 +177,7 @@ describe("CoinType EVM addresses", () => {
 
   it.each(["0x1234", `0x${"00".repeat(12)}${"ab".repeat(20)}`] as const)(
     "decodeAddress rejects malformed EVM bytes %s with a typed error",
+    { meta: { cases: ["K06"] } },
     (data) => {
       expectThrow(() => CoinType.decodeAddress(60n, data), {
         _tag: "InvalidInputError",
@@ -167,6 +207,32 @@ describe("CoinType non-EVM addresses", () => {
     [123_456_789n, "anything"],
   ] as const)("encodeAddress for coin %s rejects %j", (coinType, address) => {
     expectThrow(() => CoinType.encodeAddress(coinType, address), {
+      _tag: "InvalidInputError",
+      code: "INVALID_ADDRESS",
+    });
+  });
+
+  // RSK checksums with its chain ID 30 (RSKIP-60, EIP-1191), not EIP-55.
+  it("checksums RSK addresses with chain ID 30", { meta: { cases: ["K08"] } }, () => {
+    const rsk = CoinType.decodeAddress(137n, vitalik.toLowerCase() as Hex);
+
+    assert.strictEqual(rsk, checksumAddress(vitalik, 30));
+    assert.notStrictEqual(rsk, vitalik);
+  });
+
+  it("stores the same bytes for each format of an address", { meta: { cases: ["K10"] } }, () => {
+    assert.strictEqual(
+      CoinType.encodeAddress(145n, "bitcoincash:qpm2qsznhks23z7629mms6s4cwef74vcwvy22gdx6a"),
+      CoinType.encodeAddress(145n, "1BpEi6DfDAUFd7GtittLSdBeYJvcoaVggu"),
+    );
+  });
+
+  // EOS (194) and other coins address-encoder 3 dropped (KL-16) have no codec.
+  it("rejects coins without a codec", { meta: { cases: ["K14"] } }, () => {
+    for (const read of [() => CoinType.from("eos"), () => CoinType.decodeAddress(194n, "0x01")]) {
+      expectThrow(read, { _tag: "InvalidInputError", code: "INVALID_COIN_TYPE" });
+    }
+    expectThrow(() => CoinType.encodeAddress(194n, "eosio"), {
       _tag: "InvalidInputError",
       code: "INVALID_ADDRESS",
     });

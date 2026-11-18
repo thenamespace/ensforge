@@ -17,9 +17,9 @@ export type AddressCoder = {
   readonly decode: (address: string) => Uint8Array;
 };
 
-/** Whether a coin type is an EVM chain (ETH, or ENSIP-11's `0x80000000 | chainId`). */
+/** Whether a coin type is an EVM chain (ETH, or ENSIP-11's `0x80000000 | chainId`, chainId < 2^31). */
 export const isEvmCoinType = (coinType: bigint): boolean =>
-  coinType === 60n || coinType >= 0x8000_0000n;
+  coinType === 60n || (coinType >= 0x8000_0000n && coinType <= 0xffff_ffffn);
 
 /**
  * An address as address-record bytes. EVM addresses are 20 raw bytes for any EVM coin type;
@@ -31,7 +31,10 @@ export const encodeAddressWith = (
   coder: AddressCoder | undefined,
 ): Hex => {
   if (isEvmCoinType(coinType)) {
-    if (!isAddress(address, { strict: false }))
+    // All-lowercase and all-uppercase addresses carry no checksum; mixed case must be EIP-55.
+    const digits = address.slice(2);
+    const unchecksummed = digits === digits.toLowerCase() || digits === digits.toUpperCase();
+    if (!isAddress(address, { strict: !unchecksummed }))
       throw new InvalidInputError({ code: "INVALID_ADDRESS", input: address });
     return address.toLowerCase() as Hex;
   }

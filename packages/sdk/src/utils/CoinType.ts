@@ -75,7 +75,10 @@ export const from = (input: Input): bigint => {
   }
   if (typeof input === "object") return fromChainId(input.chainId);
 
-  const coinType = (coinNameToTypeMap as Readonly<Record<string, number>>)[input.toLowerCase()];
+  // Symbols are lowercase except the legacy SLIP-44 EVM coins (`etcLegacy`), so the exact
+  // spelling is tried first.
+  const coinTypes = coinNameToTypeMap as Readonly<Record<string, number>>;
+  const coinType = coinTypes[input] ?? coinTypes[input.toLowerCase()];
   if (coinType === undefined) throw new InvalidInputError({ code: "INVALID_COIN_TYPE", input });
   return BigInt(coinType);
 };
@@ -96,7 +99,7 @@ export const isEvm = (coinType: bigint): boolean => isEvmCoinType(coinType);
  */
 export const toChainId = (coinType: bigint): number | null => {
   if (coinType === ethCoinType) return 1;
-  if (coinType >= evmNamespace) return Number(coinType - evmNamespace);
+  if (isEvmCoinType(coinType)) return Number(coinType - evmNamespace);
   return null;
 };
 
