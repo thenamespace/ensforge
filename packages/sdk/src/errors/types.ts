@@ -30,7 +30,7 @@ export type AnyError =
 
 /**
  * Errors every action can fail with, besides the ones its `@throws` documents: a misconfigured
- * client or a missing contract (`ConfigError`), a failing RPC (`NetworkError`), a contract call
+ * client or a contract missing on the chain (`ConfigError`, `CONTRACT_NOT_DEPLOYED`), a failing RPC (`NetworkError`), a contract call
  * reverting with an error ensforge does not map (`ContractRevertError`), and anything ensforge
  * could not translate (`InternalError` `UNEXPECTED`).
  *
@@ -53,7 +53,8 @@ export type CommonError =
  *
  * - `WalletError`, or `ConfigError` (`WALLET_NOT_CONFIGURED`), when the wallet cannot sign.
  * - `UserRejectedError` when the wallet's user declines.
- * - `InsufficientFundsError` (`INSUFFICIENT_ETH`) when the account cannot pay for gas.
+ * - `InsufficientFundsError` (`INSUFFICIENT_ETH`) when the account cannot pay for gas or the
+ *   ETH the call sends.
  * - `UnsupportedError` (`WALLET_BATCH_UNSUPPORTED`) when the wallet cannot send a batch.
  * - `TransactionError` when a transaction reverts, conflicts or is not mined in time.
  * - A `via` route can also fail with its own package's errors (e.g. `HcaError`).

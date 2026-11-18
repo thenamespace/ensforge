@@ -477,7 +477,7 @@ export declare namespace isAvailable {
  * @throws `Errors.InvalidInputError` (`INVALID_NAME`, `INVALID_ADDRESS`, `DURATION_TOO_SHORT`, `INVALID_RECORD_VALUE`) for invalid input.
  * @throws `Errors.NameStateError` (`NAME_NOT_AVAILABLE`) when a name is taken or in its grace period.
  * @throws `Errors.CommitmentError` (`COMMITMENT_TOO_NEW`, `COMMITMENT_TOO_OLD`, `COMMITMENT_EXISTS`, `COMMITMENT_NOT_FOUND`) for a resumed commitment outside its window, or none for the registration.
- * @throws `Errors.InsufficientFundsError` (`INSUFFICIENT_TOKEN_BALANCE`, `INSUFFICIENT_ETH`) when the signer cannot pay.
+ * @throws `Errors.InsufficientFundsError` (`INSUFFICIENT_TOKEN_BALANCE`) when the signer cannot pay in the payment token.
  * @throws `Errors.UnsupportedError` (`PAYMENT_TOKEN_UNSUPPORTED`, `UNSUPPORTED_ON_DEPLOYMENT`) for an unaccepted token or without ENSv2.
  * @throws `Errors.ConfigError` (`WALLET_NOT_CONFIGURED`) when no signing account is known.
  * @throws `Errors.UserRejectedError` (`USER_REJECTED`) when the user rejects the request.
@@ -539,7 +539,7 @@ export declare namespace register {
  * @throws `Errors.InvalidInputError` (`INVALID_NAME`, `INVALID_ADDRESS`, `DURATION_TOO_SHORT`, `INVALID_RECORD_VALUE`) for invalid input.
  * @throws `Errors.NameStateError` (`NAME_NOT_AVAILABLE`) when a name is taken or in its grace period.
  * @throws `Errors.CommitmentError` (`COMMITMENT_TOO_NEW`, `COMMITMENT_TOO_OLD`, `COMMITMENT_EXISTS`, `COMMITMENT_NOT_FOUND`) for a resumed commitment outside its window, or none for the registration.
- * @throws `Errors.InsufficientFundsError` (`INSUFFICIENT_TOKEN_BALANCE`, `INSUFFICIENT_ETH`) when the signer cannot pay.
+ * @throws `Errors.InsufficientFundsError` (`INSUFFICIENT_TOKEN_BALANCE`) when the signer cannot pay in the payment token.
  * @throws `Errors.UnsupportedError` (`PAYMENT_TOKEN_UNSUPPORTED`, `UNSUPPORTED_ON_DEPLOYMENT`) for an unaccepted token or without ENSv2.
  * @throws `Errors.ConfigError` (`WALLET_NOT_CONFIGURED`) when no signing account is known.
  * @throws `Errors.TransactionError` (`TRANSACTION_REVERTED`, `RECEIPT_TIMEOUT`, `NONCE_CONFLICT`) when confirmation fails or the wallet's nonce is already used.
@@ -601,7 +601,7 @@ export declare namespace registerSync {
  *
  * @throws `Errors.InvalidInputError` (`INVALID_NAME`, `INVALID_ADDRESS`, `DURATION_TOO_SHORT`) for invalid input.
  * @throws `Errors.NameStateError` (`NAME_NOT_RENEWABLE`) when a name is neither registered nor in its grace period.
- * @throws `Errors.InsufficientFundsError` (`INSUFFICIENT_TOKEN_BALANCE`, `INSUFFICIENT_ETH`) when the signer cannot pay.
+ * @throws `Errors.InsufficientFundsError` (`INSUFFICIENT_TOKEN_BALANCE`) when the signer cannot pay in the payment token.
  * @throws `Errors.UnsupportedError` (`PAYMENT_TOKEN_UNSUPPORTED`, `UNSUPPORTED_ON_DEPLOYMENT`) for an unaccepted token or without ENSv2.
  * @throws `Errors.ConfigError` (`WALLET_NOT_CONFIGURED`) when no signing account is known.
  * @throws `Errors.UserRejectedError` (`USER_REJECTED`) when the user rejects the request.
@@ -658,7 +658,7 @@ export declare namespace renew {
  *
  * @throws `Errors.InvalidInputError` (`INVALID_NAME`, `INVALID_ADDRESS`, `DURATION_TOO_SHORT`) for invalid input.
  * @throws `Errors.NameStateError` (`NAME_NOT_RENEWABLE`) when a name is neither registered nor in its grace period.
- * @throws `Errors.InsufficientFundsError` (`INSUFFICIENT_TOKEN_BALANCE`, `INSUFFICIENT_ETH`) when the signer cannot pay.
+ * @throws `Errors.InsufficientFundsError` (`INSUFFICIENT_TOKEN_BALANCE`) when the signer cannot pay in the payment token.
  * @throws `Errors.UnsupportedError` (`PAYMENT_TOKEN_UNSUPPORTED`, `UNSUPPORTED_ON_DEPLOYMENT`) for an unaccepted token or without ENSv2.
  * @throws `Errors.ConfigError` (`WALLET_NOT_CONFIGURED`) when no signing account is known.
  * @throws `Errors.TransactionError` (`TRANSACTION_REVERTED`, `RECEIPT_TIMEOUT`, `NONCE_CONFLICT`) when confirmation fails or the wallet's nonce is already used.

@@ -19,9 +19,11 @@ const testFolders = Arr.map(["tests/unit/sdk/", "tests/integration/test/"], (fol
 
 // `conformance/invalid-name.test.ts` asserts these for every action generically. The transport
 // and indexer codes come from one translation layer, asserted by `errors/translate/viem.test.ts`
-// and `indexer/http.test.ts` rather than once per action.
+// and `indexer/http.test.ts` rather than once per action. `CONTRACT_NOT_DEPLOYED` is part of
+// `Errors.CommonError`, translated in `errors/translate/viem.test.ts`.
 const coveredEverywhere = new Set([
   "INVALID_NAME",
+  "CONTRACT_NOT_DEPLOYED",
   "RPC_REQUEST_FAILED",
   "RPC_TIMEOUT",
   "RATE_LIMITED",
@@ -49,6 +51,8 @@ const coveredForWrites = new Set([
   "ACCOUNT_NOT_FOUND",
   "NONCE_CONFLICT",
   "WALLET_BATCH_UNSUPPORTED",
+  // Part of `Errors.WriteError`: `errors/translate/viem.test.ts` and `revert-map.test.ts`.
+  "INSUFFICIENT_ETH",
 ]);
 
 /** Documented codes of each read action without a test yet: `domain.action` → codes. */
@@ -65,8 +69,7 @@ const uncoveredWrites: Readonly<Record<string, readonly string[]>> = {
   "name.reclaim": ["NAME_UNREACHABLE"],
   "name.setManager": ["NAME_UNREACHABLE"],
   "name.setTtl": ["NAME_UNREACHABLE"],
-  "registration.register": ["COMMITMENT_NOT_FOUND", "INSUFFICIENT_ETH"],
-  "registration.renew": ["INSUFFICIENT_ETH"],
+  "registration.register": ["COMMITMENT_NOT_FOUND"],
   "registry.attach": ["NAME_UNREACHABLE"],
   "resolver.create": ["NAME_UNREACHABLE"],
   "resolver.link": ["NAME_UNREACHABLE"],
