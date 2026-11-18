@@ -38,6 +38,7 @@ import type { Action, ActionOptions } from "../atoms/types.js";
  * }
  * ```
  *
+ * @stability unstable
  * @category server
  * @since 1.0.0
  */

@@ -40,8 +40,35 @@ const Value = Schema.Json.pipe(
   ),
 );
 
+// Results decoded from server-rendered state, until a refetch replaces them.
+const hydrated = new WeakSet<AsyncResult.AsyncResult<unknown, unknown>>();
+
+/**
+ * Whether a read's result came from the server through hydration.
+ *
+ * @stability unstable
+ */
+export const isHydrated = (result: AsyncResult.AsyncResult<unknown, unknown>): boolean =>
+  hydrated.has(result);
+
+const Result = AsyncResult.Schema({ success: Value });
+
 /**
  * Read results as JSON. Only successes are encoded: failures re-run on the client, so errors
- * never cross the server boundary.
+ * never cross the server boundary. Decoded results are marked for {@link isHydrated}.
+ *
+ * @stability unstable
  */
-export const resultSchema = AsyncResult.Schema({ success: Value });
+export const resultSchema = Result.pipe(
+  // To `Unknown`: decoding to `Result`'s type would rebuild the result and lose the mark.
+  Schema.decodeTo(
+    Schema.Unknown,
+    SchemaTransformation.transform({
+      decode: (result: AsyncResult.AsyncResult<unknown, never>): unknown => {
+        hydrated.add(result);
+        return result;
+      },
+      encode: (result: unknown) => result as AsyncResult.AsyncResult<unknown, never>,
+    }),
+  ),
+);

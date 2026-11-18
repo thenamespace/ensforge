@@ -40,7 +40,9 @@ const idle = Atom.make(AsyncResult.initial<never, never>(false));
  * **Details**
  *
  * - Components reading the same action and options share one request and one cached result.
- * - Unmounting cancels the request; writes that touch the read's names or accounts refetch it.
+ * - Unmounting keeps the result, and a request in flight, cached for `idleTTL`; a remount within
+ *   it reuses them, and retries a failed read. Writes that touch the read's names or accounts
+ *   refetch it.
  * - Pass `undefined` options (or `enabled: false`) to wait, e.g. until a name is typed.
  *
  * **Example** (Reading a role)

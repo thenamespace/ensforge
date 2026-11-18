@@ -1,9 +1,10 @@
 import { Duration, Effect } from "effect";
-import { Atom, type AsyncResult } from "effect/reactivity";
+import { AsyncResult, Atom } from "effect/reactivity";
 
 import type { Ensforge } from "@ensforge/sdk";
 
-import { resultSchema } from "./codec.js";
+import { isHydrated, resultSchema } from "./codec.js";
+import { followResults } from "./follow.js";
 import { ReadInput } from "./key.js";
 import { runAction } from "./run.js";
 import { isServer, runtime, serverReads } from "./runtime.js";
@@ -11,7 +12,8 @@ import { readReactivityKeys, subjectsOf } from "./subjects.js";
 import type { Action, ActionError, ActionOptions, ActionValue } from "./types.js";
 
 /**
- * How long a read stays fresh and cached.
+ * How long a read stays fresh and cached. Each hook's settings apply to it alone; hooks with
+ * other settings still share the read's value and requests.
  *
  * @category reads
  * @since 1.0.0
@@ -19,16 +21,19 @@ import type { Action, ActionError, ActionOptions, ActionValue } from "./types.js
 export type Freshness = {
   /**
    * After this long, the next mount or window focus refetches in the background while the
-   * cached value is shown (stale-while-revalidate).
+   * cached value is shown (stale-while-revalidate). `Duration.infinity` never does. Without it,
+   * a value hydrated from the server is stale after 30 seconds; a failed read is always stale,
+   * so a remount retries it.
    */
   readonly staleTime?: Duration.Input | undefined;
   /**
-   * How long an unused read stays cached; `"forever"` keeps it.
+   * How long an unused read stays cached; `"forever"` or `Duration.infinity` keeps it. With
+   * hooks of several settings, the longest applies.
    *
    * @default "1 minute"
    */
   readonly idleTTL?: Duration.Input | "forever" | undefined;
-  /** Refetch on this interval while the read is in use. */
+  /** Refetch on this interval while the read is in use, in the browser only. */
   readonly refetchInterval?: Duration.Input | undefined;
   /**
    * Refetch when the window regains focus (respecting `staleTime` when set).
@@ -41,38 +46,48 @@ export type Freshness = {
 /**
  * A read atom: an Effect Atom holding the read's `AsyncResult`.
  *
+ * @stability unstable
  * @category reads
  * @since 1.0.0
  */
 export type ReadAtom<value, error> = Atom.Atom<AsyncResult.AsyncResult<value, error>>;
 
-const family = Atom.family((input: ReadInput) => {
+/** Freshness in one shape: durations in milliseconds, `Infinity` for never and forever. */
+type Settings = {
+  readonly staleTime: number | undefined;
+  readonly idleTTL: number;
+  readonly refetchInterval: number | undefined;
+  readonly refreshOnWindowFocus: boolean;
+};
+
+/** Settings of a read's freshness; equal settings give equal objects, whatever their form. */
+export const settingsOf = (freshness: Freshness): Settings => ({
+  staleTime: freshness.staleTime === undefined ? undefined : Duration.toMillis(freshness.staleTime),
+  idleTTL:
+    freshness.idleTTL === "forever" ? Infinity : Duration.toMillis(freshness.idleTTL ?? "1 minute"),
+  refetchInterval:
+    freshness.refetchInterval === undefined
+      ? undefined
+      : Duration.toMillis(freshness.refetchInterval),
+  refreshOnWindowFocus: freshness.refreshOnWindowFocus ?? false,
+});
+
+// One atom per read key, shared by every hook that reads it. It is serializable, so prefetched
+// values hydrate into it and are kept on mount instead of being fetched again. The hooks' atoms
+// below keep it alive.
+const base = Atom.family((input: ReadInput) => {
   const { client, action, options } = input;
-  const freshness = JSON.parse(input.freshness) as Freshness;
   const subjects = subjectsOf(options);
+  const atom = runtime
+    .atom((get) =>
+      isServer && !get(serverReads) ? Effect.never : runAction(action, client, options),
+    )
+    .pipe(
+      Atom.withReactivity(readReactivityKeys(client, action.path, subjects)),
+      followResults(client, action.path, subjects),
+      Atom.setIdleTTL(0),
+    );
 
-  let atom: Atom.Atom<AsyncResult.AsyncResult<unknown, unknown>> = runtime.atom((get) =>
-    isServer && !get(serverReads) ? Effect.never : runAction(action, client, options),
-  );
-  atom = atom.pipe(Atom.withReactivity(readReactivityKeys(client, action.path, subjects)));
-  atom =
-    freshness.idleTTL === "forever"
-      ? Atom.keepAlive(atom)
-      : Atom.setIdleTTL(atom, freshness.idleTTL ?? "1 minute");
-  if (freshness.refetchInterval !== undefined)
-    atom = Atom.withRefresh(atom, freshness.refetchInterval);
-  if (freshness.staleTime !== undefined) {
-    atom = Atom.swr(atom, {
-      staleTime: freshness.staleTime,
-      revalidateOnFocus: freshness.refreshOnWindowFocus ?? false,
-      focusSignal: Atom.windowFocusSignal,
-    });
-  } else if (freshness.refreshOnWindowFocus === true) {
-    atom = Atom.makeRefreshOnSignal(Atom.windowFocusSignal)(atom);
-  }
-
-  // Serializable last: the freshness wrappers drop the metadata. A hydrated value is kept on
-  // mount instead of being fetched again.
   return Atom.serializable(atom, {
     key: input.id,
     schema: resultSchema as never,
@@ -80,9 +95,75 @@ const family = Atom.family((input: ReadInput) => {
   });
 });
 
+// Hydrated values have no `staleTime` of their own: they revalidate once this old.
+const hydratedStaleTime = 30_000;
+
 /**
- * The atom of one read: cached per client, action and options, refreshed when a write touches
- * a name or address in its options, and serializable for server rendering.
+ * What a mount does with the cached result: a failure is retried at once, so a remount (or an
+ * error boundary reset) fetches again instead of showing the old error; a hydrated value older
+ * than `hydratedStaleTime` revalidates in the background when the read sets no `staleTime`.
+ */
+const revalidateOnMount = (
+  source: Atom.Atom<AsyncResult.AsyncResult<unknown, unknown>>,
+  key: string,
+  staleTime: number | undefined,
+) =>
+  Atom.transform(source, (get) => {
+    const cached = get.registry.getNodes().has(key);
+    let current = get.once(source);
+    if (cached && AsyncResult.isFailure(current) && !current.waiting) {
+      get.refresh(source);
+      current = get.once(source);
+    }
+    get.subscribe(source, (value) => get.setSelf(value));
+
+    if (
+      staleTime === undefined &&
+      AsyncResult.isSuccess(current) &&
+      isHydrated(current) &&
+      Date.now() - current.timestamp >= hydratedStaleTime
+    ) {
+      // After the read, as `Atom.swr` does: hydration renders the server's value first.
+      let active = true;
+      get.addFinalizer(() => (active = false));
+      get.registry.schedulerAsync.makeDispatcher().scheduleTask(() => {
+        if (active) get.refresh(source);
+      }, 0);
+    }
+    return current;
+  });
+
+// A hook's view of a read: its freshness over the shared atom. Refreshing it refreshes the read.
+const fresh = Atom.family((input: { readonly read: ReadInput; readonly settings: Settings }) => {
+  const { read, settings } = input;
+  const source = base(read);
+
+  // The only atom with a TTL: it holds the read for `idleTTL` after its last user unmounts, so
+  // the atoms above it are rebuilt, and check the cached result, on every mount.
+  const held = Atom.setIdleTTL(
+    Atom.transform(source, (get) => get(source)),
+    settings.idleTTL,
+  );
+  let atom = revalidateOnMount(held, read.id, settings.staleTime);
+  // Servers render once: polling there would only keep the request's registry busy.
+  if (!isServer && Number.isFinite(settings.refetchInterval))
+    atom = Atom.withRefresh(atom, settings.refetchInterval as number);
+  if (settings.staleTime !== undefined) {
+    atom = Atom.swr(atom, {
+      staleTime: settings.staleTime,
+      revalidateOnFocus: settings.refreshOnWindowFocus,
+      focusSignal: Atom.windowFocusSignal,
+    });
+  } else if (settings.refreshOnWindowFocus) {
+    atom = Atom.makeRefreshOnSignal(Atom.windowFocusSignal)(atom);
+  }
+  return atom;
+});
+
+/**
+ * The atom of one read: cached per client (chain, account and indexer), action and options,
+ * refreshed when a write touches a name or address in its options, and serializable for server
+ * rendering. Each freshness gets its own atom over the shared read.
  *
  * **When to use**
  *
@@ -102,6 +183,7 @@ const family = Atom.family((input: ReadInput) => {
  * }))
  * ```
  *
+ * @stability unstable
  * @category reads
  * @since 1.0.0
  */
@@ -111,19 +193,7 @@ export const ensAtom = <action extends Action>(
   options: ActionOptions<action>,
   freshness: Freshness = {},
 ): ReadAtom<ActionValue<action>, ActionError<action>> =>
-  family(
-    new ReadInput(
-      client,
-      action,
-      options,
-      // Durations become milliseconds first: `JSON.stringify` calls their `toJSON` before a replacer.
-      JSON.stringify(
-        Object.fromEntries(
-          Object.entries(freshness).map(([option, value]) => [
-            option,
-            Duration.isDuration(value) ? Duration.toMillis(value) : value,
-          ]),
-        ),
-      ),
-    ),
-  ) as ReadAtom<ActionValue<action>, ActionError<action>>;
+  fresh({
+    read: new ReadInput(client, action, options),
+    settings: settingsOf(freshness),
+  }) as ReadAtom<ActionValue<action>, ActionError<action>>;

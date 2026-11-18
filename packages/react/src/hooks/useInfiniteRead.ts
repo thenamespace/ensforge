@@ -2,14 +2,19 @@
 
 import { useAtom } from "@effect/atom-react";
 import { Option } from "effect";
-import { AsyncResult } from "effect/reactivity";
+import { AsyncResult, Atom } from "effect/reactivity";
 
 import type { Ensforge } from "@ensforge/sdk";
 
-import { ensPagesAtom, type PageAction } from "../atoms/pull.js";
+import { ensPagesAtom, type PageAction, type PagesAtom } from "../atoms/pull.js";
 import type { ActionError, ActionOptions, ActionValue } from "../atoms/types.js";
 import { useEnsforgeContext } from "../provider/context.js";
 import { errorOf } from "./result.js";
+
+const idle: PagesAtom<never, never> = Atom.writable(
+  () => AsyncResult.initial(false),
+  () => undefined,
+);
 
 type ItemOf<page> = page extends { readonly items: readonly (infer item)[] } ? item : never;
 
@@ -45,7 +50,8 @@ export type InfiniteReadResult<page, error> = {
  * **When to use**
  *
  * Use for "load more" lists and infinite scroll. A write touching the list's name or account
- * starts it over once the indexer has caught up.
+ * starts it over once the indexer has caught up. Pass `undefined` options (or `enabled: false`)
+ * to wait, e.g. until a name is typed.
  *
  * **Example** (Subnames with "Load more")
  *
@@ -69,11 +75,21 @@ export type InfiniteReadResult<page, error> = {
  */
 export const useInfiniteRead = <action extends PageAction>(
   action: action,
-  options: Omit<ActionOptions<action>, "cursor">,
-  config: { readonly client?: Ensforge.Client | undefined } = {},
+  options: Omit<ActionOptions<action>, "cursor"> | undefined,
+  config: {
+    /**
+     * Load the list. Passing `undefined` options also disables it.
+     *
+     * @default true
+     */
+    readonly enabled?: boolean | undefined;
+    readonly client?: Ensforge.Client | undefined;
+  } = {},
 ): InfiniteReadResult<ActionValue<action>, ActionError<action>> => {
-  const { client } = useEnsforgeContext(config.client);
-  const [result, pull] = useAtom(ensPagesAtom(client, action, options));
+  const { enabled = true, client: own } = config;
+  const { client } = useEnsforgeContext(own);
+  const atom = enabled && options !== undefined ? ensPagesAtom(client, action, options) : idle;
+  const [result, pull] = useAtom(atom);
   const loaded = Option.getOrUndefined(AsyncResult.value(result));
   const pages = (loaded?.items ?? []) as readonly ActionValue<action>[];
 
@@ -85,9 +101,10 @@ export const useInfiniteRead = <action extends PageAction>(
     // The pull only learns the stream ended on the next pull; the last page already says so.
     // `paginate` always emits the first page, even an empty one, so the pull never ends empty.
     hasMore:
-      loaded === undefined ||
-      (!loaded.done &&
-        (pages.at(-1) as { readonly hasMore?: boolean } | undefined)?.hasMore !== false),
+      loaded === undefined
+        ? atom !== idle
+        : !loaded.done &&
+          (pages.at(-1) as { readonly hasMore?: boolean } | undefined)?.hasMore !== false,
     loadMore: () => pull(),
     isLoading: AsyncResult.isInitial(result) && result.waiting,
     isLoadingMore: !AsyncResult.isInitial(result) && result.waiting,

@@ -6,7 +6,8 @@ import type { Action, ActionError, ActionValue } from "./types.js";
 
 /**
  * Runs an action as an Effect. Effect actions run as they are; Promise actions get an abort
- * signal, so interrupting the fiber (unmount, refresh, key change) cancels their requests.
+ * signal, so interrupting the fiber (a refresh, or the read leaving the cache after its idle TTL)
+ * cancels their requests.
  */
 export const runAction = <action extends Action>(
   action: action,

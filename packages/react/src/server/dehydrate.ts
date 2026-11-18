@@ -23,6 +23,7 @@ import { Hydration, type AtomRegistry } from "effect/reactivity";
  * const state = dehydrate(registry, { streaming: true })
  * ```
  *
+ * @stability unstable
  * @category server
  * @since 1.0.0
  */

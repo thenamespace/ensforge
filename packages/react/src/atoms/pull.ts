@@ -1,11 +1,13 @@
-import type { Effect, Stream } from "effect";
+import { Stream, type Effect } from "effect";
 import { Atom } from "effect/reactivity";
 
 import type { Ensforge } from "@ensforge/sdk";
 import { Indexer } from "@ensforge/sdk/effect";
 
+import { followResults } from "./follow.js";
 import { ReadInput } from "./key.js";
 import { runAction } from "./run.js";
+import { isServer, serverReads } from "./runtime.js";
 import { readReactivityKeys, subjectsOf } from "./subjects.js";
 import type { Action, ActionError, ActionOptions, ActionValue } from "./types.js";
 
@@ -30,6 +32,7 @@ export type PageAction = Action &
  * Pages of an indexer list as an atom: its value holds every page loaded so far, and writing to
  * it loads the next one.
  *
+ * @stability unstable
  * @category reads
  * @since 1.0.0
  */
@@ -41,8 +44,12 @@ const family = Atom.family((input: ReadInput) => {
     runAction(action, client, { ...(options as object), cursor }),
   ) as Stream.Stream<never, never>;
 
-  return Atom.pull(pages).pipe(
-    Atom.withReactivity(readReactivityKeys(client, action.path, subjectsOf(options))),
+  const subjects = subjectsOf(options);
+
+  // Like `ensAtom`: server renders without `prefetch` leave the list loading.
+  return Atom.pull((get) => (isServer && !get(serverReads) ? Stream.never : pages)).pipe(
+    Atom.withReactivity(readReactivityKeys(client, action.path, subjects)),
+    followResults(client, action.path, subjects),
     Atom.setIdleTTL("1 minute"),
   );
 });
@@ -61,6 +68,7 @@ const family = Atom.family((input: ReadInput) => {
  * registry.set(subnames, undefined) // load the next page
  * ```
  *
+ * @stability unstable
  * @category reads
  * @since 1.0.0
  */
@@ -69,7 +77,7 @@ export const ensPagesAtom = <action extends PageAction>(
   action: action,
   options: Omit<ActionOptions<action>, "cursor">,
 ): PagesAtom<ActionValue<action>, ActionError<action>> =>
-  family(new ReadInput(client, action, options, "pages")) as unknown as PagesAtom<
+  family(new ReadInput(client, action, options)) as unknown as PagesAtom<
     ActionValue<action>,
     ActionError<action>
   >;

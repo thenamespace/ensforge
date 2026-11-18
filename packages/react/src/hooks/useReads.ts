@@ -6,7 +6,7 @@ import { RegistryContext, useAtomValue } from "@effect/atom-react";
 import { Atom } from "effect/reactivity";
 
 import { readKey } from "../atoms/key.js";
-import { ensAtom } from "../atoms/read.js";
+import { ensAtom, settingsOf } from "../atoms/read.js";
 import type { Action, ActionError, ActionOptions, ActionValue } from "../atoms/types.js";
 import { useEnsforgeContext } from "../provider/context.js";
 import { toReadResult, type ReadResult } from "./result.js";
@@ -65,13 +65,17 @@ export const useReads = <const reads extends readonly ReadSpec[]>(
   const { client: own, ...freshness } = config;
   const { client, defaults } = useEnsforgeContext(own);
   const registry = useContext(RegistryContext);
+  const settings = { ...defaults, ...freshness };
   const atoms = reads.map(([action, options]) =>
-    ensAtom(client, action, options as ActionOptions<Action>, { ...defaults, ...freshness }),
+    ensAtom(client, action, options as ActionOptions<Action>, settings),
   );
 
-  // One atom over every read, rebuilt only when the set of reads changes (read atoms are cached
-  // per key, so equal keys mean equal atoms).
-  const keys = reads.map(([action, options]) => readKey(client, action, options)).join("\n");
+  // One atom over every read, rebuilt only when a read's key or the freshness changes (read
+  // atoms are cached per key and freshness, so equal keys mean equal atoms).
+  const keys = [
+    JSON.stringify(settingsOf(settings)),
+    ...reads.map(([action, options]) => readKey(client, action, options)),
+  ].join("\n");
   // oxlint-disable-next-line react-hooks/exhaustive-deps
   const all = useMemo(() => Atom.make((get) => atoms.map((atom) => get(atom))), [keys]);
   const results = useAtomValue(all);

@@ -6,8 +6,8 @@ React hooks and Effect Atom atoms for ENS, built on [`@ensforge/sdk`](../sdk/REA
 
 - Hooks for any sdk action (`useRead`, `useWrite`, …) and named presets (`useAddress`,
   `useSetRecords`, …), typed from the actions themselves
-- Shared, cached reads that cancel on unmount and refresh after writes: chain reads once the
-  transaction is mined, indexer reads once the indexer has caught up
+- Shared, cached reads that outlive unmount for `idleTTL` and refresh after writes: chain reads
+  once the transaction is mined, indexer reads once the indexer has caught up
 - Write progress (`steps`) for multi-step plans, and `usePrepare` for review screens
 - Effect Atom atoms (`ensAtom`, `ensWriteAtom`, `ensPagesAtom`) to compose ENS data with your own
 - Server rendering: `prefetch`, `dehydrate` (with streaming) and `HydrationBoundary`, for the
