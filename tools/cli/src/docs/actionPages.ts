@@ -1,5 +1,6 @@
 import { Array as Arr, Formatter, Option, Order, String as Str } from "effect";
 
+import { describe, keywordsFor } from "./descriptions.ts";
 import {
   apiMeta,
   callout,
@@ -17,6 +18,7 @@ import {
 } from "./mdx.ts";
 import type { Member } from "./members.ts";
 import type { ActionDoc, Returns } from "./model.ts";
+import { type ExampleResponse, exampleResponseSection } from "./responses.ts";
 import { type DocExample, type DocSections, tagValue, tagValues, throwsOf } from "./sections.ts";
 import { actionUrl, domainUrl, errorClassUrl, errorUrl, packageUrl } from "./urls.ts";
 
@@ -28,6 +30,8 @@ export const pathOf = (action: ActionDoc): string =>
 export type ActionLinks = {
   readonly resolve: LinkResolver;
   /** The React hook that wraps an action path, if any. */
+  /** The recorded response of an action path, if one was recorded. */
+  readonly responseOf?: (path: string) => ExampleResponse | undefined;
   readonly hookOf: (path: string) => { readonly name: string; readonly url: string } | undefined;
 };
 
@@ -146,7 +150,15 @@ export const seeList = (doc: DocSections, resolve: LinkResolver): string =>
     "\n",
   );
 
-const description = (doc: DocSections): string => plain(firstSentence(doc.summary));
+const description = (action: ActionDoc): string =>
+  describe(
+    plain(firstSentence(action.doc.summary)),
+    `Parameters, return value, errors and examples for ${pathOf(action)} in @ensforge/${action.root}.`,
+    `Options, result, errors and examples for ${pathOf(action)}.`,
+    `Options, errors and examples for ${pathOf(action)}.`,
+    `Errors and examples for ${pathOf(action)}.`,
+    "Includes examples.",
+  );
 
 /** One action page, following the generated action page template of the writers' guide. */
 export const actionPage = (action: ActionDoc, links: ActionLinks): string => {
@@ -230,8 +242,16 @@ export const actionPage = (action: ActionDoc, links: ActionLinks): string => {
   return page(
     {
       title: path,
-      description: description(action.doc),
-      keywords: [action.name, path, ...(action.sync === undefined ? [] : [action.sync.name])],
+      description: description(action),
+      keywords: keywordsFor(
+        [
+          path,
+          action.name,
+          ...(action.sync === undefined ? [] : [action.sync.name]),
+          `@ensforge/${action.root}`,
+        ],
+        action.domain,
+      ),
     },
     [
       apiMeta({
@@ -275,6 +295,10 @@ export const actionPage = (action: ActionDoc, links: ActionLinks): string => {
       `## Returns\n\n${returnsBlock(action.returns, resolve)}`,
       `## Errors\n\n${errorsBlock(action.doc, action.kind, resolve)}`,
       `## Examples\n\n${usageTabs(action.doc.examples)}`,
+      Option.match(Option.fromUndefinedOr(links.responseOf?.(path)), {
+        onNone: () => "",
+        onSome: exampleResponseSection,
+      }),
       planMethods,
       sync,
       tagValues(action.doc, "see").length === 0
@@ -309,8 +333,21 @@ export const domainPage = (
   return page(
     {
       title: domain,
-      description: `List every ${domain} action, what it does and whether it reads or writes.`,
-      keywords: [domain, ...Arr.map(actions, (action) => `${domain}.${action.name}`)],
+      description: describe(
+        `List the ${actions.length} ${domain} action${actions.length === 1 ? "" : "s"} of @ensforge/${root} and whether each reads, writes or signs.`,
+        ...Arr.map(
+          Arr.makeBy(Math.min(actions.length, 8), (index) => 8 - index),
+          (count) =>
+            `Covers ${Arr.join(
+              Arr.map(Arr.take(actions, count), (action) => action.name),
+              ", ",
+            )}.`,
+        ),
+      ),
+      keywords: keywordsFor(
+        [domain, `@ensforge/${root}`, ...Arr.map(actions, (action) => `${domain}.${action.name}`)],
+        domain,
+      ),
     },
     [
       apiMeta({

@@ -5,6 +5,7 @@ import {
   Formatter,
   Path,
   Record as Rec,
+  Schema,
   String as Str,
 } from "effect";
 
@@ -38,6 +39,7 @@ import {
   plain,
 } from "./mdx.ts";
 import type { ActionDoc, ExportDoc, Thrower } from "./model.ts";
+import { ExampleResponses } from "./responses.ts";
 import { tagValues, throwsOf } from "./sections.ts";
 import { actionUrl, errorUrl, hookUrl, packageUrl } from "./urls.ts";
 
@@ -284,8 +286,18 @@ export const docsSite = Effect.fn("docs.site")(function* (root: string) {
       return target === undefined ? [] : [[target, hook] as const];
     }),
   );
+  const responsesFile = path.join(root, "apps/docs/src/content/example-responses.json");
+  const responses = (yield* fs.exists(responsesFile))
+    ? yield* fs.readFileString(responsesFile).pipe(
+        Effect.flatMap(Schema.decodeUnknownEffect(Schema.fromJsonString(ExampleResponses))),
+        Effect.mapError((cause) =>
+          SetupError.make({ message: `${responsesFile}: ${String(cause)}` }),
+        ),
+      )
+    : {};
   const actionLinks = {
     resolve,
+    responseOf: (actionPath: string) => responses[actionPath],
     hookOf: (actionPath: string) => {
       const hook = presets.get(actionPath);
       return hook === undefined ? undefined : { name: hook.path, url: hookUrl(hook.path) };
@@ -415,7 +427,7 @@ export const docsSite = Effect.fn("docs.site")(function* (root: string) {
       title: "SDK",
       packageName: "@ensforge/sdk",
       description:
-        "Browse every action of @ensforge/sdk by domain, with the client, batching, utilities and indexers it exports.",
+        "Browse every action of @ensforge/sdk by domain, with the client, batching, utilities and indexers it exports, each with its signature and examples.",
       intro: [
         "Every action of `@ensforge/sdk`, by domain. Each page lists its signature, options, result, errors and examples.",
       ],
@@ -430,7 +442,7 @@ export const docsSite = Effect.fn("docs.site")(function* (root: string) {
       {
         title: "Client",
         description:
-          "Look up the options of Ensforge.create, the action groups, and the read, write and plan types.",
+          "Look up the options of Ensforge.create, the action groups, and the read, write and plan option types that every @ensforge/sdk action shares.",
       },
       "The client, its options and the option and result types every action shares. See [Create a client](/docs/sdk/create-a-client).",
       clientGroups,
@@ -443,7 +455,7 @@ export const docsSite = Effect.fn("docs.site")(function* (root: string) {
       {
         title: "Utilities",
         description:
-          "Look up the name, coin type, content hash, duration, fuse, role and error helpers.",
+          "Look up the name, coin type, content hash, duration, fuse, role and error helpers that @ensforge/sdk exports besides its actions.",
       },
       "Helpers exported from `@ensforge/sdk` (and the same from `@ensforge/sdk/effect`).",
       [...utilityGroups, { heading: "Errors", entries: errorHelpers }],
@@ -456,7 +468,7 @@ export const docsSite = Effect.fn("docs.site")(function* (root: string) {
       {
         title: "Indexers",
         description:
-          "Look up the indexers, query options and result types of @ensforge/sdk/indexer.",
+          "Look up the indexers, query options and result types of @ensforge/sdk/indexer, the adapters that serve search, history and name listings.",
       },
       "Exports of `@ensforge/sdk/indexer`. See [Connect an indexer](/docs/sdk/connect-an-indexer).",
       indexerGroups,
@@ -558,7 +570,8 @@ export const docsSite = Effect.fn("docs.site")(function* (root: string) {
     exportsPage(
       {
         title: "Components",
-        description: "Look up the provider and boundary components of @ensforge/react.",
+        description:
+          "Look up EnsforgeProvider and the read error and hydration boundary components of @ensforge/react, with their props and examples.",
       },
       "Components exported from `@ensforge/react`. See [Set up the provider](/docs/react/set-up-the-provider).",
       [{ heading: "Components", entries: components }],
@@ -570,7 +583,8 @@ export const docsSite = Effect.fn("docs.site")(function* (root: string) {
     exportsPage(
       {
         title: "Server",
-        description: "Look up the server rendering helpers of @ensforge/react/server.",
+        description:
+          "Look up the server rendering helpers of @ensforge/react/server, which prefetch ENS reads on the server so the client hydrates with data.",
       },
       "Exports of `@ensforge/react/server`, for prefetching reads on the server.",
       [{ heading: "Exports", entries: serverExports }],
@@ -582,7 +596,8 @@ export const docsSite = Effect.fn("docs.site")(function* (root: string) {
     exportsPage(
       {
         title: "Atoms",
-        description: "Look up the atom layer of @ensforge/react/atoms that the hooks are built on.",
+        description:
+          "Look up the atom layer of @ensforge/react/atoms that the hooks are built on, for reading ENS data outside of React components.",
       },
       "Exports of `@ensforge/react/atoms`. See [Atoms](/docs/react/atoms).",
       [{ heading: "Exports", entries: atomsExports }],
@@ -613,7 +628,7 @@ export const docsSite = Effect.fn("docs.site")(function* (root: string) {
       title: "HCA",
       packageName: "@ensforge/hca",
       description:
-        "Browse every action of @ensforge/hca by domain, and the route and executors that send HCA calls.",
+        "Browse every action of the experimental @ensforge/hca package by domain, plus the route and executors that send hosted contract account calls.",
       intro: [
         callout(
           "info",
@@ -632,7 +647,8 @@ export const docsSite = Effect.fn("docs.site")(function* (root: string) {
     exportsPage(
       {
         title: "Executors",
-        description: "Look up the HCA route, the executors and their options in @ensforge/hca.",
+        description:
+          "Look up the HCA route, the executors that send hosted contract account calls, and their options in the experimental @ensforge/hca package.",
       },
       "Exports of `@ensforge/hca` besides its actions and `HcaError`. `@ensforge/hca` is experimental.",
       [
@@ -700,7 +716,7 @@ export const docsSite = Effect.fn("docs.site")(function* (root: string) {
       {
         title: "Contracts",
         description:
-          "Look up the ENS ABIs, contract addresses per chain, interface IDs and roles that @ensforge/contracts exports.",
+          "Look up the ENS ABIs, contract addresses per chain, interface IDs and roles that @ensforge/contracts exports, with no dependency on the SDK.",
         keywords: ["@ensforge/contracts", "Abis", "Deployments", "InterfaceIds", "Roles"],
       },
       [

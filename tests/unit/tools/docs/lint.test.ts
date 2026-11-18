@@ -2,7 +2,7 @@
 import { assert, describe, it } from "@effect/vitest";
 
 import { parseFrontmatter, urlOf, type DocsPage } from "@ensforge/tools/internal/docs/content";
-import { lintPages, slugOf } from "@ensforge/tools/internal/docs/lint";
+import { isListed, lintPages, slugOf } from "@ensforge/tools/internal/docs/lint";
 
 const page = (file: string, description: string, body = ""): DocsPage => ({
   file,
@@ -11,6 +11,9 @@ const page = (file: string, description: string, body = ""): DocsPage => ({
   generated: false,
   body,
 });
+
+const generated = (files: readonly string[]): DocsPage[] =>
+  files.map((file) => ({ ...page(file, ""), generated: true }));
 
 describe("urlOf", () => {
   it("drops route groups and index", () => {
@@ -63,5 +66,32 @@ describe("lintPages", () => {
     const pages = Array.from({ length: 400 }, (_, index) => page(`p${index}.mdx`, "y".repeat(160)));
 
     assert.strictEqual(lintPages(pages).budget.problems.length, 1);
+  });
+});
+
+describe("isListed", () => {
+  it("lists landing, package, domain, non-hook and class pages but not actions, hooks or codes", () => {
+    const listed = [
+      "sdk/index.mdx",
+      "sdk/(upgrading)/guide.mdx",
+      "reference/index.mdx",
+      "reference/sdk/client.mdx",
+      "reference/sdk/record/index.mdx",
+      "reference/contracts/abis.mdx",
+      "reference/react/components.mdx",
+      "reference/errors/(config-error)/config-error.mdx",
+    ];
+    const hidden = [
+      "reference/sdk/record/get.mdx",
+      "reference/react/(hooks)/use-read.mdx",
+      "reference/hca/hca/route.mdx",
+      "reference/errors/(config-error)/INVALID_CONFIG.mdx",
+    ];
+
+    assert.deepStrictEqual(
+      generated(listed).filter((entry) => !isListed(entry)),
+      [],
+    );
+    assert.deepStrictEqual(generated(hidden).filter(isListed), []);
   });
 });

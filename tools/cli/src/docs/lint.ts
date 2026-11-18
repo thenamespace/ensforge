@@ -57,10 +57,34 @@ export const linksOf = (page: DocsPage): { target: string; line: number }[] =>
     })),
   );
 
+/**
+ * Whether `llms.txt` lists a page (mirrors `isReferenceIndex` in the docs site): every page
+ * outside the reference, and in it the landing, package and index pages, all contracts pages,
+ * React pages that are not hooks, SDK and HCA pages one level under the package (not actions)
+ * and error class pages. Individual actions, hooks and error codes are left out.
+ */
+export const isListed = (page: DocsPage): boolean => {
+  const [, , root, ...slugs] = page.url.split("/");
+  if (root !== "reference" || slugs.length === 0 || /(^|\/)index\.mdx$/.test(page.file))
+    return true;
+  const [section = "", leaf = ""] = slugs;
+  if (section === "contracts") return true;
+  if (section === "react") return !leaf.startsWith("use");
+  if (section === "sdk" || section === "hca") return slugs.length === 2;
+  if (section === "errors") return slugs.length === 2 && leaf === leaf.toLowerCase();
+  return true;
+};
+
 export type DocsProblems = {
   readonly descriptions: string[];
   readonly links: string[];
-  readonly budget: { readonly characters: number; readonly problems: string[] };
+  readonly budget: {
+    /** Characters of the pages `llms.txt` lists. */
+    readonly characters: number;
+    /** Characters of every page. */
+    readonly total: number;
+    readonly problems: string[];
+  };
 };
 
 export const lintPages = (pages: readonly DocsPage[]): DocsProblems => {
@@ -69,11 +93,14 @@ export const lintPages = (pages: readonly DocsPage[]): DocsProblems => {
   const descriptions: string[] = [];
   const links: string[] = [];
   let characters = 0;
+  let total = 0;
 
   for (const page of pages) {
     const description = page.frontmatter["description"];
     const title = page.frontmatter["title"] ?? "";
-    characters += (description?.length ?? 0) + title.length;
+    const size = (description?.length ?? 0) + title.length;
+    total += size;
+    if (isListed(page)) characters += size;
 
     if (description === undefined || description === "")
       descriptions.push(`${page.file}: no description`);
@@ -103,9 +130,12 @@ export const lintPages = (pages: readonly DocsPage[]): DocsProblems => {
     links,
     budget: {
       characters,
+      total,
       problems:
         characters > llmsBudget
-          ? [`descriptions and titles total ${characters} characters, over ${llmsBudget}`]
+          ? [
+              `descriptions and titles of the pages llms.txt lists total ${characters} characters, over ${llmsBudget}`,
+            ]
           : [],
     },
   };

@@ -44,7 +44,8 @@ export const abisPage = (
   return page(
     {
       title: "ABIs",
-      description: "Look up every ENS contract ABI in @ensforge/contracts, by protocol version.",
+      description:
+        "Look up every ENS contract ABI in @ensforge/contracts, by protocol version, as typed const arrays you can pass straight to viem.",
       keywords: ["Abis", "ABI", "viem"],
     },
     [
@@ -174,7 +175,7 @@ export const deploymentsPage = (
     {
       title: "Deployments",
       description:
-        "Look up ENS contract addresses per chain, their capability flags and the Deployments API.",
+        "Look up ENS contract addresses per chain, the capability flags of each deployment and the Deployments helpers in @ensforge/contracts.",
       keywords: ["Deployments", "addresses", "mainnet", "sepolia", "Capabilities"],
     },
     [
@@ -203,7 +204,8 @@ const entryPointsPage = (entryPoints: readonly EntryPoint[]): string =>
   page(
     {
       title: "Entry points",
-      description: "Look up what each import path of @ensforge/contracts exports.",
+      description:
+        "Look up what each import path of @ensforge/contracts exports, so you can import single constants from a subpath and keep bundles small.",
       keywords: Arr.map(entryPoints, (entry) => entry.subpath),
     },
     [
@@ -260,7 +262,7 @@ export const contractsReference = (
         {
           title: "Interface IDs",
           description:
-            "Look up the ERC-165 interface IDs of ENS registries, resolvers and resolver profiles.",
+            "Look up the ERC-165 interface IDs of ENS registries, resolvers and resolver profiles that ensforge checks before it reads or writes.",
         },
         `\`InterfaceIds\` holds the ERC-165 interface IDs ensforge checks before it reads or writes. ${guide}`,
         "InterfaceIds",
@@ -274,7 +276,8 @@ export const contractsReference = (
       constantsPage(
         {
           title: "Roles",
-          description: "Look up the ENSv2 role bitmaps of registries and resolvers.",
+          description:
+            "Look up the ENSv2 role bitmaps of registries and resolvers, with the admin role that may grant and revoke each one and how to combine them.",
         },
         `\`Roles\` holds the ENSv2 role bitmaps. Each role has an admin role that may grant and revoke it. ${guide}`,
         "Roles",

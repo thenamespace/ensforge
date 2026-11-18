@@ -1,6 +1,7 @@
 import { Array as Arr, Record as Rec, String as Str } from "effect";
 
 import { cards, presetTarget } from "./actionPages.ts";
+import { describe, keywordsFor } from "./descriptions.ts";
 import { exportSection } from "./exportPages.ts";
 import {
   apiMeta,
@@ -34,8 +35,16 @@ export const hookPage = (hook: ExportDoc, resolve: LinkResolver): string => {
   return page(
     {
       title: hook.path,
-      description: plain(firstSentence(hook.doc.summary)),
-      keywords: [hook.path, ...(target === undefined ? [] : [target])],
+      description: describe(
+        plain(firstSentence(hook.doc.summary)),
+        `Signature, options, result and examples for ${hook.path} in @ensforge/react.`,
+        `Signature, result and examples for ${hook.path}.`,
+        "Includes examples.",
+      ),
+      keywords: keywordsFor(
+        [hook.path, "@ensforge/react", "React hook", ...(target === undefined ? [] : [target])],
+        target === undefined ? undefined : Str.split(target, ".")[0],
+      ),
     },
     [
       apiMeta({
@@ -72,7 +81,7 @@ export const reactPackagePage = (
     {
       title: "React",
       description:
-        "Look up every hook, component, server helper and atom of @ensforge/react, and the types the hooks take and return.",
+        "Look up every hook, component, server helper and atom of @ensforge/react, and the types the hooks take and return, with examples.",
       keywords: Arr.map(hooks, (hook) => hook.path),
     },
     [

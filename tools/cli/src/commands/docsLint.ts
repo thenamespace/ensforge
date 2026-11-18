@@ -2,14 +2,14 @@ import { Console, Effect } from "effect";
 import { Command, Flag } from "effect/cli";
 
 import { readPages } from "../docs/content.ts";
-import { descriptionRange, lintPages } from "../docs/lint.ts";
+import { descriptionRange, lintPages, llmsBudget } from "../docs/lint.ts";
 import { CheckFailed } from "../errors.ts";
 import { Workspace } from "../services/Workspace.ts";
 
 /**
  * Checks every docs page (generated ones too): a `description` of 120-160 characters, internal
  * `/docs/...` links that resolve to a page and a heading anchor, and the description and title
- * budget that stands in for the `llms.txt` size. Broken links and the budget fail; description
+ * budget of the pages `llms.txt` lists (hand-written, landing, package, domain and class pages). Broken links and the budget fail; description
  * length only warns until `strictDescriptions` is switched to `true` (or `--strict-descriptions`
  * is passed), which makes it fail too.
  */
@@ -21,7 +21,7 @@ export const docsLint = Effect.fn("docs.lint")(function* (strict: boolean) {
   const problems = lintPages(pages);
 
   yield* Console.log(
-    `docs lint: descriptions + titles total ${problems.budget.characters} characters (budget 50000)`,
+    `docs lint: descriptions + titles total ${problems.budget.characters} characters for the pages llms.txt lists (budget ${llmsBudget}), ${problems.budget.total} for all pages`,
   );
   const failing = [...problems.links, ...problems.budget.problems];
   if (strict) failing.unshift(...problems.descriptions);

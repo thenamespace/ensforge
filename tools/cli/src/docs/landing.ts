@@ -158,7 +158,7 @@ export const referenceLanding = (input: {
       {
         title: "API reference",
         description:
-          "Look up every action, hook, contract constant and error code of the ensforge packages, generated from their source.",
+          "Look up every action, hook, contract constant and error code of the ensforge packages, generated from their source and checked on each release.",
         keywords: ["API", "reference", ...Arr.map(reference.packages, (entry) => entry.name)],
       },
       ["<ReferenceHome />"],

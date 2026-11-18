@@ -1,6 +1,7 @@
 import { Array as Arr, Formatter } from "effect";
 
 import { cards, fieldsTable } from "./actionPages.ts";
+import { describe, keywordsFor } from "./descriptions.ts";
 import {
   apiMeta,
   code,
@@ -62,8 +63,18 @@ export const errorCodePage = (
   return page(
     {
       title: error.code,
-      description: `Fix ${error.code} (${errorClass.name}): ${plain(error.shortMessage) || "what the code means."}`,
-      keywords: [error.code, error.errorClass],
+      description: describe(
+        `What ${error.code} means, why ${errorClass.name} throws it, what to show users and how to fix it in ensforge.`,
+        "Also covers retry safety and the actions that throw it.",
+        "Also covers retry safety.",
+      ),
+      keywords: keywordsFor([
+        error.code,
+        error.errorClass,
+        `@ensforge/${error.root}`,
+        "error",
+        "error code",
+      ]),
     },
     [
       `<ErrorMeta errorClass={${Formatter.formatJson(error.errorClass)}} href="${errorClassUrl(error.errorClass)}" package={${Formatter.formatJson(packageOf(error.root))}}${error.retryable ? " retryable" : ""} />`,
@@ -93,8 +104,18 @@ export const errorClassPage = (errorClass: ErrorClassDoc, resolve: LinkResolver)
   page(
     {
       title: errorClass.name,
-      description: `Look up ${errorClass.name}: ${plain(firstSentence(errorClass.summary)) || "an ensforge error class."} Lists its fields and codes.`,
-      keywords: [errorClass.name, ...Arr.map(errorClass.codes, (error) => error.code)],
+      description: describe(
+        `What ${errorClass.name} means, which codes it carries and how to catch it in ensforge.`,
+        plain(firstSentence(errorClass.summary)),
+        "Lists its fields and every code.",
+        "Includes how to catch it.",
+      ),
+      keywords: keywordsFor([
+        errorClass.name,
+        `@ensforge/${errorClass.root}`,
+        "error class",
+        ...Arr.map(errorClass.codes, (error) => error.code),
+      ]),
     },
     [
       apiMeta({
@@ -132,8 +153,15 @@ export const errorsIndexPage = (
   return page(
     {
       title: "Errors",
-      description: "Look up every error code ensforge throws, grouped by error class.",
-      keywords: Arr.map(classes, (errorClass) => errorClass.name),
+      description: describe(
+        `Look up all ${codes.length} error codes ensforge throws, grouped by ${classes.length} error classes, with what each means and how to fix it.`,
+        "Each code has its own page.",
+      ),
+      keywords: keywordsFor([
+        "errors",
+        "error codes",
+        ...Arr.map(classes, (errorClass) => errorClass.name),
+      ]),
     },
     [
       apiMeta({ summary: `${codes.length} codes · ${classes.length} classes` }),

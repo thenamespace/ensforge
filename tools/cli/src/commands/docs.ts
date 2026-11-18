@@ -6,6 +6,7 @@ import { CheckFailed } from "../errors.ts";
 import { Workspace } from "../services/Workspace.ts";
 import { docsExamplesCommand } from "./docsExamples.ts";
 import { docsLintCommand } from "./docsLint.ts";
+import { docsRecordResponsesCommand } from "./docsRecordResponses.ts";
 
 /** Folders under `apps/docs` the generator owns: generated pages there are replaced. */
 const ownedFolders = ["content/docs/reference"];
@@ -74,5 +75,11 @@ const checkCommand = Command.make("check", {}, () => docs(true)).pipe(
 
 export const docsCommand = Command.make("docs").pipe(
   Command.withDescription("Generate or check the API reference pages of the docs site"),
-  Command.withSubcommands([generateCommand, checkCommand, docsExamplesCommand, docsLintCommand]),
+  Command.withSubcommands([
+    generateCommand,
+    checkCommand,
+    docsExamplesCommand,
+    docsLintCommand,
+    docsRecordResponsesCommand,
+  ]),
 );
