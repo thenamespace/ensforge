@@ -1,6 +1,107 @@
 ---
 title: Watch for changes
-description: Placeholder, to be written.
+description: React live when a name's owner, resolver, records or registration change.
+keywords: [event.watch, watch, onEvents, unwatch, polling, live updates]
 ---
 
-Placeholder: this page is not written yet.
+By the end of this guide you can update a name's page as it changes, or react when another account edits the name.
+
+## Prerequisites
+
+- A client with the ENS actions added. See [Create a client](/docs/sdk/create-a-client). Watching reads the chain, so it needs no indexer.
+
+## Watch a name
+
+`event.watch` starts watching and resolves to a function that stops it.
+
+**Example** (Watching a Name)
+
+```ts twoslash title="watch-name.ts"
+import { ensActions, Ensforge } from "@ensforge/sdk";
+import { createPublicClient, http } from "viem";
+import { mainnet } from "viem/chains";
+
+const ens = Ensforge.create({
+  publicClient: createPublicClient({ chain: mainnet, transport: http() }),
+}).extend(ensActions());
+
+const unwatch = await ens.event.watch({
+  name: "nick.eth",
+  onEvents: (events) => {
+    for (const event of events) {
+      console.log(event.type, event.action, event.transactionHash);
+    }
+  },
+  onError: (error) => console.error(error.code),
+});
+
+// Later, when the page closes:
+unwatch();
+```
+
+- `onEvents` runs with each new batch of events. It does not run for blocks with no events.
+- Watching starts at the current block. Events from before the call are not delivered: for those, see [Name history](/docs/sdk/name-history).
+- `onError` runs when a poll fails. Watching continues, and the next poll reads the block range that failed again.
+- `unwatch()` stops watching.
+
+See [`event.watch`](/docs/sdk/reference/actions/event/watch).
+
+## Watch only some events
+
+`types` limits the events. Each event has a `type` and an `action` that says what it did.
+
+**Example** (Watching Records and Resolver Changes)
+
+```ts twoslash title="watch-records.ts"
+import { ensActions, Ensforge } from "@ensforge/sdk";
+import { createPublicClient, http } from "viem";
+import { mainnet } from "viem/chains";
+
+const ens = Ensforge.create({
+  publicClient: createPublicClient({ chain: mainnet, transport: http() }),
+}).extend(ensActions());
+
+// ---cut---
+const unwatch = await ens.event.watch({
+  name: "nick.eth",
+  types: ["record", "resolver"],
+  pollingInterval: 4_000,
+  onEvents: (events) => {
+    for (const event of events) console.log(event.action, event.args);
+  },
+});
+```
+
+## How watching works
+
+ensforge polls for new blocks. For each new block range it reads the name's events as [`event.get`](/docs/sdk/reference/actions/event/get) does, so a change of resolver or registry during the watch is followed from the next block on. It polls at the public client's `pollingInterval`, unless you pass `pollingInterval` in milliseconds.
+
+An event has `type`, `action`, `event` (the contract's event name), `contract`, `name`, `args`, `blockNumber`, `transactionHash` and `logIndex`.
+
+## Options
+
+| Option            | Type                | Default             | Description                                   |
+| ----------------- | ------------------- | ------------------- | --------------------------------------------- |
+| `name`            | `string`            | required            | The name to watch. Normalised for you.        |
+| `onEvents`        | `(events) => void`  | required            | Called with each new batch of events.         |
+| `types`           | list of event types | all                 | Only these event types.                       |
+| `pollingInterval` | `number`            | the public client's | Milliseconds between polls.                   |
+| `onError`         | `(error) => void`   | none                | Called when a poll fails. Watching continues. |
+
+## Troubleshooting
+
+### `onEvents` never runs
+
+Nothing changed after you started watching. Watching does not replay past events. Use [`event.get`](/docs/sdk/reference/actions/event/get) or [Name history](/docs/sdk/name-history) for those.
+
+### Changes arrive late
+
+ensforge polls, so a change shows up at the next poll after its block. Lower `pollingInterval` to see changes sooner, at the cost of more RPC requests.
+
+### `onError` keeps firing
+
+Polls are failing, for example because of RPC rate limits. The error is a typed ensforge error, so log its `code`. See [Configure RPC and gateways](/docs/sdk/rpc-and-gateways) and [`RATE_LIMITED`](/docs/sdk/errors/RATE_LIMITED).
+
+### `INVALID_NAME`
+
+The name cannot be normalised. [`INVALID_NAME`](/docs/sdk/errors/INVALID_NAME) is thrown by `event.watch` before it starts watching.

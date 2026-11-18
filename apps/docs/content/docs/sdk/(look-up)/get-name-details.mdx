@@ -1,6 +1,104 @@
 ---
 title: Get a name's owner, expiry and status
-description: Placeholder, to be written.
+description: Read who owns a name, when it expires, which resolver it uses and whether it can be registered or renewed.
+keywords: [name.get, owner, registrant, manager, expiry, grace period, status, availability]
 ---
 
-Placeholder: this page is not written yet.
+By the end of this guide you can read the full state of a name in one call: who owns it, when it expires, which resolver it uses, and whether anyone can register or renew it.
+
+## Prerequisites
+
+- An ensforge client with the ENS actions added. See [Create a client](/docs/sdk/create-a-client).
+
+## Get the state of a name
+
+`name.get` returns everything ensforge knows about a name's registration. ensforge finds out where the name lives and reads it there, so you do not choose a contract.
+
+**Example** (Showing a Renewal Banner)
+
+```ts twoslash title="get-name-details.ts"
+import { ensActions, Ensforge } from "@ensforge/sdk";
+import { createPublicClient, http } from "viem";
+import { mainnet } from "viem/chains";
+
+const ens = Ensforge.create({
+  publicClient: createPublicClient({ chain: mainnet, transport: http() }),
+}).extend(ensActions());
+
+const state = await ens.name.get({ name: "ens.eth" });
+//    ^?
+
+if (state.status === "grace") {
+  console.log("In the grace period until", new Date(Number(state.gracePeriodEnd) * 1000));
+} else if (state.expiry !== null) {
+  console.log("Expires", new Date(Number(state.expiry) * 1000));
+}
+```
+
+- `status` tells where the name is in its life. See the table below.
+- `expiry` and `gracePeriodEnd` are Unix seconds as `bigint`, or `null` when they do not apply. Multiply by 1000 for a JavaScript `Date`.
+- Times come from the block the read runs at, not from your local clock.
+
+See [`name.get`](/docs/sdk/reference/actions/name/get).
+
+## Read the result
+
+| Field                 | Description                                                                                                                |
+| --------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| `name`                | The normalised name.                                                                                                       |
+| `status`              | `"available"`, `"registered"`, `"grace"`, `"expired"` or `"reserved"`.                                                     |
+| `owner`               | Who ultimately controls the name.                                                                                          |
+| `manager`             | The registry owner of an unwrapped name (the "manager" in the ENS app), or `null`.                                         |
+| `registrant`          | The holder of an unwrapped `.eth` name's registration token, or `null`.                                                    |
+| `resolver`            | The resolver set on the name itself, or `null`.                                                                            |
+| `inheritedResolver`   | The resolver serving a name that has none of its own, such as a parent's wildcard or off-chain resolver. `null` otherwise. |
+| `expiry`              | Unix seconds when the registration ends, grace period excluded. `null` when it never expires.                              |
+| `gracePeriodEnd`      | Unix seconds when the `.eth` grace period ends.                                                                            |
+| `available`           | Whether the name can be registered now.                                                                                    |
+| `renewable`           | Whether the name can be renewed now: `.eth` names that are registered or in grace.                                         |
+| `kind` and `protocol` | Where the name lives. Most apps never need them. See [ENS versions under the hood](/docs/sdk/ens-versions).                |
+
+`status: "grace"` applies to `.eth` names after they expire, while only the previous owner can renew. `"expired"` names can be registered again. For who may change a name, see [Who can change a name](/docs/sdk/who-can-change-a-name).
+
+## Check availability
+
+`available` and `renewable` answer the two questions a registration page asks. For prices and the full flow, see [Check if a name is available](/docs/sdk/check-if-a-name-is-available).
+
+**Example** (Checking Availability)
+
+```ts twoslash title="is-available.ts"
+import { ensActions, Ensforge } from "@ensforge/sdk";
+import { createPublicClient, http } from "viem";
+import { mainnet } from "viem/chains";
+
+const ens = Ensforge.create({
+  publicClient: createPublicClient({ chain: mainnet, transport: http() }),
+}).extend(ensActions());
+
+// ---cut---
+const { available, renewable } = await ens.name.get({ name: "nick.eth" });
+```
+
+`name.get` costs two batched RPC calls whatever the name kind. A name with no resolver of its own that a parent's resolver serves costs one more.
+
+## Options
+
+| Option                      | Type                    | Default                | Description                           |
+| --------------------------- | ----------------------- | ---------------------- | ------------------------------------- |
+| `name`                      | `string`                | required               | The name to read. Normalised for you. |
+| `signal`                    | `AbortSignal`           | none                   | Cancels the call.                     |
+| `blockNumber` or `blockTag` | `bigint` or a block tag | the client's block tag | Reads at one block, never both.       |
+
+## Troubleshooting
+
+### A name that resolves is reported as `available`
+
+A name served only by a parent's wildcard or off-chain resolver, such as `jesse.base.eth`, is in no registry. Its `resolver` is `null` and its `status` is `"available"`, although it resolves. Check `inheritedResolver`: when it is not `null`, something serves the name. See [Look up off-chain names](/docs/sdk/off-chain-names).
+
+### `INVALID_NAME`
+
+The name is invalid, or it is the root. [`INVALID_NAME`](/docs/sdk/errors/INVALID_NAME) is thrown before any request is sent.
+
+### `RPC_REQUEST_FAILED` or `RPC_TIMEOUT`
+
+The RPC request failed or timed out, with [`RPC_REQUEST_FAILED`](/docs/sdk/errors/RPC_REQUEST_FAILED) or [`RPC_TIMEOUT`](/docs/sdk/errors/RPC_TIMEOUT). Check your RPC endpoint. See [Configure RPC and gateways](/docs/sdk/rpc-and-gateways).

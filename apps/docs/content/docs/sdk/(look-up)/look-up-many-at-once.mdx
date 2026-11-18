@@ -1,6 +1,155 @@
 ---
 title: Look up many at once
-description: Placeholder, to be written.
+description: Read many names, records or addresses together, in as few requests as possible.
+keywords: [batch, ens.batch, Actions.batch, request, Multicall3, indexer.lookup, allowFailure]
 ---
 
-Placeholder: this page is not written yet.
+By the end of this guide you can load a whole page of data, such as a profile, a table of names or a list of holders, without one network request per value.
+
+## Prerequisites
+
+- An ensforge client with the ENS actions added. See [Create a client](/docs/sdk/create-a-client).
+- For the second approach, [an indexer](/docs/sdk/connect-an-indexer).
+
+There are two ways to read many values. Use `batch` for reads from the chain. Use `indexer.lookup` for up to 1,000 names and addresses at once, answered from an indexer.
+
+## Batch reads from the chain
+
+Every read action has a `.request` form that builds a deferred read. `batch` runs a group of them together. Contract reads are combined into Multicall3 calls per block. Resolution reads (records and primary names) keep their own Universal Resolver call, so off-chain names still work.
+
+**Example** (Loading a Profile in One Batch)
+
+```ts twoslash title="batch-profile.ts"
+import { Actions, ensActions, Ensforge } from "@ensforge/sdk";
+import { createPublicClient, http } from "viem";
+import { mainnet } from "viem/chains";
+
+const ens = Ensforge.create({
+  publicClient: createPublicClient({ chain: mainnet, transport: http() }),
+}).extend(ensActions());
+
+const { results } = await ens.batch({
+  requests: {
+    address: Actions.record.getAddress.request({ name: "nick.eth" }),
+    avatar: Actions.record.getAvatar.request({ name: "nick.eth" }),
+    state: Actions.name.get.request({ name: "nick.eth" }),
+  },
+});
+
+if (results.address.status === "success") {
+  console.log(results.address.result);
+  //                          ^?
+}
+```
+
+- `requests` is a record or a list. A record returns a record of results with the same keys. A list returns a tuple in the same order.
+- Each result is `{ status: "success", result }` or `{ status: "failure", error }`. One failed read does not fail the others.
+- Only reads have `.request`. Writes combine with `Plan.merge`. See [How writes work](/docs/sdk/writing-to-ens).
+
+### Get the values directly
+
+Set `allowFailure: false` to get plain values. The first failure rejects the whole batch.
+
+**Example** (Failing the Batch on the First Error)
+
+```ts twoslash title="batch-values.ts"
+import { Actions, ensActions, Ensforge } from "@ensforge/sdk";
+import { createPublicClient, http } from "viem";
+import { mainnet } from "viem/chains";
+
+const ens = Ensforge.create({
+  publicClient: createPublicClient({ chain: mainnet, transport: http() }),
+}).extend(ensActions());
+
+// ---cut---
+const { results } = await ens.batch({
+  requests: [
+    Actions.record.getAddress.request({ name: "nick.eth" }),
+    Actions.record.getAddress.request({ name: "vitalik.eth" }),
+    Actions.record.getAddress.request({ name: "ens.eth" }),
+  ],
+  allowFailure: false,
+});
+
+const [nickAddress, vitalikAddress, ensAddress] = results;
+//     ^?
+```
+
+### Batch options
+
+| Option         | Type                       | Default  | Description                                                       |
+| -------------- | -------------------------- | -------- | ----------------------------------------------------------------- |
+| `requests`     | list or record of requests | required | Deferred reads from `action.request(options)`.                    |
+| `allowFailure` | `boolean`                  | `true`   | Report each failure in its result instead of rejecting the batch. |
+| `signal`       | `AbortSignal`              | none     | Cancels the batch.                                                |
+
+## Look up names and addresses from an indexer
+
+`indexer.lookup` answers up to 1,000 inputs in one request. Names come back with their state. Addresses come back with their primary name and related names. It needs an indexer on the client.
+
+**Example** (Reading Names and an Address Together)
+
+```ts twoslash title="lookup-many.ts"
+import { ensActions, Ensforge } from "@ensforge/sdk";
+import { bigname, indexerActions } from "@ensforge/sdk/indexer";
+import { createPublicClient, http } from "viem";
+import { mainnet } from "viem/chains";
+
+const ens = Ensforge.create({
+  publicClient: createPublicClient({ chain: mainnet, transport: http() }),
+  indexer: bigname(),
+})
+  .extend(ensActions())
+  .extend(indexerActions());
+
+const { results } = await ens.indexer.lookup({
+  inputs: ["nick.eth", "ens.eth", "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045"],
+});
+
+for (const answer of results) {
+  console.log(answer.input, answer.kind, answer.status);
+}
+```
+
+- `results` has one answer per input, in input order.
+- `kind` is `"name"` or `"address"`. A name input fills `name`. An address input fills `names` with its related names.
+- An input that fails, such as an invalid name, reports its own `status` and `reason`. It does not fail the lookup.
+- `profile: "detail"` adds records and resolution to each answer. The default is `"feed"`.
+
+See [`indexer.lookup`](/docs/sdk/reference/actions/indexer/lookup) and [Name lists and indexers](/docs/sdk/name-lists-and-indexers).
+
+### Lookup options
+
+| Option      | Type                     | Default                            | Description                             |
+| ----------- | ------------------------ | ---------------------------------- | --------------------------------------- |
+| `inputs`    | `readonly string[]`      | required                           | Names and addresses, up to 1,000.       |
+| `namespace` | `"ens"` or `"basenames"` | every namespace the indexer serves | Limits the lookup to one naming system. |
+| `profile`   | `"feed"` or `"detail"`   | `"feed"`                           | `"detail"` adds records and resolution. |
+| `signal`    | `AbortSignal`            | none                               | Cancels the call.                       |
+
+## Choose between them
+
+| You need                                               | Use              |
+| ------------------------------------------------------ | ---------------- |
+| Records, avatars or primary names, read from the chain | `batch`          |
+| An authoritative, on-chain answer                      | `batch`          |
+| Hundreds of names or addresses in one request          | `indexer.lookup` |
+| Related names for an address                           | `indexer.lookup` |
+
+## Troubleshooting
+
+### `INVALID_RECORD_VALUE` from `batch`
+
+A request cannot be batched. Only reads built with `.request` run in a batch. [`INVALID_RECORD_VALUE`](/docs/sdk/errors/INVALID_RECORD_VALUE) is also what `indexer.lookup` throws for more than 1,000 inputs, or for none.
+
+### A result has `status: "failure"`
+
+Read `result.error`. It is the same typed error the action would have thrown on its own. Handle it as in [Handle errors](/docs/sdk/handle-errors).
+
+### `INDEXER_NOT_CONFIGURED`
+
+`indexer.lookup` needs an indexer. Pass `indexer: bigname()` to `Ensforge.create` and add `indexerActions()`. See [`INDEXER_NOT_CONFIGURED`](/docs/sdk/errors/INDEXER_NOT_CONFIGURED) and [Connect an indexer](/docs/sdk/connect-an-indexer).
+
+### `INDEXER_UNSUPPORTED`
+
+The indexer does not serve the query or the namespace. See [`INDEXER_UNSUPPORTED`](/docs/sdk/errors/INDEXER_UNSUPPORTED) and [Connect an indexer](/docs/sdk/connect-an-indexer#use-more-than-one-indexer).

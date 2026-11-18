@@ -1,6 +1,137 @@
 ---
 title: Get a name's address
-description: Placeholder, to be written.
+description: Read the address a name points to, for Ethereum or for any other coin or chain.
+keywords:
+  [getAddress, record.getAddress, coin type, ENSIP-9, ENSIP-11, ENSIP-19, forward resolution]
 ---
 
-Placeholder: this page is not written yet.
+By the end of this guide you can turn a [name](/docs/sdk/reference/glossary) such as `nick.eth` into the address it points to (forward resolution), on Ethereum or on any other chain.
+
+## Prerequisites
+
+- An ensforge client with the ENS actions added. See [Create a client](/docs/sdk/create-a-client).
+
+## Get the Ethereum address
+
+`record.getAddress` reads the **address record** of a name: the address its owner chose to receive funds at. Without a `coin`, it reads the Ethereum address.
+
+**Example** (Reading an Ethereum Address)
+
+```ts twoslash title="get-address.ts"
+import { ensActions, Ensforge } from "@ensforge/sdk";
+import { createPublicClient, http } from "viem";
+import { mainnet } from "viem/chains";
+
+const ens = Ensforge.create({
+  publicClient: createPublicClient({ chain: mainnet, transport: http() }),
+}).extend(ensActions());
+
+const address = await ens.record.getAddress({ name: "nick.eth" });
+//    ^?
+console.log(address);
+```
+
+```text title="Output"
+0xb8c2C29ee19D8307cb7255e1Cd9CbDE883A267d5
+```
+
+ensforge normalises the name before it reads, so `Nick.ETH` and `nick.eth` give the same answer. It finds the name's [resolver](/docs/sdk/reference/glossary), including parent, wildcard and off-chain resolvers, and returns a checksummed address. See [How a lookup works](/docs/sdk/looking-up-a-name) and [`record.getAddress`](/docs/sdk/reference/actions/record/get-address).
+
+To read with a plain viem public client instead, call the action directly.
+
+<Tabs groupId="api" items={["Client", "Standalone"]} persist>
+<Tab value="Client">
+
+```ts twoslash title="get-address.ts"
+import { ensActions, Ensforge } from "@ensforge/sdk";
+import { createPublicClient, http } from "viem";
+import { mainnet } from "viem/chains";
+
+const ens = Ensforge.create({
+  publicClient: createPublicClient({ chain: mainnet, transport: http() }),
+}).extend(ensActions());
+
+const address = await ens.record.getAddress({ name: "ens.eth" });
+```
+
+</Tab>
+<Tab value="Standalone">
+
+```ts twoslash title="get-address.ts"
+import { Actions } from "@ensforge/sdk";
+import { createPublicClient, http } from "viem";
+import { mainnet } from "viem/chains";
+
+const publicClient = createPublicClient({ chain: mainnet, transport: http() });
+
+const address = await Actions.record.getAddress(publicClient, { name: "ens.eth" });
+```
+
+</Tab>
+</Tabs>
+
+The standalone form imports only the action you call, which keeps bundles small. See [Ways to call actions](/docs/sdk/ways-to-call-actions).
+
+## Get an address on another chain
+
+A name can hold one address per coin. Set `coin` to pick which one to read. It takes a symbol, an EVM chain or a numeric coin type.
+
+**Example** (Reading Bitcoin, Base and a Raw Coin Type)
+
+```ts twoslash title="get-other-coins.ts"
+import { ensActions, Ensforge } from "@ensforge/sdk";
+import { createPublicClient, http } from "viem";
+import { mainnet } from "viem/chains";
+
+const ens = Ensforge.create({
+  publicClient: createPublicClient({ chain: mainnet, transport: http() }),
+}).extend(ensActions());
+
+// ---cut---
+const btc = await ens.record.getAddress({ name: "nick.eth", coin: "btc" });
+//    ^?
+const base = await ens.record.getAddress({ name: "nick.eth", coin: { chainId: 8453 } });
+const sameBtc = await ens.record.getAddress({ name: "nick.eth", coin: 0n });
+```
+
+- A symbol such as `"btc"` or `"eth"` names the coin.
+- `{ chainId: 8453 }` names an EVM chain (here Base). EVM chains get a checksummed `Address`; other coins return their native format as a string.
+- A `bigint` is the raw coin type (`0n` is Bitcoin).
+- An EVM chain with no address of its own falls back to the name's default EVM address ([ENSIP-19](https://docs.ens.domains/ensip/19)).
+
+## Options
+
+| Option | Type                              | Default  | Description                           |
+| ------ | --------------------------------- | -------- | ------------------------------------- |
+| `name` | `string`                          | required | The name to read. Normalised for you. |
+| `coin` | symbol, `{ chainId }` or `bigint` | `"eth"`  | Which coin's address to read.         |
+
+The action also takes the options every read takes: `signal` to cancel, `strict` to throw instead of returning `null`, `gatewayUrls` for off-chain lookups, and `blockNumber` or `blockTag` to read at one block. See [`record.getAddress`](/docs/sdk/reference/actions/record/get-address).
+
+## Result
+
+The result is `Address | null` for Ethereum and EVM chains, and `string | null` for other coins. It is `null` when the name has no address for that coin. Pass `strict: true` to fail instead, as in [Troubleshooting](#the-result-is-null).
+
+To read an address together with other records, use [`record.get`](/docs/sdk/reference/actions/record/get). See [Get text records](/docs/sdk/get-text-records).
+
+## Troubleshooting
+
+### The result is `null`
+
+The name has no address record for that coin, no resolver, or a resolver that does not store addresses. Pass `strict: true` to find out which one: it fails with [`RECORD_NOT_FOUND`](/docs/sdk/errors/RECORD_NOT_FOUND), [`RESOLVER_NOT_FOUND`](/docs/sdk/errors/RESOLVER_NOT_FOUND) or [`RESOLVER_PROFILE_UNSUPPORTED`](/docs/sdk/errors/RESOLVER_PROFILE_UNSUPPORTED).
+
+### `INVALID_NAME`
+
+The name cannot be normalised, for example because it contains a character ENS does not allow. [`INVALID_NAME`](/docs/sdk/errors/INVALID_NAME) is thrown before any request is sent.
+
+### `INVALID_COIN_TYPE`
+
+The `coin` is an unknown symbol or a negative value. Some defunct coins, such as EOS (coin type 194), are no longer supported and fail with [`INVALID_COIN_TYPE`](/docs/sdk/errors/INVALID_COIN_TYPE) or `INVALID_ADDRESS`.
+
+### `GATEWAY_REQUEST_FAILED` or `OFFCHAIN_LOOKUP_INVALID`
+
+The name resolves off-chain and the gateway failed or answered wrongly. See [Look up off-chain names](/docs/sdk/off-chain-names) and [`GATEWAY_REQUEST_FAILED`](/docs/sdk/errors/GATEWAY_REQUEST_FAILED).
+
+### `DNSSEC_PROOF_FAILED`
+
+The name is an imported DNS name, such as `ens.domains`, and its DNSSEC proof does not verify. At the time of writing, no DNSSEC proof verifies on Ethereum mainnet or Sepolia, so every DNS name fails this way until ENS updates its DNSSEC trust anchor. See [`DNSSEC_PROOF_FAILED`](/docs/sdk/errors/DNSSEC_PROOF_FAILED).
