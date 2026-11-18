@@ -1,7 +1,7 @@
 ---
 title: "indexer.search"
-description: "Searches names by text."
-keywords: ["search","indexer.search"]
+description: "Searches names by text. Parameters, return value, errors and examples for indexer.search in @ensforge/sdk. Options, errors and examples for indexer.search."
+keywords: ["indexer.search","search","@ensforge/sdk","indexer","bigname","subgraph","history"]
 generated: true
 ---
 
@@ -93,3 +93,113 @@ const page = yield* Actions.indexer.search(ens, { query: "nick", limit: 10 })
 </Tab>
 
 </Tabs>
+
+## Example response
+
+Recorded from Ethereum mainnet on 2026-11-18 at block 26443964. Values change as the chain does.
+
+```ts
+await ens.indexer.search({ query: "nick", limit: 3 })
+```
+
+```json
+{
+  "asOf": {
+    "chainId": 1,
+    "blockNumber": "26443964n",
+    "blockHash": "0xe75c58ea2f28bd7c6cc53c28a5ab4fc02023f3563661f0a7236a36b779e3ac86",
+    "timestamp": "1795029143n"
+  },
+  "snapshots": {
+    "1": {
+      "chainId": 1,
+      "blockNumber": "26443964n",
+      "blockHash": "0xe75c58ea2f28bd7c6cc53c28a5ab4fc02023f3563661f0a7236a36b779e3ac86",
+      "timestamp": "1795029143n"
+    }
+  },
+  "asOfToken": null,
+  "completeness": "full",
+  "unsupportedReason": null,
+  "unsupportedFields": [],
+  "origin": null,
+  "indexer": "bigname",
+  "items": [
+    {
+      "name": "nick$.eth",
+      "displayName": "nick$.eth",
+      "namespace": "ens",
+      "node": "0xde12a72f054d0acbde40e76aac0645dfaccb693266992519cbe037cc63de6772",
+      "status": "released",
+      "authority": "ensV1",
+      "owner": null,
+      "manager": null,
+      "registeredAt": "1686782675n",
+      "createdAt": "1686782675n",
+      "expiresAt": "1718318675n",
+      "graceEndsAt": "1726094675n",
+      "expiryReason": null,
+      "ensV1": {
+        "resolver": {
+          "chainId": 1,
+          "address": "0x231b0Ee14048e9dCcD1d247744d114a4EB5E8E63"
+        },
+        "expiresAt": "1718318675n",
+        "wrapperState": "lapsed",
+        "wrapperExpiresAt": "1726094675n",
+        "wrapperFuses": null
+      }
+    },
+    {
+      "name": "nick000.eth",
+      "displayName": "nick000.eth",
+      "namespace": "ens",
+      "node": "0xef756a95f9f619232d5086dc8d59281e17d3252ff42705f5a0930e30a37d3d8b",
+      "status": "released",
+      "authority": "ensV1",
+      "owner": null,
+      "manager": null,
+      "registeredAt": "1650609765n",
+      "createdAt": "1650609765n",
+      "expiresAt": "1682166717n",
+      "graceEndsAt": "1689942717n",
+      "expiryReason": null,
+      "ensV1": {
+        "resolver": null,
+        "expiresAt": "1682166717n",
+        "wrapperState": null,
+        "wrapperExpiresAt": null,
+        "wrapperFuses": null
+      }
+    },
+    {
+      "name": "nick007.eth",
+      "displayName": "nick007.eth",
+      "namespace": "ens",
+      "node": "0x6c8a6fd915fddafd8238c2c23f8bf1f89421220a5ce071f2b9161cf2d84b0a1d",
+      "status": "active",
+      "authority": "ensV1",
+      "owner": "0xAF09Db90C6Fa32326485bC9759c154D3AD1bA43F",
+      "manager": "0xAF09Db90C6Fa32326485bC9759c154D3AD1bA43F",
+      "registeredAt": "1644098284n",
+      "createdAt": "1644098284n",
+      "expiresAt": "1807239844n",
+      "graceEndsAt": "1809659044n",
+      "expiryReason": null,
+      "ensV1": {
+        "resolver": {
+          "chainId": 1,
+          "address": "0x4976fb03C32e5B8cfe2b6cCB31c09Ba78EBaBa41"
+        },
+        "expiresAt": "1801883044n",
+        "wrapperState": "unwrapped",
+        "wrapperExpiresAt": null,
+        "wrapperFuses": null
+      }
+    }
+  ],
+  "cursor": "7b2276657273696f6e223a312c22736f7274223a226e616d655f617363222c2266696c74657273223a7b226d61746368223a22707265666978222c226e616d657370616365223a227075626c69633a656e73222c2271223a226e69636b227d2c226c6173745f6974656d223a7b22646973706c61795f6e616d65223a226e69636b3030372e657468222c226e616d6568617368223a22307836633861366664393135666464616664383233386332633233663862663166383934323132323061356365303731663262393136316366326438346230613164222c226e616d657370616365223a22656e73222c226e6f726d616c697a65645f6e616d65223a226e69636b3030372e657468227d2c22736e617073686f74223a6e756c6c7d",
+  "hasMore": true,
+  "totalCount": null
+}
+```

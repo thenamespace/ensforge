@@ -1,7 +1,7 @@
 ---
 title: "indexer.getNamespace"
-description: "Reads what the indexer serves for a namespace: its networks and which features are complete."
-keywords: ["getNamespace","indexer.getNamespace"]
+description: "Reads what the indexer serves for a namespace: its networks and which features are complete. Options, result, errors and examples for indexer.getNamespace."
+keywords: ["indexer.getNamespace","getNamespace","@ensforge/sdk","indexer","bigname","subgraph","history","search"]
 generated: true
 ---
 
@@ -86,3 +86,40 @@ const info = yield* Actions.indexer.getNamespace(ens, { namespace: "ens" })
 </Tab>
 
 </Tabs>
+
+## Example response
+
+Recorded from Ethereum mainnet on 2026-11-18 at block 26443964. Values change as the chain does.
+
+```ts
+await ens.indexer.getNamespace({ namespace: "ens" })
+```
+
+```json
+{
+  "namespace": "ens",
+  "capabilities": {
+    "name_history": "full",
+    "name_profile": "full",
+    "subnames": "full",
+    "verified_primary_name": "full",
+    "verified_records": "full"
+  },
+  "networks": [
+    {
+      "network": "ethereum",
+      "chainId": 1,
+      "protocol": "ensV2",
+      "sinceBlock": "26183742n"
+    }
+  ],
+  "asOf": null,
+  "snapshots": {},
+  "asOfToken": null,
+  "completeness": "full",
+  "unsupportedReason": null,
+  "unsupportedFields": [],
+  "origin": null,
+  "indexer": "bigname"
+}
+```

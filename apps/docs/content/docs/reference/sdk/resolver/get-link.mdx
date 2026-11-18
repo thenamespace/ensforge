@@ -1,7 +1,7 @@
 ---
 title: "resolver.getLink"
-description: "Reads which record set an ENS name uses on its PermissionedResolver."
-keywords: ["getLink","resolver.getLink"]
+description: "Reads which record set an ENS name uses on its PermissionedResolver. Parameters, return value, errors and examples for resolver.getLink in @ensforge/sdk."
+keywords: ["resolver.getLink","getLink","@ensforge/sdk","resolver","CCIP-Read","public resolver","ENSIP-10"]
 generated: true
 ---
 
@@ -99,6 +99,21 @@ const link = yield* Actions.resolver.getLink(ens, { name: "alice.eth" })
 </Tab>
 
 </Tabs>
+
+## Example response
+
+Recorded from Ethereum mainnet on 2026-11-18 at block 26443964. Values change as the chain does.
+
+```ts
+await ens.resolver.getLink({ name: "nick.eth" })
+```
+
+```json
+{
+  "resolver": "0xF4f1007EA430848F2fAd60e405A54Fc100fEc341",
+  "recordId": "3n"
+}
+```
 
 ## See also
 

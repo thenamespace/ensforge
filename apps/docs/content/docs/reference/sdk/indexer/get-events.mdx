@@ -1,7 +1,7 @@
 ---
 title: "indexer.getEvents"
-description: "Searches indexed ENS events by name, address, resolver, contract or block range."
-keywords: ["getEvents","indexer.getEvents"]
+description: "Searches indexed ENS events by name, address, resolver, contract or block range. Options, result, errors and examples for indexer.getEvents."
+keywords: ["indexer.getEvents","getEvents","@ensforge/sdk","indexer","bigname","subgraph","history","search"]
 generated: true
 ---
 
@@ -105,6 +105,116 @@ const page = yield* Actions.indexer.getEvents(ens, { types: ["registration"], or
 </Tab>
 
 </Tabs>
+
+## Example response
+
+Recorded from Ethereum mainnet on 2026-11-18 at block 26443964. Values change as the chain does.
+
+```ts
+await ens.indexer.getEvents({ name: "ens.eth", limit: 3 })
+```
+
+```json
+{
+  "asOf": {
+    "chainId": 1,
+    "blockNumber": "26443964n",
+    "blockHash": "0xe75c58ea2f28bd7c6cc53c28a5ab4fc02023f3563661f0a7236a36b779e3ac86",
+    "timestamp": "1795029143n"
+  },
+  "snapshots": {
+    "1": {
+      "chainId": 1,
+      "blockNumber": "26443964n",
+      "blockHash": "0xe75c58ea2f28bd7c6cc53c28a5ab4fc02023f3563661f0a7236a36b779e3ac86",
+      "timestamp": "1795029143n"
+    }
+  },
+  "asOfToken": null,
+  "completeness": "full",
+  "unsupportedReason": null,
+  "unsupportedFields": [],
+  "origin": null,
+  "indexer": "bigname",
+  "items": [
+    {
+      "id": "c3632a2b4582290d29bcc6f8c3b3b542664ce1257e2783dd83dcf02554451942",
+      "type": "record",
+      "action": "record_changed",
+      "kind": null,
+      "name": "ens.eth",
+      "namespace": "ens",
+      "subject": null,
+      "registrationId": "04316989-63d2-5789-b7a6-c454b62d0294",
+      "contract": "0x4976fb03C32e5B8cfe2b6cCB31c09Ba78EBaBa41",
+      "blockNumber": "26405156n",
+      "timestamp": "1794562235n",
+      "transactionHash": "0xfc3c4b113b1e57565527d606e84511ee168437c9579f1d7e18ce132b86176687",
+      "logIndex": 434,
+      "data": {
+        "action": "record_changed",
+        "key": "contenthash",
+        "node": "0x4e34d3a81dc3a20f71bbdf2160492ddaa17ee7e5523757d47153379c13cb46df",
+        "resolver": {
+          "address": "0x4976fb03c32e5b8cfe2b6ccb31c09ba78ebaba41",
+          "chainId": 1
+        }
+      }
+    },
+    {
+      "id": "ba6ade15daa5bccf278f9290bfe87e3e673541adf7667e7afb436261a44b4ded",
+      "type": "record",
+      "action": "record_changed",
+      "kind": null,
+      "name": "ens.eth",
+      "namespace": "ens",
+      "subject": null,
+      "registrationId": "04316989-63d2-5789-b7a6-c454b62d0294",
+      "contract": "0x4976fb03C32e5B8cfe2b6cCB31c09Ba78EBaBa41",
+      "blockNumber": "26350975n",
+      "timestamp": "1793909915n",
+      "transactionHash": "0xba75418b56c3b12e2702ad3e4436f799af3d544ddcd1a97d92ad7de7e458c166",
+      "logIndex": 419,
+      "data": {
+        "action": "record_changed",
+        "key": "contenthash",
+        "node": "0x4e34d3a81dc3a20f71bbdf2160492ddaa17ee7e5523757d47153379c13cb46df",
+        "resolver": {
+          "address": "0x4976fb03c32e5b8cfe2b6ccb31c09ba78ebaba41",
+          "chainId": 1
+        }
+      }
+    },
+    {
+      "id": "5bcef94bca0d5de81f752ca12517fbf833d03f1ace6bf1aafd20a561601c3534",
+      "type": "record",
+      "action": "record_changed",
+      "kind": null,
+      "name": "ens.eth",
+      "namespace": "ens",
+      "subject": null,
+      "registrationId": "04316989-63d2-5789-b7a6-c454b62d0294",
+      "contract": "0x4976fb03C32e5B8cfe2b6cCB31c09Ba78EBaBa41",
+      "blockNumber": "26350931n",
+      "timestamp": "1793909387n",
+      "transactionHash": "0x403b425f4242030a1beec24a67240f0fbca92cab8ff0768e0c055bbcbe467f53",
+      "logIndex": 606,
+      "data": {
+        "action": "record_changed",
+        "key": "contenthash",
+        "node": "0x4e34d3a81dc3a20f71bbdf2160492ddaa17ee7e5523757d47153379c13cb46df",
+        "resolver": {
+          "address": "0x4976fb03c32e5b8cfe2b6ccb31c09ba78ebaba41",
+          "chainId": 1
+        }
+      }
+    }
+  ],
+  "cursor": "7b2276657273696f6e223a312c22736f7274223a22636861696e5f706f736974696f6e5f64657363222c2266696c74657273223a7b22686973746f72795f636f6e7472616374223a2232222c226e616d65223a22656e733a307834653334643361383164633361323066373162626466323136303439326464616131376565376535353233373537643437313533333739633133636234366466222c226e616d657370616365223a22656e73227d2c226c6173745f6974656d223a7b22626c6f636b5f68617368223a22307864343233346166643533616636353032356364653662396364323032363136343164656138326661646333393432353833346361346331353733353238356637222c22626c6f636b5f6e756d626572223a223236333530393331222c22636861696e5f6964223a22657468657265756d2d6d61696e6e6574222c226576656e745f6964656e74697479223a22656e735f76315f756e777261707065645f617574686f726974793a31343a657468657265756d2d6d61696e6e65743a3078643432333461666435336166363530323563646536623963643230323631363431646561383266616463333934323538333463613463313537333532383566373a3078343033623432356634323432303330613162656563323461363732343066306662636139326361623866663037363865306330353562626362653436376635333a3630363a5265636f72644368616e6765643a30222c226c6f675f696e646578223a22363036222c227472616e73616374696f6e5f696e646578223a22343038227d2c22736e617073686f74223a6e756c6c7d",
+  "hasMore": true,
+  "totalCount": null
+}
+```
 
 ## See also
 

@@ -1,7 +1,7 @@
 ---
 title: "record.getAvatar"
-description: "Reads the avatar of an ENS name and resolves it to a URL a browser can load (ENSIP-12)."
-keywords: ["getAvatar","record.getAvatar"]
+description: "Reads the avatar of an ENS name and resolves it to a URL a browser can load (ENSIP-12). Options, result, errors and examples for record.getAvatar."
+keywords: ["record.getAvatar","getAvatar","@ensforge/sdk","resolver","text record","address record","avatar","content hash","ENSIP-9"]
 generated: true
 ---
 
@@ -107,6 +107,18 @@ const src = yield* Actions.record.getAvatar(ens, { name: "nick.eth" })
 </Tab>
 
 </Tabs>
+
+## Example response
+
+Recorded from Ethereum mainnet on 2026-11-18 at block 26443964. Values change as the chain does.
+
+```ts
+await ens.record.getAvatar({ name: "jesse.base.eth" })
+```
+
+```json
+"https://zku9gdedgba48lmr.public.blob.vercel-storage.com/basenames/avatar/jesse.base.eth/1722020142962/cryptopunk-diuDROjlL5OLY6EcC5keHTsNAiWMSL.png"
+```
 
 ## See also
 

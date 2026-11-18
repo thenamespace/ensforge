@@ -1,7 +1,7 @@
 ---
 title: "permission.get"
 description: "Reads what an account may do with an ENS name: transfer it, change its resolver, edit records, create subnames and more, across ENSv1 ownership and ENSv2 roles."
-keywords: ["get","permission.get"]
+keywords: ["permission.get","get","@ensforge/sdk","permission","roles","records access","ENSv2"]
 generated: true
 ---
 
@@ -106,6 +106,34 @@ const permissions = yield* Actions.permission.get(ens, { name: "alice.eth" })
 </Tab>
 
 </Tabs>
+
+## Example response
+
+Recorded from Ethereum mainnet on 2026-11-18 at block 26443964. Values change as the chain does.
+
+```ts
+await ens.permission.get({ name: "nick.eth", account: "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045" })
+```
+
+```json
+{
+  "account": "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045",
+  "status": "registered",
+  "can": {
+    "transfer": false,
+    "setResolver": false,
+    "setSubregistry": false,
+    "createSubname": false,
+    "removeSubname": false,
+    "renew": true,
+    "setTtl": false,
+    "setManager": false,
+    "reclaim": false,
+    "setRecords": false
+  },
+  "fuses": []
+}
+```
 
 ## See also
 

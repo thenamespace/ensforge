@@ -1,7 +1,7 @@
 ---
 title: "primaryName.get"
-description: "Reads the primary name of an address (ENSIP-19 reverse resolution), verified against the name's address record."
-keywords: ["get","primaryName.get"]
+description: "Reads the primary name of an address (ENSIP-19 reverse resolution), verified against the name's address record. Errors and examples for primaryName.get."
+keywords: ["primaryName.get","get","@ensforge/sdk","primary name","reverse record","reverse resolution","ENSIP-19"]
 generated: true
 ---
 
@@ -103,6 +103,18 @@ const name = yield* Actions.primaryName.get(ens, { address, strict: true })
 </Tab>
 
 </Tabs>
+
+## Example response
+
+Recorded from Ethereum mainnet on 2026-11-18 at block 26443964. Values change as the chain does.
+
+```ts
+await ens.primaryName.get({ address: "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045" })
+```
+
+```json
+"vitalik.eth"
+```
 
 ## See also
 

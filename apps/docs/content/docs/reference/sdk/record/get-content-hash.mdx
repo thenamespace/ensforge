@@ -1,7 +1,7 @@
 ---
 title: "record.getContentHash"
-description: "Reads the content hash of an ENS name (ENSIP-7), decoded into its protocol, value and URI."
-keywords: ["getContentHash","record.getContentHash"]
+description: "Reads the content hash of an ENS name (ENSIP-7), decoded into its protocol, value and URI. Options, result, errors and examples for record.getContentHash."
+keywords: ["record.getContentHash","getContentHash","@ensforge/sdk","resolver","text record","address record","avatar","content hash","ENSIP-9"]
 generated: true
 ---
 
@@ -102,6 +102,22 @@ const site = yield* Actions.record.getContentHash(ens, { name: "vitalik.eth" })
 </Tab>
 
 </Tabs>
+
+## Example response
+
+Recorded from Ethereum mainnet on 2026-11-18 at block 26443964. Values change as the chain does.
+
+```ts
+await ens.record.getContentHash({ name: "ens.eth" })
+```
+
+```json
+{
+  "protocol": "bzz",
+  "value": "f5909b5286d9279a1f6a23d5155ddd72bb0f28f56b6b82c32de54a6529e6b1b0",
+  "uri": "bzz://f5909b5286d9279a1f6a23d5155ddd72bb0f28f56b6b82c32de54a6529e6b1b0"
+}
+```
 
 ## See also
 

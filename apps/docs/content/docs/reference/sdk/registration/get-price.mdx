@@ -1,7 +1,7 @@
 ---
 title: "registration.getPrice"
-description: "Quotes the price of registering a .eth name, in an ERC-20 payment token."
-keywords: ["getPrice","registration.getPrice"]
+description: "Quotes the price of registering a .eth name, in an ERC-20 payment token. Options, result, errors and examples for registration.getPrice."
+keywords: ["registration.getPrice","getPrice","@ensforge/sdk","register","renew","commit-reveal","price",".eth","ETH registrar"]
 generated: true
 ---
 
@@ -111,6 +111,27 @@ const price = yield* Actions.registration.getPrice(ens, { name: "alice.eth", dur
 </Tab>
 
 </Tabs>
+
+## Example response
+
+Recorded from Ethereum mainnet on 2026-11-18 at block 26443964. Values change as the chain does.
+
+```ts
+await ens.registration.getPrice({ name: "ensforge-example.eth", duration: 31_536_000n })
+```
+
+```json
+{
+  "base": "8000021n",
+  "premium": "0n",
+  "total": "8000021n",
+  "token": {
+    "address": "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+    "symbol": "USDC",
+    "decimals": 6
+  }
+}
+```
 
 ## See also
 

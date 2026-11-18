@@ -1,7 +1,7 @@
 ---
 title: "resolver.get"
 description: "Reads the resolver of an ENS name: its address, what kind of resolver it is, who may write to it and which record profiles it supports."
-keywords: ["get","resolver.get"]
+keywords: ["resolver.get","get","@ensforge/sdk","resolver","CCIP-Read","public resolver","ENSIP-10"]
 generated: true
 ---
 
@@ -111,6 +111,37 @@ const resolver = yield* Actions.resolver.get(ens, { name: "nick.eth", strict: tr
 </Tab>
 
 </Tabs>
+
+## Example response
+
+Recorded from Ethereum mainnet on 2026-11-18 at block 26443964. Values change as the chain does.
+
+```ts
+await ens.resolver.get({ name: "nick.eth" })
+```
+
+```json
+{
+  "address": "0xF4f1007EA430848F2fAd60e405A54Fc100fEc341",
+  "inherited": false,
+  "serving": true,
+  "kind": "permissioned-resolver",
+  "authorization": "roles",
+  "profiles": {
+    "addr": true,
+    "addresses": true,
+    "text": true,
+    "contentHash": true,
+    "abi": true,
+    "pubkey": false,
+    "name": true,
+    "interfaces": true,
+    "data": true,
+    "extended": true
+  },
+  "version": null
+}
+```
 
 ## See also
 

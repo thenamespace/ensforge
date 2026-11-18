@@ -1,7 +1,7 @@
 ---
 title: "COMMITMENT_NOT_FOUND"
-description: "Fix COMMITMENT_NOT_FOUND (CommitmentError): No commitment was found for this registration."
-keywords: ["COMMITMENT_NOT_FOUND","CommitmentError"]
+description: "What COMMITMENT_NOT_FOUND means, why CommitmentError throws it, what to show users and how to fix it in ensforge. Also covers retry safety."
+keywords: ["COMMITMENT_NOT_FOUND","CommitmentError","@ensforge/sdk","error","error code"]
 generated: true
 ---
 
@@ -29,9 +29,7 @@ Retrying the same call fails the same way until the cause is fixed (`retryable: 
 
 ## Actions that throw it
 
-| Action | When |
-| --- | --- |
-| [`registration.register`](/docs/reference/sdk/registration/register) | for a resumed commitment outside its window, or none for the registration. |
+No action names this code in its documented errors.
 
 ## Catch it
 

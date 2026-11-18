@@ -1,7 +1,7 @@
 ---
 title: "dns.getStatus"
-description: "Reads whether a DNS name is imported into ENS, and what it needs to be."
-keywords: ["getStatus","dns.getStatus"]
+description: "Reads whether a DNS name is imported into ENS, and what it needs to be. Parameters, return value, errors and examples for dns.getStatus in @ensforge/sdk."
+keywords: ["dns.getStatus","getStatus","@ensforge/sdk","DNS","DNSSEC","DNS name","TLD","offchain resolver"]
 generated: true
 ---
 
@@ -103,6 +103,27 @@ const status = yield* Actions.dns.getStatus(ens, { name: "example.com" })
 </Tab>
 
 </Tabs>
+
+## Example response
+
+Recorded from Ethereum mainnet on 2026-11-18 at block 26443964. Values change as the chain does.
+
+```ts
+await ens.dns.getStatus({ name: "ens.domains" })
+```
+
+```json
+{
+  "name": "ens.domains",
+  "imported": true,
+  "owner": "0xb8c2C29ee19D8307cb7255e1Cd9CbDE883A267d5",
+  "dnsOwner": "0xb8c2C29ee19D8307cb7255e1Cd9CbDE883A267d5",
+  "proofValid": false,
+  "importedInception": null,
+  "proofInception": 1794939171,
+  "action": "proof-invalid"
+}
+```
 
 ## See also
 

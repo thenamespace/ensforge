@@ -1,7 +1,7 @@
 ---
 title: "registration.isAvailable"
-description: "Checks whether a .eth name can be registered now."
-keywords: ["isAvailable","registration.isAvailable"]
+description: "Checks whether a .eth name can be registered now. Parameters, return value, errors and examples for registration.isAvailable in @ensforge/sdk."
+keywords: ["registration.isAvailable","isAvailable","@ensforge/sdk","register","renew","commit-reveal","price",".eth","ETH registrar"]
 generated: true
 ---
 
@@ -94,6 +94,18 @@ const free = yield* Actions.registration.isAvailable(ens, { name: "alice.eth" })
 </Tab>
 
 </Tabs>
+
+## Example response
+
+Recorded from Ethereum mainnet on 2026-11-18 at block 26443964. Values change as the chain does.
+
+```ts
+await ens.registration.isAvailable({ name: "nick.eth" })
+```
+
+```json
+false
+```
 
 ## See also
 

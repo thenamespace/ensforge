@@ -1,7 +1,7 @@
 ---
 title: "PARENT_NOT_MIGRATED"
-description: "Fix PARENT_NOT_MIGRATED (NameStateError): The parent name has not been migrated to ENSv2."
-keywords: ["PARENT_NOT_MIGRATED","NameStateError"]
+description: "What PARENT_NOT_MIGRATED means, why NameStateError throws it, what to show users and how to fix it in ensforge. Also covers retry safety."
+keywords: ["PARENT_NOT_MIGRATED","NameStateError","@ensforge/sdk","error","error code"]
 generated: true
 ---
 
@@ -25,9 +25,7 @@ Retrying the same call fails the same way until the cause is fixed (`retryable: 
 
 ## Actions that throw it
 
-| Action | When |
-| --- | --- |
-| [`migration.migrate`](/docs/reference/sdk/migration/migrate) | when the name is locked or its parent is not migrated yet. |
+No action names this code in its documented errors.
 
 ## Catch it
 

@@ -1,7 +1,7 @@
 ---
 title: "registration.register"
-description: "Registers one or more .eth names: approve, commit, wait, register, then records and primary name."
-keywords: ["register","registration.register","registerSync"]
+description: "Registers one or more .eth names: approve, commit, wait, register, then records and primary name. Options, errors and examples for registration.register."
+keywords: ["registration.register","register","registerSync","@ensforge/sdk","renew","commit-reveal","price",".eth","ETH registrar"]
 generated: true
 ---
 
@@ -74,7 +74,7 @@ Resolves to `Write.Result & { readonly secret: Hex }`. Submitted hashes, the pla
 | --- | --- | --- |
 | [`InvalidInputError`](/docs/reference/errors/invalid-input-error) | [`INVALID_NAME`](/docs/reference/errors/INVALID_NAME), [`INVALID_ADDRESS`](/docs/reference/errors/INVALID_ADDRESS), [`DURATION_TOO_SHORT`](/docs/reference/errors/DURATION_TOO_SHORT), [`INVALID_RECORD_VALUE`](/docs/reference/errors/INVALID_RECORD_VALUE) | invalid input. |
 | [`NameStateError`](/docs/reference/errors/name-state-error) | [`NAME_NOT_AVAILABLE`](/docs/reference/errors/NAME_NOT_AVAILABLE) | a name is taken or in its grace period. |
-| [`CommitmentError`](/docs/reference/errors/commitment-error) | [`COMMITMENT_TOO_NEW`](/docs/reference/errors/COMMITMENT_TOO_NEW), [`COMMITMENT_TOO_OLD`](/docs/reference/errors/COMMITMENT_TOO_OLD), [`COMMITMENT_EXISTS`](/docs/reference/errors/COMMITMENT_EXISTS), [`COMMITMENT_NOT_FOUND`](/docs/reference/errors/COMMITMENT_NOT_FOUND) | a resumed commitment outside its window, or none for the registration. |
+| [`CommitmentError`](/docs/reference/errors/commitment-error) | [`COMMITMENT_TOO_NEW`](/docs/reference/errors/COMMITMENT_TOO_NEW), [`COMMITMENT_TOO_OLD`](/docs/reference/errors/COMMITMENT_TOO_OLD), [`COMMITMENT_EXISTS`](/docs/reference/errors/COMMITMENT_EXISTS) | a resumed commitment outside its window. |
 | [`InsufficientFundsError`](/docs/reference/errors/insufficient-funds-error) | [`INSUFFICIENT_TOKEN_BALANCE`](/docs/reference/errors/INSUFFICIENT_TOKEN_BALANCE) | the signer cannot pay in the payment token. |
 | [`UnsupportedError`](/docs/reference/errors/unsupported-error) | [`PAYMENT_TOKEN_UNSUPPORTED`](/docs/reference/errors/PAYMENT_TOKEN_UNSUPPORTED), [`UNSUPPORTED_ON_DEPLOYMENT`](/docs/reference/errors/UNSUPPORTED_ON_DEPLOYMENT) | an unaccepted token or without ENSv2. |
 | [`ConfigError`](/docs/reference/errors/config-error) | [`WALLET_NOT_CONFIGURED`](/docs/reference/errors/WALLET_NOT_CONFIGURED) | no signing account is known. |

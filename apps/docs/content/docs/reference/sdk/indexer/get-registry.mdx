@@ -1,7 +1,7 @@
 ---
 title: "indexer.getRegistry"
-description: "Reads an ENSv2 registry: the name it serves, its parent registry, when it was created and its counts."
-keywords: ["getRegistry","indexer.getRegistry"]
+description: "Reads an ENSv2 registry: the name it serves, its parent registry, when it was created and its counts. Options, errors and examples for indexer.getRegistry."
+keywords: ["indexer.getRegistry","getRegistry","@ensforge/sdk","indexer","bigname","subgraph","history","search"]
 generated: true
 ---
 
@@ -95,6 +95,57 @@ const registry = yield* Actions.indexer.getRegistry(ens, { address })
 </Tab>
 
 </Tabs>
+
+## Example response
+
+Recorded from Ethereum mainnet on 2026-11-18 at block 26443964. Values change as the chain does.
+
+```ts
+await ens.indexer.getRegistry({ address: "0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e", chainId: 1 })
+```
+
+```json
+{
+  "chainId": 1,
+  "address": "0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e",
+  "name": "wh1tehat.eth",
+  "parent": {
+    "chainId": 1,
+    "address": "0xf60aba43E1f7F3DAB1186Ff03B561401C9Df85E2"
+  },
+  "createdAt": "1794139355n",
+  "createdBlockNumber": "26370025n",
+  "createdTransactionHash": "0xcd43345f1d89446fcf0f8d088a8b0d2f8d15e5a188fadee5000d4781c3ae7669",
+  "counts": {
+    "labels": null,
+    "roles": null,
+    "events": null
+  },
+  "referencedBy": [
+    "wh1tehat.eth"
+  ],
+  "asOf": {
+    "chainId": 1,
+    "blockNumber": "26443964n",
+    "blockHash": "0xe75c58ea2f28bd7c6cc53c28a5ab4fc02023f3563661f0a7236a36b779e3ac86",
+    "timestamp": "1795029143n"
+  },
+  "snapshots": {
+    "1": {
+      "chainId": 1,
+      "blockNumber": "26443964n",
+      "blockHash": "0xe75c58ea2f28bd7c6cc53c28a5ab4fc02023f3563661f0a7236a36b779e3ac86",
+      "timestamp": "1795029143n"
+    }
+  },
+  "asOfToken": "7b22657468657265756d223a7b22626c6f636b5f68617368223a22307865373563353865613266323862643763366363353363323861356162346663303230323366333536333636316630613732333661333662373739653361633836222c22626c6f636b5f6e756d626572223a32363434333936342c22636861696e5f6964223a22657468657265756d2d6d61696e6e6574222c2274696d657374616d70223a22323032362d31312d31385431393a31323a32335a227d7d",
+  "completeness": "full",
+  "unsupportedReason": null,
+  "unsupportedFields": [],
+  "origin": null,
+  "indexer": "bigname"
+}
+```
 
 ## See also
 

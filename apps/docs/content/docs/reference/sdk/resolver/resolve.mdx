@@ -1,7 +1,7 @@
 ---
 title: "resolver.resolve"
-description: "Calls the resolver of an ENS name with raw calldata through the Universal Resolver (ENSIP-10)."
-keywords: ["resolve","resolver.resolve"]
+description: "Calls the resolver of an ENS name with raw calldata through the Universal Resolver (ENSIP-10). Options, result, errors and examples for resolver.resolve."
+keywords: ["resolver.resolve","resolve","@ensforge/sdk","resolver","CCIP-Read","public resolver","ENSIP-10"]
 generated: true
 ---
 
@@ -105,6 +105,21 @@ const result = yield* Actions.resolver.resolve(ens, { name: "nick.eth", data })
 </Tab>
 
 </Tabs>
+
+## Example response
+
+Recorded from Ethereum mainnet on 2026-11-18 at block 26443964. Values change as the chain does.
+
+```ts
+await ens.resolver.resolve({ name: "nick.eth", data: "0x3b3b57de05a67c0ee82964c4f7394cdd47fee7f4d9503a23c09c38341779ea012afe6e00" })
+```
+
+```json
+{
+  "data": "0x000000000000000000000000b8c2c29ee19d8307cb7255e1cd9cbde883a267d5",
+  "resolver": "0xF4f1007EA430848F2fAd60e405A54Fc100fEc341"
+}
+```
 
 ## See also
 

@@ -1,7 +1,7 @@
 ---
 title: "registration.getParameters"
 description: "Reads the .eth registration settings: contracts, commitment window, minimum duration, grace period and accepted payment tokens."
-keywords: ["getParameters","registration.getParameters"]
+keywords: ["registration.getParameters","getParameters","@ensforge/sdk","register","renew","commit-reveal","price",".eth","ETH registrar"]
 generated: true
 ---
 
@@ -93,6 +93,38 @@ const parameters = yield* Actions.registration.getParameters(ens)
 </Tab>
 
 </Tabs>
+
+## Example response
+
+Recorded from Ethereum mainnet on 2026-11-18 at block 26443964. Values change as the chain does.
+
+```ts
+await ens.registration.getParameters({})
+```
+
+```json
+{
+  "registrar": "0xD6D8369e55c94Ae8AFA714E6cF7AB5bE54D5CC81",
+  "renewer": "0x56c447F308F463A01121C41E72b0E7e7557fCb68",
+  "priceOracle": "0x76F29609A363a8A1a2a6abe2e859C0F8916Af469",
+  "minCommitmentAge": "60n",
+  "maxCommitmentAge": "86400n",
+  "minDuration": "2419200n",
+  "gracePeriod": "2419200n",
+  "paymentTokens": [
+    {
+      "address": "0x6B175474E89094C44Da98b954EedeAC495271d0F",
+      "symbol": "DAI",
+      "decimals": 18
+    },
+    {
+      "address": "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+      "symbol": "USDC",
+      "decimals": 6
+    }
+  ]
+}
+```
 
 ## See also
 

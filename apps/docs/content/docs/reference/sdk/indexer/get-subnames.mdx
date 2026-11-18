@@ -1,7 +1,7 @@
 ---
 title: "indexer.getSubnames"
-description: "Lists the direct subnames of a name."
-keywords: ["getSubnames","indexer.getSubnames"]
+description: "Lists the direct subnames of a name. Parameters, return value, errors and examples for indexer.getSubnames in @ensforge/sdk."
+keywords: ["indexer.getSubnames","getSubnames","@ensforge/sdk","indexer","bigname","subgraph","history","search"]
 generated: true
 ---
 
@@ -104,6 +104,128 @@ const page = yield* Actions.indexer.getSubnames(ens, { name: "ens.eth", sort: "e
 </Tab>
 
 </Tabs>
+
+## Example response
+
+Recorded from Ethereum mainnet on 2026-11-18 at block 26443964. Values change as the chain does.
+
+```ts
+await ens.indexer.getSubnames({ name: "ens.eth", namespace: "ens", limit: 3 })
+```
+
+```json
+{
+  "asOf": {
+    "chainId": 1,
+    "blockNumber": "26443964n",
+    "blockHash": "0xe75c58ea2f28bd7c6cc53c28a5ab4fc02023f3563661f0a7236a36b779e3ac86",
+    "timestamp": "1795029143n"
+  },
+  "snapshots": {
+    "1": {
+      "chainId": 1,
+      "blockNumber": "26443964n",
+      "blockHash": "0xe75c58ea2f28bd7c6cc53c28a5ab4fc02023f3563661f0a7236a36b779e3ac86",
+      "timestamp": "1795029143n"
+    }
+  },
+  "asOfToken": null,
+  "completeness": "full",
+  "unsupportedReason": null,
+  "unsupportedFields": [],
+  "origin": null,
+  "indexer": "bigname",
+  "items": [
+    {
+      "name": "app.ens.eth",
+      "displayName": "app.ens.eth",
+      "namespace": "ens",
+      "node": "0x50a74dcf107973068dfc00db69ecf98b49d52f5361cb4db5feb740fc9f4f74d1",
+      "status": "active",
+      "authority": "ensV1",
+      "owner": "0xb6E040C9ECAaE172a89bD561c5F73e1C48d28cd9",
+      "manager": "0xb6E040C9ECAaE172a89bD561c5F73e1C48d28cd9",
+      "registeredAt": null,
+      "createdAt": "1611624962n",
+      "expiresAt": null,
+      "graceEndsAt": null,
+      "expiryReason": null,
+      "ensV1": {
+        "resolver": {
+          "chainId": 1,
+          "address": "0x4976fb03C32e5B8cfe2b6cCB31c09Ba78EBaBa41"
+        },
+        "expiresAt": null,
+        "wrapperState": "unwrapped",
+        "wrapperExpiresAt": null,
+        "wrapperFuses": null
+      },
+      "labelhash": "0xd6f028ca0e8edb4a8c9757ca4fdccab25fa1e0317da1188108f7d2dee14902fb",
+      "subnameCount": null,
+      "subregistry": null
+    },
+    {
+      "name": "attestations.ens.eth",
+      "displayName": "attestations.ens.eth",
+      "namespace": "ens",
+      "node": "0x9e5c7a2f2ab8b565c6d2c4851a73decb53d1f6a23c97a2b5b66f21d8ace1bbd5",
+      "status": "active",
+      "authority": "ensV1",
+      "owner": "0xb6E040C9ECAaE172a89bD561c5F73e1C48d28cd9",
+      "manager": "0xb6E040C9ECAaE172a89bD561c5F73e1C48d28cd9",
+      "registeredAt": null,
+      "createdAt": "1744877879n",
+      "expiresAt": null,
+      "graceEndsAt": null,
+      "expiryReason": null,
+      "ensV1": {
+        "resolver": {
+          "chainId": 1,
+          "address": "0x231b0Ee14048e9dCcD1d247744d114a4EB5E8E63"
+        },
+        "expiresAt": null,
+        "wrapperState": "unwrapped",
+        "wrapperExpiresAt": null,
+        "wrapperFuses": null
+      },
+      "labelhash": "0x14a804be56ac3478cdc58c820cb1271d39e4a2511f4c5aec7d2c25d624f24918",
+      "subnameCount": null,
+      "subregistry": null
+    },
+    {
+      "name": "coldwallet.ens.eth",
+      "displayName": "coldwallet.ens.eth",
+      "namespace": "ens",
+      "node": "0xc867d2bd24b8a88c7d5d416dfab28fec6858b5a86f3a1c94faeab450c34023f6",
+      "status": "active",
+      "authority": "ensV1",
+      "owner": "0x690F0581eCecCf8389c223170778cD9D029606F2",
+      "manager": "0x690F0581eCecCf8389c223170778cD9D029606F2",
+      "registeredAt": null,
+      "createdAt": "1614125684n",
+      "expiresAt": null,
+      "graceEndsAt": null,
+      "expiryReason": null,
+      "ensV1": {
+        "resolver": {
+          "chainId": 1,
+          "address": "0x4976fb03C32e5B8cfe2b6cCB31c09Ba78EBaBa41"
+        },
+        "expiresAt": null,
+        "wrapperState": "unwrapped",
+        "wrapperExpiresAt": null,
+        "wrapperFuses": null
+      },
+      "labelhash": "0x7d044acfeccf1426368be42c96e62a4cf73d3ea32c44c023cffe9c50ca329c62",
+      "subnameCount": null,
+      "subregistry": null
+    }
+  ],
+  "cursor": "7b2276657273696f6e223a312c22736f7274223a226e616d65222c2266696c74657273223a7b22696e636c7564655f65787069726564223a2274727565222c226e616d657370616365223a22656e73222c226f72646572223a22617363222c22706172656e74223a22656e733a307834653334643361383164633361323066373162626466323136303439326464616131376565376535353233373537643437313533333739633133636234366466222c2271223a22227d2c226c6173745f6974656d223a7b226368696c645f6c6f676963616c5f6e616d655f6964223a22656e733a307863383637643262643234623861383863376435643431366466616232386665633638353862356138366633613163393466616561623435306333343032336636222c22646973706c61795f6e616d65223a22636f6c6477616c6c65742e656e732e657468222c22736f72745f6b696e64223a226e616d65222c22736f72745f76616c7565223a22227d2c22736e617073686f74223a6e756c6c7d",
+  "hasMore": true,
+  "totalCount": 23
+}
+```
 
 ## See also
 

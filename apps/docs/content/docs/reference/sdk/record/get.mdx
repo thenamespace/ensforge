@@ -1,7 +1,7 @@
 ---
 title: "record.get"
 description: "Reads any mix of a name's records in one request: texts, addresses, content hash, ABI, public key, name record, interface implementers and data records."
-keywords: ["get","record.get"]
+keywords: ["record.get","get","@ensforge/sdk","resolver","text record","address record","avatar","content hash","ENSIP-9"]
 generated: true
 ---
 
@@ -112,6 +112,27 @@ const records = yield* Actions.record.get(ens, { name: "nick.eth", texts: ["url"
 </Tab>
 
 </Tabs>
+
+## Example response
+
+Recorded from Ethereum mainnet on 2026-11-18 at block 26443964. Values change as the chain does.
+
+```ts
+await ens.record.get({ name: "vitalik.eth", texts: ["url", "com.twitter"], addresses: ["eth"] })
+```
+
+```json
+{
+  "resolver": "0x231b0Ee14048e9dCcD1d247744d114a4EB5E8E63",
+  "texts": {
+    "url": "https://vitalik.ca",
+    "com.twitter": "VitalikButerin"
+  },
+  "addresses": {
+    "eth": "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045"
+  }
+}
+```
 
 ## See also
 

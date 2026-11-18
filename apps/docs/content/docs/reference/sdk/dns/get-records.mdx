@@ -1,7 +1,7 @@
 ---
 title: "dns.getRecords"
-description: "Reads DNS records and the zonehash a name stores on its resolver."
-keywords: ["getRecords","dns.getRecords"]
+description: "Reads DNS records and the zonehash a name stores on its resolver. Parameters, return value, errors and examples for dns.getRecords in @ensforge/sdk."
+keywords: ["dns.getRecords","getRecords","@ensforge/sdk","DNS","DNSSEC","DNS name","TLD","offchain resolver"]
 generated: true
 ---
 
@@ -97,6 +97,22 @@ const dns = yield* Actions.dns.getRecords(ens, { name: "alice.eth", records: [{ 
 </Tab>
 
 </Tabs>
+
+## Example response
+
+Recorded from Ethereum mainnet on 2026-11-18 at block 26443964. Values change as the chain does.
+
+```ts
+await ens.dns.getRecords({ name: "ens.domains" })
+```
+
+```json
+{
+  "resolver": null,
+  "zonehash": null,
+  "records": []
+}
+```
 
 ## See also
 

@@ -1,7 +1,7 @@
 ---
 title: "name.get"
 description: "Reads the full state of a name across ENSv1 and ENSv2: where it lives, who owns it, its resolver, expiry and whether it can be registered or renewed."
-keywords: ["get","name.get"]
+keywords: ["name.get","get","@ensforge/sdk","ENS name","owner","manager","ttl","labelhash","namehash"]
 generated: true
 ---
 
@@ -128,6 +128,40 @@ const state = yield* Actions.name.get(ens, { name: "nick.eth" })
 </Tab>
 
 </Tabs>
+
+## Example response
+
+Recorded from Ethereum mainnet on 2026-11-18 at block 26443964. Values change as the chain does.
+
+```ts
+await ens.name.get({ name: "nick.eth" })
+```
+
+```json
+{
+  "name": "nick.eth",
+  "kind": "v2-migrated",
+  "protocol": "v2",
+  "status": "registered",
+  "owner": "0xb8c2C29ee19D8307cb7255e1Cd9CbDE883A267d5",
+  "manager": null,
+  "registrant": null,
+  "registry": "0xf60aba43E1f7F3DAB1186Ff03B561401C9Df85E2",
+  "subregistry": "0x02cA46F62f6C9F655364bf9Fd4f11Fb8f01C5753",
+  "resolver": "0xF4f1007EA430848F2fAd60e405A54Fc100fEc341",
+  "expiry": "2051983306n",
+  "gracePeriodEnd": "2054402506n",
+  "tokenId": "42219085255511335250589442208301538195142221433306354426240614732610656010240n",
+  "resource": "42219085255511335250589442208301538195142221433306354426240614732610656010240n",
+  "ttl": null,
+  "wrapped": false,
+  "migrated": true,
+  "available": false,
+  "renewable": true,
+  "reachable": true,
+  "inheritedResolver": null
+}
+```
 
 ## See also
 

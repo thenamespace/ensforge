@@ -1,7 +1,7 @@
 ---
 title: "wrapper.getFuses"
-description: "Reads the NameWrapper owner, fuses and expiry of an ENSv1 name."
-keywords: ["getFuses","wrapper.getFuses"]
+description: "Reads the NameWrapper owner, fuses and expiry of an ENSv1 name. Parameters, return value, errors and examples for wrapper.getFuses in @ensforge/sdk."
+keywords: ["wrapper.getFuses","getFuses","@ensforge/sdk","NameWrapper","fuses","wrap","unwrap","ERC-1155"]
 generated: true
 ---
 
@@ -94,6 +94,18 @@ const wrapped = yield* Actions.wrapper.getFuses(ens, { name: "alice.eth" })
 </Tab>
 
 </Tabs>
+
+## Example response
+
+Recorded from Ethereum mainnet on 2026-11-18 at block 26443964. Values change as the chain does.
+
+```ts
+await ens.wrapper.getFuses({ name: "ens.eth" })
+```
+
+```json
+null
+```
 
 ## See also
 

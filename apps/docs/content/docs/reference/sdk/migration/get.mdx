@@ -1,7 +1,7 @@
 ---
 title: "migration.get"
-description: "Reads whether an ENSv1 name can migrate to ENSv2, how, and what it becomes."
-keywords: ["get","migration.get"]
+description: "Reads whether an ENSv1 name can migrate to ENSv2, how, and what it becomes. Parameters, return value, errors and examples for migration.get in @ensforge/sdk."
+keywords: ["migration.get","get","@ensforge/sdk","ENSv2","migrate","upgrade","ENSv1"]
 generated: true
 ---
 
@@ -96,6 +96,39 @@ const status = yield* Actions.migration.get(ens, { name: "alice.eth" })
 </Tab>
 
 </Tabs>
+
+## Example response
+
+Recorded from Ethereum mainnet on 2026-11-18 at block 26443964. Values change as the chain does.
+
+```ts
+await ens.migration.get({ name: "nick.eth" })
+```
+
+```json
+{
+  "name": "nick.eth",
+  "status": "migrated",
+  "route": null,
+  "blockers": [],
+  "owner": null,
+  "manager": null,
+  "fuses": null,
+  "expiry": null,
+  "reservationExpiry": null,
+  "resolver": {
+    "current": null,
+    "plan": "none"
+  },
+  "after": {
+    "registry": null,
+    "subregistry": null,
+    "expiry": null,
+    "roles": []
+  },
+  "discovered": null
+}
+```
 
 ## See also
 

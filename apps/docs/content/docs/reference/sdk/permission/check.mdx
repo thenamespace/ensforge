@@ -1,7 +1,7 @@
 ---
 title: "permission.check"
-description: "Checks whether an account may perform one operation on an ENS name, and lists exactly what it lacks when it may not."
-keywords: ["check","permission.check"]
+description: "Checks whether an account may perform one operation on an ENS name, and lists exactly what it lacks when it may not. Errors and examples for permission.check."
+keywords: ["permission.check","check","@ensforge/sdk","permission","roles","records access","ENSv2"]
 generated: true
 ---
 
@@ -100,6 +100,30 @@ const result = yield* Actions.permission.check(ens, { name: "alice.eth", operati
 </Tab>
 
 </Tabs>
+
+## Example response
+
+Recorded from Ethereum mainnet on 2026-11-18 at block 26443964. Values change as the chain does.
+
+```ts
+await ens.permission.check({ name: "nick.eth", operation: "transfer", account: "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045" })
+```
+
+```json
+{
+  "allowed": false,
+  "via": null,
+  "contract": "0xf60aba43E1f7F3DAB1186Ff03B561401C9Df85E2",
+  "resource": null,
+  "missing": [
+    {
+      "type": "owner",
+      "contract": "0xf60aba43E1f7F3DAB1186Ff03B561401C9Df85E2",
+      "owner": "0xb8c2C29ee19D8307cb7255e1Cd9CbDE883A267d5"
+    }
+  ]
+}
+```
 
 ## See also
 

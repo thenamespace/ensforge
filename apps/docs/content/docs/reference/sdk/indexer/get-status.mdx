@@ -1,7 +1,7 @@
 ---
 title: "indexer.getStatus"
-description: "Reads the indexer's health and how far each chain is indexed."
-keywords: ["getStatus","indexer.getStatus"]
+description: "Reads the indexer's health and how far each chain is indexed. Parameters, return value, errors and examples for indexer.getStatus in @ensforge/sdk."
+keywords: ["indexer.getStatus","getStatus","@ensforge/sdk","indexer","bigname","subgraph","history","search"]
 generated: true
 ---
 
@@ -92,3 +92,29 @@ const status = yield* Actions.indexer.getStatus(ens)
 </Tab>
 
 </Tabs>
+
+## Example response
+
+Recorded from Ethereum mainnet on 2026-11-18 at block 26443964. Values change as the chain does.
+
+```ts
+await ens.indexer.getStatus({})
+```
+
+```json
+{
+  "status": "ready",
+  "chains": {
+    "1": {
+      "status": "ready",
+      "indexed": "26443964n",
+      "latest": "26443965n",
+      "safe": "26443916n",
+      "finalized": "26443884n",
+      "lagBlocks": 1,
+      "lagSeconds": 12
+    }
+  },
+  "indexer": "bigname"
+}
+```

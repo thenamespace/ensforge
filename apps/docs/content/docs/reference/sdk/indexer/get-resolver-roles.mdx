@@ -1,7 +1,7 @@
 ---
 title: "indexer.getResolverRoles"
-description: "Lists the role grants on an ENSv2 resolver."
-keywords: ["getResolverRoles","indexer.getResolverRoles"]
+description: "Lists the role grants on an ENSv2 resolver. Parameters, return value, errors and examples for indexer.getResolverRoles in @ensforge/sdk."
+keywords: ["indexer.getResolverRoles","getResolverRoles","@ensforge/sdk","indexer","bigname","subgraph","history","search"]
 generated: true
 ---
 
@@ -96,6 +96,45 @@ const page = yield* Actions.indexer.getResolverRoles(ens, { address })
 </Tab>
 
 </Tabs>
+
+## Example response
+
+Recorded from Ethereum mainnet on 2026-11-18 at block 26443964. Values change as the chain does.
+
+```ts
+await ens.indexer.getResolverRoles({ address: "0xF29100983E058B709F3D539b0c765937B804AC15", chainId: 1, limit: 3 })
+```
+
+```json
+{
+  "asOf": {
+    "chainId": 1,
+    "blockNumber": "26443964n",
+    "blockHash": "0xe75c58ea2f28bd7c6cc53c28a5ab4fc02023f3563661f0a7236a36b779e3ac86",
+    "timestamp": "1795029143n"
+  },
+  "snapshots": {
+    "1": {
+      "chainId": 1,
+      "blockNumber": "26443964n",
+      "blockHash": "0xe75c58ea2f28bd7c6cc53c28a5ab4fc02023f3563661f0a7236a36b779e3ac86",
+      "timestamp": "1795029143n"
+    }
+  },
+  "asOfToken": "7b22657468657265756d223a7b22626c6f636b5f68617368223a22307865373563353865613266323862643763366363353363323861356162346663303230323366333536333636316630613732333661333662373739653361633836222c22626c6f636b5f6e756d626572223a32363434333936342c22636861696e5f6964223a22657468657265756d2d6d61696e6e6574222c2274696d657374616d70223a22323032362d31312d31385431393a31323a32335a227d7d",
+  "completeness": "unsupported",
+  "unsupportedReason": "binding_enumeration_not_supported",
+  "unsupportedFields": [
+    "roles"
+  ],
+  "origin": null,
+  "indexer": "bigname",
+  "items": [],
+  "cursor": null,
+  "hasMore": false,
+  "totalCount": null
+}
+```
 
 ## See also
 

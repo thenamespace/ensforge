@@ -1,7 +1,7 @@
 ---
 title: "NAME_LOCKED"
-description: "Fix NAME_LOCKED (NameStateError): The name is locked."
-keywords: ["NAME_LOCKED","NameStateError"]
+description: "What NAME_LOCKED means, why NameStateError throws it, what to show users and how to fix it in ensforge. Also covers retry safety and the actions that throw it."
+keywords: ["NAME_LOCKED","NameStateError","@ensforge/sdk","error","error code"]
 generated: true
 ---
 
@@ -27,7 +27,7 @@ Retrying the same call fails the same way until the cause is fixed (`retryable: 
 
 | Action | When |
 | --- | --- |
-| [`migration.migrate`](/docs/reference/sdk/migration/migrate) | when the name is locked or its parent is not migrated yet. |
+| [`migration.migrate`](/docs/reference/sdk/migration/migrate) | when the name is locked. |
 
 ## Catch it
 

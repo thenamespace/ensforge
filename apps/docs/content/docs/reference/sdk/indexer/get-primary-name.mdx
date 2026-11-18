@@ -1,7 +1,7 @@
 ---
 title: "indexer.getPrimaryName"
-description: "Reads an address's primary name from the indexer, verified on-chain when the indexer can."
-keywords: ["getPrimaryName","indexer.getPrimaryName"]
+description: "Reads an address's primary name from the indexer, verified on-chain when the indexer can. Options, result, errors and examples for indexer.getPrimaryName."
+keywords: ["indexer.getPrimaryName","getPrimaryName","@ensforge/sdk","indexer","bigname","subgraph","history","search"]
 generated: true
 ---
 
@@ -95,6 +95,58 @@ const { name } = yield* Actions.indexer.getPrimaryName(ens, { address })
 </Tab>
 
 </Tabs>
+
+## Example response
+
+Recorded from Ethereum mainnet on 2026-11-18 at block 26443964. Values change as the chain does.
+
+```ts
+await ens.indexer.getPrimaryName({ address: "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045" })
+```
+
+```json
+{
+  "address": "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045",
+  "coinType": 60,
+  "namespace": "ens",
+  "name": "vitalik.eth",
+  "source": "verified",
+  "answers": [
+    {
+      "source": "indexed",
+      "status": "notFound",
+      "name": null,
+      "reason": null
+    },
+    {
+      "source": "verified",
+      "status": "ok",
+      "name": "vitalik.eth",
+      "reason": null
+    }
+  ],
+  "asOf": {
+    "chainId": 1,
+    "blockNumber": "26443964n",
+    "blockHash": "0xe75c58ea2f28bd7c6cc53c28a5ab4fc02023f3563661f0a7236a36b779e3ac86",
+    "timestamp": "1795029143n"
+  },
+  "snapshots": {
+    "1": {
+      "chainId": 1,
+      "blockNumber": "26443964n",
+      "blockHash": "0xe75c58ea2f28bd7c6cc53c28a5ab4fc02023f3563661f0a7236a36b779e3ac86",
+      "timestamp": "1795029143n"
+    }
+  },
+  "asOfToken": "7b22657468657265756d223a7b22626c6f636b5f68617368223a22307865373563353865613266323862643763366363353363323861356162346663303230323366333536333636316630613732333661333662373739653361633836222c22626c6f636b5f6e756d626572223a32363434333936342c22636861696e5f6964223a22657468657265756d2d6d61696e6e6574222c2274696d657374616d70223a22323032362d31312d31385431393a31323a32335a227d7d",
+  "completeness": "full",
+  "unsupportedReason": null,
+  "unsupportedFields": [],
+  "origin": null,
+  "indexer": "bigname"
+}
+```
 
 ## See also
 

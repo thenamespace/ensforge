@@ -1,7 +1,7 @@
 ---
 title: "indexer.getPermissions"
-description: "Lists who can do what over a name, a registration, an account or an ENSv2 registry."
-keywords: ["getPermissions","indexer.getPermissions"]
+description: "Lists who can do what over a name, a registration, an account or an ENSv2 registry. Options, result, errors and examples for indexer.getPermissions."
+keywords: ["indexer.getPermissions","getPermissions","@ensforge/sdk","indexer","bigname","subgraph","history","search"]
 generated: true
 ---
 
@@ -102,6 +102,68 @@ const page = yield* Actions.indexer.getPermissions(ens, { registry: { address: r
 </Tab>
 
 </Tabs>
+
+## Example response
+
+Recorded from Ethereum mainnet on 2026-11-18 at block 26443964. Values change as the chain does.
+
+```ts
+await ens.indexer.getPermissions({ name: "ens.eth", limit: 3 })
+```
+
+```json
+{
+  "asOf": {
+    "chainId": 1,
+    "blockNumber": "26443964n",
+    "blockHash": "0xe75c58ea2f28bd7c6cc53c28a5ab4fc02023f3563661f0a7236a36b779e3ac86",
+    "timestamp": "1795029143n"
+  },
+  "snapshots": {
+    "1": {
+      "chainId": 1,
+      "blockNumber": "26443964n",
+      "blockHash": "0xe75c58ea2f28bd7c6cc53c28a5ab4fc02023f3563661f0a7236a36b779e3ac86",
+      "timestamp": "1795029143n"
+    }
+  },
+  "asOfToken": null,
+  "completeness": "partial",
+  "unsupportedReason": "permissions_partially_listed",
+  "unsupportedFields": [],
+  "origin": null,
+  "indexer": "bigname",
+  "items": [
+    {
+      "address": "0x2d2e339c93dA91682Db720ee73e3c8F854f5F246",
+      "name": "ens.eth",
+      "registrationId": "4f225413-df3a-50b3-832a-1b91e29b6a9c",
+      "powers": [
+        "resolver_control"
+      ],
+      "scope": "resolver",
+      "relation": null,
+      "wrapperState": null,
+      "lineage": null
+    },
+    {
+      "address": "0x2d2e339c93dA91682Db720ee73e3c8F854f5F246",
+      "name": "ens.eth",
+      "registrationId": "4f225413-df3a-50b3-832a-1b91e29b6a9c",
+      "powers": [
+        "registration_control"
+      ],
+      "scope": "registration",
+      "relation": null,
+      "wrapperState": null,
+      "lineage": null
+    }
+  ],
+  "cursor": null,
+  "hasMore": false,
+  "totalCount": null
+}
+```
 
 ## See also
 

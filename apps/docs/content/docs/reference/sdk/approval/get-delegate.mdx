@@ -1,7 +1,7 @@
 ---
 title: "approval.getDelegate"
-description: "Checks whether a delegate may edit a name's records on its public resolver (isApprovedFor)."
-keywords: ["getDelegate","approval.getDelegate"]
+description: "Checks whether a delegate may edit a name's records on its public resolver (isApprovedFor). Options, result, errors and examples for approval.getDelegate."
+keywords: ["approval.getDelegate","getDelegate","@ensforge/sdk","approval","operator","delegate","ERC-721","setApprovalForAll"]
 generated: true
 ---
 
@@ -94,6 +94,18 @@ const approved = yield* Actions.approval.getDelegate(ens, { name: "alice.eth", d
 </Tab>
 
 </Tabs>
+
+## Example response
+
+Recorded from Ethereum mainnet on 2026-11-18 at block 26443964. Values change as the chain does.
+
+```ts
+await ens.approval.getDelegate({ name: "nick.eth", delegate: "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045" })
+```
+
+```json
+false
+```
 
 ## See also
 

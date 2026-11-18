@@ -1,7 +1,7 @@
 ---
 title: "migration.migrate"
-description: "Migrates one or more ENSv1 names to ENSv2, carrying their resolver records and subnames."
-keywords: ["migrate","migration.migrate","migrateSync"]
+description: "Migrates one or more ENSv1 names to ENSv2, carrying their resolver records and subnames. Options, result, errors and examples for migration.migrate."
+keywords: ["migration.migrate","migrate","migrateSync","@ensforge/sdk","ENSv2","upgrade","ENSv1"]
 generated: true
 ---
 
@@ -83,7 +83,7 @@ Resolves to `Write.Result`. Submitted transaction hashes and the plan that produ
 | --- | --- | --- |
 | [`InvalidInputError`](/docs/reference/errors/invalid-input-error) | [`INVALID_NAME`](/docs/reference/errors/INVALID_NAME), [`INVALID_ADDRESS`](/docs/reference/errors/INVALID_ADDRESS), [`INVALID_RECORD_VALUE`](/docs/reference/errors/INVALID_RECORD_VALUE) | invalid input. |
 | [`MigrationError`](/docs/reference/errors/migration-error) | [`NOT_ELIGIBLE`](/docs/reference/errors/NOT_ELIGIBLE), [`ALREADY_MIGRATED`](/docs/reference/errors/ALREADY_MIGRATED), [`RECORDS_UNKNOWN`](/docs/reference/errors/RECORDS_UNKNOWN), [`NAME_NOT_LOCKED`](/docs/reference/errors/NAME_NOT_LOCKED) | a name cannot migrate as asked. |
-| [`NameStateError`](/docs/reference/errors/name-state-error) | [`NAME_LOCKED`](/docs/reference/errors/NAME_LOCKED), [`PARENT_NOT_MIGRATED`](/docs/reference/errors/PARENT_NOT_MIGRATED) | the name is locked or its parent is not migrated yet. |
+| [`NameStateError`](/docs/reference/errors/name-state-error) | [`NAME_LOCKED`](/docs/reference/errors/NAME_LOCKED) | the name is locked. |
 | [`UnsupportedError`](/docs/reference/errors/unsupported-error) | [`UNSUPPORTED_ON_DEPLOYMENT`](/docs/reference/errors/UNSUPPORTED_ON_DEPLOYMENT) | where ENSv2 is not deployed. |
 | [`UnauthorizedError`](/docs/reference/errors/unauthorized-error) | [`NOT_OWNER`](/docs/reference/errors/NOT_OWNER), [`FUSE_BURNED`](/docs/reference/errors/FUSE_BURNED) | the account may not move a token. |
 | [`UserRejectedError`](/docs/reference/errors/user-rejected-error) | [`USER_REJECTED`](/docs/reference/errors/USER_REJECTED) | the user rejects the request. |

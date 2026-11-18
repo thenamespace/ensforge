@@ -1,7 +1,7 @@
 ---
 title: "indexer.getNamesForAddress"
-description: "Lists the names an address owns, manages, holds roles on, resolves to, or used to own."
-keywords: ["getNamesForAddress","indexer.getNamesForAddress"]
+description: "Lists the names an address owns, manages, holds roles on, resolves to, or used to own. Options, result, errors and examples for indexer.getNamesForAddress."
+keywords: ["indexer.getNamesForAddress","getNamesForAddress","@ensforge/sdk","indexer","bigname","subgraph","history","search"]
 generated: true
 ---
 
@@ -112,6 +112,142 @@ const page = yield* Actions.indexer.getNamesForAddress(ens, { address, sort: "ex
 </Tab>
 
 </Tabs>
+
+## Example response
+
+Recorded from Ethereum mainnet on 2026-11-18 at block 26443964. Values change as the chain does.
+
+```ts
+await ens.indexer.getNamesForAddress({ address: "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045", limit: 3 })
+```
+
+```json
+{
+  "asOf": {
+    "chainId": 1,
+    "blockNumber": "26443964n",
+    "blockHash": "0xe75c58ea2f28bd7c6cc53c28a5ab4fc02023f3563661f0a7236a36b779e3ac86",
+    "timestamp": "1795029143n"
+  },
+  "snapshots": {
+    "1": {
+      "chainId": 1,
+      "blockNumber": "26443964n",
+      "blockHash": "0xe75c58ea2f28bd7c6cc53c28a5ab4fc02023f3563661f0a7236a36b779e3ac86",
+      "timestamp": "1795029143n"
+    }
+  },
+  "asOfToken": null,
+  "completeness": "full",
+  "unsupportedReason": null,
+  "unsupportedFields": [],
+  "origin": null,
+  "indexer": "bigname",
+  "items": [
+    {
+      "name": "$ethereum.eth",
+      "displayName": "$ethereum.eth",
+      "namespace": "ens",
+      "node": "0x19dcf664810b0725d51d9e71dd02c5be734f14803394fb2d5574dfb8efd402a7",
+      "status": "active",
+      "authority": "ensV1",
+      "owner": "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045",
+      "manager": "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045",
+      "registeredAt": "1715951615n",
+      "createdAt": "1659177236n",
+      "expiresAt": "1815916415n",
+      "graceEndsAt": "1818335615n",
+      "expiryReason": null,
+      "ensV1": {
+        "resolver": {
+          "chainId": 1,
+          "address": "0x231b0Ee14048e9dCcD1d247744d114a4EB5E8E63"
+        },
+        "expiresAt": "1810559615n",
+        "wrapperState": "locked",
+        "wrapperExpiresAt": "1818335615n",
+        "wrapperFuses": 196609
+      },
+      "relations": [
+        "owner",
+        "manager"
+      ],
+      "isPrimary": false,
+      "migratedAt": null,
+      "recordCount": null,
+      "subnameCount": null
+    },
+    {
+      "name": "$tmnt.eth",
+      "displayName": "$tmnt.eth",
+      "namespace": "ens",
+      "node": "0x0b6f1e9f5b9f267f7d9b57fad7971998a4710835d0c9007a02edc5d0f59c7960",
+      "status": "active",
+      "authority": "ensV1",
+      "owner": "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045",
+      "manager": "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045",
+      "registeredAt": "1750871663n",
+      "createdAt": "1703971235n",
+      "expiresAt": "1819300463n",
+      "graceEndsAt": "1821719663n",
+      "expiryReason": null,
+      "ensV1": {
+        "resolver": {
+          "chainId": 1,
+          "address": "0x231b0Ee14048e9dCcD1d247744d114a4EB5E8E63"
+        },
+        "expiresAt": "1813943663n",
+        "wrapperState": "emancipated",
+        "wrapperExpiresAt": "1821719663n",
+        "wrapperFuses": 196608
+      },
+      "relations": [
+        "owner",
+        "manager"
+      ],
+      "isPrimary": false,
+      "migratedAt": null,
+      "recordCount": null,
+      "subnameCount": null
+    },
+    {
+      "name": "0x2cd.eth",
+      "displayName": "0x2cd.eth",
+      "namespace": "ens",
+      "node": "0x017e683f998ef30ad2d628fa36ade474ef6f40aa8fa042d87e41730273a7145c",
+      "status": "active",
+      "authority": "ensV1",
+      "owner": "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045",
+      "manager": "0x32869721EF080442ec128FC1ddb6673006bc5aa9",
+      "registeredAt": "1651234372n",
+      "createdAt": "1651234372n",
+      "expiresAt": "1845932884n",
+      "graceEndsAt": "1848352084n",
+      "expiryReason": null,
+      "ensV1": {
+        "resolver": {
+          "chainId": 1,
+          "address": "0x4976fb03C32e5B8cfe2b6cCB31c09Ba78EBaBa41"
+        },
+        "expiresAt": "1840576084n",
+        "wrapperState": "unwrapped",
+        "wrapperExpiresAt": null,
+        "wrapperFuses": null
+      },
+      "relations": [
+        "owner"
+      ],
+      "isPrimary": false,
+      "migratedAt": null,
+      "recordCount": null,
+      "subnameCount": null
+    }
+  ],
+  "cursor": "7b2276657273696f6e223a312c22736f7274223a226e616d65222c2266696c74657273223a7b2261646472657373223a22307864386461366266323639363461663964376565643965303365353334313564333761613936303435222c22617574686f72697479223a22222c22646564757065223a226e616d65222c2269735f6d69677261746564223a22222c226e616d657370616365223a22222c226f72646572223a22617363222c2271223a22222c2272656c6174696f6e223a22227d2c226c6173745f6974656d223a7b226c6f676963616c5f6e616d655f6964223a22656e733a307830313765363833663939386566333061643264363238666133366164653437346566366634306161386661303432643837653431373330323733613731343563222c227265736f757263655f6964223a2232643539636630332d613131382d353862372d623264382d373033646561653936316336222c22736f72745f6b696e64223a226e616d65222c22736f72745f76616c7565223a2230783263642e657468227d2c22736e617073686f74223a6e756c6c7d",
+  "hasMore": true,
+  "totalCount": 90
+}
+```
 
 ## See also
 

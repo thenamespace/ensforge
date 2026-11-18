@@ -1,7 +1,7 @@
 ---
 title: "COMMITMENT_TOO_NEW"
-description: "Fix COMMITMENT_TOO_NEW (CommitmentError): The registration commitment is not ready yet."
-keywords: ["COMMITMENT_TOO_NEW","CommitmentError"]
+description: "What COMMITMENT_TOO_NEW means, why CommitmentError throws it, what to show users and how to fix it in ensforge. Also covers retry safety."
+keywords: ["COMMITMENT_TOO_NEW","CommitmentError","@ensforge/sdk","error","error code"]
 generated: true
 ---
 
@@ -32,7 +32,7 @@ Retrying the same call can succeed (`retryable: true`).
 | Action | When |
 | --- | --- |
 | [`registration.commit`](/docs/reference/sdk/registration/commit) | for a resumed commitment outside its window. |
-| [`registration.register`](/docs/reference/sdk/registration/register) | for a resumed commitment outside its window, or none for the registration. |
+| [`registration.register`](/docs/reference/sdk/registration/register) | for a resumed commitment outside its window. |
 
 ## Catch it
 

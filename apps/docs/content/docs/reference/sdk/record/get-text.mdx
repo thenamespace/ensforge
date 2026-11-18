@@ -1,7 +1,7 @@
 ---
 title: "record.getText"
-description: "Reads one text record of an ENS name, such as url, avatar or com.twitter."
-keywords: ["getText","record.getText"]
+description: "Reads one text record of an ENS name, such as url, avatar or com.twitter. Parameters, return value, errors and examples for record.getText in @ensforge/sdk."
+keywords: ["record.getText","getText","@ensforge/sdk","resolver","text record","address record","avatar","content hash","ENSIP-9"]
 generated: true
 ---
 
@@ -96,6 +96,18 @@ const url = yield* Actions.record.getText(ens, { name: "nick.eth", key: "url" })
 </Tab>
 
 </Tabs>
+
+## Example response
+
+Recorded from Ethereum mainnet on 2026-11-18 at block 26443964. Values change as the chain does.
+
+```ts
+await ens.record.getText({ name: "vitalik.eth", key: "url" })
+```
+
+```json
+"https://vitalik.ca"
+```
 
 ## See also
 

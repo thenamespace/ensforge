@@ -1,7 +1,7 @@
 ---
 title: "indexer.getRegistryLabels"
-description: "Lists the labels of an ENSv2 registry, optionally only those an address holds or does not hold."
-keywords: ["getRegistryLabels","indexer.getRegistryLabels"]
+description: "Lists the labels of an ENSv2 registry, optionally only those an address holds or does not hold. Options, errors and examples for indexer.getRegistryLabels."
+keywords: ["indexer.getRegistryLabels","getRegistryLabels","@ensforge/sdk","indexer","bigname","subgraph","history","search"]
 generated: true
 ---
 
@@ -96,3 +96,40 @@ const page = yield* Actions.indexer.getRegistryLabels(ens, { address, limit: 200
 </Tab>
 
 </Tabs>
+
+## Example response
+
+Recorded from Ethereum mainnet on 2026-11-18 at block 26443964. Values change as the chain does.
+
+```ts
+await ens.indexer.getRegistryLabels({ address: "0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e", chainId: 1, limit: 3 })
+```
+
+```json
+{
+  "asOf": {
+    "chainId": 1,
+    "blockNumber": "26443964n",
+    "blockHash": "0xe75c58ea2f28bd7c6cc53c28a5ab4fc02023f3563661f0a7236a36b779e3ac86",
+    "timestamp": "1795029143n"
+  },
+  "snapshots": {
+    "1": {
+      "chainId": 1,
+      "blockNumber": "26443964n",
+      "blockHash": "0xe75c58ea2f28bd7c6cc53c28a5ab4fc02023f3563661f0a7236a36b779e3ac86",
+      "timestamp": "1795029143n"
+    }
+  },
+  "asOfToken": null,
+  "completeness": "full",
+  "unsupportedReason": null,
+  "unsupportedFields": [],
+  "origin": null,
+  "indexer": "bigname",
+  "items": [],
+  "cursor": null,
+  "hasMore": false,
+  "totalCount": 0
+}
+```

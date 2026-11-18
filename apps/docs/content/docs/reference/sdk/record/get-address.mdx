@@ -1,7 +1,7 @@
 ---
 title: "record.getAddress"
-description: "Reads one address record of an ENS name, for Ethereum by default or any coin (ENSIP-9, ENSIP-11)."
-keywords: ["getAddress","record.getAddress"]
+description: "Reads one address record of an ENS name, for Ethereum by default or any coin (ENSIP-9, ENSIP-11). Options, result, errors and examples for record.getAddress."
+keywords: ["record.getAddress","getAddress","@ensforge/sdk","resolver","text record","address record","avatar","content hash","ENSIP-9"]
 generated: true
 ---
 
@@ -98,6 +98,18 @@ const base = yield* Actions.record.getAddress(ens, { name: "nick.eth", coin: { c
 </Tab>
 
 </Tabs>
+
+## Example response
+
+Recorded from Ethereum mainnet on 2026-11-18 at block 26443964. Values change as the chain does.
+
+```ts
+await ens.record.getAddress({ name: "nick.eth" })
+```
+
+```json
+"0xb8c2C29ee19D8307cb7255e1Cd9CbDE883A267d5"
+```
 
 ## See also
 

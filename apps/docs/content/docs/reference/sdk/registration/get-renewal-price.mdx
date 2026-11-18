@@ -1,7 +1,7 @@
 ---
 title: "registration.getRenewalPrice"
-description: "Quotes renewing one or more .eth names, in an ERC-20 payment token."
-keywords: ["getRenewalPrice","registration.getRenewalPrice"]
+description: "Quotes renewing one or more .eth names, in an ERC-20 payment token. Options, result, errors and examples for registration.getRenewalPrice."
+keywords: ["registration.getRenewalPrice","getRenewalPrice","@ensforge/sdk","register","renew","commit-reveal","price",".eth","ETH registrar"]
 generated: true
 ---
 
@@ -100,6 +100,32 @@ const quote = yield* Actions.registration.getRenewalPrice(ens, { names: "nick.et
 </Tab>
 
 </Tabs>
+
+## Example response
+
+Recorded from Ethereum mainnet on 2026-11-18 at block 26443964. Values change as the chain does.
+
+```ts
+await ens.registration.getRenewalPrice({ names: "nick.eth", duration: 31_536_000n })
+```
+
+```json
+{
+  "total": "160000009n",
+  "token": {
+    "address": "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+    "symbol": "USDC",
+    "decimals": 6
+  },
+  "items": [
+    {
+      "name": "nick.eth",
+      "route": "v2-registrar",
+      "amount": "160000009n"
+    }
+  ]
+}
+```
 
 ## See also
 

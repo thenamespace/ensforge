@@ -1,7 +1,7 @@
 ---
 title: "name.getLabel"
-description: "Recovers a label from its labelhash through the ENSv2 LabelStore."
-keywords: ["getLabel","name.getLabel"]
+description: "Recovers a label from its labelhash through the ENSv2 LabelStore. Parameters, return value, errors and examples for name.getLabel in @ensforge/sdk."
+keywords: ["name.getLabel","getLabel","@ensforge/sdk","ENS name","owner","manager","ttl","labelhash","namehash"]
 generated: true
 ---
 
@@ -87,3 +87,15 @@ const label = yield* Actions.name.getLabel(ens, { labelhash })
 </Tab>
 
 </Tabs>
+
+## Example response
+
+Recorded from Ethereum mainnet on 2026-11-18 at block 26443964. Values change as the chain does.
+
+```ts
+await ens.name.getLabel({ labelhash: "0xaf2caa1c2ca1d027f1ac823b529d0a67cd144264b2789fa2ea4d63a67c7103cc" })
+```
+
+```json
+"vitalik"
+```

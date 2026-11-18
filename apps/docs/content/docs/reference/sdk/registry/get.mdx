@@ -1,7 +1,7 @@
 ---
 title: "registry.get"
 description: "Reads an ENSv2 registry: its kind, implementation, parent, canonical name, URI, whether it is emancipated, and whether it can be upgraded."
-keywords: ["get","registry.get"]
+keywords: ["registry.get","get","@ensforge/sdk","registry","ENSv2","subregistry"]
 generated: true
 ---
 
@@ -117,6 +117,35 @@ const registry = yield* Actions.registry.get(ens, { name: "nick.eth", account })
 </Tab>
 
 </Tabs>
+
+## Example response
+
+Recorded from Ethereum mainnet on 2026-11-18 at block 26443964. Values change as the chain does.
+
+```ts
+await ens.registry.get({ name: "nick.eth" })
+```
+
+```json
+{
+  "address": "0x02cA46F62f6C9F655364bf9Fd4f11Fb8f01C5753",
+  "kind": "user",
+  "implementation": "0xFAA23592ACA10A6d8875b18eA86954e8EB6d8d72",
+  "parent": {
+    "registry": "0xf60aba43E1f7F3DAB1186Ff03B561401C9Df85E2",
+    "label": "nick"
+  },
+  "canonicalName": "nick.eth",
+  "uri": null,
+  "renderer": "0x6f412Ff4144d525f791777d3384e9A1B170492Fb",
+  "emancipated": false,
+  "upgrade": {
+    "latest": "0x3269b830b61b3186Dc6d2f57Cab118E2FBC3E2df",
+    "eligible": false,
+    "blocker": "not-approved"
+  }
+}
+```
 
 ## See also
 

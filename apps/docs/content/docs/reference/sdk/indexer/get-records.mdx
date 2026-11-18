@@ -1,7 +1,7 @@
 ---
 title: "indexer.getRecords"
-description: "Reads a name's records and its record inventory from the indexer."
-keywords: ["getRecords","indexer.getRecords"]
+description: "Reads a name's records and its record inventory from the indexer. Parameters, return value, errors and examples for indexer.getRecords in @ensforge/sdk."
+keywords: ["indexer.getRecords","getRecords","@ensforge/sdk","indexer","bigname","subgraph","history","search"]
 generated: true
 ---
 
@@ -103,6 +103,105 @@ const records = yield* Actions.indexer.getRecords(ens, { name: "nick.eth", keys:
 </Tab>
 
 </Tabs>
+
+## Example response
+
+Recorded from Ethereum mainnet on 2026-11-18 at block 26443964. Values change as the chain does.
+
+```ts
+await ens.indexer.getRecords({ name: "ens.eth", namespace: "ens" })
+```
+
+```json
+{
+  "namespace": "ens",
+  "resolver": {
+    "chainId": 1,
+    "address": "0x4976fb03C32e5B8cfe2b6cCB31c09Ba78EBaBa41"
+  },
+  "texts": {
+    "avatar": "https://i.imgur.com/ga6y0c0.jpg",
+    "com.github": "ensdomains",
+    "com.twitter": "ensdomains",
+    "snapshot": "ipns://storage.snapshot.page/registry/0xb6E040C9ECAaE172a89bD561c5F73e1C48d28cd9/ens.eth",
+    "url": "https://ens.domains/"
+  },
+  "addresses": {
+    "60": "0xfe89cc7abb2c4183683ab71653c4cdc9b02d44b7"
+  },
+  "contentHash": "0xe40101fa011b20f5909b5286d9279a1f6a23d5155ddd72bb0f28f56b6b82c32de54a6529e6b1b0",
+  "answers": {
+    "addr:60": {
+      "status": "ok",
+      "value": "0xfe89cc7abb2c4183683ab71653c4cdc9b02d44b7",
+      "reason": null
+    },
+    "contenthash": {
+      "status": "ok",
+      "value": "0xe40101fa011b20f5909b5286d9279a1f6a23d5155ddd72bb0f28f56b6b82c32de54a6529e6b1b0",
+      "reason": null
+    },
+    "text:avatar": {
+      "status": "ok",
+      "value": "https://i.imgur.com/ga6y0c0.jpg",
+      "reason": null
+    },
+    "text:com.github": {
+      "status": "ok",
+      "value": "ensdomains",
+      "reason": null
+    },
+    "text:com.twitter": {
+      "status": "ok",
+      "value": "ensdomains",
+      "reason": null
+    },
+    "text:snapshot": {
+      "status": "ok",
+      "value": "ipns://storage.snapshot.page/registry/0xb6E040C9ECAaE172a89bD561c5F73e1C48d28cd9/ens.eth",
+      "reason": null
+    },
+    "text:url": {
+      "status": "ok",
+      "value": "https://ens.domains/",
+      "reason": null
+    }
+  },
+  "inventory": {
+    "keys": [
+      "addr:60",
+      "contenthash",
+      "text:avatar",
+      "text:com.github",
+      "text:com.twitter",
+      "text:snapshot",
+      "text:url"
+    ],
+    "unsetKeys": [],
+    "unsupportedKeys": []
+  },
+  "asOf": {
+    "chainId": 1,
+    "blockNumber": "26443964n",
+    "blockHash": "0xe75c58ea2f28bd7c6cc53c28a5ab4fc02023f3563661f0a7236a36b779e3ac86",
+    "timestamp": "1795029143n"
+  },
+  "snapshots": {
+    "1": {
+      "chainId": 1,
+      "blockNumber": "26443964n",
+      "blockHash": "0xe75c58ea2f28bd7c6cc53c28a5ab4fc02023f3563661f0a7236a36b779e3ac86",
+      "timestamp": "1795029143n"
+    }
+  },
+  "asOfToken": "7b22657468657265756d223a7b22626c6f636b5f68617368223a22307865373563353865613266323862643763366363353363323861356162346663303230323366333536333636316630613732333661333662373739653361633836222c22626c6f636b5f6e756d626572223a32363434333936342c22636861696e5f6964223a22657468657265756d2d6d61696e6e6574222c2274696d657374616d70223a22323032362d31312d31385431393a31323a32335a227d7d",
+  "completeness": "full",
+  "unsupportedReason": null,
+  "unsupportedFields": [],
+  "origin": "indexed",
+  "indexer": "bigname"
+}
+```
 
 ## See also
 
