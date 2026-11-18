@@ -31,6 +31,7 @@ on:
 
 permissions:
   contents: read
+  packages: read # the services lane's bigname image (bigname-image.yml), a private package
 
 jobs:
   lane:
@@ -58,6 +59,12 @@ jobs:
         if: inputs.lane != 'live' && inputs.lane != 'mutation'
         with:
           rpc-cache: ${{ inputs.lane == 'fork' }}
+      - uses: docker/login-action@v4
+        if: inputs.lane == 'services'
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
 
       - name: Run the ${{ inputs.lane }} lane
         env:
