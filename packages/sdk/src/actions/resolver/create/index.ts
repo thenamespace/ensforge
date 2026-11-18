@@ -27,7 +27,8 @@ import * as Impl from "./effect.js";
  * **Gotchas**
  *
  * - The address depends on the sending account and `salt`: send from the account the plan was
- *   prepared for.
+ *   prepared for. A `salt` already used by that account fails with `SALT_TAKEN`, whose
+ *   `context.contract` is the existing resolver; point the name at it with `resolver.set`.
  *
  * **Example** (Creating a resolver with records)
  *
@@ -51,7 +52,7 @@ import * as Impl from "./effect.js";
  * yield* Actions.resolver.create(ens, { name: "alice.eth", records: { texts: { url: "https://alice.dev" } } })
  * ```
  *
- * @throws `Errors.InvalidInputError` (`INVALID_NAME`, `INVALID_ADDRESS`, `INVALID_ROLES`, `INVALID_RECORD_VALUE`) for invalid input.
+ * @throws `Errors.InvalidInputError` (`INVALID_NAME`, `INVALID_ADDRESS`, `INVALID_ROLES`, `INVALID_RECORD_VALUE`, `SALT_TAKEN`) for invalid input, or a `salt` whose resolver already exists.
  * @throws `Errors.NameStateError` (`NAME_EXPIRED`, `NAME_RESERVED`, `NAME_NOT_REGISTERED`) when the name is not registered.
  * @throws `Errors.ConfigError` (`WALLET_NOT_CONFIGURED`) when no account is known to predict the address.
  * @throws `Errors.UnsupportedError` (`UNSUPPORTED_ON_DEPLOYMENT`, `RESOLVER_PROFILE_UNSUPPORTED`) without ENSv2, or for records a PermissionedResolver cannot store.
@@ -147,7 +148,7 @@ create.estimateGas = Action.promiseOf(
  * yield* Actions.resolver.createSync(ens, { name: "alice.eth", records: { texts: { url: "https://alice.dev" } } })
  * ```
  *
- * @throws `Errors.InvalidInputError` (`INVALID_NAME`, `INVALID_ADDRESS`, `INVALID_ROLES`, `INVALID_RECORD_VALUE`) for invalid input.
+ * @throws `Errors.InvalidInputError` (`INVALID_NAME`, `INVALID_ADDRESS`, `INVALID_ROLES`, `INVALID_RECORD_VALUE`, `SALT_TAKEN`) for invalid input, or a `salt` whose resolver already exists.
  * @throws `Errors.NameStateError` (`NAME_EXPIRED`, `NAME_RESERVED`, `NAME_NOT_REGISTERED`) when the name is not registered.
  * @throws `Errors.ConfigError` (`WALLET_NOT_CONFIGURED`) when no account is known to predict the address.
  * @throws `Errors.UnsupportedError` (`UNSUPPORTED_ON_DEPLOYMENT`, `RESOLVER_PROFILE_UNSUPPORTED`) without ENSv2, or for records a PermissionedResolver cannot store.

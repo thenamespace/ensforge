@@ -17,6 +17,7 @@ import { requireAddress, requireRegistered } from "../../../internal/name/write.
 import { explainFor } from "../../../internal/permission/check.js";
 import { deployPermissionedResolver } from "../../../internal/resolver/deploy.js";
 import { roleBitmapOf } from "../../../internal/role/bitmap.js";
+import * as Rpc from "../../../internal/rpc/index.js";
 import { make as makePlan } from "../../../plan/make.js";
 import type { Plan } from "../../../plan/Plan.js";
 import type { Write } from "../../../Types.js";
@@ -67,6 +68,20 @@ export const plan = Effect.fnUntraced(function* (
     name: parts,
     records: options.records,
   });
+  // CREATE2 cannot deploy twice at one address. A random salt never collides; a chosen one may.
+  if (options.salt !== undefined && (yield* Rpc.hasCode(client, deployment.address))) {
+    return yield* Effect.fail(
+      new InvalidInputError({
+        code: "SALT_TAKEN",
+        field: "salt",
+        input: options.salt,
+        shortMessage: `A resolver was already created with this salt, at ${deployment.address}.`,
+        hint: `Point the name at it with \`resolver.set({ name, resolver: "${deployment.address}" })\`, or pass another \`salt\`.`,
+        context: { contract: deployment.address },
+      }),
+    );
+  }
+
   const steps: Plan.Step[] = [
     { id: "deploy", description: "Create resolver", calls: [deployment.call] },
   ];

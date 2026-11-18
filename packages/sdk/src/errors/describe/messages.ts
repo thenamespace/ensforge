@@ -77,6 +77,11 @@ export const messages: { readonly [code in Code]: Template<code> } = {
     title: "Invalid permissions",
     message: "The selected permissions are not valid.",
   }),
+  SALT_TAKEN: () => ({
+    title: "Already created",
+    message: "A resolver was already created with these settings.",
+    action: "Use the existing resolver, or create a new one.",
+  }),
   UNEXPECTED: () => ({
     title: "Something went wrong",
     message: "An unexpected error occurred.",

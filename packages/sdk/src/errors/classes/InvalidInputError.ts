@@ -42,6 +42,10 @@ const defaults: {
   INVALID_ROLES: (o: InvalidInputError.Options) => ({
     shortMessage: `${describeInput(o.input)} is not a valid role bitmap.`,
   }),
+  SALT_TAKEN: () => ({
+    shortMessage: "A contract was already deployed with this salt.",
+    hint: "Use the existing contract, or pass another `salt`.",
+  }),
 };
 
 /**
@@ -73,7 +77,8 @@ export declare namespace InvalidInputError {
     | "INVALID_DURATION"
     | "DURATION_TOO_SHORT"
     | "INVALID_EXPIRY"
-    | "INVALID_ROLES";
+    | "INVALID_ROLES"
+    | "SALT_TAKEN";
   type Options = EnsforgeError.ClassOptions<Code> & {
     readonly input?: unknown;
     readonly field?: string | undefined;

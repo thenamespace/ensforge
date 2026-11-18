@@ -46,6 +46,7 @@ export const errorsByCode: { readonly [code in Code]: () => AnyError } = {
   DURATION_TOO_SHORT: () => new Classes.InvalidInputError({ code: "DURATION_TOO_SHORT" }),
   INVALID_EXPIRY: () => new Classes.InvalidInputError({ code: "INVALID_EXPIRY" }),
   INVALID_ROLES: () => new Classes.InvalidInputError({ code: "INVALID_ROLES" }),
+  SALT_TAKEN: () => new Classes.InvalidInputError({ code: "SALT_TAKEN" }),
   NOT_ELIGIBLE: () => new Classes.MigrationError({ code: "NOT_ELIGIBLE" }),
   ALREADY_MIGRATED: () => new Classes.MigrationError({ code: "ALREADY_MIGRATED" }),
   NAME_NOT_LOCKED: () => new Classes.MigrationError({ code: "NAME_NOT_LOCKED" }),
