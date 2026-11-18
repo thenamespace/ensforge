@@ -1,6 +1,6 @@
 /* -------------------------------------------------------------------------- */
-/* Home: ENS blue on the dark theme, the hero and closing figures, the layer   */
-/* stack (after Effect Kit's) and the playground.                              */
+/* Home: ENS blue on the dark theme, the hero floor, the closing figure, the   */
+/* layer stack (after Effect Kit's) and the playground.                        */
 /* -------------------------------------------------------------------------- */
 
 .ens-home {
@@ -114,144 +114,10 @@
   transition: background 0.4s ease;
 }
 
-/* --- Hero: a name resolving through the registry and its resolver ---------- */
+/* --- Hero: the floor of names, quiet in the middle under the headline ------- */
 
-.ens-hero-figure {
-  --ink: color-mix(in oklab, var(--color-fd-foreground) 34%, transparent);
-  --detail: color-mix(in oklab, var(--color-fd-foreground) 22%, transparent);
-  overflow: visible;
-}
-.ens-hero-top {
-  fill: var(--color-fd-background);
-  stroke: var(--ink);
-  stroke-width: 1;
-  transition: stroke 0.5s ease;
-}
-.ens-hero-side {
-  fill: color-mix(in oklab, var(--color-fd-background) 82%, var(--color-fd-foreground));
-  stroke: var(--ink);
-  stroke-width: 1;
-}
-.ens-hero-side-dark {
-  fill: color-mix(in oklab, var(--color-fd-background) 90%, var(--color-fd-foreground));
-  stroke: var(--ink);
-  stroke-width: 1;
-}
-.ens-hero-plate[data-lit="true"] .ens-hero-top {
-  stroke: color-mix(in oklab, var(--ens-blue) 70%, transparent);
-}
-.ens-hero-line {
-  fill: none;
-  stroke: var(--detail);
-  stroke-width: 1;
-  vector-effect: non-scaling-stroke;
-}
-.ens-hero-engrave {
-  fill: color-mix(in oklab, var(--color-fd-foreground) 42%, transparent);
-}
-.ens-hero-node {
-  fill: color-mix(in oklab, var(--color-fd-foreground) 8%, var(--color-fd-background));
-  stroke: var(--detail);
-}
-.ens-hero-cell {
-  fill: color-mix(in oklab, var(--color-fd-foreground) 6%, var(--color-fd-background));
-  stroke: var(--detail);
-  stroke-width: 1;
-  vector-effect: non-scaling-stroke;
-  transition:
-    fill 0.45s ease,
-    stroke 0.45s ease;
-}
-.ens-hero-cell.is-lit {
-  fill: color-mix(in oklab, var(--ens-blue) 30%, var(--color-fd-background));
-  stroke: var(--ens-blue);
-}
-.ens-hero-mark {
-  color: color-mix(in oklab, var(--color-fd-foreground) 30%, transparent);
-  transition: color 0.5s ease;
-}
-.ens-hero-plate[data-lit="true"] .ens-hero-mark {
-  color: var(--ens-blue);
-}
-.ens-hero-drop {
-  stroke: color-mix(in oklab, var(--ens-blue) 45%, transparent);
-  stroke-width: 1;
-  stroke-dasharray: 3 4;
-}
-.ens-hero-packet {
-  fill: var(--ens-blue);
-  filter: drop-shadow(0 0 6px var(--ens-blue));
-  animation: ens-drop 0.8s var(--ease-out-expo) both;
-}
-@keyframes ens-drop {
-  to {
-    translate: 0 var(--drop);
-  }
-}
-.ens-hero-tag {
-  animation:
-    ens-tag-in 0.7s var(--ease-pop) both,
-    ens-float 5s ease-in-out 0.7s infinite;
-}
-.ens-hero-tag-top {
-  fill: color-mix(in oklab, var(--ens-blue) 18%, var(--color-fd-card));
-  stroke: var(--ens-blue);
-  stroke-width: 1;
-}
-.ens-hero-tag-side {
-  fill: color-mix(in oklab, var(--ens-blue) 40%, var(--color-fd-background));
-  stroke: var(--ens-blue);
-  stroke-width: 1;
-}
-.ens-hero-tag-side-dark {
-  fill: color-mix(in oklab, var(--ens-blue) 22%, var(--color-fd-background));
-  stroke: var(--ens-blue);
-  stroke-width: 1;
-}
-.ens-hero-tag-hole {
-  fill: var(--color-fd-background);
-  stroke: var(--ens-blue);
-}
-.ens-hero-tag-name {
-  fill: var(--color-fd-foreground);
-  font-weight: 600;
-}
-@keyframes ens-tag-in {
-  from {
-    opacity: 0;
-    translate: 0 -24px;
-  }
-}
-@keyframes ens-float {
-  50% {
-    translate: 0 -6px;
-  }
-}
-.ens-hero-record {
-  opacity: 0;
-  translate: -12px 0;
-  transition:
-    opacity 0.5s var(--ease-out-expo),
-    translate 0.5s var(--ease-out-expo);
-}
-.ens-hero-record[data-shown="true"] {
-  opacity: 1;
-  translate: 0 0;
-}
-.ens-hero-leader {
-  stroke: color-mix(in oklab, var(--ens-blue) 50%, transparent);
-  stroke-width: 1;
-}
-.ens-hero-chip {
-  fill: color-mix(in oklab, var(--color-fd-card) 92%, var(--ens-blue));
-  stroke: color-mix(in oklab, var(--ens-blue) 45%, transparent);
-  stroke-width: 1;
-}
-.ens-hero-chip-key {
-  fill: var(--ens-blue);
-}
-.ens-hero-chip-value {
-  fill: var(--color-fd-foreground);
+.ens-name-field {
+  mask-image: radial-gradient(ellipse 58% 52% at 50% 50%, transparent 35%, #000 100%);
 }
 
 /* --- Closing: the anvil forging names -------------------------------------- */
