@@ -53,7 +53,7 @@
   --color-fd-secondary-foreground: oklch(98.5% 0 0);
   --color-fd-accent: oklch(27.4% 0.006 286.033 / 60%);
   --color-fd-accent-foreground: oklch(98.5% 0 0);
-  --color-fd-ring: oklch(70% 0.16 252);
+  --color-fd-ring: oklch(72% 0.13 236);
 }
 
 /* Docs use the package accent for active links, the TOC, tabs, buttons and focus rings. */

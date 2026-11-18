@@ -29,7 +29,7 @@
 }
 
 :root {
-  --ek-accent: oklch(55% 0.2 258);
+  --ek-accent: oklch(53% 0.12 237);
   --ek-accent-ink: oklch(98.5% 0 0);
   --ek-line: color-mix(in oklab, var(--color-fd-foreground) 9%, transparent);
   --ek-line-strong: color-mix(in oklab, var(--color-fd-foreground) 16%, transparent);
@@ -161,50 +161,51 @@
 
 /* Accent per page. Light values are darker so accent text keeps 4.5:1 on white. */
 .dark {
-  --ek-accent: oklch(70% 0.16 252);
-  --ek-accent-ink: oklch(16% 0.02 258);
+  --ek-accent: oklch(72% 0.13 236);
+  --ek-accent-ink: oklch(16% 0.03 240);
 }
 
-/* Package accents: the SDK is the site blue; the others take distinct hues. Each package states
+/* Package accents, from the ENS brand palette lifted for the dark theme: the SDK is ENS blue,
+   contracts ENS green, React ENS magenta and HCA ENS yellow. Each package states
    its own so an element inside another package's page (the package picker) does not inherit it. */
 [data-accent="sdk"] {
-  --ek-accent: oklch(55% 0.2 258);
+  --ek-accent: oklch(53% 0.12 237);
 }
 
 .dark [data-accent="sdk"],
 .dark[data-accent="sdk"] {
-  --ek-accent: oklch(70% 0.16 252);
-  --ek-accent-ink: oklch(16% 0.02 258);
+  --ek-accent: oklch(72% 0.13 236);
+  --ek-accent-ink: oklch(16% 0.03 240);
 }
 
 [data-accent="contracts"] {
-  --ek-accent: oklch(54% 0.21 27);
+  --ek-accent: oklch(50% 0.13 148);
 }
 
 .dark [data-accent="contracts"],
 .dark[data-accent="contracts"] {
-  --ek-accent: oklch(67% 0.2 26);
-  --ek-accent-ink: oklch(98.5% 0 0);
+  --ek-accent: oklch(76% 0.16 150);
+  --ek-accent-ink: oklch(18% 0.04 150);
 }
 
 [data-accent="hca"] {
-  --ek-accent: oklch(52% 0.13 62);
+  --ek-accent: oklch(52% 0.11 90);
 }
 
 .dark [data-accent="hca"],
 .dark[data-accent="hca"] {
-  --ek-accent: oklch(81% 0.15 80);
-  --ek-accent-ink: oklch(20% 0.04 70);
+  --ek-accent: oklch(90% 0.17 104);
+  --ek-accent-ink: oklch(20% 0.05 100);
 }
 
 [data-accent="react"] {
-  --ek-accent: oklch(52% 0.2 293);
+  --ek-accent: oklch(55% 0.21 356);
 }
 
 .dark [data-accent="react"],
 .dark[data-accent="react"] {
-  --ek-accent: oklch(72% 0.15 293);
-  --ek-accent-ink: oklch(98.5% 0 0);
+  --ek-accent: oklch(71% 0.19 356);
+  --ek-accent-ink: oklch(17% 0.04 356);
 }
 
 /* Reveal on scroll: elements start hidden only once JS has opted the page in. */

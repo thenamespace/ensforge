@@ -9,11 +9,11 @@ export const OG = { width: 1200, height: 630 } as const;
  * in marketing.css and the `--ens-*` colours in home.css, as hex for the renderer.
  */
 export const accents = {
-  kit: "#5298ff",
-  sdk: "#5298ff",
-  contracts: "#f8554f",
-  react: "#a991f9",
-  hca: "#f3b539",
+  kit: "#41b0eb",
+  sdk: "#41b0eb",
+  contracts: "#58cd78",
+  react: "#f965a5",
+  hca: "#f1e344",
 } as const;
 
 export type Accent = keyof typeof accents;
