@@ -66,6 +66,7 @@ export default defineConfig({
         ...packageDocs,
         { path: "/sitemap.xml" },
         { path: "/robots.txt" },
+        { path: "/site.webmanifest" },
         { path: "/llms.txt" },
         { path: "/index.md" },
         { path: "/llms-full.txt" },
