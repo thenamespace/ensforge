@@ -13,6 +13,7 @@ import { parseEther, type Address } from "viem";
 import { Clients } from "../support/clients.ts";
 import { ethEntry, mintUsdc, usdcOf } from "../support/contracts.ts";
 import { onProfile } from "../support/lane.ts";
+import { Wallets } from "../support/wallets.ts";
 
 // Writes routed through the owner's Hosted Contract Account with the owner executor: the owner's
 // wallet sends `executeByOwner`, and the HCA is `msg.sender`.
@@ -231,6 +232,81 @@ describe("HCA", () => {
           );
         }),
       { meta: { cases: ["Z02", "Z05"] } },
+    );
+
+    it.effect("fails typed when the owner rejects a session approval", () =>
+      Effect.gen(function* () {
+        const devnet = yield* Devnet;
+        const chain = yield* Chain;
+        const clients = yield* Clients;
+        const wallets = yield* Wallets;
+        const { alice, bob } = devnet.accounts;
+        const ens = clients.make({ account: alice, wallet: wallets.make(alice, { reject: true }) });
+
+        yield* expectFailure(
+          HcaActions.hca.authorizeSession(ens, {
+            sessionKey: bob,
+            resolver: devnet.contract("v2.publicResolver"),
+            validUntil: Number(yield* chain.now) + 3600,
+          }),
+          { _tag: "UserRejectedError", code: "USER_REJECTED" },
+        );
+      }),
+    );
+
+    // HCA writes confirm through the SDK's runner like every write; these stand for all of them.
+    it.effect("fails typed when a sent HCA execution reverts on chain", () =>
+      Effect.gen(function* () {
+        const { accounts } = yield* Devnet;
+        const chain = yield* Chain;
+        const clients = yield* Clients;
+        const context = yield* Effect.context<never>();
+        const ens = clients.make({ account: accounts.user });
+        const target = "0x000000000000000000000000000000000000dEaD";
+        // The target starts reverting (`PUSH1 0 PUSH1 0 REVERT`) once the execution is submitted.
+        const breakTarget = chain
+          .setCode(target, "0x60006000fd")
+          .pipe(Effect.andThen(chain.mine()));
+
+        yield* chain.isolated(
+          Effect.gen(function* () {
+            yield* HcaActions.hca.deploySync(ens, {});
+            yield* chain.setAutomine(false);
+            yield* expectFailure(
+              HcaActions.hca.executeSync(ens, {
+                calls: [{ to: target, data: "0x" }],
+                onStep: (event) => {
+                  if (event.status === "submitted") Effect.runForkWith(context)(breakTarget);
+                },
+              }),
+              { _tag: "TransactionError", code: "TRANSACTION_REVERTED" },
+            ).pipe(Effect.ensuring(Effect.orDie(chain.setAutomine(true))));
+          }),
+        );
+      }),
+    );
+
+    it.effect("fails typed when an HCA execution's receipt does not come in time", () =>
+      Effect.gen(function* () {
+        const { accounts } = yield* Devnet;
+        const chain = yield* Chain;
+        const clients = yield* Clients;
+        const ens = clients.make({ account: accounts.user });
+
+        yield* chain.isolated(
+          Effect.gen(function* () {
+            yield* HcaActions.hca.deploySync(ens, {});
+            yield* chain.setAutomine(false);
+            yield* expectFailure(
+              HcaActions.hca.executeSync(ens, {
+                calls: [{ to: accounts.bob, value: 0n }],
+                timeout: 300,
+              }),
+              { _tag: "TransactionError", code: "RECEIPT_TIMEOUT" },
+            ).pipe(Effect.ensuring(Effect.orDie(chain.setAutomine(true))));
+          }),
+        );
+      }),
     );
   });
 });

@@ -2,13 +2,15 @@ import { assert, describe, it } from "@effect/vitest";
 import { Effect } from "effect";
 
 import { hcaSessionSalt } from "@ensforge/contracts/v2/experimental/hca";
+import { Actions } from "@ensforge/hca/effect";
 import { rhinestone, type RhinestoneSdk } from "@ensforge/hca/internal/executors/rhinestone";
+import { hca } from "@ensforge/hca/internal/hca";
 import type { ExecutionRequest, HcaSession } from "@ensforge/hca/internal/types";
-import { expectRejection } from "@ensforge/test-harness";
-import { concat, zeroAddress, zeroHash, type Address } from "viem";
+import { expectFailure, expectRejection } from "@ensforge/test-harness";
+import { concat, encodeFunctionData, erc20Abi, zeroAddress, zeroHash, type Address } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 
-import { hcaAddress, makeClient, owner } from "../fixtures";
+import { hcaAddress, makeClient, owner, v2 } from "../fixtures";
 
 const signer = privateKeyToAccount(`0x${"22".repeat(32)}`);
 
@@ -85,6 +87,32 @@ describe("rhinestone executor", () => {
         _tag: "HcaError",
         code: "HCA_EXECUTOR_UNSUPPORTED",
       });
+    }),
+  );
+
+  it.effect("hca.execute refuses to run a session without a session signer", () =>
+    Effect.gen(function* () {
+      const { client } = makeClient({ deployed: true, wallet: true });
+      const via = hca({
+        executors: [rhinestone({ sdk: fakeSdk(hcaAddress, { status: "PENDING" }).sdk })],
+        session: { ...session, chainId: 11155111, signingDomain: "smart-session" },
+      });
+      // A payment approval to the registrar: within the session policy.
+      const approve = encodeFunctionData({
+        abi: erc20Abi,
+        functionName: "approve",
+        args: [v2.contracts.ethRegistrar, 1n],
+      });
+
+      const error = yield* expectFailure(
+        Actions.hca.execute(client, {
+          calls: [{ to: "0x00000000000000000000000000000000000000cc", data: approve }],
+          via,
+        }),
+        { _tag: "HcaError", code: "HCA_EXECUTOR_UNSUPPORTED" },
+      );
+
+      assert.strictEqual(error.shortMessage, "Session executions need `sessionSigner`.");
     }),
   );
 

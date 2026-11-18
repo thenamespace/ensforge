@@ -10,6 +10,7 @@ import { contractScript, type ContractStub } from "@ensforge/test-harness/contra
 import {
   concat,
   createPublicClient,
+  createWalletClient,
   encodeAbiParameters,
   getAddress,
   getContractAddress,
@@ -67,6 +68,8 @@ export type World = {
   readonly deployment?: Deployments.Profile;
   /** The latest block's timestamp. */
   readonly now?: bigint;
+  /** Give the client a wallet for `owner` that answers from the same chain. */
+  readonly wallet?: boolean;
 };
 
 /** An Ensforge client of `owner` on Sepolia, whose chain answers from `world`. */
@@ -101,13 +104,16 @@ export const makeClient = (world: World = {}) => {
       },
     ],
   });
-  const publicClient = createPublicClient({
-    chain: sepolia,
-    transport: scriptedTransport(script).transport,
-  });
+  const { transport } = scriptedTransport(script);
+  const publicClient = createPublicClient({ chain: sepolia, transport });
+  const walletClient =
+    world.wallet === true
+      ? createWalletClient({ chain: sepolia, transport, account: owner })
+      : undefined;
   const client = Ensforge.create({
     publicClient,
     account: owner,
+    ...(walletClient === undefined ? {} : { walletClient }),
     batch: { multicall: false },
     ...(world.deployment === undefined ? {} : { deployment: world.deployment }),
     simulate: false,
@@ -117,7 +123,7 @@ export const makeClient = (world: World = {}) => {
     chainId: sepolia.id,
     account: owner,
     publicClient,
-    walletClient: undefined,
+    walletClient,
   };
   return { client, context };
 };

@@ -3,11 +3,12 @@ import { Effect } from "effect";
 
 import { Abis, Deployments } from "@ensforge/contracts";
 import { standaloneSingleOwnerHcaV2Abi } from "@ensforge/contracts/v2/experimental/hca";
+import type { HcaSession } from "@ensforge/hca";
 import { Actions } from "@ensforge/hca/effect";
 import { expectFailure } from "@ensforge/test-harness";
-import { decodeFunctionData, type Address, type Hex } from "viem";
+import { decodeFunctionData, zeroHash, type Address, type Hex } from "viem";
 
-import { contracts, hcaAddress, hcaOf, makeClient } from "../fixtures";
+import { contracts, hcaAddress, hcaOf, makeClient, owner } from "../fixtures";
 
 const other: Address = "0x00000000000000000000000000000000000000bb";
 
@@ -21,17 +22,80 @@ describe("hca.predictAddress", () => {
       assert.strictEqual(yield* Actions.hca.predictAddress(client, options), expected);
     }),
   );
+});
 
-  it.effect("fails on a chain without an HCA deployment", () =>
-    Effect.gen(function* () {
-      const { hca: _, ...v2 } = Deployments.sepolia.v2;
-      const { client } = makeClient({ deployment: { ...Deployments.sepolia, v2 } });
+describe("hca without a deployment", () => {
+  const { hca: _, ...v2 } = Deployments.sepolia.v2;
+  const { client } = makeClient({ deployment: { ...Deployments.sepolia, v2 }, wallet: true });
+  const session: HcaSession = {
+    chainId: 11155111,
+    hca: hcaAddress,
+    owner,
+    sessionKey: other,
+    terms: {
+      sessionNonce: 0n,
+      validUntil: 4_000_000_000,
+      resolver: other,
+      refundToken: other,
+      maxRefundExchangeRate: 1n,
+      maxRefundGasOverhead: 1n,
+      maxRefundAmount: 1n,
+    },
+    permissionId: zeroHash,
+    sessionDigest: zeroHash,
+    chains: [],
+    ownerSignature: "0x",
+    signingDomain: "smart-session",
+  };
 
-      yield* expectFailure(Actions.hca.predictAddress(client, {}), {
-        _tag: "HcaError",
-        code: "HCA_UNAVAILABLE",
-      });
-    }),
+  it.effect.each<readonly [string, Effect.Effect<unknown, unknown>]>([
+    ["hca.predictAddress", Actions.hca.predictAddress(client, {})],
+    ["hca.get", Actions.hca.get(client, {})],
+    ["hca.getDeposit", Actions.hca.getDeposit(client, {})],
+    ["hca.getUpgrade", Actions.hca.getUpgrade(client, { implementation: other })],
+    ["hca.verify", Actions.hca.verify(client, {})],
+    ["hca.getSession", Actions.hca.getSession(client, { session })],
+    ["hca.checkSessionCalls", Actions.hca.checkSessionCalls(client, { session, calls: [] })],
+    [
+      "hca.authorizeSession",
+      Actions.hca.authorizeSession(client, { sessionKey: other, resolver: other, validUntil: 1 }),
+    ],
+    ["hca.deploy", Actions.hca.deploy.prepare(client, {})],
+    ["hca.execute", Actions.hca.execute.prepare(client, { calls: [{ to: other }] })],
+    ["hca.addDeposit", Actions.hca.addDeposit.prepare(client, { amount: 1n })],
+    ["hca.withdrawDeposit", Actions.hca.withdrawDeposit.prepare(client, { to: other, amount: 1n })],
+    ["hca.revokeSessions", Actions.hca.revokeSessions.prepare(client, {})],
+    ["hca.upgrade", Actions.hca.upgrade.prepare(client, { implementation: other })],
+    ["hcaAdmin.getGovernance", Actions.hcaAdmin.getGovernance(client, {})],
+    [
+      "hcaAdmin.grantUpgradeSetRoles",
+      Actions.hcaAdmin.grantUpgradeSetRoles.prepare(client, { grantee: other, roles: 1n }),
+    ],
+    [
+      "hcaAdmin.revokeUpgradeSetRoles",
+      Actions.hcaAdmin.revokeUpgradeSetRoles.prepare(client, { grantee: other, roles: 1n }),
+    ],
+    ["hcaAdmin.renounceGovernance", Actions.hcaAdmin.renounceGovernance.prepare(client, {})],
+    [
+      "hcaAdmin.setDeploymentApproval",
+      Actions.hcaAdmin.setDeploymentApproval.prepare(client, {
+        implementation: other,
+        approved: true,
+      }),
+    ],
+    [
+      "hcaAdmin.setUpgradeApproval",
+      Actions.hcaAdmin.setUpgradeApproval.prepare(client, {
+        implementation: other,
+        approved: true,
+      }),
+    ],
+    [
+      "hcaAdmin.transferGovernance",
+      Actions.hcaAdmin.transferGovernance.prepare(client, { newOwner: other }),
+    ],
+  ])("%s fails on a chain without an HCA deployment", ([, action]) =>
+    expectFailure(action, { _tag: "HcaError", code: "HCA_UNAVAILABLE" }),
   );
 });
 
@@ -43,6 +107,11 @@ describe("hca input validation", () => {
     ["predictAddress.owner", Actions.hca.predictAddress(client, { owner: bad })],
     ["get.address", Actions.hca.get(client, { address: bad })],
     ["get.owner", Actions.hca.get(client, { owner: bad })],
+    ["getDeposit.address", Actions.hca.getDeposit(client, { address: bad })],
+    ["getDeposit.owner", Actions.hca.getDeposit(client, { owner: bad })],
+    ["verify.address", Actions.hca.verify(client, { address: bad })],
+    ["verify.owner", Actions.hca.verify(client, { owner: bad })],
+    ["addDeposit.address", Actions.hca.addDeposit.prepare(client, { address: bad, amount: 1n })],
     ["getUpgrade.implementation", Actions.hca.getUpgrade(client, { implementation: bad })],
     [
       "authorizeSession.sessionKey",
@@ -86,6 +155,39 @@ describe("hca input validation", () => {
     ],
   ])("rejects an invalid %s", ([, action]) =>
     expectFailure(action, { _tag: "InvalidInputError", code: "INVALID_ADDRESS" }),
+  );
+});
+
+describe("hca verification", () => {
+  // The signer's HCA is deployed but answers for another owner and account kind.
+  const { client } = makeClient({
+    deployed: true,
+    stubs: [
+      {
+        address: hcaAddress,
+        abi: standaloneSingleOwnerHcaV2Abi,
+        functions: {
+          ownerAndSessionNonce: () => [other, 0n],
+          accountId: () => "something-else",
+          getImplementation: () => contracts.standaloneImplementation,
+        },
+      },
+    ],
+  });
+
+  it.effect.each<readonly [string, Effect.Effect<unknown, unknown>]>([
+    ["hca.verify", Actions.hca.verify(client, {})],
+    ["hca.execute", Actions.hca.execute.prepare(client, { calls: [{ to: other }] })],
+  ])("%s refuses an HCA that fails verification", ([, action]) =>
+    Effect.gen(function* () {
+      const error = yield* expectFailure(action, { _tag: "HcaError", code: "HCA_NOT_VERIFIED" });
+
+      assert.deepStrictEqual((error as { details?: unknown }).details, [
+        "owner-mismatch",
+        "unknown-account",
+        "not-certified",
+      ]);
+    }),
   );
 });
 
