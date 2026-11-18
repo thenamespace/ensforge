@@ -64,7 +64,10 @@ or a bundler.
 `artifacts/` holds creation code and ABIs with their provenance (`src/artifacts/sources.ts`):
 deployment records from the pinned ENS repositories, contracts compiled from the mainnet
 build-infos with their exact solc (byte-identical to mainnet), mainnet runtime code for contracts
-placed at their mainnet addresses, and `contracts/HostileContract.sol`.
+placed at their mainnet addresses, and our own contracts under `contracts/`. A `build` source can add
+one of them to a pinned build-info (`local`), so `contracts/HCASessionHashes.sol` compiles against
+contracts-v2's own sources to expose the HCA validator's internal session hashing as
+`hca.sessionHashes`.
 
 `artifacts watch` fails when ENS released a newer ens-contracts or contracts-v2, or when the
 mainnet or Sepolia `addresses.md` of a newer release, the `deployment` branch or the latest

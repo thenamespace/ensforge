@@ -15,6 +15,7 @@ import type {
   ReadContractParameters,
   ReadContractReturnType,
   SendTransactionParameters,
+  SignTypedDataParameters,
   Transaction,
   TransactionReceipt,
 } from "viem";
@@ -61,6 +62,10 @@ export class Chain extends Context.Service<
     readonly code: (address: Address) => Effect.Effect<Hex | undefined, ChainError>;
     /** EIP-191 signature of the 32-byte `hash` by an unlocked account (`eth_sign`). */
     readonly sign: (account: Address, hash: Hex) => Effect.Effect<Hex, ChainError>;
+    /** EIP-712 signature by an unlocked account (`eth_signTypedData_v4`). */
+    readonly signTypedData: (
+      parameters: SignTypedDataParameters & { readonly account: Address },
+    ) => Effect.Effect<Hex, ChainError>;
     readonly read: <
       const abi extends Abi | readonly unknown[],
       functionName extends ReadFunction<abi>,
@@ -144,6 +149,8 @@ export class Chain extends Context.Service<
         code: (address) => rpc("getCode", () => client.getCode({ address })),
         sign: (account, hash) =>
           rpc("signMessage", () => client.signMessage({ account, message: { raw: hash } })),
+        signTypedData: (parameters) =>
+          rpc("signTypedData", () => client.signTypedData(parameters as never)),
         read: (parameters) =>
           rpc("readContract", () => client.readContract(parameters as never)) as never,
         call: (parameters) => rpc("call", () => client.call(parameters)),

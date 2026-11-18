@@ -26,7 +26,8 @@ export const canonicalSteps: readonly Step[] = [
 /**
  * Hosted Contract Accounts at contracts-v2 v1.0.1, and the reverse registrar adapters that need
  * the HCA factory. As on upstream's devnet, `MockRegistrationIntentExecutor` stands in for both
- * Rhinestone's IntentExecutor and its gas-refund paymaster.
+ * Rhinestone's IntentExecutor and its gas-refund paymaster. `hca.sessionHashes` exposes the
+ * validator's session hashing to tests.
  */
 export const hcaSteps: readonly Step[] = [
   step("hca", (c) =>
@@ -84,6 +85,9 @@ export const hcaSteps: readonly Step[] = [
       yield* c.write("hca.standaloneFactory", "setImplementationApproval", [implementation, true], {
         from: "owner",
       });
+
+      // Test-only: the validator's internal session hashing, for ensforge's property tests.
+      yield* c.deploy("hca.sessionHashes", "hca/HCASessionHashes", [verifiableFactory]);
     }),
   ),
 ];

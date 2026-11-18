@@ -42,7 +42,8 @@ export type Source =
   | { readonly kind: "deployment"; readonly repository: Repository; readonly file: string }
   /**
    * Compiled from a build-info's standard-JSON input with its exact compiler, optionally with
-   * extra source files from the same repository (`sourceName` → repository file).
+   * extra source files from the same repository (`add`) or from `tests/devnet/contracts`
+   * (`local`), each as `sourceName` → file.
    */
   | {
       readonly kind: "build";
@@ -50,6 +51,7 @@ export type Source =
       readonly buildInfo: string;
       readonly contract: string;
       readonly add?: Readonly<Record<string, string>>;
+      readonly local?: Readonly<Record<string, string>>;
     }
   /** Our own contracts under `tests/devnet/contracts`, compiled with solc 0.8.27. */
   | { readonly kind: "local"; readonly file: string; readonly contract: string }
@@ -253,6 +255,15 @@ export const sources = {
   "hca/HCAOwnerAndSessionValidator": v2Deployment("mainnet/HCAOwnerAndSessionValidator.json"),
   "hca/HCAUpgradeSet": v2Deployment("mainnet/HCAUpgradeSet.json"),
   "hca/StandaloneHCAImplementation": v2Deployment("mainnet/StandaloneHCAImplementation.json"),
+  // Exposes the validator's internal session hashing, compiled with the validator's own build.
+  "hca/HCASessionHashes": {
+    kind: "build",
+    repository: "contracts-v2",
+    buildInfo:
+      "contracts/deployments/mainnet/build-info/solc-0_8_27-9e5faa7f2aaf00def424dc2de8100f7e8bd7e87b.json",
+    contract: "project/test/HCASessionHashes.sol:HCASessionHashes",
+    local: { "project/test/HCASessionHashes.sol": "HCASessionHashes.sol" },
+  },
   "hca/MockRegistrationIntentExecutor": {
     kind: "build",
     repository: "contracts-v2",

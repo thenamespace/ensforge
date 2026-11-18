@@ -128,18 +128,19 @@ export const deriveAll = Effect.fn("deriveAll")(function* () {
     const dir = yield* repositoryDir(first.repository);
     const buildInfo = yield* readJson<BuildInfo>(path.join(dir, first.buildInfo));
     const added: Record<string, { content: string }> = {};
+    const readSource = (file: string) =>
+      fs
+        .readFileString(file)
+        .pipe(
+          Effect.mapError((cause) => new ArtifactError({ artifact: file, message: String(cause) })),
+        );
     for (const [, source] of group) {
       if (source.kind !== "build") continue;
       for (const [sourceName, file] of Object.entries(source.add ?? {})) {
-        added[sourceName] = {
-          content: yield* fs
-            .readFileString(path.join(dir, file))
-            .pipe(
-              Effect.mapError(
-                (cause) => new ArtifactError({ artifact: file, message: String(cause) }),
-              ),
-            ),
-        };
+        added[sourceName] = { content: yield* readSource(path.join(dir, file)) };
+      }
+      for (const [sourceName, file] of Object.entries(source.local ?? {})) {
+        added[sourceName] = { content: yield* readSource(path.join(contractsDir, file)) };
       }
     }
     const version = buildInfo.solcVersion;
