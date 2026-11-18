@@ -3,6 +3,7 @@ import type { CaptureResult, PostHog } from "posthog-js";
 import { getPackage } from "@/lib/packages";
 
 import { analyticsConfig } from "./config";
+import type { DocKind } from "./docs-page";
 import type { AnalyticsEvent, AnalyticsEvents } from "./events";
 
 /**
@@ -29,18 +30,21 @@ async function load() {
     defaults: "2026-08-30",
     capture_pageview: "history_change",
     capture_pageleave: true,
-    person_profiles: "identified_only",
+    // Nobody is ever identified, so no person profiles (and no identified-event billing).
+    person_profiles: "never",
     // No cookies or storage: visitors are counted with PostHog's server-side hash instead.
     cookieless_mode: "always",
     respect_dnt: true,
+    // Our own short-link parameters (`?ref=…`) are stored like UTM parameters.
+    custom_campaign_params: ["ref", "via"],
+    mask_personal_data_properties: true,
+    // Clicks on links and buttons only; the search input opts out with `ph-no-capture`.
     autocapture: {
-      dom_event_allowlist: ["click", "change", "submit"],
+      dom_event_allowlist: ["click"],
       element_allowlist: ["a", "button"],
-      css_selector_allowlist: ["[data-ph]"],
-      capture_copied_text: true,
     },
     capture_exceptions: true,
-    capture_performance: { web_vitals: true, network_timing: true },
+    capture_performance: { web_vitals: true, network_timing: false },
     capture_dead_clicks: true,
     disable_surveys: true,
     // Replay needs a client session id, which cookieless mode does not keep.
@@ -88,6 +92,16 @@ export function captureError(error: unknown, properties: Record<string, unknown>
   else queue.push(send);
 }
 
+let docsPage: { path: string; docKind: DocKind; apiName: string | undefined } | undefined;
+
+/**
+ * Remembers what the docs page at `path` documents, so every event sent from it (clicks, copies,
+ * page leaves) carries `doc_kind` and `api_name`. Set by the docs page when it mounts.
+ */
+export function setDocsPageContext(context: NonNullable<typeof docsPage>) {
+  docsPage = context;
+}
+
 const EMAIL = /[^\s@]+@[^\s@]+\.[^\s@]+/;
 
 /**
@@ -116,6 +130,11 @@ function withPageContext(event: CaptureResult | null): CaptureResult | null {
     window.innerWidth < 640 ? "phone" : window.innerWidth < 1024 ? "tablet" : "desktop";
   properties["reduced_motion"] = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   properties["release"] = import.meta.env.VITE_RELEASE;
+
+  if (docsPage?.path === path.replace(/\/$/, "")) {
+    properties["doc_kind"] ??= docsPage.docKind;
+    if (docsPage.apiName !== undefined) properties["api_name"] ??= docsPage.apiName;
+  }
 
   if (event.event === "docs_search_performed") {
     const query = String(properties["query"] ?? "")

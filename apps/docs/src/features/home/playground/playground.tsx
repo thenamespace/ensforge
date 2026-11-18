@@ -128,6 +128,7 @@ export function Playground({ code }: { readonly code: HighlightedSnippets }) {
     if (running || !tab.input.trim()) return;
 
     const { id } = example;
+    const input = example.presets.some((preset) => preset.value === tab.input) ? "preset" : "typed";
     update(id, { flow: "running" });
     client.current ??= import("./client");
 
@@ -140,10 +141,22 @@ export function Playground({ code }: { readonly code: HighlightedSnippets }) {
         ok: outcome.ok,
         cached: outcome.ok && outcome.cached,
         ms: Math.round(outcome.ms),
+        chain: tab.chain,
+        input,
+        ...(outcome.ok ? {} : { error_code: outcome.code }),
       });
     } catch {
       // Only the chunk itself can fail here (offline, a new deploy): reads report their own errors.
       client.current = undefined;
+      track("playground_run_completed", {
+        example_id: id,
+        ok: false,
+        cached: false,
+        ms: 0,
+        chain: tab.chain,
+        input,
+        error_code: "PLAYGROUND_UNAVAILABLE",
+      });
       update(id, {
         flow: "failed",
         outcome: {

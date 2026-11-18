@@ -2,7 +2,8 @@ import { useEffect, useRef } from "react";
 
 import { useLocation } from "@tanstack/react-router";
 
-import { track } from "@/lib/analytics/client";
+import { setDocsPageContext, track } from "@/lib/analytics/client";
+import type { DocKind } from "@/lib/analytics/docs-page";
 import { getPackageFromUrl } from "@/lib/packages";
 import { docsRoute } from "@/lib/shared";
 
@@ -13,10 +14,23 @@ export function useDocsSlug() {
   return pathname.replace(`${docsRoute}/`, "").replace(/\/$/, "");
 }
 
-const DEPTHS = [25, 50, 75, 100] as const;
+const PACKAGE_MANAGERS = new Set(["npm", "pnpm", "yarn", "bun"]);
 
-/** Page view and reading depth for one docs page. Mount it where the page content mounts. */
-export function DocsPageAnalytics({ packageSlug, title }: { packageSlug: string; title: string }) {
+/**
+ * Page view of one docs page, the page context every later event carries, and tab switches in
+ * its content. Mount it where the page content mounts.
+ */
+export function DocsPageAnalytics({
+  packageSlug,
+  title,
+  docKind,
+  apiName,
+}: {
+  packageSlug: string;
+  title: string;
+  docKind: DocKind;
+  apiName: string | undefined;
+}) {
   const slug = useDocsSlug();
   const viewed = useRef<string>(undefined);
 
@@ -24,44 +38,45 @@ export function DocsPageAnalytics({ packageSlug, title }: { packageSlug: string;
     if (viewed.current === slug) return;
     viewed.current = slug;
 
-    track("docs_page_viewed", { package: packageSlug, slug, title });
-  }, [slug, packageSlug, title]);
+    setDocsPageContext({ path: `${docsRoute}/${slug}`, docKind, apiName });
+    track("docs_page_viewed", {
+      package: packageSlug,
+      slug,
+      title,
+      doc_kind: docKind,
+      ...(apiName === undefined ? {} : { api_name: apiName }),
+    });
+  }, [slug, packageSlug, title, docKind, apiName]);
 
+  // Tabs come from Fumadocs (`<Tabs>` and install blocks), so one delegated listener reads them.
   useEffect(() => {
-    const reached = new Set<number>();
-    let frame = 0;
+    const onClick = (event: MouseEvent) => {
+      if (!(event.target instanceof Element)) return;
 
-    const measure = () => {
-      frame = 0;
+      const tab = event.target.closest('#nd-page [role="tab"]');
+      const list = tab?.closest('[role="tablist"]');
+      if (!tab || !list || tab.getAttribute("aria-selected") === "true") return;
 
-      const article =
-        document.querySelector("#nd-page article") ?? document.getElementById("nd-page");
-      if (!article) return;
+      const labels = [...list.querySelectorAll('[role="tab"]')].map((item) =>
+        (item.textContent ?? "").trim(),
+      );
+      const from = list.querySelector('[role="tab"][aria-selected="true"]')?.textContent ?? "";
 
-      const rect = article.getBoundingClientRect();
-      if (rect.height === 0) return;
-
-      const percent = ((window.innerHeight - rect.top) / rect.height) * 100;
-
-      for (const depth of DEPTHS) {
-        if (percent >= depth && !reached.has(depth)) {
-          reached.add(depth);
-          track("docs_scroll_depth_reached", { percent: depth, slug });
-        }
-      }
+      track("docs_tab_switched", {
+        slug,
+        group: labels.includes("Effect")
+          ? "api"
+          : labels.every((label) => PACKAGE_MANAGERS.has(label))
+            ? "package_manager"
+            : "other",
+        from: from.trim(),
+        to: (tab.textContent ?? "").trim(),
+      });
     };
 
-    // Only scrolling counts, so a short page does not report full depth on load.
-    const onScroll = () => {
-      if (frame === 0) frame = requestAnimationFrame(measure);
-    };
+    document.addEventListener("click", onClick, true);
 
-    window.addEventListener("scroll", onScroll, { passive: true, capture: true });
-
-    return () => {
-      window.removeEventListener("scroll", onScroll, { capture: true });
-      cancelAnimationFrame(frame);
-    };
+    return () => document.removeEventListener("click", onClick, true);
   }, [slug]);
 
   return null;

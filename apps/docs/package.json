@@ -5,6 +5,11 @@
   "description": "Documentation site and blog for ensforge.",
   "license": "Apache-2.0",
   "type": "module",
+  "exports": {
+    "./internal/*": {
+      "workspace-source": "./src/*.ts"
+    }
+  },
   "scripts": {
     "build": "vite build",
     "clean": "rm -rf dist .output .tanstack .source",

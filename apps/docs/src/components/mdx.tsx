@@ -13,6 +13,7 @@ import defaultMdxComponents from "fumadocs-ui/mdx";
 import type { MDXComponents } from "mdx/types";
 
 import { track } from "@/lib/analytics/client";
+import { findInstallCommand } from "@/lib/analytics/install-command";
 import { Icon } from "@/lib/docs-icons";
 
 import { useDocsSlug } from "./docs/analytics";
@@ -51,11 +52,22 @@ function TrackedPre(props: ComponentProps<typeof CodeBlock>) {
         const title = typeof props.title === "string" ? props.title : "";
         const language = title.includes(".") ? (title.split(".").pop() ?? "") : "";
 
+        const lines = [...figure.querySelectorAll("pre .line")].map((line) => line.textContent);
+
         track(isBlog ? "blog_code_copied" : "docs_code_copied", {
           slug,
           language: language || "unknown",
-          lines: figure.querySelectorAll("pre .line").length,
+          lines: lines.length,
         });
+
+        const install = isBlog ? undefined : findInstallCommand(lines.join("\n"));
+        if (install) {
+          track("install_command_copied", {
+            package: install.package,
+            package_manager: install.packageManager,
+            slug,
+          });
+        }
       }}
     >
       <Pre>{props.children}</Pre>

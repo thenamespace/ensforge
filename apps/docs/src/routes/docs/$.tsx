@@ -15,10 +15,12 @@ import {
 } from "fumadocs-ui/layouts/spacious/page";
 
 import { DocsChromeAnalytics, DocsPageAnalytics } from "@/components/docs/analytics";
+import { DocsFeedback } from "@/components/docs/feedback";
 import { CopyMarkdownButton, OpenInAssistantButtons } from "@/components/docs/page-actions";
 import { useMDXComponents } from "@/components/mdx";
 import { ApiMeta, ErrorMeta } from "@/components/reference/api-meta";
 import { ReferenceBreadcrumb } from "@/components/reference/breadcrumb";
+import { type DocKind, describeDocsPage } from "@/lib/analytics/docs-page";
 import { baseOptions } from "@/lib/layout.shared";
 import { docsImageUrl } from "@/lib/og/urls";
 import { getPackage } from "@/lib/packages";
@@ -65,9 +67,12 @@ const serverLoader = createServerFn({ method: "GET" })
       .getPages()
       .some((other) => other.url !== page.url && other.data.title === page.data.title);
 
+    const { docKind, apiName } = describeDocsPage(page.path, page.slugs, page.data.title);
+
     return {
       path: page.path,
       packageSlug: pkg?.slug,
+      analytics: { docKind, apiName: apiName ?? null },
       pageTree: await source.serializePageTree(source.getPageTree()),
       meta: {
         url: page.url,
@@ -166,11 +171,13 @@ function Content({
   slugs,
   packageSlug,
   isReference,
+  analytics,
 }: {
   path: string;
   slugs: readonly string[];
   packageSlug: string | undefined;
   isReference: boolean;
+  analytics: { docKind: DocKind; apiName: string | null };
 }) {
   const markdownUrl = getPageMarkdownUrl({ slugs });
   const page = docs.getPage(path);
@@ -181,7 +188,12 @@ function Content({
 
   return (
     <DocsPage toc={toc} {...(isReference ? { slots: { breadcrumb: ReferenceBreadcrumb } } : {})}>
-      <DocsPageAnalytics packageSlug={packageSlug ?? slugs[0] ?? ""} title={page.title} />
+      <DocsPageAnalytics
+        packageSlug={packageSlug ?? slugs[0] ?? ""}
+        title={page.title}
+        docKind={analytics.docKind}
+        apiName={analytics.apiName ?? undefined}
+      />
       <DocsTitle>{page.title}</DocsTitle>
       <DocsDescription className="mb-2">{page.description}</DocsDescription>
       <div className="flex flex-row flex-wrap items-center gap-2 border-b pb-6">
@@ -195,6 +207,7 @@ function Content({
       <DocsBody>
         <MDX components={useMDXComponents({ ApiMeta, ErrorMeta, ReferenceHome })} />
       </DocsBody>
+      <DocsFeedback key={path} slug={slugs.join("/")} />
     </DocsPage>
   );
 }
@@ -213,6 +226,7 @@ function Page() {
           slugs={slugs}
           packageSlug={packageSlug}
           isReference={data.meta.isReference}
+          analytics={data.analytics}
         />
       </Suspense>
     </DocsLayout>

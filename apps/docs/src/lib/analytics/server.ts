@@ -62,12 +62,18 @@ export async function trackAgentContent(request: Request, kind: AgentContentKind
   const userAgent = request.headers.get("user-agent") ?? "";
   const agent = agentOf(userAgent);
 
+  // Search crawlers refetch every page on their own schedule: counting them would spend the
+  // free event quota on reads nobody asked for.
+  if (agent === "crawler") return;
+
   const send = posthog.captureImmediate({
     // One anonymous id per agent family: counts reads, never people.
     distinctId: `agent:${agent}`,
     event: "agent_content_fetched",
     properties: {
       path: url.pathname,
+      // The page the Markdown belongs to, matching `slug` on browser docs events.
+      slug: url.pathname.replace(/^\/docs\//, "").replace(/\.md$/, ""),
       site_section: sectionOf(url.pathname),
       kind,
       agent,

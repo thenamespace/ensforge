@@ -24,7 +24,7 @@ The site is served by our hosting provider. Like any host, it processes your req
 
 ## Analytics
 
-We use PostHog (US cloud) to see how the site is used. It is only active when it is configured, and only on the production site at ensforge.com. It runs in cookieless mode: it sets no cookies and uses no local or session storage.
+We use PostHog (EU cloud) to see how the site is used. It is only active when it is configured, and only on the production site at ensforge.com. It runs in cookieless mode: it sets no cookies and uses no local or session storage.
 
 Visitors are counted with a privacy-preserving hash that PostHog's servers compute, instead of an identifier stored on your device. Your IP address is discarded once PostHog has derived your country from it. There are no personal profiles. If your browser sends Do Not Track, nothing is collected. We do not sell this data or share it for advertising.
 
@@ -33,16 +33,17 @@ What is collected:
 - Pages visited, referrer and campaign parameters.
 - Approximate country, device type, browser and screen size.
 - Performance metrics.
-- Interactions with the site, such as clicking links and buttons, copying code or install commands, text you copy, running a playground example, or searching the docs. Search queries are trimmed, and queries that look like an email address are replaced with a placeholder.
+- Interactions with the site, such as clicking links and buttons, switching tabs, copying code or install commands, running a playground example, or searching the docs. Search queries are trimmed, and queries that look like an email address are replaced with a placeholder.
+- Answers to "Was this page helpful?", chosen from a fixed list. There is no free text.
 - Errors that happen in your browser.
 
 ## Requests from tools and agents
 
-Requests for the Markdown pages, `llms.txt` and `llms-full.txt` do not run JavaScript, so the server counts them. Each count records the path and the requesting tool's user agent, grouped by tool family. It does not identify a person.
+Requests for the Markdown pages, `llms.txt` and `llms-full.txt` do not run JavaScript, so the server counts them. Each count records the path and the requesting tool's user agent, grouped by tool family. It does not identify a person. Search engine crawlers are not counted.
 
 ## Browser storage
 
-The site stores your package manager choice for install commands in your browser's local storage so it can remember it. This is not analytics, and it never leaves your browser.
+The site stores your package manager and code example choices in your browser's local storage so it can remember it. This is not analytics, and it never leaves your browser.
 
 ## Third parties
 
