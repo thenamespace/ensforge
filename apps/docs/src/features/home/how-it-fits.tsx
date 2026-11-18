@@ -8,7 +8,7 @@ import { track } from "@/lib/analytics/client";
 import { cn } from "@/lib/cn";
 
 /**
- * "How ensforge fits your app", after Effect Kit's layer stack: four isometric plates, from your
+ * "How ensforge fits in", after Effect Kit's layer stack: four isometric plates, from your
  * app down to ENS on Ethereum. Scrolling pins the section; each step lifts its plate out of the
  * stack, draws its annotations and expands its text in the step list.
  */
@@ -419,7 +419,7 @@ function StepItem({
 function Intro({ className }: { readonly className?: string }) {
   return (
     <div className={cn("flex flex-col gap-5", className)}>
-      <Heading>How ensforge fits your app.</Heading>
+      <Heading>How ensforge fits in.</Heading>
       <Lede>
         It sits between your code and ENS on Ethereum: one client on viem, actions that know how ENS
         works, and every name answered the same way.
@@ -512,7 +512,7 @@ export function HowItFits() {
             <div className="relative hidden h-full lg:block">
               <Intro
                 className={cn(
-                  "absolute inset-x-0 top-[calc(50%-6rem)] ps-10 transition-[opacity,translate] duration-500 ease-out-expo",
+                  "absolute inset-x-0 top-[calc(50%-10rem)] ps-10 transition-[opacity,translate] duration-500 ease-out-expo",
                   active === 0 ? "opacity-100" : "pointer-events-none -translate-y-4 opacity-0",
                 )}
               />
