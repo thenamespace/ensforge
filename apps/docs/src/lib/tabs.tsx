@@ -1,5 +1,7 @@
 import type { GetLayoutTabsOptions } from "fumadocs-ui/layouts/shared";
 
+import { EnsforgeLogo } from "@/components/logos";
+
 import { getPackageFromUrl } from "./packages";
 
 export const tabs: GetLayoutTabsOptions = {
@@ -10,7 +12,7 @@ export const tabs: GetLayoutTabsOptions = {
     return {
       ...option,
       // Each package shows its own accent, whichever docs are open.
-      icon: <pkg.Logo data-accent={pkg.slug} className="size-full text-ek-accent" />,
+      icon: <EnsforgeLogo data-accent={pkg.slug} className="size-full text-ek-accent" />,
     };
   },
 };

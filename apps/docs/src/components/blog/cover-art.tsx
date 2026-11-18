@@ -1,13 +1,6 @@
 import type { ComponentType } from "react";
 
-import {
-  ContractsLogo,
-  EnsforgeLogo,
-  HcaLogo,
-  type LogoProps,
-  ReactLogo,
-  SdkLogo,
-} from "@/components/logos";
+import { EnsforgeLogo, type LogoProps } from "@/components/logos";
 import { useReducedMotion } from "@/components/marketing/hooks";
 import { isoProjector, type Point } from "@/components/marketing/iso";
 import type { BlogCategory, BlogPackage } from "@/lib/blog/schema";
@@ -18,13 +11,6 @@ import { cn } from "@/lib/cn";
  * plate for the app and blocks for the packages, with one scene per category. Also the fallback
  * when a cover image fails to load.
  */
-
-const logos: Record<BlogPackage, ComponentType<LogoProps>> = {
-  sdk: SdkLogo,
-  contracts: ContractsLogo,
-  react: ReactLogo,
-  hca: HcaLogo,
-};
 
 const { at, box, plane } = isoProjector(262, 92);
 
@@ -109,8 +95,7 @@ function Block({
 }
 
 /** A release: the stack the package already is, and the new version settling on top. */
-function ReleaseScene({ pkg, version }: { pkg?: BlogPackage; version?: string }) {
-  const Logo = pkg ? logos[pkg] : EnsforgeLogo;
+function ReleaseScene({ version }: { version?: string }) {
   const u = 107;
   const v = 57;
 
@@ -120,7 +105,7 @@ function ReleaseScene({ pkg, version }: { pkg?: BlogPackage; version?: string })
       <Block u={u} v={v} z={PLATE.h} height={20} />
       <Block u={u} v={v} z={PLATE.h + 20} height={20} />
       <g className="ek-blog-float">
-        <Block u={u} v={v} z={PLATE.h + 58} Logo={Logo} active />
+        <Block u={u} v={v} z={PLATE.h + 58} Logo={EnsforgeLogo} active />
       </g>
     </>
   );
@@ -160,7 +145,7 @@ function AnnouncementScene() {
           v={65}
           z={PLATE.h}
           size={size}
-          Logo={logos[block.slug]}
+          Logo={EnsforgeLogo}
           active
           accent={block.slug}
           {...(index === blocks.length - 1 ? { className: "ek-blog-float" } : {})}
@@ -171,8 +156,7 @@ function AnnouncementScene() {
 }
 
 /** A guide: code engraved on the plate, and the block it is about beside it. */
-function GuideScene({ pkg }: { pkg?: BlogPackage }) {
-  const Logo = pkg ? logos[pkg] : EnsforgeLogo;
+function GuideScene() {
   const lines = [
     { y: 44, x: 24, w: 70 },
     { y: 58, x: 36, w: 96 },
@@ -200,16 +184,15 @@ function GuideScene({ pkg }: { pkg?: BlogPackage }) {
         ))}
       </g>
       <g className="ek-blog-float">
-        <Block u={196} v={60} z={PLATE.h + 26} Logo={Logo} active />
+        <Block u={196} v={60} z={PLATE.h + 26} Logo={EnsforgeLogo} active />
       </g>
     </>
   );
 }
 
 /** Engineering: three services wired together, with requests moving along the cables. */
-function EngineeringScene({ pkg }: { pkg?: BlogPackage }) {
+function EngineeringScene() {
   const reduced = useReducedMotion();
-  const Logo = pkg ? logos[pkg] : EnsforgeLogo;
   const size = 58;
   const nodes = [
     { u: 22, v: 26 },
@@ -263,7 +246,7 @@ function EngineeringScene({ pkg }: { pkg?: BlogPackage }) {
           size={size}
           height={22}
           active={index === 2}
-          {...(index === 2 ? { Logo } : {})}
+          {...(index === 2 ? { Logo: EnsforgeLogo } : {})}
         />
       ))}
     </>
@@ -281,11 +264,6 @@ export function CoverArt({
   readonly version?: string | undefined;
   readonly className?: string;
 }) {
-  const optional = {
-    ...(pkg ? { pkg } : {}),
-    ...(version ? { version } : {}),
-  };
-
   return (
     <div
       className={cn("ek-blog-art relative grid place-items-center overflow-hidden", className)}
@@ -297,10 +275,10 @@ export function CoverArt({
         className="relative h-[86%] w-auto max-w-[92%]"
         aria-hidden="true"
       >
-        {category === "release" ? <ReleaseScene {...optional} /> : null}
+        {category === "release" ? <ReleaseScene {...(version ? { version } : {})} /> : null}
         {category === "announcement" ? <AnnouncementScene /> : null}
-        {category === "guide" ? <GuideScene {...optional} /> : null}
-        {category === "engineering" ? <EngineeringScene {...optional} /> : null}
+        {category === "guide" ? <GuideScene /> : null}
+        {category === "engineering" ? <EngineeringScene /> : null}
       </svg>
     </div>
   );

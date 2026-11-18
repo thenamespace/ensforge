@@ -23,7 +23,6 @@ export const Route = createFileRoute("/og/docs/$")({
         return ogResponse(
           <DocsImage
             accent={accent}
-            slug={slug}
             section={pkg?.name ?? "Docs"}
             title={page.data.title}
             description={page.data.description}

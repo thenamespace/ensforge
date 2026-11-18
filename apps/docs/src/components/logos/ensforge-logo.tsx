@@ -1,4 +1,23 @@
-import { logoColors, type LogoProps } from "./text-logo";
+import type { SVGProps } from "react";
+
+export const logoColors = {
+  background: "#070707",
+  foreground: "#f8f8f8",
+} as const;
+
+export type LogoVariant = "mark" | "badge";
+
+export interface LogoProps extends Omit<SVGProps<SVGSVGElement>, "children"> {
+  /**
+   * `mark` draws only the glyph in `currentColor` on a transparent background.
+   * `badge` draws the glyph on the brand's black square.
+   *
+   * @defaultValue "mark"
+   */
+  readonly variant?: LogoVariant;
+  /** Accessible name. Omit for decorative usage. */
+  readonly title?: string;
+}
 
 /** The ensforge mark's paths, drawn on a 7 × 4 artboard. */
 export const ensforgeMarkPaths = [

@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 import { site } from "@/lib/site";
 
 import { KitStack, PlateStack } from "./art";
-import { Description, Frame, PackageMark, Title } from "./frame";
+import { Description, EnsforgeMark, Frame, Title } from "./frame";
 import { type Accent, accents, FAINT, LINE, MUTED } from "./primitives";
 
 /**
@@ -33,13 +33,11 @@ export function SiteImage({ page }: { page: "home" | "blog" }) {
 
 export function DocsImage({
   accent,
-  slug,
   section,
   title,
   description,
 }: {
   accent: Accent;
-  slug: string | undefined;
   section: string;
   title: string;
   description: string | undefined;
@@ -49,7 +47,7 @@ export function DocsImage({
   return (
     <Frame accent={accent} crumb={section} art={<PlateStack accent={accent} />}>
       <Pill>
-        <PackageMark slug={slug ?? ""} size={18} color={accents[accent]} />
+        <EnsforgeMark height={12} color={accents[accent]} />
         Documentation
       </Pill>
       <Title size={size}>{title}</Title>

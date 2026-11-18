@@ -7,16 +7,14 @@ import { appName, gitConfig } from "./shared";
 
 /**
  * Shared layout options. Pass the active package on docs pages to brand the nav
- * with its logo and name.
+ * with its accent and name.
  */
 export function baseOptions(pkg?: PackageInfo): BaseLayoutProps {
-  const Logo = pkg?.Logo ?? EnsforgeLogo;
-
   return {
     nav: {
       title: (
         <>
-          <Logo className={pkg ? "size-6 text-ek-accent" : "h-4 w-7"} />
+          <EnsforgeLogo className={pkg ? "h-4 w-7 text-ek-accent" : "h-4 w-7"} />
           <span className="font-semibold">
             {appName}
             {pkg ? (

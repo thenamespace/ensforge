@@ -1,43 +1,11 @@
 import type { ReactNode } from "react";
 
 import { ensforgeMarkPaths } from "@/components/logos";
-import { getPackage } from "@/lib/packages";
 import { site } from "@/lib/site";
 
 import { type Accent, accents, BG, FAINT, INK, MUTED, OG } from "./primitives";
 
 /** The frame every image shares: brand and crumb on top, text on the left, art on the right. */
-
-/** Placeholder text mark, like the site's logos: letters in a rounded square. */
-export function KitMark({
-  size = 34,
-  color = INK,
-  text = "ef",
-}: {
-  size?: number;
-  color?: string;
-  text?: string;
-}) {
-  return (
-    <div
-      style={{
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        width: size,
-        height: size,
-        borderRadius: size * 0.22,
-        border: `${Math.max(1.5, size * 0.06)}px solid ${color}`,
-        color,
-        fontFamily: "JetBrains Mono",
-        fontWeight: 700,
-        fontSize: size * (text.length > 1 ? 0.4 : 0.5),
-      }}
-    >
-      {text}
-    </div>
-  );
-}
 
 /** The ensforge mark as an SVG image (the OG renderer draws images, not inline SVG elements). */
 export function EnsforgeMark({ height = 32, color = INK }: { height?: number; color?: string }) {
@@ -52,13 +20,6 @@ export function EnsforgeMark({ height = 32, color = INK }: { height?: number; co
       alt=""
     />
   );
-}
-
-/** A package's mark: the first letter of its name. */
-export function PackageMark({ slug, size, color }: { slug: string; size: number; color: string }) {
-  const pkg = getPackage(slug);
-
-  return <KitMark size={size} color={color} {...(pkg ? { text: pkg.name.charAt(0) } : {})} />;
 }
 
 export function DotGrid() {
