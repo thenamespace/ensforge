@@ -9,11 +9,10 @@ import { Workspace } from "../services/Workspace.ts";
 /**
  * Checks every docs page (generated ones too): a `description` of 120-160 characters, internal
  * `/docs/...` links that resolve to a page and a heading anchor, and the description and title
- * budget of the pages `llms.txt` lists (hand-written, landing, package, domain and class pages). Broken links and the budget fail; description
- * length only warns until `strictDescriptions` is switched to `true` (or `--strict-descriptions`
- * is passed), which makes it fail too.
+ * budget of the pages `llms.txt` lists (hand-written, landing, package, domain and class pages).
+ * Every check fails the run; `strictDescriptions = false` turns the length check into a warning.
  */
-export const strictDescriptions = false;
+export const strictDescriptions = true;
 
 export const docsLint = Effect.fn("docs.lint")(function* (strict: boolean) {
   const workspace = yield* Workspace;
