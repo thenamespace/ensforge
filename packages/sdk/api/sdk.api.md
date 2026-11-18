@@ -268,7 +268,7 @@ const Actions.migration.get.path: 'migration.get'
 function Actions.migration.get.request(options: Pick<Options, 'signal'> & (BlockOptions & { name: string; account?: string | undefined; resolver?: 'keep' | 'new' | 'owned' | (string & {}) | undefined; })) => Request<ReturnType, ErrorType>
 type Actions.migration.get.ReturnType = Status & { readonly discovered: Discovery | null; }
 function Actions.migration.migrate(client: Client<object> | ViemClient, options: migrate.Options & Write.Options) => Promise<Result>
-type Actions.migration.migrate.ErrorType = InvalidInputError | MigrationError | UnauthorizedError | WriteError
+type Actions.migration.migrate.ErrorType = InvalidInputError | MigrationError | NameStateError | UnauthorizedError | WriteError
 function Actions.migration.migrate.estimateGas(client: Client<object> | ViemClient, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Estimate>
 const Actions.migration.migrate.estimateGas.path: string
 type Actions.migration.migrate.Options = { names: readonly NameInput[] | NameInput; resolver?: 'keep' | 'new' | 'owned' | (string & {}) | undefined; owner?: string | undefined; allowIncompleteRecords?: boolean | undefined; allowLeavingSubnames?: boolean | undefined; preserveManager?: boolean | undefined; migrateParents?: boolean | undefined; renew?: { readonly duration: bigint; readonly paymentToken?: PaymentToken | undefined; } | undefined; }
@@ -279,7 +279,7 @@ type Actions.migration.migrate.ReturnType = { readonly hash: `0x${string}`; read
 function Actions.migration.migrate.simulate(client: Client<object> | ViemClient, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Simulation>
 const Actions.migration.migrate.simulate.path: string
 function Actions.migration.migrateSync(client: Client<object> | ViemClient, options: migrate.Options & Write.Options & { confirmations?: number | undefined; timeout?: number | undefined; }) => Promise<SyncResult>
-type Actions.migration.migrateSync.ErrorType = InvalidInputError | MigrationError | UnauthorizedError | WriteError
+type Actions.migration.migrateSync.ErrorType = InvalidInputError | MigrationError | NameStateError | UnauthorizedError | WriteError
 type Actions.migration.migrateSync.Options = migrate.Options & Write.Options & { confirmations?: number | undefined; timeout?: number | undefined; }
 const Actions.migration.migrateSync.path: 'migration.migrateSync'
 type Actions.migration.migrateSync.ReturnType = Result & { readonly receipt: TransactionReceipt; readonly receipts: readonly TransactionReceipt[]; }
@@ -388,19 +388,19 @@ type Actions.permission.setRecordAccessSync.Options = setRecordAccess.Options & 
 const Actions.permission.setRecordAccessSync.path: 'permission.setRecordAccessSync'
 type Actions.permission.setRecordAccessSync.ReturnType = Result & { readonly receipt: TransactionReceipt; readonly receipts: readonly TransactionReceipt[]; }
 function Actions.plan.get(client: Client<object> | ViemClient, options: { id: string; }) => Promise<ReturnType>
-type Actions.plan.get.ErrorType = ConfigError | ContractRevertError | InternalError | NetworkError
+type Actions.plan.get.ErrorType = PlanError | CommonError
 type Actions.plan.get.Options = { id: string; }
 const Actions.plan.get.path: 'plan.get'
-function Actions.plan.get.request(options: { id: string; }) => Request<ReturnType, CommonError>
+function Actions.plan.get.request(options: { id: string; }) => Request<ReturnType, ErrorType>
 type Actions.plan.get.ReturnType = Record | null
 function Actions.plan.list(client: Client<object> | ViemClient, options: { account?: string | undefined; status?: 'completed' | 'failed' | 'pending' | undefined; }) => Promise<ReturnType>
-type Actions.plan.list.ErrorType = InvalidInputError | CommonError
+type Actions.plan.list.ErrorType = InvalidInputError | PlanError | CommonError
 type Actions.plan.list.Options = { account?: string | undefined; status?: 'completed' | 'failed' | 'pending' | undefined; }
 const Actions.plan.list.path: 'plan.list'
 function Actions.plan.list.request(options: { account?: string | undefined; status?: 'completed' | 'failed' | 'pending' | undefined; }) => Request<ReturnType, ErrorType>
 type Actions.plan.list.ReturnType = readonly Record[]
 function Actions.plan.reconcile(client: Client<object> | ViemClient, options: { id: string; step: string; hash: `0x${string}`; }) => Promise<Record>
-type Actions.plan.reconcile.ErrorType = InvalidInputError | NotFoundError | CommonError
+type Actions.plan.reconcile.ErrorType = InvalidInputError | NotFoundError | PlanError | CommonError
 type Actions.plan.reconcile.Options = { id: string; step: string; hash: `0x${string}`; }
 const Actions.plan.reconcile.path: 'plan.reconcile'
 function Actions.plan.reconcile.request(options: { id: string; step: string; hash: `0x${string}`; }) => Request<Record, ErrorType>
@@ -943,17 +943,17 @@ class Errors.CommitmentError {
   constructor(options: ClassOptions<Code> & { readonly commitment?: `0x${string}` | undefined; readonly readyAt?: bigint | undefined; readonly expiresAt?: bigint | undefined; }) => CommitmentError
   cause: unknown
   code: 'COMMITMENT_EXISTS' | 'COMMITMENT_NOT_FOUND' | 'COMMITMENT_TOO_NEW' | 'COMMITMENT_TOO_OLD'
+  ~ensforge/error: true
   _tag: 'CommitmentError'
-  name: 'CommitmentError'
   shortMessage: string
   hint: string | undefined
+  details: readonly string[]
   commitment: `0x${string}` | undefined
   readyAt: bigint | undefined
   expiresAt: bigint | undefined
   message: string
   stack: string
-  ~ensforge/error: true
-  details: readonly string[]
+  name: 'CommitmentError'
   retryable: boolean
   context: { readonly operation?: string | undefined; readonly name?: string | undefined; readonly account?: `0x${string}` | undefined; readonly chainId?: number | undefined; readonly contract?: `0x${string}` | undefined; readonly functionName?: string | undefined; readonly contractKind?: 'registrar' | 'registry' | 'resolver' | 'wrapper' | undefined; readonly selector?: `0x${string}` | undefined; readonly registry?: `0x${string}` | undefined; readonly planId?: string | undefined; readonly step?: string | undefined; readonly revert?: { readonly errorName: string | undefined; readonly data: `0x${string}` | undefined; } | undefined; }
   docsUrl: string
@@ -968,11 +968,11 @@ type Errors.CommonError = ConfigError | ContractRevertError | InternalError | Ne
 type Errors.Config = { readonly docsOrigin: string; }
 class Errors.ConfigError {
   constructor(options: { readonly code: Code; readonly shortMessage?: string | undefined; readonly hint?: string | undefined; readonly details?: readonly string[] | undefined; readonly context?: Context | undefined; readonly cause?: unknown; }) => ConfigError
-  ~ensforge/error: true
   message: string
   stack: string
   cause: unknown
   code: 'CCIP_READ_DISABLED' | 'CHAIN_NOT_CONFIGURED' | 'CONTRACT_NOT_DEPLOYED' | 'INDEXER_NOT_CONFIGURED' | 'INVALID_ACTION_GROUP' | 'INVALID_DEPLOYMENT' | 'UNKNOWN_CHAIN' | 'WALLET_NOT_CONFIGURED'
+  ~ensforge/error: true
   _tag: 'ConfigError'
   name: 'ConfigError'
   shortMessage: string
@@ -1125,13 +1125,13 @@ class Errors.InsufficientFundsError {
   _tag: 'InsufficientFundsError'
   name: 'InsufficientFundsError'
   shortMessage: string
-  hint: string | undefined
   required: bigint | undefined
   available: bigint | undefined
   token: `0x${string}` | undefined
   message: string
   stack: string
   cause: unknown
+  hint: string | undefined
   details: readonly string[]
   retryable: boolean
   context: { readonly operation?: string | undefined; readonly name?: string | undefined; readonly account?: `0x${string}` | undefined; readonly chainId?: number | undefined; readonly contract?: `0x${string}` | undefined; readonly functionName?: string | undefined; readonly contractKind?: 'registrar' | 'registry' | 'resolver' | 'wrapper' | undefined; readonly selector?: `0x${string}` | undefined; readonly registry?: `0x${string}` | undefined; readonly planId?: string | undefined; readonly step?: string | undefined; readonly revert?: { readonly errorName: string | undefined; readonly data: `0x${string}` | undefined; } | undefined; }
@@ -1172,12 +1172,12 @@ class Errors.InvalidInputError {
   _tag: 'InvalidInputError'
   name: 'InvalidInputError'
   shortMessage: string
-  hint: string | undefined
   input: unknown
   field: string | undefined
   message: string
   stack: string
   cause: unknown
+  hint: string | undefined
   details: readonly string[]
   retryable: boolean
   context: { readonly operation?: string | undefined; readonly name?: string | undefined; readonly account?: `0x${string}` | undefined; readonly chainId?: number | undefined; readonly contract?: `0x${string}` | undefined; readonly functionName?: string | undefined; readonly contractKind?: 'registrar' | 'registry' | 'resolver' | 'wrapper' | undefined; readonly selector?: `0x${string}` | undefined; readonly registry?: `0x${string}` | undefined; readonly planId?: string | undefined; readonly step?: string | undefined; readonly revert?: { readonly errorName: string | undefined; readonly data: `0x${string}` | undefined; } | undefined; }
@@ -1215,13 +1215,13 @@ type Errors.MigrationError.Code = 'ALREADY_MIGRATED' | 'NAME_NOT_LOCKED' | 'NOT_
 type Errors.MigrationError.Options = ClassOptions<Code> & { readonly blockers?: readonly string[] | undefined; }
 class Errors.NameStateError {
   constructor(options: { readonly code: Code; readonly shortMessage?: string | undefined; readonly hint?: string | undefined; readonly details?: readonly string[] | undefined; readonly context?: Context | undefined; readonly cause?: unknown; }) => NameStateError
-  code: 'NAME_EXPIRED' | 'NAME_LOCKED' | 'NAME_NOT_AVAILABLE' | 'NAME_NOT_REGISTERED' | 'NAME_NOT_RENEWABLE' | 'NAME_NOT_WRAPPED' | 'NAME_REQUIRES_MIGRATION' | 'NAME_RESERVED' | 'NAME_UNREACHABLE' | 'NAME_WRAPPED' | 'PARENT_NOT_MIGRATED' | 'REGISTRY_NOT_EMANCIPATED'
   ~ensforge/error: true
   _tag: 'NameStateError'
   name: 'NameStateError'
   message: string
   stack: string
   cause: unknown
+  code: 'NAME_EXPIRED' | 'NAME_LOCKED' | 'NAME_NOT_AVAILABLE' | 'NAME_NOT_REGISTERED' | 'NAME_NOT_RENEWABLE' | 'NAME_NOT_WRAPPED' | 'NAME_REQUIRES_MIGRATION' | 'NAME_RESERVED' | 'NAME_UNREACHABLE' | 'NAME_WRAPPED' | 'PARENT_NOT_MIGRATED' | 'REGISTRY_NOT_EMANCIPATED'
   shortMessage: string
   hint: string | undefined
   details: readonly string[]

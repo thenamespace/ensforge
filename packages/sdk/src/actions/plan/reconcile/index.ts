@@ -42,8 +42,9 @@ import * as Impl from "./effect.js";
  * ```
  *
  * @throws `Errors.NotFoundError` (`PLAN_NOT_FOUND`) for an unknown plan.
+ * @throws `Errors.PlanError` (`PLAN_INVALID`) when a saved plan cannot be read.
  * @throws `Errors.InvalidInputError` (`INVALID_RECORD_VALUE`) for an unknown step or an unrelated transaction.
- * @throws `Errors.NetworkError` when the RPC request fails.
+ * @throws `Errors.NetworkError` (`RPC_REQUEST_FAILED`, `RPC_TIMEOUT`, `RATE_LIMITED`) when the RPC request fails.
  *
  * @see {@link Actions.plan.resume} to continue the plan
  * @stability stable
@@ -67,7 +68,11 @@ export declare namespace reconcile {
   /** The updated record. */
   type ReturnType = Plan.Record;
   /** Errors {@link reconcile} can fail with. */
-  type ErrorType = Errors.CommonError | Errors.NotFoundError | Errors.InvalidInputError;
+  type ErrorType =
+    | Errors.CommonError
+    | Errors.NotFoundError
+    | Errors.PlanError
+    | Errors.InvalidInputError;
 }
 
 /** Builds a deferred read for `Actions.batch`. */

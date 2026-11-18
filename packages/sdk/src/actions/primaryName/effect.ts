@@ -55,9 +55,9 @@ import type { signClaim as signClaimTypes } from "./signClaim/index.js";
  *
  * @throws `Errors.InvalidInputError` (`INVALID_ADDRESS`, `INVALID_COIN_TYPE`, `INVALID_NAME`) for invalid input, or with `strict` an unnormalized name.
  * @throws `Errors.NotFoundError` (`PRIMARY_NAME_NOT_SET`, `PRIMARY_NAME_MISMATCH`) with `strict` when there is no valid primary name.
- * @throws `Errors.GatewayError` when an off-chain gateway fails.
+ * @throws `Errors.GatewayError` (`GATEWAY_REQUEST_FAILED`, `GATEWAY_RESPONSE_INVALID`, `OFFCHAIN_LOOKUP_INVALID`) when an off-chain gateway fails.
  * @throws `Errors.DnsError` when a DNS name's DNSSEC proof does not verify.
- * @throws `Errors.NetworkError` when the RPC request fails.
+ * @throws `Errors.NetworkError` (`RPC_REQUEST_FAILED`, `RPC_TIMEOUT`, `RATE_LIMITED`) when the RPC request fails.
  *
  * @see {@link Actions.primaryName.set} to set it
  * @stability stable
@@ -172,7 +172,9 @@ export declare namespace get {
  * @throws `Errors.UnsupportedError` (`UNSUPPORTED_ON_DEPLOYMENT`) for a chain without an L2 reverse registrar.
  * @throws `Errors.UnauthorizedError` (`NOT_APPROVED`) when the signer may not name the address.
  * @throws `Errors.UnauthorizedError` (`SIGNATURE_INVALID`, `SIGNATURE_EXPIRED`) when the claim's signature is invalid or expired.
- * @throws `Errors.UserRejectedError` when the user rejects the request.
+ * @throws `Errors.UserRejectedError` (`USER_REJECTED`) when the user rejects the request.
+ * @throws `Errors.WalletError` (`CHAIN_MISMATCH`, `ACCOUNT_NOT_FOUND`) when the wallet is on another chain or has no account to sign with.
+ * @throws `Errors.UnsupportedError` (`WALLET_BATCH_UNSUPPORTED`) with `mode: "batch"` or a paymaster when the wallet cannot send calls as one batch.
  *
  * @see {@link Actions.primaryName.get} to read it
  * @stability stable
@@ -229,7 +231,7 @@ export declare namespace set {
  * @throws `Errors.ConfigError` (`CHAIN_NOT_CONFIGURED`) for an L2 that is not in the client's `chains`.
  * @throws `Errors.UnauthorizedError` (`NOT_APPROVED`) when the signer may not name the address.
  * @throws `Errors.UnauthorizedError` (`SIGNATURE_INVALID`, `SIGNATURE_EXPIRED`) when the claim's signature is invalid or expired.
- * @throws `Errors.TransactionError` (`TRANSACTION_REVERTED`, `RECEIPT_TIMEOUT`) when confirmation fails.
+ * @throws `Errors.TransactionError` (`TRANSACTION_REVERTED`, `RECEIPT_TIMEOUT`, `NONCE_CONFLICT`) when confirmation fails or the wallet's nonce is already used.
  *
  * @see {@link set} to resolve on submission
  * @stability stable
@@ -316,7 +318,9 @@ export declare namespace setSync {
  * @throws `Errors.UnsupportedError` (`UNSUPPORTED_ON_DEPLOYMENT`) for a chain without an L2 reverse registrar.
  * @throws `Errors.NotFoundError` (`PRIMARY_NAME_MISMATCH`) when the name does not resolve to the address on a chain.
  * @throws `Errors.ConfigError` (`WALLET_NOT_CONFIGURED`) when no signing account is known.
- * @throws `Errors.UserRejectedError` when the user rejects the request.
+ * @throws `Errors.UserRejectedError` (`USER_REJECTED`) when the user rejects the request.
+ * @throws `Errors.WalletError` (`CHAIN_MISMATCH`, `ACCOUNT_NOT_FOUND`) when the wallet is on another chain or has no account to sign with.
+ * @throws `Errors.UnsupportedError` (`WALLET_BATCH_UNSUPPORTED`) with `mode: "batch"` or a paymaster when the wallet cannot send calls as one batch.
  *
  * @see {@link Actions.primaryName.set} to submit the claim
  * @stability stable

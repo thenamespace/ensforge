@@ -49,7 +49,7 @@ import * as Impl from "./effect.js";
  * @throws `Errors.InvalidInputError` (`INVALID_NAME`) when the name cannot be normalized.
  * @throws `Errors.NotFoundError` (`RESOLVER_NOT_FOUND`, `RECORD_NOT_FOUND`) without a resolver, or with `strict` and no records.
  * @throws `Errors.UnsupportedError` (`RESOLVER_PROFILE_UNSUPPORTED`) when the resolver is not a PermissionedResolver.
- * @throws `Errors.NetworkError` when the RPC request fails.
+ * @throws `Errors.NetworkError` (`RPC_REQUEST_FAILED`, `RPC_TIMEOUT`, `RATE_LIMITED`) when the RPC request fails.
  *
  * @see {@link Actions.resolver.link} to link names
  * @stability stable

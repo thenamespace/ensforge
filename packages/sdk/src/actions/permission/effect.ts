@@ -51,7 +51,7 @@ import type {
  *
  * @throws `Errors.InvalidInputError` (`INVALID_NAME`, `INVALID_ADDRESS`, `INVALID_COIN_TYPE`) for invalid input.
  * @throws `Errors.ConfigError` (`WALLET_NOT_CONFIGURED`) without `account` or a client account.
- * @throws `Errors.NetworkError` when the RPC request fails.
+ * @throws `Errors.NetworkError` (`RPC_REQUEST_FAILED`, `RPC_TIMEOUT`, `RATE_LIMITED`) when the RPC request fails.
  *
  * @see {@link Actions.permission.get} for every operation at once
  * @stability stable
@@ -111,7 +111,7 @@ export declare namespace check {
  *
  * @throws `Errors.InvalidInputError` (`INVALID_NAME`, `INVALID_ADDRESS`) for invalid input.
  * @throws `Errors.ConfigError` (`WALLET_NOT_CONFIGURED`) without `account` or a client account.
- * @throws `Errors.NetworkError` when the RPC request fails.
+ * @throws `Errors.NetworkError` (`RPC_REQUEST_FAILED`, `RPC_TIMEOUT`, `RATE_LIMITED`) when the RPC request fails.
  *
  * @see {@link Actions.permission.check} for one operation and what is missing
  * @stability stable
@@ -174,7 +174,9 @@ export declare namespace get {
  * @throws `Errors.NotFoundError` (`RESOLVER_NOT_FOUND`) when the name has no resolver.
  * @throws `Errors.UnsupportedError` (`RESOLVER_PROFILE_UNSUPPORTED`) for public keys on a PermissionedResolver.
  * @throws `Errors.UnauthorizedError` (`CANNOT_GRANT_ROLES`, `NOT_OWNER`) when the account may not grant access.
- * @throws `Errors.UserRejectedError` when the user rejects the request.
+ * @throws `Errors.UserRejectedError` (`USER_REJECTED`) when the user rejects the request.
+ * @throws `Errors.WalletError` (`CHAIN_MISMATCH`, `ACCOUNT_NOT_FOUND`) when the wallet is on another chain or has no account to sign with.
+ * @throws `Errors.UnsupportedError` (`WALLET_BATCH_UNSUPPORTED`) with `mode: "batch"` or a paymaster when the wallet cannot send calls as one batch.
  *
  * @see {@link Actions.permission.get} to read access
  * @stability stable
@@ -232,7 +234,7 @@ export declare namespace setRecordAccess {
  * @throws `Errors.NotFoundError` (`RESOLVER_NOT_FOUND`) when the name has no resolver.
  * @throws `Errors.UnsupportedError` (`RESOLVER_PROFILE_UNSUPPORTED`) for public keys on a PermissionedResolver.
  * @throws `Errors.UnauthorizedError` (`CANNOT_GRANT_ROLES`, `NOT_OWNER`) when the account may not grant access.
- * @throws `Errors.TransactionError` (`TRANSACTION_REVERTED`, `RECEIPT_TIMEOUT`) when confirmation fails.
+ * @throws `Errors.TransactionError` (`TRANSACTION_REVERTED`, `RECEIPT_TIMEOUT`, `NONCE_CONFLICT`) when confirmation fails or the wallet's nonce is already used.
  *
  * @see {@link setRecordAccess} to resolve on submission
  * @stability stable

@@ -38,8 +38,9 @@ import * as Impl from "./effect.js";
  * const record = yield* Actions.plan.get(ens, { id: planId })
  * ```
  *
- * @throws `Errors.InternalError` when the storage fails.
- * @throws `Errors.NetworkError` when the RPC request fails.
+ * @throws `Errors.InternalError` (`UNEXPECTED`) when the storage fails.
+ * @throws `Errors.PlanError` (`PLAN_INVALID`) when a saved plan cannot be read.
+ * @throws `Errors.NetworkError` (`RPC_REQUEST_FAILED`, `RPC_TIMEOUT`, `RATE_LIMITED`) when the RPC request fails.
  *
  * @see {@link Actions.plan.resume} to continue it
  * @stability stable
@@ -59,7 +60,7 @@ export declare namespace get {
   /** The saved plan and its progress, or `null`. */
   type ReturnType = Plan.Record | null;
   /** Errors {@link get} can fail with. */
-  type ErrorType = Errors.CommonError;
+  type ErrorType = Errors.CommonError | Errors.PlanError;
 }
 
 /** Builds a deferred read for `Actions.batch`. */

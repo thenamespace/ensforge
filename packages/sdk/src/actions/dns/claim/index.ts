@@ -50,7 +50,9 @@ import * as Impl from "./effect.js";
  * @throws `Errors.DnsError` (`DNS_RECORD_MISSING`, `PROOF_STALE`, `DNSSEC_PROOF_FAILED`, `TLD_NOT_PUBLIC`) when the name cannot be proven.
  * @throws `Errors.GatewayError` (`GATEWAY_REQUEST_FAILED`, `GATEWAY_RESPONSE_INVALID`) when the proof cannot be fetched.
  * @throws `Errors.UnauthorizedError` (`NOT_OWNER`) when someone other than the DNS owner claims with a resolver.
- * @throws `Errors.UserRejectedError` when the user rejects the request.
+ * @throws `Errors.UserRejectedError` (`USER_REJECTED`) when the user rejects the request.
+ * @throws `Errors.WalletError` (`CHAIN_MISMATCH`, `ACCOUNT_NOT_FOUND`) when the wallet is on another chain or has no account to sign with.
+ * @throws `Errors.UnsupportedError` (`WALLET_BATCH_UNSUPPORTED`) with `mode: "batch"` or a paymaster when the wallet cannot send calls as one batch.
  *
  * @see {@link Actions.dns.getStatus} to check the name first
  * @stability stable
@@ -140,7 +142,7 @@ claim.estimateGas = Action.promiseOf(
  * @throws `Errors.DnsError` (`DNS_RECORD_MISSING`, `PROOF_STALE`, `DNSSEC_PROOF_FAILED`, `TLD_NOT_PUBLIC`) when the name cannot be proven.
  * @throws `Errors.GatewayError` (`GATEWAY_REQUEST_FAILED`, `GATEWAY_RESPONSE_INVALID`) when the proof cannot be fetched.
  * @throws `Errors.UnauthorizedError` (`NOT_OWNER`) when someone other than the DNS owner claims with a resolver.
- * @throws `Errors.TransactionError` (`TRANSACTION_REVERTED`, `RECEIPT_TIMEOUT`) when confirmation fails.
+ * @throws `Errors.TransactionError` (`TRANSACTION_REVERTED`, `RECEIPT_TIMEOUT`, `NONCE_CONFLICT`) when confirmation fails or the wallet's nonce is already used.
  *
  * @see {@link claim} to resolve on submission
  * @stability stable

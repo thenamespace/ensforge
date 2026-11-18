@@ -42,8 +42,8 @@ import * as Impl from "./effect.js";
  * const events = yield* Actions.event.decode(ens, { receipts })
  * ```
  *
- * @throws `Errors.InternalError` for malformed logs.
- * @throws `Errors.NetworkError` when the RPC request fails.
+ * @throws `Errors.InternalError` (`UNEXPECTED`) for malformed logs.
+ * @throws `Errors.NetworkError` (`RPC_REQUEST_FAILED`, `RPC_TIMEOUT`, `RATE_LIMITED`) when the RPC request fails.
  *
  * @see {@link Actions.event.get} to fetch a name's events
  * @stability stable
