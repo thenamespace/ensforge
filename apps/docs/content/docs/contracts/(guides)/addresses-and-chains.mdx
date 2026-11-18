@@ -1,6 +1,102 @@
 ---
 title: Addresses and chains
-description: Placeholder, to be written.
+description: Look up ENS contract addresses, behaviour flags and provenance for mainnet and Sepolia, or for a chain by ID.
+keywords: [Deployments, mainnet, sepolia, get, list, capabilities, provenance, l2ReverseRegistrars]
 ---
 
-Placeholder: this page is not written yet.
+`Deployments` holds one **profile** per supported chain. A profile has the addresses of every ENS contract on that chain, flags for behaviour that differs between chains, and where the addresses come from. By the end of this guide you will find any address by chain and know which flags to check.
+
+## Look up a profile
+
+`Deployments.mainnet` and `Deployments.sepolia` are the built-in profiles. `Deployments.get({ chainId })` returns the profile of a chain, or `undefined` when ensforge ships none. `Deployments.list()` returns both.
+
+**Example** (Reading Addresses From a Profile)
+
+```ts twoslash title="profiles.ts"
+import { Deployments } from "@ensforge/contracts";
+
+const registry = Deployments.mainnet.v2.contracts.ethRegistry;
+const sepoliaResolver = Deployments.get({ chainId: 11155111 })?.v2?.contracts.publicResolver;
+const chainIds = Deployments.list().map((profile) => profile.chainId);
+```
+
+A profile is `{ name, chainId, v1?, v2? }`. `v1` and `v2` are the ENSv1 and ENSv2 deployments on that chain. Both exist on mainnet and Sepolia. Use `get` with optional chaining for chains that may have no profile.
+
+## What a deployment holds
+
+Both `v1` and `v2` carry an `id` such as `mainnet-v2`, the `chainId`, a `protocol`, a `status` and a `provenance`. `status` is `"active"` for the current protocol on that chain, `"legacy"` for a deployment kept for compatibility and migration, and `"beta"` for one not yet recommended for production names. On mainnet and Sepolia, ENSv2 is `active` and ENSv1 is `legacy`.
+
+### ENSv2 address groups
+
+| Group             | What it holds                                                                                                                                                                                                           |
+| ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `contracts`       | Entry points apps call directly: the Universal Resolver proxy, root and `.eth` registries, the `.eth` registrar, the rent price oracle, the public resolver, the verifiable factory and the reverse registrar adapters. |
+| `implementations` | Implementation contracts that proxies and the factory point to, such as `permissionedResolver` and `userRegistry`.                                                                                                      |
+| `migration`       | ENSv1 to ENSv2 migration contracts, such as `unlockedMigrationController` and `migrationHelper`.                                                                                                                        |
+| `infrastructure`  | Supporting contracts: batch registrars and token URI renderers.                                                                                                                                                         |
+| `dns`             | DNS integration contracts. Present when the deployment has them.                                                                                                                                                        |
+| `hca`             | Hosted contract account contracts (experimental). Present when the deployment has them.                                                                                                                                 |
+| `paymentTokens`   | The ERC-20 tokens the `.eth` registrar accepts: `dai` and `usdc`. The rent price oracle stays the source of truth.                                                                                                      |
+
+### ENSv1 contracts
+
+`v1.contracts` holds the registry, the `.eth` registrar and controllers, the NameWrapper, the public resolver, the reverse registrars and the DNS contracts. `legacyPublicResolvers` and `frozenPublicResolvers` list earlier public resolver generations: legacy ones still authorise writes, frozen ones can be read but no longer changed.
+
+Since the ENSv2 cutover, ENSv1 controllers no longer register or renew `.eth` names on mainnet. Their addresses remain so that you can read past registrations.
+
+## Check behaviour flags before you branch on a chain
+
+The same ENSv2 release can behave differently on two chains, because ENS deployed some contracts individually. `v2.capabilities` records those differences, so code can branch on a flag instead of on the chain ID.
+
+| Flag                          | Values                         | Meaning                                                                         |
+| ----------------------------- | ------------------------------ | ------------------------------------------------------------------------------- |
+| `resolutionErrorWrapping`     | `boolean`                      | Resolution contracts wrap registry reverts in `ResolutionError(address,bytes)`. |
+| `wrapperRegistryInitializer`  | `"explicit"`, `"fuse-derived"` | How a WrapperRegistry receives its label and roles.                             |
+| `wrapperRegistryEmancipation` | `"static"`, `"role-derived"`   | How `isEmancipated` is computed.                                                |
+| `lockedMigrationRenewal`      | `"renew-role"`, `"max-expiry"` | How locked migration treats names that can extend their expiry.                 |
+| `userRegistryUpgradeGate`     | `boolean`                      | User registries upgrade only to approved implementations.                       |
+| `userRegistryRootRenewal`     | `boolean`                      | New user registries check the `renew` role at their root only.                  |
+| `hcaSameChainSourceRejected`  | `boolean`                      | The HCA validator rejects permits whose source chain is the current chain.      |
+| `hcaSessionDomain`            | `"smart-session"`, `"hca"`     | The EIP-712 domain HCA session approvals use.                                   |
+| `hcaContractOwners`           | `boolean`                      | HCA owners can be contracts that sign with ERC-1271.                            |
+
+**Example** (Branching on a Flag)
+
+```ts twoslash title="capabilities.ts"
+import { Deployments } from "@ensforge/contracts";
+
+const { wrapperRegistryInitializer } = Deployments.mainnet.v2.capabilities;
+//      ^?
+```
+
+`wrapperRegistryInitializer` is `"fuse-derived"` on mainnet and `"explicit"` on Sepolia.
+
+## Find where an address comes from
+
+`provenance` names the repository, the release tag, the commit and, for ENSv2, the compiler build of each contract. ENSv2 networks mix builds because contracts were redeployed one by one.
+
+```ts twoslash title="provenance.ts"
+import { Deployments } from "@ensforge/contracts";
+
+const { repository, release, commit } = Deployments.sepolia.v2.provenance;
+```
+
+## Find a reverse registrar on a layer 2
+
+`Deployments.l2ReverseRegistrars` maps a chain ID to the ENSv1 `L2ReverseRegistrar` on that chain, where an address sets its primary name for that chain. All mainnet layer 2s share one address and all testnets share another.
+
+```ts twoslash title="l2-reverse.ts"
+import { Deployments } from "@ensforge/contracts";
+
+const base = Deployments.l2ReverseRegistrars[8453];
+```
+
+It covers OP Mainnet, Base, Arbitrum One, Linea and Scroll, and their Sepolia testnets. The ABI is `Abis.v1.l2ReverseRegistrar`.
+
+## Troubleshooting
+
+### `get` returns `undefined`
+
+ensforge ships profiles for mainnet and Sepolia only. For a devnet, a fork or any other chain, [define a custom deployment](/docs/contracts/custom-deployments). See also [`UNKNOWN_CHAIN`](/docs/sdk/errors/UNKNOWN_CHAIN), which the SDK client throws for a chain without a profile.
+
+See the [deployments reference](/docs/contracts/reference/deployments) for every address.

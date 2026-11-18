@@ -1,6 +1,109 @@
 ---
 title: Bundlers
-description: Placeholder, to be written.
+description: Run HCA writes as owner-signed ERC-4337 UserOperations through any bundler or Pimlico, with or without a paymaster.
+keywords: [bundler, pimlico, ERC-4337, UserOperation, paymaster, EntryPoint, gasless]
 ---
 
-Placeholder: this page is not written yet.
+<Callout type="info" title="Experimental">
+  `@ensforge/hca` is experimental for 1.0. The bundler path has no production proof upstream yet.
+  ensforge tests it against a local bundler (alto) without ERC-7562 safe mode, and the live Pimlico
+  check is still open. Test on Sepolia first.
+</Callout>
+
+A **bundler** collects ERC-4337 UserOperations and lands them on chain. The `bundler()` and `pimlico()` executors send each HCA execution as a UserOperation that the owner signs, so the owner needs no ETH when a paymaster sponsors it. By the end of this page you will run a write gaslessly.
+
+## What a bundler executor does
+
+- It sends owner operations only. HCA sessions run through [Rhinestone](/docs/hca/rhinestone), not ERC-4337, and a session with a bundler fails with `HCA_EXECUTOR_UNSUPPORTED`.
+- It targets EntryPoint v0.7.
+- The first operation deploys the HCA through its factory, so no setup transaction is needed.
+- The owner signs with `personal_sign` over the UserOperation hash. The wallet shows one signature prompt instead of a transaction.
+
+## Use Pimlico
+
+`pimlico()` is a preset for Pimlico's hosted bundler and paymaster on mainnet or Sepolia. It builds the endpoint for the client's chain from your API key.
+
+| Option                | Type      | Default | Description                                  |
+| --------------------- | --------- | ------- | -------------------------------------------- |
+| `apiKey`              | `string`  | none    | Your Pimlico API key.                        |
+| `sponsor`             | `boolean` | `false` | Sponsor operations with Pimlico's paymaster. |
+| `sponsorshipPolicyId` | `string`  | none    | Pimlico sponsorship policy id.               |
+
+**Example** (Gasless Renewal With Pimlico)
+
+```ts twoslash title="pimlico.ts"
+import { hca, hcaActions, owner, pimlico } from "@ensforge/hca";
+import { Ensforge, ensActions } from "@ensforge/sdk";
+import { createPublicClient, createWalletClient, http } from "viem";
+import { privateKeyToAccount } from "viem/accounts";
+import { sepolia } from "viem/chains";
+
+const account = privateKeyToAccount(
+  "0x0123456789012345678901234567890123456789012345678901234567890123",
+);
+const ens = Ensforge.create({
+  publicClient: createPublicClient({ chain: sepolia, transport: http() }),
+  walletClient: createWalletClient({ account, chain: sepolia, transport: http() }),
+})
+  .extend(ensActions())
+  .extend(hcaActions());
+// ---cut---
+const via = hca({
+  executors: [pimlico({ apiKey: "pim_…", sponsor: true }), owner()],
+});
+
+await ens.hca.executeSync({
+  calls: [{ to: "0x000000000000000000000000000000000000dEaD", value: 0n }],
+  via,
+});
+```
+
+- `sponsor: true` lets Pimlico's paymaster pay. Without it, the HCA pays its own gas.
+- `owner()` last keeps the write working with the owner's wallet when Pimlico cannot run it.
+
+## Use any bundler
+
+`bundler()` takes any ERC-4337 bundler RPC URL that supports EntryPoint v0.7.
+
+| Option             | Type                      | Default     | Description                                                                   |
+| ------------------ | ------------------------- | ----------- | ----------------------------------------------------------------------------- |
+| `url`              | `string`                  | none        | Bundler RPC URL.                                                              |
+| `paymaster`        | `string`                  | none        | ERC-7677 paymaster RPC URL that sponsors operations, often the bundler's own. |
+| `paymasterContext` | `Record<string, unknown>` | none        | Context for the paymaster, such as a sponsorship policy id.                   |
+| `id`               | `string`                  | `"bundler"` | Name shown on plans and errors.                                               |
+| `timeout`          | `number`                  | `180000`    | Milliseconds an operation may stay pending before `HCA_EXECUTION_TIMEOUT`.    |
+
+**Example** (A Sponsored Operation With a Policy)
+
+```ts twoslash title="bundler.ts"
+import { bundler, hca } from "@ensforge/hca";
+
+const url = "https://bundler.example.com/rpc"; // your bundler
+
+const via = hca({
+  executors: [bundler({ url, paymaster: url, paymasterContext: { sponsorshipPolicyId: "sp_…" } })],
+});
+```
+
+Pass `via` to any write, for example `ens.registration.renewSync({ names, duration, via })`. Renewals, transfers and migration are the writes the HCA has authority for. See [How it works](/docs/hca/how-it-works#what-the-hca-can-do).
+
+## Who pays gas
+
+| Setup                                | Who pays                                                                                         |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------ |
+| No `paymaster` (or `sponsor: false`) | The HCA, from its own funds. Keep it funded: see [Deposits and gas](/docs/hca/deposits-and-gas). |
+| `paymaster` or `sponsor: true`       | The paymaster. The HCA's balance does not change.                                                |
+
+## Troubleshooting
+
+### `HCA_BUNDLER_REJECTED`
+
+The bundler refused the operation. The usual cause is that neither the HCA nor a paymaster can pay. Fund the HCA, add a paymaster, and check that the bundler supports EntryPoint v0.7. ensforge marks this error as retryable. See [`HCA_BUNDLER_REJECTED`](/docs/sdk/errors/HCA_BUNDLER_REJECTED).
+
+### `HCA_PAYMASTER_REJECTED`
+
+The paymaster refused to sponsor the operation. Check the sponsorship policy and context. See [`HCA_PAYMASTER_REJECTED`](/docs/sdk/errors/HCA_PAYMASTER_REJECTED).
+
+### `HCA_EXECUTION_TIMEOUT`
+
+The operation stayed pending longer than `timeout`. It may still land: `plan.resume` checks it again. Raise `timeout` to wait longer. See [Continue after a failure](/docs/sdk/continue-after-a-failure) and [`HCA_EXECUTION_TIMEOUT`](/docs/sdk/errors/HCA_EXECUTION_TIMEOUT).

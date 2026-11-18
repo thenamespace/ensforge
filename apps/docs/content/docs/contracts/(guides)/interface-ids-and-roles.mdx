@@ -1,6 +1,104 @@
 ---
 title: Interface IDs and roles
-description: Placeholder, to be written.
+description: Detect ENS contract types with ERC-165 interface IDs and check ENSv2 registry and resolver roles with bitmaps.
+keywords:
+  [InterfaceIds, Roles, ERC-165, supportsInterface, role bitmap, EnhancedAccessControl, hasRoles]
 ---
 
-Placeholder: this page is not written yet.
+This guide covers two sets of constants. **Interface IDs** tell you what a contract is. **Role bitmaps** tell you what an account may do on an ENSv2 registry or resolver. By the end you will have detected a resolver type and checked a role.
+
+## Prerequisites
+
+- `@ensforge/contracts` and `viem` installed. See [Installation](/docs/contracts/installation).
+- A public client. See [Use ABIs with viem](/docs/contracts/use-abis-with-viem).
+
+## Detect a contract with an interface ID
+
+An **ERC-165 interface ID** is a four-byte value a contract reports through `supportsInterface`. `InterfaceIds` groups them:
+
+| Group                           | Holds                                                                                               |
+| ------------------------------- | --------------------------------------------------------------------------------------------------- |
+| `InterfaceIds.registry`         | ENSv2 registry interfaces, such as `permissionedRegistry` and `wrapperRegistry`.                    |
+| `InterfaceIds.resolver`         | ENSv2 resolver interfaces, such as `permissionedResolver`.                                          |
+| `InterfaceIds.resolverProfiles` | Resolver profile interfaces: `addr`, `text`, `contenthash`, `abi`, `pubkey`, `extended` and others. |
+| `InterfaceIds.erc165`           | The ERC-165 interface ID itself.                                                                    |
+
+**Example** (Detecting a PermissionedResolver)
+
+```ts twoslash title="detect-resolver.ts"
+import { Abis, InterfaceIds } from "@ensforge/contracts";
+import { createPublicClient, http } from "viem";
+import { mainnet } from "viem/chains";
+
+const publicClient = createPublicClient({ chain: mainnet, transport: http() });
+const resolver = "0x0000000000000000000000000000000000000001"; // placeholder: the resolver to inspect
+
+const isPermissioned = await publicClient.readContract({
+  address: resolver,
+  abi: Abis.shared.erc165,
+  functionName: "supportsInterface",
+  args: [InterfaceIds.resolver.permissionedResolver],
+});
+```
+
+A resolver that does not support the ID returns `false`. Use `InterfaceIds.resolverProfiles.text` the same way to ask whether a resolver can store text records.
+
+## Read how roles are encoded
+
+In ENSv2, a registry or resolver grants **roles** to accounts through EnhancedAccessControl. A role is one bit of a 256-bit number, and a set of roles is a bitmap you combine with `|`. Each role sits in its own nybble, and its **admin role**, which may grant that role, sits 128 bits higher.
+
+| Constant                      | Holds                                                                                                      |
+| ----------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `Roles.registry`              | Registry roles, such as `renew`, `setResolver` and `setSubregistry`, each with an `…Admin` twin.           |
+| `Roles.resolver`              | PermissionedResolver roles, such as `setAddr`, `setText` and `setContenthash`, each with an `…Admin` twin. |
+| `Roles.registryBitmaps`       | Role sets: `unemancipated`, `regeneration` and `registration`.                                             |
+| `Roles.enhancedAccessControl` | Masks for `allRoles` and `adminRoles`.                                                                     |
+
+`Roles.registryBitmaps.registration` is the set the `.eth` registrar grants a new owner. Use it as a default for any new name an owner should control.
+
+## Check a role
+
+Ask the registry for the account's roles on a name, then test the bit with `&`.
+
+**Example** (Checking the Renew Role)
+
+```ts twoslash title="check-role.ts"
+import { Abis, Deployments, Roles } from "@ensforge/contracts";
+import { createPublicClient, hexToBigInt, http } from "viem";
+import { labelhash } from "viem/ens";
+import { mainnet } from "viem/chains";
+
+const publicClient = createPublicClient({ chain: mainnet, transport: http() });
+const account = "0x0000000000000000000000000000000000000001"; // placeholder: the account to check
+
+const bitmap = await publicClient.readContract({
+  address: Deployments.mainnet.v2.contracts.ethRegistry,
+  abi: Abis.v2.permissionedRegistry,
+  functionName: "roles",
+  args: [hexToBigInt(labelhash("vitalik")), account],
+});
+
+const canRenew = (bitmap & Roles.registry.renew) !== 0n;
+```
+
+- `roles` takes the label hash as a number and the account.
+- To grant several roles, combine them: `Roles.registry.setResolver | Roles.registry.renew`.
+
+For a resolver, `Roles.resolver.setText` and its siblings apply to a **resource**: one record key, or the root. `permissionedResolverResource({ text: "url" })` from `@ensforge/contracts/v2` computes the resource for a record.
+
+## Which role bitmaps change a name's token
+
+`Roles.registryBitmaps.regeneration` lists the roles whose change regenerates a name's token ID. `Roles.registryBitmaps.unemancipated` lists the roles that, held by anyone but the sole owner, mean the name is not emancipated.
+
+<Callout type="info" title="Roles are ENSv2 only">
+  Role bitmaps apply to ENSv2 registries and resolvers. ENSv1 names use owners, managers and
+  NameWrapper fuses instead. See [Roles and permissions](/docs/sdk/roles-and-permissions).
+</Callout>
+
+## Troubleshooting
+
+### `supportsInterface` reverts
+
+The address may not implement ERC-165. Check that it is a contract and that you pass the interface ID as a four-byte hex value.
+
+See the [roles reference](/docs/contracts/reference/roles) and the [interface IDs reference](/docs/contracts/reference/interface-ids).
