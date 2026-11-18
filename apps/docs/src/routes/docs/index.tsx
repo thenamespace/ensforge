@@ -5,7 +5,7 @@ import { createServerFn } from "@tanstack/react-start";
 
 import { useFumadocsLoader } from "fumadocs-core/source/client";
 import { DocsLayout } from "fumadocs-ui/layouts/spacious";
-import { DocsBody, DocsDescription, DocsPage, DocsTitle } from "fumadocs-ui/layouts/spacious/page";
+import { DocsBody, DocsPage } from "fumadocs-ui/layouts/spacious/page";
 
 import { DocsChromeAnalytics } from "@/components/docs/analytics";
 import { useMDXComponents } from "@/components/mdx";
@@ -28,7 +28,7 @@ const serverLoader = createServerFn({ method: "GET" }).handler(async () => {
   };
 });
 
-/** The docs home: choose-your-path cards, rendered from `content/docs/index.mdx`. */
+/** The docs home: the `DocsHome` landing, rendered from `content/docs/index.mdx` (its hero is the h1). */
 export const Route = createFileRoute("/docs/")({
   component: Page,
   loader: async () => {
@@ -71,8 +71,6 @@ function Content({ path }: { path: string }) {
 
   return (
     <DocsPage toc={toc}>
-      <DocsTitle>{page.title}</DocsTitle>
-      <DocsDescription>{page.description}</DocsDescription>
       <DocsBody>
         <MDX components={useMDXComponents()} />
       </DocsBody>
