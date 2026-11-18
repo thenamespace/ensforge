@@ -88,6 +88,10 @@ export class Anvil extends Context.Service<
           timestamp: options.timestamp,
           loadState: options.loadState,
           chainId: options.chainId,
+          // anvil infers a network family from well-known chain IDs (10 is OP Mainnet), whose
+          // hardforks differ; the devnet runs Ethereum's whatever chain ID it answers as. prool
+          // passes the flag through, but its types predate it.
+          ...({ network: "ethereum" } as {}),
           ...(options.fork === undefined
             ? {}
             : {

@@ -6,7 +6,8 @@ import { step, type Step } from "./engine.ts";
 
 /**
  * Canonical singletons other software expects at fixed addresses: Multicall3 (batched reads),
- * EntryPoint v0.7 and its SenderCreator (HCA UserOperations, bundlers) and Permit2. Their mainnet
+ * EntryPoint v0.7 and its SenderCreator (HCA UserOperations, bundlers), Permit2 and ERC-6492's
+ * UniversalSigValidator (counterfactual signatures for the reverse registrars). Their mainnet
  * runtime code works anywhere: none has immutables tied to mainnet (Permit2 re-derives its
  * domain separator on another chain).
  */
@@ -17,6 +18,7 @@ export const canonicalSteps: readonly Step[] = [
       yield* c.place("canonical.senderCreator", "canonical/SenderCreatorV07");
       yield* c.place("canonical.entryPoint", "canonical/EntryPointV07");
       yield* c.place("canonical.permit2", "canonical/Permit2");
+      yield* c.place("canonical.universalSigValidator", "canonical/UniversalSigValidator");
     }),
   ),
 ];

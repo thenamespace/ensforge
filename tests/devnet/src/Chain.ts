@@ -59,6 +59,8 @@ export class Chain extends Context.Service<
     readonly balance: (address: Address) => Effect.Effect<bigint, ChainError>;
     /** The code at `address`; `undefined` for an account without code. */
     readonly code: (address: Address) => Effect.Effect<Hex | undefined, ChainError>;
+    /** EIP-191 signature of the 32-byte `hash` by an unlocked account (`eth_sign`). */
+    readonly sign: (account: Address, hash: Hex) => Effect.Effect<Hex, ChainError>;
     readonly read: <
       const abi extends Abi | readonly unknown[],
       functionName extends ReadFunction<abi>,
@@ -140,6 +142,8 @@ export class Chain extends Context.Service<
         blockNumber: rpc("getBlockNumber", () => client.getBlockNumber()),
         balance: (address) => rpc("getBalance", () => client.getBalance({ address })),
         code: (address) => rpc("getCode", () => client.getCode({ address })),
+        sign: (account, hash) =>
+          rpc("signMessage", () => client.signMessage({ account, message: { raw: hash } })),
         read: (parameters) =>
           rpc("readContract", () => client.readContract(parameters as never)) as never,
         call: (parameters) => rpc("call", () => client.call(parameters)),

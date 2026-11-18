@@ -3,7 +3,7 @@ import { Deployments } from "@ensforge/contracts";
 import { cutoverSteps } from "../deploy/cutover.ts";
 import type { Ledger, Step, Variant } from "../deploy/engine.ts";
 import { canonicalSteps, hcaSteps } from "../deploy/hca.ts";
-import { mockSteps } from "../deploy/mocks.ts";
+import { l2MockSteps, mockSteps } from "../deploy/mocks.ts";
 import { v1Steps } from "../deploy/v1.ts";
 import { v2ResolutionSteps, v2Steps } from "../deploy/v2.ts";
 import { v1Deployment, v2Deployment } from "./deployments.ts";
@@ -52,13 +52,13 @@ export const profiles = {
   "v1-live": {
     description:
       "ENSv1 before the ENSv2 launch: controllers register, the NameWrapper has an owner",
-    steps: v1Only,
+    steps: [...v1Only, ...l2MockSteps],
     deployments: (ledger) => profile({ v1: v1Deployment(ledger, chainId, "active") }),
   },
   "v1-v2-greenfield": {
     description:
       "ENSv1 and ENSv2 with roles granted at deploy time and ENSv1 still registering (upstream's devnet)",
-    steps: greenfield,
+    steps: [...greenfield, ...l2MockSteps],
     deployments: (ledger) =>
       profile({
         v1: v1Deployment(ledger, chainId, "active"),
@@ -67,7 +67,7 @@ export const profiles = {
   },
   "mainnet-shaped": {
     description: "ENSv1 and ENSv2 as on mainnet today: after the launch and the registry hand-over",
-    steps: mainnetShaped,
+    steps: [...mainnetShaped, ...l2MockSteps],
     deployments: (ledger) =>
       profile({
         v1: v1Deployment(ledger, chainId, "legacy"),
@@ -77,7 +77,7 @@ export const profiles = {
   "sepolia-shaped": {
     description:
       "The mainnet-shaped deployment on Sepolia's builds: no ResolutionError wrapping, explicit WrapperRegistry initializer, older HCA validator",
-    steps: mainnetShaped,
+    steps: [...mainnetShaped, ...l2MockSteps],
     variant: sepolia,
     deployments: (ledger) =>
       profile({
@@ -89,7 +89,7 @@ export const profiles = {
   // its ENSv2-only paths.
   "v2-only": {
     description: "The mainnet-shaped chain, with an ensforge profile that knows only ENSv2",
-    steps: mainnetShaped,
+    steps: [...mainnetShaped, ...l2MockSteps],
     deployments: (ledger) => profile({ v2: v2Deployment(ledger, chainId, mainnetCapabilities) }),
   },
 } as const satisfies Record<string, ProfileDefinition>;

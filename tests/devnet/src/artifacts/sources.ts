@@ -109,6 +109,13 @@ export const sources = {
   "v1/BatchGatewayProvider": v1Deployment("BatchGatewayProvider"),
   "v1/UniversalResolver": v1Deployment("UniversalResolver"),
   "v1/MigrationHelper": v1Deployment("MigrationHelper"),
+  // The L2 reverse registrar as deployed on OP Mainnet. Tests run its code on a second anvil
+  // answering as OP Mainnet, at the address it has on every mainnet L2.
+  "v1/L2ReverseRegistrar": {
+    kind: "deployment",
+    repository: "ens-contracts",
+    file: "deployments/optimism/L2ReverseRegistrar.json",
+  },
   // The 2020 controller that registered unwrapped names until the NameWrapper (recompiled by
   // ens-contracts; behaviour-equivalent to mainnet's 0x283A…).
   "v1/LegacyETHRegistrarController": {
@@ -307,6 +314,11 @@ export const sources = {
     file: "OffchainWriteResolver.sol",
     contract: "OffchainWriteResolver",
   },
+  "mocks/GatewayResolver": {
+    kind: "local",
+    file: "GatewayResolver.sol",
+    contract: "GatewayResolver",
+  },
 
   // Canonical singletons, placed at their mainnet addresses.
   "canonical/Multicall3": {
@@ -323,6 +335,12 @@ export const sources = {
     address: "0xEFC2c1444eBCC4Db75e7613d20C6a62fF67A167C",
   },
   "canonical/Permit2": { kind: "runtime", address: "0x000000000022D473030F116dDEE9F6B43aC78BA3" },
+  // ERC-6492's UniversalSigValidator, which ENS's reverse registrars (`SignatureUtils`) call for
+  // signatures of accounts not deployed yet.
+  "canonical/UniversalSigValidator": {
+    kind: "runtime",
+    address: "0x164af34fAF9879394370C7f09064127C043A35E9",
+  },
 } as const satisfies Record<string, Source>;
 
 export type ArtifactName = keyof typeof sources;

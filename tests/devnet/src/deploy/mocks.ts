@@ -86,3 +86,18 @@ export const mockSteps: readonly Step[] = [
     }),
   ),
 ];
+
+/**
+ * L2 primary names, deployed after everything else so no other address moves: OP Mainnet's L2
+ * reverse registrar (tests copy its code to a second anvil answering as OP Mainnet) and a
+ * resolver that answers through a gateway (tests serve `8000000a.reverse` from that anvil).
+ */
+export const l2MockSteps: readonly Step[] = [
+  step("mocks.l2", (c) =>
+    Effect.gen(function* () {
+      // OP Mainnet's ENSIP-11 coin type, the registrar's constructor argument there.
+      yield* c.deploy("mock.l2ReverseRegistrar", "v1/L2ReverseRegistrar", [0x8000000an]);
+      yield* c.deploy("mock.gatewayResolver", "mocks/GatewayResolver");
+    }),
+  ),
+];
