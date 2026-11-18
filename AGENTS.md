@@ -1,6 +1,9 @@
 # Ensforge repository guide
 
-Ensforge is a pnpm and Turborepo monorepo for Effect-native Ethereum Name Service packages.
+Ensforge is a pnpm and Turborepo monorepo for the SDK for ENS (Ethereum Name Service). The public API
+is viem-style Promises; the Effect API is optional. Effect is how the packages are implemented
+internally, and the Effect conventions below apply to contributors. Never describe the product as
+"Effect-native". Users should never need to think about ENSv1 versus ENSv2: ensforge handles it.
 
 ## Workspace map
 
@@ -100,6 +103,23 @@ tracking.
   Do not add tests that restate the implementation, check what the type checker already proves,
   or assert the obvious.
 - See the Tests section of CONTRIBUTING.md for lanes, fixtures and the coverage ledger.
+
+## Docs
+
+Docs content lives in `apps/docs/content`. Reference pages are generated with `pnpm docs:generate`:
+never hand-edit a page marked `generated: true`; edit the JSDoc in the package source and
+regenerate. The full guide is `research/docs-research/04-writers-guide.md`. Core rules:
+
+- Use plain words in titles, headings and descriptions ("Get a name's address"). Explain an ENS term
+  once, where it first appears, and link the glossary.
+- Write short sentences with one fact per sentence. No marketing words, em dashes or exclamation
+  marks.
+- Explain every code block: what it does before it, and the important lines after it when not obvious.
+- Hand-written TypeScript blocks are `ts twoslash` with a `title`, and must compile.
+- Do not use Fumadocs `Steps` or `TypeTable`: use numbered `##` headings and Markdown tables.
+- Use Mermaid for flows and structures.
+- Take facts only from the source, the tests or a cited spec. Leave out what you cannot verify.
+- Default to the Promise API; show Effect only in the Advanced section and in reference tabs.
 
 # Learning more about Effect
 
