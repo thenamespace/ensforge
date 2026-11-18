@@ -134,8 +134,8 @@ function TrackedLink(props: ComponentProps<typeof Link>) {
 }
 
 function DocsTitledLink(props: ComponentProps<typeof Link> & { isBlog: boolean; slug: string }) {
-  const { root } = useTreeContext();
-  const titles = useMemo(() => titlesOf(root), [root]);
+  const { full } = useTreeContext();
+  const titles = useMemo(() => titlesOf(full), [full]);
 
   return (
     <ReportingLink

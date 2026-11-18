@@ -49,12 +49,18 @@ export function pageTitle(title?: string) {
   return title ? `${title}${SEPARATOR}${site.name}` : `${site.name}${SEPARATOR}${site.tagline}`;
 }
 
+/** `<Page title> | ensforge Docs`, whether the caller passed `Page | SDK Docs` or the bare title. */
+function docsTitle(title: string) {
+  return `${title.split(SEPARATOR)[0]}${SEPARATOR}${site.name} Docs`;
+}
+
 /**
  * Head tags for a page: title, description, canonical, Open Graph, Twitter and JSON-LD.
  * Returns the `{ meta, links, scripts }` shape TanStack Router's `head` expects.
  */
 export function seo(input: SeoInput) {
-  const title = pageTitle(input.title);
+  const isDocs = input.path === "/docs" || input.path.startsWith("/docs/");
+  const title = isDocs && input.title ? docsTitle(input.title) : pageTitle(input.title);
   const url = absolute(input.path);
   const canonical = input.canonical ?? url;
   const type = input.type ?? "website";
@@ -64,6 +70,7 @@ export function seo(input: SeoInput) {
   const meta: Record<string, string>[] = [
     { title },
     { name: "description", content: input.description },
+    { name: "author", content: site.publisher },
     {
       name: "robots",
       content: input.noindex
@@ -132,7 +139,9 @@ export const organizationLd = {
   "@context": "https://schema.org",
   "@type": "Organization",
   "@id": ids.organization,
-  name: site.name,
+  name: site.publisher,
+  legalName: site.publisher,
+  alternateName: site.name,
   url: site.url,
   logo: { "@type": "ImageObject", url: absolute("/logo.svg") },
   sameAs: [

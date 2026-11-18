@@ -20,6 +20,7 @@ import {
   TagsList,
   TagsListItem,
 } from "fumadocs-ui/components/dialog/search";
+import { Check } from "lucide-react";
 
 import { track } from "@/lib/analytics/client";
 import { documentedPackages, getPackageFromUrl } from "@/lib/packages";
@@ -80,15 +81,26 @@ export default function PackageSearchDialog(props: SharedProps) {
               </TagsListItem>
             ))}
           </TagsList>
-          <label className="flex shrink-0 cursor-pointer items-center gap-2 text-sm text-fd-muted-foreground select-none hover:text-fd-foreground">
-            <input
-              type="checkbox"
-              className="size-3.5 cursor-pointer accent-fd-primary"
-              checked={kind === "reference"}
-              onChange={(event) => setKind(event.target.checked ? "reference" : "guides")}
-            />
-            API reference
-          </label>
+          <div className="ml-auto flex shrink-0 items-center gap-2 text-sm text-fd-muted-foreground">
+            {/* A styled button: the native checkbox cannot take the site's theme. */}
+            <button
+              id="search-api-reference"
+              type="button"
+              // oxlint-disable-next-line jsx-a11y/prefer-tag-over-role
+              role="checkbox"
+              aria-checked={kind === "reference"}
+              onClick={() => setKind(kind === "reference" ? "guides" : "reference")}
+              className="peer flex size-4 shrink-0 cursor-pointer items-center justify-center rounded-[4px] border border-fd-border bg-fd-background text-fd-primary-foreground shadow-xs outline-none transition-colors focus-visible:ring-2 focus-visible:ring-fd-ring focus-visible:ring-offset-1 focus-visible:ring-offset-fd-popover aria-checked:border-fd-primary aria-checked:bg-fd-primary"
+            >
+              {kind === "reference" ? <Check className="size-3" strokeWidth={3} /> : null}
+            </button>
+            <label
+              htmlFor="search-api-reference"
+              className="cursor-pointer select-none hover:text-fd-foreground"
+            >
+              API reference
+            </label>
+          </div>
         </SearchDialogFooter>
       </SearchDialogContent>
     </SearchDialog>

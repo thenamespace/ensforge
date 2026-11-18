@@ -5,6 +5,8 @@
 export const site = {
   name: "ensforge",
   url: (import.meta.env.VITE_SITE_URL ?? "https://ensforge.com").replace(/\/$/, ""),
+  /** Legal publisher and author of the site and the packages. */
+  publisher: "Namespace Inc.",
   tagline: "Effect-native ENS packages",
   description:
     "Type-safe, Effect-native packages for Ethereum Name Service applications, across ENSv1 and ENSv2. Placeholder description: the site copy is not written yet.",

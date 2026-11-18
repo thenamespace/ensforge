@@ -60,7 +60,7 @@ export async function blogFeed() {
       <guid isPermaLink="true">${url}</guid>
       <description>${escape(post.description)}</description>
       <pubDate>${rfc822(post.published)}</pubDate>
-      <dc:creator>${escape(post.authors.map((author) => author.name).join(", "))}</dc:creator>
+      <dc:creator>${escape(post.authors.map((author) => author.name).join(", ") || site.publisher)}</dc:creator>
       <category>${escape(categoryLabels[post.category].one)}</category>
 ${post.tags.map((tag) => `      <category>${escape(tag)}</category>`).join("\n")}
       <content:encoded><![CDATA[${content.replaceAll("]]>", "]]]]><![CDATA[>")}]]></content:encoded>
@@ -78,6 +78,7 @@ ${post.tags.map((tag) => `      <category>${escape(tag)}</category>`).join("\n")
     <atom:link href="${absolute("/blog/rss.xml")}" rel="self" type="application/rss+xml" />
     <description>${escape(blogDescription)}</description>
     <language>en</language>
+    <dc:creator>${escape(site.publisher)}</dc:creator>
     <image>
       <url>${absolute("/logo.svg")}</url>
       <title>${escape(site.name)} blog</title>
