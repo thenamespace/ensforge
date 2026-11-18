@@ -57,6 +57,19 @@ const commitmentTooOld: Mapper = ([commitment, validTo]) =>
   });
 
 /**
+ * A resolver that keeps its records elsewhere (an L2, a database behind a gateway) refusing an
+ * on-chain write; `detail` says where its records live.
+ */
+export const offchainWriteRefused = (detail: string): UnsupportedError =>
+  new UnsupportedError({
+    code: "RESOLVER_PROFILE_UNSUPPORTED",
+    feature: "on-chain records",
+    shortMessage: "The resolver keeps its records off-chain; it does not accept on-chain writes.",
+    hint: "Update the records where the resolver keeps them (its own app or gateway), or point the name at an on-chain resolver with `resolver.set`.",
+    details: [detail],
+  });
+
+/**
  * Contract error name → ensforge error. `ResolverError` and `ResolutionError` are unwrapped before
  * this table is consulted.
  */
@@ -176,6 +189,19 @@ export const revertMap: Readonly<Record<string, Mapper>> = {
     context.contract !== undefined && !isAddressEqual(sender as Address, context.contract)
       ? new GatewayError({ code: "OFFCHAIN_LOOKUP_INVALID" })
       : new ConfigError({ code: "CCIP_READ_DISABLED" }),
+  // ERC-5559 and ERC-7884: where a resolver that does not store records on this chain sends writes.
+  StorageHandledByL2: ([chainId, contract]) =>
+    offchainWriteRefused(
+      `ERC-5559: records are stored by ${String(contract)} on chain ${String(chainId)}.`,
+    ),
+  StorageHandledByOffChainDatabase: ([, url]) =>
+    offchainWriteRefused(`ERC-5559: records are stored by the gateway at ${String(url)}.`),
+  OperationHandledOnchain: ([chainId, contract]) =>
+    offchainWriteRefused(
+      `ERC-7884: writes are handled by ${String(contract)} on chain ${String(chainId)}.`,
+    ),
+  OperationHandledOffchain: ([, url]) =>
+    offchainWriteRefused(`ERC-7884: writes are handled by the gateway at ${String(url)}.`),
   InvalidBatchGatewayResponse: () => new GatewayError({ code: "GATEWAY_RESPONSE_INVALID" }),
   UnsafeBatchGatewayResponse: () => new GatewayError({ code: "GATEWAY_RESPONSE_INVALID" }),
   NameNotLocked: () => new MigrationError({ code: "NAME_NOT_LOCKED" }),

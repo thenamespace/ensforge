@@ -15,6 +15,7 @@ import {
   keccak256,
   namehash,
   numberToHex,
+  parseAbi,
   toHex,
   zeroAddress,
   zeroHash,
@@ -419,6 +420,47 @@ describe("contract errors", () => {
           );
         }),
       { meta: { cases: ["O24"] } },
+    );
+
+    // ERC-5559 and ERC-7884 refusals of a resolver that keeps its records off-chain.
+    it.effect(
+      "come from resolvers that keep their records off-chain",
+      () =>
+        Effect.gen(function* () {
+          const devnet = yield* Devnet;
+          const chain = yield* Chain;
+          const { alice } = devnet.accounts;
+          const resolver = devnet.contract("mock.offchainWriter");
+          const setText: Call = {
+            from: alice,
+            to: resolver,
+            abi: Abis.v1.publicResolver as Abi,
+            functionName: "setText",
+            args: [zeroHash, "url", "x"],
+          };
+
+          yield* chain.isolated(
+            Effect.gen(function* () {
+              // `OffchainWriteResolver.Mode`.
+              for (const [mode, error] of [
+                [1, "StorageHandledByL2"],
+                [2, "StorageHandledByOffChainDatabase"],
+                [3, "OperationHandledOnchain"],
+                [4, "OperationHandledOffchain"],
+              ] as const) {
+                yield* chain.write({
+                  account: alice,
+                  address: resolver,
+                  abi: parseAbi(["function setMode(uint8)"]),
+                  functionName: "setMode",
+                  args: [mode],
+                });
+                assert.strictEqual(yield* revertOf(setText), error);
+              }
+            }),
+          );
+        }),
+      { meta: { cases: ["X16"] } },
     );
 
     it.effect("come from the HCA", () =>

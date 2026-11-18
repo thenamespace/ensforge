@@ -20,7 +20,9 @@ import {
   encodeRecordWrites,
   recordWriteCodecs,
   resolverCall,
+  writtenProfiles,
 } from "../../../internal/records/write-profiles.js";
+import { describeResolver } from "../../../internal/resolver/describe.js";
 import * as Rpc from "../../../internal/rpc/index.js";
 import { make as makePlan } from "../../../plan/make.js";
 import type { Plan } from "../../../plan/Plan.js";
@@ -62,21 +64,52 @@ export const plan = Effect.fnUntraced(function* (
     resolverChange = yield* setResolverCall(client, loaded, resolver);
   }
 
-  const keying = yield* setterKeying(client, resolver);
-  // Data records (ENSIP-24) are newer than most node-keyed resolvers, which revert without a
-  // reason on `setData`.
-  if (keying === "node" && Object.keys(options.data ?? {}).length > 0) {
-    const supported = yield* Rpc.readContractOrUndefined(client, {
-      address: resolver,
-      abi: Abis.shared.erc165,
-      functionName: "supportsInterface",
-      args: [InterfaceIds.resolverProfiles.data],
-    });
-    if (supported !== true) {
-      return yield* Effect.fail(
-        new UnsupportedError({ code: "RESOLVER_PROFILE_UNSUPPORTED", feature: "data records" }),
-      );
-    }
+  // One round: how the setters key the name, the profiles the resolver declares, and whether it
+  // implements ERC-165 at all (within the gas EIP-165 allows `supportsInterface`).
+  const { keying, resolverInfo, erc165 } = yield* Effect.all(
+    {
+      keying: setterKeying(client, resolver),
+      resolverInfo: describeResolver(client, resolver, loaded.data.parts.node),
+      erc165: Rpc.readContractOrUndefined(client, {
+        address: resolver,
+        abi: Abis.shared.erc165,
+        functionName: "supportsInterface",
+        args: [InterfaceIds.erc165],
+        gas: 30_000n,
+      }).pipe(Effect.orElseSucceed(() => undefined)),
+    },
+    { concurrency: "unbounded" },
+  );
+  if (resolverInfo.authorization === "none") {
+    return yield* Effect.fail(
+      new UnsupportedError({
+        code: "RESOLVER_PROFILE_UNSUPPORTED",
+        feature: "writing records",
+        shortMessage: "The resolver does not store records that can be written.",
+        hint: "Pass `resolver` to write the records to a resolver that stores them, and switch to it.",
+      }),
+    );
+  }
+
+  // A resolver without ERC-165 predates the profiles it would declare, except that it surely
+  // lacks `data` (ENSIP-24, newer than all of them); its other writes are left to simulation.
+  const missing = writtenProfiles(options).find(
+    ([profile]) => (erc165 === true || profile === "data") && !resolverInfo.profiles[profile],
+  )?.[1];
+  // Node-keyed resolvers clear by bumping the record version; older ones have neither.
+  const unsupported =
+    missing ??
+    (erc165 === true && options.clear === true && keying === "node" && resolverInfo.version === null
+      ? "clearing records"
+      : undefined);
+  if (unsupported !== undefined) {
+    return yield* Effect.fail(
+      new UnsupportedError({
+        code: "RESOLVER_PROFILE_UNSUPPORTED",
+        feature: unsupported,
+        shortMessage: `The resolver does not support ${unsupported}.`,
+      }),
+    );
   }
 
   const codecs = yield* recordWriteCodecs(options);

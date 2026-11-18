@@ -70,6 +70,13 @@ const expected: Readonly<Record<string, { readonly _tag: string; readonly code: 
   HttpError: { _tag: "GatewayError", code: "GATEWAY_REQUEST_FAILED" },
   InvalidOffchainLookup: { _tag: "GatewayError", code: "OFFCHAIN_LOOKUP_INVALID" },
   OffchainLookup: { _tag: "ConfigError", code: "CCIP_READ_DISABLED" },
+  StorageHandledByL2: { _tag: "UnsupportedError", code: "RESOLVER_PROFILE_UNSUPPORTED" },
+  StorageHandledByOffChainDatabase: {
+    _tag: "UnsupportedError",
+    code: "RESOLVER_PROFILE_UNSUPPORTED",
+  },
+  OperationHandledOnchain: { _tag: "UnsupportedError", code: "RESOLVER_PROFILE_UNSUPPORTED" },
+  OperationHandledOffchain: { _tag: "UnsupportedError", code: "RESOLVER_PROFILE_UNSUPPORTED" },
   InvalidBatchGatewayResponse: { _tag: "GatewayError", code: "GATEWAY_RESPONSE_INVALID" },
   UnsafeBatchGatewayResponse: { _tag: "GatewayError", code: "GATEWAY_RESPONSE_INVALID" },
   NameNotLocked: { _tag: "MigrationError", code: "NAME_NOT_LOCKED" },
@@ -104,6 +111,7 @@ const fragmentsOf = (errorName: string): readonly ErrorFragment[] =>
 const sample = (parameter: AbiParameter): unknown => {
   const { type } = parameter;
   if (type.endsWith("[]")) return [sample({ ...parameter, type: type.slice(0, -2) })];
+  if (type === "tuple" && "components" in parameter) return parameter.components.map(sample);
   if (type === "address") return account;
   if (type === "string") return "label";
   if (type === "bool") return true;
@@ -288,6 +296,43 @@ describe("revertMap fields", () => {
     },
   ])("$errorName copies its arguments into the error", ({ errorName, args, fields }) => {
     assert.include(fromRevert({ data: encode(errorName, args) }, {}), fields);
+  });
+
+  it.each([
+    { errorName: "StorageHandledByL2", args: [8453n, account], where: `${account} on chain 8453` },
+    {
+      errorName: "StorageHandledByOffChainDatabase",
+      args: [
+        { name: "resolver", version: "1", chainId: 1n, verifyingContract: account },
+        "https://gateway.example",
+        {
+          functionSelector: "0x10f13a8c",
+          sender: account,
+          parameters: [],
+          expirationTimestamp: 1n,
+        },
+      ],
+      where: "https://gateway.example",
+    },
+    {
+      errorName: "OperationHandledOnchain",
+      args: [8453n, account],
+      where: `${account} on chain 8453`,
+    },
+    {
+      errorName: "OperationHandledOffchain",
+      args: [
+        { name: "resolver", version: "1", chainId: 1n, verifyingContract: account },
+        "https://gateway.example",
+        { data: "0x", sender: account, expirationTimestamp: 1n },
+      ],
+      where: "https://gateway.example",
+    },
+  ])("$errorName says where the resolver keeps its records", ({ errorName, args, where }) => {
+    const error = fromRevert({ data: encode(errorName, args) }, {});
+
+    assert.strictEqual(error.code, "RESOLVER_PROFILE_UNSUPPORTED");
+    assert.include(error.details.join("\n"), where);
   });
 
   it.each([

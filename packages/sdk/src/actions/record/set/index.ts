@@ -24,6 +24,9 @@ import * as Impl from "./effect.js";
  *   inherited from a parent.
  * - `resolver` writes the records to another resolver, then points the name at it, in one step:
  *   a rejected write never leaves the name on an empty resolver.
+ * - Each kind of record is checked against the profiles the resolver declares through ERC-165,
+ *   and `clear` against its record versions, before anything is simulated; a resolver without
+ *   ERC-165 is left to the simulation.
  * - The plan is simulated before the wallet prompt, so permission errors surface first.
  *
  * **Gotchas**
@@ -31,8 +34,10 @@ import * as Impl from "./effect.js";
  * - The ENSv2 PermissionedResolver has no `pubkey` records. `clear` there links the name to record
  *   0 (needs the root `link` role), so it reads the resolver's default record until new records
  *   are written.
- * - Older resolvers lack newer profiles; the ENSv1 public resolver has no `data` records, so the
- *   simulation reverts.
+ * - Older resolvers lack newer profiles (the 2020 public resolver has no `data` records and cannot
+ *   `clear`), and resolvers that keep their records off-chain (EIP-3668, ERC-5559, ERC-7884) take
+ *   no on-chain writes. Both fail with `RESOLVER_PROFILE_UNSUPPORTED`; for an off-chain resolver,
+ *   `details` say where its records live.
  * - `resolver: "default"` (the ENSv1 public resolver) is for ENSv1 names only; ENSv2 names pass the
  *   address of a resolver such as their own PermissionedResolver.
  *
@@ -68,7 +73,7 @@ import * as Impl from "./effect.js";
  *
  * @throws `Errors.InvalidInputError` (`INVALID_NAME`, `INVALID_ADDRESS`, `INVALID_COIN_TYPE`, `INVALID_CONTENT_HASH`, `INVALID_RECORD_VALUE`) for invalid input.
  * @throws `Errors.NotFoundError` (`RESOLVER_NOT_FOUND`) when the name has no resolver of its own.
- * @throws `Errors.UnsupportedError` (`RESOLVER_PROFILE_UNSUPPORTED`, `UNSUPPORTED_PROTOCOL`) for `pubkey` on a PermissionedResolver, `data` on a resolver without data records, or `resolver: "default"` on an ENSv2 name.
+ * @throws `Errors.UnsupportedError` (`RESOLVER_PROFILE_UNSUPPORTED`, `UNSUPPORTED_PROTOCOL`) for records the resolver does not support (`feature` names them), a resolver that keeps its records off-chain or takes no writes, or `resolver: "default"` on an ENSv2 name.
  * @throws `Errors.NameStateError` (`NAME_EXPIRED`, `NAME_RESERVED`, `NAME_NOT_REGISTERED`) when the name is not registered.
  * @throws `Errors.UnauthorizedError` (`NOT_OWNER`, `MISSING_ROLES`) when the account may not edit records.
  * @throws `Errors.ConfigError` (`WALLET_NOT_CONFIGURED`) when the client has no wallet.
@@ -175,7 +180,7 @@ set.estimateGas = Action.promiseOf(
  *
  * @throws `Errors.InvalidInputError` (`INVALID_NAME`, `INVALID_ADDRESS`, `INVALID_COIN_TYPE`, `INVALID_CONTENT_HASH`, `INVALID_RECORD_VALUE`) for invalid input.
  * @throws `Errors.NotFoundError` (`RESOLVER_NOT_FOUND`) when the name has no resolver of its own.
- * @throws `Errors.UnsupportedError` (`RESOLVER_PROFILE_UNSUPPORTED`, `UNSUPPORTED_PROTOCOL`) for records or resolvers the name's resolver or protocol does not support.
+ * @throws `Errors.UnsupportedError` (`RESOLVER_PROFILE_UNSUPPORTED`, `UNSUPPORTED_PROTOCOL`) for records the resolver does not support, a resolver that keeps its records off-chain or takes no writes, or `resolver: "default"` on an ENSv2 name.
  * @throws `Errors.NameStateError` (`NAME_EXPIRED`, `NAME_RESERVED`, `NAME_NOT_REGISTERED`) when the name is not registered.
  * @throws `Errors.UnauthorizedError` (`NOT_OWNER`, `MISSING_ROLES`) when the account may not edit records.
  * @throws `Errors.TransactionError` (`TRANSACTION_REVERTED`, `RECEIPT_TIMEOUT`) when confirmation fails.

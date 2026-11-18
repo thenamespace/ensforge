@@ -8,6 +8,7 @@ import type { AnyError } from "../../errors/types.js";
 import type { Plan } from "../../plan/Plan.js";
 import type { Write } from "../../Types.js";
 import { addressOf } from "../address.js";
+import { offchainWriteRefusal } from "../write/offchain.js";
 import { waitForReceipts } from "../write/receipts.js";
 import { sendPlan } from "../write/send.js";
 import { resolveSigner } from "../write/signer.js";
@@ -37,23 +38,36 @@ const isOpaqueRevert = (error: AnyError): boolean =>
   error._tag === "ContractRevertError" &&
   (error.context.revert?.errorName === undefined || error.context.revert.errorName === "Error");
 
-/** Replaces an opaque revert with the explainer's error, keeping the revert as its cause. */
+/**
+ * Replaces a resolver's refusal to store records on-chain with its typed error, and any other
+ * opaque revert with the explainer's error, keeping the revert as the cause.
+ */
 const explained = <options>(
   client: Client,
   options: options,
   account: Address | undefined,
   explain: Explainer<options> | undefined,
+  extra: EnsforgeError.Context | undefined,
   error: AnyError,
 ): Effect.Effect<AnyError> =>
-  explain === undefined || account === undefined || !isOpaqueRevert(error)
-    ? Effect.succeed(error)
-    : explain(client, options, account).pipe(
-        Effect.map((explanation) =>
-          explanation === undefined ? error : (explanation.withCause(error) as AnyError),
-        ),
-        // A failing explanation must not hide the original error.
-        Effect.orElseSucceed(() => error),
-      );
+  (extra?.contractKind === "resolver"
+    ? offchainWriteRefusal(client, error)
+    : Effect.undefined
+  ).pipe(
+    Effect.flatMap((refusal) =>
+      refusal !== undefined
+        ? Effect.succeed(refusal)
+        : explain === undefined || account === undefined || !isOpaqueRevert(error)
+          ? Effect.succeed(error)
+          : explain(client, options, account).pipe(
+              Effect.map((explanation) =>
+                explanation === undefined ? error : (explanation.withCause(error) as AnyError),
+              ),
+              // A failing explanation must not hide the original error.
+              Effect.orElseSucceed(() => error),
+            ),
+    ),
+  );
 
 /**
  * Every Effect a write action exposes, built from one planner: `send` (the action itself),
@@ -97,7 +111,7 @@ export const write = <options, error extends EnsforgeError>(
       const steps = yield* Effect.forEach(simulation.steps, (step) =>
         step.error === undefined
           ? Effect.succeed(step)
-          : explained(client, options, account, explain, step.error).pipe(
+          : explained(client, options, account, explain, extra, step.error).pipe(
               Effect.map((error) => ({ ...step, error: error.withContext(context) })),
             ),
       );
@@ -127,7 +141,7 @@ export const write = <options, error extends EnsforgeError>(
     const signer = yield* resolveSigner(client, options.account);
     return yield* sendPlan(client, plan, signer, { ...options, confirmLast }).pipe(
       Effect.catch((error: AnyError) =>
-        explained(client, options, addressOf(signer.account), explain, error).pipe(
+        explained(client, options, addressOf(signer.account), explain, extra, error).pipe(
           Effect.flatMap(Effect.fail),
         ),
       ),

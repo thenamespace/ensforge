@@ -11,6 +11,7 @@ import {
   type Hex,
 } from "viem";
 
+import type { ResolverProfiles } from "../../actions/resolver/get/types.js";
 import { InvalidInputError } from "../../errors/classes/InvalidInputError.js";
 import { UnsupportedError } from "../../errors/classes/UnsupportedError.js";
 import type { Plan } from "../../plan/Plan.js";
@@ -259,6 +260,28 @@ export const encodeRecordWrites = (
   }
 
   return calls;
+};
+
+/**
+ * The ERC-165 resolver profile each kind of record in `writes` is written through, with the name
+ * of those records for errors. `clear` is not a profile: see `recordVersions`.
+ */
+export const writtenProfiles = (
+  writes: RecordWrites,
+): readonly (readonly [profile: keyof ResolverProfiles, records: string])[] => {
+  const profiles: readonly (readonly [keyof ResolverProfiles, string, boolean])[] = [
+    ["text", "text records", Object.keys(writes.texts ?? {}).length > 0],
+    ["addresses", "address records", Object.keys(writes.addresses ?? {}).length > 0],
+    ["contentHash", "content hash records", writes.contentHash !== undefined],
+    ["abi", "ABI records", writes.abi !== undefined],
+    ["pubkey", "public key records", writes.pubkey !== undefined],
+    ["name", "name records", writes.nameRecord !== undefined],
+    ["interfaces", "interface records", Object.keys(writes.interfaces ?? {}).length > 0],
+    ["data", "data records", Object.keys(writes.data ?? {}).length > 0],
+  ];
+  return profiles.flatMap(([profile, records, isWritten]) =>
+    isWritten ? [[profile, records] as const] : [],
+  );
 };
 
 /** One call on the resolver: the setter itself, or a resolver `multicall` of several. */
