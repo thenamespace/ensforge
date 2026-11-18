@@ -82,6 +82,15 @@ export const encode = (uri: string): Hex => {
 /**
  * Decodes the bytes of an ENS `contenthash` record, or returns `null` when empty.
  *
+ * **Example** (Decoding a content hash)
+ *
+ * ```ts
+ * import { ContentHash } from "@ensforge/sdk"
+ *
+ * const decoded = ContentHash.decode(data)
+ * decoded?.uri // "ipfs://…"
+ * ```
+ *
  * @throws `Errors.InvalidInputError` (`INVALID_CONTENT_HASH`) when the bytes are malformed or use
  * an unsupported codec.
  * @stability stable

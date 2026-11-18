@@ -15,7 +15,8 @@ import * as Impl from "./effect.js";
  *
  * - `http(s)` and `data:` URIs are returned as-is; `ipfs://`, `ipns://`, `ar://` and bare CIDs go
  *   through `gateways`: the call's, else the client's (`Ensforge.create({ gateways })`), else
- *   `https://ipfs.io` and `https://arweave.net`.
+ *   `https://ipfs.io` and `https://arweave.net` (the client config also has a Swarm gateway,
+ *   `https://api.gateway.ethswarm.org`, used for `bzz://` content hashes, not avatars).
  * - NFT avatars (`eip155:1/erc721:…/…`, `erc1155`) read the token's metadata and return its image.
  *   They resolve only on the client's own chain, and only when the name's ETH address owns the
  *   token (ENSIP-12): `ownerOf` for ERC-721, a non-zero balance for ERC-1155.

@@ -7,6 +7,14 @@ import { InvalidInputError } from "../errors/classes/InvalidInputError.js";
 /**
  * Registry role bits from contracts-v2 v1.0.1 (`canTransfer` is `1n << 28n`).
  *
+ * **Example** (Reading a registry role)
+ *
+ * ```ts
+ * import { Role } from "@ensforge/sdk"
+ *
+ * const canRenew = Role.registry.renew
+ * ```
+ *
  * @stability stable
  * @category roles
  * @since 1.0.0
@@ -15,6 +23,14 @@ export const registry: typeof Roles.registry = Roles.registry;
 
 /**
  * PermissionedResolver role bits from contracts-v2 v1.0.1.
+ *
+ * **Example** (Reading a resolver role)
+ *
+ * ```ts
+ * import { Role } from "@ensforge/sdk"
+ *
+ * const canSetText = Role.resolver.setText
+ * ```
  *
  * @stability stable
  * @category roles
@@ -69,6 +85,16 @@ export const from = (names: readonly Name[]): bigint =>
 /**
  * Whether `bitmap` has every role in `names`.
  *
+ * **Example** (Checking roles)
+ *
+ * ```ts
+ * import { Role } from "@ensforge/sdk"
+ *
+ * const bitmap = Role.from(["setText", "setAddr"])
+ * Role.has(bitmap, "setText")                // true
+ * Role.has(bitmap, ["setText", "setAddr"])  // true
+ * ```
+ *
  * @throws `Errors.InvalidInputError` (`INVALID_ROLES`) for unknown role names.
  * @stability stable
  * @category roles
@@ -81,6 +107,14 @@ export const has = (bitmap: bigint, names: Name | readonly Name[]): boolean => {
 
 /**
  * Names of the roles set in `bitmap` for a registry or resolver.
+ *
+ * **Example** (Listing roles)
+ *
+ * ```ts
+ * import { Role } from "@ensforge/sdk"
+ *
+ * Role.toNames(Role.from(["setText"]), "resolver") // ["setText"]
+ * ```
  *
  * @stability stable
  * @category roles
@@ -98,6 +132,14 @@ export const toNames = (bitmap: bigint, target: Target): readonly Name[] => {
 
 /**
  * Admin role that grants and revokes `name`, e.g. `setResolver` → `setResolverAdmin`.
+ *
+ * **Example** (Granting a role with its admin)
+ *
+ * ```ts
+ * import { Role } from "@ensforge/sdk"
+ *
+ * const bitmap = Role.from(["setText", Role.admin("setText")])
+ * ```
  *
  * @stability stable
  * @category roles

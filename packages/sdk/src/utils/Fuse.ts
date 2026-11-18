@@ -39,6 +39,14 @@ export type Decoded = { readonly [name in Name]: boolean };
 /**
  * Fuse mask with every fuse in `names` burned.
  *
+ * **Example** (Building a fuse mask)
+ *
+ * ```ts
+ * import { Fuse } from "@ensforge/sdk"
+ *
+ * const mask = Fuse.from(["cannotUnwrap", "cannotSetResolver"])
+ * ```
+ *
  * @throws `Errors.InvalidInputError` (`INVALID_RECORD_VALUE`) for unknown fuse names.
  * @stability stable
  * @category wrapper
@@ -55,6 +63,14 @@ export const from = (names: readonly Name[]): number =>
 /**
  * Whether `name` is burned in `mask`.
  *
+ * **Example** (Checking one fuse)
+ *
+ * ```ts
+ * import { Fuse } from "@ensforge/sdk"
+ *
+ * const locked = Fuse.has(Fuse.from(["cannotUnwrap"]), "cannotUnwrap")
+ * ```
+ *
  * @stability stable
  * @category wrapper
  * @since 1.0.0
@@ -63,6 +79,14 @@ export const has = (mask: number, name: Name): boolean => (mask & fuses[name]) =
 
 /**
  * Every fuse in `mask`, by name.
+ *
+ * **Example** (Reading a fuse mask)
+ *
+ * ```ts
+ * import { Fuse } from "@ensforge/sdk"
+ *
+ * const { cannotUnwrap, cannotTransfer } = Fuse.decode(Fuse.from(["cannotUnwrap"]))
+ * ```
  *
  * @stability stable
  * @category wrapper

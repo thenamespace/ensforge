@@ -14,6 +14,14 @@ const count = (value: number | bigint): bigint => {
 /**
  * `n` days in seconds.
  *
+ * **Example** (Extending by a month)
+ *
+ * ```ts
+ * import { Duration } from "@ensforge/sdk"
+ *
+ * await ens.registration.renew({ names: "alice.eth", duration: Duration.days(30) })
+ * ```
+ *
  * @throws `Errors.InvalidInputError` (`INVALID_DURATION`) for negative or fractional values.
  * @stability stable
  * @category durations

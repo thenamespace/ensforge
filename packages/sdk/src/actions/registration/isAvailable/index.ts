@@ -15,7 +15,7 @@ import * as Impl from "./effect.js";
  *
  * - Every new `.eth` name is registered on ENSv2, including names that expired on ENSv1, so one
  *   check covers both.
- * - Names in their grace period are not available; only their owner can renew them.
+ * - Names in their grace period are not available; anyone can renew them, and the name is available again once the grace period ends.
  * - Labels the price oracle rejects (for example shorter than 3 characters) are not available.
  *
  * **Example** (Checking a name)
