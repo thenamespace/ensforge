@@ -99,6 +99,7 @@ export type Client<actions extends object = {}> = actions & ClientBase<actions>;
  * @since 1.0.0
  */
 export interface ClientBase<actions extends object = {}> {
+  /** The chain the client reads and writes ENS on. */
   readonly chain: { readonly id: number; readonly name: string };
   /** Default signer address, or `undefined` without a wallet. */
   readonly account: Address | undefined;
@@ -106,6 +107,7 @@ export interface ClientBase<actions extends object = {}> {
   readonly deployment: Deployments.Profile;
   /** The viem client used for reads, as an escape hatch. */
   readonly publicClient: ViemClient;
+  /** The configuration the client was created with. */
   readonly config: Config;
   /** Adds action groups; returns a new client. */
   readonly extend: <const added extends object>(
