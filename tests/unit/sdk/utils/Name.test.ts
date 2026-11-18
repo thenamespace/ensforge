@@ -14,13 +14,19 @@ describe("Name.normalize", () => {
     assert.strictEqual(Name.normalize(input), expected);
   });
 
-  it.each(["nick..eth", `[${"AB".repeat(32)}].eth`, `[${"ab".repeat(31)}].eth`])(
-    "rejects %j with INVALID_NAME",
-    (input) => {
-      expectThrow(() => Name.normalize(input), { _tag: "InvalidInputError", code: "INVALID_NAME" });
-      assert.isFalse(Name.isValid(input));
-    },
-  );
+  // The root is `""`; ensjs's `[root]` notation is not a name.
+  it.each([
+    "nick..eth",
+    `[${"AB".repeat(32)}].eth`,
+    `[0x${"ab".repeat(32)}].eth`,
+    `[${"ab".repeat(31)}].eth`,
+    `[${"ab".repeat(33)}].eth`,
+    "[root]",
+    "[root].eth",
+  ])("rejects %j with INVALID_NAME", { meta: { cases: ["H09", "H15"] } }, (input) => {
+    expectThrow(() => Name.normalize(input), { _tag: "InvalidInputError", code: "INVALID_NAME" });
+    assert.isFalse(Name.isValid(input));
+  });
 });
 
 describe("Name.labelhash", () => {
@@ -38,12 +44,22 @@ describe("Name DNS encoding", () => {
     assert.strictEqual(Name.dnsDecode(Name.dnsEncode(name)), name);
   });
 
-  it.each(["0x", "0x03616263", "0x036162630000", "0x0500"] as const)(
+  it.each(["0x", "0x03616263", "0x036162630000", "0x0500", "0x03612e6200"] as const)(
     "dnsDecode rejects malformed %s",
+    { meta: { cases: ["H07"] } },
     (data) => {
       expectThrow(() => Name.dnsDecode(data), { _tag: "InvalidInputError", code: "INVALID_NAME" });
     },
   );
+
+  // 0xC0 and up would be a compression pointer in DNS messages; names never compress.
+  it("dnsDecode reads every length byte as a length", { meta: { cases: ["H08"] } }, () => {
+    for (const length of [1, 63, 64, 192, 255]) {
+      const label = "a".repeat(length);
+      const data = `0x${length.toString(16).padStart(2, "0")}${"61".repeat(length)}00` as const;
+      assert.strictEqual(Name.dnsDecode(data), label);
+    }
+  });
 });
 
 describe("Name.parse", () => {

@@ -124,7 +124,8 @@ export const dnsEncode = (name: string): Hex => bytesToHex(packetToBytes(normali
  * Name.dnsDecode(Name.dnsEncode("nick.eth")) // "nick.eth"
  * ```
  *
- * @throws `Errors.InvalidInputError` (`INVALID_NAME`) when the bytes are not a DNS-encoded name.
+ * @throws `Errors.InvalidInputError` (`INVALID_NAME`) when the bytes are not a DNS-encoded name, or
+ * a label contains a dot.
  * @category names
  * @since 1.0.0
  */
@@ -141,7 +142,10 @@ export const dnsDecode = (data: Hex): string => {
     }
     const end = offset + 1 + length;
     if (end > bytes.length) break;
-    labels.push(bytesToString(bytes.subarray(offset + 1, end)));
+    // A label with a dot would read back as two labels (NameCoder refuses it too).
+    const label = bytesToString(bytes.subarray(offset + 1, end));
+    if (label.includes(".")) break;
+    labels.push(label);
     offset = end;
   }
   throw new InvalidInputError({ code: "INVALID_NAME", input: data, field: "DNS-encoded name" });
