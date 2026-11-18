@@ -1,4 +1,9 @@
-/** Legacy ETH-only address resolver profile. */
+/**
+ * Legacy ETH-only address resolver profile.
+ *
+ * @stability stable
+ * @since 1.0.0
+ */
 export const addrResolverAbi = [
   {
     type: "event",
@@ -18,9 +23,20 @@ export const addrResolverAbi = [
   },
 ] as const;
 
+/**
+ * ERC-165 interface ID of {@link addrResolverAbi}.
+ *
+ * @stability stable
+ * @since 1.0.0
+ */
 export const addrResolverInterfaceId = "0x3b3b57de" as const;
 
-/** ENSIP-9 multicoin address resolver profile. */
+/**
+ * ENSIP-9 multicoin address resolver profile.
+ *
+ * @stability stable
+ * @since 1.0.0
+ */
 export const addressResolverAbi = [
   {
     type: "event",
@@ -44,9 +60,20 @@ export const addressResolverAbi = [
   },
 ] as const;
 
+/**
+ * ERC-165 interface ID of {@link addressResolverAbi}.
+ *
+ * @stability stable
+ * @since 1.0.0
+ */
 export const addressResolverInterfaceId = "0xf1cb7e06" as const;
 
-/** Optional address-presence capability used by current ENS resolvers. */
+/**
+ * Optional address-presence capability used by current ENS resolvers.
+ *
+ * @stability stable
+ * @since 1.0.0
+ */
 export const hasAddressResolverAbi = [
   {
     type: "function",
@@ -60,4 +87,10 @@ export const hasAddressResolverAbi = [
   },
 ] as const;
 
+/**
+ * ERC-165 interface ID of {@link hasAddressResolverAbi}.
+ *
+ * @stability stable
+ * @since 1.0.0
+ */
 export const hasAddressResolverInterfaceId = "0x32f111d7" as const;

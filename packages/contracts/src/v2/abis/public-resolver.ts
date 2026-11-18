@@ -1,4 +1,12 @@
-/** ABI from the pinned Sepolia deployment artifact. */
+/**
+ * Shared public resolver for ENSv2 names.
+ *
+ * Superset of the mainnet and Sepolia deployments at contracts-v2 v1.0.1.
+ *
+ * @see https://github.com/ensdomains/contracts-v2/blob/v1.0.1/contracts/src/resolver/PublicResolverV2.sol
+ * @stability stable
+ * @since 1.0.0
+ */
 export const publicResolverV2Abi = [
   {
     inputs: [
@@ -57,6 +65,22 @@ export const publicResolverV2Abi = [
       },
     ],
     name: "OffsetOutOfBoundsError",
+    type: "error",
+  },
+  {
+    inputs: [
+      {
+        internalType: "contract IRegistry",
+        name: "registry",
+        type: "address",
+      },
+      {
+        internalType: "bytes",
+        name: "errorData",
+        type: "bytes",
+      },
+    ],
+    name: "ResolutionError",
     type: "error",
   },
   {

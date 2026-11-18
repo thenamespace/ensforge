@@ -1,0 +1,43 @@
+import { Effect } from "effect";
+
+import type { Address } from "viem";
+
+import type { Client } from "../../../client/types.js";
+import type { AnyError } from "../../../errors/types.js";
+import * as Action from "../../../internal/action/index.js";
+import { resolveAvatar } from "../../../internal/avatar/resolve.js";
+import { resolveGateways } from "../../../internal/gateways.js";
+import { readSingleRecord } from "../../../internal/records/single.js";
+import type { getAvatar as Promises } from "./index.js";
+
+/** @internal Implementation of `Actions.record.getAvatar`. */
+export const getAvatar = Effect.fn("ensforge.record.getAvatar")(
+  function* (
+    client: Client,
+    options: Promises.Options,
+  ): Effect.fn.Return<Promises.ReturnType, AnyError> {
+    // The ETH address is read with the record: NFT avatars must belong to it.
+    const record = yield* readSingleRecord(
+      client,
+      { ...options, selection: { texts: ["avatar"], addresses: ["eth"] }, resource: "avatar" },
+      (records) => {
+        const avatar = records.texts?.["avatar"] ?? null;
+        // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- the `addresses` selection yields an address or null per coin type
+        const owner = (records.addresses as Record<string, Address | null>).eth ?? null;
+        return avatar === null ? null : { avatar, owner };
+      },
+    );
+    if (record === null) return null;
+
+    const resolved = resolveAvatar(client, record.avatar, {
+      gateways: resolveGateways(options.gateways, client.config.gateways),
+      timeout: options.timeout ?? 10_000,
+      owner: record.owner,
+    });
+    // Without `strict`, an avatar that cannot be loaded (dead gateway, bad metadata) is `null`.
+    return yield* options.strict === true
+      ? resolved
+      : resolved.pipe(Effect.orElseSucceed(() => null as string | null));
+  },
+  Action.withContext("record.getAvatar", { contractKind: "resolver" }),
+);

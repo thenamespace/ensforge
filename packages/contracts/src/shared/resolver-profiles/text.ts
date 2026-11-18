@@ -1,3 +1,9 @@
+/**
+ * ENSIP-5 text record resolver profile.
+ *
+ * @stability stable
+ * @since 1.0.0
+ */
 export const textResolverAbi = [
   {
     type: "event",
@@ -22,4 +28,10 @@ export const textResolverAbi = [
   },
 ] as const;
 
+/**
+ * ERC-165 interface ID of {@link textResolverAbi}.
+ *
+ * @stability stable
+ * @since 1.0.0
+ */
 export const textResolverInterfaceId = "0x59d1d43c" as const;

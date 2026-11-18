@@ -1,4 +1,12 @@
-/** ABI from the pinned Sepolia deployment artifact. */
+/**
+ * Implementation of registries for migrated NameWrapper names.
+ *
+ * Superset of the mainnet and Sepolia deployments at contracts-v2 v1.0.1.
+ *
+ * @see https://github.com/ensdomains/contracts-v2/blob/v1.0.1/contracts/src/registry/WrapperRegistry.sol
+ * @stability stable
+ * @since 1.0.0
+ */
 export const wrapperRegistryV2Abi = [
   {
     inputs: [
@@ -92,6 +100,17 @@ export const wrapperRegistryV2Abi = [
       },
     ],
     name: "CannotSetPastExpiry",
+    type: "error",
+  },
+  {
+    inputs: [
+      {
+        internalType: "bytes",
+        name: "dns",
+        type: "bytes",
+      },
+    ],
+    name: "DNSDecodingFailed",
     type: "error",
   },
   {
@@ -385,6 +404,11 @@ export const wrapperRegistryV2Abi = [
       },
     ],
     name: "LabelExpired",
+    type: "error",
+  },
+  {
+    inputs: [],
+    name: "LabelIsEmpty",
     type: "error",
   },
   {
@@ -1669,16 +1693,6 @@ export const wrapperRegistryV2Abi = [
         name: "parentRegistry",
         type: "address",
       },
-      {
-        internalType: "string",
-        name: "childLabel",
-        type: "string",
-      },
-      {
-        internalType: "uint256",
-        name: "roleBitmap",
-        type: "uint256",
-      },
     ],
     name: "initialize",
     outputs: [],
@@ -1738,7 +1752,7 @@ export const wrapperRegistryV2Abi = [
         type: "bool",
       },
     ],
-    stateMutability: "pure",
+    stateMutability: "view",
     type: "function",
   },
   {
@@ -2326,6 +2340,34 @@ export const wrapperRegistryV2Abi = [
       },
     ],
     stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "bytes32",
+        name: "node",
+        type: "bytes32",
+      },
+      {
+        internalType: "contract IRegistry",
+        name: "parentRegistry",
+        type: "address",
+      },
+      {
+        internalType: "string",
+        name: "childLabel",
+        type: "string",
+      },
+      {
+        internalType: "uint256",
+        name: "roleBitmap",
+        type: "uint256",
+      },
+    ],
+    name: "initialize",
+    outputs: [],
+    stateMutability: "nonpayable",
     type: "function",
   },
 ] as const;

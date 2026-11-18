@@ -1,0 +1,46 @@
+# The fast lane, shared by CI: formatting, lint, types, builds, verify, bundle budgets, the unit
+# and type tests, package metadata, and a security audit of the workflows. Network- and
+# chain-free; the devnet, fuzz, services, fork and live lanes run in _lanes.yml.
+name: Check
+
+on:
+  workflow_call:
+    inputs:
+      timeout-minutes:
+        description: Timeout of the check job
+        type: number
+        default: 20
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: ${{ inputs.timeout-minutes }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+        with:
+          cache: pnpm
+      - run: pnpm ci:check
+        env:
+          ENSFORGE_TEST_RUNS: "1000"
+      - run: pnpm pack:check
+
+  zizmor:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      # Annotations instead of code scanning: SARIF uploads would need `security-events: write`.
+      - uses: zizmorcore/zizmor-action@v0.8.1
+        with:
+          version: 1.32.0
+          config: .github/zizmor.yml
+          advanced-security: false
+          annotations: true

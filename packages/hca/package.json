@@ -1,16 +1,16 @@
 {
   "name": "@ensforge/hca",
   "version": "0.6.1",
-  "description": "Typed execution adapters and persistence for ENS HCA accounts",
+  "description": "ENS Hosted Contract Accounts: one-transaction writes, sessions and gasless execution",
   "keywords": [
+    "account-abstraction",
+    "effect",
     "ens",
     "ethereum",
-    "name-service",
-    "sdk",
+    "hca",
+    "sessions",
     "typescript",
-    "viem",
-    "wagmi",
-    "web3"
+    "viem"
   ],
   "homepage": "https://ensforge.com",
   "bugs": "https://github.com/thenamespace/ensforge/issues",
@@ -21,30 +21,23 @@
     "directory": "packages/hca"
   },
   "files": [
+    "CHANGELOG.md",
     "dist",
-    "patches"
+    "src"
   ],
   "type": "module",
   "sideEffects": false,
-  "imports": {
-    "#/*": "./src/*.ts"
-  },
   "exports": {
     ".": {
       "workspace-source": "./src/index.ts",
       "default": "./dist/index.js"
     },
-    "./pimlico": {
-      "workspace-source": "./src/providers/pimlico.ts",
-      "default": "./dist/pimlico.js"
+    "./effect": {
+      "workspace-source": "./src/effect.ts",
+      "default": "./dist/effect.js"
     },
-    "./remote": {
-      "workspace-source": "./src/remote/index.ts",
-      "default": "./dist/remote.js"
-    },
-    "./rhinestone": {
-      "workspace-source": "./src/providers/rhinestone.ts",
-      "default": "./dist/rhinestone.js"
+    "./internal/*": {
+      "workspace-source": "./src/*.ts"
     },
     "./package.json": "./package.json"
   },
@@ -54,43 +47,45 @@
     },
     "exports": {
       ".": "./dist/index.js",
-      "./pimlico": "./dist/pimlico.js",
-      "./remote": "./dist/remote.js",
-      "./rhinestone": "./dist/rhinestone.js",
+      "./effect": "./dist/effect.js",
       "./package.json": "./package.json"
     },
     "access": "public",
     "provenance": true
   },
   "scripts": {
-    "build": "tsdown",
-    "dev": "tsdown --watch",
-    "lint": "oxlint --deny-warnings .",
+    "build": "ensforge-dev build",
+    "dev": "ensforge-dev build --watch",
+    "lint": "oxlint -c ../../.config/oxlint.config.ts --deny-warnings .",
     "typecheck": "tsc --noEmit",
     "pack:check": "publint && attw --pack . --profile esm-only",
-    "prepack": "pnpm build"
+    "verify": "ensforge-dev verify",
+    "api:report": "ensforge-dev api-report",
+    "codegen": "ensforge-dev codegen"
   },
   "dependencies": {
     "@ensforge/contracts": "workspace:*",
-    "@ensforge/core": "workspace:*"
+    "@ensforge/sdk": "workspace:*"
   },
   "devDependencies": {
-    "@rhinestone/sdk": "1.8.0",
-    "permissionless": "0.4.0",
+    "@ensforge/tools": "workspace:*",
     "viem": "catalog:"
   },
   "peerDependencies": {
-    "@rhinestone/sdk": "1.8.0",
-    "effect": "^4.0.0",
-    "permissionless": "^0.4.0",
-    "viem": "^2.49.0"
+    "effect": "^4.1.4",
+    "viem": "^2.57.0"
   },
-  "peerDependenciesMeta": {
-    "@rhinestone/sdk": {
-      "optional": true
-    },
-    "permissionless": {
-      "optional": true
-    }
+  "engines": {
+    "node": ">=20.19"
+  },
+  "ensforge": {
+    "api": [
+      ".",
+      "./effect"
+    ],
+    "effectFree": [
+      "."
+    ],
+    "codegen": "extension"
   }
 }

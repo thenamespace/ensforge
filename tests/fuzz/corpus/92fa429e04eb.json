@@ -1,0 +1,113 @@
+{
+  "seed": 150709994,
+  "failure": "step 8 ({\"kind\":\"role\",\"name\":1,\"actor\":0,\"grantee\":1,\"grant\":true}): permission.check(fuzzbeta.eth, \"transfer\", alice) says allowed, but name.transfer.simulate fails TRANSFER_DISALLOWED",
+  "commands": [
+    {
+      "kind": "register",
+      "name": 1,
+      "actor": 0,
+      "years": 2,
+      "url": false
+    },
+    {
+      "kind": "operator",
+      "actor": 0,
+      "operator": 0,
+      "approved": false
+    },
+    {
+      "kind": "setResolver",
+      "name": 0,
+      "actor": 0,
+      "clear": false
+    },
+    {
+      "kind": "register",
+      "name": 0,
+      "actor": 0,
+      "years": 2,
+      "url": false
+    },
+    {
+      "kind": "migrate",
+      "name": 0,
+      "actor": 0
+    },
+    {
+      "kind": "wrapper",
+      "name": 0,
+      "actor": 4,
+      "action": "wrap",
+      "fuse": 4
+    },
+    {
+      "kind": "renew",
+      "name": 2,
+      "actor": 4,
+      "years": 2
+    },
+    {
+      "kind": "wrapper",
+      "name": 2,
+      "actor": 2,
+      "action": "wrap",
+      "fuse": 4
+    },
+    {
+      "kind": "role",
+      "name": 1,
+      "actor": 0,
+      "grantee": 1,
+      "grant": true
+    },
+    {
+      "kind": "setText",
+      "name": 1,
+      "actor": 5,
+      "value": 0
+    },
+    {
+      "kind": "register",
+      "name": 2,
+      "actor": 0,
+      "years": 2,
+      "url": true
+    },
+    {
+      "kind": "wait",
+      "name": 3,
+      "boundary": "day",
+      "offset": -1
+    },
+    {
+      "kind": "transfer",
+      "name": 2,
+      "actor": 0,
+      "to": 3
+    },
+    {
+      "kind": "setText",
+      "name": 4,
+      "actor": 2,
+      "value": 5
+    },
+    {
+      "kind": "operator",
+      "actor": 1,
+      "operator": 0,
+      "approved": false
+    },
+    {
+      "kind": "operator",
+      "actor": 4,
+      "operator": 2,
+      "approved": false
+    },
+    {
+      "kind": "operator",
+      "actor": 4,
+      "operator": 1,
+      "approved": true
+    }
+  ]
+}

@@ -1,0 +1,33 @@
+{
+  "$schema": "https://turborepo.com/schema.json",
+  "tasks": {
+    "build": {
+      "dependsOn": ["^build"],
+      "outputs": ["dist/**"]
+    },
+    "dev": {
+      "cache": false,
+      "persistent": true
+    },
+    "lint": {
+      "dependsOn": ["^build", "^lint"],
+      "inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/.config/oxlint.config.ts"],
+      "outputs": []
+    },
+    "pack:check": {
+      "dependsOn": ["build"],
+      "outputs": []
+    },
+    "typecheck": {
+      "dependsOn": ["^build", "^typecheck"],
+      "outputs": []
+    },
+    "clean": {
+      "cache": false
+    },
+    "verify": {
+      "dependsOn": ["build", "^build"],
+      "outputs": []
+    }
+  }
+}

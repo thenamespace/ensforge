@@ -1,6 +1,9 @@
 /**
  * Complete OffchainDNSResolver ABI from @ensdomains/ens-contracts v1.7.0.
- * Source: contracts/dnsregistrar/OffchainDNSResolver.sol
+ *
+ * @see https://github.com/ensdomains/ens-contracts/blob/v1.7.0/contracts/dnsregistrar/OffchainDNSResolver.sol
+ * @stability stable
+ * @since 1.0.0
  */
 export const offchainDnsResolverV1Abi = [
   {

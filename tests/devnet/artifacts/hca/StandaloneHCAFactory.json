@@ -1,0 +1,172 @@
+{
+  "abi": [
+    {
+      "inputs": [
+        {
+          "internalType": "contract IVerifiableFactory",
+          "name": "verifiableFactory",
+          "type": "address"
+        },
+        { "internalType": "address", "name": "owner_", "type": "address" }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "constructor"
+    },
+    { "inputs": [], "name": "HCAImplementationCannotBeZero", "type": "error" },
+    {
+      "inputs": [{ "internalType": "address", "name": "hcaImplementation", "type": "address" }],
+      "name": "HCAImplementationNotApproved",
+      "type": "error"
+    },
+    {
+      "inputs": [{ "internalType": "address", "name": "hca", "type": "address" }],
+      "name": "HCAOwnerUnavailable",
+      "type": "error"
+    },
+    {
+      "inputs": [{ "internalType": "address", "name": "owner", "type": "address" }],
+      "name": "OwnableInvalidOwner",
+      "type": "error"
+    },
+    {
+      "inputs": [{ "internalType": "address", "name": "account", "type": "address" }],
+      "name": "OwnableUnauthorizedAccount",
+      "type": "error"
+    },
+    { "inputs": [], "name": "OwnerCannotBeZero", "type": "error" },
+    {
+      "inputs": [
+        { "internalType": "address", "name": "expectedImplementation", "type": "address" },
+        { "internalType": "address", "name": "actualImplementation", "type": "address" }
+      ],
+      "name": "UnexpectedHCAImplementation",
+      "type": "error"
+    },
+    {
+      "inputs": [
+        { "internalType": "address", "name": "expectedOwner", "type": "address" },
+        { "internalType": "address", "name": "actualOwner", "type": "address" }
+      ],
+      "name": "UnexpectedHCAOwner",
+      "type": "error"
+    },
+    { "inputs": [], "name": "VerifiableFactoryCannotBeZero", "type": "error" },
+    {
+      "anonymous": false,
+      "inputs": [
+        { "indexed": true, "internalType": "address", "name": "hca", "type": "address" },
+        { "indexed": true, "internalType": "address", "name": "owner", "type": "address" },
+        { "indexed": true, "internalType": "address", "name": "implementation", "type": "address" },
+        { "indexed": false, "internalType": "uint256", "name": "userSalt", "type": "uint256" }
+      ],
+      "name": "HCADeployed",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        { "indexed": true, "internalType": "address", "name": "implementation", "type": "address" },
+        { "indexed": true, "internalType": "bool", "name": "approved", "type": "bool" }
+      ],
+      "name": "ImplementationApprovalChanged",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        { "indexed": true, "internalType": "address", "name": "previousOwner", "type": "address" },
+        { "indexed": true, "internalType": "address", "name": "newOwner", "type": "address" }
+      ],
+      "name": "OwnershipTransferred",
+      "type": "event"
+    },
+    {
+      "inputs": [],
+      "name": "VERIFIABLE_FACTORY",
+      "outputs": [{ "internalType": "contract IVerifiableFactory", "name": "", "type": "address" }],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [{ "internalType": "address", "name": "implementation", "type": "address" }],
+      "name": "approvedImplementations",
+      "outputs": [{ "internalType": "bool", "name": "approved", "type": "bool" }],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [{ "internalType": "address", "name": "hca", "type": "address" }],
+      "name": "authorizedOwnerOf",
+      "outputs": [{ "internalType": "address", "name": "owner", "type": "address" }],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        { "internalType": "address", "name": "owner", "type": "address" },
+        { "internalType": "address", "name": "hcaImplementation", "type": "address" },
+        { "internalType": "uint256", "name": "userSalt", "type": "uint256" }
+      ],
+      "name": "deploy",
+      "outputs": [{ "internalType": "address", "name": "hca", "type": "address" }],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        { "internalType": "address", "name": "owner", "type": "address" },
+        { "internalType": "address", "name": "hcaImplementation", "type": "address" },
+        { "internalType": "uint256", "name": "userSalt", "type": "uint256" }
+      ],
+      "name": "deploymentSalt",
+      "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+      "stateMutability": "pure",
+      "type": "function"
+    },
+    {
+      "inputs": [{ "internalType": "address", "name": "hca", "type": "address" }],
+      "name": "hcaOwners",
+      "outputs": [{ "internalType": "address", "name": "owner", "type": "address" }],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "owner",
+      "outputs": [{ "internalType": "address", "name": "", "type": "address" }],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "renounceOwnership",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        { "internalType": "address", "name": "implementation", "type": "address" },
+        { "internalType": "bool", "name": "approved", "type": "bool" }
+      ],
+      "name": "setImplementationApproval",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [{ "internalType": "address", "name": "newOwner", "type": "address" }],
+      "name": "transferOwnership",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    }
+  ],
+  "bytecode": "0x60a060405234801561000f575f5ffd5b50604051610c13380380610c1383398101604081905261002e91610105565b806001600160a01b03811661005c57604051631e4fbdf760e01b81525f600482015260240160405180910390fd5b6100658161009f565b506001600160a01b03821661008d576040516305e07fb560e51b815260040160405180910390fd5b506001600160a01b031660805261013d565b5f80546001600160a01b038381166001600160a01b0319831681178455604051919092169283917f8be0079c531659141344cd1fd0a4f28419497f9722a3daafe3b4186f6b6457e09190a35050565b6001600160a01b0381168114610102575f5ffd5b50565b5f5f60408385031215610116575f5ffd5b8251610121816100ee565b6020840151909250610132816100ee565b809150509250929050565b608051610ab16101625f395f818160c2015281816102a601526104600152610ab15ff3fe608060405234801561000f575f5ffd5b50600436106100b9575f3560e01c806396b78cbe11610072578063e093b82211610058578063e093b822146101a9578063e537b27b146101d4578063f2fde38b146101e7575f5ffd5b806396b78cbe14610156578063a407ffa614610188575f5ffd5b8063715018a6116100a2578063715018a614610114578063862c38c01461011e5780638da5cb5b14610146575f5ffd5b806318ad9b71146100bd5780631b3671bf14610101575b5f5ffd5b6100e47f000000000000000000000000000000000000000000000000000000000000000081565b6040516001600160a01b0390911681526020015b60405180910390f35b6100e461010f366004610939565b6101fa565b61011c610749565b005b6100e461012c366004610977565b60026020525f90815260409020546001600160a01b031681565b5f546001600160a01b03166100e4565b610178610164366004610977565b60016020525f908152604090205460ff1681565b60405190151581526020016100f8565b61019b610196366004610939565b61075c565b6040519081526020016100f8565b6100e46101b7366004610977565b6001600160a01b039081165f908152600260205260409020541690565b61011c6101e2366004610992565b6107ac565b61011c6101f5366004610977565b61082e565b5f6001600160a01b03841661023b576040517f9b15e16f00000000000000000000000000000000000000000000000000000000815260040160405180910390fd5b6001600160a01b038316610262576040516330eb1e6560e01b815260040160405180910390fd5b5f61026e85858561075c565b6040517f17d35d7b000000000000000000000000000000000000000000000000000000008152306004820152602481018290529091507f00000000000000000000000000000000000000000000000000000000000000006001600160a01b0316906317d35d7b90604401602060405180830381865afa1580156102f3573d5f5f3e3d5ffd5b505050506040513d601f19601f8201168201806040525081019061031791906109cd565b6001600160a01b038082165f908152600260205260409020549193508087169116036103435750610742565b6001600160a01b0384165f9081526001602052604090205460ff166103a4576040517f1a127e840000000000000000000000000000000000000000000000000000000081526001600160a01b03851660048201526024015b60405180910390fd5b604080516001600160a01b03871660208201525f910160408051601f19818403018152908290526103d791602401610a16565b60408051601f198184030181529181526020820180517bffffffffffffffffffffffffffffffffffffffffffffffffffffffff167f4b6a141900000000000000000000000000000000000000000000000000000000179052517f5d84121a0000000000000000000000000000000000000000000000000000000081529091506001600160a01b037f00000000000000000000000000000000000000000000000000000000000000001690635d84121a9061049990889086908690600401610a28565b6020604051808303815f875af11580156104b5573d5f5f3e3d5ffd5b505050506040513d601f19601f820116820180604052508101906104d991906109cd565b92505f836001600160a01b03166395c5c9736040518163ffffffff1660e01b81526004016040805180830381865afa158015610517573d5f5f3e3d5ffd5b505050506040513d601f19601f8201168201806040525081019061053b9190610a58565b915050856001600160a01b0316816001600160a01b03161461059c576040517fa6a6d0080000000000000000000000000000000000000000000000000000000081526001600160a01b0380881660048301528216602482015260440161039b565b6001600160a01b038481165f818152600260209081526040808320805473ffffffffffffffffffffffffffffffffffffffff1916958d169590951790945583517f8da5cb5b00000000000000000000000000000000000000000000000000000000815293519193638da5cb5b92600480830193928290030181865afa925050508015610645575060408051601f3d908101601f19168201909252610642918101906109cd565b60015b610686576040517f15bd01c50000000000000000000000000000000000000000000000000000000081526001600160a01b038616600482015260240161039b565b9050876001600160a01b0316816001600160a01b0316146106e6576040517f6a2382770000000000000000000000000000000000000000000000000000000081526001600160a01b03808a1660048301528216602482015260440161039b565b866001600160a01b0316886001600160a01b0316866001600160a01b03167f2f6f28fd05c32050ef9075770f6272930a2c8f0001007bcbac54bbf1084a736b8960405161073591815260200190565b60405180910390a4505050505b9392505050565b610751610884565b61075a5f6108c9565b565b5f81848460405160200161078c939291909283526001600160a01b03918216602084015216604082015260600190565b60408051601f198184030181529190528051602090910120949350505050565b6107b4610884565b6001600160a01b0382166107db576040516330eb1e6560e01b815260040160405180910390fd5b6001600160a01b0382165f81815260016020526040808220805460ff191685151590811790915590519092917fdf2de8f46c1295aaa5eaaea8c458190346b99f2dd813bd0a543dff50c0c4106e91a35050565b610836610884565b6001600160a01b038116610878576040517f1e4fbdf70000000000000000000000000000000000000000000000000000000081525f600482015260240161039b565b610881816108c9565b50565b5f546001600160a01b0316331461075a576040517f118cdaa700000000000000000000000000000000000000000000000000000000815233600482015260240161039b565b5f80546001600160a01b0383811673ffffffffffffffffffffffffffffffffffffffff19831681178455604051919092169283917f8be0079c531659141344cd1fd0a4f28419497f9722a3daafe3b4186f6b6457e09190a35050565b6001600160a01b0381168114610881575f5ffd5b5f5f5f6060848603121561094b575f5ffd5b833561095681610925565b9250602084013561096681610925565b929592945050506040919091013590565b5f60208284031215610987575f5ffd5b813561074281610925565b5f5f604083850312156109a3575f5ffd5b82356109ae81610925565b9150602083013580151581146109c2575f5ffd5b809150509250929050565b5f602082840312156109dd575f5ffd5b815161074281610925565b5f81518084528060208401602086015e5f602082860101526020601f19601f83011685010191505092915050565b602081525f61074260208301846109e8565b6001600160a01b0384168152826020820152606060408201525f610a4f60608301846109e8565b95945050505050565b5f5f60408385031215610a69575f5ffd5b8251915060208301516109c28161092556fea2646970667358221220e69f3cd7e75f1b281480b61d956acab1796008ded7c3df77963c0255287e02f664736f6c634300081b0033",
+  "source": {
+    "kind": "deployment",
+    "repository": "contracts-v2",
+    "file": "contracts/deployments/mainnet/StandaloneHCAFactory.json",
+    "commit": "5026725d2a927f84de3a3a34b5bfe6cb92ae7cbb"
+  }
+}

@@ -1,3 +1,9 @@
+/**
+ * DNS record resolver profile for wire-format DNS records.
+ *
+ * @stability stable
+ * @since 1.0.0
+ */
 export const dnsRecordResolverAbi = [
   {
     type: "event",
@@ -43,4 +49,10 @@ export const dnsRecordResolverAbi = [
   },
 ] as const;
 
+/**
+ * ERC-165 interface ID of {@link dnsRecordResolverAbi}.
+ *
+ * @stability stable
+ * @since 1.0.0
+ */
 export const dnsRecordResolverInterfaceId = "0xa8fa5682" as const;

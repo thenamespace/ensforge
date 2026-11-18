@@ -1,3 +1,9 @@
+/**
+ * ENSIP-4 contract ABI resolver profile.
+ *
+ * @stability stable
+ * @since 1.0.0
+ */
 export const abiResolverAbi = [
   {
     type: "event",
@@ -23,4 +29,10 @@ export const abiResolverAbi = [
   },
 ] as const;
 
+/**
+ * ERC-165 interface ID of {@link abiResolverAbi}.
+ *
+ * @stability stable
+ * @since 1.0.0
+ */
 export const abiResolverInterfaceId = "0x2203ab56" as const;

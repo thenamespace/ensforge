@@ -5,6 +5,7 @@
   "keywords": [
     "abi",
     "contracts",
+    "deployments",
     "ens",
     "ethereum",
     "typescript",
@@ -19,41 +20,35 @@
     "directory": "packages/contracts"
   },
   "files": [
-    "dist"
+    "CHANGELOG.md",
+    "dist",
+    "src"
   ],
   "type": "module",
   "sideEffects": false,
-  "imports": {
-    "#/*": "./src/*.ts"
-  },
   "exports": {
     ".": {
       "workspace-source": "./src/index.ts",
       "default": "./dist/index.js"
     },
-    "./deployments": {
-      "workspace-source": "./src/deployments/index.ts",
-      "default": "./dist/deployments.js"
-    },
-    "./resolver-profiles": {
-      "workspace-source": "./src/shared/resolver-profiles/index.ts",
-      "default": "./dist/resolver-profiles.js"
-    },
     "./shared": {
       "workspace-source": "./src/shared/index.ts",
-      "default": "./dist/shared.js"
+      "default": "./dist/shared/index.js"
     },
     "./v1": {
       "workspace-source": "./src/v1/index.ts",
-      "default": "./dist/v1.js"
+      "default": "./dist/v1/index.js"
     },
     "./v2": {
       "workspace-source": "./src/v2/index.ts",
-      "default": "./dist/v2.js"
+      "default": "./dist/v2/index.js"
     },
     "./v2/experimental/hca": {
       "workspace-source": "./src/v2/experimental/hca/index.ts",
-      "default": "./dist/v2/experimental/hca.js"
+      "default": "./dist/v2/experimental/hca/index.js"
+    },
+    "./internal/*": {
+      "workspace-source": "./src/*.ts"
     },
     "./package.json": "./package.json"
   },
@@ -63,31 +58,41 @@
     },
     "exports": {
       ".": "./dist/index.js",
-      "./deployments": "./dist/deployments.js",
-      "./resolver-profiles": "./dist/resolver-profiles.js",
-      "./shared": "./dist/shared.js",
-      "./v1": "./dist/v1.js",
-      "./v2": "./dist/v2.js",
-      "./v2/experimental/hca": "./dist/v2/experimental/hca.js",
+      "./shared": "./dist/shared/index.js",
+      "./v1": "./dist/v1/index.js",
+      "./v2": "./dist/v2/index.js",
+      "./v2/experimental/hca": "./dist/v2/experimental/hca/index.js",
       "./package.json": "./package.json"
     },
     "access": "public",
     "provenance": true
   },
   "scripts": {
-    "build": "tsdown",
-    "dev": "tsdown --watch",
-    "lint": "oxlint --deny-warnings .",
+    "api:report": "ensforge-dev api-report",
+    "build": "ensforge-dev build",
+    "dev": "ensforge-dev build --watch",
+    "lint": "oxlint -c ../../.config/oxlint.config.ts --deny-warnings .",
     "pack:check": "publint && attw --pack . --profile esm-only",
-    "prepack": "pnpm build",
-    "test": "vitest run --passWithNoTests",
-    "test:watch": "vitest --passWithNoTests",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "verify": "ensforge-dev verify"
   },
   "devDependencies": {
+    "@ensforge/tools": "workspace:*",
     "viem": "catalog:"
   },
   "peerDependencies": {
-    "viem": "^2.49.0"
+    "viem": "^2.57.0"
+  },
+  "engines": {
+    "node": ">=20.19"
+  },
+  "ensforge": {
+    "api": [
+      ".",
+      "./v1",
+      "./v2",
+      "./shared",
+      "./v2/experimental/hca"
+    ]
   }
 }

@@ -1,4 +1,9 @@
-/** Complete IDefaultReverseRegistrar ABI from @ensdomains/ens-contracts v1.7.0. */
+/**
+ * Complete IDefaultReverseRegistrar ABI from @ensdomains/ens-contracts v1.7.0.
+ *
+ * @stability stable
+ * @since 1.0.0
+ */
 export const defaultReverseRegistrarV1InterfaceAbi = [
   {
     inputs: [
@@ -61,7 +66,12 @@ export const defaultReverseRegistrarV1InterfaceAbi = [
   },
 ] as const;
 
-/** Complete DefaultReverseRegistrar ABI from @ensdomains/ens-contracts v1.7.0. */
+/**
+ * Complete DefaultReverseRegistrar ABI from @ensdomains/ens-contracts v1.7.0.
+ *
+ * @stability stable
+ * @since 1.0.0
+ */
 export const defaultReverseRegistrarV1Abi = [
   {
     inputs: [],

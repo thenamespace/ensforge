@@ -1,0 +1,28 @@
+{
+  "extends": "klarity/tsconfig/library",
+  "compilerOptions": {
+    "customConditions": ["workspace-source"],
+    "lib": ["ES2024"],
+    "types": ["node"],
+    "rootDir": ".",
+    "erasableSyntaxOnly": true,
+    "noErrorTruncation": true,
+    "plugins": [
+      {
+        "name": "@effect/language-service",
+        "diagnosticSeverity": {
+          "experimentalApiUsage": "off",
+          "unstableApiUsage": "off"
+        },
+        "keyPatterns": [{ "target": "service", "pattern": "package-identifier" }],
+        "allowedUnstableApis": [
+          "@effect/vitest",
+          "@effect/platform-node",
+          "effect/FileSystem",
+          "effect/Path"
+        ]
+      }
+    ]
+  },
+  "include": ["src/**/*.ts"]
+}

@@ -1,0 +1,32 @@
+{
+  "name": "@ensforge/test-devnet",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Local ENS deployment for ensforge's chain test suites (not published)",
+  "bin": {
+    "ensforge-devnet": "./src/bin.ts"
+  },
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "lint": "oxlint -c ../../.config/oxlint.config.ts --deny-warnings .",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p test"
+  },
+  "dependencies": {
+    "@effect/platform-node": "catalog:",
+    "@ensforge/contracts": "workspace:*",
+    "effect": "catalog:",
+    "get-port": "catalog:",
+    "prool": "catalog:",
+    "viem": "catalog:"
+  },
+  "devDependencies": {
+    "@effect/vitest": "catalog:",
+    "@ensforge/sdk": "workspace:*",
+    "@types/node": "catalog:",
+    "solc-0.8.25": "catalog:",
+    "solc-0.8.27": "catalog:"
+  }
+}

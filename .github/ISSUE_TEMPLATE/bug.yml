@@ -1,42 +1,44 @@
 name: Bug report
-description: Report a reproducible problem with ensforge.
+description: Something in an ensforge package does not work as documented.
+labels: [bug]
 body:
   - type: markdown
     attributes:
       value: |
-        For vulnerabilities, use private reporting in the Security tab. Never paste private keys,
-        session keys, provider API keys, or authenticated RPC URLs.
-  - type: input
-    id: versions
+        Security issues go through [private reporting](https://github.com/thenamespace/ensforge/security/advisories/new), not here.
+        Redact private keys, API keys and RPC URLs with credentials.
+  - type: dropdown
+    id: packages
     attributes:
-      label: Packages and versions
-      description: Include the ensforge packages and Effect, Viem, or provider SDK versions involved.
+      label: Packages
+      multiple: true
+      options:
+        - "@ensforge/sdk"
+        - "@ensforge/react"
+        - "@ensforge/hca"
+        - "@ensforge/contracts"
     validations:
       required: true
   - type: input
-    id: environment
+    id: versions
     attributes:
-      label: Environment
-      description: Runtime or browser, chain ID, protocol version, and built-in or custom deployment.
+      label: Versions
+      description: ensforge, effect, viem and (if used) wagmi or react.
+      placeholder: "@ensforge/sdk 1.0.0, effect 4.1.4, viem 2.57.20"
     validations:
       required: true
   - type: textarea
     id: reproduction
     attributes:
       label: Reproduction
-      description: Provide minimal code or a repository link and the steps to reproduce.
+      description: The smallest code that shows the problem, or a link to a repository. Include the chain and name.
+      render: ts
     validations:
       required: true
   - type: textarea
-    id: expected
+    id: behavior
     attributes:
-      label: Expected behavior
-    validations:
-      required: true
-  - type: textarea
-    id: actual
-    attributes:
-      label: Actual behavior
-      description: Include redacted errors or logs where useful.
+      label: Expected and actual behavior
+      description: What you expected, what happened instead, and the error (`_tag`, `code` and message) if any.
     validations:
       required: true

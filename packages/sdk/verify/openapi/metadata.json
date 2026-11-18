@@ -1,0 +1,16 @@
+{
+  "bigname": {
+    "url": "https://api.bigname.sh/openapi.json",
+    "version": "0.1.0",
+    "build": "d1b71f33a94c7f41398240c5a7d86dea9d7e6e1a",
+    "sha256": "c5aec83dbdb69725eb435ae05efd88a455f243ed2e70f4cbded6266f71c2bc69",
+    "retrievedAt": "2026-11-17T08:10:53.849Z"
+  },
+  "goldsky": {
+    "url": "https://ens-api.goldsky.com/openapi.json",
+    "version": "0.1.0",
+    "build": null,
+    "sha256": "466f03da81f0b4e3747ff34e07d33fb307276bb464986d97d260998df75f5c99",
+    "retrievedAt": "2026-11-17T08:10:55.103Z"
+  }
+}

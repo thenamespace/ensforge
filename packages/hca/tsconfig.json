@@ -3,7 +3,25 @@
   "compilerOptions": {
     "customConditions": ["workspace-source"],
     "rootDir": ".",
-    "types": ["node"]
+    "types": ["node"],
+    "erasableSyntaxOnly": true,
+    "noErrorTruncation": true,
+    "plugins": [
+      {
+        "name": "@effect/language-service",
+        "diagnosticSeverity": {
+          "experimentalApiUsage": "off",
+          "unstableApiUsage": "off"
+        },
+        "keyPatterns": [{ "target": "service", "pattern": "package-identifier" }],
+        "allowedUnstableApis": ["@ensforge/sdk"],
+        "allowedExperimentalApis": [
+          "@ensforge/hca",
+          "@ensforge/contracts/v2/experimental/hca",
+          "@ensforge/contracts/deployments/types#V2Hca"
+        ]
+      }
+    ]
   },
-  "include": ["src/**/*.ts", "test/**/*.ts"]
+  "include": ["src/**/*.ts"]
 }

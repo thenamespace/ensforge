@@ -1,4 +1,12 @@
-/** ABI from the pinned Sepolia deployment artifact. */
+/**
+ * Validator for HCA owner signatures and session keys.
+ *
+ * Superset of the mainnet and Sepolia deployments at contracts-v2 v1.0.1.
+ *
+ * @see https://github.com/ensdomains/contracts-v2/blob/v1.0.1/contracts/src/hca/HCAOwnerAndSessionValidator.sol
+ * @stability experimental
+ * @since 1.0.0
+ */
 export const hcaOwnerAndSessionValidatorV2Abi = [
   {
     inputs: [
@@ -58,22 +66,6 @@ export const hcaOwnerAndSessionValidatorV2Abi = [
     type: "error",
   },
   {
-    inputs: [
-      {
-        internalType: "address",
-        name: "target",
-        type: "address",
-      },
-      {
-        internalType: "bytes4",
-        name: "selector",
-        type: "bytes4",
-      },
-    ],
-    name: "ActionNotAllowed",
-    type: "error",
-  },
-  {
     inputs: [],
     name: "CallerNotIntentExecutor",
     type: "error",
@@ -81,11 +73,6 @@ export const hcaOwnerAndSessionValidatorV2Abi = [
   {
     inputs: [],
     name: "GasRefundNotAllowed",
-    type: "error",
-  },
-  {
-    inputs: [],
-    name: "InvalidOperationEncoding",
     type: "error",
   },
   {
@@ -106,11 +93,6 @@ export const hcaOwnerAndSessionValidatorV2Abi = [
   {
     inputs: [],
     name: "OwnerUnavailable",
-    type: "error",
-  },
-  {
-    inputs: [],
-    name: "PolicyRuleFailed",
     type: "error",
   },
   {

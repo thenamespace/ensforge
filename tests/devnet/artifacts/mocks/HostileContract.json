@@ -1,0 +1,37 @@
+{
+  "abi": [
+    { "stateMutability": "payable", "type": "fallback" },
+    {
+      "inputs": [],
+      "name": "mode",
+      "outputs": [{ "internalType": "enum HostileContract.Mode", "name": "", "type": "uint8" }],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "returnSize",
+      "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        { "internalType": "enum HostileContract.Mode", "name": "newMode", "type": "uint8" }
+      ],
+      "name": "setMode",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [{ "internalType": "uint256", "name": "size", "type": "uint256" }],
+      "name": "setReturnSize",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    }
+  ],
+  "bytecode": "0x6080604052621000006001553480156015575f5ffd5b506101e9806100235f395ff3fe60806040526004361061003e575f3560e01c80630758c8221461008657806321175b4a146100a7578063295a5212146100c6578063def2a2f9146100f4575b5f5460ff1660018160028111156100575761005761013d565b03610062575b61005d565b60028160028111156100765761007661013d565b0361008257600154805ff35b5f5ffd5b348015610091575f5ffd5b506100a56100a0366004610151565b600155565b005b3480156100b2575f5ffd5b506100a56100c1366004610168565b610117565b3480156100d1575f5ffd5b505f546100de9060ff1681565b6040516100eb919061018d565b60405180910390f35b3480156100ff575f5ffd5b5061010960015481565b6040519081526020016100eb565b5f805482919060ff191660018360028111156101355761013561013d565b021790555050565b634e487b7160e01b5f52602160045260245ffd5b5f60208284031215610161575f5ffd5b5035919050565b5f60208284031215610178575f5ffd5b813560038110610186575f5ffd5b9392505050565b60208101600383106101ad57634e487b7160e01b5f52602160045260245ffd5b9190529056fea264697066735822122075637969db947ea56ed70e18f35a4916e4a4c8fdc46e958d7038675baa63079a64736f6c634300081b0033",
+  "source": { "kind": "local", "file": "HostileContract.sol", "contract": "HostileContract" }
+}

@@ -1,3 +1,9 @@
+/**
+ * ERC-165 interface implementer resolver profile.
+ *
+ * @stability stable
+ * @since 1.0.0
+ */
 export const interfaceResolverAbi = [
   {
     type: "event",
@@ -21,4 +27,10 @@ export const interfaceResolverAbi = [
   },
 ] as const;
 
+/**
+ * ERC-165 interface ID of {@link interfaceResolverAbi}.
+ *
+ * @stability stable
+ * @since 1.0.0
+ */
 export const interfaceResolverInterfaceId = "0x124a319c" as const;

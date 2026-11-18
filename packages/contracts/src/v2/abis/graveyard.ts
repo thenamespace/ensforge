@@ -1,4 +1,12 @@
-/** ABI from the pinned Sepolia deployment artifact. */
+/**
+ * Holder of ENSv1 tokens retired by migration.
+ *
+ * Superset of the mainnet and Sepolia deployments at contracts-v2 v1.0.1.
+ *
+ * @see https://github.com/ensdomains/contracts-v2/blob/v1.0.1/contracts/src/migration/Graveyard.sol
+ * @stability stable
+ * @since 1.0.0
+ */
 export const graveyardV2Abi = [
   {
     inputs: [

@@ -1,4 +1,12 @@
-/** ABI from the pinned Sepolia deployment artifact. */
+/**
+ * Resolver that resolves names through the ENSv2 registry tree.
+ *
+ * Superset of the mainnet and Sepolia deployments at contracts-v2 v1.0.1.
+ *
+ * @see https://github.com/ensdomains/contracts-v2/blob/v1.0.1/contracts/src/resolver/ENSV2Resolver.sol
+ * @stability stable
+ * @since 1.0.0
+ */
 export const ensV2ResolverV2Abi = [
   {
     inputs: [
@@ -40,6 +48,11 @@ export const ensV2ResolverV2Abi = [
   {
     inputs: [],
     name: "InvalidBatchGatewayResponse",
+    type: "error",
+  },
+  {
+    inputs: [],
+    name: "InvalidOffchainLookup",
     type: "error",
   },
   {
@@ -87,6 +100,22 @@ export const ensV2ResolverV2Abi = [
       },
     ],
     name: "OffsetOutOfBoundsError",
+    type: "error",
+  },
+  {
+    inputs: [
+      {
+        internalType: "contract IRegistry",
+        name: "registry",
+        type: "address",
+      },
+      {
+        internalType: "bytes",
+        name: "errorData",
+        type: "bytes",
+      },
+    ],
+    name: "ResolutionError",
     type: "error",
   },
   {

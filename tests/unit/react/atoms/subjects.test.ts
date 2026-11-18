@@ -1,0 +1,45 @@
+import { assert, describe, it } from "@effect/vitest";
+import { Array as Arr, String as Str } from "effect";
+
+import { subjectsOf, writeSubjects } from "@ensforge/react/internal/atoms/subjects";
+
+const alice = "0x00000000000000000000000000000000000A11CE";
+const bob = "0x0000000000000000000000000000000000000B0B";
+
+describe("subjectsOf", () => {
+  it.each([
+    [{ name: "Nick.eth" }, { names: ["nick.eth"], addresses: [] }],
+    [{ names: ["a.eth", "A.eth", "b.eth"] }, { names: ["a.eth", "b.eth"], addresses: [] }],
+    [
+      { parent: "ens.eth", owner: alice },
+      { names: ["ens.eth"], addresses: [Str.toLowerCase(alice)] },
+    ],
+    [
+      { address: alice, account: { address: bob } },
+      { names: [], addresses: Arr.map([alice, bob], Str.toLowerCase) },
+    ],
+    [
+      { name: "a..eth", key: "url" },
+      { names: [], addresses: [] },
+    ],
+    [undefined, { names: [], addresses: [] }],
+  ])("reads %j", (options, expected) => {
+    assert.deepStrictEqual(subjectsOf(options), expected);
+  });
+});
+
+describe("writeSubjects", () => {
+  it("adds parents, for subname and registry lists, and the signer", () => {
+    assert.deepStrictEqual(writeSubjects({ name: "pay.alice.eth", to: alice }, bob), {
+      names: ["pay.alice.eth", "alice.eth"],
+      addresses: [Str.toLowerCase(alice), Str.toLowerCase(bob)],
+    });
+  });
+
+  it("lists a parent shared by several names once", () => {
+    assert.deepStrictEqual(writeSubjects({ names: ["a.eth", "b.eth"] }, undefined), {
+      names: ["a.eth", "b.eth", "eth"],
+      addresses: [],
+    });
+  });
+});

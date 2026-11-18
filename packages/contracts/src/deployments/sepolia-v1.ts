@@ -1,7 +1,11 @@
-import type { EnsV1Deployment } from "./types.js";
+import type { V1 } from "./types.js";
 
-/** Legacy ENSv1 contracts retained on Sepolia for compatibility and migration. */
-export const sepoliaV1Deployment = {
+/**
+ * ENSv1 on Sepolia at ens-contracts v1.7.0, kept for compatibility and migration.
+ *
+ * @since 1.0.0
+ */
+export const sepoliaV1 = {
   id: "sepolia-v1",
   chainId: 11155111,
   protocol: "v1",
@@ -21,10 +25,15 @@ export const sepoliaV1Deployment = {
     dnssecOracle: "0xe62E4b6cE018Ad6e916fcC24545e20a33b9d8653",
     offchainDnsResolver: "0x179Be112b24Ad4cFC392eF8924DfA08C20Ad8583",
   },
+  legacyPublicResolvers: [
+    "0x8948458626811dd0c23EB25Cc74291247077cC51",
+    "0x8FADE66B79cC9f707aB26799354482EB93a5B7dD",
+    "0x0CeEC524b2807841739D3B5E161F5bf1430FFA48",
+  ],
   provenance: {
     repository: "https://github.com/ensdomains/ens-contracts",
-    ref: "v1.7.0",
+    release: "v1.7.0",
     commit: "9b034936a42f462fc04bc0a929a419ede5e18d59",
     documentation: "https://docs.ens.domains/learn/deployments/",
   },
-} as const satisfies EnsV1Deployment;
+} as const satisfies V1;

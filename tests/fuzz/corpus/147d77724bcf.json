@@ -1,0 +1,18 @@
+{
+  "seed": 1229662663,
+  "failure": "step 1 ({\"kind\":\"subname\",\"name\":3,\"actor\":3,\"remove\":false}): alice subname.create({\"name\":\"sub.records-v1.eth\"}) was estimated at 252239 gas and used 252251",
+  "commands": [
+    {
+      "kind": "wait",
+      "name": 0,
+      "boundary": "graceEnd",
+      "offset": 0
+    },
+    {
+      "kind": "subname",
+      "name": 3,
+      "actor": 3,
+      "remove": false
+    }
+  ]
+}

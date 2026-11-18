@@ -1,3 +1,9 @@
+/**
+ * ENSIP-7 content hash resolver profile.
+ *
+ * @stability stable
+ * @since 1.0.0
+ */
 export const contenthashResolverAbi = [
   {
     type: "event",
@@ -17,4 +23,10 @@ export const contenthashResolverAbi = [
   },
 ] as const;
 
+/**
+ * ERC-165 interface ID of {@link contenthashResolverAbi}.
+ *
+ * @stability stable
+ * @since 1.0.0
+ */
 export const contenthashResolverInterfaceId = "0xbc1c58d1" as const;

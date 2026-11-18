@@ -1,7 +1,20 @@
 {
   "extends": "klarity/tsconfig/library",
   "compilerOptions": {
-    "rootDir": "src"
+    "rootDir": "src",
+    "erasableSyntaxOnly": true,
+    "noErrorTruncation": true,
+    "plugins": [
+      {
+        "name": "@effect/language-service",
+        "diagnosticSeverity": {
+          "experimentalApiUsage": "off",
+          "unstableApiUsage": "off"
+        },
+        "keyPatterns": [{ "target": "service", "pattern": "package-identifier" }],
+        "allowedExperimentalApis": ["@ensforge/contracts"]
+      }
+    ]
   },
   "include": ["src/**/*.ts"]
 }

@@ -1,4 +1,10 @@
-/** IPermissionedResolver ABI from the pinned ENSv2 deployment source. */
+/**
+ * `IPermissionedResolver` interface ABI at contracts-v2 v1.0.1.
+ *
+ * @see https://github.com/ensdomains/contracts-v2/blob/v1.0.1/contracts/src/resolver/interfaces/IPermissionedResolver.sol
+ * @stability stable
+ * @since 1.0.0
+ */
 export const permissionedResolverV2InterfaceAbi = [
   {
     inputs: [

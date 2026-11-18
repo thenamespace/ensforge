@@ -1,0 +1,22 @@
+{
+  "name": "@ensforge/test-harness",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Shared test harness for ensforge test suites (not published)",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./setup": "./src/setup.ts",
+    "./*": "./src/*.ts"
+  },
+  "scripts": {
+    "lint": "oxlint -c ../../.config/oxlint.config.ts --deny-warnings .",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@effect/vitest": "catalog:",
+    "effect": "catalog:",
+    "viem": "catalog:",
+    "vitest": "catalog:"
+  }
+}

@@ -1,0 +1,37 @@
+# Which packages the PR releases, in the job summary. Informational: tests, docs and private
+# packages need no changeset, so this never fails a PR for a missing one.
+name: Changeset status
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened, ready_for_review]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: changeset-status-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  status:
+    # The version PR consumes the changesets; there is nothing to report.
+    if: >-
+      github.event.pull_request.user.login != 'github-actions[bot]' ||
+      github.event.pull_request.head.repo.full_name != github.repository ||
+      github.head_ref != 'changeset-release/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      # The base commit, with read-only credentials kept so the action can fetch the PR head into
+      # a temporary worktree. Nothing from the PR is installed or run.
+      - uses: actions/checkout@v7 # zizmor: ignore[artipacked]
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          fetch-depth: 0
+      - uses: changesets/action/pr-status@v2.1.2
+        id: status
+      - name: Write the job summary
+        env:
+          STATUS: ${{ steps.status.outputs.comment-body }}
+        run: printf '%s\n' "$STATUS" >> "$GITHUB_STEP_SUMMARY"

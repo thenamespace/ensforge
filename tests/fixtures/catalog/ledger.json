@@ -1,0 +1,2325 @@
+{
+  "L01": {
+    "na": "ENSIP-15 normalization: ens-normalize's behaviour, tested upstream; ensforge only calls it"
+  },
+  "L02": {
+    "na": "ENSIP-15 normalization: ens-normalize's behaviour, tested upstream; ensforge only calls it"
+  },
+  "L03": {
+    "na": "ENSIP-15 normalization: ens-normalize's behaviour, tested upstream; ensforge only calls it"
+  },
+  "L04": {
+    "na": "ENSIP-15 normalization: ens-normalize's behaviour, tested upstream; ensforge only calls it"
+  },
+  "L05": {
+    "na": "ENSIP-15 normalization: ens-normalize's behaviour, tested upstream; ensforge only calls it"
+  },
+  "L06": {
+    "na": "ENSIP-15 normalization: ens-normalize's behaviour, tested upstream; ensforge only calls it"
+  },
+  "L07": {
+    "na": "ENSIP-15 normalization: ens-normalize's behaviour, tested upstream; ensforge only calls it"
+  },
+  "L08": {
+    "na": "ENSIP-15 normalization: ens-normalize's behaviour, tested upstream; ensforge only calls it"
+  },
+  "L09": {
+    "na": "ENSIP-15 normalization: ens-normalize's behaviour, tested upstream; ensforge only calls it"
+  },
+  "L10": {
+    "na": "ENSIP-15 normalization: ens-normalize's behaviour, tested upstream; ensforge only calls it"
+  },
+  "L11": {
+    "na": "ENSIP-15 normalization: ens-normalize's behaviour, tested upstream; ensforge only calls it"
+  },
+  "L12": {
+    "na": "ENSIP-15 normalization: ens-normalize's behaviour, tested upstream; ensforge only calls it"
+  },
+  "L13": {
+    "na": "ENSIP-15 normalization: ens-normalize's behaviour, tested upstream; ensforge only calls it"
+  },
+  "L14": {
+    "na": "ENSIP-15 normalization: ens-normalize's behaviour, tested upstream; ensforge only calls it"
+  },
+  "L15": {
+    "na": "ENSIP-15 normalization: ens-normalize's behaviour, tested upstream; ensforge only calls it"
+  },
+  "L16": {
+    "na": "ENSIP-15 normalization: ens-normalize's behaviour, tested upstream; ensforge only calls it"
+  },
+  "L17": {
+    "na": "ENSIP-15 normalization: ens-normalize's behaviour, tested upstream; ensforge only calls it"
+  },
+  "L18": {
+    "na": "ENSIP-15 normalization: ens-normalize's behaviour, tested upstream; ensforge only calls it"
+  },
+  "L19": {
+    "na": "ENSIP-15 normalization: ens-normalize's behaviour, tested upstream; ensforge only calls it"
+  },
+  "L20": {
+    "na": "ENSIP-15 normalization: ens-normalize's behaviour, tested upstream; ensforge only calls it"
+  },
+  "L21": {
+    "na": "ENSIP-15 normalization: ens-normalize's behaviour, tested upstream; ensforge only calls it"
+  },
+  "L22": {
+    "na": "ENSIP-15 normalization: ens-normalize's behaviour, tested upstream; ensforge only calls it"
+  },
+  "L23": {
+    "na": "ENSIP-15 normalization: ens-normalize's behaviour, tested upstream; ensforge only calls it"
+  },
+  "L24": {
+    "na": "ENSIP-15 normalization: ens-normalize's behaviour, tested upstream; ensforge only calls it"
+  },
+  "L25": {
+    "na": "ENSIP-15 normalization: ens-normalize's behaviour, tested upstream; ensforge only calls it"
+  },
+  "L26": {
+    "na": "ENSIP-15 normalization: ens-normalize's behaviour, tested upstream; ensforge only calls it"
+  },
+  "L27": {
+    "na": "ENSIP-15 normalization: ens-normalize's behaviour, tested upstream; ensforge only calls it"
+  },
+  "L28": {
+    "na": "ENSIP-15 normalization: ens-normalize's behaviour, tested upstream; ensforge only calls it"
+  },
+  "L29": {
+    "na": "ENSIP-15 normalization: ens-normalize's behaviour, tested upstream; ensforge only calls it"
+  },
+  "L30": {
+    "tests": [
+      "tests/integration/test/reads/name.test.ts > normalizes input and rejects names that cannot be normalized"
+    ]
+  },
+  "L31": {
+    "tests": [
+      "tests/integration/test/reads/name.test.ts > normalizes input and rejects names that cannot be normalized"
+    ]
+  },
+  "L32": {
+    "tests": ["tests/integration/test/reads/name.test.ts > hierarchy.label-unnormalized"]
+  },
+  "L33": {
+    "tests": [
+      "tests/integration/test/writes/registration.test.ts > registers the normalized name for input that normalization changes"
+    ]
+  },
+  "L34": {
+    "na": "ENS app bulk-renew look-alike filter; ensforge does not filter user lists"
+  },
+  "H01": {
+    "tests": ["tests/integration/test/reads/name.test.ts > hierarchy.label-255"]
+  },
+  "H02": {
+    "tests": [
+      "tests/integration/test/reads/name.test.ts > hierarchy.label-63",
+      "tests/integration/test/reads/name.test.ts > hierarchy.label-64"
+    ]
+  },
+  "H03": {
+    "tests": [
+      "tests/integration/test/reads/records.test.ts > reads a name with a label over 255 bytes, sent by its labelhash"
+    ]
+  },
+  "H04": {
+    "tests": ["tests/integration/test/reads/name.test.ts > hierarchy.label-with-dot"]
+  },
+  "H05": {
+    "tests": ["tests/integration/test/reads/name.test.ts > hierarchy.label-literal-hex"]
+  },
+  "H06": {
+    "tests": ["tests/integration/test/reads/name.test.ts > hierarchy.label-invalid-utf8"]
+  },
+  "H07": {
+    "tests": [
+      "tests/unit/sdk/utils/Name.test.ts > dnsDecode inverts dnsEncode",
+      "tests/unit/sdk/utils/Name.test.ts > dnsDecode rejects malformed %s"
+    ]
+  },
+  "H08": {
+    "tests": ["tests/unit/sdk/utils/Name.test.ts > dnsDecode reads every length byte as a length"]
+  },
+  "H09": {
+    "tests": [
+      "tests/unit/sdk/utils/Name.test.ts > keeps encoded labels and the root: %j",
+      "tests/unit/sdk/utils/Name.test.ts > rejects %j with INVALID_NAME"
+    ]
+  },
+  "H10": {
+    "tests": [
+      "tests/integration/test/reads/name.test.ts > recovers ENSv2 labels from the LabelStore and leaves unknown ones null"
+    ]
+  },
+  "H11": {
+    "tests": [
+      "tests/integration/test/writes/errors.test.ts > registration.commit refuses an encoded label",
+      "tests/integration/test/writes/errors.test.ts > subname.create refuses an encoded label",
+      "tests/integration/test/writes/errors.test.ts > wrapper.wrap refuses an encoded label"
+    ]
+  },
+  "H12": {
+    "tests": [
+      "tests/unit/sdk/indexer/define.test.ts > infers Basenames for subnames of base.eth, also when its labels are encoded"
+    ]
+  },
+  "H13": {
+    "tests": ["tests/integration/test/reads/name.test.ts > hierarchy.depth-33"]
+  },
+  "H14": {
+    "tests": [
+      "tests/unit/sdk/conformance/invalid-name.test.ts > registration actions refuse top-level names and the root"
+    ]
+  },
+  "H15": {
+    "tests": [
+      "tests/unit/sdk/utils/Name.test.ts > keeps encoded labels and the root: %j",
+      "tests/unit/sdk/utils/Name.test.ts > rejects %j with INVALID_NAME"
+    ]
+  },
+  "H16": {
+    "tests": [
+      "tests/unit/sdk/actions/primaryName/reverse-name.test.ts > spell the address in lowercase hex and the coin type without leading zeros"
+    ]
+  },
+  "H17": {
+    "tests": [
+      "tests/unit/sdk/actions/primaryName/reverse-name.test.ts > spell the address in lowercase hex and the coin type without leading zeros"
+    ]
+  },
+  "H18": {
+    "na": "ensforge reads primary names only for EVM coin types and 20-byte addresses (`INVALID_COIN_TYPE` / `INVALID_ADDRESS`); non-EVM reverse addresses are not exposed"
+  },
+  "H19": {
+    "na": "ensforge never parses reverse names (ENSIP-19 library behaviour); it only builds them (H16, H17)"
+  },
+  "H20": {
+    "tests": [
+      "tests/unit/sdk/indexer/define.test.ts > infers Basenames for subnames of base.eth, also when its labels are encoded"
+    ]
+  },
+  "H21": {
+    "tests": [
+      "tests/integration/test/writes/dns.test.ts > imports a name under a public suffix of several labels"
+    ]
+  },
+  "H22": {
+    "tests": [
+      "tests/integration/test/writes/dns.test.ts > refuses names and proofs the registrar cannot take"
+    ]
+  },
+  "H23": {
+    "tests": ["tests/integration/test/reads/records.test.ts > reads a name of ten 63-byte labels"]
+  },
+  "H24": {
+    "tests": [
+      "tests/integration/test/reads/name.test.ts > v1.subname",
+      "tests/integration/test/reads/registry.test.ts > reads a registry by address, with its parent and canonical name"
+    ]
+  },
+  "H25": {
+    "tests": [
+      "tests/integration/test/reads/resolver.test.ts > resolves through the exact resolver first, then a parent's wildcard"
+    ]
+  },
+  "O01": {
+    "tests": ["tests/integration/test/reads/name.test.ts > v1.old-registry"]
+  },
+  "O02": {
+    "tests": ["tests/integration/test/reads/name.test.ts > v1.old-registry.migrated"]
+  },
+  "O03": {
+    "tests": [
+      "tests/integration/test/reads/name.test.ts > registrant, manager and expiry of ENSv1 names",
+      "tests/integration/test/reads/name.test.ts > v1.unwrapped.transferred",
+      "tests/integration/test/writes/transfers.test.ts > sets and reclaims the ENSv1 manager",
+      "tests/integration/test/writes/transfers.test.ts > transfers each ENSv1 role it is asked to"
+    ]
+  },
+  "O04": {
+    "tests": [
+      "tests/integration/test/reads/name.test.ts > registrant, manager and expiry of ENSv1 names",
+      "tests/integration/test/reads/name.test.ts > v1.unwrapped.registrar-only",
+      "tests/integration/test/writes/transfers.test.ts > sets and reclaims the ENSv1 manager"
+    ]
+  },
+  "O05": {
+    "tests": ["tests/integration/test/reads/name.test.ts > v1.unwrapped.expired"]
+  },
+  "O06": {
+    "tests": ["tests/integration/test/reads/name.test.ts > v1.wrapped.implicit-unwrap"]
+  },
+  "O07": {
+    "tests": [
+      "tests/integration/test/reads/name.test.ts > v1.wrapped.desynced",
+      "tests/integration/test/reads/wrapper.test.ts > withholds what the wrapper withholds once a token expires"
+    ]
+  },
+  "O08": {
+    "tests": ["tests/integration/test/reads/name.test.ts > v1.wrapped.desynced"]
+  },
+  "O09": {
+    "tests": [
+      "tests/integration/test/writes/hierarchy.test.ts > rewrites a wrapped child of an unwrapped parent in the registry, unwrapping it"
+    ]
+  },
+  "O10": {
+    "tests": ["tests/integration/test/reads/name.test.ts > v1.wrapped.sub.unwrapped-parent"]
+  },
+  "O11": {
+    "tests": ["tests/integration/test/reads/name.test.ts > v1.unwrapped.sub.wrapped-parent"]
+  },
+  "O12": {
+    "tests": [
+      "tests/integration/test/reads/name.test.ts > v1.subname.deleted",
+      "tests/integration/test/writes/hierarchy.test.ts > creates, updates and removes ENSv1 subnames"
+    ]
+  },
+  "O13": {
+    "tests": ["tests/integration/test/reads/name.test.ts > v2.reserved.lapsed"]
+  },
+  "O14": {
+    "tests": ["tests/integration/test/reads/name.test.ts > v2.unregistered.renewed"]
+  },
+  "O15": {
+    "tests": [
+      "tests/integration/test/reads/name.test.ts > v2.grace",
+      "tests/integration/test/reads/name.test.ts > v2.expired"
+    ]
+  },
+  "O16": {
+    "tests": ["tests/integration/test/reads/name.test.ts > v2.unregistered"]
+  },
+  "O17": {
+    "tests": [
+      "tests/integration/test/reads/name.test.ts > v2.re-registered",
+      "tests/integration/test/writes/registration.test.ts > re-registers an expired name as a new token, without the old roles"
+    ]
+  },
+  "O18": {
+    "tests": [
+      "tests/integration/test/reads/migration.test.ts > reports each name's route, blockers and state after migrating",
+      "tests/integration/test/reads/name.test.ts > v2.reserved",
+      "tests/integration/test/reads/registration.test.ts > prices renewals through the contract that renews each name",
+      "tests/integration/test/writes/renewal.test.ts > renews a premigrated ENSv1 name through ETHRenewerV1"
+    ]
+  },
+  "O19": {
+    "tests": [
+      "tests/integration/test/reads/migration.test.ts > reports each name's route, blockers and state after migrating",
+      "tests/integration/test/reads/name.test.ts > v1.unwrapped",
+      "tests/integration/test/reads/registration.test.ts > isAvailable agrees with name.get for every .eth second-level name",
+      "tests/integration/test/reads/registration.test.ts > prices renewals through the contract that renews each name",
+      "tests/integration/test/reads/resolver.test.ts > tells which resolvers resolution still reaches",
+      "tests/integration/test/writes/access-matrix.test.ts > record.set as not premigrated",
+      "tests/integration/test/writes/migration.test.ts > refuses blocked names before the wallet is asked"
+    ]
+  },
+  "O20": {
+    "tests": [
+      "tests/integration/test/reads/name.test.ts > v2.linked",
+      "tests/integration/test/reads/registry.test.ts > follows a linked registry from both parents to one registry"
+    ]
+  },
+  "O21": {
+    "tests": [
+      "tests/integration/test/reads/registry.test.ts > follows a linked registry from both parents to one registry"
+    ]
+  },
+  "O22": {
+    "tests": [
+      "tests/integration/test/reads/registry.test.ts > reports a replaced subregistry as unreachable"
+    ]
+  },
+  "O23": {
+    "tests": [
+      "tests/integration/test/reads/name.test.ts > v2.replaced-subregistry",
+      "tests/integration/test/reads/registry.test.ts > reports a replaced subregistry as unreachable"
+    ]
+  },
+  "O24": {
+    "tests": [
+      "tests/integration/test/writes/reverts.test.ts > come from the Universal Resolver, through ensforge's reads"
+    ]
+  },
+  "O25": {
+    "na": "ENSV2Resolver's internal eth override, reached only through ENSV2Resolver; ensforge resolves through the v2 Universal Resolver and does not interpret it"
+  },
+  "O26": {
+    "na": "ensforge resolves through the deployment's Universal Resolver (the v2 proxy whenever ENSv2 is deployed); the v1 UR's ENSV2Resolver path is contract behaviour ensforge never selects"
+  },
+  "O27": {
+    "tests": [
+      "tests/integration/test/writes/migration.test.ts > migrates unwrapped and wrapped names, leaving their ENSv1 husk to the Graveyard"
+    ]
+  },
+  "O28": {
+    "tests": [
+      "tests/integration/test/writes/migration.test.ts > migrates a locked name into a WrapperRegistry, then its locked child"
+    ]
+  },
+  "O29": {
+    "tests": [
+      "tests/integration/test/writes/migration.test.ts > registers an abandoned emancipated child afresh under its migrated parent"
+    ]
+  },
+  "O30": {
+    "tests": [
+      "tests/integration/test/reads/name.test.ts > v2.reserved",
+      "tests/integration/test/writes/migration.test.ts > copies records to a new resolver, keeps the manager, and renews a name in grace first"
+    ]
+  },
+  "O31": {
+    "na": "bigname's tombstone rule needs the ETH registry's unregister role, which no account holds in any devnet profile (a DAO action on mainnet); bigname tests it upstream and ensforge reports bigname's status as given"
+  },
+  "O32": {
+    "tests": [
+      "tests/services/test/indexer/fixtures.test.ts > serves an ENSv1 name without a live ENSv2 entry with its owner and expiry, unresolved"
+    ]
+  },
+  "O33": {
+    "na": "root-only NameWrapper operation ensforge does not expose; the resulting wrapper-owner-0 state reads like O07"
+  },
+  "O34": {
+    "na": "Root contract TLD locking; ensforge exposes no root or TLD ownership writes"
+  },
+  "W01": {
+    "tests": [
+      "tests/integration/test/writes/wrapper.test.ts > changes an expired child's fuses only by recreating it with a new expiry"
+    ]
+  },
+  "W02": {
+    "tests": [
+      "tests/integration/test/writes/hierarchy.test.ts > follows NameWrapper fuse rules for children",
+      "tests/integration/test/writes/wrapper.test.ts > refuses parent-controlled fuses under an unlocked parent, and new fuses on emancipated children"
+    ]
+  },
+  "W03": {
+    "tests": [
+      "tests/integration/test/writes/hierarchy.test.ts > extends an emancipated child's expiry, up to its parent's",
+      "tests/integration/test/writes/wrapper.test.ts > refuses parent-controlled fuses under an unlocked parent, and new fuses on emancipated children"
+    ]
+  },
+  "W04": {
+    "tests": [
+      "tests/integration/test/writes/hierarchy.test.ts > wraps, burns fuses, and refuses what burned fuses forbid"
+    ]
+  },
+  "W05": {
+    "tests": [
+      "tests/integration/test/reads/name.test.ts > v1.wrapped.sub.expired-emancipated",
+      "tests/integration/test/reads/wrapper.test.ts > withholds what the wrapper withholds once a token expires",
+      "tests/integration/test/writes/hierarchy.test.ts > follows NameWrapper fuse rules for children",
+      "tests/integration/test/writes/wrapper.test.ts > updates an expired child its parent still controls, and recreates a lapsed emancipated one"
+    ]
+  },
+  "W06": {
+    "tests": [
+      "tests/integration/test/writes/wrapper.test.ts > lets an emancipated child lapse with its parent"
+    ]
+  },
+  "W07": {
+    "tests": [
+      "tests/integration/test/reads/name.test.ts > v1.wrapped.grace",
+      "tests/integration/test/reads/wrapper.test.ts > withholds what the wrapper withholds once a token expires"
+    ]
+  },
+  "W08": {
+    "tests": [
+      "tests/integration/test/reads/name.test.ts > v1.wrapped.expired",
+      "tests/integration/test/reads/wrapper.test.ts > withholds what the wrapper withholds once a token expires"
+    ]
+  },
+  "W09": {
+    "tests": [
+      "tests/integration/test/reads/access.test.ts > renews wrapped subnames through the parent's authority, or the child's with canExtendExpiry",
+      "tests/integration/test/reads/name.test.ts > v1.wrapped.sub.expired",
+      "tests/integration/test/reads/wrapper.test.ts > withholds what the wrapper withholds once a token expires",
+      "tests/integration/test/writes/wrapper.test.ts > updates an expired child its parent still controls, and recreates a lapsed emancipated one"
+    ]
+  },
+  "W10": {
+    "tests": [
+      "tests/services/test/indexer/fixtures.test.ts > withholds a lapsed wrapped name's owner and fuses, keeping its wrapper expiry"
+    ]
+  },
+  "W11": {
+    "tests": [
+      "tests/integration/test/writes/access-matrix.test.ts > approval.setToken as token approval, CANNOT_APPROVE",
+      "tests/integration/test/writes/migration.test.ts > refuses blocked names before the wallet is asked"
+    ]
+  },
+  "W12": {
+    "tests": [
+      "tests/integration/test/reads/access.test.ts > gives a NameWrapper token approval no say over the name itself",
+      "tests/integration/test/reads/access.test.ts > reads ENSv1 operators, resolver delegates and token approvals",
+      "tests/integration/test/reads/access.test.ts > renews wrapped subnames through the parent's authority, or the child's with canExtendExpiry",
+      "tests/integration/test/writes/access-matrix.test.ts > approval.setToken as token approval by stranger",
+      "tests/integration/test/writes/access-matrix.test.ts > record.set as token-approved"
+    ]
+  },
+  "W13": {
+    "tests": [
+      "tests/integration/test/writes/transfers.test.ts > clears an ENSv1 token approval when the name moves or is unwrapped"
+    ]
+  },
+  "W14": {
+    "tests": [
+      "tests/integration/test/reads/access.test.ts > renews wrapped subnames through the parent's authority, or the child's with canExtendExpiry",
+      "tests/integration/test/writes/hierarchy.test.ts > extends an emancipated child's expiry, up to its parent's"
+    ]
+  },
+  "W15": {
+    "tests": [
+      "tests/integration/test/writes/wrapper.test.ts > renews .eth names through the registrar, not as a wrapped child"
+    ]
+  },
+  "W16": {
+    "tests": [
+      "tests/integration/test/reads/wrapper.test.ts > keeps fuses it has no name for in the mask"
+    ]
+  },
+  "W17": {
+    "tests": [
+      "tests/integration/test/writes/wrapper.test.ts > wraps a .eth name only from its registrant, burning only owner fuses"
+    ]
+  },
+  "W18": {
+    "na": "ensforge DNS-encodes the normalized name itself; callers cannot append bytes"
+  },
+  "W19": {
+    "tests": [
+      "tests/integration/test/writes/wrapper.test.ts > wraps a .eth name only from its registrant, burning only owner fuses"
+    ]
+  },
+  "W20": {
+    "tests": [
+      "tests/integration/test/writes/wrapper.test.ts > wraps a .eth name only from its registrant, burning only owner fuses",
+      "tests/integration/test/writes/wrapper.test.ts > wraps a name for its holder when an operator sends it"
+    ]
+  },
+  "W21": {
+    "tests": [
+      "tests/integration/test/writes/wrapper.test.ts > recreates an expired child that had cannotTransfer burned, with only its new fuses"
+    ]
+  },
+  "W22": {
+    "tests": [
+      "tests/integration/test/writes/wrapper.test.ts > lets a child's owner burn it, unless cannotUnwrap is burned"
+    ]
+  },
+  "W23": {
+    "na": "ensforge does not expose NameWrapper.upgrade; migration goes through the migration controllers"
+  },
+  "W24": {
+    "tests": [
+      "tests/integration/test/reads/name.test.ts > token ID, resource, registry and expiry of ENSv2 names"
+    ]
+  },
+  "W25": {
+    "tests": [
+      "tests/integration/test/writes/transfers.test.ts > refuses a prepared transfer once its token ID regenerates, and transfers it afresh"
+    ]
+  },
+  "W26": {
+    "tests": [
+      "tests/integration/test/writes/access.test.ts > grants root roles with grantRootRoles, regenerating no token"
+    ]
+  },
+  "W27": {
+    "tests": [
+      "tests/integration/test/writes/access.test.ts > refuses a 16th holder of a role, and still transfers the name"
+    ]
+  },
+  "W28": {
+    "tests": [
+      "tests/integration/test/writes/access.test.ts > lets an operator act with the owner's roles, which revoking cannot take away"
+    ]
+  },
+  "W29": {
+    "tests": [
+      "tests/integration/test/reads/access.test.ts > refuses safe transfers of names in a registry that is not emancipated",
+      "tests/integration/test/writes/transfers.test.ts > transfers an ENSv2 name only while it holds canTransferAdmin and is live"
+    ]
+  },
+  "W30": {
+    "tests": [
+      "tests/integration/test/writes/transfers.test.ts > transfers an ENSv2 name only while it holds canTransferAdmin and is live"
+    ]
+  },
+  "W31": {
+    "tests": [
+      "tests/integration/test/writes/transfers.test.ts > transfers an ENSv2 name only while it holds canTransferAdmin and is live"
+    ]
+  },
+  "W32": {
+    "tests": [
+      "tests/integration/test/writes/access.test.ts > grants root roles with grantRootRoles, regenerating no token"
+    ]
+  },
+  "W33": {
+    "tests": [
+      "tests/integration/test/writes/access.test.ts > refuses role grants to no account, and child registries to owners without the role"
+    ]
+  },
+  "W34": {
+    "tests": [
+      "tests/integration/test/writes/access.test.ts > refuses role grants to no account, and child registries to owners without the role"
+    ]
+  },
+  "W35": {
+    "tests": [
+      "tests/integration/test/reads/access.test.ts > reads no roles on an expired ENSv2 name"
+    ]
+  },
+  "W36": {
+    "tests": [
+      "tests/integration/test/writes/access.test.ts > grants roles through any version of a regenerated token ID"
+    ]
+  },
+  "W37": {
+    "na": "ERC-1155 receiver re-entry during mint is contract behaviour (contracts-v2 `mutatingReceiver_*` tests); ensforge reads ownership afterwards as for any transfer (A04)"
+  },
+  "W38": {
+    "tests": [
+      "tests/integration/test/writes/migration.test.ts > migrates a locked name into a WrapperRegistry, then its locked child"
+    ]
+  },
+  "W39": {
+    "tests": [
+      "tests/integration/test/writes/access.test.ts > renews a child with the renew role on it only on registries made before"
+    ]
+  },
+  "R01": {
+    "tests": [
+      "tests/integration/test/reads/resolver.test.ts > resolves through the exact resolver first, then a parent's wildcard"
+    ]
+  },
+  "R02": {
+    "tests": [
+      "tests/integration/test/reads/resolver.test.ts > describes each generation and kind of resolver"
+    ]
+  },
+  "R03": {
+    "tests": [
+      "tests/integration/test/reads/resolver.test.ts > resolves through the exact resolver first, then a parent's wildcard"
+    ]
+  },
+  "R04": {
+    "tests": [
+      "tests/integration/test/reads/resolver.test.ts > resolves through the exact resolver first, then a parent's wildcard"
+    ]
+  },
+  "R05": {
+    "tests": [
+      "tests/integration/test/reads/resolver.test.ts > describes each generation and kind of resolver",
+      "tests/integration/test/reads/resolver.test.ts > reads misbehaving resolvers as missing records, and fails strict reads with a typed error"
+    ]
+  },
+  "R06": {
+    "tests": [
+      "tests/integration/test/reads/resolver.test.ts > reads misbehaving resolvers as missing records, and fails strict reads with a typed error"
+    ]
+  },
+  "R07": {
+    "tests": [
+      "tests/integration/test/reads/resolver.test.ts > reads misbehaving resolvers as missing records, and fails strict reads with a typed error"
+    ]
+  },
+  "R08": {
+    "tests": [
+      "tests/integration/test/reads/resolver.test.ts > reads misbehaving resolvers as missing records, and fails strict reads with a typed error"
+    ]
+  },
+  "R09": {
+    "tests": [
+      "tests/integration/test/reads/resolver.test.ts > reads misbehaving resolvers as missing records, and fails strict reads with a typed error"
+    ]
+  },
+  "R10": {
+    "tests": [
+      "tests/integration/test/reads/ccip.test.ts > keeps the records that answer when another call of the read fails"
+    ]
+  },
+  "R11": {
+    "tests": [
+      "tests/integration/test/reads/resolver.test.ts > describes each generation and kind of resolver",
+      "tests/integration/test/reads/resolver.test.ts > reads ETH from a resolver without ERC-165 through the legacy addr",
+      "tests/integration/test/reads/resolver.test.ts > resolves through the exact resolver first, then a parent's wildcard"
+    ]
+  },
+  "R12": {
+    "tests": [
+      "tests/fork/test/reads/resolution.test.ts > reads only the profiles an old resolver without multicall supports, behind the bridge",
+      "tests/integration/test/reads/resolver.test.ts > describes each generation and kind of resolver",
+      "tests/integration/test/reads/resolver.test.ts > reads ETH from a resolver without ERC-165 through the legacy addr",
+      "tests/integration/test/writes/access-matrix.test.ts > record.set as frozen 2019 resolver"
+    ]
+  },
+  "R13": {
+    "tests": [
+      "tests/integration/test/reads/resolver.test.ts > describes each generation and kind of resolver",
+      "tests/integration/test/reads/resolver.test.ts > reads misbehaving resolvers as missing records, and fails strict reads with a typed error"
+    ]
+  },
+  "R14": {
+    "tests": [
+      "tests/integration/test/reads/resolver.test.ts > describes each generation and kind of resolver",
+      "tests/integration/test/reads/resolver.test.ts > reads misbehaving resolvers as missing records, and fails strict reads with a typed error"
+    ]
+  },
+  "R15": {
+    "tests": [
+      "tests/integration/test/reads/resolver.test.ts > reads misbehaving resolvers as missing records, and fails strict reads with a typed error"
+    ]
+  },
+  "R16": {
+    "na": "ensforge has no composite-resolver or latest-public-resolver concept and never reads a resolver's self-description; `kind` comes from deployment addresses (R02)"
+  },
+  "R17": {
+    "na": "ensforge has no composite-resolver or latest-public-resolver concept and never reads a resolver's self-description; `kind` comes from deployment addresses (R02)"
+  },
+  "R18": {
+    "na": "the repair offer is ENS app UI; ensforge reports the resolver kind (R02)"
+  },
+  "R19": {
+    "tests": [
+      "tests/integration/test/reads/resolver.test.ts > fails with a typed error when a registry reverts during resolution"
+    ]
+  },
+  "R20": {
+    "tests": [
+      "tests/fork/test/reads/resolution.test.ts > unwraps the Universal Resolver's ResolutionError for DNS names (KL-14, KL-29)",
+      "tests/integration/test/reads/resolver.test.ts > fails with a typed error when a registry reverts during resolution"
+    ]
+  },
+  "R21": {
+    "tests": ["tests/integration/test/reads/records.test.ts > reads default and linked records"]
+  },
+  "R22": {
+    "tests": [
+      "tests/integration/test/reads/records.test.ts > reads default and linked records",
+      "tests/integration/test/reads/resolver.test.ts > describes ENSv2 resolvers and their record links",
+      "tests/integration/test/writes/records.test.ts > links a name to another's records, and unlinks it"
+    ]
+  },
+  "R23": {
+    "tests": ["tests/integration/test/reads/records.test.ts > reads default and linked records"]
+  },
+  "R24": {
+    "tests": [
+      "tests/integration/test/reads/resolver.test.ts > refuses calls a PermissionedResolver does not answer"
+    ]
+  },
+  "R25": {
+    "na": "ensforge reads through `resolve(name, multicall)`, which PermissionedResolver answers call by call; its own `multicall` is used only for writes, where atomicity is intended (per-entry failure: R10)"
+  },
+  "R26": {
+    "tests": [
+      "tests/integration/test/reads/resolver.test.ts > describes ENSv2 resolvers and their record links"
+    ]
+  },
+  "R27": {
+    "tests": [
+      "tests/integration/test/writes/access-matrix.test.ts > approval.setDelegate as wrapped owner, to self",
+      "tests/integration/test/writes/access-matrix.test.ts > record.set as wrapped owner"
+    ]
+  },
+  "R28": {
+    "tests": ["tests/integration/test/writes/records.test.ts > clears every record of a name"]
+  },
+  "R29": {
+    "tests": [
+      "tests/integration/test/reads/resolver.test.ts > reports the ENSv1 resolver behind the bridge, and reads the bridge answered"
+    ]
+  },
+  "R30": {
+    "tests": [
+      "tests/integration/test/reads/ccip.test.ts > keeps the records that answer when another call of the read fails"
+    ]
+  },
+  "R31": {
+    "tests": [
+      "tests/integration/test/reads/resolver.test.ts > reports the ENSv1 resolver behind the bridge, and reads the bridge answered"
+    ]
+  },
+  "R32": {
+    "tests": [
+      "tests/integration/test/reads/ccip.test.ts > follows an off-chain lookup through the resolver's gateway"
+    ]
+  },
+  "R33": {
+    "na": "ensforge has no direct path without a Universal Resolver; `Deployments.define` requires one"
+  },
+  "X01": {
+    "tests": [
+      "tests/integration/test/reads/ccip.test.ts > reports a failing gateway with its HTTP status",
+      "tests/integration/test/reads/primary.test.ts > reports an L2 primary name's failing gateway or proof as a gateway error",
+      "tests/integration/test/writes/reverts.test.ts > come from the Universal Resolver and its batch gateway"
+    ]
+  },
+  "X02": {
+    "na": "viem's CCIP-Read client (EIP-3668 HTTP transport and local batch gateway), tested upstream; ensforge only passes gateway settings through"
+  },
+  "X03": {
+    "na": "viem's CCIP-Read client (EIP-3668 HTTP transport and local batch gateway), tested upstream; ensforge only passes gateway settings through"
+  },
+  "X04": {
+    "na": "viem's CCIP-Read client (EIP-3668 HTTP transport and local batch gateway), tested upstream; ensforge only passes gateway settings through"
+  },
+  "X05": {
+    "tests": [
+      "tests/integration/test/reads/ccip.test.ts > never answers from an off-chain lookup that names another contract as its sender",
+      "tests/integration/test/writes/reverts.test.ts > come from the Universal Resolver and its batch gateway"
+    ]
+  },
+  "X06": {
+    "na": "viem's CCIP-Read client (EIP-3668 HTTP transport and local batch gateway), tested upstream; ensforge only passes gateway settings through"
+  },
+  "X07": {
+    "tests": [
+      "tests/integration/test/reads/ccip.test.ts > fails with a typed error when a DNS name's resolver forges an off-chain lookup"
+    ]
+  },
+  "X08": {
+    "na": "viem's CCIP-Read client (EIP-3668 HTTP transport and local batch gateway), tested upstream; ensforge only passes gateway settings through"
+  },
+  "X09": {
+    "na": "viem's CCIP-Read client (EIP-3668 HTTP transport and local batch gateway), tested upstream; ensforge only passes gateway settings through"
+  },
+  "X10": {
+    "tests": [
+      "tests/integration/test/reads/ccip.test.ts > keeps the records that answer when another call of the read fails"
+    ]
+  },
+  "X11": {
+    "na": "viem's CCIP-Read client (EIP-3668 HTTP transport and local batch gateway), tested upstream; ensforge only passes gateway settings through"
+  },
+  "X12": {
+    "tests": [
+      "tests/integration/test/reads/ccip.test.ts > times out on a gateway that never answers, and an abort drops its request",
+      "tests/integration/test/reads/primary.test.ts > reports an L2 primary name's failing gateway or proof as a gateway error"
+    ]
+  },
+  "X13": {
+    "tests": [
+      "tests/integration/test/reads/ccip.test.ts > does not contact the gateway when CCIP-Read is disabled"
+    ]
+  },
+  "X14": {
+    "tests": [
+      "tests/integration/test/reads/ccip.test.ts > fails with the resolver's error when it rejects the gateway's answer"
+    ]
+  },
+  "X15": {
+    "tests": [
+      "tests/integration/test/reads/name.test.ts > a wildcard subname is available and has no expiry, yet resolves"
+    ]
+  },
+  "X16": {
+    "tests": [
+      "tests/integration/test/writes/reverts.test.ts > come from resolvers that keep their records off-chain",
+      "tests/integration/test/writes/unwritable-resolvers.test.ts > record.set refuses records an extended resolver declares no profile for",
+      "tests/integration/test/writes/unwritable-resolvers.test.ts > record.set says a resolver keeps its records off-chain, however it refuses the write"
+    ]
+  },
+  "X17": {
+    "tests": [
+      "tests/integration/test/writes/migration.test.ts > keeps an off-chain resolver without reading through its gateway"
+    ]
+  },
+  "X18": {
+    "na": "viem's CCIP-Read client (EIP-3668 HTTP transport and local batch gateway), tested upstream; ensforge only passes gateway settings through"
+  },
+  "K01": {
+    "tests": [
+      "tests/integration/test/reads/records.test.ts > reads every profile of a PublicResolver",
+      "tests/integration/test/writes/records.test.ts > writes every encoding and deletes with null (${id})"
+    ]
+  },
+  "K02": {
+    "tests": [
+      "tests/integration/test/reads/records.test.ts > reads a PermissionedResolver, where a zero address is a record",
+      "tests/integration/test/reads/records.test.ts > reads every profile of a PublicResolver"
+    ]
+  },
+  "K03": {
+    "tests": [
+      "tests/integration/test/reads/records.test.ts > reads every profile of a PublicResolver",
+      "tests/integration/test/writes/records.test.ts > writes every encoding and deletes with null (${id})"
+    ]
+  },
+  "K04": {
+    "tests": [
+      "tests/integration/test/reads/records.test.ts > reads a PermissionedResolver, where a zero address is a record",
+      "tests/integration/test/writes/records.test.ts > writes every encoding and deletes with null (${id})"
+    ]
+  },
+  "K05": {
+    "tests": [
+      "tests/integration/test/reads/records.test.ts > does not read the default EVM address as an ETH address"
+    ]
+  },
+  "K06": {
+    "tests": [
+      "tests/unit/sdk/actions/record/set.test.ts > refuses addresses and ABI content types a resolver would reject",
+      "tests/unit/sdk/records/read-profiles.test.ts > reads undecodable records as missing and keeps the others",
+      "tests/unit/sdk/utils/CoinType.test.ts > decodeAddress inverts encodeAddress"
+    ]
+  },
+  "K07": {
+    "tests": [
+      "tests/unit/sdk/actions/record/set.test.ts > refuses addresses and ABI content types a resolver would reject",
+      "tests/unit/sdk/utils/CoinType.test.ts > accepts addresses without a checksum",
+      "tests/unit/sdk/utils/CoinType.test.ts > rejects a mixed-case address with a wrong checksum"
+    ]
+  },
+  "K08": {
+    "tests": ["tests/unit/sdk/utils/CoinType.test.ts > checksums RSK addresses with chain ID 30"]
+  },
+  "K09": {
+    "tests": [
+      "tests/integration/test/reads/records.test.ts > decodes taproot addresses and every content hash codec",
+      "tests/integration/test/reads/records.test.ts > reads every profile of a PublicResolver",
+      "tests/integration/test/writes/records.test.ts > writes every encoding and deletes with null (${id})"
+    ]
+  },
+  "K10": {
+    "tests": [
+      "tests/unit/sdk/utils/CoinType.test.ts > stores the same bytes for each format of an address"
+    ]
+  },
+  "K11": {
+    "tests": [
+      "tests/unit/sdk/actions/primaryName/get.test.ts > refuses coins that are not EVM chains before reading anything",
+      "tests/unit/sdk/utils/CoinType.test.ts > %s is not an EVM coin type",
+      "tests/unit/sdk/utils/CoinType.test.ts > is ENSIP-11 and inverted by toChainId"
+    ]
+  },
+  "K12": {
+    "tests": [
+      "tests/unit/sdk/utils/CoinType.test.ts > reads the legacy SLIP-44 EVM coins by their own names"
+    ]
+  },
+  "K13": {
+    "tests": [
+      "tests/unit/sdk/utils/CoinType.test.ts > keeps the SLIP-44 types of Avalanche and RSK"
+    ]
+  },
+  "K14": {
+    "tests": ["tests/unit/sdk/utils/CoinType.test.ts > rejects coins without a codec"]
+  },
+  "K15": {
+    "tests": [
+      "tests/integration/test/reads/records.test.ts > reads every profile of a PublicResolver",
+      "tests/integration/test/writes/records.test.ts > writes every encoding and deletes with null (${id})"
+    ]
+  },
+  "K16": {
+    "tests": [
+      "tests/integration/test/reads/records.test.ts > reads every profile of a PublicResolver"
+    ]
+  },
+  "K17": {
+    "na": "ensforge reads text keys exactly as given and does not alias legacy `vnd.*` keys; ENSIP-5 leaves aliasing to the app"
+  },
+  "K18": {
+    "na": "text records come back as stored; validating ENSIP-18 values (colour, length, URL scheme) is the app's job"
+  },
+  "K19": {
+    "tests": ["tests/integration/test/reads/records.test.ts > reads a 24 KB text in one call"]
+  },
+  "K20": {
+    "na": "the key grammar is bigname's; ensforge passes keys through and maps bigname's 400 to `INDEXER_REQUEST_REJECTED` (tests/unit/sdk/indexer/http.test.ts)"
+  },
+  "K21": {
+    "tests": [
+      "tests/integration/test/reads/records.test.ts > reads every profile of a PublicResolver",
+      "tests/integration/test/writes/records.test.ts > writes every encoding and deletes with null (${id})"
+    ]
+  },
+  "K22": {
+    "tests": [
+      "tests/integration/test/reads/records.test.ts > decodes taproot addresses and every content hash codec"
+    ]
+  },
+  "K23": {
+    "tests": [
+      "tests/integration/test/reads/records.test.ts > decodes taproot addresses and every content hash codec"
+    ]
+  },
+  "K24": {
+    "tests": [
+      "tests/unit/sdk/actions/record/set.test.ts > refuses addresses and ABI content types a resolver would reject"
+    ]
+  },
+  "K25": {
+    "tests": [
+      "tests/integration/test/reads/records.test.ts > reads every profile of a PublicResolver",
+      "tests/integration/test/writes/records.test.ts > writes every encoding and deletes with null (${id})"
+    ]
+  },
+  "K26": {
+    "tests": [
+      "tests/integration/test/reads/records.test.ts > reads a PermissionedResolver, where a zero address is a record"
+    ]
+  },
+  "K27": {
+    "tests": [
+      "tests/unit/sdk/records/read-profiles.test.ts > reads undecodable records as missing and keeps the others"
+    ]
+  },
+  "K28": {
+    "na": "ensforge's ABI read has no fallback to the reverse record; ENSIP-4 makes it optional"
+  },
+  "K29": {
+    "tests": [
+      "tests/integration/test/reads/records.test.ts > reads every profile of a PublicResolver"
+    ]
+  },
+  "K30": {
+    "tests": [
+      "tests/integration/test/reads/records.test.ts > reads every profile of a PublicResolver",
+      "tests/integration/test/writes/records.test.ts > writes every encoding and deletes with null (${id})"
+    ]
+  },
+  "K31": {
+    "tests": [
+      "tests/integration/test/reads/records.test.ts > reads a PermissionedResolver, where a zero address is a record",
+      "tests/integration/test/writes/records.test.ts > creates a resolver with records and points a name at it",
+      "tests/integration/test/writes/unwritable-resolvers.test.ts > record.set refuses records and clearing the 2020 public resolver predates"
+    ]
+  },
+  "K32": {
+    "tests": [
+      "tests/integration/test/writes/records.test.ts > reads DNS records by owner name in any case, and deletes a record set with empty data"
+    ]
+  },
+  "K33": {
+    "tests": [
+      "tests/integration/test/reads/records.test.ts > returns avatars it can use and ignores the rest"
+    ]
+  },
+  "K34": {
+    "tests": [
+      "tests/integration/test/reads/records.test.ts > returns avatars it can use and ignores the rest"
+    ]
+  },
+  "K35": {
+    "tests": [
+      "tests/integration/test/reads/records.test.ts > returns avatars it can use and ignores the rest"
+    ]
+  },
+  "K36": {
+    "tests": [
+      "tests/integration/test/reads/records.test.ts > returns avatars it can use and ignores the rest"
+    ]
+  },
+  "K37": {
+    "na": "ensforge reads avatars by name only (`record.getAvatar`); there is no avatar-by-address flow"
+  },
+  "K38": {
+    "tests": [
+      "tests/integration/test/reads/records.test.ts > returns avatars it can use and ignores the rest"
+    ]
+  },
+  "K39": {
+    "na": "ensforge registers only through the ENSv2 ETHRegistrar and writes records in its own resolver calls; it never passes `data[]` to the ENSv1 controller"
+  },
+  "K40": {
+    "tests": [
+      "tests/integration/test/writes/records.test.ts > reveals a PermissionedResolver's default record when a name's records are cleared"
+    ]
+  },
+  "K41": {
+    "tests": [
+      "tests/integration/test/reads/records.test.ts > reads a PermissionedResolver, where a zero address is a record",
+      "tests/integration/test/reads/records.test.ts > reads every profile of a PublicResolver",
+      "tests/integration/test/writes/records.test.ts > writes every encoding and deletes with null (${id})"
+    ]
+  },
+  "P01": {
+    "tests": [
+      "tests/integration/test/reads/primary.test.ts > reads verified primary names from every reverse namespace and registrar generation"
+    ]
+  },
+  "P02": {
+    "tests": ["tests/integration/test/writes/access.test.ts > sets and clears a primary name"]
+  },
+  "P03": {
+    "tests": [
+      "tests/integration/test/reads/primary.test.ts > stops at an addr.reverse resolver without a name, never falling back to the default"
+    ]
+  },
+  "P04": {
+    "tests": [
+      "tests/integration/test/reads/primary.test.ts > stops at an addr.reverse resolver without a name, never falling back to the default"
+    ]
+  },
+  "P05": {
+    "tests": [
+      "tests/integration/test/reads/primary.test.ts > reads verified primary names from every reverse namespace and registrar generation"
+    ]
+  },
+  "P06": {
+    "tests": [
+      "tests/unit/sdk/actions/primaryName/get.test.ts > refuses coins that are not EVM chains before reading anything"
+    ]
+  },
+  "P07": {
+    "tests": [
+      "tests/integration/test/reads/primary.test.ts > returns null for names that do not verify, unless verification is off",
+      "tests/integration/test/writes/reverts.test.ts > come from the Universal Resolver and its batch gateway"
+    ]
+  },
+  "P08": {
+    "tests": [
+      "tests/integration/test/reads/primary.test.ts > fails a primary name whose resolver is missing or has no address as a mismatch",
+      "tests/integration/test/reads/primary.test.ts > returns null for names that do not verify, unless verification is off",
+      "tests/integration/test/writes/access-matrix.test.ts > primaryName.set as someone else's name as primary",
+      "tests/integration/test/writes/reverts.test.ts > come from the Universal Resolver and its batch gateway"
+    ]
+  },
+  "P09": {
+    "tests": [
+      "tests/integration/test/reads/primary.test.ts > verifies a chain's primary name through the default EVM address alone",
+      "tests/integration/test/writes/primary-l2.test.ts > rejects expired, tampered and misdirected claims, and claims for other names"
+    ]
+  },
+  "P10": {
+    "tests": [
+      "tests/integration/test/reads/primary.test.ts > fails a primary name whose resolver is missing or has no address as a mismatch",
+      "tests/integration/test/reads/primary.test.ts > returns null for stored names that are not names, or whose resolver has no address"
+    ]
+  },
+  "P11": {
+    "tests": [
+      "tests/integration/test/reads/primary.test.ts > stops at an addr.reverse resolver without a name, never falling back to the default"
+    ]
+  },
+  "P12": {
+    "tests": [
+      "tests/integration/test/reads/primary.test.ts > verifies a primary name whose address is answered off-chain"
+    ]
+  },
+  "P13": {
+    "na": "same proof as P06: primary names are EVM-only, so coin 123 fails with `INVALID_COIN_TYPE` before any call"
+  },
+  "P14": {
+    "tests": [
+      "tests/integration/test/reads/primary.test.ts > returns null for stored names that are not names, or whose resolver has no address"
+    ]
+  },
+  "P15": {
+    "tests": [
+      "tests/integration/test/reads/primary.test.ts > returns null for stored names that are not names, or whose resolver has no address"
+    ]
+  },
+  "P16": {
+    "tests": [
+      "tests/integration/test/reads/primary.test.ts > neither sets nor returns a primary name with an encoded label"
+    ]
+  },
+  "P17": {
+    "tests": [
+      "tests/integration/test/reads/batch.test.ts > aligns primary names with their addresses; an empty batch returns nothing"
+    ]
+  },
+  "P18": {
+    "na": "ensforge does not set L2 primary names or use the L2ReverseRegistrar signature flows (KL-10)"
+  },
+  "P19": {
+    "na": "ensforge does not set L2 primary names or use the L2ReverseRegistrar signature flows (KL-10)"
+  },
+  "P20": {
+    "na": "ensforge does not set L2 primary names or use the L2ReverseRegistrar signature flows (KL-10)"
+  },
+  "P21": {
+    "na": "ensforge does not set L2 primary names or use the L2ReverseRegistrar signature flows (KL-10)"
+  },
+  "P22": {
+    "tests": [
+      "tests/integration/test/reads/primary.test.ts > reads verified primary names from every reverse namespace and registrar generation",
+      "tests/integration/test/writes/access-matrix.test.ts > primaryName.set as contract's owner names it",
+      "tests/integration/test/writes/access-matrix.test.ts > primaryName.set as stranger names a contract"
+    ]
+  },
+  "P23": {
+    "na": "`syncName` / ContractNamer on L2 is not exposed"
+  },
+  "P24": {
+    "na": "ensforge never writes a reverse record through an HCA; the owner sets it (writes/hca.test.ts); the adapter HCA checks are contract-only"
+  },
+  "P25": {
+    "na": "ensforge doesn't write to the L2ReverseRegistrar (KL-10); the L1 clear with `setName(\"\")` is P02's test"
+  },
+  "P26": {
+    "tests": [
+      "tests/integration/test/reads/primary.test.ts > returns null for names that do not verify, unless verification is off",
+      "tests/integration/test/writes/registration.test.ts > sets records, a primary name and a referrer while registering"
+    ]
+  },
+  "P27": {
+    "na": "an error in the ENSIP-23 document; ensforge builds `<coinType>.reverse` names itself (P28 shows `80014a34.reverse`)"
+  },
+  "P28": {
+    "tests": [
+      "tests/unit/sdk/actions/primaryName/get.test.ts > reads each chain's reverse namespace"
+    ]
+  },
+  "P29": {
+    "tests": [
+      "tests/unit/sdk/actions/primaryName/get.test.ts > refuses coins that are not EVM chains before reading anything"
+    ]
+  },
+  "P30": {
+    "tests": [
+      "tests/integration/test/reads/primary.test.ts > follows a primary name's subname as it is created and removed"
+    ]
+  },
+  "P31": {
+    "tests": [
+      "tests/integration/test/writes/access.test.ts > sets and clears a contract's primary name as its ContractNamer"
+    ]
+  },
+  "P32": {
+    "tests": [
+      "tests/integration/test/reads/primary.test.ts > reports an L2 primary name's failing gateway or proof as a gateway error",
+      "tests/integration/test/writes/reverts.test.ts > come from the L2 reverse resolvers' proof verifiers, through ensforge's reads"
+    ]
+  },
+  "P33": {
+    "tests": [
+      "tests/integration/test/writes/primary-l2.test.ts > sets the signer's L2 primary name on the L2, read back on Ethereum"
+    ]
+  },
+  "P34": {
+    "tests": [
+      "tests/integration/test/writes/primary-l2.test.ts > submits one signed claim from a relayer, for an EOA, ERC-1271 and ERC-6492 accounts and an Ownable"
+    ]
+  },
+  "P35": {
+    "tests": [
+      "tests/integration/test/writes/primary-l2.test.ts > submits one signed claim from a relayer, for an EOA, ERC-1271 and ERC-6492 accounts and an Ownable"
+    ]
+  },
+  "P36": {
+    "tests": [
+      "tests/integration/test/writes/primary-l2.test.ts > submits one signed claim from a relayer, for an EOA, ERC-1271 and ERC-6492 accounts and an Ownable"
+    ]
+  },
+  "P37": {
+    "tests": [
+      "tests/integration/test/writes/primary-l2.test.ts > rejects expired, tampered and misdirected claims, and claims for other names",
+      "tests/integration/test/writes/reverts.test.ts > come from the reverse registrars' signed name claims"
+    ]
+  },
+  "P38": {
+    "tests": [
+      "tests/integration/test/writes/primary-l2.test.ts > sets the signer's L2 primary name on the L2, read back on Ethereum",
+      "tests/integration/test/writes/reverts.test.ts > come from the reverse registrars' signed name claims"
+    ]
+  },
+  "P39": {
+    "tests": [
+      "tests/integration/test/writes/primary-l2.test.ts > fails before sending for chains it cannot reach and claims it cannot sign"
+    ]
+  },
+  "P40": {
+    "tests": [
+      "tests/integration/test/writes/primary-l2.test.ts > resumes a saved L2 plan on the L2"
+    ]
+  },
+  "G01": {
+    "tests": [
+      "tests/integration/test/reads/registration.test.ts > prices labels by code point and refuses labels below the minimum"
+    ]
+  },
+  "G02": {
+    "tests": [
+      "tests/integration/test/reads/registration.test.ts > prices labels by code point and refuses labels below the minimum"
+    ]
+  },
+  "G03": {
+    "tests": [
+      "tests/integration/test/reads/registration.test.ts > prices labels by code point and refuses labels below the minimum"
+    ]
+  },
+  "G04": {
+    "tests": [
+      "tests/integration/test/reads/registration.test.ts > prices labels by code point and refuses labels below the minimum"
+    ]
+  },
+  "G05": {
+    "tests": [
+      "tests/integration/test/writes/hierarchy.test.ts > creates ENSv2 subnames, deploying a registry where the parent has none"
+    ]
+  },
+  "G06": {
+    "tests": [
+      "tests/integration/test/reads/registration.test.ts > tracks a commitment through its window",
+      "tests/integration/test/writes/registration.test.ts > registers from an earlier commitment only inside its window"
+    ]
+  },
+  "G07": {
+    "tests": [
+      "tests/integration/test/writes/errors.test.ts > registration.commit refuses a commitment already made"
+    ]
+  },
+  "G08": {
+    "tests": [
+      "tests/integration/test/writes/registration.test.ts > reveals a commitment paying with another token than the one quoted"
+    ]
+  },
+  "G09": {
+    "tests": [
+      "tests/integration/test/writes/registration.test.ts > refuses names that cannot be registered before the wallet is asked",
+      "tests/integration/test/writes/renewal.test.ts > refuses names that cannot be renewed before the wallet is asked"
+    ]
+  },
+  "G10": {
+    "tests": ["tests/integration/test/writes/renewal.test.ts > renews a name listed twice once"]
+  },
+  "G11": {
+    "tests": [
+      "tests/integration/test/writes/renewal.test.ts > renews an ENSv2 name until its grace period ends"
+    ]
+  },
+  "G12": {
+    "tests": [
+      "tests/integration/test/reads/name.test.ts > registration.v1-renewed-by-renewer",
+      "tests/integration/test/reads/registration.test.ts > prices renewals through the contract that renews each name",
+      "tests/integration/test/writes/hierarchy.test.ts > extends an emancipated child's expiry, up to its parent's",
+      "tests/integration/test/writes/renewal.test.ts > renews a premigrated ENSv1 name through ETHRenewerV1"
+    ]
+  },
+  "G13": {
+    "tests": [
+      "tests/integration/test/writes/renewal.test.ts > renews a premigrated ENSv1 name through ETHRenewerV1"
+    ]
+  },
+  "G14": {
+    "tests": [
+      "tests/integration/test/reads/registration.test.ts > quotes the premium curve of a released name at a given time",
+      "tests/integration/test/writes/registration.test.ts > pays the premium of a recently released name"
+    ]
+  },
+  "G15": {
+    "tests": [
+      "tests/integration/test/writes/registration.test.ts > pays a price that rose after the quote, up to the 2% its approval leaves"
+    ]
+  },
+  "G16": {
+    "tests": [
+      "tests/integration/test/writes/registration.test.ts > pays with a token that returns nothing, and fails typed when a token refuses the payment"
+    ]
+  },
+  "G17": {
+    "tests": [
+      "tests/integration/test/writes/registration.test.ts > registers a name through commit, wait and reveal, paying the quote"
+    ]
+  },
+  "G18": {
+    "tests": [
+      "tests/integration/test/writes/registration.test.ts > fails typed when the owner is a contract that refuses the name token"
+    ]
+  },
+  "G19": {
+    "tests": [
+      "tests/integration/test/writes/registration.test.ts > refuses to reveal once someone else registered the name, without asking the wallet"
+    ]
+  },
+  "G20": {
+    "tests": [
+      "tests/integration/test/writes/plans.test.ts > confirms a submitted step on resume, and sends a dropped one again",
+      "tests/integration/test/writes/plans.test.ts > resumes an interrupted registration without committing again",
+      "tests/integration/test/writes/registration.test.ts > registers from an earlier commitment only inside its window"
+    ]
+  },
+  "G21": {
+    "tests": [
+      "tests/integration/test/writes/registration.test.ts > registers from an earlier commitment only inside its window"
+    ]
+  },
+  "G22": {
+    "tests": [
+      "tests/integration/test/writes/registration.test.ts > refuses names that cannot be registered before the wallet is asked"
+    ]
+  },
+  "G23": {
+    "tests": [
+      "tests/integration/test/writes/renewal.test.ts > refuses names that cannot be renewed before the wallet is asked"
+    ]
+  },
+  "G24": {
+    "tests": [
+      "tests/integration/test/writes/renewal.test.ts > renews an ENSv2 name for anyone who pays, in grace from its old expiry"
+    ]
+  },
+  "G25": {
+    "tests": [
+      "tests/integration/test/writes/registration.test.ts > sets records, a primary name and a referrer while registering"
+    ]
+  },
+  "G26": {
+    "tests": [
+      "tests/integration/test/reads/registration.test.ts > applies the multi-year renewal discounts"
+    ]
+  },
+  "G27": {
+    "tests": [
+      "tests/integration/test/reads/registration.test.ts > converts prices to each token, rounding up"
+    ]
+  },
+  "G28": {
+    "tests": [
+      "tests/integration/test/reads/registration.test.ts > refuses a payment token the oracle no longer accepts"
+    ]
+  },
+  "G29": {
+    "tests": [
+      "tests/integration/test/writes/registration.test.ts > deploys the signer's shared resolver once, and reuses it for later names"
+    ]
+  },
+  "G30": {
+    "na": "ensforge takes a 32-byte or address referrer (ENSv2 `register` argument); it has no ENSIP-14 secret prefix or ensjs campaign number"
+  },
+  "T01": {
+    "tests": [
+      "tests/integration/test/reads/name-time.test.ts > an ENSv1 .eth name expires at its expiry and is released one second after grace"
+    ]
+  },
+  "T02": {
+    "tests": [
+      "tests/integration/test/reads/name-time.test.ts > an ENSv1 .eth name expires at its expiry and is released one second after grace"
+    ]
+  },
+  "T03": {
+    "tests": [
+      "tests/integration/test/reads/name-time.test.ts > a wrapped .eth name keeps its owner until one second after the wrapper expiry"
+    ]
+  },
+  "T04": {
+    "tests": [
+      "tests/integration/test/reads/name-time.test.ts > an ENSv2 .eth name is in grace from its expiry and available at grace end"
+    ]
+  },
+  "T05": {
+    "tests": [
+      "tests/integration/test/reads/name-time.test.ts > an ENSv2 .eth name is in grace from its expiry and available at grace end"
+    ]
+  },
+  "T06": {
+    "tests": [
+      "tests/services/test/indexer/fixtures.test.ts > indexes every fixture name as the chain holds it"
+    ]
+  },
+  "T07": {
+    "tests": [
+      "tests/integration/test/reads/migration.test.ts > reports each name's route, blockers and state after migrating",
+      "tests/integration/test/reads/name-time.test.ts > a premigrated ENSv1 name is reachable through ENSv2 until its reservation ends",
+      "tests/integration/test/writes/migration.test.ts > migrates unwrapped and wrapped names, leaving their ENSv1 husk to the Graveyard"
+    ]
+  },
+  "T08": {
+    "tests": [
+      "tests/integration/test/writes/migration.test.ts > copies records to a new resolver, keeps the manager, and renews a name in grace first"
+    ]
+  },
+  "T09": {
+    "tests": [
+      "tests/integration/test/reads/name.test.ts > registration.v2-renewed-in-grace",
+      "tests/integration/test/writes/renewal.test.ts > renews an ENSv2 name for anyone who pays, in grace from its old expiry"
+    ]
+  },
+  "T10": {
+    "tests": [
+      "tests/integration/test/reads/conformance.test.ts > reads at a pinned block, with that block's time"
+    ]
+  },
+  "T11": {
+    "tests": [
+      "tests/integration/test/reads/errors.test.ts > reads before ENSv2 was deployed take the ENSv1 path or fail typed"
+    ]
+  },
+  "T12": {
+    "na": "ENS app UI polling cadence; ensforge reads chain time on demand (T10)"
+  },
+  "T13": {
+    "tests": [
+      "tests/integration/test/reads/name.test.ts > a wrapped name whose expiry was never set has none, rather than 1970",
+      "tests/unit/sdk/indexer/map.test.ts > fills defaults for a name with only its identity fields",
+      "tests/unit/sdk/indexer/map.test.ts > maps the expiry reason %s to %s"
+    ]
+  },
+  "T14": {
+    "tests": [
+      "tests/integration/test/reads/migration.test.ts > blocks a locked child until its parent migrates, and for anyone but its owner"
+    ]
+  },
+  "T15": {
+    "tests": [
+      "tests/unit/sdk/indexer/map.test.ts > keeps expiries beyond 2^53 exact, up to bigname's saturated i64::MAX"
+    ]
+  },
+  "T16": {
+    "tests": [
+      "tests/integration/test/writes/plans.test.ts > re-validates a plan prepared before its name changed"
+    ]
+  },
+  "D01": {
+    "tests": [
+      "tests/integration/test/writes/dns.test.ts > imports a DNS name to the owner its TXT record names, from any sender"
+    ]
+  },
+  "D02": {
+    "tests": [
+      "tests/integration/test/writes/dns.test.ts > refuses proofs that do not hold, and gateways that fail"
+    ]
+  },
+  "D03": {
+    "tests": [
+      "tests/integration/test/writes/dns.test.ts > refuses names and proofs the registrar cannot take"
+    ]
+  },
+  "D04": {
+    "tests": [
+      "tests/integration/test/reads/dns.test.ts > resolve through the resolver an ENS1 record names, by address or by ENS name"
+    ]
+  },
+  "D05": {
+    "tests": [
+      "tests/integration/test/reads/dns.test.ts > use the first ENS1 record whose resolver is usable"
+    ]
+  },
+  "D06": {
+    "na": "ExtendedDNSResolver / DNSTXTResolver parse the context themselves; ensforge passes it through unchanged (D04 proves the path)"
+  },
+  "D07": {
+    "tests": [
+      "tests/integration/test/reads/dns.test.ts > resolve on-chain before their ENS1 record, which serves once the resolver is cleared"
+    ]
+  },
+  "D08": {
+    "tests": [
+      "tests/integration/test/reads/dns.test.ts > have no resolver for a subname still on ENSv1 without one"
+    ]
+  },
+  "D09": {
+    "na": "DNSTXTResolver's own context errors; ensforge passes its reverts through, and a failed call inside a multicall reads as unset, as for any resolver"
+  },
+  "D10": {
+    "tests": [
+      "tests/integration/test/reads/dns.test.ts > resolve as another name through the DNS alias resolver"
+    ]
+  },
+  "D11": {
+    "tests": [
+      "tests/integration/test/writes/dns.test.ts > refuses names and proofs the registrar cannot take",
+      "tests/integration/test/writes/dns.test.ts > refuses proofs that do not hold, and gateways that fail"
+    ]
+  },
+  "D12": {
+    "tests": [
+      "tests/integration/test/writes/dns.test.ts > refuses proofs that do not hold, and gateways that fail"
+    ]
+  },
+  "D13": {
+    "tests": [
+      "tests/fork/test/reads/resolution.test.ts > unwraps the Universal Resolver's ResolutionError for DNS names (KL-14, KL-29)"
+    ]
+  },
+  "D14": {
+    "tests": [
+      "tests/integration/test/writes/dns.test.ts > needs gateways for DNSSEC reads, and reports the ones that fail",
+      "tests/integration/test/writes/dns.test.ts > refuses names and proofs the registrar cannot take"
+    ]
+  },
+  "D15": {
+    "tests": ["tests/integration/test/reads/name.test.ts > dns.imported.wrapped"]
+  },
+  "D16": {
+    "na": "ENS app UI (an out-of-sync banner); the DNS and ENS owners are read through D-axis cases"
+  },
+  "D17": {
+    "tests": [
+      "tests/integration/test/reads/name.test.ts > a DNS TLD synced into ENSv2 never expires"
+    ]
+  },
+  "D18": {
+    "tests": [
+      "tests/fork/test/reads/resolution.test.ts > unwraps the Universal Resolver's ResolutionError for DNS names (KL-14, KL-29)"
+    ]
+  },
+  "D19": {
+    "tests": [
+      "tests/integration/test/reads/dns.test.ts > read an ENS1 record split into several strings whole"
+    ]
+  },
+  "M01": {
+    "tests": [
+      "tests/integration/test/writes/migration.test.ts > refuses blocked names before the wallet is asked"
+    ]
+  },
+  "M02": {
+    "na": "ensforge encodes the full LibMigration.Data itself; it never sends data shorter than 7×32 bytes"
+  },
+  "M03": {
+    "na": "ensforge derives the label and the token ID from the same parsed name, so they always match"
+  },
+  "M04": {
+    "tests": [
+      "tests/integration/test/writes/migration.test.ts > migrates a locked name into a WrapperRegistry, then its locked child"
+    ]
+  },
+  "M05": {
+    "tests": [
+      "tests/integration/test/writes/migration.test.ts > decodes the error a migration controller returns through the NameWrapper"
+    ]
+  },
+  "M06": {
+    "tests": [
+      "tests/integration/test/writes/migration.test.ts > migrates unwrapped and wrapped names, leaving their ENSv1 husk to the Graveyard"
+    ]
+  },
+  "M07": {
+    "tests": [
+      "tests/integration/test/writes/migration.test.ts > migrates a locked name into a WrapperRegistry, then its locked child"
+    ]
+  },
+  "M08": {
+    "tests": [
+      "tests/integration/test/writes/migration.test.ts > refuses blocked names before the wallet is asked"
+    ]
+  },
+  "M09": {
+    "tests": [
+      "tests/integration/test/writes/migration.test.ts > migrates a locked name into a WrapperRegistry, then its locked child",
+      "tests/integration/test/writes/reverts.test.ts > come from the migration controllers and the migration helper"
+    ]
+  },
+  "M10": {
+    "na": "ensforge does not expose Graveyard `clear`"
+  },
+  "M11": {
+    "tests": [
+      "tests/integration/test/reads/migration.test.ts > blocks a locked child until its parent migrates, and for anyone but its owner",
+      "tests/integration/test/writes/reverts.test.ts > come from the migration controllers and the migration helper"
+    ]
+  },
+  "M12": {
+    "tests": [
+      "tests/services/test/indexer/writes.test.ts > bigname after ensforge writes > finds the records a migration copies, and the subnames it cannot recreate",
+      "tests/services/test/indexer/writes.test.ts > finds the records a migration copies, and the subnames it cannot recreate"
+    ]
+  },
+  "M13": {
+    "na": "app review flow; ensforge's equivalents are tested elsewhere: subnames come from an explicit list or the indexer (M12/M15) and plans are re-validated before sending (T16)"
+  },
+  "M14": {
+    "tests": [
+      "tests/integration/test/writes/migration.test.ts > fails typed when a token approval is revoked between the steps of a migration"
+    ]
+  },
+  "M15": {
+    "tests": [
+      "tests/services/test/indexer/writes.test.ts > bigname after ensforge writes > finds the records a migration copies, and the subnames it cannot recreate",
+      "tests/services/test/indexer/writes.test.ts > finds subnames at every depth for a migration to recreate",
+      "tests/services/test/indexer/writes.test.ts > finds the records a migration copies, and the subnames it cannot recreate"
+    ]
+  },
+  "M16": {
+    "tests": [
+      "tests/integration/test/writes/migration.test.ts > keeps the owner's primary name on a name it migrates"
+    ]
+  },
+  "M17": {
+    "tests": [
+      "tests/integration/test/reads/migration.test.ts > lets the registrant migrate, not the manager"
+    ]
+  },
+  "M18": {
+    "na": "contradicted by the contracts: once the reservation lapses ENSv2 resolution no longer reaches the ENSv1 name (README decided semantics); ensforge reports `reachable: false` and record reads return null from that second (T07 name-time test)"
+  },
+  "M19": {
+    "tests": [
+      "tests/integration/test/writes/migration.test.ts > recreates subnames at any depth, each registry owned by the subname's holder"
+    ]
+  },
+  "M20": {
+    "tests": [
+      "tests/integration/test/writes/migration.test.ts > registers a locked name's controlled subnames in its WrapperRegistry once it migrated"
+    ]
+  },
+  "M21": {
+    "tests": [
+      "tests/integration/test/writes/migration.test.ts > leaves a locked name's subnames behind once it burned cannotCreateSubdomain"
+    ]
+  },
+  "M22": {
+    "tests": [
+      "tests/services/test/indexer/writes.test.ts > finds subnames at every depth for a migration to recreate"
+    ]
+  },
+  "A01": {
+    "tests": [
+      "tests/integration/test/reads/access.test.ts > reads ENSv1 operators, resolver delegates and token approvals"
+    ]
+  },
+  "A02": {
+    "tests": [
+      "tests/integration/test/reads/access.test.ts > reads ENSv1 operators, resolver delegates and token approvals",
+      "tests/integration/test/writes/access-matrix.test.ts > approval.setDelegate as delegate by stranger",
+      "tests/integration/test/writes/access-matrix.test.ts > record.set as resolver delegate"
+    ]
+  },
+  "A03": {
+    "tests": [
+      "tests/integration/test/writes/registration.test.ts > fails the register step when the owner's delegated code rejects the name's token"
+    ]
+  },
+  "A04": {
+    "na": "contract re-entrancy handling, covered by contracts-v2 `mutatingReceiver_*` tests; ensforge does not interpret it"
+  },
+  "A05": {
+    "tests": [
+      "tests/integration/test/writes/renewal.test.ts > resumes a bulk renewal the user stopped after approving, charging once"
+    ]
+  },
+  "A06": {
+    "na": "ENS app UI state (a disabled editor); the permission behind it is M:D2/M:D3"
+  },
+  "A07": {
+    "tests": [
+      "tests/integration/test/writes/access-matrix.test.ts > name.transfer as parent of an emancipated child"
+    ]
+  },
+  "A08": {
+    "tests": [
+      "tests/integration/test/writes/access-matrix.test.ts > subname.remove as parent of an emancipated child",
+      "tests/integration/test/writes/wrapper.test.ts > refuses parent-controlled fuses under an unlocked parent, and new fuses on emancipated children"
+    ]
+  },
+  "A09": {
+    "tests": [
+      "tests/integration/test/writes/access-matrix.test.ts > name.transfer as owner, to a name",
+      "tests/integration/test/writes/access-matrix.test.ts > name.transfer as owner, to a padded address",
+      "tests/integration/test/writes/access-matrix.test.ts > name.transfer as owner, to self",
+      "tests/integration/test/writes/access-matrix.test.ts > name.transfer as owner, to the zero address"
+    ]
+  },
+  "A10": {
+    "tests": [
+      "tests/unit/sdk/client/signer.test.ts > fails with CHAIN_MISMATCH for a wallet on another chain"
+    ]
+  },
+  "Z01": {
+    "tests": [
+      "tests/integration/test/writes/hca.test.ts > HCA > mainnet-shaped > refuses a name token sent to the HCA",
+      "tests/integration/test/writes/hca.test.ts > refuses a name token sent to the HCA"
+    ]
+  },
+  "Z02": {
+    "tests": [
+      "tests/integration/test/writes/hca-session.test.ts > accepts an authorized session's first use, and refuses one outside its approval",
+      "tests/integration/test/writes/hca.test.ts > HCA > mainnet-shaped > authorizes a session, checks its calls, and revokes it",
+      "tests/integration/test/writes/hca.test.ts > authorizes a session, checks its calls, and revokes it"
+    ]
+  },
+  "Z03": {
+    "tests": [
+      "tests/integration/test/writes/hca-session.test.ts > accepts an authorized session's first use, and refuses one outside its approval"
+    ]
+  },
+  "Z04": {
+    "tests": [
+      "tests/integration/test/writes/hca.test.ts > HCA > mainnet-shaped > deploys the owner's HCA once and executes calls from it",
+      "tests/integration/test/writes/hca.test.ts > deploys the owner's HCA once and executes calls from it"
+    ]
+  },
+  "Z05": {
+    "tests": [
+      "tests/integration/test/writes/hca-session.test.ts > accepts an authorized session's first use, and refuses one outside its approval",
+      "tests/integration/test/writes/hca.test.ts > HCA > mainnet-shaped > authorizes a session, checks its calls, and revokes it",
+      "tests/integration/test/writes/hca.test.ts > authorizes a session, checks its calls, and revokes it"
+    ]
+  },
+  "Z06": {
+    "na": "ensforge never builds delegatecall executions: `hca.execute` and the route encode batch call mode only"
+  },
+  "Z07": {
+    "na": "blocked by KL-52: ClaimFieldMismatch and FundingPolicyFailed come from the funding validator behind Rhinestone's orchestrator, which Rhinestone SDK 3.3.0 cannot reach for a standalone HCA"
+  },
+  "F01": {
+    "na": "ensforge resolves through the deployment's Universal Resolver at the read block; which path a chain's UR takes is the contracts' history (F05 pins reads to a block; the fork suites resolve on both networks)"
+  },
+  "F02": {
+    "tests": [
+      "tests/fork/test/reads/resolution.test.ts > reads only the profiles an old resolver without multicall supports, behind the bridge",
+      "tests/integration/test/reads/resolver.test.ts > reports the ENSv1 resolver behind the bridge, and reads the bridge answered"
+    ]
+  },
+  "F03": {
+    "tests": [
+      "tests/fork/test/reads/resolution.test.ts > follows CCIP-Read for off-chain names under an on-chain parent"
+    ]
+  },
+  "F04": {
+    "na": "live canaries assert invariants of long-lived names, not values, so a name that stops resolving is drift they tolerate by design (tests/live); no live test depends on a single DNS name"
+  },
+  "F05": {
+    "tests": [
+      "tests/integration/test/reads/conformance.test.ts > sends every contract read to the block it pins"
+    ]
+  },
+  "I01": {
+    "tests": [
+      "tests/services/test/indexer/fixtures.test.ts > bigname against the chain > indexes every fixture name as the chain holds it",
+      "tests/services/test/indexer/fixtures.test.ts > indexes every fixture name as the chain holds it",
+      "tests/services/test/indexer/writes.test.ts > bigname after ensforge writes > indexes a registration with records and a primary name",
+      "tests/services/test/indexer/writes.test.ts > indexes a registration with records and a primary name"
+    ]
+  },
+  "I02": {
+    "tests": [
+      "tests/services/test/indexer/writes.test.ts > bigname after ensforge writes > follows subnames as they are created and removed, page by page",
+      "tests/services/test/indexer/writes.test.ts > follows subnames as they are created and removed, page by page"
+    ]
+  },
+  "I03": {
+    "na": "bigname's lapsed registrations are not part of ensforge's indexer model: `IndexedName` describes the current registration"
+  },
+  "I04": {
+    "na": "bigname's own bookkeeping; ensforge maps the fields it serves unchanged (SDK unit tests on recorded answers), and the services lane compares them with the chain (I19)"
+  },
+  "I05": {
+    "na": "bigname's own bookkeeping; ensforge maps the fields it serves unchanged (SDK unit tests on recorded answers), and the services lane compares them with the chain (I19)"
+  },
+  "I06": {
+    "na": "bigname's own bookkeeping; ensforge maps the fields it serves unchanged (SDK unit tests on recorded answers), and the services lane compares them with the chain (I19)"
+  },
+  "I07": {
+    "na": "Label healing is bigname's; ensforge pages with bigname's cursors and shows each page's `displayName` as served"
+  },
+  "I08": {
+    "tests": [
+      "tests/services/test/indexer/writes.test.ts > bigname after ensforge writes > follows role grants and transfers",
+      "tests/services/test/indexer/writes.test.ts > follows role grants and transfers"
+    ]
+  },
+  "I09": {
+    "tests": [
+      "tests/services/test/indexer/fixtures.test.ts > bigname against the chain > serves an alias path only on the name route",
+      "tests/services/test/indexer/fixtures.test.ts > serves an alias path only on the name route"
+    ]
+  },
+  "I10": {
+    "na": "Needs a migrated WrapperRegistry falling back to ENSv1 behind an alias; ensforge maps the 404 to `NotFoundError` like any other (SDK unit tests)"
+  },
+  "I11": {
+    "na": "ensforge passes `completeness`, `unsupportedReason` and `unsupportedFields` through (SDK unit tests); which paths bigname leaves unprojected is bigname's"
+  },
+  "I12": {
+    "tests": [
+      "tests/services/test/indexer/writes.test.ts > bigname after ensforge writes > drops a name's records when its resolver changes",
+      "tests/services/test/indexer/writes.test.ts > drops a name's records when its resolver changes"
+    ]
+  },
+  "I13": {
+    "na": "ensforge passes `completeness`, `unsupportedReason` and `unsupportedFields` through (SDK unit tests); which resolvers bigname marks unsupported is bigname's"
+  },
+  "I14": {
+    "tests": [
+      "tests/services/test/indexer/fixtures.test.ts > bigname against the chain > does not follow CCIP-Read when it verifies records on-chain",
+      "tests/services/test/indexer/fixtures.test.ts > does not follow CCIP-Read when it verifies records on-chain"
+    ]
+  },
+  "I15": {
+    "na": "The devnet does not reorg; ensforge maps bigname's 409 and 503 answers to `INDEXER_REQUEST_REJECTED` and `INDEXER_BEHIND` (SDK unit tests)"
+  },
+  "I16": {
+    "tests": [
+      "tests/services/test/indexer/writes.test.ts > bigname after ensforge writes > follows subnames as they are created and removed, page by page",
+      "tests/services/test/indexer/writes.test.ts > follows subnames as they are created and removed, page by page"
+    ]
+  },
+  "I17": {
+    "na": "ensforge's collection queries take no `at` (their types refuse it), so they never send one"
+  },
+  "I18": {
+    "tests": [
+      "tests/services/test/indexer/fixtures.test.ts > bigname against the chain > leaves expired and released subnames out when asked",
+      "tests/services/test/indexer/fixtures.test.ts > leaves expired and released subnames out when asked"
+    ]
+  },
+  "I19": {
+    "tests": [
+      "tests/services/test/indexer/fixtures.test.ts > bigname against the chain > indexes every fixture name as the chain holds it",
+      "tests/services/test/indexer/fixtures.test.ts > bigname against the chain > indexes every fixture's records as its resolver answers them",
+      "tests/services/test/indexer/fixtures.test.ts > indexes every fixture name as the chain holds it",
+      "tests/services/test/indexer/fixtures.test.ts > indexes every fixture's records as its resolver answers them"
+    ]
+  },
+  "I20": {
+    "na": "About upstream documentation; ensforge decodes events from the contracts' ABIs, which its event tests check"
+  },
+  "M:A1": {
+    "tests": ["tests/integration/test/reads/name.test.ts > a name never registered is available"]
+  },
+  "M:A2": {
+    "tests": [
+      "tests/integration/test/reads/name.test.ts > v1.unwrapped",
+      "tests/integration/test/writes/transfers.test.ts > transfers each ENSv1 role it is asked to"
+    ]
+  },
+  "M:A3": {
+    "tests": [
+      "tests/integration/test/reads/name.test.ts > registrant, manager and expiry of ENSv1 names",
+      "tests/integration/test/reads/name.test.ts > v1.unwrapped.manager",
+      "tests/integration/test/writes/access-matrix.test.ts > record.set as registrant, not manager",
+      "tests/integration/test/writes/transfers.test.ts > sets and reclaims the ENSv1 manager"
+    ]
+  },
+  "M:A4": {
+    "tests": [
+      "tests/integration/test/reads/name.test.ts > v1.subname",
+      "tests/integration/test/reads/reachability.test.ts > a child of a .eth name ENSv2 holds no reservation for is unreachable",
+      "tests/integration/test/reads/reachability.test.ts > a child stays reachable under a parent migrated with the ENSv1 bridge as its resolver",
+      "tests/integration/test/writes/hierarchy.test.ts > creates, updates and removes ENSv1 subnames",
+      "tests/integration/test/writes/hierarchy.test.ts > removes a child as an operator of its parent"
+    ]
+  },
+  "M:A5": {
+    "tests": ["tests/integration/test/reads/name.test.ts > v1.unwrapped.grace"]
+  },
+  "M:A6": {
+    "tests": ["tests/integration/test/reads/name.test.ts > v1.unwrapped.expired"]
+  },
+  "M:A7": {
+    "tests": [
+      "tests/integration/test/reads/name.test.ts > v1.wrapped",
+      "tests/integration/test/reads/name.test.ts > wrapped names report the wrapper's token and expiry",
+      "tests/integration/test/writes/access-matrix.test.ts > record.set as wrapped owner",
+      "tests/integration/test/writes/hierarchy.test.ts > wraps, burns fuses, and refuses what burned fuses forbid",
+      "tests/integration/test/writes/transfers.test.ts > transfers each ENSv1 role it is asked to"
+    ]
+  },
+  "M:A8": {
+    "tests": [
+      "tests/integration/test/reads/access.test.ts > reports what an account may do, and why not",
+      "tests/integration/test/reads/name.test.ts > v1.wrapped.locked",
+      "tests/integration/test/writes/hierarchy.test.ts > wraps, burns fuses, and refuses what burned fuses forbid",
+      "tests/integration/test/writes/transfers.test.ts > transfers each ENSv1 role it is asked to"
+    ]
+  },
+  "M:A9": {
+    "tests": [
+      "tests/integration/test/reads/name.test.ts > v1.wrapped.sub",
+      "tests/integration/test/writes/hierarchy.test.ts > follows NameWrapper fuse rules for children",
+      "tests/integration/test/writes/hierarchy.test.ts > removes a child as an operator of its parent"
+    ]
+  },
+  "M:A10": {
+    "tests": [
+      "tests/integration/test/reads/name.test.ts > v1.wrapped.sub.emancipated",
+      "tests/integration/test/reads/reachability.test.ts > an emancipated child of a migrated locked parent stays reachable until it migrates",
+      "tests/integration/test/writes/hierarchy.test.ts > follows NameWrapper fuse rules for children"
+    ]
+  },
+  "M:A11": {
+    "tests": ["tests/integration/test/reads/name.test.ts > v1.wrapped.sub.locked"]
+  },
+  "M:A12": {
+    "tests": [
+      "tests/integration/test/reads/name.test.ts > v1.wrapped.sub.expired",
+      "tests/integration/test/writes/wrapper.test.ts > updates an expired child its parent still controls, and recreates a lapsed emancipated one"
+    ]
+  },
+  "M:A13": {
+    "tests": ["tests/integration/test/reads/name.test.ts > v1.wrapped.grace"]
+  },
+  "M:A14": {
+    "tests": [
+      "tests/integration/test/reads/name.test.ts > v2.registered",
+      "tests/integration/test/writes/registration.test.ts > registers a name through commit, wait and reveal, paying the quote",
+      "tests/integration/test/writes/transfers.test.ts > transfers ENSv2 names, safely only when nobody else holds roles"
+    ]
+  },
+  "M:A15": {
+    "tests": [
+      "tests/integration/test/reads/name.test.ts > v2.grace",
+      "tests/integration/test/writes/renewal.test.ts > renews an ENSv2 name for anyone who pays, in grace from its old expiry"
+    ]
+  },
+  "M:A16": {
+    "tests": ["tests/integration/test/reads/name.test.ts > v2.expired"]
+  },
+  "M:A17": {
+    "tests": [
+      "tests/integration/test/reads/name.test.ts > v2.re-registered",
+      "tests/integration/test/writes/registration.test.ts > re-registers an expired name as a new token, without the old roles"
+    ]
+  },
+  "M:A18": {
+    "tests": [
+      "tests/integration/test/reads/name.test.ts > token ID, resource, registry and expiry of ENSv2 names",
+      "tests/integration/test/reads/name.test.ts > v2.subnames",
+      "tests/integration/test/reads/registry.test.ts > identifies each kind of registry by the name whose children it holds",
+      "tests/integration/test/reads/registry.test.ts > reads a registry by address, with its parent and canonical name",
+      "tests/integration/test/writes/hierarchy.test.ts > creates ENSv2 subnames, deploying a registry where the parent has none",
+      "tests/integration/test/writes/hierarchy.test.ts > deploys a registry and attaches it under a name"
+    ]
+  },
+  "M:A19": {
+    "tests": [
+      "tests/integration/test/reads/name.test.ts > v2.unregistered",
+      "tests/integration/test/reads/registration.test.ts > isAvailable agrees with name.get for every .eth second-level name"
+    ]
+  },
+  "M:A20": {
+    "tests": [
+      "tests/integration/test/reads/migration.test.ts > reports each name's route, blockers and state after migrating",
+      "tests/integration/test/reads/name.test.ts > migration.unwrapped",
+      "tests/integration/test/writes/migration.test.ts > migrates unwrapped and wrapped names, leaving their ENSv1 husk to the Graveyard"
+    ]
+  },
+  "M:A21": {
+    "tests": [
+      "tests/integration/test/reads/name.test.ts > migration.wrapped-unlocked",
+      "tests/integration/test/writes/migration.test.ts > migrates unwrapped and wrapped names, leaving their ENSv1 husk to the Graveyard"
+    ]
+  },
+  "M:A22": {
+    "tests": [
+      "tests/integration/test/reads/migration.test.ts > reports each name's route, blockers and state after migrating",
+      "tests/integration/test/reads/name.test.ts > migration.locked",
+      "tests/integration/test/reads/registry.test.ts > identifies each kind of registry by the name whose children it holds",
+      "tests/integration/test/writes/migration.test.ts > migrates a locked name into a WrapperRegistry, then its locked child"
+    ]
+  },
+  "M:A23": {
+    "tests": [
+      "tests/integration/test/reads/migration.test.ts > reports each name's route, blockers and state after migrating",
+      "tests/integration/test/reads/name.test.ts > v2.reserved"
+    ]
+  },
+  "M:A24": {
+    "tests": [
+      "tests/integration/test/reads/access.test.ts > reads ENSv2 roles held by accounts other than the owner",
+      "tests/integration/test/reads/name.test.ts > v2.roles",
+      "tests/integration/test/writes/access-matrix.test.ts > name.transfer as resolver role, transfer",
+      "tests/integration/test/writes/access-matrix.test.ts > role.grant as role grant by stranger",
+      "tests/integration/test/writes/access.test.ts > grants and revokes ENSv2 roles",
+      "tests/integration/test/writes/transfers.test.ts > transfers ENSv2 names, safely only when nobody else holds roles"
+    ]
+  },
+  "M:A25": {
+    "tests": [
+      "tests/integration/test/reads/name.test.ts > token ID, resource, registry and expiry of ENSv2 names",
+      "tests/integration/test/reads/name.test.ts > v2.regenerated"
+    ]
+  },
+  "M:A26": {
+    "tests": [
+      "tests/integration/test/reads/registry.test.ts > offers an upgrade from an older implementation only when the latest accepts it",
+      "tests/integration/test/reads/registry.test.ts > offers no upgrade from the v1.0.1 implementation to the current one"
+    ]
+  },
+  "M:B1": {
+    "tests": [
+      "tests/integration/test/reads/records.test.ts > reads every profile of a PublicResolver",
+      "tests/integration/test/writes/records.test.ts > clears every record of a name"
+    ]
+  },
+  "M:B2": {
+    "tests": [
+      "tests/fork/test/reads/legacy-resolvers.test.ts > accept writes from the current registry's owner, unless frozen",
+      "tests/integration/test/reads/resolver.test.ts > describes each generation and kind of resolver",
+      "tests/integration/test/writes/access-matrix.test.ts > record.set as frozen 2019 resolver",
+      "tests/integration/test/writes/unwritable-resolvers.test.ts > record.set refuses records and clearing the 2020 public resolver predates"
+    ]
+  },
+  "M:B3": {
+    "tests": [
+      "tests/integration/test/writes/records.test.ts > writes records to a new resolver before pointing the name at it"
+    ]
+  },
+  "M:B4": {
+    "tests": [
+      "tests/integration/test/reads/resolver.test.ts > describes ENSv2 resolvers and their record links"
+    ]
+  },
+  "M:B5": {
+    "tests": [
+      "tests/integration/test/reads/records.test.ts > reads a PermissionedResolver, where a zero address is a record",
+      "tests/integration/test/reads/resolver.test.ts > describes ENSv2 resolvers and their record links",
+      "tests/integration/test/writes/access-matrix.test.ts > record.set as ENSv2 owner",
+      "tests/integration/test/writes/access-matrix.test.ts > record.set as ENSv2 stranger",
+      "tests/integration/test/writes/records.test.ts > creates a resolver with records and points a name at it",
+      "tests/integration/test/writes/transfers.test.ts > hands record access over with an ENSv2 name, unless the resolver serves other names"
+    ]
+  },
+  "M:B6": {
+    "tests": [
+      "tests/integration/test/writes/access-matrix.test.ts > record.set as url role, address",
+      "tests/integration/test/writes/access-matrix.test.ts > record.set as url role, description",
+      "tests/integration/test/writes/access-matrix.test.ts > record.set as url role, url",
+      "tests/integration/test/writes/access.test.ts > gives an account access to chosen records only"
+    ]
+  },
+  "M:B7": {
+    "tests": [
+      "tests/integration/test/reads/records.test.ts > reads default and linked records",
+      "tests/integration/test/reads/resolver.test.ts > describes ENSv2 resolvers and their record links",
+      "tests/integration/test/writes/records.test.ts > links a name to another's records, and unlinks it"
+    ]
+  },
+  "M:B8": {
+    "tests": [
+      "tests/integration/test/reads/resolver.test.ts > resolves through the exact resolver first, then a parent's wildcard"
+    ]
+  },
+  "M:B9": {
+    "tests": [
+      "tests/integration/test/reads/resolver.test.ts > describes each generation and kind of resolver",
+      "tests/integration/test/reads/resolver.test.ts > resolves through the exact resolver first, then a parent's wildcard"
+    ]
+  },
+  "M:B10": {
+    "tests": [
+      "tests/integration/test/reads/ccip.test.ts > follows an off-chain lookup through the resolver's gateway",
+      "tests/integration/test/writes/unwritable-resolvers.test.ts > record.set refuses records an extended resolver declares no profile for"
+    ]
+  },
+  "M:B11": {
+    "tests": [
+      "tests/integration/test/reads/ccip.test.ts > reports a failing gateway with its HTTP status"
+    ]
+  },
+  "M:B12": {
+    "tests": [
+      "tests/integration/test/reads/ccip.test.ts > never answers from an off-chain lookup that names another contract as its sender"
+    ]
+  },
+  "M:B13": {
+    "tests": [
+      "tests/integration/test/reads/name.test.ts > a wildcard subname is available and has no expiry, yet resolves",
+      "tests/integration/test/reads/resolver.test.ts > describes each generation and kind of resolver",
+      "tests/integration/test/reads/resolver.test.ts > reads misbehaving resolvers as missing records, and fails strict reads with a typed error"
+    ]
+  },
+  "M:B14": {
+    "tests": [
+      "tests/integration/test/reads/resolver.test.ts > describes each generation and kind of resolver",
+      "tests/integration/test/reads/resolver.test.ts > reads misbehaving resolvers as missing records, and fails strict reads with a typed error"
+    ]
+  },
+  "M:B15": {
+    "tests": [
+      "tests/integration/test/reads/resolver.test.ts > reads misbehaving resolvers as missing records, and fails strict reads with a typed error"
+    ]
+  },
+  "M:B16": {
+    "tests": [
+      "tests/integration/test/reads/name.test.ts > a name whose parent registry reverts fails with a typed error",
+      "tests/integration/test/reads/resolver.test.ts > fails with a typed error when a registry reverts during resolution"
+    ]
+  },
+  "M:B17": {
+    "tests": [
+      "tests/integration/test/reads/resolver.test.ts > reads misbehaving resolvers as missing records, and fails strict reads with a typed error"
+    ]
+  },
+  "M:C1": {
+    "tests": [
+      "tests/integration/test/reads/name.test.ts > normalizes input and rejects names that cannot be normalized",
+      "tests/integration/test/reads/registry.test.ts > identifies each kind of registry by the name whose children it holds"
+    ]
+  },
+  "M:C2": {
+    "tests": [
+      "tests/integration/test/reads/name.test.ts > reads top-level names from the root registry"
+    ]
+  },
+  "M:C3": {
+    "tests": [
+      "tests/integration/test/reads/primary.test.ts > reads verified primary names from every reverse namespace and registrar generation",
+      "tests/integration/test/writes/access.test.ts > sets and clears a primary name"
+    ]
+  },
+  "M:C4": {
+    "tests": [
+      "tests/integration/test/reads/name.test.ts > dns.imported",
+      "tests/integration/test/reads/reachability.test.ts > an imported DNS name is reachable while its TLD resolves through the DNS TLD resolver"
+    ]
+  },
+  "M:C5": {
+    "tests": [
+      "tests/integration/test/reads/dns.test.ts > resolve through the resolver an ENS1 record names, by address or by ENS name"
+    ]
+  },
+  "M:C6": {
+    "tests": [
+      "tests/integration/test/reads/name.test.ts > hierarchy.label-unknown",
+      "tests/integration/test/reads/name.test.ts > hierarchy.label-with-dot",
+      "tests/integration/test/reads/name.test.ts > recovers ENSv2 labels from the LabelStore and leaves unknown ones null"
+    ]
+  },
+  "M:C7": {
+    "tests": [
+      "tests/integration/test/reads/name.test.ts > normalizes input and rejects names that cannot be normalized"
+    ]
+  },
+  "M:C8": {
+    "tests": ["tests/integration/test/reads/name.test.ts > hierarchy.label-unnormalized"]
+  },
+  "M:C9": {
+    "tests": [
+      "tests/integration/test/reads/registration.test.ts > prices labels by code point and refuses labels below the minimum",
+      "tests/integration/test/writes/registration.test.ts > registers several names, each at its price tier"
+    ]
+  },
+  "M:D1": {
+    "tests": ["tests/integration/test/writes/access-matrix.test.ts > record.set as ENSv1 owner"]
+  },
+  "M:D2": {
+    "tests": ["tests/integration/test/writes/access-matrix.test.ts > record.set as manager"]
+  },
+  "M:D3": {
+    "tests": [
+      "tests/integration/test/writes/access-matrix.test.ts > record.set as registrant, not manager"
+    ]
+  },
+  "M:D4": {
+    "tests": [
+      "tests/integration/test/reads/access.test.ts > reads ENSv1 operators, resolver delegates and token approvals",
+      "tests/integration/test/writes/access-matrix.test.ts > record.set as registry operator",
+      "tests/integration/test/writes/access.test.ts > grants and revokes ENSv1 operators, token approvals and delegates",
+      "tests/integration/test/writes/hierarchy.test.ts > removes a child as an operator of its parent",
+      "tests/integration/test/writes/transfers.test.ts > lets an approved operator transfer an ENSv2 name",
+      "tests/integration/test/writes/wrapper.test.ts > wraps a name for its holder when an operator sends it"
+    ]
+  },
+  "M:D5": {
+    "tests": [
+      "tests/integration/test/reads/access.test.ts > gives a NameWrapper token approval no say over the name itself",
+      "tests/integration/test/writes/access-matrix.test.ts > record.set as token-approved",
+      "tests/integration/test/writes/access.test.ts > grants and revokes ENSv1 operators, token approvals and delegates"
+    ]
+  },
+  "M:D6": {
+    "tests": [
+      "tests/integration/test/reads/access.test.ts > reads ENSv1 operators, resolver delegates and token approvals",
+      "tests/integration/test/writes/access-matrix.test.ts > record.set as resolver delegate",
+      "tests/integration/test/writes/access.test.ts > grants and revokes ENSv1 operators, token approvals and delegates"
+    ]
+  },
+  "M:D7": {
+    "tests": [
+      "tests/integration/test/writes/access-matrix.test.ts > name.transfer as resolver role, transfer",
+      "tests/integration/test/writes/access-matrix.test.ts > permission.setRecordAccess as record access by stranger",
+      "tests/integration/test/writes/access-matrix.test.ts > record.set as url role, description",
+      "tests/integration/test/writes/access-matrix.test.ts > record.set as url role, url",
+      "tests/integration/test/writes/access.test.ts > gives an account access to chosen records only",
+      "tests/integration/test/writes/access.test.ts > grants and revokes ENSv2 roles"
+    ]
+  },
+  "M:D8": {
+    "tests": [
+      "tests/integration/test/reads/access.test.ts > renews wrapped subnames through the parent's authority, or the child's with canExtendExpiry",
+      "tests/integration/test/writes/hierarchy.test.ts > creates ENSv2 subnames, deploying a registry where the parent has none",
+      "tests/integration/test/writes/hierarchy.test.ts > follows NameWrapper fuse rules for children",
+      "tests/integration/test/writes/hierarchy.test.ts > removes a child as an operator of its parent"
+    ]
+  },
+  "M:D9": {
+    "tests": [
+      "tests/integration/test/writes/hca.test.ts > migrates several names in one execution",
+      "tests/integration/test/writes/hca.test.ts > registers a name for the owner, paid by the HCA, with the owner's primary name"
+    ]
+  },
+  "M:D10": {
+    "tests": [
+      "tests/integration/test/reads/primary.test.ts > reads verified primary names from every reverse namespace and registrar generation",
+      "tests/integration/test/writes/access-matrix.test.ts > primaryName.set as contract's owner names it"
+    ]
+  },
+  "M:D11": {
+    "tests": ["tests/integration/test/writes/access-matrix.test.ts > record.set as stranger"]
+  },
+  "M:D12": {
+    "tests": [
+      "tests/integration/test/writes/conformance.test.ts > fails typed when the user rejects or there is no wallet"
+    ]
+  },
+  "M:E1": {
+    "tests": [
+      "tests/integration/test/reads/name-time.test.ts > an ENSv1 .eth name expires at its expiry and is released one second after grace",
+      "tests/integration/test/reads/name-time.test.ts > an ENSv2 .eth name is in grace from its expiry and available at grace end"
+    ]
+  },
+  "M:E2": {
+    "tests": [
+      "tests/integration/test/reads/name-time.test.ts > an ENSv1 .eth name expires at its expiry and is released one second after grace",
+      "tests/integration/test/reads/name-time.test.ts > an ENSv2 .eth name is in grace from its expiry and available at grace end"
+    ]
+  },
+  "M:E3": {
+    "tests": [
+      "tests/integration/test/reads/name-time.test.ts > an ENSv1 .eth name expires at its expiry and is released one second after grace",
+      "tests/integration/test/reads/name-time.test.ts > an ENSv2 .eth name is in grace from its expiry and available at grace end"
+    ]
+  },
+  "M:E4": {
+    "tests": [
+      "tests/integration/test/reads/conformance.test.ts > reads at a pinned block, with that block's time"
+    ]
+  },
+  "M:E5": {
+    "tests": [
+      "tests/integration/test/writes/plans.test.ts > re-validates a plan prepared before its name changed"
+    ]
+  },
+  "M:F1": {
+    "na": "the devnet lane itself: every tests/integration test runs on contracts-v2 v1.0.1 builds"
+  },
+  "M:F2": {
+    "tests": [
+      "tests/fork/test/reads/resolution.test.ts > unwraps the Universal Resolver's ResolutionError for DNS names (KL-14, KL-29)"
+    ]
+  },
+  "M:F3": {
+    "tests": [
+      "tests/fork/test/reads/resolution.test.ts > resolves wrapped ENSv1 names and DNS names through the cut-over Universal Resolver"
+    ]
+  },
+  "M:F4": {
+    "tests": [
+      "tests/integration/test/reads/ccip.test.ts > does not contact the gateway when CCIP-Read is disabled"
+    ]
+  },
+  "M:F5": {
+    "tests": [
+      "tests/integration/test/reads/ccip.test.ts > sends lookups through the batch gateways the caller names"
+    ]
+  },
+  "M:F6": {
+    "tests": [
+      "tests/integration/test/reads/conformance.test.ts > reads the same without Multicall3 on the chain, and with batching off"
+    ]
+  },
+  "M:F7": {
+    "tests": [
+      "tests/integration/test/reads/conformance.test.ts > reads the same without Multicall3 on the chain, and with batching off"
+    ]
+  },
+  "M:F8": {
+    "tests": [
+      "tests/integration/test/reads/registration.test.ts > fails with a typed error where ENSv2 is not deployed"
+    ]
+  },
+  "M:F9": {
+    "tests": [
+      "tests/integration/test/reads/errors.test.ts > NameWrapper reads where ENSv1 is not deployed"
+    ]
+  }
+}

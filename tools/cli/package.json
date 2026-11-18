@@ -1,0 +1,29 @@
+{
+  "name": "@ensforge/tools",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Repository tooling for ensforge: build, verify, API reports, codegen and bundle budgets",
+  "bin": {
+    "ensforge-dev": "./src/bin.ts"
+  },
+  "type": "module",
+  "exports": {
+    "./internal/*": {
+      "workspace-source": "./src/*.ts"
+    }
+  },
+  "scripts": {
+    "lint": "oxlint -c ../../.config/oxlint.config.ts --deny-warnings .",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@effect/platform-node": "catalog:",
+    "effect": "catalog:",
+    "rolldown": "catalog:",
+    "typescript": "catalog:"
+  },
+  "devDependencies": {
+    "@effect/vitest": "catalog:",
+    "@types/node": "catalog:"
+  }
+}

@@ -1,4 +1,10 @@
-/** Resolver role bitmaps from ENSv2 PermissionedResolverLib. */
+/**
+ * PermissionedResolver roles from contracts-v2 v1.0.1 `PermissionedResolverLib`.
+ *
+ * @see https://github.com/ensdomains/contracts-v2/blob/v1.0.1/contracts/src/resolver/libraries/PermissionedResolverLib.sol
+ * @stability stable
+ * @since 1.0.0
+ */
 export const resolverRoles = {
   setAddr: 1n << 0n,
   setAddrAdmin: 1n << 128n,
@@ -22,4 +28,10 @@ export const resolverRoles = {
   upgradeAdmin: 1n << 252n,
 } as const;
 
+/**
+ * A single resolver role bit from {@link resolverRoles}.
+ *
+ * @stability stable
+ * @since 1.0.0
+ */
 export type ResolverRole = (typeof resolverRoles)[keyof typeof resolverRoles];

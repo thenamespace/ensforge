@@ -5,46 +5,97 @@ Ensforge is a pnpm and Turborepo monorepo for Effect-native Ethereum Name Servic
 ## Workspace map
 
 - `packages/contracts`: runtime-neutral ENS ABIs, interfaces, addresses, and deployment metadata.
-- `packages/core`: framework-independent SDK types, services, and actions when introduced.
+- `packages/sdk`: framework-independent SDK client, types, services, and actions.
 - `apps/*`: runnable applications when a concrete application is introduced.
 - `packages/*`: additional publishable packages when they have an independent public boundary.
 
-Dependencies must point inward toward `@ensforge/core`. Framework adapters may depend on core; core
-must not depend on React or application runtimes.
+Dependencies must point inward toward `@ensforge/sdk`. Framework adapters may depend on the sdk; the
+sdk must not depend on React or application runtimes.
 
 ## Commands
 
-- `pnpm check`: formatting, linting, type checking, tests, and builds.
+- `pnpm check`: formatting, linting, type checking, builds, verify, bundle budgets and tests.
 - `pnpm format`: format the workspace with Oxfmt.
 - `pnpm changeset`: record a publishable package change.
 
-Use the Klarity presets already configured at the workspace root. Do not add Prettier, ESLint, Husky,
-lint-staged, tsup, or Rollup unless a demonstrated requirement cannot be met by the existing tools.
+Use the Klarity presets already configured at the workspace root. Packages build with TypeScript 7's
+`tsc` (`ensforge-dev build`, from `tools/cli`), which keeps `export * as` re-exports tree-shakeable; tsdown's
+unbundled output did not. Do not add Prettier, ESLint, Husky, lint-staged, tsup, or Rollup unless a
+demonstrated requirement cannot be met by the existing tools. Pin every external dependency in the
+pnpm catalog. Tool configs live in `.config/`; repository scripts are `ensforge-dev` commands in
+`tools/cli`, written with Effect.
 
-## Readability
+`tsc` is patched with the Effect language service (`@effect/tsgo`), so typecheck reports Effect
+diagnostics. Fix them in the code rather than silencing them; disable one with an
+`@effect-diagnostics-next-line` comment only when the flagged pattern is the point of the code.
+`pnpm install` also patches oxlint (`effect-tsgo patch --oxlint`): lint is type-aware and runs the
+`@effect/tsgo` oxlint presets, whose rules `tsc` does not run. Silence those the same way, with a
+one-line reason and `// oxlint-disable-next-line effecttsgo/<rule>` (an `@effect-diagnostics`
+comment for a rule `tsc` does not run fails typecheck as having no effect). Unstable and
+experimental APIs used on purpose are allowlisted per package (`allowedUnstableApis`,
+`allowedExperimentalApis` in its tsconfig).
 
-Apply these conventions across all package source, including core, HCA, SDK, React, contracts, and
-new packages. Oxfmt does not insert logical blank lines; review grouping explicitly when writing code.
+## Code guidelines
 
-Separate validation, execution, state updates, and result construction with blank lines. Keep short,
-related declarations and assertions together; do not add a blank line after every statement. Separate
-independent functions and type declarations, while keeping overloads and schema/type pairs together.
+These apply to all code: the SDK, HCA, React, contracts, tools and tests. Oxfmt does not insert
+logical blank lines; review grouping explicitly when writing code.
 
-Use brief comments for non-obvious constraints, ordering, or lifecycle decisions. Avoid comments that
-repeat the code, section banners, roadmap phase labels in source comments, and manual reformatting
-of generated artifacts.
+### Structure and naming
 
-Inline trivial wrappers such as a function that only constructs an error or forwards a call. Prefer
-an explicit expression at its use site when a small helper adds navigation without clarifying intent.
-Keep shared functions for substantial reused logic or important domain concepts; do not extract
-one-off helpers merely to shorten a function. Preserve existing public APIs when cleaning up.
+- Name things for what they are in the domain, consistently across the repository: one name per
+  concept (`fixtures.byId`, `services.indexerUrl`), not synonyms per file.
+- Prefer Effect services (`Context.Service` with a static `layer`, methods built with
+  `Effect.fn`/`Effect.fnUntraced`) over free functions that take a client or instance as their
+  first argument. Shared behaviour belongs in a service other code yields. The one exception is
+  the packages' public actions and the internal modules behind them: they take the client first
+  (`Actions.record.get(ens, options)`), which keeps them tree-shakeable and shared by the Promise
+  and Effect APIs.
+- Use what exists before writing a helper: viem, Effect (`Predicate`, `Schema`, `Array`, …), the
+  SDK's own utilities (`Name.parse`, `CoinType`, `Role`), then the shared test services. When a
+  helper is missing and generally useful, add it to the package that owns the concept, with tests.
+- Keep each public action in its own action folder, following neighboring actions. Keep each file
+  to one responsibility.
 
-Keep each public action in its own action folder, following neighboring actions. Separate validation,
-RPC/provider work, mutation, and result construction; group related declarations without inserting
-a blank line after every line.
+### Helpers and inlining
+
+- Inline one-off logic at its use site. Do not declare small helpers, constants or fixtures at the
+  top of a file when they are used once or twice in that file: a reader should not have to jump
+  around to follow a test or a function.
+- Extract only substantial logic, or logic reused across files, into a shared module with a
+  specific name; never into catch-all `utils`/`helpers` files.
+- Inline trivial wrappers: a function that only constructs an error, forwards a call, or wraps an
+  assertion (`const fails = (e) => expectFailure(e, …)`) adds navigation without clarifying intent.
+- Preserve existing public APIs when cleaning up.
+
+### Grouping and comments
+
+- Separate logical blocks with a blank line: setup, validation, execution (RPC or provider
+  work), state updates, assertions and result construction. Keep short, related declarations and
+  assertions together; do not add a blank line after every statement. Separate independent
+  functions and type declarations, keeping overloads and schema/type pairs together.
+- Use brief comments for non-obvious constraints, ordering or lifecycle decisions. Avoid comments
+  that repeat the code, section banners, roadmap phase labels, and manual reformatting of
+  generated artifacts.
 
 Defer HCA user documentation until the final documentation phase. Write it in `apps/docs`, not in
-package guides or action README files. Keep the existing research roadmap for implementation tracking.
+package guides or action README files. Keep the existing research roadmap for implementation
+tracking.
+
+## Tests
+
+- All tests live under `tests/`: unit tests in `tests/unit/<package>`, the chain, fuzz and
+  services lanes beside them. Unit tests reach package internals through the workspace-only
+  `@ensforge/<package>/internal/*` export.
+- Tests are Effect programs (`it.effect`, `layer(...)` from `@effect/vitest`). Call ensforge
+  through its Effect API (`yield* Actions.record.get(ens, options)`, `Actions` from
+  `@ensforge/sdk/effect` or `@ensforge/hca/effect`) and assert failures with `expectFailure`.
+  Reach the chain, wallets, gateways, indexers and bundlers through the shared test services; do
+  not write `Effect.promise`/`async` in tests. Only the conformance tests that compare the Promise
+  API with the Effect API call Promises.
+- Write the tests a behaviour needs: the documented contract, its failure cases and regressions.
+  Do not add tests that restate the implementation, check what the type checker already proves,
+  or assert the obvious.
+- See the Tests section of CONTRIBUTING.md for lanes, fixtures and the coverage ledger.
 
 # Learning more about Effect
 

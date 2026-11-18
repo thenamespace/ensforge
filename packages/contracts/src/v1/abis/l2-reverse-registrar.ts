@@ -1,4 +1,9 @@
-/** Complete IL2ReverseRegistrar ABI from @ensdomains/ens-contracts v1.7.0. */
+/**
+ * Complete IL2ReverseRegistrar ABI from @ensdomains/ens-contracts v1.7.0.
+ *
+ * @stability stable
+ * @since 1.0.0
+ */
 export const l2ReverseRegistrarV1InterfaceAbi = [
   {
     inputs: [
@@ -104,7 +109,12 @@ export const l2ReverseRegistrarV1InterfaceAbi = [
   },
 ] as const;
 
-/** Complete L2ReverseRegistrar ABI from @ensdomains/ens-contracts v1.7.0. */
+/**
+ * Complete L2ReverseRegistrar ABI from @ensdomains/ens-contracts v1.7.0.
+ *
+ * @stability stable
+ * @since 1.0.0
+ */
 export const l2ReverseRegistrarV1Abi = [
   {
     inputs: [
@@ -321,7 +331,12 @@ export const l2ReverseRegistrarV1Abi = [
   },
 ] as const;
 
-/** Complete L2ReverseRegistrarWithMigration ABI from @ensdomains/ens-contracts v1.7.0. */
+/**
+ * Complete L2ReverseRegistrarWithMigration ABI from @ensdomains/ens-contracts v1.7.0.
+ *
+ * @stability stable
+ * @since 1.0.0
+ */
 export const l2ReverseRegistrarWithMigrationV1Abi = [
   {
     inputs: [

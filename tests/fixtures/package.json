@@ -1,0 +1,26 @@
+{
+  "name": "@ensforge/test-fixtures",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Every ENS name state seeded on the devnet, with the edge-case catalog and coverage ledger (not published)",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "lint": "oxlint -c ../../.config/oxlint.config.ts --deny-warnings .",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p test"
+  },
+  "dependencies": {
+    "@effect/platform-node": "catalog:",
+    "@ensdomains/content-hash": "catalog:",
+    "@ensforge/contracts": "workspace:*",
+    "@ensforge/test-devnet": "workspace:*",
+    "effect": "catalog:",
+    "viem": "catalog:"
+  },
+  "devDependencies": {
+    "@effect/vitest": "catalog:",
+    "@types/node": "catalog:"
+  }
+}

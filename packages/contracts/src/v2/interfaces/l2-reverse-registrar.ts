@@ -1,4 +1,10 @@
-/** IL2ReverseRegistrar ABI from the pinned ENSv2 deployment source. */
+/**
+ * `IL2ReverseRegistrar` interface ABI at contracts-v2 v1.0.1.
+ *
+ * @see https://github.com/ensdomains/contracts-v2/blob/v1.0.1/contracts/src/reverse-registrar/interfaces/IL2ReverseRegistrar.sol
+ * @stability stable
+ * @since 1.0.0
+ */
 export const l2ReverseRegistrarV2InterfaceAbi = [
   {
     inputs: [

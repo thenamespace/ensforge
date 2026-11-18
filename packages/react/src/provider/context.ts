@@ -4,27 +4,46 @@ import { createContext, useContext } from "react";
 
 import type { Ensforge } from "@ensforge/sdk";
 
-import type { EnsMutationDefaults } from "../mutation/options.js";
-import type { EnsAtomDefaults } from "../query/options.js";
+import type { Freshness } from "../atoms/read.js";
 
-export interface EnsforgeReactDefaults {
-  readonly atoms?: EnsAtomDefaults;
-  readonly mutations?: EnsMutationDefaults;
-}
-
-export interface EnsforgeReactContextValue {
-  readonly defaults: EnsforgeReactDefaults;
-  readonly sdk: Ensforge;
-}
-
-export const EnsforgeReactContext = createContext<EnsforgeReactContextValue | undefined>(undefined);
-
-export const useEnsforgeContext = (): EnsforgeReactContextValue => {
-  const value = useContext(EnsforgeReactContext);
-
-  if (value === undefined) {
-    throw new Error("Ensforge React hooks must be used inside an EnsforgeProvider");
-  }
-
-  return value;
+/** What `EnsforgeProvider` gives the hooks below it. */
+export type EnsforgeContextValue = {
+  readonly client: Ensforge.Client;
+  readonly defaults: Freshness;
 };
+
+/** React context behind `EnsforgeProvider` and `useEnsforge`. */
+export const EnsforgeContext = createContext<EnsforgeContextValue | undefined>(undefined);
+
+/** The nearest provider's client and defaults; `client` overrides the client. */
+export const useEnsforgeContext = (client?: Ensforge.Client): EnsforgeContextValue => {
+  const context = useContext(EnsforgeContext);
+  if (client !== undefined) return { client, defaults: context?.defaults ?? {} };
+  if (context === undefined) {
+    throw new Error(
+      "ensforge hooks need an <EnsforgeProvider client={…}> above them, or a `client` option.",
+    );
+  }
+  return context;
+};
+
+/**
+ * The client of the nearest `EnsforgeProvider`.
+ *
+ * **Example** (Calling an action from an event handler)
+ *
+ * ```tsx
+ * import { Actions } from "@ensforge/sdk"
+ * import { useEnsforge } from "@ensforge/react"
+ *
+ * function Check({ name }: { name: string }) {
+ *   const ens = useEnsforge()
+ *   return <button onClick={() => Actions.registration.isAvailable(ens, { name })}>Check</button>
+ * }
+ * ```
+ *
+ * @stability stable
+ * @category provider
+ * @since 1.0.0
+ */
+export const useEnsforge = (): Ensforge.Client => useEnsforgeContext().client;

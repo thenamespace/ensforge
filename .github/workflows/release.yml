@@ -1,37 +1,197 @@
+# Releases from the default branch, dispatched by a maintainer. With pending changesets it opens
+# (or updates) the version PR; once that PR is merged, it verifies and publishes the exact packed
+# tarballs with npm trusted publishing (OIDC, no npm token) and provenance, then tags and creates
+# GitHub releases. A dry run (the default) versions temporarily in the runner, prepares, packs and
+# checks, and creates nothing. npm checks this filename: keep it `release.yml`.
 name: Release
 
 on:
   workflow_dispatch:
+    inputs:
+      dry-run:
+        description: Verify the release without opening the version PR or publishing
+        type: boolean
+        default: true
 
-permissions:
-  contents: write
-  id-token: write
-  pull-requests: write
+permissions: {}
 
+# Serialized and never cancelled: a cancelled publish can leave a partial release.
 concurrency:
-  group: release-main
+  group: release
   cancel-in-progress: false
 
 jobs:
-  release:
-    name: Release
+  plan:
+    if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    permissions:
+      contents: read
+    outputs:
+      mode: ${{ steps.mode.outputs.mode }}
+      publish-plan-artifact-id: ${{ steps.mode.outputs.publish-plan-artifact-id }}
     steps:
-      - name: Checkout main
-        uses: actions/checkout@v7
+      # Full history and tags: the publish plan skips versions that are already tagged.
+      - uses: actions/checkout@v7
         with:
-          ref: main
           fetch-depth: 0
-
-      - name: Setup pnpm and Node.js
-        uses: ./.github/actions/setup
-
-      - name: Create release pull request or publish to npm
-        uses: changesets/action@v2
+          persist-credentials: false
+      - uses: ./.github/actions/setup
         with:
-          publish-script: pnpm release
-          commit-message: "chore: release"
+          ignore-scripts: "true"
+      - uses: changesets/action/select-mode@v2.1.2
+        id: mode
+      - name: Write the job summary
+        env:
+          MODE: ${{ steps.mode.outputs.mode }}
+          DRY_RUN: ${{ inputs.dry-run }}
+        run: |
+          {
+            echo "### Release plan"
+            echo "Mode: \`$MODE\` (version: open the version PR; publish: publish the versions on main; none: nothing to release)."
+            if [ "$DRY_RUN" = true ]; then echo "Dry run: verify only; nothing is pushed or published."; fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  version:
+    needs: plan
+    if: ${{ !inputs.dry-run && needs.plan.outputs.mode == 'version' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write # the version commit on changeset-release/main
+      pull-requests: write # the version PR
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+        with:
+          ignore-scripts: "true"
+      # Commits through the GitHub API with the workflow token (signed by GitHub).
+      - uses: changesets/action/version@v2.1.2
+        with:
+          script: pnpm release:version
+          commit-message: "chore(release): version packages"
+          pr-title: "chore(release): version packages"
+
+  prepare:
+    needs: plan
+    if: ${{ inputs.dry-run || needs.plan.outputs.mode == 'publish' }}
+    runs-on: ubuntu-latest
+    # release:prepare runs pnpm check and the chain, fuzz and services lanes (bigname builds from
+    # source on a cold runner).
+    timeout-minutes: 120
+    permissions:
+      contents: read
+    outputs:
+      pack-dir-artifact-id: ${{ steps.pack.outputs.pack-dir-artifact-id }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      # No dependency cache in the release: everything comes from the lockfile and the registry.
+      - uses: ./.github/actions/setup
+      - uses: ./.github/actions/setup-foundry
+
+      - name: Version in the runner (dry run)
+        if: inputs.dry-run
+        run: |
+          if ! find .changeset -maxdepth 1 -name '*.md' ! -name README.md | grep -q .; then
+            {
+              echo '---'
+              for name in contracts sdk hca react; do echo "\"@ensforge/$name\": patch"; done
+              echo '---'
+              echo
+              echo 'Release dry run.'
+            } > .changeset/release-dry-run.md
+          fi
+          pnpm release:version
+          git diff --stat
+
+      - run: pnpm release:prepare
+
+      # Packs the publish plan from the plan job; a dry run packs the versions made above.
+      - uses: changesets/action/pack@v2.1.2
+        id: pack
+        with:
+          publish-plan-artifact-id: ${{ !inputs.dry-run && needs.plan.outputs.publish-plan-artifact-id || '' }}
+      - uses: actions/download-artifact@v8
+        with:
+          artifact-ids: ${{ steps.pack.outputs.pack-dir-artifact-id }}
+          path: ${{ runner.temp }}/release-candidate
+
+      - name: Record the packed checksums
+        run: |
+          cd "$RUNNER_TEMP/release-candidate"
+          find . -type f -print0 | sort -z | xargs -0 sha256sum > "$RUNNER_TEMP/release-candidate.sha256"
+      - run: pnpm release:check --pack-dir "$RUNNER_TEMP/release-candidate"
+      - name: Require the report and unchanged archives
+        run: |
+          cd "$RUNNER_TEMP/release-candidate"
+          jq -e '.ok == true' verification.json > /dev/null
+          sha256sum --check --strict --quiet "$RUNNER_TEMP/release-candidate.sha256"
+
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: release-verification-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/release-candidate/verification.json
+          if-no-files-found: warn
+          retention-days: 30
+      - name: Write the job summary
+        env:
+          PACK_ARTIFACT_ID: ${{ steps.pack.outputs.pack-dir-artifact-id }}
+          DRY_RUN: ${{ inputs.dry-run }}
+        run: |
+          {
+            echo "### Release candidate"
+            echo "Run ID: \`$GITHUB_RUN_ID\` · packed artifact ID: \`$PACK_ARTIFACT_ID\`"
+            jq -r '.packages[] | "- \(.name)@\(.version)"' "$RUNNER_TEMP/release-candidate/verification.json"
+            if [ "$DRY_RUN" = true ]; then echo "Dry run: these versions exist only in this runner."; fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  publish:
+    needs: [plan, prepare]
+    if: ${{ !inputs.dry-run && needs.plan.outputs.mode == 'publish' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: write # tags and GitHub releases
+      id-token: write # npm trusted publishing and provenance
+    outputs:
+      published: ${{ steps.publish.outputs.published }}
+      published-packages: ${{ steps.publish.outputs.published-packages }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+        with:
+          ignore-scripts: "true"
+      # Publishes the verified archives as they are: nothing is rebuilt.
+      - uses: changesets/action/publish@v2.1.2
+        id: publish
+        with:
+          pack-dir-artifact-id: ${{ needs.prepare.outputs.pack-dir-artifact-id }}
           create-github-releases: true
           push-git-tags: true
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+        env:
+          NPM_CONFIG_PROVENANCE: "true"
+          PNPM_CONFIG_PROVENANCE: "true"
+      - name: Write the job summary
+        if: always()
+        env:
+          PUBLISHED: ${{ steps.publish.outputs.published-packages }}
+          PACK_ARTIFACT_ID: ${{ needs.prepare.outputs.pack-dir-artifact-id }}
+        run: |
+          {
+            echo "### Published"
+            printf '%s\n' "${PUBLISHED:-[]}" | jq -r '.[] | "- \(.name)@\(.version)"'
+            echo
+            echo "Once npm serves the versions, run the release smoke check:"
+            echo
+            echo "\`gh workflow run release-smoke.yml -f release-run-id=$GITHUB_RUN_ID -f pack-artifact-id=$PACK_ARTIFACT_ID\`"
+          } >> "$GITHUB_STEP_SUMMARY"

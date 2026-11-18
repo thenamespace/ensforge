@@ -1,0 +1,241 @@
+import { Array as Arr, Effect, String as Str } from "effect";
+
+import { Abis } from "@ensforge/contracts";
+import { predictVerifiableProxyAddress } from "@ensforge/contracts/v2";
+import {
+  hcaSessionDigest,
+  hcaSessionPermissionId,
+  hcaSessionSalt,
+  hcaSessionTypedData,
+  hcaSignedSession,
+  type HcaSessionTerms,
+} from "@ensforge/contracts/v2/experimental/hca";
+import type { Plan } from "@ensforge/sdk";
+import { Rpc, type AnyError, type Client, type ViemWalletClient } from "@ensforge/sdk/extension";
+import { isAddressEqual, zeroAddress, type Address, type Hex } from "viem";
+import { signTypedData } from "viem/actions";
+
+import { HcaError } from "../errors/classes/HcaError.js";
+import type { HcaSession } from "../types.js";
+import { readAccount } from "./account.js";
+import { decodeCall } from "./decode.js";
+import { requireHca } from "./deployment.js";
+
+/** Signs a session approval for the signer's HCA and returns the storable session. */
+export const authorize = Effect.fnUntraced(function* (
+  client: Client,
+  wallet: ViemWalletClient,
+  owner: Address,
+  options: {
+    readonly sessionKey: Address;
+    readonly resolver: Address;
+    readonly validUntil: number;
+    readonly refund?:
+      | {
+          readonly token?: Address | undefined;
+          readonly maxExchangeRate?: bigint | undefined;
+          readonly maxGasOverhead?: bigint | undefined;
+          readonly maxAmount?: bigint | undefined;
+        }
+      | undefined;
+  },
+): Effect.fn.Return<HcaSession, AnyError | HcaError> {
+  const deployment = yield* requireHca(client);
+  const account = yield* readAccount(client, { owner });
+  const refundToken = options.refund?.token ?? deployment.v2.paymentTokens?.usdc;
+  if (refundToken === undefined) {
+    return yield* Effect.fail(
+      new HcaError({
+        code: "HCA_SESSION_INVALID",
+        shortMessage: "This deployment has no default refund token; pass `refund.token`.",
+      }),
+    );
+  }
+
+  // Refund ceilings default to the ENS app's: $20k per ETH, 500k gas of overhead, 100 USDC per
+  // intent.
+  const terms: HcaSessionTerms = {
+    sessionNonce: account.sessionNonce,
+    validUntil: options.validUntil,
+    resolver: options.resolver,
+    refundToken,
+    maxRefundExchangeRate: options.refund?.maxExchangeRate ?? 20_000_000_000n,
+    maxRefundGasOverhead: options.refund?.maxGasOverhead ?? 500_000n,
+    maxRefundAmount: options.refund?.maxAmount ?? 100_000_000n,
+  };
+  const salt = hcaSessionSalt(terms);
+  const session = hcaSignedSession({
+    account: account.address,
+    sessionKey: options.sessionKey,
+    salt,
+  });
+  const sessionDigest = hcaSessionDigest(session);
+
+  const ownerSignature = yield* Rpc.fromPromise(() =>
+    signTypedData(wallet, {
+      account: wallet.account ?? owner,
+      ...hcaSessionTypedData([{ chainId: client.chain.id, session }]),
+    }),
+  );
+
+  return {
+    chainId: client.chain.id,
+    hca: account.address,
+    owner,
+    sessionKey: options.sessionKey,
+    terms,
+    permissionId: hcaSessionPermissionId({ sessionKey: options.sessionKey, salt }),
+    sessionDigest,
+    chains: [{ chainId: client.chain.id, sessionDigest }],
+    ownerSignature,
+    signingDomain: client.deployment.v2?.capabilities.hcaSessionDomain ?? "smart-session",
+  } satisfies HcaSession;
+});
+
+/** Why a stored session can no longer be used, or `undefined` when it can. */
+export const sessionProblem = Effect.fnUntraced(function* (
+  client: Client,
+  session: HcaSession,
+): Effect.fn.Return<
+  "chain" | "expired" | "signing-domain" | "revoked" | undefined,
+  AnyError | HcaError
+> {
+  if (session.chainId !== client.chain.id) return "chain";
+  // The validator compares `validUntil` with the block's timestamp, not the local clock.
+  const now = yield* Rpc.blockTimestamp(client, {});
+  if (BigInt(session.terms.validUntil) < now) return "expired";
+  const domain = client.deployment.v2?.capabilities.hcaSessionDomain ?? "smart-session";
+  if (session.signingDomain !== domain) return "signing-domain";
+  const account = yield* readAccount(client, { address: session.hca });
+  if (account.sessionNonce !== session.terms.sessionNonce) return "revoked";
+  return undefined;
+});
+
+// Record calls a session may make on its resolver: HCAResolverPolicyLib (v1.0.1) allows these
+// setters, and `multicall` only when every inner call is allowed too.
+const recordSetters = new Set([
+  "setAddress",
+  "setText",
+  "setContenthash",
+  "setABI",
+  "setInterface",
+  "setData",
+  "linkToNode",
+  "linkToRecord",
+  "setName",
+]);
+
+const isRecordCall = (data: Hex): boolean => {
+  const decoded = decodeCall(Abis.v2.permissionedResolver, data);
+  if (decoded === undefined) return false;
+  if (decoded.functionName === "multicall") {
+    const [inner] = decoded.args;
+    return Arr.every(inner, isRecordCall);
+  }
+  return recordSetters.has(decoded.functionName);
+};
+
+const notAllowed = (call: Plan.Call, reason: string) => {
+  const selector = Str.slice(0, 10)(call.data);
+  return new HcaError({
+    code: "HCA_ACTION_NOT_ALLOWED",
+    details: [`${call.to} ${selector}: ${reason}`],
+    context: { contract: call.to, functionName: selector },
+  });
+};
+
+/**
+ * Checks calls against the session policy before anything is signed: registrations to the owner
+ * with the session's resolver, the session resolver's deployment and records, primary names,
+ * and payment approvals to the registrar. Value must be zero.
+ */
+export const checkSessionCalls = Effect.fnUntraced(function* (
+  client: Client,
+  session: HcaSession,
+  calls: readonly Plan.Call[],
+): Effect.fn.Return<void, AnyError | HcaError> {
+  const deployment = yield* requireHca(client);
+  const registrar = deployment.v2.contracts.ethRegistrar;
+  const resolver = session.terms.resolver;
+
+  for (const call of calls) {
+    if (call.value !== 0n) return yield* Effect.fail(notAllowed(call, "sessions send no value"));
+
+    if (isAddressEqual(call.to, registrar)) {
+      const decoded = decodeCall(Abis.v2.ethRegistrar, call.data);
+      if (decoded?.functionName === "commit") continue;
+      if (decoded?.functionName === "register") {
+        const [, owner, , subregistry, registeredResolver] = decoded.args;
+        if (!isAddressEqual(owner, session.owner))
+          return yield* Effect.fail(notAllowed(call, "names must be registered to the HCA owner"));
+        if (!isAddressEqual(subregistry, zeroAddress))
+          return yield* Effect.fail(notAllowed(call, "the subregistry must be empty"));
+        if (!isAddressEqual(registeredResolver, resolver))
+          return yield* Effect.fail(notAllowed(call, "the resolver must be the session's"));
+        continue;
+      }
+      return yield* Effect.fail(notAllowed(call, "only commit and register are allowed"));
+    }
+
+    if (isAddressEqual(call.to, resolver)) {
+      if (isRecordCall(call.data)) continue;
+      return yield* Effect.fail(notAllowed(call, "only record setters on the session resolver"));
+    }
+
+    if (isAddressEqual(call.to, deployment.verifiableFactory)) {
+      const decoded = decodeCall(Abis.v2.verifiableFactory, call.data);
+      if (decoded?.functionName === "deployProxy") {
+        const [implementation, salt] = decoded.args;
+        const permitted = deployment.v2.implementations.permissionedResolver;
+        if (!isAddressEqual(implementation, permitted))
+          return yield* Effect.fail(notAllowed(call, "only the approved PermissionedResolver"));
+        const proxyLogic = yield* Rpc.readContract(client, {
+          address: deployment.verifiableFactory,
+          abi: Abis.v2.verifiableFactory,
+          functionName: "proxyLogic",
+        });
+        const predicted = predictVerifiableProxyAddress({
+          factory: deployment.verifiableFactory,
+          proxyLogic,
+          deployer: session.hca,
+          salt,
+        });
+        if (isAddressEqual(predicted, resolver)) continue;
+      }
+      return yield* Effect.fail(notAllowed(call, "only the session resolver may be deployed"));
+    }
+
+    if (isAddressEqual(call.to, deployment.v2.contracts.defaultReverseRegistrarAdapter)) {
+      const decoded = decodeCall(Abis.v2.defaultReverseRegistrarAdapter, call.data);
+      if (
+        decoded?.functionName === "setNameWithHCA" &&
+        isAddressEqual(decoded.args[0], session.owner)
+      )
+        continue;
+      return yield* Effect.fail(notAllowed(call, "primary names are for the HCA owner only"));
+    }
+    if (isAddressEqual(call.to, deployment.v2.contracts.reverseRegistrarAdapter)) {
+      const decoded = decodeCall(Abis.v2.reverseRegistrarAdapter, call.data);
+      if (
+        decoded?.functionName === "claimWithHCA" &&
+        isAddressEqual(decoded.args[0], session.owner) &&
+        (isAddressEqual(decoded.args[1], resolver) || isAddressEqual(decoded.args[1], zeroAddress))
+      )
+        continue;
+      return yield* Effect.fail(
+        notAllowed(call, "reverse claims are for the owner and the session resolver"),
+      );
+    }
+
+    const approval = decodeCall(Abis.shared.erc20, call.data);
+    if (approval?.functionName === "approve") {
+      const [spender] = approval.args;
+      if (isAddressEqual(spender, registrar)) continue;
+      return yield* Effect.fail(notAllowed(call, "payment approvals go to the registrar only"));
+    }
+
+    return yield* Effect.fail(notAllowed(call, "not part of the session policy"));
+  }
+
+  return undefined;
+});

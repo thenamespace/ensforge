@@ -1,8 +1,22 @@
 {
   "extends": "klarity/tsconfig/library",
   "compilerOptions": {
+    "customConditions": ["workspace-source"],
+    "types": ["node"],
     "rootDir": ".",
-    "types": ["node"]
+    "erasableSyntaxOnly": true,
+    "noErrorTruncation": true,
+    "plugins": [
+      {
+        "name": "@effect/language-service",
+        "diagnosticSeverity": {
+          "experimentalApiUsage": "off",
+          "unstableApiUsage": "off"
+        },
+        "keyPatterns": [{ "target": "service", "pattern": "package-identifier" }],
+        "allowedUnstableApis": ["@ensforge/sdk", "effect/crypto"]
+      }
+    ]
   },
-  "include": ["src/**/*.ts", "test/**/*.ts"]
+  "include": ["src/**/*.ts"]
 }

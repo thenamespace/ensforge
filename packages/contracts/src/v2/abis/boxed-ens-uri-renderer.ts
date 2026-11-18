@@ -1,4 +1,12 @@
-/** ABI from the pinned Sepolia deployment artifact. */
+/**
+ * Token URI renderer for names held in boxed (wrapped) registries.
+ *
+ * Superset of the mainnet and Sepolia deployments at contracts-v2 v1.0.1.
+ *
+ * @see https://github.com/ensdomains/contracts-v2/blob/v1.0.1/contracts/src/registry/BoxedURIRenderer.sol
+ * @stability stable
+ * @since 1.0.0
+ */
 export const boxedEnsUriRendererV2Abi = [
   {
     inputs: [

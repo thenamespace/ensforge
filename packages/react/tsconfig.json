@@ -3,7 +3,20 @@
   "compilerOptions": {
     "jsx": "react-jsx",
     "rootDir": ".",
-    "types": ["node"]
+    "types": ["node"],
+    "erasableSyntaxOnly": true,
+    "noErrorTruncation": true,
+    "plugins": [
+      {
+        "name": "@effect/language-service",
+        "diagnosticSeverity": {
+          "experimentalApiUsage": "off",
+          "unstableApiUsage": "off"
+        },
+        "keyPatterns": [{ "target": "service", "pattern": "package-identifier" }],
+        "allowedUnstableApis": ["@ensforge/react", "@effect/atom-react", "effect/reactivity"]
+      }
+    ]
   },
-  "include": ["src/**/*.ts", "src/**/*.tsx", "test/**/*.ts", "test/**/*.tsx"]
+  "include": ["src/**/*.ts", "src/**/*.tsx"]
 }

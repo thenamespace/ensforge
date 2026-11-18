@@ -1,57 +1,29 @@
+# Fast lane: pull requests, pushes to main, the merge queue and manual runs. Network- and
+# chain-free; the devnet, fuzz and services lanes run in extended.yml and the release, the fork,
+# live and watch lanes in networks.yml.
 name: CI
 
 on:
+  pull_request:
+  push:
+    branches: [main]
+  merge_group:
   workflow_dispatch:
 
 permissions:
   contents: read
-  packages: read
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  group: ci-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   check:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-      - name: Setup pnpm and Node.js
-        uses: ./.github/actions/setup
-      - run: pnpm check
-      - run: pnpm pack:check
-      - name: Test published package tarballs
-        run: pnpm test:packages
-      - name: Test minimum supported viem
-        run: pnpm test:packages
-        env:
-          ENSFORGE_TEST_VIEM_VERSION: 2.49.0
-
-  integration:
-    name: Contract integration
-    runs-on: ubuntu-latest
-    timeout-minutes: 40
-    steps:
-      - uses: actions/checkout@v7
-      - name: Setup pnpm and Node.js
-        uses: ./.github/actions/setup
-      - name: Build integration dependencies
-        run: pnpm --filter @ensforge/test-env... build
-      - name: Select pinned ENS devnet image
-        run: |
-          node --input-type=module <<'NODE' >> "$GITHUB_ENV"
-          import { ensContractsV2Commit } from './packages/test-env/dist/index.js';
-
-          const owner = process.env.GITHUB_REPOSITORY_OWNER.toLowerCase();
-          console.log(`ENSFORGE_TEST_IMAGE=ghcr.io/${owner}/ensforge-devnet:${ensContractsV2Commit}`);
-          NODE
-      - name: Log in to GitHub Container Registry
-        uses: docker/login-action@v4
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Pull pinned ENS devnet image
-        run: docker pull "$ENSFORGE_TEST_IMAGE"
-      - name: Verify seeded ENS devnet
-        run: pnpm test:integration
+    # The version PR only changes versions and changelogs, and GitHub does not run workflows on
+    # PRs the workflow token opens; dispatch CI on its branch to check it.
+    if: >-
+      github.event_name != 'pull_request' ||
+      github.event.pull_request.user.login != 'github-actions[bot]' ||
+      github.event.pull_request.head.repo.full_name != github.repository ||
+      github.head_ref != 'changeset-release/main'
+    uses: ./.github/workflows/_check.yml

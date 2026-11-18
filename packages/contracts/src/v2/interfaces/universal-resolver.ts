@@ -1,4 +1,9 @@
-/** IUniversalResolverExtended ABI from the pinned ENSv2 snapshot. */
+/**
+ * IUniversalResolverExtended ABI from the pinned ENSv2 snapshot.
+ *
+ * @stability stable
+ * @since 1.0.0
+ */
 export const universalResolverV2InterfaceAbi = [
   {
     inputs: [

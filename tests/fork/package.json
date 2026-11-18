@@ -1,0 +1,27 @@
+{
+  "name": "@ensforge/test-fork",
+  "version": "0.0.0",
+  "private": true,
+  "description": "ensforge on forks of mainnet and Sepolia at pinned blocks (not published)",
+  "type": "module",
+  "exports": {
+    "./support/*": "./test/support/*.ts"
+  },
+  "scripts": {
+    "lint": "oxlint -c ../../.config/oxlint.config.ts --deny-warnings .",
+    "typecheck": "tsc --noEmit -p test"
+  },
+  "devDependencies": {
+    "@effect/platform-node": "catalog:",
+    "@effect/vitest": "catalog:",
+    "@ensforge/contracts": "workspace:*",
+    "@ensforge/hca": "workspace:*",
+    "@ensforge/sdk": "workspace:*",
+    "@ensforge/test-devnet": "workspace:*",
+    "@ensforge/test-harness": "workspace:*",
+    "@ensforge/test-integration": "workspace:*",
+    "@types/node": "catalog:",
+    "effect": "catalog:",
+    "viem": "catalog:"
+  }
+}

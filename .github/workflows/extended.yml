@@ -1,0 +1,41 @@
+# The local lanes that need Foundry or Docker but no credentials, run manually. Release runs
+# chain, fuzz and services too (release:prepare).
+name: Extended tests
+
+on:
+  workflow_dispatch:
+    inputs:
+      lane:
+        description: Lane to run (all runs every one, in parallel)
+        type: choice
+        options: [chain, fuzz, services, mutation, mutation-chain, all]
+        default: chain
+      seed:
+        description: Fuzz and property seed (an integer, or random for fuzz); empty for the default
+        type: string
+        default: ""
+      runs:
+        description: Fuzz sequences per run (ENSFORGE_FUZZ_RUNS); empty for the default (100)
+        type: string
+        default: ""
+
+permissions:
+  contents: read
+
+concurrency:
+  group: extended-${{ github.ref }}-${{ inputs.lane }}
+  cancel-in-progress: false
+
+jobs:
+  lane:
+    strategy:
+      fail-fast: false
+      matrix:
+        lane: ${{ fromJSON(inputs.lane == 'all' && '["chain","fuzz","services","mutation","mutation-chain"]' || format('["{0}"]', inputs.lane)) }}
+    uses: ./.github/workflows/_lanes.yml
+    with:
+      lane: ${{ matrix.lane }}
+      seed: ${{ inputs.seed }}
+      runs: ${{ inputs.runs }}
+      # Mutation testing of the chain lane takes the longest.
+      timeout-minutes: ${{ startsWith(matrix.lane, 'mutation') && 180 || 60 }}

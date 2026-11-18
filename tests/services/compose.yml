@@ -1,0 +1,158 @@
+# Services ensforge talks to, run against a devnet on the host. `test/stack/stack.ts` starts one
+# project per suite with the profiles it asks for (`indexer`, `aa`) and the variables below;
+# images are pinned in `test/stack/images.ts`.
+name: ensforge-services
+
+x-bigname: &bigname # Built locally with the devnet's manifest profile (bigname/Dockerfile).
+  image: ${BIGNAME_IMAGE:?}
+
+x-devnet-host: &devnet-host
+  extra_hosts:
+    # Linux engines need the mapping that Docker Desktop provides.
+    - host.docker.internal:host-gateway
+
+services:
+  postgres:
+    profiles: [indexer]
+    image: ${POSTGRES_IMAGE:?}
+    command: [postgres, -c, jit=off, -c, fsync=off, -c, synchronous_commit=off]
+    environment:
+      POSTGRES_DB: bigname
+      POSTGRES_USER: bigname
+      POSTGRES_PASSWORD: bigname
+    # A fresh, throwaway database per stack.
+    tmpfs: [/var/lib/postgresql/data]
+    healthcheck:
+      test: [CMD-SHELL, pg_isready -U bigname -d bigname]
+      interval: 1s
+      timeout: 5s
+      retries: 60
+
+  bigname-schema:
+    profiles: [indexer]
+    <<: *bigname
+    command: [phases-migrate, --database-url, postgres://bigname:bigname@postgres:5432/bigname]
+    depends_on:
+      postgres: { condition: service_healthy }
+
+  # The phase runner verifies through, and the API reads through, a SELECT-only login.
+  bigname-reader:
+    profiles: [indexer]
+    image: ${POSTGRES_IMAGE:?}
+    environment:
+      PGPASSWORD: bigname
+    command:
+      - psql
+      - --host=postgres
+      - --username=bigname
+      - --dbname=bigname
+      - --set=ON_ERROR_STOP=1
+      - --command
+      - |
+        CREATE ROLE bigname_reader LOGIN PASSWORD 'bigname_reader'
+          NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT NOREPLICATION NOBYPASSRLS;
+        GRANT CONNECT ON DATABASE bigname TO bigname_reader;
+        GRANT EXECUTE ON FUNCTION pg_catalog.pg_control_system() TO bigname_reader;
+        GRANT USAGE ON SCHEMA bigname_phase TO bigname_reader;
+        GRANT SELECT ON ALL TABLES IN SCHEMA bigname_phase TO bigname_reader;
+        GRANT EXECUTE ON FUNCTION bigname_phase.revalidate_resolution_lookup_state_read_only(
+          text, bigint, text, jsonb, jsonb, uuid, text, text) TO bigname_reader;
+    depends_on:
+      bigname-schema: { condition: service_completed_successfully }
+
+  bigname-phases:
+    profiles: [indexer]
+    <<: [*bigname, *devnet-host]
+    command:
+      - phases
+      - --database-url
+      - postgres://bigname:bigname@postgres:5432/bigname
+      - --verification-database-url
+      - postgres://bigname_reader:bigname_reader@postgres:5432/bigname
+      - --metrics-bind-addr
+      - 0.0.0.0:9100
+      - --chain
+      - ethereum-sepolia
+      - --source
+      - ethereum-sepolia:devnet:drpc:ethereum_head:0=DEVNET_RPC_URL
+      - --manifests-root
+      - /app/manifests/.bigname-e2e-runtime-profile-devnet
+    environment:
+      DEVNET_RPC_URL: ${DEVNET_RPC_URL:?}
+      # The devnet runs Sepolia's chain id on its own genesis.
+      BIGNAME_PHASE_RUNNER_RPC_CHAIN_CHECK: chain-id-only
+      BIGNAME_DATABASE_MAX_CONNECTIONS: "8"
+    depends_on:
+      bigname-reader: { condition: service_completed_successfully }
+
+  bigname-api:
+    profiles: [indexer]
+    <<: [*bigname, *devnet-host]
+    command:
+      - api
+      - --database-url
+      - postgres://bigname_reader:bigname_reader@postgres:5432/bigname
+      - --bind-addr
+      - 0.0.0.0:3000
+      - --metrics-bind-addr
+      - 0.0.0.0:9101
+      - --chain-rpc-url
+      - ethereum-sepolia=${DEVNET_RPC_URL:?}
+    environment:
+      BIGNAME_API_RPC_CHAIN_CHECK: chain-id-only
+      BIGNAME_DATABASE_MAX_CONNECTIONS: "8"
+    ports:
+      - 127.0.0.1:${BIGNAME_PORT:?}:3000
+    depends_on:
+      bigname-reader: { condition: service_completed_successfully }
+
+  # Account abstraction (`--profile aa`): the EntryPoints the bundler and paymaster expect, Pimlico's
+  # alto bundler (safe mode off: anvil runs its tracer, but alto cannot decode its own simulation
+  # result, `DelegateAndRevert`, KL-51) and a paymaster that sponsors every UserOperation.
+  aa-deployer:
+    <<: *devnet-host
+    profiles: [aa]
+    build: { context: ./aa, target: deployer }
+    image: ensforge-aa-deployer:ab0e32d
+    environment:
+      ANVIL_RPC: ${DEVNET_RPC_URL:?}
+
+  alto:
+    <<: *devnet-host
+    profiles: [aa]
+    image: ${ALTO_IMAGE:?}
+    command:
+      - --entrypoints
+      - "0x0000000071727De22E5E9d8BAf0edAc6f37da032"
+      - --executor-private-keys
+      - ${ALTO_EXECUTOR_KEY:?}
+      - --utility-private-key
+      - ${ALTO_UTILITY_KEY:?}
+      - --rpc-url
+      - ${DEVNET_RPC_URL:?}
+      - --safe-mode
+      - "false"
+      - --refilling-wallets
+      - "false"
+      - --block-time
+      - "250"
+      - --port
+      - "4337"
+    ports:
+      - 127.0.0.1:${ALTO_PORT:?}:4337
+    depends_on:
+      aa-deployer: { condition: service_completed_successfully }
+
+  paymaster:
+    <<: *devnet-host
+    profiles: [aa]
+    build: { context: ./aa, target: paymaster }
+    image: ensforge-aa-paymaster:0.0.8
+    environment:
+      ANVIL_RPC: ${DEVNET_RPC_URL:?}
+      ALTO_RPC: http://alto:4337
+    ports:
+      - 127.0.0.1:${PAYMASTER_PORT:?}:3000
+    depends_on:
+      aa-deployer: { condition: service_completed_successfully }
+      alto: { condition: service_started }

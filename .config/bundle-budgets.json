@@ -1,0 +1,7 @@
+{
+  "sdk: Actions.record.getText": 40870,
+  "sdk: ensActions()": 106247,
+  "sdk: ensActions() + indexerActions()": 127621,
+  "react: useAddress": 77976,
+  "hca: hca() with owner()": 38306
+}

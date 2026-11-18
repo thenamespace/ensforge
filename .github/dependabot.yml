@@ -1,20 +1,13 @@
 version: 2
 updates:
-  - package-ecosystem: npm
-    directory: /
-    schedule:
-      interval: weekly
-    open-pull-requests-limit: 5
-    groups:
-      effect:
-        patterns:
-          - effect
-          - "@effect/*"
-      ensforge:
-        patterns:
-          - "@ensforge/*"
+  # Workflows reference actions by major tag; this proposes new majors, grouped weekly.
   - package-ecosystem: github-actions
-    directory: /
+    directories: ["/", "/.github/actions/*"]
     schedule:
       interval: weekly
-    open-pull-requests-limit: 5
+    # Releases at least a week old, so a compromised release is likely found before it lands.
+    cooldown:
+      default-days: 7
+    groups:
+      github-actions:
+        patterns: ["*"]

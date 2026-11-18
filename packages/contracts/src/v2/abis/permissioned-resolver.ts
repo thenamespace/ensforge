@@ -1,4 +1,12 @@
-/** ABI from the pinned Sepolia deployment artifact. */
+/**
+ * Implementation of the role-based ENSv2 resolver, deployed per user through the VerifiableFactory.
+ *
+ * Superset of the mainnet and Sepolia deployments at contracts-v2 v1.0.1.
+ *
+ * @see https://github.com/ensdomains/contracts-v2/blob/v1.0.1/contracts/src/resolver/PermissionedResolver.sol
+ * @stability stable
+ * @since 1.0.0
+ */
 export const permissionedResolverV2Abi = [
   {
     inputs: [

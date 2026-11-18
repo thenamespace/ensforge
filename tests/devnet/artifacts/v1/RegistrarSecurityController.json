@@ -1,0 +1,129 @@
+{
+  "abi": [
+    {
+      "inputs": [
+        {
+          "internalType": "contract BaseRegistrarImplementation",
+          "name": "_registrar",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "constructor"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        { "indexed": true, "internalType": "address", "name": "controller", "type": "address" },
+        { "indexed": false, "internalType": "bool", "name": "enabled", "type": "bool" }
+      ],
+      "name": "ControllerChanged",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        { "indexed": true, "internalType": "address", "name": "previousOwner", "type": "address" },
+        { "indexed": true, "internalType": "address", "name": "newOwner", "type": "address" }
+      ],
+      "name": "OwnershipTransferred",
+      "type": "event"
+    },
+    {
+      "inputs": [{ "internalType": "address", "name": "controller", "type": "address" }],
+      "name": "addRegistrarController",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [{ "internalType": "address", "name": "", "type": "address" }],
+      "name": "controllers",
+      "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [{ "internalType": "address", "name": "controller", "type": "address" }],
+      "name": "disableRegistrarController",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "owner",
+      "outputs": [{ "internalType": "address", "name": "", "type": "address" }],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "registrar",
+      "outputs": [
+        { "internalType": "contract BaseRegistrarImplementation", "name": "", "type": "address" }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [{ "internalType": "address", "name": "controller", "type": "address" }],
+      "name": "removeRegistrarController",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "renounceOwnership",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        { "internalType": "address", "name": "controller", "type": "address" },
+        { "internalType": "bool", "name": "enabled", "type": "bool" }
+      ],
+      "name": "setController",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [{ "internalType": "address", "name": "resolver", "type": "address" }],
+      "name": "setRegistrarResolver",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [{ "internalType": "bytes4", "name": "interfaceId", "type": "bytes4" }],
+      "name": "supportsInterface",
+      "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [{ "internalType": "address", "name": "newOwner", "type": "address" }],
+      "name": "transferOwnership",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [{ "internalType": "address", "name": "newOwner", "type": "address" }],
+      "name": "transferRegistrarOwnership",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    }
+  ],
+  "bytecode": "0x6080604052348015600f57600080fd5b506040516108e33803806108e3833981016040819052602c9160a7565b6033336057565b600280546001600160a01b0319166001600160a01b039290921691909117905560d5565b600080546001600160a01b038381166001600160a01b0319831681178455604051919092169283917f8be0079c531659141344cd1fd0a4f28419497f9722a3daafe3b4186f6b6457e09190a35050565b60006020828403121560b857600080fd5b81516001600160a01b038116811460ce57600080fd5b9392505050565b6107ff806100e46000396000f3fe608060405234801561001057600080fd5b50600436106100d45760003560e01c8063715018a611610081578063da8c229e1161005b578063da8c229e1461020f578063e0dba60f14610232578063f2fde38b1461024557600080fd5b8063715018a6146101d65780638da5cb5b146101de578063b229e85e146101fc57600080fd5b8063246b813e116100b2578063246b813e1461016b578063256772631461017e5780632b20e3971461019157600080fd5b806301ffc9a7146100d9578063154fbf1514610143578063198e423614610158575b600080fd5b61012e6100e7366004610700565b7fffffffff00000000000000000000000000000000000000000000000000000000167f01ffc9a7000000000000000000000000000000000000000000000000000000001490565b60405190151581526020015b60405180910390f35b610156610151366004610772565b610258565b005b610156610166366004610772565b6102e9565b610156610179366004610772565b610349565b61015661018c366004610772565b6103a9565b6002546101b19073ffffffffffffffffffffffffffffffffffffffff1681565b60405173ffffffffffffffffffffffffffffffffffffffff909116815260200161013a565b61015661044d565b60005473ffffffffffffffffffffffffffffffffffffffff166101b1565b61015661020a366004610772565b610461565b61012e61021d366004610772565b60016020526000908152604090205460ff1681565b61015661024036600461078d565b6104c1565b610156610253366004610772565b610553565b61026061060a565b6002546040517ff2fde38b00000000000000000000000000000000000000000000000000000000815273ffffffffffffffffffffffffffffffffffffffff83811660048301529091169063f2fde38b906024015b600060405180830381600087803b1580156102ce57600080fd5b505af11580156102e2573d6000803e3d6000fd5b5050505050565b6102f161060a565b6002546040517f4e543b2600000000000000000000000000000000000000000000000000000000815273ffffffffffffffffffffffffffffffffffffffff838116600483015290911690634e543b26906024016102b4565b61035161060a565b6002546040517ff6a74ed700000000000000000000000000000000000000000000000000000000815273ffffffffffffffffffffffffffffffffffffffff83811660048301529091169063f6a74ed7906024016102b4565b3360009081526001602052604090205460ff16610351576040517f08c379a000000000000000000000000000000000000000000000000000000000815260206004820152602860248201527f436f6e74726f6c6c61626c653a2043616c6c6572206973206e6f74206120636f60448201527f6e74726f6c6c657200000000000000000000000000000000000000000000000060648201526084015b60405180910390fd5b61045561060a565b61045f600061068b565b565b61046961060a565b6002546040517fa7fc7a0700000000000000000000000000000000000000000000000000000000815273ffffffffffffffffffffffffffffffffffffffff83811660048301529091169063a7fc7a07906024016102b4565b6104c961060a565b73ffffffffffffffffffffffffffffffffffffffff821660008181526001602090815260409182902080547fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff001685151590811790915591519182527f4c97694570a07277810af7e5669ffd5f6a2d6b74b6e9a274b8b870fd5114cf87910160405180910390a25050565b61055b61060a565b73ffffffffffffffffffffffffffffffffffffffff81166105fe576040517f08c379a000000000000000000000000000000000000000000000000000000000815260206004820152602660248201527f4f776e61626c653a206e6577206f776e657220697320746865207a65726f206160448201527f64647265737300000000000000000000000000000000000000000000000000006064820152608401610444565b6106078161068b565b50565b60005473ffffffffffffffffffffffffffffffffffffffff16331461045f576040517f08c379a000000000000000000000000000000000000000000000000000000000815260206004820181905260248201527f4f776e61626c653a2063616c6c6572206973206e6f7420746865206f776e65726044820152606401610444565b6000805473ffffffffffffffffffffffffffffffffffffffff8381167fffffffffffffffffffffffff0000000000000000000000000000000000000000831681178455604051919092169283917f8be0079c531659141344cd1fd0a4f28419497f9722a3daafe3b4186f6b6457e09190a35050565b60006020828403121561071257600080fd5b81357fffffffff000000000000000000000000000000000000000000000000000000008116811461074257600080fd5b9392505050565b803573ffffffffffffffffffffffffffffffffffffffff8116811461076d57600080fd5b919050565b60006020828403121561078457600080fd5b61074282610749565b600080604083850312156107a057600080fd5b6107a983610749565b9150602083013580151581146107be57600080fd5b80915050925092905056fea26469706673582212202633eb2280e992de5f0a48b14bb340f31af7b0458415a05116d0086c3a68ab6864736f6c634300081a0033",
+  "source": {
+    "kind": "deployment",
+    "repository": "ens-contracts",
+    "file": "deployments/mainnet/RegistrarSecurityController.json",
+    "commit": "9b034936a42f462fc04bc0a929a419ede5e18d59"
+  }
+}

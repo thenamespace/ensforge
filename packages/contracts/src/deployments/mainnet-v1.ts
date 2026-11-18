@@ -1,11 +1,19 @@
-import type { EnsV1Deployment } from "./types.js";
+import type { V1 } from "./types.js";
 
-/** Current ENSv1 contracts on Ethereum mainnet. */
-export const mainnetV1Deployment = {
+/**
+ * ENSv1 on Ethereum mainnet at ens-contracts v1.7.0, kept for compatibility and migration.
+ *
+ * Since the ENSv2 cutover, ENSv1 controllers no longer register or renew `.eth` names (the
+ * BaseRegistrar belongs to ENSv2's `ETHRenewerV1`) and the NameWrapper has no owner. The controller
+ * addresses remain for reading past registrations.
+ *
+ * @since 1.0.0
+ */
+export const mainnetV1 = {
   id: "mainnet-v1",
   chainId: 1,
   protocol: "v1",
-  status: "active",
+  status: "legacy",
   contracts: {
     registry: "0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e",
     baseRegistrar: "0x57f1887a8BF19b14fC0dF6Fd9B2acc9Af147eA85",
@@ -22,10 +30,20 @@ export const mainnetV1Deployment = {
     dnssecOracle: "0x0fc3152971714E5ed7723FAFa650F86A4BaF30C5",
     offchainDnsResolver: "0xF142B308cF687d4358410a4cB885513b30A42025",
   },
+  legacyPublicResolvers: [
+    "0x231b0Ee14048e9dCcD1d247744d114a4EB5E8E63",
+    "0x4976fb03C32e5B8cfe2b6cCB31c09Ba78EBaBa41",
+    "0xDaaF96c344f63131acadD0Ea35170E7892d3dfBA",
+  ],
+  frozenPublicResolvers: [
+    "0x226159d592E2b063810a10Ebf6dcbADA94Ed68b8",
+    "0x1da022710dF5002339274AaDEe8D58218e9D6AB5",
+    "0x5FfC014343cd971B7eb70732021E26C35B744cc4",
+  ],
   provenance: {
     repository: "https://github.com/ensdomains/ens-contracts",
-    ref: "v1.7.0",
+    release: "v1.7.0",
     commit: "9b034936a42f462fc04bc0a929a419ede5e18d59",
     documentation: "https://docs.ens.domains/learn/deployments/",
   },
-} as const satisfies EnsV1Deployment;
+} as const satisfies V1;

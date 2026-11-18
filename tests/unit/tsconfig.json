@@ -1,0 +1,35 @@
+{
+  "extends": "klarity/tsconfig/library",
+  "compilerOptions": {
+    "customConditions": ["workspace-source"],
+    "jsx": "react-jsx",
+    "noEmit": true,
+    "rootDir": ".",
+    "types": ["node"],
+    "erasableSyntaxOnly": true,
+    "noErrorTruncation": true,
+    "plugins": [
+      {
+        "name": "@effect/language-service",
+        "diagnosticSeverity": {
+          "experimentalApiUsage": "off",
+          "unstableApiUsage": "off"
+        },
+        "keyPatterns": [{ "target": "service", "pattern": "package-identifier" }],
+        "allowedUnstableApis": [
+          "@effect/vitest",
+          "@ensforge/sdk",
+          "@ensforge/react",
+          "@effect/atom-react",
+          "@effect/platform-node",
+          "effect/Arbitrary",
+          "effect/FileSystem",
+          "effect/Path",
+          "effect/reactivity"
+        ],
+        "allowedExperimentalApis": ["@ensforge/hca", "@ensforge/contracts/v2/experimental/hca"]
+      }
+    ]
+  },
+  "include": ["./**/*.ts", "./**/*.tsx"]
+}

@@ -1,8 +1,9 @@
 {
   "name": "@ensforge/sdk",
   "version": "0.6.1",
-  "description": "A type-safe TypeScript SDK for ENS",
+  "description": "Type-safe actions and utilities for ENS",
   "keywords": [
+    "effect",
     "ens",
     "ethereum",
     "name-service",
@@ -21,89 +22,39 @@
     "directory": "packages/sdk"
   },
   "files": [
-    "dist"
+    "CHANGELOG.md",
+    "dist",
+    "src"
   ],
   "type": "module",
   "sideEffects": false,
-  "imports": {
-    "#/*": "./src/*.ts"
-  },
   "exports": {
     ".": {
       "workspace-source": "./src/index.ts",
       "default": "./dist/index.js"
     },
-    "./batch": {
-      "workspace-source": "./src/entrypoints/batch.ts",
-      "default": "./dist/batch.js"
+    "./actions": {
+      "workspace-source": "./src/actions/index.ts",
+      "default": "./dist/actions/index.js"
     },
-    "./capabilities": {
-      "workspace-source": "./src/entrypoints/capabilities.ts",
-      "default": "./dist/capabilities.js"
+    "./effect": {
+      "workspace-source": "./src/effect.ts",
+      "default": "./dist/effect.js"
     },
-    "./dns": {
-      "workspace-source": "./src/entrypoints/dns.ts",
-      "default": "./dist/dns.js"
-    },
-    "./events": {
-      "workspace-source": "./src/entrypoints/events.ts",
-      "default": "./dist/events.js"
-    },
-    "./hca": {
-      "workspace-source": "./src/entrypoints/hca.ts",
-      "default": "./dist/hca.js"
-    },
-    "./hca/admin": {
-      "workspace-source": "./src/entrypoints/hca-admin.ts",
-      "default": "./dist/hca/admin.js"
+    "./extension": {
+      "workspace-source": "./src/extension.ts",
+      "default": "./dist/extension.js"
     },
     "./indexer": {
-      "workspace-source": "./src/entrypoints/indexer.ts",
-      "default": "./dist/indexer.js"
-    },
-    "./migration": {
-      "workspace-source": "./src/entrypoints/migration.ts",
-      "default": "./dist/migration.js"
-    },
-    "./name": {
-      "workspace-source": "./src/entrypoints/name.ts",
-      "default": "./dist/name.js"
-    },
-    "./ownership": {
-      "workspace-source": "./src/entrypoints/ownership.ts",
-      "default": "./dist/ownership.js"
-    },
-    "./permissions": {
-      "workspace-source": "./src/entrypoints/permissions.ts",
-      "default": "./dist/permissions.js"
-    },
-    "./records": {
-      "workspace-source": "./src/entrypoints/records.ts",
-      "default": "./dist/records.js"
-    },
-    "./registration": {
-      "workspace-source": "./src/entrypoints/registration.ts",
-      "default": "./dist/registration.js"
-    },
-    "./resolution": {
-      "workspace-source": "./src/entrypoints/resolution.ts",
-      "default": "./dist/resolution.js"
-    },
-    "./reverse": {
-      "workspace-source": "./src/entrypoints/reverse.ts",
-      "default": "./dist/reverse.js"
-    },
-    "./subnames": {
-      "workspace-source": "./src/entrypoints/subnames.ts",
-      "default": "./dist/subnames.js"
+      "workspace-source": "./src/indexer/index.ts",
+      "default": "./dist/indexer/index.js"
     },
     "./wagmi": {
-      "workspace-source": "./src/wagmi.ts",
-      "default": "./dist/wagmi.js"
+      "workspace-source": "./src/wagmi/index.ts",
+      "default": "./dist/wagmi/index.js"
     },
-    "./wrapping": {
-      "workspace-source": "./src/entrypoints/wrapping.ts",
-      "default": "./dist/wrapping.js"
+    "./internal/*": {
+      "workspace-source": "./src/*.ts"
     },
     "./package.json": "./package.json"
   },
@@ -113,53 +64,66 @@
     },
     "exports": {
       ".": "./dist/index.js",
-      "./batch": "./dist/batch.js",
-      "./capabilities": "./dist/capabilities.js",
-      "./dns": "./dist/dns.js",
-      "./events": "./dist/events.js",
-      "./hca": "./dist/hca.js",
-      "./hca/admin": "./dist/hca/admin.js",
-      "./indexer": "./dist/indexer.js",
-      "./migration": "./dist/migration.js",
-      "./name": "./dist/name.js",
-      "./ownership": "./dist/ownership.js",
-      "./permissions": "./dist/permissions.js",
-      "./records": "./dist/records.js",
-      "./registration": "./dist/registration.js",
-      "./resolution": "./dist/resolution.js",
-      "./reverse": "./dist/reverse.js",
-      "./subnames": "./dist/subnames.js",
-      "./wagmi": "./dist/wagmi.js",
-      "./wrapping": "./dist/wrapping.js",
+      "./actions": "./dist/actions/index.js",
+      "./effect": "./dist/effect.js",
+      "./extension": "./dist/extension.js",
+      "./indexer": "./dist/indexer/index.js",
+      "./wagmi": "./dist/wagmi/index.js",
       "./package.json": "./package.json"
     },
     "access": "public",
     "provenance": true
   },
   "scripts": {
-    "build": "tsdown",
-    "dev": "tsdown --watch",
-    "lint": "oxlint --deny-warnings .",
+    "api:report": "ensforge-dev api-report",
+    "build": "ensforge-dev build",
+    "dev": "ensforge-dev build --watch",
+    "lint": "oxlint -c ../../.config/oxlint.config.ts --deny-warnings .",
     "pack:check": "publint && attw --pack . --profile esm-only",
-    "prepack": "pnpm build",
-    "test": "vitest run",
-    "test:watch": "vitest",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "verify": "ensforge-dev verify",
+    "codegen": "ensforge-dev codegen",
+    "openapi": "ensforge-dev openapi"
   },
   "dependencies": {
-    "@ensforge/core": "workspace:*"
+    "@ensdomains/address-encoder": "catalog:",
+    "@ensdomains/content-hash": "catalog:",
+    "@ensforge/contracts": "workspace:*",
+    "cborg": "catalog:",
+    "fflate": "catalog:"
   },
   "devDependencies": {
-    "viem": "catalog:"
+    "@ensforge/tools": "workspace:*",
+    "viem": "catalog:",
+    "wagmi": "catalog:"
   },
   "peerDependencies": {
-    "effect": "^4.0.0",
-    "viem": "^2.49.0",
-    "wagmi": ">=2.19.0 <4.0.0"
+    "effect": "^4.1.4",
+    "viem": "^2.57.0",
+    "wagmi": ">=2.14.0 <4"
   },
   "peerDependenciesMeta": {
     "wagmi": {
       "optional": true
     }
+  },
+  "engines": {
+    "node": ">=20.19"
+  },
+  "ensforge": {
+    "api": [
+      ".",
+      "./effect",
+      "./indexer",
+      "./wagmi"
+    ],
+    "effectFree": [
+      ".",
+      "./actions",
+      "./indexer",
+      "./wagmi"
+    ],
+    "codegen": "sdk",
+    "openapi": true
   }
 }

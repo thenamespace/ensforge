@@ -1,18 +1,14 @@
-## What changed
+## Summary
 
-Describe the problem and the resulting behavior. Link related issues when relevant.
+<!-- What changes for users, and why. Link the issue it closes. -->
 
 ## Verification
 
-List the checks you ran and their results. Explain any checks you could not run.
+<!-- The checks you ran (`pnpm check`, focused tests) and anything you could not run. -->
 
-## Compatibility
+## Checklist
 
-Describe changes to public APIs, deployment profiles, permissions, or saved workflow state.
-For dependency changes, explain why the dependency or update is needed.
-
-- [ ] Added a changeset for a published-package change, or explained why none is needed.
-- [ ] Updated affected documentation and examples.
-- [ ] Removed credentials and sensitive account data from the diff and logs.
-
-Report exploitable security issues privately using the repository's Security tab instead of this PR.
+- [ ] Tests cover the change
+- [ ] Changeset added for a published package (`pnpm changeset`), or not needed
+- [ ] TSDoc, README and API report updated for public API changes
+- [ ] No credentials, private keys or authenticated RPC URLs in the diff or logs

@@ -2,9 +2,6 @@
 .env
 .env.*
 !.env.example
-**/.ensforge/
-.repos/
-apps/docs/pages.gen.ts
 .turbo/
 coverage/
 dist/
@@ -13,6 +10,14 @@ research/
 *.log
 *.tgz
 
-# Local manual verification and draft documentation
-/scripts-temp/
-/tmp-*.md
+
+# codegen --check scratch output
+.codegen-check/
+
+# devnet clones and state dumps
+tests/devnet/.cache/
+tests/services/.cache/
+
+# mutation testing sandboxes and reports
+.stryker-tmp/
+reports/

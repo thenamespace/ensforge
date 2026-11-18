@@ -1,4 +1,10 @@
-/** IERC1155Singleton ABI from the pinned ENSv2 deployment source. */
+/**
+ * `IERC1155Singleton` interface ABI at contracts-v2 v1.0.1.
+ *
+ * @see https://github.com/ensdomains/contracts-v2/blob/v1.0.1/contracts/src/erc1155/interfaces/IERC1155Singleton.sol
+ * @stability stable
+ * @since 1.0.0
+ */
 export const erc1155SingletonV2InterfaceAbi = [
   {
     anonymous: false,
