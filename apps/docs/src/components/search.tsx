@@ -72,7 +72,7 @@ export default function PackageSearchDialog(props: SharedProps) {
           <SearchDialogClose />
         </SearchDialogHeader>
         <SearchDialogList />
-        <SearchDialogFooter>
+        <SearchDialogFooter className="flex flex-row items-center justify-between gap-3">
           <TagsList {...(tag === undefined ? {} : { tag })} onTagChange={setTag} allowClear>
             {documentedPackages.map((pkg) => (
               <TagsListItem key={pkg.slug} value={pkg.slug}>
@@ -80,13 +80,15 @@ export default function PackageSearchDialog(props: SharedProps) {
               </TagsListItem>
             ))}
           </TagsList>
-          <TagsList
-            {...(kind === "reference" ? { tag: "reference" } : {})}
-            onTagChange={(value) => setKind(value === "reference" ? "reference" : "guides")}
-            allowClear
-          >
-            <TagsListItem value="reference">API reference</TagsListItem>
-          </TagsList>
+          <label className="flex shrink-0 cursor-pointer items-center gap-2 text-sm text-fd-muted-foreground select-none hover:text-fd-foreground">
+            <input
+              type="checkbox"
+              className="size-3.5 cursor-pointer accent-fd-primary"
+              checked={kind === "reference"}
+              onChange={(event) => setKind(event.target.checked ? "reference" : "guides")}
+            />
+            API reference
+          </label>
         </SearchDialogFooter>
       </SearchDialogContent>
     </SearchDialog>
