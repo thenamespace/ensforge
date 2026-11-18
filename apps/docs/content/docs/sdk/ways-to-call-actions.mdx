@@ -1,6 +1,158 @@
 ---
 title: Ways to call actions
-description: Placeholder, to be written.
+description: Choose between client methods, standalone actions and the Effect API; all three run the same actions.
+icon: code
+keywords:
+  [
+    Actions,
+    client methods,
+    standalone,
+    tree-shaking,
+    "@ensforge/sdk/effect",
+    request,
+    prepare,
+    Sync,
+  ]
 ---
 
-Placeholder: this page is not written yet.
+An **action** is one thing ensforge can do: `record.getAddress`, `name.transfer`,
+`registration.register`. Every action can be called three ways. They run the same code and return
+the same results; they differ only in how you import and call them.
+
+| Way               | Looks like                                          | Choose it when                                                  |
+| ----------------- | --------------------------------------------------- | --------------------------------------------------------------- |
+| Client method     | `ens.record.getAddress(options)`                    | Most apps. Short to write, everything in one place.             |
+| Standalone action | `Actions.record.getAddress(client, options)`        | Bundle size matters, or you write helpers that take any client. |
+| Effect API        | `yield* Actions.record.getAddress(client, options)` | Your app is an Effect program.                                  |
+
+## Client methods
+
+Add actions to a client with `extend`, then call them on it. This is the form the docs use by
+default.
+
+**Example** (Calling a Client Method)
+
+```ts twoslash title="client-method.ts"
+import { Ensforge, ensActions } from "@ensforge/sdk";
+import { createPublicClient, http } from "viem";
+import { mainnet } from "viem/chains";
+
+const ens = Ensforge.create({
+  publicClient: createPublicClient({ chain: mainnet, transport: http() }),
+}).extend(ensActions());
+
+const url = await ens.record.getText({ name: "nick.eth", key: "url" });
+```
+
+`ensActions()` adds every action group. To keep a bundle small, add only the groups you use, such
+as `recordActions()`. See [Create a client](/docs/sdk/create-a-client#add-actions-with-extend).
+
+## Standalone actions
+
+`Actions` holds every action as a plain function that takes the client first. Bundlers keep only
+the actions you call, so this is the smallest form.
+
+**Example** (Calling a Standalone Action)
+
+```ts twoslash title="standalone.ts"
+import { Actions, Ensforge } from "@ensforge/sdk";
+import { createPublicClient, http } from "viem";
+import { mainnet } from "viem/chains";
+
+const ens = Ensforge.create({
+  publicClient: createPublicClient({ chain: mainnet, transport: http() }),
+});
+
+const url = await Actions.record.getText(ens, { name: "nick.eth", key: "url" });
+```
+
+- The first argument is an ensforge client, or a bare viem client. A viem client gets an ensforge
+  client with default options, created once and reused.
+- No `extend` is needed: the client carries only configuration.
+- `@ensforge/sdk/actions` exports the same actions by group:
+  `import { record } from "@ensforge/sdk/actions"`. See
+  [Entry points](/docs/sdk/reference/entry-points).
+
+## The Effect API
+
+`@ensforge/sdk/effect` has the same actions, but each returns an
+[Effect](https://effect.website) instead of a Promise. Its error channel is the action's typed
+error union, so you handle failures with `Effect.catchTag` and the other Effect tools.
+
+**Example** (Calling an Action in an Effect Program)
+
+```ts twoslash title="effect.ts"
+import { Actions, Ensforge } from "@ensforge/sdk/effect";
+import { Effect } from "effect";
+import { createPublicClient, http } from "viem";
+import { mainnet } from "viem/chains";
+
+const program = Effect.gen(function* () {
+  const ens = yield* Ensforge.Ensforge;
+  return yield* Actions.record.getText(ens, { name: "nick.eth", key: "url" });
+});
+
+const url = await Effect.runPromise(
+  program.pipe(
+    Effect.provide(
+      Ensforge.layer({ publicClient: createPublicClient({ chain: mainnet, transport: http() }) }),
+    ),
+  ),
+);
+```
+
+- `Ensforge.layer(options)` creates the client as an Effect service, `Ensforge.Ensforge`.
+- Errors are the same instances in both APIs. Their `_tag` is the class name, so
+  `Effect.catchTag("NotFoundError", …)` works.
+- You never need this API to use ensforge. See [The Effect API](/docs/sdk/effect-api).
+
+## Extra forms every action has
+
+The three ways above call an action. Actions also carry a few related functions, the same in every
+way of calling.
+
+| Form                          | On         | What it does                                                               |
+| ----------------------------- | ---------- | -------------------------------------------------------------------------- |
+| `action.request(options)`     | Most reads | Describes the read without running it, for `batch` and React's `useReads`. |
+| `action.prepare(options)`     | Writes     | Builds the plan without sending anything.                                  |
+| `action.simulate(options)`    | Writes     | Simulates every call of the plan.                                          |
+| `action.estimateGas(options)` | Writes     | Estimates the gas and ETH the plan needs.                                  |
+| `actionSync(options)`         | Writes     | Sends, then waits for the receipts (`record.setSync`).                     |
+| `action.path`                 | All        | The action's name, such as `"record.get"`, for logs and cache keys.        |
+
+**Example** (Batching Two Reads With Requests)
+
+```ts twoslash title="requests.ts"
+import { Actions, Ensforge, ensActions } from "@ensforge/sdk";
+import { createPublicClient, http } from "viem";
+import { mainnet } from "viem/chains";
+
+const ens = Ensforge.create({
+  publicClient: createPublicClient({ chain: mainnet, transport: http() }),
+}).extend(ensActions());
+
+const {
+  results: [state, address],
+} = await ens.batch({
+  requests: [
+    Actions.name.get.request({ name: "nick.eth" }),
+    Actions.record.getAddress.request({ name: "nick.eth" }),
+  ],
+  allowFailure: false,
+});
+```
+
+- Requests are built from `Actions`, whichever way you call `batch`.
+- A list of requests returns a list of results; a record returns a record with the same keys.
+- With `allowFailure: false` the first failure rejects; by default each result carries its own
+  `status`.
+
+See [Look up many at once](/docs/sdk/look-up-many-at-once) and
+[How writes work](/docs/sdk/writing-to-ens).
+
+## Mix them freely
+
+The three ways share clients and errors, so you can mix them in one app: client methods in UI code,
+standalone actions in a small server function, the Effect API in an Effect service. The React hooks
+in `@ensforge/react` take the same actions, as in `useRead(Actions.record.getText, options)`. See
+[React](/docs/react).
