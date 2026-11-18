@@ -11,7 +11,10 @@ import { sectionsOf } from "./sections.ts";
 /** What the error classes of a built package expose at runtime: their constructors by name. */
 export type ErrorRuntime = {
   readonly classes: Readonly<Record<string, unknown>>;
-  /** `Errors.describe` of the sdk, which has end-user copy for the sdk's codes only. */
+  /**
+   * `Errors.describe` of the sdk. It has end-user copy for the HCA codes too: loading the built
+   * hca package registers them with the same sdk module.
+   */
   readonly describe: (error: unknown) => {
     title: string;
     message: string;
@@ -106,7 +109,7 @@ export const errorClassDocs = (
           try {
             user = instance === undefined ? undefined : runtime.describe(instance);
           } catch {
-            // `describe` has copy for the sdk's codes only.
+            // A code whose copy needs more than the code documents no end-user copy.
             user = undefined;
           }
           return {

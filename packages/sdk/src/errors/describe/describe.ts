@@ -1,5 +1,9 @@
-import { toAnyError } from "../../internal/anyError.js";
-import type { AnyError, Code, ErrorOf } from "../types.js";
+import { Record as Rec } from "effect";
+
+import { InternalError } from "../classes/InternalError.js";
+import type { EnsforgeError } from "../EnsforgeError.js";
+import { fromCause } from "../translate/fromCause.js";
+import type { AnyError, Code } from "../types.js";
 import { messages, type Copy } from "./messages.js";
 
 /**
@@ -10,27 +14,60 @@ import { messages, type Copy } from "./messages.js";
  * @since 1.0.0
  */
 export type Description = Copy & {
-  readonly code: Code;
+  /** A code of `Errors.Code`, or of a package that extends ensforge (e.g. `HcaError`). */
+  readonly code: Code | (string & {});
   readonly retryable: boolean;
   /** `info`: expected outcome; `warning`: temporary, retry later; `error`: needs attention. */
   readonly severity: "info" | "warning" | "error";
 };
 
 /**
- * Options for {@link describe}.
+ * Options for {@link describe}. `error` is the union of error classes whose codes `messages`
+ * may override: every sdk error by default; add a package's class to override its codes too,
+ * e.g. `DescribeOptions<Errors.AnyError | HcaError>`.
  *
  * @stability stable
  * @category errors
  * @since 1.0.0
  */
-export type DescribeOptions = {
+export type DescribeOptions<error extends EnsforgeError = AnyError> = {
   /** Replacement copy by code, e.g. translations. Missing fields fall back to the English copy. */
   readonly messages?: {
-    readonly [code in Code]?: (error: ErrorOf<code>) => Partial<Copy>;
+    readonly [code in error["code"]]?: (
+      error: error extends { readonly code: infer codes }
+        ? code extends codes
+          ? error
+          : never
+        : never,
+    ) => Partial<Copy>;
   };
 };
 
-const expected = new Set<AnyError["_tag"]>([
+type Template = (error: EnsforgeError) => Copy;
+
+// oxlint-disable-next-line typescript/no-unsafe-type-assertion -- each template receives an error with its code
+const sdkMessages = messages as unknown as Readonly<Partial<Record<string, Template>>>;
+const extensionMessages = new Map<string, Template>();
+const generic: Template = (error) =>
+  messages.UNEXPECTED(new InternalError({ code: "UNEXPECTED", context: error.context }));
+
+/**
+ * Adds the end-user copy of a package's error codes to `Errors.describe`. Call it once, next to
+ * the error class, so the copy is registered wherever the class can be thrown. The sdk's own
+ * codes cannot be replaced.
+ *
+ * @internal
+ * @stability unstable
+ */
+export const registerMessages = <error extends EnsforgeError>(table: {
+  readonly [code in error["code"]]: (error: error) => Copy;
+}): void => {
+  for (const [code, template] of Rec.toEntries(table))
+    // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- `describe` passes the template only errors with its code
+    if (sdkMessages[code] === undefined) extensionMessages.set(code, template as Template);
+};
+
+const expected = new Set([
   "UserRejectedError",
   "NameStateError",
   "NotFoundError",
@@ -47,6 +84,8 @@ const expected = new Set<AnyError["_tag"]>([
  * **Details**
  *
  * - Accepts any value; non-ensforge errors go through `Errors.fromCause` first.
+ * - Packages that extend ensforge, such as `@ensforge/hca`, add copy for their own codes; a code
+ *   without copy gets the generic `UNEXPECTED` copy.
  * - Override copy per code with `messages`, for example to translate.
  *
  * **Example** (Showing an error toast)
@@ -76,18 +115,20 @@ const expected = new Set<AnyError["_tag"]>([
  * @category errors
  * @since 1.0.0
  */
-export const describe = (value: unknown, options: DescribeOptions = {}): Description => {
-  const error = toAnyError(value);
-  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- the message tables are keyed by every error code
-  const template = messages[error.code] as (error: AnyError) => Copy;
-  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- the message tables are keyed by every error code
-  const override = options.messages?.[error.code] as
-    | ((error: AnyError) => Partial<Copy>)
+export const describe = <error extends EnsforgeError = AnyError>(
+  value: unknown,
+  options: DescribeOptions<error> = {},
+): Description => {
+  const error = fromCause(value);
+  const template = sdkMessages[error.code] ?? extensionMessages.get(error.code) ?? generic;
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- overrides are keyed by the code of the error they receive
+  const overrides = options.messages as
+    | Readonly<Partial<Record<string, (error: EnsforgeError) => Partial<Copy>>>>
     | undefined;
 
   return {
     ...template(error),
-    ...override?.(error),
+    ...overrides?.[error.code]?.(error),
     code: error.code,
     retryable: error.retryable,
     severity: expected.has(error._tag) ? "info" : error.retryable ? "warning" : "error",
