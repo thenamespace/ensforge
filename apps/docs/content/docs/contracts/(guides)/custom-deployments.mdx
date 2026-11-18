@@ -44,6 +44,8 @@ export const devnet = Deployments.define({
 
 `define` throws `Deployments.InvalidProfileError` with every problem it finds, not only the first. It checks that the chain IDs agree, that every required group and address is present and well-formed, that no unknown contract name appears, and that every capability flag has a known value. It does not read the chain.
 
+**Example** (Catching an Invalid Profile)
+
 ```ts twoslash title="invalid.ts"
 import { Deployments } from "@ensforge/contracts";
 
@@ -58,7 +60,9 @@ try {
 
 ## 3. Use the profile with the SDK
 
-Pass the profile as `deployment` when you create the client. The client's chain must match the profile's `chainId`, or creation fails with `INVALID_DEPLOYMENT`.
+Pass the profile as `deployment` when you create the client. The client's chain must match the profile's `chainId`, or creation fails with [`INVALID_DEPLOYMENT`](/docs/sdk/errors/INVALID_DEPLOYMENT).
+
+**Example** (Creating a Client for the Devnet)
 
 ```ts twoslash title="client.ts"
 import { Deployments } from "@ensforge/contracts";
@@ -84,4 +88,4 @@ Read `error.issues`. Each entry names the path, such as `v2.contracts.ethRegistr
 
 ### `INVALID_DEPLOYMENT`
 
-The SDK rejected the profile, or it is for another chain than the client's. Match `chainId` to the viem client's chain. See [`INVALID_DEPLOYMENT`](/docs/sdk/errors/INVALID_DEPLOYMENT).
+`Deployments.define` rejected the profile, or the profile is for another chain than the client's. Read the error's `cause` for the profile's issues, and match `chainId` to the viem client's chain. See [`INVALID_DEPLOYMENT`](/docs/sdk/errors/INVALID_DEPLOYMENT).

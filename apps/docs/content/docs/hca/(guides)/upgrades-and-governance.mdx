@@ -18,14 +18,14 @@ keywords:
   and their API can change in a minor release.
 </Callout>
 
-An HCA runs an **implementation**: the contract code behind the account. The DAO decides which implementations exist and which accounts may move to. By the end of this guide you will have checked an upgrade, run it, and, as a governance account, approved a new implementation.
+An [HCA](/docs/sdk/reference/glossary#hca) runs an **implementation**: the contract code behind the account. Governance accounts decide which implementations new accounts may use and which ones existing accounts may upgrade to. By the end of this guide you will have checked an upgrade, run it, and, as a governance account, approved a new implementation.
 
 ## Upgrade your HCA (owners)
 
-An upgrade keeps the HCA's address and its sessions. Only the owner can run it, and only to an implementation that two checks allow:
+An upgrade keeps the HCA's address and its sessions. Only the owner can run it, only on a deployed HCA, and only to an implementation that passes two checks:
 
-1. The implementation is in the DAO's **upgrade set**.
-2. The implementation accepts the account's current implementation as a predecessor.
+1. The implementation is in the DAO's **upgrade set**, a list of allowed upgrade targets.
+2. The new implementation accepts the account's current implementation as its predecessor. The new implementation's own code decides this.
 
 ### 1. Check the upgrade
 
@@ -55,16 +55,16 @@ const { allowed, inUpgradeSet, predecessorAllowed } = await ens.hca.getUpgrade({
 });
 ```
 
-| Field                | Meaning                                                            |
-| -------------------- | ------------------------------------------------------------------ |
-| `allowed`            | `true` when both checks pass.                                      |
-| `current`            | The account's current implementation, or `null` before deployment. |
-| `inUpgradeSet`       | The upgrade set includes the implementation.                       |
-| `predecessorAllowed` | The implementation accepts `current` as its predecessor.           |
+| Field                | Meaning                                                                             |
+| -------------------- | ----------------------------------------------------------------------------------- |
+| `allowed`            | `true` when both checks pass.                                                       |
+| `current`            | The account's current implementation, or `null` before deployment.                  |
+| `inUpgradeSet`       | The upgrade set includes the implementation.                                        |
+| `predecessorAllowed` | The implementation accepts `current` as its predecessor. `false` before deployment. |
 
 ### 2. Run the upgrade
 
-[`hca.upgrade`](/docs/hca/reference/actions/hca/upgrade) is the owner's own transaction. It fails with `HCA_UPGRADE_NOT_ALLOWED` when the HCA is not deployed or a check fails.
+[`hca.upgrade`](/docs/hca/reference/actions/hca/upgrade) is the owner's own transaction. It fails with [`HCA_UPGRADE_NOT_ALLOWED`](/docs/sdk/errors/HCA_UPGRADE_NOT_ALLOWED) before sending when the HCA is not deployed or a check fails.
 
 ```ts twoslash title="upgrade.ts"
 import { hcaActions } from "@ensforge/hca";
@@ -102,7 +102,7 @@ After an upgrade, `ens.hca.get` returns the new `implementation`. The account's 
 
 ## Approve implementations (governance accounts)
 
-Each action is limited to the account in the table's second column. Each has a `…Sync` form.
+Each action is limited to the accounts in the table's second column. Each has a `…Sync` form that waits for the receipt.
 
 | Action                                                                                    | Who                      | What it does                                                                  |
 | ----------------------------------------------------------------------------------------- | ------------------------ | ----------------------------------------------------------------------------- |

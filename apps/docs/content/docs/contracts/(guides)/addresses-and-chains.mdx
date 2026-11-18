@@ -20,7 +20,7 @@ const sepoliaResolver = Deployments.get({ chainId: 11155111 })?.v2?.contracts.pu
 const chainIds = Deployments.list().map((profile) => profile.chainId);
 ```
 
-A profile is `{ name, chainId, v1?, v2? }`. `v1` and `v2` are the ENSv1 and ENSv2 deployments on that chain. Both exist on mainnet and Sepolia. Use `get` with optional chaining for chains that may have no profile.
+A profile is `{ name, chainId, v1?, v2? }`. `v1` and `v2` are the [ENSv1](/docs/sdk/reference/glossary#ensv1) and [ENSv2](/docs/sdk/reference/glossary#ensv2) deployments on that chain. Both exist on mainnet and Sepolia. Use `get` with optional chaining for chains that may have no profile.
 
 ## What a deployment holds
 
@@ -28,21 +28,21 @@ Both `v1` and `v2` carry an `id` such as `mainnet-v2`, the `chainId`, a `protoco
 
 ### ENSv2 address groups
 
-| Group             | What it holds                                                                                                                                                                                                           |
-| ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `contracts`       | Entry points apps call directly: the Universal Resolver proxy, root and `.eth` registries, the `.eth` registrar, the rent price oracle, the public resolver, the verifiable factory and the reverse registrar adapters. |
-| `implementations` | Implementation contracts that proxies and the factory point to, such as `permissionedResolver` and `userRegistry`.                                                                                                      |
-| `migration`       | ENSv1 to ENSv2 migration contracts, such as `unlockedMigrationController` and `migrationHelper`.                                                                                                                        |
-| `infrastructure`  | Supporting contracts: batch registrars and token URI renderers.                                                                                                                                                         |
-| `dns`             | DNS integration contracts. Present when the deployment has them.                                                                                                                                                        |
-| `hca`             | Hosted contract account contracts (experimental). Present when the deployment has them.                                                                                                                                 |
-| `paymentTokens`   | The ERC-20 tokens the `.eth` registrar accepts: `dai` and `usdc`. The rent price oracle stays the source of truth.                                                                                                      |
+| Group             | What it holds                                                                                                                                                                                                                                                                                                                                                   |
+| ----------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `contracts`       | Entry points apps call directly, such as the Universal Resolver proxy, the root and `.eth` [registries](/docs/sdk/reference/glossary#registry), the `.eth` [registrar](/docs/sdk/reference/glossary#registrar), the rent price oracle, the public [resolver](/docs/sdk/reference/glossary#resolver), the verifiable factory and the reverse registrar adapters. |
+| `implementations` | Implementation contracts that proxies and the factory point to, such as `permissionedResolver` and `userRegistry`.                                                                                                                                                                                                                                              |
+| `migration`       | ENSv1 to ENSv2 [migration](/docs/sdk/reference/glossary#migration) contracts, such as `unlockedMigrationController` and `migrationHelper`.                                                                                                                                                                                                                      |
+| `infrastructure`  | Supporting contracts: batch registrars, token URI renderers and the ENS-managed Universal Resolver proxy.                                                                                                                                                                                                                                                       |
+| `dns`             | DNS integration contracts. Present when the deployment has them.                                                                                                                                                                                                                                                                                                |
+| `hca`             | [HCA](/docs/sdk/reference/glossary#hca) (Hosted Contract Account) contracts, experimental. Present when the deployment has them.                                                                                                                                                                                                                                |
+| `paymentTokens`   | The ERC-20 tokens the `.eth` registrar accepts: `dai` and `usdc`. The rent price oracle stays the source of truth.                                                                                                                                                                                                                                              |
 
 ### ENSv1 contracts
 
-`v1.contracts` holds the registry, the `.eth` registrar and controllers, the NameWrapper, the public resolver, the reverse registrars and the DNS contracts. `legacyPublicResolvers` and `frozenPublicResolvers` list earlier public resolver generations: legacy ones still authorise writes, frozen ones can be read but no longer changed.
+`v1.contracts` holds the registry, the `.eth` registrar, its controller, price oracle and bulk renewal helper, the [Name Wrapper](/docs/sdk/reference/glossary#name-wrapper), the public resolver, the Universal Resolver, the reverse registrars and the DNS contracts. `legacyPublicResolvers` and `frozenPublicResolvers` list earlier public resolver generations: legacy ones still authorise writes, frozen ones can be read but no longer changed.
 
-Since the ENSv2 cutover, ENSv1 controllers no longer register or renew `.eth` names on mainnet. Their addresses remain so that you can read past registrations.
+Since the ENSv2 cutover, ENSv1 controllers no longer register or renew `.eth` names on mainnet: the ENSv1 `.eth` registrar now belongs to ENSv2's `migration.ethRenewerV1`. The controller addresses remain so that you can read past registrations.
 
 ## Check behaviour flags before you branch on a chain
 
@@ -73,7 +73,9 @@ const { wrapperRegistryInitializer } = Deployments.mainnet.v2.capabilities;
 
 ## Find where an address comes from
 
-`provenance` names the repository, the release tag, the commit and, for ENSv2, the compiler build of each contract. ENSv2 networks mix builds because contracts were redeployed one by one.
+`provenance` names the repository, the release tag, the commit and, for ENSv2, the compiler build of each contract. ENSv2 networks mix builds because contracts were redeployed one by one. Mainnet and Sepolia ENSv2 come from contracts-v2 `v1.0.1`, ENSv1 from ens-contracts `v1.7.0`.
+
+**Example** (Reading Provenance)
 
 ```ts twoslash title="provenance.ts"
 import { Deployments } from "@ensforge/contracts";
@@ -83,7 +85,9 @@ const { repository, release, commit } = Deployments.sepolia.v2.provenance;
 
 ## Find a reverse registrar on a layer 2
 
-`Deployments.l2ReverseRegistrars` maps a chain ID to the ENSv1 `L2ReverseRegistrar` on that chain, where an address sets its primary name for that chain. All mainnet layer 2s share one address and all testnets share another.
+`Deployments.l2ReverseRegistrars` maps a chain ID to the ENSv1 `L2ReverseRegistrar` on that chain, where an address sets its [primary name](/docs/sdk/reference/glossary#primary-name) for that chain. All mainnet layer 2s share one address and all testnets share another.
+
+**Example** (Finding the Base Reverse Registrar)
 
 ```ts twoslash title="l2-reverse.ts"
 import { Deployments } from "@ensforge/contracts";

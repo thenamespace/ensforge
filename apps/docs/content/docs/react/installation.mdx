@@ -5,7 +5,7 @@ description: Install @ensforge/react with the SDK and its peers in a React 19 ap
 keywords: [install, "@ensforge/react", React 19]
 ---
 
-`@ensforge/react` needs React 19 and the ensforge SDK. It installs `@effect/atom-react` for you.
+`@ensforge/react` needs React 19 and the ensforge SDK. It depends on `@effect/atom-react` and installs it for you. Add `@effect/atom-react` to your own dependencies only when your code imports from it, such as `RegistryContext` for the atom layer. Use the version `@ensforge/react` depends on, so both share one registry context.
 
 ## Install the packages
 
@@ -15,6 +15,7 @@ keywords: [install, "@ensforge/react", React 19]
 
 - `@ensforge/sdk` is the client the hooks run actions with. See [Create a client](/docs/sdk/create-a-client).
 - `effect` and `viem` are peer dependencies, as they are for the SDK.
+- `scheduler` (0.25 to 0.28) is a peer dependency too. React DOM depends on it. If your package manager reports it missing, add it.
 - `react` must be version 19 or newer.
 
 ## Use wagmi? Add the adapter

@@ -5,7 +5,7 @@ keywords:
   [Next.js, Pages Router, getServerSideProps, getStaticProps, static export, prefetch, dehydrate]
 ---
 
-In the Pages Router, prefetch the reads in `getServerSideProps` or `getStaticProps`, return the state as a prop, and render `HydrationBoundary` in the page. The same steps work for a static export.
+In the Pages Router, prefetch the reads in `getServerSideProps` or `getStaticProps`, return the state as a prop, and render `HydrationBoundary` in the page. `getStaticProps` also works for a static export.
 
 <Callout type="info" title="Server rendering helpers are unstable">
   `prefetch`, `dehydrate` and `HydrationBoundary` are marked `unstable`. Their names and shapes can
@@ -47,7 +47,7 @@ export default function App({ Component, pageProps }: AppProps) {
 
 ## 2. Prefetch on the server
 
-Create a new registry for each request. The state is plain JSON (bigints and bytes are tagged), so it passes through page props.
+Create a new registry for each request. The values are plain JSON (bigints and bytes are tagged). Each entry of `dehydrate`'s result also has an `undefined` field, which Next.js refuses in page props, so pass the state through `JSON.stringify` and `JSON.parse` to drop it.
 
 **Example** (A Name Page)
 
@@ -70,7 +70,7 @@ export const getServerSideProps: GetServerSideProps<Props> = async ({ params }) 
 
   await prefetch(registry, ens, Actions.name.get, { name });
 
-  return { props: { name, state: dehydrate(registry) } };
+  return { props: { name, state: JSON.parse(JSON.stringify(dehydrate(registry))) } };
 };
 
 function Profile({ name }: { name: string }) {
@@ -89,10 +89,11 @@ export default function Page({ name, state }: Props) {
 ```
 
 - `useName` reads the same action and options as `prefetch`, so it uses the prefetched value.
+- `JSON.parse(JSON.stringify(...))` removes the `undefined` fields. Without it, Next.js fails with "`undefined` cannot be serialized as JSON".
 - A failed read is not sent, so the browser retries it.
 
 ## Static pages
 
-Use the same `prefetch` and `dehydrate` in `getStaticProps`. The state is baked into the page at build time. Set `staleTime` on the hooks for data that changes. Without it, a hydrated value revalidates once it is 30 seconds old.
+Use the same `prefetch` and `dehydrate`, with the same `JSON` round trip, in `getStaticProps`. The state is baked into the page at build time. Set `staleTime` on the hooks for data that changes. Without it, a hydrated value revalidates once it is 30 seconds old.
 
 For the App Router version with streaming, see [Next.js App Router](/docs/react/nextjs-app-router).

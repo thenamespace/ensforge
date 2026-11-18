@@ -49,10 +49,10 @@ With RainbowKit or another wallet kit, put its provider around `EnsforgeProvider
 
 ## What `fromWagmi` does for you
 
-- The ENS chain is the `chainId` option, else mainnet when the config has it, else the first configured chain ensforge has a deployment for. Its transport must be in the wagmi config. Otherwise it throws `UNKNOWN_CHAIN`.
-- The wallet is looked up on every write, so account and connector changes are followed. With no wallet connected, a write fails with `WALLET_NOT_CONFIGURED`.
-- A wallet on another chain is asked to switch first, as wagmi's own `writeContract` does. Pass `switchChain: false` to turn that off.
-- Every other chain of the wagmi config becomes one of the client's `chains`, so writes ENS makes there (an L2 primary name) use wagmi's clients and wallet.
+- The ENS chain is the `chainId` option, else mainnet when the config has it, else the first configured chain ensforge has a deployment for. Its transport must be in the wagmi config. Otherwise it throws [`UNKNOWN_CHAIN`](/docs/sdk/errors/UNKNOWN_CHAIN).
+- The wallet is looked up on every write, so account and connector changes are followed. With no wallet connected, a write fails with [`WALLET_NOT_CONFIGURED`](/docs/sdk/errors/WALLET_NOT_CONFIGURED).
+- A wallet on another chain is asked to switch first, as wagmi's own `writeContract` does. Pass `switchChain: false` to turn that off. A wallet on another chain then fails with [`CHAIN_MISMATCH`](/docs/sdk/errors/CHAIN_MISMATCH).
+- Every other chain of the wagmi config becomes one of the client's `chains`, so writes ENS makes there (an L2 [primary name](/docs/sdk/reference/glossary#primary-name)) use wagmi's clients and wallet.
 
 **Example** (A Sepolia Client Without Chain Switching)
 
@@ -72,6 +72,6 @@ No wallet is connected. Connect one first, then send the write.
 
 ### `fromWagmi` throws `UNKNOWN_CHAIN`
 
-The wagmi config has no chain ensforge can use, or no transport for it. Add a chain with a transport, or pass `chainId`.
+The wagmi config has no chain ensforge can use, or no transport for it. Add mainnet, or another chain ensforge has a deployment for, with a transport. For any other chain, pass `chainId` with a `deployment`.
 
 See [Create a client](/docs/sdk/create-a-client) for every client option, and [Set up the provider](/docs/react/set-up-the-provider) for the provider's props.

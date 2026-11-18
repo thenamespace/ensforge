@@ -4,7 +4,7 @@ description: Install @ensforge/contracts, the ENS ABIs, addresses and constants 
 keywords: [installation, "@ensforge/contracts", ABI, viem, entry points]
 ---
 
-`@ensforge/contracts` holds the ENS contract ABIs, deployment addresses and protocol constants. It has no runtime dependencies beyond the `viem` peer, and it does not depend on Effect or on `@ensforge/sdk`, so you can use it alone.
+`@ensforge/contracts` holds the ENS contract ABIs, deployment addresses and protocol constants such as interface IDs and [role](/docs/sdk/reference/glossary#role) bitmaps. It has no runtime dependencies beyond the `viem` peer, and it does not depend on Effect or on `@ensforge/sdk`, so you can use it alone.
 
 ## Requirements
 
@@ -28,6 +28,8 @@ The root entry point has four namespaces:
 | `InterfaceIds` | ERC-165 interface IDs of registries, resolvers and resolver profiles. |
 | `Roles`        | ENSv2 role bitmaps for registries and resolvers.                      |
 
+**Example** (Importing the Namespaces)
+
 ```ts twoslash title="imports.ts"
 import { Abis, Deployments, InterfaceIds, Roles } from "@ensforge/contracts";
 
@@ -41,14 +43,14 @@ const renewRole = Roles.registry.renew;
 
 The same ABIs and constants are also available as flat named exports, which suit bundlers that tree-shake by file.
 
-| Import                                    | What it holds                                                                                             |
-| ----------------------------------------- | --------------------------------------------------------------------------------------------------------- |
-| `@ensforge/contracts/v1`                  | ENSv1 ABIs and constants, such as `baseRegistrarV1Abi`.                                                   |
-| `@ensforge/contracts/v2`                  | ENSv2 ABIs, interfaces, role and interface-ID constants and helpers, such as `permissionedRegistryV2Abi`. |
-| `@ensforge/contracts/shared`              | ABIs both protocol versions share: token standards, ERC-165, resolver profiles, errors, events.           |
-| `@ensforge/contracts/v2/experimental/hca` | The experimental hosted contract account ABIs and session helpers.                                        |
+| Import                                    | What it holds                                                                                                |
+| ----------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| `@ensforge/contracts/v1`                  | ENSv1 ABIs and constants, such as `baseRegistrarV1Abi`.                                                      |
+| `@ensforge/contracts/v2`                  | ENSv2 ABIs, interfaces, role and interface-ID constants and helpers, such as `permissionedRegistryV2Abi`.    |
+| `@ensforge/contracts/shared`              | ABIs both protocol versions share: token standards, ERC-165, resolver profiles, errors, events.              |
+| `@ensforge/contracts/v2/experimental/hca` | The experimental [HCA](/docs/sdk/reference/glossary#hca) (Hosted Contract Account) ABIs and session helpers. |
 
-See [Reference entry points](/docs/contracts/reference/entry-points) for every export.
+See the [entry points reference](/docs/contracts/reference/entry-points) for every export.
 
 ## Use it with the SDK
 

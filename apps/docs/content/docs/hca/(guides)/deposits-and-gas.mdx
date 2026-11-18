@@ -9,20 +9,20 @@ keywords:
   `@ensforge/hca` is experimental for 1.0. Its API can change in a minor release.
 </Callout>
 
-An HCA is its own account, so it can hold funds and pay for things. By the end of this guide you will know who pays gas for each executor, how to fund an HCA before it exists, and how to manage its ERC-4337 deposit.
+An [HCA](/docs/sdk/reference/glossary#hca) is its own account, so it can hold funds and pay for things. By the end of this guide you will know who pays gas for each [executor](/docs/sdk/reference/glossary#executor), how to fund an HCA before it exists, and how to manage its ERC-4337 deposit.
 
 ## Who pays what
 
-Two costs exist. The **gas** pays for running the execution. The **spend** is what the calls themselves pay, such as a registration fee.
+Two costs exist. The **gas** pays for running the execution. The **spend** is what the calls themselves pay, such as ETH sent with a call or a registration fee in tokens.
 
-| Executor                                       | Pays the gas                                                               | Pays the spend                                              |
-| ---------------------------------------------- | -------------------------------------------------------------------------- | ----------------------------------------------------------- |
-| `owner()`                                      | The owner's wallet.                                                        | The HCA, when the call is made by the HCA (a registration). |
-| `bundler()` or `pimlico()` without a paymaster | The HCA, from its own funds.                                               | The HCA.                                                    |
-| `bundler()` or `pimlico()` with a paymaster    | The paymaster.                                                             | The HCA.                                                    |
-| `rhinestone()`                                 | Sponsored by default. With `sponsored: false`, the session's refund token. | The HCA.                                                    |
+| Executor                                       | Pays the gas                                                             | Pays ETH the calls send                        | Pays tokens the calls spend |
+| ---------------------------------------------- | ------------------------------------------------------------------------ | ---------------------------------------------- | --------------------------- |
+| `owner()`                                      | The owner's wallet.                                                      | The owner's wallet, sent with the transaction. | The HCA.                    |
+| `bundler()` or `pimlico()` without a paymaster | The HCA.                                                                 | The HCA.                                       | The HCA.                    |
+| `bundler()` or `pimlico()` with a paymaster    | The [paymaster](/docs/sdk/reference/glossary#paymaster).                 | The HCA.                                       | The HCA.                    |
+| `rhinestone()`                                 | Sponsored by default. With `sponsored: false`, a session's refund token. | The HCA.                                       | The HCA.                    |
 
-The HCA is `msg.sender` of the calls it runs, so what a call spends comes from the HCA's balance, not the wallet's. A registration through `via: hca()` fails with `INSUFFICIENT_TOKEN_BALANCE` before it is sent when the HCA cannot pay. Fund the HCA first.
+The HCA is `msg.sender` of the calls it runs, so tokens a call spends come from the HCA's balance, not the wallet's. A registration through `via: hca()` fails with [`INSUFFICIENT_TOKEN_BALANCE`](/docs/sdk/errors/INSUFFICIENT_TOKEN_BALANCE) before it is sent when the HCA cannot pay. Fund the HCA first.
 
 ## Fund an HCA before it exists
 
@@ -55,12 +55,12 @@ await walletClient.sendTransaction({ to: address, value: parseEther("0.01") });
 
 ## Read and top up the EntryPoint deposit
 
-With a bundler and no paymaster, the HCA pays for its UserOperations. The ERC-4337 **EntryPoint** keeps a deposit for each account, and that deposit pays the gas without a paymaster. Read it, and add to it, with these actions.
+With a bundler and no paymaster, the HCA pays for its UserOperations. The ERC-4337 **EntryPoint** keeps a deposit for each account and charges that gas to it. Read the deposit, and add to it ahead of time, with these actions.
 
 | Action                                                                    | What it does                                                      |
 | ------------------------------------------------------------------------- | ----------------------------------------------------------------- |
 | [`hca.getDeposit`](/docs/hca/reference/actions/hca/get-deposit)           | Reads the deposit in wei. Takes an optional `address` or `owner`. |
-| [`hca.addDeposit`](/docs/hca/reference/actions/hca/add-deposit)           | Adds `amount` wei to the deposit.                                 |
+| [`hca.addDeposit`](/docs/hca/reference/actions/hca/add-deposit)           | Adds `amount` wei from your wallet to the deposit.                |
 | [`hca.withdrawDeposit`](/docs/hca/reference/actions/hca/withdraw-deposit) | Withdraws `amount` wei to `to`.                                   |
 
 **Example** (Topping Up and Withdrawing)
@@ -91,11 +91,11 @@ const after = await ens.hca.getDeposit({});
 await ens.hca.withdrawDepositSync({ to: account.address, amount: after - before });
 ```
 
-`withdrawDeposit` runs from the HCA and forwards no value. Each action has a `…Sync` form that waits for the receipt and a form that resolves once the transaction is submitted. See [Ways to call actions](/docs/sdk/ways-to-call-actions).
+`withdrawDeposit` runs from the HCA through `executeByOwner`, because only the account may withdraw its deposit. Each action has a `…Sync` form that waits for the receipt and a form that resolves once the transaction is submitted. See [Ways to call actions](/docs/sdk/ways-to-call-actions).
 
 ## Check the cost before you send
 
-Every write has `prepare`, `simulate` and `estimateGas`. With an executor that quotes fees, the plan shows them before anything is sent. See [Preview before sending](/docs/sdk/preview-before-sending).
+Every write has `prepare`, `simulate` and `estimateGas`. With an executor that quotes fees, the [plan](/docs/sdk/reference/glossary#plan) shows them in `plan.fees` before anything is sent. See [Preview before sending](/docs/sdk/preview-before-sending).
 
 ## Troubleshooting
 

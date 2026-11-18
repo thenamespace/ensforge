@@ -7,9 +7,10 @@ keywords: [ensAtom, ensWriteAtom, ensPagesAtom, invalidate, readKey, Effect Atom
 Every hook reads atoms. The atom layer lets you build your own derived state from the same reads, read ENS outside components, or send writes from a store.
 
 <Callout type="info" title="The atom layer is unstable">
-  Everything in `@ensforge/react/atoms` is marked `unstable`, except the `Action`, `Freshness` and
-  `PageAction` types. It is built on Effect's `effect/reactivity` Atom module, which is unstable
-  upstream. Names and shapes can change in a minor release. The hooks are stable.
+  Everything in `@ensforge/react/atoms` is marked `unstable`, except the `Action`, `ActionOptions`,
+  `ActionValue`, `ActionError`, `Freshness` and `PageAction` types. It is built on Effect's
+  `effect/reactivity` Atom module, which is unstable upstream. Names and shapes can change in a
+  minor release. The hooks are stable.
 </Callout>
 
 ## Prerequisites
@@ -19,7 +20,7 @@ Every hook reads atoms. The atom layer lets you build your own derived state fro
 
 ## Read ENS in an atom
 
-`ensAtom(client, action, options, freshness?)` returns the atom of one read. It holds an `AsyncResult`. It is cached per client (chain, account and indexer), action and options, so it is the same atom `useRead` uses for that read.
+`ensAtom(client, action, options, freshness?)` returns the atom of one read. It holds an `AsyncResult`. It is cached per client (chain, account and indexer), action and options, so it shares its request and result with `useRead` for that read.
 
 **Example** (Composing Reads)
 
@@ -100,7 +101,7 @@ Mount `run` while you write through it. Writes never interrupt each other, and r
 
 ## Page through a list
 
-`ensPagesAtom(client, pageAction, options)` returns the atom of an indexer list. Its value holds every page loaded so far, and setting it loads the next page.
+`ensPagesAtom(client, pageAction, options)` returns the atom of an [indexer](/docs/sdk/reference/glossary#indexer) list. Its value holds every page loaded so far, and setting it loads the next page.
 
 **Example** (Loading Subnames Page By Page)
 
