@@ -12,7 +12,11 @@ import type { Implementation } from "./promise.js";
  */
 const implementationKey = Symbol.for("ensforge.request.implementation");
 
-/** The implementation `fn.request` captured, when the request was built by one. */
+/**
+ * The implementation `fn.request` captured, when the request was built by one.
+ *
+ * @stability unstable
+ */
 export const implementationOf = (
   request: Request,
 ): ((client: Client, options: never) => Effect.Effect<unknown, AnyError>) | undefined =>
