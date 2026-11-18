@@ -81,12 +81,12 @@ const { hash, hashes, plan } = await ens.record.set({
 [`record.set`](/docs/sdk/reference/actions/record/set) simulates the write first, so a revert
 becomes a typed error before the wallet prompt. It then asks the wallet to sign. The result holds:
 
-| Field    | Description                                                                                                                      |
-| -------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| `hash`   | Hash of the last transaction.                                                                                                    |
-| `hashes` | Every submitted transaction, in order. Writes with several steps, such as a registration, have more than one.                    |
-| `id`     | The EIP-5792 bundle id when the calls went out as one batch, otherwise `undefined`.                                              |
-| `plan`   | The [plan](/docs/sdk/writing-to-ens) that was sent. `plan.id` is what [`plan.resume`](/docs/sdk/continue-after-a-failure) needs. |
+| Field    | Description                                                                                                                                        |
+| -------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `hash`   | Hash of the last transaction.                                                                                                                      |
+| `hashes` | Every submitted transaction, in order. Writes with several [steps](/docs/sdk/reference/glossary#step), such as a registration, have more than one. |
+| `id`     | The EIP-5792 [bundle](/docs/sdk/reference/glossary#bundle) id when the calls went out as one batch, otherwise `undefined`.                         |
+| `plan`   | The [plan](/docs/sdk/writing-to-ens) that was sent. `plan.id` is what [`plan.resume`](/docs/sdk/continue-after-a-failure) needs.                   |
 
 ## 3. Wait for the receipt
 
@@ -165,8 +165,8 @@ await ens.record.setSync({
 });
 ```
 
-`status` is `waiting` while ensforge waits for chain time before a step (a registration waits a
-minute between its two transactions), `submitted` once the step's transactions are sent,
+`status` is `waiting` while ensforge waits for chain time before a step (a registration waits at least a
+minute between its commit and register steps), `submitted` once the step's transactions are sent,
 `confirmed` once their receipts are in, and `failed` with the error. With `setSync`, the last step
 reports `confirmed` too.
 
@@ -182,8 +182,8 @@ These options work on every write and every `…Sync` form.
 | `maxBundleCalls` | `10`                                    | Most calls in one wallet bundle.                                                                                                                                                                |
 | `signal`         | none                                    | Cancels before the next wallet prompt. Transactions already submitted are not undone.                                                                                                           |
 | `onStep`         | none                                    | Called as each step waits, is submitted, is confirmed or fails.                                                                                                                                 |
-| `via`            | none                                    | Send through another route, such as a smart account. See [Use smart accounts](/docs/sdk/use-smart-accounts).                                                                                    |
-| `paymaster`      | none                                    | Sponsor the gas with an EIP-5792 paymaster. See [Pay gas for users](/docs/sdk/pay-gas-for-users).                                                                                               |
+| `via`            | none                                    | Send through another [route](/docs/sdk/reference/glossary#route), such as a smart account. See [Use smart accounts](/docs/sdk/use-smart-accounts).                                              |
+| `paymaster`      | none                                    | Sponsor the gas with an EIP-5792 [paymaster](/docs/sdk/reference/glossary#paymaster). See [Pay gas for users](/docs/sdk/pay-gas-for-users).                                                     |
 
 An aborted write rejects with `signal.reason`, so its plan id is not on the error. Read it from
 [`plan.list`](/docs/sdk/reference/actions/plan/list) when you need to resume.

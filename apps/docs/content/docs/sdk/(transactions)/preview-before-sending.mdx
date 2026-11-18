@@ -11,7 +11,7 @@ the chain, and `.estimateGas` prices it. ensforge never sends a transaction duri
 
 - A client with an account. A wallet client is not needed to preview, only an account address. See
   [Create a client](/docs/sdk/create-a-client).
-- Read [How writes work](/docs/sdk/writing-to-ens) if the word **plan** is new: a plan is the list
+- Read [How writes work](/docs/sdk/writing-to-ens) if the word [plan](/docs/sdk/reference/glossary#plan) is new: a plan is the list
   of calls a write will make, as plain data.
 
 ## 1. Prepare the plan
@@ -27,7 +27,7 @@ import { createPublicClient, http } from "viem";
 import { sepolia } from "viem/chains";
 
 const publicClient = createPublicClient({ chain: sepolia, transport: http() });
-const account = "0x225f137127d9067788314bc7fcc1f36746a3c3B5";
+const account = "0xA11Ce00000000000000000000000000000000000"; // the account that will send it
 const ens = Ensforge.create({ publicClient, account }).extend(ensActions());
 
 // ---cut---
@@ -42,7 +42,7 @@ plan.requirements; // balance or token approval the account needs
 plan.warnings; // notes for the user, such as an unusual resolver
 ```
 
-- `plan.steps` are the groups of calls in order. Most writes have one step; a registration waits
+- `plan.steps` are the groups of calls ([steps](/docs/sdk/reference/glossary#step)) in order. Most writes have one step; a registration waits
   between two.
 - `plan.calls` is every call of every step, flattened. Each has `to`, `data` and `value`.
 - `plan.requirements` lists what the account must hold first, such as a balance or an ERC-20
@@ -66,7 +66,7 @@ import { createPublicClient, http } from "viem";
 import { sepolia } from "viem/chains";
 
 const publicClient = createPublicClient({ chain: sepolia, transport: http() });
-const account = "0x225f137127d9067788314bc7fcc1f36746a3c3B5";
+const account = "0xA11Ce00000000000000000000000000000000000"; // the account that will send it
 const ens = Ensforge.create({ publicClient, account }).extend(ensActions());
 
 // ---cut---
@@ -108,7 +108,7 @@ import { createPublicClient, formatEther, http } from "viem";
 import { sepolia } from "viem/chains";
 
 const publicClient = createPublicClient({ chain: sepolia, transport: http() });
-const account = "0x225f137127d9067788314bc7fcc1f36746a3c3B5";
+const account = "0xA11Ce00000000000000000000000000000000000"; // the account that will send it
 const ens = Ensforge.create({ publicClient, account }).extend(ensActions());
 
 // ---cut---

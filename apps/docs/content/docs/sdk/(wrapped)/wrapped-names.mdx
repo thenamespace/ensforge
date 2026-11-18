@@ -4,7 +4,7 @@ description: Learn what the ENSv1 Name Wrapper does, how it changes who controls
 keywords: [NameWrapper, wrapped name, ERC-1155, fuses, emancipated, locked, ENSv1]
 ---
 
-This page is about ENSv1 only. The **Name Wrapper** is an ENSv1 contract that turns a name into an ERC-1155 token and adds **fuses**: permissions that can be burned, for good, until the name expires. ENSv2 has no Name Wrapper. Wrapped names migrate to ENSv2 like unwrapped ones.
+This page is about [ENSv1](/docs/sdk/reference/glossary#ensv1) only. The **Name Wrapper** is an ENSv1 contract that turns a name into an ERC-1155 token and adds **fuses**: permissions that can be burned, for good, until the name expires. [ENSv2](/docs/sdk/reference/glossary#ensv2) has no Name Wrapper. Wrapped names [migrate](/docs/sdk/reference/glossary#migration) to ENSv2 like unwrapped ones.
 
 You never need to wrap a name to use ensforge. Wrapping matters when you want the token form or want to give up powers permanently.
 
@@ -23,7 +23,7 @@ On a wrapped name there is no separate manager. `name.get` reports the token hol
 
 A **fuse** is a permission that can be burned. A burned fuse cannot be unburned before the name expires. Two states matter:
 
-- **Emancipated** (`parentCannotControl` burned): a subname its parent can no longer control. The parent can only extend it, until it expires.
+- **Emancipated** (`parentCannotControl` burned): a [subname](/docs/sdk/reference/glossary#subname) its parent can no longer control. The parent can only extend it, until it expires.
 - **Locked** (`cannotUnwrap` burned): a name that stays in the NameWrapper until it expires. Every other owner-controlled fuse needs it first.
 
 See [Lock permissions with fuses](/docs/sdk/fuses) for the full list.
@@ -38,6 +38,6 @@ See [Lock permissions with fuses](/docs/sdk/fuses) for the full list.
 
 ## Renewal
 
-Wrapped `.eth` names renew through `ETHRenewerV1`, and `registration.renew` picks it for you. See [Renew a name](/docs/sdk/renew-a-name).
+`.eth` names still on ENSv1, wrapped or not, renew through `ETHRenewerV1`, which also extends the wrapped name's expiry. `registration.renew` picks it for you. See [Renew a name](/docs/sdk/renew-a-name).
 
 To wrap or unwrap a name, see [Wrap and unwrap a name](/docs/sdk/wrap-and-unwrap).

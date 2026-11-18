@@ -4,8 +4,8 @@ description: Sponsor a write's gas with an EIP-5792 paymaster service, or throug
 keywords: [paymaster, paymasterService, sponsor, gasless, EIP-5792, gas]
 ---
 
-A **paymaster** pays the gas of a transaction on the user's behalf. ensforge supports two ways to
-sponsor a write: a paymaster service your wallet understands, and the sponsorship of an HCA
+A [paymaster](/docs/sdk/reference/glossary#paymaster) pays the gas of a transaction on the user's behalf. ensforge supports two ways to
+sponsor a write: a paymaster service your wallet understands, and the sponsorship of an [HCA](/docs/sdk/reference/glossary#hca)
 bundler.
 
 ## Prerequisites
@@ -52,7 +52,7 @@ const { id } = await ens.record.set({
 
 - `url` is the paymaster service the wallet calls.
 - `context` is passed to the service as it is, for example a sponsorship policy. It is optional.
-- The write goes out as a bundle even when it has one call, and the bundle is atomic. `id` is the
+- The write goes out as a [bundle](/docs/sdk/reference/glossary#bundle) even when it has one call, and the bundle is atomic. `id` is the
   bundle id. See [Bundle transactions](/docs/sdk/bundle-transactions).
 
 `paymaster` is a write option, so `…Sync` forms, `plan.send` and `plan.resume` take it too.
@@ -60,13 +60,16 @@ const { id } = await ens.record.set({
 ## Sponsor through an HCA bundler
 
 An HCA can run a write as a UserOperation through a bundler, and the bundler's paymaster can pay for
-it. The executors take their own sponsorship settings: `bundler({ paymaster })`,
+it. The [executors](/docs/sdk/reference/glossary#executor) take their own sponsorship settings: `bundler({ paymaster })`,
 `pimlico({ sponsor, sponsorshipPolicyId })` and `rhinestone({ sponsored })`. This path is
 experimental. See [Bundlers](/docs/hca/bundlers), [Rhinestone](/docs/hca/rhinestone) and
 [Deposits and gas](/docs/hca/deposits-and-gas), and [Use smart accounts](/docs/sdk/use-smart-accounts)
 for `via`.
 
-A route's `plan.fees` shows each fee with `sponsored: true` when the sponsor pays it.
+With the default `owner()` executor, the HCA's transactions come from your wallet, so pass
+`paymaster` on the write as above.
+
+A [route](/docs/sdk/reference/glossary#route)'s `plan.fees` shows each fee with `sponsored: true` when the sponsor pays it.
 
 ## Check the result
 

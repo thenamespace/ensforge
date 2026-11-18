@@ -14,7 +14,7 @@ keywords:
   ]
 ---
 
-This page is about ENSv2 only. ENSv1 has one registry for every name. ENSv2 gives each name that has children its own **registry**, and calls it the name's **subregistry**. Everything here fails with [`UNSUPPORTED_PROTOCOL`](/docs/sdk/errors/UNSUPPORTED_PROTOCOL) or [`UNSUPPORTED_ON_DEPLOYMENT`](/docs/sdk/errors/UNSUPPORTED_ON_DEPLOYMENT) for ENSv1 names and chains without ENSv2.
+This page is about [ENSv2](/docs/sdk/reference/glossary#ensv2) only. [ENSv1](/docs/sdk/reference/glossary#ensv1) has one [registry](/docs/sdk/reference/glossary#registry) for every name. ENSv2 gives each name that has children its own registry, and calls it the name's **subregistry**. Everything here fails with [`UNSUPPORTED_PROTOCOL`](/docs/sdk/errors/UNSUPPORTED_PROTOCOL) or [`UNSUPPORTED_ON_DEPLOYMENT`](/docs/sdk/errors/UNSUPPORTED_ON_DEPLOYMENT) for ENSv1 names and chains without ENSv2.
 
 You will inspect the registry that holds a name's children, deploy one, attach it, upgrade it and set its metadata URI. Most apps never need this: [`subname.create`](/docs/sdk/create-subnames) deploys and attaches a registry when a parent has none.
 
@@ -37,7 +37,7 @@ flowchart TD
 | `wrapper` | A WrapperRegistry for a name migrated from the NameWrapper. See [Move a name to ENSv2](/docs/sdk/move-a-name-to-ensv2). |
 | `unknown` | Any other contract.                                                                                                     |
 
-An **emancipated** registry is one whose root role holders cannot take children back: they cannot unregister them, repoint them or control their transfers. Children of an emancipated registry keep what they were given.
+An **emancipated** registry is one whose root [role](/docs/sdk/reference/glossary#role) holders cannot take children back: they cannot unregister them, repoint them or control their transfers. Children of an emancipated registry keep what they were given.
 
 ## Prerequisites
 
@@ -178,14 +178,16 @@ When `upgrade.eligible` is `false`, `upgrade.blocker` says why:
 | `not-upgradeable` | ensforge knows no upgrade target for this kind of registry.                                                                     |
 
 <Callout type="info" title="Older registries cannot always be upgraded">
-  Registries created before the 2026-11-17 redeploy may report `not-approved`: the current
-  UserRegistry does not accept their implementation, and `registry.upgrade` fails with
+  On mainnet, user registries created before the 2026-11-17 redeploy report `not-approved`: the
+  current UserRegistry does not accept their implementation, and `registry.upgrade` fails with
   `UPGRADE_NOT_APPROVED`. They keep their token-level `renew` behaviour.
 </Callout>
 
 ## 5. Set the metadata URI
 
 [`registry.setUri`](/docs/sdk/reference/actions/registry/set-uri) points a registry's token metadata at your own service. It needs the `setUri` root role. It keeps the current URI renderer unless you pass `renderer`, and `renderer: null` removes it.
+
+**Example** (Setting a Metadata URI)
 
 ```ts twoslash title="registry-set-uri.ts"
 // @types: node

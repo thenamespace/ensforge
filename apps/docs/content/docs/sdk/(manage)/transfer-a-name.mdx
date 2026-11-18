@@ -5,7 +5,7 @@ keywords:
   [name.transfer, setManager, reclaim, registrant, manager, handover, RECORD_CONTROL_RETAINED]
 ---
 
-You will send a name you own to another address. ensforge moves the right token for the name's kind, so one call works for ENSv2 names, unwrapped ENSv1 names and wrapped names.
+You will send a [name](/docs/sdk/reference/glossary#name) you own to another address. ensforge moves the right token for the name's kind, so one call works for [ENSv2](/docs/sdk/reference/glossary#ensv2) names, unwrapped [ENSv1](/docs/sdk/reference/glossary#ensv1) names and wrapped names.
 
 ## Prerequisites
 
@@ -58,7 +58,7 @@ What moves depends on where the name lives:
 
 ## 2. Decide who keeps control of the records
 
-On ENSv2, a name's resolver has its own roles. By default they stay with the sender, who can still edit the records after the transfer. The plan carries a `RECORD_CONTROL_RETAINED` warning.
+On ENSv2, a name's [resolver](/docs/sdk/reference/glossary#resolver) has its own [roles](/docs/sdk/reference/glossary#role). By default they stay with the sender, who can still edit the records after the transfer. The plan carries a `RECORD_CONTROL_RETAINED` warning.
 
 Pass `records: "handover"` to grant them to the recipient and revoke the sender's in the same step.
 
@@ -91,13 +91,13 @@ await ens.name.transferSync({
 
 ## Give only the registrar token (ENSv1)
 
-An unwrapped `.eth` name on ENSv1 has two holders. The **registrant** holds the registrar token and owns the name. The **manager** is the registry owner and edits records and subnames. See [Who can change a name](/docs/sdk/who-can-change-a-name).
+An unwrapped `.eth` name on ENSv1 has two holders. The [registrant](/docs/sdk/reference/glossary#registrant) holds the registrar token and owns the name. The [manager](/docs/sdk/reference/glossary#manager) is the registry owner and edits records and subnames. See [Who can change a name](/docs/sdk/who-can-change-a-name).
 
 - `role: "registrant"` on `name.transfer` moves only the registrar token.
 - [`name.setManager`](/docs/sdk/reference/actions/name/set-manager) lets another account edit records and subnames while you keep ownership.
 - [`name.reclaim`](/docs/sdk/reference/actions/name/reclaim) resets the manager to the registrant (or to `owner`). Use it after receiving a registrar token, or to repair a lost manager.
 
-`setManager` and `reclaim` fail with [`UNSUPPORTED_PROTOCOL`](/docs/sdk/errors/UNSUPPORTED_PROTOCOL) for ENSv2 names, and for wrapped names. ENSv2 uses roles instead. See [Roles and permissions](/docs/sdk/roles-and-permissions).
+`setManager` and `reclaim` fail with [`UNSUPPORTED_PROTOCOL`](/docs/sdk/errors/UNSUPPORTED_PROTOCOL) for ENSv2 names and wrapped names, and `reclaim` also for names that are not `.eth` names. ENSv2 uses roles instead. See [Roles and permissions](/docs/sdk/roles-and-permissions).
 
 ## Check the result
 

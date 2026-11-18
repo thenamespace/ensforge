@@ -5,8 +5,8 @@ keywords:
   [server, serverless, edge, Cloudflare Workers, Node, privateKeyToAccount, plan storage, fetch]
 ---
 
-ensforge has no browser dependencies, so the same code runs in a Node server, a serverless function
-or an edge runtime. Three things differ from the browser: where the signer comes from, where plans
+ensforge depends on no browser or Node APIs, so the same code can run in a Node server, a
+serverless function or an edge runtime. Three things differ from the browser: where the signer comes from, where plans
 are saved, and how long a process lives.
 
 ## Prerequisites
@@ -15,15 +15,17 @@ are saved, and how long a process lives.
 
 ## What ensforge needs from the runtime
 
-The SDK imports no Node built-ins and touches no browser globals. It makes network requests through
-your viem transports and, for off-chain data (indexers, avatars, DNS proofs), through the global
-`fetch`. A runtime with `fetch` and viem support runs ensforge. An indexer takes its own `fetch`
-option if you need to supply one. See [Connect an indexer](/docs/sdk/connect-an-indexer).
+The SDK imports no Node built-ins and reads no browser globals, except `localStorage` when you use
+`Plan.localStorage()`. It makes network requests through your viem transports and, for off-chain
+data ([indexers](/docs/sdk/reference/glossary#indexer), avatars, DNS proofs), through the global
+`fetch`. A runtime with `fetch` and viem support can run ensforge. The built-in indexers,
+`bigname()` and `goldsky()`, take a `fetch` option if you need to supply one. ensforge's own tests
+run on Node only. See [Connect an indexer](/docs/sdk/connect-an-indexer).
 
 ## Create the client once per process
 
-An ensforge client is immutable and holds no per-request state, so create it at module scope and
-reuse it. Create a separate client only when the signer differs per request.
+An ensforge client's settings are fixed when you create it, and it keeps no per-request state, so
+create it at module scope and reuse it. Create a separate client only when the signer differs per request.
 
 ## Sign on the server
 
@@ -58,7 +60,7 @@ with [Handle errors](/docs/sdk/handle-errors).
 
 ## Save plans somewhere that outlives the process
 
-By default plans are kept in memory. A serverless function starts fresh on each cold start, so a
+By default [plans](/docs/sdk/reference/glossary#plan) are kept in memory. A serverless function starts fresh on each cold start, so a
 plan from an earlier invocation is gone and `plan.resume` fails with
 [`PLAN_NOT_FOUND`](/docs/sdk/errors/PLAN_NOT_FOUND). `Plan.localStorage()` does not exist on a
 server: its calls reject, and a write ignores a store that fails to save, so the write still runs

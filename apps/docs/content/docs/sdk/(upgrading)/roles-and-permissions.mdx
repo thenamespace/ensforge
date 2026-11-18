@@ -13,7 +13,7 @@ keywords:
   ]
 ---
 
-This page is about ENSv2 roles. On ENSv1 an owner, a manager and operators control a name, limited by NameWrapper fuses. ENSv2 replaces that with **roles**: each account holds specific powers, such as changing the resolver, on a name or at the root of a registry or resolver. The permission reads below answer for both versions, so UIs need no branch.
+This page is about [ENSv2](/docs/sdk/reference/glossary#ensv2) roles. On [ENSv1](/docs/sdk/reference/glossary#ensv1) an [owner](/docs/sdk/reference/glossary#owner), a [manager](/docs/sdk/reference/glossary#manager) and operators control a name, limited by [Name Wrapper](/docs/sdk/reference/glossary#name-wrapper) [fuses](/docs/sdk/reference/glossary#fuse). ENSv2 replaces that with **roles**: each account holds specific powers, such as changing the resolver, on a name or at the root of a [registry](/docs/sdk/reference/glossary#registry) or [resolver](/docs/sdk/reference/glossary#resolver). The [permission](/docs/sdk/reference/glossary#permission) reads below answer for both versions, so UIs need no branch.
 
 You will check what an account may do, grant and revoke roles, and give an app access to some records.
 
@@ -95,7 +95,8 @@ const { names, admin, rootRoles } = await ens.role.get({
 ```
 
 - `names` lists the roles held, including root roles, which apply to every name.
-- `admin` lists the roles whose holders may grant and revoke them.
+- `admin` lists the roles the account may grant and revoke.
+- `rootRoles` is the bitmap of the root roles alone.
 - `root: true` reads root roles alone. `contract` reads another registry or resolver than the name's.
 
 ## 3. Grant and revoke roles

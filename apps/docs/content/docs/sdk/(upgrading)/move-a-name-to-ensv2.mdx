@@ -14,15 +14,15 @@ keywords:
   ]
 ---
 
-This page is about ENS versions: a name registered on ENSv1 (the original contracts) can **migrate** to ENSv2 (the new registries). Most tasks in these docs work on either version without a choice from you. Migration is the task where the version matters, because it moves a name from one to the other.
+This page is about ENS versions: a name registered on [ENSv1](/docs/sdk/reference/glossary#ensv1) (the original contracts) can [migrate](/docs/sdk/reference/glossary#migration) to [ENSv2](/docs/sdk/reference/glossary#ensv2) (the new registries). Most tasks in these docs work on either version without a choice from you. Migration is the task where the version matters, because it moves a name from one to the other.
 
 You will check a name, migrate it, and confirm it now lives on ENSv2. For the background, see [ENS versions under the hood](/docs/sdk/ens-versions).
 
 ## Prerequisites
 
-- A wallet client for the account that holds the name's token (the registrant or the NameWrapper owner), or an approved operator. See [Create a client](/docs/sdk/create-a-client).
+- A wallet client for the account that holds the name's token (the [registrant](/docs/sdk/reference/glossary#registrant) or the [Name Wrapper](/docs/sdk/reference/glossary#name-wrapper) owner), or an approved operator. See [Create a client](/docs/sdk/create-a-client).
 - A chain with ENSv2 deployed, such as Sepolia.
-- Optional: an indexer, so ensforge can discover the name's records and subnames. See [Connect an indexer](/docs/sdk/connect-an-indexer).
+- Optional: an [indexer](/docs/sdk/reference/glossary#indexer), so ensforge can discover the name's records and subnames. See [Connect an indexer](/docs/sdk/connect-an-indexer).
 
 ## What migration does
 
@@ -65,12 +65,12 @@ const status = await ens.migration.get({ name: "ensforge-docs-demo.eth" });
 
 `status.status` is one of:
 
-| `status`       | Meaning                              |
-| -------------- | ------------------------------------ |
-| `eligible`     | The name can migrate now.            |
-| `blocked`      | See `blockers`.                      |
-| `migrated`     | The name is already on ENSv2.        |
-| `not-required` | Already on ENSv2, or not registered. |
+| `status`       | Meaning                                                 |
+| -------------- | ------------------------------------------------------- |
+| `eligible`     | The name can migrate now.                               |
+| `blocked`      | See `blockers`.                                         |
+| `migrated`     | The name was already migrated to ENSv2.                 |
+| `not-required` | The name was registered on ENSv2, or is not registered. |
 
 `status.route` says how the name moves:
 
@@ -83,18 +83,18 @@ const status = await ens.migration.get({ name: "ensforge-docs-demo.eth" });
 
 `blockers` explain why a name cannot migrate:
 
-| Blocker               | Meaning                                                                        |
-| --------------------- | ------------------------------------------------------------------------------ |
-| `not-eth`             | Not a `.eth` name or one of its subnames.                                      |
-| `expired`             | The ENSv1 registration expired. A name in grace: renew first, or pass `renew`. |
-| `not-reserved`        | ENSv2 holds no reservation for the name.                                       |
-| `not-owner`           | The account neither holds the token nor is an approved operator.               |
-| `cannot-transfer`     | The `cannotTransfer` fuse is burned.                                           |
-| `frozen-approval`     | `cannotApprove` is burned while a token approval is set.                       |
-| `parent-not-migrated` | A locked child whose parent is still on ENSv1.                                 |
-| `unlocked-child`      | A subname without its own token route. It is recreated through its parent.     |
-| `locked-resolver`     | `cannotSetResolver` keeps a resolver that could no longer be edited.           |
-| `unknown-label`       | Only the label's hash is known.                                                |
+| Blocker               | Meaning                                                                                                                                |
+| --------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| `not-eth`             | Not a `.eth` name or one of its subnames.                                                                                              |
+| `expired`             | The ENSv1 registration expired. A name in its [grace period](/docs/sdk/reference/glossary#grace-period): renew first, or pass `renew`. |
+| `not-reserved`        | ENSv2 holds no reservation for the name.                                                                                               |
+| `not-owner`           | The account neither holds the token nor is an approved operator.                                                                       |
+| `cannot-transfer`     | The `cannotTransfer` fuse is burned.                                                                                                   |
+| `frozen-approval`     | `cannotApprove` is burned while a token approval is set.                                                                               |
+| `parent-not-migrated` | A locked child whose parent is still on ENSv1.                                                                                         |
+| `unlocked-child`      | A subname without its own token route. It is recreated through its parent.                                                             |
+| `locked-resolver`     | `cannotSetResolver` keeps a resolver that could no longer be edited.                                                                   |
+| `unknown-label`       | Only the label's hash is known.                                                                                                        |
 
 `status.resolver.plan` shows what `migrate` does with the current resolver for the same `resolver` option, and `status.after` shows the registry, subregistry, expiry and roles the name gets. With an indexer, `status.discovered` lists the records and subnames that `migrate` carries over by default.
 
@@ -166,8 +166,8 @@ Read the name with [`name.get`](/docs/sdk/reference/actions/name/get). A migrate
 ## Wrapped and locked names
 
 - A wrapped name that is not locked migrates like an unwrapped one.
-- A locked name gets a WrapperRegistry. Its non-emancipated children are registered there after it migrates, which works only when the account sending the migration becomes its owner and `cannotCreateSubdomain` is not burned.
-- Emancipated children of a locked name migrate on their own, and the plan carries a warning. Use `migrateParents` to move a locked child's parent first.
+- A [locked](/docs/sdk/reference/glossary#locked) name gets a WrapperRegistry. Its non-emancipated children are registered there after it migrates, which works only when the account sending the migration becomes its owner and `cannotCreateSubdomain` is not burned.
+- [Emancipated](/docs/sdk/reference/glossary#emancipated) children of a locked name migrate on their own, and the plan carries a warning. Use `migrateParents` to move a locked child's parent first.
 
 See [Wrapped names](/docs/sdk/wrapped-names) and [Lock permissions with fuses](/docs/sdk/fuses).
 

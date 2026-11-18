@@ -6,7 +6,7 @@ keywords:
 ---
 
 ensjs and ensforge are both action libraries on top of viem, so the move is mostly renaming. The
-differences are that ensforge needs no chain wrapper, routes between ENSv1 and ENSv2 for you, has
+differences are that ensforge needs no chain wrapper, routes between [ENSv1](/docs/sdk/reference/glossary#ensv1) and [ENSv2](/docs/sdk/reference/glossary#ensv2) for you, has
 one `record.set` for all record writes, and fails with typed errors. This guide maps the ensjs
 5.x actions.
 
@@ -71,7 +71,7 @@ is built in.
 | `public/v1`: `getOwner`, `getExpiry`, `getWrapperData`                                | [`name.get`](/docs/sdk/reference/actions/name/get): `owner`, `manager`, `registrant`, `expiry`, `wrapped`                                               |
 | `public/v2`: `getNameRegistries`, `getExpiry`, `getTokenId`, `getNameRolesAccounts` … | `name.get`, `registry.get`, `role.get`, `permission.get`                                                                                                |
 | `getSupportedInterfaces`                                                              | `resolver.get`: `profiles` lists what the resolver supports                                                                                             |
-| `dns`: `getDnsImportData`                                                             | `dns.getProof`, `dns.getStatus`, `dns.claim`                                                                                                            |
+| `dns`: `getDnsImportData`, `importDnsName`, `getDnsOwner`, `getDnsOffchainData`       | `dns.getProof`, `dns.claim`, `dns.getStatus`, `dns.getOffchainResolver`                                                                                 |
 
 You do not pick `public/v1` or `public/v2`. ensforge finds which version a name lives on. See
 [ENS versions under the hood](/docs/sdk/ens-versions).
@@ -79,7 +79,8 @@ You do not pick `public/v1` or `public/v2`. ensforge finds which version a name 
 ## 3. Records in one call
 
 `getRecords` maps directly. The `coins` option is `addresses` in ensforge, and the result has exactly
-the fields you asked for.
+the fields you asked for. ensjs returns `texts` as an array of `{ key, value }`. ensforge returns an
+object keyed by the text key.
 
 ```ts title="records.ts"
 const records = await getRecords(client, {
@@ -128,6 +129,8 @@ submitted. The `…Sync` form waits for the receipt. See
 | `createSubname`, `deleteSubname`                                                                          | `subname.create`, `subname.remove`                                                                                                            |
 | `wrapName`, `unwrapName`, `setFuses`, `setChildFuses`                                                     | `wrapper.wrap`, `wrapper.unwrap`, `wrapper.setFuses`, `wrapper.setChildFuses`                                                                 |
 | `grantRoles`, `revokeRoles`, `grantResolverRoles`, `revokeResolverRoles`                                  | `role.grant`, `role.revoke`                                                                                                                   |
+| `linkToNode`, `linkToRecord`                                                                              | `resolver.link`                                                                                                                               |
+| `deploySubregistry`, `setSubregistry`, `setParent`                                                        | `registry.deploy`, `registry.attach`                                                                                                          |
 
 A registration does the commit, the wait and the register in one call, with progress through
 `onStep`. See [Register a name](/docs/sdk/register-a-name).
@@ -136,7 +139,7 @@ A registration does the commit, the wait and the register in one call, with prog
 
 ensjs queries ENS's subgraph through `@ensdomains/ensjs/subgraph` (`getNamesForAddress`,
 `getSubnames`, `getNameHistory`, `getSubgraphRecords`) and needs `graphql`. ensforge reads lists from
-an indexer you connect to the client.
+an [indexer](/docs/sdk/reference/glossary#indexer) you connect to the client.
 
 | ensjs subgraph                                     | ensforge                                                                                  |
 | -------------------------------------------------- | ----------------------------------------------------------------------------------------- |

@@ -14,7 +14,7 @@ keywords:
   ]
 ---
 
-You will write **records** (a website, an avatar, an address, a content hash) to a name you can edit. ensforge writes them all in one `multicall` on the name's **resolver**, and detects whether that resolver is an ENSv1 resolver or an ENSv2 PermissionedResolver. You do not choose.
+You will write [records](/docs/sdk/reference/glossary#record) (a website, an avatar, an address, a content hash) to a name you can edit. ensforge writes them all in one `multicall` on the name's [resolver](/docs/sdk/reference/glossary#resolver), and detects whether that resolver is an [ENSv1](/docs/sdk/reference/glossary#ensv1) resolver or an [ENSv2](/docs/sdk/reference/glossary#ensv2) PermissionedResolver. You do not choose.
 
 ## Prerequisites
 
@@ -45,28 +45,28 @@ const ens = Ensforge.create({
 const { hash } = await ens.record.setSync({
   name: "ensforge-docs-demo.eth",
   texts: { url: "https://example.com", avatar: "https://example.com/avatar.png" },
-  addresses: { eth: "0x225f137127d9067788314bc7fcc1f36746a3c3B5" },
+  addresses: { eth: account.address },
   contentHash: "ipfs://bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi",
 });
 ```
 
-- `texts` maps a key to a string. The key `avatar` sets the name's avatar.
+- `texts` maps a key to a string. The key `avatar` sets the name's [avatar](/docs/sdk/reference/glossary#avatar).
 - `addresses` maps a coin symbol (`eth`, `btc`) or a decimal **coin type** (`"2147492101"`) to an address. ensforge validates and encodes it for that chain.
 - `contentHash` takes a URI such as `ipfs://…`.
 
-| Option        | Type                             | Description                                        |
-| ------------- | -------------------------------- | -------------------------------------------------- |
-| `name`        | `string`                         | The name to update. Normalised automatically.      |
-| `texts`       | `Record<string, string \| null>` | Text records by key.                               |
-| `addresses`   | `Record<string, string \| null>` | Address records by coin symbol or coin type.       |
-| `contentHash` | `string \| null`                 | Content hash URI.                                  |
-| `abi`         | `{ contentType?, value }`        | ABI record (ENSIP-4). An `Abi` is stored as JSON.  |
-| `pubkey`      | `{ x, y } \| null`               | SECP256k1 public key. ENSv1 resolvers only.        |
-| `nameRecord`  | `string \| null`                 | The `name` record, used by reverse names.          |
-| `interfaces`  | `Record<Hex, Address \| null>`   | ERC-165 implementers by 4-byte interface ID.       |
-| `data`        | `Record<string, Hex \| null>`    | Data records (ENSIP-24) by key.                    |
-| `clear`       | `boolean`                        | Delete every existing record first.                |
-| `resolver`    | `Address \| "default"`           | Write to this resolver, then point the name at it. |
+| Option        | Type                             | Description                                            |
+| ------------- | -------------------------------- | ------------------------------------------------------ |
+| `name`        | `string`                         | The name to update. Normalised automatically.          |
+| `texts`       | `Record<string, string \| null>` | Text records by key.                                   |
+| `addresses`   | `Record<string, string \| null>` | Address records by coin symbol or coin type.           |
+| `contentHash` | `string \| null`                 | Content hash URI.                                      |
+| `abi`         | `{ contentType?, value }`        | ABI record (ENSIP-4). An `Abi` is stored as JSON.      |
+| `pubkey`      | `{ x, y } \| null`               | SECP256k1 public key. Not on the PermissionedResolver. |
+| `nameRecord`  | `string \| null`                 | The `name` record, used by reverse names.              |
+| `interfaces`  | `Record<Hex, Address \| null>`   | ERC-165 implementers by 4-byte interface ID.           |
+| `data`        | `Record<string, Hex \| null>`    | Data records (ENSIP-24) by key.                        |
+| `clear`       | `boolean`                        | Delete every existing record first.                    |
+| `resolver`    | `Address \| "default"`           | Write to this resolver, then point the name at it.     |
 
 ## 2. Delete records
 
@@ -96,7 +96,7 @@ await ens.record.setSync({
 });
 ```
 
-On an ENSv2 PermissionedResolver, `clear` links the name to record 0 instead of deleting. The name then reads the resolver's default record, which is empty unless someone set it. It also needs the root `link` role.
+On an ENSv2 PermissionedResolver, `clear` links the name to record 0 instead of deleting. The name then reads the resolver's default record, which is empty unless someone set it. It also needs the root `link` [role](/docs/sdk/reference/glossary#role).
 
 ## 3. Write to a new resolver and switch to it
 

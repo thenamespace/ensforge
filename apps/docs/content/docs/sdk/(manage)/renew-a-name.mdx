@@ -4,12 +4,12 @@ description: Quote and renew one or more .eth names, including names in their gr
 keywords: [registration.renew, getRenewalPrice, grace period, ETHRenewerV1, renewBatch]
 ---
 
-You will extend the registration of one or more `.eth` names. Anyone can renew any name: the signer pays, and the owner does not change. ensforge picks the right contract for each name, so ENSv1 and ENSv2 names renew in the same call.
+You will extend the registration of one or more [`.eth` names](/docs/sdk/reference/glossary#eth-name). Anyone can renew any name: the signer pays, and the owner does not change. ensforge picks the right contract for each name, so [ENSv1](/docs/sdk/reference/glossary#ensv1) and [ENSv2](/docs/sdk/reference/glossary#ensv2) names renew in the same call.
 
 ## Prerequisites
 
 - A wallet client that holds the payment token and gas. See [Create a client](/docs/sdk/create-a-client).
-- Names that are registered or in their **grace period** (the time after expiry when only the previous owner can renew). Names past the grace period are registered again, not renewed. See [Register a name](/docs/sdk/register-a-name).
+- Names that are registered or in their [grace period](/docs/sdk/reference/glossary#grace-period) (the time after [expiry](/docs/sdk/reference/glossary#expiry) when the name can still be renewed and nobody else can register it). Names past the grace period are registered again, not renewed. See [Register a name](/docs/sdk/register-a-name).
 
 ## 1. Quote the renewal
 
@@ -73,7 +73,7 @@ const { hashes } = await ens.registration.renewSync({
 | `paymentToken` | `"usdc" \| "dai" \| string` | `"usdc"` | Token to pay with.                                              |
 | `referrer`     | `Hex`                       | none     | Referrer the registrar records.                                 |
 
-`renew` returns `{ hash, hashes, id, plan }`. `renewSync` adds `receipt` and `receipts`. All write options apply too. See [How writes work](/docs/sdk/writing-to-ens).
+`renew` returns `{ hash, hashes, id, plan }`. `renewSync` adds `receipt` and `receipts`, the renewed `names` with their new `expiry`, and `paid`, the amount charged in the token's smallest unit. All write options apply too. See [How writes work](/docs/sdk/writing-to-ens).
 
 ## Check the result
 

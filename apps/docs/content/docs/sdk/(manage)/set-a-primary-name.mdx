@@ -18,7 +18,7 @@ You will set the **primary name** of an address: the name wallets and apps show 
 ## Prerequisites
 
 - A wallet client for the address you are naming. See [Create a client](/docs/sdk/create-a-client).
-- A name that resolves to that address. ensforge checks this before sending and fails with `PRIMARY_NAME_MISMATCH` otherwise. See [Set records](/docs/sdk/set-records).
+- A [name](/docs/sdk/reference/glossary#name) that resolves to that address. ensforge checks this before sending and fails with `PRIMARY_NAME_MISMATCH` otherwise. See [Set records](/docs/sdk/set-records).
 
 ## 1. Set the primary name on Ethereum
 
@@ -44,7 +44,7 @@ const ens = Ensforge.create({
 const { hash } = await ens.primaryName.setSync({ name: "ensforge-docs-demo.eth" });
 ```
 
-Pass `name: null` to clear it. Names with encoded labels (`[af2c…]`) are rejected, because readers show only normalised names.
+Pass `name: null` to clear it. Names with encoded [labels](/docs/sdk/reference/glossary#label) (`[af2c…]`) are rejected, because readers show only [normalised](/docs/sdk/reference/glossary#normalisation) names.
 
 | Option    | Type                                | Default    | Description                                                             |
 | --------- | ----------------------------------- | ---------- | ----------------------------------------------------------------------- |
@@ -211,7 +211,7 @@ The L2 is not in the client's `chains`. Add it to `Ensforge.create`, or to the w
 
 ### `SIGNATURE_INVALID` or `SIGNATURE_EXPIRED`
 
-The claim's signature does not match, or it is more than an hour old. Sign again, for the same name, chains and expiry. See [`SIGNATURE_INVALID`](/docs/sdk/errors/SIGNATURE_INVALID) and [`SIGNATURE_EXPIRED`](/docs/sdk/errors/SIGNATURE_EXPIRED).
+The claim's signature does not match, or the claim has expired. Sign again, for the same name, chains and expiry. See [`SIGNATURE_INVALID`](/docs/sdk/errors/SIGNATURE_INVALID) and [`SIGNATURE_EXPIRED`](/docs/sdk/errors/SIGNATURE_EXPIRED).
 
 ### `INVALID_DURATION`
 
@@ -222,6 +222,6 @@ The claim's signature does not match, or it is more than an hour old. Sign again
 The signer may not name `address`. See [Name another address](#name-another-address) and [`NOT_APPROVED`](/docs/sdk/errors/NOT_APPROVED).
 
 <Callout type="info" title="Not supported yet">
-  Setting L2 primary names through an HCA (`via: hca()`) is not supported, because the HCA lives on
-  Ethereum. The contracts-v2 L2 registrar is not deployed.
+  Setting L2 primary names through an [HCA](/docs/sdk/reference/glossary#hca) (`via: hca()`) is not
+  supported, because the HCA lives on Ethereum. The contracts-v2 L2 registrar is not deployed.
 </Callout>

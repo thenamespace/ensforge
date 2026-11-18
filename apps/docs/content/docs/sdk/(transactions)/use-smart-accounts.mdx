@@ -6,7 +6,7 @@ keywords: [smart account, via, route, HCA, EIP-7702, EIP-5792, account abstracti
 
 A **smart account** is an account that is a contract, so it can run several calls in one
 transaction. ensforge works with smart accounts in two ways: through your wallet, with no code
-change, and through a **route** (`via`), which sends a write another way.
+change, and through a [route](/docs/sdk/reference/glossary#route) (`via`), which sends a write another way.
 
 ## Prerequisites
 
@@ -17,17 +17,17 @@ change, and through a **route** (`via`), which sends a write another way.
 ## A smart-account wallet needs nothing extra
 
 When the wallet is a smart account (a contract wallet, or an account upgraded with EIP-7702) and it
-supports EIP-5792 atomic batches, `mode: "auto"` sends a write's calls as one bundle. The signer is
+supports EIP-5792 atomic batches, `mode: "auto"` sends a write's calls as one [bundle](/docs/sdk/reference/glossary#bundle). The signer is
 the wallet's account and ENS sees it as the sender. See
 [Bundle transactions](/docs/sdk/bundle-transactions).
 
 ## Route a write with `via`
 
-A route changes how a plan is sent. Pass `via` to any write and ensforge hands the plan to the
+A route changes how a [plan](/docs/sdk/reference/glossary#plan) is sent. Pass `via` to any write and ensforge hands the plan to the
 route, which can rewrite it and, if it has its own sender, send it too.
 
 `hca()` from `@ensforge/hca` is the route that ships with ensforge. It runs the write from the
-signer's ENS **Hosted Contract Account** (HCA): the account is deployed on first use, consecutive
+signer's ENS Hosted Contract Account ([HCA](/docs/sdk/reference/glossary#hca)): the account is deployed on first use, consecutive
 steps run as one atomic `executeByOwner` call, and the approvals it needs to move the owner's names
 are added as owner transactions.
 
@@ -46,10 +46,10 @@ declare global {
 import { hca, hcaActions } from "@ensforge/hca";
 import { Ensforge, ensActions } from "@ensforge/sdk";
 import { createPublicClient, createWalletClient, custom, http } from "viem";
-import { mainnet } from "viem/chains";
+import { sepolia } from "viem/chains";
 
-const publicClient = createPublicClient({ chain: mainnet, transport: http() });
-const walletClient = createWalletClient({ chain: mainnet, transport: custom(window.ethereum!) });
+const publicClient = createPublicClient({ chain: sepolia, transport: http() });
+const walletClient = createWalletClient({ chain: sepolia, transport: custom(window.ethereum!) });
 const [account] = await walletClient.requestAddresses();
 
 const ens = Ensforge.create({ publicClient, walletClient, account })
@@ -61,7 +61,7 @@ await ens.migration.migrateSync({ names: ["alice.eth", "bob.eth"], via: hca() })
 
 - `hcaActions()` adds `ens.hca.*`, such as `ens.hca.get()` to read the account.
 - `via: hca()` is never chosen for you. Route through an HCA only with the user's agreement.
-- The HCA is the sender (`msg.sender`) of the calls, so it needs authority over what they touch.
+- The HCA is the sender (`msg.sender`) of the calls, so it needs authority over what they touch, such as the [roles](/docs/sdk/reference/glossary#role) a write uses.
   Migration and registration plan for it; other writes need the HCA to hold the roles they use.
 
 ## Preview a routed write
@@ -102,7 +102,7 @@ The codes, such as [`HCA_NOT_VERIFIED`](/docs/sdk/errors/HCA_NOT_VERIFIED) and
 - A route's `send` reports a reference, not a transaction hash, until the step lands.
 
 To build a route of your own, see [Extend the client](/docs/sdk/extend-the-client). To choose how
-the HCA executes (your wallet, a bundler, a session), see [Your wallet](/docs/hca/your-wallet) and
+the HCA executes, its [executor](/docs/sdk/reference/glossary#executor) (your wallet, a bundler, a session), see [Your wallet](/docs/hca/your-wallet) and
 [Bundlers](/docs/hca/bundlers).
 
 ## Check the result
