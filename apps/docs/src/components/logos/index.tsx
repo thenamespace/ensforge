@@ -1,10 +1,7 @@
 import { type LogoProps, TextLogo } from "./text-logo";
 
+export { EnsforgeLogo, ensforgeMarkPaths } from "./ensforge-logo";
 export { type LogoProps, type LogoVariant, logoColors } from "./text-logo";
-
-export function EnsforgeLogo(props: LogoProps) {
-  return <TextLogo text="ef" {...props} />;
-}
 
 export function SdkLogo(props: LogoProps) {
   return <TextLogo text="S" {...props} />;

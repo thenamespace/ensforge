@@ -41,7 +41,7 @@ export function MarketingNav() {
           className="flex items-center gap-2.5 rounded-md focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-fd-ring"
           aria-label={`${site.name} home`}
         >
-          <EnsforgeLogo className="size-6" />
+          <EnsforgeLogo className="h-4 w-7" />
           <span className="font-semibold whitespace-nowrap">{site.name}</span>
         </Link>
         <nav aria-label="Main" className="flex items-center gap-1 text-sm">

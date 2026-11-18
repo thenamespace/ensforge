@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 
+import { ensforgeMarkPaths } from "@/components/logos";
 import { getPackage } from "@/lib/packages";
 import { site } from "@/lib/site";
 
@@ -35,6 +36,21 @@ export function KitMark({
     >
       {text}
     </div>
+  );
+}
+
+/** The ensforge mark as an SVG image (the OG renderer draws images, not inline SVG elements). */
+export function EnsforgeMark({ height = 32, color = INK }: { height?: number; color?: string }) {
+  const paths = ensforgeMarkPaths.map((d) => `<path d="${d}" fill="${color}"/>`).join("");
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 7 4">${paths}</svg>`;
+
+  return (
+    <img
+      src={`data:image/svg+xml;base64,${btoa(svg)}`}
+      width={(height * 7) / 4}
+      height={height}
+      alt=""
+    />
   );
 }
 
@@ -122,7 +138,7 @@ export function Frame({ accent, crumb, art, children, wide = true }: FrameProps)
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-          <KitMark />
+          <EnsforgeMark />
           <span style={{ fontSize: 28, fontWeight: 600, letterSpacing: -0.5 }}>{site.name}</span>
           {crumb ? (
             <span

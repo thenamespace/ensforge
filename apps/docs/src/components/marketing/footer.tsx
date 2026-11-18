@@ -49,7 +49,7 @@ export function MarketingFooter() {
             className="flex w-fit items-center gap-2.5"
             aria-label={`${site.name} home`}
           >
-            <EnsforgeLogo className="size-6" />
+            <EnsforgeLogo className="h-4 w-7" />
             <span className="font-semibold">{site.name}</span>
           </Link>
           <p className="max-w-64 text-sm leading-relaxed text-fd-muted-foreground">
