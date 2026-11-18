@@ -13,7 +13,11 @@ import type { Fixture } from "../fixture.ts";
 import { durations } from "./durations.ts";
 import { abis, addresses, coins, contenthashes, hugeText, texts } from "./values.ts";
 
-/** A v1 name on the current PublicResolver with `records`, written by its owner. */
+/**
+ * A v1 name on the current PublicResolver with `records`, written by its owner. `records` runs
+ * again in `check` to know what to expect, so it only reads; `prepare` sets up what the records
+ * point at (a minted token), once, before they are written.
+ */
 const v1WithRecords = (
   id: string,
   label: string,
@@ -22,14 +26,18 @@ const v1WithRecords = (
   records: (
     c: StepContext,
   ) => Effect.Effect<Records, never, FileSystem.FileSystem | CurrentStep> | Records,
-  owner: "alice" | "bob" = "alice",
+  options: {
+    readonly owner?: "alice" | "bob";
+    readonly prepare?: Effect.Effect<void, never, FileSystem.FileSystem | CurrentStep>;
+  } = {},
 ): Fixture => ({
   id,
   cases,
   tags: { kind: "v1-unwrapped", resolver: "public-resolver", ...tags },
   prelaunch: (c) =>
     Effect.gen(function* () {
-      const account = c.accounts[owner];
+      const account = c.accounts[options.owner ?? "alice"];
+      if (options.prepare !== undefined) yield* options.prepare;
       const name = yield* registerV1({ label, owner: account, duration: durations.active });
       const resolved = records(c);
       const written = Effect.isEffect(resolved) ? yield* resolved : resolved;
@@ -62,6 +70,7 @@ const avatar = (
   kind: string,
   cases: readonly string[],
   uri: Effect.Effect<string, never, FileSystem.FileSystem | CurrentStep>,
+  prepare?: Effect.Effect<void, never, FileSystem.FileSystem | CurrentStep>,
 ) =>
   v1WithRecords(
     `records.avatar.${kind}`,
@@ -75,16 +84,21 @@ const avatar = (
           addresses: [[coins.eth, c.accounts.alice]],
         })),
       ),
+    prepare === undefined ? {} : { prepare },
   );
 
 // An avatar pointing at token `id` of `mock.avatarToken`, minted to alice: it is owned when the
 // name's ETH address is hers.
 const tokenAvatar = (standard: "erc721" | "erc1155", id: bigint) =>
   Effect.gen(function* () {
+    const contract = yield* (yield* CurrentStep).address("mock.avatarToken");
+    return `eip155:31337/${standard}:${contract.toLowerCase()}/${id}`;
+  }).pipe(Effect.orDie);
+
+const mintAvatarToken = (id: bigint) =>
+  Effect.gen(function* () {
     const c = yield* CurrentStep;
     yield* c.write("mock.avatarToken", "mint", [c.accounts.alice, id]);
-    const contract = yield* c.address("mock.avatarToken");
-    return `eip155:31337/${standard}:${contract.toLowerCase()}/${id}`;
   }).pipe(Effect.orDie);
 
 /** Records of every encoding, avatar kinds, content hash codecs, and PermissionedResolver records. */
@@ -131,8 +145,8 @@ export const records: readonly Fixture[] = [
     texts: { description: hugeText },
   })),
   avatar("https", ["K33"], Effect.succeed("https://ensforge.com/avatar.png")),
-  avatar("erc721-owned", ["K34"], tokenAvatar("erc721", 1n)),
-  avatar("erc1155", ["K35"], tokenAvatar("erc1155", 2n)),
+  avatar("erc721-owned", ["K34"], tokenAvatar("erc721", 1n), mintAvatarToken(1n)),
+  avatar("erc1155", ["K35"], tokenAvatar("erc1155", 2n), mintAvatarToken(2n)),
   avatar(
     "data-svg",
     ["K36"],
@@ -154,7 +168,7 @@ export const records: readonly Fixture[] = [
           addresses: [[coins.eth, c.accounts.bob]],
         })),
       ),
-    "bob",
+    { owner: "bob", prepare: mintAvatarToken(3n) },
   ),
   {
     id: "records.v2",
