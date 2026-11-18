@@ -4,6 +4,7 @@ import { Link } from "fumadocs-core/link";
 import { cn } from "@/lib/cn";
 import { docsIcon } from "@/lib/docs-icons";
 import { getPackageFromUrl } from "@/lib/packages";
+import { site } from "@/lib/site";
 
 const referenceRoute = "/docs/reference";
 
@@ -23,7 +24,9 @@ export function SectionLinks() {
   ] as const;
 
   return (
-    <nav aria-label="Docs sections" className="mb-4 flex flex-col">
+    // The sidebar gives its last link a 1.5rem bottom margin; without the Blog link that is this
+    // wrapper, so cancel it and let the first section label's own top margin set the gap.
+    <nav aria-label="Docs sections" className={cn("flex flex-col", !site.blogEnabled && "-mb-6")}>
       {links.map((item) => (
         <Link
           key={item.label}

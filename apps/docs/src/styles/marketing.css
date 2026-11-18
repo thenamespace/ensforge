@@ -165,7 +165,18 @@
   --ek-accent-ink: oklch(16% 0.02 258);
 }
 
-/* Placeholder package accents: the SDK keeps the site blue; the others take distinct hues. */
+/* Package accents: the SDK is the site blue; the others take distinct hues. Each package states
+   its own so an element inside another package's page (the package picker) does not inherit it. */
+[data-accent="sdk"] {
+  --ek-accent: oklch(55% 0.2 258);
+}
+
+.dark [data-accent="sdk"],
+.dark[data-accent="sdk"] {
+  --ek-accent: oklch(70% 0.16 252);
+  --ek-accent-ink: oklch(16% 0.02 258);
+}
+
 [data-accent="contracts"] {
   --ek-accent: oklch(54% 0.21 27);
 }
