@@ -1,19 +1,25 @@
 {
   "name": "@ensforge/contracts",
   "version": "1.0.0",
-  "description": "Type-safe contract ABIs, deployment addresses, and interfaces for ENS",
+  "description": "ENS contract ABIs, deployment addresses and constants for viem",
   "keywords": [
     "abi",
     "contracts",
     "deployments",
     "ens",
+    "ensv2",
     "ethereum",
+    "ethereum-name-service",
+    "names",
+    "resolver",
     "typescript",
-    "viem"
+    "viem",
+    "web3"
   ],
-  "homepage": "https://ensforge.com",
+  "homepage": "https://ensforge.com/docs/contracts",
   "bugs": "https://github.com/thenamespace/ensforge/issues",
   "license": "Apache-2.0",
+  "author": "Namespace Inc.",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/thenamespace/ensforge.git",

@@ -1,21 +1,26 @@
 {
   "name": "@ensforge/sdk",
   "version": "1.0.0",
-  "description": "Type-safe actions and utilities for ENS",
+  "description": "The SDK for ENS: look up names, read and write records, and register and manage names",
   "keywords": [
-    "effect",
     "ens",
+    "ensv2",
     "ethereum",
-    "name-service",
+    "ethereum-name-service",
+    "names",
+    "primary-name",
+    "resolver",
     "sdk",
+    "subnames",
     "typescript",
     "viem",
     "wagmi",
     "web3"
   ],
-  "homepage": "https://ensforge.com",
+  "homepage": "https://ensforge.com/docs/sdk",
   "bugs": "https://github.com/thenamespace/ensforge/issues",
   "license": "Apache-2.0",
+  "author": "Namespace Inc.",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/thenamespace/ensforge.git",
@@ -113,6 +118,7 @@
   "ensforge": {
     "api": [
       ".",
+      "./actions",
       "./effect",
       "./indexer",
       "./wagmi"
