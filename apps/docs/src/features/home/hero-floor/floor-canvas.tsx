@@ -1,9 +1,16 @@
 import { useEffect, useRef } from "react";
 
-import { COS, SIN } from "@/components/marketing/iso";
 import { cn } from "@/lib/cn";
 
-import { type Accent, CELL, type FloorLayout, type Point, toScreen } from "./layout";
+import {
+  type Accent,
+  CELL,
+  type FloorLayout,
+  PLANE,
+  type Point,
+  toPlane,
+  toScreen,
+} from "./layout";
 import { type FloorName, floorNames } from "./names";
 
 /**
@@ -105,7 +112,17 @@ export function FloorCanvas({
     }
 
     // The plane range that covers the screen, in whole cells.
-    const reach = Math.ceil((width / 2 / COS + height / 2 / SIN) / 2 / CELL) + 1;
+    const reach =
+      Math.ceil(
+        Math.max(
+          ...[
+            [0, 0],
+            [width, 0],
+            [0, height],
+            [width, height],
+          ].flatMap(([x = 0, y = 0]) => toPlane(width, height, x, y).map(Math.abs)),
+        ) / CELL,
+      ) + 1;
     const lines: (readonly [number, number, number, number])[] = [];
     for (let k = -reach; k <= reach; k++) {
       const [ax, ay] = project(k * CELL, -reach * CELL);
@@ -115,25 +132,56 @@ export function FloorCanvas({
       lines.push([ax, ay, bx, by], [cx, cy, dx, dy]);
     }
 
-    // Tiles stay off the headline and off the cards, with a little air around both.
+    // Tiles stay whole on screen, and off the headline, the cards and the traces, with air
+    // around each so nothing crowds.
+    const tileWidth = CELL * SPAN;
+    const overlaps = (
+      u: number,
+      v: number,
+      left: number,
+      top: number,
+      right: number,
+      bottom: number,
+    ) => u < right && u + tileWidth > left && v < bottom && v + CELL > top;
     const onCard = (u: number, v: number) =>
-      cards.some(
-        (card) =>
-          u < card.u + card.w + 16 &&
-          u + CELL * SPAN > card.u - 16 &&
-          v < card.v + card.h + 16 &&
-          v + CELL > card.v - 16,
+      cards.some((card) =>
+        overlaps(u, v, card.u - 40, card.v - 40, card.u + card.w + 40, card.v + card.h + 40),
       );
-    const onHeadline = (u: number, v: number) => {
-      const [x, y] = project(u + (CELL * SPAN) / 2, v + CELL / 2);
-
-      return (
-        x > clear.left - 70 && x < clear.right + 70 && y > clear.top - 20 && y < clear.bottom + 20
+    const onTrace = (u: number, v: number) =>
+      layout.traces.some(({ points }) =>
+        points.slice(1).some(([bu, bv], index) => {
+          const [au = 0, av = 0] = points[index] ?? [];
+          return overlaps(
+            u,
+            v,
+            Math.min(au, bu) - 20,
+            Math.min(av, bv) - 20,
+            Math.max(au, bu) + 20,
+            Math.max(av, bv) + 20,
+          );
+        }),
       );
-    };
+    const corners = (u: number, v: number) =>
+      [
+        project(u, v),
+        project(u + tileWidth, v),
+        project(u, v + CELL),
+        project(u + tileWidth, v + CELL),
+      ] as const;
+    const onScreen = (u: number, v: number) =>
+      corners(u, v).every(([x, y]) => x > 12 && x < width - 12 && y > 76 && y < height - 24);
+    const onHeadline = (u: number, v: number) =>
+      corners(u, v).some(
+        ([x, y]) =>
+          x > clear.left - 40 &&
+          x < clear.right + 40 &&
+          y > clear.top - 24 &&
+          y < clear.bottom + 24,
+      );
 
     const tiles: Tile[] = [];
     let used = 0;
+    const nextName = () => floorNames[used++ % floorNames.length];
     for (let i = -reach; i < reach; i += SPAN) {
       for (let j = -reach; j < reach; j++) {
         const roll = hash(i, j);
@@ -141,11 +189,9 @@ export function FloorCanvas({
 
         const u = i * CELL;
         const v = j * CELL;
-        const [x, y] = project(u + (CELL * SPAN) / 2, v + CELL / 2);
-        if (x < 90 || x > width - 90 || y < 84 || y > height - 30) continue;
-        if (onCard(u, v) || onHeadline(u, v)) continue;
+        if (!onScreen(u, v) || onCard(u, v) || onTrace(u, v) || onHeadline(u, v)) continue;
 
-        const entry = floorNames[used++ % floorNames.length] ?? floorNames[0];
+        const entry = nextName();
         if (!entry) continue;
 
         tiles.push({
@@ -222,14 +268,13 @@ export function FloorCanvas({
         return;
       }
 
-      const tileWidth = CELL * SPAN - 2;
       context.globalAlpha = lit * 0.08;
       context.fillStyle = accent;
-      context.fillRect(u + 1, v + 1, tileWidth, CELL - 2);
+      context.fillRect(u + 1, v + 1, tileWidth - 2, CELL - 2);
       context.globalAlpha = lit * 0.55;
       context.strokeStyle = accent;
       context.lineWidth = 0.8;
-      context.strokeRect(u + 1, v + 1, tileWidth, CELL - 2);
+      context.strokeRect(u + 1, v + 1, tileWidth - 2, CELL - 2);
       context.globalAlpha = lit;
       context.fillRect(u + 1, v + 1, 3, CELL - 2);
 
@@ -293,6 +338,13 @@ export function FloorCanvas({
       }
       context.stroke();
 
+      // Pads where the trace meets each card's edge.
+      context.globalAlpha = 0.9;
+      context.fillStyle = accent;
+      for (const pad of [trace.points[0], trace.points.at(-1)]) {
+        if (pad) context.fillRect(pad[0] - 4, pad[1] - 4, 8, 8);
+      }
+
       if (reduced) return;
 
       // One pulse per cycle: a short bright run with a solid head, and a pause before the next.
@@ -333,10 +385,10 @@ export function FloorCanvas({
 
       // Everything else lies flat on the floor plane.
       context.setTransform(
-        ratio * COS,
-        ratio * SIN,
-        -ratio * COS,
-        ratio * SIN,
+        ratio * PLANE.ux,
+        ratio * PLANE.uy,
+        ratio * PLANE.vx,
+        ratio * PLANE.vy,
         (ratio * width) / 2,
         (ratio * height) / 2,
       );
@@ -345,7 +397,9 @@ export function FloorCanvas({
       for (const trace of traces) drawTrace(trace, time);
       for (const tile of tiles) {
         if (tile.litAt !== undefined && time - tile.litAt >= LIFE_MS) {
+          // Settle back as the next name in the list, so the floor keeps changing.
           tile.litAt = undefined;
+          tile.entry = nextName() ?? tile.entry;
           tile.showText = !tile.showText && Boolean(tile.entry.text);
         }
         drawTile(tile, time);
@@ -385,10 +439,7 @@ export function FloorCanvas({
       if (reduced) return;
 
       const rect = element.getBoundingClientRect();
-      const across = (event.clientX - rect.left - width / 2) / COS;
-      const down = (event.clientY - rect.top - height / 2) / SIN;
-      const u = (across + down) / 2;
-      const v = (down - across) / 2;
+      const [u, v] = toPlane(width, height, event.clientX - rect.left, event.clientY - rect.top);
       const tile = tiles.find(
         (entry) => u >= entry.u && u < entry.u + CELL * SPAN && v >= entry.v && v < entry.v + CELL,
       );

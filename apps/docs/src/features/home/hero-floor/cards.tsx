@@ -2,15 +2,14 @@ import type { CSSProperties, ReactNode } from "react";
 
 import { CheckIcon } from "lucide-react";
 
-import { COS, SIN } from "@/components/marketing/iso";
 import { cn } from "@/lib/cn";
 
 import { avatarSrc } from "../avatars";
-import type { Accent, CardId, FloorCard } from "./layout";
+import { type Accent, type CardId, type FloorCard, PLANE } from "./layout";
 
 /**
  * The component cards lying on the hero floor: small, crisp mockups of what ensforge reads and
- * writes. Each is plain HTML laid onto the isometric plane with a CSS matrix, so its text stays
+ * writes. Each is plain HTML laid onto the floor plane with a CSS matrix, so its text stays
  * sharp. Names, addresses and records are real mainnet values.
  */
 
@@ -172,7 +171,7 @@ const content: Record<CardId, () => ReactNode> = {
 const placement = (card: FloorCard): CSSProperties => ({
   width: card.w,
   height: card.h,
-  transform: `matrix(${COS}, ${SIN}, ${-COS}, ${SIN}, ${(card.u - card.v) * COS}, ${(card.u + card.v) * SIN})`,
+  transform: `matrix(${PLANE.ux}, ${PLANE.uy}, ${PLANE.vx}, ${PLANE.vy}, ${card.u * PLANE.ux + card.v * PLANE.vx}, ${card.u * PLANE.uy + card.v * PLANE.vy})`,
 });
 
 export function FloorCards({

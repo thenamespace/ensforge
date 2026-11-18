@@ -1,10 +1,9 @@
 import { COS, SIN } from "@/components/marketing/iso";
 
 /**
- * Geometry of the hero floor. The floor is an isometric plane centred on the hero: plane point
- * (u, v) sits at screen (width / 2 + (u − v)·cos, height / 2 + (u + v)·sin). Component cards lie
- * on the plane in the bands above and below the headline, and coloured traces run between them
- * along the floor grid.
+ * Geometry of the hero floor: an isometric plane centred on the hero. Component cards lie on it
+ * in the bands above and below the headline, and coloured traces run between them along the
+ * floor grid.
  */
 
 export const CELL = 64;
@@ -66,16 +65,20 @@ const sizes: Record<CardId, readonly [w: number, h: number]> = {
   register: [196, 116],
 };
 
+/** The plane's axes on screen: the isometric projection the other illustrations use. */
+export const PLANE = { ux: COS, uy: SIN, vx: -COS, vy: SIN } as const;
+
 export const toScreen = (width: number, height: number, u: number, v: number): Point => [
-  width / 2 + (u - v) * COS,
-  height / 2 + (u + v) * SIN,
+  width / 2 + u * PLANE.ux + v * PLANE.vx,
+  height / 2 + u * PLANE.uy + v * PLANE.vy,
 ];
 
-const toPlane = (width: number, height: number, x: number, y: number): Point => {
-  const across = (x - width / 2) / COS;
-  const down = (y - height / 2) / SIN;
+export const toPlane = (width: number, height: number, x: number, y: number): Point => {
+  const dx = x - width / 2;
+  const dy = y - height / 2;
+  const det = PLANE.ux * PLANE.vy - PLANE.vx * PLANE.uy;
 
-  return [(across + down) / 2, (down - across) / 2];
+  return [(dx * PLANE.vy - dy * PLANE.vx) / det, (dy * PLANE.ux - dx * PLANE.uy) / det];
 };
 
 const snap = (value: number) => Math.round(value / (CELL / 4)) * (CELL / 4);
@@ -88,20 +91,16 @@ const cardAt = (width: number, height: number, id: CardId, x: number, y: number)
   return { id, u: snap(u - w / 2), v: snap(v - h / 2), w, h };
 };
 
-/** Steps from one card's centre to another's, alternating along u and v, so traces run level. */
-const staircase = (from: FloorCard, to: FloorCard): readonly Point[] => {
-  const [ua, va] = [from.u + from.w / 2, from.v + from.h / 2];
-  const [ub, vb] = [to.u + to.w / 2, to.v + to.h / 2];
-  const steps = Math.max(1, Math.round(Math.max(Math.abs(ub - ua), Math.abs(vb - va)) / CELL));
-  const points: Point[] = [[ua, va]];
+/**
+ * A trace from the right edge of one card to the left edge of the next: out along u, across along
+ * v to the other card's middle, and in along u. It starts and ends on the card edges.
+ */
+const link = (from: FloorCard, to: FloorCard): readonly Point[] => {
+  const start: Point = [from.u + from.w, from.v + from.h / 2];
+  const end: Point = [to.u, to.v + to.h / 2];
+  const turn = snap((start[0] + end[0]) / 2);
 
-  for (let step = 1; step <= steps; step++) {
-    const u = ua + ((ub - ua) * step) / steps;
-    const [, previousV] = points.at(-1) ?? [ua, va];
-    points.push([u, previousV], [u, va + ((vb - va) * step) / steps]);
-  }
-
-  return points;
+  return [start, [turn, start[1]], [turn, end[1]], end];
 };
 
 export function placeFloor(width: number, height: number, clear: Box): FloorLayout {
@@ -137,11 +136,11 @@ export function placeFloor(width: number, height: number, clear: Box): FloorLayo
     clear,
     cards: [profile, primary, migrate, records, batch, subname, register],
     traces: [
-      { accent: "sky", points: staircase(profile, primary) },
-      { accent: "blue", points: staircase(primary, migrate) },
-      { accent: "magenta", points: staircase(records, batch) },
-      { accent: "yellow", points: staircase(batch, subname) },
-      { accent: "green", points: staircase(subname, register) },
+      { accent: "sky", points: link(profile, primary) },
+      { accent: "blue", points: link(primary, migrate) },
+      { accent: "magenta", points: link(records, batch) },
+      { accent: "yellow", points: link(batch, subname) },
+      { accent: "green", points: link(subname, register) },
     ],
   };
 }
