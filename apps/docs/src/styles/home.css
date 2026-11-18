@@ -9,6 +9,8 @@
   --ens-react: oklch(71% 0.19 356);
   --ens-hca: oklch(90% 0.17 104);
   --ens-contracts: oklch(76% 0.16 150);
+  /* ENS light blue (#cee1e8), lifted to read as names on the dark background. */
+  --ens-sky: oklch(87% 0.045 225);
   --ek-accent: var(--ens-blue);
   --ek-accent-ink: oklch(16% 0.03 240);
 }
