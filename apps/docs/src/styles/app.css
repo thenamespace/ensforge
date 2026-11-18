@@ -7,6 +7,7 @@
 /* Marketing pages: tokens and motion primitives, then the shared isometric scenes. */
 @import "./marketing.css";
 @import "./scenes.css";
+@import "./home.css";
 @import "./errors.css";
 @import "./blog.css";
 
