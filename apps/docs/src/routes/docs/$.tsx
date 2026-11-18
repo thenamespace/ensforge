@@ -41,6 +41,7 @@ const serverLoader = createServerFn({ method: "GET" })
     // Reference pages belong to the package after `reference/` (errors and the landing to none).
     const isReference = page.slugs[0] === "reference";
     const pkg = getPackage(isReference ? page.slugs[1] : page.slugs[0]);
+    const section = isReference ? `${pkg?.name ?? "API"} Reference` : (pkg?.name ?? "Docs");
 
     // The git modified date ships with the compiled page in async mode.
     const { lastModified } = await page.data.load();
@@ -58,7 +59,8 @@ const serverLoader = createServerFn({ method: "GET" })
       ),
     ].filter((item, index, all) => item.path !== all[index - 1]?.path);
 
-    // A few guides share a title across packages (`Quick start`); name the package in those.
+    // A few pages share a title (`Quick start` in each package, `Atoms` as a guide and in the
+    // reference); name the section in those.
     const shared = source
       .getPages()
       .some((other) => other.url !== page.url && other.data.title === page.data.title);
@@ -71,11 +73,11 @@ const serverLoader = createServerFn({ method: "GET" })
         url: page.url,
         slugs: page.slugs,
         title: page.data.title,
-        headTitle: shared ? `${page.data.title} (${pkg?.name ?? site.name})` : page.data.title,
+        headTitle: shared ? `${page.data.title} (${section})` : page.data.title,
         breadcrumbs,
         description:
           page.data.description ?? `${page.data.title} in the ${pkg?.name ?? site.name} docs.`,
-        section: isReference ? `${pkg?.name ?? "API"} Reference` : (pkg?.name ?? "Docs"),
+        section,
         isReference,
         keywords: page.data.keywords ?? [],
         published: page.data.published,
