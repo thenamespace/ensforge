@@ -1,0 +1,14 @@
+{
+  "title": "registration",
+  "pages": [
+    "index",
+    "commit",
+    "get-commitment-status",
+    "get-parameters",
+    "get-price",
+    "get-renewal-price",
+    "is-available",
+    "register",
+    "renew"
+  ]
+}

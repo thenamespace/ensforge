@@ -7,6 +7,12 @@ import * as ts from "typescript/unstable/ast";
 
 import { isExported, jsdocOf } from "../jsdoc.ts";
 
+/** Section headings an action's JSDoc may use besides examples, in this order. */
+export const sectionHeadings = ["**When to use**", "**Details**", "**Gotchas**"] as const;
+
+/** An example heading, `**Example** (Title)`, capturing the title. */
+export const exampleHeading = /^\*\*Example\*\* \((.+)\)$/;
+
 /** Whether a type literal member has a name (`TypeElementBase` does not declare one). */
 const hasName = (member: ts.TypeElement): member is ts.TypeElement & { readonly name: ts.Node } =>
   "name" in member;
@@ -76,9 +82,9 @@ export const checkActionFile = (
       const line = Str.trim(raw);
       if (!Str.startsWith("**")(line)) continue;
 
-      const example = /^\*\*Example\*\* \((.+)\)$/.exec(line);
+      const example = exampleHeading.exec(line);
       if (example === null) {
-        if (!["**When to use**", "**Details**", "**Gotchas**"].includes(line))
+        if (!(sectionHeadings as readonly string[]).includes(line))
           fail(`unknown section heading ${line}`);
         if (line === "**When to use**") {
           const first = Arr.findFirst(lines.slice(index + 1), (next) => Str.trim(next) !== "");

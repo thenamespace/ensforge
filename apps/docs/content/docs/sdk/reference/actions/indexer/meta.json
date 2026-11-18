@@ -1,0 +1,25 @@
+{
+  "title": "indexer",
+  "pages": [
+    "index",
+    "get-events",
+    "get-history",
+    "get-name",
+    "get-names-by-expiry",
+    "get-names-for-address",
+    "get-namespace",
+    "get-permissions",
+    "get-primary-name",
+    "get-records",
+    "get-registry",
+    "get-registry-labels",
+    "get-resolver",
+    "get-resolver-links",
+    "get-resolver-roles",
+    "get-resolvers",
+    "get-status",
+    "get-subnames",
+    "lookup",
+    "search"
+  ]
+}

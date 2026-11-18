@@ -1,0 +1,11 @@
+{
+  "title": "wrapper",
+  "pages": [
+    "index",
+    "get-fuses",
+    "set-child-fuses",
+    "set-fuses",
+    "unwrap",
+    "wrap"
+  ]
+}

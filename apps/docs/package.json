@@ -9,10 +9,12 @@
     "build": "vite build",
     "clean": "rm -rf dist .output .tanstack .source",
     "dev": "vite dev",
+    "docs:generate": "ensforge-dev docs generate",
     "lint": "oxlint -c ../../.config/oxlint.config.ts --deny-warnings .",
     "preview": "vite preview",
     "start": "node .output/server/index.mjs",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "verify": "ensforge-dev docs check"
   },
   "dependencies": {
     "@fontsource-variable/inter": "catalog:",
@@ -44,6 +46,7 @@
     "@ensforge/hca": "workspace:*",
     "@ensforge/react": "workspace:*",
     "@ensforge/sdk": "workspace:*",
+    "@ensforge/tools": "workspace:*",
     "@posthog/rollup-plugin": "catalog:",
     "@shikijs/themes": "catalog:",
     "@tailwindcss/vite": "catalog:",
