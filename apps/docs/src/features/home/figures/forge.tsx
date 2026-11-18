@@ -5,6 +5,8 @@ import { useInView, useReducedMotion } from "@/components/marketing/hooks";
 import { COS, isoProjector, SIN } from "@/components/marketing/iso";
 import { cn } from "@/lib/cn";
 
+import { avatarSrc } from "../avatars";
+
 /**
  * Closing figure: the ensforge anvil, extruded from its logo glyph, on a plinth. A name plate
  * lies on the anvil's face; every strike lights the face's edge, throws sparks and forges the
@@ -90,6 +92,8 @@ function Tag({
   readonly h: number;
 }) {
   const faces = box(u, v, z, w, d, h);
+  const avatar = avatarSrc(name);
+  const clip = `forge-avatar-${name.replaceAll(".", "-")}`;
 
   return (
     <g className="ens-forge-tag" style={{ "--avatar": accentVar[accent] }}>
@@ -98,15 +102,31 @@ function Tag({
       <path className="ens-forge-tag-top" d={faces.top} />
       <g transform={plane(z + h)}>
         <circle className="ens-forge-avatar" cx={u + 16} cy={v + d / 2} r={9} />
-        <text
-          className="ens-forge-avatar-initial font-mono"
-          x={u + 16}
-          y={v + d / 2 + 3.5}
-          fontSize={10}
-          textAnchor="middle"
-        >
-          {name.charAt(0).toUpperCase()}
-        </text>
+        {avatar ? (
+          <>
+            <clipPath id={clip}>
+              <circle cx={u + 16} cy={v + d / 2} r={8.5} />
+            </clipPath>
+            <image
+              href={avatar}
+              x={u + 7}
+              y={v + d / 2 - 9}
+              width={18}
+              height={18}
+              clipPath={`url(#${clip})`}
+            />
+          </>
+        ) : (
+          <text
+            className="ens-forge-avatar-initial font-mono"
+            x={u + 16}
+            y={v + d / 2 + 3.5}
+            fontSize={10}
+            textAnchor="middle"
+          >
+            {name.charAt(0).toUpperCase()}
+          </text>
+        )}
         <text className="ens-forge-tag-name font-mono" x={u + 32} y={v + d / 2 + 4} fontSize={11}>
           {name}
         </text>
