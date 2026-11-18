@@ -99,8 +99,9 @@ export function seo(input: SeoInput) {
     { name: "twitter:image:alt", content: input.image.alt },
   ];
 
-  const twitterCreator = input.twitterCreator ?? site.twitter;
-  if (site.twitter) meta.push({ name: "twitter:site", content: site.twitter });
+  const twitterSite = site.twitter ?? site.publisherTwitter;
+  const twitterCreator = input.twitterCreator ?? twitterSite;
+  meta.push({ name: "twitter:site", content: twitterSite });
   if (twitterCreator) meta.push({ name: "twitter:creator", content: twitterCreator });
 
   if (input.keywords?.length) meta.push({ name: "keywords", content: input.keywords.join(", ") });
@@ -173,7 +174,7 @@ export const organizationLd = {
   legalName: site.publisher,
   description: site.publisherDescription,
   logo: { "@type": "ImageObject", url: absolute("/icon-512.png"), width: 512, height: 512 },
-  sameAs: [site.publisherGithub],
+  sameAs: [site.publisherGithub, `https://x.com/${site.publisherTwitter.slice(1)}`],
 };
 
 export const websiteLd = {

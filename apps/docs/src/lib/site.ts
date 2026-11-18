@@ -9,6 +9,8 @@ export const site = {
   publisher: "Namespace Inc.",
   publisherUrl: "https://namespace.ninja",
   publisherGithub: "https://github.com/thenamespace",
+  /** The publisher's X handle with the `@`: `twitter:site` while ensforge has none of its own. */
+  publisherTwitter: "@namespace_eth",
   publisherDescription: "Namespace Inc. is an official ENS Service Provider.",
   tagline: "The toolkit for building on ENS",
   description:
