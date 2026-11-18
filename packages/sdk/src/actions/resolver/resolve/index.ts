@@ -19,7 +19,9 @@ import * as Impl from "./effect.js";
  * - Finds the resolver like any ENS client: the name's own, a parent's wildcard, or off-chain
  *   through CCIP-Read.
  * - `data` is the resolver call, with the name's node as its first argument.
- * - Returns the ABI-encoded result and the resolver that answered.
+ * - Returns the ABI-encoded result and the resolver the Universal Resolver called: for ENSv1
+ *   names ENSv2 serves through the ENSv1 bridge, the bridge itself (`record.get` and
+ *   `resolver.get` report the ENSv1 resolver behind it).
  *
  * **Example** (Calling a custom profile)
  *

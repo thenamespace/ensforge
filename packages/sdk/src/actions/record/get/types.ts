@@ -43,7 +43,10 @@ type AddressValue<coin> = coin extends "eth" | 60n ? Address | null : string | n
  * @since 1.0.0
  */
 export type Records<selection extends Selection = Selection> = {
-  /** Resolver that answered, or `null` when the name has none. */
+  /**
+   * Resolver that answered, or `null` when the name has none. For an ENSv1 name ENSv2 serves
+   * through the ENSv1 bridge, the ENSv1 resolver behind the bridge, as `resolver.get` reports it.
+   */
   readonly resolver: Address | null;
 } & (selection extends { readonly texts: readonly (infer key extends string)[] }
   ? { readonly texts: { readonly [k in key]: string | null } }

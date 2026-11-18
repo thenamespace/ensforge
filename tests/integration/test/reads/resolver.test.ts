@@ -298,7 +298,8 @@ describe("resolver reads", () => {
     );
 
     // The Universal Resolver answers ENSv1 names through the ENSv1 bridge (`ENSV1Resolver`);
-    // `resolver.get` looks behind it, while reads report the contract that answered them.
+    // `resolver.get` and `record.get` look behind it, while the raw `resolver.resolve` reports the
+    // contract the Universal Resolver called.
     it.effect(
       "reports the ENSv1 resolver behind the bridge, and reads the bridge answered",
       () =>
@@ -320,7 +321,16 @@ describe("resolver reads", () => {
           });
           assert.strictEqual(
             (yield* Actions.record.get(reader, { name: records, texts: ["url"] })).resolver,
-            bridge,
+            devnet.contract("v1.publicResolver"),
+          );
+          // Behind the bridge, a parent's wildcard resolver answers for a name without its own.
+          const wildcard = fixtures.byId("resolver.wildcard");
+          assert.strictEqual(
+            (yield* Actions.record.get(reader, {
+              name: String(wildcard.facts["wildcardChild"]),
+              addresses: ["eth"],
+            })).resolver,
+            wildcard.facts["resolver"],
           );
 
           // An off-chain resolver behind the bridge, as `jesse.base.eth` on mainnet.

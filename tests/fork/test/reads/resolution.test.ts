@@ -2,7 +2,6 @@ import { assert, describe } from "@effect/vitest";
 import { Effect } from "effect";
 
 import { Actions } from "@ensforge/sdk/effect";
-import { Devnet } from "@ensforge/test-devnet";
 import { expectFailure } from "@ensforge/test-harness";
 import { Clients } from "@ensforge/test-integration/support/clients";
 
@@ -43,7 +42,6 @@ describe("fork resolution", () => {
       "reads only the profiles an old resolver without multicall supports, behind the bridge",
       () =>
         Effect.gen(function* () {
-          const { deployments } = yield* Devnet;
           const { reader } = yield* Clients;
           const resolver = "0x1da022710dF5002339274AaDEe8D58218e9D6AB5";
           const records = yield* Actions.record.get(reader, {
@@ -53,9 +51,8 @@ describe("fork resolution", () => {
             contentHash: true,
           });
 
-          // Records report the resolver that answered (the ENSv1 bridge); `resolver.get` the
-          // ENSv1 resolver behind it.
-          assert.strictEqual(records.resolver, deployments.v2?.migration.ensV1Resolver);
+          // Records and `resolver.get` report the ENSv1 resolver behind the ENSv1 bridge.
+          assert.strictEqual(records.resolver, resolver);
           assert.deepInclude(yield* Actions.resolver.get(reader, { name: "jessesum.eth" }), {
             address: resolver,
             kind: "public-resolver",

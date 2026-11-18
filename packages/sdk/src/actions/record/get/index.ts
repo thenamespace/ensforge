@@ -19,7 +19,8 @@ export type { AbiRecord, Records, Selection } from "./types.js";
  * **Details**
  *
  * - One Universal Resolver call, whatever the selection (ENSv1, ENSv2, wildcard and off-chain
- *   names).
+ *   names). ENSv1 names answered through the ENSv1 bridge cost one more batched call, to report
+ *   the ENSv1 resolver behind it in `resolver`.
  * - The result has exactly the selected fields: `texts.url` exists only when `"url"` was
  *   requested.
  * - Missing records are `null`. A missing resolver gives `resolver: null` and every record `null`,
