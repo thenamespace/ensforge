@@ -52,8 +52,8 @@ export function MarketingFooter() {
             <span className="font-semibold">{site.name}</span>
           </Link>
           <p className="max-w-72 text-sm leading-relaxed text-fd-muted-foreground">
-            The SDK for ENS. Look up names, read and write records, register and manage names, with
-            one API for every name.
+            Look up names, read and write records, and register and manage names in TypeScript. One
+            API, and every ENS name works the same way.
           </p>
           <p className="text-sm text-fd-muted-foreground">Built by {site.publisher}</p>
           <div className="mt-2 flex flex-wrap gap-2">
