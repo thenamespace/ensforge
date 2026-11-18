@@ -555,6 +555,9 @@ importers:
       '@ensforge/sdk':
         specifier: workspace:*
         version: link:../../packages/sdk
+      '@ensforge/tools':
+        specifier: workspace:*
+        version: link:../../tools/cli
       '@posthog/rollup-plugin':
         specifier: 'catalog:'
         version: 1.6.4(rollup@4.68.5)

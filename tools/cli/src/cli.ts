@@ -5,6 +5,7 @@ import { buildCommand } from "./commands/build.ts";
 import { bundleSizeCommand } from "./commands/bundleSize.ts";
 import { codegenCommand } from "./commands/codegen.ts";
 import { distTypesCommand } from "./commands/distTypes.ts";
+import { docsCommand } from "./commands/docs.ts";
 import { examplesCommand } from "./commands/examples.ts";
 import { lintJsdocCommand } from "./commands/lintJsdoc.ts";
 import { openapiCommand } from "./commands/openapi.ts";
@@ -25,6 +26,7 @@ export const cli = Command.make("ensforge-dev").pipe(
     distTypesCommand,
     examplesCommand,
     codegenCommand,
+    docsCommand,
     openapiCommand,
     bundleSizeCommand,
     releaseCommand,
