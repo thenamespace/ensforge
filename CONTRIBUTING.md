@@ -55,7 +55,7 @@ pnpm check
 pnpm pack:check
 ```
 
-`pnpm check` covers formatting, linting, type checking (sources and tests), builds, the fast tests,
+CI runs the same (`pnpm ci:check`, then `pnpm pack:check`). `pnpm check` covers formatting, linting, type checking (sources and tests), builds, the fast tests,
 and each package's `verify`: generated code, JSDoc lint, API reports, published types compiled by a
 consumer, OpenAPI snapshots and every JSDoc example. `pnpm pack:check` validates package metadata
 and exports. `pnpm check` also bundles typical imports and fails when one grows more than 5% over
@@ -168,14 +168,49 @@ unrelated refactors in the same change. Changes to `main` require one code-owner
 @envoy1084. The maintainer bypass team lets the sole maintainer integrate their own changes.
 Force pushes and deletion of `main` remain blocked, including for that team.
 
-The full CI suite is manually dispatched by a maintainer before release; it is not a required PR
-status check. CodeQL and dependency review run separately as security checks. Contributors should
+CI checks every pull request (see [Continuous integration](#continuous-integration)); the chain,
+fuzz and services lanes run in the extended workflow and in every release. CodeQL and dependency review run separately as security checks. Contributors should
 run the relevant local checks and report their results in the PR. Dependency updates, especially
 wallet, signing, and account-abstraction libraries, require review and are not automatically merged.
 
 Do not add live wallet keys or provider credentials to PR workflows. Report vulnerabilities through
 [private security reporting](https://github.com/thenamespace/ensforge/security/advisories/new), not
 public issues. See [SECURITY.md](SECURITY.md) for the reporting policy.
+
+## Continuous integration
+
+Workflows live in `.github/workflows`; the shared pieces are the composite actions
+`.github/actions/setup` (Node from `.node-version`, pnpm from `packageManager`, frozen install,
+optional pnpm cache and `ignore-scripts`) and `.github/actions/setup-foundry` (Foundry at
+`tests/devnet/foundry-version`, with caches for the devnet profile dumps and anvil's fork cache),
+and the reusable workflows `_check.yml` and `_lanes.yml`.
+
+| Workflow               | Runs                                                                                                                       | Trigger                                    |
+| ---------------------- | -------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------ |
+| `ci.yml`               | `_check.yml`: `pnpm ci:check`, `pnpm pack:check`, and a [zizmor](https://docs.zizmor.sh) audit of the workflows            | pull requests, `main`, merge queue, manual |
+| `pr-title.yml`         | the PR title as a Conventional Commit with commitlint's types                                                              | pull requests                              |
+| `changeset-status.yml` | the packages the PR releases, in the job summary (never fails)                                                             | pull requests                              |
+| `extended.yml`         | `_lanes.yml`: `chain`, `fuzz`, `services`, `mutation`, `mutation-chain` or `all`, with an optional seed and fuzz run count | manual                                     |
+| `networks.yml`         | `_lanes.yml` with the RPC secrets: `fork`, `live` or `watch` (`pnpm release:watch`), one at a time                         | manual, default branch                     |
+| `release.yml`          | the release (below)                                                                                                        | manual, default branch                     |
+| `release-smoke.yml`    | published packages against the archives a release verified                                                                 | manual                                     |
+
+Lanes upload their logs, JUnit reports, fuzz corpus and mutation reports as an artifact named
+`lane-<lane>-<run>-<attempt>` for 14 days; the network lanes redact the RPC URLs from them first.
+Only `networks.yml` receives secrets (`ENSFORGE_MAINNET_RPC_URL`, `ENSFORGE_SEPOLIA_RPC_URL`, as
+repository secrets). Jobs get the least permissions they need, check out without persisted
+credentials (except the changeset status, which fetches the PR head with read-only ones), and
+have timeouts. Actions are referenced by version tag, the major tag where the action publishes one
+(`changesets/action` and `zizmor-action` have none, so they name a release); Dependabot proposes
+new versions weekly, a week after their release. Check workflow changes locally with
+`docker run --rm -v "$PWD:/repo" -w /repo rhysd/actionlint:1.7.12` and
+`docker run --rm -v "$PWD:/repo" -w /repo ghcr.io/zizmorcore/zizmor:1.32.0 --config .github/zizmor.yml .`.
+
+Required status checks (repository settings, branch protection or ruleset for `main`): `check / check`
+and `check / zizmor` from CI, `title` from PR title and `status` from Changeset status (which
+never fails: it only reports).
+Turn on the merge queue there too if wanted; CI runs on `merge_group`. In Settings → Actions →
+General, allow GitHub Actions to create pull requests (the release opens the version PR).
 
 ## Changesets
 
@@ -189,6 +224,46 @@ Choose the affected packages and describe the change from a package user's persp
 packages use a fixed version group, so Changesets releases `@ensforge/contracts`, `@ensforge/sdk`,
 `@ensforge/react`, and `@ensforge/hca` together. Tests, documentation-only changes, and private
 workspace packages generally do not require a changeset.
+
+## Releases
+
+Releases run in `release.yml`, dispatched from `main` (Actions → Release → Run workflow), and
+publish with [npm trusted publishing](https://docs.npmjs.com/trusted-publishers): the workflow
+proves its identity to npm with a GitHub OIDC token, so no npm token exists anywhere, and npm
+attaches provenance to each version.
+
+1. **Dry run** (the default): versions the packages inside the runner (a temporary patch changeset
+   when none are pending), runs `pnpm release:prepare` (`pnpm check` and the chain, fuzz and
+   services lanes), packs with `changeset pack` and runs `pnpm release:check` on the archives.
+   Nothing is pushed or published. Do this first.
+2. **Version PR**: run it again with _dry run_ unchecked. With pending changesets it opens or
+   updates the `chore(release): version packages` PR (`pnpm release:version`: versions,
+   changelogs, lockfile, formatting). Review and merge it; GitHub does not run CI on PRs the
+   workflow opens, so run CI on its branch manually first.
+3. **Publish**: run it once more, not a dry run, on the merged version commit. It prepares and
+   packs the publish plan, checks the archives (`release:check` writes `verification.json` and the
+   job confirms the archives did not change), then publishes those same archives with provenance,
+   pushes the tags and creates the GitHub releases. The prepare job's summary lists the run ID and
+   the packed artifact ID (kept 30 days).
+4. **Smoke check**: once npm serves the versions, dispatch `release-smoke.yml` with that run ID and
+   artifact ID (the publish summary prints the `gh workflow run` command). It checks that the run
+   was a successful release from `main` that published, downloads its packed artifact and runs
+   `pnpm release:smoke --pack-dir <dir> --provenance`: npm's integrity and the registry tarballs
+   equal the packed archives, and each version's SLSA provenance names that archive and this
+   repository's `release.yml`.
+
+The same commands run locally after versioning: `pnpm release:pack --out-dir <dir>` builds and
+packs the unpublished versions, `pnpm release:check --pack-dir <dir>` verifies them (publint, attw,
+an app that installs the tarballs and imports and type-checks every entry, bundle budgets), and
+`pnpm release:smoke --pack-dir <dir> [--provenance]` compares npm with them.
+
+### npm trusted publisher setup
+
+Once per package, on npmjs.com, for `@ensforge/contracts`, `@ensforge/sdk`, `@ensforge/hca` and
+`@ensforge/react`: package → Settings → Trusted publishing → GitHub Actions, with organization
+`thenamespace`, repository `ensforge`, workflow filename `release.yml` and no environment. Then,
+under Publishing access, require two-factor authentication and disallow tokens, so only the
+workflow can publish. A new package must be published once by hand before it can be configured.
 
 ## License
 
