@@ -7,7 +7,7 @@ import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
 import { fumadocsMdx } from "fumadocs-mdx/vite";
 import { nitro } from "nitro/vite";
-import { defineConfig } from "vite";
+import { defineConfig, loadEnv } from "vite";
 
 // Package docs are only linked from the picker popover, so seed the crawler with each one,
 // along with their Markdown versions for agents.
@@ -19,28 +19,35 @@ const packageDocs = readdirSync("content/docs", { withFileTypes: true }).flatMap
 // to a release.
 const release = (process.env.GIT_SHA ?? "dev").slice(0, 12);
 
-// Source maps go to PostHog error tracking only from builds that hold a personal API key and a
-// project id; they are deleted after upload, so the site never serves them.
-const personalApiKey = process.env.POSTHOG_PERSONAL_API_KEY;
-const projectId = process.env.POSTHOG_PROJECT_ID;
-const sourceMaps =
-  personalApiKey && projectId
-    ? [
-        posthog({
-          personalApiKey,
-          projectId,
-          host: "https://eu.posthog.com",
-          sourcemaps: {
-            enabled: true,
-            releaseName: "ensforge-docs",
-            releaseVersion: release,
-            deleteAfterUpload: true,
-          },
-        }),
-      ]
-    : [];
+/**
+ * Source maps go to PostHog error tracking only from deploy builds that hold a personal API key
+ * and a project id; they are deleted after upload, so the site never serves them. The keys have no
+ * `VITE_` prefix and Vite does not put env files into `process.env`, so they are read with
+ * `loadEnv`: from the environment, `.env.local`, or the `.env.production` the Docker build writes.
+ */
+function sourceMaps(mode: string) {
+  const env = loadEnv(mode, process.cwd(), "POSTHOG_");
+  const personalApiKey = env["POSTHOG_PERSONAL_API_KEY"];
+  const projectId = env["POSTHOG_PROJECT_ID"];
+  // Only deploy builds (which set GIT_SHA) upload; a local build with keys in .env does not.
+  if (!personalApiKey || !projectId || release === "dev") return [];
 
-export default defineConfig({
+  return [
+    posthog({
+      personalApiKey,
+      projectId,
+      host: "https://eu.posthog.com",
+      sourcemaps: {
+        enabled: true,
+        releaseName: "ensforge-docs",
+        releaseVersion: release,
+        deleteAfterUpload: true,
+      },
+    }),
+  ];
+}
+
+export default defineConfig(({ mode }) => ({
   define: {
     "import.meta.env.VITE_RELEASE": JSON.stringify(release),
   },
@@ -83,9 +90,9 @@ export default defineConfig({
       traceDeps: ["takumi-js"],
     }),
     react(),
-    ...sourceMaps,
+    ...sourceMaps(mode),
   ],
   resolve: {
     tsconfigPaths: true,
   },
-});
+}));
