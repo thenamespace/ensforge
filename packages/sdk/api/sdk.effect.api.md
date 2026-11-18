@@ -648,15 +648,15 @@ const Actions.subname.createSync.path: 'subname.createSync'
 type Actions.subname.createSync.ErrorType = CommitmentError | ConfigError | ContractRevertError | DnsError | GatewayError | IndexerError | InsufficientFundsError | InternalError | InvalidInputError | MigrationError | NameStateError | NetworkError | NotFoundError | PlanError | TransactionError | UnauthorizedError | UnsupportedError | UserRejectedError | WalletError
 type Actions.subname.createSync.Options = create.Options & Write.Options & { confirmations?: number | undefined; timeout?: number | undefined; }
 type Actions.subname.createSync.ReturnType = Result & { readonly receipt: TransactionReceipt; readonly receipts: readonly TransactionReceipt[]; }
-function Actions.subname.remove(client: ClientBase<{}>, options: { readonly name: string; } & Options) => Effect<Result, AnyError, never>
-const Actions.subname.remove.prepare: ((client: ClientBase<{}>, options: { readonly name: string; } & Pick<Options, 'account' | 'via'>) => Effect<Plan, AnyError, never>) & { path: string; }
-const Actions.subname.remove.simulate: ((client: ClientBase<{}>, options: { readonly name: string; } & Pick<Options, 'account' | 'via'>) => Effect<Simulation, AnyError, never>) & { path: string; }
-const Actions.subname.remove.estimateGas: ((client: ClientBase<{}>, options: { readonly name: string; } & Pick<Options, 'account' | 'via'>) => Effect<Estimate, AnyError, never>) & { path: string; }
+function Actions.subname.remove(client: ClientBase<{}>, options: remove.Options & Write.Options) => Effect<Result, AnyError, never>
+const Actions.subname.remove.prepare: ((client: ClientBase<{}>, options: Options & Pick<Options, 'account' | 'via'>) => Effect<Plan, AnyError, never>) & { path: string; }
+const Actions.subname.remove.simulate: ((client: ClientBase<{}>, options: Options & Pick<Options, 'account' | 'via'>) => Effect<Simulation, AnyError, never>) & { path: string; }
+const Actions.subname.remove.estimateGas: ((client: ClientBase<{}>, options: Options & Pick<Options, 'account' | 'via'>) => Effect<Estimate, AnyError, never>) & { path: string; }
 const Actions.subname.remove.path: 'subname.remove'
 type Actions.subname.remove.ErrorType = CommitmentError | ConfigError | ContractRevertError | DnsError | GatewayError | IndexerError | InsufficientFundsError | InternalError | InvalidInputError | MigrationError | NameStateError | NetworkError | NotFoundError | PlanError | TransactionError | UnauthorizedError | UnsupportedError | UserRejectedError | WalletError
 type Actions.subname.remove.Options = { name: string; }
 type Actions.subname.remove.ReturnType = { readonly hash: `0x${string}`; readonly hashes: readonly `0x${string}`[]; readonly id: string | undefined; readonly plan: Plan; }
-function Actions.subname.removeSync(client: ClientBase<{}>, options: { readonly name: string; } & Options & { confirmations?: number | undefined; timeout?: number | undefined; }) => Effect<SyncResult, AnyError, never>
+function Actions.subname.removeSync(client: ClientBase<{}>, options: remove.Options & Write.Options & { confirmations?: number | undefined; timeout?: number | undefined; }) => Effect<SyncResult, AnyError, never>
 const Actions.subname.removeSync.path: 'subname.removeSync'
 type Actions.subname.removeSync.ErrorType = CommitmentError | ConfigError | ContractRevertError | DnsError | GatewayError | IndexerError | InsufficientFundsError | InternalError | InvalidInputError | MigrationError | NameStateError | NetworkError | NotFoundError | PlanError | TransactionError | UnauthorizedError | UnsupportedError | UserRejectedError | WalletError
 type Actions.subname.removeSync.Options = remove.Options & Write.Options & { confirmations?: number | undefined; timeout?: number | undefined; }

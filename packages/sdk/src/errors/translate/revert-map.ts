@@ -191,6 +191,11 @@ export const revertMap: Readonly<Record<string, Mapper>> = {
   PaymentTokenNotSupported: () => new UnsupportedError({ code: "PAYMENT_TOKEN_UNSUPPORTED" }),
   UpgradeTargetNotApproved: () => new UnsupportedError({ code: "UPGRADE_NOT_APPROVED" }),
   InvalidUpgradeTarget: () => new UnsupportedError({ code: "UPGRADE_NOT_APPROVED" }),
+  NestedUpgradeNotAllowed: () =>
+    new UnsupportedError({
+      code: "UPGRADE_NOT_APPROVED",
+      shortMessage: "A registry upgrade cannot call another upgrade.",
+    }),
   UnsupportedResolverProfile: ([selector]) =>
     new UnsupportedError({
       code: "RESOLVER_PROFILE_UNSUPPORTED",

@@ -67,6 +67,7 @@ const expected: Readonly<Record<string, Expected | Readonly<Record<number, Expec
   PaymentTokenNotSupported: { _tag: "UnsupportedError", code: "PAYMENT_TOKEN_UNSUPPORTED" },
   UpgradeTargetNotApproved: { _tag: "UnsupportedError", code: "UPGRADE_NOT_APPROVED" },
   InvalidUpgradeTarget: { _tag: "UnsupportedError", code: "UPGRADE_NOT_APPROVED" },
+  NestedUpgradeNotAllowed: { _tag: "UnsupportedError", code: "UPGRADE_NOT_APPROVED" },
   UnsupportedResolverProfile: { _tag: "UnsupportedError", code: "RESOLVER_PROFILE_UNSUPPORTED" },
   ResolverNotFound: { _tag: "NotFoundError", code: "RESOLVER_NOT_FOUND" },
   ResolverNotContract: { _tag: "NotFoundError", code: "RESOLVER_NOT_FOUND" },
@@ -218,7 +219,6 @@ const notRaisedOnChain = [
   "NotApprovedOperator",
   "CommitmentNotFound",
   "UpgradeTargetNotApproved",
-  "InvalidUpgradeTarget",
 ];
 
 describe("revertMap coverage", () => {
