@@ -1,3 +1,7 @@
+import type { ComponentType } from "react";
+
+import { ContractsLogo, HcaLogo, type LogoProps, ReactLogo, SdkLogo } from "@/components/logos";
+
 import { docsRoute, gitConfig } from "./shared";
 
 export interface PackageInfo {
@@ -6,20 +10,22 @@ export interface PackageInfo {
   readonly name: string;
   /** Published name, e.g. `@ensforge/sdk`; its GitHub releases back the changelog. */
   readonly npm: string;
+  readonly Logo: ComponentType<LogoProps>;
   /** Whether `content/docs/<slug>` exists yet. */
   readonly hasDocs: boolean;
 }
 
 export const packages: readonly PackageInfo[] = [
-  { slug: "sdk", name: "SDK", npm: "@ensforge/sdk", hasDocs: true },
+  { slug: "sdk", name: "SDK", npm: "@ensforge/sdk", Logo: SdkLogo, hasDocs: true },
   {
     slug: "contracts",
     name: "Contracts",
     npm: "@ensforge/contracts",
+    Logo: ContractsLogo,
     hasDocs: true,
   },
-  { slug: "react", name: "React", npm: "@ensforge/react", hasDocs: true },
-  { slug: "hca", name: "HCA", npm: "@ensforge/hca", hasDocs: true },
+  { slug: "react", name: "React", npm: "@ensforge/react", Logo: ReactLogo, hasDocs: true },
+  { slug: "hca", name: "HCA", npm: "@ensforge/hca", Logo: HcaLogo, hasDocs: true },
 ];
 
 export const documentedPackages = packages.filter((pkg) => pkg.hasDocs);
