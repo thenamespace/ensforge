@@ -1,6 +1,268 @@
 ---
 title: Quick start
-description: Placeholder, to be written.
+description: Read your first ENS name in under five minutes, then send your first write on Sepolia.
+icon: rocket
+keywords: [quick start, getting started, record.getAddress, batch, record.setSync, Sepolia]
 ---
 
-Placeholder: this page is not written yet.
+By the end of this page you will have read an address, an avatar, a text record and a primary name
+from ENS in one round trip. The second part sends your first write, on the Sepolia test network.
+
+You need Node.js 20.19 or later. Nothing else: the first part reads from Ethereum mainnet and needs
+no wallet.
+
+## 1. Create a project
+
+Create an empty folder, make it an ES module project, and install the SDK with viem and Effect.
+
+```sh
+mkdir ens-quickstart && cd ens-quickstart
+npm init -y && npm pkg set type=module
+npm install @ensforge/sdk viem effect@^4 tsx
+```
+
+`tsx` runs the TypeScript files on this page directly. Any other way of running TypeScript works
+too.
+
+## 2. Create a client
+
+The client is the object you call ENS actions on. Create it once from a viem public client; the
+chain of that client tells ensforge which ENS contracts to use.
+
+**Example** (Creating a Mainnet Client)
+
+```ts twoslash title="ens.ts"
+import { Ensforge, ensActions } from "@ensforge/sdk";
+import { createPublicClient, http } from "viem";
+import { mainnet } from "viem/chains";
+
+export const ens = Ensforge.create({
+  publicClient: createPublicClient({ chain: mainnet, transport: http() }),
+}).extend(ensActions());
+```
+
+- `Ensforge.create` takes the viem client. No wallet is needed to read.
+- `.extend(ensActions())` adds every ENS action to the client: `ens.record`, `ens.name`,
+  `ens.primaryName` and the rest.
+
+See [Create a client](/docs/sdk/create-a-client) for every option.
+
+## 3. Get an address
+
+Ask for the Ethereum address of `nick.eth`. This is the most common ENS lookup: turning a name
+into the address it points to.
+
+**Example** (Getting an Address)
+
+```ts twoslash title="address.ts"
+// @filename: ens.ts
+import { Ensforge, ensActions } from "@ensforge/sdk";
+import { createPublicClient, http } from "viem";
+import { mainnet } from "viem/chains";
+
+export const ens = Ensforge.create({
+  publicClient: createPublicClient({ chain: mainnet, transport: http() }),
+}).extend(ensActions());
+
+// @filename: address.ts
+// ---cut---
+import { ens } from "./ens";
+
+const address = await ens.record.getAddress({ name: "nick.eth" });
+//    ^?
+
+console.log(address);
+```
+
+Run it:
+
+```sh
+npx tsx address.ts
+```
+
+```text title="Output"
+0xb8c2C29ee19D8307cb7255e1Cd9CbDE883A267d5
+```
+
+The result is `null` when the name has no address, so your code handles a missing record without a
+`try`. ensforge also checks and [normalises](/docs/sdk/reference/glossary#normalisation) the name for
+you: `Nick.ETH` reads the same record. See [Get a name's address](/docs/sdk/get-an-address) for
+other chains and coins.
+
+## 4. Look up several things at once
+
+A profile page needs more than an address. `ens.batch` runs several lookups together, in as few
+requests to the chain as possible.
+
+**Example** (Loading a Profile in One Batch)
+
+```ts twoslash title="profile.ts"
+// @filename: ens.ts
+import { Ensforge, ensActions } from "@ensforge/sdk";
+import { createPublicClient, http } from "viem";
+import { mainnet } from "viem/chains";
+
+export const ens = Ensforge.create({
+  publicClient: createPublicClient({ chain: mainnet, transport: http() }),
+}).extend(ensActions());
+
+// @filename: profile.ts
+// ---cut---
+import { Actions } from "@ensforge/sdk";
+import { ens } from "./ens";
+
+const { results } = await ens.batch({
+  requests: {
+    address: Actions.record.getAddress.request({ name: "nick.eth" }),
+    avatar: Actions.record.getAvatar.request({ name: "nick.eth" }),
+    github: Actions.record.getText.request({ name: "nick.eth", key: "com.github" }),
+    primaryName: Actions.primaryName.get.request({
+      address: "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045",
+    }),
+  },
+});
+
+console.log(results);
+```
+
+```sh
+npx tsx profile.ts
+```
+
+```text title="Output"
+{
+  address: {
+    status: 'success',
+    result: '0xb8c2C29ee19D8307cb7255e1Cd9CbDE883A267d5'
+  },
+  avatar: { status: 'success', result: 'https://euc.li/nick.eth' },
+  github: { status: 'success', result: 'arachnid' },
+  primaryName: { status: 'success', result: 'vitalik.eth' }
+}
+```
+
+- Every read action has a `.request(...)` form. It describes the lookup without running it, so
+  `batch` can run them together.
+- `record.getAvatar` returns a URL a browser can load, not the raw record.
+- `primaryName.get` goes the other way: from an address to its name. ensforge only returns the name
+  when it points back to the same address.
+- One failed lookup does not fail the others: each result has its own `status`.
+
+You have read ENS. The next part writes to it.
+
+See [Look up many at once](/docs/sdk/look-up-many-at-once) and
+[How a lookup works](/docs/sdk/looking-up-a-name).
+
+## 5. Get a test name and test ETH
+
+Writes change data on a chain, so they need a wallet that pays for gas and controls the name. Use
+the Sepolia test network, where both are free.
+
+- A private key for a test account. Never use a key that holds real funds.
+- Some Sepolia ETH in that account, from any Sepolia faucet.
+- A `.eth` name on Sepolia owned by that account. Register one in the
+  [ENS app on Sepolia](https://sepolia.app.ens.domains).
+
+Put the key in an environment variable so it stays out of your code:
+
+```sh
+export PRIVATE_KEY=0x...
+```
+
+## 6. Preview the write
+
+Add a wallet client to a Sepolia client, then ask ensforge to plan a text record change without
+sending it. Replace `your-name.eth` with your Sepolia name.
+
+**Example** (Planning a Write on Sepolia)
+
+```ts twoslash title="write.ts"
+declare const process: { env: Record<string, string | undefined> };
+// ---cut---
+import { Ensforge, ensActions } from "@ensforge/sdk";
+import { createPublicClient, createWalletClient, http, type Hex } from "viem";
+import { privateKeyToAccount } from "viem/accounts";
+import { sepolia } from "viem/chains";
+
+const account = privateKeyToAccount(process.env.PRIVATE_KEY as Hex);
+
+const ens = Ensforge.create({
+  publicClient: createPublicClient({ chain: sepolia, transport: http() }),
+  walletClient: createWalletClient({ account, chain: sepolia, transport: http() }),
+}).extend(ensActions());
+
+const records = { name: "your-name.eth", texts: { url: "https://example.com" } };
+
+const plan = await ens.record.set.prepare(records);
+console.log(plan.steps.map((step) => step.description));
+```
+
+```text title="Output"
+[ 'Set records' ]
+```
+
+- The wallet client signs. The public client still does every read.
+- `record.set.prepare` returns a **plan**: the transactions the write needs, in order. Nothing is
+  sent and the wallet is not asked to sign.
+- Every write has `.prepare`, so a UI can show what will happen before the user confirms.
+
+See [How writes work](/docs/sdk/writing-to-ens).
+
+## 7. Send it and wait
+
+Send the same write with `record.setSync`. The `Sync` form waits until the transaction is mined,
+then you read the record back to see the change.
+
+**Example** (Setting a Text Record and Reading It Back)
+
+```ts twoslash title="write.ts"
+declare const process: { env: Record<string, string | undefined> };
+import { Ensforge, ensActions } from "@ensforge/sdk";
+import { createPublicClient, createWalletClient, http, type Hex } from "viem";
+import { privateKeyToAccount } from "viem/accounts";
+import { sepolia } from "viem/chains";
+
+const account = privateKeyToAccount(process.env.PRIVATE_KEY as Hex);
+
+const ens = Ensforge.create({
+  publicClient: createPublicClient({ chain: sepolia, transport: http() }),
+  walletClient: createWalletClient({ account, chain: sepolia, transport: http() }),
+}).extend(ensActions());
+
+const records = { name: "your-name.eth", texts: { url: "https://example.com" } };
+// ---cut---
+const { hash } = await ens.record.setSync(records);
+console.log("Mined:", hash);
+
+console.log(await ens.record.getText({ name: "your-name.eth", key: "url" }));
+```
+
+```text title="Output"
+Mined: 0x...
+https://example.com
+```
+
+- ensforge simulates the transaction before the wallet prompt. A write that would fail, for
+  example because the account does not own the name, throws a typed error such as
+  [`NOT_OWNER`](/docs/sdk/errors/NOT_OWNER) and sends nothing.
+- `record.set` (without `Sync`) returns as soon as the transaction is submitted. Use it when your
+  UI tracks confirmation itself.
+
+## Choose where to go next
+
+You have read ENS records, batched lookups, and planned and sent a write. From here:
+
+<Cards>
+  <Card title="Why ensforge" href="/docs/sdk/why-ensforge">
+    What ensforge does for you, and when to use something else.
+  </Card>
+  <Card title="Names and records" href="/docs/sdk/names-and-records">
+    What a name, a resolver and a record are, in plain words.
+  </Card>
+  <Card title="Ways to call actions" href="/docs/sdk/ways-to-call-actions">
+    Client methods, standalone actions, and the Effect API.
+  </Card>
+  <Card title="React" href="/docs/react">
+    The same actions as React hooks.
+  </Card>
+</Cards>
