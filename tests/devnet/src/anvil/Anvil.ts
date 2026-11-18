@@ -98,6 +98,11 @@ export class Anvil extends Context.Service<
                 retries: 10,
                 forkRetryBackoff: 2_000,
                 timeout: 120_000,
+                // A fork mines slowly (state comes from the RPC), and its block number can move
+                // before the receipt is readable. viem then waits for the next block, which an
+                // automining chain never makes: a block every second as well ends that wait.
+                blockTime: 1,
+                mixedMining: true,
               }),
         });
         yield* Effect.acquireRelease(
