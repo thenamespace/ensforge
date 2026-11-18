@@ -1,0 +1,9 @@
+{
+  "title": "primaryName",
+  "pages": [
+    "index",
+    "get",
+    "set",
+    "sign-claim"
+  ]
+}

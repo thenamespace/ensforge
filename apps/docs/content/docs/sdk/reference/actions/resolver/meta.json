@@ -1,0 +1,13 @@
+{
+  "title": "resolver",
+  "pages": [
+    "index",
+    "create",
+    "get",
+    "get-link",
+    "link",
+    "resolve",
+    "set",
+    "upgrade"
+  ]
+}

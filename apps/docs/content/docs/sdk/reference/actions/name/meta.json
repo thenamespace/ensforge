@@ -1,0 +1,12 @@
+{
+  "title": "name",
+  "pages": [
+    "index",
+    "get",
+    "get-label",
+    "reclaim",
+    "set-manager",
+    "set-ttl",
+    "transfer"
+  ]
+}

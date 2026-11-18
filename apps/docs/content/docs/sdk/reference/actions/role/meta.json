@@ -1,0 +1,9 @@
+{
+  "title": "role",
+  "pages": [
+    "index",
+    "get",
+    "grant",
+    "revoke"
+  ]
+}
