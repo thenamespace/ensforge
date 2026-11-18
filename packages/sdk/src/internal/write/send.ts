@@ -1,4 +1,4 @@
-import { Effect } from "effect";
+import { Clock, Effect } from "effect";
 
 import type { Hex } from "viem";
 import { getBlock, getTransaction } from "viem/actions";
@@ -69,13 +69,14 @@ export const sendPlan = Effect.fnUntraced(function* (
     submitted: {},
     bundles: {},
     references: {},
-    updatedAt: Date.now(),
+    updatedAt: yield* Clock.currentTimeMillis,
   };
   // Saving is best effort: storage that is unavailable (server rendering) must not stop a write.
-  const save = (update: Partial<Plan.Record>) => {
-    record = { ...record, ...update, updatedAt: Date.now() };
-    return Effect.ignore(fromPromise(() => client.config.storage.set(record)));
-  };
+  const save = (update: Partial<Plan.Record>) =>
+    Effect.flatMap(Clock.currentTimeMillis, (updatedAt) => {
+      record = { ...record, ...update, updatedAt };
+      return Effect.ignore(fromPromise(() => client.config.storage.set(record)));
+    });
 
   // A resumed plan is simulated step by step: its earlier steps already changed the state.
   if (simulate && resumed === undefined) {

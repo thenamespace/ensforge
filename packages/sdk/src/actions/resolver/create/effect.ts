@@ -115,8 +115,8 @@ const write = Action.write(
   "resolver.create",
   plan,
   { contractKind: "resolver" },
-  (client, options, account) =>
-    options.name === undefined ? Effect.undefined : pointsName(client, options, account),
+  (client, options, account, error) =>
+    options.name === undefined ? Effect.undefined : pointsName(client, options, account, error),
 );
 
 const withResolver = <result extends Write.Result>(result: result) => ({

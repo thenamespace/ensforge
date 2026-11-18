@@ -14,6 +14,7 @@ import { waitForReceipts } from "../write/receipts.js";
 import { sendPlan } from "../write/send.js";
 import { resolveSigner } from "../write/signer.js";
 import { estimatePlan, simulatePlan } from "../write/simulate.js";
+import { staleTransfer } from "../write/stale.js";
 import { routePlan } from "../write/via.js";
 import { contextOf, withContext } from "./context.js";
 
@@ -24,24 +25,26 @@ export type Planner<options, error> = (
 ) => Effect.Effect<Plan, error>;
 
 /**
- * Explains why the signer could not perform the write: an `UnauthorizedError` with what is
- * missing, or `undefined`. Only consulted when simulation fails with a revert that carries no
- * error name (ENSv1 `require` strings), so successful writes pay nothing for it.
+ * Explains why the write reverted: the name expiring before the transaction can be mined, or what
+ * the signer is missing for a revert that carries no error name (ENSv1 `require` strings); else
+ * `undefined`. Only consulted when simulation reverts, so successful writes pay nothing for it.
  */
 export type Explainer<options> = (
   client: Client,
   options: options,
   account: Address,
+  error: AnyError,
 ) => Effect.Effect<AnyError | undefined, AnyError>;
 
 // An unmapped `require` string decodes as `Error(string)`: it names no ENS error either.
-const isOpaqueRevert = (error: AnyError): boolean =>
+export const isOpaqueRevert = (error: AnyError): boolean =>
   error._tag === "ContractRevertError" &&
   (error.context.revert?.errorName === undefined || error.context.revert.errorName === "Error");
 
 /**
- * Replaces a resolver's refusal to store records on-chain with its typed error, and any other
- * opaque revert with the explainer's error, keeping the revert as the cause.
+ * Refines a failed write: a stale prepared transfer becomes `PLAN_STALE`, a resolver's refusal to
+ * store records on-chain its typed error, and any other opaque revert the explainer's error,
+ * keeping the revert as the cause.
  */
 const explained = <options>(
   client: Client,
@@ -49,26 +52,25 @@ const explained = <options>(
   account: Address | undefined,
   explain: Explainer<options> | undefined,
   extra: EnsforgeError.Context | undefined,
+  plan: Plan,
   error: AnyError,
 ): Effect.Effect<AnyError> =>
-  (extra?.contractKind === "resolver"
-    ? offchainWriteRefusal(client, error)
-    : Effect.undefined
-  ).pipe(
-    Effect.flatMap((refusal) =>
-      refusal !== undefined
-        ? Effect.succeed(refusal)
-        : explain === undefined || account === undefined || !isOpaqueRevert(error)
-          ? Effect.succeed(error)
-          : explain(client, options, account).pipe(
-              Effect.map((explanation) =>
-                explanation === undefined ? error : (explanation.withCause(error) as AnyError),
-              ),
-              // A failing explanation must not hide the original error.
-              Effect.orElseSucceed(() => error),
-            ),
-    ),
-  );
+  Effect.gen(function* () {
+    const refined =
+      (yield* staleTransfer(client, plan, error)) ??
+      (extra?.contractKind === "resolver" ? yield* offchainWriteRefusal(client, error) : undefined);
+    if (refined !== undefined) return refined;
+    if (explain === undefined || account === undefined || error.context.revert === undefined) {
+      return error;
+    }
+    return yield* explain(client, options, account, error).pipe(
+      Effect.map((explanation) =>
+        explanation === undefined ? error : (explanation.withCause(error) as AnyError),
+      ),
+      // A failing explanation must not hide the original error.
+      Effect.orElseSucceed(() => error),
+    );
+  });
 
 /**
  * Every Effect a write action exposes, built from one planner: `send` (the action itself),
@@ -123,7 +125,7 @@ export const write = <options, error extends EnsforgeError>(
       const steps = yield* Effect.forEach(simulation.steps, (step) =>
         step.error === undefined
           ? Effect.succeed(step)
-          : explained(client, options, account, explain, extra, step.error).pipe(
+          : explained(client, options, account, explain, extra, plan, step.error).pipe(
               Effect.map((error) => ({ ...step, error: error.withContext(context) })),
             ),
       );
@@ -154,7 +156,7 @@ export const write = <options, error extends EnsforgeError>(
     const signer = yield* resolveSigner(target, options.account);
     const result = yield* sendPlan(target, plan, signer, { ...options, confirmLast }).pipe(
       Effect.catch((error: AnyError) =>
-        explained(client, options, addressOf(signer.account), explain, extra, error).pipe(
+        explained(client, options, addressOf(signer.account), explain, extra, plan, error).pipe(
           Effect.flatMap(Effect.fail),
         ),
       ),

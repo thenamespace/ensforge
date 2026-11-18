@@ -1,4 +1,4 @@
-import { Effect } from "effect";
+import { Clock, Effect } from "effect";
 
 import { isHash } from "viem";
 import { getTransaction } from "viem/actions";
@@ -64,7 +64,7 @@ export const reconcile = Effect.fn("ensforge.plan.reconcile")(function* (
   const updated = {
     ...record,
     submitted: { ...record.submitted, [step.id]: [options.hash] },
-    updatedAt: Date.now(),
+    updatedAt: yield* Clock.currentTimeMillis,
   };
   yield* fromPromise(() => client.config.storage.set(updated));
   return updated;

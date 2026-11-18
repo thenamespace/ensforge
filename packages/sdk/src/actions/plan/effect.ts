@@ -309,7 +309,7 @@ export declare namespace resumeSync {
  * yield* Actions.plan.send(ens, { plan: Plan.merge([recordsPlan, primaryNamePlan]) })
  * ```
  *
- * @throws `Errors.PlanError` (`PLAN_CHAIN_MISMATCH`, `PLAN_ACCOUNT_MISMATCH`) for a plan prepared elsewhere.
+ * @throws `Errors.PlanError` (`PLAN_CHAIN_MISMATCH`, `PLAN_ACCOUNT_MISMATCH`) for a plan prepared elsewhere; (`PLAN_STALE`) when a token it transfers was reissued since it was prepared.
  * @throws `Errors.ContractRevertError` (`CONTRACT_REVERTED`), or the failing step's own error, with `context.planId` and `context.step`.
  * @throws `Errors.UserRejectedError` when the user rejects the request.
  *
@@ -360,7 +360,7 @@ export declare namespace send {
  * yield* Actions.plan.sendSync(ens, { plan: Plan.merge([recordsPlan, primaryNamePlan]) })
  * ```
  *
- * @throws `Errors.PlanError` (`PLAN_CHAIN_MISMATCH`, `PLAN_ACCOUNT_MISMATCH`) for a plan prepared elsewhere.
+ * @throws `Errors.PlanError` (`PLAN_CHAIN_MISMATCH`, `PLAN_ACCOUNT_MISMATCH`) for a plan prepared elsewhere; (`PLAN_STALE`) when a token it transfers was reissued since it was prepared.
  * @throws `Errors.ContractRevertError` (`CONTRACT_REVERTED`), or the failing step's own error, with `context.planId` and `context.step`.
  * @throws `Errors.TransactionError` (`TRANSACTION_REVERTED`, `RECEIPT_TIMEOUT`) when confirmation fails.
  *
