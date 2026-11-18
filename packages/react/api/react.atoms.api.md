@@ -9,7 +9,7 @@ type ActionOptions = Parameters<action>[1]
 type ActionValue = ReturnType<action> extends Promise<infer value> ? value : ReturnType<action> extends Effect<infer value, unknown, unknown> ? value : never
 function ensAtom<action extends Action>(client: ClientBase<{}>, action: action, options: Parameters<action>[1], freshness?: Freshness | undefined) => Atom<AsyncResult<ActionValue<action>, ActionError<action>>>
 function ensPagesAtom<action extends PageAction>(client: ClientBase<{}>, action: action, options: { [P in Exclude<keyof ActionOptions<action>, 'cursor'>]: ActionOptions<action>[P]; }) => Writable<PullResult<ActionValue<action>, ActionError<action>>, void>
-function ensWriteAtom<action extends Action>(client: ClientBase<{}>, action: action) => { readonly run: AtomResultFn<ActionOptions<action>, ActionValue<action>, ActionError<action>>; readonly steps: Writable<readonly Event[], readonly Event[]>; }
+function ensWriteAtom<action extends Action>(client: ClientBase<{}>, action: action) => { readonly run: Writable<AsyncResult<ActionValue<action>, ActionError<action>>, typeof Reset | ActionOptions<action>>; readonly steps: Writable<readonly Event[], readonly Event[]>; readonly send: (options: ActionOptions<action>) => Effect<ActionValue<action>, ActionError<action>, AtomRegistry>; }
 type Freshness = { readonly staleTime?: Input | undefined; readonly idleTTL?: 'forever' | Input | undefined; readonly refetchInterval?: Input | undefined; readonly refreshOnWindowFocus?: boolean | undefined; }
 function invalidate(registry: AtomRegistry, client: ClientBase<{}>, subjects: { readonly names?: readonly string[]; readonly addresses?: readonly string[]; }) => void
 function optionsKey(options: unknown) => string
@@ -17,5 +17,5 @@ type PageAction = ((client: ClientBase<{}>, options: never) => unknown) & { read
 type PagesAtom = Writable<PullResult<page, error>, void>
 type ReadAtom = Atom<AsyncResult<value, error>>
 function readKey(client: ClientBase<{}>, action: ((client: ClientBase<{}>, options: never) => unknown) & { readonly path: string; }, options: unknown) => string
-type WriteAtom = { readonly run: AtomResultFn<options, value, error>; readonly steps: Writable<readonly Event[], readonly Event[]>; }
+type WriteAtom = { readonly run: Writable<AsyncResult<value, error>, typeof Reset | options>; readonly steps: Writable<readonly Event[], readonly Event[]>; readonly send: (options: options) => Effect<value, error, AtomRegistry>; }
 ```

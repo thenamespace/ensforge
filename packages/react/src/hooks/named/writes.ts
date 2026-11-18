@@ -182,6 +182,38 @@ export const useSetPrimaryName = (
 > => useWrite(Actions.primaryName.set, config);
 
 /**
+ * Signs a claim to a primary name on L2s, with one signature and no transaction, for
+ * `primaryName.set` on each chain (or a relaying server). Preset of
+ * `useWrite(Actions.primaryName.signClaim)`; it refreshes no reads.
+ *
+ * **Example** (Signing, then setting the name on Base)
+ *
+ * ```tsx
+ * import { useSetPrimaryName, useSignClaim } from "@ensforge/react"
+ *
+ * function Send() {
+ *   const sign = useSignClaim()
+ *   const set = useSetPrimaryName()
+ *   const onClick = async () => {
+ *     const signed = await sign.mutateAsync({ name: "alice.eth", chainIds: [8453] })
+ *     set.mutate({ ...signed, coin: { chainId: 8453 } })
+ *   }
+ *   return <button disabled={sign.isPending || set.isPending} onClick={onClick}>Send</button>
+ * }
+ * ```
+ *
+ * @category named writes
+ * @since 1.0.0
+ */
+export const useSignClaim = (
+  config?: Parameters<typeof useWrite>[1],
+): WriteResult<
+  Parameters<typeof Actions.primaryName.signClaim>[1],
+  Actions.primaryName.signClaim.ReturnType,
+  Errors.AnyError
+> => useWrite(Actions.primaryName.signClaim, config);
+
+/**
  * Moves names from ENSv1 to ENSv2. Preset of `useWrite(Actions.migration.migrate)`.
  *
  * **Example** (A button that sends it)
