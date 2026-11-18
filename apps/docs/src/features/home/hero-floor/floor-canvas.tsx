@@ -34,7 +34,7 @@ interface Plate {
   /** How bright it sits, so some plates read nearer than others. */
   readonly depth: number;
   readonly born: number;
-  /** Its whole life, rise to sink, between six and nine seconds. */
+  /** Its whole life, rise to sink, between ten and fourteen seconds. */
   readonly life: number;
 }
 
@@ -151,27 +151,20 @@ export function FloorCanvas({
           accent: accents[Math.floor(random() * accents.length)] ?? ink,
           depth: 0.7 + random() * 0.3,
           born: time - age,
-          life: 6000 + random() * 3000,
+          life: 10_000 + random() * 4000,
         };
       }
 
       return undefined;
     };
 
-    // The first scatter is seeded, so it is the same on every load; later plates are random.
-    let seed = 1084;
-    const seeded = () => {
-      seed = (seed + 0x6d_2b_79_f5) | 0;
-      let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
-      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-      return ((t ^ (t >>> 14)) >>> 0) / 4_294_967_296;
-    };
-
-    const target = compact ? 6 : 15;
+    // The canvas draws only after mount, so plain randomness cannot upset hydration; every load
+    // starts from a different scatter.
+    const target = compact ? 4 : 9;
     const start = performance.now();
     for (let index = 0; index < target; index++) {
       // Spread the first plates through their lives, so they do not all rise together.
-      const plate = spawn(start, seeded, reduced ? 5000 : seeded() * 6000);
+      const plate = spawn(start, Math.random, reduced ? 5000 : Math.random() * 9000);
       if (plate) plates.push(plate);
     }
     let spawns: number[] = [];

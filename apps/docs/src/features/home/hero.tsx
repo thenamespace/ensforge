@@ -32,7 +32,7 @@ export function Hero() {
       />
       <div
         data-hero-content=""
-        className="relative mx-auto flex min-h-[92svh] w-full max-w-[1400px] flex-col items-center justify-center gap-7 px-5 pt-32 pb-24 text-center md:px-8"
+        className="relative mx-auto flex min-h-[108svh] md:min-h-[92svh] w-full max-w-[1400px] flex-col items-center justify-center gap-7 px-5 pt-32 pb-24 text-center md:px-8"
       >
         <p className="flex animate-ek-rise items-center gap-2.5 rounded-full border border-(--ek-line) bg-fd-background px-3 py-1 text-sm text-fd-muted-foreground">
           <img
@@ -48,7 +48,7 @@ export function Hero() {
           as="h1"
           className="animate-ek-rise font-normal [animation-delay:80ms] md:text-[92px]"
         >
-          <span className="ek-shine block animate-ek-shine motion-reduce:animate-none">
+          <span className="ek-shine -mb-[0.12em] block animate-ek-shine pb-[0.12em] motion-reduce:animate-none">
             {headline.map((line) => (
               <span key={line} className="block">
                 {line}
