@@ -1,4 +1,4 @@
-import { Predicate } from "effect";
+import { Array as Arr, Predicate, String as Str } from "effect";
 
 type Parameter = { readonly type: string; readonly components?: readonly Parameter[] };
 type AbiItem = {
@@ -11,20 +11,18 @@ type AbiItem = {
 
 /** Whether a runtime value is an ABI, which the report prints one signature per line. */
 export const isAbi = (value: unknown): value is readonly AbiItem[] =>
-  Array.isArray(value) &&
+  Arr.isArray(value) &&
   value.length > 0 &&
-  value.every(
-    (item) => Predicate.isObjectOrArray(item) && Predicate.isString((item as AbiItem).type),
-  );
+  Arr.every(value, (item) => Predicate.hasProperty(item, "type") && Predicate.isString(item.type));
 
 const parameterType = (parameter: Parameter): string =>
-  parameter.type.startsWith("tuple")
-    ? `(${(parameter.components ?? []).map(parameterType).join(",")})${parameter.type.slice("tuple".length)}`
+  Str.startsWith("tuple")(parameter.type)
+    ? `(${Arr.join(Arr.map(parameter.components ?? [], parameterType), ",")})${Str.slice("tuple".length)(parameter.type)}`
     : parameter.type;
 
 /** One ABI item as `kind name(inputs) mutability returns (outputs)`. */
 export const formatAbiItem = (item: AbiItem): string => {
-  const inputs = (item.inputs ?? []).map(parameterType).join(",");
+  const inputs = Arr.join(Arr.map(item.inputs ?? [], parameterType), ",");
   const mutability =
     item.stateMutability === undefined || item.stateMutability === "nonpayable"
       ? ""
@@ -32,6 +30,6 @@ export const formatAbiItem = (item: AbiItem): string => {
   const outputs =
     item.outputs === undefined || item.outputs.length === 0
       ? ""
-      : ` returns (${item.outputs.map(parameterType).join(",")})`;
+      : ` returns (${Arr.join(Arr.map(item.outputs, parameterType), ",")})`;
   return `${item.type}${item.name === undefined ? "" : ` ${item.name}`}(${inputs})${mutability}${outputs}`;
 };

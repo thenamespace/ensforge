@@ -1,7 +1,19 @@
+// oxlint-disable-next-line effecttsgo/node-builtin-import -- synchronous digest of in-memory data; Effect has no hashing API
 import { createHash } from "node:crypto";
 
-import { Console, DateTime, Effect, FileSystem, Path, Schema } from "effect";
+import {
+  Array as Arr,
+  Console,
+  DateTime,
+  Effect,
+  FileSystem,
+  Formatter,
+  Path,
+  Record as Rec,
+  Schema,
+} from "effect";
 import { Argument, Command } from "effect/cli";
+import { HttpClient, HttpClientResponse } from "effect/http";
 
 import { CheckFailed, SetupError, ToolFailed } from "../errors.ts";
 import { Workspace } from "../services/Workspace.ts";
@@ -30,7 +42,7 @@ const indexers = {
   goldsky: ["https://ens-api.goldsky.com/openapi.json"],
 } as const;
 type Id = keyof typeof indexers;
-const ids = Object.keys(indexers) as Id[];
+const ids = Rec.keys(indexers);
 
 // Goldsky names some components differently, composes RegistryLabel (allOf) and has no
 // `/resolvers` route. Fields it leaves out decode as missing, so they are only reported.
@@ -42,16 +54,13 @@ const goldskyAliases: Readonly<Record<string, string>> = {
 const goldskySkipped = new Set(["RegistryLabel", "RoleHolderResolver"]);
 
 const fetchSpec = Effect.fn("openapi.fetchSpec")(function* (url: string) {
-  const text = yield* Effect.tryPromise({
-    try: async () => {
-      const response = await fetch(url);
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      return response.text();
-    },
-    catch: (cause) => new ToolFailed({ tool: `fetch ${url}`, output: String(cause) }),
-  });
+  const text = yield* HttpClient.get(url).pipe(
+    Effect.flatMap(HttpClientResponse.filterStatusOk),
+    Effect.flatMap((response) => response.text),
+    Effect.mapError((cause) => ToolFailed.make({ tool: `fetch ${url}`, output: String(cause) })),
+  );
   const spec = yield* decodeSpec(text).pipe(
-    Effect.mapError((cause) => new SetupError({ message: `${url}: ${String(cause)}` })),
+    Effect.mapError((cause) => SetupError.make({ message: `${url}: ${String(cause)}` })),
   );
   return { text, spec };
 });
@@ -61,15 +70,16 @@ const fetchSpec = Effect.fn("openapi.fetchSpec")(function* (url: string) {
  * contract); missing Goldsky fields are notes, except whole components.
  */
 const missing = (id: Id, spec: Spec, fields: Readonly<Record<string, readonly string[]>>) =>
-  Object.entries(fields).flatMap(([component, names]) => {
+  Arr.flatMap(Rec.toEntries(fields), ([component, names]) => {
     if (id === "goldsky" && goldskySkipped.has(component)) return [];
     const name = id === "goldsky" ? (goldskyAliases[component] ?? component) : component;
     const declared = spec.components.schemas[name]?.properties;
     if (declared === undefined)
       return [{ fatal: true, line: `${id}: component ${name} is missing` }];
-    return names
-      .filter((field) => !(field in declared))
-      .map((field) => ({ fatal: id === "bigname", line: `${id}: ${name}.${field} is missing` }));
+    return Arr.map(
+      Arr.filter(names, (field) => !(field in declared)),
+      (field) => ({ fatal: id === "bigname", line: `${id}: ${name}.${field} is missing` }),
+    );
   });
 
 /**
@@ -92,38 +102,40 @@ export const openapi = Effect.fn("openapi")(function* (mode: "check" | "drift" |
         const other = yield* fetchSpec(url);
         // bigname's Sepolia host can run an older build (e.g. without `/resolvers`).
         if (
-          Object.keys(primary.spec.components.schemas).join() !==
-          Object.keys(other.spec.components.schemas).join()
+          Arr.join(Rec.keys(primary.spec.components.schemas), ",") !==
+          Arr.join(Rec.keys(other.spec.components.schemas), ",")
         )
           yield* Console.warn(`${id}: ${url} declares different components`);
       }
       yield* fs.writeFileString(
         path.join(folder, `${id}.json`),
-        `${JSON.stringify(primary.spec, null, 2)}\n`,
+        `${Formatter.formatJson(primary.spec, { space: 2 })}\n`,
       );
+      const now = yield* DateTime.now;
       metadata[id] = {
         url: primaryUrl,
         version: primary.spec.info?.version ?? null,
         build: primary.spec.info?.["x-build-sha"] ?? null,
         sha256: createHash("sha256").update(primary.text).digest("hex"),
-        retrievedAt: DateTime.formatIso(yield* DateTime.now),
+        retrievedAt: DateTime.formatIso(now),
       };
     }
     yield* fs.writeFileString(
       path.join(folder, "metadata.json"),
-      `${JSON.stringify(metadata, null, 2)}\n`,
+      `${Formatter.formatJson(metadata, { space: 2 })}\n`,
     );
     return yield* Console.log("openapi: snapshots written; review the diff, then run check");
   }
 
   // Field names each built wire Schema decodes, by OpenAPI component.
   const wire = yield* Effect.tryPromise({
-    try: () => import(`file://${path.join(workspace.packageDir, "dist/internal/indexer/wire.js")}`),
-    catch: (cause) => new SetupError({ message: `Build the package first: ${String(cause)}` }),
+    try: (): Promise<Record<string, { readonly fields?: Record<string, unknown> }>> =>
+      import(`file://${path.join(workspace.packageDir, "dist/internal/indexer/wire.js")}`),
+    catch: (cause) => SetupError.make({ message: `Build the package first: ${String(cause)}` }),
   });
-  const fields = Object.fromEntries(
-    Object.entries(wire as Record<string, { readonly fields?: Record<string, unknown> }>).flatMap(
-      ([name, schema]) => (schema.fields === undefined ? [] : [[name, Object.keys(schema.fields)]]),
+  const fields = Rec.fromEntries(
+    Arr.flatMap(Rec.toEntries(wire), ([name, schema]) =>
+      schema.fields === undefined ? [] : [[name, Rec.keys(schema.fields)]],
     ),
   );
 
@@ -133,7 +145,9 @@ export const openapi = Effect.fn("openapi")(function* (mode: "check" | "drift" |
       mode === "check"
         ? yield* fs.readFileString(path.join(folder, `${id}.json`)).pipe(
             Effect.flatMap(decodeSpec),
-            Effect.mapError((cause) => new SetupError({ message: `${id}.json: ${String(cause)}` })),
+            Effect.mapError((cause) =>
+              SetupError.make({ message: `${id}.json: ${String(cause)}` }),
+            ),
           )
         : (yield* fetchSpec(indexers[id][0])).spec;
     for (const { fatal, line } of missing(id, spec, fields)) {
@@ -141,9 +155,9 @@ export const openapi = Effect.fn("openapi")(function* (mode: "check" | "drift" |
       else yield* Console.log(`note: ${line}`);
     }
   }
-  if (problems.length > 0) return yield* new CheckFailed({ check: "openapi", problems });
-  yield* Console.log(
-    `openapi: ok (${Object.keys(fields).length} components, ${mode === "check" ? "snapshots" : "live specs"})`,
+  if (problems.length > 0) return yield* CheckFailed.make({ check: "openapi", problems });
+  return yield* Console.log(
+    `openapi: ok (${Rec.keys(fields).length} components, ${mode === "check" ? "snapshots" : "live specs"})`,
   );
 });
 

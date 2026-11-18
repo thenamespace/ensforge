@@ -22,7 +22,13 @@ export const verify = Effect.fn("verify")(function* () {
   const { config } = workspace;
   const fixture = (name: string) => fs.exists(path.join(workspace.packageDir, "verify", name));
 
-  const checks = [
+  const checks: ReadonlyArray<
+    Effect.Effect<
+      void,
+      Effect.Error<ReturnType<typeof openapi | typeof codegen>>,
+      Effect.Services<ReturnType<typeof openapi | typeof codegen>>
+    >
+  > = [
     ...(config.codegen === undefined ? [] : [codegen(true)]),
     ...(config.api === undefined ? [] : [lintJsdoc(), apiReport(true)]),
     ...(config.effectFree !== undefined || (yield* fixture("consumer.ts")) ? [distTypes()] : []),
@@ -32,12 +38,14 @@ export const verify = Effect.fn("verify")(function* () {
 
   const problems: string[] = [];
   for (const check of checks) {
-    yield* Effect.catchTag(check, "CheckFailed", (failed) =>
-      Effect.sync(() => problems.push(`[${failed.check}]`, ...failed.problems)),
+    yield* check.pipe(
+      Effect.catchTag("CheckFailed", (failed) =>
+        Effect.sync(() => problems.push(`[${failed.check}]`, ...failed.problems)),
+      ),
     );
   }
-  if (problems.length > 0) return yield* new CheckFailed({ check: "verify", problems });
-  yield* Console.log(`verify: ok (${workspace.name})`);
+  if (problems.length > 0) return yield* CheckFailed.make({ check: "verify", problems });
+  return yield* Console.log(`verify: ok (${workspace.name})`);
 });
 
 export const verifyCommand = Command.make("verify", {}, () => verify()).pipe(

@@ -1,4 +1,4 @@
-import { Predicate } from "effect";
+import { Array as Arr, Order, Predicate, String as Str } from "effect";
 
 import { SyntaxKind } from "typescript/unstable/ast";
 import {
@@ -18,13 +18,9 @@ import { formatAbiItem, isAbi } from "./abi.ts";
 const typeFlags = 1 | 8_388_608 | 268_435_456 | 262_144;
 
 const valueAt = (module: unknown, path: string): unknown =>
-  path
-    .split(".")
-    .reduce<unknown>(
-      (value, key) =>
-        Predicate.isObjectKeyword(value) ? (value as Record<string, unknown>)[key] : undefined,
-      module,
-    );
+  Arr.reduce(Str.split(path, "."), module, (value, key) =>
+    Predicate.hasProperty(value, key) ? value[key] : undefined,
+  );
 
 /**
  * Every export of a declaration file, walking into namespaces (`export * as Errors`), with its
@@ -50,7 +46,7 @@ export const renderReport = (project: Project, file: string, runtime: unknown): 
         NodeBuilderFlags.UseSingleQuotesForStringLiteralType |
         NodeBuilderFlags.IgnoreErrors,
     );
-    return node === undefined ? "" : project.print(node).replaceAll(/\s*\n\s*/g, " ");
+    return node === undefined ? "" : Str.replaceAll(/\s*\n\s*/g, " ")(project.print(node));
   };
   const resolve = (symbol: TsSymbol) =>
     (symbol.flags & SymbolFlags.Alias) !== 0 ? checker.getAliasedSymbol(symbol) : symbol;
@@ -58,12 +54,11 @@ export const renderReport = (project: Project, file: string, runtime: unknown): 
   const describeType = (path: string, symbol: TsSymbol) => {
     const type = checker.getDeclaredTypeOfSymbol(symbol);
     if ((symbol.flags & SymbolFlags.Interface) !== 0) {
-      const members = checker
-        .getPropertiesOfType(type)
-        .map(
-          (member) =>
-            `  ${member.name}${(member.flags & SymbolFlags.Optional) !== 0 ? "?" : ""}: ${typeText(member)}`,
-        );
+      const members = Arr.map(
+        checker.getPropertiesOfType(type),
+        (member) =>
+          `  ${member.name}${(member.flags & SymbolFlags.Optional) !== 0 ? "?" : ""}: ${typeText(member)}`,
+      );
       lines.push(`interface ${path} {`, ...members, "}");
       return;
     }
@@ -73,20 +68,24 @@ export const renderReport = (project: Project, file: string, runtime: unknown): 
   const describeValue = (path: string, symbol: TsSymbol) => {
     const type = checker.getTypeOfSymbolAtLocation(symbol, source);
     if ((symbol.flags & SymbolFlags.Class) !== 0) {
-      const members = checker
-        .getPropertiesOfType(checker.getDeclaredTypeOfSymbol(symbol))
-        .filter((member) => !member.name.startsWith("#"))
-        .map((member) => `  ${member.name}: ${typeText(member)}`);
-      const constructors = checker
-        .getSignaturesOfType(type, SignatureKind.Construct)
-        .map((signature) => `  constructor${signatureText(signature)}`);
+      const members = Arr.map(
+        Arr.filter(
+          checker.getPropertiesOfType(checker.getDeclaredTypeOfSymbol(symbol)),
+          (member) => !Str.startsWith("#")(member.name),
+        ),
+        (member) => `  ${member.name}: ${typeText(member)}`,
+      );
+      const constructors = Arr.map(
+        checker.getSignaturesOfType(type, SignatureKind.Construct),
+        (signature) => `  constructor${signatureText(signature)}`,
+      );
       lines.push(`class ${path} {`, ...constructors, ...members, "}");
       return;
     }
 
     const value = valueAt(runtime, path);
     if (isAbi(value)) {
-      lines.push(`const ${path}: Abi`, ...value.map((item) => `  ${formatAbiItem(item)}`));
+      lines.push(`const ${path}: Abi`, ...Arr.map(value, (item) => `  ${formatAbiItem(item)}`));
       return;
     }
 
@@ -105,8 +104,8 @@ export const renderReport = (project: Project, file: string, runtime: unknown): 
 
   // `inherited`: the tag of the function or class whose namespace is walked (`getText.Options`).
   const walk = (prefix: string, symbols: Iterable<TsSymbol>, inherited?: string) => {
-    // oxlint-disable-next-line unicorn/no-array-sort -- sorts a fresh array
-    for (const exported of [...symbols].sort((a, b) => a.name.localeCompare(b.name))) {
+    const byName = Order.make<TsSymbol>((a, b) => Str.localeCompare(b.name)(a.name));
+    for (const exported of Arr.sort([...symbols], byName)) {
       const symbol = resolve(exported);
       const path = prefix === "" ? exported.name : `${prefix}.${exported.name}`;
 
@@ -137,8 +136,8 @@ export const renderReport = (project: Project, file: string, runtime: unknown): 
 
   // Types outside the entry's scope print as `import("/abs/path").Name`; keep only the name.
   // Unique-symbol keys print with a compiler-internal id (`__@name@123`) that changes between runs.
-  return lines
-    .join("\n")
-    .replaceAll(/import\((["'])[^"']+\1\)\./g, "")
-    .replaceAll(/__@(\w+)@\d+/g, "[$1]");
+  return Str.replaceAll(
+    /__@(\w+)@\d+/g,
+    "[$1]",
+  )(Str.replaceAll(/import\((["'])[^"']+\1\)\./g, "")(Arr.join(lines, "\n")));
 };

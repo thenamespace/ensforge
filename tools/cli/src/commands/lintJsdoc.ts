@@ -1,4 +1,4 @@
-import { Console, Effect, FileSystem, Path } from "effect";
+import { Array as Arr, Console, Effect, FileSystem, Path, String as Str } from "effect";
 import { Command } from "effect/cli";
 
 import { CheckFailed } from "../errors.ts";
@@ -22,11 +22,12 @@ export const lintJsdoc = Effect.fn("lintJsdoc")(function* () {
   const src = path.join(workspace.packageDir, "src");
 
   const relativePaths = yield* fs.readDirectory(src, { recursive: true });
-  const sourceFiles = relativePaths
-    .filter((file) => /\.tsx?$/.test(file))
-    .map((file) => path.join(src, file));
+  const sourceFiles = Arr.map(
+    Arr.filter(relativePaths, (file) => /\.tsx?$/.test(file)),
+    (file) => path.join(src, file),
+  );
   const project = yield* typescript.open(sourceFiles);
-  const entries = workspace.entriesOf(workspace.config.api).map((entry) => entry.source);
+  const entries = Arr.map(workspace.entriesOf(workspace.config.api), (entry) => entry.source);
 
   // The package's own error classes plus the sdk's, which extension packages also throw.
   const errorClasses = new Set<string>();
@@ -35,7 +36,8 @@ export const lintJsdoc = Effect.fn("lintJsdoc")(function* () {
     path.join(workspace.root, "packages/sdk/src/errors/classes"),
   ]) {
     if (!(yield* fs.exists(folder))) continue;
-    for (const file of yield* fs.readDirectory(folder)) errorClasses.add(file.replace(/\.ts$/, ""));
+    for (const file of yield* fs.readDirectory(folder))
+      errorClasses.add(Str.replace(/\.ts$/, "")(file));
   }
 
   const existing = new Set(sourceFiles);
@@ -43,38 +45,46 @@ export const lintJsdoc = Effect.fn("lintJsdoc")(function* () {
   const actionsFolder = path.join(src, "actions");
   const actionFiles = actionFilesOf(
     actionsFolder,
-    relativePaths.filter((file) => file.startsWith("actions/")).map((file) => file.slice(8)),
+    Arr.map(
+      Arr.filter(relativePaths, (file) => Str.startsWith("actions/")(file)),
+      (file) => Str.slice(8)(file),
+    ),
   );
   const exported = exportedPaths(
     project,
-    workspace.entries.map((entry) => entry.source),
+    Arr.map(workspace.entries, (entry) => entry.source),
   );
 
   const untagged = untaggedExports(
     project,
-    workspace.entries.map((entry) => ({
-      name: `${workspace.name}${entry.subpath.slice(1)}`,
+    Arr.map(workspace.entries, (entry) => ({
+      name: `${workspace.name}${Str.slice(1)(entry.subpath)}`,
       source: entry.source,
     })),
   );
 
-  const problems = [
-    ...declarations.problems.map(([file, message]) => [file, message] as const),
+  const located: ReadonlyArray<readonly [string, string]> = [
+    ...Arr.map(declarations.problems, ([file, message]) => [file, message] as const),
     ...untagged,
-    ...actionFiles.flatMap((file) =>
-      checkActionFile(file, project.sourceFile(file), actionsFolder, errorClasses).map(
+    ...Arr.flatMap(actionFiles, (file: string) =>
+      Arr.map(
+        checkActionFile(file, project.sourceFile(file), actionsFolder, errorClasses),
         (message) => [file, message] as const,
       ),
     ),
-    ...sourceFiles
-      .filter((file) => !file.includes("/internal/"))
-      .flatMap((file) =>
-        brokenLinks(project, file, exported).map((message) => [file, message] as const),
-      ),
-  ].map(([file, message]) => `${path.relative(workspace.packageDir, file)}: ${message}`);
+    ...Arr.flatMap(
+      Arr.filter(sourceFiles, (file) => !Str.includes("/internal/")(file)),
+      (file: string) =>
+        Arr.map(brokenLinks(project, file, exported), (message) => [file, message] as const),
+    ),
+  ];
+  const problems = Arr.map(
+    located,
+    ([file, message]) => `${path.relative(workspace.packageDir, file)}: ${message}`,
+  );
 
-  if (problems.length > 0) return yield* new CheckFailed({ check: "lint-jsdoc", problems });
-  yield* Console.log(
+  if (problems.length > 0) return yield* CheckFailed.make({ check: "lint-jsdoc", problems });
+  return yield* Console.log(
     `lint-jsdoc: ok (${declarations.modules} modules, ${actionFiles.length} action files)`,
   );
 }, Effect.scoped);

@@ -1,4 +1,4 @@
-import { Console, Effect, FileSystem, Path } from "effect";
+import { Array as Arr, Console, Effect, FileSystem, Path, String as Str } from "effect";
 import { Command } from "effect/cli";
 
 import { CheckFailed } from "../errors.ts";
@@ -26,13 +26,13 @@ export const distTypes = Effect.fn("distTypes")(function* () {
       if (seen.has(file) || !(yield* fs.exists(file))) continue;
       seen.add(file);
       const text = yield* fs.readFileString(file);
-      for (const [, specifier = ""] of text.matchAll(/(?:from|import)\s*\(?\s*"([^"]+)"/g)) {
-        if (specifier === "effect" || specifier.startsWith("effect/"))
+      for (const [, specifier = ""] of Str.matchAll(/(?:from|import)\s*\(?\s*"([^"]+)"/g)(text)) {
+        if (specifier === "effect" || Str.startsWith("effect/")(specifier))
           problems.push(
             `${entry.name}: ${path.relative(workspace.packageDir, file)} imports "${specifier}"`,
           );
-        else if (specifier.startsWith("."))
-          pending.push(path.resolve(path.dirname(file), specifier.replace(/\.js$/, ".d.ts")));
+        else if (Str.startsWith(".")(specifier))
+          pending.push(path.resolve(path.dirname(file), Str.replace(/\.js$/, ".d.ts")(specifier)));
       }
     }
   }
@@ -70,9 +70,14 @@ export const distTypes = Effect.fn("distTypes")(function* () {
     }
   }
 
-  if (problems.length > 0) return yield* new CheckFailed({ check: "dist-types", problems });
-  yield* Console.log(
-    `dist-types: ok (effect-free: ${effectFree.map((entry) => entry.name).join(", ") || "none"}${hasConsumer ? "; consumer compiles" : ""})`,
+  if (problems.length > 0) return yield* CheckFailed.make({ check: "dist-types", problems });
+  return yield* Console.log(
+    `dist-types: ok (effect-free: ${
+      Arr.join(
+        Arr.map(effectFree, (entry) => entry.name),
+        ", ",
+      ) || "none"
+    }${hasConsumer ? "; consumer compiles" : ""})`,
   );
 });
 

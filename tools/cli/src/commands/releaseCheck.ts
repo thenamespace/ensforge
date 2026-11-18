@@ -1,4 +1,16 @@
-import { Console, DateTime, Effect, FileSystem, Path, Schema } from "effect";
+import {
+  Array as Arr,
+  Console,
+  DateTime,
+  Effect,
+  FileSystem,
+  Formatter,
+  Order,
+  Path,
+  Record as Rec,
+  Schema,
+  String as Str,
+} from "effect";
 import { Command, Flag } from "effect/cli";
 
 import { CheckFailed, SetupError, type ToolFailed } from "../errors.ts";
@@ -21,7 +33,7 @@ const PackageManifest = Schema.fromJsonString(
 const fail = (problems: readonly string[]) =>
   problems.length === 0
     ? Effect.void
-    : Effect.fail(new CheckFailed({ check: "release-check", problems }));
+    : Effect.fail(CheckFailed.make({ check: "release-check", problems }));
 
 /** The packages under `packages/` that are not private: what every release publishes. */
 const publishablePackages = Effect.fn("releaseCheck.publishablePackages")(
@@ -30,19 +42,20 @@ const publishablePackages = Effect.fn("releaseCheck.publishablePackages")(
     const path = yield* Path.Path;
     const packagesDir = path.join(root, "packages");
     const found = [];
-    for (const folder of (yield* fs.readDirectory(packagesDir)).toSorted()) {
+    const folders = yield* fs.readDirectory(packagesDir);
+    for (const folder of Arr.sort(folders, Order.String)) {
       const dir = path.join(packagesDir, folder);
       const file = path.join(dir, "package.json");
       if (!(yield* fs.exists(file))) continue;
       const manifest = yield* fs.readFileString(file).pipe(
         Effect.flatMap(Schema.decodeUnknownEffect(PackageManifest)),
-        Effect.mapError((cause) => new SetupError({ message: `${file}: ${String(cause)}` })),
+        Effect.mapError((cause) => SetupError.make({ message: `${file}: ${String(cause)}` })),
       );
       if (manifest.private !== true) found.push({ dir, manifest });
     }
     return found;
   },
-  Effect.catchTag("PlatformError", (cause) => new SetupError({ message: String(cause) })),
+  Effect.catchTag("PlatformError", (cause) => SetupError.make({ message: String(cause) })),
 );
 
 /**
@@ -72,7 +85,7 @@ export const releaseCheck = Effect.fn("releaseCheck")(
         Effect.as<readonly string[]>([]),
         Effect.catchTags({
           CheckFailed: (failed) => Effect.succeed(failed.problems),
-          ToolFailed: (failed) => Effect.succeed([`${failed.tool}:`, failed.output.trim()]),
+          ToolFailed: (failed) => Effect.succeed([`${failed.tool}:`, Str.trim(failed.output)]),
         }),
         Effect.tap((problems) => Effect.sync(() => checks.push({ name, problems }))),
         Effect.map((problems) => problems.length === 0),
@@ -84,7 +97,7 @@ export const releaseCheck = Effect.fn("releaseCheck")(
         ...readProblems,
         ...planProblems(
           releases,
-          packages.map(({ manifest }) => manifest.name),
+          Arr.map(packages, ({ manifest }) => manifest.name),
           integrities,
         ),
       ]),
@@ -106,18 +119,17 @@ export const releaseCheck = Effect.fn("releaseCheck")(
         );
       }
 
-      const peers = Object.assign(
-        {},
-        ...packages.map(({ manifest }) => manifest.peerDependencies ?? {}),
-      ) as Record<string, string>;
+      const peers = Rec.fromEntries(
+        Arr.flatMap(packages, ({ manifest }) => Rec.toEntries(manifest.peerDependencies ?? {})),
+      );
       const manifests = consumerManifests(releases, tarballOf, peers);
       yield* fs.writeFileString(
         path.join(consumer, "package.json"),
-        JSON.stringify(manifests.packageJson, null, 2),
+        Formatter.formatJson(manifests.packageJson, { space: 2 }),
       );
       yield* fs.writeFileString(
         path.join(consumer, "pnpm-workspace.yaml"),
-        JSON.stringify(manifests.workspace, null, 2),
+        Formatter.formatJson(manifests.workspace, { space: 2 }),
       );
       // No lockfile exists yet; pnpm defaults to a frozen lockfile in CI.
       const installed = yield* step(
@@ -133,7 +145,7 @@ export const releaseCheck = Effect.fn("releaseCheck")(
           const file = path.join(consumer, "node_modules", release.name, "package.json");
           const manifest = yield* fs.readFileString(file).pipe(
             Effect.flatMap(Schema.decodeUnknownEffect(PackageManifest)),
-            Effect.mapError((cause) => new SetupError({ message: `${file}: ${String(cause)}` })),
+            Effect.mapError((cause) => SetupError.make({ message: `${file}: ${String(cause)}` })),
           );
           specifiers.push(...publicEntries(release.name, manifest.exports ?? {}));
         }
@@ -175,59 +187,61 @@ export const releaseCheck = Effect.fn("releaseCheck")(
         const budgets = yield* readBudgets(workspace.root);
         yield* step(
           "bundle budgets",
-          Effect.forEach(Object.entries(scenarios), ([name, [, source]], index) =>
-            measure(path.join(consumer, "bundles", String(index)), source).pipe(
-              Effect.catchTag("PlatformError", Effect.die),
-              Effect.map((size) => [name, size] as const),
-            ),
+          Effect.forEach(
+            Rec.toEntries(scenarios),
+            ([name, [, source]], index) =>
+              measure(path.join(consumer, "bundles", String(index)), source).pipe(
+                Effect.catchTag("PlatformError", Effect.die),
+                Effect.map((size) => [name, size] as const),
+              ),
+            { concurrency: 1 },
           ).pipe(Effect.flatMap((sizes) => fail(overBudget(sizes, budgets)))),
         );
       }
     }
 
     const after = yield* checksums(packDir, "verification.json");
-    const changed = [...new Set([...before.keys(), ...after.keys()])].filter(
+    const changed = Arr.filter(
+      [...new Set([...before.keys(), ...after.keys()])],
       (file) => before.get(file) !== after.get(file),
     );
     yield* step(
       "pack dir unchanged",
-      fail(changed.map((file) => `${file} changed during the check`)),
+      fail(Arr.map(changed, (file) => `${file} changed during the check`)),
     );
 
     const packed = [];
     for (const release of releases) {
       const file = path.join(packDir, release.tarball);
+      const exists = yield* fs.exists(file);
+      const bytes = exists ? yield* fs.readFile(file) : undefined;
       packed.push({
         ...release,
-        npmIntegrity: (yield* fs.exists(file))
-          ? integrityOf("sha512", yield* fs.readFile(file))
-          : null,
+        npmIntegrity: bytes === undefined ? null : integrityOf("sha512", bytes),
       });
     }
-    const problems = checks.flatMap((check) =>
+    const problems = Arr.flatMap(checks, (check) =>
       check.problems.length === 0 ? [] : [`[${check.name}]`, ...check.problems],
     );
-    yield* fs.writeFileString(
-      reportFile,
-      `${JSON.stringify(
-        {
-          ok: problems.length === 0,
-          checkedAt: DateTime.formatIso(yield* DateTime.now),
-          packages: packed,
-          checks: checks.map((check) => ({ ...check, ok: check.problems.length === 0 })),
-        },
-        null,
-        2,
-      )}\n`,
+    const now = yield* DateTime.now;
+    const report = Formatter.formatJson(
+      {
+        ok: problems.length === 0,
+        checkedAt: DateTime.formatIso(now),
+        packages: packed,
+        checks: Arr.map(checks, (check) => ({ ...check, ok: check.problems.length === 0 })),
+      },
+      { space: 2 },
     );
+    yield* fs.writeFileString(reportFile, `${report}\n`);
 
     for (const check of checks)
       yield* Console.log(`${check.problems.length === 0 ? "ok  " : "FAIL"}  ${check.name}`);
-    if (problems.length > 0) return yield* new CheckFailed({ check: "release-check", problems });
-    yield* Console.log(`release-check: ok (${releases.length} packages, ${reportFile})`);
+    if (problems.length > 0) return yield* CheckFailed.make({ check: "release-check", problems });
+    return yield* Console.log(`release-check: ok (${releases.length} packages, ${reportFile})`);
   },
   Effect.scoped,
-  Effect.catchTag("PlatformError", (cause) => new SetupError({ message: String(cause) })),
+  Effect.catchTag("PlatformError", (cause) => SetupError.make({ message: String(cause) })),
 );
 
 export const releaseCheckCommand = Command.make(

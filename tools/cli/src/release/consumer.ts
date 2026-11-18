@@ -1,3 +1,5 @@
+import { Array as Arr, String as Str, Record as Rec } from "effect";
+
 import type { PackedRelease } from "./packDir.ts";
 
 /**
@@ -12,11 +14,11 @@ export const consumerManifests = (
   tarballOf: (release: PackedRelease) => string,
   peers: Readonly<Record<string, string>>,
 ) => {
-  const tarballs = Object.fromEntries(
-    releases.map((release) => [release.name, `file:${tarballOf(release)}`]),
+  const tarballs = Rec.fromEntries(
+    Arr.map(releases, (release) => [release.name, `file:${tarballOf(release)}`]),
   );
-  const dependencies: Record<string, string> = Object.fromEntries(
-    Object.entries(peers).filter(([name]) => !(name in tarballs)),
+  const dependencies: Record<string, string> = Rec.fromEntries(
+    Arr.filter(Rec.toEntries(peers), ([name]) => !(name in tarballs)),
   );
   // React's types ship separately; the react package's declarations need them.
   if (peers.react !== undefined) dependencies["@types/react"] = peers.react;
@@ -33,20 +35,33 @@ export const consumerManifests = (
 
 /** Import specifiers of a package's published exports, without `./package.json` and patterns. */
 export const publicEntries = (name: string, exports: Readonly<Record<string, unknown>>) =>
-  Object.keys(exports)
-    .filter((subpath) => subpath !== "./package.json" && !subpath.includes("*"))
-    .map((subpath) => (subpath === "." ? name : `${name}/${subpath.slice(2)}`));
+  Arr.map(
+    Arr.filter(
+      Rec.keys(exports),
+      (subpath) => subpath !== "./package.json" && !Str.includes("*")(subpath),
+    ),
+    (subpath) => (subpath === "." ? name : `${name}/${Str.slice(2)(subpath)}`),
+  );
 
 /**
  * A module importing every entry: run by Node as `.mjs`, compiled by tsc as `.ts`. An entry that
  * exports nothing is reported by the `.mjs` run.
  */
 export const entriesModule = (specifiers: readonly string[]) =>
-  [
-    ...specifiers.map((specifier, index) => `import * as entry${index} from "${specifier}";`),
-    "",
-    `const entries = { ${specifiers.map((specifier, index) => `"${specifier}": entry${index}`).join(", ")} };`,
-    "const empty = Object.entries(entries).filter(([, entry]) => Object.keys(entry).length === 0);",
-    'if (empty.length > 0) throw new Error("no exports: " + empty.map(([name]) => name).join(", "));',
-    "",
-  ].join("\n");
+  Arr.join(
+    [
+      ...Arr.map(
+        specifiers,
+        (specifier, index) => `import * as entry${index} from "${specifier}";`,
+      ),
+      "",
+      `const entries = { ${Arr.join(
+        Arr.map(specifiers, (specifier, index) => `"${specifier}": entry${index}`),
+        ", ",
+      )} };`,
+      "const empty = Object.entries(entries).filter(([, entry]) => Object.keys(entry).length === 0);",
+      'if (empty.length > 0) throw new Error("no exports: " + empty.map(([name]) => name).join(", "));',
+      "",
+    ],
+    "\n",
+  );

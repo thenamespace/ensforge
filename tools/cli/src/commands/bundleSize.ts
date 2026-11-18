@@ -1,6 +1,16 @@
 import { gzipSync } from "node:zlib";
 
-import { Console, Effect, FileSystem, Path, Schema } from "effect";
+import {
+  Array as Arr,
+  Console,
+  Effect,
+  FileSystem,
+  Formatter,
+  Path,
+  Record as Rec,
+  Schema,
+  String as Str,
+} from "effect";
 import { Command, Flag } from "effect/cli";
 
 import { build } from "rolldown";
@@ -36,7 +46,7 @@ export const readBudgets = Effect.fn("bundleSize.readBudgets")(function* (root: 
   const budgetsFile = path.join(root, ".config/bundle-budgets.json");
   return yield* fs.readFileString(budgetsFile).pipe(
     Effect.flatMap(Schema.decodeUnknownEffect(Budgets)),
-    Effect.mapError((cause) => new SetupError({ message: `${budgetsFile}: ${String(cause)}` })),
+    Effect.mapError((cause) => SetupError.make({ message: `${budgetsFile}: ${String(cause)}` })),
   );
 });
 
@@ -45,7 +55,7 @@ export const overBudget = (
   sizes: ReadonlyArray<readonly [name: string, size: number]>,
   budgets: Readonly<Record<string, number>>,
 ) =>
-  sizes.flatMap(([name, size]) => {
+  Arr.flatMap(sizes, ([name, size]) => {
     const budget = budgets[name];
     return budget === undefined || size > budget * 1.05
       ? [`${name}: ${size} B gzip (budget ${budget ?? "none"} B)`]
@@ -69,18 +79,18 @@ export const measure = Effect.fn("bundleSize.measure")(function* (folder: string
         input: path.join(folder, "entry.mjs"),
         external: (id) =>
           id === "viem" ||
-          id.startsWith("viem/") ||
+          Str.startsWith("viem/")(id) ||
           id === "react" ||
-          id.startsWith("react/") ||
+          Str.startsWith("react/")(id) ||
           id === "react-dom",
         output: { format: "esm", minify: true },
         write: false,
         logLevel: "silent",
       }),
-    catch: (cause) => new ToolFailed({ tool: "rolldown", output: String(cause) }),
+    catch: (cause) => ToolFailed.make({ tool: "rolldown", output: String(cause) }),
   });
 
-  const chunks = new Map(result.output.map((chunk) => [chunk.fileName, chunk]));
+  const chunks = new Map(Arr.map(result.output, (chunk) => [chunk.fileName, chunk]));
   const initial = new Set<string>();
   const visit = (fileName: string) => {
     const chunk = chunks.get(fileName);
@@ -91,12 +101,13 @@ export const measure = Effect.fn("bundleSize.measure")(function* (folder: string
   for (const chunk of result.output)
     if (chunk.type === "chunk" && chunk.isEntry) visit(chunk.fileName);
 
-  const code = [...initial]
-    .map((fileName) => {
+  const code = Arr.join(
+    Arr.map([...initial], (fileName) => {
       const chunk = chunks.get(fileName);
       return chunk?.type === "chunk" ? chunk.code : "";
-    })
-    .join("");
+    }),
+    "",
+  );
   return gzipSync(code).length;
 });
 
@@ -111,7 +122,7 @@ export const bundleSize = Effect.fn("bundleSize")(function* (write: boolean) {
   const budgets = write ? {} : yield* readBudgets(workspace.root);
 
   const sizes = yield* Effect.forEach(
-    Object.entries(scenarios),
+    Rec.toEntries(scenarios),
     ([name, [pkg, source]], index) =>
       measure(
         path.join(workspace.root, "packages", pkg, `node_modules/.cache/bundle-size/${index}`),
@@ -120,18 +131,19 @@ export const bundleSize = Effect.fn("bundleSize")(function* (write: boolean) {
     { concurrency: "unbounded" },
   );
 
-  for (const [name, size] of sizes) yield* Console.log(`${String(size).padStart(8)} B  ${name}`);
+  for (const [name, size] of sizes)
+    yield* Console.log(`${Str.padStart(8)(String(size))} B  ${name}`);
   if (write) {
     yield* fs.writeFileString(
       path.join(workspace.root, ".config/bundle-budgets.json"),
-      `${JSON.stringify(Object.fromEntries(sizes), null, 2)}\n`,
+      `${Formatter.formatJson(Rec.fromEntries(sizes), { space: 2 })}\n`,
     );
     return yield* Console.log("bundle-size: budgets written");
   }
 
   const problems = overBudget(sizes, budgets);
-  if (problems.length > 0) return yield* new CheckFailed({ check: "bundle-size", problems });
-  yield* Console.log("bundle-size: ok");
+  if (problems.length > 0) return yield* CheckFailed.make({ check: "bundle-size", problems });
+  return yield* Console.log("bundle-size: ok");
 });
 
 export const bundleSizeCommand = Command.make(

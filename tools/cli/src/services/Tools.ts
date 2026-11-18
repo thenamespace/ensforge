@@ -1,4 +1,4 @@
-import { Context, Effect, Layer, Stream } from "effect";
+import { Array as Arr, Context, Effect, Layer, Stream } from "effect";
 import { ChildProcess, ChildProcessSpawner } from "effect/process";
 
 import { ToolFailed } from "../errors.ts";
@@ -25,8 +25,8 @@ export class Tools extends Context.Service<
         args: readonly string[],
         options: { readonly cwd?: string; readonly inherit?: boolean } = {},
       ) {
-        const tool = [command, ...args.slice(0, 2)].join(" ");
-        const failed = (output: string) => new ToolFailed({ tool, output });
+        const tool = Arr.join([command, ...args.slice(0, 2)], " ");
+        const failed = (output: string) => ToolFailed.make({ tool, output });
         const handle = yield* spawner
           .spawn(
             ChildProcess.make(command, [...args], {

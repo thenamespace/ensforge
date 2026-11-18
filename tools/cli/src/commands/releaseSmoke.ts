@@ -1,7 +1,18 @@
+// oxlint-disable-next-line effecttsgo/node-builtin-import -- synchronous digest of in-memory data; Effect has no hashing API
 import { createHash } from "node:crypto";
 
-import { Console, Effect, FileSystem, Path, Schedule, Schema } from "effect";
+import {
+  Array as Arr,
+  Console,
+  Effect,
+  FileSystem,
+  Path,
+  Schedule,
+  Schema,
+  String as Str,
+} from "effect";
 import { Command, Flag } from "effect/cli";
+import { HttpClient, HttpClientResponse } from "effect/http";
 
 import { CheckFailed, SetupError, ToolFailed } from "../errors.ts";
 import { integrityOf, planProblems, readPackDir } from "../release/packDir.ts";
@@ -20,14 +31,14 @@ const PublishedVersion = Schema.Struct({
 // Transient registry and CDN failures are retried; a missing version fails after the retries.
 const download = Effect.fn("releaseSmoke.download")(
   function* (url: string) {
-    return yield* Effect.tryPromise({
-      try: async () => {
-        const response = await fetch(url);
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        return new Uint8Array(await response.arrayBuffer());
-      },
-      catch: (cause) => new ToolFailed({ tool: `fetch ${url}`, output: String(cause) }),
-    });
+    return yield* HttpClient.get(url).pipe(
+      Effect.flatMap(HttpClientResponse.filterStatusOk),
+      Effect.flatMap((response) => response.arrayBuffer),
+      Effect.mapBoth({
+        onSuccess: (buffer) => new Uint8Array(buffer),
+        onFailure: (cause) => ToolFailed.make({ tool: `fetch ${url}`, output: String(cause) }),
+      }),
+    );
   },
   Effect.retry({ times: 3, schedule: Schedule.exponential("2 seconds") }),
 );
@@ -38,7 +49,9 @@ const downloadJson = <S extends Schema.Top>(url: string, schema: S) =>
       Schema.decodeEffect(Schema.fromJsonString(schema))(new TextDecoder().decode(bytes)),
     ),
     Effect.mapError((cause) =>
-      cause._tag === "ToolFailed" ? cause : new SetupError({ message: `${url}: ${String(cause)}` }),
+      cause._tag === "ToolFailed"
+        ? cause
+        : SetupError.make({ message: `${url}: ${String(cause)}` }),
     ),
   );
 
@@ -61,12 +74,12 @@ export const releaseSmoke = Effect.fn("releaseSmoke")(function* (
     ...readProblems,
     ...planProblems(
       releases,
-      releases.map((release) => release.name),
+      Arr.map(releases, (release) => release.name),
       integrities,
     ),
   ];
   if (releases.length === 0) problems.push("the publish plan releases nothing");
-  if (problems.length > 0) return yield* new CheckFailed({ check: "release-smoke", problems });
+  if (problems.length > 0) return yield* CheckFailed.make({ check: "release-smoke", problems });
 
   for (const release of releases) {
     const id = `${release.name}@${release.version}`;
@@ -74,7 +87,7 @@ export const releaseSmoke = Effect.fn("releaseSmoke")(function* (
     const packedIntegrity = integrityOf("sha512", packed);
 
     const published = yield* downloadJson(
-      `${registry}/${release.name.replace("/", "%2f")}/${release.version}`,
+      `${registry}/${Str.replace("/", "%2f")(release.name)}/${release.version}`,
       PublishedVersion,
     );
     if (published.dist.integrity !== packedIntegrity)
@@ -100,8 +113,8 @@ export const releaseSmoke = Effect.fn("releaseSmoke")(function* (
     yield* Console.log(`checked ${id}`);
   }
 
-  if (problems.length > 0) return yield* new CheckFailed({ check: "release-smoke", problems });
-  yield* Console.log(
+  if (problems.length > 0) return yield* CheckFailed.make({ check: "release-smoke", problems });
+  return yield* Console.log(
     `release-smoke: ok (${releases.length} packages${provenance ? ", provenance" : ""})`,
   );
 });

@@ -1,4 +1,4 @@
-import { Console, Effect, FileSystem, Path } from "effect";
+import { Console, Effect, FileSystem, Formatter, Option, Path, String as Str } from "effect";
 import { Command } from "effect/cli";
 
 import { CheckFailed } from "../errors.ts";
@@ -25,10 +25,9 @@ export const examples = Effect.fn("examples")(function* () {
   let count = 0;
   for (const file of yield* fs.readDirectory(src, { recursive: true })) {
     if (!/\.tsx?$/.test(file)) continue;
-    const base = file.replaceAll("/", "__").replace(/\.tsx?$/, "");
-    for (const [index, example] of examplesOf(
-      yield* fs.readFileString(path.join(src, file)),
-    ).entries()) {
+    const base = Str.replace(/\.tsx?$/, "")(Str.replaceAll("/", "__")(file));
+    const source = yield* fs.readFileString(path.join(src, file));
+    for (const [index, example] of examplesOf(source).entries()) {
       yield* fs.writeFileString(
         path.join(out, `${base}__${index + 1}.${example.extension}`),
         toModule(example.code),
@@ -39,7 +38,7 @@ export const examples = Effect.fn("examples")(function* () {
 
   yield* fs.writeFileString(
     path.join(out, "tsconfig.json"),
-    JSON.stringify({
+    Formatter.formatJson({
       extends: path.join(workspace.packageDir, "tsconfig.json"),
       compilerOptions: {
         rootDir: workspace.packageDir,
@@ -57,15 +56,14 @@ export const examples = Effect.fn("examples")(function* () {
       cwd: workspace.packageDir,
     })
     .pipe(
-      Effect.mapError(
-        ({ output }) =>
-          new CheckFailed({
-            check: "examples",
-            problems: [
-              ...output.trim().split("\n"),
-              `${new Set(output.match(/[\w.-]+__\d+\.tsx?/g) ?? []).size} of ${count} examples fail to type-check`,
-            ],
-          }),
+      Effect.mapError(({ output }) =>
+        CheckFailed.make({
+          check: "examples",
+          problems: [
+            ...Str.split(Str.trim(output), "\n"),
+            `${new Set(Option.getOrElse(Str.match(/[\w.-]+__\d+\.tsx?/g)(output), () => [])).size} of ${count} examples fail to type-check`,
+          ],
+        }),
       ),
     );
   yield* Console.log(`examples: ok (${count} examples)`);

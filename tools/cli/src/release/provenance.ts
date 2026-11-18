@@ -1,4 +1,4 @@
-import { Option, Schema } from "effect";
+import { Array as Arr, Option, Schema, String as Str } from "effect";
 
 /** npm's `/-/npm/v1/attestations/<name>@<version>` response. */
 export const Attestations = Schema.Struct({
@@ -49,10 +49,12 @@ export const provenanceProblems = (
   release: { readonly name: string; readonly version: string; readonly sha512Hex: string },
 ) => {
   const id = `${release.name}@${release.version}`;
-  const provenance = attestations.attestations.find(
+  const found = Arr.findFirst(
+    attestations.attestations,
     (attestation) => attestation.predicateType === slsaProvenance,
   );
-  if (provenance === undefined) return [`${id}: no SLSA provenance attestation`];
+  if (Option.isNone(found)) return [`${id}: no SLSA provenance attestation`];
+  const provenance = found.value;
 
   const statement = decodeStatement(
     Buffer.from(provenance.bundle.dsseEnvelope.payload, "base64").toString("utf8"),
@@ -60,13 +62,14 @@ export const provenanceProblems = (
   if (Option.isNone(statement)) return [`${id}: unreadable provenance statement`];
 
   const problems: string[] = [];
-  const subject = `pkg:npm/${release.name.replace("@", "%40")}@${release.version}`;
-  const digests = statement.value.subject
-    .filter((entry) => entry.name === subject)
-    .map((entry) => entry.digest.sha512);
+  const subject = `pkg:npm/${Str.replace("@", "%40")(release.name)}@${release.version}`;
+  const digests = Arr.map(
+    Arr.filter(statement.value.subject, (entry) => entry.name === subject),
+    (entry) => entry.digest.sha512 ?? "",
+  );
   if (!digests.includes(release.sha512Hex))
     problems.push(
-      `${id}: provenance subject is not this tarball (${digests.join(", ") || "none"})`,
+      `${id}: provenance subject is not this tarball (${Arr.join(digests, ", ") || "none"})`,
     );
 
   const { workflow } = statement.value.predicate.buildDefinition.externalParameters;

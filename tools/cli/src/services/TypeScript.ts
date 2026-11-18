@@ -1,6 +1,16 @@
+// oxlint-disable-next-line effecttsgo/node-builtin-import -- synchronous digest of in-memory data; Effect has no hashing API
 import { createHash } from "node:crypto";
 
-import { Context, Effect, FileSystem, Layer, Path, type Scope } from "effect";
+import {
+  Context,
+  Effect,
+  FileSystem,
+  Formatter,
+  Layer,
+  Path,
+  String as Str,
+  type Scope,
+} from "effect";
 
 import type { Node, SourceFile } from "typescript/unstable/ast";
 import { API, type Checker, type Program } from "typescript/unstable/sync";
@@ -59,29 +69,27 @@ export class TypeScript extends Context.Service<
       const fs = yield* FileSystem.FileSystem;
       const path = yield* Path.Path;
       const tools = yield* Tools;
-      const tscBin = path.join(
-        path.dirname(
-          yield* Effect.sync(() => import.meta.resolve("typescript/package.json")).pipe(
-            Effect.flatMap((url) => path.fromFileUrl(new URL(url))),
-            Effect.orDie,
-          ),
-        ),
-        "bin/tsc",
+      const typescriptManifest = yield* Effect.sync(() =>
+        import.meta.resolve("typescript/package.json"),
+      ).pipe(
+        Effect.flatMap((url) => path.fromFileUrl(new URL(url))),
+        Effect.orDie,
       );
+      const tscBin = path.join(path.dirname(typescriptManifest), "bin/tsc");
 
       const writeConfig = Effect.fn("TypeScript.writeConfig")(
         function* (cwd: string, config: Readonly<Record<string, unknown>>) {
-          const text = JSON.stringify(config);
+          const text = Formatter.formatJson(config);
           const folder = path.join(cwd, "node_modules/.cache/ensforge-dev");
           const file = path.join(
             folder,
-            `tsconfig.${createHash("sha256").update(text).digest("hex").slice(0, 16)}.json`,
+            `tsconfig.${Str.slice(0, 16)(createHash("sha256").update(text).digest("hex"))}.json`,
           );
           yield* fs.makeDirectory(folder, { recursive: true });
           yield* fs.writeFileString(file, text);
           return file;
         },
-        Effect.mapError((cause) => new SetupError({ message: String(cause) })),
+        Effect.mapError((cause) => SetupError.make({ message: String(cause) })),
       );
 
       const open = Effect.fn("TypeScript.open")(function* (
@@ -99,7 +107,7 @@ export class TypeScript extends Context.Service<
         );
         const project = api.updateSnapshot({ openProjects: [config] }).getProjects()[0];
         if (project === undefined)
-          return yield* new SetupError({ message: `TypeScript could not open ${config}` });
+          return yield* SetupError.make({ message: `TypeScript could not open ${config}` });
 
         return {
           program: project.program,

@@ -1,4 +1,4 @@
-import { Console, Effect, FileSystem, Path } from "effect";
+import { Array as Arr, Console, Effect, FileSystem, Order, Path, String as Str } from "effect";
 import { Command, Flag } from "effect/cli";
 
 import { discover, type Layout } from "../codegen/discover.ts";
@@ -40,7 +40,7 @@ export const codegen = Effect.fn("codegen")(function* (check: boolean) {
   const path = yield* Path.Path;
 
   if (workspace.config.codegen === undefined)
-    return yield* new SetupError({
+    return yield* SetupError.make({
       message: `${workspace.name} has no "ensforge.codegen" setting.`,
     });
   const profile = workspace.config.codegen === "sdk" ? sdkProfile : extensionProfile;
@@ -59,11 +59,12 @@ export const codegen = Effect.fn("codegen")(function* (check: boolean) {
   }
 
   const project = yield* typescript.open(
-    layout.flatMap(({ domain, folders }) =>
-      folders.flatMap(({ folder, files }) =>
-        ["index.ts", "effect.ts"]
-          .filter((file) => files.includes(file))
-          .map((file) => path.join(actionsDir, domain, folder, file)),
+    Arr.flatMap(layout, ({ domain, folders }) =>
+      Arr.flatMap(folders, ({ folder, files }) =>
+        Arr.map(
+          Arr.filter(["index.ts", "effect.ts"], (file) => files.includes(file)),
+          (file) => path.join(actionsDir, domain, folder, file),
+        ),
       ),
     ),
   );
@@ -74,22 +75,25 @@ export const codegen = Effect.fn("codegen")(function* (check: boolean) {
         problems.push(`${domain}/${action.folder}: namespace ${action.name} has no ErrorType`);
     }
   }
-  if (problems.length > 0) return yield* new CheckFailed({ check: "codegen", problems });
+  if (problems.length > 0) return yield* CheckFailed.make({ check: "codegen", problems });
 
   // Each action's `ErrorType` in its hand-written index.ts is generated from its `@throws` tags.
-  const errorTypes = domains.flatMap(({ domain, actions }) =>
-    [...new Set(actions.map((action) => action.folder))].map((folder) => {
+  const errorTypes = Arr.flatMap(domains, ({ domain, actions }) =>
+    Arr.map([...new Set(Arr.map(actions, (action) => action.folder))], (folder) => {
       const file = `src/actions/${domain}/${folder}/index.ts`;
       let text = project.sourceFile(path.join(workspace.packageDir, file)).text;
-      const ranges = actions
-        .flatMap((action) =>
+      const ranges = Arr.sort(
+        Arr.flatMap(actions, (action) =>
           action.folder === folder && action.errorType !== undefined
             ? [{ ...action.errorType, type: errorType(action, actions, profile) }]
             : [],
-        )
-        .toSorted((a, b) => b.start - a.start);
+        ),
+        Order.flip(
+          Order.mapInput(Order.Number, (range: { readonly start: number }) => range.start),
+        ),
+      );
       for (const { start, end, type } of ranges)
-        text = text.slice(0, start) + type + text.slice(end);
+        text = Str.slice(0, start)(text) + type + Str.slice(end)(text);
       return [file, text] as const;
     }),
   );
@@ -99,7 +103,7 @@ export const codegen = Effect.fn("codegen")(function* (check: boolean) {
     ["src/actions/effect.ts", treeBarrel(domains, "effect", profile)],
     ["src/actions/decorators.ts", decorators(domains, profile)],
     ...(profile.batch ? [["src/actions/requests.ts", requestsTable(domains)] as const] : []),
-    ...domains.flatMap((entry) => [
+    ...Arr.flatMap(domains, (entry) => [
       [`src/actions/${entry.domain}/index.ts`, domainBarrel(entry)] as const,
       [`src/actions/${entry.domain}/effect.ts`, effectBarrel(entry, profile)] as const,
     ]),
@@ -120,7 +124,7 @@ export const codegen = Effect.fn("codegen")(function* (check: boolean) {
       "exec",
       "oxfmt",
       ...((yield* fs.exists(oxfmtConfig)) ? ["-c", oxfmtConfig] : []),
-      ...[...outputs.keys()].map((file) => path.join(stage, file)),
+      ...Arr.map([...outputs.keys()], (file) => path.join(stage, file)),
     ],
     { cwd: workspace.root },
   );
@@ -135,13 +139,13 @@ export const codegen = Effect.fn("codegen")(function* (check: boolean) {
   }
   yield* fs.remove(stage, { recursive: true, force: true });
   if (stale.length > 0) {
-    return yield* new CheckFailed({
+    return yield* CheckFailed.make({
       check: "codegen",
       problems: [...stale, "Generated files are stale; run `ensforge-dev codegen`."],
     });
   }
-  yield* Console.log(
-    `codegen: ok (${domains.length} domains, ${domains.flatMap((domain) => domain.actions).length} actions)`,
+  return yield* Console.log(
+    `codegen: ok (${domains.length} domains, ${Arr.flatMap(domains, (domain) => domain.actions).length} actions)`,
   );
 }, Effect.scoped);
 

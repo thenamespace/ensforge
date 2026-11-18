@@ -1,4 +1,14 @@
-import { Context, Effect, FileSystem, Layer, Path, Schema } from "effect";
+import {
+  Array as Arr,
+  Context,
+  Effect,
+  FileSystem,
+  Layer,
+  Path,
+  Record as Rec,
+  Schema,
+  String as Str,
+} from "effect";
 
 import { SetupError } from "../errors.ts";
 
@@ -61,25 +71,25 @@ export class Workspace extends Context.Service<
       while (!(yield* fs.exists(path.join(root, "pnpm-workspace.yaml")))) {
         const parent = path.dirname(root);
         if (parent === root)
-          return yield* new SetupError({ message: "Run inside the ensforge repository." });
+          return yield* SetupError.make({ message: "Run inside the ensforge repository." });
         root = parent;
       }
 
       const manifest = yield* fs.readFileString(path.join(packageDir, "package.json")).pipe(
         Effect.flatMap(Schema.decodeUnknownEffect(Schema.fromJsonString(Manifest))),
-        Effect.mapError((cause) => new SetupError({ message: `package.json: ${String(cause)}` })),
+        Effect.mapError((cause) => SetupError.make({ message: `package.json: ${String(cause)}` })),
       );
 
-      const entries = Object.entries(manifest.exports ?? {}).flatMap(([subpath, target]) => {
+      const entries = Arr.flatMap(Rec.toEntries(manifest.exports ?? {}), ([subpath, target]) => {
         const decoded = Schema.decodeUnknownOption(ExportTarget)(target);
         if (decoded._tag === "None") return [];
         const module = path.join(packageDir, decoded.value.default);
         return [
           {
             subpath,
-            name: subpath === "." ? "index" : subpath.slice(2),
+            name: subpath === "." ? "index" : Str.slice(2)(subpath),
             source: path.join(packageDir, decoded.value["workspace-source"]),
-            declaration: module.replace(/\.js$/, ".d.ts"),
+            declaration: Str.replace(/\.js$/, ".d.ts")(module),
             module,
           },
         ];
@@ -93,8 +103,8 @@ export class Workspace extends Context.Service<
         entries,
         config,
         entriesOf: (subpaths) =>
-          (subpaths ?? []).flatMap((subpath) =>
-            entries.filter((entry) => entry.subpath === subpath),
+          Arr.flatMap(subpaths ?? [], (subpath) =>
+            Arr.filter(entries, (entry) => entry.subpath === subpath),
           ),
       });
     }),

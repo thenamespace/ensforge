@@ -1,3 +1,5 @@
+import { String as Str, Array as Arr } from "effect";
+
 import * as ts from "typescript/unstable/ast";
 import { SymbolFlags, type Checker, type Symbol as TsSymbol } from "typescript/unstable/sync";
 
@@ -28,7 +30,7 @@ const tagOfDeclaration = (declaration: ts.Node): StabilityTag | undefined => {
   const source = statement.getSourceFile();
   const block = jsdocBlockOf(statement, source);
   const value = /^@stability\b[ \t]*(.*)$/m.exec(block === undefined ? "" : jsdocText(block))?.[1];
-  return value === undefined ? undefined : { value: value.trim(), file: source.fileName };
+  return value === undefined ? undefined : { value: Str.trim(value), file: source.fileName };
 };
 
 /**
@@ -64,7 +66,7 @@ const tagSiteOf = (checker: Checker, exported: TsSymbol): string | undefined => 
     if (
       declaration !== undefined &&
       !ts.isSourceFile(declaration) &&
-      !declaration.getSourceFile().fileName.includes("/node_modules/")
+      !Str.includes("/node_modules/")(declaration.getSourceFile().fileName)
     )
       site = declaration.getSourceFile().fileName;
     symbol =
@@ -99,12 +101,12 @@ export const untaggedExports = (
         const file = tagSiteOf(checker, exported) ?? entry;
         problems.set(`${file}:${path}`, [
           file,
-          `${path} (from ${entry}) has no @stability tag (${stabilities.join(", ")})`,
+          `${path} (from ${entry}) has no @stability tag (${Arr.join(stabilities, ", ")})`,
         ]);
       } else if (!(stabilities as readonly string[]).includes(tag.value)) {
         problems.set(`${tag.file}:${path}`, [
           tag.file,
-          `${path} (from ${entry}) has \`@stability ${tag.value}\`; use ${stabilities.join(", ")}`,
+          `${path} (from ${entry}) has \`@stability ${tag.value}\`; use ${Arr.join(stabilities, ", ")}`,
         ]);
       }
 

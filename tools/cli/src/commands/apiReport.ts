@@ -1,4 +1,4 @@
-import { Console, Effect, FileSystem, Path } from "effect";
+import { Array as Arr, Console, Effect, FileSystem, Path, String as Str } from "effect";
 import { Command, Flag } from "effect/cli";
 
 import { renderReport } from "../api-report/report.ts";
@@ -17,13 +17,16 @@ const reportOf = Effect.fn("apiReport.reportOf")(function* (entry: Entry) {
     ...project.program.getSemanticDiagnostics(),
   ];
   if (diagnostics.length > 0) {
-    return yield* new SetupError({
-      message: `${entry.name}: ${diagnostics.map((diagnostic) => diagnostic.text).join("\n")}`,
+    return yield* SetupError.make({
+      message: `${entry.name}: ${Arr.join(
+        Arr.map(diagnostics, (diagnostic) => diagnostic.text),
+        "\n",
+      )}`,
     });
   }
   const runtime = yield* Effect.tryPromise({
     try: () => import(new URL(`file://${entry.module}`).href),
-    catch: (cause) => new SetupError({ message: `${entry.module}: ${String(cause)}` }),
+    catch: (cause) => SetupError.make({ message: `${entry.module}: ${String(cause)}` }),
   });
   const body = renderReport(project, entry.declaration, runtime);
   const title = `${workspace.name}${entry.name === "index" ? "" : `/${entry.name}`}`;
@@ -40,7 +43,7 @@ export const apiReport = Effect.fn("apiReport")(function* (check: boolean) {
   const fs = yield* FileSystem.FileSystem;
   const path = yield* Path.Path;
   const folder = path.join(workspace.packageDir, "api");
-  const unscoped = workspace.name.split("/").at(-1) ?? workspace.name;
+  const unscoped = Str.split(workspace.name, "/").at(-1) ?? workspace.name;
   const entries = workspace.entriesOf(workspace.config.api);
 
   yield* fs.makeDirectory(folder, { recursive: true });
@@ -48,7 +51,7 @@ export const apiReport = Effect.fn("apiReport")(function* (check: boolean) {
   for (const entry of entries) {
     const report = yield* reportOf(entry);
     const name =
-      entry.name === "index" ? unscoped : `${unscoped}.${entry.name.replaceAll("/", "-")}`;
+      entry.name === "index" ? unscoped : `${unscoped}.${Str.replaceAll("/", "-")(entry.name)}`;
     const target = path.join(folder, `${name}.api.md`);
 
     if (!check) {
@@ -60,7 +63,7 @@ export const apiReport = Effect.fn("apiReport")(function* (check: boolean) {
   }
 
   if (stale.length > 0) {
-    return yield* new CheckFailed({
+    return yield* CheckFailed.make({
       check: "api-report",
       problems: [
         ...stale,
@@ -68,8 +71,11 @@ export const apiReport = Effect.fn("apiReport")(function* (check: boolean) {
       ],
     });
   }
-  yield* Console.log(
-    `api-report: ${check ? "ok" : "written"} (${entries.map((entry) => entry.name).join(", ")})`,
+  return yield* Console.log(
+    `api-report: ${check ? "ok" : "written"} (${Arr.join(
+      Arr.map(entries, (entry) => entry.name),
+      ", ",
+    )})`,
   );
 });
 

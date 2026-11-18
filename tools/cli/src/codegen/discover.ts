@@ -1,4 +1,7 @@
+// oxlint-disable-next-line effecttsgo/node-builtin-import -- pure synchronous path arithmetic in AST helpers that run outside Effect programs
 import { join } from "node:path";
+
+import { Array as Arr, Option, String as Str } from "effect";
 
 import * as ts from "typescript/unstable/ast";
 
@@ -28,7 +31,7 @@ export type Domain = {
 };
 
 export const isWrite = (action: Action): boolean =>
-  writeMethods.every((method) => action.properties.includes(method));
+  Arr.every(writeMethods, (method) => action.properties.includes(method));
 
 /**
  * Whether `action` signs and sends: a write, the `…Sync` form of one in the same folder
@@ -37,8 +40,9 @@ export const isWrite = (action: Action): boolean =>
 export const sends = (action: Action, actions: readonly Action[]): boolean =>
   isWrite(action) ||
   /^\s*\* @category writing$/m.test(action.jsdoc) ||
-  (action.name.endsWith("Sync") &&
-    actions.some(
+  (Str.endsWith("Sync")(action.name) &&
+    Arr.some(
+      actions,
       (other) =>
         other.folder === action.folder && `${other.name}Sync` === action.name && isWrite(other),
     ));
@@ -50,10 +54,11 @@ export const sends = (action: Action, actions: readonly Action[]): boolean =>
  */
 export const documentedErrors = (action: Action): readonly string[] => [
   ...new Set(
-    action.jsdoc
-      .split("\n")
-      .filter((line) => line.includes("@throws"))
-      .flatMap((line) => [...line.matchAll(/`Errors\.(\w+)`/g)].map(([, name]) => name ?? "")),
+    Arr.flatMap(
+      Arr.filter(Str.split(action.jsdoc, "\n"), (line) => Str.includes("@throws")(line)),
+      (line: string) =>
+        Arr.map([...Str.matchAll(/`Errors\.(\w+)`/g)(line)], ([, name]) => name ?? ""),
+    ),
   ),
 ];
 
@@ -102,11 +107,16 @@ const readActions = (project: Project, file: string, folder: string): Action[] =
       !ts.isModuleBlock(statement.body)
     )
       continue;
-    const aliases = statement.body.statements.filter(ts.isTypeAliasDeclaration);
+    const aliases = Arr.filter(statement.body.statements, ts.isTypeAliasDeclaration);
     const action = actions.get(statement.name.text);
     if (action === undefined) continue;
-    action.types.push(...aliases.map((alias) => alias.name.text));
-    const errorType = aliases.find((alias) => alias.name.text === "ErrorType")?.type;
+    action.types.push(...Arr.map(aliases, (alias) => alias.name.text));
+    const errorType = Option.getOrUndefined(
+      Option.map(
+        Arr.findFirst(aliases, (alias) => alias.name.text === "ErrorType"),
+        (alias) => alias.type,
+      ),
+    );
     if (errorType !== undefined)
       action.errorType = { start: errorType.getStart(source), end: errorType.getEnd() };
   }
@@ -125,13 +135,13 @@ const readActions = (project: Project, file: string, folder: string): Action[] =
 /** Exported value names of an action's effect.ts. */
 const readEffectExports = (project: Project, file: string): Set<string> =>
   new Set(
-    project
-      .sourceFile(file)
-      .statements.flatMap((statement) =>
-        ts.isVariableStatement(statement) && isExported(statement)
-          ? statement.declarationList.declarations.map((declaration) => declaration.name.getText())
-          : [],
-      ),
+    Arr.flatMap(project.sourceFile(file).statements, (statement) =>
+      ts.isVariableStatement(statement) && isExported(statement)
+        ? Arr.map(statement.declarationList.declarations, (declaration) =>
+            declaration.name.getText(),
+          )
+        : [],
+    ),
   );
 
 /**
@@ -145,12 +155,12 @@ export const discover = (
 ): { domains: Domain[]; problems: string[] } => {
   const problems: string[] = [];
 
-  const domains = layout.map(({ domain, folders }) => {
+  const domains = Arr.map(layout, ({ domain, folders }) => {
     // Top-level client members that an action group's name would shadow.
     if (["chain", "account", "deployment", "publicClient", "config", "extend"].includes(domain))
       problems.push(`domain "${domain}" uses a reserved client name`);
 
-    const actions = folders.flatMap(({ folder, files }) => {
+    const actions = Arr.flatMap(folders, ({ folder, files }) => {
       if (!files.includes("index.ts") || !files.includes("effect.ts")) {
         problems.push(`${domain}/${folder}: needs index.ts and effect.ts`);
         return [];

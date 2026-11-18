@@ -1,4 +1,7 @@
+// oxlint-disable-next-line effecttsgo/node-builtin-import -- pure synchronous path arithmetic in AST helpers that run outside Effect programs
 import { dirname, join } from "node:path";
+
+import { String as Str, Array as Arr } from "effect";
 
 import * as ts from "typescript/unstable/ast";
 
@@ -18,19 +21,22 @@ export const undocumentedExports = (
   const visited = new Set<string>();
 
   const resolveModule = (from: string, specifier: string): string | undefined => {
-    if (!specifier.startsWith(".")) return undefined;
-    const file = join(dirname(from), specifier.replace(/\.js$/, ".ts"));
+    if (!Str.startsWith(".")(specifier)) return undefined;
+    const file = join(dirname(from), Str.replace(/\.js$/, ".ts")(specifier));
     return exists(file) ? file : undefined;
   };
 
   const check = (file: string) => {
-    if (visited.has(file) || file.includes("/internal/")) return;
+    if (visited.has(file) || Str.includes("/internal/")(file)) return;
     visited.add(file);
     const source = project.sourceFile(file);
 
     for (const statement of source.statements) {
       if (ts.isExportDeclaration(statement) && statement.moduleSpecifier !== undefined) {
-        const target = resolveModule(file, (statement.moduleSpecifier as ts.StringLiteral).text);
+        const specifier = statement.moduleSpecifier;
+        const target = ts.isStringLiteral(specifier)
+          ? resolveModule(file, specifier.text)
+          : undefined;
         if (target !== undefined) check(target);
         continue;
       }
@@ -48,10 +54,10 @@ export const undocumentedExports = (
         isExported(statement) &&
         jsdocOf(statement, source) === undefined
       ) {
-        const names = statement.declarationList.declarations.map((declaration) =>
+        const names = Arr.map(statement.declarationList.declarations, (declaration) =>
           declaration.name.getText(source),
         );
-        problems.push([file, `${names.join(", ")} has no JSDoc`]);
+        problems.push([file, `${Arr.join(names, ", ")} has no JSDoc`]);
       }
     }
   };

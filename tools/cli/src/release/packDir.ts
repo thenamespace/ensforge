@@ -1,3 +1,4 @@
+// oxlint-disable-next-line effecttsgo/node-builtin-import -- synchronous digest of in-memory data; Effect has no hashing API
 import { createHash } from "node:crypto";
 
 import { Array as Arr, Effect, FileSystem, Order, Path, Schema } from "effect";
@@ -71,7 +72,7 @@ export const planProblems = (
 ) => {
   const problems: string[] = [];
   for (const name of publishable) {
-    const count = releases.filter((release) => release.name === name).length;
+    const count = Arr.filter(releases, (release) => release.name === name).length;
     if (count === 0) problems.push(`${name}: not in the publish plan`);
     if (count > 1) problems.push(`${name}: released ${count} times`);
   }
@@ -94,7 +95,7 @@ export const readPackDir = Effect.fn("readPackDir")(function* (packDir: string) 
 
   const plan = yield* fs.readFileString(planFile).pipe(
     Effect.flatMap(Schema.decodeUnknownEffect(Schema.fromJsonString(PublishPlan))),
-    Effect.mapError((cause) => new SetupError({ message: `${planFile}: ${String(cause)}` })),
+    Effect.mapError((cause) => SetupError.make({ message: `${planFile}: ${String(cause)}` })),
   );
   const { releases, problems } = packedReleases(plan);
 
@@ -103,9 +104,10 @@ export const readPackDir = Effect.fn("readPackDir")(function* (packDir: string) 
   for (const release of releases) {
     const file = path.join(packDir, release.tarball);
     const exists = yield* fs.exists(file).pipe(Effect.orDie);
+    const bytes = exists ? yield* fs.readFile(file).pipe(Effect.orDie) : undefined;
     integrities.set(
       release.tarball,
-      exists ? integrityOf("sha256", yield* fs.readFile(file).pipe(Effect.orDie)) : undefined,
+      bytes === undefined ? undefined : integrityOf("sha256", bytes),
     );
   }
   return { releases, problems, integrities };
@@ -119,8 +121,11 @@ export const checksums = Effect.fn("checksums")(function* (dir: string, except: 
   const sums = new Map<string, string>();
   for (const file of Arr.sort(files, Order.String)) {
     const full = path.join(dir, file);
-    if (file === except || (yield* fs.stat(full)).type !== "File") continue;
-    sums.set(file, integrityOf("sha256", yield* fs.readFile(full)));
+    if (file === except) continue;
+    const info = yield* fs.stat(full);
+    if (info.type !== "File") continue;
+    const bytes = yield* fs.readFile(full);
+    sums.set(file, integrityOf("sha256", bytes));
   }
   return sums;
 }, Effect.orDie);
