@@ -15,6 +15,7 @@ import { Command, Flag } from "effect/cli";
 
 import { CheckFailed, SetupError, type ToolFailed } from "../errors.ts";
 import { consumerManifests, entriesModule, publicEntries } from "../release/consumer.ts";
+import { contentProblems } from "../release/contents.ts";
 import { checksums, integrityOf, planProblems, readPackDir } from "../release/packDir.ts";
 import { Tools } from "../services/Tools.ts";
 import { TypeScript } from "../services/TypeScript.ts";
@@ -26,9 +27,21 @@ const PackageManifest = Schema.fromJsonString(
     name: Schema.String,
     private: Schema.optionalKey(Schema.Boolean),
     exports: Schema.optionalKey(Schema.Record(Schema.String, Schema.Unknown)),
+    dependencies: Schema.optionalKey(Schema.Record(Schema.String, Schema.String)),
+    optionalDependencies: Schema.optionalKey(Schema.Record(Schema.String, Schema.String)),
     peerDependencies: Schema.optionalKey(Schema.Record(Schema.String, Schema.String)),
   }),
 );
+
+const readManifest = Effect.fn("releaseCheck.readManifest")(function* (file: string) {
+  const fs = yield* FileSystem.FileSystem;
+  return yield* fs.readFileString(file).pipe(
+    Effect.flatMap(Schema.decodeUnknownEffect(PackageManifest)),
+    Effect.mapError((cause) => SetupError.make({ message: `${file}: ${String(cause)}` })),
+  );
+});
+
+const SourceMap = Schema.fromJsonString(Schema.Struct({ sources: Schema.Array(Schema.String) }));
 
 const fail = (problems: readonly string[]) =>
   problems.length === 0
@@ -47,10 +60,7 @@ const publishablePackages = Effect.fn("releaseCheck.publishablePackages")(
       const dir = path.join(packagesDir, folder);
       const file = path.join(dir, "package.json");
       if (!(yield* fs.exists(file))) continue;
-      const manifest = yield* fs.readFileString(file).pipe(
-        Effect.flatMap(Schema.decodeUnknownEffect(PackageManifest)),
-        Effect.mapError((cause) => SetupError.make({ message: `${file}: ${String(cause)}` })),
-      );
+      const manifest = yield* readManifest(file);
       if (manifest.private !== true) found.push({ dir, manifest });
     }
     return found;
@@ -61,7 +71,8 @@ const publishablePackages = Effect.fn("releaseCheck.publishablePackages")(
 /**
  * Verifies a `changeset pack` directory before it is published: the plan releases every
  * publishable package with a tarball matching its integrity; publint and attw pass on each
- * tarball; a throwaway app installs the tarballs, imports every public entry in Node and compiles
+ * tarball; each installed package ships its readme, license and changelog, nothing forbidden, and
+ * the sources its maps name; a throwaway app installs the tarballs, imports every public entry in Node and compiles
  * them (and each package's `verify/consumer.ts`) with `nodenext` resolution; the installed bundles
  * fit the budgets. Writes `<pack-dir>/verification.json` and never changes the plan or archives.
  */
@@ -140,12 +151,34 @@ export const releaseCheck = Effect.fn("releaseCheck")(
       );
 
       if (installed) {
+        for (const release of releases) {
+          const dir = path.join(consumer, "node_modules", release.name);
+          const entries = yield* fs.readDirectory(dir, { recursive: true });
+          const files = Arr.map(entries, Str.replaceAll(path.sep, "/"));
+          const mapSources = new Map<string, readonly string[]>();
+          for (const map of Arr.filter(files, Str.endsWith(".map"))) {
+            const sourceMap = yield* fs.readFileString(path.join(dir, map)).pipe(
+              Effect.flatMap(Schema.decodeUnknownEffect(SourceMap)),
+              Effect.mapError((cause) => SetupError.make({ message: `${map}: ${String(cause)}` })),
+            );
+            mapSources.set(map, sourceMap.sources);
+          }
+          const manifest = yield* readManifest(path.join(dir, "package.json"));
+          const dependencies = {
+            ...manifest.dependencies,
+            ...manifest.optionalDependencies,
+            ...manifest.peerDependencies,
+          };
+          yield* step(
+            `contents ${release.name}`,
+            fail(contentProblems(release.name, files, mapSources, dependencies)),
+          );
+        }
+
         const specifiers: string[] = [];
         for (const release of releases) {
-          const file = path.join(consumer, "node_modules", release.name, "package.json");
-          const manifest = yield* fs.readFileString(file).pipe(
-            Effect.flatMap(Schema.decodeUnknownEffect(PackageManifest)),
-            Effect.mapError((cause) => SetupError.make({ message: `${file}: ${String(cause)}` })),
+          const manifest = yield* readManifest(
+            path.join(consumer, "node_modules", release.name, "package.json"),
           );
           specifiers.push(...publicEntries(release.name, manifest.exports ?? {}));
         }

@@ -288,7 +288,8 @@ attaches provenance to each version.
 
 The same commands run locally after versioning: `pnpm release:pack --out-dir <dir>` builds and
 packs the unpublished versions, `pnpm release:check --pack-dir <dir>` verifies them (publint, attw,
-an app that installs the tarballs and imports and type-checks every entry, bundle budgets), and
+each package's contents — readme, license, changelog, the sources its maps name, nothing secret or
+pnpm-only — an app that installs the tarballs and imports and type-checks every entry, bundle budgets), and
 `pnpm release:smoke --pack-dir <dir> [--provenance]` compares npm with them.
 
 ### npm trusted publisher setup
