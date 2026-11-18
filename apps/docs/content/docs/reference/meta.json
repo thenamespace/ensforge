@@ -1,0 +1,17 @@
+{
+  "title": "Reference",
+  "description": "API reference of every package",
+  "root": "reference",
+  "pages": [
+    "index",
+    "sdk",
+    "react",
+    "hca",
+    "contracts",
+    "errors",
+    "---[intro]More---",
+    "entry-points",
+    "known-limitations",
+    "glossary"
+  ]
+}

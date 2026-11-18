@@ -5,7 +5,7 @@ keywords:
   [InterfaceIds, Roles, ERC-165, supportsInterface, role bitmap, EnhancedAccessControl, hasRoles]
 ---
 
-This guide covers two sets of constants. **Interface IDs** tell you what a contract is. **Role bitmaps** tell you what an account may do on an [ENSv2](/docs/sdk/reference/glossary#ensv2) [registry](/docs/sdk/reference/glossary#registry) or [resolver](/docs/sdk/reference/glossary#resolver). By the end you will have detected a resolver type and checked a role.
+This guide covers two sets of constants. **Interface IDs** tell you what a contract is. **Role bitmaps** tell you what an account may do on an [ENSv2](/docs/reference/glossary#ensv2) [registry](/docs/reference/glossary#registry) or [resolver](/docs/reference/glossary#resolver). By the end you will have detected a resolver type and checked a role.
 
 ## Prerequisites
 
@@ -42,11 +42,11 @@ const isPermissioned = await publicClient.readContract({
 });
 ```
 
-A resolver that does not support the ID returns `false`. Use `InterfaceIds.resolverProfiles.text` the same way to ask whether a resolver can store text [records](/docs/sdk/reference/glossary#record).
+A resolver that does not support the ID returns `false`. Use `InterfaceIds.resolverProfiles.text` the same way to ask whether a resolver can store text [records](/docs/reference/glossary#record).
 
 ## Read how roles are encoded
 
-In ENSv2, a registry or resolver grants [roles](/docs/sdk/reference/glossary#role) to accounts through EnhancedAccessControl. A role is one bit of a 256-bit number, and a set of roles is a bitmap you combine with `|`. Each role sits in its own nybble, and its **admin role**, which may grant that role, sits 128 bits higher.
+In ENSv2, a registry or resolver grants [roles](/docs/reference/glossary#role) to accounts through EnhancedAccessControl. A role is one bit of a 256-bit number, and a set of roles is a bitmap you combine with `|`. Each role sits in its own nybble, and its **admin role**, which may grant that role, sits 128 bits higher.
 
 | Constant                      | Holds                                                                                                                      |
 | ----------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
@@ -55,7 +55,7 @@ In ENSv2, a registry or resolver grants [roles](/docs/sdk/reference/glossary#rol
 | `Roles.registryBitmaps`       | Role sets: `unemancipated`, `regeneration` and `registration`.                                                             |
 | `Roles.enhancedAccessControl` | Masks for `allRoles` and `adminRoles`.                                                                                     |
 
-`Roles.registryBitmaps.registration` is the set the `.eth` [registrar](/docs/sdk/reference/glossary#registrar) grants a new [owner](/docs/sdk/reference/glossary#owner): changing the resolver and subregistry, their admin roles, and the admin role of transfers. Use it as a default for any new name an owner should control.
+`Roles.registryBitmaps.registration` is the set the `.eth` [registrar](/docs/reference/glossary#registrar) grants a new [owner](/docs/reference/glossary#owner): changing the resolver and subregistry, their admin roles, and the admin role of transfers. Use it as a default for any new name an owner should control.
 
 ## Check a role
 
@@ -89,7 +89,7 @@ For a resolver, `Roles.resolver.setText` and its siblings apply to a **resource*
 
 ## Which role bitmaps change a name's token
 
-`Roles.registryBitmaps.regeneration` lists the roles whose change regenerates a name's token ID. `Roles.registryBitmaps.unemancipated` lists the roles that, held by anyone but the sole owner, mean the name is not [emancipated](/docs/sdk/reference/glossary#emancipated). It leaves out the `renew` and `upgrade` roles. Mainnet WrapperRegistry follows these sets; the Sepolia WrapperRegistry build predates them.
+`Roles.registryBitmaps.regeneration` lists the roles whose change regenerates a name's token ID. `Roles.registryBitmaps.unemancipated` lists the roles that, held by anyone but the sole owner, mean the name is not [emancipated](/docs/reference/glossary#emancipated). It leaves out the `renew` and `upgrade` roles. Mainnet WrapperRegistry follows these sets; the Sepolia WrapperRegistry build predates them.
 
 <Callout type="info" title="Roles are ENSv2 only">
   Role bitmaps apply to ENSv2 registries and resolvers. ENSv1 names use owners, managers and Name
@@ -102,4 +102,4 @@ For a resolver, `Roles.resolver.setText` and its siblings apply to a **resource*
 
 The address may not implement ERC-165. Check that it is a contract and that you pass the interface ID as a four-byte hex value.
 
-See the [roles reference](/docs/contracts/reference/roles) and the [interface IDs reference](/docs/contracts/reference/interface-ids).
+See the [roles reference](/docs/reference/contracts/roles) and the [interface IDs reference](/docs/reference/contracts/interface-ids).

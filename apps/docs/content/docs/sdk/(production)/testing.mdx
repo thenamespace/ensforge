@@ -93,7 +93,7 @@ clear the account's code first with `testClient.setCode({ address, bytecode: "0x
 
 ## 4. Move time forward
 
-A registration waits for the registrar's [commitment](/docs/sdk/reference/glossary#commitment) age on chain time, and a fork's time only moves
+A registration waits for the registrar's [commitment](/docs/reference/glossary#commitment) age on chain time, and a fork's time only moves
 with its blocks. Use `onStep` to advance it when a step waits.
 
 **Example** (Skipping a registration wait)
@@ -130,9 +130,9 @@ after.
 
 Fast tests should not need a chain. Replace the parts that reach outside:
 
-- **An [indexer](/docs/sdk/reference/glossary#indexer).** `defineIndexer` builds an indexer from your own functions. See
+- **An [indexer](/docs/reference/glossary#indexer).** `defineIndexer` builds an indexer from your own functions. See
   [Custom indexers](/docs/sdk/custom-indexers).
-- **[Plan](/docs/sdk/reference/glossary#plan) storage.** The default `Plan.memoryStorage()` is already a fresh store per client. Pass
+- **[Plan](/docs/reference/glossary#plan) storage.** The default `Plan.memoryStorage()` is already a fresh store per client. Pass
   your own `Plan.Storage` to check what a write saves.
 - **Errors.** Error classes can be built directly, so you can test how your UI reacts.
 
@@ -162,15 +162,15 @@ Run your tests twice against the pinned fork. The second run should read the sam
 ### `UNKNOWN_CHAIN`
 
 The fork or devnet has a chain ID ensforge does not ship. Pass `deployment` to `Ensforge.create`.
-See [`UNKNOWN_CHAIN`](/docs/sdk/errors/UNKNOWN_CHAIN) and
+See [`UNKNOWN_CHAIN`](/docs/reference/errors/UNKNOWN_CHAIN) and
 [Create a client](/docs/sdk/create-a-client).
 
 ### `CONTRACT_NOT_DEPLOYED`
 
 The fork has no ENS contracts at the pinned block, or the clients point at the wrong chain. See
-[`CONTRACT_NOT_DEPLOYED`](/docs/sdk/errors/CONTRACT_NOT_DEPLOYED).
+[`CONTRACT_NOT_DEPLOYED`](/docs/reference/errors/CONTRACT_NOT_DEPLOYED).
 
 ### `RATE_LIMITED` while forking
 
 Anvil reads state from the upstream RPC on demand. Pin the block so anvil can cache, and throttle
-it with `--compute-units-per-second`. See [`RATE_LIMITED`](/docs/sdk/errors/RATE_LIMITED).
+it with `--compute-units-per-second`. See [`RATE_LIMITED`](/docs/reference/errors/RATE_LIMITED).

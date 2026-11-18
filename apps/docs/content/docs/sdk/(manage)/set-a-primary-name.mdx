@@ -18,11 +18,11 @@ You will set the **primary name** of an address: the name wallets and apps show 
 ## Prerequisites
 
 - A wallet client for the address you are naming. See [Create a client](/docs/sdk/create-a-client).
-- A [name](/docs/sdk/reference/glossary#name) that resolves to that address. ensforge checks this before sending and fails with `PRIMARY_NAME_MISMATCH` otherwise. See [Set records](/docs/sdk/set-records).
+- A [name](/docs/reference/glossary#name) that resolves to that address. ensforge checks this before sending and fails with `PRIMARY_NAME_MISMATCH` otherwise. See [Set records](/docs/sdk/set-records).
 
 ## 1. Set the primary name on Ethereum
 
-[`primaryName.set`](/docs/sdk/reference/actions/primary-name/set) sets the name for the signer. `primaryName.setSync` also waits for the receipt.
+[`primaryName.set`](/docs/reference/sdk/primary-name/set) sets the name for the signer. `primaryName.setSync` also waits for the receipt.
 
 **Example** (Setting Your Primary Name)
 
@@ -43,7 +43,7 @@ const ens = Ensforge.create({
 const { hash } = await ens.primaryName.setSync({ name: "ensforge-docs-demo.eth" });
 ```
 
-Pass `name: null` to clear it. Names with encoded [labels](/docs/sdk/reference/glossary#label) (`[af2c…]`) are rejected, because readers show only [normalised](/docs/sdk/reference/glossary#normalisation) names.
+Pass `name: null` to clear it. Names with encoded [labels](/docs/reference/glossary#label) (`[af2c…]`) are rejected, because readers show only [normalised](/docs/reference/glossary#normalisation) names.
 
 | Option    | Type                                | Default    | Description                                                             |
 | --------- | ----------------------------------- | ---------- | ----------------------------------------------------------------------- |
@@ -99,11 +99,11 @@ await ens.primaryName.setSync({
 
 The plan is for the L2, and resumes there. Readers on Ethereum verify an L2 primary name against the L2's state as committed to Ethereum, so they see it only once that state is, which can take a while after the receipt.
 
-Supported L2s are those with an L2 reverse registrar: OP Mainnet, Base, Arbitrum One, Linea and Scroll, and their Sepolia testnets. Other chains fail with [`UNSUPPORTED_ON_DEPLOYMENT`](/docs/sdk/errors/UNSUPPORTED_ON_DEPLOYMENT).
+Supported L2s are those with an L2 reverse registrar: OP Mainnet, Base, Arbitrum One, Linea and Scroll, and their Sepolia testnets. Other chains fail with [`UNSUPPORTED_ON_DEPLOYMENT`](/docs/reference/errors/UNSUPPORTED_ON_DEPLOYMENT).
 
 ## 4. Set it on several L2s with one signature
 
-[`primaryName.signClaim`](/docs/sdk/reference/actions/primary-name/sign-claim) signs one EIP-191 message that covers several L2s, with no transaction. Anyone can then submit the claim on each chain with `primaryName.set`, so the account needs no gas or wallet connection on the L2s.
+[`primaryName.signClaim`](/docs/reference/sdk/primary-name/sign-claim) signs one EIP-191 message that covers several L2s, with no transaction. Anyone can then submit the claim on each chain with `primaryName.set`, so the account needs no gas or wallet connection on the L2s.
 
 **Example** (Signing One Claim for Two Chains)
 
@@ -182,41 +182,41 @@ export async function relayClaim(body: string) {
 
 ## Name another address
 
-`address` names another account. The signer must be the address's registry operator or, for a contract, its `Ownable` owner or its ContractNamer. Any other signer fails before sending with [`NOT_APPROVED`](/docs/sdk/errors/NOT_APPROVED).
+`address` names another account. The signer must be the address's registry operator or, for a contract, its `Ownable` owner or its ContractNamer. Any other signer fails before sending with [`NOT_APPROVED`](/docs/reference/errors/NOT_APPROVED).
 
 For `"eth"`, a ContractNamer goes through the ENSv2 adapter: it claims the contract's `addr.reverse` node, which makes the signer that node's owner, then sets the name. Those two dependent calls can only be simulated on an RPC that supports `eth_simulateV1`, or with `simulate: false`.
 
 ## Check the result
 
-Read it back with [`primaryName.get`](/docs/sdk/reference/actions/primary-name/get). See [Get the name for an address](/docs/sdk/get-a-primary-name).
+Read it back with [`primaryName.get`](/docs/reference/sdk/primary-name/get). See [Get the name for an address](/docs/sdk/get-a-primary-name).
 
 ## Troubleshooting
 
 ### `PRIMARY_NAME_MISMATCH`
 
-The name does not resolve to the address. Add an address record with `record.set`, then set the primary name. For an L2, the name needs an address for that chain's coin type or a default EVM address. See [`PRIMARY_NAME_MISMATCH`](/docs/sdk/errors/PRIMARY_NAME_MISMATCH).
+The name does not resolve to the address. Add an address record with `record.set`, then set the primary name. For an L2, the name needs an address for that chain's coin type or a default EVM address. See [`PRIMARY_NAME_MISMATCH`](/docs/reference/errors/PRIMARY_NAME_MISMATCH).
 
 ### `CHAIN_NOT_CONFIGURED`
 
-The L2 is not in the client's `chains`. Add it to `Ensforge.create`, or to the wagmi config with `fromWagmi`. See [`CHAIN_NOT_CONFIGURED`](/docs/sdk/errors/CHAIN_NOT_CONFIGURED).
+The L2 is not in the client's `chains`. Add it to `Ensforge.create`, or to the wagmi config with `fromWagmi`. See [`CHAIN_NOT_CONFIGURED`](/docs/reference/errors/CHAIN_NOT_CONFIGURED).
 
 ### `INVALID_COIN_TYPE`
 
-`coin` is not an EVM chain, or the claim does not cover the chain. For `signClaim`, `chainIds` is empty, includes the ENS chain, or mixes mainnet and testnets. See [`INVALID_COIN_TYPE`](/docs/sdk/errors/INVALID_COIN_TYPE).
+`coin` is not an EVM chain, or the claim does not cover the chain. For `signClaim`, `chainIds` is empty, includes the ENS chain, or mixes mainnet and testnets. See [`INVALID_COIN_TYPE`](/docs/reference/errors/INVALID_COIN_TYPE).
 
 ### `SIGNATURE_INVALID` or `SIGNATURE_EXPIRED`
 
-The claim's signature does not match, or the claim has expired. Sign again, for the same name, chains and expiry. See [`SIGNATURE_INVALID`](/docs/sdk/errors/SIGNATURE_INVALID) and [`SIGNATURE_EXPIRED`](/docs/sdk/errors/SIGNATURE_EXPIRED).
+The claim's signature does not match, or the claim has expired. Sign again, for the same name, chains and expiry. See [`SIGNATURE_INVALID`](/docs/reference/errors/SIGNATURE_INVALID) and [`SIGNATURE_EXPIRED`](/docs/reference/errors/SIGNATURE_EXPIRED).
 
 ### `INVALID_DURATION`
 
-`expiresIn` is not between 1 and 3600 seconds. See [`INVALID_DURATION`](/docs/sdk/errors/INVALID_DURATION).
+`expiresIn` is not between 1 and 3600 seconds. See [`INVALID_DURATION`](/docs/reference/errors/INVALID_DURATION).
 
 ### `NOT_APPROVED`
 
-The signer may not name `address`. See [Name another address](#name-another-address) and [`NOT_APPROVED`](/docs/sdk/errors/NOT_APPROVED).
+The signer may not name `address`. See [Name another address](#name-another-address) and [`NOT_APPROVED`](/docs/reference/errors/NOT_APPROVED).
 
 <Callout type="info" title="Not supported yet">
-  Setting L2 primary names through an [HCA](/docs/sdk/reference/glossary#hca) (`via: hca()`) is not
+  Setting L2 primary names through an [HCA](/docs/reference/glossary#hca) (`via: hca()`) is not
   supported, because the HCA lives on Ethereum. The contracts-v2 L2 registrar is not deployed.
 </Callout>

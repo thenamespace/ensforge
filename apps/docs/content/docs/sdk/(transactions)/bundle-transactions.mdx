@@ -5,8 +5,8 @@ keywords: [EIP-5792, wallet_sendCalls, batch, atomic, Plan.merge, mode, maxBundl
 ---
 
 A **bundle** (EIP-5792) is a group of calls a wallet sends together after one approval. ensforge
-bundles the [steps](/docs/sdk/reference/glossary#step) of a write for you when the wallet supports it, and `Plan.merge` lets you bundle
-several writes into one [plan](/docs/sdk/reference/glossary#plan).
+bundles the [steps](/docs/reference/glossary#step) of a write for you when the wallet supports it, and `Plan.merge` lets you bundle
+several writes into one [plan](/docs/reference/glossary#plan).
 
 ## Prerequisites
 
@@ -74,9 +74,9 @@ const { id, hashes } = await ens.record.set({
 
 `id` is the bundle id. A bundle has no transaction hash until it is included, so the write waits
 for the bundle to settle before it resolves, and `hashes` holds the transactions it landed in. A
-bundle that reverts fails with [`TRANSACTION_REVERTED`](/docs/sdk/errors/TRANSACTION_REVERTED).
+bundle that reverts fails with [`TRANSACTION_REVERTED`](/docs/reference/errors/TRANSACTION_REVERTED).
 Without a `timeout` ensforge waits five minutes, then fails with
-[`RECEIPT_TIMEOUT`](/docs/sdk/errors/RECEIPT_TIMEOUT).
+[`RECEIPT_TIMEOUT`](/docs/reference/errors/RECEIPT_TIMEOUT).
 
 ## Share one bundle across steps
 
@@ -144,15 +144,15 @@ const { hashes } = await ens.plan.send({ plan: Plan.merge([records, primary]) })
 ```
 
 - Every plan must be for the same chain and account. Otherwise `Plan.merge` throws
-  [`PLAN_CHAIN_MISMATCH`](/docs/sdk/errors/PLAN_CHAIN_MISMATCH) or
-  [`PLAN_ACCOUNT_MISMATCH`](/docs/sdk/errors/PLAN_ACCOUNT_MISMATCH).
+  [`PLAN_CHAIN_MISMATCH`](/docs/reference/errors/PLAN_CHAIN_MISMATCH) or
+  [`PLAN_ACCOUNT_MISMATCH`](/docs/reference/errors/PLAN_ACCOUNT_MISMATCH).
 - A merged plan keeps the steps' requirements, warnings and deployments.
-- [`plan.send`](/docs/sdk/reference/actions/plan/send) simulates and sends the merged plan like any
+- [`plan.send`](/docs/reference/sdk/plan/send) simulates and sends the merged plan like any
   write, and saves it so [`plan.resume`](/docs/sdk/continue-after-a-failure) can continue it.
 
 ## Batch reads
 
-Reads [batch](/docs/sdk/reference/glossary#batch) differently. [`Actions.batch`](/docs/sdk/reference/actions/batch) runs several reads
+Reads [batch](/docs/reference/glossary#batch) differently. [`Actions.batch`](/docs/reference/sdk/batch) runs several reads
 through Multicall3. It does not take writes. See [Look up many at once](/docs/sdk/look-up-many-at-once).
 
 ## Check the result
@@ -165,7 +165,7 @@ sequential sending, `id` is `undefined` and each call has its own hash.
 ### `WALLET_BATCH_UNSUPPORTED`
 
 You set `mode: "batch"` and the wallet refused an atomic bundle. Use `mode: "auto"` or
-`mode: "sequential"`. See [`WALLET_BATCH_UNSUPPORTED`](/docs/sdk/errors/WALLET_BATCH_UNSUPPORTED).
+`mode: "sequential"`. See [`WALLET_BATCH_UNSUPPORTED`](/docs/reference/errors/WALLET_BATCH_UNSUPPORTED).
 
 ### The wallet shows one prompt per call
 

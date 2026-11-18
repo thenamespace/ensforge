@@ -10,11 +10,11 @@ keywords: [bundler, pimlico, ERC-4337, UserOperation, paymaster, EntryPoint, gas
   check is still open. Test on Sepolia first.
 </Callout>
 
-A **bundler** collects ERC-4337 UserOperations and lands them on chain. The `bundler()` and `pimlico()` [executors](/docs/sdk/reference/glossary#executor) send each [HCA](/docs/sdk/reference/glossary#hca) execution as a UserOperation that the owner signs, so the owner needs no ETH when a [paymaster](/docs/sdk/reference/glossary#paymaster) sponsors it. By the end of this page you will run a write gaslessly.
+A **bundler** collects ERC-4337 UserOperations and lands them on chain. The `bundler()` and `pimlico()` [executors](/docs/reference/glossary#executor) send each [HCA](/docs/reference/glossary#hca) execution as a UserOperation that the owner signs, so the owner needs no ETH when a [paymaster](/docs/reference/glossary#paymaster) sponsors it. By the end of this page you will run a write gaslessly.
 
 ## What a bundler executor does
 
-- It sends owner operations only. HCA sessions run through [Rhinestone](/docs/hca/rhinestone), not ERC-4337, and `hca()` with a session and only bundler executors fails with [`HCA_EXECUTOR_UNSUPPORTED`](/docs/sdk/errors/HCA_EXECUTOR_UNSUPPORTED).
+- It sends owner operations only. HCA sessions run through [Rhinestone](/docs/hca/rhinestone), not ERC-4337, and `hca()` with a session and only bundler executors fails with [`HCA_EXECUTOR_UNSUPPORTED`](/docs/reference/errors/HCA_EXECUTOR_UNSUPPORTED).
 - It targets EntryPoint v0.7.
 - The first operation deploys the HCA through its factory, so no setup transaction is needed.
 - The owner signs with `personal_sign` over the UserOperation hash. The wallet shows one signature prompt instead of a transaction.
@@ -98,12 +98,12 @@ Pass `via` to any write, for example `ens.registration.renewSync({ names, durati
 
 ### `HCA_BUNDLER_REJECTED`
 
-The bundler refused the operation. The usual cause is that neither the HCA nor a paymaster can pay. Fund the HCA, add a paymaster, and check that the bundler supports EntryPoint v0.7. ensforge marks this error as retryable. See [`HCA_BUNDLER_REJECTED`](/docs/sdk/errors/HCA_BUNDLER_REJECTED).
+The bundler refused the operation. The usual cause is that neither the HCA nor a paymaster can pay. Fund the HCA, add a paymaster, and check that the bundler supports EntryPoint v0.7. ensforge marks this error as retryable. See [`HCA_BUNDLER_REJECTED`](/docs/reference/errors/HCA_BUNDLER_REJECTED).
 
 ### `HCA_PAYMASTER_REJECTED`
 
-The paymaster refused to sponsor the operation. Check the sponsorship policy and context. See [`HCA_PAYMASTER_REJECTED`](/docs/sdk/errors/HCA_PAYMASTER_REJECTED).
+The paymaster refused to sponsor the operation. Check the sponsorship policy and context. See [`HCA_PAYMASTER_REJECTED`](/docs/reference/errors/HCA_PAYMASTER_REJECTED).
 
 ### `HCA_EXECUTION_TIMEOUT`
 
-The operation stayed pending longer than `timeout`. It may still land: `plan.resume` checks it again. Raise `timeout` to wait longer. See [Continue after a failure](/docs/sdk/continue-after-a-failure) and [`HCA_EXECUTION_TIMEOUT`](/docs/sdk/errors/HCA_EXECUTION_TIMEOUT).
+The operation stayed pending longer than `timeout`. It may still land: `plan.resume` checks it again. Raise `timeout` to wait longer. See [Continue after a failure](/docs/sdk/continue-after-a-failure) and [`HCA_EXECUTION_TIMEOUT`](/docs/reference/errors/HCA_EXECUTION_TIMEOUT).

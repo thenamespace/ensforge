@@ -17,7 +17,7 @@ are saved, and how long a process lives.
 
 The SDK imports no Node built-ins and reads no browser globals, except `localStorage` when you use
 `Plan.localStorage()`. It makes network requests through your viem transports and, for off-chain
-data ([indexers](/docs/sdk/reference/glossary#indexer), avatars, DNS proofs), through the global
+data ([indexers](/docs/reference/glossary#indexer), avatars, DNS proofs), through the global
 `fetch`. A runtime with `fetch` and viem support can run ensforge. The built-in indexers,
 `bigname()` and `goldsky()`, take a `fetch` option if you need to supply one. ensforge's own tests
 run on Node only. See [Connect an indexer](/docs/sdk/connect-an-indexer).
@@ -51,15 +51,15 @@ const walletClient = createWalletClient({
 export const ens = Ensforge.create({ publicClient, walletClient }).extend(ensActions());
 ```
 
-A server signer has no wallet prompt, so there is no [`USER_REJECTED`](/docs/sdk/errors/USER_REJECTED)
+A server signer has no wallet prompt, so there is no [`USER_REJECTED`](/docs/reference/errors/USER_REJECTED)
 and no EIP-5792 bundle: ensforge sends one transaction per call. Handle the failures that remain
 with [Handle errors](/docs/sdk/handle-errors).
 
 ## Save plans somewhere that outlives the process
 
-By default [plans](/docs/sdk/reference/glossary#plan) are kept in memory. A serverless function starts fresh on each cold start, so a
+By default [plans](/docs/reference/glossary#plan) are kept in memory. A serverless function starts fresh on each cold start, so a
 plan from an earlier invocation is gone and `plan.resume` fails with
-[`PLAN_NOT_FOUND`](/docs/sdk/errors/PLAN_NOT_FOUND). `Plan.localStorage()` does not exist on a
+[`PLAN_NOT_FOUND`](/docs/reference/errors/PLAN_NOT_FOUND). `Plan.localStorage()` does not exist on a
 server: its calls reject, and a write ignores a store that fails to save, so the write still runs
 but cannot be resumed.
 
@@ -92,9 +92,9 @@ undone.
 
 ## Avoid long-lived subscriptions
 
-[`event.watch`](/docs/sdk/reference/actions/event/watch) polls for new blocks until you stop it,
+[`event.watch`](/docs/reference/sdk/event/watch) polls for new blocks until you stop it,
 which does not fit a function that exits after a request. Use
-[`event.get`](/docs/sdk/reference/actions/event/get) over a block range, or an indexer, for
+[`event.get`](/docs/reference/sdk/event/get) over a block range, or an indexer, for
 request-scoped history. See [Watch for changes](/docs/sdk/watch-for-changes).
 
 ## Check the result
@@ -107,7 +107,7 @@ on a block explorer.
 ### `ACCOUNT_NOT_FOUND`
 
 The wallet client has no account. Create it with `account`, as above. See
-[`ACCOUNT_NOT_FOUND`](/docs/sdk/errors/ACCOUNT_NOT_FOUND).
+[`ACCOUNT_NOT_FOUND`](/docs/reference/errors/ACCOUNT_NOT_FOUND).
 
 ### `localStorage is not available in this environment`
 
@@ -116,4 +116,4 @@ You used `Plan.localStorage()` on a server. Use a custom `Plan.Storage`.
 ### `RPC_TIMEOUT` on cold starts
 
 Your RPC provider is slow to answer. Set a `timeout` on viem's `http` transport and retry.
-See [`RPC_TIMEOUT`](/docs/sdk/errors/RPC_TIMEOUT).
+See [`RPC_TIMEOUT`](/docs/reference/errors/RPC_TIMEOUT).

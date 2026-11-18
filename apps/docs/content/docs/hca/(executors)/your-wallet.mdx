@@ -8,7 +8,7 @@ keywords: [owner, executor, executeByOwner, EIP-5792, hca]
   `@ensforge/hca` is experimental for 1.0. Its API can change in a minor release.
 </Callout>
 
-The `owner()` [executor](/docs/sdk/reference/glossary#executor) sends each [HCA](/docs/sdk/reference/glossary#hca) execution as an `executeByOwner` transaction from the owner's wallet. It is the default, needs no service, and the owner pays gas. By the end of this page you will know when it runs, how to combine it with other executors, and how to run arbitrary calls from the HCA.
+The `owner()` [executor](/docs/reference/glossary#executor) sends each [HCA](/docs/reference/glossary#hca) execution as an `executeByOwner` transaction from the owner's wallet. It is the default, needs no service, and the owner pays gas. By the end of this page you will know when it runs, how to combine it with other executors, and how to run arbitrary calls from the HCA.
 
 ## Use it by default
 
@@ -38,18 +38,18 @@ const { receipt } = await ens.hca.executeSync({
 });
 ```
 
-[`hca.execute`](/docs/hca/reference/actions/hca/execute) runs the calls in order, from the HCA, as one atomic execution. Every call succeeds or the whole execution reverts. With the owner executor, your wallet sends the ETH the calls spend along with the transaction, so this example pays 0.001 ETH from your wallet. Tokens the calls spend come from the HCA's balance.
+[`hca.execute`](/docs/reference/hca/hca/execute) runs the calls in order, from the HCA, as one atomic execution. Every call succeeds or the whole execution reverts. With the owner executor, your wallet sends the ETH the calls spend along with the transaction, so this example pays 0.001 ETH from your wallet. Tokens the calls spend come from the HCA's balance.
 
 ## What the owner executor sends
 
-- With a wallet that supports atomic batches (EIP-5792), the owner's [steps](/docs/sdk/reference/glossary#step) share one [bundle](/docs/sdk/reference/glossary#bundle): the setup and the executions.
+- With a wallet that supports atomic batches (EIP-5792), the owner's [steps](/docs/reference/glossary#step) share one [bundle](/docs/reference/glossary#bundle): the setup and the executions.
 - Otherwise the wallet sends one transaction per step.
 - The setup step, `hca-setup`, deploys the HCA with a factory call when it does not exist yet.
 - Use `mode` and `maxBundleCalls` on the write to control bundling, as for any [write](/docs/sdk/send-a-transaction).
 
 ## Let the wallet sponsor gas
 
-With a wallet that supports the EIP-5792 `paymasterService` capability, pass `paymaster` on the write. The wallet's [paymaster](/docs/sdk/reference/glossary#paymaster) service then pays for its transactions.
+With a wallet that supports the EIP-5792 `paymasterService` capability, pass `paymaster` on the write. The wallet's [paymaster](/docs/reference/glossary#paymaster) service then pays for its transactions.
 
 ```ts title="sponsored-by-wallet.ts"
 import { hca, hcaActions } from "@ensforge/hca";
@@ -102,8 +102,8 @@ The owner executor does not run sessions. See [Sessions](/docs/hca/sessions).
 
 ### `HCA_EXECUTOR_UNSUPPORTED`
 
-`hca()` throws it when you pass a `session` and no executor in the list runs sessions. Add `rhinestone()`. See [`HCA_EXECUTOR_UNSUPPORTED`](/docs/sdk/errors/HCA_EXECUTOR_UNSUPPORTED).
+`hca()` throws it when you pass a `session` and no executor in the list runs sessions. Add `rhinestone()`. See [`HCA_EXECUTOR_UNSUPPORTED`](/docs/reference/errors/HCA_EXECUTOR_UNSUPPORTED).
 
 ### `HCA_NOT_VERIFIED`
 
-The write has no signer, or the deployed HCA failed its checks. Pass an `account` or a wallet client, and read `details` for the failed checks. See [`HCA_NOT_VERIFIED`](/docs/sdk/errors/HCA_NOT_VERIFIED).
+The write has no signer, or the deployed HCA failed its checks. Pass an `account` or a wallet client, and read `details` for the failed checks. See [`HCA_NOT_VERIFIED`](/docs/reference/errors/HCA_NOT_VERIFIED).

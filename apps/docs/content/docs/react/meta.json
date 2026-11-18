@@ -15,7 +15,6 @@
     "...(frameworks)",
     "---[code]Advanced---",
     "...(advanced)",
-    "---[reference]Reference---",
-    "...reference"
+    "[reference][API reference](/docs/reference/react)"
   ]
 }

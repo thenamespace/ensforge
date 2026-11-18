@@ -28,7 +28,7 @@ const address = await getEnsAddress(publicClient, { name: normalize("nick.eth") 
 const address = await Actions.record.getAddress(publicClient, { name: "nick.eth" }); // [!code ++]
 ```
 
-ensforge [normalises](/docs/sdk/reference/glossary#normalisation) the name for you, so you can drop `normalize`.
+ensforge [normalises](/docs/reference/glossary#normalisation) the name for you, so you can drop `normalize`.
 
 **Example** (The same read, after)
 
@@ -44,14 +44,14 @@ const address = await Actions.record.getAddress(publicClient, { name: "nick.eth"
 
 ## 2. Map each action
 
-| viem                                | ensforge                                                                              | Notes                                                                                            |
-| ----------------------------------- | ------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
-| `getEnsAddress({ name, coinType })` | [`record.getAddress({ name, coin })`](/docs/sdk/reference/actions/record/get-address) | `coin` is a symbol (`"btc"`), a chain (`{ chainId: 8453 }`) or a coin type. Default is Ethereum. |
-| `getEnsName({ address })`           | [`primaryName.get({ address })`](/docs/sdk/reference/actions/primary-name/get)        | Checks that the name resolves back to the address by default.                                    |
-| `getEnsAvatar({ name })`            | [`record.getAvatar({ name })`](/docs/sdk/reference/actions/record/get-avatar)         | Returns a URL a browser can load. Set storage gateways with `gateways`.                          |
-| `getEnsText({ name, key })`         | [`record.getText({ name, key })`](/docs/sdk/reference/actions/record/get-text)        |                                                                                                  |
-| `getEnsResolver({ name })`          | [`resolver.get({ name })`](/docs/sdk/reference/actions/resolver/get)                  | Returns the resolver's `address`, its `kind`, who may write to it and its profiles.              |
-| `normalize(name)` from `viem/ens`   | `Name.normalize(name)`                                                                | ensforge actions normalise their inputs already.                                                 |
+| viem                                | ensforge                                                                      | Notes                                                                                            |
+| ----------------------------------- | ----------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| `getEnsAddress({ name, coinType })` | [`record.getAddress({ name, coin })`](/docs/reference/sdk/record/get-address) | `coin` is a symbol (`"btc"`), a chain (`{ chainId: 8453 }`) or a coin type. Default is Ethereum. |
+| `getEnsName({ address })`           | [`primaryName.get({ address })`](/docs/reference/sdk/primary-name/get)        | Checks that the name resolves back to the address by default.                                    |
+| `getEnsAvatar({ name })`            | [`record.getAvatar({ name })`](/docs/reference/sdk/record/get-avatar)         | Returns a URL a browser can load. Set storage gateways with `gateways`.                          |
+| `getEnsText({ name, key })`         | [`record.getText({ name, key })`](/docs/reference/sdk/record/get-text)        |                                                                                                  |
+| `getEnsResolver({ name })`          | [`resolver.get({ name })`](/docs/reference/sdk/resolver/get)                  | Returns the resolver's `address`, its `kind`, who may write to it and its profiles.              |
+| `normalize(name)` from `viem/ens`   | `Name.normalize(name)`                                                        | ensforge actions normalise their inputs already.                                                 |
 
 These ensforge reads also take `blockNumber` or `blockTag`, `gatewayUrls`, `strict` and `signal`.
 
@@ -68,9 +68,9 @@ const resolver = (await Actions.resolver.get(publicClient, { name: "nick.eth" })
 
 ## 3. Know what behaves differently
 
-- **Gateway failures are errors.** For an [off-chain name](/docs/sdk/reference/glossary#off-chain-name) whose [gateway](/docs/sdk/reference/glossary#gateway) is unreachable or invalid,
-  ensforge throws a `GatewayError` ([`GATEWAY_REQUEST_FAILED`](/docs/sdk/errors/GATEWAY_REQUEST_FAILED),
-  [`GATEWAY_RESPONSE_INVALID`](/docs/sdk/errors/GATEWAY_RESPONSE_INVALID)). viem returns `null`.
+- **Gateway failures are errors.** For an [off-chain name](/docs/reference/glossary#off-chain-name) whose [gateway](/docs/reference/glossary#gateway) is unreachable or invalid,
+  ensforge throws a `GatewayError` ([`GATEWAY_REQUEST_FAILED`](/docs/reference/errors/GATEWAY_REQUEST_FAILED),
+  [`GATEWAY_RESPONSE_INVALID`](/docs/reference/errors/GATEWAY_RESPONSE_INVALID)). viem returns `null`.
 - **`strict` means something else.** In ensforge, `strict: true` throws a `NotFoundError` when data
   is missing instead of returning `null`.
 - **Errors carry codes.** Every action throws `Errors.*` classes with a stable `code`, so you can
@@ -82,9 +82,9 @@ const resolver = (await Actions.resolver.get(publicClient, { name: "nick.eth" })
 
 Once reads work, move to the parts viem has no action for:
 
-- Several records in one request with [`record.get`](/docs/sdk/reference/actions/record/get).
+- Several records in one request with [`record.get`](/docs/reference/sdk/record/get).
   See [Get text records](/docs/sdk/get-text-records).
-- A whole profile for many names with [`Actions.batch`](/docs/sdk/reference/actions/batch). See
+- A whole profile for many names with [`Actions.batch`](/docs/reference/sdk/batch). See
   [Look up many at once](/docs/sdk/look-up-many-at-once).
 - A name's owner, expiry and status in one call. See
   [Get a name's owner, expiry and status](/docs/sdk/get-name-details).
@@ -117,10 +117,10 @@ expected difference.
 ### `UNKNOWN_CHAIN`
 
 The viem client's chain is not Ethereum mainnet or Sepolia. Create an ensforge client with
-`deployment`. See [`UNKNOWN_CHAIN`](/docs/sdk/errors/UNKNOWN_CHAIN).
+`deployment`. See [`UNKNOWN_CHAIN`](/docs/reference/errors/UNKNOWN_CHAIN).
 
 ### A read that returned `null` in viem throws
 
 You passed `strict: true`, or the name is off-chain and its gateway failed. See
-[`RECORD_NOT_FOUND`](/docs/sdk/errors/RECORD_NOT_FOUND) and
-[`GATEWAY_REQUEST_FAILED`](/docs/sdk/errors/GATEWAY_REQUEST_FAILED).
+[`RECORD_NOT_FOUND`](/docs/reference/errors/RECORD_NOT_FOUND) and
+[`GATEWAY_REQUEST_FAILED`](/docs/reference/errors/GATEWAY_REQUEST_FAILED).

@@ -9,7 +9,7 @@ keywords:
   `@ensforge/hca` is experimental for 1.0. Its API can change in a minor release.
 </Callout>
 
-An [HCA](/docs/sdk/reference/glossary#hca) is its own account, so it can hold funds and pay for things. By the end of this guide you will know who pays gas for each [executor](/docs/sdk/reference/glossary#executor), how to fund an HCA before it exists, and how to manage its ERC-4337 deposit.
+An [HCA](/docs/reference/glossary#hca) is its own account, so it can hold funds and pay for things. By the end of this guide you will know who pays gas for each [executor](/docs/reference/glossary#executor), how to fund an HCA before it exists, and how to manage its ERC-4337 deposit.
 
 ## Who pays what
 
@@ -19,10 +19,10 @@ Two costs exist. The **gas** pays for running the execution. The **spend** is wh
 | ---------------------------------------------- | ------------------------------------------------------------------------ | ---------------------------------------------- | --------------------------- |
 | `owner()`                                      | The owner's wallet.                                                      | The owner's wallet, sent with the transaction. | The HCA.                    |
 | `bundler()` or `pimlico()` without a paymaster | The HCA.                                                                 | The HCA.                                       | The HCA.                    |
-| `bundler()` or `pimlico()` with a paymaster    | The [paymaster](/docs/sdk/reference/glossary#paymaster).                 | The HCA.                                       | The HCA.                    |
+| `bundler()` or `pimlico()` with a paymaster    | The [paymaster](/docs/reference/glossary#paymaster).                     | The HCA.                                       | The HCA.                    |
 | `rhinestone()`                                 | Sponsored by default. With `sponsored: false`, a session's refund token. | The HCA.                                       | The HCA.                    |
 
-The HCA is `msg.sender` of the calls it runs, so tokens a call spends come from the HCA's balance, not the wallet's. A registration through `via: hca()` fails with [`INSUFFICIENT_TOKEN_BALANCE`](/docs/sdk/errors/INSUFFICIENT_TOKEN_BALANCE) before it is sent when the HCA cannot pay. Fund the HCA first.
+The HCA is `msg.sender` of the calls it runs, so tokens a call spends come from the HCA's balance, not the wallet's. A registration through `via: hca()` fails with [`INSUFFICIENT_TOKEN_BALANCE`](/docs/reference/errors/INSUFFICIENT_TOKEN_BALANCE) before it is sent when the HCA cannot pay. Fund the HCA first.
 
 ## Fund an HCA before it exists
 
@@ -50,17 +50,17 @@ const address = await ens.hca.predictAddress({});
 await walletClient.sendTransaction({ to: address, value: parseEther("0.01") });
 ```
 
-[`hca.predictAddress`](/docs/hca/reference/actions/hca/predict-address) takes an optional `owner`, which defaults to the client's account. The address never changes, even after upgrades.
+[`hca.predictAddress`](/docs/reference/hca/hca/predict-address) takes an optional `owner`, which defaults to the client's account. The address never changes, even after upgrades.
 
 ## Read and top up the EntryPoint deposit
 
 With a bundler and no paymaster, the HCA pays for its UserOperations. The ERC-4337 **EntryPoint** keeps a deposit for each account and charges that gas to it. Read the deposit, and add to it ahead of time, with these actions.
 
-| Action                                                                    | What it does                                                      |
-| ------------------------------------------------------------------------- | ----------------------------------------------------------------- |
-| [`hca.getDeposit`](/docs/hca/reference/actions/hca/get-deposit)           | Reads the deposit in wei. Takes an optional `address` or `owner`. |
-| [`hca.addDeposit`](/docs/hca/reference/actions/hca/add-deposit)           | Adds `amount` wei from your wallet to the deposit.                |
-| [`hca.withdrawDeposit`](/docs/hca/reference/actions/hca/withdraw-deposit) | Withdraws `amount` wei to `to`.                                   |
+| Action                                                            | What it does                                                      |
+| ----------------------------------------------------------------- | ----------------------------------------------------------------- |
+| [`hca.getDeposit`](/docs/reference/hca/hca/get-deposit)           | Reads the deposit in wei. Takes an optional `address` or `owner`. |
+| [`hca.addDeposit`](/docs/reference/hca/hca/add-deposit)           | Adds `amount` wei from your wallet to the deposit.                |
+| [`hca.withdrawDeposit`](/docs/reference/hca/hca/withdraw-deposit) | Withdraws `amount` wei to `to`.                                   |
 
 **Example** (Topping Up and Withdrawing)
 
@@ -93,13 +93,13 @@ await ens.hca.withdrawDepositSync({ to: account.address, amount: after - before 
 
 ## Check the cost before you send
 
-Every write has `prepare`, `simulate` and `estimateGas`. With an executor that quotes fees, the [plan](/docs/sdk/reference/glossary#plan) shows them in `plan.fees` before anything is sent. See [Preview before sending](/docs/sdk/preview-before-sending).
+Every write has `prepare`, `simulate` and `estimateGas`. With an executor that quotes fees, the [plan](/docs/reference/glossary#plan) shows them in `plan.fees` before anything is sent. See [Preview before sending](/docs/sdk/preview-before-sending).
 
 ## Troubleshooting
 
 ### `INSUFFICIENT_TOKEN_BALANCE`
 
-The HCA does not hold enough of the payment token for the registration. Send the token to the HCA's address and run the write again. See [`INSUFFICIENT_TOKEN_BALANCE`](/docs/sdk/errors/INSUFFICIENT_TOKEN_BALANCE).
+The HCA does not hold enough of the payment token for the registration. Send the token to the HCA's address and run the write again. See [`INSUFFICIENT_TOKEN_BALANCE`](/docs/reference/errors/INSUFFICIENT_TOKEN_BALANCE).
 
 ### `HCA_BUNDLER_REJECTED`
 

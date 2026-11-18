@@ -29,9 +29,6 @@
     "...(advanced)",
     "---[history]Migrate---",
     "...(migrate)",
-    "---[reference]Reference---",
-    "...reference",
-    "---[errors]Errors---",
-    "...errors"
+    "[reference][API reference](/docs/reference/sdk)"
   ]
 }

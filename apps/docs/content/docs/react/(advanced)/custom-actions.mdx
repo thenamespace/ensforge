@@ -56,7 +56,7 @@ Writes refresh the reads whose options name something the write touched. ensforg
 
 Name your options with those fields, as `getProfile` does with `name`, and your read refetches after a write to that name. A read whose options use other field names is not refreshed by writes. Call `refresh()` or `invalidate` for it. See [Caching and refreshing](/docs/react/caching-and-refreshing).
 
-A read is refreshed too when its returned value mentions a touched name or account, such as a [primary name](/docs/sdk/reference/glossary#primary-name).
+A read is refreshed too when its returned value mentions a touched name or account, such as a [primary name](/docs/reference/glossary#primary-name).
 
 ## Use an Effect action
 
@@ -81,6 +81,6 @@ For how the Effect API relates to the Promise one, see [The Effect API](/docs/sd
 
 ## Write with a custom action
 
-`useWrite(action)` takes your own write the same way. The write refreshes reads only when its result is a [plan](/docs/sdk/reference/glossary#plan) result, which carries `hashes`. A custom write that returns something else never triggers a refresh, so call `invalidate` after it.
+`useWrite(action)` takes your own write the same way. The write refreshes reads only when its result is a [plan](/docs/reference/glossary#plan) result, which carries `hashes`. A custom write that returns something else never triggers a refresh, so call `invalidate` after it.
 
 For the atoms behind both hooks, see [Atoms](/docs/react/atoms).

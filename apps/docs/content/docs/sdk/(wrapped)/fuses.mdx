@@ -13,7 +13,7 @@ keywords:
   ]
 ---
 
-This page is about [ENSv1](/docs/sdk/reference/glossary#ensv1) only, because fuses belong to the [Name Wrapper](/docs/sdk/reference/glossary#name-wrapper). A **fuse** is a permission on a wrapped name that can be burned, for good, until the name [expires](/docs/sdk/reference/glossary#expiry). You will read a name's fuses, burn some, and [emancipate](/docs/sdk/reference/glossary#emancipated) a [subname](/docs/sdk/reference/glossary#subname) as its parent. See [What wrapped names are](/docs/sdk/wrapped-names).
+This page is about [ENSv1](/docs/reference/glossary#ensv1) only, because fuses belong to the [Name Wrapper](/docs/reference/glossary#name-wrapper). A **fuse** is a permission on a wrapped name that can be burned, for good, until the name [expires](/docs/reference/glossary#expiry). You will read a name's fuses, burn some, and [emancipate](/docs/reference/glossary#emancipated) a [subname](/docs/reference/glossary#subname) as its parent. See [What wrapped names are](/docs/sdk/wrapped-names).
 
 <Callout type="warn" title="Burned fuses cannot be undone">
   Fuses cannot be unburned before the name expires. Simulate first. See [Preview before
@@ -46,7 +46,7 @@ The first seven are owner-controlled fuses. The owner burns them with `wrapper.s
 
 ## 1. Read the fuses
 
-[`wrapper.getFuses`](/docs/sdk/reference/actions/wrapper/get-fuses) returns the owner, the mask, the burned fuses by name and the expiry.
+[`wrapper.getFuses`](/docs/reference/sdk/wrapper/get-fuses) returns the owner, the mask, the burned fuses by name and the expiry.
 
 **Example** (Reading Fuses)
 
@@ -66,7 +66,7 @@ It returns `null` when the name is not wrapped, or is an expired emancipated nam
 
 ## 2. Burn fuses
 
-[`wrapper.setFuses`](/docs/sdk/reference/actions/wrapper/set-fuses) burns owner-controlled fuses.
+[`wrapper.setFuses`](/docs/reference/sdk/wrapper/set-fuses) burns owner-controlled fuses.
 
 **Example** (Locking a Name)
 
@@ -98,7 +98,7 @@ To burn fuses while wrapping a `.eth` name, pass `fuses` to `wrapper.wrap`.
 
 ## 3. Emancipate or extend a subname
 
-[`wrapper.setChildFuses`](/docs/sdk/reference/actions/wrapper/set-child-fuses) is sent by the owner of the wrapped parent. It burns fuses on a subname, including the parent-controlled ones, and extends its expiry.
+[`wrapper.setChildFuses`](/docs/reference/sdk/wrapper/set-child-fuses) is sent by the owner of the wrapped parent. It burns fuses on a subname, including the parent-controlled ones, and extends its expiry.
 
 **Example** (Emancipating a Subname)
 
@@ -132,30 +132,30 @@ You can also burn fuses while creating a subname under a wrapped parent. See [Cr
 
 ## Check the result
 
-Call `wrapper.getFuses` again, or use [`permission.get`](/docs/sdk/reference/actions/permission/get), whose `fuses` field lists what is burned. See [Roles and permissions](/docs/sdk/roles-and-permissions).
+Call `wrapper.getFuses` again, or use [`permission.get`](/docs/reference/sdk/permission/get), whose `fuses` field lists what is burned. See [Roles and permissions](/docs/sdk/roles-and-permissions).
 
 ## Troubleshooting
 
 ### `INVALID_RECORD_VALUE`
 
-A fuse name is unknown, or a parent-controlled fuse needs `cannotUnwrap` on the parent first. See [`INVALID_RECORD_VALUE`](/docs/sdk/errors/INVALID_RECORD_VALUE).
+A fuse name is unknown, or a parent-controlled fuse needs `cannotUnwrap` on the parent first. See [`INVALID_RECORD_VALUE`](/docs/reference/errors/INVALID_RECORD_VALUE).
 
 ### `INVALID_EXPIRY`
 
-The expiry is not valid for the subname. See [`INVALID_EXPIRY`](/docs/sdk/errors/INVALID_EXPIRY).
+The expiry is not valid for the subname. See [`INVALID_EXPIRY`](/docs/reference/errors/INVALID_EXPIRY).
 
 ### `FUSE_BURNED`
 
-A burned fuse forbids the change. See [`FUSE_BURNED`](/docs/sdk/errors/FUSE_BURNED).
+A burned fuse forbids the change. See [`FUSE_BURNED`](/docs/reference/errors/FUSE_BURNED).
 
 ### `NOT_OWNER`
 
-The account may not burn these fuses. See [`NOT_OWNER`](/docs/sdk/errors/NOT_OWNER).
+The account may not burn these fuses. See [`NOT_OWNER`](/docs/reference/errors/NOT_OWNER).
 
 ### `NAME_NOT_WRAPPED`
 
-The name is not wrapped. Wrap it first. See [`NAME_NOT_WRAPPED`](/docs/sdk/errors/NAME_NOT_WRAPPED).
+The name is not wrapped. Wrap it first. See [`NAME_NOT_WRAPPED`](/docs/reference/errors/NAME_NOT_WRAPPED).
 
 ### `UNSUPPORTED_PROTOCOL`
 
-ENSv2 and migrated names have no NameWrapper. See [`UNSUPPORTED_PROTOCOL`](/docs/sdk/errors/UNSUPPORTED_PROTOCOL).
+ENSv2 and migrated names have no NameWrapper. See [`UNSUPPORTED_PROTOCOL`](/docs/reference/errors/UNSUPPORTED_PROTOCOL).

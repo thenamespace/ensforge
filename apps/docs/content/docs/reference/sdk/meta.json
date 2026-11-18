@@ -1,0 +1,28 @@
+{
+  "title": "SDK",
+  "icon": "code",
+  "pages": [
+    "index",
+    "client",
+    "batch",
+    "utilities",
+    "indexers",
+    "---Domains---",
+    "approval",
+    "dns",
+    "event",
+    "indexer",
+    "migration",
+    "name",
+    "permission",
+    "plan",
+    "primary-name",
+    "record",
+    "registration",
+    "registry",
+    "resolver",
+    "role",
+    "subname",
+    "wrapper"
+  ]
+}

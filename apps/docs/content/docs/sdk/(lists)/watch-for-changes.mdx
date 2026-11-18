@@ -44,7 +44,7 @@ unwatch();
 - `onError` runs when a poll fails. Watching continues, and the next poll reads the block range that failed again.
 - `unwatch()` stops watching.
 
-See [`event.watch`](/docs/sdk/reference/actions/event/watch).
+See [`event.watch`](/docs/reference/sdk/event/watch).
 
 ## Watch only some events
 
@@ -73,7 +73,7 @@ const unwatch = await ens.event.watch({
 
 ## How watching works
 
-ensforge polls for new blocks. For each new block range it reads the name's events as [`event.get`](/docs/sdk/reference/actions/event/get) does, so a change of resolver or registry during the watch is followed from the next block on. It polls at the public client's `pollingInterval`, unless you pass `pollingInterval` in milliseconds.
+ensforge polls for new blocks. For each new block range it reads the name's events as [`event.get`](/docs/reference/sdk/event/get) does, so a change of resolver or registry during the watch is followed from the next block on. It polls at the public client's `pollingInterval`, unless you pass `pollingInterval` in milliseconds.
 
 An event has `type`, `action`, `event` (the contract's event name), `contract`, `name`, `args`, `blockNumber`, `transactionHash` and `logIndex`.
 
@@ -91,7 +91,7 @@ An event has `type`, `action`, `event` (the contract's event name), `contract`, 
 
 ### `onEvents` never runs
 
-Nothing changed after you started watching. Watching does not replay past events. Use [`event.get`](/docs/sdk/reference/actions/event/get) or [Name history](/docs/sdk/name-history) for those.
+Nothing changed after you started watching. Watching does not replay past events. Use [`event.get`](/docs/reference/sdk/event/get) or [Name history](/docs/sdk/name-history) for those.
 
 ### Changes arrive late
 
@@ -99,8 +99,8 @@ ensforge polls, so a change shows up at the next poll after its block. Lower `po
 
 ### `onError` keeps firing
 
-Polls are failing, for example because of RPC rate limits. The error is a typed ensforge error, so log its `code`. See [Configure RPC and gateways](/docs/sdk/rpc-and-gateways) and [`RATE_LIMITED`](/docs/sdk/errors/RATE_LIMITED).
+Polls are failing, for example because of RPC rate limits. The error is a typed ensforge error, so log its `code`. See [Configure RPC and gateways](/docs/sdk/rpc-and-gateways) and [`RATE_LIMITED`](/docs/reference/errors/RATE_LIMITED).
 
 ### `INVALID_NAME`
 
-The name cannot be normalised. [`INVALID_NAME`](/docs/sdk/errors/INVALID_NAME) is thrown by `event.watch` before it starts watching.
+The name cannot be normalised. [`INVALID_NAME`](/docs/reference/errors/INVALID_NAME) is thrown by `event.watch` before it starts watching.

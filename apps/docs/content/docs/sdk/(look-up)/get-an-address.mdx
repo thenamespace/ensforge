@@ -5,7 +5,7 @@ keywords:
   [getAddress, record.getAddress, coin type, ENSIP-9, ENSIP-11, ENSIP-19, forward resolution]
 ---
 
-By the end of this guide you can turn a [name](/docs/sdk/reference/glossary#name) such as `nick.eth` into the address it points to (forward resolution), on Ethereum or on any other chain.
+By the end of this guide you can turn a [name](/docs/reference/glossary#name) such as `nick.eth` into the address it points to (forward resolution), on Ethereum or on any other chain.
 
 ## Prerequisites
 
@@ -34,7 +34,7 @@ console.log(address);
 0xb8c2C29ee19D8307cb7255e1Cd9CbDE883A267d5
 ```
 
-ensforge normalises the name before it reads, so `Nick.ETH` and `nick.eth` give the same answer. It finds the name's [resolver](/docs/sdk/reference/glossary#resolver), including parent, wildcard and off-chain resolvers, and returns a checksummed address. See [How a lookup works](/docs/sdk/looking-up-a-name) and [`record.getAddress`](/docs/sdk/reference/actions/record/get-address).
+ensforge normalises the name before it reads, so `Nick.ETH` and `nick.eth` give the same answer. It finds the name's [resolver](/docs/reference/glossary#resolver), including parent, wildcard and off-chain resolvers, and returns a checksummed address. See [How a lookup works](/docs/sdk/looking-up-a-name) and [`record.getAddress`](/docs/reference/sdk/record/get-address).
 
 To read with a plain viem public client instead, call the action directly.
 
@@ -103,32 +103,32 @@ const sameBtc = await ens.record.getAddress({ name: "nick.eth", coin: 0n });
 | `name` | `string`                          | required | The name to read. Normalised for you. |
 | `coin` | symbol, `{ chainId }` or `bigint` | `"eth"`  | Which coin's address to read.         |
 
-The action also takes the options every read takes: `signal` to cancel, `strict` to throw instead of returning `null`, `gatewayUrls` for off-chain lookups, and `blockNumber` or `blockTag` to read at one block. See [`record.getAddress`](/docs/sdk/reference/actions/record/get-address).
+The action also takes the options every read takes: `signal` to cancel, `strict` to throw instead of returning `null`, `gatewayUrls` for off-chain lookups, and `blockNumber` or `blockTag` to read at one block. See [`record.getAddress`](/docs/reference/sdk/record/get-address).
 
 ## Result
 
 The result is `Address | null` for Ethereum and EVM chains, and `string | null` for other coins. It is `null` when the name has no address for that coin. Pass `strict: true` to fail instead, as in [Troubleshooting](#the-result-is-null).
 
-To read an address together with other records, use [`record.get`](/docs/sdk/reference/actions/record/get). See [Get text records](/docs/sdk/get-text-records).
+To read an address together with other records, use [`record.get`](/docs/reference/sdk/record/get). See [Get text records](/docs/sdk/get-text-records).
 
 ## Troubleshooting
 
 ### The result is `null`
 
-The name has no address record for that coin, no resolver, or a resolver that does not store addresses. Pass `strict: true` to find out which one: it fails with [`RECORD_NOT_FOUND`](/docs/sdk/errors/RECORD_NOT_FOUND), [`RESOLVER_NOT_FOUND`](/docs/sdk/errors/RESOLVER_NOT_FOUND) or [`RESOLVER_PROFILE_UNSUPPORTED`](/docs/sdk/errors/RESOLVER_PROFILE_UNSUPPORTED).
+The name has no address record for that coin, no resolver, or a resolver that does not store addresses. Pass `strict: true` to find out which one: it fails with [`RECORD_NOT_FOUND`](/docs/reference/errors/RECORD_NOT_FOUND), [`RESOLVER_NOT_FOUND`](/docs/reference/errors/RESOLVER_NOT_FOUND) or [`RESOLVER_PROFILE_UNSUPPORTED`](/docs/reference/errors/RESOLVER_PROFILE_UNSUPPORTED).
 
 ### `INVALID_NAME`
 
-The name cannot be normalised, for example because it contains a character ENS does not allow. [`INVALID_NAME`](/docs/sdk/errors/INVALID_NAME) is thrown before any request is sent.
+The name cannot be normalised, for example because it contains a character ENS does not allow. [`INVALID_NAME`](/docs/reference/errors/INVALID_NAME) is thrown before any request is sent.
 
 ### `INVALID_COIN_TYPE`
 
-The `coin` is an unknown symbol or a negative value. Some defunct coins, such as EOS (coin type 194), are no longer supported and fail with [`INVALID_COIN_TYPE`](/docs/sdk/errors/INVALID_COIN_TYPE) or `INVALID_ADDRESS`.
+The `coin` is an unknown symbol or a negative value. Some defunct coins, such as EOS (coin type 194), are no longer supported and fail with [`INVALID_COIN_TYPE`](/docs/reference/errors/INVALID_COIN_TYPE) or `INVALID_ADDRESS`.
 
 ### `GATEWAY_REQUEST_FAILED` or `OFFCHAIN_LOOKUP_INVALID`
 
-The name resolves off-chain and the gateway failed or answered wrongly. See [Look up off-chain names](/docs/sdk/off-chain-names) and [`GATEWAY_REQUEST_FAILED`](/docs/sdk/errors/GATEWAY_REQUEST_FAILED).
+The name resolves off-chain and the gateway failed or answered wrongly. See [Look up off-chain names](/docs/sdk/off-chain-names) and [`GATEWAY_REQUEST_FAILED`](/docs/reference/errors/GATEWAY_REQUEST_FAILED).
 
 ### `DNSSEC_PROOF_FAILED`
 
-The name is a DNS name that resolves through a DNSSEC proof, such as `ens.domains`, and the proof does not verify. At the time of writing, no DNSSEC proof verifies on Ethereum mainnet or Sepolia, so these names fail this way until ENS updates its DNSSEC trust anchor. See [`DNSSEC_PROOF_FAILED`](/docs/sdk/errors/DNSSEC_PROOF_FAILED).
+The name is a DNS name that resolves through a DNSSEC proof, such as `ens.domains`, and the proof does not verify. At the time of writing, no DNSSEC proof verifies on Ethereum mainnet or Sepolia, so these names fail this way until ENS updates its DNSSEC trust anchor. See [`DNSSEC_PROOF_FAILED`](/docs/reference/errors/DNSSEC_PROOF_FAILED).

@@ -18,7 +18,7 @@ keywords:
 
 Every change to a name, from editing a record to creating a subname, is checked by a contract
 against the account that sends it. The **owner** can do almost everything. Other accounts can be
-allowed to do some things ([permissions](/docs/sdk/reference/glossary#permission)). ensforge reads all of these rules and answers one question for you: what
+allowed to do some things ([permissions](/docs/reference/glossary#permission)). ensforge reads all of these rules and answers one question for you: what
 may this account do with this name?
 
 ## The owner
@@ -34,20 +34,20 @@ anyone, because paying for more time never hurts the owner.
 An owner can let other accounts act without giving the name away. ENS has a few ways to do this,
 each with a different reach:
 
-| Allowed account      | Can do                                                                                                              | Set with                                                                    |
-| -------------------- | ------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
-| **Operator**         | Everything the owner can do, for every name the owner holds on that contract.                                       | [`approval.setOperator`](/docs/sdk/reference/actions/approval/set-operator) |
-| **Approved address** | Transfer one name token.                                                                                            | [`approval.setToken`](/docs/sdk/reference/actions/approval/set-token)       |
-| **Delegate**         | Edit the records of one name on a public [resolver](/docs/sdk/reference/glossary#resolver).                         | [`approval.setDelegate`](/docs/sdk/reference/actions/approval/set-delegate) |
-| **Role holder**      | Exactly the actions its roles name, such as `setResolver` or `setText`, on one name or on every name of a contract. | [`role.grant`](/docs/sdk/reference/actions/role/grant)                      |
+| Allowed account      | Can do                                                                                                              | Set with                                                            |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
+| **Operator**         | Everything the owner can do, for every name the owner holds on that contract.                                       | [`approval.setOperator`](/docs/reference/sdk/approval/set-operator) |
+| **Approved address** | Transfer one name token.                                                                                            | [`approval.setToken`](/docs/reference/sdk/approval/set-token)       |
+| **Delegate**         | Edit the records of one name on a public [resolver](/docs/reference/glossary#resolver).                             | [`approval.setDelegate`](/docs/reference/sdk/approval/set-delegate) |
+| **Role holder**      | Exactly the actions its roles name, such as `setResolver` or `setText`, on one name or on every name of a contract. | [`role.grant`](/docs/reference/sdk/role/grant)                      |
 
 To let someone edit a name's records, whatever kind of resolver it has, use
-[`permission.setRecordAccess`](/docs/sdk/reference/actions/permission/set-record-access): it picks
+[`permission.setRecordAccess`](/docs/reference/sdk/permission/set-record-access): it picks
 the right mechanism.
 
 ## Owner, manager and registrant
 
-Names still on [ENSv1](/docs/sdk/reference/glossary#ensv1), the original ENS contracts, can split
+Names still on [ENSv1](/docs/reference/glossary#ensv1), the original ENS contracts, can split
 control in two. The **registrant** holds the
 `.eth` registration, and the **manager** controls the name in the registry: its resolver, records
 and subnames. The registrant can always take management back.
@@ -60,13 +60,13 @@ flowchart TD
 
 Most names have the same account in both places, and `name.transfer` moves both by default. When
 they differ, `name.get` reports both, and `owner` is the account with final control. Names wrapped
-in the [Name Wrapper](/docs/sdk/reference/glossary#name-wrapper) add **fuses**, permanent switches
+in the [Name Wrapper](/docs/reference/glossary#name-wrapper) add **fuses**, permanent switches
 that remove permissions. See
 [What wrapped names are](/docs/sdk/wrapped-names).
 
 ## Roles
 
-Names on [ENSv2](/docs/sdk/reference/glossary#ensv2) replace the split above with **roles**: named permissions that an owner grants to
+Names on [ENSv2](/docs/reference/glossary#ensv2) replace the split above with **roles**: named permissions that an owner grants to
 other accounts, one by one. A role can apply to one name, or to every name of a registry or
 resolver. Each role has an admin role that may grant and revoke it.
 
@@ -126,12 +126,12 @@ console.log(can);
 - Use it to show or hide buttons before the user tries anything.
 
 `permission.check` answers for one operation and lists exactly what is missing, such as the roles
-to request. See [`permission.check`](/docs/sdk/reference/actions/permission/check).
+to request. See [`permission.check`](/docs/reference/sdk/permission/check).
 
 ## What ensforge does for you
 
 - Reads ownership, approvals, roles and fuses for any name, and combines them into one answer.
 - Checks permission before planning a write, so a write the account may not make fails with
-  [`NOT_OWNER`](/docs/sdk/errors/NOT_OWNER) or [`MISSING_ROLES`](/docs/sdk/errors/MISSING_ROLES)
+  [`NOT_OWNER`](/docs/reference/errors/NOT_OWNER) or [`MISSING_ROLES`](/docs/reference/errors/MISSING_ROLES)
   before the wallet prompt, naming what is missing.
 - Picks the right contract and mechanism when you grant access or transfer a name.

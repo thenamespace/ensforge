@@ -8,7 +8,7 @@ Hooks never fetch on their own schedule per component. They share one cached rea
 
 ## How hooks share a read
 
-A read is identified by the client's chain, account and indexer, the action and its options. Names are [normalised](/docs/sdk/reference/glossary#normalisation) (`Nick.eth` and `nick.eth` share one read) and addresses are compared in lowercase. Two components with the same identity share one request and one result, whatever their freshness settings.
+A read is identified by the client's chain, account and indexer, the action and its options. Names are [normalised](/docs/reference/glossary#normalisation) (`Nick.eth` and `nick.eth` share one read) and addresses are compared in lowercase. Two components with the same identity share one request and one result, whatever their freshness settings.
 
 ```mermaid
 flowchart LR
@@ -64,12 +64,12 @@ An unmounted read keeps its result, and any request still in flight, for `idleTT
 
 Writes made through ensforge refresh the reads they touched. You do not call anything.
 
-- A write touches the names and accounts in its options, the parents of those names (for [subname](/docs/sdk/reference/glossary#subname) lists) and the signer (for primary names, approvals and "my names" lists).
+- A write touches the names and accounts in its options, the parents of those names (for [subname](/docs/reference/glossary#subname) lists) and the signer (for primary names, approvals and "my names" lists).
 - **Chain reads** refetch once the write's last transaction is mined. They refetch even if waiting for the receipt fails, because the transaction may have landed.
-- **[Indexer](/docs/sdk/reference/glossary#indexer) reads**, such as [infinite lists](/docs/react/infinite-lists), refetch once the indexer reports the write's block. ensforge polls for up to a minute, and gives an indexer with no status a few seconds instead.
+- **[Indexer](/docs/reference/glossary#indexer) reads**, such as [infinite lists](/docs/react/infinite-lists), refetch once the indexer reports the write's block. ensforge polls for up to a minute, and gives an indexer with no status a few seconds instead.
 - A write that fails after one step was confirmed refreshes too.
 - A signature (`primaryName.signClaim`) sends no transaction and refreshes nothing.
-- A read also follows the names its value mentions, such as a [primary name](/docs/sdk/reference/glossary#primary-name), so changing that name's address refreshes it.
+- A read also follows the names its value mentions, such as a [primary name](/docs/reference/glossary#primary-name), so changing that name's address refreshes it.
 
 The write's result never waits for these refreshes. See [Write data](/docs/react/write-data).
 

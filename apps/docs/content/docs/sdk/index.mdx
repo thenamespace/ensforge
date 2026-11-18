@@ -6,7 +6,7 @@ keywords: [quick start, getting started, record.getAddress, batch, record.setSyn
 ---
 
 By the end of this page you will have read an address, an avatar, a text record and a
-[primary name](/docs/sdk/reference/glossary#primary-name) from ENS in one batch. The second part sends your first write, on the Sepolia test network.
+[primary name](/docs/reference/glossary#primary-name) from ENS in one batch. The second part sends your first write, on the Sepolia test network.
 
 You need Node.js 20.19 or later. Nothing else: the first part reads from Ethereum mainnet and needs
 no wallet.
@@ -72,7 +72,7 @@ npx tsx address.ts
 ```
 
 The result is `null` when the name has no address, so your code handles a missing record without a
-`try`. ensforge also checks and [normalises](/docs/sdk/reference/glossary#normalisation) the name for
+`try`. ensforge also checks and [normalises](/docs/reference/glossary#normalisation) the name for
 you: `Nick.ETH` reads the same record. See [Get a name's address](/docs/sdk/get-an-address) for
 other chains and coins.
 
@@ -216,7 +216,7 @@ https://example.com
 
 - ensforge simulates the transaction before the wallet prompt. A write that would fail, for
   example because the account does not own the name, throws a typed error such as
-  [`NOT_OWNER`](/docs/sdk/errors/NOT_OWNER) and sends nothing.
+  [`NOT_OWNER`](/docs/reference/errors/NOT_OWNER) and sends nothing.
 - `record.set` (without `Sync`) returns as soon as the transaction is submitted. Use it when your
   UI tracks confirmation itself.
 

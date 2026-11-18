@@ -8,7 +8,7 @@ By the end of this guide you can show an account's names, for a "my names" page 
 
 ## Prerequisites
 
-- A client with an [indexer](/docs/sdk/reference/glossary#indexer) and `indexerActions()`. See [Connect an indexer](/docs/sdk/connect-an-indexer). The chain cannot list the names of an address, so this needs an indexer.
+- A client with an [indexer](/docs/reference/glossary#indexer) and `indexerActions()`. See [Connect an indexer](/docs/sdk/connect-an-indexer). The chain cannot list the names of an address, so this needs an indexer.
 
 ## List the names an address is related to
 
@@ -42,7 +42,7 @@ for (const item of page.items) {
 - Each item is a name with `relations`, the ways the address relates to it, and `isPrimary`, whether it is the address's primary name.
 - `page.hasMore` and `page.cursor` tell you whether there is another page. See [Load more results](/docs/sdk/load-more-results).
 
-The address can be all lowercase or checksummed. Without `namespace`, the list covers every namespace the indexer serves. See [`indexer.getNamesForAddress`](/docs/sdk/reference/actions/indexer/get-names-for-address).
+The address can be all lowercase or checksummed. Without `namespace`, the list covers every namespace the indexer serves. See [`indexer.getNamesForAddress`](/docs/reference/sdk/indexer/get-names-for-address).
 
 ## Choose how the address is related
 
@@ -130,16 +130,16 @@ The page also carries the indexer metadata (`asOf`, `completeness`, `indexer`) d
 
 ### `INDEXER_NOT_CONFIGURED`
 
-The client has no indexer, or you forgot `indexerActions()`. See [Connect an indexer](/docs/sdk/connect-an-indexer) and [`INDEXER_NOT_CONFIGURED`](/docs/sdk/errors/INDEXER_NOT_CONFIGURED).
+The client has no indexer, or you forgot `indexerActions()`. See [Connect an indexer](/docs/sdk/connect-an-indexer) and [`INDEXER_NOT_CONFIGURED`](/docs/reference/errors/INDEXER_NOT_CONFIGURED).
 
 ### `INVALID_ADDRESS`
 
-The `address` is not a valid address. [`INVALID_ADDRESS`](/docs/sdk/errors/INVALID_ADDRESS) is thrown before any request is sent. `INVALID_COIN_TYPE` and `INVALID_NAME` are thrown the same way for a bad `coin` or `parent`.
+The `address` is not a valid address. [`INVALID_ADDRESS`](/docs/reference/errors/INVALID_ADDRESS) is thrown before any request is sent. `INVALID_COIN_TYPE` and `INVALID_NAME` are thrown the same way for a bad `coin` or `parent`.
 
 ### The list is missing a name you registered recently
 
-The indexer can lag the chain by a few blocks. Read `ens.indexer.getStatus()` to see how far it has indexed, or read the name on-chain with [`name.get`](/docs/sdk/reference/actions/name/get).
+The indexer can lag the chain by a few blocks. Read `ens.indexer.getStatus()` to see how far it has indexed, or read the name on-chain with [`name.get`](/docs/reference/sdk/name/get).
 
 ### `INDEXER_UNSUPPORTED`
 
-The indexer does not serve the query or the namespace. See [`INDEXER_UNSUPPORTED`](/docs/sdk/errors/INDEXER_UNSUPPORTED).
+The indexer does not serve the query or the namespace. See [`INDEXER_UNSUPPORTED`](/docs/reference/errors/INDEXER_UNSUPPORTED).

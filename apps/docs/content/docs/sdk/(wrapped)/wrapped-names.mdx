@@ -4,7 +4,7 @@ description: Learn what the ENSv1 Name Wrapper does, how it changes who controls
 keywords: [NameWrapper, wrapped name, ERC-1155, fuses, emancipated, locked, ENSv1]
 ---
 
-This page is about [ENSv1](/docs/sdk/reference/glossary#ensv1) only. The **Name Wrapper** is an ENSv1 contract that turns a name into an ERC-1155 token and adds **fuses**: permissions that can be burned, for good, until the name expires. [ENSv2](/docs/sdk/reference/glossary#ensv2) has no Name Wrapper. Wrapped names [migrate](/docs/sdk/reference/glossary#migration) to ENSv2 like unwrapped ones.
+This page is about [ENSv1](/docs/reference/glossary#ensv1) only. The **Name Wrapper** is an ENSv1 contract that turns a name into an ERC-1155 token and adds **fuses**: permissions that can be burned, for good, until the name expires. [ENSv2](/docs/reference/glossary#ensv2) has no Name Wrapper. Wrapped names [migrate](/docs/reference/glossary#migration) to ENSv2 like unwrapped ones.
 
 You never need to wrap a name to use ensforge. Wrapping matters when you want the token form or want to give up powers permanently.
 
@@ -23,17 +23,17 @@ On a wrapped name there is no separate manager. `name.get` reports the token hol
 
 A **fuse** is a permission that can be burned. A burned fuse cannot be unburned before the name expires. Two states matter:
 
-- **Emancipated** (`parentCannotControl` burned): a [subname](/docs/sdk/reference/glossary#subname) its parent can no longer control. The parent can only extend it, until it expires.
+- **Emancipated** (`parentCannotControl` burned): a [subname](/docs/reference/glossary#subname) its parent can no longer control. The parent can only extend it, until it expires.
 - **Locked** (`cannotUnwrap` burned): a name that stays in the NameWrapper until it expires. Every other owner-controlled fuse needs it first.
 
 See [Lock permissions with fuses](/docs/sdk/fuses) for the full list.
 
 ## What ensforge does for you
 
-- [`name.get`](/docs/sdk/reference/actions/name/get) reports `kind: "v1-wrapped"` and `wrapped: true` for wrapped names. See [Get a name's owner, expiry and status](/docs/sdk/get-name-details).
+- [`name.get`](/docs/reference/sdk/name/get) reports `kind: "v1-wrapped"` and `wrapped: true` for wrapped names. See [Get a name's owner, expiry and status](/docs/sdk/get-name-details).
 - Writes such as `name.transfer`, `resolver.set` and `subname.create` use the NameWrapper when the name is wrapped. You pass the same options.
-- [`wrapper.getFuses`](/docs/sdk/reference/actions/wrapper/get-fuses) reads the owner, the burned fuses and the expiry.
-- Wrapper actions on ENSv2 names fail with [`UNSUPPORTED_PROTOCOL`](/docs/sdk/errors/UNSUPPORTED_PROTOCOL).
+- [`wrapper.getFuses`](/docs/reference/sdk/wrapper/get-fuses) reads the owner, the burned fuses and the expiry.
+- Wrapper actions on ENSv2 names fail with [`UNSUPPORTED_PROTOCOL`](/docs/reference/errors/UNSUPPORTED_PROTOCOL).
 - Locked names migrate into a WrapperRegistry whose roles follow their fuses. See [Move a name to ENSv2](/docs/sdk/move-a-name-to-ensv2).
 
 ## Renewal

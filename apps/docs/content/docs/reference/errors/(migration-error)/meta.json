@@ -1,0 +1,11 @@
+{
+  "title": "MigrationError",
+  "pagesIndex": "migration-error",
+  "pages": [
+    "NOT_ELIGIBLE",
+    "ALREADY_MIGRATED",
+    "NAME_NOT_LOCKED",
+    "RECORDS_UNKNOWN",
+    "VERIFICATION_FAILED"
+  ]
+}

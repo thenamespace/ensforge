@@ -8,7 +8,7 @@ By the end of this guide you can show an activity feed for a name or an account:
 
 ## Prerequisites
 
-- For full history, a client with an [indexer](/docs/sdk/reference/glossary#indexer) and `indexerActions()`. See [Connect an indexer](/docs/sdk/connect-an-indexer).
+- For full history, a client with an [indexer](/docs/reference/glossary#indexer) and `indexerActions()`. See [Connect an indexer](/docs/sdk/connect-an-indexer).
 - For recent events only, a plain client is enough. See [Read recent events from the chain](#read-recent-events-from-the-chain).
 
 ## Read the full history of a name
@@ -42,7 +42,7 @@ for (const event of page.items) {
 - Each event includes its details in `data`, unless you pass `includeData: false`.
 - `scope` picks the name's own events, its registrations' events, or `"both"` (the default).
 
-See [`indexer.getHistory`](/docs/sdk/reference/actions/indexer/get-history) and [Load more results](/docs/sdk/load-more-results).
+See [`indexer.getHistory`](/docs/reference/sdk/indexer/get-history) and [Load more results](/docs/sdk/load-more-results).
 
 ## Filter the history
 
@@ -119,10 +119,10 @@ for (const event of events) {
 
 - `fromBlock` is required. `toBlock` defaults to `"latest"`.
 - Events come back in chain order.
-- Ranges the RPC provider rejects are split. After `maxRequests` `eth_getLogs` requests (default 500), the read fails with [`LOG_RANGE_TOO_LARGE`](/docs/sdk/errors/LOG_RANGE_TOO_LARGE) instead of sending more.
+- Ranges the RPC provider rejects are split. After `maxRequests` `eth_getLogs` requests (default 500), the read fails with [`LOG_RANGE_TOO_LARGE`](/docs/reference/errors/LOG_RANGE_TOO_LARGE) instead of sending more.
 - `event.get` covers one name. Address-wide and full history needs an indexer.
 
-See [`event.get`](/docs/sdk/reference/actions/event/get).
+See [`event.get`](/docs/reference/sdk/event/get).
 
 ## Options
 
@@ -150,11 +150,11 @@ Event types are `registration`, `renewal`, `release`, `expiry`, `transfer`, `aut
 
 ### `INDEXER_NOT_FOUND`
 
-The indexer has no such name. [`INDEXER_NOT_FOUND`](/docs/sdk/errors/INDEXER_NOT_FOUND) is thrown for a name that has never been indexed. Check the spelling, or read the name on-chain.
+The indexer has no such name. [`INDEXER_NOT_FOUND`](/docs/reference/errors/INDEXER_NOT_FOUND) is thrown for a name that has never been indexed. Check the spelling, or read the name on-chain.
 
 ### `INDEXER_NOT_CONFIGURED`
 
-The client has no indexer, or you forgot `indexerActions()`. See [Connect an indexer](/docs/sdk/connect-an-indexer) and [`INDEXER_NOT_CONFIGURED`](/docs/sdk/errors/INDEXER_NOT_CONFIGURED).
+The client has no indexer, or you forgot `indexerActions()`. See [Connect an indexer](/docs/sdk/connect-an-indexer) and [`INDEXER_NOT_CONFIGURED`](/docs/reference/errors/INDEXER_NOT_CONFIGURED).
 
 ### `LOG_RANGE_TOO_LARGE`
 

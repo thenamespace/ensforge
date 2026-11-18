@@ -9,9 +9,9 @@ By the end of this guide you can load a whole page of data, such as a profile, a
 ## Prerequisites
 
 - An ensforge client with the ENS actions added. See [Create a client](/docs/sdk/create-a-client).
-- For the second approach, an [indexer](/docs/sdk/reference/glossary#indexer). See [Connect an indexer](/docs/sdk/connect-an-indexer).
+- For the second approach, an [indexer](/docs/reference/glossary#indexer). See [Connect an indexer](/docs/sdk/connect-an-indexer).
 
-There are two ways to read many values. Use `batch` for reads from the chain ([batch](/docs/sdk/reference/glossary#batch)). Use `indexer.lookup` for up to 1,000 names and addresses at once, answered from an indexer.
+There are two ways to read many values. Use `batch` for reads from the chain ([batch](/docs/reference/glossary#batch)). Use `indexer.lookup` for up to 1,000 names and addresses at once, answered from an indexer.
 
 ## Batch reads from the chain
 
@@ -115,7 +115,7 @@ for (const answer of results) {
 - An input that fails, such as an invalid name, reports its own `status` and `reason`. It does not fail the lookup.
 - `profile: "detail"` adds records and resolution to each answer. The default is `"feed"`.
 
-See [`indexer.lookup`](/docs/sdk/reference/actions/indexer/lookup) and [Name lists and indexers](/docs/sdk/name-lists-and-indexers).
+See [`indexer.lookup`](/docs/reference/sdk/indexer/lookup) and [Name lists and indexers](/docs/sdk/name-lists-and-indexers).
 
 ### Lookup options
 
@@ -139,7 +139,7 @@ See [`indexer.lookup`](/docs/sdk/reference/actions/indexer/lookup) and [Name lis
 
 ### `INVALID_RECORD_VALUE` from `batch`
 
-A request cannot be batched. Only reads built with `.request` run in a batch. [`INVALID_RECORD_VALUE`](/docs/sdk/errors/INVALID_RECORD_VALUE) is also what `indexer.lookup` throws for more than 1,000 inputs, or for none.
+A request cannot be batched. Only reads built with `.request` run in a batch. [`INVALID_RECORD_VALUE`](/docs/reference/errors/INVALID_RECORD_VALUE) is also what `indexer.lookup` throws for more than 1,000 inputs, or for none.
 
 ### A result has `status: "failure"`
 
@@ -147,8 +147,8 @@ Read `result.error`. It is the same typed error the action would have thrown on 
 
 ### `INDEXER_NOT_CONFIGURED`
 
-`indexer.lookup` needs an indexer. Pass `indexer: bigname()` to `Ensforge.create` and add `indexerActions()`. See [`INDEXER_NOT_CONFIGURED`](/docs/sdk/errors/INDEXER_NOT_CONFIGURED) and [Connect an indexer](/docs/sdk/connect-an-indexer).
+`indexer.lookup` needs an indexer. Pass `indexer: bigname()` to `Ensforge.create` and add `indexerActions()`. See [`INDEXER_NOT_CONFIGURED`](/docs/reference/errors/INDEXER_NOT_CONFIGURED) and [Connect an indexer](/docs/sdk/connect-an-indexer).
 
 ### `INDEXER_UNSUPPORTED`
 
-The indexer does not serve the query or the namespace. See [`INDEXER_UNSUPPORTED`](/docs/sdk/errors/INDEXER_UNSUPPORTED) and [Connect an indexer](/docs/sdk/connect-an-indexer#use-more-than-one-indexer).
+The indexer does not serve the query or the namespace. See [`INDEXER_UNSUPPORTED`](/docs/reference/errors/INDEXER_UNSUPPORTED) and [Connect an indexer](/docs/sdk/connect-an-indexer#use-more-than-one-indexer).

@@ -5,7 +5,7 @@ keywords: [troubleshooting, errors, null result, rate limit, wallet, CCIP-Read]
 ---
 
 Find your symptom or error message below. Every error has a stable `code`, and each code has a page
-at `/docs/sdk/errors/<CODE>` with causes and fixes. For how to catch and show errors, see
+at `/docs/reference/errors/<CODE>` with causes and fixes. For how to catch and show errors, see
 [Handle errors](/docs/sdk/handle-errors).
 
 ## Reads
@@ -14,49 +14,49 @@ at `/docs/sdk/errors/<CODE>` with causes and fixes. For how to catch and show er
 
 `null` means the data is not set, not that the call failed. Check, in order:
 
-1. The name is spelled as you meant. ensforge [normalises](/docs/sdk/reference/glossary#normalisation) names (ENSIP-15), and
-   [`INVALID_NAME`](/docs/sdk/errors/INVALID_NAME) reports names that cannot be normalised.
-2. The name has a [resolver](/docs/sdk/reference/glossary#resolver) and the [record](/docs/sdk/reference/glossary#record) exists. Call `resolver.get`, or pass `strict: true` to turn
-   `null` into [`RESOLVER_NOT_FOUND`](/docs/sdk/errors/RESOLVER_NOT_FOUND) or
-   [`RECORD_NOT_FOUND`](/docs/sdk/errors/RECORD_NOT_FOUND).
+1. The name is spelled as you meant. ensforge [normalises](/docs/reference/glossary#normalisation) names (ENSIP-15), and
+   [`INVALID_NAME`](/docs/reference/errors/INVALID_NAME) reports names that cannot be normalised.
+2. The name has a [resolver](/docs/reference/glossary#resolver) and the [record](/docs/reference/glossary#record) exists. Call `resolver.get`, or pass `strict: true` to turn
+   `null` into [`RESOLVER_NOT_FOUND`](/docs/reference/errors/RESOLVER_NOT_FOUND) or
+   [`RECORD_NOT_FOUND`](/docs/reference/errors/RECORD_NOT_FOUND).
 3. The client is on the chain you expect. A Sepolia client does not see mainnet names.
 
 ### `This name resolves off-chain, and CCIP-Read is disabled.`
 
-The name keeps its records off-chain ([CCIP-Read](/docs/sdk/reference/glossary#ccip-read)) and the client was created with `ccipRead: false`. Remove that
-option. See [`CCIP_READ_DISABLED`](/docs/sdk/errors/CCIP_READ_DISABLED) and
+The name keeps its records off-chain ([CCIP-Read](/docs/reference/glossary#ccip-read)) and the client was created with `ccipRead: false`. Remove that
+option. See [`CCIP_READ_DISABLED`](/docs/reference/errors/CCIP_READ_DISABLED) and
 [Look up off-chain names](/docs/sdk/off-chain-names).
 
 ### An off-chain name fails with a gateway error
 
-The [gateway](/docs/sdk/reference/glossary#gateway) did not answer or returned data ensforge cannot use. A failed request is worth
-retrying. See [`GATEWAY_REQUEST_FAILED`](/docs/sdk/errors/GATEWAY_REQUEST_FAILED) and
-[`GATEWAY_RESPONSE_INVALID`](/docs/sdk/errors/GATEWAY_RESPONSE_INVALID).
+The [gateway](/docs/reference/glossary#gateway) did not answer or returned data ensforge cannot use. A failed request is worth
+retrying. See [`GATEWAY_REQUEST_FAILED`](/docs/reference/errors/GATEWAY_REQUEST_FAILED) and
+[`GATEWAY_RESPONSE_INVALID`](/docs/reference/errors/GATEWAY_RESPONSE_INVALID).
 
 ### `The primary name does not resolve back to this address.`
 
-The address's [primary name](/docs/sdk/reference/glossary#primary-name) record names a name whose address record points elsewhere. Set the name's
+The address's [primary name](/docs/reference/glossary#primary-name) record names a name whose address record points elsewhere. Set the name's
 address record to the address, or set another primary name. See
-[`PRIMARY_NAME_MISMATCH`](/docs/sdk/errors/PRIMARY_NAME_MISMATCH) and
+[`PRIMARY_NAME_MISMATCH`](/docs/reference/errors/PRIMARY_NAME_MISMATCH) and
 [Get the name for an address](/docs/sdk/get-a-primary-name).
 
 ### `The RPC provider is rate limiting requests.`
 
 Use a dedicated RPC URL or a `fallback` transport. See
-[`RATE_LIMITED`](/docs/sdk/errors/RATE_LIMITED) and
+[`RATE_LIMITED`](/docs/reference/errors/RATE_LIMITED) and
 [Configure RPC and gateways](/docs/sdk/rpc-and-gateways).
 
 ### `The RPC provider's eth_getLogs limits make this block range too expensive.`
 
 `event.get` needs wide log ranges. Narrow the block range, use an RPC URL with wider ranges, or read
-history from an indexer. See [`LOG_RANGE_TOO_LARGE`](/docs/sdk/errors/LOG_RANGE_TOO_LARGE) and
+history from an indexer. See [`LOG_RANGE_TOO_LARGE`](/docs/reference/errors/LOG_RANGE_TOO_LARGE) and
 [Name history](/docs/sdk/name-history).
 
 ### `This action needs an indexer.`
 
-You called an `indexer.*` action on a client without an [indexer](/docs/sdk/reference/glossary#indexer). Pass `indexer` to
+You called an `indexer.*` action on a client without an [indexer](/docs/reference/glossary#indexer). Pass `indexer` to
 `Ensforge.create`, and add `indexerActions()` to the client. See
-[`INDEXER_NOT_CONFIGURED`](/docs/sdk/errors/INDEXER_NOT_CONFIGURED) and
+[`INDEXER_NOT_CONFIGURED`](/docs/reference/errors/INDEXER_NOT_CONFIGURED) and
 [Connect an indexer](/docs/sdk/connect-an-indexer).
 
 ### DNS names fail with `DNSSEC_PROOF_FAILED`
@@ -64,7 +64,7 @@ You called an `indexer.*` action on a client without an [indexer](/docs/sdk/refe
 Since the root key rollover in October 2026 the on-chain DNSSEC oracle cannot verify proofs, so DNS
 name resolution and claims fail on mainnet and Sepolia. ensforge has no client-side workaround.
 The fix is upstream: ENS must add the new trust anchor to the oracle. See
-[`DNSSEC_PROOF_FAILED`](/docs/sdk/errors/DNSSEC_PROOF_FAILED) and
+[`DNSSEC_PROOF_FAILED`](/docs/reference/errors/DNSSEC_PROOF_FAILED) and
 [Use a DNS name](/docs/sdk/use-a-dns-name).
 
 ## Writes
@@ -72,56 +72,56 @@ The fix is upstream: ENS must add the new trust anchor to the oracle. See
 ### `This action needs a wallet client with an account.`
 
 The client has no wallet. Pass `walletClient` to `Ensforge.create`, or `account` to the action. See
-[`WALLET_NOT_CONFIGURED`](/docs/sdk/errors/WALLET_NOT_CONFIGURED).
+[`WALLET_NOT_CONFIGURED`](/docs/reference/errors/WALLET_NOT_CONFIGURED).
 
 ### `The wallet has no account to sign with.`
 
 The wallet client was created without an account and no default `account` was given. Pass `account`
-to `Ensforge.create` or the write. See [`ACCOUNT_NOT_FOUND`](/docs/sdk/errors/ACCOUNT_NOT_FOUND).
+to `Ensforge.create` or the write. See [`ACCOUNT_NOT_FOUND`](/docs/reference/errors/ACCOUNT_NOT_FOUND).
 
 ### `The wallet is on chain …, expected ….`
 
 The wallet's chain differs from the client's. Switch the wallet or create the client for its chain.
-See [`CHAIN_MISMATCH`](/docs/sdk/errors/CHAIN_MISMATCH).
+See [`CHAIN_MISMATCH`](/docs/reference/errors/CHAIN_MISMATCH).
 
 ### `... does not own this name.`
 
 The signer is not the owner. Send from the owner's account, or check who may change the name. See
-[`NOT_OWNER`](/docs/sdk/errors/NOT_OWNER) and
+[`NOT_OWNER`](/docs/reference/errors/NOT_OWNER) and
 [Who can change a name](/docs/sdk/who-can-change-a-name).
 
 ### `... is missing the roles this change needs.`
 
-On [ENSv2](/docs/sdk/reference/glossary#ensv2) names a change needs a [role](/docs/sdk/reference/glossary#role). `error.missingRoles` names them. See
-[`MISSING_ROLES`](/docs/sdk/errors/MISSING_ROLES) and
+On [ENSv2](/docs/reference/glossary#ensv2) names a change needs a [role](/docs/reference/glossary#role). `error.missingRoles` names them. See
+[`MISSING_ROLES`](/docs/reference/errors/MISSING_ROLES) and
 [Roles and permissions](/docs/sdk/roles-and-permissions).
 
 ### `The resolver does not support this record type.`
 
 The name's resolver cannot store that kind of record, for example an older resolver without `data`
 records, or a resolver that keeps records off-chain. Point the name at a resolver that supports it.
-See [`RESOLVER_PROFILE_UNSUPPORTED`](/docs/sdk/errors/RESOLVER_PROFILE_UNSUPPORTED) and
+See [`RESOLVER_PROFILE_UNSUPPORTED`](/docs/reference/errors/RESOLVER_PROFILE_UNSUPPORTED) and
 [Change the resolver](/docs/sdk/change-the-resolver).
 
 ### `The name must be migrated to ENSv2 first.`
 
-The write needs the name on ENSv2. [Migrate](/docs/sdk/reference/glossary#migration) it with `migration.migrate`. See
-[`NAME_REQUIRES_MIGRATION`](/docs/sdk/errors/NAME_REQUIRES_MIGRATION) and
+The write needs the name on ENSv2. [Migrate](/docs/reference/glossary#migration) it with `migration.migrate`. See
+[`NAME_REQUIRES_MIGRATION`](/docs/reference/errors/NAME_REQUIRES_MIGRATION) and
 [Move a name to ENSv2](/docs/sdk/move-a-name-to-ensv2).
 
 ### `Timed out waiting for the transaction receipt.`
 
 The transaction may still confirm. Check it by hash before sending again. See
-[`RECEIPT_TIMEOUT`](/docs/sdk/errors/RECEIPT_TIMEOUT).
+[`RECEIPT_TIMEOUT`](/docs/reference/errors/RECEIPT_TIMEOUT).
 
 ### `The transaction nonce conflicts with another transaction.`
 
 Another transaction from the account is pending. Wait for it to confirm, then retry. See
-[`NONCE_CONFLICT`](/docs/sdk/errors/NONCE_CONFLICT).
+[`NONCE_CONFLICT`](/docs/reference/errors/NONCE_CONFLICT).
 
 ### A registration takes more than a minute
 
-That is expected. A registration sends a [commitment](/docs/sdk/reference/glossary#commitment), waits for the registrar's minimum commitment age on chain
+That is expected. A registration sends a [commitment](/docs/reference/glossary#commitment), waits for the registrar's minimum commitment age on chain
 time, then registers. With a wallet that does not send atomic bundles, a single name is four to five
 transactions. Use `onStep` to show progress. See
 [Register a name](/docs/sdk/register-a-name) and [Send a transaction](/docs/sdk/send-a-transaction).
@@ -130,32 +130,32 @@ transactions. Use `onStep` to show progress. See
 
 Resume it with `plan.resume`. Do not send it again. See
 [Continue after a failure](/docs/sdk/continue-after-a-failure) and
-[`PLAN_NOT_FOUND`](/docs/sdk/errors/PLAN_NOT_FOUND).
+[`PLAN_NOT_FOUND`](/docs/reference/errors/PLAN_NOT_FOUND).
 
 ## Setup
 
 ### `No contract is deployed at the called address.`
 
 The client's chain does not match the deployment ensforge uses. Check the chain of your public
-client. See [`CONTRACT_NOT_DEPLOYED`](/docs/sdk/errors/CONTRACT_NOT_DEPLOYED).
+client. See [`CONTRACT_NOT_DEPLOYED`](/docs/reference/errors/CONTRACT_NOT_DEPLOYED).
 
 ### `ensforge has no ENS deployment for this chain.`
 
 ensforge ships deployments for Ethereum mainnet and Sepolia. For another chain, a fork with a
-different chain ID or a devnet, pass `deployment`. See [`UNKNOWN_CHAIN`](/docs/sdk/errors/UNKNOWN_CHAIN)
+different chain ID or a devnet, pass `deployment`. See [`UNKNOWN_CHAIN`](/docs/reference/errors/UNKNOWN_CHAIN)
 and [Create a client](/docs/sdk/create-a-client).
 
 ### `A decorator added an action group with a reserved name.`
 
 An extension added a group named `chain`, `account`, `deployment`, `publicClient`, `config` or
-`extend`. Rename the group. See [`INVALID_ACTION_GROUP`](/docs/sdk/errors/INVALID_ACTION_GROUP) and
+`extend`. Rename the group. See [`INVALID_ACTION_GROUP`](/docs/reference/errors/INVALID_ACTION_GROUP) and
 [Extend the client](/docs/sdk/extend-the-client).
 
 ### `An unexpected error occurred.`
 
 ensforge could not classify the failure. The original error is in `error.cause`. If it persists,
 report it at the [ensforge issue tracker](https://github.com/thenamespace/ensforge/issues) with the
-cause. See [`UNEXPECTED`](/docs/sdk/errors/UNEXPECTED).
+cause. See [`UNEXPECTED`](/docs/reference/errors/UNEXPECTED).
 
 ## Still stuck
 

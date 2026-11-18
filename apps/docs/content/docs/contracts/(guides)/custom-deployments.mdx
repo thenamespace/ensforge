@@ -60,7 +60,7 @@ try {
 
 ## 3. Use the profile with the SDK
 
-Pass the profile as `deployment` when you create the client. The client's chain must match the profile's `chainId`, or creation fails with [`INVALID_DEPLOYMENT`](/docs/sdk/errors/INVALID_DEPLOYMENT).
+Pass the profile as `deployment` when you create the client. The client's chain must match the profile's `chainId`, or creation fails with [`INVALID_DEPLOYMENT`](/docs/reference/errors/INVALID_DEPLOYMENT).
 
 **Example** (Creating a Client for the Devnet)
 
@@ -88,4 +88,4 @@ Read `error.issues`. Each entry names the path, such as `v2.contracts.ethRegistr
 
 ### `INVALID_DEPLOYMENT`
 
-`Deployments.define` rejected the profile, or the profile is for another chain than the client's. Read the error's `cause` for the profile's issues, and match `chainId` to the viem client's chain. See [`INVALID_DEPLOYMENT`](/docs/sdk/errors/INVALID_DEPLOYMENT).
+`Deployments.define` rejected the profile, or the profile is for another chain than the client's. Read the error's `cause` for the profile's issues, and match `chainId` to the viem client's chain. See [`INVALID_DEPLOYMENT`](/docs/reference/errors/INVALID_DEPLOYMENT).

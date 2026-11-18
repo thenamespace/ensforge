@@ -28,7 +28,7 @@ const ens = Ensforge.create({
 const url = await ens.record.getText({ name: "nick.eth", key: "url" });
 ```
 
-The result is a `string`, or `null` when the record is not set. ensforge [normalises](/docs/sdk/reference/glossary#normalisation) the name and finds its [resolver](/docs/sdk/reference/glossary#resolver), so wildcard names and [off-chain names](/docs/sdk/reference/glossary#off-chain-name) work too. Calls made in the same tick are batched into one multicall where possible. See [`record.getText`](/docs/sdk/reference/actions/record/get-text) and [How a lookup works](/docs/sdk/looking-up-a-name).
+The result is a `string`, or `null` when the record is not set. ensforge [normalises](/docs/reference/glossary#normalisation) the name and finds its [resolver](/docs/reference/glossary#resolver), so wildcard names and [off-chain names](/docs/reference/glossary#off-chain-name) work too. Calls made in the same tick are batched into one multicall where possible. See [`record.getText`](/docs/reference/sdk/record/get-text) and [How a lookup works](/docs/sdk/looking-up-a-name).
 
 ## Read several records in one call
 
@@ -61,7 +61,7 @@ profile.resolver;
 - `resolver` is the address of the resolver that answered, or `null` when the name has none.
 - A field you did not ask for does not exist on the result: `profile.texts.url` is there only because `"url"` was requested.
 
-`record.get` is one Universal Resolver call whatever you select. It can also read the content hash (`contentHash: true`), the public key, the `name` record and more. See [`record.get`](/docs/sdk/reference/actions/record/get), [Get a name's address](/docs/sdk/get-an-address) and [Get a website](/docs/sdk/get-a-website).
+`record.get` is one Universal Resolver call whatever you select. It can also read the content hash (`contentHash: true`), the public key, the `name` record and more. See [`record.get`](/docs/reference/sdk/record/get), [Get a name's address](/docs/sdk/get-an-address) and [Get a website](/docs/sdk/get-a-website).
 
 ## Options
 
@@ -91,12 +91,12 @@ Both actions also take the options every read takes: `signal` to cancel, `strict
 
 ### A record is `null`
 
-The record is not set, the name has no resolver, or its resolver does not store text records. With `strict: true`, `getText` fails with [`RECORD_NOT_FOUND`](/docs/sdk/errors/RECORD_NOT_FOUND), [`RESOLVER_NOT_FOUND`](/docs/sdk/errors/RESOLVER_NOT_FOUND) or [`RESOLVER_PROFILE_UNSUPPORTED`](/docs/sdk/errors/RESOLVER_PROFILE_UNSUPPORTED), so you can tell which. `record.get` with `strict: true` fails with `RESOLVER_NOT_FOUND` when the name has no resolver. Without `strict`, it returns `resolver: null` and every record `null`.
+The record is not set, the name has no resolver, or its resolver does not store text records. With `strict: true`, `getText` fails with [`RECORD_NOT_FOUND`](/docs/reference/errors/RECORD_NOT_FOUND), [`RESOLVER_NOT_FOUND`](/docs/reference/errors/RESOLVER_NOT_FOUND) or [`RESOLVER_PROFILE_UNSUPPORTED`](/docs/reference/errors/RESOLVER_PROFILE_UNSUPPORTED), so you can tell which. `record.get` with `strict: true` fails with `RESOLVER_NOT_FOUND` when the name has no resolver. Without `strict`, it returns `resolver: null` and every record `null`.
 
 ### `INVALID_NAME`
 
-The name cannot be normalised. [`INVALID_NAME`](/docs/sdk/errors/INVALID_NAME) is thrown before any request is sent.
+The name cannot be normalised. [`INVALID_NAME`](/docs/reference/errors/INVALID_NAME) is thrown before any request is sent.
 
 ### `GATEWAY_REQUEST_FAILED`
 
-The name's resolver sends the lookup to an off-chain gateway, and the gateway failed. See [Look up off-chain names](/docs/sdk/off-chain-names) and [`GATEWAY_REQUEST_FAILED`](/docs/sdk/errors/GATEWAY_REQUEST_FAILED).
+The name's resolver sends the lookup to an off-chain gateway, and the gateway failed. See [Look up off-chain names](/docs/sdk/off-chain-names) and [`GATEWAY_REQUEST_FAILED`](/docs/reference/errors/GATEWAY_REQUEST_FAILED).

@@ -13,7 +13,7 @@ keywords:
   ]
 ---
 
-This page is about [ENSv2](/docs/sdk/reference/glossary#ensv2) roles. On [ENSv1](/docs/sdk/reference/glossary#ensv1) an [owner](/docs/sdk/reference/glossary#owner), a [manager](/docs/sdk/reference/glossary#manager) and operators control a name, limited by [Name Wrapper](/docs/sdk/reference/glossary#name-wrapper) [fuses](/docs/sdk/reference/glossary#fuse). ENSv2 replaces that with **roles**: each account holds specific powers, such as changing the resolver, on a name or at the root of a [registry](/docs/sdk/reference/glossary#registry) or [resolver](/docs/sdk/reference/glossary#resolver). The [permission](/docs/sdk/reference/glossary#permission) reads below answer for both versions, so UIs need no branch.
+This page is about [ENSv2](/docs/reference/glossary#ensv2) roles. On [ENSv1](/docs/reference/glossary#ensv1) an [owner](/docs/reference/glossary#owner), a [manager](/docs/reference/glossary#manager) and operators control a name, limited by [Name Wrapper](/docs/reference/glossary#name-wrapper) [fuses](/docs/reference/glossary#fuse). ENSv2 replaces that with **roles**: each account holds specific powers, such as changing the resolver, on a name or at the root of a [registry](/docs/reference/glossary#registry) or [resolver](/docs/reference/glossary#resolver). The [permission](/docs/reference/glossary#permission) reads below answer for both versions, so UIs need no branch.
 
 You will check what an account may do, grant and revoke roles, and give an app access to some records.
 
@@ -24,7 +24,7 @@ You will check what an account may do, grant and revoke roles, and give an app a
 
 ## 1. Check what an account may do
 
-[`permission.get`](/docs/sdk/reference/actions/permission/get) answers every operation at once. Use it to show or hide buttons.
+[`permission.get`](/docs/reference/sdk/permission/get) answers every operation at once. Use it to show or hide buttons.
 
 **Example** (Gating a UI)
 
@@ -50,7 +50,7 @@ if (can.setRecords) console.log("show the edit button");
 - Pass `records` for per-record answers, such as which text keys the account may write.
 - On ENSv2 the answer uses the account's roles on the name and at the root of its registry.
 
-[`permission.check`](/docs/sdk/reference/actions/permission/check) checks one operation and lists what is missing.
+[`permission.check`](/docs/reference/sdk/permission/check) checks one operation and lists what is missing.
 
 **Example** (Explaining a Disabled Button)
 
@@ -74,7 +74,7 @@ const { allowed, via, missing } = await ens.permission.check({
 
 ## 2. Read an account's roles
 
-[`role.get`](/docs/sdk/reference/actions/role/get) reads the roles directly. `target` is `"registry"` or `"resolver"`.
+[`role.get`](/docs/reference/sdk/role/get) reads the roles directly. `target` is `"registry"` or `"resolver"`.
 
 **Example** (Reading Roles on a Name)
 
@@ -101,7 +101,7 @@ const { names, admin, rootRoles } = await ens.role.get({
 
 ## 3. Grant and revoke roles
 
-[`role.grant`](/docs/sdk/reference/actions/role/grant) and [`role.revoke`](/docs/sdk/reference/actions/role/revoke) take role names or a bitmap. Granting or revoking needs the matching admin roles.
+[`role.grant`](/docs/reference/sdk/role/grant) and [`role.revoke`](/docs/reference/sdk/role/revoke) take role names or a bitmap. Granting or revoking needs the matching admin roles.
 
 **Example** (Granting and Revoking a Role)
 
@@ -164,7 +164,7 @@ Some roles regenerate the name's token ID. The plan then carries a `TOKEN_ID_REG
 
 ## 4. Let an app edit some records
 
-[`permission.setRecordAccess`](/docs/sdk/reference/actions/permission/set-record-access) gives an account access to the records you list, or to all of them. `revoke: true` takes it back.
+[`permission.setRecordAccess`](/docs/reference/sdk/permission/set-record-access) gives an account access to the records you list, or to all of them. `revoke: true` takes it back.
 
 **Example** (Letting an App Edit One Text Record)
 
@@ -203,15 +203,15 @@ await ens.permission.setRecordAccessSync({
 
 ### `MISSING_ROLES`
 
-The account lacks a role. The error lists them. See [`MISSING_ROLES`](/docs/sdk/errors/MISSING_ROLES).
+The account lacks a role. The error lists them. See [`MISSING_ROLES`](/docs/reference/errors/MISSING_ROLES).
 
 ### `CANNOT_GRANT_ROLES`
 
-The signer lacks the admin role for what it tries to grant or revoke. See [`CANNOT_GRANT_ROLES`](/docs/sdk/errors/CANNOT_GRANT_ROLES).
+The signer lacks the admin role for what it tries to grant or revoke. See [`CANNOT_GRANT_ROLES`](/docs/reference/errors/CANNOT_GRANT_ROLES).
 
 ### `INVALID_ROLES`
 
-A role name or bitmap is not valid. See [`INVALID_ROLES`](/docs/sdk/errors/INVALID_ROLES).
+A role name or bitmap is not valid. See [`INVALID_ROLES`](/docs/reference/errors/INVALID_ROLES).
 
 ### `permission.get` returns `null` for an operation
 

@@ -5,27 +5,27 @@ keywords:
   [dns.claim, dns.getStatus, dns.getProof, DNSSEC, _ens TXT record, gasless DNS, ENS1, zonehash]
 ---
 
-You will import a DNS name you own into ENS, so it can have an [owner](/docs/sdk/reference/glossary#owner), a [resolver](/docs/sdk/reference/glossary#resolver) and [records](/docs/sdk/reference/glossary#record) like any other name. You prove ownership with a **DNSSEC** proof of a TXT record in your DNS zone, and ensforge fetches and sends the proof for you.
+You will import a DNS name you own into ENS, so it can have an [owner](/docs/reference/glossary#owner), a [resolver](/docs/reference/glossary#resolver) and [records](/docs/reference/glossary#record) like any other name. You prove ownership with a **DNSSEC** proof of a TXT record in your DNS zone, and ensforge fetches and sends the proof for you.
 
-DNS names are imported into [ENSv1](/docs/sdk/reference/glossary#ensv1). [ENSv2](/docs/sdk/reference/glossary#ensv2) resolves them through the ENSv1 [registry](/docs/sdk/reference/glossary#registry), so you do not choose a version.
+DNS names are imported into [ENSv1](/docs/reference/glossary#ensv1). [ENSv2](/docs/reference/glossary#ensv2) resolves them through the ENSv1 [registry](/docs/reference/glossary#registry), so you do not choose a version.
 
 ## Prerequisites
 
 - A DNS name whose zone uses DNSSEC.
 - A wallet client. Anyone can send the claim: the name goes to the address in the TXT record. See [Create a client](/docs/sdk/create-a-client).
-- A chain with a DNSSEC [gateway](/docs/sdk/reference/glossary#gateway) in its deployment, or your own `gatewayUrls`. The mainnet and Sepolia deployments list their gateways on-chain. Without either, the DNS actions fail with [`UNSUPPORTED_ON_DEPLOYMENT`](/docs/sdk/errors/UNSUPPORTED_ON_DEPLOYMENT).
+- A chain with a DNSSEC [gateway](/docs/reference/glossary#gateway) in its deployment, or your own `gatewayUrls`. The mainnet and Sepolia deployments list their gateways on-chain. Without either, the DNS actions fail with [`UNSUPPORTED_ON_DEPLOYMENT`](/docs/reference/errors/UNSUPPORTED_ON_DEPLOYMENT).
 
 <Callout type="warn" title="DNS claims fail since the root key rollover">
   Since the DNSSEC root KSK rollover in October 2026, the on-chain DNSSEC oracle on mainnet and
   Sepolia cannot verify any proof: it lacks the new root key. `dns.getStatus` reports
   `proof-invalid` and `dns.claim` fails with `DNSSEC_PROOF_FAILED` until ENS adds the trust anchor.
   ensforge has no client-side workaround. See
-  [`DNSSEC_PROOF_FAILED`](/docs/sdk/errors/DNSSEC_PROOF_FAILED).
+  [`DNSSEC_PROOF_FAILED`](/docs/reference/errors/DNSSEC_PROOF_FAILED).
 </Callout>
 
 ## 1. Check what the name needs
 
-[`dns.getStatus`](/docs/sdk/reference/actions/dns/get-status) compares the ENSv1 registry owner with the address in the `_ens` TXT record, and verifies the record's proof against the on-chain DNSSEC oracle.
+[`dns.getStatus`](/docs/reference/sdk/dns/get-status) compares the ENSv1 registry owner with the address in the `_ens` TXT record, and verifies the record's proof against the on-chain DNSSEC oracle.
 
 **Example** (Checking a DNS Name)
 
@@ -62,7 +62,7 @@ _ens.example.com.  TXT  "a=0xB0b0000000000000000000000000000000000000"
 
 ## 3. Claim the name
 
-[`dns.claim`](/docs/sdk/reference/actions/dns/claim) fetches the proof from the deployment's DNSSEC gateway and sends it. `dns.claimSync` also waits for the receipt.
+[`dns.claim`](/docs/reference/sdk/dns/claim) fetches the proof from the deployment's DNSSEC gateway and sends it. `dns.claimSync` also waits for the receipt.
 
 **Example** (Claiming a DNS Name)
 
@@ -94,13 +94,13 @@ if (status.action === "claim") {
 | `resolver`    | `string`   | A resolver to set while claiming. Only the DNS owner may send a claim with a resolver. |
 | `gatewayUrls` | `string[]` | DNSSEC gateways to fetch the proof from, instead of the deployment's.                  |
 
-[`dns.getProof`](/docs/sdk/reference/actions/dns/get-proof) fetches a proof without sending anything. It does not verify the proof: `dns.getStatus` does.
+[`dns.getProof`](/docs/reference/sdk/dns/get-proof) fetches a proof without sending anything. It does not verify the proof: `dns.getStatus` does.
 
 `dns.claim` cannot set an address record while claiming. Set records afterwards with [`record.set`](/docs/sdk/set-records).
 
 ## Use a gasless DNS name
 
-A gasless DNS name resolves without being imported, as an [off-chain name](/docs/sdk/reference/glossary#off-chain-name). Its owner adds a TXT record `ENS1 <resolver> [context]` on the name itself. [`dns.getOffchainResolver`](/docs/sdk/reference/actions/dns/get-offchain-resolver) reads it and returns `{ resolver, context }`, or `null` when there is none.
+A gasless DNS name resolves without being imported, as an [off-chain name](/docs/reference/glossary#off-chain-name). Its owner adds a TXT record `ENS1 <resolver> [context]` on the name itself. [`dns.getOffchainResolver`](/docs/reference/sdk/dns/get-offchain-resolver) reads it and returns `{ resolver, context }`, or `null` when there is none.
 
 **Example** (Reading a Gasless DNS Setup)
 
@@ -120,34 +120,34 @@ The record is read through the DNSSEC gateway without on-chain verification. See
 
 ## Host DNS records in ENS
 
-[`dns.setRecords`](/docs/sdk/reference/actions/dns/set-records) stores resource records, or a zonehash, on an ENS name's public resolver, for DNS servers that read them from ENS. Records are in DNS wire format. `zonehash: null` clears the zonehash. Only the ENS public resolvers store DNS records.
+[`dns.setRecords`](/docs/reference/sdk/dns/set-records) stores resource records, or a zonehash, on an ENS name's public resolver, for DNS servers that read them from ENS. Records are in DNS wire format. `zonehash: null` clears the zonehash. Only the ENS public resolvers store DNS records.
 
 ## Check the result
 
-Call `dns.getStatus` again. `action` is `none` and `imported` is `true` when the claim worked. Then read the name with [`name.get`](/docs/sdk/reference/actions/name/get).
+Call `dns.getStatus` again. `action` is `none` and `imported` is `true` when the claim worked. Then read the name with [`name.get`](/docs/reference/sdk/name/get).
 
 ## Troubleshooting
 
 ### `DNS_RECORD_MISSING`
 
-The `_ens` TXT record is missing, or its value does not parse as `a=<address>`. Add it and wait for DNS to update. See [`DNS_RECORD_MISSING`](/docs/sdk/errors/DNS_RECORD_MISSING).
+The `_ens` TXT record is missing, or its value does not parse as `a=<address>`. Add it and wait for DNS to update. See [`DNS_RECORD_MISSING`](/docs/reference/errors/DNS_RECORD_MISSING).
 
 ### `PROOF_STALE`
 
-The proof is older than the one already on-chain. Fetch a fresh proof and retry. See [`PROOF_STALE`](/docs/sdk/errors/PROOF_STALE).
+The proof is older than the one already on-chain. Fetch a fresh proof and retry. See [`PROOF_STALE`](/docs/reference/errors/PROOF_STALE).
 
 ### `DNSSEC_PROOF_FAILED`
 
-The proof could not be built or verified. Check that DNSSEC is enabled for the domain, and see the warning at the top of this page. See [`DNSSEC_PROOF_FAILED`](/docs/sdk/errors/DNSSEC_PROOF_FAILED).
+The proof could not be built or verified. Check that DNSSEC is enabled for the domain, and see the warning at the top of this page. See [`DNSSEC_PROOF_FAILED`](/docs/reference/errors/DNSSEC_PROOF_FAILED).
 
 ### `TLD_NOT_PUBLIC`
 
-The name's top-level domain is not a public suffix, so it cannot be imported. See [`TLD_NOT_PUBLIC`](/docs/sdk/errors/TLD_NOT_PUBLIC).
+The name's top-level domain is not a public suffix, so it cannot be imported. See [`TLD_NOT_PUBLIC`](/docs/reference/errors/TLD_NOT_PUBLIC).
 
 ### `GATEWAY_REQUEST_FAILED` or `GATEWAY_RESPONSE_INVALID`
 
-The DNSSEC gateway failed or answered with data that does not parse. Retry, or pass another `gatewayUrls`. See [`GATEWAY_REQUEST_FAILED`](/docs/sdk/errors/GATEWAY_REQUEST_FAILED) and [`GATEWAY_RESPONSE_INVALID`](/docs/sdk/errors/GATEWAY_RESPONSE_INVALID).
+The DNSSEC gateway failed or answered with data that does not parse. Retry, or pass another `gatewayUrls`. See [`GATEWAY_REQUEST_FAILED`](/docs/reference/errors/GATEWAY_REQUEST_FAILED) and [`GATEWAY_RESPONSE_INVALID`](/docs/reference/errors/GATEWAY_RESPONSE_INVALID).
 
 ### `NOT_OWNER`
 
-You passed `resolver`, but the sender is not the DNS owner. Claim without `resolver`, or send from the address in the TXT record. See [`NOT_OWNER`](/docs/sdk/errors/NOT_OWNER).
+You passed `resolver`, but the sender is not the DNS owner. Claim without `resolver`, or send from the address in the TXT record. See [`NOT_OWNER`](/docs/reference/errors/NOT_OWNER).

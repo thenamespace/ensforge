@@ -13,7 +13,7 @@ By the end of this guide you can read the **content hash** of a name (a pointer 
 
 ## Read the content hash
 
-`record.getContentHash` reads the content hash [record](/docs/sdk/reference/glossary#record) ([ENSIP-7](https://docs.ens.domains/ensip/7)) and decodes it.
+`record.getContentHash` reads the content hash [record](/docs/reference/glossary#record) ([ENSIP-7](https://docs.ens.domains/ensip/7)) and decodes it.
 
 **Example** (Reading a Website)
 
@@ -38,11 +38,11 @@ The result is `null` when the record is not set or cannot be decoded. Otherwise 
 | `value`    | The identifier without the scheme, such as an IPFS CID.                                         |
 | `uri`      | `protocol://value`.                                                                             |
 
-See [`record.getContentHash`](/docs/sdk/reference/actions/record/get-content-hash).
+See [`record.getContentHash`](/docs/reference/sdk/record/get-content-hash).
 
 ## Turn it into a link
 
-A `uri` such as `ipfs://…` is not a link a browser opens. `ContentHash.toGatewayUrl` turns it into an HTTP URL through a storage [gateway](/docs/sdk/reference/glossary#gateway).
+A `uri` such as `ipfs://…` is not a link a browser opens. `ContentHash.toGatewayUrl` turns it into an HTTP URL through a storage [gateway](/docs/reference/glossary#gateway).
 
 **Example** (Building a Gateway Link)
 
@@ -79,11 +79,11 @@ The action also takes the options every read takes: `signal`, `strict`, `gateway
 
 ### The result is `null`
 
-The name has no content hash, no resolver, or the bytes use a codec ensforge does not decode. With `strict: true`, a missing record fails with [`RECORD_NOT_FOUND`](/docs/sdk/errors/RECORD_NOT_FOUND) or [`RESOLVER_NOT_FOUND`](/docs/sdk/errors/RESOLVER_NOT_FOUND).
+The name has no content hash, no resolver, or the bytes use a codec ensforge does not decode. With `strict: true`, a missing record fails with [`RECORD_NOT_FOUND`](/docs/reference/errors/RECORD_NOT_FOUND) or [`RESOLVER_NOT_FOUND`](/docs/reference/errors/RESOLVER_NOT_FOUND).
 
 ### `INVALID_CONTENT_HASH`
 
-`ContentHash.encode` and `ContentHash.decode` throw [`INVALID_CONTENT_HASH`](/docs/sdk/errors/INVALID_CONTENT_HASH) when a value is malformed or uses an unsupported scheme. The read itself returns `null` instead.
+`ContentHash.encode` and `ContentHash.decode` throw [`INVALID_CONTENT_HASH`](/docs/reference/errors/INVALID_CONTENT_HASH) when a value is malformed or uses an unsupported scheme. The read itself returns `null` instead.
 
 ### The link does not load
 

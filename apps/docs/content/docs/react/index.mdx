@@ -35,7 +35,7 @@ export function Providers({ children }: { children: ReactNode }) {
 
 ## 2. Read an address
 
-`useAddress` reads the address a [name](/docs/sdk/reference/glossary#name) points to. It returns `isLoading` until the first result, then `data`. It is a preset of [`useRead`](/docs/react/reference/hooks/use-read).
+`useAddress` reads the address a [name](/docs/reference/glossary#name) points to. It returns `isLoading` until the first result, then `data`. It is a preset of [`useRead`](/docs/reference/react/use-read).
 
 **Example** (Showing An Address)
 
@@ -60,7 +60,7 @@ Every component that reads `nick.eth` shares this one request and result. See [R
 
 ## 3. Send a write
 
-`useSetRecords` writes [records](/docs/sdk/reference/glossary#record) to a name you manage. Call `mutate` from an event handler. `status` and `steps` follow the transaction. Use a testnet such as Sepolia and a name you own for writes.
+`useSetRecords` writes [records](/docs/reference/glossary#record) to a name you manage. Call `mutate` from an event handler. `status` and `steps` follow the transaction. Use a testnet such as Sepolia and a name you own for writes.
 
 **Example** (Saving A Website Record)
 
@@ -91,7 +91,7 @@ Once the transaction is mined, every read of `name` on screen refetches, so a co
 
 <Callout type="info" title="Writes need a wallet">
   The client in step 1 has no wallet, so a write fails with
-  [`WALLET_NOT_CONFIGURED`](/docs/sdk/errors/WALLET_NOT_CONFIGURED). Pass a `walletClient` to
+  [`WALLET_NOT_CONFIGURED`](/docs/reference/errors/WALLET_NOT_CONFIGURED). Pass a `walletClient` to
   `Ensforge.create`, or use [wagmi](/docs/react/with-wagmi).
 </Callout>
 

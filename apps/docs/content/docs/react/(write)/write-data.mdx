@@ -37,17 +37,17 @@ export function Save({ name }: { name: string }) {
 
 ## Pick a write hook
 
-| Hook                                                                    | Sends                                                         |
-| ----------------------------------------------------------------------- | ------------------------------------------------------------- |
-| [`useSetRecords`](/docs/react/reference/hooks/use-set-records)          | Sets, changes or clears a name's records in one write.        |
-| [`useRegister`](/docs/react/reference/hooks/use-register)               | Registers names: commit, wait the minimum age, then register. |
-| [`useRenew`](/docs/react/reference/hooks/use-renew)                     | Renews names.                                                 |
-| [`useSetResolver`](/docs/react/reference/hooks/use-set-resolver)        | Points a name at a resolver.                                  |
-| [`useTransferName`](/docs/react/reference/hooks/use-transfer-name)      | Transfers a name to another account.                          |
-| [`useCreateSubname`](/docs/react/reference/hooks/use-create-subname)    | Creates a subname, optionally with records.                   |
-| [`useSetPrimaryName`](/docs/react/reference/hooks/use-set-primary-name) | Sets the signer's primary name.                               |
-| [`useSignClaim`](/docs/react/reference/hooks/use-sign-claim)            | Signs a primary-name claim once, to set it on other chains.   |
-| [`useMigrate`](/docs/react/reference/hooks/use-migrate)                 | Moves names from ENSv1 to ENSv2.                              |
+| Hook                                                              | Sends                                                         |
+| ----------------------------------------------------------------- | ------------------------------------------------------------- |
+| [`useSetRecords`](/docs/reference/react/use-set-records)          | Sets, changes or clears a name's records in one write.        |
+| [`useRegister`](/docs/reference/react/use-register)               | Registers names: commit, wait the minimum age, then register. |
+| [`useRenew`](/docs/reference/react/use-renew)                     | Renews names.                                                 |
+| [`useSetResolver`](/docs/reference/react/use-set-resolver)        | Points a name at a resolver.                                  |
+| [`useTransferName`](/docs/reference/react/use-transfer-name)      | Transfers a name to another account.                          |
+| [`useCreateSubname`](/docs/reference/react/use-create-subname)    | Creates a subname, optionally with records.                   |
+| [`useSetPrimaryName`](/docs/reference/react/use-set-primary-name) | Sets the signer's primary name.                               |
+| [`useSignClaim`](/docs/reference/react/use-sign-claim)            | Signs a primary-name claim once, to set it on other chains.   |
+| [`useMigrate`](/docs/reference/react/use-migrate)                 | Moves names from ENSv1 to ENSv2.                              |
 
 For any other write, use `useWrite(action)` with an action from `@ensforge/sdk`. Named hooks are presets of it.
 
@@ -68,7 +68,7 @@ Each component gets its own state, so two buttons never share a result. The stat
 
 ## Show progress
 
-Multi-step writes, such as a registration (commit, wait, register), push an event to `steps` as each [step](/docs/sdk/reference/glossary#step) changes. Each event names its `step` and its `status`. `submitted` events carry the transaction `hashes`, and `failed` events carry the `error`.
+Multi-step writes, such as a registration (commit, wait, register), push an event to `steps` as each [step](/docs/reference/glossary#step) changes. Each event names its `step` and its `status`. `submitted` events carry the transaction `hashes`, and `failed` events carry the `error`.
 
 **Example** (Registering With Progress)
 
@@ -140,4 +140,4 @@ export function SaveAndClose({ name, onDone }: { name: string; onDone: () => voi
 
 Once a write succeeds, every read of the names and accounts it touched refetches: chain reads once the transaction is mined, indexer reads once the indexer has caught up. Components that show the data update on their own. See [Caching and refreshing](/docs/react/caching-and-refreshing#refresh-after-a-write).
 
-To show what a write will do before the wallet prompt, see [Preview before sending](/docs/react/preview-before-sending). For how [plans](/docs/sdk/reference/glossary#plan) work, see [How writes work](/docs/sdk/writing-to-ens).
+To show what a write will do before the wallet prompt, see [Preview before sending](/docs/react/preview-before-sending). For how [plans](/docs/reference/glossary#plan) work, see [How writes work](/docs/sdk/writing-to-ens).

@@ -35,7 +35,7 @@ console.log(name);
 vitalik.eth
 ```
 
-The result is a `string`, or `null` when the address has no valid primary name. Show the address itself in that case. See [`primaryName.get`](/docs/sdk/reference/actions/primary-name/get).
+The result is a `string`, or `null` when the address has no valid primary name. Show the address itself in that case. See [`primaryName.get`](/docs/reference/sdk/primary-name/get).
 
 ## Why a name can come back as `null` even when one is set
 
@@ -89,10 +89,10 @@ The action also takes the options every read takes: `signal`, `strict`, `gateway
 
 The result is the name, or `null` when there is no valid primary name. With `strict: true`, the two ways to have none are told apart:
 
-| Situation                                                                                          | Error                                                             |
-| -------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
-| The address has no reverse name, or its reverse name has no resolver or no name                    | [`PRIMARY_NAME_NOT_SET`](/docs/sdk/errors/PRIMARY_NAME_NOT_SET)   |
-| The name does not resolve back to the address (no resolver, no address record, or another address) | [`PRIMARY_NAME_MISMATCH`](/docs/sdk/errors/PRIMARY_NAME_MISMATCH) |
+| Situation                                                                                          | Error                                                                   |
+| -------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| The address has no reverse name, or its reverse name has no resolver or no name                    | [`PRIMARY_NAME_NOT_SET`](/docs/reference/errors/PRIMARY_NAME_NOT_SET)   |
+| The name does not resolve back to the address (no resolver, no address record, or another address) | [`PRIMARY_NAME_MISMATCH`](/docs/reference/errors/PRIMARY_NAME_MISMATCH) |
 
 The `cause` of a mismatch names the name or the profile that failed. A resolver that reverts without data says neither, and counts as not set.
 
@@ -102,12 +102,12 @@ To label many addresses at once, see [Look up many at once](/docs/sdk/look-up-ma
 
 ### The result is `null`
 
-The address has no primary name, or the name it set does not resolve back to it. Pass `strict: true` to get [`PRIMARY_NAME_NOT_SET`](/docs/sdk/errors/PRIMARY_NAME_NOT_SET) or [`PRIMARY_NAME_MISMATCH`](/docs/sdk/errors/PRIMARY_NAME_MISMATCH). To fix a mismatch, the owner sets the name's address record to the address, or picks another primary name.
+The address has no primary name, or the name it set does not resolve back to it. Pass `strict: true` to get [`PRIMARY_NAME_NOT_SET`](/docs/reference/errors/PRIMARY_NAME_NOT_SET) or [`PRIMARY_NAME_MISMATCH`](/docs/reference/errors/PRIMARY_NAME_MISMATCH). To fix a mismatch, the owner sets the name's address record to the address, or picks another primary name.
 
 ### `INVALID_ADDRESS`
 
-The `address` is not a valid address. [`INVALID_ADDRESS`](/docs/sdk/errors/INVALID_ADDRESS) is thrown before any request is sent. [`INVALID_COIN_TYPE`](/docs/sdk/errors/INVALID_COIN_TYPE) means the `coin` is unknown.
+The `address` is not a valid address. [`INVALID_ADDRESS`](/docs/reference/errors/INVALID_ADDRESS) is thrown before any request is sent. [`INVALID_COIN_TYPE`](/docs/reference/errors/INVALID_COIN_TYPE) means the `coin` is unknown.
 
 ### `GATEWAY_REQUEST_FAILED` on an L2 name
 
-Primary names on other chains can be proven through off-chain gateways, and the gateway failed. See [Look up off-chain names](/docs/sdk/off-chain-names) and [`GATEWAY_REQUEST_FAILED`](/docs/sdk/errors/GATEWAY_REQUEST_FAILED).
+Primary names on other chains can be proven through off-chain gateways, and the gateway failed. See [Look up off-chain names](/docs/sdk/off-chain-names) and [`GATEWAY_REQUEST_FAILED`](/docs/reference/errors/GATEWAY_REQUEST_FAILED).

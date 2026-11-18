@@ -165,9 +165,9 @@ const text = Plan.serialize(plan);
 const restored = Plan.deserialize(text);
 ```
 
-`Plan.deserialize` throws [`PLAN_INVALID`](/docs/sdk/errors/PLAN_INVALID) when the text is not a
+`Plan.deserialize` throws [`PLAN_INVALID`](/docs/reference/errors/PLAN_INVALID) when the text is not a
 serialised plan. A restored plan is for one chain and account: send it with
-[`plan.send`](/docs/sdk/reference/actions/plan/send) on a client for the same ones.
+[`plan.send`](/docs/reference/sdk/plan/send) on a client for the same ones.
 
 ## Check the result
 
@@ -179,7 +179,7 @@ there with the steps already submitted.
 ### `PLAN_NOT_FOUND`
 
 The store has no plan with that id. With the default memory store, plans are lost on reload. See
-[`PLAN_NOT_FOUND`](/docs/sdk/errors/PLAN_NOT_FOUND).
+[`PLAN_NOT_FOUND`](/docs/reference/errors/PLAN_NOT_FOUND).
 
 ### `localStorage is not available in this environment`
 

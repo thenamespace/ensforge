@@ -19,10 +19,10 @@ marked `before` is the 0.x API as published in `@ensforge/sdk@0.6.1` and `@ensfo
 | One setter per record kind (`setText`, `setAddress`, `setContentHash` …)                        | One action, `record.set`, with `texts`, `addresses`, `contentHash` and more.                                                                        |
 | Writes that waited for the receipt by default, with `status`, `hash` and `receipt`              | Writes resolve once submitted with `Write.Result` (`hash`, `hashes`, `id`, `plan`). The `…Sync` form waits for receipts.                            |
 | `writes: { simulation, confirmation }` in the config                                            | `simulate` and `…Sync` per call or per client.                                                                                                      |
-| Workflows (`sdk.workflows`)                                                                     | [Plans](/docs/sdk/reference/glossary#plan) (`plan.get`, `plan.list`, `plan.resume`).                                                                |
+| Workflows (`sdk.workflows`)                                                                     | [Plans](/docs/reference/glossary#plan) (`plan.get`, `plan.list`, `plan.resume`).                                                                    |
 | `ContractError`, `RpcError`, `NameError` …                                                      | `Errors.*` classes with stable codes.                                                                                                               |
 | `createEnsforge` from `@ensforge/sdk/wagmi`, or `createWagmiConfig` from `@ensforge/core/wagmi` | `Ensforge.fromWagmi` from `@ensforge/sdk/wagmi`.                                                                                                    |
-| [HCA](/docs/sdk/reference/glossary#hca) actions on `sdk.hca`                                    | The `@ensforge/hca` package, as `ens.hca.*` and `via: hca()`.                                                                                       |
+| [HCA](/docs/reference/glossary#hca) actions on `sdk.hca`                                        | The `@ensforge/hca` package, as `ens.hca.*` and `via: hca()`.                                                                                       |
 
 ## 1. Update the packages
 
@@ -128,34 +128,34 @@ See [Set records](/docs/sdk/set-records) and [Send a transaction](/docs/sdk/send
 
 ### Where each 0.x action went
 
-| 0.x group and actions                                                                                    | 1.0                                                                                                                                        |
-| -------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| `records.get*`                                                                                           | [`record.get`](/docs/sdk/reference/actions/record/get), `record.getText`, `record.getAddress`, `record.getAvatar`, `record.getContentHash` |
-| `records.set*`, `records.clearRecords`, `records.clearAvatar`                                            | [`record.set`](/docs/sdk/reference/actions/record/set) (`null` deletes a value; `clear: true` deletes everything first)                    |
-| `name.getOwner`, `getManager`, `getRegistrant`, `getExpiry`, `getNameState`, `isWrapped`, `isMigrated` … | [`name.get`](/docs/sdk/reference/actions/name/get)                                                                                         |
-| `name.isAvailable`                                                                                       | `registration.isAvailable`                                                                                                                 |
-| `resolution.getResolver`, `resolve*`                                                                     | `resolver.get`, `resolver.resolve`                                                                                                         |
-| `records.setAlias`, `resolution.getAlias`                                                                | `resolver.link`, `resolver.getLink`. See [Resolvers and shared records](/docs/sdk/resolvers-and-shared-records).                           |
-| `resolution.setResolver`, `setResolverAndRecords`, `createResolver`, `upgradeResolver`                   | `resolver.set`, `record.set({ resolver })`, `resolver.create`, `resolver.upgrade`                                                          |
-| `reverse.setPrimaryName`, `clearPrimaryName`, `setPrimaryNameForAddress`, `setContractPrimaryName`       | [`primaryName.set`](/docs/sdk/reference/actions/primary-name/set) (`name: null` clears)                                                    |
-| `registration.registerName(s)`, `commitName`, `completeRegistration`                                     | `registration.register` (several names in one call), `registration.commit`; finish with the result's `secret`                              |
-| `registration.getRegistrationPrice`, `getRenewalPrice`, `getCommitmentStatus`                            | `registration.getPrice`, `getRenewalPrice`, `getCommitmentStatus`                                                                          |
-| `registration.renewName(s)`                                                                              | `registration.renew`                                                                                                                       |
-| `ownership.transferName`, `transferRegistrant`, `reclaimName`, `setManager`, `setTtl`                    | `name.transfer` (`role: "registrant"`), `name.reclaim`, `name.setManager`, `name.setTtl`                                                   |
-| `subnames.*`                                                                                             | `subname.create`, `subname.update`, `subname.remove`                                                                                       |
-| `wrapping.*`                                                                                             | `wrapper.wrap`, `unwrap`, `getFuses`, `setFuses`, `setChildFuses`                                                                          |
-| `migration.*`                                                                                            | `migration.get`, `migration.migrate`                                                                                                       |
-| `dns.*`                                                                                                  | `dns.getStatus`, `dns.claim`, `dns.getProof`, `dns.getRecords`, `dns.setRecords`                                                           |
-| `events.*`                                                                                               | `event.get`, `event.watch`, `event.decode`                                                                                                 |
-| `permissions.*`, `capabilities.*`                                                                        | `permission.check`, `permission.get`, `permission.setRecordAccess`, `role.get`, `role.grant`, `role.revoke`, `approval.*`                  |
-| `indexer.*`                                                                                              | `indexer.*` (19 actions; add `indexerActions()`)                                                                                           |
-| `batch.prepareCalls`, `simulateCalls`, `estimateCalls`, `sendCalls`, `executeWritePlan`                  | `.prepare`, `.simulate`, `.estimateGas` on any write, and `plan.send`. See [Preview before sending](/docs/sdk/preview-before-sending).     |
-| `batch.getCallsStatus`, `resumeCalls`, `workflows.*`                                                     | `plan.get`, `plan.list`, `plan.resume`, `plan.reconcile`. See [Continue after a failure](/docs/sdk/continue-after-a-failure).              |
-| `hca.*`, `hcaAdmin`                                                                                      | `@ensforge/hca`. See [Use smart accounts](/docs/sdk/use-smart-accounts).                                                                   |
+| 0.x group and actions                                                                                    | 1.0                                                                                                                                    |
+| -------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| `records.get*`                                                                                           | [`record.get`](/docs/reference/sdk/record/get), `record.getText`, `record.getAddress`, `record.getAvatar`, `record.getContentHash`     |
+| `records.set*`, `records.clearRecords`, `records.clearAvatar`                                            | [`record.set`](/docs/reference/sdk/record/set) (`null` deletes a value; `clear: true` deletes everything first)                        |
+| `name.getOwner`, `getManager`, `getRegistrant`, `getExpiry`, `getNameState`, `isWrapped`, `isMigrated` … | [`name.get`](/docs/reference/sdk/name/get)                                                                                             |
+| `name.isAvailable`                                                                                       | `registration.isAvailable`                                                                                                             |
+| `resolution.getResolver`, `resolve*`                                                                     | `resolver.get`, `resolver.resolve`                                                                                                     |
+| `records.setAlias`, `resolution.getAlias`                                                                | `resolver.link`, `resolver.getLink`. See [Resolvers and shared records](/docs/sdk/resolvers-and-shared-records).                       |
+| `resolution.setResolver`, `setResolverAndRecords`, `createResolver`, `upgradeResolver`                   | `resolver.set`, `record.set({ resolver })`, `resolver.create`, `resolver.upgrade`                                                      |
+| `reverse.setPrimaryName`, `clearPrimaryName`, `setPrimaryNameForAddress`, `setContractPrimaryName`       | [`primaryName.set`](/docs/reference/sdk/primary-name/set) (`name: null` clears)                                                        |
+| `registration.registerName(s)`, `commitName`, `completeRegistration`                                     | `registration.register` (several names in one call), `registration.commit`; finish with the result's `secret`                          |
+| `registration.getRegistrationPrice`, `getRenewalPrice`, `getCommitmentStatus`                            | `registration.getPrice`, `getRenewalPrice`, `getCommitmentStatus`                                                                      |
+| `registration.renewName(s)`                                                                              | `registration.renew`                                                                                                                   |
+| `ownership.transferName`, `transferRegistrant`, `reclaimName`, `setManager`, `setTtl`                    | `name.transfer` (`role: "registrant"`), `name.reclaim`, `name.setManager`, `name.setTtl`                                               |
+| `subnames.*`                                                                                             | `subname.create`, `subname.update`, `subname.remove`                                                                                   |
+| `wrapping.*`                                                                                             | `wrapper.wrap`, `unwrap`, `getFuses`, `setFuses`, `setChildFuses`                                                                      |
+| `migration.*`                                                                                            | `migration.get`, `migration.migrate`                                                                                                   |
+| `dns.*`                                                                                                  | `dns.getStatus`, `dns.claim`, `dns.getProof`, `dns.getRecords`, `dns.setRecords`                                                       |
+| `events.*`                                                                                               | `event.get`, `event.watch`, `event.decode`                                                                                             |
+| `permissions.*`, `capabilities.*`                                                                        | `permission.check`, `permission.get`, `permission.setRecordAccess`, `role.get`, `role.grant`, `role.revoke`, `approval.*`              |
+| `indexer.*`                                                                                              | `indexer.*` (19 actions; add `indexerActions()`)                                                                                       |
+| `batch.prepareCalls`, `simulateCalls`, `estimateCalls`, `sendCalls`, `executeWritePlan`                  | `.prepare`, `.simulate`, `.estimateGas` on any write, and `plan.send`. See [Preview before sending](/docs/sdk/preview-before-sending). |
+| `batch.getCallsStatus`, `resumeCalls`, `workflows.*`                                                     | `plan.get`, `plan.list`, `plan.resume`, `plan.reconcile`. See [Continue after a failure](/docs/sdk/continue-after-a-failure).          |
+| `hca.*`, `hcaAdmin`                                                                                      | `@ensforge/hca`. See [Use smart accounts](/docs/sdk/use-smart-accounts).                                                               |
 
 Some 0.x helpers, such as `resolution.predictResolverAddress` and `name.getProtocol`, have no
 action of their own in 1.0: `resolver.create.prepare` returns the address in `plan.deploys`, and
-`name.get` returns `protocol`. Browse the [reference](/docs/sdk/reference/actions/record) for what
+`name.get` returns `protocol`. Browse the [reference](/docs/reference/sdk/record) for what
 exists.
 
 ## 5. Errors
@@ -210,7 +210,7 @@ The group is called `record` in 1.0. See the table above.
 ### `UNKNOWN_CHAIN`
 
 0.x took `network: "mainnet"`. In 1.0 the public client needs a `chain`, or you pass `deployment`.
-See [`UNKNOWN_CHAIN`](/docs/sdk/errors/UNKNOWN_CHAIN).
+See [`UNKNOWN_CHAIN`](/docs/reference/errors/UNKNOWN_CHAIN).
 
 ### Receipts are missing from a write result
 

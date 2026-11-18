@@ -1,0 +1,345 @@
+---
+title: Known limitations
+description: Check the known limits of ensforge 1.0 and of ENS itself, grouped by topic, with what to do about each.
+keywords:
+  [limitations, known issues, DNSSEC, IPFS gateway, eth_simulateV1, indexer, bigname, Goldsky, HCA]
+---
+
+These are the places where ensforge 1.0, or the ENS contracts and services it uses, behave in a way
+you might not expect. Each entry says what happens and what to do. Most come from how the ENS
+protocol works and are not bugs.
+
+## Records and resolvers
+
+### Older public resolvers show as `custom`
+
+`resolver.get` reports some older ENS public resolvers, such as the 2020 one, as
+`kind: "custom"` with `authorization: "unknown"`. They are not in the deployment's list of known
+resolvers, so ensforge cannot prove how they decide who may write.
+
+**What to do:** reading and writing records still works, except kinds of record the resolver
+lacks: the 2020 public resolver has no `data` records and cannot `clear`. To use a resolver
+ensforge recognises, pass `resolver: "default"` to `record.set` with the records to keep. It writes
+them to the current public resolver and points the name at it. Records you do not pass are not
+copied.
+
+### Frozen resolvers cannot change records
+
+Names on three old public resolvers, tied to the registry ENS replaced in 2020, cannot change their
+records. `record.set` fails before sending and suggests a new resolver.
+
+**What to do:** pass `resolver` to `record.set` to write the records to a new resolver and point the
+name at it in one step.
+
+### The ENSv2 public resolver only serves Name Wrapper names
+
+`resolver: "default"` works for ENSv1 names only. On ENSv2 names it fails with
+[`UNSUPPORTED_PROTOCOL`](/docs/reference/errors/UNSUPPORTED_PROTOCOL), because the ENSv2 public resolver
+only accepts names the Name Wrapper knows.
+
+**What to do:** give the name its own resolver with `resolver.create`.
+
+### Clearing records on a PermissionedResolver shows its default record
+
+`record.set({ clear: true })` on an ENSv2 PermissionedResolver links the name to the resolver's
+default record. Until new records are written, the name reads that default record, which is empty
+unless someone set it.
+
+**What to do:** write the new records in the same `record.set` call as `clear`. ensforge clears
+first and writes the new records in the same transaction.
+
+### Shared resolvers share record access
+
+On a PermissionedResolver used by several names, `permission.setRecordAccess` lets the grantee
+edit those records on every name that uses the resolver.
+
+**What to do:** keep one resolver per name, as ensforge does by default. Share a resolver only with
+accounts you trust for every name on it.
+
+### Predicted resolver addresses assume the signer sends
+
+`resolver.create` predicts the new resolver's address from the account that sends the deploy call.
+If a relayer or a bundler sends it instead, the resolver lands at another address.
+
+**What to do:** send `resolver.create` from the account itself, or read the address from the
+receipt.
+
+### Some coins are not supported
+
+EOS (coin type 194) and other coins whose encoders were removed upstream fail with
+[`INVALID_COIN_TYPE`](/docs/reference/errors/INVALID_COIN_TYPE) or
+[`INVALID_ADDRESS`](/docs/reference/errors/INVALID_ADDRESS).
+
+**What to do:** nothing in ensforge; these coins cannot be encoded.
+
+### XRP addresses can be stored two ways
+
+An XRP X-address and the r-address of the same account encode to different bytes, so the same
+account can be stored in two forms.
+
+**What to do:** pick one form for your app and store addresses in it.
+
+### The default IPFS gateway is rate limited
+
+Avatars and website links on IPFS go through `https://ipfs.io` by default, which answers HTTP 429
+under load.
+
+**What to do:** set your own gateway with `Ensforge.create({ gateways: { ipfs: "…" } })`. See
+[Configure RPC and gateways](/docs/sdk/rpc-and-gateways).
+
+## Writes and plans
+
+### RPCs without `eth_simulateV1` cannot simulate dependent calls
+
+ensforge simulates a step's calls in sequence with `eth_simulateV1`. On RPCs without it, each call
+is simulated alone, so a call that depends on an earlier one in the same step can fail in
+simulation although sending would succeed.
+
+**What to do:** use an RPC that supports `eth_simulateV1`, or send that write with
+`simulate: false`.
+
+### Plans are kept in memory by default
+
+The default plan storage loses plans on a page reload, and an aborted write rejects with the abort
+reason instead of an error carrying the plan id.
+
+**What to do:** create the client with `storage: Plan.localStorage()` or your own `Plan.Storage`.
+Find the id of an aborted plan with `plan.list`. See
+[Continue after a failure](/docs/sdk/continue-after-a-failure).
+
+### Wallets differ in bundle size and resuming
+
+`maxBundleCalls` defaults to 10, MetaMask's limit. Resuming a bundle sent through EIP-5792 asks the
+wallet that sent it, since only that wallet knows the bundle.
+
+**What to do:** lower `maxBundleCalls` for wallets with a smaller limit, and resume with the same
+wallet.
+
+## Registration
+
+### Registering takes at least a minute
+
+`registration.register` commits, waits the registrar's minimum commitment age on chain time (60
+seconds on the networks tested), then registers. With a payment approval, a resolver and a primary
+name, one name takes four to five transactions.
+
+**What to do:** show progress with `onStep`. A wallet that supports atomic batches bundles each
+step's calls. `commit` and a later `register` with the same `secret` split the flow across sessions.
+
+### Contracts that reject ERC-1155 tokens cannot own ENSv2 names
+
+ENSv2 sends the new name to its owner as an ERC-1155 token. If `owner` is a contract that does not
+accept ERC-1155 tokens, the register step reverts after the commit was sent.
+
+**What to do:** register to an account, or to a contract that implements `onERC1155Received`.
+
+## Subnames and registries
+
+### An ENSv2 subname's owner cannot be changed from its parent
+
+`subname.update({ owner })` on an ENSv2 subname fails with
+[`UNSUPPORTED_PROTOCOL`](/docs/reference/errors/UNSUPPORTED_PROTOCOL): only the token holder can transfer
+it.
+
+**What to do:** the subname's owner calls `name.transfer`, or the parent removes the subname and
+creates it again.
+
+### Subnames created without an expiry cannot get one later
+
+ENSv2 subnames never expire by default, and an expiry can only be extended, not added.
+`subname.update({ expiry })` on such a subname fails with
+[`INVALID_EXPIRY`](/docs/reference/errors/INVALID_EXPIRY).
+
+**What to do:** pass `expiry` to `subname.create` when subnames should lapse.
+
+### Some ENSv2 registries cannot be upgraded
+
+Registries created on mainnet before 17 November 2026 run an implementation that the latest one
+does not accept. `registry.get` reports `blocker: "not-approved"`, and `registry.upgrade` fails
+with [`UPGRADE_NOT_APPROVED`](/docs/reference/errors/UPGRADE_NOT_APPROVED).
+
+**What to do:** nothing until ENS approves an upgrade path. These registries keep working.
+
+## Permissions
+
+### `.eth` owners cannot delegate renewal
+
+`role.grant({ roles: ["renew"] })` on a `.eth` name fails with
+[`CANNOT_GRANT_ROLES`](/docs/reference/errors/CANNOT_GRANT_ROLES): the `.eth` registrar gives owners no
+right to grant it.
+
+**What to do:** nothing is needed. Anyone can renew a `.eth` name with `registration.renew`.
+
+## DNS names
+
+### DNSSEC proofs do not verify at the moment
+
+Since the DNS root changed its signing key in October 2026, the ENS DNSSEC oracle no longer accepts
+any proof, on mainnet and Sepolia. `dns.getStatus` reports `proof-invalid`, and `dns.claim` fails
+with [`DNSSEC_PROOF_FAILED`](/docs/reference/errors/DNSSEC_PROOF_FAILED). Lookups of DNS names that
+resolve through a proof, because they have no resolver of their own in ENS (such as
+`ens.domains`), fail the same way.
+
+**What to do:** nothing on the client side. This needs ENS to add the new key to its oracle.
+
+### `dns.claim` cannot set an address
+
+ENS public resolvers refuse the address the DNS registrar would set while claiming.
+
+**What to do:** claim with `resolver` only, then set records with `record.set`.
+
+### DNS names are imported into ENSv1
+
+There is no ENSv2 way to claim a second-level DNS name yet. `dns.claim` imports it into ENSv1, and
+ENSv2 resolves it from there.
+
+**What to do:** nothing; lookups work as usual.
+
+### DNS reads are not verified
+
+`dns.getProof` and `dns.getOffchainResolver` return what the gateway sends without verifying it,
+and ignore `blockNumber` and `blockTag`. `dns.getStatus` does verify the proof.
+
+**What to do:** use `dns.getStatus` when the answer must be trusted.
+
+## Moving names to ENSv2
+
+### Migration needs records and subnames listed without an indexer
+
+Without an indexer, `migration.migrate` cannot discover every record and subname of a name. With
+one, it finds them itself, up to 500 subnames across all levels.
+
+**What to do:** create the client with an `indexer`, or pass the records and `subnames` yourself.
+See [Move a name to ENSv2](/docs/sdk/move-a-name-to-ensv2).
+
+### Subname records stay where they are
+
+Migrated subnames keep their records on their ENSv1 resolvers, as in the ENS app. Lookups keep
+working: the subnames still point at those resolvers.
+
+**What to do:** nothing for lookups. To give a subname its own ENSv2 resolver, read its records
+with `record.get`, then create a resolver with them with `resolver.create({ name, records })`.
+
+### Public keys and DNS records are not copied
+
+ENSv2 PermissionedResolvers have no public key or DNS record types, so migration cannot copy them.
+
+**What to do:** keep a copy before migrating if you need them.
+
+### A name in its grace period migrates as the signer's
+
+The registrar hides who held an expired name. With `renew`, ensforge assumes the signer is the
+registrant, and checks the transfer again after renewing.
+
+**What to do:** migrate names in grace from the account that held them.
+
+## Events and history
+
+### Event history over RPC is bounded
+
+`event.get` needs a block range. Free RPC plans that limit `eth_getLogs` to a few blocks reach the
+request budget quickly and fail with
+[`LOG_RANGE_TOO_LARGE`](/docs/reference/errors/LOG_RANGE_TOO_LARGE). Some transfers are not scanned:
+Name Wrapper token transfers, and `.eth` and root registry transfers beyond 5,000 blocks for
+anyone but the current owner.
+
+**What to do:** use `indexer.getHistory` or `indexer.getEvents` for full history. See
+[Name history](/docs/sdk/name-history).
+
+## Indexers
+
+### Indexers disagree on some fields
+
+bigname and Goldsky answer some fields differently: a name's registration date, the format of
+registration ids, and which fields and counts they fill.
+
+**What to do:** compare answers from one indexer only. Every answer says which indexer gave it in
+`indexer`.
+
+### Snapshots and finality need bigname
+
+`at` and `finality` exist only on name, records, registry and resolver reads, and only bigname
+supports them. Goldsky fails with [`INDEXER_UNSUPPORTED`](/docs/reference/errors/INDEXER_UNSUPPORTED).
+bigname answers [`INDEXER_BEHIND`](/docs/reference/errors/INDEXER_BEHIND) when it no longer keeps the
+requested snapshot.
+
+**What to do:** use bigname for snapshot reads, and retry without `at` when it is behind.
+
+### Basenames come from Goldsky
+
+bigname does not index Basenames yet, so it reports `INDEXER_UNSUPPORTED` for them.
+
+**What to do:** use `fallback([bigname(), goldsky()])`; Basenames are then served by Goldsky.
+
+### A missing indexer route looks like a missing name
+
+A server that lacks a route answers like it does for an unknown name, so the call fails with
+[`INDEXER_NOT_FOUND`](/docs/reference/errors/INDEXER_NOT_FOUND) instead of `INDEXER_UNSUPPORTED`.
+
+**What to do:** check the indexer's version when a list you expect is not found.
+
+### Custom indexer answers are checked shallowly
+
+`defineIndexer` checks that answers are objects and that pages have an `items` array. Field types
+are trusted to your adapter's TypeScript types.
+
+**What to do:** validate your source's data in the adapter.
+
+### bigname misses some names under new registries
+
+Names under a subregistry set at registration on ENSv2 registries created since 17 November 2026
+are missing from bigname. Reads from the chain are not affected.
+
+**What to do:** read such names with chain actions until bigname handles them.
+
+### Indexed expiry of ENSv1 names
+
+For ENSv1 names not yet moved to ENSv2, bigname reports the expiry of the ENSv2 reservation, not of
+the `.eth` registration.
+
+**What to do:** use `name.get` for the expiry of an ENSv1 name.
+
+## Smart accounts (HCA)
+
+`@ensforge/hca` is experimental. See [HCA](/docs/hca).
+
+### Bundlers and Rhinestone are not proven in production
+
+The bundler route has not been tested against a production bundler in safe mode. The `rhinestone`
+executor needs a Rhinestone SDK that supports standalone ENS HCAs, and fails with
+`HCA_SDK_UNSUPPORTED` with one that does not.
+
+**What to do:** test these routes on Sepolia before relying on them.
+
+### Writes through an HCA need the HCA's authority
+
+Through `via: hca()` the HCA sends the calls. Registration, migration and `hca.execute` work. Other
+writes, such as records, roles and transfers, succeed only where the HCA holds the needed
+permissions, and fail at simulation otherwise. L2 primary names cannot be sent through an HCA.
+
+**What to do:** use `hca()` for registration and migration, and the owner's wallet for other writes.
+
+### Migrating wrapped names leaves a Name Wrapper approval
+
+Wrapped names need the HCA approved as an operator on the Name Wrapper. The plan warns with
+`HCA_WRAPPER_APPROVAL`, and the approval stays after migration.
+
+**What to do:** revoke it afterwards with `approval.setOperator`.
+
+### Session approvals use Rhinestone's signing format
+
+Session approvals are signed as Rhinestone Smart Session data, which an account with Smart Sessions
+installed could also accept.
+
+**What to do:** nothing yet. ENS plans its own signing format for sessions, and ensforge switches
+to it once ENS deploys it.
+
+## Errors
+
+### Route errors are outside a write's error type
+
+A write sent through a `via` route can fail with the route package's own errors, such as
+`HcaError`, which are not part of the action's `ErrorType`.
+
+**What to do:** check for `HcaError` too when you send through `hca()`. See
+[How errors work](/docs/sdk/errors-explained).

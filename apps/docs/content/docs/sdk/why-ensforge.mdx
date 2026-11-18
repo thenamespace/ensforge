@@ -31,7 +31,7 @@ const jesse = await ens.record.getAddress({ name: "jesse.base.eth" });
 ```
 
 `nick.eth` keeps its records on Ethereum. `jesse.base.eth` is a Basename whose records live off
-Ethereum and are fetched through a [gateway](/docs/sdk/reference/glossary#gateway). The call and
+Ethereum and are fetched through a [gateway](/docs/reference/glossary#gateway). The call and
 the result type are the same. Writes work the same way: `record.set`, `name.transfer` and
 `subname.create` pick the right contracts for the name you pass.
 
@@ -74,7 +74,7 @@ See [How errors work](/docs/sdk/errors-explained).
 ## Writes you can inspect before sending
 
 Many ENS tasks take more than one transaction. Registering a name approves a payment, commits,
-waits at least a minute, then registers ([commitment](/docs/sdk/reference/glossary#commitment)). ensforge turns every write into a **plan** you can look
+waits at least a minute, then registers ([commitment](/docs/reference/glossary#commitment)). ensforge turns every write into a **plan** you can look
 at, simulate, estimate and save before anything is signed.
 
 - Every write is simulated before the wallet prompt, so a write that would fail throws a typed
@@ -112,10 +112,10 @@ See [Ways to call actions](/docs/sdk/ways-to-call-actions) and
 ensforge covers the whole of ENS from one client:
 
 - Lookups: addresses for any chain, text records, avatars, websites,
-  [primary names](/docs/sdk/reference/glossary#primary-name).
+  [primary names](/docs/reference/glossary#primary-name).
 - Registration and renewal of `.eth` names, records, subnames, transfers and primary names on L2s.
 - Permissions: who can do what with a name, before they try.
-- Lists, search and history through an [indexer](/docs/sdk/reference/glossary#indexer).
+- Lists, search and history through an [indexer](/docs/reference/glossary#indexer).
 - React hooks in `@ensforge/react`, and an optional Effect API for Effect programs.
 
 ## When to use something else

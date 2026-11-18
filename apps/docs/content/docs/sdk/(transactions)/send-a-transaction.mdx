@@ -43,7 +43,7 @@ export const ens = Ensforge.create({ publicClient, walletClient, account }).exte
 - `walletClient` signs and sends. It can also be a function that returns the client, for wallets
   that connect later.
 - `account` is the default signer. Without it, and without an account on the wallet client, a
-  write fails with [`ACCOUNT_NOT_FOUND`](/docs/sdk/errors/ACCOUNT_NOT_FOUND).
+  write fails with [`ACCOUNT_NOT_FOUND`](/docs/reference/errors/ACCOUNT_NOT_FOUND).
 
 ## 2. Send the write
 
@@ -76,15 +76,15 @@ const { hash, hashes, plan } = await ens.record.set({
 });
 ```
 
-[`record.set`](/docs/sdk/reference/actions/record/set) simulates the write first, so a revert
+[`record.set`](/docs/reference/sdk/record/set) simulates the write first, so a revert
 becomes a typed error before the wallet prompt. It then asks the wallet to sign. The result holds:
 
-| Field    | Description                                                                                                                                        |
-| -------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `hash`   | Hash of the last transaction.                                                                                                                      |
-| `hashes` | Every submitted transaction, in order. Writes with several [steps](/docs/sdk/reference/glossary#step), such as a registration, have more than one. |
-| `id`     | The EIP-5792 [bundle](/docs/sdk/reference/glossary#bundle) id when the calls went out as one batch, otherwise `undefined`.                         |
-| `plan`   | The [plan](/docs/sdk/writing-to-ens) that was sent. `plan.id` is what [`plan.resume`](/docs/sdk/continue-after-a-failure) needs.                   |
+| Field    | Description                                                                                                                                    |
+| -------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| `hash`   | Hash of the last transaction.                                                                                                                  |
+| `hashes` | Every submitted transaction, in order. Writes with several [steps](/docs/reference/glossary#step), such as a registration, have more than one. |
+| `id`     | The EIP-5792 [bundle](/docs/reference/glossary#bundle) id when the calls went out as one batch, otherwise `undefined`.                         |
+| `plan`   | The [plan](/docs/sdk/writing-to-ens) that was sent. `plan.id` is what [`plan.resume`](/docs/sdk/continue-after-a-failure) needs.               |
 
 ## 3. Wait for the receipt
 
@@ -123,9 +123,9 @@ receipt.status; // "success"
 
 - `confirmations` is the number of confirmations to wait for per transaction. The default is 1.
 - `timeout` is the milliseconds to wait for each receipt. When it passes, the call fails with
-  [`RECEIPT_TIMEOUT`](/docs/sdk/errors/RECEIPT_TIMEOUT). The transaction may still land.
+  [`RECEIPT_TIMEOUT`](/docs/reference/errors/RECEIPT_TIMEOUT). The transaction may still land.
 - `receipt` is the receipt of the last transaction and `receipts` holds all of them.
-- A reverted transaction fails with [`TRANSACTION_REVERTED`](/docs/sdk/errors/TRANSACTION_REVERTED).
+- A reverted transaction fails with [`TRANSACTION_REVERTED`](/docs/reference/errors/TRANSACTION_REVERTED).
 
 ## Follow progress
 
@@ -178,11 +178,11 @@ These options work on every write and every `…Sync` form.
 | `maxBundleCalls` | `10`                                    | Most calls in one wallet bundle.                                                                                                                                                                |
 | `signal`         | none                                    | Cancels before the next wallet prompt. Transactions already submitted are not undone.                                                                                                           |
 | `onStep`         | none                                    | Called as each step waits, is submitted, is confirmed or fails.                                                                                                                                 |
-| `via`            | none                                    | Send through another [route](/docs/sdk/reference/glossary#route), such as a smart account. See [Use smart accounts](/docs/sdk/use-smart-accounts).                                              |
-| `paymaster`      | none                                    | Sponsor the gas with an EIP-5792 [paymaster](/docs/sdk/reference/glossary#paymaster). See [Pay gas for users](/docs/sdk/pay-gas-for-users).                                                     |
+| `via`            | none                                    | Send through another [route](/docs/reference/glossary#route), such as a smart account. See [Use smart accounts](/docs/sdk/use-smart-accounts).                                                  |
+| `paymaster`      | none                                    | Sponsor the gas with an EIP-5792 [paymaster](/docs/reference/glossary#paymaster). See [Pay gas for users](/docs/sdk/pay-gas-for-users).                                                         |
 
 An aborted write rejects with `signal.reason`, so its plan id is not on the error. Read it from
-[`plan.list`](/docs/sdk/reference/actions/plan/list) when you need to resume.
+[`plan.list`](/docs/reference/sdk/plan/list) when you need to resume.
 
 ## Check the result
 
@@ -204,21 +204,21 @@ const url = await ens.record.getText({ name: "alice.eth", key: "url" });
 ### `WALLET_NOT_CONFIGURED`
 
 The client has no wallet. Pass `walletClient` to `Ensforge.create`. See
-[`WALLET_NOT_CONFIGURED`](/docs/sdk/errors/WALLET_NOT_CONFIGURED).
+[`WALLET_NOT_CONFIGURED`](/docs/reference/errors/WALLET_NOT_CONFIGURED).
 
 ### `CHAIN_MISMATCH`
 
 The wallet is on another chain than the client. Switch the wallet's network or create the client
-for the wallet's chain. See [`CHAIN_MISMATCH`](/docs/sdk/errors/CHAIN_MISMATCH).
+for the wallet's chain. See [`CHAIN_MISMATCH`](/docs/reference/errors/CHAIN_MISMATCH).
 
 ### `USER_REJECTED`
 
 The user closed or rejected the wallet prompt. Nothing was sent. Treat it as a normal outcome, not
-a failure. See [`USER_REJECTED`](/docs/sdk/errors/USER_REJECTED).
+a failure. See [`USER_REJECTED`](/docs/reference/errors/USER_REJECTED).
 
 ### `RECEIPT_TIMEOUT`
 
 `setSync` stopped waiting, but the transaction may still be pending. Check the hash before you
-send again. See [`RECEIPT_TIMEOUT`](/docs/sdk/errors/RECEIPT_TIMEOUT).
+send again. See [`RECEIPT_TIMEOUT`](/docs/reference/errors/RECEIPT_TIMEOUT).
 
 For the rest of the codes and when a retry is safe, see [Handle errors](/docs/sdk/handle-errors).

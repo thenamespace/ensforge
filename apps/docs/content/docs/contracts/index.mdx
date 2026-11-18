@@ -5,15 +5,15 @@ description: Read an ENS contract with viem using an ABI and an address from @en
 keywords: [readContract, Abis, Deployments, viem, getState]
 ---
 
-By the end of this page you will have read a name's state from the [ENSv2](/docs/sdk/reference/glossary#ensv2) `.eth` [registry](/docs/sdk/reference/glossary#registry) with viem, using an ABI and an address from `@ensforge/contracts`. Install the package first: [Installation](/docs/contracts/installation).
+By the end of this page you will have read a name's state from the [ENSv2](/docs/reference/glossary#ensv2) `.eth` [registry](/docs/reference/glossary#registry) with viem, using an ABI and an address from `@ensforge/contracts`. Install the package first: [Installation](/docs/contracts/installation).
 
 ## 1. Pick an address and an ABI
 
-`Deployments.mainnet.v2.contracts.ethRegistry` is the address of the registry that holds [`.eth` names](/docs/sdk/reference/glossary#eth-name). `Abis.v2.permissionedRegistry` is the ABI to read it with. The ABI is an `as const` array, so viem infers the function names, arguments and return types.
+`Deployments.mainnet.v2.contracts.ethRegistry` is the address of the registry that holds [`.eth` names](/docs/reference/glossary#eth-name). `Abis.v2.permissionedRegistry` is the ABI to read it with. The ABI is an `as const` array, so viem infers the function names, arguments and return types.
 
 ## 2. Read the contract
 
-`getState` takes a [label](/docs/sdk/reference/glossary#label)'s hash as a number and returns the name's status, [expiry](/docs/sdk/reference/glossary#expiry), latest [owner](/docs/sdk/reference/glossary#owner), token ID and role resource.
+`getState` takes a [label](/docs/reference/glossary#label)'s hash as a number and returns the name's status, [expiry](/docs/reference/glossary#expiry), latest [owner](/docs/reference/glossary#owner), token ID and role resource.
 
 **Example** (Reading a Name's State)
 
@@ -35,9 +35,9 @@ const state = await publicClient.readContract({
 state;
 ```
 
-- `labelhash("vitalik")` hashes the label (the part before `.eth`), giving its [labelhash](/docs/sdk/reference/glossary#labelhash). [Normalise](/docs/sdk/reference/glossary#normalisation) a label before you hash it.
+- `labelhash("vitalik")` hashes the label (the part before `.eth`), giving its [labelhash](/docs/reference/glossary#labelhash). [Normalise](/docs/reference/glossary#normalisation) a label before you hash it.
 - `status` is the contract's `Status` enum, returned as a number: `0` (`AVAILABLE`), `1` (`RESERVED`) or `2` (`REGISTERED`).
-- A `.eth` name that has not moved from [ENSv1](/docs/sdk/reference/glossary#ensv1) yet reads as `1` (`RESERVED`) with a zero `latestOwner`, because its owner is still in the ENSv1 registry. `vitalik.eth` reads this way while it stays on ENSv1. The SDK reads both registries for you: see [Get a name's owner, expiry and status](/docs/sdk/get-name-details).
+- A `.eth` name that has not moved from [ENSv1](/docs/reference/glossary#ensv1) yet reads as `1` (`RESERVED`) with a zero `latestOwner`, because its owner is still in the ENSv1 registry. `vitalik.eth` reads this way while it stays on ENSv1. The SDK reads both registries for you: see [Get a name's owner, expiry and status](/docs/sdk/get-name-details).
 
 ## 3. Read another chain
 

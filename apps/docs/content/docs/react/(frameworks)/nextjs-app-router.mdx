@@ -182,10 +182,10 @@ Read a streamed value with [`useSuspenseRead`](/docs/react/suspense) inside `<Su
 
 ### The browser fetches again after prefetching
 
-The read in the component differs from the prefetched one. The action and the options must match. Names are compared [normalised](/docs/sdk/reference/glossary#normalisation), so `Nick.eth` and `nick.eth` match.
+The read in the component differs from the prefetched one. The action and the options must match. Names are compared [normalised](/docs/reference/glossary#normalisation), so `Nick.eth` and `nick.eth` match.
 
 ### Next.js says a function cannot be passed to a client component
 
 You passed the client from a server component. Import it in the `"use client"` providers file instead.
 
-See [Caching and refreshing](/docs/react/caching-and-refreshing) for how hydrated reads revalidate, and the [reference for `prefetch`](/docs/react/reference/server) for every option.
+See [Caching and refreshing](/docs/react/caching-and-refreshing) for how hydrated reads revalidate, and the [reference for `prefetch`](/docs/reference/react/server) for every option.

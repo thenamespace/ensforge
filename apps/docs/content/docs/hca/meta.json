@@ -11,7 +11,6 @@
     "...(executors)",
     "---[guide]Guides---",
     "...(guides)",
-    "---[reference]Reference---",
-    "...reference"
+    "[reference][API reference](/docs/reference/hca)"
   ]
 }

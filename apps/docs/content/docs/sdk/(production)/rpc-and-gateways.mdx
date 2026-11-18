@@ -14,8 +14,8 @@ covers each setting you may want to change before you go live.
 ## Use a dedicated RPC URL
 
 ensforge makes the RPC requests your public client makes. Public endpoints are rate limited, which
-shows up as [`RATE_LIMITED`](/docs/sdk/errors/RATE_LIMITED) or
-[`RPC_TIMEOUT`](/docs/sdk/errors/RPC_TIMEOUT). Give the public client a dedicated URL, and use
+shows up as [`RATE_LIMITED`](/docs/reference/errors/RATE_LIMITED) or
+[`RPC_TIMEOUT`](/docs/reference/errors/RPC_TIMEOUT). Give the public client a dedicated URL, and use
 viem's `fallback` transport to add a second provider.
 
 **Example** (Two providers with fallback)
@@ -40,13 +40,13 @@ Two features need more from the RPC:
   [Preview before sending](/docs/sdk/preview-before-sending).
 - Reads at an old `blockNumber`, and `event.get` over long ranges, need an archive node and wide
   `eth_getLogs` ranges. A provider that limits log ranges fails with
-  [`LOG_RANGE_TOO_LARGE`](/docs/sdk/errors/LOG_RANGE_TOO_LARGE). Use an indexer for history. See
+  [`LOG_RANGE_TOO_LARGE`](/docs/reference/errors/LOG_RANGE_TOO_LARGE). Use an indexer for history. See
   [Connect an indexer](/docs/sdk/connect-an-indexer).
 
 ## Set off-chain lookup gateways
 
-Some names keep their records off-chain and resolve through [CCIP-Read](/docs/sdk/reference/glossary#ccip-read)
-(EIP-3668): the resolver names the [gateway](/docs/sdk/reference/glossary#gateway) that holds its
+Some names keep their records off-chain and resolve through [CCIP-Read](/docs/reference/glossary#ccip-read)
+(EIP-3668): the resolver names the [gateway](/docs/reference/glossary#gateway) that holds its
 records. ensforge reads names through the Universal Resolver, which sends these lookups through a
 batch gateway. By default that is the Universal Resolver's own batch gateway. `ccipRead.gatewayUrls`
 sets the batch gateways instead, and `ccipRead: false` turns off-chain lookups off.
@@ -70,14 +70,14 @@ const ens = Ensforge.create({
 directly instead of going through a hosted batch gateway. A URL works too, for a batch gateway you
 run. A single call can override the client's gateways with `gatewayUrls`. When a gateway fails, the
 action throws a `GatewayError` such as
-[`GATEWAY_REQUEST_FAILED`](/docs/sdk/errors/GATEWAY_REQUEST_FAILED) or
-[`GATEWAY_RESPONSE_INVALID`](/docs/sdk/errors/GATEWAY_RESPONSE_INVALID). With `ccipRead: false`,
-reading an off-chain name fails with [`CCIP_READ_DISABLED`](/docs/sdk/errors/CCIP_READ_DISABLED).
+[`GATEWAY_REQUEST_FAILED`](/docs/reference/errors/GATEWAY_REQUEST_FAILED) or
+[`GATEWAY_RESPONSE_INVALID`](/docs/reference/errors/GATEWAY_RESPONSE_INVALID). With `ccipRead: false`,
+reading an off-chain name fails with [`CCIP_READ_DISABLED`](/docs/reference/errors/CCIP_READ_DISABLED).
 See [Look up off-chain names](/docs/sdk/off-chain-names).
 
 ## Tune read batching
 
-ensforge coalesces concurrent contract reads into Multicall3 calls ([batching](/docs/sdk/reference/glossary#batch)). It is on by default.
+ensforge coalesces concurrent contract reads into Multicall3 calls ([batching](/docs/reference/glossary#batch)). It is on by default.
 
 | Option                      | Default | Description                                                 |
 | --------------------------- | ------- | ----------------------------------------------------------- |
@@ -103,8 +103,8 @@ Lower `batchSize` if your provider rejects large calls. To batch reads yourself,
 
 ## Set storage gateways
 
-[Avatars](/docs/sdk/reference/glossary#avatar) and content hashes point at decentralized storage (`ipfs://`, `ar://`, `bzz://`).
-[`record.getAvatar`](/docs/sdk/reference/actions/record/get-avatar) turns them into URLs a browser
+[Avatars](/docs/reference/glossary#avatar) and content hashes point at decentralized storage (`ipfs://`, `ar://`, `bzz://`).
+[`record.getAvatar`](/docs/reference/sdk/record/get-avatar) turns them into URLs a browser
 can load through gateways. The defaults are `https://ipfs.io`, `https://arweave.net` and
 `https://api.gateway.ethswarm.org`.
 
@@ -128,11 +128,11 @@ ens.config.gateways)` reuses the client's gateways for content hashes.
 
 ## Other defaults
 
-| Option     | Default    | Description                                                                                                                          |
-| ---------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| `blockTag` | `"latest"` | Block tag for reads. A call can pass `blockNumber` or `blockTag`.                                                                    |
-| `simulate` | `true`     | Simulate writes before the wallet prompt.                                                                                            |
-| `chains`   | none       | Clients for other chains, needed to set L2 primary names. Otherwise [`CHAIN_NOT_CONFIGURED`](/docs/sdk/errors/CHAIN_NOT_CONFIGURED). |
+| Option     | Default    | Description                                                                                                                                |
+| ---------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| `blockTag` | `"latest"` | Block tag for reads. A call can pass `blockNumber` or `blockTag`.                                                                          |
+| `simulate` | `true`     | Simulate writes before the wallet prompt.                                                                                                  |
+| `chains`   | none       | Clients for other chains, needed to set L2 primary names. Otherwise [`CHAIN_NOT_CONFIGURED`](/docs/reference/errors/CHAIN_NOT_CONFIGURED). |
 
 ## Check the result
 
@@ -144,7 +144,7 @@ without `RATE_LIMITED` or gateway errors.
 ### `RATE_LIMITED`
 
 The RPC provider is limiting requests. Use a dedicated URL or a `fallback` transport. See
-[`RATE_LIMITED`](/docs/sdk/errors/RATE_LIMITED).
+[`RATE_LIMITED`](/docs/reference/errors/RATE_LIMITED).
 
 ### Avatar URLs return HTTP 429
 
@@ -153,4 +153,4 @@ The default `ipfs.io` gateway is rate limited. Set `gateways.ipfs`.
 ### `CONTRACT_NOT_DEPLOYED`
 
 The chain has no ENS contracts at the addresses ensforge uses. Check the chain of your public client.
-See [`CONTRACT_NOT_DEPLOYED`](/docs/sdk/errors/CONTRACT_NOT_DEPLOYED).
+See [`CONTRACT_NOT_DEPLOYED`](/docs/reference/errors/CONTRACT_NOT_DEPLOYED).

@@ -13,7 +13,7 @@ keywords:
   ]
 ---
 
-This page is about [ENSv2](/docs/sdk/reference/glossary#ensv2) [resolvers](/docs/sdk/reference/glossary#resolver). On [ENSv1](/docs/sdk/reference/glossary#ensv1) most names use the shared public resolver, which has no roles. ENSv2 uses the **PermissionedResolver**: a resolver whose writes are controlled by [roles](/docs/sdk/reference/glossary#role), and in which each name has a **record ID** that says which set of records it reads and writes. Two names with the same record ID on the same resolver share their records.
+This page is about [ENSv2](/docs/reference/glossary#ensv2) [resolvers](/docs/reference/glossary#resolver). On [ENSv1](/docs/reference/glossary#ensv1) most names use the shared public resolver, which has no roles. ENSv2 uses the **PermissionedResolver**: a resolver whose writes are controlled by [roles](/docs/reference/glossary#role), and in which each name has a **record ID** that says which set of records it reads and writes. Two names with the same record ID on the same resolver share their records.
 
 You will create a resolver, link names to one record set and upgrade the resolver.
 
@@ -25,7 +25,7 @@ You will create a resolver, link names to one record set and upgrade the resolve
 
 ## 1. Create a resolver
 
-[`resolver.create`](/docs/sdk/reference/actions/resolver/create) deploys a PermissionedResolver as a verifiable proxy from the VerifiableFactory. Its address is known before sending (`plan.deploys`) and returned as `resolver`.
+[`resolver.create`](/docs/reference/sdk/resolver/create) deploys a PermissionedResolver as a verifiable proxy from the VerifiableFactory. Its address is known before sending (`plan.deploys`) and returned as `resolver`.
 
 **Example** (Creating a Resolver for a Name)
 
@@ -68,7 +68,7 @@ If you reuse a `salt` that the account already used, `resolver.create` fails wit
 
 ## 2. Share records between names
 
-[`resolver.link`](/docs/sdk/reference/actions/resolver/link) makes a name read and write the records of another name on the same resolver. Use it for aliases of a main name.
+[`resolver.link`](/docs/reference/sdk/resolver/link) makes a name read and write the records of another name on the same resolver. Use it for aliases of a main name.
 
 **Example** (Making an Alias Share a Main Name's Records)
 
@@ -96,7 +96,7 @@ await ens.resolver.linkSync({
 - It needs the `link` role on the resolver.
 - `to` is a name, or `{ recordId }` from `resolver.getLink`.
 
-Check whether two names share records with [`resolver.getLink`](/docs/sdk/reference/actions/resolver/get-link). Linked names have the same `recordId` on the same `resolver`.
+Check whether two names share records with [`resolver.getLink`](/docs/reference/sdk/resolver/get-link). Linked names have the same `recordId` on the same `resolver`.
 
 **Example** (Checking Whether Names Share Records)
 
@@ -127,7 +127,7 @@ const shared = a !== null && b !== null && a.resolver === b.resolver && a.record
 
 ## 3. Upgrade a resolver
 
-[`resolver.upgrade`](/docs/sdk/reference/actions/resolver/upgrade) moves a name's PermissionedResolver to the deployment's latest implementation, or to `implementation` if you pass one. It checks that the target accepts the current implementation (`canUpgradeFrom`) before sending, and it needs the `upgrade` role on the resolver.
+[`resolver.upgrade`](/docs/reference/sdk/resolver/upgrade) moves a name's PermissionedResolver to the deployment's latest implementation, or to `implementation` if you pass one. It checks that the target accepts the current implementation (`canUpgradeFrom`) before sending, and it needs the `upgrade` role on the resolver.
 
 **Example** (Upgrading a Resolver)
 
@@ -150,7 +150,7 @@ await ens.resolver.upgradeSync({ name: "ensforge-docs-demo.eth" });
 
 ## Limits to know
 
-- The PermissionedResolver has no `pubkey` or DNS records, so [migration](/docs/sdk/reference/glossary#migration) does not copy them.
+- The PermissionedResolver has no `pubkey` or DNS records, so [migration](/docs/reference/glossary#migration) does not copy them.
 - `record.set({ clear: true })` links the name to record 0, which reads the resolver's default record. See [Set records](/docs/sdk/set-records).
 - `resolver: "default"` is for ENSv1 names only. ENSv2's public resolver (PublicResolverV2) only serves names the NameWrapper knows, so ENSv2 names fail with `UNSUPPORTED_PROTOCOL`.
 
@@ -158,12 +158,12 @@ await ens.resolver.upgradeSync({ name: "ensforge-docs-demo.eth" });
 
 ### `SALT_TAKEN`
 
-The account already deployed a resolver with this salt. Use the one in `context.contract`, or pass another `salt`. See [`SALT_TAKEN`](/docs/sdk/errors/SALT_TAKEN).
+The account already deployed a resolver with this salt. Use the one in `context.contract`, or pass another `salt`. See [`SALT_TAKEN`](/docs/reference/errors/SALT_TAKEN).
 
 ### `MISSING_ROLES`
 
-The account lacks `link` or `upgrade` on the resolver. See [`MISSING_ROLES`](/docs/sdk/errors/MISSING_ROLES).
+The account lacks `link` or `upgrade` on the resolver. See [`MISSING_ROLES`](/docs/reference/errors/MISSING_ROLES).
 
 ### `UPGRADE_NOT_APPROVED`
 
-The target implementation does not accept the current one. See [`UPGRADE_NOT_APPROVED`](/docs/sdk/errors/UPGRADE_NOT_APPROVED).
+The target implementation does not accept the current one. See [`UPGRADE_NOT_APPROVED`](/docs/reference/errors/UPGRADE_NOT_APPROVED).

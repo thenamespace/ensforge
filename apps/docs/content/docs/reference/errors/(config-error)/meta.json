@@ -1,0 +1,14 @@
+{
+  "title": "ConfigError",
+  "pagesIndex": "config-error",
+  "pages": [
+    "UNKNOWN_CHAIN",
+    "INVALID_DEPLOYMENT",
+    "CONTRACT_NOT_DEPLOYED",
+    "WALLET_NOT_CONFIGURED",
+    "INDEXER_NOT_CONFIGURED",
+    "CCIP_READ_DISABLED",
+    "INVALID_ACTION_GROUP",
+    "CHAIN_NOT_CONFIGURED"
+  ]
+}

@@ -8,7 +8,7 @@ By the end of this guide you can load a long list one page at a time, or walk ev
 
 ## Prerequisites
 
-- A client with an [indexer](/docs/sdk/reference/glossary#indexer) and `indexerActions()`. See [Connect an indexer](/docs/sdk/connect-an-indexer).
+- A client with an [indexer](/docs/reference/glossary#indexer) and `indexerActions()`. See [Connect an indexer](/docs/sdk/connect-an-indexer).
 
 ## How pages work
 
@@ -130,7 +130,7 @@ console.log(page.totalCount);
 | `cursor`       | `string`  | none    | The previous page's `cursor`.              |
 | `includeTotal` | `boolean` | `false` | Count every row into `totalCount`. Slower. |
 
-See [`indexer.getNamesForAddress`](/docs/sdk/reference/actions/indexer/get-names-for-address), [`indexer.search`](/docs/sdk/reference/actions/indexer/search) and [`indexer.getSubnames`](/docs/sdk/reference/actions/indexer/get-subnames).
+See [`indexer.getNamesForAddress`](/docs/reference/sdk/indexer/get-names-for-address), [`indexer.search`](/docs/reference/sdk/indexer/search) and [`indexer.getSubnames`](/docs/reference/sdk/indexer/get-subnames).
 
 ## Troubleshooting
 
@@ -144,8 +144,8 @@ Check that you send the same options and only change `cursor`. A cursor from one
 
 ### `INDEXER_UNSUPPORTED` with a cursor under `fallback`
 
-The cursor was issued by an indexer that cannot serve this method. [`INDEXER_UNSUPPORTED`](/docs/sdk/errors/INDEXER_UNSUPPORTED) is thrown instead of asking another indexer, because it could not read the cursor. Start the list again.
+The cursor was issued by an indexer that cannot serve this method. [`INDEXER_UNSUPPORTED`](/docs/reference/errors/INDEXER_UNSUPPORTED) is thrown instead of asking another indexer, because it could not read the cursor. Start the list again.
 
 ### `INDEXER_RATE_LIMITED` while walking many pages
 
-Raise `limit` to 200 to use fewer requests, or add a second indexer. See [Connect an indexer](/docs/sdk/connect-an-indexer#use-more-than-one-indexer) and [`INDEXER_RATE_LIMITED`](/docs/sdk/errors/INDEXER_RATE_LIMITED).
+Raise `limit` to 200 to use fewer requests, or add a second indexer. See [Connect an indexer](/docs/sdk/connect-an-indexer#use-more-than-one-indexer) and [`INDEXER_RATE_LIMITED`](/docs/reference/errors/INDEXER_RATE_LIMITED).

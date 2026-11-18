@@ -28,7 +28,7 @@ const ens = Ensforge.create({
 const src = await ens.record.getAvatar({ name: "nick.eth" });
 ```
 
-The result is an `http(s)` or `data:` URL, or `null` when the avatar is not set or cannot be loaded. See [`record.getAvatar`](/docs/sdk/reference/actions/record/get-avatar).
+The result is an `http(s)` or `data:` URL, or `null` when the avatar is not set or cannot be loaded. See [`record.getAvatar`](/docs/reference/sdk/record/get-avatar).
 
 ## What ensforge does with each kind of avatar
 
@@ -40,11 +40,11 @@ The result is an `http(s)` or `data:` URL, or `null` when the avatar is not set 
 
 An NFT avatar resolves only on the client's own chain, and only when the name's Ethereum address owns the token ([ENSIP-12](https://docs.ens.domains/ensip/12)): `ownerOf` for ERC-721, a non-zero balance for ERC-1155.
 
-To read the raw record without resolving it, use [`record.getText`](/docs/sdk/reference/actions/record/get-text) with `key: "avatar"`. See [Get text records](/docs/sdk/get-text-records).
+To read the raw record without resolving it, use [`record.getText`](/docs/reference/sdk/record/get-text) with `key: "avatar"`. See [Get text records](/docs/sdk/get-text-records).
 
 ## Use your own gateway
 
-IPFS and Arweave avatars load through a storage [gateway](/docs/sdk/reference/glossary#gateway). The defaults are `https://ipfs.io` and `https://arweave.net`. The public `ipfs.io` gateway is rate limited and answers HTTP 429 under load, so set your own gateway in production.
+IPFS and Arweave avatars load through a storage [gateway](/docs/reference/glossary#gateway). The defaults are `https://ipfs.io` and `https://arweave.net`. The public `ipfs.io` gateway is rate limited and answers HTTP 429 under load, so set your own gateway in production.
 
 Set the gateways once on the client, or per call.
 
@@ -86,11 +86,11 @@ The action also takes the options every read takes: `signal`, `strict`, `gateway
 
 ### The result is `null`
 
-The avatar is not set, or it cannot be loaded. With `strict: true`, a missing record fails with [`RECORD_NOT_FOUND`](/docs/sdk/errors/RECORD_NOT_FOUND) or [`RESOLVER_NOT_FOUND`](/docs/sdk/errors/RESOLVER_NOT_FOUND).
+The avatar is not set, or it cannot be loaded. With `strict: true`, a missing record fails with [`RECORD_NOT_FOUND`](/docs/reference/errors/RECORD_NOT_FOUND) or [`RESOLVER_NOT_FOUND`](/docs/reference/errors/RESOLVER_NOT_FOUND).
 
 ### `GATEWAY_REQUEST_FAILED` or `GATEWAY_RESPONSE_INVALID`
 
-With `strict: true`, NFT metadata that cannot be loaded fails with [`GATEWAY_REQUEST_FAILED`](/docs/sdk/errors/GATEWAY_REQUEST_FAILED) or [`GATEWAY_RESPONSE_INVALID`](/docs/sdk/errors/GATEWAY_RESPONSE_INVALID). Without `strict`, the result is `null`.
+With `strict: true`, NFT metadata that cannot be loaded fails with [`GATEWAY_REQUEST_FAILED`](/docs/reference/errors/GATEWAY_REQUEST_FAILED) or [`GATEWAY_RESPONSE_INVALID`](/docs/reference/errors/GATEWAY_RESPONSE_INVALID). Without `strict`, the result is `null`.
 
 ### Images fail to load with HTTP 429
 
@@ -98,4 +98,4 @@ The public `ipfs.io` gateway is rate limiting you. Set your own IPFS gateway, as
 
 ### `INVALID_NAME`
 
-The name cannot be normalised. See [`INVALID_NAME`](/docs/sdk/errors/INVALID_NAME).
+The name cannot be normalised. See [`INVALID_NAME`](/docs/reference/errors/INVALID_NAME).

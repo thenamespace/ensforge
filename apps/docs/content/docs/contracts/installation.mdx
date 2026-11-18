@@ -5,7 +5,7 @@ description: Install @ensforge/contracts, the ENS ABIs, addresses and constants 
 keywords: [installation, "@ensforge/contracts", ABI, viem, entry points]
 ---
 
-`@ensforge/contracts` holds the ENS contract ABIs, deployment addresses and protocol constants such as interface IDs and [role](/docs/sdk/reference/glossary#role) bitmaps. It has no runtime dependencies beyond the `viem` peer, and it does not depend on Effect or on `@ensforge/sdk`, so you can use it alone.
+`@ensforge/contracts` holds the ENS contract ABIs, deployment addresses and protocol constants such as interface IDs and [role](/docs/reference/glossary#role) bitmaps. It has no runtime dependencies beyond the `viem` peer, and it does not depend on Effect or on `@ensforge/sdk`, so you can use it alone.
 
 ## Requirements
 
@@ -44,14 +44,14 @@ const renewRole = Roles.registry.renew;
 
 The same ABIs and constants are also available as flat named exports, which suit bundlers that tree-shake by file.
 
-| Import                                    | What it holds                                                                                                |
-| ----------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| `@ensforge/contracts/v1`                  | ENSv1 ABIs and constants, such as `baseRegistrarV1Abi`.                                                      |
-| `@ensforge/contracts/v2`                  | ENSv2 ABIs, interfaces, role and interface-ID constants and helpers, such as `permissionedRegistryV2Abi`.    |
-| `@ensforge/contracts/shared`              | ABIs both protocol versions share: token standards, ERC-165, resolver profiles, errors, events.              |
-| `@ensforge/contracts/v2/experimental/hca` | The experimental [HCA](/docs/sdk/reference/glossary#hca) (Hosted Contract Account) ABIs and session helpers. |
+| Import                                    | What it holds                                                                                             |
+| ----------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| `@ensforge/contracts/v1`                  | ENSv1 ABIs and constants, such as `baseRegistrarV1Abi`.                                                   |
+| `@ensforge/contracts/v2`                  | ENSv2 ABIs, interfaces, role and interface-ID constants and helpers, such as `permissionedRegistryV2Abi`. |
+| `@ensforge/contracts/shared`              | ABIs both protocol versions share: token standards, ERC-165, resolver profiles, errors, events.           |
+| `@ensforge/contracts/v2/experimental/hca` | The experimental [HCA](/docs/reference/glossary#hca) (Hosted Contract Account) ABIs and session helpers.  |
 
-See the [entry points reference](/docs/contracts/reference/entry-points) for every export.
+See the [entry points reference](/docs/reference/contracts/entry-points) for every export.
 
 ## Use it with the SDK
 

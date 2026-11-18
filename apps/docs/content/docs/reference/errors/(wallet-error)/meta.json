@@ -1,0 +1,8 @@
+{
+  "title": "WalletError",
+  "pagesIndex": "wallet-error",
+  "pages": [
+    "CHAIN_MISMATCH",
+    "ACCOUNT_NOT_FOUND"
+  ]
+}

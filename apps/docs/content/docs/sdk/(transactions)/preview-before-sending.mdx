@@ -11,7 +11,7 @@ the chain, and `.estimateGas` prices it. ensforge never sends a transaction duri
 
 - A client with an account. A wallet client is not needed to preview, only an account address. See
   [Create a client](/docs/sdk/create-a-client).
-- Read [How writes work](/docs/sdk/writing-to-ens) if the word [plan](/docs/sdk/reference/glossary#plan) is new: a plan is the list
+- Read [How writes work](/docs/sdk/writing-to-ens) if the word [plan](/docs/reference/glossary#plan) is new: a plan is the list
   of calls a write will make, as plain data.
 
 ## 1. Prepare the plan
@@ -41,7 +41,7 @@ plan.requirements; // balance or token approval the account needs
 plan.warnings; // notes for the user, such as an unusual resolver
 ```
 
-- `plan.steps` are the groups of calls ([steps](/docs/sdk/reference/glossary#step)) in order. Most writes have one step; a registration waits
+- `plan.steps` are the groups of calls ([steps](/docs/reference/glossary#step)) in order. Most writes have one step; a registration waits
   between two.
 - `plan.calls` is every call of every step, flattened. Each has `to`, `data` and `value`.
 - `plan.requirements` lists what the account must hold first, such as a balance or an ERC-20
@@ -81,7 +81,7 @@ if (!simulation.ok) {
 ```
 
 A failing step is a value in `simulation.steps`, not a thrown error. `.simulate` throws only when
-it cannot plan at all, for example [`INVALID_NAME`](/docs/sdk/errors/INVALID_NAME).
+it cannot plan at all, for example [`INVALID_NAME`](/docs/reference/errors/INVALID_NAME).
 
 Simulation runs the calls in order, so a call sees the state the earlier ones leave (an approval
 before a payment). It uses `eth_simulateV1` when the RPC supports it. On other RPCs each call runs
@@ -124,7 +124,7 @@ console.log(`about ${formatEther(gas * gasPrice)} ETH for gas`);
 
 ## 4. Send the plan you reviewed
 
-Pass the prepared plan to [`plan.send`](/docs/sdk/reference/actions/plan/send). It simulates the
+Pass the prepared plan to [`plan.send`](/docs/reference/sdk/plan/send). It simulates the
 plan again, sends it step by step and saves its progress, exactly as the write itself would.
 
 **Example** (Reviewing, then sending)
@@ -156,10 +156,10 @@ const approved = window.confirm(`Send ${plan.calls.length} call(s)?`);
 if (approved) await ens.plan.send({ plan });
 ```
 
-A plan is for one chain and one account. [`plan.send`](/docs/sdk/reference/actions/plan/send) fails
-with [`PLAN_ACCOUNT_MISMATCH`](/docs/sdk/errors/PLAN_ACCOUNT_MISMATCH) or
-[`PLAN_CHAIN_MISMATCH`](/docs/sdk/errors/PLAN_CHAIN_MISMATCH) for a plan prepared for another. A
-plan that transfers a name token fails with [`PLAN_STALE`](/docs/sdk/errors/PLAN_STALE) when the token it
+A plan is for one chain and one account. [`plan.send`](/docs/reference/sdk/plan/send) fails
+with [`PLAN_ACCOUNT_MISMATCH`](/docs/reference/errors/PLAN_ACCOUNT_MISMATCH) or
+[`PLAN_CHAIN_MISMATCH`](/docs/reference/errors/PLAN_CHAIN_MISMATCH) for a plan prepared for another. A
+plan that transfers a name token fails with [`PLAN_STALE`](/docs/reference/errors/PLAN_STALE) when the token it
 moves was reissued since you prepared it. Prepare again in both cases.
 
 Plans are plain data, so you can also inspect `plan.calls` and send them with viem yourself, or
@@ -176,13 +176,13 @@ A plan sent through `plan.send` returns the same result as any write: `hash`, `h
 
 The contract rejected the call and ensforge has no more specific explanation. Read
 `step.error.context.revert` for the contract's error name. See
-[`CONTRACT_REVERTED`](/docs/sdk/errors/CONTRACT_REVERTED).
+[`CONTRACT_REVERTED`](/docs/reference/errors/CONTRACT_REVERTED).
 
 ### `NOT_OWNER` or `MISSING_ROLES` in a simulation
 
 The account may not make this change. ensforge checks the account's authority and reports it as a
 typed error instead of an opaque revert. See
-[`NOT_OWNER`](/docs/sdk/errors/NOT_OWNER) and [`MISSING_ROLES`](/docs/sdk/errors/MISSING_ROLES).
+[`NOT_OWNER`](/docs/reference/errors/NOT_OWNER) and [`MISSING_ROLES`](/docs/reference/errors/MISSING_ROLES).
 
 ### The simulation passes but sending fails
 

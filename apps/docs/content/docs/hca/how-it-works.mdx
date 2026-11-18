@@ -13,15 +13,15 @@ A **hosted contract account (HCA)** is a smart contract wallet that ENS hosts fo
 
 ## One account per owner
 
-ensforge uses one HCA for each wallet on a chain. Its address derives from the owner and the deployment's initial implementation, so ensforge can compute it before it exists ([`hca.predictAddress`](/docs/hca/reference/actions/hca/predict-address)). The address never changes, even after upgrades.
+ensforge uses one HCA for each wallet on a chain. Its address derives from the owner and the deployment's initial implementation, so ensforge can compute it before it exists ([`hca.predictAddress`](/docs/reference/hca/hca/predict-address)). The address never changes, even after upgrades.
 
 - The owner is fixed when the account is deployed. Nobody can change it.
-- ensforge deploys the account on first use, through the ENS factory. You can also deploy it ahead of time with [`hca.deploy`](/docs/hca/reference/actions/hca/deploy). Deploying twice returns the existing account.
-- The account is not a place to keep names. It refuses name tokens, so a transfer of a name to an HCA fails with [`TRANSFER_DISALLOWED`](/docs/sdk/errors/TRANSFER_DISALLOWED).
+- ensforge deploys the account on first use, through the ENS factory. You can also deploy it ahead of time with [`hca.deploy`](/docs/reference/hca/hca/deploy). Deploying twice returns the existing account.
+- The account is not a place to keep names. It refuses name tokens, so a transfer of a name to an HCA fails with [`TRANSFER_DISALLOWED`](/docs/reference/errors/TRANSFER_DISALLOWED).
 
 ## How a write runs from the account
 
-A normal write sends transactions from your wallet. A write with `via: hca()` sends a different [plan](/docs/sdk/reference/glossary#plan): ensforge wraps the calls in one `executeByOwner` call on your HCA, and the HCA calls the ENS contracts. `hca()` is a [route](/docs/sdk/reference/glossary#route).
+A normal write sends transactions from your wallet. A write with `via: hca()` sends a different [plan](/docs/reference/glossary#plan): ensforge wraps the calls in one `executeByOwner` call on your HCA, and the HCA calls the ENS contracts. `hca()` is a [route](/docs/reference/glossary#route).
 
 ```mermaid
 flowchart LR
@@ -36,19 +36,19 @@ The **executor** is the part that delivers the execution: your wallet (`owner()`
 ensforge adds two things around your calls:
 
 - A setup step, sent by your wallet, that deploys the HCA when the executor cannot and approves the HCA to move the name tokens the write touches.
-- Batches. Consecutive [steps](/docs/sdk/reference/glossary#step) without a wait run as one atomic execution, up to 32 calls. A step is never split. Every call succeeds or the whole execution reverts.
+- Batches. Consecutive [steps](/docs/reference/glossary#step) without a wait run as one atomic execution, up to 32 calls. A step is never split. Every call succeeds or the whole execution reverts.
 
-When a wrapped name is involved, the HCA becomes an operator of all your names in the [Name Wrapper](/docs/sdk/reference/glossary#name-wrapper). The plan warns with `HCA_WRAPPER_APPROVAL`. Revoke it with [`approval.setOperator`](/docs/sdk/reference/actions/approval/set-operator) once the write is done.
+When a wrapped name is involved, the HCA becomes an operator of all your names in the [Name Wrapper](/docs/reference/glossary#name-wrapper). The plan warns with `HCA_WRAPPER_APPROVAL`. Revoke it with [`approval.setOperator`](/docs/reference/sdk/approval/set-operator) once the write is done.
 
 ## What the HCA can do
 
-The HCA is `msg.sender` of the calls it runs, so it needs authority over what they touch. [Migration](/docs/sdk/reference/glossary#migration) and registration plan for it, and renewals work because anyone may renew. Other writes need the HCA to hold the [roles](/docs/sdk/reference/glossary#role) they use, and fail at simulation otherwise. See [Who can change a name](/docs/sdk/who-can-change-a-name).
+The HCA is `msg.sender` of the calls it runs, so it needs authority over what they touch. [Migration](/docs/reference/glossary#migration) and registration plan for it, and renewals work because anyone may renew. Other writes need the HCA to hold the [roles](/docs/reference/glossary#role) they use, and fail at simulation otherwise. See [Who can change a name](/docs/sdk/who-can-change-a-name).
 
 ensforge never routes a write through an HCA unless you pass `via`.
 
 ## How ensforge trusts an account
 
-Before it uses a deployed HCA, ensforge checks it. [`hca.get`](/docs/hca/reference/actions/hca/get) returns the failed checks in `problems`. [`hca.verify`](/docs/hca/reference/actions/hca/verify) throws [`HCA_NOT_VERIFIED`](/docs/sdk/errors/HCA_NOT_VERIFIED) instead.
+Before it uses a deployed HCA, ensforge checks it. [`hca.get`](/docs/reference/hca/hca/get) returns the failed checks in `problems`. [`hca.verify`](/docs/reference/hca/hca/verify) throws [`HCA_NOT_VERIFIED`](/docs/reference/errors/HCA_NOT_VERIFIED) instead.
 
 | Problem                    | Meaning                                                                             |
 | -------------------------- | ----------------------------------------------------------------------------------- |

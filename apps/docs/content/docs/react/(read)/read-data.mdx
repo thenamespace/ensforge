@@ -4,11 +4,11 @@ description: Read names, records and lists in components with hooks that share a
 keywords: [useRead, useAddress, useRecords, useText, useName, enabled, ReadResult]
 ---
 
-Use a read hook in a component to get a value for a [name](/docs/sdk/reference/glossary#name) or an address. Every hook returns the same result object, and components that ask for the same thing share one request.
+Use a read hook in a component to get a value for a [name](/docs/reference/glossary#name) or an address. Every hook returns the same result object, and components that ask for the same thing share one request.
 
 ## Read with a named hook
 
-Named hooks cover the common reads. Pass the same options as the matching [SDK action](/docs/sdk/reference/actions/record/get-address).
+Named hooks cover the common reads. Pass the same options as the matching [SDK action](/docs/reference/sdk/record/get-address).
 
 **Example** (Reading An Address And A Profile)
 
@@ -31,22 +31,22 @@ export function Profile({ name }: { name: string }) {
 }
 ```
 
-`useRecords` reads several [records](/docs/sdk/reference/glossary#record) in one call and returns them under `texts` and `addresses`.
+`useRecords` reads several [records](/docs/reference/glossary#record) in one call and returns them under `texts` and `addresses`.
 
-| Hook                                                                         | Reads                                                                   |
-| ---------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
-| [`useAddress`](/docs/react/reference/hooks/use-address)                      | The address a name points to, for ETH or another coin.                  |
-| [`useText`](/docs/react/reference/hooks/use-text)                            | One text record, such as `url` or `com.twitter`.                        |
-| [`useRecords`](/docs/react/reference/hooks/use-records)                      | Several records at once.                                                |
-| [`useAvatar`](/docs/react/reference/hooks/use-avatar)                        | An avatar as an image URL, with NFT avatars resolved.                   |
-| [`usePrimaryName`](/docs/react/reference/hooks/use-primary-name)             | The primary name of an address, verified against its forward address.   |
-| [`useName`](/docs/react/reference/hooks/use-name)                            | A name's owner, manager, expiry, resolver, registry and wrapper status. |
-| [`useAvailability`](/docs/react/reference/hooks/use-availability)            | Whether a name can be registered now.                                   |
-| [`useRegistrationPrice`](/docs/react/reference/hooks/use-registration-price) | What registering names for a duration costs.                            |
-| [`usePermissions`](/docs/react/reference/hooks/use-permissions)              | What an account may do with a name.                                     |
-| [`useMigrationStatus`](/docs/react/reference/hooks/use-migration-status)     | Whether and how a name can move from ENSv1 to ENSv2.                    |
+| Hook                                                                   | Reads                                                                   |
+| ---------------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| [`useAddress`](/docs/reference/react/use-address)                      | The address a name points to, for ETH or another coin.                  |
+| [`useText`](/docs/reference/react/use-text)                            | One text record, such as `url` or `com.twitter`.                        |
+| [`useRecords`](/docs/reference/react/use-records)                      | Several records at once.                                                |
+| [`useAvatar`](/docs/reference/react/use-avatar)                        | An avatar as an image URL, with NFT avatars resolved.                   |
+| [`usePrimaryName`](/docs/reference/react/use-primary-name)             | The primary name of an address, verified against its forward address.   |
+| [`useName`](/docs/reference/react/use-name)                            | A name's owner, manager, expiry, resolver, registry and wrapper status. |
+| [`useAvailability`](/docs/reference/react/use-availability)            | Whether a name can be registered now.                                   |
+| [`useRegistrationPrice`](/docs/reference/react/use-registration-price) | What registering names for a duration costs.                            |
+| [`usePermissions`](/docs/reference/react/use-permissions)              | What an account may do with a name.                                     |
+| [`useMigrationStatus`](/docs/reference/react/use-migration-status)     | Whether and how a name can move from ENSv1 to ENSv2.                    |
 
-Lists from an [indexer](/docs/sdk/reference/glossary#indexer) have their own hooks. See [Infinite lists](/docs/react/infinite-lists).
+Lists from an [indexer](/docs/reference/glossary#indexer) have their own hooks. See [Infinite lists](/docs/react/infinite-lists).
 
 ## Read the result
 

@@ -14,7 +14,7 @@ keywords:
   ]
 ---
 
-You will write [records](/docs/sdk/reference/glossary#record) (a website, an avatar, an address, a content hash) to a name you can edit. ensforge writes them all in one `multicall` on the name's [resolver](/docs/sdk/reference/glossary#resolver), and detects whether that resolver is an [ENSv1](/docs/sdk/reference/glossary#ensv1) resolver or an [ENSv2](/docs/sdk/reference/glossary#ensv2) PermissionedResolver. You do not choose.
+You will write [records](/docs/reference/glossary#record) (a website, an avatar, an address, a content hash) to a name you can edit. ensforge writes them all in one `multicall` on the name's [resolver](/docs/reference/glossary#resolver), and detects whether that resolver is an [ENSv1](/docs/reference/glossary#ensv1) resolver or an [ENSv2](/docs/reference/glossary#ensv2) PermissionedResolver. You do not choose.
 
 ## Prerequisites
 
@@ -23,7 +23,7 @@ You will write [records](/docs/sdk/reference/glossary#record) (a website, an ava
 
 ## 1. Write the records
 
-[`record.set`](/docs/sdk/reference/actions/record/set) takes the name and any mix of record kinds. `record.setSync` also waits for the receipt.
+[`record.set`](/docs/reference/sdk/record/set) takes the name and any mix of record kinds. `record.setSync` also waits for the receipt.
 
 **Example** (Updating a Profile)
 
@@ -49,7 +49,7 @@ const { hash } = await ens.record.setSync({
 });
 ```
 
-- `texts` maps a key to a string. The key `avatar` sets the name's [avatar](/docs/sdk/reference/glossary#avatar).
+- `texts` maps a key to a string. The key `avatar` sets the name's [avatar](/docs/reference/glossary#avatar).
 - `addresses` maps a coin symbol (`eth`, `btc`) or a decimal **coin type** (`"2147492101"`) to an address. ensforge validates and encodes it for that chain.
 - `contentHash` takes a URI such as `ipfs://…`.
 
@@ -93,7 +93,7 @@ await ens.record.setSync({
 });
 ```
 
-On an ENSv2 PermissionedResolver, `clear` links the name to record 0 instead of deleting. The name then reads the resolver's default record, which is empty unless someone set it. It also needs the root `link` [role](/docs/sdk/reference/glossary#role).
+On an ENSv2 PermissionedResolver, `clear` links the name to record 0 instead of deleting. The name then reads the resolver's default record, which is empty unless someone set it. It also needs the root `link` [role](/docs/reference/glossary#role).
 
 ## 3. Write to a new resolver and switch to it
 
@@ -132,26 +132,26 @@ await ens.record.setSync({
 
 ## Check the result
 
-Read the records back with [`record.get`](/docs/sdk/reference/actions/record/get). See [Get text records](/docs/sdk/get-text-records) and [Get a name's address](/docs/sdk/get-an-address).
+Read the records back with [`record.get`](/docs/reference/sdk/record/get). See [Get text records](/docs/sdk/get-text-records) and [Get a name's address](/docs/sdk/get-an-address).
 
 ## Troubleshooting
 
 ### `RESOLVER_PROFILE_UNSUPPORTED`
 
-The resolver cannot store this kind of record, or keeps its records off-chain. Older resolvers lack newer profiles: the 2020 public resolver has no `data` records and cannot `clear`. Resolvers that keep records off-chain (EIP-3668, ERC-5559, ERC-7884) take no on-chain writes, and the error's details say where the records live. Point the name at a resolver that supports the record. See [`RESOLVER_PROFILE_UNSUPPORTED`](/docs/sdk/errors/RESOLVER_PROFILE_UNSUPPORTED) and [Change the resolver](/docs/sdk/change-the-resolver).
+The resolver cannot store this kind of record, or keeps its records off-chain. Older resolvers lack newer profiles: the 2020 public resolver has no `data` records and cannot `clear`. Resolvers that keep records off-chain (EIP-3668, ERC-5559, ERC-7884) take no on-chain writes, and the error's details say where the records live. Point the name at a resolver that supports the record. See [`RESOLVER_PROFILE_UNSUPPORTED`](/docs/reference/errors/RESOLVER_PROFILE_UNSUPPORTED) and [Change the resolver](/docs/sdk/change-the-resolver).
 
 ### `RESOLVER_NOT_FOUND`
 
-The name has no resolver of its own. Pass `resolver`, or create one. See [`RESOLVER_NOT_FOUND`](/docs/sdk/errors/RESOLVER_NOT_FOUND).
+The name has no resolver of its own. Pass `resolver`, or create one. See [`RESOLVER_NOT_FOUND`](/docs/reference/errors/RESOLVER_NOT_FOUND).
 
 ### `NOT_OWNER` or `MISSING_ROLES`
 
-The account may not edit the records. On a PermissionedResolver the account needs the setter roles. See [Roles and permissions](/docs/sdk/roles-and-permissions), [`NOT_OWNER`](/docs/sdk/errors/NOT_OWNER) and [`MISSING_ROLES`](/docs/sdk/errors/MISSING_ROLES).
+The account may not edit the records. On a PermissionedResolver the account needs the setter roles. See [Roles and permissions](/docs/sdk/roles-and-permissions), [`NOT_OWNER`](/docs/reference/errors/NOT_OWNER) and [`MISSING_ROLES`](/docs/reference/errors/MISSING_ROLES).
 
 ### `INVALID_COIN_TYPE`, `INVALID_ADDRESS` or `INVALID_CONTENT_HASH`
 
-A coin, address or content hash does not parse. See [`INVALID_COIN_TYPE`](/docs/sdk/errors/INVALID_COIN_TYPE), [`INVALID_ADDRESS`](/docs/sdk/errors/INVALID_ADDRESS) and [`INVALID_CONTENT_HASH`](/docs/sdk/errors/INVALID_CONTENT_HASH).
+A coin, address or content hash does not parse. See [`INVALID_COIN_TYPE`](/docs/reference/errors/INVALID_COIN_TYPE), [`INVALID_ADDRESS`](/docs/reference/errors/INVALID_ADDRESS) and [`INVALID_CONTENT_HASH`](/docs/reference/errors/INVALID_CONTENT_HASH).
 
 ### `UNSUPPORTED_PROTOCOL`
 
-You passed `resolver: "default"` for an ENSv2 name. Pass a resolver address. See [`UNSUPPORTED_PROTOCOL`](/docs/sdk/errors/UNSUPPORTED_PROTOCOL).
+You passed `resolver: "default"` for an ENSv2 name. Pass a resolver address. See [`UNSUPPORTED_PROTOCOL`](/docs/reference/errors/UNSUPPORTED_PROTOCOL).

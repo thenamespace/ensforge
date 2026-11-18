@@ -5,7 +5,7 @@ keywords:
   [name.transfer, setManager, reclaim, registrant, manager, handover, RECORD_CONTROL_RETAINED]
 ---
 
-You will send a [name](/docs/sdk/reference/glossary#name) you own to another address. ensforge moves the right token for the name's kind, so one call works for [ENSv2](/docs/sdk/reference/glossary#ensv2) names, unwrapped [ENSv1](/docs/sdk/reference/glossary#ensv1) names and wrapped names.
+You will send a [name](/docs/reference/glossary#name) you own to another address. ensforge moves the right token for the name's kind, so one call works for [ENSv2](/docs/reference/glossary#ensv2) names, unwrapped [ENSv1](/docs/reference/glossary#ensv1) names and wrapped names.
 
 ## Prerequisites
 
@@ -14,7 +14,7 @@ You will send a [name](/docs/sdk/reference/glossary#name) you own to another add
 
 ## 1. Send the name
 
-[`name.transfer`](/docs/sdk/reference/actions/name/transfer) takes the name and the recipient. `name.transferSync` also waits for the receipt.
+[`name.transfer`](/docs/reference/sdk/name/transfer) takes the name and the recipient. `name.transferSync` also waits for the receipt.
 
 **Example** (Sending a Name)
 
@@ -57,7 +57,7 @@ What moves depends on where the name lives:
 
 ## 2. Decide who keeps control of the records
 
-On ENSv2, a name's [resolver](/docs/sdk/reference/glossary#resolver) has its own [roles](/docs/sdk/reference/glossary#role). By default they stay with the sender, who can still edit the records after the transfer. The plan carries a `RECORD_CONTROL_RETAINED` warning.
+On ENSv2, a name's [resolver](/docs/reference/glossary#resolver) has its own [roles](/docs/reference/glossary#role). By default they stay with the sender, who can still edit the records after the transfer. The plan carries a `RECORD_CONTROL_RETAINED` warning.
 
 Pass `records: "handover"` to grant them to the recipient and revoke the sender's in the same step.
 
@@ -88,36 +88,36 @@ await ens.name.transferSync({
 
 ## Give only the registrar token (ENSv1)
 
-An unwrapped `.eth` name on ENSv1 has two holders. The [registrant](/docs/sdk/reference/glossary#registrant) holds the registrar token and owns the name. The [manager](/docs/sdk/reference/glossary#manager) is the registry owner and edits records and subnames. See [Who can change a name](/docs/sdk/who-can-change-a-name).
+An unwrapped `.eth` name on ENSv1 has two holders. The [registrant](/docs/reference/glossary#registrant) holds the registrar token and owns the name. The [manager](/docs/reference/glossary#manager) is the registry owner and edits records and subnames. See [Who can change a name](/docs/sdk/who-can-change-a-name).
 
 - `role: "registrant"` on `name.transfer` moves only the registrar token.
-- [`name.setManager`](/docs/sdk/reference/actions/name/set-manager) lets another account edit records and subnames while you keep ownership.
-- [`name.reclaim`](/docs/sdk/reference/actions/name/reclaim) resets the manager to the registrant (or to `owner`). Use it after receiving a registrar token, or to repair a lost manager.
+- [`name.setManager`](/docs/reference/sdk/name/set-manager) lets another account edit records and subnames while you keep ownership.
+- [`name.reclaim`](/docs/reference/sdk/name/reclaim) resets the manager to the registrant (or to `owner`). Use it after receiving a registrar token, or to repair a lost manager.
 
-`setManager` and `reclaim` fail with [`UNSUPPORTED_PROTOCOL`](/docs/sdk/errors/UNSUPPORTED_PROTOCOL) for ENSv2 names and wrapped names, and `reclaim` also for names that are not `.eth` names. ENSv2 uses roles instead. See [Roles and permissions](/docs/sdk/roles-and-permissions).
+`setManager` and `reclaim` fail with [`UNSUPPORTED_PROTOCOL`](/docs/reference/errors/UNSUPPORTED_PROTOCOL) for ENSv2 names and wrapped names, and `reclaim` also for names that are not `.eth` names. ENSv2 uses roles instead. See [Roles and permissions](/docs/sdk/roles-and-permissions).
 
 ## Check the result
 
-Read the name with [`name.get`](/docs/sdk/reference/actions/name/get) and compare `owner` with the recipient. See [Get a name's owner, expiry and status](/docs/sdk/get-name-details).
+Read the name with [`name.get`](/docs/reference/sdk/name/get) and compare `owner` with the recipient. See [Get a name's owner, expiry and status](/docs/sdk/get-name-details).
 
 ## Troubleshooting
 
 ### `NOT_OWNER`
 
-The signer does not own the name. Send from the owner's account. See [`NOT_OWNER`](/docs/sdk/errors/NOT_OWNER).
+The signer does not own the name. Send from the owner's account. See [`NOT_OWNER`](/docs/reference/errors/NOT_OWNER).
 
 ### `TRANSFER_DISALLOWED`
 
-The owner lacks the role to transfer, other accounts hold roles on an ENSv2 name, or the recipient (an HCA) refuses it. Revoke the other roles, or pass `unsafe: true`. See [`TRANSFER_DISALLOWED`](/docs/sdk/errors/TRANSFER_DISALLOWED).
+The owner lacks the role to transfer, other accounts hold roles on an ENSv2 name, or the recipient (an HCA) refuses it. Revoke the other roles, or pass `unsafe: true`. See [`TRANSFER_DISALLOWED`](/docs/reference/errors/TRANSFER_DISALLOWED).
 
 ### `NAME_EXPIRED`, `NAME_RESERVED` or `NAME_NOT_REGISTERED`
 
-Only registered names can be sent. See [`NAME_EXPIRED`](/docs/sdk/errors/NAME_EXPIRED), [`NAME_RESERVED`](/docs/sdk/errors/NAME_RESERVED) and [`NAME_NOT_REGISTERED`](/docs/sdk/errors/NAME_NOT_REGISTERED).
+Only registered names can be sent. See [`NAME_EXPIRED`](/docs/reference/errors/NAME_EXPIRED), [`NAME_RESERVED`](/docs/reference/errors/NAME_RESERVED) and [`NAME_NOT_REGISTERED`](/docs/reference/errors/NAME_NOT_REGISTERED).
 
 ### `UNSUPPORTED_PROTOCOL`
 
-You passed `role: "registrant"` for a name that has no registrant. See [`UNSUPPORTED_PROTOCOL`](/docs/sdk/errors/UNSUPPORTED_PROTOCOL).
+You passed `role: "registrant"` for a name that has no registrant. See [`UNSUPPORTED_PROTOCOL`](/docs/reference/errors/UNSUPPORTED_PROTOCOL).
 
 ### `INVALID_ADDRESS`
 
-`to` is not an address. See [`INVALID_ADDRESS`](/docs/sdk/errors/INVALID_ADDRESS).
+`to` is not an address. See [`INVALID_ADDRESS`](/docs/reference/errors/INVALID_ADDRESS).

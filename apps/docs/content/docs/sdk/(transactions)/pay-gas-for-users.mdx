@@ -4,8 +4,8 @@ description: Sponsor a write's gas with an EIP-5792 paymaster service, or throug
 keywords: [paymaster, paymasterService, sponsor, gasless, EIP-5792, gas]
 ---
 
-A [paymaster](/docs/sdk/reference/glossary#paymaster) pays the gas of a transaction on the user's behalf. ensforge supports two ways to
-sponsor a write: a paymaster service your wallet understands, and the sponsorship of an [HCA](/docs/sdk/reference/glossary#hca)
+A [paymaster](/docs/reference/glossary#paymaster) pays the gas of a transaction on the user's behalf. ensforge supports two ways to
+sponsor a write: a paymaster service your wallet understands, and the sponsorship of an [HCA](/docs/reference/glossary#hca)
 bundler.
 
 ## Prerequisites
@@ -51,7 +51,7 @@ const { id } = await ens.record.set({
 
 - `url` is the paymaster service the wallet calls.
 - `context` is passed to the service as it is, for example a sponsorship policy. It is optional.
-- The write goes out as a [bundle](/docs/sdk/reference/glossary#bundle) even when it has one call, and the bundle is atomic. `id` is the
+- The write goes out as a [bundle](/docs/reference/glossary#bundle) even when it has one call, and the bundle is atomic. `id` is the
   bundle id. See [Bundle transactions](/docs/sdk/bundle-transactions).
 
 `paymaster` is a write option, so `…Sync` forms, `plan.send` and `plan.resume` take it too.
@@ -59,7 +59,7 @@ const { id } = await ens.record.set({
 ## Sponsor through an HCA bundler
 
 An HCA can run a write as a UserOperation through a bundler, and the bundler's paymaster can pay for
-it. The [executors](/docs/sdk/reference/glossary#executor) take their own sponsorship settings: `bundler({ paymaster })`,
+it. The [executors](/docs/reference/glossary#executor) take their own sponsorship settings: `bundler({ paymaster })`,
 `pimlico({ sponsor, sponsorshipPolicyId })` and `rhinestone({ sponsored })`. This path is
 experimental. See [Bundlers](/docs/hca/bundlers), [Rhinestone](/docs/hca/rhinestone) and
 [Deposits and gas](/docs/hca/deposits-and-gas), and [Use smart accounts](/docs/sdk/use-smart-accounts)
@@ -68,7 +68,7 @@ for `via`.
 With the default `owner()` executor, the HCA's transactions come from your wallet, so pass
 `paymaster` on the write as above.
 
-A [route](/docs/sdk/reference/glossary#route)'s `plan.fees` shows each fee with `sponsored: true` when the sponsor pays it.
+A [route](/docs/reference/glossary#route)'s `plan.fees` shows each fee with `sponsored: true` when the sponsor pays it.
 
 ## Check the result
 
@@ -81,14 +81,14 @@ leaves it unchanged except for any `value` the calls send.
 
 The wallet does not support the `paymasterService` capability, or does not send atomic bundles.
 Remove `paymaster`, or let the user pay. See
-[`WALLET_BATCH_UNSUPPORTED`](/docs/sdk/errors/WALLET_BATCH_UNSUPPORTED).
+[`WALLET_BATCH_UNSUPPORTED`](/docs/reference/errors/WALLET_BATCH_UNSUPPORTED).
 
 ### `INSUFFICIENT_ETH`
 
 The wallet could not cover the gas, for example because the sponsor did not pay for the bundle.
-Check the paymaster service's policy. See [`INSUFFICIENT_ETH`](/docs/sdk/errors/INSUFFICIENT_ETH).
+Check the paymaster service's policy. See [`INSUFFICIENT_ETH`](/docs/reference/errors/INSUFFICIENT_ETH).
 
 ### `HCA_PAYMASTER_REJECTED`
 
 An HCA bundler's paymaster refused the operation. See
-[`HCA_PAYMASTER_REJECTED`](/docs/sdk/errors/HCA_PAYMASTER_REJECTED).
+[`HCA_PAYMASTER_REJECTED`](/docs/reference/errors/HCA_PAYMASTER_REJECTED).

@@ -80,7 +80,7 @@ const ens = Ensforge.create({ publicClient }).extend(recordActions()).extend(nam
 await ens.record.getAddress({ name: "nick.eth" });
 ```
 
-`ensActions()` is all the domains except `indexer`, plus `batch`. Add the [indexer](/docs/sdk/reference/glossary#indexer) group with
+`ensActions()` is all the domains except `indexer`, plus `batch`. Add the [indexer](/docs/reference/glossary#indexer) group with
 `indexerActions()` only if you use it. See [Ways to call actions](/docs/sdk/ways-to-call-actions).
 
 ## Choose the entry that matches your style

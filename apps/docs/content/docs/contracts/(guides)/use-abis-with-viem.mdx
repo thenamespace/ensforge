@@ -23,7 +23,7 @@ Every ABI in `@ensforge/contracts` is an `as const` array. viem uses that to typ
 | `Abis.shared`                              | Token standards, ERC-165, resolver profiles, errors and events that both versions share.                 | `Abis.shared.erc165`           |
 | `Abis.v2.interfaces`, `Abis.v1.interfaces` | The ABIs of interfaces, for code that targets an interface instead of one contract.                      | `Abis.v2.interfaces.registry`  |
 
-The addresses come from [`Deployments`](/docs/contracts/addresses-and-chains). Browse every key in the [ABI reference](/docs/contracts/reference/abis).
+The addresses come from [`Deployments`](/docs/contracts/addresses-and-chains). Browse every key in the [ABI reference](/docs/reference/contracts/abis).
 
 ## Read a contract
 
@@ -52,7 +52,7 @@ supported;
 
 ## Send a write
 
-Simulate first, then send. `simulateContract` returns a typed request that `writeContract` accepts, so a revert shows up before the wallet prompt. This example sets a text [record](/docs/sdk/reference/glossary#record) on Sepolia with the [ENSv2](/docs/sdk/reference/glossary#ensv2) public [resolver](/docs/sdk/reference/glossary#resolver).
+Simulate first, then send. `simulateContract` returns a typed request that `writeContract` accepts, so a revert shows up before the wallet prompt. This example sets a text [record](/docs/reference/glossary#record) on Sepolia with the [ENSv2](/docs/reference/glossary#ensv2) public [resolver](/docs/reference/glossary#resolver).
 
 **Example** (Setting a Text Record on Sepolia)
 
@@ -80,7 +80,7 @@ const { request } = await publicClient.simulateContract({
 const hash = await walletClient.writeContract(request);
 ```
 
-- `namehash(normalize(name))` is the [namehash](/docs/sdk/reference/glossary#namehash), the node the resolver stores records under. Always [normalise](/docs/sdk/reference/glossary#normalisation) a name before you hash it, or the hash points to another node.
+- `namehash(normalize(name))` is the [namehash](/docs/reference/glossary#namehash), the node the resolver stores records under. Always [normalise](/docs/reference/glossary#normalisation) a name before you hash it, or the hash points to another node.
 - The call succeeds only when the name uses this resolver and the account may set its records.
 
 <Callout type="info" title="Prefer the SDK for ENS writes">

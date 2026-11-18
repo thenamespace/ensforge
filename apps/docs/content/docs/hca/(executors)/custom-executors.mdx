@@ -8,7 +8,7 @@ keywords: [defineExecutor, Executor, ExecutionRequest, relayer, capabilities]
   `@ensforge/hca` is experimental for 1.0. The `Executor` type can change in a minor release.
 </Callout>
 
-An [executor](/docs/sdk/reference/glossary#executor) delivers one [HCA](/docs/sdk/reference/glossary#hca) execution and reports what happened to it. `defineExecutor` builds one from your own functions. Use it when none of the built-in executors ([your wallet](/docs/hca/your-wallet), [bundlers](/docs/hca/bundlers), [Rhinestone](/docs/hca/rhinestone)) fits, for example a relayer your company runs. By the end of this page you will have an executor that `hca()` can use.
+An [executor](/docs/reference/glossary#executor) delivers one [HCA](/docs/reference/glossary#hca) execution and reports what happened to it. `defineExecutor` builds one from your own functions. Use it when none of the built-in executors ([your wallet](/docs/hca/your-wallet), [bundlers](/docs/hca/bundlers), [Rhinestone](/docs/hca/rhinestone)) fits, for example a relayer your company runs. By the end of this page you will have an executor that `hca()` can use.
 
 ## The shape of an executor
 
@@ -83,8 +83,8 @@ const fake = defineExecutor({
 
 ## Executor rules ensforge follows
 
-- `hca()` picks its executor when you call it: the first in the list, or with a `session` the first with `capabilities.sessions`. It throws [`HCA_EXECUTOR_UNSUPPORTED`](/docs/sdk/errors/HCA_EXECUTOR_UNSUPPORTED) when none qualifies.
-- When `quote` throws an `HcaError`, it passes through unchanged. Any other error from `quote` becomes [`HCA_EXECUTION_FAILED`](/docs/sdk/errors/HCA_EXECUTION_FAILED).
+- `hca()` picks its executor when you call it: the first in the list, or with a `session` the first with `capabilities.sessions`. It throws [`HCA_EXECUTOR_UNSUPPORTED`](/docs/reference/errors/HCA_EXECUTOR_UNSUPPORTED) when none qualifies.
+- When `quote` throws an `HcaError`, it passes through unchanged. Any other error from `quote` becomes [`HCA_EXECUTION_FAILED`](/docs/reference/errors/HCA_EXECUTION_FAILED).
 - Every executor is a Promise interface, so you can wrap Promise SDKs without Effect.
 
-See the [executor reference](/docs/hca/reference/executors) for the exact types.
+See the [executor reference](/docs/reference/hca/executors) for the exact types.

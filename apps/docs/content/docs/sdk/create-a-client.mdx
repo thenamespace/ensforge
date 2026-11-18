@@ -31,7 +31,7 @@ const name = await ens.primaryName.get({ address: "0xd8dA6BF26964aF9D7eEd9e03E53
 - `extend(ensActions())` returns a new client with every ENS action on it. The original client is
   left unchanged: clients are frozen.
 
-A viem client on another chain fails with [`UNKNOWN_CHAIN`](/docs/sdk/errors/UNKNOWN_CHAIN) unless
+A viem client on another chain fails with [`UNKNOWN_CHAIN`](/docs/reference/errors/UNKNOWN_CHAIN) unless
 you pass `deployment`. See [Custom deployments](/docs/contracts/custom-deployments).
 
 ## Add a wallet for writes
@@ -59,7 +59,7 @@ const ens = Ensforge.create({
 - `walletClient` can also be a function that returns the wallet, or `undefined` while none is
   connected. ensforge calls it on every write, so a wallet that connects later works.
 - Without a wallet, writes fail with
-  [`WALLET_NOT_CONFIGURED`](/docs/sdk/errors/WALLET_NOT_CONFIGURED). Reads keep working.
+  [`WALLET_NOT_CONFIGURED`](/docs/reference/errors/WALLET_NOT_CONFIGURED). Reads keep working.
 
 ## From a wagmi config
 
@@ -81,7 +81,7 @@ const ens = Ensforge.fromWagmi(wagmiConfig).extend(ensActions());
 - A wallet connected to another chain is asked to switch first. Pass `{ switchChain: false }` to
   turn that off.
 - Every other chain in the wagmi config is added to `chains`, so a
-  [primary name](/docs/sdk/reference/glossary#primary-name) on an L2 uses wagmi's client and
+  [primary name](/docs/reference/glossary#primary-name) on an L2 uses wagmi's client and
   wallet there.
 - `fromWagmi` takes every option of `Ensforge.create` except the viem clients.
 
@@ -121,7 +121,7 @@ const page = await ens.indexer.getNamesForAddress({
 
 The indexer actions are a separate group because they need an indexer service. Calling them on a
 client without `indexer` fails with
-[`INDEXER_NOT_CONFIGURED`](/docs/sdk/errors/INDEXER_NOT_CONFIGURED). See
+[`INDEXER_NOT_CONFIGURED`](/docs/reference/errors/INDEXER_NOT_CONFIGURED). See
 [Name lists and indexers](/docs/sdk/name-lists-and-indexers).
 
 **Example** (Only the Record Actions)
@@ -145,20 +145,20 @@ of your bundle. See [Keep bundles small](/docs/sdk/bundle-size).
 
 Every option except `publicClient` is optional.
 
-| Option         | Type                                               | Default                                                                      | Description                                                                                                                                                                                |
-| -------------- | -------------------------------------------------- | ---------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `publicClient` | viem client                                        | (required)                                                                   | Client for reads. Its chain selects the ENS deployment.                                                                                                                                    |
-| `walletClient` | viem wallet client, or a function returning one    | `publicClient` when it has an account                                        | Client for writes. A function is called on every write.                                                                                                                                    |
-| `account`      | `Account \| Address`                               | the wallet client's account                                                  | Default signer for writes. A write's own `account` overrides it.                                                                                                                           |
-| `chains`       | `Record<chainId, { publicClient, walletClient? }>` | none                                                                         | Clients for other chains, for writes ENS makes there, such as a primary name on an L2. Without one, such writes fail with [`CHAIN_NOT_CONFIGURED`](/docs/sdk/errors/CHAIN_NOT_CONFIGURED). |
-| `deployment`   | `Deployments.Profile`                              | the built-in deployment for the chain                                        | ENS contract addresses. Required for devnets, forks and other chains.                                                                                                                      |
-| `ccipRead`     | `{ gatewayUrls? } \| false`                        | the Universal Resolver's own batch gateway                                   | Off-chain lookups ([CCIP-Read](/docs/sdk/reference/glossary#ccip-read)): the batch gateways the Universal Resolver sends them through. `false` turns them off.                             |
-| `batch`        | `{ multicall?: boolean \| { batchSize?, wait? } }` | `{ multicall: true }`                                                        | Groups reads made at the same time into multicall requests. `wait` is in milliseconds.                                                                                                     |
-| `blockTag`     | `BlockTag`                                         | `"latest"`                                                                   | Block that reads run at.                                                                                                                                                                   |
-| `storage`      | `Plan.Storage`                                     | `Plan.memoryStorage()`                                                       | Where multi-step writes save their [plan](/docs/sdk/reference/glossary#plan) progress. Use `Plan.localStorage()` to survive a reload.                                                      |
-| `simulate`     | `boolean`                                          | `true`                                                                       | Simulate writes before the wallet prompt.                                                                                                                                                  |
-| `indexer`      | `Indexer`                                          | none                                                                         | [Indexer](/docs/sdk/reference/glossary#indexer) for `indexer.*` actions and for finding records and subnames during migration, from `@ensforge/sdk/indexer`.                               |
-| `gateways`     | `{ ipfs?, arweave?, swarm? }`                      | `https://ipfs.io`, `https://arweave.net`, `https://api.gateway.ethswarm.org` | HTTP gateways for avatars and website links. The public IPFS gateway is rate limited: set your own in production.                                                                          |
+| Option         | Type                                               | Default                                                                      | Description                                                                                                                                                                                      |
+| -------------- | -------------------------------------------------- | ---------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `publicClient` | viem client                                        | (required)                                                                   | Client for reads. Its chain selects the ENS deployment.                                                                                                                                          |
+| `walletClient` | viem wallet client, or a function returning one    | `publicClient` when it has an account                                        | Client for writes. A function is called on every write.                                                                                                                                          |
+| `account`      | `Account \| Address`                               | the wallet client's account                                                  | Default signer for writes. A write's own `account` overrides it.                                                                                                                                 |
+| `chains`       | `Record<chainId, { publicClient, walletClient? }>` | none                                                                         | Clients for other chains, for writes ENS makes there, such as a primary name on an L2. Without one, such writes fail with [`CHAIN_NOT_CONFIGURED`](/docs/reference/errors/CHAIN_NOT_CONFIGURED). |
+| `deployment`   | `Deployments.Profile`                              | the built-in deployment for the chain                                        | ENS contract addresses. Required for devnets, forks and other chains.                                                                                                                            |
+| `ccipRead`     | `{ gatewayUrls? } \| false`                        | the Universal Resolver's own batch gateway                                   | Off-chain lookups ([CCIP-Read](/docs/reference/glossary#ccip-read)): the batch gateways the Universal Resolver sends them through. `false` turns them off.                                       |
+| `batch`        | `{ multicall?: boolean \| { batchSize?, wait? } }` | `{ multicall: true }`                                                        | Groups reads made at the same time into multicall requests. `wait` is in milliseconds.                                                                                                           |
+| `blockTag`     | `BlockTag`                                         | `"latest"`                                                                   | Block that reads run at.                                                                                                                                                                         |
+| `storage`      | `Plan.Storage`                                     | `Plan.memoryStorage()`                                                       | Where multi-step writes save their [plan](/docs/reference/glossary#plan) progress. Use `Plan.localStorage()` to survive a reload.                                                                |
+| `simulate`     | `boolean`                                          | `true`                                                                       | Simulate writes before the wallet prompt.                                                                                                                                                        |
+| `indexer`      | `Indexer`                                          | none                                                                         | [Indexer](/docs/reference/glossary#indexer) for `indexer.*` actions and for finding records and subnames during migration, from `@ensforge/sdk/indexer`.                                         |
+| `gateways`     | `{ ipfs?, arweave?, swarm? }`                      | `https://ipfs.io`, `https://arweave.net`, `https://api.gateway.ethswarm.org` | HTTP gateways for avatars and website links. The public IPFS gateway is rate limited: set your own in production.                                                                                |
 
 See [Configure RPC and gateways](/docs/sdk/rpc-and-gateways).
 

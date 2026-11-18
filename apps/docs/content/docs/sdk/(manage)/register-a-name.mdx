@@ -4,9 +4,9 @@ description: Register a .eth name with the commit, wait and register flow, optio
 keywords: [registration.register, registerSync, commit, commitment, secret, ETHRegistrar, USDC]
 ---
 
-You will register a new [`.eth` name](/docs/sdk/reference/glossary#eth-name), paying in an ERC-20 token. A registration is a **commit-reveal** flow: you first send a [commitment](/docs/sdk/reference/glossary#commitment), wait on-chain for it to age, then register. This stops anyone from front-running your name.
+You will register a new [`.eth` name](/docs/reference/glossary#eth-name), paying in an ERC-20 token. A registration is a **commit-reveal** flow: you first send a [commitment](/docs/reference/glossary#commitment), wait on-chain for it to age, then register. This stops anyone from front-running your name.
 
-ensforge runs the whole flow as one [plan](/docs/sdk/reference/glossary#plan). Every new `.eth` name is registered on [ENSv2](/docs/sdk/reference/glossary#ensv2), so you never choose a version.
+ensforge runs the whole flow as one [plan](/docs/reference/glossary#plan). Every new `.eth` name is registered on [ENSv2](/docs/reference/glossary#ensv2), so you never choose a version.
 
 ## Prerequisites
 
@@ -40,11 +40,11 @@ sequenceDiagram
 | `records`     | Records on the owner's resolver, when `resolver` is explicit.                          |
 | `primaryName` | The reverse record, when `primaryName` is set.                                         |
 
-By default each name gets its own [resolver](/docs/sdk/reference/glossary#resolver), deployed in the `register` step with `records` written at creation. See [Resolvers and shared records](/docs/sdk/resolvers-and-shared-records).
+By default each name gets its own [resolver](/docs/reference/glossary#resolver), deployed in the `register` step with `records` written at creation. See [Resolvers and shared records](/docs/sdk/resolvers-and-shared-records).
 
 ## 1. Register and wait
 
-[`registration.registerSync`](/docs/sdk/reference/actions/registration/register) sends every step and resolves after the last receipt. [`registration.register`](/docs/sdk/reference/actions/registration/register) resolves as soon as the last transaction is submitted.
+[`registration.registerSync`](/docs/reference/sdk/registration/register) sends every step and resolves after the last receipt. [`registration.register`](/docs/reference/sdk/registration/register) resolves as soon as the last transaction is submitted.
 
 **Example** (Registering With Records and a Primary Name)
 
@@ -73,7 +73,7 @@ const { names, paid, secret } = await ens.registration.registerSync({
 
 - `names` takes one name or an array. Several names share one plan.
 - `records` are written when each name's resolver is created. Their shape is the one `record.set` takes. See [Set records](/docs/sdk/set-records).
-- `primaryName: true` sets the single name as the signer's [primary name](/docs/sdk/reference/glossary#primary-name) and adds its `eth` address record. It needs exactly one name, owned by the signer. See [Set a primary name](/docs/sdk/set-a-primary-name).
+- `primaryName: true` sets the single name as the signer's [primary name](/docs/reference/glossary#primary-name) and adds its `eth` address record. It needs exactly one name, owned by the signer. See [Set a primary name](/docs/sdk/set-a-primary-name).
 - `onStep` is called as each step waits, is submitted, is confirmed or fails.
 - The wallet prompts once per step, or once for several steps when it supports EIP-5792 batches. See [Send a transaction](/docs/sdk/send-a-transaction).
 
@@ -110,7 +110,7 @@ The approval covers the quote plus 2%, because the price is charged at `register
 
 ## Split the flow across sessions
 
-[`registration.commit`](/docs/sdk/reference/actions/registration/commit) sends only the first half. Use it when the user commits now and finishes later, or on another device. Keep the returned `secret`, then call `register` with exactly the same options and the `secret`.
+[`registration.commit`](/docs/reference/sdk/registration/commit) sends only the first half. Use it when the user commits now and finishes later, or on another device. Keep the returned `secret`, then call `register` with exactly the same options and the `secret`.
 
 **Example** (Committing Now and Registering Later)
 
@@ -142,7 +142,7 @@ if (status === "ready") {
 }
 ```
 
-[`registration.getCommitmentStatus`](/docs/sdk/reference/actions/registration/get-commitment-status) reports where the commitment is in its window.
+[`registration.getCommitmentStatus`](/docs/reference/sdk/registration/get-commitment-status) reports where the commitment is in its window.
 
 | `status`  | Meaning                                               |
 | --------- | ----------------------------------------------------- |
@@ -166,39 +166,39 @@ Resuming needs the same options, because they are part of the commitment. With a
 
 ### `NAME_NOT_AVAILABLE`
 
-The name is registered or in its [grace period](/docs/sdk/reference/glossary#grace-period). Check it first. See [`NAME_NOT_AVAILABLE`](/docs/sdk/errors/NAME_NOT_AVAILABLE).
+The name is registered or in its [grace period](/docs/reference/glossary#grace-period). Check it first. See [`NAME_NOT_AVAILABLE`](/docs/reference/errors/NAME_NOT_AVAILABLE).
 
 ### `INSUFFICIENT_TOKEN_BALANCE`
 
-The signer cannot pay the quote in the payment token. Fund the account, or pick another `paymentToken`. See [`INSUFFICIENT_TOKEN_BALANCE`](/docs/sdk/errors/INSUFFICIENT_TOKEN_BALANCE).
+The signer cannot pay the quote in the payment token. Fund the account, or pick another `paymentToken`. See [`INSUFFICIENT_TOKEN_BALANCE`](/docs/reference/errors/INSUFFICIENT_TOKEN_BALANCE).
 
 ### `COMMITMENT_TOO_NEW`
 
-You resumed before the commitment aged. The error's `readyAt` is the Unix time from which `register` works. See [`COMMITMENT_TOO_NEW`](/docs/sdk/errors/COMMITMENT_TOO_NEW).
+You resumed before the commitment aged. The error's `readyAt` is the Unix time from which `register` works. See [`COMMITMENT_TOO_NEW`](/docs/reference/errors/COMMITMENT_TOO_NEW).
 
 ### `COMMITMENT_TOO_OLD`
 
-The commitment expired before you registered. Commit again. See [`COMMITMENT_TOO_OLD`](/docs/sdk/errors/COMMITMENT_TOO_OLD).
+The commitment expired before you registered. Commit again. See [`COMMITMENT_TOO_OLD`](/docs/reference/errors/COMMITMENT_TOO_OLD).
 
 ### `COMMITMENT_EXISTS`
 
-An unexpired commitment with the same data already exists. Resume it with its `secret` instead of committing again. See [`COMMITMENT_EXISTS`](/docs/sdk/errors/COMMITMENT_EXISTS).
+An unexpired commitment with the same data already exists. Resume it with its `secret` instead of committing again. See [`COMMITMENT_EXISTS`](/docs/reference/errors/COMMITMENT_EXISTS).
 
 ### `DURATION_TOO_SHORT`
 
-`duration` is shorter than the registrar's minimum. Read `minDuration` from `registration.getParameters`. See [`DURATION_TOO_SHORT`](/docs/sdk/errors/DURATION_TOO_SHORT).
+`duration` is shorter than the registrar's minimum. Read `minDuration` from `registration.getParameters`. See [`DURATION_TOO_SHORT`](/docs/reference/errors/DURATION_TOO_SHORT).
 
 ### `PAYMENT_TOKEN_UNSUPPORTED`
 
-The registrar does not accept `paymentToken`. See [`PAYMENT_TOKEN_UNSUPPORTED`](/docs/sdk/errors/PAYMENT_TOKEN_UNSUPPORTED).
+The registrar does not accept `paymentToken`. See [`PAYMENT_TOKEN_UNSUPPORTED`](/docs/reference/errors/PAYMENT_TOKEN_UNSUPPORTED).
 
 ### `WALLET_NOT_CONFIGURED`
 
-The client has no wallet client and you passed no `account`. Pass `walletClient` to `Ensforge.create`. See [`WALLET_NOT_CONFIGURED`](/docs/sdk/errors/WALLET_NOT_CONFIGURED).
+The client has no wallet client and you passed no `account`. Pass `walletClient` to `Ensforge.create`. See [`WALLET_NOT_CONFIGURED`](/docs/reference/errors/WALLET_NOT_CONFIGURED).
 
 ### `RECEIPT_TIMEOUT` or `TRANSACTION_REVERTED`
 
-`registerSync` stopped waiting, or a transaction reverted. A timed-out transaction may still confirm: check it by hash before retrying. See [Continue after a failure](/docs/sdk/continue-after-a-failure), [`RECEIPT_TIMEOUT`](/docs/sdk/errors/RECEIPT_TIMEOUT) and [`TRANSACTION_REVERTED`](/docs/sdk/errors/TRANSACTION_REVERTED).
+`registerSync` stopped waiting, or a transaction reverted. A timed-out transaction may still confirm: check it by hash before retrying. See [Continue after a failure](/docs/sdk/continue-after-a-failure), [`RECEIPT_TIMEOUT`](/docs/reference/errors/RECEIPT_TIMEOUT) and [`TRANSACTION_REVERTED`](/docs/reference/errors/TRANSACTION_REVERTED).
 
 ### The register step reverts after the wait
 

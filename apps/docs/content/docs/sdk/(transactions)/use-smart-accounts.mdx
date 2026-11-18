@@ -6,7 +6,7 @@ keywords: [smart account, via, route, HCA, EIP-7702, EIP-5792, account abstracti
 
 A **smart account** is an account that is a contract, so it can run several calls in one
 transaction. ensforge works with smart accounts in two ways: through your wallet, with no code
-change, and through a [route](/docs/sdk/reference/glossary#route) (`via`), which sends a write another way.
+change, and through a [route](/docs/reference/glossary#route) (`via`), which sends a write another way.
 
 ## Prerequisites
 
@@ -17,17 +17,17 @@ change, and through a [route](/docs/sdk/reference/glossary#route) (`via`), which
 ## A smart-account wallet needs nothing extra
 
 When the wallet is a smart account (a contract wallet, or an account upgraded with EIP-7702) and it
-supports EIP-5792 atomic batches, `mode: "auto"` sends a write's calls as one [bundle](/docs/sdk/reference/glossary#bundle). The signer is
+supports EIP-5792 atomic batches, `mode: "auto"` sends a write's calls as one [bundle](/docs/reference/glossary#bundle). The signer is
 the wallet's account and ENS sees it as the sender. See
 [Bundle transactions](/docs/sdk/bundle-transactions).
 
 ## Route a write with `via`
 
-A route changes how a [plan](/docs/sdk/reference/glossary#plan) is sent. Pass `via` to any write and ensforge hands the plan to the
+A route changes how a [plan](/docs/reference/glossary#plan) is sent. Pass `via` to any write and ensforge hands the plan to the
 route, which can rewrite it and, if it has its own sender, send it too.
 
 `hca()` from `@ensforge/hca` is the route that ships with ensforge. It runs the write from the
-signer's ENS Hosted Contract Account ([HCA](/docs/sdk/reference/glossary#hca)): the account is deployed on first use, consecutive
+signer's ENS Hosted Contract Account ([HCA](/docs/reference/glossary#hca)): the account is deployed on first use, consecutive
 steps run as one atomic `executeByOwner` call, and the approvals it needs to move the owner's names
 are added as owner transactions.
 
@@ -60,7 +60,7 @@ await ens.migration.migrateSync({ names: ["alice.eth", "bob.eth"], via: hca() })
 
 - `hcaActions()` adds `ens.hca.*`, such as `ens.hca.get()` to read the account.
 - `via: hca()` is never chosen for you. Route through an HCA only with the user's agreement.
-- The HCA is the sender (`msg.sender`) of the calls, so it needs authority over what they touch, such as the [roles](/docs/sdk/reference/glossary#role) a write uses.
+- The HCA is the sender (`msg.sender`) of the calls, so it needs authority over what they touch, such as the [roles](/docs/reference/glossary#role) a write uses.
   Migration and registration plan for it; other writes need the HCA to hold the roles they use.
 
 ## Preview a routed write
@@ -73,7 +73,7 @@ See [Preview before sending](/docs/sdk/preview-before-sending).
 
 A route sends some steps itself and ensforge saves a reference for each, such as a UserOperation
 hash. Resume the plan with the same `via`, so the route can follow those steps. Without it,
-`plan.resume` fails with [`PLAN_ROUTE_REQUIRED`](/docs/sdk/errors/PLAN_ROUTE_REQUIRED). See
+`plan.resume` fails with [`PLAN_ROUTE_REQUIRED`](/docs/reference/errors/PLAN_ROUTE_REQUIRED). See
 [Continue after a failure](/docs/sdk/continue-after-a-failure).
 
 ## Handle route errors
@@ -91,8 +91,8 @@ if (error instanceof HcaError) {
 }
 ```
 
-The codes, such as [`HCA_NOT_VERIFIED`](/docs/sdk/errors/HCA_NOT_VERIFIED) and
-[`HCA_EXECUTOR_UNSUPPORTED`](/docs/sdk/errors/HCA_EXECUTOR_UNSUPPORTED), have their own pages.
+The codes, such as [`HCA_NOT_VERIFIED`](/docs/reference/errors/HCA_NOT_VERIFIED) and
+[`HCA_EXECUTOR_UNSUPPORTED`](/docs/reference/errors/HCA_EXECUTOR_UNSUPPORTED), have their own pages.
 
 ## Limits
 
@@ -100,7 +100,7 @@ The codes, such as [`HCA_NOT_VERIFIED`](/docs/sdk/errors/HCA_NOT_VERIFIED) and
 - A route's `send` reports a reference, not a transaction hash, until the step lands.
 
 To build a route of your own, see [Extend the client](/docs/sdk/extend-the-client). To choose how
-the HCA executes, its [executor](/docs/sdk/reference/glossary#executor) (your wallet, a bundler, a session), see [Your wallet](/docs/hca/your-wallet) and
+the HCA executes, its [executor](/docs/reference/glossary#executor) (your wallet, a bundler, a session), see [Your wallet](/docs/hca/your-wallet) and
 [Bundlers](/docs/hca/bundlers).
 
 ## Check the result
@@ -112,14 +112,14 @@ the HCA executes, its [executor](/docs/sdk/reference/glossary#executor) (your wa
 ### `HCA_NOT_VERIFIED`
 
 The signer's HCA has problems ensforge will not route through, or the write has no signer. Read
-`details` on the error. See [`HCA_NOT_VERIFIED`](/docs/sdk/errors/HCA_NOT_VERIFIED).
+`details` on the error. See [`HCA_NOT_VERIFIED`](/docs/reference/errors/HCA_NOT_VERIFIED).
 
 ### `HCA_EXECUTOR_UNSUPPORTED`
 
 No executor in `executors` can run the request, for example a `session` with only `owner()`. See
-[`HCA_EXECUTOR_UNSUPPORTED`](/docs/sdk/errors/HCA_EXECUTOR_UNSUPPORTED).
+[`HCA_EXECUTOR_UNSUPPORTED`](/docs/reference/errors/HCA_EXECUTOR_UNSUPPORTED).
 
 ### `MISSING_ROLES` after routing
 
 The HCA, not your wallet, is the sender, and it lacks a role the write needs. Grant the role to the
-HCA, or send the write without `via`. See [`MISSING_ROLES`](/docs/sdk/errors/MISSING_ROLES).
+HCA, or send the write without `via`. See [`MISSING_ROLES`](/docs/reference/errors/MISSING_ROLES).

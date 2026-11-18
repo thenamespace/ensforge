@@ -10,13 +10,13 @@ keywords: [installation, "@ensforge/hca", hcaActions, hcaAdminActions]
   and Rhinestone paths have no production proof yet. Pin the version you test.
 </Callout>
 
-`@ensforge/hca` adds hosted contract accounts ([HCA](/docs/sdk/reference/glossary#hca)) to the ensforge client. An HCA is a smart account that ENS hosts for a wallet. See [How it works](/docs/hca/how-it-works).
+`@ensforge/hca` adds hosted contract accounts ([HCA](/docs/reference/glossary#hca)) to the ensforge client. An HCA is a smart account that ENS hosts for a wallet. See [How it works](/docs/hca/how-it-works).
 
 ## Requirements
 
 - Node.js 20.19 or later.
 - `@ensforge/sdk`, `effect` (version 4.1.4 or later) and `viem` (version 2.57 or later). The package lists `effect` and `viem` as peer dependencies.
-- A chain with an HCA deployment: Ethereum mainnet or Sepolia. Other chains fail with [`HCA_UNAVAILABLE`](/docs/sdk/errors/HCA_UNAVAILABLE) unless you [define a deployment](/docs/contracts/custom-deployments) that has an `hca` group.
+- A chain with an HCA deployment: Ethereum mainnet or Sepolia. Other chains fail with [`HCA_UNAVAILABLE`](/docs/reference/errors/HCA_UNAVAILABLE) unless you [define a deployment](/docs/contracts/custom-deployments) that has an `hca` group.
 
 ## 1. Install the packages
 
@@ -61,4 +61,4 @@ The same actions run in Effect programs: import `Actions` from `@ensforge/hca/ef
 
 ### `HCA_UNAVAILABLE`
 
-The client's chain has no HCA deployment. Use mainnet or Sepolia, or pass a deployment that has an `hca` group. See [`HCA_UNAVAILABLE`](/docs/sdk/errors/HCA_UNAVAILABLE).
+The client's chain has no HCA deployment. Use mainnet or Sepolia, or pass a deployment that has an `hca` group. See [`HCA_UNAVAILABLE`](/docs/reference/errors/HCA_UNAVAILABLE).

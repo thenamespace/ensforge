@@ -4,16 +4,16 @@ description: Quote and renew one or more .eth names, including names in their gr
 keywords: [registration.renew, getRenewalPrice, grace period, ETHRenewerV1, renewBatch]
 ---
 
-You will extend the registration of one or more [`.eth` names](/docs/sdk/reference/glossary#eth-name). Anyone can renew any name: the signer pays, and the owner does not change. ensforge picks the right contract for each name, so [ENSv1](/docs/sdk/reference/glossary#ensv1) and [ENSv2](/docs/sdk/reference/glossary#ensv2) names renew in the same call.
+You will extend the registration of one or more [`.eth` names](/docs/reference/glossary#eth-name). Anyone can renew any name: the signer pays, and the owner does not change. ensforge picks the right contract for each name, so [ENSv1](/docs/reference/glossary#ensv1) and [ENSv2](/docs/reference/glossary#ensv2) names renew in the same call.
 
 ## Prerequisites
 
 - A wallet client that holds the payment token and gas. See [Create a client](/docs/sdk/create-a-client).
-- Names that are registered or in their [grace period](/docs/sdk/reference/glossary#grace-period) (the time after [expiry](/docs/sdk/reference/glossary#expiry) when the name can still be renewed and nobody else can register it). Names past the grace period are registered again, not renewed. See [Register a name](/docs/sdk/register-a-name).
+- Names that are registered or in their [grace period](/docs/reference/glossary#grace-period) (the time after [expiry](/docs/reference/glossary#expiry) when the name can still be renewed and nobody else can register it). Names past the grace period are registered again, not renewed. See [Register a name](/docs/sdk/register-a-name).
 
 ## 1. Quote the renewal
 
-[`registration.getRenewalPrice`](/docs/sdk/reference/actions/registration/get-renewal-price) quotes any number of names in one batched call.
+[`registration.getRenewalPrice`](/docs/reference/sdk/registration/get-renewal-price) quotes any number of names in one batched call.
 
 **Example** (Quoting Two Names)
 
@@ -41,7 +41,7 @@ Each entry of `items` has the `name`, its `amount` and its `route`:
 
 ## 2. Renew
 
-[`registration.renew`](/docs/sdk/reference/actions/registration/renew) sends one `renewBatch` call per route, with a token approval for each contract whose allowance is short. `registration.renewSync` also waits for the receipts.
+[`registration.renew`](/docs/reference/sdk/registration/renew) sends one `renewBatch` call per route, with a token approval for each contract whose allowance is short. `registration.renewSync` also waits for the receipts.
 
 **Example** (Renewing Two Names)
 
@@ -87,20 +87,20 @@ Read the name again to see its new `expiry`. See [Get a name's owner, expiry and
 
 ### `NAME_NOT_RENEWABLE`
 
-A name is neither registered nor in its grace period. Register it instead. See [`NAME_NOT_RENEWABLE`](/docs/sdk/errors/NAME_NOT_RENEWABLE).
+A name is neither registered nor in its grace period. Register it instead. See [`NAME_NOT_RENEWABLE`](/docs/reference/errors/NAME_NOT_RENEWABLE).
 
 ### `INSUFFICIENT_TOKEN_BALANCE`
 
-The signer cannot pay the quote. See [`INSUFFICIENT_TOKEN_BALANCE`](/docs/sdk/errors/INSUFFICIENT_TOKEN_BALANCE).
+The signer cannot pay the quote. See [`INSUFFICIENT_TOKEN_BALANCE`](/docs/reference/errors/INSUFFICIENT_TOKEN_BALANCE).
 
 ### `DURATION_TOO_SHORT`
 
-`duration` is shorter than the registrar's minimum. See [`DURATION_TOO_SHORT`](/docs/sdk/errors/DURATION_TOO_SHORT).
+`duration` is shorter than the registrar's minimum. See [`DURATION_TOO_SHORT`](/docs/reference/errors/DURATION_TOO_SHORT).
 
 ### `PAYMENT_TOKEN_UNSUPPORTED`
 
-The registrar does not accept `paymentToken`. See [`PAYMENT_TOKEN_UNSUPPORTED`](/docs/sdk/errors/PAYMENT_TOKEN_UNSUPPORTED).
+The registrar does not accept `paymentToken`. See [`PAYMENT_TOKEN_UNSUPPORTED`](/docs/reference/errors/PAYMENT_TOKEN_UNSUPPORTED).
 
 ### `UNSUPPORTED_ON_DEPLOYMENT`
 
-The chain has no ENSv2 deployment. See [`UNSUPPORTED_ON_DEPLOYMENT`](/docs/sdk/errors/UNSUPPORTED_ON_DEPLOYMENT).
+The chain has no ENSv2 deployment. See [`UNSUPPORTED_ON_DEPLOYMENT`](/docs/reference/errors/UNSUPPORTED_ON_DEPLOYMENT).

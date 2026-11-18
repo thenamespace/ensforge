@@ -36,7 +36,7 @@ const page = await ens.indexer.search({ query: "vitalik" });
 - `indexerActions()` adds the `ens.indexer.*` actions. `ensActions()` does not include them, because they need an indexer.
 - On-chain actions such as `record.getAddress` do not use the indexer.
 
-See [Name lists and indexers](/docs/sdk/name-lists-and-indexers) and [`bigname`](/docs/sdk/reference/indexers).
+See [Name lists and indexers](/docs/sdk/name-lists-and-indexers) and [`bigname`](/docs/reference/sdk/indexers).
 
 ## 2. Check the connection
 
@@ -65,7 +65,7 @@ for (const [chainId, chain] of Object.entries(status.chains)) {
 }
 ```
 
-`status` is `"ready"`, `"degraded"` or `"stale"`. Each chain reports the block it has `indexed`, the `latest` block, and `lagBlocks` and `lagSeconds`. See [`indexer.getStatus`](/docs/sdk/reference/actions/indexer/get-status).
+`status` is `"ready"`, `"degraded"` or `"stale"`. Each chain reports the block it has `indexed`, the `latest` block, and `lagBlocks` and `lagSeconds`. See [`indexer.getStatus`](/docs/reference/sdk/indexer/get-status).
 
 ## 3. Read answers with care
 
@@ -79,7 +79,7 @@ Every indexer answer carries metadata besides its data:
 | `origin`            | `"indexed"` when answered from the index, `"verified"` when read on-chain.                 |
 | `indexer`           | The id of the indexer that answered, such as `bigname`.                                    |
 
-An indexer is fast but can lag the chain by a few blocks. For an authoritative answer about one name, read the chain with [`name.get`](/docs/sdk/reference/actions/name/get).
+An indexer is fast but can lag the chain by a few blocks. For an authoritative answer about one name, read the chain with [`name.get`](/docs/reference/sdk/name/get).
 
 ## Use Basenames and Goldsky
 
@@ -162,7 +162,7 @@ To adapt another data source, see [Custom indexers](/docs/sdk/custom-indexers).
 
 ### `INDEXER_NOT_CONFIGURED`
 
-The client has no indexer. Pass `indexer` to `Ensforge.create`. See [`INDEXER_NOT_CONFIGURED`](/docs/sdk/errors/INDEXER_NOT_CONFIGURED).
+The client has no indexer. Pass `indexer` to `Ensforge.create`. See [`INDEXER_NOT_CONFIGURED`](/docs/reference/errors/INDEXER_NOT_CONFIGURED).
 
 ### `Property 'indexer' does not exist` in TypeScript
 
@@ -170,12 +170,12 @@ You did not add `indexerActions()` with `.extend(...)`. `ensActions()` does not 
 
 ### `INDEXER_UNSUPPORTED`
 
-The indexer does not serve the query or its namespace. Examples: the client's chain has no public host (pass `url`), the namespace is not indexed (bigname does not serve Basenames at the time of writing), or Goldsky was asked for a snapshot (`at`) or a `safe` or `finalized` read. Combine indexers with `fallback`. See [`INDEXER_UNSUPPORTED`](/docs/sdk/errors/INDEXER_UNSUPPORTED).
+The indexer does not serve the query or its namespace. Examples: the client's chain has no public host (pass `url`), the namespace is not indexed (bigname does not serve Basenames at the time of writing), or Goldsky was asked for a snapshot (`at`) or a `safe` or `finalized` read. Combine indexers with `fallback`. See [`INDEXER_UNSUPPORTED`](/docs/reference/errors/INDEXER_UNSUPPORTED).
 
 ### `INDEXER_UNAVAILABLE` or `INDEXER_RATE_LIMITED`
 
-The indexer is down or limiting you. Both are marked retryable. ensforge already retries `retryCount` times, so add a second indexer with `fallback`. See [`INDEXER_UNAVAILABLE`](/docs/sdk/errors/INDEXER_UNAVAILABLE) and [`INDEXER_RATE_LIMITED`](/docs/sdk/errors/INDEXER_RATE_LIMITED).
+The indexer is down or limiting you. Both are marked retryable. ensforge already retries `retryCount` times, so add a second indexer with `fallback`. See [`INDEXER_UNAVAILABLE`](/docs/reference/errors/INDEXER_UNAVAILABLE) and [`INDEXER_RATE_LIMITED`](/docs/reference/errors/INDEXER_RATE_LIMITED).
 
 ### `INDEXER_BEHIND`
 
-The indexer is behind the chain. Retry shortly, or read on-chain instead. See [`INDEXER_BEHIND`](/docs/sdk/errors/INDEXER_BEHIND).
+The indexer is behind the chain. Retry shortly, or read on-chain instead. See [`INDEXER_BEHIND`](/docs/reference/errors/INDEXER_BEHIND).

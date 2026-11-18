@@ -1,0 +1,27 @@
+{
+  "title": "Errors",
+  "icon": "errors",
+  "pages": [
+    "index",
+    "(commitment-error)",
+    "(config-error)",
+    "(contract-revert-error)",
+    "(dns-error)",
+    "(gateway-error)",
+    "(indexer-error)",
+    "(insufficient-funds-error)",
+    "(internal-error)",
+    "(invalid-input-error)",
+    "(migration-error)",
+    "(name-state-error)",
+    "(network-error)",
+    "(not-found-error)",
+    "(plan-error)",
+    "(transaction-error)",
+    "(unauthorized-error)",
+    "(unsupported-error)",
+    "(user-rejected-error)",
+    "(wallet-error)",
+    "(hca-error)"
+  ]
+}

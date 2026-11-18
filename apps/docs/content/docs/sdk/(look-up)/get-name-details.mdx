@@ -37,7 +37,7 @@ if (state.status === "grace") {
 - `expiry` and `gracePeriodEnd` are Unix seconds as `bigint`, or `null` when they do not apply. Multiply by 1000 for a JavaScript `Date`.
 - Times come from the block the read runs at, not from your local clock.
 
-See [`name.get`](/docs/sdk/reference/actions/name/get).
+See [`name.get`](/docs/reference/sdk/name/get).
 
 ## Read the result
 
@@ -45,10 +45,10 @@ See [`name.get`](/docs/sdk/reference/actions/name/get).
 | --------------------- | -------------------------------------------------------------------------------------------------------------------------- |
 | `name`                | The normalised name.                                                                                                       |
 | `status`              | `"available"`, `"registered"`, `"grace"`, `"expired"` or `"reserved"`.                                                     |
-| `owner`               | Who ultimately controls the name ([owner](/docs/sdk/reference/glossary#owner)).                                            |
+| `owner`               | Who ultimately controls the name ([owner](/docs/reference/glossary#owner)).                                                |
 | `manager`             | The registry owner of an unwrapped name (the "manager" in the ENS app), or `null`.                                         |
 | `registrant`          | The holder of an unwrapped `.eth` name's registration token, or `null`.                                                    |
-| `resolver`            | The [resolver](/docs/sdk/reference/glossary#resolver) set on the name itself, or `null`.                                   |
+| `resolver`            | The [resolver](/docs/reference/glossary#resolver) set on the name itself, or `null`.                                       |
 | `inheritedResolver`   | The resolver serving a name that has none of its own, such as a parent's wildcard or off-chain resolver. `null` otherwise. |
 | `expiry`              | Unix seconds when the registration ends, grace period excluded. `null` when it never expires.                              |
 | `gracePeriodEnd`      | Unix seconds when the `.eth` grace period ends.                                                                            |
@@ -56,7 +56,7 @@ See [`name.get`](/docs/sdk/reference/actions/name/get).
 | `renewable`           | Whether the name can be renewed now: `.eth` names that are registered or in grace.                                         |
 | `kind` and `protocol` | Where the name lives. Most apps never need them. See [ENS versions under the hood](/docs/sdk/ens-versions).                |
 
-`status: "grace"` applies to `.eth` names after they expire: during the [grace period](/docs/sdk/reference/glossary#grace-period) anyone can still renew the name, but nobody can register it. `"expired"` names can be registered again. For who may change a name, see [Who can change a name](/docs/sdk/who-can-change-a-name).
+`status: "grace"` applies to `.eth` names after they expire: during the [grace period](/docs/reference/glossary#grace-period) anyone can still renew the name, but nobody can register it. `"expired"` names can be registered again. For who may change a name, see [Who can change a name](/docs/sdk/who-can-change-a-name).
 
 ## Check availability
 
@@ -94,8 +94,8 @@ A name served only by a parent's wildcard or off-chain resolver, such as `jesse.
 
 ### `INVALID_NAME`
 
-The name is invalid, or it is the root. [`INVALID_NAME`](/docs/sdk/errors/INVALID_NAME) is thrown before any request is sent.
+The name is invalid, or it is the root. [`INVALID_NAME`](/docs/reference/errors/INVALID_NAME) is thrown before any request is sent.
 
 ### `RPC_REQUEST_FAILED` or `RPC_TIMEOUT`
 
-The RPC request failed or timed out, with [`RPC_REQUEST_FAILED`](/docs/sdk/errors/RPC_REQUEST_FAILED) or [`RPC_TIMEOUT`](/docs/sdk/errors/RPC_TIMEOUT). Check your RPC endpoint. See [Configure RPC and gateways](/docs/sdk/rpc-and-gateways).
+The RPC request failed or timed out, with [`RPC_REQUEST_FAILED`](/docs/reference/errors/RPC_REQUEST_FAILED) or [`RPC_TIMEOUT`](/docs/reference/errors/RPC_TIMEOUT). Check your RPC endpoint. See [Configure RPC and gateways](/docs/sdk/rpc-and-gateways).

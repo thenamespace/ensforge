@@ -34,8 +34,8 @@ show where a name lives, move names to ENSv2, or use features only one version h
 | Default resolver         | Shared public resolver                                                   | A **PermissionedResolver** per name, with roles per record                                     |
 | New `.eth` registrations | Not offered by ensforge: new names register on ENSv2                     | Paid in an ERC-20 token (USDC by default), as are renewals on both versions                    |
 
-Both share what matters to most apps: names, [records](/docs/sdk/reference/glossary#record),
-[resolvers](/docs/sdk/reference/glossary#resolver) and primary names work the same way. See [Names and records](/docs/sdk/names-and-records).
+Both share what matters to most apps: names, [records](/docs/reference/glossary#record),
+[resolvers](/docs/reference/glossary#resolver) and primary names work the same way. See [Names and records](/docs/sdk/names-and-records).
 
 ## The bridge
 
@@ -125,20 +125,20 @@ protocol would refuse the call, they fail with a typed error before anything is 
 | `dns.claim` (importing a DNS name)                                        | `name.getLabel` (recovering a label from its hash)                         |
 
 - Name, approval, role, registry and Name Wrapper actions called on the other version fail with
-  [`UNSUPPORTED_PROTOCOL`](/docs/sdk/errors/UNSUPPORTED_PROTOCOL).
+  [`UNSUPPORTED_PROTOCOL`](/docs/reference/errors/UNSUPPORTED_PROTOCOL).
 - A task that needs the name on ENSv2 first fails with
-  [`NAME_REQUIRES_MIGRATION`](/docs/sdk/errors/NAME_REQUIRES_MIGRATION).
+  [`NAME_REQUIRES_MIGRATION`](/docs/reference/errors/NAME_REQUIRES_MIGRATION).
 - A feature the chain's deployment lacks fails with
-  [`UNSUPPORTED_ON_DEPLOYMENT`](/docs/sdk/errors/UNSUPPORTED_ON_DEPLOYMENT).
+  [`UNSUPPORTED_ON_DEPLOYMENT`](/docs/reference/errors/UNSUPPORTED_ON_DEPLOYMENT).
 
 See [Upgrading names](/docs/sdk/move-a-name-to-ensv2) for the ENSv2-only features and
 [Wrapped names](/docs/sdk/wrapped-names) for the ENSv1 ones.
 
 ## Moving a name to ENSv2
 
-An ENSv1 name moves to ENSv2 by [migration](/docs/sdk/reference/glossary#migration). `migration.get` says whether a name can move, how,
+An ENSv1 name moves to ENSv2 by [migration](/docs/reference/glossary#migration). `migration.get` says whether a name can move, how,
 and what it would become. `migration.migrate` moves one or more names with their records and
-subnames. A [locked](/docs/sdk/reference/glossary#locked) subname can move only after its
+subnames. A [locked](/docs/reference/glossary#locked) subname can move only after its
 parent; `migrateParents` moves those parents first. See [Move a name to ENSv2](/docs/sdk/move-a-name-to-ensv2).
 
 ## Deployments

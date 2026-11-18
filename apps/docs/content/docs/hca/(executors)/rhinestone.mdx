@@ -9,7 +9,7 @@ keywords: [rhinestone, intents, session, sponsored, refund token, HCA_SDK_UNSUPP
   standalone HCA support, and ensforge only tests its wiring, not Rhinestone's orchestrator.
 </Callout>
 
-**Rhinestone** is an intent network. The `rhinestone()` [executor](/docs/sdk/reference/glossary#executor) sends [HCA](/docs/sdk/reference/glossary#hca) executions as Rhinestone intents, either signed by the owner or, with a [session](/docs/hca/sessions), signed by a session key without a wallet prompt. By the end of this page you will have an executor ready for both.
+**Rhinestone** is an intent network. The `rhinestone()` [executor](/docs/reference/glossary#executor) sends [HCA](/docs/reference/glossary#hca) executions as Rhinestone intents, either signed by the owner or, with a [session](/docs/hca/sessions), signed by a session key without a wallet prompt. By the end of this page you will have an executor ready for both.
 
 ## Prerequisites
 
@@ -68,7 +68,7 @@ const executor = rhinestone({ sdk, sessionSigner, sponsored: false });
 
 ## What ensforge checks
 
-- Before signing, ensforge checks every session call against the HCA policy. A call outside it fails with [`HCA_ACTION_NOT_ALLOWED`](/docs/sdk/errors/HCA_ACTION_NOT_ALLOWED) and nothing is signed.
+- Before signing, ensforge checks every session call against the HCA policy. A call outside it fails with [`HCA_ACTION_NOT_ALLOWED`](/docs/reference/errors/HCA_ACTION_NOT_ALLOWED) and nothing is signed.
 - The SDK account must derive the same HCA address as ensforge. Otherwise the executor fails with `HCA_SDK_UNSUPPORTED` before it signs anything.
 - Status follows the intent until it has a fill transaction. An intent that is `FAILED` or `EXPIRED` reports as failed.
 
@@ -76,8 +76,8 @@ const executor = rhinestone({ sdk, sessionSigner, sponsored: false });
 
 ### `HCA_SDK_UNSUPPORTED`
 
-The Rhinestone SDK derives a different address than the owner's HCA. Use an SDK release with standalone HCA support (`ens-standalone-1.1.0`). See [`HCA_SDK_UNSUPPORTED`](/docs/sdk/errors/HCA_SDK_UNSUPPORTED).
+The Rhinestone SDK derives a different address than the owner's HCA. Use an SDK release with standalone HCA support (`ens-standalone-1.1.0`). See [`HCA_SDK_UNSUPPORTED`](/docs/reference/errors/HCA_SDK_UNSUPPORTED).
 
 ### `HCA_EXECUTOR_UNSUPPORTED`
 
-The write has no wallet account, the chain has no HCA deployment, or a session execution has no `sessionSigner`. `hca()` also throws it when you pass a `session` and no executor in the list runs sessions. See [`HCA_EXECUTOR_UNSUPPORTED`](/docs/sdk/errors/HCA_EXECUTOR_UNSUPPORTED).
+The write has no wallet account, the chain has no HCA deployment, or a session execution has no `sessionSigner`. `hca()` also throws it when you pass a `session` and no executor in the list runs sessions. See [`HCA_EXECUTOR_UNSUPPORTED`](/docs/reference/errors/HCA_EXECUTOR_UNSUPPORTED).

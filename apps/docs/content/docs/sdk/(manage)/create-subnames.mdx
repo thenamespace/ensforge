@@ -4,7 +4,7 @@ description: Create, update and remove subnames such as pay.alice.eth under a na
 keywords: [subname.create, subname.update, subname.remove, subregistry, upsert, emancipate, expiry]
 ---
 
-You will create a **subname** (a name under one you own, such as `pay.alice.eth`), change it and remove it. ensforge routes the write by the parent: an [ENSv2](/docs/sdk/reference/glossary#ensv2) subregistry, the [ENSv1](/docs/sdk/reference/glossary#ensv1) [registry](/docs/sdk/reference/glossary#registry) or the [Name Wrapper](/docs/sdk/reference/glossary#name-wrapper). You pass the same options.
+You will create a **subname** (a name under one you own, such as `pay.alice.eth`), change it and remove it. ensforge routes the write by the parent: an [ENSv2](/docs/reference/glossary#ensv2) subregistry, the [ENSv1](/docs/reference/glossary#ensv1) [registry](/docs/reference/glossary#registry) or the [Name Wrapper](/docs/reference/glossary#name-wrapper). You pass the same options.
 
 ## Prerequisites
 
@@ -13,7 +13,7 @@ You will create a **subname** (a name under one you own, such as `pay.alice.eth`
 
 ## 1. Create a subname
 
-[`subname.create`](/docs/sdk/reference/actions/subname/create) takes the full name of the child. `subname.createSync` also waits for the receipt.
+[`subname.create`](/docs/reference/sdk/subname/create) takes the full name of the child. `subname.createSync` also waits for the receipt.
 
 **Example** (Creating a Subname With Records)
 
@@ -39,7 +39,7 @@ const { hash } = await ens.subname.createSync({
 ```
 
 - `owner` defaults to the signer.
-- By default the child gets its own [resolver](/docs/sdk/reference/glossary#resolver), a PermissionedResolver, with `records` written at creation. `resolver: "parent"` shares the parent's resolver. `resolver: null` creates the child without one.
+- By default the child gets its own [resolver](/docs/reference/glossary#resolver), a PermissionedResolver, with `records` written at creation. `resolver: "parent"` shares the parent's resolver. `resolver: null` creates the child without one.
 - `upsert: true` updates an existing child's resolver and records instead of failing.
 
 | Option       | Type                         | Default                | Description                                                  |
@@ -70,7 +70,7 @@ const { hash } = await ens.subname.createSync({
 
 ## 2. Change a subname from its parent
 
-[`subname.update`](/docs/sdk/reference/actions/subname/update) changes a child's resolver or [expiry](/docs/sdk/reference/glossary#expiry) without asking its owner. `owner` changes only on ENSv1.
+[`subname.update`](/docs/reference/sdk/subname/update) changes a child's resolver or [expiry](/docs/reference/glossary#expiry) without asking its owner. `owner` changes only on ENSv1.
 
 **Example** (Repointing a Subname)
 
@@ -95,12 +95,12 @@ await ens.subname.updateSync({
 ```
 
 - `expiry` can only grow. Unwrapped ENSv1 subnames have no expiry.
-- An ENSv2 child's owner moves with [`name.transfer`](/docs/sdk/transfer-a-name), not with `update`. `update({ owner })` on ENSv2 fails with [`UNSUPPORTED_PROTOCOL`](/docs/sdk/errors/UNSUPPORTED_PROTOCOL).
-- An ENSv2 child created with the default (never expires) cannot get an expiry later, because `renew` only extends. `update({ expiry })` then fails with [`INVALID_EXPIRY`](/docs/sdk/errors/INVALID_EXPIRY). Pass `expiry` at creation when children should lapse.
+- An ENSv2 child's owner moves with [`name.transfer`](/docs/sdk/transfer-a-name), not with `update`. `update({ owner })` on ENSv2 fails with [`UNSUPPORTED_PROTOCOL`](/docs/reference/errors/UNSUPPORTED_PROTOCOL).
+- An ENSv2 child created with the default (never expires) cannot get an expiry later, because `renew` only extends. `update({ expiry })` then fails with [`INVALID_EXPIRY`](/docs/reference/errors/INVALID_EXPIRY). Pass `expiry` at creation when children should lapse.
 
 ## 3. Remove a subname
 
-[`subname.remove`](/docs/sdk/reference/actions/subname/remove) takes a child back. On ENSv2 it also clears the child's resolver and subregistry, so nothing carries over to a later owner.
+[`subname.remove`](/docs/reference/sdk/subname/remove) takes a child back. On ENSv2 it also clears the child's resolver and subregistry, so nothing carries over to a later owner.
 
 **Example** (Removing a Subname)
 
@@ -121,34 +121,34 @@ const ens = Ensforge.create({
 await ens.subname.removeSync({ name: "pay.ensforge-docs-demo.eth" });
 ```
 
-A parent cannot remove an [emancipated](/docs/sdk/reference/glossary#emancipated) child: an ENSv1 child with `parentCannotControl` burned, or a child of an emancipated ENSv2 subregistry.
+A parent cannot remove an [emancipated](/docs/reference/glossary#emancipated) child: an ENSv1 child with `parentCannotControl` burned, or a child of an emancipated ENSv2 subregistry.
 
 ## Check the result
 
-Read the child with [`name.get`](/docs/sdk/reference/actions/name/get). See [Get a name's owner, expiry and status](/docs/sdk/get-name-details).
+Read the child with [`name.get`](/docs/reference/sdk/name/get). See [Get a name's owner, expiry and status](/docs/sdk/get-name-details).
 
 ## Troubleshooting
 
 ### `NAME_NOT_AVAILABLE`
 
-The child already exists. Pass `upsert: true` to update it, or pick another label. See [`NAME_NOT_AVAILABLE`](/docs/sdk/errors/NAME_NOT_AVAILABLE).
+The child already exists. Pass `upsert: true` to update it, or pick another label. See [`NAME_NOT_AVAILABLE`](/docs/reference/errors/NAME_NOT_AVAILABLE).
 
 ### `NAME_NOT_REGISTERED` or `NAME_EXPIRED`
 
-The parent is not registered. See [`NAME_NOT_REGISTERED`](/docs/sdk/errors/NAME_NOT_REGISTERED) and [`NAME_EXPIRED`](/docs/sdk/errors/NAME_EXPIRED).
+The parent is not registered. See [`NAME_NOT_REGISTERED`](/docs/reference/errors/NAME_NOT_REGISTERED) and [`NAME_EXPIRED`](/docs/reference/errors/NAME_EXPIRED).
 
 ### `INVALID_EXPIRY`
 
-The new expiry is lower than the current one, or the ENSv2 child never expires. See [`INVALID_EXPIRY`](/docs/sdk/errors/INVALID_EXPIRY).
+The new expiry is lower than the current one, or the ENSv2 child never expires. See [`INVALID_EXPIRY`](/docs/reference/errors/INVALID_EXPIRY).
 
 ### `MISSING_ROLES`, `NOT_OWNER` or `FUSE_BURNED`
 
-The account may not create children, or a burned fuse forbids it. On a wrapped parent, an emancipated child cannot be updated until it expires. See [`MISSING_ROLES`](/docs/sdk/errors/MISSING_ROLES), [`NOT_OWNER`](/docs/sdk/errors/NOT_OWNER) and [`FUSE_BURNED`](/docs/sdk/errors/FUSE_BURNED).
+The account may not create children, or a burned fuse forbids it. On a wrapped parent, an emancipated child cannot be updated until it expires. See [`MISSING_ROLES`](/docs/reference/errors/MISSING_ROLES), [`NOT_OWNER`](/docs/reference/errors/NOT_OWNER) and [`FUSE_BURNED`](/docs/reference/errors/FUSE_BURNED).
 
 ### `INVALID_RECORD_VALUE`
 
-`parentCannotControl` and `canExtendExpiry` need `cannotUnwrap` burned on a wrapped parent first. See [Lock permissions with fuses](/docs/sdk/fuses) and [`INVALID_RECORD_VALUE`](/docs/sdk/errors/INVALID_RECORD_VALUE).
+`parentCannotControl` and `canExtendExpiry` need `cannotUnwrap` burned on a wrapped parent first. See [Lock permissions with fuses](/docs/sdk/fuses) and [`INVALID_RECORD_VALUE`](/docs/reference/errors/INVALID_RECORD_VALUE).
 
 ### `INVALID_ROLES` or `UNSUPPORTED_PROTOCOL`
 
-`roles` is for ENSv2 parents and `fuses` for wrapped parents. See [`INVALID_ROLES`](/docs/sdk/errors/INVALID_ROLES).
+`roles` is for ENSv2 parents and `fuses` for wrapped parents. See [`INVALID_ROLES`](/docs/reference/errors/INVALID_ROLES).

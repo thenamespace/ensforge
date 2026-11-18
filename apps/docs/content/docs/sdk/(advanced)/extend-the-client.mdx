@@ -113,7 +113,7 @@ const { url } = await ens.profile.get({ name: "nick.eth" });
 ```
 
 Group names must not be `chain`, `account`, `deployment`, `publicClient`, `config` or `extend`. A
-decorator that uses one throws [`INVALID_ACTION_GROUP`](/docs/sdk/errors/INVALID_ACTION_GROUP).
+decorator that uses one throws [`INVALID_ACTION_GROUP`](/docs/reference/errors/INVALID_ACTION_GROUP).
 Groups with the same name merge, so you can add actions to an existing group.
 
 For a write, the same pattern applies with `Action.write(path, planner)`, which gives you the
@@ -169,7 +169,7 @@ function. Both should return the same value.
 ### `INVALID_ACTION_GROUP`
 
 The decorator returned a reserved group name. Rename the group. See
-[`INVALID_ACTION_GROUP`](/docs/sdk/errors/INVALID_ACTION_GROUP).
+[`INVALID_ACTION_GROUP`](/docs/reference/errors/INVALID_ACTION_GROUP).
 
 ### A type error after upgrading
 

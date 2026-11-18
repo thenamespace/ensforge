@@ -40,9 +40,9 @@ flowchart LR
 Names are case-insensitive and can contain emoji and most scripts. Before a name is used, it is
 **normalised** (ENSIP-15): `Nick.ETH` becomes `nick.eth`, and names that could be confused with
 others are rejected. Contracts identify a name by a hash of it called the **namehash**. ensforge normalises and hashes every name you pass, so you work with plain strings.
-An invalid name fails with [`INVALID_NAME`](/docs/sdk/errors/INVALID_NAME). See the
-[glossary](/docs/sdk/reference/glossary#namehash) and the `Name` utilities in the
-[utilities reference](/docs/sdk/reference/utilities).
+An invalid name fails with [`INVALID_NAME`](/docs/reference/errors/INVALID_NAME). See the
+[glossary](/docs/reference/glossary#namehash) and the `Name` utilities in the
+[utilities reference](/docs/reference/sdk/utilities).
 
 ## Who holds a name
 
@@ -78,17 +78,17 @@ Ethereum. Either way, reading looks the same. See [How a lookup works](/docs/sdk
 
 ## Kinds of record
 
-| Record       | What it holds                                                                                                                 | Read it with                                                                   |
-| ------------ | ----------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
-| Address      | An address for one chain or coin, chosen by its **coin type** (ENSIP-9, ENSIP-11). Ethereum is the default.                   | [`record.getAddress`](/docs/sdk/reference/actions/record/get-address)          |
-| Text         | A string under a key: `url`, `avatar`, `description`, `com.twitter`, `com.github`, or any key you choose (ENSIP-5).           | [`record.getText`](/docs/sdk/reference/actions/record/get-text)                |
-| Avatar       | A text record with an image link: HTTPS, IPFS, Arweave or an NFT (ENSIP-12). ensforge turns it into a URL a browser can load. | [`record.getAvatar`](/docs/sdk/reference/actions/record/get-avatar)            |
-| Content hash | A website or file on IPFS, IPNS, Swarm, Arweave and similar (ENSIP-7).                                                        | [`record.getContentHash`](/docs/sdk/reference/actions/record/get-content-hash) |
-| ABI          | A contract ABI (ENSIP-4).                                                                                                     | [`record.get`](/docs/sdk/reference/actions/record/get)                         |
-| Public key   | A SECP256k1 public key.                                                                                                       | [`record.get`](/docs/sdk/reference/actions/record/get)                         |
-| Name         | The name an address is known by, used for primary names (ENSIP-3).                                                            | [`record.get`](/docs/sdk/reference/actions/record/get)                         |
-| Interface    | The contract implementing an ERC-165 interface for the name.                                                                  | [`record.get`](/docs/sdk/reference/actions/record/get)                         |
-| Data         | Raw bytes under a key (ENSIP-24).                                                                                             | [`record.get`](/docs/sdk/reference/actions/record/get)                         |
+| Record       | What it holds                                                                                                                 | Read it with                                                           |
+| ------------ | ----------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| Address      | An address for one chain or coin, chosen by its **coin type** (ENSIP-9, ENSIP-11). Ethereum is the default.                   | [`record.getAddress`](/docs/reference/sdk/record/get-address)          |
+| Text         | A string under a key: `url`, `avatar`, `description`, `com.twitter`, `com.github`, or any key you choose (ENSIP-5).           | [`record.getText`](/docs/reference/sdk/record/get-text)                |
+| Avatar       | A text record with an image link: HTTPS, IPFS, Arweave or an NFT (ENSIP-12). ensforge turns it into a URL a browser can load. | [`record.getAvatar`](/docs/reference/sdk/record/get-avatar)            |
+| Content hash | A website or file on IPFS, IPNS, Swarm, Arweave and similar (ENSIP-7).                                                        | [`record.getContentHash`](/docs/reference/sdk/record/get-content-hash) |
+| ABI          | A contract ABI (ENSIP-4).                                                                                                     | [`record.get`](/docs/reference/sdk/record/get)                         |
+| Public key   | A SECP256k1 public key.                                                                                                       | [`record.get`](/docs/reference/sdk/record/get)                         |
+| Name         | The name an address is known by, used for primary names (ENSIP-3).                                                            | [`record.get`](/docs/reference/sdk/record/get)                         |
+| Interface    | The contract implementing an ERC-165 interface for the name.                                                                  | [`record.get`](/docs/reference/sdk/record/get)                         |
+| Data         | Raw bytes under a key (ENSIP-24).                                                                                             | [`record.get`](/docs/reference/sdk/record/get)                         |
 
 `record.get` reads any mix of these in one request. Its result has exactly the fields you asked
 for, and a record that is not set is `null`.

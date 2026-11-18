@@ -17,7 +17,7 @@ keywords:
 ---
 
 A **lookup** (resolution) turns a name into one of its records. It has two parts: find the
-[resolver](/docs/sdk/reference/glossary#resolver) that serves the name, then ask that resolver for
+[resolver](/docs/reference/glossary#resolver) that serves the name, then ask that resolver for
 the record. ensforge does both in a
 single call to the **Universal Resolver**, a contract ENS deploys for exactly this.
 
@@ -41,8 +41,8 @@ sequenceDiagram
   SDK-->>App: 0xb8c2...67d5
 ```
 
-- ensforge [normalises](/docs/sdk/reference/glossary#normalisation) the name first. An invalid name
-  fails with [`INVALID_NAME`](/docs/sdk/errors/INVALID_NAME) before any request is made.
+- ensforge [normalises](/docs/reference/glossary#normalisation) the name first. An invalid name
+  fails with [`INVALID_NAME`](/docs/reference/errors/INVALID_NAME) before any request is made.
 - The Universal Resolver finds the right resolver wherever the name lives, so ensforge never has to
   ask you where a name is registered.
 - ensforge decodes the answer: an address for the right chain, a text string, a website link.
@@ -50,7 +50,7 @@ sequenceDiagram
 ## When a name has no resolver of its own
 
 Not every name has its own resolver. A parent name can serve all of its
-[subnames](/docs/sdk/reference/glossary#subname) from one
+[subnames](/docs/reference/glossary#subname) from one
 **wildcard resolver** (ENSIP-10), without creating each subname on-chain. To find the resolver, the
 Universal Resolver walks up the name: `pay.nick.eth`, then `nick.eth`, then `eth`, and uses the
 first resolver it finds. A resolver found on a parent answers only if it supports wildcard lookups.
@@ -116,12 +116,12 @@ Universal Resolver sends off-chain lookups through a **batch gateway**, which co
 forwards each one to the resolver's own gateway. By default ensforge uses the Universal Resolver's own
 batch gateway. `ccipRead: { gatewayUrls }` on the client, or `gatewayUrls` on one call, replaces it
 with batch gateways you choose. `ccipRead: false` turns off-chain lookups off, after which they
-fail with [`CCIP_READ_DISABLED`](/docs/sdk/errors/CCIP_READ_DISABLED). A gateway that fails or
+fail with [`CCIP_READ_DISABLED`](/docs/reference/errors/CCIP_READ_DISABLED). A gateway that fails or
 answers badly raises a `GatewayError`. See [Look up off-chain names](/docs/sdk/off-chain-names).
 
 DNS names such as `example.com` can resolve in a similar way: a DNSSEC proof shows that the DNS
 owner set the name's ENS data. A proof that does not verify raises a `DnsError`. See
-[Known limitations](/docs/sdk/reference/known-limitations#dns-names).
+[Known limitations](/docs/reference/known-limitations#dns-names).
 
 ## Missing data is `null`, unless you ask for errors
 
@@ -129,8 +129,8 @@ A lookup that finds nothing is a normal answer. A missing record, a name without
 address without a primary name returns `null`, so you handle it with an `if`, not a `try`.
 
 Pass `strict: true` to get an error instead. The error says why nothing was found:
-[`RESOLVER_NOT_FOUND`](/docs/sdk/errors/RESOLVER_NOT_FOUND) when the name has no resolver,
-[`RECORD_NOT_FOUND`](/docs/sdk/errors/RECORD_NOT_FOUND) when the record is not set. Network,
+[`RESOLVER_NOT_FOUND`](/docs/reference/errors/RESOLVER_NOT_FOUND) when the name has no resolver,
+[`RECORD_NOT_FOUND`](/docs/reference/errors/RECORD_NOT_FOUND) when the record is not set. Network,
 gateway and input errors are thrown either way.
 
 ## Many lookups, few requests

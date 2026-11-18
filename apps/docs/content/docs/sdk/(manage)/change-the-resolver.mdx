@@ -5,7 +5,7 @@ keywords:
   [resolver.set, resolver.get, resolver.create, public resolver, PermissionedResolver, default]
 ---
 
-You will move a name to a different [resolver](/docs/sdk/reference/glossary#resolver), the contract that stores its [records](/docs/sdk/reference/glossary#record). The records stay on the old resolver, so you copy them in the same step or before you switch.
+You will move a name to a different [resolver](/docs/reference/glossary#resolver), the contract that stores its [records](/docs/reference/glossary#record). The records stay on the old resolver, so you copy them in the same step or before you switch.
 
 ## Prerequisites
 
@@ -14,7 +14,7 @@ You will move a name to a different [resolver](/docs/sdk/reference/glossary#reso
 
 ## 1. Read the current resolver
 
-[`resolver.get`](/docs/sdk/reference/actions/resolver/get) tells you where the records live, who may write to them and which record kinds the resolver supports.
+[`resolver.get`](/docs/reference/sdk/resolver/get) tells you where the records live, who may write to them and which record kinds the resolver supports.
 
 **Example** (Reading a Name's Resolver)
 
@@ -37,7 +37,7 @@ const resolver = await ens.resolver.get({ name: "ensforge-docs-demo.eth" });
 
 ## 2. Move the name and its records together
 
-[`record.set`](/docs/sdk/reference/actions/record/set) with `resolver` writes the records to the new resolver, then points the name at it, in one step. A rejected write never leaves the name on an empty resolver.
+[`record.set`](/docs/reference/sdk/record/set) with `resolver` writes the records to the new resolver, then points the name at it, in one step. A rejected write never leaves the name on an empty resolver.
 
 **Example** (Switching Resolver and Copying a Profile)
 
@@ -65,7 +65,7 @@ await ens.record.setSync({
 
 ## 3. Or only change the pointer
 
-[`resolver.set`](/docs/sdk/reference/actions/resolver/set) changes the resolver and nothing else. `resolver.setSync` also waits for the receipt.
+[`resolver.set`](/docs/reference/sdk/resolver/set) changes the resolver and nothing else. `resolver.setSync` also waits for the receipt.
 
 **Example** (Pointing a Name at Another Resolver)
 
@@ -95,11 +95,11 @@ await ens.resolver.setSync({
 | `"default"`      | Points the name at the ENSv1 public resolver. ENSv1 names only. |
 | `null`           | Removes the resolver.                                           |
 
-The change is made in the [registry](/docs/sdk/reference/glossary#registry) that holds the name: the ENS registry on [ENSv1](/docs/sdk/reference/glossary#ensv1) (through the NameWrapper when the name is wrapped), or the name's registry on [ENSv2](/docs/sdk/reference/glossary#ensv2).
+The change is made in the [registry](/docs/reference/glossary#registry) that holds the name: the ENS registry on [ENSv1](/docs/reference/glossary#ensv1) (through the NameWrapper when the name is wrapped), or the name's registry on [ENSv2](/docs/reference/glossary#ensv2).
 
 ## Create a resolver for an ENSv2 name
 
-ENSv2 names have no shared default resolver, so `resolver: "default"` fails for them with [`UNSUPPORTED_PROTOCOL`](/docs/sdk/errors/UNSUPPORTED_PROTOCOL). [`resolver.create`](/docs/sdk/reference/actions/resolver/create) deploys a PermissionedResolver, optionally writes records into it and points the name at it, in one plan.
+ENSv2 names have no shared default resolver, so `resolver: "default"` fails for them with [`UNSUPPORTED_PROTOCOL`](/docs/reference/errors/UNSUPPORTED_PROTOCOL). [`resolver.create`](/docs/reference/sdk/resolver/create) deploys a PermissionedResolver, optionally writes records into it and points the name at it, in one plan.
 
 **Example** (Creating a Resolver With Records)
 
@@ -133,15 +133,15 @@ Call `resolver.get` again and compare `address` with the one you set. See [Get a
 
 ### `NOT_OWNER`, `MISSING_ROLES` or `FUSE_BURNED`
 
-The account may not change the resolver. On ENSv2 it needs the `setResolver` [role](/docs/sdk/reference/glossary#role). On a wrapped name, a burned `cannotSetResolver` fuse forbids it for good. See [`NOT_OWNER`](/docs/sdk/errors/NOT_OWNER), [`MISSING_ROLES`](/docs/sdk/errors/MISSING_ROLES), [`FUSE_BURNED`](/docs/sdk/errors/FUSE_BURNED) and [Lock permissions with fuses](/docs/sdk/fuses).
+The account may not change the resolver. On ENSv2 it needs the `setResolver` [role](/docs/reference/glossary#role). On a wrapped name, a burned `cannotSetResolver` fuse forbids it for good. See [`NOT_OWNER`](/docs/reference/errors/NOT_OWNER), [`MISSING_ROLES`](/docs/reference/errors/MISSING_ROLES), [`FUSE_BURNED`](/docs/reference/errors/FUSE_BURNED) and [Lock permissions with fuses](/docs/sdk/fuses).
 
 ### `UNSUPPORTED_PROTOCOL`
 
-You passed `"default"` for an ENSv2 name. Pass an address, or create a resolver with `resolver.create`. See [`UNSUPPORTED_PROTOCOL`](/docs/sdk/errors/UNSUPPORTED_PROTOCOL).
+You passed `"default"` for an ENSv2 name. Pass an address, or create a resolver with `resolver.create`. See [`UNSUPPORTED_PROTOCOL`](/docs/reference/errors/UNSUPPORTED_PROTOCOL).
 
 ### `NAME_EXPIRED`, `NAME_RESERVED` or `NAME_NOT_REGISTERED`
 
-Only registered names can change their resolver. See [`NAME_NOT_REGISTERED`](/docs/sdk/errors/NAME_NOT_REGISTERED).
+Only registered names can change their resolver. See [`NAME_NOT_REGISTERED`](/docs/reference/errors/NAME_NOT_REGISTERED).
 
 ### Records disappeared after the switch
 
