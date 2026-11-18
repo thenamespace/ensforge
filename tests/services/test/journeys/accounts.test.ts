@@ -98,11 +98,22 @@ layer(Services.layer({ profile: "mainnet-shaped", services: ["indexer", "aa"] })
     Effect.gen(function* () {
       const services = yield* Services;
       const devnet = yield* Devnet;
+      const chain = yield* Chain;
+      const clients = yield* Clients;
+      const { bob } = devnet.accounts;
+
+      yield* Actions.registration.registerSync(clients.make({ account: bob }), {
+        names: "journey-app.eth",
+        duration: Duration.years(1),
+        records: { texts: { url: "https://app.example" }, addresses: { eth: bob } },
+        primaryName: true,
+        onStep: chain.passWaits,
+      });
 
       // The app's own program depends only on the `Ensforge` service.
       const profile = Effect.gen(function* () {
         const ens = yield* Ensforge.Ensforge;
-        const name = yield* Actions.primaryName.get(ens, { address: devnet.accounts.carol });
+        const name = yield* Actions.primaryName.get(ens, { address: bob });
         if (name === null) return null;
         // The indexer may lag behind the chain; the chain is the fallback.
         const url = yield* Actions.indexer.getRecords(ens, { name, keys: ["text:url"] }).pipe(
@@ -126,7 +137,7 @@ layer(Services.layer({ profile: "mainnet-shaped", services: ["indexer", "aa"] })
           }),
         ),
       );
-      assert.deepStrictEqual(read, { name: "journey-bundled.eth", url: "https://bundled.example" });
+      assert.deepStrictEqual(read, { name: "journey-app.eth", url: "https://app.example" });
     }),
   );
 });
