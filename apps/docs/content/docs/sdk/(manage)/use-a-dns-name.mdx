@@ -1,6 +1,154 @@
 ---
 title: Use a DNS name
-description: Placeholder, to be written.
+description: Import a DNS name such as example.com into ENS with a DNSSEC proof, then manage its records.
+keywords:
+  [dns.claim, dns.getStatus, dns.getProof, DNSSEC, _ens TXT record, gasless DNS, ENS1, zonehash]
 ---
 
-Placeholder: this page is not written yet.
+You will import a DNS name you own into ENS, so it can have an owner, a resolver and records like any other name. You prove ownership with a **DNSSEC** proof of a TXT record in your DNS zone, and ensforge fetches and sends the proof for you.
+
+DNS names are imported into ENSv1. ENSv2 resolves them through the ENSv1 registry, so you do not choose a version.
+
+## Prerequisites
+
+- A DNS name whose zone uses DNSSEC.
+- A wallet client. Anyone can send the claim: the name goes to the address in the TXT record. See [Create a client](/docs/sdk/create-a-client).
+- A chain with a DNSSEC gateway in its deployment, or your own `gatewayUrls`. Without either, the DNS actions fail with [`UNSUPPORTED_ON_DEPLOYMENT`](/docs/sdk/errors/UNSUPPORTED_ON_DEPLOYMENT).
+
+<Callout type="warn" title="Claims can fail since the root key rollover">
+  Since the DNSSEC root KSK rollover, the on-chain DNSSEC oracle on mainnet and Sepolia cannot
+  verify any proof: it lacks the new root key. `dns.getStatus` reports `proof-invalid` and
+  `dns.claim` fails with `DNSSEC_PROOF_FAILED` until ENS adds the trust anchor. ensforge has no
+  client-side workaround. See [`DNSSEC_PROOF_FAILED`](/docs/sdk/errors/DNSSEC_PROOF_FAILED).
+</Callout>
+
+## 1. Check what the name needs
+
+[`dns.getStatus`](/docs/sdk/reference/actions/dns/get-status) compares the ENSv1 registry owner with the address in the `_ens` TXT record, and verifies the record's proof against the on-chain DNSSEC oracle.
+
+**Example** (Checking a DNS Name)
+
+```ts twoslash title="dns-status.ts"
+import { createPublicClient, http } from "viem";
+import { sepolia } from "viem/chains";
+import { Ensforge, ensActions } from "@ensforge/sdk";
+
+const ens = Ensforge.create({
+  publicClient: createPublicClient({ chain: sepolia, transport: http() }),
+}).extend(ensActions());
+
+const status = await ens.dns.getStatus({ name: "example.com" });
+//    ^?
+```
+
+`status.action` is the next step:
+
+| `action`         | What to do                                                                              |
+| ---------------- | --------------------------------------------------------------------------------------- |
+| `set-txt-record` | Add the TXT record in step 2.                                                           |
+| `claim`          | Import the name (step 3), or re-import it to move it to the address in its TXT record.  |
+| `proof-invalid`  | The TXT record exists, but its proof does not verify on-chain. Do not send a claim yet. |
+| `none`           | The name is imported and owned by the address in its TXT record.                        |
+
+`status` also has `imported`, `owner` (the ENSv1 registry owner), `dnsOwner` (the address in the TXT record) and `proofValid`.
+
+## 2. Add the TXT record
+
+In your DNS zone, add a TXT record at `_ens.<name>` with the value `a=<address>`. The address becomes the owner. For `example.com` it is the record `_ens.example.com`.
+
+```text title="DNS record"
+_ens.example.com.  TXT  "a=0xB0b0000000000000000000000000000000000000"
+```
+
+## 3. Claim the name
+
+[`dns.claim`](/docs/sdk/reference/actions/dns/claim) fetches the proof from the deployment's DNSSEC gateway and sends it. `dns.claimSync` also waits for the receipt.
+
+**Example** (Claiming a DNS Name)
+
+```ts twoslash title="dns-claim.ts"
+// @types: node
+import { createPublicClient, createWalletClient, http, type Hex } from "viem";
+import { privateKeyToAccount } from "viem/accounts";
+import { sepolia } from "viem/chains";
+import { Ensforge, ensActions } from "@ensforge/sdk";
+
+const account = privateKeyToAccount(process.env.PRIVATE_KEY as Hex);
+const transport = http(process.env.SEPOLIA_RPC_URL);
+
+const ens = Ensforge.create({
+  publicClient: createPublicClient({ chain: sepolia, transport }),
+  walletClient: createWalletClient({ account, chain: sepolia, transport }),
+}).extend(ensActions());
+
+const status = await ens.dns.getStatus({ name: "example.com" });
+
+if (status.action === "claim") {
+  await ens.dns.claimSync({ name: "example.com" });
+}
+```
+
+| Option        | Type       | Description                                                                            |
+| ------------- | ---------- | -------------------------------------------------------------------------------------- |
+| `name`        | `string`   | The DNS name. Normalised automatically.                                                |
+| `proof`       | `Proof`    | A proof from `dns.getProof`, instead of fetching one.                                  |
+| `resolver`    | `string`   | A resolver to set while claiming. Only the DNS owner may send a claim with a resolver. |
+| `gatewayUrls` | `string[]` | DNSSEC gateways to fetch the proof from, instead of the deployment's.                  |
+
+[`dns.getProof`](/docs/sdk/reference/actions/dns/get-proof) fetches a proof without sending anything. It does not verify the proof: `dns.getStatus` does.
+
+`dns.claim` cannot set an address record while claiming. Set records afterwards with [`record.set`](/docs/sdk/set-records).
+
+## Use a gasless DNS name
+
+A gasless DNS name resolves without being imported. Its owner adds a TXT record `ENS1 <resolver> [context]` on the name itself. [`dns.getOffchainResolver`](/docs/sdk/reference/actions/dns/get-offchain-resolver) reads it and returns `{ resolver, context }`, or `null` when there is none.
+
+**Example** (Reading a Gasless DNS Setup)
+
+```ts twoslash title="dns-offchain.ts"
+import { createPublicClient, http } from "viem";
+import { sepolia } from "viem/chains";
+import { Ensforge, ensActions } from "@ensforge/sdk";
+
+const ens = Ensforge.create({
+  publicClient: createPublicClient({ chain: sepolia, transport: http() }),
+}).extend(ensActions());
+
+const offchain = await ens.dns.getOffchainResolver({ name: "example.com" });
+```
+
+The record is read through the DNSSEC gateway without on-chain verification. See [Look up off-chain names](/docs/sdk/off-chain-names).
+
+## Host DNS records in ENS
+
+[`dns.setRecords`](/docs/sdk/reference/actions/dns/set-records) stores resource records, or a zonehash, on an ENS name's public resolver, for DNS servers that read them from ENS. Records are in DNS wire format. `zonehash: null` clears the zonehash. Only the ENS public resolvers store DNS records.
+
+## Check the result
+
+Call `dns.getStatus` again. `action` is `none` and `imported` is `true` when the claim worked. Then read the name with [`name.get`](/docs/sdk/reference/actions/name/get).
+
+## Troubleshooting
+
+### `DNS_RECORD_MISSING`
+
+The `_ens` TXT record is missing, or its value does not parse as `a=<address>`. Add it and wait for DNS to update. See [`DNS_RECORD_MISSING`](/docs/sdk/errors/DNS_RECORD_MISSING).
+
+### `PROOF_STALE`
+
+The proof is older than the one already on-chain. Fetch a fresh proof and retry. See [`PROOF_STALE`](/docs/sdk/errors/PROOF_STALE).
+
+### `DNSSEC_PROOF_FAILED`
+
+The proof could not be built or verified. Check that DNSSEC is enabled for the domain, and see the warning at the top of this page. See [`DNSSEC_PROOF_FAILED`](/docs/sdk/errors/DNSSEC_PROOF_FAILED).
+
+### `TLD_NOT_PUBLIC`
+
+The name's top-level domain is not a public suffix, so it cannot be imported. See [`TLD_NOT_PUBLIC`](/docs/sdk/errors/TLD_NOT_PUBLIC).
+
+### `GATEWAY_REQUEST_FAILED` or `GATEWAY_RESPONSE_INVALID`
+
+The DNSSEC gateway failed or answered with data that does not parse. Retry, or pass another `gatewayUrls`. See [`GATEWAY_REQUEST_FAILED`](/docs/sdk/errors/GATEWAY_REQUEST_FAILED) and [`GATEWAY_RESPONSE_INVALID`](/docs/sdk/errors/GATEWAY_RESPONSE_INVALID).
+
+### `NOT_OWNER`
+
+You passed `resolver`, but the sender is not the DNS owner. Claim without `resolver`, or send from the address in the TXT record. See [`NOT_OWNER`](/docs/sdk/errors/NOT_OWNER).
