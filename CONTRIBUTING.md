@@ -106,6 +106,16 @@ in `Effect.promise`.
   action (`tests/unit/sdk/conformance/throws-coverage.test.ts`, which lists the few still
   open), and every contract error the SDK maps must be raised by a devnet contract in
   `tests/integration/test/writes/reverts.test.ts` (`revert-map.test.ts` lists the rest).
+- An action fails only with the errors it declares. Codegen writes each action's `ErrorType`
+  from its `@throws` classes plus `Errors.CommonError` (`Errors.WriteError` for writes and their
+  `…Sync` forms; `Errors.AnyError` names any class, for `plan.send`), and types its Effect error
+  channel with it. The shared RPC and revert translation are typed `AnyError`, so the unit, chain,
+  fuzz and services lanes check it at runtime: `tests/harness/src/error-types.ts` records every
+  error an action fails with through the Effect and Promise APIs and fails the test file when one
+  is outside the action's `ErrorType`. Document a missing class in `@throws` (and run codegen)
+  rather than widening the type. `expectFailure` also rejects, at compile time, an expected
+  literal `_tag` the effect does not declare. `ENSFORGE_ERRORS_LOG=<file>` appends every observed
+  `{ path, tag, code }` as JSON lines.
 
 Property tests use a fixed seed; reproduce a failure with `ENSFORGE_TEST_SEED=<seed> pnpm test`.
 
@@ -152,6 +162,30 @@ Update documentation when changing a public API, configuration option, return ty
 or package entrypoint: the TSDoc on the export (with examples, which `verify` type-checks), the
 package README, and the API report (`pnpm --filter <package> api:report`). Package READMEs stay short
 introductions; the documentation site comes later.
+
+## API stability
+
+Every public export (everything reachable from a package's published entries: values, types,
+namespaces and re-exports) has a `@stability` tag in its JSDoc. `ensforge-dev lint-jsdoc` (part of
+`verify`) fails on a missing or unknown tag and names the export and the file the tag belongs in.
+API reports mark every export that is not stable.
+
+| Tag            | Promise under semver                                                                                                                                                                                                 |
+| -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `stable`       | Breaking changes (removal, renaming, stricter options, wider return or error types, changed behaviour) only in a major release, after a deprecation in a minor one.                                                  |
+| `experimental` | A complete feature whose design may still change with the protocol or services it depends on (ENS HCAs, bundlers, Rhinestone). Breaking changes can land in a minor release, described in its changeset.             |
+| `unstable`     | Building blocks for adapters and extension packages, or APIs built on Effect's unstable modules. They can change or be removed in any minor release, described in its changeset. Patch releases never break any tag. |
+
+Today `@ensforge/hca`, `@ensforge/contracts/v2/experimental/hca` and `Deployments.V2Hca` are
+experimental; the own exports of `@ensforge/sdk/extension` and React's Effect Atom layer (the atoms,
+their keys, `invalidate`, the server helpers and `HydrationBoundary`) are unstable. Promoting an
+export to `stable` is a minor change with a changeset.
+
+Write the tag on the declaration, before `@category` and `@since`. Exceptions: a namespace re-export
+(`export * as Errors from`) is tagged on that statement, and so is a dependency's export re-exported
+with `export { … } from`; types in a function's namespace (`getText.Options`) share the function's
+tag. Codegen writes the tags of generated namespaces and decorators: a domain is as stable as its
+most stable action.
 
 ## Commits and pull requests
 
