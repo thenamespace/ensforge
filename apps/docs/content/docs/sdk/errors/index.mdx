@@ -344,7 +344,7 @@ Fields:
 ## HcaError
 
 An HCA (Hosted Contract Account) operation failed: the account, its session, an executor
-(bundler, Rhinestone) or the DAO's upgrade sets.
+(bundler, Rhinestone) or the DAO's upgrade set.
 
 Fields:
 
@@ -364,5 +364,5 @@ Fields:
 | [`HCA_PAYMASTER_REJECTED`](/docs/sdk/errors/HCA_PAYMASTER_REJECTED) | The paymaster refused to sponsor the HCA UserOperation. |
 | [`HCA_EXECUTION_FAILED`](/docs/sdk/errors/HCA_EXECUTION_FAILED) | The HCA execution failed. |
 | [`HCA_EXECUTION_TIMEOUT`](/docs/sdk/errors/HCA_EXECUTION_TIMEOUT) | The HCA execution was not included in time. |
-| [`HCA_UPGRADE_NOT_ALLOWED`](/docs/sdk/errors/HCA_UPGRADE_NOT_ALLOWED) | The DAO's upgrade sets do not allow this HCA upgrade. |
+| [`HCA_UPGRADE_NOT_ALLOWED`](/docs/sdk/errors/HCA_UPGRADE_NOT_ALLOWED) | The upgrade set or the new implementation's `canUpgradeFrom` check does not allow this HCA upgrade. |
 | [`HCA_SDK_UNSUPPORTED`](/docs/sdk/errors/HCA_SDK_UNSUPPORTED) | The Rhinestone SDK does not support the standalone ENS HCA. |

@@ -1,6 +1,6 @@
 ---
 title: "hca.upgrade"
-description: "Upgrades the signer's HCA to an implementation both DAO upgrade sets allow."
+description: "Upgrades the signer's HCA to an implementation the DAO's upgrade set and its own canUpgradeFrom check allow."
 keywords: ["upgrade","hca.upgrade","upgradeSync"]
 generated: true
 ---
@@ -15,7 +15,7 @@ generated: true
 
 </Callout>
 
-Upgrades the signer's HCA to an implementation both DAO upgrade sets allow. Resolves once the transaction is submitted.
+Upgrades the signer's HCA to an implementation the DAO's upgrade set and its own `canUpgradeFrom` check allow. Resolves once the transaction is submitted.
 
 ## When to use
 
@@ -98,7 +98,7 @@ Each method takes the same options as `hca.upgrade` and sends nothing. See [Prev
 
 ## Wait for the receipt with `upgradeSync`
 
-Upgrades the signer's HCA to an implementation both DAO upgrade sets allow. Resolves once the receipt is in.
+Upgrades the signer's HCA to an implementation the DAO's upgrade set and its own `canUpgradeFrom` check allow. Resolves once the receipt is in.
 
 Use when the next step depends on the change being on-chain.
 

@@ -19,9 +19,9 @@ Call them as `ens.hca.<action>(options)` on a client, or `Actions.hca.<action>(c
 | [`hca.get`](/docs/hca/reference/actions/hca/get) | Read | Reads an ENS HCA (Hosted Contract Account): its address, owner, implementation, session nonce and verification problems. |
 | [`hca.getDeposit`](/docs/hca/reference/actions/hca/get-deposit) | Read | Reads an HCA's ERC-4337 EntryPoint deposit, which pays for its UserOperations without a paymaster. |
 | [`hca.getSession`](/docs/hca/reference/actions/hca/get-session) | Read | Checks whether a stored HCA session can still be used. |
-| [`hca.getUpgrade`](/docs/hca/reference/actions/hca/get-upgrade) | Read | Checks whether an HCA may upgrade to an implementation: both DAO sets must allow it. |
+| [`hca.getUpgrade`](/docs/hca/reference/actions/hca/get-upgrade) | Read | Checks whether an HCA may upgrade to an implementation: it must be in the DAO's upgrade set and accept the current implementation. |
 | [`hca.predictAddress`](/docs/hca/reference/actions/hca/predict-address) | Read | Computes the address of an owner's ENS HCA, deployed or not. |
 | [`hca.revokeSessions`](/docs/hca/reference/actions/hca/revoke-sessions) | Write | Invalidates every session approval of the signer's HCA. |
-| [`hca.upgrade`](/docs/hca/reference/actions/hca/upgrade) | Write | Upgrades the signer's HCA to an implementation both DAO upgrade sets allow. |
+| [`hca.upgrade`](/docs/hca/reference/actions/hca/upgrade) | Write | Upgrades the signer's HCA to an implementation the DAO's upgrade set and its own `canUpgradeFrom` check allow. |
 | [`hca.verify`](/docs/hca/reference/actions/hca/verify) | Read | Checks that an address is a usable ENS HCA of its owner, and returns it. |
 | [`hca.withdrawDeposit`](/docs/hca/reference/actions/hca/withdraw-deposit) | Write | Withdraws ETH from the signer's HCA EntryPoint deposit. |

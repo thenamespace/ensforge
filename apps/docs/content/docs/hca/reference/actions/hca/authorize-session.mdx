@@ -61,7 +61,7 @@ yield* Actions.hca.authorizeSession(ens, { sessionKey: sessionAccount.address, r
 | Option | Type | Default | Description |
 | --- | --- | --- | --- |
 | `sessionKey` (required) | `string` |  | Public address of the session key the app keeps. |
-| `resolver` (required) | `string` |  | The one resolver the session may deploy and edit (an HCA-deployed PermissionedResolver). |
+| `resolver` (required) | `string` |  | The one resolver the session may deploy and edit (an existing resolver, or a PermissionedResolver proxy the session deploys from the HCA at that address). |
 | `validUntil` (required) | `number` |  | Unix seconds after which the session stops working. |
 | `refund` | `{ readonly token?: Address \| undefined; readonly maxExchangeRate?: bigint \| undefined; readonly maxGasOverhead?: bigint \| undefined; readonly maxAmount?: bigint \| undefined; }` |  | Refund ceilings for Rhinestone executions, in the refund token's units. |
 | `account` | `Address` |  | Signer (the HCA owner). @default the client's account |

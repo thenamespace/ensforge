@@ -43,9 +43,21 @@ const ens = Ensforge.create({
 })
 ```
 
+```ts title="Adding an L2 for primary names"
+import { Ensforge, ensActions } from "@ensforge/sdk"
+
+const ens = Ensforge.create({
+  publicClient,
+  walletClient,
+  chains: { 10: { publicClient: optimismClient, walletClient: optimismWallet } },
+}).extend(ensActions())
+
+await ens.primaryName.set({ name: "alice.eth", coin: { chainId: 10 } })
+```
+
 Errors:
 
-- `ConfigError` ([`UNKNOWN_CHAIN`](/docs/sdk/errors/UNKNOWN_CHAIN)) when the chain has no built-in deployment and none is given. **Example** (Adding an L2 for primary names) ```ts import { Ensforge, ensActions } from "@ensforge/sdk" const ens = Ensforge.create({ publicClient, walletClient, chains: { 10: { publicClient: optimismClient, walletClient: optimismWallet } }, }).extend(ensActions()) await ens.primaryName.set({ name: "alice.eth", coin: { chainId: 10 } }) ```
+- `ConfigError` ([`UNKNOWN_CHAIN`](/docs/sdk/errors/UNKNOWN_CHAIN)) when the chain has no built-in deployment and none is given.
 - `ConfigError` ([`INVALID_DEPLOYMENT`](/docs/sdk/errors/INVALID_DEPLOYMENT)) when `deployment` is invalid or for another chain.
 - `ConfigError` ([`CHAIN_NOT_CONFIGURED`](/docs/sdk/errors/CHAIN_NOT_CONFIGURED)) when an entry of `chains` holds clients of another chain.
 
