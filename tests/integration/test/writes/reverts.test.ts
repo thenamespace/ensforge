@@ -11,15 +11,20 @@ import {
   bytesToHex,
   decodeErrorResult,
   encodeAbiParameters,
+  encodeErrorResult,
   encodeFunctionData,
   encodePacked,
   erc20Abi,
   getAbiItem,
+  hexToBigInt,
   keccak256,
+  labelhash,
+  maxUint64,
   namehash,
   numberToHex,
   pad,
   parseAbi,
+  parseEther,
   toFunctionSelector,
   toHex,
   zeroAddress,
@@ -34,6 +39,7 @@ import { packetToBytes } from "viem/ens";
 import { Clients } from "../support/clients.ts";
 import { ethEntry } from "../support/contracts.ts";
 import { RecordType, txtProof, type Tampering } from "../support/dnssec.ts";
+import { Gateways } from "../support/gateways.ts";
 import { onProfile } from "../support/lane.ts";
 
 // Each contract error the SDK maps (`revertMap`) is raised here by a deployed contract, so the
@@ -47,26 +53,49 @@ type Call = {
   readonly abi: Abi;
   readonly functionName: string;
   readonly args: readonly unknown[];
+  readonly value?: bigint;
 };
 
-/** The name of the ENS error `call` reverts with. */
-const revertOf = Effect.fnUntraced(function* ({ from, to, abi, functionName, args }: Call) {
+/**
+ * The name of the ENS error `call` reverts with. Errors the migration controllers return through
+ * the NameWrapper arrive as `Error("WrappedError::0x…")` (`WrappedErrorLib`) and are unwrapped, as
+ * ensforge does.
+ */
+const revertOf = Effect.fnUntraced(function* ({ from, to, abi, functionName, args, value }: Call) {
   const chain = yield* Chain;
   const data = encodeFunctionData({ abi, functionName, args } as never);
 
-  return yield* chain.call({ account: from, to, data }).pipe(
+  return yield* chain.call({ account: from, to, data, value }).pipe(
     Effect.match({
       onSuccess: () => "no revert",
       onFailure: (error) => {
         const reverted = (error.cause as BaseError).walk(
           (cause) => typeof (cause as { data?: unknown }).data === "string",
         ) as { readonly data: Hex } | null;
-        return reverted === null
-          ? "no revert data"
-          : decodeErrorResult({ abi: Abis.shared.errors, data: reverted.data }).errorName;
+        if (reverted === null) return "no revert data";
+
+        const decoded = decodeErrorResult({ abi: Abis.shared.errors, data: reverted.data });
+        const errorName: string = decoded.errorName;
+        const [message] = decoded.args ?? [];
+        return errorName === "Error" &&
+          typeof message === "string" &&
+          message.startsWith("WrappedError::0x")
+          ? decodeErrorResult({
+              abi: Abis.shared.errors,
+              data: message.slice("WrappedError::".length) as Hex,
+            }).errorName
+          : errorName;
       },
     }),
   );
+});
+
+/** `LibMigration.Data`, the migration controllers' input, for `name` and its new `owner`. */
+const migration = (name: string, owner: Address) => ({
+  label: Name.parse(name).label,
+  owner,
+  subregistry: zeroAddress,
+  resolver: zeroAddress,
 });
 
 /** The contract error an ensforge call failed with, from its error context. */
@@ -88,8 +117,9 @@ describe("contract errors", () => {
         const devnet = yield* Devnet;
         const chain = yield* Chain;
         const { reader } = yield* Clients;
-        const { alice, carol, user } = devnet.accounts;
-        const registered = (yield* ethEntry(fixtures.byId("v2.registered").name)).tokenId;
+        const { alice, bob, carol, user } = devnet.accounts;
+        const registeredName = fixtures.byId("v2.registered").name;
+        const registered = (yield* ethEntry(registeredName)).tokenId;
         const delegated = (yield* ethEntry(fixtures.byId("v2.roles").name)).tokenId;
         const expired = (yield* ethEntry(fixtures.byId("v2.expired").name)).tokenId;
 
@@ -110,6 +140,9 @@ describe("contract errors", () => {
           to: devnet.contract("v2.ethRegistry"),
           abi: Abis.v2.permissionedRegistry as Abi,
         };
+        const childRegistry = { to: subregistry.address, abi: Abis.v2.permissionedRegistry as Abi };
+        // `revived` is RESERVED in its registry: unregistered, then renewed by the root.
+        const reserved = fixtures.byId("v2.unregistered.renewed");
         const wrapper = { to: devnet.contract("v1.nameWrapper"), abi: Abis.v1.nameWrapper as Abi };
         const transfer = (from: Address, owner: Address, token: bigint) => ({
           ...registry,
@@ -154,11 +187,50 @@ describe("contract errors", () => {
             args: [expired, stranger],
           },
           CannotReduceExpiry: {
-            to: subregistry.address,
-            abi: Abis.v2.permissionedRegistry as Abi,
+            ...childRegistry,
             from: alice,
             functionName: "renew",
             args: [childToken, 1n],
+          },
+          CannotSetPastExpiry: {
+            ...childRegistry,
+            from: alice,
+            functionName: "register",
+            args: ["never-registered", alice, zeroAddress, zeroAddress, 0n, 1n],
+          },
+          // alice holds the child registry's root roles, so it is not emancipated.
+          TransferUnsafeUntilRegistryIsEmancipated: {
+            ...childRegistry,
+            from: bob,
+            functionName: "safeTransferFrom",
+            args: [bob, carol, childToken, 1n, "0x"],
+          },
+          // Each role is one nybble's lowest bit; bit 1 is none.
+          EACInvalidRoleBitmap: {
+            ...registry,
+            from: user,
+            functionName: "getAssigneeCount",
+            args: [registered, 2n],
+          },
+          LabelAlreadyRegistered: {
+            ...registry,
+            from: user,
+            functionName: "register",
+            args: [Name.parse(registeredName).label, user, zeroAddress, zeroAddress, 0n, maxUint64],
+          },
+          LabelAlreadyReserved: {
+            to: reserved.facts["registry"] as Address,
+            abi: Abis.v2.permissionedRegistry as Abi,
+            from: alice,
+            functionName: "register",
+            args: [
+              Name.parse(reserved.name).label,
+              zeroAddress,
+              zeroAddress,
+              zeroAddress,
+              0n,
+              maxUint64,
+            ],
           },
           Unauthorised: {
             ...wrapper,
@@ -245,6 +317,17 @@ describe("contract errors", () => {
               ),
               "NestedUpgradeNotAllowed",
             );
+
+            // A UserRegistry upgrades anywhere until it is emancipated; then only to the upgrade
+            // set's implementations. alice keeps `upgrade`, which emancipation does not need.
+            yield* chain.write({
+              account: alice,
+              address: subregistry.address,
+              abi: Abis.v2.userRegistry,
+              functionName: "revokeRootRoles",
+              args: [Roles.registryBitmaps.unemancipated, alice],
+            });
+            assert.strictEqual(yield* revertOf(upgrade(target, "0x")), "UpgradeTargetNotApproved");
           }),
         );
       }),
@@ -298,6 +381,59 @@ describe("contract errors", () => {
           });
           return commitment;
         });
+        const v1Controller = {
+          to: devnet.contract("v1.ethRegistrarController"),
+          abi: Abis.v1.ethRegistrarController as Abi,
+          from: alice,
+        };
+
+        const cases: Readonly<Record<string, Call>> = {
+          NameNotRenewable: {
+            ...registrar,
+            from: alice,
+            functionName: "getRenewPrice",
+            args: ["never-registered", Duration.years(1), usdc],
+          },
+          NotValid: {
+            to: devnet.contract("v2.rentPriceOracle"),
+            abi: Abis.v2.standardRentPriceOracle as Abi,
+            from: alice,
+            functionName: "getRenewPrice",
+            args: ["", 0n, Duration.years(1), usdc],
+          },
+          OwnableUnauthorizedAccount: {
+            ...registrar,
+            from: user,
+            functionName: "transferOwnership",
+            args: [user],
+          },
+          // ENSv1's controller checks the payment before anything else.
+          InsufficientValue: {
+            ...v1Controller,
+            functionName: "renew",
+            args: ["never-registered", Duration.years(1), zeroHash],
+          },
+          CommitmentNotFound: {
+            ...v1Controller,
+            functionName: "register",
+            args: [
+              {
+                label: "never-committed",
+                owner: alice,
+                duration: Duration.years(1),
+                secret,
+                resolver: zeroAddress,
+                data: [],
+                reverseRecord: 0,
+                referrer: zeroHash,
+              },
+            ],
+            value: parseEther("1"),
+          },
+        };
+        for (const [error, call] of Object.entries(cases)) {
+          assert.strictEqual(yield* revertOf(call), error, error);
+        }
 
         yield* chain.isolated(
           Effect.gen(function* () {
@@ -354,7 +490,7 @@ describe("contract errors", () => {
       Effect.gen(function* () {
         const devnet = yield* Devnet;
         const chain = yield* Chain;
-        const { alice } = devnet.accounts;
+        const { alice, bob } = devnet.accounts;
         const at = Number(yield* chain.now);
         const name = "reverts-dns.com";
         const owner = [`a=${alice}`];
@@ -403,6 +539,13 @@ describe("contract errors", () => {
             "reverts-dns.test",
             txtProof("reverts-dns.test", owner, at - 60),
           ),
+          // The proof names alice as the owner.
+          PermissionDenied: {
+            ...registrar,
+            from: bob,
+            functionName: "proveAndClaimWithResolver",
+            args: [bytesToHex(packetToBytes(name)), proof(), zeroAddress, zeroAddress],
+          },
           TLDNotPublic: {
             to: devnet.contract("v2.temporaryDnsRegistrar"),
             abi: Abis.v2.temporaryDnsRegistrar as Abi,
@@ -429,6 +572,119 @@ describe("contract errors", () => {
           }),
         );
       }),
+    );
+
+    // The controllers' errors reach the caller through the NameWrapper as `WrappedError`s.
+    it.effect(
+      "come from the migration controllers and the migration helper",
+      () =>
+        Effect.gen(function* () {
+          const fixtures = yield* Fixtures;
+          const devnet = yield* Devnet;
+          const chain = yield* Chain;
+          const { alice, bob } = devnet.accounts;
+          const plain = fixtures.byId("v1.wrapped").name;
+          const locked = fixtures.byId("v1.wrapped.locked").name;
+          const migrated = fixtures.byId("migration.locked").facts;
+          const nameWrapper = devnet.contract("v1.nameWrapper");
+          const sendTo = (controller: string, name: string): Call => ({
+            to: nameWrapper,
+            abi: Abis.v1.nameWrapper as Abi,
+            from: alice,
+            functionName: "safeTransferFrom",
+            args: [
+              alice,
+              devnet.contract(controller),
+              hexToBigInt(namehash(name)),
+              1n,
+              encodeAbiParameters(
+                [
+                  {
+                    type: "tuple",
+                    components: [
+                      { name: "label", type: "string" },
+                      { name: "owner", type: "address" },
+                      { name: "subregistry", type: "address" },
+                      { name: "resolver", type: "address" },
+                    ],
+                  },
+                ],
+                [migration(name, alice)],
+              ),
+            ],
+          });
+          // `migrate(unwrapped, unlockedGroups, lockedGroups, lockedChildrenGroups)`.
+          const helper = (from: Address, groups: readonly unknown[]): Call => ({
+            to: devnet.contract("v2.migrationHelper"),
+            abi: Abis.v2.migrationHelper as Abi,
+            from,
+            functionName: "migrate",
+            args: groups,
+          });
+
+          const cases: Readonly<Record<string, Call>> = {
+            NameIsLocked: sendTo("v2.unlockedMigrationController", locked),
+            NameNotLocked: sendTo("v2.lockedMigrationController", plain),
+            // The parent migrated; its locked child did not, and only migration may claim it.
+            NameRequiresMigration: {
+              to: migrated["wrapperRegistry"] as Address,
+              abi: Abis.v2.wrapperRegistry as Abi,
+              from: alice,
+              functionName: "register",
+              args: [
+                Name.parse(migrated["child"] as string).label,
+                alice,
+                zeroAddress,
+                zeroAddress,
+                0n,
+                maxUint64,
+              ],
+            },
+            NotApprovedOperator: helper(bob, [[], [[migration(plain, bob)]], [], []]),
+            ParentNotMigrated: helper(alice, [
+              [],
+              [],
+              [],
+              [{ parentName: Name.dnsEncode(locked), groups: [] }],
+            ]),
+          };
+          for (const [error, call] of Object.entries(cases)) {
+            assert.strictEqual(yield* revertOf(call), error, error);
+          }
+
+          // One group moves one owner's names: bob lets alice move his, which is no reason to
+          // mix them with hers.
+          yield* chain.isolated(
+            Effect.gen(function* () {
+              yield* chain.write({
+                account: alice,
+                address: nameWrapper,
+                abi: Abis.v1.nameWrapper,
+                functionName: "safeTransferFrom",
+                args: [alice, bob, hexToBigInt(namehash(plain)), 1n, "0x"],
+              });
+              yield* chain.write({
+                account: bob,
+                address: nameWrapper,
+                abi: Abis.v1.nameWrapper,
+                functionName: "setApprovalForAll",
+                args: [alice, true],
+              });
+              assert.strictEqual(
+                yield* revertOf(
+                  helper(alice, [
+                    [],
+                    [[migration(locked, alice), migration(plain, alice)]],
+                    [],
+                    [],
+                  ]),
+                ),
+                "WrappedOwnerMismatch",
+              );
+            }),
+          );
+        }),
+      { meta: { cases: ["M09", "M11"] } },
     );
 
     // `resolver.none` is premigrated: ENSv2 hands it to the ENSv1 bridge, which finds no ENSv1
@@ -471,6 +727,283 @@ describe("contract errors", () => {
           );
         }),
       { meta: { cases: ["O24"] } },
+    );
+
+    // `resolveWithResolver` and the reverse functions, with the batch gateways the test names: the
+    // local one viem answers (`x-batch-gateway:true`) or an in-process one answering crafted batches.
+    it.effect(
+      "come from the Universal Resolver and its batch gateway",
+      () =>
+        Effect.gen(function* () {
+          const fixtures = yield* Fixtures;
+          const devnet = yield* Devnet;
+          const chain = yield* Chain;
+          const gateways = yield* Gateways;
+          const { alice, bob, deployer } = devnet.accounts;
+          const universalResolver = {
+            to: devnet.contract("v2.universalResolver"),
+            abi: Abis.v2.universalResolver as Abi,
+            from: alice,
+          };
+          const offchain = fixtures.byId("resolver.offchain");
+          const spoofed = fixtures.byId("resolver.spoofed-offchain-lookup");
+          const shapeshift = {
+            abi: parseAbi([
+              "function setResponse(bytes,bytes)",
+              "function setRevertURL(string)",
+              "function setFeature(bytes4,bool)",
+            ]),
+            account: deployer,
+          } as const;
+          const resolveWith = (
+            resolver: Address,
+            name: string,
+            batchGateways: readonly string[],
+          ): Call => ({
+            ...universalResolver,
+            functionName: "resolveWithResolver",
+            args: [
+              resolver,
+              Name.dnsEncode(name),
+              encodeFunctionData({
+                abi: Abis.shared.addrResolver,
+                functionName: "addr",
+                args: [namehash(name)],
+              }),
+              batchGateways,
+            ],
+          });
+          // The batch gateway's answer, `abi.encode(bool[] failures, bytes[] responses)`.
+          const batchGateway = (failures: readonly boolean[], responses: readonly Hex[]) =>
+            gateways.serve(() => ({
+              status: 200,
+              body: JSON.stringify({
+                data: encodeAbiParameters(
+                  [{ type: "bool[]" }, { type: "bytes[]" }],
+                  [failures, responses],
+                ),
+              }),
+            }));
+          const failing = yield* gateways.serve(() => ({
+            status: 500,
+            body: '{"message":"down"}',
+          }));
+          const miscounted = yield* batchGateway([true], []);
+          // A failure whose error is neither `HttpError` nor `Error(string)`.
+          const untrusted = yield* batchGateway([true], ["0x12345678"]);
+          const notNormalized = fixtures.byId("primary.not-normalized").facts;
+
+          const cases: Readonly<Record<string, Call>> = {
+            UnsupportedResolverProfile: resolveWith(
+              devnet.contract("mock.shapeshiftResolver"),
+              offchain.name,
+              [],
+            ),
+            ResolverNotContract: resolveWith(bob, offchain.name, []),
+            InvalidBatchGatewayResponse: resolveWith(
+              offchain.facts["resolver"] as Address,
+              offchain.name,
+              [miscounted.url],
+            ),
+            UnsafeBatchGatewayResponse: resolveWith(
+              offchain.facts["resolver"] as Address,
+              offchain.name,
+              [untrusted.url],
+            ),
+          };
+          for (const [error, call] of Object.entries(cases)) {
+            assert.strictEqual(yield* revertOf(call), error, error);
+          }
+          assert.isAbove(miscounted.requests(), 0);
+          assert.isAbove(untrusted.requests(), 0);
+
+          yield* chain.isolated(
+            Effect.gen(function* () {
+              // viem's local batch gateway reports the resolver's failing gateway per request.
+              yield* chain.write({
+                ...shapeshift,
+                address: offchain.facts["resolver"] as Address,
+                functionName: "setRevertURL",
+                args: [failing.url],
+              });
+              assert.strictEqual(
+                yield* revertOf(
+                  resolveWith(offchain.facts["resolver"] as Address, offchain.name, [
+                    "x-batch-gateway:true",
+                  ]),
+                ),
+                "HttpError",
+              );
+              assert.isAbove(failing.requests(), 0);
+
+              // bob claims alice's primary name, whose address is hers.
+              yield* chain.write({
+                account: bob,
+                address: devnet.contract("v1.reverseRegistrar"),
+                abi: Abis.v1.reverseRegistrar,
+                functionName: "setName",
+                args: [fixtures.byId("primary.addr-reverse").name],
+              });
+              assert.strictEqual(
+                yield* revertOf({
+                  ...universalResolver,
+                  functionName: "reverse",
+                  args: [bob, 60n],
+                }),
+                "ReverseAddressMismatch",
+              );
+
+              // An ERC-7996 resolver is called directly, without the batch gateway; a lookup it
+              // raises in another contract's name ends the call there.
+              yield* chain.write({
+                ...shapeshift,
+                address: spoofed.facts["resolver"] as Address,
+                functionName: "setFeature",
+                args: ["0x00000001", true],
+              });
+              assert.strictEqual(
+                yield* revertOf(
+                  resolveWith(spoofed.facts["resolver"] as Address, spoofed.name, []),
+                ),
+                "InvalidOffchainLookup",
+              );
+
+              // An ENSIP-15 normalizer: the mock answers `normalize(label)` with what is set.
+              const normalizer = devnet.contract("mock.shapeshiftResolver");
+              for (const [label, normalized] of [
+                ["Rev-Approved", "rev-approved"],
+                ["eth", "eth"],
+              ] as const) {
+                yield* chain.write({
+                  ...shapeshift,
+                  address: normalizer,
+                  functionName: "setResponse",
+                  args: [
+                    encodeFunctionData({
+                      abi: parseAbi(["function normalize(string) view returns (string)"]),
+                      functionName: "normalize",
+                      args: [label],
+                    }),
+                    encodeAbiParameters([{ type: "string" }], [normalized]),
+                  ],
+                });
+              }
+              assert.strictEqual(
+                yield* revertOf({
+                  ...universalResolver,
+                  functionName: "reverseWithNormalization",
+                  args: [notNormalized["address"], 60n, normalizer],
+                }),
+                "PrimaryNameNotNormalized",
+              );
+            }),
+          );
+        }).pipe(Effect.scoped),
+      { meta: { cases: ["X01", "X05", "P07", "P08"] } },
+    );
+
+    // The L2 reverse resolvers' unruggable verifiers reject a gateway's proof of L2 state with
+    // these errors. The devnet's L2 primary names (`8000000a.reverse`) are served by a resolver
+    // whose gateway callback replays each, as a verifier would, back through the Universal
+    // Resolver to ensforge.
+    it.effect(
+      "come from the L2 reverse resolvers' proof verifiers, through ensforge's reads",
+      () =>
+        Effect.gen(function* () {
+          const devnet = yield* Devnet;
+          const chain = yield* Chain;
+          const { reader } = yield* Clients;
+          const gateways = yield* Gateways;
+          const { owner, alice } = devnet.accounts;
+          const resolver = {
+            address: (yield* Fixtures).byId("resolver.offchain").facts["resolver"] as Address,
+            abi: parseAbi(["function setRevertURL(string)", "function setResponse(bytes,bytes)"]),
+            account: owner,
+          } as const;
+          const gateway = yield* gateways.serve(() => ({ status: 200, body: '{"data":"0x"}' }));
+
+          yield* chain.isolated(
+            Effect.gen(function* () {
+              yield* chain.write({
+                address: devnet.contract("v1.registry"),
+                abi: Abis.v1.ensRegistry,
+                functionName: "setSubnodeRecord",
+                args: [namehash("reverse"), labelhash("8000000a"), owner, resolver.address, 0n],
+                account: owner,
+              });
+              yield* chain.write({
+                ...resolver,
+                functionName: "setRevertURL",
+                args: [gateway.url],
+              });
+
+              for (const [errorName, args] of [
+                ["CommitTooOld", [10n, 2n, 4n]],
+                ["CommitTooNew", [10n, 12n]],
+                ["InvalidProof", []],
+                ["GameNotFound", []],
+                ["InvalidGameTypeBitMask", []],
+                ["OutputNotFound", []],
+                ["TooManyProofs", [8n]],
+                ["RequestOverflow", []],
+                ["InvalidRequest", []],
+                ["InvalidStackIndex", [3n, 2n, false]],
+                ["InvalidOutputIndex", [3n, 2n]],
+                ["StackOverflow", []],
+                ["DataMissing", []],
+                ["DataIsNotMod32", []],
+                ["LengthNotMod32", []],
+                ["MaxTreeLeafIndexExceed", []],
+                ["WrongBytesLength", [32n, 31n]],
+                ["WrongProofLength", [4n, 3n]],
+              ] as const) {
+                yield* chain.write({
+                  ...resolver,
+                  functionName: "setResponse",
+                  args: [
+                    encodeFunctionData({
+                      abi: Abis.shared.nameResolver,
+                      functionName: "name",
+                      args: [namehash(`${alice.slice(2).toLowerCase()}.8000000a.reverse`)],
+                    }),
+                    encodeErrorResult({ abi: Abis.shared.errors, errorName, args } as never),
+                  ],
+                });
+                assert.strictEqual(
+                  yield* revertName(
+                    Actions.primaryName.get(reader, {
+                      address: alice,
+                      coin: { chainId: 10 },
+                      strict: true,
+                    }),
+                  ),
+                  errorName,
+                );
+              }
+              assert.isAbove(gateway.requests(), 0);
+            }),
+          );
+        }).pipe(Effect.scoped),
+      { meta: { cases: ["P32"] } },
+    );
+
+    it.effect("come from the PermissionedResolver", () =>
+      Effect.gen(function* () {
+        const devnet = yield* Devnet;
+        const { name, facts } = (yield* Fixtures).byId("records.v2.linked");
+
+        // bob may link names on his resolver, but only to records it already has.
+        assert.strictEqual(
+          yield* revertOf({
+            to: facts["resolver"] as Address,
+            abi: Abis.v2.permissionedResolver as Abi,
+            from: devnet.accounts.bob,
+            functionName: "linkToRecord",
+            args: [Name.dnsEncode(name), 2n ** 64n],
+          }),
+          "InvalidRecord",
+        );
+      }),
     );
 
     // ERC-5559 and ERC-7884 refusals of a resolver that keeps its records off-chain.

@@ -36,6 +36,8 @@ import { onProfile } from "../support/lane.ts";
 describe("CCIP-Read", () => {
   for (const profile of ["v1-live", "mainnet-shaped"] as const) {
     onProfile(profile)(profile, (it) => {
+      // The gateway answers alice's address, as if the lookup were genuine: ensforge must never
+      // return it.
       it.effect(
         "never answers from an off-chain lookup that names another contract as its sender",
         () =>
@@ -45,12 +47,24 @@ describe("CCIP-Read", () => {
             const { reader } = yield* Clients;
             const gateways = yield* Gateways;
             const { name, facts } = (yield* Fixtures).byId("resolver.spoofed-offchain-lookup");
-            const gateway = yield* gateways.serve(() => ({ status: 200, body: '{"data":"0x"}' }));
+            const answer = encodeAbiParameters([{ type: "address" }], [devnet.accounts.alice]);
+            const gateway = yield* gateways.serve(() => ({
+              status: 200,
+              body: JSON.stringify({ data: answer }),
+            }));
             const data = encodeFunctionData({
               abi: Abis.shared.addrResolver,
               functionName: "addr",
               args: [namehash(name)],
             });
+            const resolver = {
+              address: facts["resolver"] as Address,
+              abi: parseAbi([
+                "function setResponse(bytes,bytes)",
+                "function setFeature(bytes4,bool)",
+              ]),
+              account: devnet.accounts.deployer,
+            } as const;
 
             yield* chain.isolated(
               Effect.gen(function* () {
@@ -60,11 +74,9 @@ describe("CCIP-Read", () => {
                   args: [devnet.accounts.bob, [gateway.url], "0x", "0x00000000", "0x"],
                 });
                 yield* chain.write({
-                  address: facts["resolver"] as Address,
-                  abi: parseAbi(["function setResponse(bytes,bytes)"]),
+                  ...resolver,
                   functionName: "setResponse",
                   args: [data, lookup],
-                  account: devnet.accounts.deployer,
                 });
 
                 // The Universal Resolver's batcher follows it and calls back the named sender, an
@@ -73,6 +85,21 @@ describe("CCIP-Read", () => {
                   _tag: "UnsupportedError",
                   code: "RESOLVER_PROFILE_UNSUPPORTED",
                 });
+                assert.isAbove(gateway.requests(), 0);
+
+                // An ERC-7996 resolver is called directly, without the batcher, and the Universal
+                // Resolver refuses the lookup before any gateway is asked.
+                const asked = gateway.requests();
+                yield* chain.write({
+                  ...resolver,
+                  functionName: "setFeature",
+                  args: ["0x00000001", true],
+                });
+                yield* expectFailure(Actions.resolver.resolve(reader, { name, data }), {
+                  _tag: "GatewayError",
+                  code: "OFFCHAIN_LOOKUP_INVALID",
+                });
+                assert.strictEqual(gateway.requests(), asked);
               }),
             );
           }).pipe(Effect.scoped),

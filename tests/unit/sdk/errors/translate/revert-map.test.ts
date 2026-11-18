@@ -167,72 +167,23 @@ const overloads = (errorName: string): readonly Hex[] =>
 const encode = (errorName: string, args: readonly unknown[]): Hex =>
   encodeErrorResult({ abi: Abis.shared.errors, errorName, args } as never);
 
-// Mapped errors no devnet contract is made to raise yet; the list must shrink, never grow.
-const notRaisedOnChain = [
-  // Batch gateway failures: raised by the Universal Resolver's gateway, not reached here yet.
-  "HttpError",
-  "InvalidOffchainLookup",
-  "InvalidBatchGatewayResponse",
-  "UnsafeBatchGatewayResponse",
-  // unruggable verifiers check real L2 proofs, which only the fork lane has; primary.test.ts
-  // replays InvalidGameTypeBitMask through a mock resolver.
-  "CommitTooOld",
-  "CommitTooNew",
-  "InvalidProof",
-  "GameNotFound",
-  "InvalidGameTypeBitMask",
-  "OutputNotFound",
-  "TooManyProofs",
-  "RequestOverflow",
-  "InvalidRequest",
-  "InvalidStackIndex",
-  "InvalidOutputIndex",
-  "StackOverflow",
-  "DataMissing",
-  "DataIsNotMod32",
-  "LengthNotMod32",
-  "MaxTreeLeafIndexExceed",
-  "WrongBytesLength",
-  "WrongProofLength",
-  // Not reached by a devnet scenario yet: ensforge refuses most of these states before sending,
-  // or the devnet deploys no contract that raises them with revert data.
-  "NameIsLocked",
-  "NameRequiresMigration",
-  "ParentNotMigrated",
-  "NameNotLocked",
-  "TransferUnsafeUntilRegistryIsEmancipated",
-  "EACInvalidRoleBitmap",
-  "LabelAlreadyRegistered",
-  "LabelAlreadyReserved",
-  "NameNotRenewable",
-  "CannotSetPastExpiry",
-  "InsufficientValue",
-  "NotValid",
-  "UnsupportedResolverProfile",
-  "InvalidRecord",
-  "PrimaryNameNotNormalized",
-  "ReverseAddressMismatch",
-  "ResolverNotContract",
-  "OwnableUnauthorizedAccount",
-  "WrappedOwnerMismatch",
-  "PermissionDenied",
-  "NotApprovedOperator",
-  "CommitmentNotFound",
-  "UpgradeTargetNotApproved",
-];
+// Mapped errors no devnet contract is made to raise, each with the reason; keep it empty.
+const notRaisedOnChain: string[] = [];
 
 describe("revertMap coverage", () => {
   it("documents every mapped contract error", () => {
     assert.sameMembers(Object.keys(revertMap), Object.keys(expected));
   });
 
+  // A name counts where the chain test expects it from a call: as a string it compares the
+  // decoded error with, or as the key of a table of calls; never in a comment.
   it("has each mapped error raised by a devnet contract, or listed as not yet", () => {
     const chainTest = readFileSync(
       new URL("../../../../integration/test/writes/reverts.test.ts", import.meta.url),
       "utf8",
     );
     const missing = Object.keys(revertMap).filter(
-      (errorName) => !new RegExp(String.raw`\b${errorName}\b`, "u").test(chainTest),
+      (errorName) => !new RegExp(String.raw`"${errorName}"|\b${errorName}:`, "u").test(chainTest),
     );
     assert.sameMembers(missing, notRaisedOnChain);
   });
