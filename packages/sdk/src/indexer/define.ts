@@ -21,7 +21,11 @@ export type Draft<answer> = answer extends null ? null : Omit<answer, keyof Meta
  * @category indexer
  * @since 1.0.0
  */
-export type Adapter = { readonly id: string } & {
+export type Adapter = {
+  readonly id: string;
+  /** What distinguishes this indexer from others with the same id (see `Indexer.key`). */
+  readonly key?: string | undefined;
+} & {
   readonly [method in Method]?: (
     query: Parameters<Methods[method]>[0],
     context: Context,
@@ -99,5 +103,5 @@ export const defineIndexer = (adapter: Adapter): Indexer => {
       }).pipe(Effect.flatMap((draft) => complete(method, draft as never, id)));
   }
 
-  return makeIndexer({ id, methods: methods as Implementation["methods"] });
+  return makeIndexer({ id, key: adapter.key ?? id, methods: methods as Implementation["methods"] });
 };

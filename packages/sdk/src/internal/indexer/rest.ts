@@ -447,5 +447,6 @@ export const restIndexer = (options: RestOptions): Implementation => {
     }),
   };
 
-  return { id, methods };
+  // The built-in hosts are the same for every client; a custom URL is a different indexer.
+  return { id, key: `${id}:${options.url ?? "default"}`, methods };
 };

@@ -5,7 +5,10 @@ import * as Actions from "@ensforge/sdk/internal/actions/effect";
 import { IndexerError } from "@ensforge/sdk/internal/errors/classes/IndexerError";
 import { NotFoundError } from "@ensforge/sdk/internal/errors/classes/NotFoundError";
 import type { AnyError } from "@ensforge/sdk/internal/errors/types";
+import { bigname } from "@ensforge/sdk/internal/indexer/bigname";
+import { defineIndexer } from "@ensforge/sdk/internal/indexer/define";
 import { fallback, type FallbackReason } from "@ensforge/sdk/internal/indexer/fallback";
+import { goldsky } from "@ensforge/sdk/internal/indexer/goldsky";
 import type { Query } from "@ensforge/sdk/internal/indexer/Indexer";
 import { define } from "@ensforge/sdk/internal/indexer/Indexer.effect";
 import { Arbitraries, expectFailure } from "@ensforge/test-harness";
@@ -171,7 +174,7 @@ describe("fallback routing", () => {
 
     assert.strictEqual(indexer.id, "fallback(a)");
     assert.throws(
-      () => fallback([{ id: "fake", "~ensforge/indexer": true }]),
+      () => fallback([{ id: "fake", key: "fake", "~ensforge/indexer": true }]),
       "fallback: fake was not built by ensforge.",
     );
   });
@@ -300,4 +303,21 @@ describe("fallback pinning", () => {
       assert.strictEqual(second.cursor, "f0:f1:c");
     }),
   );
+});
+
+describe("Indexer.key", () => {
+  // Caches key answers by indexer: deployments of one adapter must not share them.
+  it("names the adapter and where it reads from", () => {
+    assert.strictEqual(bigname().key, "bigname:default");
+    assert.strictEqual(
+      bigname({ url: "https://bigname.internal" }).key,
+      "bigname:https://bigname.internal",
+    );
+    assert.strictEqual(
+      fallback([bigname(), goldsky()]).key,
+      "fallback(bigname:default, goldsky:default)",
+    );
+    assert.strictEqual(defineIndexer({ id: "in-house" }).key, "in-house");
+    assert.strictEqual(defineIndexer({ id: "in-house", key: "in-house:eu" }).key, "in-house:eu");
+  });
 });

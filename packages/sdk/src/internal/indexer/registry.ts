@@ -18,6 +18,8 @@ export type EffectMethod<method extends Method> = (
 /** An adapter's methods as Effects; a missing method is an unsupported query. */
 export type Implementation = {
   readonly id: string;
+  /** Cache identity; the id when it says enough (see `Indexer.key`). */
+  readonly key?: string;
   readonly methods: { readonly [method in Method]?: EffectMethod<method> };
 };
 
@@ -51,6 +53,7 @@ const implementations = new WeakMap<Indexer, Implementation>();
 export const makeIndexer = (implementation: Implementation): Indexer => {
   const indexer: Indexer = Object.freeze({
     id: implementation.id,
+    key: implementation.key ?? implementation.id,
     "~ensforge/indexer": true as const,
   });
   implementations.set(indexer, implementation);

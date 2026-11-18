@@ -225,7 +225,10 @@ describe("Indexer.define", () => {
 describe("client without an ensforge indexer", () => {
   it.effect.each([
     { label: "no indexer", indexer: undefined },
-    { label: "a foreign value", indexer: { id: "fake", "~ensforge/indexer": true } as const },
+    {
+      label: "a foreign value",
+      indexer: { id: "fake", key: "fake", "~ensforge/indexer": true } as const,
+    },
   ])("fails with INDEXER_NOT_CONFIGURED for $label", ({ indexer }) =>
     expectFailure(Actions.indexer.getStatus(clientWith(indexer), {}), {
       _tag: "ConfigError",

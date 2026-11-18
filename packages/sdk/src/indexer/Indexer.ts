@@ -37,6 +37,11 @@ import type {
 export interface Indexer {
   /** Adapter id, reported as `indexer` on every answer. */
   readonly id: string;
+  /**
+   * The adapter and where it reads from, e.g. `bigname:https://bigname.internal`: two indexers
+   * with the same key answer alike, so caches (React's) can share their answers.
+   */
+  readonly key: string;
   readonly "~ensforge/indexer": true;
 }
 

@@ -182,5 +182,9 @@ export const fallback = (
     });
   }
 
-  return makeIndexer({ id, methods: methods as Implementation["methods"] });
+  return makeIndexer({
+    id,
+    key: `fallback(${indexers.map((indexer) => indexer.key).join(", ")})`,
+    methods: methods as Implementation["methods"],
+  });
 };
