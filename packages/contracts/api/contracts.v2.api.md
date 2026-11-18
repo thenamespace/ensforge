@@ -1228,6 +1228,7 @@ const userRegistryV2Abi: Abi
   error LabelAlreadyRegistered(string)
   error LabelAlreadyReserved(string)
   error LabelExpired(uint256)
+  error NestedUpgradeNotAllowed()
   error NotInitializing()
   error TransferDisallowed(uint256,address)
   error TransferUnsafeUntilRegistryIsEmancipated()

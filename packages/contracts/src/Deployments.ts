@@ -240,6 +240,7 @@ const capabilityValues = {
   wrapperRegistryEmancipation: ["static", "role-derived"],
   lockedMigrationRenewal: ["renew-role", "max-expiry"],
   userRegistryUpgradeGate: [true, false],
+  userRegistryRootRenewal: [true, false],
   hcaSameChainSourceRejected: [true, false],
   hcaSessionDomain: ["smart-session", "hca"],
   hcaContractOwners: [true, false],

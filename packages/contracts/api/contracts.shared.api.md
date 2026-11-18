@@ -124,6 +124,7 @@ const ensErrorsAbi: Abi
   error NameNotRenewable(string)
   error NameRequiresMigration()
   error NameRequiresPreimage()
+  error NestedUpgradeNotAllowed()
   error NoMatchingProof(bytes)
   error NoNFTAllowed()
   error NoOwnerRecordFound()

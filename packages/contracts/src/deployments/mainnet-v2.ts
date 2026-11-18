@@ -1,9 +1,11 @@
 import type { V2 } from "./types.js";
 
 /**
- * ENSv2 on Ethereum mainnet at contracts-v2 v1.0.1.
+ * ENSv2 on Ethereum mainnet at contracts-v2 v1.0.1, with the UserRegistry implementation
+ * redeployed from the `post-audit-2` branch.
  *
  * @see https://github.com/ensdomains/contracts-v2/blob/v1.0.1/contracts/deployments/mainnet/addresses.md
+ * @see https://github.com/ensdomains/contracts-v2/blob/e9c9fa266cdd41b878994164cfd50bb605786c55/contracts/deployments/mainnet/addresses.md
  * @since 1.0.0
  */
 export const mainnetV2 = {
@@ -30,7 +32,10 @@ export const mainnetV2 = {
     universalResolver: "0x06Fdd07F007ADaC667177b46aB2EB9A75132Cfd5",
     universalResolverV1: "0x804bf0D289C8353a0BaFdAAF9069Ab14C92B2099",
     permissionedResolver: "0x565b0F456a04Ac9b48758190e90030623Cff57C5",
-    userRegistry: "0x86013382F943C6214E1433d1e64936F4000925CB",
+    // Redeployed from contracts-v2 post-audit-2 (e9c9fa26) on 2026-11-17 (block 26,437,652):
+    // root-only `renew` (#505) and no nested upgrades (#506). Registries created before run
+    // 0x86013382F943C6214E1433d1e64936F4000925CB; its `canUpgradeFrom` lists none, so they stay.
+    userRegistry: "0x3269b830b61b3186Dc6d2f57Cab118E2FBC3E2df",
     wrapperRegistry: "0xe86A4ef4d7A210aAA1d6A9594fC7Add7cD2Cf888",
     contractNamer: "0x87d7CDffAfBe9826D978FBdBE3Ad45E7A4BF3D1C",
   },
@@ -82,6 +87,7 @@ export const mainnetV2 = {
     wrapperRegistryEmancipation: "role-derived",
     lockedMigrationRenewal: "max-expiry",
     userRegistryUpgradeGate: true,
+    userRegistryRootRenewal: true,
     hcaSameChainSourceRejected: true,
     hcaSessionDomain: "smart-session",
     hcaContractOwners: false,
@@ -106,7 +112,8 @@ export const mainnetV2 = {
         UniversalHelper: "solc-0_8_25-8550fee9a7d7605147b869f3868c3d2bc5861ae7",
         UniversalResolverV1: "solc-0_8_25-8550fee9a7d7605147b869f3868c3d2bc5861ae7",
         UniversalResolverV2: "solc-0_8_25-8550fee9a7d7605147b869f3868c3d2bc5861ae7",
-        UserRegistryImpl: "solc-0_8_25-f617a676c95a9ce4b7e0ea01d7d2b3ad9a3b9e05",
+        // contracts-v2 post-audit-2, `mainnet-adhoc` record.
+        UserRegistryImpl: "solc-0_8_25-ed99abfe0486af116d474f10f46e0b4bb88b3afc",
         WrapperRegistryImpl: "solc-0_8_25-2da803f8458b3fb4227772e3f35a54a402baf88d",
       },
     },

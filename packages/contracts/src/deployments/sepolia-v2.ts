@@ -75,6 +75,7 @@ export const sepoliaV2 = {
     wrapperRegistryEmancipation: "static",
     lockedMigrationRenewal: "renew-role",
     userRegistryUpgradeGate: true,
+    userRegistryRootRenewal: false,
     hcaSameChainSourceRejected: false,
     hcaSessionDomain: "smart-session",
     hcaContractOwners: false,

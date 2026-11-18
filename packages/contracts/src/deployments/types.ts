@@ -275,6 +275,12 @@ export interface Capabilities {
   readonly lockedMigrationRenewal: "renew-role" | "max-expiry";
   /** User registries only upgrade to implementations approved by `UPGRADE_SET()`. */
   readonly userRegistryUpgradeGate: boolean;
+  /**
+   * Registries running `implementations.userRegistry` check the `renew` role at their root only
+   * (contracts-v2 #505, mainnet since 2026-11-17). Every other registry, including those created
+   * on an earlier UserRegistry implementation, also accepts it on the name.
+   */
+  readonly userRegistryRootRenewal: boolean;
   /** The HCA validator rejects permits whose source chain is the current chain. */
   readonly hcaSameChainSourceRejected: boolean;
   /**

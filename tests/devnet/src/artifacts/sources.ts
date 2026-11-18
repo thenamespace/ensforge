@@ -14,9 +14,28 @@ export const repositories = {
     tag: "v1.0.1",
     commit: "5026725d2a927f84de3a3a34b5bfe6cb92ae7cbb",
   },
-} as const;
+  // Past v1.0.1 on the branch ENS deploys from: #505 (root-only `renew`) and #506 (no nested
+  // upgrades), with the UserRegistryImpl redeployed on mainnet on 2026-11-17.
+  "contracts-v2-post-audit-2": {
+    url: "https://github.com/ensdomains/contracts-v2.git",
+    branch: "post-audit-2",
+    commit: "e9c9fa266cdd41b878994164cfd50bb605786c55",
+  },
+} as const satisfies Record<
+  string,
+  { readonly url: string; readonly commit: string } & (
+    | { readonly tag: string }
+    | { readonly branch: string }
+  )
+>;
 
 export type Repository = keyof typeof repositories;
+
+/**
+ * The checkout whose mainnet and Sepolia deployment records `@ensforge/contracts` follows;
+ * `artifacts watch` compares newer records against it.
+ */
+export const deploymentRecords: Repository = "contracts-v2-post-audit-2";
 
 export type Source =
   /** Creation code and ABI from a deployment record (as deployed on mainnet). */
@@ -195,7 +214,13 @@ export const sources = {
   "v2/DNSTLDResolver": v2Deployment("mainnet-adhoc/DNSTLDResolver.json"),
   "v2/TemporaryDNSRegistrar": v2Deployment("mainnet-adhoc/TemporaryDNSRegistrar.json"),
   "v2/PermissionedResolverImpl": v2Deployment("mainnet/PermissionedResolverImpl.json"),
-  "v2/UserRegistryImpl": v2Deployment("mainnet-adhoc/UserRegistryImpl.json"),
+  // Mainnet's current UserRegistryImpl, and the v1.0.1 one registries created before still run.
+  "v2/UserRegistryImpl": {
+    kind: "deployment",
+    repository: "contracts-v2-post-audit-2",
+    file: "contracts/deployments/mainnet-adhoc/UserRegistryImpl.json",
+  },
+  "v2/UserRegistryImplV1_0_1": v2Deployment("mainnet-adhoc/UserRegistryImpl.json"),
   "v2/Graveyard": v2Deployment("mainnet/Graveyard.json"),
   "v2/PublicResolverV2": v2Deployment("mainnet/PublicResolverV2.json"),
   "v2/PublicResolverSet": v2Deployment("mainnet/PublicResolverSet.json"),

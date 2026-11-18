@@ -1,7 +1,9 @@
 /**
  * Implementation of user-owned subname registries, deployed per name through the VerifiableFactory.
  *
- * Superset of the mainnet and Sepolia deployments at contracts-v2 v1.0.1.
+ * Superset of the mainnet and Sepolia deployments at contracts-v2 v1.0.1 and of mainnet's
+ * redeployed implementation from contracts-v2 `post-audit-2` (`e9c9fa26`), which adds
+ * `NestedUpgradeNotAllowed`.
  *
  * @see https://github.com/ensdomains/contracts-v2/blob/v1.0.1/contracts/src/registry/UserRegistry.sol
  * @since 1.0.0
@@ -356,6 +358,11 @@ export const userRegistryV2Abi = [
       },
     ],
     name: "LabelExpired",
+    type: "error",
+  },
+  {
+    inputs: [],
+    name: "NestedUpgradeNotAllowed",
     type: "error",
   },
   {

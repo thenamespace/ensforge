@@ -48,7 +48,7 @@ const watch = Command.make("watch", {}, () =>
     if (changes.length > 0) {
       return yield* new ArtifactError({
         artifact: "sources",
-        message: `ENS changed upstream; refresh the pins in artifacts/sources.ts, the deployments in @ensforge/contracts, and rerun every lane:\n${changes.join("\n")}`,
+        message: `ENS changed upstream; refresh the pins and deploymentRecords in artifacts/sources.ts, the deployments in @ensforge/contracts, and rerun every lane:\n${changes.join("\n")}`,
       });
     }
     yield* Console.log("artifacts: sources are the latest releases and deployments");

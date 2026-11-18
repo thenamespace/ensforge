@@ -15,7 +15,7 @@ import { step, type Step } from "./engine.ts";
 
 /**
  * ENSv2 at contracts-v2 v1.0.1, following its deploy scripts with the `local` tag, on the live
- * mainnet build of each contract. Roles are granted at deploy time (upstream's greenfield devnet);
+ * mainnet build of each contract (the UserRegistryImpl from `post-audit-2`). Roles are granted at deploy time (upstream's greenfield devnet);
  * mainnet's later hand-over is `cutoverSteps`. Needs the ENSv1 steps.
  */
 export const v2Steps: readonly Step[] = [
@@ -181,14 +181,26 @@ export const v2Steps: readonly Step[] = [
       yield* c.deploy("v2.permissionedResolverImplementation", "v2/PermissionedResolverImpl", [
         c.accounts.owner,
       ]);
-      // The live mainnet build names its registries through the ContractNamer.
-      yield* c.deploy("v2.userRegistryImplementation", "v2/UserRegistryImpl", [
+      // The live mainnet builds name their registries through the ContractNamer. As on mainnet,
+      // the current implementation accepts no upgrades from the v1.0.1 one (`upgradeable` is
+      // empty) and neither is in the upgrade set; registries made before keep the older one.
+      const userRegistryArguments = [
         yield* c.address("v2.labelStore"),
         namer,
         yield* c.address("v2.registryUpgradeSet"),
         [],
         yield* c.address("v2.boxedEnsUriRenderer"),
-      ]);
+      ];
+      yield* c.deploy(
+        "v2.userRegistryImplementationV1_0_1",
+        "v2/UserRegistryImplV1_0_1",
+        userRegistryArguments,
+      );
+      yield* c.deploy(
+        "v2.userRegistryImplementation",
+        "v2/UserRegistryImpl",
+        userRegistryArguments,
+      );
       yield* c.deploy("v2.graveyard", "v2/Graveyard", [nameWrapper, namer]);
       yield* c.deploy("v2.publicResolver", "v2/PublicResolverV2", [
         nameWrapper,

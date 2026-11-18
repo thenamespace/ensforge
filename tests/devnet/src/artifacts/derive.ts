@@ -49,17 +49,27 @@ const git = (args: readonly string[], cwd?: string) =>
 /** A shallow clone of `repository` at its pinned commit, made once under `.cache/repos`. */
 const checkout = Effect.fn("checkout")(function* (repository: Repository) {
   const fs = yield* FileSystem.FileSystem;
-  const { url, tag, commit } = repositories[repository];
-  const dir = `${cacheDir}/repos/${repository}@${commit}`;
+  const pinned = repositories[repository];
+  const dir = `${cacheDir}/repos/${repository}@${pinned.commit}`;
 
   if (!(yield* fs.exists(dir).pipe(Effect.orDie))) {
-    yield* git(["clone", "--quiet", "--depth", "1", "--branch", tag, url, dir]);
+    if ("tag" in pinned) {
+      yield* git(["clone", "--quiet", "--depth", "1", "--branch", pinned.tag, pinned.url, dir]);
+    } else {
+      // A branch moves on, so its pinned commit is fetched by hash.
+      yield* git(["init", "--quiet", dir]);
+      yield* git(["fetch", "--quiet", "--depth", "1", pinned.url, pinned.commit], dir);
+      yield* git(["checkout", "--quiet", "FETCH_HEAD"], dir);
+    }
   }
   const head = yield* git(["rev-parse", "HEAD"], dir);
-  if (head !== commit) {
+  if (head !== pinned.commit) {
     return yield* new ArtifactError({
       artifact: repository,
-      message: `${tag} is ${head}, expected ${commit}; the tag moved`,
+      message:
+        "tag" in pinned
+          ? `${pinned.tag} is ${head}, expected ${pinned.commit}; the tag moved`
+          : `${dir} is at ${head}, expected ${pinned.commit}; remove it`,
     });
   }
   return dir;

@@ -1,6 +1,6 @@
 /**
  * Every custom error of the ENS contracts in this package (ENSv1 ens-contracts v1.7.0 and
- * ENSv2 contracts-v2 v1.0.1), plus the OpenZeppelin `IERC20Errors` that ERC-20 payment tokens
+ * ENSv2 contracts-v2 v1.0.1, with mainnet's UserRegistry from `post-audit-2`), plus the OpenZeppelin `IERC20Errors` that ERC-20 payment tokens
  * raise, the verifiable proxy's `InvalidUpgradeTarget`, the HCA's `NoNFTAllowed` (raised when a
  * name token is sent to a Hosted Contract Account), the errors with which resolvers that keep
  * their records elsewhere refuse on-chain writes (ERC-5559 `StorageHandledBy…`, ERC-7884
@@ -837,6 +837,11 @@ export const ensErrorsAbi = [
   {
     type: "error",
     name: "NameRequiresPreimage",
+    inputs: [],
+  },
+  {
+    type: "error",
+    name: "NestedUpgradeNotAllowed",
     inputs: [],
   },
   {

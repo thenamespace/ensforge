@@ -37,6 +37,8 @@ const sepolia: Variant = {
     "v2/PublicResolverV2": "sepolia/PublicResolverV2",
     "v2/UniversalResolverV2": "sepolia/UniversalResolverV2",
     "v2/WrapperRegistryImpl": "sepolia/WrapperRegistryImpl",
+    // Sepolia was not redeployed after contracts-v2 #505: token-level `renew` still works there.
+    "v2/UserRegistryImpl": "v2/UserRegistryImplV1_0_1",
     "v2/LockedMigrationControllerImplementation": "sepolia/LockedMigrationController",
     "v2/MigrationHelper": "sepolia/MigrationHelper",
     "v2/DNSTLDResolver": "sepolia/DNSTLDResolver",
