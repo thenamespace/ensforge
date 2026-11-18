@@ -1,6 +1,22 @@
 {
   "title": "React",
-  "description": "Effect Atom hooks and atoms for ENS in React",
+  "description": "React hooks for ENS",
   "root": true,
-  "pages": ["---[intro]Getting started---", "index", "[history][Changelog](/docs/react/changelog)"]
+  "pages": [
+    "---[intro]Get started---",
+    "installation",
+    "index",
+    "set-up-the-provider",
+    "[history][Changelog](/docs/react/changelog)",
+    "---[data]Read data---",
+    "...(read)",
+    "---[send]Write data---",
+    "...(write)",
+    "---[react]Frameworks---",
+    "...(frameworks)",
+    "---[code]Advanced---",
+    "...(advanced)",
+    "---[reference]Reference---",
+    "...reference"
+  ]
 }

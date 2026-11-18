@@ -1,6 +1,18 @@
 {
   "title": "HCA",
-  "description": "Hosted Contract Account route and executors",
+  "description": "Hosted contract accounts for ENS (experimental)",
   "root": true,
-  "pages": ["---[intro]Getting started---", "index", "[history][Changelog](/docs/hca/changelog)"]
+  "pages": [
+    "---[intro]Get started---",
+    "installation",
+    "index",
+    "how-it-works",
+    "[history][Changelog](/docs/hca/changelog)",
+    "---[plug]Executors---",
+    "...(executors)",
+    "---[guide]Guides---",
+    "...(guides)",
+    "---[reference]Reference---",
+    "...reference"
+  ]
 }

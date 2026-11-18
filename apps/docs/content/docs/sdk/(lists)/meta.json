@@ -1,0 +1,10 @@
+{
+  "pages": [
+    "connect-an-indexer",
+    "list-names-for-an-address",
+    "search-names",
+    "load-more-results",
+    "name-history",
+    "watch-for-changes"
+  ]
+}

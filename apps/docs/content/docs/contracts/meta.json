@@ -1,10 +1,15 @@
 {
   "title": "Contracts",
-  "description": "ENS ABIs, interfaces, roles and deployments",
+  "description": "ENS ABIs, addresses and constants",
   "root": true,
   "pages": [
-    "---[intro]Getting started---",
+    "---[intro]Get started---",
+    "installation",
     "index",
-    "[history][Changelog](/docs/contracts/changelog)"
+    "[history][Changelog](/docs/contracts/changelog)",
+    "---[guide]Guides---",
+    "...(guides)",
+    "---[reference]Reference---",
+    "...reference"
   ]
 }
