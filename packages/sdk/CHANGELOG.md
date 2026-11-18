@@ -1,5 +1,19 @@
 # @ensforge/core
 
+## 1.0.1
+
+### Patch Changes
+
+- e338a7f: Actions now declare the error codes they can raise (wallet, nonce, RPC, indexer, gateway, plan, commitment, migration and name-state codes), so their typed errors and the API reference list every code an action can fail with.
+- a393fc9: `docsUrl` on every ensforge error now points to the error's page in the API reference, `https://ensforge.com/docs/reference/errors/<CODE>` (it was `https://ensforge.com/errors/<CODE>`).
+- 9c3051f: - `Errors.describe` gives end-user copy for the error codes of packages that extend ensforge (such as `@ensforge/hca`), and falls back to generic copy instead of throwing for a code it does not know.
+  - New `Plan.deserializeRecord` reads back a saved plan record for custom plan stores; `Plan.localStorage()` now rejects broken records with `PLAN_INVALID`.
+  - `Actions.batch` runs reads of extension packages, such as `@ensforge/hca`.
+  - Removed the error codes nothing raised: `PRICE_ABOVE_MAXIMUM`, `DNS_OWNER_MISMATCH` and `TRANSACTION_REPLACED`. `INSUFFICIENT_ETH` and `CONTRACT_NOT_DEPLOYED` are documented as errors any write or action can fail with.
+  - More examples for `Fuse`, `Name`, `Role`, `CoinType`, `ContentHash` and `Duration`, corrected docs (grace-period renewals, avatar gateways, batch gateways), and a new README.
+- Updated dependencies [9c3051f]
+  - @ensforge/contracts@1.0.1
+
 ## 1.0.0
 
 ### Major Changes

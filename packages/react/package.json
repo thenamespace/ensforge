@@ -1,6 +1,6 @@
 {
   "name": "@ensforge/react",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "React hooks for ENS: look up names, read and write records, and render on the server",
   "keywords": [
     "ens",
