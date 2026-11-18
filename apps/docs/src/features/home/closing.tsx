@@ -8,9 +8,9 @@ import { useSectionView } from "@/components/marketing/hooks";
 import { Container, Eyebrow, Heading, Lede } from "@/components/marketing/section";
 import { site } from "@/lib/site";
 
-import { RegistryTree } from "./figures/registry-tree";
+import { Forge } from "./figures/forge";
 
-/** Closing call to action, beside a lookup travelling down the tree of registries. */
+/** Closing call to action, beside the anvil forging names. */
 export function Closing() {
   const root = useRef<HTMLElement>(null);
   useSectionView(root, "closing");
@@ -54,7 +54,7 @@ export function Closing() {
             </div>
           </div>
           <div className="ek-dotted flex items-center justify-center border-t border-(--ek-line) px-6 py-10 lg:border-t-0 lg:border-s">
-            <RegistryTree className="max-w-[600px]" />
+            <Forge className="max-w-[620px]" />
           </div>
         </div>
       </Container>
