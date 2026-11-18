@@ -1,11 +1,20 @@
-import { Fragment } from "react";
+import { Fragment, type ReactNode } from "react";
 
-import { CheckIcon, LoaderCircleIcon, XIcon } from "lucide-react";
+import {
+  AppWindowIcon,
+  BracesIcon,
+  CheckIcon,
+  LoaderCircleIcon,
+  NetworkIcon,
+  XIcon,
+} from "lucide-react";
 
 import { EnsforgeLogo } from "@/components/logos";
 import { cn } from "@/lib/cn";
 
 export type FlowState = "idle" | "running" | "done" | "failed";
+
+const icon = "size-5";
 
 /**
  * The path of one read, after Visual Effect's nodes: your app calls ensforge, ensforge asks
@@ -19,45 +28,59 @@ export function RequestFlow({
 }: {
   readonly state: FlowState;
   readonly api: string;
-  /** Shown under the result node once the read settles, e.g. `3 requests · 412 ms`. */
+  /** Shown under the result node once the read settles, e.g. `412 ms · 3 req`. */
   readonly summary: string | undefined;
 }) {
-  const nodes = [
-    { id: "app", label: "Your app", detail: `ens.${api.split(" ")[0]}()`, glyph: "{ }" },
-    { id: "sdk", label: "ensforge", detail: "normalize · batch", glyph: null },
-    { id: "ens", label: "ENS", detail: "registry · resolver", glyph: ".eth" },
-    { id: "result", label: "Result", detail: summary ?? "typed value", glyph: null },
-  ] as const;
+  const nodes: readonly { id: string; label: string; detail: string; tile: ReactNode }[] = [
+    {
+      id: "app",
+      label: "Your app",
+      detail: `${api.split(" ")[0]}()`,
+      tile: <AppWindowIcon className={icon} strokeWidth={1.5} />,
+    },
+    {
+      id: "sdk",
+      label: "ensforge",
+      detail: "normalize · batch",
+      tile: <EnsforgeLogo className="size-5.5" />,
+    },
+    {
+      id: "ens",
+      label: "ENS",
+      detail: "on mainnet",
+      tile: <NetworkIcon className={icon} strokeWidth={1.5} />,
+    },
+    {
+      id: "result",
+      label: "Result",
+      detail: summary ?? "typed value",
+      tile: <ResultIcon state={state} />,
+    },
+  ];
 
   return (
     <div
-      className="ens-flow grid grid-cols-[auto_1fr_auto_1fr_auto_1fr_auto] items-start gap-y-2"
+      className="ens-flow grid grid-cols-[auto_minmax(0.75rem,1fr)_auto_minmax(0.75rem,1fr)_auto_minmax(0.75rem,1fr)_auto] items-start"
       data-state={state}
     >
       {nodes.map((node, index) => (
         <Fragment key={node.id}>
-          <div className="flex w-16 flex-col items-center gap-2 text-center sm:w-24">
+          <div className="flex min-w-16 flex-col items-center text-center">
             <span
-              className="ens-flow-node grid size-11 place-items-center rounded-lg border font-mono text-[13px] sm:size-14"
+              className="ens-flow-node grid size-11 place-items-center rounded-xl border sm:size-12"
               data-node={node.id}
             >
-              {node.id === "sdk" ? (
-                <EnsforgeLogo className="size-6" />
-              ) : node.id === "result" ? (
-                <ResultGlyph state={state} />
-              ) : (
-                node.glyph
-              )}
+              {node.tile}
             </span>
-            <span className="font-mono text-[11px] tracking-[0.08em] text-fd-foreground uppercase">
+            <span className="mt-2.5 font-mono text-[11px] leading-none tracking-[0.08em] whitespace-nowrap text-fd-foreground uppercase">
               {node.label}
             </span>
-            <span className="hidden font-mono text-[10.5px] leading-snug text-fd-muted-foreground sm:block">
+            <span className="mt-1.5 hidden font-mono text-[10.5px] leading-none whitespace-nowrap text-fd-muted-foreground tabular-nums sm:block">
               {node.detail}
             </span>
           </div>
           {index < nodes.length - 1 ? (
-            <span aria-hidden="true" className="ens-flow-wire mt-5.5 sm:mt-7" data-wire={index}>
+            <span aria-hidden="true" className="ens-flow-wire mt-5.5 sm:mt-6" data-wire={index}>
               <span className="ens-flow-packet" />
             </span>
           ) : null}
@@ -67,12 +90,12 @@ export function RequestFlow({
   );
 }
 
-function ResultGlyph({ state }: { readonly state: FlowState }) {
-  const className = "size-5";
+function ResultIcon({ state }: { readonly state: FlowState }) {
+  if (state === "running") {
+    return <LoaderCircleIcon className={cn(icon, "animate-spin")} strokeWidth={1.5} />;
+  }
+  if (state === "done") return <CheckIcon className={icon} strokeWidth={1.75} />;
+  if (state === "failed") return <XIcon className={icon} strokeWidth={1.75} />;
 
-  if (state === "running") return <LoaderCircleIcon className={cn(className, "animate-spin")} />;
-  if (state === "done") return <CheckIcon className={className} />;
-  if (state === "failed") return <XIcon className={className} />;
-
-  return <span className="size-2 rounded-full bg-fd-muted-foreground/50" />;
+  return <BracesIcon className={icon} strokeWidth={1.5} />;
 }

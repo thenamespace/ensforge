@@ -348,7 +348,11 @@
 
 .ens-flow-node {
   border-color: var(--ek-line-strong);
-  background: color-mix(in oklab, var(--color-fd-foreground) 4%, var(--color-fd-background));
+  background: linear-gradient(
+    to bottom,
+    color-mix(in oklab, var(--color-fd-foreground) 7%, var(--color-fd-background)),
+    color-mix(in oklab, var(--color-fd-foreground) 2%, var(--color-fd-background))
+  );
   color: var(--color-fd-muted-foreground);
   transition:
     border-color 0.3s ease,

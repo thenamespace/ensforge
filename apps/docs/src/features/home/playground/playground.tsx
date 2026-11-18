@@ -71,6 +71,15 @@ const describeRun = (outcome: RunOutcome | undefined) => {
   return `${outcome.requests} RPC request${outcome.requests === 1 ? "" : "s"} · ${Math.round(outcome.ms)} ms`;
 };
 
+/** The same run, short enough to sit on one line under the flow's result tile. */
+const summarizeRun = (outcome: RunOutcome | undefined) => {
+  if (!outcome) return undefined;
+  if (!outcome.ok) return `failed · ${Math.round(outcome.ms)} ms`;
+  if (outcome.cached) return "cached";
+
+  return `${Math.round(outcome.ms)} ms · ${outcome.requests} req`;
+};
+
 /**
  * Real reads of `@ensforge/sdk` against Ethereum mainnet, in the browser. The SDK loads when
  * the playground first scrolls near the screen; until then (and on the server) it renders idle.
@@ -307,7 +316,7 @@ export function Playground({ code }: { readonly code: HighlightedSnippets }) {
               ) : null}
             </form>
 
-            <RequestFlow state={tab.flow} api={example.api} summary={describeRun(outcome)} />
+            <RequestFlow state={tab.flow} api={example.api} summary={summarizeRun(outcome)} />
 
             <div
               aria-live="polite"
@@ -399,7 +408,7 @@ export function Playground({ code }: { readonly code: HighlightedSnippets }) {
         </div>
       </div>
       <p className="pt-4 text-center font-mono text-[11px] tracking-[0.08em] text-fd-muted-foreground">
-        Reads Ethereum mainnet through eth.drpc.org · results cached for this visit
+        Reads Ethereum mainnet through rpc.namespace.ninja · results cached for this visit
       </p>
     </section>
   );

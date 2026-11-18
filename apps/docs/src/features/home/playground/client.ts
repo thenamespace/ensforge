@@ -11,7 +11,7 @@ import type { Chain, ExampleId, ResultView, RunOutcome, SocialRecord } from "./e
  * fast cannot flood the endpoint.
  */
 
-const RPC_URL = "https://eth.drpc.org";
+const RPC_URL = `https://rpc.namespace.ninja/rpc/${mainnet.id}`;
 /** Minimum gap between two runs that reach the network. */
 const SPACING_MS = 1200;
 /** Network runs per page view; past it the playground asks for a reload. */
