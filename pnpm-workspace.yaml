@@ -62,9 +62,13 @@ allowBuilds:
 overrides:
   # prool pins tar 7.2.0, deprecated for known vulnerabilities.
   "prool>tar": "7.5.23"
-  # Dev-only advisories (commitlint/stryker's ajv, @changesets/cli); drop when they update.
+  # Dev-only advisories (commitlint and Stryker, @changesets/cli, solc's unused SMT solver
+  # helper); drop each when its dependent updates.
   "fast-uri": "3.1.9"
   "launch-editor": "2.14.2"
+  "@stryker-mutator/core>minimatch": "11.0.9"
+  "typed-rest-client>qs": "6.17.1"
+  "solc>tmp": "0.2.7"
   "tslib": "2.9.1"
   "tsx": "4.22.4"
 
