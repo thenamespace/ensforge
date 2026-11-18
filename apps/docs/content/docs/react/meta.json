@@ -3,7 +3,6 @@
   "description": "React hooks for ENS",
   "root": true,
   "pages": [
-    "---[intro]Get started---",
     "installation",
     "index",
     "set-up-the-provider",

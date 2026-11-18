@@ -3,7 +3,6 @@
   "description": "Hosted contract accounts for ENS (experimental)",
   "root": true,
   "pages": [
-    "---[intro]Get started---",
     "installation",
     "index",
     "how-it-works",

@@ -9,6 +9,7 @@ import {
   Compass01Icon,
   CpuIcon,
   Database01Icon,
+  FlowConnectionIcon,
   HierarchySquare01Icon,
   HistoryIcon,
   Key01Icon,
@@ -22,6 +23,7 @@ import {
   ReactIcon,
   Rocket01Icon,
   ServerStack01Icon,
+  SparklesIcon,
   Settings02Icon,
   Shield01Icon,
   SourceCodeIcon,
@@ -62,6 +64,8 @@ const icons = {
   stream: WaterfallDown01Icon,
   code: SourceCodeIcon,
   history: HistoryIcon,
+  sparkles: SparklesIcon,
+  flow: FlowConnectionIcon,
 } satisfies Record<string, IconSvgElement>;
 
 export type DocsIconName = keyof typeof icons;

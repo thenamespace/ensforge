@@ -3,7 +3,6 @@
   "description": "Look up, register and manage ENS names",
   "root": true,
   "pages": [
-    "---[intro]Get started---",
     "installation",
     "index",
     "why-ensforge",

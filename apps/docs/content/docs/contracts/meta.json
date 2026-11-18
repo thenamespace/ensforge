@@ -3,7 +3,6 @@
   "description": "ENS ABIs, addresses and constants",
   "root": true,
   "pages": [
-    "---[intro]Get started---",
     "installation",
     "index",
     "[history][Changelog](/docs/contracts/changelog)",
