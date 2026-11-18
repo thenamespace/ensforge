@@ -784,7 +784,11 @@
     ]
   },
   "X16": {
-    "na": "disabling the editor is ENS app UI; `resolver.get` reports `authorization: \"unknown\"` for extended resolvers (a write to one is not refused client-side: noted as a follow-up)"
+    "tests": [
+      "tests/integration/test/writes/reverts.test.ts > come from resolvers that keep their records off-chain",
+      "tests/integration/test/writes/unwritable-resolvers.test.ts > record.set says a resolver keeps its records off-chain, however it refuses the write",
+      "tests/integration/test/writes/unwritable-resolvers.test.ts > record.set refuses records an extended resolver declares no profile for"
+    ]
   },
   "X17": {
     "tests": [
@@ -940,7 +944,8 @@
   "K31": {
     "tests": [
       "tests/integration/test/reads/records.test.ts > reads a PermissionedResolver, where a zero address is a record",
-      "tests/integration/test/writes/records.test.ts > creates a resolver with records and points a name at it"
+      "tests/integration/test/writes/records.test.ts > creates a resolver with records and points a name at it",
+      "tests/integration/test/writes/unwritable-resolvers.test.ts > record.set refuses records and clearing the 2020 public resolver predates"
     ]
   },
   "K32": {
@@ -1870,7 +1875,8 @@
   "M:B2": {
     "tests": [
       "tests/integration/test/reads/resolver.test.ts > describes each generation and kind of resolver",
-      "tests/integration/test/writes/access-matrix.test.ts > record.set as frozen 2019 resolver"
+      "tests/integration/test/writes/access-matrix.test.ts > record.set as frozen 2019 resolver",
+      "tests/integration/test/writes/unwritable-resolvers.test.ts > record.set refuses records and clearing the 2020 public resolver predates"
     ]
   },
   "M:B3": {
@@ -1921,7 +1927,8 @@
   },
   "M:B10": {
     "tests": [
-      "tests/integration/test/reads/ccip.test.ts > follows an off-chain lookup through the resolver's gateway"
+      "tests/integration/test/reads/ccip.test.ts > follows an off-chain lookup through the resolver's gateway",
+      "tests/integration/test/writes/unwritable-resolvers.test.ts > record.set refuses records an extended resolver declares no profile for"
     ]
   },
   "M:B11": {
@@ -1937,7 +1944,8 @@
   "M:B13": {
     "tests": [
       "tests/integration/test/reads/resolver.test.ts > describes each generation and kind of resolver",
-      "tests/integration/test/reads/resolver.test.ts > reads misbehaving resolvers as missing records, and fails strict reads with a typed error"
+      "tests/integration/test/reads/resolver.test.ts > reads misbehaving resolvers as missing records, and fails strict reads with a typed error",
+      "tests/integration/test/reads/name.test.ts > a wildcard subname is available and has no expiry, yet resolves"
     ]
   },
   "M:B14": {
