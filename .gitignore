@@ -17,3 +17,7 @@ research/
 # devnet clones and state dumps
 tests/devnet/.cache/
 tests/services/.cache/
+
+# mutation testing sandboxes and reports
+.stryker-tmp/
+reports/

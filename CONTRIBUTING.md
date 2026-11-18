@@ -109,6 +109,17 @@ in `Effect.promise`.
 
 Property tests use a fixed seed; reproduce a failure with `ENSFORGE_TEST_SEED=<seed> pnpm test`.
 
+Mutation testing ([Stryker](https://stryker-mutator.io)) checks that the tests notice behaviour
+changes in the write path: the send and route runtime (`internal/write`, `internal/action/write.ts`),
+the plan actions and the HCA route and executors. `pnpm test:mutation` runs the SDK and HCA unit
+tests against each mutant; `pnpm test:mutation:chain` runs the devnet write tests against
+`send.ts` and `via.ts` (slow; Foundry). Both work in a sandbox copy under `.stryker-tmp/`, so they
+never change the sources, and write their reports to `reports/mutation/`. Turn a surviving mutant
+into a test, or explain in the pull request why it is equivalent. Mutate other modules with
+`pnpm test:mutation --mutate <glob>` (for example `packages/sdk/src/internal/permission/*.ts`).
+Configs: `.config/stryker.config.json` and `.config/stryker.chain.config.json`, with the Vitest
+configs they name.
+
 ### Commands
 
 | Command                                      | Runs                                                            | Needs                 |
@@ -119,6 +130,8 @@ Property tests use a fixed seed; reproduce a failure with `ENSFORGE_TEST_SEED=<s
 | `pnpm test:services`                         | bigname, alto, paymaster and journeys                           | Foundry, Docker       |
 | `pnpm test:fork`                             | real names on mainnet and Sepolia forks at pinned blocks        | Foundry, archive RPCs |
 | `pnpm test:live`                             | read-only canaries, indexers and proxies on mainnet and Sepolia | RPCs                  |
+| `pnpm test:mutation`                         | mutation testing of the write path on the unit lanes            | nothing               |
+| `pnpm test:mutation:chain`                   | mutation testing of `send.ts` and `via.ts` on the chain lane    | Foundry               |
 | `pnpm devnet:build` / `devnet:verify`        | build (cache) and check devnet profiles                         | Foundry               |
 | `pnpm artifacts:check` / `artifacts:refresh` | committed contract artifacts against their pinned sources       | network               |
 | `pnpm release:watch`                         | newer ENS releases or deployments, and indexer OpenAPI drift    | network               |

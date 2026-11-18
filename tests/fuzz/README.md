@@ -29,7 +29,9 @@ checked against a small model, plus property and differential checks (not publis
   - registration commitments, through `ETHRegistrar`;
   - resolver addresses, through `VerifiableFactory`;
   - role bitmaps, through `hasRoles`;
-  - fuses, through `allFusesBurned`.
+  - fuses, through `allFusesBurned`;
+  - HCA session approvals (salt, session digest, permission id, multi-chain digest, owner
+    signature), through `hca.sessionHashes`, a harness exposing the validator's internal hashing.
 - `test/differential`: ensforge, viem's ENS actions and ensjs over every fixture on every profile.
   Each difference is either a bug that gets fixed, or listed in `documented.ts` with its reason.
   That list only shrinks.
@@ -74,16 +76,7 @@ a permission-oracle failure, for example:
 
 Revert the change and delete the corpus file the run wrote.
 
-## Mutation spot checks
+## Mutation testing
 
-Stryker is not a workspace dependency. Run it by hand from `packages/sdk`:
-
-```sh
-pnpm --package=@stryker-mutator/core@10.1.1 --package=@stryker-mutator/vitest-runner@10.1.1 \
-  dlx stryker run ../../.config/stryker.config.json
-```
-
-It mutates the permission engine, name state and plan modules in place, runs the SDK unit lane
-against each mutant, and restores the files. Turn surviving mutants into tests. The send and route
-modules are covered on chain (`tests/integration`) and by `@ensforge/hca`, which this run does not
-see.
+Stryker runs from the repository root (`pnpm test:mutation`); see the Tests section of
+CONTRIBUTING.md.
