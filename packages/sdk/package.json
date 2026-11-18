@@ -22,7 +22,9 @@
     "directory": "packages/sdk"
   },
   "files": [
-    "dist"
+    "CHANGELOG.md",
+    "dist",
+    "src"
   ],
   "type": "module",
   "sideEffects": false,

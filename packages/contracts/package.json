@@ -20,7 +20,9 @@
     "directory": "packages/contracts"
   },
   "files": [
-    "dist"
+    "CHANGELOG.md",
+    "dist",
+    "src"
   ],
   "type": "module",
   "sideEffects": false,
