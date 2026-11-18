@@ -32,7 +32,7 @@ try {
   await ens.record.getAddress({ name: "nobody-here.eth", strict: true });
 } catch (error) {
   if (Errors.is(error)) {
-    console.log(error.code); // "RECORD_NOT_FOUND"
+    console.log(error.code); // "RESOLVER_NOT_FOUND": the name has no resolver
     console.log(error.shortMessage); // one line for developers
     console.log(error.hint); // how to fix it, when ensforge knows
     console.log(error.retryable); // whether the same call can succeed later
@@ -68,7 +68,7 @@ import { createPublicClient, http } from "viem";
 import { sepolia } from "viem/chains";
 
 const publicClient = createPublicClient({ chain: sepolia, transport: http() });
-const account = "0x225f137127d9067788314bc7fcc1f36746a3c3B5";
+const account = "0xA11Ce00000000000000000000000000000000000";
 const ens = Ensforge.create({ publicClient, account }).extend(ensActions());
 
 // ---cut---
@@ -87,7 +87,7 @@ try {
 
 Each action also lists the errors it can fail with, as `ErrorType` on its namespace
 (`record.set.ErrorType`). They are narrowed by class, so `switch (error._tag)` is exhaustive over
-the classes an action declares. Route errors, such as `HcaError` from `via: hca()`, are outside
+the classes an action declares. [Route](/docs/sdk/reference/glossary#route) errors, such as `HcaError` from `via: hca()`, are outside
 those unions.
 
 ## 3. Show users a safe message
@@ -139,9 +139,10 @@ Retry only when `error.retryable` is `true`. ensforge sets it for transient fail
 
 - every `NetworkError` code: `RPC_REQUEST_FAILED`, `RPC_TIMEOUT`, `RATE_LIMITED`,
   `LOG_RANGE_TOO_LARGE`
-- the `IndexerError` codes `INDEXER_UNAVAILABLE`, `INDEXER_RATE_LIMITED` and `INDEXER_BEHIND`
-- `GATEWAY_REQUEST_FAILED`, when an off-chain gateway did not answer
-- `COMMITMENT_TOO_NEW`, when a registration's commitment needs more time to age
+- the `IndexerError` codes `INDEXER_UNAVAILABLE`, `INDEXER_RATE_LIMITED` and `INDEXER_BEHIND`, from an
+  [indexer](/docs/sdk/reference/glossary#indexer)
+- `GATEWAY_REQUEST_FAILED`, when an off-chain [gateway](/docs/sdk/reference/glossary#gateway) did not answer
+- `COMMITMENT_TOO_NEW`, when a registration's [commitment](/docs/sdk/reference/glossary#commitment) needs more time to age
 - `NONCE_CONFLICT`, when another transaction from the account is still pending
 - the HCA code `HCA_BUNDLER_REJECTED`
 
@@ -160,8 +161,8 @@ flowchart TD
 
 <Callout type="warn" title="Never retry a write by sending it again">
   A write that failed after a step was submitted has already spent gas. Sending it again can repeat
-  that step. Resume the plan instead: it confirms the finished steps and sends the rest. See
-  [Continue after a failure](/docs/sdk/continue-after-a-failure).
+  that step. Resume the [plan](/docs/sdk/reference/glossary#plan) instead: it confirms the finished
+  steps and sends the rest. See [Continue after a failure](/docs/sdk/continue-after-a-failure).
 </Callout>
 
 **Example** (Retrying a read with backoff)
@@ -194,7 +195,7 @@ For a write that timed out waiting for a receipt ([`RECEIPT_TIMEOUT`](/docs/sdk/
 
 ## Reads return `null`, not errors, for missing data
 
-Reads return `null` when a record or resolver is missing. Pass `strict: true` to get a
+Reads return `null` when a [record](/docs/sdk/reference/glossary#record) or [resolver](/docs/sdk/reference/glossary#resolver) is missing. Pass `strict: true` to get a
 `NotFoundError` instead, such as [`RECORD_NOT_FOUND`](/docs/sdk/errors/RECORD_NOT_FOUND) or
 [`RESOLVER_NOT_FOUND`](/docs/sdk/errors/RESOLVER_NOT_FOUND).
 

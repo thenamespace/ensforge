@@ -11,18 +11,18 @@ marked `before` is the 0.x API as published in `@ensforge/sdk@0.6.1` and `@ensfo
 
 ## What changed
 
-| 0.x                                                                                  | 1.0                                                                                                                                                 |
-| ------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `@ensforge/core` (actions) and `@ensforge/sdk` (the `Ensforge` class)                | One package, `@ensforge/sdk`. `@ensforge/core` is gone.                                                                                             |
-| `new Ensforge({ network, publicClient })` or `createConfig`                          | `Ensforge.create({ publicClient })`. The chain of the public client picks the deployment.                                                           |
-| Groups on the instance: `sdk.records`, `sdk.name`, `sdk.resolution`, `sdk.reverse` … | Decorators you add: `.extend(ensActions())`. Groups are `record`, `name`, `resolver`, `primaryName`, `registration`, `subname`, `wrapper` and more. |
-| One setter per record kind (`setText`, `setAddress`, `setContentHash` …)             | One action, `record.set`, with `texts`, `addresses`, `contentHash` and more.                                                                        |
-| Write results with `status`, `hash` and `receipt`                                    | `Write.Result` (`hash`, `hashes`, `id`, `plan`), and a `…Sync` form for receipts.                                                                   |
-| `writes: { simulation, confirmation }` in the config                                 | `simulate` and `…Sync` per call or per client.                                                                                                      |
-| Workflows (`sdk.workflows`)                                                          | Plans (`plan.get`, `plan.list`, `plan.resume`).                                                                                                     |
-| `ContractError`, `RpcError`, `NameError` …                                           | `Errors.*` classes with stable codes.                                                                                                               |
-| `@ensforge/core/wagmi` `createWagmiConfig`                                           | `Ensforge.fromWagmi` from `@ensforge/sdk/wagmi`.                                                                                                    |
-| HCA actions on `sdk.hca`                                                             | The `@ensforge/hca` package, as `ens.hca.*` and `via: hca()`.                                                                                       |
+| 0.x                                                                                             | 1.0                                                                                                                                                 |
+| ----------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `@ensforge/core` (actions) and `@ensforge/sdk` (the `Ensforge` class)                           | One package, `@ensforge/sdk`. `@ensforge/core` is gone.                                                                                             |
+| `new Ensforge({ network, publicClient })` or `createConfig`                                     | `Ensforge.create({ publicClient })`. The chain of the public client picks the deployment.                                                           |
+| Groups on the instance: `sdk.records`, `sdk.name`, `sdk.resolution`, `sdk.reverse` …            | Decorators you add: `.extend(ensActions())`. Groups are `record`, `name`, `resolver`, `primaryName`, `registration`, `subname`, `wrapper` and more. |
+| One setter per record kind (`setText`, `setAddress`, `setContentHash` …)                        | One action, `record.set`, with `texts`, `addresses`, `contentHash` and more.                                                                        |
+| Writes that waited for the receipt by default, with `status`, `hash` and `receipt`              | Writes resolve once submitted with `Write.Result` (`hash`, `hashes`, `id`, `plan`). The `…Sync` form waits for receipts.                            |
+| `writes: { simulation, confirmation }` in the config                                            | `simulate` and `…Sync` per call or per client.                                                                                                      |
+| Workflows (`sdk.workflows`)                                                                     | [Plans](/docs/sdk/reference/glossary#plan) (`plan.get`, `plan.list`, `plan.resume`).                                                                |
+| `ContractError`, `RpcError`, `NameError` …                                                      | `Errors.*` classes with stable codes.                                                                                                               |
+| `createEnsforge` from `@ensforge/sdk/wagmi`, or `createWagmiConfig` from `@ensforge/core/wagmi` | `Ensforge.fromWagmi` from `@ensforge/sdk/wagmi`.                                                                                                    |
+| [HCA](/docs/sdk/reference/glossary#hca) actions on `sdk.hca`                                    | The `@ensforge/hca` package, as `ens.hca.*` and `via: hca()`.                                                                                       |
 
 ## 1. Update the packages
 
@@ -52,13 +52,17 @@ const ens = Ensforge.create({ publicClient }).extend(ensActions()); // [!code ++
 
 Other options moved too:
 
-| 0.x                                       | 1.0                                                                                                          |
-| ----------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| `walletClient`                            | `walletClient` (also a function for wallets that connect later)                                              |
-| `reads`, `gateways`, `indexer`            | `blockTag`, `ccipRead`, `gateways`, `indexer`. See [Configure RPC and gateways](/docs/sdk/rpc-and-gateways). |
-| `writes.simulation: "required" \| "skip"` | `simulate: true \| false`                                                                                    |
-| `storage` (workflow storage)              | `storage` (plan storage). See [Save and resume plans](/docs/sdk/save-and-resume-plans).                      |
-| `indexer: false` or config                | `indexer: bigname()`, `goldsky()`, `fallback([...])` from `@ensforge/sdk/indexer`.                           |
+| 0.x                                                        | 1.0                                                                                                                                     |
+| ---------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| `network`                                                  | Gone. The public client's chain picks the deployment, or pass `deployment`.                                                             |
+| `walletClient`                                             | `walletClient` (also a function for wallets that connect later)                                                                         |
+| `reads: { concurrency, multicallBatchSize }`               | `batch: { multicall: { batchSize, wait } }`. See [Configure RPC and gateways](/docs/sdk/rpc-and-gateways).                              |
+| `gateways` (allowed hosts and limits for gateway requests) | No counterpart. 1.0 `gateways` sets storage gateways for avatars and content hashes, and `ccipRead` sets the off-chain lookup gateways. |
+| `writes.simulation: "required" \| "skip"`                  | `simulate: true \| false`                                                                                                               |
+| `writes.confirmation`                                      | The `…Sync` form of a write, with `confirmations` and `timeout`.                                                                        |
+| `storage` (workflow storage)                               | `storage` (plan storage). See [Save and resume plans](/docs/sdk/save-and-resume-plans).                                                 |
+| `indexer` (GraphQL endpoints) or `false`                   | `indexer: bigname()`, `goldsky()`, `fallback([...])` from `@ensforge/sdk/indexer`. Without it, no indexer.                              |
+| `hca`                                                      | The `@ensforge/hca` package.                                                                                                            |
 
 ## 3. Reads
 
@@ -77,7 +81,7 @@ const primary = await ens.primaryName.get({ address }); // [!code ++]
 
 - `getAddress` took `coinType`. 1.0 takes `coin`: a symbol (`"btc"`), a chain (`{ chainId: 8453 }`)
   or a coin type. See [Get a name's address](/docs/sdk/get-an-address).
-- `getPrimaryName` returned `{ name, match }`. 1.0 returns the name, or `null`, and checks that the
+- `getPrimaryName` returned `{ name, match }` or `null`. 1.0 returns the name, or `null`, and checks that the
   name resolves back to the address by default (`verify`).
 - `name.get` returns the whole state in one call: `owner`, `manager`, `registrant`, `expiry`,
   `resolver`, `wrapped`, `available`, `renewable` and more. The single-fact reads of 0.x
@@ -87,7 +91,8 @@ const primary = await ens.primaryName.get({ address }); // [!code ++]
 ### Batched reads
 
 `readBatch` returned a record of values. `batch` returns `{ results }`, where each result is
-`{ status: "success", result }` or `{ status: "failure", error }` by default.
+`{ status: "success", result }` or `{ status: "failure", error }` by default. `readBatchSettled`
+returned `{ status, value }` outcomes; 1.0 names the field `result`.
 
 ```ts title="batch.ts"
 const profile = await sdk.batch.readBatch({
@@ -101,13 +106,15 @@ const { results } = await ens.batch({
 }); // [!code ++]
 ```
 
-`Actions` comes from `@ensforge/sdk`. `readBatchSettled` is now the default (`allowFailure: true`).
+`Actions` comes from `@ensforge/sdk`. Settled results are now the default (`allowFailure: true`), and
+`allowFailure: false` behaves like `readBatch`.
 See [Look up many at once](/docs/sdk/look-up-many-at-once).
 
 ## 4. Writes
 
-One `record.set` replaces the setters. Writes resolve once submitted. Use `…Sync` to wait for the
-receipt, which replaces the `confirmation` policy.
+One `record.set` replaces the setters. 0.x writes waited for the receipt by default
+(`confirmation: { type: "confirmed" }`). 1.0 writes resolve once submitted. Use `…Sync` to wait for
+the receipt, as the examples below do.
 
 ```ts title="writes.ts"
 await sdk.records.setText({ name: "alice.eth", key: "url", value: "https://alice.dev" }); // [!code --]
@@ -128,7 +135,8 @@ See [Set records](/docs/sdk/set-records) and [Send a transaction](/docs/sdk/send
 | `name.getOwner`, `getManager`, `getRegistrant`, `getExpiry`, `getNameState`, `isWrapped`, `isMigrated` … | [`name.get`](/docs/sdk/reference/actions/name/get)                                                                                         |
 | `name.isAvailable`                                                                                       | `registration.isAvailable`                                                                                                                 |
 | `resolution.getResolver`, `resolve*`                                                                     | `resolver.get`, `resolver.resolve`                                                                                                         |
-| `resolution.setResolver`, `createResolver`, `upgradeResolver`                                            | `record.set({ resolver })`, `resolver.set`, `resolver.create`, `resolver.upgrade`                                                          |
+| `records.setAlias`, `resolution.getAlias`                                                                | `resolver.link`, `resolver.getLink`. See [Resolvers and shared records](/docs/sdk/resolvers-and-shared-records).                           |
+| `resolution.setResolver`, `setResolverAndRecords`, `createResolver`, `upgradeResolver`                   | `resolver.set`, `record.set({ resolver })`, `resolver.create`, `resolver.upgrade`                                                          |
 | `reverse.setPrimaryName`, `clearPrimaryName`, `setPrimaryNameForAddress`, `setContractPrimaryName`       | [`primaryName.set`](/docs/sdk/reference/actions/primary-name/set) (`name: null` clears)                                                    |
 | `registration.registerName(s)`, `commitName`, `completeRegistration`                                     | `registration.register` (several names in one call), `registration.commit`; finish with the result's `secret`                              |
 | `registration.getRegistrationPrice`, `getRenewalPrice`, `getCommitmentStatus`                            | `registration.getPrice`, `getRenewalPrice`, `getCommitmentStatus`                                                                          |
@@ -139,14 +147,16 @@ See [Set records](/docs/sdk/set-records) and [Send a transaction](/docs/sdk/send
 | `migration.*`                                                                                            | `migration.get`, `migration.migrate`                                                                                                       |
 | `dns.*`                                                                                                  | `dns.getStatus`, `dns.claim`, `dns.getProof`, `dns.getRecords`, `dns.setRecords`                                                           |
 | `events.*`                                                                                               | `event.get`, `event.watch`, `event.decode`                                                                                                 |
-| `permissions.*`, `capabilities.*`                                                                        | `permission.check`, `permission.get`, `role.get`, `role.grant`, `role.revoke`, `approval.*`                                                |
+| `permissions.*`, `capabilities.*`                                                                        | `permission.check`, `permission.get`, `permission.setRecordAccess`, `role.get`, `role.grant`, `role.revoke`, `approval.*`                  |
 | `indexer.*`                                                                                              | `indexer.*` (19 actions; add `indexerActions()`)                                                                                           |
 | `batch.prepareCalls`, `simulateCalls`, `estimateCalls`, `sendCalls`, `executeWritePlan`                  | `.prepare`, `.simulate`, `.estimateGas` on any write, and `plan.send`. See [Preview before sending](/docs/sdk/preview-before-sending).     |
 | `batch.getCallsStatus`, `resumeCalls`, `workflows.*`                                                     | `plan.get`, `plan.list`, `plan.resume`, `plan.reconcile`. See [Continue after a failure](/docs/sdk/continue-after-a-failure).              |
 | `hca.*`, `hcaAdmin`                                                                                      | `@ensforge/hca`. See [Use smart accounts](/docs/sdk/use-smart-accounts).                                                                   |
 
-Some 0.x record actions, such as `setAlias` and `getAlias`, have no counterpart in 1.0. Browse the
-[reference](/docs/sdk/reference/actions/record) for what exists.
+Some 0.x helpers, such as `resolution.predictResolverAddress` and `name.getProtocol`, have no
+action of their own in 1.0: `resolver.create.prepare` returns the address in `plan.deploys`, and
+`name.get` returns `protocol`. Browse the [reference](/docs/sdk/reference/actions/record) for what
+exists.
 
 ## 5. Errors
 
@@ -172,6 +182,7 @@ Each action now documents its errors, and `Errors.describe` gives user-safe copy
 ```ts title="wagmi.ts"
 import { createEnsforge } from "@ensforge/sdk/wagmi"; // [!code --]
 import { Ensforge } from "@ensforge/sdk/wagmi"; // [!code ++]
+import { ensActions } from "@ensforge/sdk"; // [!code ++]
 
 const sdk = createEnsforge({ network: "mainnet", wagmiConfig }); // [!code --]
 const ens = Ensforge.fromWagmi(wagmiConfig).extend(ensActions()); // [!code ++]

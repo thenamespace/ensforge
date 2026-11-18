@@ -13,7 +13,7 @@ keywords:
   ]
 ---
 
-This page is about ENSv1 only, because fuses belong to the Name Wrapper. A **fuse** is a permission on a wrapped name that can be burned, for good, until the name expires. You will read a name's fuses, burn some, and emancipate a subname as its parent. See [What wrapped names are](/docs/sdk/wrapped-names).
+This page is about [ENSv1](/docs/sdk/reference/glossary#ensv1) only, because fuses belong to the [Name Wrapper](/docs/sdk/reference/glossary#name-wrapper). A **fuse** is a permission on a wrapped name that can be burned, for good, until the name [expires](/docs/sdk/reference/glossary#expiry). You will read a name's fuses, burn some, and [emancipate](/docs/sdk/reference/glossary#emancipated) a [subname](/docs/sdk/reference/glossary#subname) as its parent. See [What wrapped names are](/docs/sdk/wrapped-names).
 
 <Callout type="warn" title="Burned fuses cannot be undone">
   Fuses cannot be unburned before the name expires. Simulate first. See [Preview before
@@ -27,18 +27,20 @@ This page is about ENSv1 only, because fuses belong to the Name Wrapper. A **fus
 
 ## The fuses
 
-| Fuse                    | Burned by                                                                            |
-| ----------------------- | ------------------------------------------------------------------------------------ |
-| `cannotUnwrap`          | The owner. The name stays wrapped until it expires. Every other owner fuse needs it. |
-| `cannotBurnFuses`       | The owner.                                                                           |
-| `cannotTransfer`        | The owner.                                                                           |
-| `cannotSetResolver`     | The owner.                                                                           |
-| `cannotSetTtl`          | The owner.                                                                           |
-| `cannotCreateSubdomain` | The owner.                                                                           |
-| `cannotApprove`         | The owner.                                                                           |
-| `parentCannotControl`   | The parent. Emancipates the name.                                                    |
-| `canExtendExpiry`       | The parent. Lets the name's owner extend its expiry.                                 |
-| `isDotEth`              | Set by the NameWrapper on wrapped `.eth` names.                                      |
+| Fuse                    | Who burns it                                                                                        |
+| ----------------------- | --------------------------------------------------------------------------------------------------- |
+| `cannotUnwrap`          | The owner, or the parent. The name stays wrapped until it expires. Every other owner fuse needs it. |
+| `cannotBurnFuses`       | The owner, or the parent.                                                                           |
+| `cannotTransfer`        | The owner, or the parent.                                                                           |
+| `cannotSetResolver`     | The owner, or the parent.                                                                           |
+| `cannotSetTtl`          | The owner, or the parent.                                                                           |
+| `cannotCreateSubdomain` | The owner, or the parent.                                                                           |
+| `cannotApprove`         | The owner, or the parent.                                                                           |
+| `parentCannotControl`   | Only the parent. Emancipates the name.                                                              |
+| `canExtendExpiry`       | Only the parent. Lets the name's owner extend its expiry.                                           |
+| `isDotEth`              | Nobody. The NameWrapper sets it on wrapped `.eth` names.                                            |
+
+The first seven are owner-controlled fuses. The owner burns them with `wrapper.setFuses`. The parent can burn them too, with `wrapper.setChildFuses`, until it burns `parentCannotControl` on the subname. After that, only the owner can. A `.eth` name has no parent owner, so only its owner burns its fuses.
 
 `Fuse.from(names)` builds the mask, `Fuse.has(mask, name)` tests one fuse and `Fuse.decode(mask)` returns every fuse by name.
 

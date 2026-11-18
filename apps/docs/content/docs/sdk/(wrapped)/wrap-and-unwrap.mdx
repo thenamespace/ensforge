@@ -4,7 +4,7 @@ description: Wrap an ENSv1 name in the Name Wrapper, optionally burning fuses, a
 keywords: [wrapper.wrap, wrapper.unwrap, NameWrapper, NAME_WRAPPED, NAME_NOT_WRAPPED, cannotUnwrap]
 ---
 
-This page is about ENSv1 only, because the Name Wrapper does not exist on ENSv2. You will wrap an ENSv1 name, which turns it into an ERC-1155 token, and unwrap it back. See [What wrapped names are](/docs/sdk/wrapped-names).
+This page is about [ENSv1](/docs/sdk/reference/glossary#ensv1) only, because the [Name Wrapper](/docs/sdk/reference/glossary#name-wrapper) does not exist on [ENSv2](/docs/sdk/reference/glossary#ensv2). You will wrap an ENSv1 name, which turns it into an ERC-1155 token, and unwrap it back. See [What wrapped names are](/docs/sdk/wrapped-names).
 
 ## Prerequisites
 
@@ -42,11 +42,11 @@ const { hash } = await ens.wrapper.wrapSync({ name: "ensforge-docs-v1-demo.eth" 
 | `fuses`    | `Fuse.Name[]` | none                                | Fuses to burn while wrapping. `.eth` second-level names only. |
 | `resolver` | `string`      | the current resolver                | Resolver to set.                                              |
 
-- A `.eth` second-level name is wrapped in one transaction from the registrant, which may burn owner fuses (`cannotUnwrap` first).
+- A [`.eth` name](/docs/sdk/reference/glossary#eth-name) is wrapped in one transaction from the [registrant](/docs/sdk/reference/glossary#registrant), which may burn owner [fuses](/docs/sdk/reference/glossary#fuse) (`cannotUnwrap` first).
 - Any other name needs its registry owner to approve the NameWrapper first. ensforge adds the approval when it is needed.
 - The wrapped name stays with its current holder unless you pass `owner`. This also holds when an approved operator wraps it.
 
-If the name's manager is not the signer, the manager must approve the NameWrapper first. An operator of the manager cannot approve it for them, and the write fails with `NOT_APPROVED`.
+If the name's [manager](/docs/sdk/reference/glossary#manager) is not the signer, the manager must approve the NameWrapper first. An operator of the manager cannot approve it for them, and the write fails with `NOT_APPROVED`.
 
 ## 2. Unwrap the name
 

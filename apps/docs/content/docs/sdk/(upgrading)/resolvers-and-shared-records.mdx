@@ -13,7 +13,7 @@ keywords:
   ]
 ---
 
-This page is about ENSv2 resolvers. On ENSv1 most names use the shared public resolver, which has no roles. ENSv2 uses the **PermissionedResolver**: a resolver whose writes are controlled by roles, and in which each name has a **record ID** that says which set of records it reads and writes. Two names with the same record ID on the same resolver share their records.
+This page is about [ENSv2](/docs/sdk/reference/glossary#ensv2) [resolvers](/docs/sdk/reference/glossary#resolver). On [ENSv1](/docs/sdk/reference/glossary#ensv1) most names use the shared public resolver, which has no roles. ENSv2 uses the **PermissionedResolver**: a resolver whose writes are controlled by [roles](/docs/sdk/reference/glossary#role), and in which each name has a **record ID** that says which set of records it reads and writes. Two names with the same record ID on the same resolver share their records.
 
 You will create a resolver, link names to one record set and upgrade the resolver.
 
@@ -132,6 +132,8 @@ const shared = a !== null && b !== null && a.resolver === b.resolver && a.record
 
 [`resolver.upgrade`](/docs/sdk/reference/actions/resolver/upgrade) moves a name's PermissionedResolver to the deployment's latest implementation, or to `implementation` if you pass one. It checks that the target accepts the current implementation (`canUpgradeFrom`) before sending, and it needs the `upgrade` role on the resolver.
 
+**Example** (Upgrading a Resolver)
+
 ```ts twoslash title="resolver-upgrade.ts"
 // @types: node
 import { createPublicClient, createWalletClient, http, type Hex } from "viem";
@@ -153,9 +155,9 @@ await ens.resolver.upgradeSync({ name: "ensforge-docs-demo.eth" });
 
 ## Limits to know
 
-- The PermissionedResolver has no `pubkey` or DNS records, so migration does not copy them.
+- The PermissionedResolver has no `pubkey` or DNS records, so [migration](/docs/sdk/reference/glossary#migration) does not copy them.
 - `record.set({ clear: true })` links the name to record 0, which reads the resolver's default record. See [Set records](/docs/sdk/set-records).
-- `resolver: "default"` is for ENSv1 names only, because the ENSv1 public resolver serves only names the NameWrapper knows.
+- `resolver: "default"` is for ENSv1 names only. ENSv2's public resolver (PublicResolverV2) only serves names the NameWrapper knows, so ENSv2 names fail with `UNSUPPORTED_PROTOCOL`.
 
 ## Troubleshooting
 

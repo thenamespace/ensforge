@@ -28,7 +28,7 @@ const address = await getEnsAddress(publicClient, { name: normalize("nick.eth") 
 const address = await Actions.record.getAddress(publicClient, { name: "nick.eth" }); // [!code ++]
 ```
 
-ensforge normalises the name for you, so you can drop `normalize`.
+ensforge [normalises](/docs/sdk/reference/glossary#normalisation) the name for you, so you can drop `normalize`.
 
 **Example** (The same read, after)
 
@@ -53,7 +53,7 @@ const address = await Actions.record.getAddress(publicClient, { name: "nick.eth"
 | `getEnsResolver({ name })`          | [`resolver.get({ name })`](/docs/sdk/reference/actions/resolver/get)                  | Returns the resolver's `address`, its `kind`, who may write to it and its profiles.              |
 | `normalize(name)` from `viem/ens`   | `Name.normalize(name)`                                                                | ensforge actions normalise their inputs already.                                                 |
 
-Every ensforge read takes `blockNumber` or `blockTag`, `gatewayUrls`, `strict` and `signal`.
+These ensforge reads also take `blockNumber` or `blockTag`, `gatewayUrls`, `strict` and `signal`.
 
 ```ts title="reads.ts"
 const name = await getEnsName(publicClient, { address }); // [!code --]
@@ -68,15 +68,15 @@ const resolver = (await Actions.resolver.get(publicClient, { name: "nick.eth" })
 
 ## 3. Know what behaves differently
 
-- **Gateway failures are errors.** For an off-chain name whose gateway is unreachable or invalid,
+- **Gateway failures are errors.** For an [off-chain name](/docs/sdk/reference/glossary#off-chain-name) whose [gateway](/docs/sdk/reference/glossary#gateway) is unreachable or invalid,
   ensforge throws a `GatewayError` ([`GATEWAY_REQUEST_FAILED`](/docs/sdk/errors/GATEWAY_REQUEST_FAILED),
   [`GATEWAY_RESPONSE_INVALID`](/docs/sdk/errors/GATEWAY_RESPONSE_INVALID)). viem returns `null`.
 - **`strict` means something else.** In ensforge, `strict: true` throws a `NotFoundError` when data
   is missing instead of returning `null`.
 - **Errors carry codes.** Every action throws `Errors.*` classes with a stable `code`, so you can
   branch without parsing messages. See [Handle errors](/docs/sdk/handle-errors).
-- **A name with a resolver that reverts reads as empty.** ensforge and viem read no record in that
-  case.
+- **A name with a resolver that reverts reads as empty, as in viem.** Neither reads a record in
+  that case.
 
 ## 4. Use what viem does not have
 

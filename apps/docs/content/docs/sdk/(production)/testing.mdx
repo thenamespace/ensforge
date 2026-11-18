@@ -94,7 +94,7 @@ clear the account's code first with `testClient.setCode({ address, bytecode: "0x
 
 ## 4. Move time forward
 
-A registration waits for the registrar's commitment age on chain time, and a fork's time only moves
+A registration waits for the registrar's [commitment](/docs/sdk/reference/glossary#commitment) age on chain time, and a fork's time only moves
 with its blocks. Use `onStep` to advance it when a step waits.
 
 **Example** (Skipping a registration wait)
@@ -132,9 +132,9 @@ after.
 
 Fast tests should not need a chain. Replace the parts that reach outside:
 
-- **An indexer.** `defineIndexer` builds an indexer from your own functions. See
+- **An [indexer](/docs/sdk/reference/glossary#indexer).** `defineIndexer` builds an indexer from your own functions. See
   [Custom indexers](/docs/sdk/custom-indexers).
-- **Plan storage.** The default `Plan.memoryStorage()` is already a fresh store per client. Pass
+- **[Plan](/docs/sdk/reference/glossary#plan) storage.** The default `Plan.memoryStorage()` is already a fresh store per client. Pass
   your own `Plan.Storage` to check what a write saves.
 - **Errors.** Error classes can be built directly, so you can test how your UI reacts.
 

@@ -5,21 +5,22 @@ keywords:
   [dns.claim, dns.getStatus, dns.getProof, DNSSEC, _ens TXT record, gasless DNS, ENS1, zonehash]
 ---
 
-You will import a DNS name you own into ENS, so it can have an owner, a resolver and records like any other name. You prove ownership with a **DNSSEC** proof of a TXT record in your DNS zone, and ensforge fetches and sends the proof for you.
+You will import a DNS name you own into ENS, so it can have an [owner](/docs/sdk/reference/glossary#owner), a [resolver](/docs/sdk/reference/glossary#resolver) and [records](/docs/sdk/reference/glossary#record) like any other name. You prove ownership with a **DNSSEC** proof of a TXT record in your DNS zone, and ensforge fetches and sends the proof for you.
 
-DNS names are imported into ENSv1. ENSv2 resolves them through the ENSv1 registry, so you do not choose a version.
+DNS names are imported into [ENSv1](/docs/sdk/reference/glossary#ensv1). [ENSv2](/docs/sdk/reference/glossary#ensv2) resolves them through the ENSv1 [registry](/docs/sdk/reference/glossary#registry), so you do not choose a version.
 
 ## Prerequisites
 
 - A DNS name whose zone uses DNSSEC.
 - A wallet client. Anyone can send the claim: the name goes to the address in the TXT record. See [Create a client](/docs/sdk/create-a-client).
-- A chain with a DNSSEC gateway in its deployment, or your own `gatewayUrls`. Without either, the DNS actions fail with [`UNSUPPORTED_ON_DEPLOYMENT`](/docs/sdk/errors/UNSUPPORTED_ON_DEPLOYMENT).
+- A chain with a DNSSEC [gateway](/docs/sdk/reference/glossary#gateway) in its deployment, or your own `gatewayUrls`. The mainnet and Sepolia deployments list their gateways on-chain. Without either, the DNS actions fail with [`UNSUPPORTED_ON_DEPLOYMENT`](/docs/sdk/errors/UNSUPPORTED_ON_DEPLOYMENT).
 
-<Callout type="warn" title="Claims can fail since the root key rollover">
-  Since the DNSSEC root KSK rollover, the on-chain DNSSEC oracle on mainnet and Sepolia cannot
-  verify any proof: it lacks the new root key. `dns.getStatus` reports `proof-invalid` and
-  `dns.claim` fails with `DNSSEC_PROOF_FAILED` until ENS adds the trust anchor. ensforge has no
-  client-side workaround. See [`DNSSEC_PROOF_FAILED`](/docs/sdk/errors/DNSSEC_PROOF_FAILED).
+<Callout type="warn" title="DNS claims fail since the root key rollover">
+  Since the DNSSEC root KSK rollover in October 2026, the on-chain DNSSEC oracle on mainnet and
+  Sepolia cannot verify any proof: it lacks the new root key. `dns.getStatus` reports
+  `proof-invalid` and `dns.claim` fails with `DNSSEC_PROOF_FAILED` until ENS adds the trust anchor.
+  ensforge has no client-side workaround. See
+  [`DNSSEC_PROOF_FAILED`](/docs/sdk/errors/DNSSEC_PROOF_FAILED).
 </Callout>
 
 ## 1. Check what the name needs
@@ -101,7 +102,7 @@ if (status.action === "claim") {
 
 ## Use a gasless DNS name
 
-A gasless DNS name resolves without being imported. Its owner adds a TXT record `ENS1 <resolver> [context]` on the name itself. [`dns.getOffchainResolver`](/docs/sdk/reference/actions/dns/get-offchain-resolver) reads it and returns `{ resolver, context }`, or `null` when there is none.
+A gasless DNS name resolves without being imported, as an [off-chain name](/docs/sdk/reference/glossary#off-chain-name). Its owner adds a TXT record `ENS1 <resolver> [context]` on the name itself. [`dns.getOffchainResolver`](/docs/sdk/reference/actions/dns/get-offchain-resolver) reads it and returns `{ resolver, context }`, or `null` when there is none.
 
 **Example** (Reading a Gasless DNS Setup)
 

@@ -5,7 +5,7 @@ keywords:
   [resolver.set, resolver.get, resolver.create, public resolver, PermissionedResolver, default]
 ---
 
-You will move a name to a different **resolver**, the contract that stores its records. The records stay on the old resolver, so you copy them in the same step or before you switch.
+You will move a name to a different [resolver](/docs/sdk/reference/glossary#resolver), the contract that stores its [records](/docs/sdk/reference/glossary#record). The records stay on the old resolver, so you copy them in the same step or before you switch.
 
 ## Prerequisites
 
@@ -99,7 +99,7 @@ await ens.resolver.setSync({
 | `"default"`      | Points the name at the ENSv1 public resolver. ENSv1 names only. |
 | `null`           | Removes the resolver.                                           |
 
-The change is made in the registry that holds the name: the ENS registry on ENSv1 (through the NameWrapper when the name is wrapped), or the name's registry on ENSv2.
+The change is made in the [registry](/docs/sdk/reference/glossary#registry) that holds the name: the ENS registry on [ENSv1](/docs/sdk/reference/glossary#ensv1) (through the NameWrapper when the name is wrapped), or the name's registry on [ENSv2](/docs/sdk/reference/glossary#ensv2).
 
 ## Create a resolver for an ENSv2 name
 
@@ -133,13 +133,13 @@ const { resolver } = await ens.resolver.createSync({
 
 ## Check the result
 
-Call `resolver.get` again and compare `address` with the one you set. See [Get name details](/docs/sdk/get-name-details).
+Call `resolver.get` again and compare `address` with the one you set. See [Get a name's owner, expiry and status](/docs/sdk/get-name-details).
 
 ## Troubleshooting
 
 ### `NOT_OWNER`, `MISSING_ROLES` or `FUSE_BURNED`
 
-The account may not change the resolver. On ENSv2 it needs the `setResolver` role. On a wrapped name, a burned `cannotSetResolver` fuse forbids it for good. See [`NOT_OWNER`](/docs/sdk/errors/NOT_OWNER), [`MISSING_ROLES`](/docs/sdk/errors/MISSING_ROLES), [`FUSE_BURNED`](/docs/sdk/errors/FUSE_BURNED) and [Lock permissions with fuses](/docs/sdk/fuses).
+The account may not change the resolver. On ENSv2 it needs the `setResolver` [role](/docs/sdk/reference/glossary#role). On a wrapped name, a burned `cannotSetResolver` fuse forbids it for good. See [`NOT_OWNER`](/docs/sdk/errors/NOT_OWNER), [`MISSING_ROLES`](/docs/sdk/errors/MISSING_ROLES), [`FUSE_BURNED`](/docs/sdk/errors/FUSE_BURNED) and [Lock permissions with fuses](/docs/sdk/fuses).
 
 ### `UNSUPPORTED_PROTOCOL`
 

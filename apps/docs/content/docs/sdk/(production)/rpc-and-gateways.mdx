@@ -45,11 +45,13 @@ Two features need more from the RPC:
 
 ## Set off-chain lookup gateways
 
-Some names keep their records off-chain and resolve through **CCIP-Read** (EIP-3668): the resolver
-tells ensforge which gateway to ask. By default ensforge uses the Universal Resolver's own batch
-gateway. Pass `ccipRead` to set gateways, or `false` to turn off-chain lookups off.
+Some names keep their records off-chain and resolve through [CCIP-Read](/docs/sdk/reference/glossary#ccip-read)
+(EIP-3668): the resolver names the [gateway](/docs/sdk/reference/glossary#gateway) that holds its
+records. ensforge reads names through the Universal Resolver, which sends these lookups through a
+batch gateway. By default that is the Universal Resolver's own batch gateway. `ccipRead.gatewayUrls`
+sets the batch gateways instead, and `ccipRead: false` turns off-chain lookups off.
 
-**Example** (Custom gateways)
+**Example** (Answering Lookups Locally)
 
 ```ts twoslash title="ccip.ts"
 import { Ensforge } from "@ensforge/sdk";
@@ -61,11 +63,13 @@ const publicClient = createPublicClient({ chain: mainnet, transport: http() });
 // ---cut---
 const ens = Ensforge.create({
   publicClient,
-  ccipRead: { gatewayUrls: ["https://ccip.example.com/{sender}/{data}.json"] },
+  ccipRead: { gatewayUrls: ["x-batch-gateway:true"] },
 });
 ```
 
-A single call can override the client's gateways with `gatewayUrls`. When a gateway fails, the
+`x-batch-gateway:true` makes viem answer the batch itself, so ensforge calls each resolver's gateway
+directly instead of going through a hosted batch gateway. A URL works too, for a batch gateway you
+run. A single call can override the client's gateways with `gatewayUrls`. When a gateway fails, the
 action throws a `GatewayError` such as
 [`GATEWAY_REQUEST_FAILED`](/docs/sdk/errors/GATEWAY_REQUEST_FAILED) or
 [`GATEWAY_RESPONSE_INVALID`](/docs/sdk/errors/GATEWAY_RESPONSE_INVALID). With `ccipRead: false`,
@@ -74,7 +78,7 @@ See [Look up off-chain names](/docs/sdk/off-chain-names).
 
 ## Tune read batching
 
-ensforge coalesces concurrent contract reads into Multicall3 calls. It is on by default.
+ensforge coalesces concurrent contract reads into Multicall3 calls ([batching](/docs/sdk/reference/glossary#batch)). It is on by default.
 
 | Option                      | Default | Description                                                 |
 | --------------------------- | ------- | ----------------------------------------------------------- |
@@ -101,7 +105,7 @@ Lower `batchSize` if your provider rejects large calls. To batch reads yourself,
 
 ## Set storage gateways
 
-Avatars and content hashes point at decentralized storage (`ipfs://`, `ar://`, `bzz://`).
+[Avatars](/docs/sdk/reference/glossary#avatar) and content hashes point at decentralized storage (`ipfs://`, `ar://`, `bzz://`).
 [`record.getAvatar`](/docs/sdk/reference/actions/record/get-avatar) turns them into URLs a browser
 can load through gateways. The defaults are `https://ipfs.io`, `https://arweave.net` and
 `https://api.gateway.ethswarm.org`.

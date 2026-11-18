@@ -4,9 +4,9 @@ description: Register a .eth name with the commit, wait and register flow, optio
 keywords: [registration.register, registerSync, commit, commitment, secret, ETHRegistrar, USDC]
 ---
 
-You will register a `.eth` **name** you own, paying in an ERC-20 token. A registration is a **commit-reveal** flow: you first commit to the registration, wait on-chain for the commitment to age, then register. This stops anyone from front-running your name.
+You will register a new [`.eth` name](/docs/sdk/reference/glossary#eth-name), paying in an ERC-20 token. A registration is a **commit-reveal** flow: you first send a [commitment](/docs/sdk/reference/glossary#commitment), wait on-chain for it to age, then register. This stops anyone from front-running your name.
 
-ensforge runs the whole flow as one plan. Every new `.eth` name is registered on ENSv2, so you never choose a version.
+ensforge runs the whole flow as one [plan](/docs/sdk/reference/glossary#plan). Every new `.eth` name is registered on [ENSv2](/docs/sdk/reference/glossary#ensv2), so you never choose a version.
 
 ## Prerequisites
 
@@ -31,15 +31,16 @@ sequenceDiagram
   You->>W: set records and primary name
 ```
 
-| Step id       | What it sends                                                                     |
-| ------------- | --------------------------------------------------------------------------------- |
-| `approve`     | The token approval, only when the commit step does not already carry it.          |
-| `commit`      | The token approval (when the allowance is short) and the commitment.              |
-| `register`    | Deploys each name's resolver, then registers. Waits for the commitment age first. |
-| `records`     | Records on the owner's resolver, when `resolver` is explicit.                     |
-| `primaryName` | The reverse record, when `primaryName` is set.                                    |
+| Step id       | What it sends                                                                          |
+| ------------- | -------------------------------------------------------------------------------------- |
+| `approve`     | The token approval, only when the commit step does not already carry it.               |
+| `commit`      | The token approval (when the allowance is short) and the commitment.                   |
+| `resolver`    | Deploys the signer's shared resolver, only for `resolver: "owned"` with a `via` route. |
+| `register`    | Deploys each name's resolver, then registers. Waits for the commitment age first.      |
+| `records`     | Records on the owner's resolver, when `resolver` is explicit.                          |
+| `primaryName` | The reverse record, when `primaryName` is set.                                         |
 
-By default each name gets its own resolver, deployed in the `register` step with `records` written at creation. See [Resolvers and shared records](/docs/sdk/resolvers-and-shared-records).
+By default each name gets its own [resolver](/docs/sdk/reference/glossary#resolver), deployed in the `register` step with `records` written at creation. See [Resolvers and shared records](/docs/sdk/resolvers-and-shared-records).
 
 ## 1. Register and wait
 
@@ -73,7 +74,7 @@ const { names, paid, secret } = await ens.registration.registerSync({
 
 - `names` takes one name or an array. Several names share one plan.
 - `records` are written when each name's resolver is created. Their shape is the one `record.set` takes. See [Set records](/docs/sdk/set-records).
-- `primaryName: true` sets the single name as the signer's primary name and adds its `eth` address record. It needs exactly one name, owned by the signer. See [Set a primary name](/docs/sdk/set-a-primary-name).
+- `primaryName: true` sets the single name as the signer's [primary name](/docs/sdk/reference/glossary#primary-name) and adds its `eth` address record. It needs exactly one name, owned by the signer. See [Set a primary name](/docs/sdk/set-a-primary-name).
 - `onStep` is called as each step waits, is submitted, is confirmed or fails.
 - The wallet prompts once per step, or once for several steps when it supports EIP-5792 batches. See [Send a transaction](/docs/sdk/send-a-transaction).
 
@@ -104,7 +105,7 @@ const { names, paid, secret } = await ens.registration.registerSync({
 | `referrer`     | `Hex`                       | none                    | Referrer the registrar records: 32 bytes, or an address.                          |
 | `secret`       | `Hex`                       | a random secret         | Secret from an earlier `commit` or `register`, to finish that registration.       |
 
-All write options also apply: `account`, `simulate`, `signal`, `mode`, `onStep`, `via` and `paymaster`. See [How writes work](/docs/sdk/writing-to-ens).
+All write options also apply: `account`, `simulate`, `signal`, `mode`, `maxBundleCalls`, `onStep`, `via` and `paymaster`. See [How writes work](/docs/sdk/writing-to-ens).
 
 The approval covers the quote plus 2%, because the price is charged at `register` and can drift, for example while a premium decays. You pay only the actual price.
 
@@ -168,7 +169,7 @@ Resuming needs the same options, because they are part of the commitment. With a
 
 ### `NAME_NOT_AVAILABLE`
 
-The name is registered or in its grace period. Check it first. See [`NAME_NOT_AVAILABLE`](/docs/sdk/errors/NAME_NOT_AVAILABLE).
+The name is registered or in its [grace period](/docs/sdk/reference/glossary#grace-period). Check it first. See [`NAME_NOT_AVAILABLE`](/docs/sdk/errors/NAME_NOT_AVAILABLE).
 
 ### `INSUFFICIENT_TOKEN_BALANCE`
 

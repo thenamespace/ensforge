@@ -5,8 +5,8 @@ keywords: [EIP-5792, wallet_sendCalls, batch, atomic, Plan.merge, mode, maxBundl
 ---
 
 A **bundle** (EIP-5792) is a group of calls a wallet sends together after one approval. ensforge
-bundles the steps of a write for you when the wallet supports it, and `Plan.merge` lets you bundle
-several writes.
+bundles the [steps](/docs/sdk/reference/glossary#step) of a write for you when the wallet supports it, and `Plan.merge` lets you bundle
+several writes into one [plan](/docs/sdk/reference/glossary#plan).
 
 ## Prerequisites
 
@@ -155,7 +155,7 @@ const { hashes } = await ens.plan.send({ plan: Plan.merge([records, primary]) })
 
 ## Batch reads
 
-Reads batch differently. [`Actions.batch`](/docs/sdk/reference/actions/batch) runs several reads
+Reads [batch](/docs/sdk/reference/glossary#batch) differently. [`Actions.batch`](/docs/sdk/reference/actions/batch) runs several reads
 through Multicall3. It does not take writes. See [Look up many at once](/docs/sdk/look-up-many-at-once).
 
 ## Check the result
