@@ -2,9 +2,11 @@
  * Every custom error of the ENS contracts in this package (ENSv1 ens-contracts v1.7.0 and
  * ENSv2 contracts-v2 v1.0.1), plus the OpenZeppelin `IERC20Errors` that ERC-20 payment tokens
  * raise, the verifiable proxy's `InvalidUpgradeTarget`, the HCA's `NoNFTAllowed` (raised when a
- * name token is sent to a Hosted Contract Account) and the errors with which resolvers that keep
+ * name token is sent to a Hosted Contract Account), the errors with which resolvers that keep
  * their records elsewhere refuse on-chain writes (ERC-5559 `StorageHandledBy…`, ERC-7884
- * `OperationHandled…`). Use it to decode a revert from any ENS call.
+ * `OperationHandled…`) and the verifier and fetcher errors of unruggable gateways, which the L2
+ * reverse resolvers raise for a proof that does not verify. Use it to decode a revert from any ENS
+ * call.
  *
  * Generated from the ABIs of this package; regenerate when they change.
  *
@@ -1536,6 +1538,121 @@ export const ensErrorsAbi = [
           { name: "expirationTimestamp", type: "uint256" },
         ],
       },
+    ],
+  },
+  // Errors declared in the contracts of `@unruggable/gateways` 1.3.0, the version ens-contracts
+  // pins (npm integrity sha512-+dlrwk9RioP57/QlrAB85noI+t6vQ0avpO8DjDGeW9FP4HzPJNzsVZdEcvfOEgDW
+  // VVDrlh3S1EOCNguGivOPEg==), less its admin errors: the L2 reverse resolvers' verifiers and
+  // fetchers raise them when a gateway's proof of L2 state does not verify.
+  // `InvalidGameTypeBitMask()` (0xeb57ceb9) is not in 1.3.0; Base's deployed verifier raises it.
+  {
+    type: "error",
+    name: "CommitTooOld",
+    inputs: [
+      { name: "latest", type: "uint256" },
+      { name: "got", type: "uint256" },
+      { name: "window", type: "uint256" },
+    ],
+  },
+  {
+    type: "error",
+    name: "CommitTooNew",
+    inputs: [
+      { name: "latest", type: "uint256" },
+      { name: "got", type: "uint256" },
+    ],
+  },
+  {
+    type: "error",
+    name: "InvalidProof",
+    inputs: [],
+  },
+  {
+    type: "error",
+    name: "GameNotFound",
+    inputs: [],
+  },
+  {
+    type: "error",
+    name: "InvalidGameTypeBitMask",
+    inputs: [],
+  },
+  {
+    type: "error",
+    name: "OutputNotFound",
+    inputs: [],
+  },
+  {
+    type: "error",
+    name: "TooManyProofs",
+    inputs: [{ name: "max", type: "uint256" }],
+  },
+  {
+    type: "error",
+    name: "RequestOverflow",
+    inputs: [],
+  },
+  {
+    type: "error",
+    name: "InvalidRequest",
+    inputs: [],
+  },
+  {
+    type: "error",
+    name: "InvalidStackIndex",
+    inputs: [
+      { name: "index", type: "uint256" },
+      { name: "count", type: "uint256" },
+      { name: "reversed", type: "bool" },
+    ],
+  },
+  {
+    type: "error",
+    name: "InvalidOutputIndex",
+    inputs: [
+      { name: "index", type: "uint256" },
+      { name: "count", type: "uint256" },
+    ],
+  },
+  {
+    type: "error",
+    name: "StackOverflow",
+    inputs: [],
+  },
+  {
+    type: "error",
+    name: "DataMissing",
+    inputs: [],
+  },
+  {
+    type: "error",
+    name: "DataIsNotMod32",
+    inputs: [],
+  },
+  {
+    type: "error",
+    name: "LengthNotMod32",
+    inputs: [],
+  },
+  {
+    type: "error",
+    name: "MaxTreeLeafIndexExceed",
+    inputs: [],
+  },
+  {
+    type: "error",
+    name: "WrongBytesLength",
+    inputs: [
+      { name: "expectedLength", type: "uint256" },
+      { name: "bytesLength", type: "uint256" },
+    ],
+  },
+  {
+    type: "error",
+    name: "WrongProofLength",
+    inputs: [
+      { name: "expectedLength", type: "uint256" },
+      { name: "actualLength", type: "uint256" },
     ],
   },
 ] as const;

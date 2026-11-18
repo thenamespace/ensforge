@@ -32,6 +32,7 @@ import type {
   V2PaymentTokens,
 } from "./deployments/types.js";
 
+export { l2ReverseRegistrars } from "./deployments/l2-reverse-registrars.js";
 export type {
   Status,
   Provenance,
