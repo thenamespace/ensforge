@@ -1,4 +1,4 @@
-import { Effect } from "effect";
+import { Array as Arr, Effect, String as Str } from "effect";
 
 import { CurrentStep } from "@ensforge/test-devnet";
 import { keccak256, labelhash, namehash, type Hex } from "viem";
@@ -53,33 +53,34 @@ const hashed = (
 
 /** Label shapes and depths that only exist on chain by hash, or stress encoding. */
 export const hierarchy: readonly Fixture[] = [
-  ...(
+  ...Arr.map(
     [
-      ["hierarchy.label-63", "a".repeat(63), ["H02"]],
-      ["hierarchy.label-64", "b".repeat(64), ["H02"]],
-      ["hierarchy.label-255", "c".repeat(255), ["H01"]],
-    ] as const
-  ).map(([id, label, cases]): Fixture => ({
-    id,
-    cases,
-    tags: { kind: "v1-unwrapped", label: `${label.length}-bytes` },
-    prelaunch: (c) =>
-      Effect.gen(function* () {
-        yield* ensureParent;
-        const sub = yield* v1Subname({
-          parent,
-          label,
-          parentOwner: c.accounts.alice,
-          owner: c.accounts.bob,
-        });
-        return { name: sub.name, owner: c.accounts.bob };
-      }),
-    check: (c, facts) =>
-      Effect.gen(function* () {
-        const owner = yield* c.read("v1.registry", "owner", [namehash(String(facts["name"]))]);
-        yield* expectState(id, "owner", owner, c.accounts.bob);
-      }),
-  })),
+      ["hierarchy.label-63", Str.repeat(63)("a"), ["H02"]],
+      ["hierarchy.label-64", Str.repeat(64)("b"), ["H02"]],
+      ["hierarchy.label-255", Str.repeat(255)("c"), ["H01"]],
+    ] as const,
+    ([id, label, cases]): Fixture => ({
+      id,
+      cases,
+      tags: { kind: "v1-unwrapped", label: `${label.length}-bytes` },
+      prelaunch: (c) =>
+        Effect.gen(function* () {
+          yield* ensureParent;
+          const sub = yield* v1Subname({
+            parent,
+            label,
+            parentOwner: c.accounts.alice,
+            owner: c.accounts.bob,
+          });
+          return { name: sub.name, owner: c.accounts.bob };
+        }),
+      check: (c, facts) =>
+        Effect.gen(function* () {
+          const owner = yield* c.read("v1.registry", "owner", [namehash(String(facts["name"]))]);
+          yield* expectState(id, "owner", owner, c.accounts.bob);
+        }),
+    }),
+  ),
   // A mainnet-style name registered as one label containing a dot, e.g. `8436.eth` as one label.
   hashed(
     "hierarchy.label-with-dot",
@@ -92,8 +93,8 @@ export const hierarchy: readonly Fixture[] = [
     "hierarchy.label-literal-hex",
     ["H05"],
     { label: "literal-encoded" },
-    labelhash(`[${"ab".repeat(32)}]`),
-    `[${"ab".repeat(32)}]`,
+    labelhash(`[${Str.repeat(32)("ab")}]`),
+    `[${Str.repeat(32)("ab")}]`,
   ),
   hashed(
     "hierarchy.label-invalid-utf8",
@@ -134,7 +135,7 @@ export const hierarchy: readonly Fixture[] = [
           });
           current = sub.name;
         }
-        return { name: current, owner: c.accounts.alice, labels: current.split(".").length };
+        return { name: current, owner: c.accounts.alice, labels: Str.split(current, ".").length };
       }),
     check: (c, facts) =>
       Effect.gen(function* () {

@@ -1,3 +1,5 @@
+import { Array as Arr } from "effect";
+
 import { Roles } from "@ensforge/contracts";
 import { bytesToHex, concatHex, labelhash, numberToHex, type Hex } from "viem";
 import { packetToBytes } from "viem/ens";
@@ -57,7 +59,8 @@ export const rentPricing = (() => {
   const discountDenominator = 10n ** 38n;
   const discount = (numer: bigint, denom: bigint) => (discountDenominator * numer) / denom;
   return {
-    baseRatePerCodePoint: [0n, 0n, 640n, 160n, 8n].map(
+    baseRatePerCodePoint: Arr.map(
+      [0n, 0n, 640n, 160n, 8n],
       (yearly) => (yearly * priceScale + secondsPerYear - 1n) / secondsPerYear,
     ),
     discountPoints: [

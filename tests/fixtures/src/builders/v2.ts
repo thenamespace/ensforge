@@ -1,4 +1,4 @@
-import { Effect } from "effect";
+import { Effect, String as Str } from "effect";
 
 import { Abis, Roles } from "@ensforge/contracts";
 import { ownedResolverSalt, predictVerifiableProxyAddress } from "@ensforge/contracts/v2";
@@ -150,7 +150,7 @@ export const mountUserRegistry = Effect.fnUntraced(function* (options: {
   yield* c.write(
     [registry, "v2/UserRegistryImpl"],
     "setParent",
-    [options.parentRegistry, options.parent.split(".")[0] as string],
+    [options.parentRegistry, Str.split(options.parent, ".")[0]],
     from,
   );
   return registry;

@@ -1,3 +1,5 @@
+import { Array as Arr, Formatter, Option, Record as Rec, Schema, String as Str } from "effect";
+
 import { bigname as bignameFixtures } from "./fixtures/bigname.js";
 import { goldsky as goldskyFixtures } from "./fixtures/goldsky.js";
 import type { Envelope, ErrorEnvelope } from "./fixtures/types.js";
@@ -23,13 +25,18 @@ export type Responder = Reply | ((request: FakeRequest) => Reply | undefined);
 /** A request and what the fake answered (`undefined` for hangs and network failures). */
 export type Recorded = FakeRequest & { readonly status: number | undefined };
 
+const requestBody = Schema.fromJsonString(Schema.Unknown);
+
 const http = (status: number, text: string, headers: Readonly<Record<string, string>> = {}) =>
   ({ kind: "http", status, text, headers }) as const satisfies Reply;
 
 /** Reply builders for `on` and `once`. */
 export const reply = {
   json: (body: unknown, status = 200, headers: Readonly<Record<string, string>> = {}): Reply =>
-    http(status, JSON.stringify(body), { "content-type": "application/json", ...headers }),
+    http(status, Formatter.formatJson(body), {
+      "content-type": "application/json",
+      ...headers,
+    }),
   envelope: (envelope: Envelope, headers?: Readonly<Record<string, string>>): Reply =>
     reply.json(envelope, 200, headers),
   /** bigname's error envelope, e.g. `error(503, "overloaded")`. */
@@ -92,7 +99,8 @@ export type FakeIndexer = {
 const etagOf = (text: string): string => {
   let hash = 0x811c9dc5;
   for (let index = 0; index < text.length; index += 1) {
-    hash = Math.imul(hash ^ text.charCodeAt(index), 0x01000193) >>> 0;
+    hash =
+      Math.imul(hash ^ Option.getOrElse(Str.charCodeAt(text, index), () => 0), 0x01000193) >>> 0;
   }
   return `"${hash.toString(16)}"`;
 };
@@ -150,15 +158,17 @@ export const fakeIndexer = (options: FakeIndexerOptions): FakeIndexer => {
       : new Response(result.text, { status: 200, headers: { ...result.headers, etag } });
   };
 
+  // A stand-in for the global `fetch`, which is Promise-based.
+  /* oxlint-disable effecttsgo/async-function, effecttsgo/new-promise */
   const fakeFetch = async (input: string | URL | Request, init?: RequestInit) => {
     const url = new URL(
       typeof input === "string" ? input : input instanceof URL ? input : input.url,
     );
     const href = url.href;
-    const path = href.startsWith(prefix)
-      ? url.pathname.slice(options.version.length)
+    const path = Str.startsWith(prefix)(href)
+      ? Str.slice(options.version.length)(url.pathname)
       : url.pathname;
-    const matched = href.startsWith(prefix) ? match(path) : undefined;
+    const matched = Str.startsWith(prefix)(href) ? match(path) : undefined;
     const request: FakeRequest = {
       method: init?.method ?? "GET",
       url: href,
@@ -167,8 +177,10 @@ export const fakeIndexer = (options: FakeIndexerOptions): FakeIndexer => {
       params: matched?.params ?? {},
       query: url.searchParams,
       // `Headers` lowercases names.
-      headers: Object.fromEntries(new Headers(init?.headers).entries()),
-      body: typeof init?.body === "string" ? JSON.parse(init.body) : undefined,
+      headers: Rec.fromEntries(new Headers(init?.headers).entries()),
+      // A synchronous callback of `fetch`, outside any Effect runtime.
+      // oxlint-disable-next-line effecttsgo/schema-sync
+      body: typeof init?.body === "string" ? Schema.decodeSync(requestBody)(init.body) : undefined,
       signal: init?.signal ?? undefined,
     };
 
@@ -189,12 +201,13 @@ export const fakeIndexer = (options: FakeIndexerOptions): FakeIndexer => {
     requests.push({ ...request, status: response.status });
     return response;
   };
+  /* oxlint-enable effecttsgo/async-function, effecttsgo/new-promise */
 
   return {
     url: origin,
-    fetch: fakeFetch as typeof fetch,
+    fetch: fakeFetch,
     requests,
-    requestsTo: (route) => requests.filter((request) => request.route === route),
+    requestsTo: (route) => Arr.filter(requests, (request) => request.route === route),
     on: (route, responder) => {
       persistent.set(route, responder);
     },

@@ -15,7 +15,7 @@ export const expectState = (fixture: string, label: string, actual: unknown, exp
   return same
     ? Effect.void
     : Effect.fail(
-        new DeployError({
+        DeployError.make({
           step: `fixture ${fixture}`,
           message: `${label}: ${String(actual)}, expected ${String(expected)}`,
         }),

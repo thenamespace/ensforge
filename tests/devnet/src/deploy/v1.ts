@@ -1,4 +1,4 @@
-import { Effect } from "effect";
+import { Array as Arr, Effect } from "effect";
 
 import { labelhash, namehash, numberToHex, pad, zeroAddress, zeroHash, type Address } from "viem";
 
@@ -61,7 +61,8 @@ export const v1Steps: readonly Step[] = [
         ["legacy.publicResolver2018", "legacy/PublicResolver2018", 0n],
         ["legacy.publicResolver2019", "legacy/PublicResolver2019", 7n],
       ] as const) {
-        yield* setSlot(c, yield* c.place(key, artifact), slot, legacy);
+        const placed = yield* c.place(key, artifact);
+        yield* setSlot(c, placed, slot, legacy);
       }
 
       const registry = yield* c.deploy("v1.registry", "v1/ENSRegistryWithFallback", [legacy]);
@@ -70,7 +71,8 @@ export const v1Steps: readonly Step[] = [
         ["legacy.publicResolver2020Jan", "legacy/PublicResolver2020Jan"],
         ["legacy.publicResolver2020Feb", "legacy/PublicResolver2020Feb"],
       ] as const) {
-        yield* setSlot(c, yield* c.place(key, artifact), 10n, registry);
+        const placed = yield* c.place(key, artifact);
+        yield* setSlot(c, placed, 10n, registry);
       }
     }),
   ),
@@ -352,7 +354,7 @@ export const v1Steps: readonly Step[] = [
       ]);
       const suffixes = yield* c.deploy("v1.publicSuffixList", "v1/SimplePublicSuffixList");
       yield* c.write("v1.publicSuffixList", "transferOwnership", [c.accounts.owner]);
-      yield* c.write("v1.publicSuffixList", "addPublicSuffixes", [dnsTlds.map(dnsEncode)], {
+      yield* c.write("v1.publicSuffixList", "addPublicSuffixes", [Arr.map(dnsTlds, dnsEncode)], {
         from: "owner",
       });
 

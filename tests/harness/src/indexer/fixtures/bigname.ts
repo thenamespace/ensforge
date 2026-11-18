@@ -1,3 +1,5 @@
+import { Array as Arr, Record as Rec, Schema, String as Str } from "effect";
+
 import { getAddress, labelhash, namehash } from "viem";
 
 import type { FakeRequest, Fixtures } from "../routes.js";
@@ -16,11 +18,11 @@ export const addresses = {
   wrapper: getAddress("0xd4416b13d2b3a9abae7acd5d6c2bbdbe25686401"),
 } as const;
 
-const wire = (address: string) => address.toLowerCase();
+const wire = (address: string) => Str.toLowerCase(address);
 
 export const asOf: Wire.AsOf = {
   block_number: 21_000_000,
-  block_hash: `0x${"ab".repeat(32)}`,
+  block_hash: `0x${Str.repeat(32)("ab")}`,
   timestamp: "1730000000",
 };
 
@@ -101,7 +103,7 @@ const subnameRow = (label: string, fields: Partial<Wire.Subname> = {}): Wire.Sub
 
 const labels = ["alpha", "beta", "gamma"];
 
-export const subnames: readonly Wire.Subname[] = labels.map((label) => subnameRow(label));
+export const subnames: readonly Wire.Subname[] = Arr.map(labels, (label) => subnameRow(label));
 
 export const nickEvents: readonly Wire.HistoryEvent[] = [
   {
@@ -115,7 +117,7 @@ export const nickEvents: readonly Wire.HistoryEvent[] = [
     contract_address: wire(addresses.publicResolver),
     block_number: 20_000_000,
     timestamp: "1717000000",
-    transaction_hash: `0x${"12".repeat(32)}`,
+    transaction_hash: `0x${Str.repeat(32)("12")}`,
     log_index: 7,
     data: { action: "record_changed", key: "text:avatar", record_id: "r1", coin_type: 60 },
   },
@@ -130,7 +132,7 @@ export const nickEvents: readonly Wire.HistoryEvent[] = [
     contract_address: null,
     block_number: 4_200_000,
     timestamp: "1504207252",
-    transaction_hash: `0x${"34".repeat(32)}`,
+    transaction_hash: `0x${Str.repeat(32)("34")}`,
     log_index: 0,
     data: { action: "registration_granted", expires_at: "2031690868", base_cost: "0" },
   },
@@ -183,7 +185,7 @@ export const registryOverview: Wire.RegistryOverview = {
   parent_registry: { chain_id: 1, address: wire(addresses.parentRegistry) },
   created_block_number: 21_500_000,
   created_at: "1735000000",
-  created_transaction_hash: `0x${"56".repeat(32)}`,
+  created_transaction_hash: `0x${Str.repeat(32)("56")}`,
   created_basis: "event",
   counts: { labels: 3, roles: 4, events: 12 },
   referenced_by: {
@@ -231,17 +233,26 @@ export const status: Wire.StatusData = {
   chains: { "1": chainStatus },
 };
 
+const LookupBody = Schema.Struct({
+  inputs: Schema.Array(
+    Schema.Struct({
+      name: Schema.optionalKey(Schema.String),
+      address: Schema.optionalKey(Schema.String),
+    }),
+  ),
+});
+
 const sameAddress = (left: string | undefined, right: string) =>
-  left !== undefined && left.toLowerCase() === right.toLowerCase();
+  left !== undefined && Str.toLowerCase(left) === Str.toLowerCase(right);
 
 /** One page of `rows`, honouring `page_size` and `cursor` (`c<offset>`) like bigname. */
-export const paged = <row>(request: FakeRequest, rows: readonly row[]): Wire.Envelope => {
+export const paged = (request: FakeRequest, rows: readonly unknown[]): Wire.Envelope => {
   const size = Number(request.query.get("page_size") ?? 50);
   const cursor = request.query.get("cursor");
-  const offset = cursor === null ? 0 : Number(cursor.slice(1));
+  const offset = cursor === null ? 0 : Number(Str.slice(1)(cursor));
   const next = offset + size;
   const hasMore = next < rows.length;
-  const counted = (request.query.get("include") ?? "").split(",").includes("total_count");
+  const counted = Str.split(request.query.get("include") ?? "", ",").includes("total_count");
 
   return {
     data: rows.slice(offset, next),
@@ -257,16 +268,18 @@ export const paged = <row>(request: FakeRequest, rows: readonly row[]): Wire.Env
 };
 
 const resolverRecords = (request: FakeRequest): Wire.Envelope | undefined => {
-  const keys = request.query.get("keys")?.split(",");
-  if (keys === undefined) return { data: nickRecords, meta };
+  const keysParam = request.query.get("keys");
+  if (keysParam === null) return { data: nickRecords, meta };
 
-  const records = Object.fromEntries(
-    keys.map((key) => [key, recordAnswers[key] ?? { status: "not_found" }]),
+  const keys = Str.split(keysParam, ",");
+
+  const records = Rec.fromEntries(
+    Arr.map(keys, (key) => [key, recordAnswers[key] ?? { status: "not_found" }]),
   );
   return { data: { ...nickRecords, records }, meta };
 };
 
-const nameRows = [nameRow("nick.eth"), ...subnames.map((row) => nameRow(row.name))];
+const nameRows = [nameRow("nick.eth"), ...Arr.map(subnames, (row) => nameRow(row.name))];
 
 export const bigname: Fixtures = {
   "/status": () => ({ data: status }),
@@ -317,9 +330,10 @@ export const bigname: Fixtures = {
     const rows =
       name === null
         ? nickEvents
-        : nickEvents
-            .filter((event) => event.name === name)
-            .map(({ name: _name, ...event }) => event);
+        : Arr.map(
+            Arr.filter(nickEvents, (event) => event.name === name),
+            ({ name: _name, ...event }) => event,
+          );
     return paged(request, rows);
   },
   "/search": (request) => {
@@ -327,14 +341,16 @@ export const bigname: Fixtures = {
     const contains = request.query.get("match") === "contains";
     return paged(
       request,
-      nameRows.filter((row) => (contains ? row.name.includes(query) : row.name.startsWith(query))),
+      Arr.filter(nameRows, (row) =>
+        contains ? Str.includes(query)(row.name) : Str.startsWith(query)(row.name),
+      ),
     );
   },
   "/lookup": (request) => {
-    const { inputs } = request.body as {
-      readonly inputs: readonly { readonly name?: string; readonly address?: string }[];
-    };
-    const results = inputs.map((input): Wire.LookupResult => {
+    // A synchronous route answer, outside any Effect runtime.
+    // oxlint-disable-next-line effecttsgo/schema-sync
+    const { inputs } = Schema.decodeUnknownSync(LookupBody)(request.body);
+    const results = Arr.map(inputs, (input): Wire.LookupResult => {
       if (input.address !== undefined) {
         return sameAddress(input.address, addresses.nick)
           ? {
@@ -355,7 +371,7 @@ export const bigname: Fixtures = {
   "/names": (request) =>
     paged(
       request,
-      ["nick.eth", "alpha.nick.eth"].map((name, index) =>
+      Arr.map(["nick.eth", "alpha.nick.eth"], (name, index) =>
         nameRow(name, { expires_window_index: index }),
       ),
     ),
@@ -366,7 +382,9 @@ export const bigname: Fixtures = {
     sameAddress(request.params.address, addresses.registry)
       ? paged(
           request,
-          labels.map((label) => subnameRow(label, { authority: "ens_v2", role_holder_count: 1 })),
+          Arr.map(labels, (label) =>
+            subnameRow(label, { authority: "ens_v2", role_holder_count: 1 }),
+          ),
         )
       : undefined,
   "/resolvers": (request) => paged(request, roleHolderResolvers),
@@ -398,7 +416,7 @@ export const bigname: Fixtures = {
         namehash: namehash("nick.eth"),
         record_id: "1",
         default: true,
-        link_event: { block_number: 21_600_000, transaction_hash: `0x${"78".repeat(32)}` },
+        link_event: { block_number: 21_600_000, transaction_hash: `0x${Str.repeat(32)("78")}` },
       },
       { namehash: namehash("alpha.nick.eth"), record_id: "2", default: false, link_event: {} },
     ]),

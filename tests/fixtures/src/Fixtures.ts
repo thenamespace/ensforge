@@ -1,5 +1,5 @@
 import { NodeServices } from "@effect/platform-node";
-import { Context, Effect, Layer } from "effect";
+import { Array as Arr, Context, Effect, Formatter, Layer, Option, Record as Rec } from "effect";
 
 import { Devnet, type DevnetOptions, type ProfileName } from "@ensforge/test-devnet";
 
@@ -20,27 +20,28 @@ export type FixturesApi = {
 
 const api = (manifest: Manifest): FixturesApi => {
   const where = (tags: Tags) =>
-    manifest.fixtures.filter((fixture) =>
-      Object.entries(tags).every(([axis, value]) => fixture.tags[axis] === value),
+    Arr.filter(manifest.fixtures, (fixture) =>
+      Arr.every(Rec.toEntries(tags), ([axis, value]) => fixture.tags[axis] === value),
     );
   return {
     manifest,
     all: manifest.fixtures,
     byId: (id) => {
-      const found = manifest.fixtures.find((fixture) => fixture.id === id);
-      if (found === undefined) throw new Error(`no fixture ${id} on ${manifest.profile}`);
-      return found;
+      const found = Arr.findFirst(manifest.fixtures, (fixture) => fixture.id === id);
+      if (Option.isNone(found)) throw new Error(`no fixture ${id} on ${manifest.profile}`);
+      return found.value;
     },
-    forCase: (id) => manifest.fixtures.filter((fixture) => fixture.cases.includes(id)),
+    forCase: (id) => Arr.filter(manifest.fixtures, (fixture) => fixture.cases.includes(id)),
     where,
     one: (tags) => {
       const found = where(tags);
-      if (found.length !== 1) {
+      const [only] = found;
+      if (found.length !== 1 || only === undefined) {
         throw new Error(
-          `${found.length} fixtures match ${JSON.stringify(tags)} on ${manifest.profile}`,
+          `${found.length} fixtures match ${Formatter.formatJson(tags)} on ${manifest.profile}`,
         );
       }
-      return found[0] as FixtureEntry;
+      return only;
     },
   };
 };
@@ -58,12 +59,15 @@ export class Fixtures extends Context.Service<Fixtures, FixturesApi>()(
     const devnet = Layer.unwrap(
       sourcesKey().pipe(
         Effect.map((key) => Devnet.layer({ ...options, seed: fixtureSeed(options.profile, key) })),
-        Effect.provide(NodeServices.layer),
       ),
-    );
+    ).pipe(Layer.provide(NodeServices.layer));
     const fixtures = Layer.effect(
       Fixtures,
-      Effect.map(Effect.service(Devnet), (instance) => api(instance.seed as Manifest)),
+      Effect.map(Effect.service(Devnet), (instance) =>
+        // The seed is this package's own `fixtureSeed` output, which is a `Manifest`.
+        // oxlint-disable-next-line typescript/no-unsafe-type-assertion
+        api(instance.seed as Manifest),
+      ),
     );
     return fixtures.pipe(Layer.provideMerge(devnet));
   };

@@ -1,11 +1,11 @@
-import { Effect } from "effect";
+import { Effect, String as Str } from "effect";
 
 import { predictVerifiableProxyAddress } from "@ensforge/contracts/v2";
 import { concatHex, namehash, type Address } from "viem";
 import { mnemonicToAccount } from "viem/accounts";
 
 import { expectState } from "../builders/check.ts";
-import type { Fixture } from "../fixture.ts";
+import { factAddress, type Fixture } from "../fixture.ts";
 
 /** Accounts acting on names other than as owners: operators, delegates, an HCA, a 7702 EOA. */
 export const accounts: readonly Fixture[] = [
@@ -109,12 +109,12 @@ export const accounts: readonly Fixture[] = [
     check: (c, facts) =>
       Effect.gen(function* () {
         const code = yield* c.cheat((client) =>
-          client.getCode({ address: facts["account"] as Address }),
+          client.getCode({ address: factAddress(facts, "account") }),
         );
         yield* expectState(
           "account.eip7702",
           "delegated",
-          code?.startsWith("0xef0100") ?? false,
+          code !== undefined && Str.startsWith("0xef0100")(code),
           true,
         );
       }),

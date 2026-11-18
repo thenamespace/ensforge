@@ -1,4 +1,4 @@
-import { Effect } from "effect";
+import { Array as Arr, Effect, String as Str } from "effect";
 
 import { step, type Step } from "@ensforge/test-devnet";
 import { zeroAddress } from "viem";
@@ -13,6 +13,13 @@ const chunkSize = 25;
 /** The `.eth` second-level name `name` is or sits under. */
 const secondLevel = (name: string) => /[^.]+\.eth$/u.exec(name)?.[0];
 
+// The `.eth` second-level name each fixture sits under, for those that do.
+const secondLevels = (facts: Map<string, Facts>, fixtures: readonly Fixture[]) =>
+  Arr.flatMap(fixtures, (fixture) => {
+    const name = secondLevel(String(facts.get(fixture.id)?.["name"]));
+    return name === undefined ? [] : [name];
+  });
+
 /**
  * Mainnet's premigration: before the launch, ENSv2 reserves every ENSv1 `.eth` label that is
  * registered or in grace, until its ENSv1 expiry plus the migration bonus: the fixtures'
@@ -25,15 +32,15 @@ export const premigration = (selected: readonly Fixture[], facts: Map<string, Fa
     Effect.gen(function* () {
       const now = c.time.now();
       const excluded = new Set(
-        selected
-          .filter((fixture) => fixture.unreserved === true)
-          .flatMap((fixture) => secondLevel(String(facts.get(fixture.id)?.["name"])) ?? []),
-      );
-      const names = [
-        ...new Set(
-          selected.flatMap((fixture) => secondLevel(String(facts.get(fixture.id)?.["name"])) ?? []),
+        secondLevels(
+          facts,
+          Arr.filter(selected, (fixture) => fixture.unreserved === true),
         ),
-      ].filter((name) => !excluded.has(name));
+      );
+      const names = Arr.filter(
+        [...new Set(secondLevels(facts, selected))],
+        (name) => !excluded.has(name),
+      );
 
       const reservations: {
         readonly name: string;
@@ -41,7 +48,7 @@ export const premigration = (selected: readonly Fixture[], facts: Map<string, Fa
         readonly expiry: bigint;
       }[] = [];
       for (const name of names) {
-        const label = name.slice(0, -".eth".length);
+        const label = Str.slice(0, -".eth".length)(name);
         const expiry = yield* c.read<bigint>("v1.baseRegistrar", "nameExpires", [labelId(label)]);
         // Registered or in the 90-day grace period.
         if (expiry === 0n || expiry + days(90n) <= now) continue;
@@ -56,12 +63,12 @@ export const premigration = (selected: readonly Fixture[], facts: Map<string, Fa
         yield* c.write("v2.batchRegistrar", "batchRegister", [
           zeroAddress,
           resolver,
-          chunk.map(({ label }) => label),
-          chunk.map(({ expiry }) => expiry),
+          Arr.map(chunk, ({ label }) => label),
+          Arr.map(chunk, ({ expiry }) => expiry),
         ]);
       }
 
-      const reserved = new Set(reservations.map(({ name }) => name));
+      const reserved = new Set(Arr.map(reservations, ({ name }) => name));
       for (const fixture of selected) {
         const found = facts.get(fixture.id);
         if (found === undefined) continue;

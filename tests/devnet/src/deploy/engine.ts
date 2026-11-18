@@ -1,6 +1,6 @@
-import { Context, Effect, type FileSystem } from "effect";
+import { Context, Effect, Predicate, type FileSystem } from "effect";
 
-import { getAddress, type Address, type Hash, type TransactionReceipt } from "viem";
+import { getAddress, isHex, type Address, type Hash, type TransactionReceipt } from "viem";
 import { mnemonicToAccount } from "viem/accounts";
 
 import { loadArtifact } from "../artifacts/files.ts";
@@ -98,6 +98,8 @@ export type StepContext = {
  * `yield* CurrentStep` instead of taking it as an argument.
  */
 export class CurrentStep extends Context.Service<CurrentStep, StepContext>()(
+  // Service keys are `<package>/<Service>`; this file is not named after the service.
+  // oxlint-disable-next-line effecttsgo/deterministic-keys
   "@ensforge/test-devnet/CurrentStep",
 ) {}
 
@@ -111,9 +113,7 @@ export type Step = {
 export const step = (id: string, run: Step["run"]): Step => ({ id, run });
 
 const shortMessage = (cause: unknown): string =>
-  typeof cause === "object" && cause !== null && "shortMessage" in cause
-    ? String((cause as { shortMessage: unknown }).shortMessage)
-    : String(cause);
+  Predicate.hasProperty(cause, "shortMessage") ? String(cause.shortMessage) : String(cause);
 
 /**
  * Runs `steps` against an anvil started with `--no-mining`, mining one block per transaction at
@@ -132,11 +132,11 @@ export const runSteps = Effect.fn("runSteps")(function* (
     const attempt = <A>(promise: () => Promise<A>) =>
       Effect.tryPromise({
         try: promise,
-        catch: (cause) => new DeployError({ step: id, message: shortMessage(cause) }),
+        catch: (cause) => DeployError.make({ step: id, message: shortMessage(cause) }),
       });
 
     const sender = (from: TxOptions["from"] = "deployer"): Address =>
-      from.startsWith("0x") ? (from as Address) : accounts[from as AccountName];
+      isHex(from) ? from : accounts[from];
 
     const resolve = Effect.fnUntraced(function* (
       target: string | readonly [Address, ArtifactName],
@@ -144,7 +144,7 @@ export const runSteps = Effect.fn("runSteps")(function* (
       if (typeof target !== "string") return { address: target[0], artifact: target[1] };
       const deployed = ledger.get(target);
       if (deployed === undefined)
-        return yield* new DeployError({ step: id, message: `${target} is not deployed yet` });
+        return yield* DeployError.make({ step: id, message: `${target} is not deployed yet` });
       return deployed;
     });
 
@@ -159,20 +159,22 @@ export const runSteps = Effect.fn("runSteps")(function* (
       if (receipt.status === "success") return receipt;
 
       const transaction = yield* attempt(() => client.getTransaction({ hash }));
-      const reason = yield* Effect.tryPromise(() =>
-        client.call({
-          account: transaction.from,
-          to: transaction.to,
-          data: transaction.input,
-          blockNumber: receipt.blockNumber - 1n,
-        }),
-      ).pipe(
+      const reason = yield* Effect.tryPromise({
+        try: () =>
+          client.call({
+            account: transaction.from,
+            to: transaction.to,
+            data: transaction.input,
+            blockNumber: receipt.blockNumber - 1n,
+          }),
+        catch: shortMessage,
+      }).pipe(
         Effect.match({
-          onFailure: (error) => shortMessage(error.cause),
+          onFailure: (message) => message,
           onSuccess: () => "no reason",
         }),
       );
-      return yield* new DeployError({ step: id, message: `${hash} reverted: ${reason}` });
+      return yield* DeployError.make({ step: id, message: `${hash} reverted: ${reason}` });
     });
 
     const context: StepContext = {
@@ -189,7 +191,7 @@ export const runSteps = Effect.fn("runSteps")(function* (
         Effect.gen(function* () {
           const artifact = variant.artifacts?.[requested] ?? requested;
           if (ledger.has(key))
-            return yield* new DeployError({ step: id, message: `${key} is already deployed` });
+            return yield* DeployError.make({ step: id, message: `${key} is already deployed` });
           const { abi, bytecode } = yield* loadArtifact(artifact);
           const receipt = yield* mined(() =>
             client.deployContract({
@@ -203,7 +205,7 @@ export const runSteps = Effect.fn("runSteps")(function* (
           );
           const address = receipt.contractAddress && getAddress(receipt.contractAddress);
           if (address === null || address === undefined)
-            return yield* new DeployError({ step: id, message: `${artifact} has no address` });
+            return yield* DeployError.make({ step: id, message: `${artifact} has no address` });
           ledger.set(key, { address, artifact });
           return address;
         }),
@@ -211,7 +213,10 @@ export const runSteps = Effect.fn("runSteps")(function* (
         Effect.gen(function* () {
           const { bytecode, source } = yield* loadArtifact(artifact);
           if (source.kind !== "runtime")
-            return yield* new DeployError({ step: id, message: `${artifact} is not runtime code` });
+            return yield* DeployError.make({
+              step: id,
+              message: `${artifact} is not runtime code`,
+            });
           yield* attempt(() => client.setCode({ address: source.address, bytecode }));
           ledger.set(key, { address: source.address, artifact });
           return source.address;
@@ -240,9 +245,12 @@ export const runSteps = Effect.fn("runSteps")(function* (
         Effect.gen(function* () {
           const { address, artifact } = yield* resolve(target);
           const { abi } = yield* loadArtifact(artifact);
-          return (yield* attempt(() =>
+          const result = yield* attempt(() =>
             client.readContract({ address, abi, functionName, args: [...args] }),
-          )) as A;
+          );
+          // The caller states the result type; the ABI is only known at runtime.
+          // oxlint-disable-next-line typescript/no-unsafe-type-assertion
+          return result as A;
         }),
       cheat: (action) => attempt(() => action(client)),
     };

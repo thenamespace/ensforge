@@ -8,19 +8,25 @@ import { Chain, Devnet, profileNames, verify } from "../../src/index.ts";
 
 describe("verify", () => {
   for (const profile of profileNames) {
-    layer(Devnet.layer({ profile }), { excludeTestServices: true })(profile, (it) => {
+    layer(Layer.mergeAll(Devnet.layer({ profile }), NodeServices.layer), {
+      excludeTestServices: true,
+    })(profile, (it) => {
       it.effect("finds the profile wired as intended", () =>
         Effect.gen(function* () {
           const problems = yield* verify();
           assert.deepStrictEqual(problems, []);
-        }).pipe(Effect.provide(NodeServices.layer)),
+        }),
       );
     });
   }
 
-  layer(Chain.layer.pipe(Layer.provideMerge(Devnet.layer({ profile: "v1-live" }))), {
-    excludeTestServices: true,
-  })("tampered", (it) => {
+  layer(
+    Chain.layer.pipe(
+      Layer.provideMerge(Devnet.layer({ profile: "v1-live" })),
+      Layer.provideMerge(NodeServices.layer),
+    ),
+    { excludeTestServices: true },
+  )("tampered", (it) => {
     it.effect("reports altered code and a moved resolver", () =>
       Effect.gen(function* () {
         const { accounts, contract } = yield* Devnet;
@@ -39,7 +45,7 @@ describe("verify", () => {
           "legacy.publicResolver2017: placed code differs from mainnet's",
           `eth resolver: ${accounts.user}, expected ${contract("v1.ethOwnedResolver")}`,
         ]);
-      }).pipe(Effect.provide(NodeServices.layer)),
+      }),
     );
   });
 });

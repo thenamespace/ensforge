@@ -1,4 +1,4 @@
-import { Console, Effect } from "effect";
+import { Clock, Console, Effect } from "effect";
 import { Argument, Command, Flag } from "effect/cli";
 
 import { build } from "../build.ts";
@@ -18,13 +18,17 @@ export const buildCommand = Command.make(
     ),
   },
   ({ profiles: selected, force }) =>
-    Effect.forEach(selected.length > 0 ? selected : profileNames, (profile: ProfileName) =>
-      Effect.gen(function* () {
-        const started = Date.now();
-        const result = yield* build(profile, { force });
-        yield* Console.log(
-          `${profile}: ${result.ledger.size} contracts (${Date.now() - started} ms) — ${profiles[profile].description}`,
-        );
-      }),
+    Effect.forEach(
+      selected.length > 0 ? selected : profileNames,
+      (profile: ProfileName) =>
+        Effect.gen(function* () {
+          const started = yield* Clock.currentTimeMillis;
+          const result = yield* build(profile, { force });
+          const finished = yield* Clock.currentTimeMillis;
+          yield* Console.log(
+            `${profile}: ${result.ledger.size} contracts (${finished - started} ms) — ${profiles[profile].description}`,
+          );
+        }),
+      { concurrency: 1 },
     ),
 ).pipe(Command.withDescription("Build profiles (all when none is named) and cache their state"));

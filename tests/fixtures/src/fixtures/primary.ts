@@ -1,4 +1,4 @@
-import { Effect } from "effect";
+import { Effect, String as Str } from "effect";
 
 import type { StepContext } from "@ensforge/test-devnet";
 import { labelhash, namehash, type Address } from "viem";
@@ -6,7 +6,7 @@ import { labelhash, namehash, type Address } from "viem";
 import { expectState } from "../builders/check.ts";
 import { setV1Records } from "../builders/records.ts";
 import { registerV1 } from "../builders/v1.ts";
-import type { Facts, Fixture } from "../fixture.ts";
+import { factAddress, type Facts, type Fixture } from "../fixture.ts";
 import { durations } from "./durations.ts";
 import { coins } from "./values.ts";
 
@@ -26,8 +26,8 @@ const forward = Effect.fnUntraced(function* (label: string, owner: Address, addr
 // node has (the registry falls back to the 2017 registry for nodes it never wrote).
 const checkReverse = (id: string) => (c: StepContext, facts: Facts) =>
   Effect.gen(function* () {
-    const address = facts["address"] as Address;
-    const node = namehash(`${address.slice(2).toLowerCase()}.addr.reverse`);
+    const address = factAddress(facts, "address");
+    const node = namehash(`${Str.toLowerCase(Str.slice(2)(address))}.addr.reverse`);
     const resolver = yield* c.read<Address>("v1.registry", "resolver", [node]);
     const name = yield* c.read<string>([resolver, "v1/PublicResolver"], "name", [node]);
     yield* expectState(id, "addr.reverse name", name, facts["reverseName"]);
@@ -169,9 +169,11 @@ export const primary: readonly Fixture[] = [
             [namehash("reverse"), labelhash("addr"), registrar],
             owner,
           );
-        yield* setAddrReverse(yield* c.address("legacy.reverseRegistrar2020"));
+        const legacyRegistrar = yield* c.address("legacy.reverseRegistrar2020");
+        yield* setAddrReverse(legacyRegistrar);
         yield* c.write("legacy.reverseRegistrar2020", "setName", [name], { from: c.accounts.user });
-        yield* setAddrReverse(yield* c.address("v1.reverseRegistrar"));
+        const currentRegistrar = yield* c.address("v1.reverseRegistrar");
+        yield* setAddrReverse(currentRegistrar);
         return { name, address: c.accounts.user, reverseName: name };
       }),
     check: checkReverse("primary.reverse-2020"),

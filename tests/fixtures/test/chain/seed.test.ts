@@ -1,5 +1,5 @@
 import { assert, describe, layer } from "@effect/vitest";
-import { Effect } from "effect";
+import { Array as Arr, Effect } from "effect";
 
 import { profileNames } from "@ensforge/test-devnet";
 
@@ -11,10 +11,10 @@ describe("seeded fixtures", () => {
       it.effect("seeds and self-checks every fixture for the profile", () =>
         Effect.gen(function* () {
           const fixtures = yield* Fixtures;
-          const expected = allFixtures.filter((fixture) => seededOn(fixture, profile));
+          const expected = Arr.filter(allFixtures, (fixture) => seededOn(fixture, profile));
           assert.deepStrictEqual(
-            fixtures.all.map((fixture) => fixture.id),
-            expected.map((fixture) => fixture.id),
+            Arr.map(fixtures.all, (fixture) => fixture.id),
+            Arr.map(expected, (fixture) => fixture.id),
           );
           for (const fixture of fixtures.all) assert.isNotEmpty(fixture.name, fixture.id);
         }),

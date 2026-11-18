@@ -1,4 +1,13 @@
-import { Console, Effect, FileSystem, Option } from "effect";
+import {
+  Array as Arr,
+  Console,
+  Effect,
+  FileSystem,
+  Formatter,
+  Option,
+  Record as Rec,
+  String as Str,
+} from "effect";
 import { Argument, Command, Flag } from "effect/cli";
 
 import { build } from "../build.ts";
@@ -30,7 +39,7 @@ export const startCommand = Command.make(
       if (Option.isSome(manifest)) {
         yield* fs.writeFileString(
           manifest.value,
-          `${JSON.stringify(
+          `${Formatter.formatJson(
             {
               profile,
               chainId,
@@ -40,20 +49,23 @@ export const startCommand = Command.make(
               contracts: devnet.contracts,
               deployments: devnet.deployments,
             },
-            null,
-            2,
+            { space: 2 },
           )}\n`,
         );
       }
       yield* Console.log(
-        [
-          `${profile}: ${profiles[profile].description}`,
-          `RPC       ${devnet.rpcUrl} (chain ${chainId})`,
-          ...Object.entries(devnet.accounts).map(
-            ([name, address]) => `${name.padEnd(9)} ${address}`,
-          ),
-          "Stop with Ctrl-C.",
-        ].join("\n"),
+        Arr.join(
+          [
+            `${profile}: ${profiles[profile].description}`,
+            `RPC       ${devnet.rpcUrl} (chain ${chainId})`,
+            ...Arr.map(
+              Rec.toEntries(devnet.accounts),
+              ([name, address]) => `${Str.padEnd(9)(name)} ${address}`,
+            ),
+            "Stop with Ctrl-C.",
+          ],
+          "\n",
+        ),
       );
       return yield* Effect.never;
     }).pipe(Effect.scoped),
@@ -62,7 +74,7 @@ export const startCommand = Command.make(
 export const profileCommand = Command.make("profile", { profile: profileArgument }, ({ profile }) =>
   build(profile).pipe(
     Effect.flatMap((built) =>
-      Console.log(JSON.stringify(profiles[profile].deployments(built.ledger), null, 2)),
+      Console.log(Formatter.formatJson(profiles[profile].deployments(built.ledger), { space: 2 })),
     ),
   ),
 ).pipe(Command.withDescription("Print the ensforge deployment profile of a profile"));
@@ -71,13 +83,16 @@ export const verifyCommand = Command.make(
   "verify",
   { profiles: profileArgument.pipe(Argument.variadic()) },
   ({ profiles: selected }) =>
-    Effect.forEach(selected.length > 0 ? selected : profileNames, (profile) =>
-      Effect.gen(function* () {
-        const devnet = yield* startDevnet({ profile });
-        const problems = yield* verify().pipe(Effect.provideService(Devnet, devnet));
-        if (problems.length > 0) return yield* new VerifyFailed({ profile, problems });
-        yield* Console.log(`${profile}: ok`);
-      }).pipe(Effect.scoped),
+    Effect.forEach(
+      selected.length > 0 ? selected : profileNames,
+      (profile) =>
+        Effect.gen(function* () {
+          const devnet = yield* startDevnet({ profile });
+          const problems = yield* verify().pipe(Effect.provideService(Devnet, devnet));
+          if (problems.length > 0) return yield* VerifyFailed.make({ profile, problems });
+          return yield* Console.log(`${profile}: ok`);
+        }).pipe(Effect.scoped),
+      { concurrency: 1 },
     ),
 ).pipe(
   Command.withDescription("Check that profiles (all when none is named) are wired as intended"),

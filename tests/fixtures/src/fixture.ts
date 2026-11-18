@@ -1,4 +1,4 @@
-import type { Effect, FileSystem } from "effect";
+import { absurd, type Effect, type FileSystem } from "effect";
 
 import type {
   ArtifactError,
@@ -7,10 +7,13 @@ import type {
   ProfileName,
   StepContext,
 } from "@ensforge/test-devnet";
-import type { Hex } from "viem";
+import { getAddress, type Address, type Hex } from "viem";
 
 /** JSON-safe facts a fixture records: addresses, expiries (decimal strings), expected values. */
 export type Facts = Readonly<Record<string, string | number | boolean | null>>;
+
+/** The address fact `key`, which a fixture's phase recorded. */
+export const factAddress = (facts: Facts, key: string): Address => getAddress(String(facts[key]));
 
 /** Axis → value, e.g. `{ kind: "v1-wrapped", fuses: "locked" }`. Tests select by these. */
 export type Tags = Readonly<Record<string, string>>;
@@ -89,5 +92,7 @@ export const seededOn = (fixture: Fixture, profile: ProfileName): boolean => {
     case "mainnet-shaped":
     case "v2-only":
       return fixture.unlaunched !== true;
+    default:
+      return absurd(profile);
   }
 };

@@ -1,10 +1,20 @@
 import { createRequire } from "node:module";
 
-import { Effect } from "effect";
+import {
+  Array as Arr,
+  Effect,
+  Formatter,
+  Order,
+  Predicate,
+  Record as Rec,
+  Schema,
+  String as Str,
+} from "effect";
 
 import type { Abi, Hex } from "viem";
 
 import { ArtifactError } from "../errors.ts";
+import { AbiSchema } from "./json.ts";
 
 type Solc = { readonly compile: (input: string) => string; readonly version: () => string };
 
@@ -24,17 +34,25 @@ export type StandardJsonInput = {
 
 export type Compiled = { readonly abi: Abi; readonly bytecode: Hex };
 
-type Output = {
-  readonly errors?: readonly { readonly severity: string; readonly formattedMessage: string }[];
-  readonly contracts?: Readonly<
-    Record<
-      string,
-      Readonly<
-        Record<string, { readonly abi: Abi; readonly evm: { bytecode: { object: string } } }>
-      >
-    >
-  >;
-};
+const Output = Schema.fromJsonString(
+  Schema.Struct({
+    errors: Schema.optional(
+      Schema.Array(Schema.Struct({ severity: Schema.String, formattedMessage: Schema.String })),
+    ),
+    contracts: Schema.optional(
+      Schema.Record(
+        Schema.String,
+        Schema.Record(
+          Schema.String,
+          Schema.Struct({
+            abi: AbiSchema,
+            evm: Schema.Struct({ bytecode: Schema.Struct({ object: Schema.String }) }),
+          }),
+        ),
+      ),
+    ),
+  }),
+);
 
 const require = createRequire(import.meta.url);
 
@@ -43,20 +61,27 @@ type Remapping = { readonly context: string; readonly prefix: string; readonly t
 // Resolves an import the way solc does: relative paths against the importing file, others through
 // the longest matching remapping whose context contains the importing file.
 const resolveImport = (from: string, path: string, remappings: readonly Remapping[]): string => {
-  if (path.startsWith("./") || path.startsWith("../")) {
-    const parts = from.slice(0, from.lastIndexOf("/")).split("/");
-    for (const segment of path.split("/")) {
+  if (Str.startsWith("./")(path) || Str.startsWith("../")(path)) {
+    const parts = Arr.dropRight(Str.split(from, "/"), 1);
+    for (const segment of Str.split(path, "/")) {
       if (segment === "..") parts.pop();
       else if (segment !== ".") parts.push(segment);
     }
-    return parts.join("/");
+    return Arr.join(parts, "/");
   }
-  const match = remappings
-    .filter((remapping) => from.startsWith(remapping.context) && path.startsWith(remapping.prefix))
-    .toSorted(
-      (a, b) => b.context.length - a.context.length || b.prefix.length - a.prefix.length,
-    )[0];
-  return match === undefined ? path : match.target + path.slice(match.prefix.length);
+  const longestFirst = Order.combine(
+    Order.flip(Order.mapInput(Order.Number, (remapping: Remapping) => remapping.context.length)),
+    Order.flip(Order.mapInput(Order.Number, (remapping: Remapping) => remapping.prefix.length)),
+  );
+  const match = Arr.sort(
+    Arr.filter(
+      remappings,
+      (remapping) =>
+        Str.startsWith(remapping.context)(from) && Str.startsWith(remapping.prefix)(path),
+    ),
+    longestFirst,
+  )[0];
+  return match === undefined ? path : match.target + Str.slice(match.prefix.length)(path);
 };
 
 /**
@@ -64,31 +89,29 @@ const resolveImport = (from: string, path: string, remappings: readonly Remappin
  * compiling them alone gives the same bytecode, and keeps solc-js within its memory.
  */
 const importClosure = (input: StandardJsonInput, roots: readonly string[]): StandardJsonInput => {
-  const remappings = ((input.settings["remappings"] ?? []) as string[]).map(
+  const configured = input.settings["remappings"];
+  const remappings = Arr.map(
+    Arr.filter(Arr.isArray(configured) ? configured : [], Predicate.isString),
     (remapping): Remapping => {
-      const [left = "", target = ""] = remapping.split("=");
-      const [context = "", prefix = ""] = left.includes(":") ? left.split(":") : ["", left];
+      const [left, target = ""] = Str.split(remapping, "=");
+      const [context, prefix = ""] = Str.includes(":")(left) ? Str.split(left, ":") : ["", left];
       return { context, prefix, target };
     },
   );
-  const included = new Set<string>();
+  const included = new Map<string, { readonly content: string }>();
   const pending = [...roots];
-  while (pending.length > 0) {
-    const file = pending.pop() as string;
+  for (let file = pending.pop(); file !== undefined; file = pending.pop()) {
     if (included.has(file)) continue;
-    const content = input.sources[file]?.content;
-    if (content === undefined) continue;
-    included.add(file);
-    for (const [, path] of content.matchAll(/^\s*import\s[^"']*["']([^"']+)["']/gm)) {
-      pending.push(resolveImport(file, path as string, remappings));
+    const source = input.sources[file];
+    if (source === undefined) continue;
+    included.set(file, source);
+    for (const [, path = ""] of Str.matchAll(/^\s*import\s[^"']*["']([^"']+)["']/gm)(
+      source.content,
+    )) {
+      pending.push(resolveImport(file, path, remappings));
     }
   }
-  return {
-    ...input,
-    sources: Object.fromEntries(
-      [...included].map((file) => [file, input.sources[file] as { content: string }]),
-    ),
-  };
+  return { ...input, sources: Rec.fromEntries([...included]) };
 };
 
 /**
@@ -101,41 +124,50 @@ export const compile = Effect.fnUntraced(function* (
   input: StandardJsonInput,
   contracts: readonly string[],
 ) {
-  const artifact = contracts.join(", ");
+  const artifact = Arr.join(contracts, ", ");
+  // solc-js is an untyped CommonJS module.
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion
   const solc = require(compilers[version]) as Solc;
-  if (!solc.version().startsWith(`${version}+`)) {
-    return yield* new ArtifactError({
+  if (!Str.startsWith(`${version}+`)(solc.version())) {
+    return yield* ArtifactError.make({
       artifact,
       message: `expected solc ${version}, loaded ${solc.version()}`,
     });
   }
 
-  const outputSelection: Record<string, Record<string, string[]>> = {};
+  const outputSelection: Record<string, Record<string, readonly string[]>> = {};
   for (const contract of contracts) {
-    const [file = "", name = ""] = contract.split(":");
+    const [file, name = ""] = Str.split(contract, ":");
     (outputSelection[file] ??= {})[name] = ["abi", "evm.bytecode.object"];
   }
-  const pruned = importClosure(input, Object.keys(outputSelection));
-  const output = JSON.parse(
-    solc.compile(JSON.stringify({ ...pruned, settings: { ...pruned.settings, outputSelection } })),
-  ) as Output;
+  const pruned = importClosure(input, Rec.keys(outputSelection));
+  const standardInput = Formatter.formatJson({
+    ...pruned,
+    settings: { ...pruned.settings, outputSelection },
+  });
+  const output = yield* Schema.decodeEffect(Output)(solc.compile(standardInput)).pipe(
+    Effect.mapError((cause) => ArtifactError.make({ artifact, message: String(cause) })),
+  );
 
-  const errors = (output.errors ?? []).filter((error) => error.severity === "error");
+  const errors = Arr.filter(output.errors ?? [], (error) => error.severity === "error");
   if (errors.length > 0) {
-    return yield* new ArtifactError({
+    return yield* ArtifactError.make({
       artifact,
-      message: errors.map((error) => error.formattedMessage).join("\n"),
+      message: Arr.join(
+        Arr.map(errors, (error) => error.formattedMessage),
+        "\n",
+      ),
     });
   }
 
   const compiled: Record<string, Compiled> = {};
   for (const contract of contracts) {
-    const [file = "", name = ""] = contract.split(":");
+    const [file, name = ""] = Str.split(contract, ":");
     const result = output.contracts?.[file]?.[name];
     if (result === undefined) {
-      return yield* new ArtifactError({ artifact, message: `${contract} is not in the output` });
+      return yield* ArtifactError.make({ artifact, message: `${contract} is not in the output` });
     }
     compiled[contract] = { abi: result.abi, bytecode: `0x${result.evm.bytecode.object}` };
   }
-  return compiled as Readonly<Record<string, Compiled>>;
+  return compiled;
 });

@@ -1,3 +1,5 @@
+import { String as Str } from "effect";
+
 import { encode } from "@ensdomains/content-hash";
 import type { Hex } from "viem";
 
@@ -25,13 +27,11 @@ export const addresses = {
 
 /** Content hashes of every codec ensforge decodes, plus one it does not know. */
 export const contenthashes = {
-  ipfs: `0x${encode("ipfs", "QmRAQB6YaCyidP37UdDnjFY5vQuiBrcqdyoW1CuDgwxkD4")}` as Hex,
-  ipns: `0x${encode("ipns", "k51qzi5uqu5dgutdk6i1ynyzgkqngpha5xpgia3a5qqp4jsh0u4csozksxel3r")}` as Hex,
-  swarm:
-    `0x${encode("swarm", "d1de9994b4d039f6548d191eb26786769f580809256b4685ef316805265ea162")}` as Hex,
-  onion3:
-    `0x${encode("onion3", "p53lf57qovyuvwsc6xnrppyply3vtqm7l6pcobkmyqsiofyeznfu5uqd")}` as Hex,
-  arweave: `0x${encode("arweave", "ys32Pt8uC7TrVxHdOLByOspfPEq2LO63wREHQIM9SJQ")}` as Hex,
+  ipfs: `0x${encode("ipfs", "QmRAQB6YaCyidP37UdDnjFY5vQuiBrcqdyoW1CuDgwxkD4")}`,
+  ipns: `0x${encode("ipns", "k51qzi5uqu5dgutdk6i1ynyzgkqngpha5xpgia3a5qqp4jsh0u4csozksxel3r")}`,
+  swarm: `0x${encode("swarm", "d1de9994b4d039f6548d191eb26786769f580809256b4685ef316805265ea162")}`,
+  onion3: `0x${encode("onion3", "p53lf57qovyuvwsc6xnrppyply3vtqm7l6pcobkmyqsiofyeznfu5uqd")}`,
+  arweave: `0x${encode("arweave", "ys32Pt8uC7TrVxHdOLByOspfPEq2LO63wREHQIM9SJQ")}`,
   unknown: "0xdeadbeef" as Hex,
 } as const;
 
@@ -53,4 +53,4 @@ export const texts = {
 } as const;
 
 /** A text over 20 KB: readable, but expensive to read in one `eth_call`. */
-export const hugeText = "ens".repeat(8_000);
+export const hugeText = Str.repeat(8_000)("ens");

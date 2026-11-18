@@ -1,3 +1,5 @@
+import { Array as Arr, String as Str } from "effect";
+
 import type { Envelope } from "./fixtures/types.js";
 
 /** Every route of bigname's REST API, below the version prefix. Goldsky serves all but `/resolvers`. */
@@ -54,16 +56,16 @@ export type Fixtures = {
 export const match = (
   path: string,
 ): { readonly route: Route; readonly params: Record<string, string> } | undefined => {
-  const segments = path.split("/").slice(1);
+  const segments = Str.split(path, "/").slice(1);
   for (const route of routes) {
-    const template = route.split("/").slice(1);
+    const template = Str.split(route, "/").slice(1);
     if (template.length !== segments.length) continue;
 
     const params: Record<string, string> = {};
-    const matches = template.every((part, index) => {
-      const segment = segments[index] as string;
-      if (!part.startsWith("{")) return part === segment;
-      params[part.slice(1, -1)] = decodeURIComponent(segment);
+    const matches = Arr.every(template, (part, index) => {
+      const segment = segments[index] ?? "";
+      if (!Str.startsWith("{")(part)) return part === segment;
+      params[Str.slice(1, -1)(part)] = decodeURIComponent(segment);
       return segment !== "";
     });
     if (matches) return { route, params };

@@ -1,5 +1,6 @@
 export {
   clockJump,
+  factAddress,
   seededOn,
   type Facts,
   type Fixture,

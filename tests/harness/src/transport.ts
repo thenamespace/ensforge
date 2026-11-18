@@ -1,3 +1,5 @@
+import { Array as Arr } from "effect";
+
 import { custom, type EIP1193RequestFn, type Hex } from "viem";
 
 /** One recorded JSON-RPC request. */
@@ -15,13 +17,17 @@ export type Script = (request: {
  */
 export const scriptedTransport = (script: Script) => {
   const calls: RecordedCall[] = [];
+  // viem's `request` is Promise-based and generic over every RPC method, which a script cannot
+  // satisfy type by type.
+  /* oxlint-disable effecttsgo/async-function, typescript/no-unsafe-type-assertion */
   const request = (async ({ method, params }: { method: string; params?: unknown }) => {
     calls.push({ method, params });
     if (method === "eth_chainId") return "0x1" as Hex;
-    const answer = script({ method, params: (params ?? []) as readonly unknown[] });
+    const answer = script({ method, params: Arr.isArray(params) ? params : [] });
     if (answer === undefined) throw new Error(`Unscripted RPC request: ${method}`);
     return answer;
   }) as EIP1193RequestFn;
+  /* oxlint-enable effecttsgo/async-function, typescript/no-unsafe-type-assertion */
   return { transport: custom({ request }), calls };
 };
 

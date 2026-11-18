@@ -1,4 +1,4 @@
-import { Effect } from "effect";
+import { Effect, String as Str } from "effect";
 
 import { CurrentStep, dnsEncode } from "@ensforge/test-devnet";
 import { labelhash, namehash, zeroAddress, zeroHash, type Address } from "viem";
@@ -234,6 +234,6 @@ export const hashedSubname = Effect.fnUntraced(function* (options: {
     [namehash(options.parent), options.labelhash, options.owner],
     { from: options.parentOwner },
   );
-  const name = `[${options.labelhash.slice(2)}].${options.parent}`;
+  const name = `[${Str.slice(2)(options.labelhash)}].${options.parent}`;
   return { name, node: namehash(name) };
 });

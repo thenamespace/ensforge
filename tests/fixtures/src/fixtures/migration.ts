@@ -8,7 +8,7 @@ import { encodeAbiParameters, hexToBigInt, zeroAddress, type Address } from "vie
 import { expectState } from "../builders/check.ts";
 import { labelId } from "../builders/names.ts";
 import { registerV1, wrappedSubname } from "../builders/v1.ts";
-import type { Fixture } from "../fixture.ts";
+import { factAddress, type Fixture } from "../fixture.ts";
 import { days, durations } from "./durations.ts";
 
 /** `abi.encode(MigrationData(label, owner, subregistry, resolver))`, the controllers' input. */
@@ -87,7 +87,7 @@ export const migration: readonly Fixture[] = [
             c.accounts.alice,
             yield* c.address("v2.unlockedMigrationController"),
             labelId("m-unwrapped"),
-            migrationData("m-unwrapped", c.accounts.alice, facts["resolver"] as Address),
+            migrationData("m-unwrapped", c.accounts.alice, factAddress(facts, "resolver")),
           ],
           { from: c.accounts.alice },
         );
@@ -111,9 +111,9 @@ export const migration: readonly Fixture[] = [
           [
             c.accounts.alice,
             yield* c.address("v2.unlockedMigrationController"),
-            hexToBigInt(facts["node"] as `0x${string}`),
+            BigInt(String(facts["node"])),
             1n,
-            migrationData("m-wrapped", c.accounts.alice, facts["resolver"] as Address),
+            migrationData("m-wrapped", c.accounts.alice, factAddress(facts, "resolver")),
           ],
           { from: c.accounts.alice },
         );
@@ -161,9 +161,9 @@ export const migration: readonly Fixture[] = [
           [
             c.accounts.alice,
             yield* c.address("v2.lockedMigrationController"),
-            hexToBigInt(facts["node"] as `0x${string}`),
+            BigInt(String(facts["node"])),
             1n,
-            migrationData("m-locked", c.accounts.alice, facts["resolver"] as Address),
+            migrationData("m-locked", c.accounts.alice, factAddress(facts, "resolver")),
           ],
           { from: c.accounts.alice },
         );

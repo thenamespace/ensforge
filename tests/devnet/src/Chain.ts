@@ -46,7 +46,7 @@ type PlanEvent = {
 type SimulateParameters = Parameters<DevnetClient["simulateContract"]>[0];
 
 const rpc = <A>(method: string, run: () => Promise<A>) =>
-  Effect.tryPromise({ try: run, catch: (cause) => new ChainError({ method, cause }) });
+  Effect.tryPromise({ try: run, catch: (cause) => ChainError.make({ method, cause }) });
 
 /** The running devnet as Effects: reads and writes, accounts, time and snapshots. */
 export class Chain extends Context.Service<
@@ -124,7 +124,7 @@ export class Chain extends Context.Service<
     Effect.gen(function* () {
       const { client } = yield* Devnet;
       // `passWaits` is a plain callback the SDK calls; it runs its effects with this context.
-      const context = yield* Effect.context<never>();
+      const context = yield* Effect.context();
       const latestBlock = rpc("getBlock", () => client.getBlock());
       const receipt = (hash: Hash) =>
         rpc("waitForTransactionReceipt", () => client.waitForTransactionReceipt({ hash }));
@@ -149,10 +149,14 @@ export class Chain extends Context.Service<
         code: (address) => rpc("getCode", () => client.getCode({ address })),
         sign: (account, hash) =>
           rpc("signMessage", () => client.signMessage({ account, message: { raw: hash } })),
+        // viem's contract and typed-data generics cannot be related to the service's own
+        // signatures through a generic `parameters`.
+        /* oxlint-disable typescript/no-unsafe-type-assertion */
         signTypedData: (parameters) =>
           rpc("signTypedData", () => client.signTypedData(parameters as never)),
         read: (parameters) =>
           rpc("readContract", () => client.readContract(parameters as never)) as never,
+        /* oxlint-enable typescript/no-unsafe-type-assertion */
         call: (parameters) => rpc("call", () => client.call(parameters)),
         simulate: (parameters) =>
           rpc("simulateContract", () => client.simulateContract(parameters)),

@@ -1,4 +1,4 @@
-import { Context, Effect, FileSystem, Layer, Stream, type Scope } from "effect";
+import { Context, Effect, FileSystem, Layer, Stream, String as Str, type Scope } from "effect";
 import { ChildProcess, ChildProcessSpawner } from "effect/process";
 
 import getPort from "get-port";
@@ -36,6 +36,7 @@ export type AnvilInstance = { readonly rpcUrl: string; readonly port: number };
 
 // Mainnet's current hardfork; it also provides the P-256 precompile ENS DNSSEC uses. prool's
 // hardfork type predates Osaka (anvil accepts it, and rejects prool's `Latest`).
+// oxlint-disable-next-line typescript/no-unsafe-type-assertion
 const hardfork = "Osaka" as "Prague";
 
 /** Runs anvil processes through prool, each stopped when its scope closes. */
@@ -56,24 +57,24 @@ export class Anvil extends Context.Service<
       // Checked on the first start, so commands that never run anvil do not need it.
       const checkVersion = yield* Effect.cached(
         Effect.gen(function* () {
-          const pinned = (yield* fs
+          const pinnedFile = yield* fs
             .readFileString(`${packageDir}foundry-version`)
-            .pipe(Effect.mapError((cause) => new AnvilError({ message: String(cause) })))).trim();
+            .pipe(Effect.mapError((cause) => AnvilError.make({ message: String(cause) })));
+          const pinned = Str.trim(pinnedFile);
           const installHint = `install it with \`foundryup --install ${pinned}\``;
 
           const version = yield* spawner.spawn(ChildProcess.make("anvil", ["--version"])).pipe(
             Effect.flatMap((handle) => handle.stdout.pipe(Stream.decodeText(), Stream.mkString)),
             Effect.scoped,
-            Effect.mapError(
-              () => new AnvilError({ message: `anvil is not on PATH; ${installHint}` }),
+            Effect.mapError(() =>
+              AnvilError.make({ message: `anvil is not on PATH; ${installHint}` }),
             ),
           );
           const found = /Version: (\S+)/.exec(version)?.[1];
-          if (found !== pinned) {
-            return yield* new AnvilError({
-              message: `found anvil ${found}, need ${pinned}; ${installHint}`,
-            });
-          }
+          if (found === pinned) return yield* Effect.void;
+          return yield* AnvilError.make({
+            message: `found anvil ${found}, need ${pinned}; ${installHint}`,
+          });
         }),
       );
 
@@ -112,7 +113,7 @@ export class Anvil extends Context.Service<
         yield* Effect.acquireRelease(
           Effect.tryPromise({
             try: () => instance.start(),
-            catch: (cause) => new AnvilError({ message: `anvil did not start: ${String(cause)}` }),
+            catch: (cause) => AnvilError.make({ message: `anvil did not start: ${String(cause)}` }),
           }),
           () => Effect.promise(() => instance.stop()),
         );

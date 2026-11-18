@@ -1,4 +1,4 @@
-import { Effect, type FileSystem } from "effect";
+import { Array as Arr, Effect, Record as Rec, String as Str, type FileSystem } from "effect";
 
 import { Abis, Roles } from "@ensforge/contracts";
 import { permissionedResolverResource } from "@ensforge/contracts/v2";
@@ -9,7 +9,7 @@ import { expectState } from "../builders/check.ts";
 import { resolveText, setV1Records, setV2Records, type Records } from "../builders/records.ts";
 import { registerV1 } from "../builders/v1.ts";
 import { ownedResolver, registerV2 } from "../builders/v2.ts";
-import type { Fixture } from "../fixture.ts";
+import { factAddress, type Fixture } from "../fixture.ts";
 import { durations } from "./durations.ts";
 import { abis, addresses, coins, contenthashes, hugeText, texts } from "./values.ts";
 
@@ -53,11 +53,11 @@ const v1WithRecords = (
     Effect.gen(function* () {
       const written = records(c);
       const expected = Effect.isEffect(written) ? yield* written : written;
-      const resolver = [facts["resolver"] as Address, "v1/PublicResolver"] as const;
+      const resolver = [factAddress(facts, "resolver"), "v1/PublicResolver"] as const;
       const node = namehash(String(facts["name"]));
-      for (const [key, value] of Object.entries(expected.texts ?? {})) {
+      for (const [key, value] of Rec.toEntries(expected.texts ?? {})) {
         const actual = yield* c.read<string>(resolver, "text", [node, key]);
-        yield* expectState(id, `text ${key.slice(0, 40)}`, actual, value);
+        yield* expectState(id, `text ${Str.slice(0, 40)(key)}`, actual, value);
       }
       if (expected.contenthash !== undefined) {
         const actual = yield* c.read(resolver, "contenthash", [node]);
@@ -92,7 +92,7 @@ const avatar = (
 const tokenAvatar = (standard: "erc721" | "erc1155", id: bigint) =>
   Effect.gen(function* () {
     const contract = yield* (yield* CurrentStep).address("mock.avatarToken");
-    return `eip155:31337/${standard}:${contract.toLowerCase()}/${id}`;
+    return `eip155:31337/${standard}:${Str.toLowerCase(contract)}/${id}`;
   }).pipe(Effect.orDie);
 
 const mintAvatarToken = (id: bigint) =>
@@ -132,7 +132,7 @@ export const records: readonly Fixture[] = [
       addresses: [[coins.btc, addresses.btcTaproot.bytes]],
     }),
   ),
-  ...Object.entries(contenthashes).map(([codec, contenthash]) =>
+  ...Arr.map(Rec.toEntries(contenthashes), ([codec, contenthash]) =>
     v1WithRecords(
       `records.contenthash.${codec}`,
       `contenthash-${codec}`,
@@ -207,7 +207,7 @@ export const records: readonly Fixture[] = [
     check: (c, facts) =>
       Effect.gen(function* () {
         const url = yield* resolveText({
-          resolver: facts["resolver"] as Address,
+          resolver: factAddress(facts, "resolver"),
           name: String(facts["name"]),
           key: "url",
         });
@@ -240,7 +240,7 @@ export const records: readonly Fixture[] = [
     check: (c, facts) =>
       Effect.gen(function* () {
         const url = yield* resolveText({
-          resolver: facts["resolver"] as Address,
+          resolver: factAddress(facts, "resolver"),
           name: String(facts["name"]),
           key: "url",
         });
@@ -273,7 +273,7 @@ export const records: readonly Fixture[] = [
     check: (c, facts) =>
       Effect.gen(function* () {
         const url = yield* resolveText({
-          resolver: facts["resolver"] as Address,
+          resolver: factAddress(facts, "resolver"),
           name: String(facts["name"]),
           key: "url",
         });
@@ -307,7 +307,7 @@ export const records: readonly Fixture[] = [
     check: (c, facts) =>
       Effect.gen(function* () {
         const allowed = yield* c.read(
-          [facts["resolver"] as Address, "v2/PermissionedResolverImpl"],
+          [factAddress(facts, "resolver"), "v2/PermissionedResolverImpl"],
           "hasRoles",
           [permissionedResolverResource({ text: "url" }), Roles.resolver.setText, c.accounts.carol],
         );

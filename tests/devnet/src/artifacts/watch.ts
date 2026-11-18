@@ -1,4 +1,5 @@
-import { Effect, Stream } from "effect";
+import { Array as Arr, Effect, Order, Record as Rec, Schema, Stream, String as Str } from "effect";
+import { HttpClient, HttpClientResponse } from "effect/http";
 import { ChildProcess, ChildProcessSpawner } from "effect/process";
 
 import { ArtifactError } from "../errors.ts";
@@ -6,22 +7,25 @@ import { deploymentRecords, repositories } from "./sources.ts";
 
 /** The body at `url`, or `undefined` when it does not exist. */
 const fetchText = (url: string) =>
-  Effect.tryPromise({
-    try: async () => {
-      const response = await fetch(url, { headers: { "user-agent": "ensforge-devnet" } });
-      if (response.status === 404) return undefined;
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      return response.text();
-    },
-    catch: (cause) => new ArtifactError({ artifact: url, message: String(cause) }),
-  });
+  HttpClient.get(url, { headers: { "user-agent": "ensforge-devnet" } }).pipe(
+    Effect.flatMap((response) =>
+      response.status === 404
+        ? Effect.undefined
+        : HttpClientResponse.filterStatusOk(response).pipe(Effect.flatMap((ok) => ok.text)),
+    ),
+    Effect.mapError((cause) => ArtifactError.make({ artifact: url, message: String(cause) })),
+  );
 
-const fetchJson = <A>(url: string) =>
+const fetchJson = <S extends Schema.Top>(url: string, schema: S) =>
   fetchText(url).pipe(
     Effect.flatMap((text) =>
       text === undefined
-        ? Effect.fail(new ArtifactError({ artifact: url, message: "HTTP 404" }))
-        : Effect.succeed(JSON.parse(text) as A),
+        ? Effect.fail(ArtifactError.make({ artifact: url, message: "HTTP 404" }))
+        : Schema.decodeEffect(Schema.fromJsonString(schema))(text).pipe(
+            Effect.mapError((cause) =>
+              ArtifactError.make({ artifact: url, message: String(cause) }),
+            ),
+          ),
     ),
   );
 
@@ -33,32 +37,37 @@ const remoteBranches = (url: string, patterns: readonly string[]) =>
       ChildProcess.make("git", ["ls-remote", "--heads", url, ...patterns]),
     );
     const output = yield* handle.stdout.pipe(Stream.decodeText(), Stream.mkString);
-    if ((yield* handle.exitCode) !== ChildProcessSpawner.ExitCode(0)) {
-      return yield* new ArtifactError({ artifact: url, message: "git ls-remote failed" });
+    const exitCode = yield* handle.exitCode;
+    if (exitCode !== ChildProcessSpawner.ExitCode(0)) {
+      return yield* ArtifactError.make({ artifact: url, message: "git ls-remote failed" });
     }
-    return output.split("\n").flatMap((line) => {
-      const [commit, ref] = line.split("\t");
+    return Arr.flatMap(Str.split(output, "\n"), (line) => {
+      const [commit, ref] = Str.split(line, "\t");
       return commit === undefined || ref === undefined
         ? []
-        : [{ branch: ref.replace("refs/heads/", ""), commit }];
+        : [{ branch: Str.replace("refs/heads/", "")(ref), commit }];
     });
   }).pipe(
     Effect.scoped,
     Effect.catchTag("PlatformError", (cause) =>
-      Effect.fail(new ArtifactError({ artifact: url, message: String(cause) })),
+      Effect.fail(ArtifactError.make({ artifact: url, message: String(cause) })),
     ),
   );
 
 /** `Contract → address` rows of a contracts-v2 `addresses.md` deployment record. */
 const addressRows = (markdown: string): ReadonlyMap<string, string> =>
   new Map(
-    [...markdown.matchAll(/^\| (\w+) \| \[(0x[0-9a-fA-F]{40})\]/gm)].flatMap(
+    Arr.flatMap(
+      [...Str.matchAll(/^\| (\w+) \| \[(0x[0-9a-fA-F]{40})\]/gm)(markdown)],
       ([, contract, address]) =>
-        contract === undefined || address === undefined ? [] : [[contract, address.toLowerCase()]],
+        contract === undefined || address === undefined
+          ? []
+          : [[contract, Str.toLowerCase(address)]],
     ),
   );
 
-const slugOf = (url: string) => url.replace("https://github.com/", "").replace(/\.git$/, "");
+const slugOf = (url: string) =>
+  Str.replace(/\.git$/, "")(Str.replace("https://github.com/", "")(url));
 
 /**
  * What changed upstream since the pinned sources: a newer release of either repository, and the
@@ -84,7 +93,8 @@ export const watchReleases = Effect.fn("watchReleases")(function* () {
   });
   const pinned = yield* records(repositories[deploymentRecords].commit);
   const compare = Effect.fnUntraced(function* (source: string, ref: string) {
-    for (const [network, after] of yield* records(ref)) {
+    const refRows = yield* records(ref);
+    for (const [network, after] of refRows) {
       const before = pinned.get(network) ?? new Map<string, string>();
       for (const [contract, address] of after) {
         const was = before.get(contract);
@@ -100,10 +110,11 @@ export const watchReleases = Effect.fn("watchReleases")(function* () {
     }
   });
 
-  for (const [repository, pin] of Object.entries(repositories)) {
+  for (const [repository, pin] of Rec.toEntries(repositories)) {
     if (!("tag" in pin)) continue;
-    const latest = yield* fetchJson<{ readonly tag_name: string }>(
+    const latest = yield* fetchJson(
       `https://api.github.com/repos/${slugOf(pin.url)}/releases/latest`,
+      Schema.Struct({ tag_name: Schema.String }),
     );
     if (latest.tag_name === pin.tag) continue;
     changes.push(`${repository}: release ${latest.tag_name} (pinned ${pin.tag})`);
@@ -114,20 +125,31 @@ export const watchReleases = Effect.fn("watchReleases")(function* () {
 
   // ENS redeploys single contracts from deployment branches between releases; a newer
   // `post-audit-*` branch supersedes the older ones.
-  const branches = (yield* remoteBranches(repositories["contracts-v2"].url, [
+  const remoteHeads = yield* remoteBranches(repositories["contracts-v2"].url, [
     "deployment",
     "post-audit*",
-  ])).filter(({ branch }) => branch === "deployment" || /^post-audit(-[\w.-]+)?$/.test(branch));
-  const dated = yield* Effect.forEach(
-    branches.filter(({ branch }) => branch !== "deployment"),
-    ({ branch, commit }) =>
-      fetchJson<{ readonly commit: { readonly committer: { readonly date: string } } }>(
-        `https://api.github.com/repos/${v2}/commits/${commit}`,
-      ).pipe(Effect.map((response) => ({ branch, commit, date: response.commit.committer.date }))),
+  ]);
+  const branches = Arr.filter(
+    remoteHeads,
+    ({ branch }) => branch === "deployment" || /^post-audit(-[\w.-]+)?$/.test(branch),
   );
-  const latestPostAudit = dated.toSorted((a, b) => b.date.localeCompare(a.date))[0];
+  const dated = yield* Effect.forEach(
+    Arr.filter(branches, ({ branch }) => branch !== "deployment"),
+    ({ branch, commit }) =>
+      fetchJson(
+        `https://api.github.com/repos/${v2}/commits/${commit}`,
+        Schema.Struct({
+          commit: Schema.Struct({ committer: Schema.Struct({ date: Schema.String }) }),
+        }),
+      ).pipe(Effect.map((response) => ({ branch, commit, date: response.commit.committer.date }))),
+    { concurrency: 1 },
+  );
+  const newestFirst = Order.flip(
+    Order.mapInput(Str.Order, (head: { readonly date: string }) => head.date),
+  );
+  const latestPostAudit = Arr.sort(dated, newestFirst)[0];
   const watched = [
-    ...branches.filter((head) => head.branch === "deployment"),
+    ...Arr.filter(branches, (head) => head.branch === "deployment"),
     ...(latestPostAudit === undefined ? [] : [latestPostAudit]),
   ];
   for (const head of watched) {

@@ -1,9 +1,12 @@
 #!/usr/bin/env node
+// The repository's .env is loaded before any Effect runtime exists.
+// oxlint-disable-next-line effecttsgo/node-builtin-import
 import { existsSync } from "node:fs";
 
 import { NodeRuntime, NodeServices } from "@effect/platform-node";
-import { Console, Effect, Layer } from "effect";
+import { Array as Arr, Console, Effect, Layer } from "effect";
 import { Command } from "effect/cli";
+import { FetchHttpClient } from "effect/http";
 
 import { Anvil } from "./anvil/Anvil.ts";
 import { cli } from "./cli.ts";
@@ -13,7 +16,9 @@ import { packageDir } from "./package.ts";
 if (existsSync(`${packageDir}../../.env`)) process.loadEnvFile(`${packageDir}../../.env`);
 
 const report = (lines: readonly string[]) =>
-  Console.error(lines.join("\n")).pipe(Effect.andThen(Effect.sync(() => (process.exitCode = 1))));
+  Console.error(Arr.join(lines, "\n")).pipe(
+    Effect.andThen(Effect.sync(() => (process.exitCode = 1))),
+  );
 
 cli.pipe(
   Command.run({ version: "1.0.0" }),
@@ -23,6 +28,11 @@ cli.pipe(
     DeployError: ({ step, message }) => report([`step ${step}: ${message}`]),
     VerifyFailed: ({ profile, problems }) => report([...problems, `verify ${profile}: failed`]),
   }),
-  Effect.provide(Anvil.layer.pipe(Layer.provideMerge(NodeServices.layer))),
+  Effect.provide(
+    Anvil.layer.pipe(
+      Layer.provideMerge(NodeServices.layer),
+      Layer.provideMerge(FetchHttpClient.layer),
+    ),
+  ),
   NodeRuntime.runMain,
 );

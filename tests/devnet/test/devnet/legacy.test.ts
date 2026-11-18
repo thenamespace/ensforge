@@ -52,16 +52,20 @@ describe("legacy ENSv1 generations", () => {
 
             const owner = yield* chain.read({ ...registry, functionName: "owner", args: [node] });
             assert.strictEqual(owner, accounts.user);
-            assert.isFalse(
-              yield* chain.read({ ...registry, functionName: "recordExists", args: [node] }),
-            );
+            const recordExists = yield* chain.read({
+              ...registry,
+              functionName: "recordExists",
+              args: [node],
+            });
+            assert.isFalse(recordExists);
             const setResolver = chain.simulate({
               ...registry,
               functionName: "setResolver",
               args: [node, zeroAddress],
               account: accounts.user,
             });
-            assert.isFalse(yield* Effect.isSuccess(setResolver));
+            const resolverSet = yield* Effect.isSuccess(setResolver);
+            assert.isFalse(resolverSet);
           }),
         );
       }),
@@ -91,7 +95,8 @@ describe("legacy ENSv1 generations", () => {
                   args: [node, accounts.user2],
                   account,
                 });
-                assert.strictEqual(yield* Effect.isSuccess(setAddr), authorized, account);
+                const succeeded = yield* Effect.isSuccess(setAddr);
+                assert.strictEqual(succeeded, authorized, account);
               }
               const text = yield* chain.read({
                 ...frozen,
@@ -135,7 +140,8 @@ describe("legacy ENSv1 generations", () => {
             functionName: "supportsInterface",
             args: ["0x01ffc9a7"],
           });
-          assert.isFalse(yield* Effect.isSuccess(supportsInterface), key);
+          const supported = yield* Effect.isSuccess(supportsInterface);
+          assert.isFalse(supported, key);
         }
       }),
     );
@@ -162,9 +168,11 @@ describe("legacy ENSv1 generations", () => {
         const data = "0x01ffc9a7";
 
         const reverted = chain.call({ to: contract("mock.hostile.revert"), data });
-        assert.isFalse(yield* Effect.isSuccess(reverted));
+        const revertedSucceeded = yield* Effect.isSuccess(reverted);
+        assert.isFalse(revertedSucceeded);
         const burned = chain.call({ to: contract("mock.hostile.burnGas"), data, gas: 1_000_000n });
-        assert.isFalse(yield* Effect.isSuccess(burned));
+        const burnedSucceeded = yield* Effect.isSuccess(burned);
+        assert.isFalse(burnedSucceeded);
         const large = yield* chain.call({ to: contract("mock.hostile.returnLarge"), data });
         assert.strictEqual(size(large.data ?? "0x"), 1 << 20);
       }),

@@ -1,4 +1,4 @@
-import { Effect } from "effect";
+import { Effect, Record as Rec } from "effect";
 
 import { Abis } from "@ensforge/contracts";
 import { CurrentStep, dnsEncode } from "@ensforge/test-devnet";
@@ -26,7 +26,7 @@ export const setV1Records = Effect.fnUntraced(function* (options: {
   const target = [options.resolver, "v1/PublicResolver"] as const;
   const from = { from: options.from } as const;
   const { records, node } = options;
-  for (const [key, value] of Object.entries(records.texts ?? {})) {
+  for (const [key, value] of Rec.toEntries(records.texts ?? {})) {
     yield* c.write(target, "setText", [node, key, value], from);
   }
   for (const [coinType, value] of records.addresses ?? []) {
@@ -55,7 +55,7 @@ export const setV2Records = Effect.fnUntraced(function* (options: {
   const from = { from: options.from } as const;
   const { records } = options;
   const name = dnsEncode(options.name);
-  for (const [key, value] of Object.entries(records.texts ?? {})) {
+  for (const [key, value] of Rec.toEntries(records.texts ?? {})) {
     yield* c.write(target, "setText", [name, key, value], from);
   }
   for (const [coinType, value] of records.addresses ?? []) {
@@ -70,7 +70,7 @@ export const setV2Records = Effect.fnUntraced(function* (options: {
   for (const [interfaceId, implementer] of records.interfaces ?? []) {
     yield* c.write(target, "setInterface", [name, interfaceId, implementer], from);
   }
-  for (const [key, value] of Object.entries(records.data ?? {})) {
+  for (const [key, value] of Rec.toEntries(records.data ?? {})) {
     yield* c.write(target, "setData", [name, key, value], from);
   }
 });

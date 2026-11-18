@@ -1,4 +1,4 @@
-import { Effect } from "effect";
+import { Array as Arr, Effect } from "effect";
 
 import { labelhash, namehash, zeroAddress, type Address } from "viem";
 
@@ -93,10 +93,8 @@ export const ownershipV1: readonly Fixture[] = [
     prelaunch: (c) =>
       Effect.gen(function* () {
         const controller = yield* c.address("v1.ethRegistrarController");
-        yield* c.cheat(async (client) => {
-          await client.impersonateAccount({ address: controller });
-          await client.setBalance({ address: controller, value: 10n ** 18n });
-        });
+        yield* c.cheat((client) => client.impersonateAccount({ address: controller }));
+        yield* c.cheat((client) => client.setBalance({ address: controller, value: 10n ** 18n }));
         yield* c.write(
           "v1.baseRegistrar",
           "registerOnly",
@@ -137,34 +135,35 @@ export const ownershipV1: readonly Fixture[] = [
         yield* expectState("v1.unwrapped.legacy-controller", "addr", addr, c.accounts.alice);
       }),
   },
-  ...(
+  ...Arr.map(
     [
       ["v1.unwrapped.grace", "v1-grace", durations.v1Grace, ["M:A5", "T02", "G12"], "grace"],
       ["v1.unwrapped.premium", "v1-premium", durations.v1Premium, ["G14", "T02"], "premium"],
       ["v1.unwrapped.expired", "v1-expired", durations.expired, ["M:A6", "O05", "T01"], "expired"],
-    ] as const
-  ).map(([id, label, duration, cases, state]): Fixture => ({
-    id,
-    cases,
-    tags: { kind: "v1-unwrapped", state },
-    prelaunch: (c) => registerV1({ label, owner: c.accounts.alice, duration }),
-    check: (c, facts) =>
-      Effect.gen(function* () {
-        const now = c.time.now();
-        const expiry = BigInt(String(facts["expiry"]));
-        const graceEnd = expiry + days(90n);
-        const premiumEnd = graceEnd + days(21n);
-        const inState = {
-          grace: now >= expiry && now < graceEnd,
-          premium: now >= graceEnd && now < premiumEnd,
-          expired: now >= premiumEnd,
-        }[state];
-        yield* expectState(id, `${state} at ${now}`, inState, true);
-        // The registry keeps the stale manager.
-        const manager = yield* c.read("v1.registry", "owner", [facts["node"]]);
-        yield* expectState(id, "stale manager", manager, c.accounts.alice);
-      }),
-  })),
+    ] as const,
+    ([id, label, duration, cases, state]): Fixture => ({
+      id,
+      cases,
+      tags: { kind: "v1-unwrapped", state },
+      prelaunch: (c) => registerV1({ label, owner: c.accounts.alice, duration }),
+      check: (c, facts) =>
+        Effect.gen(function* () {
+          const now = c.time.now();
+          const expiry = BigInt(String(facts["expiry"]));
+          const graceEnd = expiry + days(90n);
+          const premiumEnd = graceEnd + days(21n);
+          const inState = {
+            grace: now >= expiry && now < graceEnd,
+            premium: now >= graceEnd && now < premiumEnd,
+            expired: now >= premiumEnd,
+          }[state];
+          yield* expectState(id, `${state} at ${now}`, inState, true);
+          // The registry keeps the stale manager.
+          const manager = yield* c.read("v1.registry", "owner", [facts["node"]]);
+          yield* expectState(id, "stale manager", manager, c.accounts.alice);
+        }),
+    }),
+  ),
   {
     id: "v1.subname",
     cases: ["M:A4", "H24"],

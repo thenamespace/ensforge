@@ -1,4 +1,4 @@
-import { Effect } from "effect";
+import { Effect, Formatter } from "effect";
 
 import { toFunctionSelector } from "viem";
 
@@ -48,7 +48,7 @@ export const mockSteps: readonly Step[] = [
       // A token for NFT avatars, whose metadata is a `data:` URL with an image.
       yield* c.deploy("mock.avatarToken", "mocks/AvatarToken");
       yield* c.write("mock.avatarToken", "setMetadata", [
-        `data:application/json;base64,${Buffer.from(JSON.stringify({ image: avatarImage })).toString("base64")}`,
+        `data:application/json;base64,${Buffer.from(Formatter.formatJson({ image: avatarImage })).toString("base64")}`,
       ]);
     }),
   ),

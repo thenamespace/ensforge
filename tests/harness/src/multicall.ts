@@ -1,3 +1,5 @@
+import { Array as Arr } from "effect";
+
 import {
   decodeFunctionData,
   encodeFunctionResult,
@@ -28,6 +30,8 @@ export const callScript =
   ({ method, params }) => {
     if (method !== "eth_call") return undefined;
 
+    // JSON-RPC fixes the shape of `eth_call` params.
+    // oxlint-disable-next-line typescript/no-unsafe-type-assertion
     const { to, data } = params[0] as { readonly to: Address; readonly data: Hex };
     if (!isAddressEqual(to, multicall3)) {
       const result = answer({ to, data });
@@ -38,7 +42,7 @@ export const callScript =
     const { functionName, args } = decodeFunctionData({ abi: multicall3Abi, data });
     if (functionName !== "aggregate3") return undefined;
 
-    const results = args[0].map(({ target, callData }) => {
+    const results = Arr.map(args[0], ({ target, callData }) => {
       const result = answer({ to: target, data: callData });
       if (result === undefined) throw new Error(`Unscripted call to ${target}: ${callData}`);
       return result;

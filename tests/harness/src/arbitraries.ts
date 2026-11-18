@@ -1,23 +1,23 @@
-import { Arbitrary, Schema } from "effect";
+import { Arbitrary, Array as Arr, Schema, String as Str } from "effect";
 
 import { getAddress, keccak256, toHex, type Address, type Hex } from "viem";
 
 /** Lowercase ASCII labels that are already normalized (a–z, 0–9, inner hyphens). */
 export const asciiLabel = Arbitrary.map(
   Arbitrary.schema(
-    Schema.Array(Schema.Literals([..."abcdefghijklmnopqrstuvwxyz0123456789"])).check(
+    Schema.Array(Schema.Literals(Str.split("abcdefghijklmnopqrstuvwxyz0123456789", ""))).check(
       Schema.isMinLength(1),
       Schema.isMaxLength(24),
     ),
   ),
-  (letters) => letters.join(""),
+  (letters) => Arr.join(letters, ""),
 );
 
 // One alphabet per label: ENSIP-15 rejects labels mixing scripts (e.g. Han with Latin `ß`).
 // Units are whole graphemes, so emoji sequences (skin tones, ZWJ) are never split.
 const scripts = {
-  latin: [..."abcxyz019éßü"],
-  han: [..."名字中文"],
+  latin: Str.split("abcxyz019éßü", ""),
+  han: Str.split("名字中文", ""),
   emoji: ["🔥", "🦊", "👍🏻", "👨‍👩‍👧"],
 } as const;
 
@@ -30,7 +30,7 @@ export const unicodeLabel = Arbitrary.flatMap(
         minLength: 1,
         maxLength: 8,
       }),
-      (parts) => parts.join(""),
+      (parts) => Arr.join(parts, ""),
     ),
 );
 
@@ -42,7 +42,11 @@ export const name = Arbitrary.map(
       Schema.isMaxLength(4),
     ),
   ),
-  (seeds) => seeds.map((value, index) => `l${Math.abs(value) % 997}x${index}`).join("."),
+  (seeds) =>
+    Arr.join(
+      Arr.map(seeds, (value, index) => `l${Math.abs(value) % 997}x${index}`),
+      ".",
+    ),
 );
 
 /** `.eth` names built from ASCII labels. */
@@ -51,7 +55,7 @@ export const ethName = Arbitrary.map(asciiLabel, (label) => `${label}.eth`);
 /** Checksummed addresses derived from arbitrary integers. */
 export const address = Arbitrary.map(
   Arbitrary.schema(Schema.Number.check(Schema.isInt(), Schema.isGreaterThanOrEqualTo(0))),
-  (value): Address => getAddress(keccak256(toHex(value)).slice(0, 42)),
+  (value): Address => getAddress(Str.slice(0, 42)(keccak256(toHex(value)))),
 );
 
 /** 32-byte hex values. */

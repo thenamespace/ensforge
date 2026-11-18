@@ -1,3 +1,5 @@
+// Read synchronously by the lanes' setup, outside any Effect runtime.
+/* oxlint-disable effecttsgo/node-builtin-import, effecttsgo/process-env */
 import { existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 

@@ -43,7 +43,10 @@ describe("devnet profiles", () => {
         assert.strictEqual(eth.protocol, "v2");
         assert.strictEqual(eth.owner, devnet.accounts.nameOwner);
         assert.strictEqual(eth.subregistry, devnet.contract("v2.ethRegistry"));
-        assert.isTrue(yield* Actions.registration.isAvailable(ens, { name: "devnet-smoke.eth" }));
+        const available = yield* Actions.registration.isAvailable(ens, {
+          name: "devnet-smoke.eth",
+        });
+        assert.isTrue(available);
       }),
     );
 
@@ -100,7 +103,8 @@ describe("devnet profiles", () => {
               data: answer,
             });
             assert.strictEqual(resolved, user2);
-            assert.strictEqual(yield* Actions.record.getAddress(ens, { name }), user2);
+            const address = yield* Actions.record.getAddress(ens, { name });
+            assert.strictEqual(address, user2);
           }),
         );
       }),
@@ -130,9 +134,10 @@ describe("devnet profiles", () => {
           assert.isFalse(devnet.deployments.v2?.capabilities.resolutionErrorWrapping);
           const eth = yield* Actions.name.get(ens, { name: "eth" });
           assert.strictEqual(eth.protocol, "v2");
-          assert.isTrue(
-            yield* Actions.registration.isAvailable(ens, { name: "sepolia-smoke.eth" }),
-          );
+          const available = yield* Actions.registration.isAvailable(ens, {
+            name: "sepolia-smoke.eth",
+          });
+          assert.isTrue(available);
         }),
       );
     },

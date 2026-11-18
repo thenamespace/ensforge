@@ -1,6 +1,8 @@
+// Synchronous digest of in-memory data; Effect has no hashing API.
+// oxlint-disable-next-line effecttsgo/node-builtin-import
 import { createHash } from "node:crypto";
 
-import { Effect, FileSystem, Path } from "effect";
+import { Array as Arr, Effect, FileSystem, Path, Record as Rec, String as Str } from "effect";
 
 import { step, type ProfileName, type Seed, type Step } from "@ensforge/test-devnet";
 import { namehash } from "viem";
@@ -17,12 +19,12 @@ import { premigration } from "./premigration.ts";
 export const fixtureSeed = (profile: ProfileName, key: string): Seed => ({
   key: `${profile}:${key}`,
   create: () => {
-    const selected = allFixtures.filter((fixture) => seededOn(fixture, profile));
+    const selected = Arr.filter(allFixtures, (fixture) => seededOn(fixture, profile));
     const facts = new Map<string, Facts>();
     let jumpedAt = 0n;
 
     const phase = (name: "prelaunch" | "postlaunch" | "afterTime"): Step[] =>
-      selected.flatMap((fixture) => {
+      Arr.flatMap(selected, (fixture) => {
         const run = fixture[name];
         if (run === undefined) return [];
         return [
@@ -30,8 +32,8 @@ export const fixtureSeed = (profile: ProfileName, key: string): Seed => ({
             run(c, facts.get(fixture.id) ?? {}).pipe(
               Effect.map((found) => {
                 // bigints become decimal strings, so the manifest is plain JSON.
-                const recorded = Object.fromEntries(
-                  Object.entries(found).map(([field, value]) => [
+                const recorded = Rec.fromEntries(
+                  Arr.map(Rec.toEntries(found), ([field, value]) => [
                     field,
                     typeof value === "bigint" ? value.toString() : value,
                   ]),
@@ -54,14 +56,12 @@ export const fixtureSeed = (profile: ProfileName, key: string): Seed => ({
           Effect.gen(function* () {
             c.time.advance(clockJump);
             jumpedAt = c.time.now();
-            yield* c.cheat(async (client) => {
-              await client.setNextBlockTimestamp({ timestamp: jumpedAt });
-              await client.mine({ blocks: 1 });
-            });
+            yield* c.cheat((client) => client.setNextBlockTimestamp({ timestamp: jumpedAt }));
+            yield* c.cheat((client) => client.mine({ blocks: 1 }));
           }),
         ),
         ...phase("afterTime"),
-        ...selected.map((fixture) =>
+        ...Arr.map(selected, (fixture) =>
           step(`fixture ${fixture.id} (check)`, (c) =>
             fixture.check(c, facts.get(fixture.id) ?? {}),
           ),
@@ -70,7 +70,7 @@ export const fixtureSeed = (profile: ProfileName, key: string): Seed => ({
       output: (): Manifest => ({
         profile,
         clock: { jumpedAt: jumpedAt.toString(), jump: clockJump.toString() },
-        fixtures: selected.map((fixture) => {
+        fixtures: Arr.map(selected, (fixture) => {
           const found = facts.get(fixture.id) ?? {};
           const name = String(found["name"]);
           return {
@@ -93,9 +93,11 @@ export const sourcesKey = Effect.fn("sourcesKey")(function* () {
   const path = yield* Path.Path;
   const src = path.join(new URL("..", import.meta.url).pathname, "src");
   const hash = createHash("sha256");
-  for (const file of (yield* fs.readDirectory(src, { recursive: true })).toSorted()) {
-    if (!file.endsWith(".ts")) continue;
-    hash.update(file).update(yield* fs.readFileString(path.join(src, file)));
+  const entries = yield* fs.readDirectory(src, { recursive: true });
+  for (const file of Arr.sort(entries, Str.Order)) {
+    if (!Str.endsWith(".ts")(file)) continue;
+    const content = yield* fs.readFileString(path.join(src, file));
+    hash.update(file).update(content);
   }
-  return hash.digest("hex").slice(0, 16);
+  return Str.slice(0, 16)(hash.digest("hex"));
 });

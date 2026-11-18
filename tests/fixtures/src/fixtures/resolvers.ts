@@ -19,7 +19,7 @@ import { expectState } from "../builders/check.ts";
 import { setV1Records } from "../builders/records.ts";
 import { registerV1, v1Subname } from "../builders/v1.ts";
 import { registerV2 } from "../builders/v2.ts";
-import type { Fixture } from "../fixture.ts";
+import { factAddress, type Fixture } from "../fixture.ts";
 import { durations } from "./durations.ts";
 import { coins } from "./values.ts";
 
@@ -248,7 +248,7 @@ export const resolvers: readonly Fixture[] = [
       }),
     check: (c, facts) =>
       Effect.gen(function* () {
-        const url = yield* c.read([facts["resolver"] as Address, "v1/PublicResolver"], "text", [
+        const url = yield* c.read([factAddress(facts, "resolver"), "v1/PublicResolver"], "text", [
           namehash(String(facts["name"])),
           "url",
         ]);
@@ -281,7 +281,7 @@ export const resolvers: readonly Fixture[] = [
       }),
     check: (c, facts) =>
       Effect.gen(function* () {
-        const url = yield* c.read([facts["resolver"] as Address, "v1/PublicResolver"], "text", [
+        const url = yield* c.read([factAddress(facts, "resolver"), "v1/PublicResolver"], "text", [
           namehash(String(facts["name"])),
           "url",
         ]);

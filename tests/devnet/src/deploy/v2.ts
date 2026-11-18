@@ -1,4 +1,4 @@
-import { Effect } from "effect";
+import { Array as Arr, Effect } from "effect";
 
 import { encodeFunctionData, maxUint64, zeroAddress } from "viem";
 
@@ -149,7 +149,7 @@ export const v2Steps: readonly Step[] = [
         zeroAddress,
         tldResolver,
         [...dnsTlds],
-        dnsTlds.map(() => maxUint64),
+        Arr.map(dnsTlds, () => maxUint64),
       ]);
       yield* c.write("v2.rootRegistry", "revokeRootRoles", [
         deploymentRoles.batchRegistrar,

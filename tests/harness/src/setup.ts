@@ -1,4 +1,6 @@
 // Runs before every test file of the fast lanes: fixed property seeds and no network.
+// It reads the environment synchronously, outside any Effect runtime.
+/* oxlint-disable effecttsgo/process-env */
 import { beforeEach } from "@effect/vitest";
 import { Arbitrary } from "effect";
 
@@ -10,9 +12,9 @@ Arbitrary.configureGlobal({
 });
 
 beforeEach(() => {
-  globalThis.fetch = (() => {
+  globalThis.fetch = () => {
     throw new Error(
       "Network access is not allowed in this lane (fetch); use a scripted transport.",
     );
-  }) as typeof fetch;
+  };
 });

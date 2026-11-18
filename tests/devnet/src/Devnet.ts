@@ -1,5 +1,5 @@
 import { NodeServices } from "@effect/platform-node";
-import { Context, Effect, Layer } from "effect";
+import { Array as Arr, Context, Effect, Layer, Record as Rec } from "effect";
 
 import type { Deployments } from "@ensforge/contracts";
 import { defineChain, type Address, type Chain } from "viem";
@@ -81,8 +81,8 @@ export const startDevnet = Effect.fn("startDevnet")(function* (options: DevnetOp
             ? {}
             : { v2: { ...profileDeployments.v2, chainId: options.chainId } }),
         };
-  const contracts = Object.fromEntries(
-    [...built.ledger].map(([key, deployed]) => [key, deployed.address]),
+  const contracts = Rec.fromEntries(
+    Arr.map([...built.ledger], ([key, deployed]) => [key, deployed.address]),
   );
   const universalResolver =
     deployments.v2?.contracts.universalResolver ?? deployments.v1?.contracts.universalResolver;
@@ -90,6 +90,8 @@ export const startDevnet = Effect.fn("startDevnet")(function* (options: DevnetOp
     ...foundry,
     ...(options.chainId === undefined ? {} : { id: options.chainId }),
     contracts: {
+      // Every profile deploys the canonical Multicall3.
+      // oxlint-disable-next-line typescript/no-unsafe-type-assertion
       multicall3: { address: contracts["canonical.multicall3"] as Address },
       ...(universalResolver === undefined
         ? {}

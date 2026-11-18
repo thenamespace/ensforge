@@ -1,6 +1,6 @@
-import { Effect, type FileSystem } from "effect";
+import { Array as Arr, Effect, String as Str, type FileSystem } from "effect";
 
-import { isAddressEqual, labelhash, namehash, zeroAddress, zeroHash, type Address } from "viem";
+import { isAddress, isAddressEqual, labelhash, namehash, zeroAddress, zeroHash } from "viem";
 
 import { loadArtifact } from "./artifacts/files.ts";
 import { ethResolverInterfaces, deploymentRoles, dnsTlds } from "./deploy/constants.ts";
@@ -19,7 +19,7 @@ export const verify = Effect.fn("verify")(function* () {
   if (profile === "mainnet" || profile === "sepolia") {
     return yield* Effect.die(new Error(`verify checks a built profile, not a fork of ${profile}`));
   }
-  const launched = profiles[profile].steps.some((step) => step.id.startsWith("cutover"));
+  const launched = Arr.some(profiles[profile].steps, (step) => Str.startsWith("cutover")(step.id));
   const hasV2 = ledger.has("v2.rootRegistry");
   const problems: string[] = [];
 
@@ -31,15 +31,18 @@ export const verify = Effect.fn("verify")(function* () {
     Effect.gen(function* () {
       const deployed = ledger.get(key);
       if (deployed === undefined) {
-        return yield* new DeployError({ step: "verify", message: `${key} is not deployed` });
+        return yield* DeployError.make({ step: "verify", message: `${key} is not deployed` });
       }
       const { abi } = yield* loadArtifact(deployed.artifact);
-      return (yield* Effect.tryPromise({
+      const result = yield* Effect.tryPromise({
         try: () =>
           client.readContract({ address: deployed.address, abi, functionName, args: [...args] }),
         catch: (cause) =>
-          new DeployError({ step: "verify", message: `${key}.${functionName}: ${String(cause)}` }),
-      })) as A;
+          DeployError.make({ step: "verify", message: `${key}.${functionName}: ${String(cause)}` }),
+      });
+      // The caller states the result type; the ABI is only known at runtime.
+      // oxlint-disable-next-line typescript/no-unsafe-type-assertion
+      return result as A;
     });
   const expect = Effect.fnUntraced(function* (
     label: string,
@@ -49,10 +52,10 @@ export const verify = Effect.fn("verify")(function* () {
     const value = yield* actual;
     // Addresses and other hex values compare in any case.
     const same =
-      typeof value === "string" && typeof expected === "string" && value.startsWith("0x")
-        ? value.length === 42 && expected.length === 42
-          ? isAddressEqual(value as Address, expected as Address)
-          : value.toLowerCase() === expected.toLowerCase()
+      typeof value === "string" && typeof expected === "string" && Str.startsWith("0x")(value)
+        ? isAddress(value, { strict: false }) && isAddress(expected, { strict: false })
+          ? isAddressEqual(value, expected)
+          : Str.toLowerCase(value) === Str.toLowerCase(expected)
         : value === expected;
     if (!same) problems.push(`${label}: ${String(value)}, expected ${String(expected)}`);
   });

@@ -1,4 +1,4 @@
-import { Effect } from "effect";
+import { Array as Arr, Effect } from "effect";
 
 import { nameWrapperFuses as fuse } from "@ensforge/contracts/v1";
 import { CurrentStep } from "@ensforge/test-devnet";
@@ -109,7 +109,7 @@ const subname = (
 export const wrapper: readonly Fixture[] = [
   wrappedEth("v1.wrapped", "w-plain", 0, ["M:A7", "W16", "T03"], { fuses: "none" }),
   wrappedEth("v1.wrapped.locked", "w-parent", locked, ["M:A8"], { fuses: "CU" }),
-  ...(
+  ...Arr.map(
     [
       ["cannot-transfer", fuse.cannotTransfer, "CT", ["M:A8", "M08", "W30"]],
       ["cannot-set-resolver", fuse.cannotSetResolver, "CSR", ["M:A8", "M07"]],
@@ -127,11 +127,11 @@ export const wrapper: readonly Fixture[] = [
         "all",
         ["M:A8"],
       ],
-    ] as const
-  ).map(([suffix, extra, tag, cases]) =>
-    wrappedEth(`v1.wrapped.locked.${suffix}`, `w-${suffix}`, locked | extra, cases, {
-      fuses: `CU+${tag}`,
-    }),
+    ] as const,
+    ([suffix, extra, tag, cases]) =>
+      wrappedEth(`v1.wrapped.locked.${suffix}`, `w-${suffix}`, locked | extra, cases, {
+        fuses: `CU+${tag}`,
+      }),
   ),
   {
     id: "v1.wrapped.approved",
@@ -371,11 +371,12 @@ export const wrapper: readonly Fixture[] = [
         const registryOwner = yield* c.read("v1.registry", "owner", [
           namehash(String(facts["name"])),
         ]);
+        const nameWrapper = yield* c.address("v1.nameWrapper");
         yield* expectState(
           "v1.wrapped.sub.unwrapped-parent",
           "registry owner",
           registryOwner,
-          yield* c.address("v1.nameWrapper"),
+          nameWrapper,
         );
       }),
   },

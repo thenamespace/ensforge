@@ -1,4 +1,4 @@
-import { Console, Effect, FileSystem } from "effect";
+import { Array as Arr, Console, Effect, FileSystem } from "effect";
 import { Command } from "effect/cli";
 
 import { deriveAll } from "../artifacts/derive.ts";
@@ -11,7 +11,7 @@ const refresh = Command.make("refresh", {}, () =>
   Effect.gen(function* () {
     const derived = yield* deriveAll();
     yield* writeArtifacts(derived, artifactsDir);
-    yield* Console.log(`artifacts: wrote ${derived.size}`);
+    return yield* Console.log(`artifacts: wrote ${derived.size}`);
   }),
 ).pipe(Command.withDescription("Re-derive every artifact from its pinned source and write it"));
 
@@ -26,19 +26,20 @@ const check = Command.make("check", {}, () =>
     const stale: string[] = [];
     for (const name of derived.keys()) {
       const committed = artifactFile(name);
+      const exists = yield* fs.exists(committed);
       const matches =
-        (yield* fs.exists(committed)) &&
+        exists &&
         (yield* fs.readFileString(committed)) ===
           (yield* fs.readFileString(artifactFile(name, staged)));
       if (!matches) stale.push(name);
     }
     if (stale.length > 0) {
-      return yield* new ArtifactError({
-        artifact: stale.join(", "),
+      return yield* ArtifactError.make({
+        artifact: Arr.join(stale, ", "),
         message: "differs from its source; run `ensforge-devnet artifacts refresh`",
       });
     }
-    yield* Console.log(`artifacts: ok (${derived.size})`);
+    return yield* Console.log(`artifacts: ok (${derived.size})`);
   }),
 ).pipe(Command.withDescription("Fail when a committed artifact differs from its source"));
 
@@ -46,12 +47,12 @@ const watch = Command.make("watch", {}, () =>
   Effect.gen(function* () {
     const changes = yield* watchReleases();
     if (changes.length > 0) {
-      return yield* new ArtifactError({
+      return yield* ArtifactError.make({
         artifact: "sources",
-        message: `ENS changed upstream; refresh the pins and deploymentRecords in artifacts/sources.ts, the deployments in @ensforge/contracts, and rerun every lane:\n${changes.join("\n")}`,
+        message: `ENS changed upstream; refresh the pins and deploymentRecords in artifacts/sources.ts, the deployments in @ensforge/contracts, and rerun every lane:\n${Arr.join(changes, "\n")}`,
       });
     }
-    yield* Console.log("artifacts: sources are the latest releases and deployments");
+    return yield* Console.log("artifacts: sources are the latest releases and deployments");
   }),
 ).pipe(
   Command.withDescription(

@@ -1,12 +1,23 @@
+// Synchronous digest of in-memory data; Effect has no hashing API.
+// oxlint-disable-next-line effecttsgo/node-builtin-import
 import { createHash } from "node:crypto";
 import { gunzipSync } from "node:zlib";
 
-import { Effect, FileSystem, Path } from "effect";
-
-import type { Address } from "viem";
+import {
+  Array as Arr,
+  Effect,
+  FileSystem,
+  Formatter,
+  Option,
+  Path,
+  Record as Rec,
+  Schema,
+  String as Str,
+} from "effect";
 
 import { Anvil } from "./anvil/Anvil.ts";
-import type { ArtifactName } from "./artifacts/sources.ts";
+import { HexSchema } from "./artifacts/json.ts";
+import { sources, type ArtifactName } from "./artifacts/sources.ts";
 import { devnetClient } from "./client.ts";
 import { genesisTimestamp, runSteps, type Ledger, type Step } from "./deploy/engine.ts";
 import { DeployError } from "./errors.ts";
@@ -40,11 +51,23 @@ export type Build = {
   readonly timestamp: bigint;
 };
 
-type StoredBuild = {
-  readonly ledger: readonly (readonly [string, { address: Address; artifact: ArtifactName }])[];
-  readonly timestamp: string;
-  readonly seed?: unknown;
-};
+type StoredBuild = typeof StoredBuild.Type;
+
+const StoredBuild = Schema.Struct({
+  ledger: Schema.Array(
+    Schema.Tuple([
+      Schema.String,
+      Schema.Struct({
+        address: HexSchema,
+        artifact: Schema.declare((value): value is ArtifactName =>
+          Arr.some(Rec.keys(sources), (key) => key === value),
+        ),
+      }),
+    ]),
+  ),
+  timestamp: Schema.String,
+  seed: Schema.optional(Schema.Unknown),
+});
 
 // Builds depend on the deploy code, the artifacts and anvil itself.
 const buildKey = Effect.fn("buildKey")(function* (profile: ProfileName) {
@@ -52,15 +75,19 @@ const buildKey = Effect.fn("buildKey")(function* (profile: ProfileName) {
   const path = yield* Path.Path;
   const hash = createHash("sha256").update(profile);
   for (const dir of ["src/deploy", "src/profiles", "artifacts"]) {
-    const files = (yield* fs.readDirectory(path.join(packageDir, dir), { recursive: true }))
-      .filter((file) => /\.(ts|json)$/.test(file))
-      .toSorted();
+    const entries = yield* fs.readDirectory(path.join(packageDir, dir), { recursive: true });
+    const files = Arr.sort(
+      Arr.filter(entries, (file) => /\.(ts|json)$/.test(file)),
+      Str.Order,
+    );
     for (const file of files) {
-      hash.update(file).update(yield* fs.readFileString(path.join(packageDir, dir, file)));
+      const content = yield* fs.readFileString(path.join(packageDir, dir, file));
+      hash.update(file).update(content);
     }
   }
-  hash.update(yield* fs.readFileString(path.join(packageDir, "foundry-version")));
-  return hash.digest("hex").slice(0, 16);
+  const foundryVersion = yield* fs.readFileString(path.join(packageDir, "foundry-version"));
+  hash.update(foundryVersion);
+  return Str.slice(0, 16)(hash.digest("hex"));
 });
 
 const buildFresh = Effect.fn("buildFresh")(function* (profile: ProfileName, seed?: Seed) {
@@ -69,8 +96,9 @@ const buildFresh = Effect.fn("buildFresh")(function* (profile: ProfileName, seed
   const definition: ProfileDefinition = profiles[profile];
   const seeded = seed?.create();
   // A seed's prelaunch steps go right before the ENSv2 launch, or last when there is none.
-  const launch = definition.steps.findIndex((step) => step.id.startsWith("cutover"));
-  const split = launch === -1 ? definition.steps.length : launch;
+  const split = Arr.findFirstIndex(definition.steps, (step) =>
+    Str.startsWith("cutover")(step.id),
+  ).pipe(Option.getOrElse(() => definition.steps.length));
   const steps =
     seeded === undefined
       ? definition.steps
@@ -83,15 +111,19 @@ const buildFresh = Effect.fn("buildFresh")(function* (profile: ProfileName, seed
   const ledger = yield* runSteps(rpcUrl, steps, definition.variant);
 
   const client = devnetClient(rpcUrl);
-  const { dump, block } = yield* Effect.tryPromise({
-    try: async () => ({ dump: await client.dumpState(), block: await client.getBlock() }),
-    catch: (cause) => new DeployError({ step: "dump", message: String(cause) }),
+  const dump = yield* Effect.tryPromise({
+    try: () => client.dumpState(),
+    catch: (cause) => DeployError.make({ step: "dump", message: String(cause) }),
+  });
+  const block = yield* Effect.tryPromise({
+    try: () => client.getBlock(),
+    catch: (cause) => DeployError.make({ step: "dump", message: String(cause) }),
   });
   return {
     // `dumpState` returns the `--dump-state` JSON, gzipped and hex-encoded.
-    state: gunzipSync(Buffer.from(dump.slice(2), "hex")).toString("utf8"),
+    state: gunzipSync(Buffer.from(Str.slice(2)(dump), "hex")).toString("utf8"),
     ledger,
-    timestamp: BigInt(block.timestamp),
+    timestamp: block.timestamp,
     seed: seeded?.output(),
   };
 }, Effect.scoped);
@@ -110,13 +142,16 @@ export const build = Effect.fn("build")(function* (
   const seedKey =
     options.seed === undefined
       ? ""
-      : `-${createHash("sha256").update(options.seed.key).digest("hex").slice(0, 16)}`;
+      : `-${Str.slice(0, 16)(createHash("sha256").update(options.seed.key).digest("hex"))}`;
   const base = `${cacheDir}/dumps/${profile}-${key}${seedKey}`;
   const stateFile = `${base}.state.json`;
   const buildFile = `${base}.json`;
 
   if (options.force !== true && (yield* fs.exists(buildFile))) {
-    const stored = JSON.parse(yield* fs.readFileString(buildFile)) as StoredBuild;
+    const text = yield* fs.readFileString(buildFile);
+    const stored = yield* Schema.decodeEffect(Schema.fromJsonString(StoredBuild))(text).pipe(
+      Effect.mapError((cause) => DeployError.make({ step: "build", message: String(cause) })),
+    );
     return {
       profile,
       stateFile,
@@ -136,7 +171,7 @@ export const build = Effect.fn("build")(function* (
   // The build file is written last: its presence means the state file is complete.
   for (const [file, content] of [
     [stateFile, fresh.state],
-    [buildFile, JSON.stringify(stored)],
+    [buildFile, Formatter.formatJson(stored)],
   ] as const) {
     const partial = `${file}.${process.pid}.tmp`;
     yield* fs.writeFileString(partial, content);

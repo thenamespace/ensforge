@@ -1,3 +1,5 @@
+import { Array as Arr, Option } from "effect";
+
 import {
   decodeFunctionData,
   encodeFunctionResult,
@@ -28,15 +30,21 @@ export const contractScript =
   }): Script =>
   (request) => {
     if (request.method === "eth_getCode") {
+      // JSON-RPC fixes the shape of `eth_getCode` params.
+      // oxlint-disable-next-line typescript/no-unsafe-type-assertion
       const [address] = request.params as readonly [Address];
-      return (options.code ?? []).some((deployed) => isAddressEqual(deployed, address))
+      return Arr.some(options.code ?? [], (deployed) => isAddressEqual(deployed, address))
         ? "0x60006000"
         : "0x";
     }
     if (request.method !== "eth_call") return options.fallback?.(request);
 
+    // JSON-RPC fixes the shape of `eth_call` params.
+    // oxlint-disable-next-line typescript/no-unsafe-type-assertion
     const [call] = request.params as readonly [{ readonly to: Address; readonly data: Hex }];
-    const stub = options.contracts.find((contract) => isAddressEqual(contract.address, call.to));
+    const stub = Arr.findFirst(options.contracts, (contract) =>
+      isAddressEqual(contract.address, call.to),
+    ).pipe(Option.getOrUndefined);
     if (stub === undefined) throw new Error(`Unscripted eth_call to ${call.to}`);
     const { functionName, args } = decodeFunctionData({ abi: stub.abi, data: call.data });
     const answer = stub.functions[functionName];
@@ -45,5 +53,5 @@ export const contractScript =
       abi: stub.abi,
       functionName,
       result: answer(args ?? []),
-    } as never);
+    });
   };

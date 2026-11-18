@@ -18,10 +18,8 @@ const imported = Effect.fnUntraced(function* (label: string, owner: Address) {
   const c = yield* CurrentStep;
   const registrar = yield* c.address("v1.dnsRegistrar");
   const resolver = yield* c.address("v1.publicResolver");
-  yield* c.cheat(async (client) => {
-    await client.impersonateAccount({ address: registrar });
-    await client.setBalance({ address: registrar, value: 10n ** 18n });
-  });
+  yield* c.cheat((client) => client.impersonateAccount({ address: registrar }));
+  yield* c.cheat((client) => client.setBalance({ address: registrar, value: 10n ** 18n }));
   yield* c.write(
     "v1.registry",
     "setSubnodeRecord",

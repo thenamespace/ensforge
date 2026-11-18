@@ -1,3 +1,5 @@
+import { Record as Rec } from "effect";
+
 import { Deployments } from "@ensforge/contracts";
 
 import { cutoverSteps } from "../deploy/cutover.ts";
@@ -98,4 +100,4 @@ export const profiles = {
 
 export type ProfileName = keyof typeof profiles;
 
-export const profileNames = Object.keys(profiles) as readonly ProfileName[];
+export const profileNames = Rec.keys(profiles) as readonly ProfileName[];

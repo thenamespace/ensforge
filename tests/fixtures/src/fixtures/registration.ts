@@ -1,4 +1,4 @@
-import { Effect } from "effect";
+import { Array as Arr, Effect } from "effect";
 
 import { maxUint256, zeroAddress, zeroHash } from "viem";
 
@@ -11,30 +11,35 @@ import { days, durations } from "./durations.ts";
 
 /** Price tiers by code point, a v2 premium, and renewals in grace through both renewers. */
 export const registration: readonly Fixture[] = [
-  ...(
+  ...Arr.map(
     [
       ["registration.price.3cp", "fx3", ["M:C9", "G03"]],
       ["registration.price.4cp", "four", ["M:C9"]],
       ["registration.price.5cp", "fiver", ["M:C9"]],
       // Three code points, one grapheme: priced as a three-character name.
       ["registration.price.emoji-zwj", "🍄‍🟫", ["M:C9", "G01"]],
-    ] as const
-  ).map(([id, label, cases]): Fixture => ({
-    id,
-    cases,
-    tags: { kind: "v2-native", state: "registered", price: `${[...label].length}cp` },
-    v2: true,
-    postlaunch: (c) =>
-      registerV2({ label, owner: c.accounts.alice, duration: durations.active }).pipe(
-        Effect.map((name) => ({ ...name, codePoints: [...label].length })),
-      ),
-    check: (c, facts) =>
-      Effect.gen(function* () {
-        const owner = yield* c.read("v2.ethRegistry", "findOwner", [label]);
-        yield* expectState(id, "owner", owner, c.accounts.alice);
-        yield* expectState(id, "name", facts["name"], `${label}.eth`);
-      }),
-  })),
+    ] as const,
+    ([id, label, cases]): Fixture => ({
+      id,
+      cases,
+      tags: {
+        kind: "v2-native",
+        state: "registered",
+        price: `${Arr.fromIterable(label).length}cp`,
+      },
+      v2: true,
+      postlaunch: (c) =>
+        registerV2({ label, owner: c.accounts.alice, duration: durations.active }).pipe(
+          Effect.map((name) => ({ ...name, codePoints: Arr.fromIterable(label).length })),
+        ),
+      check: (c, facts) =>
+        Effect.gen(function* () {
+          const owner = yield* c.read("v2.ethRegistry", "findOwner", [label]);
+          yield* expectState(id, "owner", owner, c.accounts.alice);
+          yield* expectState(id, "name", facts["name"], `${label}.eth`);
+        }),
+    }),
+  ),
   {
     id: "registration.v2-premium",
     cases: ["G14"],

@@ -1,5 +1,6 @@
+import { assert } from "@effect/vitest";
 import { assertTrue, strictEqual } from "@effect/vitest/utils";
-import { Effect } from "effect";
+import { Effect, Formatter, Predicate } from "effect";
 
 /** What a failure must look like: an ensforge error class and code. */
 export type ExpectedError = { readonly _tag: string; readonly code?: string | undefined };
@@ -19,6 +20,10 @@ type Declared<E, Tag extends string> = string extends Tag
     ? tag
     : string;
 
+const isErrorShape = (
+  value: unknown,
+): value is { readonly _tag?: string; readonly code?: string } => Predicate.isObject(value);
+
 /**
  * Runs `effect`, expects it to fail with an ensforge error matching `expected`, and returns that
  * error, narrowed to its class, for further assertions. A success fails the test with the value.
@@ -26,29 +31,33 @@ type Declared<E, Tag extends string> = string extends Tag
 export const expectFailure = <A, E, const Tag extends string>(
   effect: Effect.Effect<A, E>,
   expected: { readonly _tag: Tag & NoInfer<Declared<E, Tag>>; readonly code?: string | undefined },
-): Effect.Effect<Tagged<E, Tag>, A> =>
-  Effect.flip(effect).pipe(
-    Effect.map((error) => {
+): Effect.Effect<Tagged<E, Tag>> =>
+  Effect.match(effect, {
+    onSuccess: (value) =>
+      assert.fail(`expected ${expected._tag} but succeeded with ${Formatter.format(value)}`),
+    onFailure: (error) => {
+      // The tag is checked below, which narrows `E` to its member; `E` itself is generic.
+      // oxlint-disable-next-line typescript/no-unsafe-type-assertion
       const tagged = error as Tagged<E, Tag> & { readonly _tag: string; readonly code: string };
       strictEqual(tagged._tag, expected._tag);
       if (expected.code !== undefined) strictEqual(tagged.code, expected.code);
       return tagged;
-    }),
-  );
+    },
+  });
 
 /** Runs a Promise-returning call and expects it to reject with a matching ensforge error. */
-export const expectRejection = (thunk: () => Promise<unknown>, expected: ExpectedError) =>
+export const expectRejection = <A>(thunk: () => Promise<A>, expected: ExpectedError) =>
   Effect.flip(
     Effect.tryPromise({
       try: thunk,
-      catch: (cause) => cause as { readonly _tag?: string; readonly code?: string } | null,
+      catch: (rejection) => ({ rejection }),
     }),
   ).pipe(
-    Effect.map((error) => {
-      assertTrue(error !== null && typeof error === "object", "rejected with a non-object");
-      strictEqual(error._tag, expected._tag);
-      if (expected.code !== undefined) strictEqual(error.code, expected.code);
-      return error;
+    Effect.map(({ rejection }) => {
+      assertTrue(isErrorShape(rejection), "rejected with a non-object");
+      strictEqual(rejection._tag, expected._tag);
+      if (expected.code !== undefined) strictEqual(rejection.code, expected.code);
+      return rejection;
     }),
   );
 
@@ -61,9 +70,8 @@ export const expectThrow = (thunk: () => unknown, expected: ExpectedError) => {
     thrown = cause;
   }
 
-  const error = thrown as { readonly _tag?: string; readonly code?: string } | undefined;
-  assertTrue(error !== null && typeof error === "object", "did not throw an error object");
-  strictEqual(error._tag, expected._tag);
-  if (expected.code !== undefined) strictEqual(error.code, expected.code);
-  return error;
+  assertTrue(isErrorShape(thrown), "did not throw an error object");
+  strictEqual(thrown._tag, expected._tag);
+  if (expected.code !== undefined) strictEqual(thrown.code, expected.code);
+  return thrown;
 };
