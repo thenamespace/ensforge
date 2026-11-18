@@ -71,5 +71,15 @@ export declare namespace checkSessionCalls {
   type ErrorType = Errors.CommonError | HcaError;
 }
 
+/** Builds a deferred read for `Actions.batch`. */
+checkSessionCalls.request = Action.request(
+  "hca.checkSessionCalls",
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Action.Declared narrows errors to the documented @throws
+  Impl.checkSessionCalls as Action.Declared<
+    typeof Impl.checkSessionCalls,
+    checkSessionCalls.ErrorType
+  >,
+);
+
 /** Path of the action, e.g. for cache keys. */
 checkSessionCalls.path = "hca.checkSessionCalls" as const;

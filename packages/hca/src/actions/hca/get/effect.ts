@@ -9,7 +9,7 @@ import type { get as Promises } from "./index.js";
 /** @internal Implementation of `Actions.hca.get`. */
 export const get = Effect.fn("ensforge.hca.get")(function* (
   client: Client,
-  options: Promises.Options,
+  options: Promises.Options = {},
 ): Effect.fn.Return<Promises.ReturnType, AnyError | HcaError> {
   return yield* accountInput(client, options);
 }, Action.withContext("hca.get"));

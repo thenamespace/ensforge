@@ -10,7 +10,7 @@ import type { predictAddress as Promises } from "./index.js";
 /** @internal Implementation of `Actions.hca.predictAddress`. */
 export const predictAddress = Effect.fn("ensforge.hca.predictAddress")(function* (
   client: Client,
-  options: Promises.Options,
+  options: Promises.Options = {},
 ): Effect.fn.Return<Promises.ReturnType, AnyError | HcaError> {
   const owner =
     options.owner === undefined

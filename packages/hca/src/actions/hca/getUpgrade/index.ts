@@ -73,5 +73,12 @@ export declare namespace getUpgrade {
   type ErrorType = Errors.CommonError | Errors.InvalidInputError | HcaError;
 }
 
+/** Builds a deferred read for `Actions.batch`. */
+getUpgrade.request = Action.request(
+  "hca.getUpgrade",
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Action.Declared narrows errors to the documented @throws
+  Impl.getUpgrade as Action.Declared<typeof Impl.getUpgrade, getUpgrade.ErrorType>,
+);
+
 /** Path of the action, e.g. for cache keys. */
 getUpgrade.path = "hca.getUpgrade" as const;

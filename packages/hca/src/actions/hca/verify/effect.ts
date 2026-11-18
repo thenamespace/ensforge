@@ -9,7 +9,7 @@ import type { verify as Promises } from "./index.js";
 /** @internal Implementation of `Actions.hca.verify`. */
 export const verify = Effect.fn("ensforge.hca.verify")(function* (
   client: Client,
-  options: Promises.Options,
+  options: Promises.Options = {},
 ): Effect.fn.Return<Promises.ReturnType, AnyError | HcaError> {
   const account = yield* accountInput(client, options);
   if (account.problems.length > 0) {
