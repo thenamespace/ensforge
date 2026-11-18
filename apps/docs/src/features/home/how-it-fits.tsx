@@ -62,7 +62,7 @@ const steps: readonly Step[] = [
   {
     id: "ens",
     label: "ENS underneath",
-    title: "Every name, one API",
+    title: "No special cases in your code",
     body: "ENSv1 or ENSv2, wrapped or not, on-chain or off-chain through CCIP-Read: ensforge works it out, so your code never branches on it.",
     notes: [
       { at: [50, 160], label: "ENSv1 and ENSv2\nregistries", side: "left" },
