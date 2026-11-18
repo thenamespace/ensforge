@@ -243,6 +243,7 @@ export const contractsReference = (
       "reference/contracts/meta.json",
       meta({
         title: "Contracts",
+        icon: "package-contracts",
         pages: ["abis", "deployments", "interface-ids", "roles", "entry-points"],
       }),
     ],

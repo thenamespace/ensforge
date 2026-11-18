@@ -112,3 +112,9 @@ samp {
 .prose a[href^="/docs/reference/glossary"]:hover {
   text-decoration-color: var(--ek-accent);
 }
+
+/* The reference landing is the reference root's index page; the "API reference" section link
+   above the rule already points to it, so the tree's own entry for it is hidden. */
+:is(#nd-sidebar, #nd-sidebar-mobile) a[href="/docs/reference"]:not(.docs-section-link) {
+  display: none;
+}

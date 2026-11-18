@@ -1,6 +1,6 @@
 {
   "title": "React",
-  "icon": "react",
+  "icon": "package-react",
   "pages": [
     "(hooks)",
     "components",

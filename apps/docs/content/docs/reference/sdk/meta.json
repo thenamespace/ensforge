@@ -1,6 +1,6 @@
 {
   "title": "SDK",
-  "icon": "code",
+  "icon": "package-sdk",
   "pages": [
     "client",
     "batch",

@@ -1,6 +1,6 @@
 {
   "title": "HCA",
-  "icon": "plug",
+  "icon": "package-hca",
   "pages": [
     "executors",
     "---Domains---",

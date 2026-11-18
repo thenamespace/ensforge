@@ -337,6 +337,7 @@ export const docsSite = Effect.fn("docs.site")(function* (root: string) {
     meta({
       title: "Reference",
       description: "API reference of every package",
+      icon: "reference",
       root: "reference",
       pages: [
         "index",
@@ -409,7 +410,7 @@ export const docsSite = Effect.fn("docs.site")(function* (root: string) {
     "sdk/meta.json",
     meta({
       title: "SDK",
-      icon: "code",
+      icon: "package-sdk",
       pages: [
         "client",
         ...Arr.map(sdkExtra, (action) => kebab(action.folder)),
@@ -547,7 +548,7 @@ export const docsSite = Effect.fn("docs.site")(function* (root: string) {
     "react/meta.json",
     meta({
       title: "React",
-      icon: "react",
+      icon: "package-react",
       pages: ["(hooks)", "components", "server", "atoms"],
     }),
   );
@@ -617,7 +618,7 @@ export const docsSite = Effect.fn("docs.site")(function* (root: string) {
     "hca/meta.json",
     meta({
       title: "HCA",
-      icon: "plug",
+      icon: "package-hca",
       pages: ["executors", "---Domains---", ...Arr.map(hcaDomains, (entry) => kebab(entry.domain))],
     }),
   );

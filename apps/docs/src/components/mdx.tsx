@@ -16,7 +16,6 @@ import { track } from "@/lib/analytics/client";
 import { Icon } from "@/lib/docs-icons";
 
 import { useDocsSlug } from "./docs/analytics";
-import { DocsHome } from "./docs/docs-home";
 import { Mermaid } from "./mermaid";
 
 /**
@@ -182,7 +181,6 @@ export function getMDXComponents(components?: MDXComponents) {
     Accordions,
     Card,
     Cards,
-    DocsHome,
     Icon,
     Mermaid,
     Tab,

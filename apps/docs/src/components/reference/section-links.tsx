@@ -16,7 +16,7 @@ export function SectionLinks() {
   const links = [
     {
       label: "Guides",
-      href: pkg ? `/docs/${pkg.slug}` : "/docs",
+      href: `/docs/${pkg?.slug ?? "sdk"}`,
       icon: "guide",
       active: !isReference,
     },
@@ -41,7 +41,7 @@ export function SectionLinks() {
           data-active={item.active}
           aria-current={item.active ? "page" : undefined}
           className={cn(
-            "flex w-full items-center gap-3 rounded-lg px-2.5 py-2 text-start outline-none transition-colors focus-visible:ring-2 focus-visible:ring-fd-ring [&_svg]:size-4 [&_svg]:shrink-0",
+            "docs-section-link flex w-full items-center gap-3 rounded-lg px-2.5 py-2 text-start outline-none transition-colors focus-visible:ring-2 focus-visible:ring-fd-ring [&_svg]:size-4 [&_svg]:shrink-0",
             item.active
               ? "bg-fd-primary/10 text-fd-primary"
               : "text-fd-muted-foreground hover:text-fd-accent-foreground",
