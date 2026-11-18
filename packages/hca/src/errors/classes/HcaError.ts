@@ -1,5 +1,7 @@
 import { Errors } from "@ensforge/sdk";
-import { withDefaults } from "@ensforge/sdk/extension";
+import { registerMessages, withDefaults } from "@ensforge/sdk/extension";
+
+import { messages } from "../messages.js";
 
 const defaults: {
   readonly [code in HcaError.Code]: (options: HcaError.Options) => Errors.EnsforgeError.Defaults;
@@ -68,6 +70,9 @@ export class HcaError extends Errors.EnsforgeError<"HcaError", HcaError.Code> {
     this.executor = options.executor;
   }
 }
+
+// Registered beside the class, so `Errors.describe` has the copy wherever an `HcaError` is thrown.
+registerMessages<HcaError>(messages);
 
 export declare namespace HcaError {
   type Code =
