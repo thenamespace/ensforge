@@ -1,13 +1,9 @@
-import { Effect } from "effect";
-import { AsyncResult, Atom, Reactivity, type AtomRegistry } from "effect/reactivity";
+import { AsyncResult, type AtomRegistry } from "effect/reactivity";
 
 import type { Ensforge } from "@ensforge/sdk";
 
-import { runtime } from "./runtime.js";
+import { reactivity } from "./registry.js";
 import { invalidationKeys, subjectsOf } from "./subjects.js";
-
-// The registry's `Reactivity`, the one read atoms subscribe to.
-const reactivity = runtime.atom(Effect.service(Reactivity.Reactivity)).pipe(Atom.keepAlive);
 
 /**
  * Refetches every cached read of the given names and accounts, chain and indexer reads alike.
@@ -25,6 +21,7 @@ const reactivity = runtime.atom(Effect.service(Reactivity.Reactivity)).pipe(Atom
  * invalidate(registry, ens, { names: ["alice.eth"] })
  * ```
  *
+ * @stability unstable
  * @category invalidation
  * @since 1.0.0
  */

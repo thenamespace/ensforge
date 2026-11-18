@@ -16,7 +16,11 @@ import { EnsforgeContext } from "./context.js";
  * @since 1.0.0
  */
 export type EnsforgeProviderProps = {
-  /** The client hooks use: `Ensforge.create(…)`, or `Ensforge.fromWagmi(config)`. */
+  /**
+   * The client hooks use, as is: `Ensforge.create(…)`, or `Ensforge.fromWagmi(config)`. Writes
+   * ENS makes on other chains (L2 primary names) need them in its `chains`, which `fromWagmi`
+   * fills from the wagmi config's chains.
+   */
   readonly client: Ensforge.Client;
   /** Freshness for every read below, unless a hook sets its own. */
   readonly defaults?: Freshness | undefined;

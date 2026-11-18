@@ -1,10 +1,10 @@
 "use client";
 
-import { useContext, useMemo } from "react";
+import { useCallback, useContext, useMemo } from "react";
 
-import { RegistryContext, useAtom, useAtomValue } from "@effect/atom-react";
-import { Option } from "effect";
-import { AsyncResult, Atom } from "effect/reactivity";
+import { RegistryContext, useAtomValue } from "@effect/atom-react";
+import { Effect } from "effect";
+import { AsyncResult, Atom, AtomRegistry } from "effect/reactivity";
 
 import type { Ensforge, Plan } from "@ensforge/sdk";
 
@@ -20,18 +20,27 @@ import { errorOf } from "./result.js";
  * @since 1.0.0
  */
 export type WriteResult<options, value, error> = {
-  /** Sends the write; the outcome lands in `status`, `data` and `error`. */
+  /** Sends the write; the outcome lands in `status`, `data` and `error`. Stable across renders. */
   readonly mutate: (options: options) => void;
-  /** Sends the write and resolves with its result, or rejects with its error. */
+  /**
+   * Sends the write and resolves with its own result, or rejects with its error, even when
+   * later writes start while it runs. Stable across renders.
+   */
   readonly mutateAsync: (options: options) => Promise<value>;
+  /** The latest write's value, once it succeeded. */
   readonly data: value | undefined;
   readonly error: error | undefined;
+  /** Status of the latest write started. */
   readonly status: "idle" | "pending" | "success" | "error";
   readonly isPending: boolean;
   /** Progress of the latest write's plan: `waiting`, `submitted`, `confirmed`, `failed`. */
   readonly steps: readonly Plan.Event[];
   readonly result: AsyncResult.AsyncResult<value, error>;
-  /** Clears the result and steps. */
+  /**
+   * Clears the result and steps. Writes in flight are not interrupted (a sent transaction cannot
+   * be taken back): their `mutateAsync` promises still settle, but they no longer update the
+   * state. Stable across renders.
+   */
   readonly reset: () => void;
 };
 
@@ -46,6 +55,7 @@ export type WriteResult<options, value, error> = {
  * **Details**
  *
  * - Each component gets its own state; two buttons never share a result.
+ * - The state follows the latest write started; each `mutateAsync` settles with its own write.
  * - `steps` lists plan events as they happen, for multi-step writes (approve, commit, register).
  * - Afterwards, reads of the names and accounts it touched refetch: chain reads once mined,
  *   indexer reads once indexed.
@@ -76,16 +86,29 @@ export const useWrite = <action extends Action>(
   const { client } = useEnsforgeContext(config.client);
   const registry = useContext(RegistryContext);
   const atoms = useMemo(() => ensWriteAtom(client, action), [client, action]);
-  const [result, run] = useAtom(atoms.run, { mode: "promise" });
+  const result = useAtomValue(atoms.run);
   const steps = useAtomValue(atoms.steps);
 
-  return {
-    mutate: (options) => {
+  const mutateAsync = useCallback(
+    (options: ActionOptions<action>) =>
+      Effect.runPromise(
+        atoms.send(options).pipe(Effect.provideService(AtomRegistry.AtomRegistry, registry)),
+      ),
+    [atoms, registry],
+  );
+  const mutate = useCallback(
+    (options: ActionOptions<action>) => {
       // The outcome is in `result`; `mutateAsync` is for callers that await it.
-      run(options).catch(() => undefined);
+      mutateAsync(options).catch(() => undefined);
     },
-    mutateAsync: run,
-    data: Option.getOrUndefined(AsyncResult.value(result)),
+    [mutateAsync],
+  );
+  const reset = useCallback(() => registry.set(atoms.run, Atom.Reset), [atoms, registry]);
+
+  return {
+    mutate,
+    mutateAsync,
+    data: AsyncResult.isSuccess(result) ? result.value : undefined,
     error: errorOf(result),
     status: result.waiting
       ? "pending"
@@ -97,9 +120,6 @@ export const useWrite = <action extends Action>(
     isPending: result.waiting,
     steps,
     result,
-    reset: () => {
-      registry.set(atoms.run, Atom.Reset);
-      registry.set(atoms.steps, []);
-    },
+    reset,
   };
 };

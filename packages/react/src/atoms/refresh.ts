@@ -10,33 +10,42 @@ import { invalidationKeys, writeSubjects } from "./subjects.js";
 /**
  * Refreshes the reads a write touched: chain reads once its transactions are mined, indexer
  * reads once the indexer has indexed them. Runs in the background; a write's result never waits
- * for it.
+ * for it. Without a result (a write that failed after a step was confirmed), nothing is left to
+ * wait for and the signer is the client's account.
+ *
+ * @stability unstable
  */
-export const refreshAfterWrite = Effect.fnUntraced(
-  function* (
-    client: Ensforge.Client,
-    options: unknown,
-    value: unknown,
-  ): Effect.fn.Return<void, unknown, Reactivity.Reactivity> {
-    const subjects = writeSubjects(options, value as Write.Result | undefined);
-    const last = Predicate.hasProperty(value, "hashes")
-      ? (value as Write.Result).hashes.at(-1)
-      : undefined;
+export const refreshAfterWrite = Effect.fnUntraced(function* (
+  client: Ensforge.Client,
+  options: unknown,
+  written: Write.Result | undefined,
+): Effect.fn.Return<void, never, Reactivity.Reactivity> {
+  const subjects = writeSubjects(options, written?.plan.account ?? client.account);
+  const last =
+    written === undefined || Predicate.hasProperty(written, "receipts")
+      ? undefined
+      : written.hashes.at(-1);
 
-    const receipt =
-      last === undefined || Predicate.hasProperty(value, "receipts")
-        ? undefined
-        : yield* Effect.promise(() =>
-            waitForTransactionReceipt(client.publicClient, { hash: last }),
-          );
-    yield* Reactivity.invalidate(invalidationKeys(client, "chain", subjects));
+  // Chain reads refresh even when the receipt wait fails or times out (viem gives up after three
+  // minutes): the transactions may have landed anyway.
+  const minedIn = yield* (
+    last === undefined
+      ? Effect.undefined
+      : Effect.tryPromise((signal) =>
+          waitForTransactionReceipt(client.publicClient, { hash: last, signal }),
+        ).pipe(
+          Effect.map((receipt) => receipt.blockNumber),
+          Effect.orElseSucceed(() => undefined),
+        )
+  ).pipe(Effect.ensuring(Reactivity.invalidate(invalidationKeys(client, "chain", subjects))));
 
-    if (client.config.indexer === undefined) return;
+  if (client.config.indexer === undefined) return;
+  yield* Effect.gen(function* () {
     const block =
-      receipt?.blockNumber ??
-      (yield* Effect.promise(() => client.publicClient.request({ method: "eth_blockNumber" })).pipe(
-        Effect.map(BigInt),
-      ));
+      minedIn ??
+      (yield* Effect.tryPromise(() =>
+        client.publicClient.request({ method: "eth_blockNumber" }),
+      ).pipe(Effect.map(BigInt)));
 
     // Indexers lag the chain. Their reads refresh once the indexer reports the write's block,
     // polled for up to a minute; indexers without a status are given a few seconds instead.
@@ -50,6 +59,5 @@ export const refreshAfterWrite = Effect.fnUntraced(
       Effect.catch(() => Effect.sleep("5 seconds")),
     );
     yield* Reactivity.invalidate(invalidationKeys(client, "indexer", subjects));
-  },
-  (refresh) => Effect.ignore(refresh),
-);
+  }).pipe(Effect.ignoreCause());
+});

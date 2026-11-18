@@ -1,7 +1,7 @@
 import { Predicate } from "effect";
 
 import { Name } from "@ensforge/sdk";
-import type { Ensforge, Write } from "@ensforge/sdk";
+import type { Ensforge } from "@ensforge/sdk";
 
 /** The names and addresses a read depends on, or a write changes. */
 export type Subjects = {
@@ -58,10 +58,9 @@ export const subjectsOf = (options: unknown): Subjects => {
  * @category invalidation
  * @since 1.0.0
  */
-export const writeSubjects = (options: unknown, result: Write.Result | undefined): Subjects => {
+export const writeSubjects = (options: unknown, signer: string | undefined): Subjects => {
   const named = subjectsOf(options);
   const parents = named.names.flatMap((name) => Name.getParent(name) ?? []);
-  const signer = result?.plan.account;
 
   return {
     names: [...new Set([...named.names, ...parents])],
@@ -69,6 +68,27 @@ export const writeSubjects = (options: unknown, result: Write.Result | undefined
       ...new Set([...named.addresses, ...(signer === undefined ? [] : [signer.toLowerCase()])]),
     ],
   };
+};
+
+const mergeSubjects = (all: readonly Subjects[]): Subjects => ({
+  names: [...new Set(all.flatMap((subjects) => subjects.names))],
+  addresses: [...new Set(all.flatMap((subjects) => subjects.addresses))],
+});
+
+/**
+ * Subjects a read's value names, beyond its options: a name it returns (a primary name), and the
+ * names and accounts of its fields and list items (an account's names, a name's owner). A write
+ * touching one refreshes the read: a primary name when that name's address changes, an account's
+ * names when an operator transfers one away.
+ */
+export const resultSubjects = (value: unknown): Subjects => {
+  if (typeof value === "string") return subjectsOf({ name: value });
+  if (Array.isArray(value)) return mergeSubjects(value.map(resultSubjects));
+  if (!Predicate.isObject(value)) return { names: [], addresses: [] };
+
+  const items =
+    Predicate.hasProperty(value, "items") && Array.isArray(value.items) ? value.items : [];
+  return mergeSubjects([subjectsOf(value), ...items.map(resultSubjects)]);
 };
 
 /**
