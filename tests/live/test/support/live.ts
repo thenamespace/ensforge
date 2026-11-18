@@ -1,25 +1,18 @@
-import { existsSync } from "node:fs";
-import { fileURLToPath } from "node:url";
-
 import { layer } from "@effect/vitest";
 import { Context, Effect, Layer, Schema } from "effect";
 
 import { Ensforge, ensActions } from "@ensforge/sdk";
 import { bigname, goldsky, type Indexer } from "@ensforge/sdk/indexer";
+import { networkRpc, type Network } from "@ensforge/test-harness/networks";
 import { createPublicClient, http, type Address, type Hex } from "viem";
 import { getBlockNumber, getStorageAt } from "viem/actions";
 import { mainnet, sepolia } from "viem/chains";
-
-/** A live network the read-only suites check. */
-export type Network = "mainnet" | "sepolia";
 
 /** The live suites cannot run (no RPC URL), or an RPC request failed. */
 export class LiveError extends Schema.TaggedError<LiveError, { readonly brand: unique symbol }>()(
   "LiveError",
   { message: Schema.String },
 ) {}
-
-const envFile = fileURLToPath(new URL("../../../../.env", import.meta.url));
 
 // The RPC is rate limited (Namespace's proxy: 500 requests a minute per IP). Every HTTP request
 // of the process waits its turn, 250 ms apart: at most 240 a minute. JSON-RPC batching and
@@ -71,11 +64,8 @@ export class Live extends Context.Service<
     Layer.effect(
       Live,
       Effect.gen(function* () {
-        if (existsSync(envFile)) process.loadEnvFile(envFile);
-        const variable =
-          network === "mainnet" ? "ENSFORGE_MAINNET_RPC_URL" : "ENSFORGE_SEPOLIA_RPC_URL";
-        const url = process.env[variable];
-        if (url === undefined || url === "") {
+        const { variable, url } = networkRpc(network);
+        if (url === undefined) {
           return yield* new LiveError({ message: `set ${variable} to read ${network}` });
         }
 

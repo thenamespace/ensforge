@@ -109,6 +109,30 @@ in `Effect.promise`.
 
 Property tests use a fixed seed; reproduce a failure with `ENSFORGE_TEST_SEED=<seed> pnpm test`.
 
+### Commands
+
+| Command                                      | Runs                                                            | Needs                 |
+| -------------------------------------------- | --------------------------------------------------------------- | --------------------- |
+| `pnpm test`                                  | unit and type tests (part of `pnpm check`)                      | nothing               |
+| `pnpm test:chain`                            | devnet, fixtures and integration lanes                          | Foundry               |
+| `pnpm test:fuzz`                             | fuzz lane                                                       | Foundry               |
+| `pnpm test:services`                         | bigname, alto, paymaster and journeys                           | Foundry, Docker       |
+| `pnpm test:fork`                             | real names on mainnet and Sepolia forks at pinned blocks        | Foundry, archive RPCs |
+| `pnpm test:live`                             | read-only canaries, indexers and proxies on mainnet and Sepolia | RPCs                  |
+| `pnpm devnet:build` / `devnet:verify`        | build (cache) and check devnet profiles                         | Foundry               |
+| `pnpm artifacts:check` / `artifacts:refresh` | committed contract artifacts against their pinned sources       | network               |
+| `pnpm release:watch`                         | newer ENS releases or deployments, and indexer OpenAPI drift    | network               |
+
+The fork and live lanes read `ENSFORGE_MAINNET_RPC_URL` and `ENSFORGE_SEPOLIA_RPC_URL` from the
+environment or `.env` (`.env.example`). They are throttled for a rate-limited RPC (forks at 80
+compute units a second, cached in `~/.foundry/cache/rpc`; live reads 250 ms apart) and run one
+file at a time: never run them alongside each other. Both keep to a few essential checks; new
+coverage belongs on the devnet.
+
+Flaky tests are not retried. A test that fails without a code change is quarantined (`it.skip`
+with a link to its issue and the seed or block that reproduces it) and fixed or removed; a lane is
+green when it passes three consecutive runs.
+
 ## Documentation
 
 Update documentation when changing a public API, configuration option, return type, error, deployment,

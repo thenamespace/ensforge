@@ -1,6 +1,3 @@
-import { existsSync } from "node:fs";
-import { fileURLToPath } from "node:url";
-
 import { NodeServices } from "@effect/platform-node";
 import { layer } from "@effect/vitest";
 import { Effect, Layer, Schema } from "effect";
@@ -14,12 +11,10 @@ import {
   devnetClient,
   type DevnetInstance,
 } from "@ensforge/test-devnet";
+import { networkRpc, type Network } from "@ensforge/test-harness/networks";
 import { chainServices } from "@ensforge/test-integration/support/lane";
 import { defineChain, encodeAbiParameters, erc20Abi, keccak256, toHex, type Address } from "viem";
 import { mainnet, sepolia } from "viem/chains";
-
-/** A live network a fork follows. */
-export type Network = "mainnet" | "sepolia";
 
 /**
  * Where each fork starts: after the ENSv2 cutover, at blocks whose state anvil caches on disk, so
@@ -33,13 +28,9 @@ export class ForkError extends Schema.TaggedError<ForkError, { readonly brand: u
   { message: Schema.String },
 ) {}
 
-const envFile = fileURLToPath(new URL("../../../../.env", import.meta.url));
-
 const startFork = Effect.fn("startFork")(function* (network: Network) {
-  if (existsSync(envFile)) process.loadEnvFile(envFile);
-  const variable = network === "mainnet" ? "ENSFORGE_MAINNET_RPC_URL" : "ENSFORGE_SEPOLIA_RPC_URL";
-  const url = process.env[variable];
-  if (url === undefined || url === "") {
+  const { variable, url } = networkRpc(network);
+  if (url === undefined) {
     return yield* new ForkError({ message: `set ${variable} (an archive RPC) to fork ${network}` });
   }
 
