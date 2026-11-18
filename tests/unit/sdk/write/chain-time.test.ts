@@ -39,4 +39,57 @@ describe("waitForChainTime", () => {
       assert.strictEqual(calls.filter((call) => call.method === "eth_getBlockByNumber").length, 2);
     }),
   );
+
+  it.effect("returns at once when the chain is exactly at the target", () =>
+    Effect.gen(function* () {
+      const { transport, calls } = scriptedTransport(({ method }) =>
+        method === "eth_getBlockByNumber"
+          ? {
+              number: "0x1",
+              hash: `0x${"11".repeat(32)}`,
+              timestamp: numberToHex(committedAt),
+              transactions: [],
+            }
+          : undefined,
+      );
+      const client = Ensforge.create({
+        publicClient: createPublicClient({ chain: mainnet, transport }),
+      });
+
+      yield* waitForChainTime(client, committedAt);
+
+      assert.deepStrictEqual(
+        calls.map(({ params }) => (params as readonly unknown[])[0]),
+        ["latest"],
+      );
+    }),
+  );
+
+  // With polling slower than the time left, the next check comes when the target should be reached.
+  it.effect("sleeps no longer than the time left", () =>
+    Effect.gen(function* () {
+      let timestamp = committedAt;
+      const { transport, calls } = scriptedTransport(({ method }) =>
+        method === "eth_getBlockByNumber"
+          ? {
+              number: "0x1",
+              hash: `0x${"11".repeat(32)}`,
+              timestamp: numberToHex(timestamp),
+              transactions: [],
+            }
+          : undefined,
+      );
+      const client = Ensforge.create({
+        publicClient: createPublicClient({ chain: mainnet, transport, pollingInterval: 600_000 }),
+      });
+
+      const wait = yield* waitForChainTime(client, committedAt + 61n).pipe(Effect.forkChild);
+      yield* TestClock.withLive(Effect.sleep("10 millis"));
+      timestamp = committedAt + 61n;
+      yield* TestClock.adjust("61 seconds");
+      yield* Fiber.join(wait);
+
+      assert.strictEqual(calls.length, 2);
+    }),
+  );
 });

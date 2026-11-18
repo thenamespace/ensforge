@@ -1,0 +1,264 @@
+import { assert, describe, it } from "@effect/vitest";
+import { Effect } from "effect";
+
+import type { Plan } from "@ensforge/sdk";
+import * as Ensforge from "@ensforge/sdk/internal/client/Ensforge";
+import { estimatePlan, simulatePlan } from "@ensforge/sdk/internal/internal/write/simulate";
+import { make as makePlan } from "@ensforge/sdk/internal/plan/make";
+import { expectFailure, scriptedTransport } from "@ensforge/test-harness";
+import {
+  createPublicClient,
+  encodeErrorResult,
+  getAddress,
+  pad,
+  type Address,
+  type Hex,
+} from "viem";
+import { mainnet } from "viem/chains";
+
+import { requestsOf } from "./wallet";
+
+const account = getAddress("0x00000000000000000000000000000000000a11ce");
+const target: Address = "0x00000000000000000000000000000000000000c0";
+const reason = encodeErrorResult({
+  abi: [{ type: "error", name: "Error", inputs: [{ name: "message", type: "string" }] }],
+  errorName: "Error",
+  args: ["not allowed"],
+});
+
+/**
+ * A client whose node simulates calls in order with `eth_simulateV1` (unless `sequential` is off,
+ * as on nodes without it, where calls run one by one with `eth_call`): each call uses 21,000 gas
+ * and reverts with the data `reverts` gives for it.
+ */
+const node = (reverts: Readonly<Record<Hex, Hex>> = {}, sequential = true) => {
+  const { transport, calls } = scriptedTransport(({ method, params }) => {
+    const [request] = params as readonly Record<string, unknown>[];
+    if (method === "eth_simulateV1") {
+      if (!sequential)
+        throw Object.assign(new Error("eth_simulateV1 does not exist"), { code: -32601 });
+      const block = (
+        request?.blockStateCalls as
+          | readonly { readonly calls: readonly { readonly data: Hex }[] }[]
+          | undefined
+      )?.[0];
+      return [
+        {
+          number: "0x1",
+          hash: pad("0x1"),
+          timestamp: "0x1",
+          gasLimit: "0x1c9c380",
+          gasUsed: "0x0",
+          transactions: [],
+          calls: block?.calls.map(({ data }) => {
+            const revert = reverts[data];
+            return revert === undefined
+              ? { status: "0x1", returnData: "0x", gasUsed: "0x5208", logs: [] }
+              : {
+                  status: "0x0",
+                  returnData: revert,
+                  gasUsed: "0x5208",
+                  logs: [],
+                  error: { code: 3, message: "execution reverted", data: revert },
+                };
+          }),
+        },
+      ];
+    }
+    if (method === "eth_call" || method === "eth_estimateGas") {
+      const revert = reverts[request?.data as Hex];
+      if (revert !== undefined)
+        throw Object.assign(new Error("execution reverted"), { code: -32000, data: revert });
+      return method === "eth_call" ? "0x" : "0x5208";
+    }
+    return undefined;
+  });
+  const client = Ensforge.create({
+    publicClient: createPublicClient({ chain: mainnet, transport }),
+  });
+  return { client, calls };
+};
+
+const call = (data: Hex): Plan.Call => ({ to: target, data, value: 0n });
+
+// The commit and the approval run against current state; the registration waits for chain time.
+const plan = makePlan({
+  operation: "test",
+  chainId: 1,
+  account,
+  steps: [
+    { id: "commit", description: "commit", calls: [call("0x01")] },
+    { id: "approve", description: "approve", calls: [call("0x02"), call("0x03")] },
+    { id: "register", description: "register", calls: [call("0x04")], waitFor: { seconds: 60n } },
+  ],
+});
+
+describe("simulatePlan", () => {
+  it.effect("runs the steps before the first wait in order and reports each step's error", () =>
+    Effect.gen(function* () {
+      const { client, calls } = node({ "0x03": "0x" });
+
+      const simulation = yield* simulatePlan(client, plan, account);
+
+      assert.strictEqual(simulation.ok, false);
+      assert.strictEqual(simulation.plan, plan);
+      assert.deepStrictEqual(
+        simulation.steps.map(({ id, ok }) => [id, ok]),
+        [
+          ["commit", true],
+          ["approve", false],
+        ],
+      );
+      // A revert without data would read as a missing contract; it is a revert.
+      const error = simulation.steps[1]?.error;
+      assert.strictEqual(error?._tag, "ContractRevertError");
+      assert.strictEqual(error?.code, "CONTRACT_REVERTED");
+      assert.strictEqual((error as { readonly data?: Hex } | undefined)?.data, "0x");
+      assert.deepStrictEqual(error?.context.revert, { errorName: undefined, data: "0x" });
+      assert.strictEqual(error?.context.contract, target);
+      assert.strictEqual(error?.context.account, account);
+      const [request] = requestsOf(calls, "eth_simulateV1");
+      const block = (
+        request?.blockStateCalls as
+          | readonly { readonly calls: readonly Record<string, unknown>[] }[]
+          | undefined
+      )?.[0];
+      assert.deepStrictEqual(
+        // viem appends a call of its own.
+        block?.calls.slice(0, 3).map(({ from, to, data }) => ({ from, to, data })),
+        ["0x01", "0x02", "0x03"].map((data) => ({ from: account, to: target, data })),
+      );
+    }),
+  );
+
+  it.effect("decodes a revert reason and reports a plan without failures as ok", () =>
+    Effect.gen(function* () {
+      const failing = yield* simulatePlan(node({ "0x01": reason }).client, plan, account);
+      const passing = yield* simulatePlan(node().client, plan, undefined);
+
+      assert.strictEqual(failing.steps[0]?.error?.context.revert?.errorName, "Error");
+      assert.strictEqual(failing.steps[0]?.error?.context.contract, target);
+      assert.deepStrictEqual(passing, {
+        ok: true,
+        plan,
+        steps: [
+          { id: "commit", ok: true },
+          { id: "approve", ok: true },
+        ],
+      });
+    }),
+  );
+
+  it.effect("simulates without a sender when the write has no account", () =>
+    Effect.gen(function* () {
+      const { client, calls } = node();
+
+      yield* simulatePlan(client, plan, undefined);
+
+      const [request] = requestsOf(calls, "eth_simulateV1");
+      const block = (
+        request?.blockStateCalls as
+          | readonly { readonly calls: readonly Record<string, unknown>[] }[]
+          | undefined
+      )?.[0];
+      assert.isTrue(block?.calls.every((simulated) => simulated.from === undefined));
+    }),
+  );
+
+  // Nodes without `eth_simulateV1` run each call alone against current state.
+  it.effect("falls back to one eth_call per call on nodes without eth_simulateV1", () =>
+    Effect.gen(function* () {
+      const { client, calls } = node({ "0x02": reason }, false);
+
+      const simulation = yield* simulatePlan(client, plan, account);
+
+      assert.deepStrictEqual(
+        simulation.steps.map(({ id, ok, error }) => [id, ok, error?.context.contract]),
+        [
+          ["commit", true, undefined],
+          ["approve", false, target],
+        ],
+      );
+      assert.deepStrictEqual(
+        calls
+          .filter(({ method }) => method === "eth_call")
+          .map(({ params }) => {
+            const [request] = params as readonly Record<string, unknown>[];
+            return [request?.from, request?.data];
+          }),
+        [
+          [account, "0x01"],
+          [account, "0x02"],
+          [account, "0x03"],
+        ],
+      );
+
+      const { client: anonymous, calls: anonymousCalls } = node({}, false);
+      yield* simulatePlan(anonymous, plan, undefined);
+      assert.isTrue(
+        anonymousCalls
+          .filter(({ method }) => method === "eth_call")
+          .every(
+            ({ params }) => (params as readonly Record<string, unknown>[])[0]?.from === undefined,
+          ),
+      );
+    }),
+  );
+});
+
+describe("estimatePlan", () => {
+  it.effect("sums the in-order simulation's gas, with headroom, without estimating again", () =>
+    Effect.gen(function* () {
+      const { client, calls } = node();
+
+      const estimate = yield* estimatePlan(client, plan, account);
+
+      assert.strictEqual(estimate.gas, 3n * 25_200n);
+      assert.strictEqual(calls.filter(({ method }) => method === "eth_estimateGas").length, 0);
+    }),
+  );
+
+  it.effect("fails with the error of a call that would revert", () =>
+    Effect.gen(function* () {
+      const error = yield* expectFailure(
+        estimatePlan(node({ "0x02": reason }).client, plan, account),
+        {
+          _tag: "ContractRevertError",
+        },
+      );
+
+      assert.strictEqual(error.context.revert?.errorName, "Error");
+    }),
+  );
+
+  it.effect("estimates each call as the account on nodes without eth_simulateV1", () =>
+    Effect.gen(function* () {
+      const { client, calls } = node({}, false);
+
+      yield* estimatePlan(client, plan, account);
+      const { client: anonymous, calls: anonymousCalls } = node({}, false);
+      yield* estimatePlan(anonymous, plan, undefined);
+
+      const senders = (recorded: typeof calls) =>
+        recorded
+          .filter(({ method }) => method === "eth_estimateGas")
+          .map(({ params }) => (params as readonly Record<string, unknown>[])[0]?.from);
+      assert.deepStrictEqual(senders(calls), [account, account, account]);
+      assert.deepStrictEqual(senders(anonymousCalls), [undefined, undefined, undefined]);
+    }),
+  );
+
+  it.effect("names the contract of a call whose estimate fails", () =>
+    Effect.gen(function* () {
+      const error = yield* expectFailure(
+        estimatePlan(node({ "0x03": reason }, false).client, plan, account),
+        {
+          _tag: "ContractRevertError",
+        },
+      );
+
+      assert.strictEqual(error.context.contract, target);
+      assert.strictEqual(error.context.account, account);
+    }),
+  );
+});
