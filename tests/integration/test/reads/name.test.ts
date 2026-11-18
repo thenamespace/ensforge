@@ -11,9 +11,11 @@ import { labelhash, namehash, type Address } from "viem";
 import { Clients } from "../support/clients.ts";
 import {
   atStage,
+  belowPremigrated,
   premigrated,
   stageOf,
   unclaimed,
+  v1Dns,
   v1Eth,
   v1Reserved,
   v1Sub,
@@ -138,8 +140,8 @@ const expected: Readonly<Record<string, NameExpectation>> = {
   "hierarchy.label-unknown": v1Sub(["M:C6"], "bob"),
   "hierarchy.label-unnormalized": v1Sub(["L32", "M:C8"], "bob"),
   "hierarchy.depth-33": v1Sub(["H13"], "alice"),
-  "dns.imported": v1Sub(["M:C4"], "alice"),
-  "dns.imported.wrapped": v1Sub(["D15"], "bob", "registered", "v1-wrapped"),
+  "dns.imported": v1Dns(["M:C4"], "alice"),
+  "dns.imported.wrapped": v1Dns(["D15"], "bob", "v1-wrapped"),
   "dns.synced-tld": v2Sub(["D17", "M:C2"], "owner"),
   "registration.price.3cp": v2Eth([], "alice"),
   "registration.price.4cp": v2Eth([], "alice"),
@@ -182,7 +184,11 @@ describe("name.get", () => {
               const { accounts } = yield* Devnet;
               const { reader } = yield* Clients;
               const wanted =
-                fixture.facts["premigrated"] === true ? premigrated(expectation) : expectation;
+                fixture.facts["premigrated"] === true
+                  ? premigrated(expectation)
+                  : fixture.facts["belowPremigrated"] === true
+                    ? belowPremigrated(expectation)
+                    : expectation;
               const stage = stageOf(profile);
 
               const state = yield* Actions.name.get(reader, { name: fixture.name });

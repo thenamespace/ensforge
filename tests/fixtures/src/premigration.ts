@@ -10,11 +10,15 @@ import { days } from "./fixtures/durations.ts";
 // The BatchRegistrar's limit per call is gas, not a count; chunks keep each call small.
 const chunkSize = 25;
 
+/** The `.eth` second-level name `name` is or sits under. */
+const secondLevel = (name: string) => /[^.]+\.eth$/u.exec(name)?.[0];
+
 /**
  * Mainnet's premigration: before the launch, ENSv2 reserves every ENSv1 `.eth` label that is
- * registered or in grace, until its ENSv1 expiry plus the migration bonus. Fixtures marked
- * `unreserved`, and labels ENSv2 already holds, are left out; premigrated fixtures record
- * `premigrated: true`.
+ * registered or in grace, until its ENSv1 expiry plus the migration bonus: the fixtures'
+ * second-level names and those their subnames sit under. Fixtures marked `unreserved`, and labels
+ * ENSv2 already holds, are left out; premigrated fixtures record `premigrated: true`, fixtures
+ * below one `belowPremigrated: true`.
  */
 export const premigration = (selected: readonly Fixture[], facts: Map<string, Facts>): Step =>
   step("fixtures premigration", (c) =>
@@ -23,11 +27,13 @@ export const premigration = (selected: readonly Fixture[], facts: Map<string, Fa
       const excluded = new Set(
         selected
           .filter((fixture) => fixture.unreserved === true)
-          .map((fixture) => String(facts.get(fixture.id)?.["name"])),
+          .flatMap((fixture) => secondLevel(String(facts.get(fixture.id)?.["name"])) ?? []),
       );
       const names = [
-        ...new Set(selected.map((fixture) => String(facts.get(fixture.id)?.["name"]))),
-      ].filter((name) => /^[^.]+\.eth$/u.test(name) && !excluded.has(name));
+        ...new Set(
+          selected.flatMap((fixture) => secondLevel(String(facts.get(fixture.id)?.["name"])) ?? []),
+        ),
+      ].filter((name) => !excluded.has(name));
 
       const reservations: {
         readonly name: string;
@@ -58,8 +64,12 @@ export const premigration = (selected: readonly Fixture[], facts: Map<string, Fa
       const reserved = new Set(reservations.map(({ name }) => name));
       for (const fixture of selected) {
         const found = facts.get(fixture.id);
-        if (found !== undefined && reserved.has(String(found["name"]))) {
-          facts.set(fixture.id, { ...found, premigrated: true });
+        if (found === undefined) continue;
+        const name = String(found["name"]);
+        const ancestor = secondLevel(name);
+        if (reserved.has(name)) facts.set(fixture.id, { ...found, premigrated: true });
+        else if (ancestor !== undefined && reserved.has(ancestor)) {
+          facts.set(fixture.id, { ...found, belowPremigrated: true });
         }
       }
     }),

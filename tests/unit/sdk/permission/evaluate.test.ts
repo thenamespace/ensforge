@@ -1,8 +1,16 @@
 import { assert, describe, it } from "@effect/vitest";
 
 import { Roles } from "@ensforge/contracts";
-import type { Operation } from "@ensforge/sdk/internal/actions/permission/get/types";
-import { evaluate } from "@ensforge/sdk/internal/internal/permission/evaluate";
+import type {
+  Operation,
+  PermissionCheck,
+} from "@ensforge/sdk/internal/actions/permission/get/types";
+import type { LoadedName } from "@ensforge/sdk/internal/internal/name/load";
+import {
+  evaluate,
+  evaluateChildRewrite,
+  evaluateSelfRemoval,
+} from "@ensforge/sdk/internal/internal/permission/evaluate";
 import type { PermissionFacts } from "@ensforge/sdk/internal/internal/permission/facts";
 import * as Fuse from "@ensforge/sdk/internal/utils/Fuse";
 import type { Address } from "viem";
@@ -15,6 +23,7 @@ const resolver: Address = "0x0000000000000000000000000000000000000005";
 const wrapper: Address = "0x0000000000000000000000000000000000000006";
 const registrar: Address = "0x0000000000000000000000000000000000000007";
 const ensRegistry: Address = "0x0000000000000000000000000000000000000008";
+const contracts = { registry: ensRegistry, baseRegistrar: registrar, nameWrapper: wrapper };
 
 type Overrides = {
   readonly protocol?: "v1" | "v2";
@@ -59,12 +68,19 @@ const factsOf = (o: Overrides = {}): PermissionFacts =>
       registrarApproved: null,
       wrapperOperator: false,
       wrapperApproved: null,
+      parentOwner: null,
+      parentApproved: null,
+      canExtendSubnames: false,
+      canModifyName: false,
       ...o.v1,
     },
     v2: {
       roles: 0n,
+      rootRoles: 0n,
+      rootOnlyRenewal: false,
       ownerRoles: Roles.registry.canTransferAdmin,
       ownerOnlyAssignee: true,
+      registryEmancipated: true,
       operator: false,
       subregistryRoles: null,
       ...o.v2,
@@ -74,13 +90,12 @@ const factsOf = (o: Overrides = {}): PermissionFacts =>
 
 /** What `evaluate` says about `operation`, in one comparable line. */
 const check = (overrides: Overrides, operation: Operation, withContracts = true) => {
-  const result = evaluate(
-    factsOf(overrides),
-    operation,
-    withContracts
-      ? { registry: ensRegistry, baseRegistrar: registrar, nameWrapper: wrapper }
-      : undefined,
+  return describeCheck(
+    evaluate(factsOf(overrides), operation, withContracts ? contracts : undefined),
   );
+};
+
+const describeCheck = (result: PermissionCheck) => {
   if (result.allowed === true) return `allowed via ${result.via}`;
   if (result.allowed === null) return "unknown";
 
@@ -92,6 +107,15 @@ const check = (overrides: Overrides, operation: Operation, withContracts = true)
   });
   return `denied: ${missing.join(", ")}`;
 };
+
+const wrappedChild = (fuses = 0) =>
+  ({ state: { wrapped: true }, data: { v1: { wrapper: { fuses } } } }) as unknown as LoadedName;
+const unwrappedChild = { state: { wrapped: false }, data: {} } as unknown as LoadedName;
+
+const rewrite = (parent: Overrides, child: LoadedName) =>
+  describeCheck(evaluateChildRewrite(factsOf(parent), child, contracts));
+
+const removal = (child: Overrides) => describeCheck(evaluateSelfRemoval(factsOf(child), contracts));
 
 const permissioned = (roles: { root?: bigint; resource?: Map<bigint, bigint> } = {}) => ({
   address: resolver,
@@ -140,6 +164,11 @@ describe("evaluate", () => {
       );
       assert.strictEqual(
         check({ v2: { ownerOnlyAssignee: false } }, "transfer"),
+        "denied: blocked transfer-disallowed",
+      );
+      // TransferUnsafeUntilRegistryIsEmancipated: someone holds unemancipated root roles.
+      assert.strictEqual(
+        check({ v2: { registryEmancipated: false } }, "transfer"),
         "denied: blocked transfer-disallowed",
       );
     });
@@ -199,6 +228,35 @@ describe("evaluate", () => {
       );
     });
 
+    // contracts-v2 #505: the current UserRegistry ignores `renew` on the name.
+    it("renews names on the current UserRegistry only with the root renew role", () => {
+      const onName = { roles: Roles.registry.renew, rootOnlyRenewal: true };
+      assert.deepInclude(evaluate(factsOf({ isEth2ld: false, v2: onName }), "renew", contracts), {
+        allowed: false,
+        resource: 0n,
+        missing: [{ type: "roles", contract: registry, resource: 0n, roles: ["renew"] }],
+      });
+      assert.strictEqual(
+        check({ isEth2ld: false, v2: { ...onName, rootRoles: Roles.registry.renew } }, "renew"),
+        "allowed via roles",
+      );
+      assert.strictEqual(check({ v2: { rootOnlyRenewal: true } }, "renew"), "allowed via anyone");
+    });
+
+    it("revives an expired subname only with the root renew role", () => {
+      const expired = {
+        isEth2ld: false,
+        status: "expired",
+        v2: { roles: Roles.registry.renew },
+      } as const;
+      assert.strictEqual(check(expired, "renew"), `denied: roles renew on ${registry}`);
+      assert.strictEqual(
+        check({ ...expired, v2: { rootRoles: Roles.registry.renew } }, "renew"),
+        "allowed via roles",
+      );
+      assert.strictEqual(check(expired, "setResolver"), "denied: blocked status");
+    });
+
     it("has no TTL or manager", () => {
       for (const operation of ["setTtl", "setManager", "reclaim"] as const) {
         assert.strictEqual(check({}, operation), "denied: blocked unsupported");
@@ -209,7 +267,7 @@ describe("evaluate", () => {
   describe("wrapped ENSv1", () => {
     const wrapped = { protocol: "v1", wrapped: true } as const;
 
-    it("lets the owner, an operator or an approved account act until a fuse is burned", () => {
+    it("lets the owner or an operator act until a fuse is burned, not a token-approved account", () => {
       const guarded = {
         transfer: "cannotTransfer",
         setResolver: "cannotSetResolver",
@@ -230,9 +288,11 @@ describe("evaluate", () => {
           check({ ...wrapped, owner, v1: { wrapperOperator: true } }, operation),
           "allowed via operator",
         );
+        // NameWrapper token approval only extends the name's children (canExtendSubnames).
         assert.strictEqual(
           check({ ...wrapped, owner, v1: { wrapperApproved: me } }, operation),
-          "allowed via approved",
+          `denied: owner ${owner} on ${wrapper}`,
+          operation,
         );
         assert.strictEqual(
           check({ ...wrapped, fuses: Fuse.from([fuse]) }, operation),
@@ -253,15 +313,63 @@ describe("evaluate", () => {
       );
     });
 
-    it("renews .eth names for anyone, and subnames only with canExtendExpiry", () => {
+    it("renews .eth names for anyone", () => {
       assert.strictEqual(check({ ...wrapped, owner }, "renew"), "allowed via anyone");
+    });
+
+    it("renews subnames through the parent, or as their owner with canExtendExpiry", () => {
+      const sub = { ...wrapped, isEth2ld: false, owner } as const;
+      const parent = { parentOwner: me, canExtendSubnames: true };
+      assert.strictEqual(check({ ...sub, v1: parent }, "renew"), "allowed via owner");
       assert.strictEqual(
-        check({ ...wrapped, isEth2ld: false }, "renew"),
-        "denied: blocked unsupported",
+        check({ ...sub, v1: { ...parent, parentOwner: owner } }, "renew"),
+        "allowed via operator",
       );
       assert.strictEqual(
-        check({ ...wrapped, isEth2ld: false, fuses: Fuse.from(["canExtendExpiry"]) }, "renew"),
+        check({ ...sub, v1: { ...parent, parentOwner: owner, parentApproved: me } }, "renew"),
+        "allowed via approved",
+      );
+      // A .eth parent in grace extends nothing.
+      assert.strictEqual(
+        check({ ...sub, v1: { parentOwner: me, canExtendSubnames: false } }, "renew"),
+        "denied: blocked status",
+      );
+      assert.strictEqual(
+        check({ ...sub, v1: { parentOwner: owner } }, "renew"),
+        `denied: owner ${owner} on ${wrapper}`,
+      );
+
+      const extendable = { ...sub, owner: me, fuses: Fuse.from(["canExtendExpiry"]) };
+      assert.strictEqual(
+        check({ ...extendable, v1: { parentOwner: owner, canModifyName: true } }, "renew"),
         "allowed via owner",
+      );
+      assert.strictEqual(
+        check({ ...extendable, owner, v1: { parentOwner: owner, canModifyName: true } }, "renew"),
+        "allowed via operator",
+      );
+      // A token-approved account is not the child's own authority (canModifyName).
+      assert.strictEqual(
+        check({ ...extendable, owner, v1: { parentOwner: owner, wrapperApproved: me } }, "renew"),
+        `denied: owner ${owner} on ${wrapper}`,
+      );
+      assert.strictEqual(
+        check({ ...sub, owner: me, v1: { parentOwner: owner, canModifyName: true } }, "renew"),
+        `denied: owner ${owner} on ${wrapper}`,
+      );
+    });
+
+    it("renews an expired subname the parent still controls, not an emancipated one", () => {
+      const expired = { ...wrapped, isEth2ld: false, status: "expired" } as const;
+      const parent = { parentOwner: me, canExtendSubnames: true };
+      assert.strictEqual(check({ ...expired, owner, v1: parent }, "renew"), "allowed via owner");
+      assert.strictEqual(
+        check({ ...expired, owner, v1: parent }, "setResolver"),
+        "denied: blocked status",
+      );
+      assert.strictEqual(
+        check({ ...expired, owner: null, v1: parent }, "renew"),
+        "denied: blocked status",
       );
     });
 
@@ -429,6 +537,81 @@ describe("evaluate", () => {
         check({ resolver: nodeBased({ nameKnown: false }) }, text),
         "denied: blocked unsupported",
       );
+    });
+  });
+
+  describe("subname rewrites and removals", () => {
+    const emancipated = wrappedChild(Fuse.from(["parentCannotControl"]));
+
+    it("rewrites children from an unwrapped parent in the registry, whatever their fuses", () => {
+      const parent = { protocol: "v1" } as const;
+      assert.strictEqual(rewrite(parent, emancipated), "allowed via owner");
+      assert.strictEqual(
+        rewrite({ ...parent, manager: owner, v1: { registryOperator: true } }, emancipated),
+        "allowed via operator",
+      );
+      assert.strictEqual(
+        rewrite({ ...parent, manager: owner }, unwrappedChild),
+        `denied: owner ${owner} on ${ensRegistry}`,
+      );
+    });
+
+    it("rewrites children of a wrapped parent as its owner or operator, unless emancipated", () => {
+      const parent = { protocol: "v1", wrapped: true, owner } as const;
+      assert.strictEqual(
+        rewrite({ ...parent, v1: { wrapperOperator: true } }, wrappedChild()),
+        "allowed via operator",
+      );
+      assert.strictEqual(
+        rewrite({ ...parent, v1: { wrapperApproved: me } }, wrappedChild()),
+        `denied: owner ${owner} on ${wrapper}`,
+      );
+      assert.strictEqual(rewrite({ ...parent, owner: me }, emancipated), "denied: blocked fuse");
+    });
+
+    it("removes a child as its own holder", () => {
+      assert.strictEqual(
+        removal({ v2: { roles: Roles.registry.unregister } }),
+        "allowed via roles",
+      );
+      assert.strictEqual(removal({}), `denied: roles unregister on ${registry}`);
+
+      const unwrapped = { protocol: "v1", isEth2ld: false } as const;
+      assert.strictEqual(removal(unwrapped), "allowed via owner");
+      assert.strictEqual(
+        removal({ ...unwrapped, manager: owner, v1: { registryOperator: true } }),
+        "allowed via operator",
+      );
+      assert.strictEqual(
+        removal({ ...unwrapped, manager: owner }),
+        `denied: owner ${owner} on ${ensRegistry}`,
+      );
+      assert.strictEqual(removal({ ...unwrapped, status: "expired" }), "denied: blocked status");
+    });
+
+    it("removes a wrapped child as its owner or operator, unless a fuse keeps it", () => {
+      const wrapped = { protocol: "v1", wrapped: true, isEth2ld: false } as const;
+      assert.strictEqual(removal(wrapped), "allowed via owner");
+      assert.strictEqual(
+        removal({ ...wrapped, owner, v1: { wrapperOperator: true } }),
+        "allowed via operator",
+      );
+      assert.strictEqual(
+        removal({ ...wrapped, owner, v1: { wrapperApproved: me } }),
+        `denied: owner ${owner} on ${wrapper}`,
+      );
+      for (const fuse of [
+        "cannotUnwrap",
+        "cannotTransfer",
+        "cannotSetResolver",
+        "cannotSetTtl",
+      ] as const) {
+        assert.strictEqual(
+          removal({ ...wrapped, fuses: Fuse.from([fuse]) }),
+          "denied: blocked fuse",
+          fuse,
+        );
+      }
     });
   });
 });

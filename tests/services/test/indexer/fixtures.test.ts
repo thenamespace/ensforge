@@ -138,7 +138,11 @@ layer(Services.layer({ profile: "mainnet-shaped" }), { excludeTestServices: true
       { meta: { cases: ["I14"] } },
     );
 
-    it.effect(
+    // Known bigname gap (KL-59): registries from contracts-v2 #505 (the mainnet UserRegistry since
+    // 2026-11-17) emit `SubregistryUpdated` before the name's token exists, and bigname v0.14.11
+    // drops it, so the alias registered with its subregistry is not indexed. `fails` turns this
+    // test red once bigname handles the order.
+    it.effect.fails(
       "serves an alias path only on the name route",
       () =>
         Effect.gen(function* () {

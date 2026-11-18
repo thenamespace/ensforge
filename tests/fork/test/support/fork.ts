@@ -20,7 +20,7 @@ import { mainnet, sepolia } from "viem/chains";
  * Where each fork starts: after the ENSv2 cutover, at blocks whose state anvil caches on disk, so
  * later runs barely reach the RPC. Moving a pin refetches state and may change real names' facts.
  */
-export const forkBlocks = { mainnet: 26_437_000n, sepolia: 12_157_000n } as const;
+export const forkBlocks = { mainnet: 26_441_000n, sepolia: 12_157_000n } as const;
 
 /** The fork could not start: no RPC URL, or anvil failed. */
 export class ForkError extends Schema.TaggedError<ForkError, { readonly brand: unique symbol }>()(

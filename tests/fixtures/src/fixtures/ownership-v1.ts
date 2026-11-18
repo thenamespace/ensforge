@@ -200,6 +200,8 @@ export const ownershipV1: readonly Fixture[] = [
     id: "v1.subname.deleted",
     cases: ["O12"],
     tags: { kind: "v1-unwrapped", state: "deleted" },
+    // Unreserved, ENSv2 does not serve the resolver the deleted record keeps.
+    unreserved: true,
     prelaunch: (c) =>
       Effect.gen(function* () {
         const parent = yield* registerV1({

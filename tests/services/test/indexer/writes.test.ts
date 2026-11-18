@@ -230,5 +230,49 @@ layer(Services.layer({ profile: "mainnet-shaped" }), { excludeTestServices: true
         }),
       { meta: { cases: ["M12", "M15"] } },
     );
+
+    it.effect(
+      "finds subnames at every depth for a migration to recreate",
+      () =>
+        Effect.gen(function* () {
+          const services = yield* Services;
+          const { accounts } = yield* Devnet;
+          const chain = yield* Chain;
+          const clients = yield* Clients;
+          const fixtures = yield* Fixtures;
+          const { alice, bob } = accounts;
+          const ens = clients.make({ account: alice, indexer: services.indexer });
+          const name = fixtures.byId("v1.wrapped").name;
+          const [kid, deep] = [`kid.${name}`, `deep.kid.${name}`];
+
+          // Wrapped children: the NameWrapper tells bigname their labels.
+          yield* Actions.subname.createSync(ens, { name: kid, owner: bob, resolver: null });
+          yield* Actions.subname.createSync(clients.make({ account: bob }), {
+            name: deep,
+            resolver: null,
+          });
+          yield* services.waitForIndexed();
+
+          const { discovered } = yield* Actions.migration.get(ens, { name, account: alice });
+          assert.includeMembers([...(discovered?.subnames ?? [])], [kid, deep]);
+
+          const migrated = yield* Actions.migration.migrateSync(ens, {
+            names: name,
+            resolver: "keep",
+            onStep: chain.passWaits,
+          });
+          assert.notInclude(
+            migrated.plan.warnings.map((warning) => warning.code),
+            "SUBNAMES_NOT_RECREATED",
+          );
+          for (const subname of [kid, deep]) {
+            assert.deepInclude(yield* Actions.name.get(ens, { name: subname }), {
+              kind: "v2-native",
+              owner: bob,
+            });
+          }
+        }),
+      { meta: { cases: ["M22", "M15"] } },
+    );
   },
 );

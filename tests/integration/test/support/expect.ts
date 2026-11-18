@@ -78,7 +78,10 @@ export const premigrated = (expectation: NameExpectation): NameExpectation =>
     ? expectation
     : { ...expectation, reachable: true, available: false, renewable: true };
 
-/** An ENSv1 name below a second-level name (or not under `.eth`): never registered or renewed. */
+/**
+ * An ENSv1 name below a `.eth` second-level name: never registered or renewed. Unreachable from
+ * ENSv2 like its unreserved parent; {@link belowPremigrated} makes it reachable.
+ */
 export const v1Sub = (
   cases: readonly string[],
   owner: Holder,
@@ -90,9 +93,22 @@ export const v1Sub = (
   status,
   owner,
   wrapped: kind === "v1-wrapped",
-  reachable: true,
+  reachable: { v1: true, greenfield: false, launched: false },
   available: status === "expired" || status === "available",
   renewable: false,
+});
+
+/** An ENSv1 DNS name: ENSv2 resolves it through the DNS TLD resolver, which reads ENSv1 first. */
+export const v1Dns = (
+  cases: readonly string[],
+  owner: Holder,
+  kind: NameKind = "v1-unwrapped",
+): NameExpectation => ({ ...v1Sub(cases, owner, "registered", kind), reachable: true });
+
+/** An ENSv1 subname whose `.eth` ancestor ENSv2 reserved: resolved through the ENSv1 bridge. */
+export const belowPremigrated = (expectation: NameExpectation): NameExpectation => ({
+  ...expectation,
+  reachable: true,
 });
 
 /** An ENSv2 `.eth` second-level name, native or migrated: registrable and renewable by status. */

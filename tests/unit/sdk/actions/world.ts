@@ -160,6 +160,7 @@ const stubs = (world: World): ContractStub[] => {
             .find((state) => state !== undefined && isAddressEqual(state.owner, account as Address))
             ?.roles ?? 0n,
         isOnlyAssignee: ([id]) => v2Of(id as bigint)?.v2.onlyAssignee ?? true,
+        isEmancipated: () => true,
         isApprovedForAll: () => false,
       },
     };
@@ -225,7 +226,6 @@ const stubs = (world: World): ContractStub[] => {
       abi: Abis.v2.universalHelper,
       functions: {
         findParentRegistry: ([dns]) => parentRegistry(Name.dnsDecode(dns as Hex)) ?? zeroAddress,
-        findNearestOwner: () => [zeroAddress, 0n],
       },
     },
     {
@@ -252,6 +252,18 @@ const stubs = (world: World): ContractStub[] => {
           world.found?.resolver ?? zeroAddress,
           namehash(Name.dnsDecode(dns as Hex)),
           world.found?.offset ?? 0n,
+        ],
+      },
+    },
+    // ENSv2 reserves every ENSv1 name, so its own resolution reaches them through the bridge.
+    {
+      address: Deployments.mainnet.v2.implementations.universalResolver,
+      abi: Abis.v2.universalResolver as Abi,
+      functions: {
+        findResolver: ([dns]) => [
+          Deployments.mainnet.v2.migration.ensV1Resolver,
+          namehash(Name.dnsDecode(dns as Hex)),
+          0n,
         ],
       },
     },

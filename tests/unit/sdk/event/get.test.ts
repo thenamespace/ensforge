@@ -13,6 +13,7 @@ import {
   multicall3Abi,
   numberToHex,
   zeroAddress,
+  zeroHash,
   type Abi,
   type Address,
   type Hex,
@@ -61,6 +62,11 @@ const ensOver = (logs: readonly Log[], head = 100n) => {
       address: Deployments.mainnet.v2.contracts.universalHelper,
       abi: Abis.v2.universalHelper,
       answers: { findParentRegistry: zeroAddress },
+    },
+    {
+      address: Deployments.mainnet.v2.implementations.universalResolver,
+      abi: Abis.v2.universalResolver,
+      answers: { findResolver: [zeroAddress, zeroHash, 0n] },
     },
     {
       address: Deployments.mainnet.v2.contracts.ethRegistrar,

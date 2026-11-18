@@ -174,6 +174,147 @@ describe("migration", () => {
     );
 
     it.effect(
+      "recreates subnames at any depth, each registry owned by the subname's holder",
+      () =>
+        Effect.gen(function* () {
+          const devnet = yield* Devnet;
+          const chain = yield* Chain;
+          const clients = yield* Clients;
+          const { alice, bob, carol } = devnet.accounts;
+          const ens = clients.make({ account: alice });
+          const { name } = (yield* Fixtures).byId("v2.reserved");
+          const [a, b] = [`a.${name}`, `b.a.${name}`];
+
+          yield* chain.isolated(
+            Effect.gen(function* () {
+              yield* Actions.subname.createSync(ens, { name: a, owner: bob, resolver: null });
+              yield* Actions.subname.createSync(clients.make({ account: bob }), {
+                name: b,
+                resolver: devnet.contract("v1.publicResolver"),
+                records: { addresses: { eth: carol } },
+              });
+
+              // `a` is not listed: it is recreated as the level that holds `b`.
+              yield* Actions.migration.migrateSync(ens, {
+                names: { name, subnames: ["b.a"] },
+                resolver: "keep",
+                onStep: chain.passWaits,
+              });
+
+              const parent = yield* Actions.name.get(ens, { name: a });
+              assert.deepInclude(parent, { kind: "v2-native", owner: bob });
+              assert.deepInclude(yield* Actions.name.get(ens, { name: b }), {
+                kind: "v2-native",
+                owner: bob,
+              });
+              assert.strictEqual(yield* Actions.record.getAddress(ens, { name: b }), carol);
+
+              // The migrating account keeps no roles on the registry it deployed for bob.
+              const contract = parent.subregistry ?? undefined;
+              const roles = (account: Address) =>
+                Actions.role.get(ens, { account, target: "registry", contract, root: true });
+              assert.include([...(yield* roles(bob)).names], "registrar");
+              assert.deepStrictEqual((yield* roles(alice)).names, []);
+            }),
+          );
+        }),
+      { meta: { cases: ["M19"] } },
+    );
+
+    it.effect(
+      "registers a locked name's controlled subnames in its WrapperRegistry once it migrated",
+      () =>
+        Effect.gen(function* () {
+          const fixtures = yield* Fixtures;
+          const devnet = yield* Devnet;
+          const chain = yield* Chain;
+          const clients = yield* Clients;
+          const { alice, bob } = devnet.accounts;
+          const ens = clients.make({ account: alice });
+          const parent = fixtures.byId("v1.wrapped.locked").name;
+          const controlled = fixtures.byId("v1.wrapped.sub").name;
+          const emancipated = fixtures.byId("v1.wrapped.sub.emancipated").name;
+
+          yield* chain.isolated(
+            Effect.gen(function* () {
+              const { plan } = yield* Actions.migration.migrateSync(ens, {
+                names: { name: parent, subnames: [controlled, emancipated] },
+                resolver: "keep",
+                onStep: chain.passWaits,
+              });
+
+              assert.deepStrictEqual(
+                plan.steps.map((step) => step.id),
+                ["migrate", "wrapped-subnames"],
+              );
+              assert.include(
+                plan.warnings.map((warning) => warning.code),
+                "SUBNAMES_MIGRATE_SEPARATELY",
+              );
+              const registry = yield* Actions.registry.get(ens, { name: parent });
+              assert.deepInclude(yield* Actions.name.get(ens, { name: controlled }), {
+                kind: "v2-native",
+                owner: bob,
+                registry: registry?.address ?? null,
+              });
+              assert.strictEqual(
+                (yield* Actions.name.get(ens, { name: emancipated })).kind,
+                "v1-wrapped",
+              );
+            }),
+          );
+        }),
+      { meta: { cases: ["M20"] } },
+    );
+
+    it.effect(
+      "leaves a locked name's subnames behind once it burned cannotCreateSubdomain",
+      () =>
+        Effect.gen(function* () {
+          const fixtures = yield* Fixtures;
+          const devnet = yield* Devnet;
+          const chain = yield* Chain;
+          const clients = yield* Clients;
+          const ens = clients.make({ account: devnet.accounts.alice });
+          const parent = fixtures.byId("v1.wrapped.locked").name;
+          const controlled = fixtures.byId("v1.wrapped.sub").name;
+          const migrate = { names: { name: parent, subnames: [controlled] }, resolver: "keep" };
+
+          yield* chain.isolated(
+            Effect.gen(function* () {
+              yield* Actions.wrapper.setFusesSync(ens, {
+                name: parent,
+                fuses: ["cannotCreateSubdomain"],
+              });
+
+              const error = yield* expectFailure(Actions.migration.migrate(ens, migrate), {
+                _tag: "MigrationError",
+                code: "NOT_ELIGIBLE",
+              });
+              assert.deepStrictEqual(error.blockers, [
+                `subname ${controlled}: ${parent} burned cannotCreateSubdomain`,
+              ]);
+
+              const { plan } = yield* Actions.migration.migrateSync(ens, {
+                ...migrate,
+                allowLeavingSubnames: true,
+                onStep: chain.passWaits,
+              });
+              assert.deepStrictEqual(
+                plan.steps.map((step) => step.id),
+                ["migrate"],
+              );
+              assert.strictEqual(
+                (yield* Actions.name.get(ens, { name: controlled })).kind,
+                "v1-wrapped",
+              );
+            }),
+          );
+        }),
+      { meta: { cases: ["M21"] } },
+    );
+
+    it.effect(
       "copies records to a new resolver, keeps the manager, and renews a name in grace first",
       () =>
         Effect.gen(function* () {

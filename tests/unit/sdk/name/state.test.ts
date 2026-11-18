@@ -55,7 +55,7 @@ const data = (overrides: Partial<NameData>, name = "alice.eth"): NameData => ({
   now,
   v1: undefined,
   v2: undefined,
-  ownedAncestor: false,
+  reachesV1: undefined,
   ...overrides,
 });
 

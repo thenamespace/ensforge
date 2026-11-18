@@ -10,6 +10,7 @@ import { Fixtures } from "@ensforge/test-fixtures";
 import {
   bytesToHex,
   decodeErrorResult,
+  encodeAbiParameters,
   encodeFunctionData,
   encodePacked,
   erc20Abi,
@@ -17,6 +18,7 @@ import {
   keccak256,
   namehash,
   numberToHex,
+  pad,
   parseAbi,
   toFunctionSelector,
   toHex,
@@ -206,6 +208,42 @@ describe("contract errors", () => {
                 args: [delegated, Roles.registry.setResolver, numberToHex(14, { size: 20 })],
               }),
               "EACMaxAssignees",
+            );
+          }),
+        );
+
+        // Upgrading the child's registry, on the current UserRegistry: the verifiable proxy wants
+        // a target accepting it (the v1.0.1 implementation does not), the registry no upgrade
+        // call that upgrades again. The target is a copy of the current implementation listing it
+        // in `canUpgradeFrom`, a mapping at slot 1 of its own storage.
+        const current = subregistry.implementation ?? assert.fail("the registry is a proxy");
+        const target = "0x00000000000000000000000000000000000ce5e5";
+        const upgrade = (implementation: Address, data: Hex): Call => ({
+          to: subregistry.address,
+          abi: Abis.v2.userRegistry as Abi,
+          from: alice,
+          functionName: "upgradeToAndCall",
+          args: [implementation, data],
+        });
+        assert.strictEqual(
+          yield* revertOf(upgrade(devnet.contract("v2.userRegistryImplementationV1_0_1"), "0x")),
+          "InvalidUpgradeTarget",
+        );
+        yield* chain.isolated(
+          Effect.gen(function* () {
+            yield* chain.setCode(target, (yield* chain.code(current)) ?? "0x");
+            yield* chain.setStorage(
+              target,
+              keccak256(
+                encodeAbiParameters([{ type: "address" }, { type: "uint256" }], [current, 1n]),
+              ),
+              pad("0x01"),
+            );
+            assert.strictEqual(
+              yield* revertOf(
+                upgrade(target, toFunctionSelector("upgradeToAndCall(address,bytes)")),
+              ),
+              "NestedUpgradeNotAllowed",
             );
           }),
         );

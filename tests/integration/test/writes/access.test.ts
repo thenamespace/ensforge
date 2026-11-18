@@ -12,6 +12,7 @@ import {
   hexToBigInt,
   namehash,
   numberToHex,
+  pad,
   zeroAddress,
   type Address,
 } from "viem";
@@ -468,6 +469,50 @@ describe("access writes", () => {
           );
         }),
       { meta: { cases: ["M:B6", "M:D7"] } },
+    );
+
+    // contracts-v2 #505: the current UserRegistry checks `renew` at its root only; registries on
+    // the v1.0.1 implementation still accept it on the name.
+    it.effect(
+      "renews a child with the renew role on it only on registries made before",
+      () =>
+        Effect.gen(function* () {
+          const devnet = yield* Devnet;
+          const chain = yield* Chain;
+          const clients = yield* Clients;
+          const { alice, bob } = devnet.accounts;
+          const name = "renewable.v2-parent.eth";
+          const owner = clients.make({ account: bob });
+          const renew = Actions.permission.check(owner, { name, operation: "renew" });
+          const extend = Actions.subname.updateSync(owner, { name, expiry: 4_100_000_000n });
+
+          yield* chain.isolated(
+            Effect.gen(function* () {
+              yield* Actions.subname.createSync(clients.make({ account: alice }), {
+                name,
+                owner: bob,
+                roles: ["renew"],
+                expiry: 4_000_000_000n,
+              });
+              assert.deepInclude(yield* renew, { allowed: false, resource: 0n });
+              yield* expectFailure(extend, { _tag: "UnauthorizedError", code: "MISSING_ROLES" });
+
+              const registry = (yield* Actions.registry.get(owner, { name: "v2-parent.eth" }))
+                ?.address;
+              if (registry === undefined) return assert.fail("v2-parent.eth has no registry");
+              // ERC-1967 implementation slot.
+              yield* chain.setStorage(
+                registry,
+                "0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc",
+                pad(devnet.contract("v2.userRegistryImplementationV1_0_1")),
+              );
+              assert.deepInclude(yield* renew, { allowed: true, via: "roles" });
+              yield* extend;
+              assert.strictEqual((yield* Actions.name.get(owner, { name })).expiry, 4_100_000_000n);
+            }),
+          );
+        }),
+      { meta: { cases: ["W39"] } },
     );
   });
 });

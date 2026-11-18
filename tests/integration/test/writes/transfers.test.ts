@@ -182,6 +182,25 @@ describe("transfers and managers", () => {
       { meta: { cases: ["W29", "W30", "W31"] } },
     );
 
+    it.effect("refuses a transfer the name's expiry overtakes before it can be mined", () =>
+      Effect.gen(function* () {
+        const { accounts } = yield* Devnet;
+        const chain = yield* Chain;
+        const ens = (yield* Clients).make({ account: accounts.alice });
+        const { name } = (yield* Fixtures).byId("v2.registered");
+        const { expiry } = yield* ethEntry(name);
+
+        // Live in the latest block, expired in the next one, where the write is simulated.
+        yield* chain.atTimestamp(
+          expiry - 1n,
+          expectFailure(Actions.name.transfer(ens, { name, to: accounts.carol }), {
+            _tag: "NameStateError",
+            code: "NAME_EXPIRED",
+          }),
+        );
+      }),
+    );
+
     it.effect(
       "refuses a prepared transfer once its token ID regenerates, and transfers it afresh",
       () =>
@@ -206,8 +225,10 @@ describe("transfers and managers", () => {
               });
               const sent = wallet.methods.length;
 
+              // The transfer names the old token ID; the account still owns the name.
               const error = yield* expectFailure(Actions.plan.send(ens, { plan }), {
-                _tag: "UnauthorizedError",
+                _tag: "PlanError",
+                code: "PLAN_STALE",
               });
               assert.strictEqual(error.context.revert?.errorName, "ERC1155InsufficientBalance");
               assert.notInclude(wallet.methods.slice(sent), "eth_sendTransaction");

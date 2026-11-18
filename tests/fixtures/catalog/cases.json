@@ -1060,6 +1060,14 @@
     "domains": ["migr", "perm"]
   },
   {
+    "id": "W39",
+    "axis": "W",
+    "title": "v2: `renew` held on a name, on a UserRegistry from contracts-v2 #505 vs one created before",
+    "component": "UserRegistry",
+    "expected": "New implementation: only `renew` at the registry's root renews (or revives an expired name); older registries still accept it on the name",
+    "domains": ["roles", "reg"]
+  },
+  {
     "id": "R01",
     "axis": "R",
     "title": "Exact resolver beats a parent wildcard",
@@ -2797,6 +2805,38 @@
     "component": "app",
     "expected": "Records remain readable",
     "domains": ["migr", "record"]
+  },
+  {
+    "id": "M19",
+    "axis": "M",
+    "title": "Subnames at any depth recreated (`x.eth → a → b`)",
+    "component": "sdk, UserRegistry",
+    "expected": "Each subname with children gets its own UserRegistry owned by its holder; the sender keeps no roles",
+    "domains": ["migration"]
+  },
+  {
+    "id": "M20",
+    "axis": "M",
+    "title": "A locked name's non-emancipated subnames after it migrates",
+    "component": "WrapperRegistry",
+    "expected": "Registered in its WrapperRegistry; emancipated ones warned to migrate themselves",
+    "domains": ["migration"]
+  },
+  {
+    "id": "M21",
+    "axis": "M",
+    "title": "A locked name that burned `cannotCreateSubdomain`, with subnames",
+    "component": "WrapperRegistry",
+    "expected": "Subnames left behind with a reason (`allowLeavingSubnames`)",
+    "domains": ["migration"]
+  },
+  {
+    "id": "M22",
+    "axis": "M",
+    "title": "Indexer discovery of subnames below subnames",
+    "component": "bigname",
+    "expected": "Recurses where subnames exist; 500 limit across levels; hashed labels recovered from NameWrapper.names",
+    "domains": ["migration"]
   },
   {
     "id": "A01",

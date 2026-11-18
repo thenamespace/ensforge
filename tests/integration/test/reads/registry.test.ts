@@ -159,5 +159,37 @@ describe("registry.get", () => {
         }),
       { meta: { cases: ["M:A26"] } },
     );
+
+    // As on mainnet, the current UserRegistry lists no implementation in `canUpgradeFrom`.
+    it.effect(
+      "offers no upgrade from the v1.0.1 implementation to the current one",
+      () =>
+        Effect.gen(function* () {
+          const chain = yield* Chain;
+          const devnet = yield* Devnet;
+          const { reader } = yield* Clients;
+          const options = { name: "v2-parent.eth", account: devnet.accounts.alice };
+          const current = yield* Actions.registry.get(reader, options);
+          if (current === null) return assert.fail("v2-parent.eth has no registry");
+
+          const upgrade = yield* chain.isolated(
+            Effect.gen(function* () {
+              // ERC-1967 implementation slot.
+              yield* chain.setStorage(
+                current.address,
+                "0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc",
+                pad(devnet.contract("v2.userRegistryImplementationV1_0_1")),
+              );
+              return (yield* Actions.registry.get(reader, options))?.upgrade;
+            }),
+          );
+          assert.deepStrictEqual(upgrade, {
+            latest: devnet.contract("v2.userRegistryImplementation"),
+            eligible: false,
+            blocker: "not-approved",
+          });
+        }),
+      { meta: { cases: ["M:A26"] } },
+    );
   });
 });

@@ -42,6 +42,52 @@ describe("subnames, wrapper and registries", () => {
       { meta: { cases: ["M:A4", "O12"] } },
     );
 
+    // Regression: only the parent's owner took the parent route; its operator was sent the
+    // child's own `setRecord`, which the registry and the NameWrapper refused.
+    it.effect(
+      "removes a child as an operator of its parent",
+      () =>
+        Effect.gen(function* () {
+          const fixtures = yield* Fixtures;
+          const devnet = yield* Devnet;
+          const chain = yield* Chain;
+          const clients = yield* Clients;
+          const { alice, carol } = devnet.accounts;
+          const operator = clients.make({ account: carol });
+
+          const unwrapped = fixtures.byId("v1.subname").name;
+          yield* chain.isolated(
+            Effect.gen(function* () {
+              yield* chain.write({
+                account: alice,
+                address: devnet.contract("v1.registry"),
+                abi: Abis.v1.ensRegistry,
+                functionName: "setApprovalForAll",
+                args: [carol, true],
+              });
+              yield* Actions.subname.removeSync(operator, { name: unwrapped });
+              assert.strictEqual((yield* v1Owners(unwrapped)).registry, zeroAddress);
+            }),
+          );
+
+          const wrapped = fixtures.byId("v1.wrapped.sub").name;
+          yield* chain.isolated(
+            Effect.gen(function* () {
+              yield* chain.write({
+                account: alice,
+                address: devnet.contract("v1.nameWrapper"),
+                abi: Abis.v1.nameWrapper,
+                functionName: "setApprovalForAll",
+                args: [carol, true],
+              });
+              yield* Actions.subname.removeSync(operator, { name: wrapped });
+              assert.strictEqual((yield* v1Owners(wrapped)).registry, zeroAddress);
+            }),
+          );
+        }),
+      { meta: { cases: ["M:D4", "M:D8", "M:A4", "M:A9"] } },
+    );
+
     it.effect(
       "follows NameWrapper fuse rules for children",
       () =>
@@ -69,13 +115,13 @@ describe("subnames, wrapper and registries", () => {
               code: "FUSE_BURNED",
             },
           );
-          // Emancipating a child needs a locked parent (W02).
+          // Emancipating a child needs a locked parent (W02), checked before anything is signed.
           yield* expectFailure(
-            Actions.subname.create(ens, {
+            Actions.subname.create.prepare(ens, {
               name: `new.${fixtures.byId("v1.wrapped").name}`,
               fuses: ["parentCannotControl"],
             }),
-            { _tag: "UnauthorizedError", code: "FUSE_BURNED" },
+            { _tag: "InvalidInputError", code: "INVALID_RECORD_VALUE" },
           );
           // CANNOT_CREATE_SUBDOMAIN on the parent.
           yield* expectFailure(
