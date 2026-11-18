@@ -51,7 +51,7 @@ Pass `storage` to `Ensforge.create`.
 | `Plan.localStorage(key?)`        | Yes             | Browsers. Records are kept as JSON under one key, `ensforge:plans` by default. Calls reject where `localStorage` does not exist, such as server rendering. |
 | Your own `Plan.Storage`          | Yes             | Anywhere, such as a database or key-value store.                                                                                                           |
 
-**Example** (Plans that survive a page reload)
+**Example** (Plans That Survive a Page Reload)
 
 ```ts twoslash title="storage.ts"
 import { Ensforge, Plan, ensActions } from "@ensforge/sdk";
@@ -67,6 +67,8 @@ export const ens = Ensforge.create({
 ```
 
 After a reload, list what did not finish and resume it:
+
+**Example** (Resuming Unfinished Plans)
 
 ```ts twoslash title="recover.ts"
 import { Ensforge, Plan, ensActions } from "@ensforge/sdk";
@@ -93,7 +95,7 @@ A store implements four Promise functions: `get`, `set`, `delete` and `list`. It
 values, which contain `bigint`s, so a store that writes JSON needs a bigint-safe encoding.
 `Plan.serialize` and `Plan.deserialize` give one for the plan inside the record.
 
-**Example** (A key-value store)
+**Example** (A Key-Value Store)
 
 ```ts twoslash title="kv-storage.ts"
 import { Plan } from "@ensforge/sdk";
@@ -144,7 +146,7 @@ Plans are plain data. `Plan.serialize` turns a plan or a record into JSON text w
 preserved, and `Plan.deserialize` reads a plan back. Use them to send a prepared plan to another
 service, for review or signing elsewhere.
 
-**Example** (Sending a plan to another process)
+**Example** (Sending a Plan to Another Process)
 
 ```ts twoslash title="serialize.ts"
 import { Ensforge, Plan, ensActions } from "@ensforge/sdk";

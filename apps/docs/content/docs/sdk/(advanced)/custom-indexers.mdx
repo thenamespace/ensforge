@@ -27,7 +27,7 @@ An adapter is an `id` and the queries it answers, as Promise functions. Implemen
 you serve. The others fail with [`INDEXER_UNSUPPORTED`](/docs/sdk/errors/INDEXER_UNSUPPORTED), which
 lets `fallback` ask the next indexer.
 
-**Example** (An adapter for an in-house subnames API)
+**Example** (An Adapter for an In-House Subnames API)
 
 ```ts twoslash title="in-house.ts"
 import { defineIndexer } from "@ensforge/sdk/indexer";
@@ -100,7 +100,7 @@ becomes [`INDEXER_UNAVAILABLE`](/docs/sdk/errors/INDEXER_UNAVAILABLE). Return `n
 queries must return an object, or the call fails with
 [`INDEXER_RESPONSE_INVALID`](/docs/sdk/errors/INDEXER_RESPONSE_INVALID).
 
-**Example** (Reporting a rate limit)
+**Example** (Reporting a Rate Limit)
 
 ```ts twoslash title="errors.ts"
 import { Errors } from "@ensforge/sdk";
@@ -129,7 +129,7 @@ export const guarded = defineIndexer({
 Pass the indexer to the client. Combine it with others using `fallback`: each query goes to the first
 indexer that can answer it.
 
-**Example** (Yours first, bigname after)
+**Example** (Yours First, bigname After)
 
 ```ts twoslash title="client.ts"
 import { Ensforge, ensActions } from "@ensforge/sdk";
@@ -157,6 +157,8 @@ issued them, so the next page goes back to the same one.
 
 `paginate` follows `cursor` until the last page. `break` stops requesting pages.
 
+**Example** (Walking Every Page of a Custom Indexer)
+
 ```ts twoslash title="paginate.ts"
 import { Ensforge, indexerActions } from "@ensforge/sdk";
 import { paginate, type Indexer } from "@ensforge/sdk/indexer";
@@ -178,6 +180,8 @@ for await (const page of paginate(ens.indexer.getSubnames, { name: "ens.eth" }))
 
 A small adapter makes tests independent of a live service. See
 [Test your integration](/docs/sdk/testing).
+
+**Example** (An Indexer That Finds Nothing)
 
 ```ts twoslash title="double.ts"
 import { defineIndexer } from "@ensforge/sdk/indexer";

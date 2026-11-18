@@ -5,7 +5,7 @@ keywords:
   [getAddress, record.getAddress, coin type, ENSIP-9, ENSIP-11, ENSIP-19, forward resolution]
 ---
 
-By the end of this guide you can turn a [name](/docs/sdk/reference/glossary) such as `nick.eth` into the address it points to (forward resolution), on Ethereum or on any other chain.
+By the end of this guide you can turn a [name](/docs/sdk/reference/glossary#name) such as `nick.eth` into the address it points to (forward resolution), on Ethereum or on any other chain.
 
 ## Prerequisites
 
@@ -35,7 +35,7 @@ console.log(address);
 0xb8c2C29ee19D8307cb7255e1Cd9CbDE883A267d5
 ```
 
-ensforge normalises the name before it reads, so `Nick.ETH` and `nick.eth` give the same answer. It finds the name's [resolver](/docs/sdk/reference/glossary), including parent, wildcard and off-chain resolvers, and returns a checksummed address. See [How a lookup works](/docs/sdk/looking-up-a-name) and [`record.getAddress`](/docs/sdk/reference/actions/record/get-address).
+ensforge normalises the name before it reads, so `Nick.ETH` and `nick.eth` give the same answer. It finds the name's [resolver](/docs/sdk/reference/glossary#resolver), including parent, wildcard and off-chain resolvers, and returns a checksummed address. See [How a lookup works](/docs/sdk/looking-up-a-name) and [`record.getAddress`](/docs/sdk/reference/actions/record/get-address).
 
 To read with a plain viem public client instead, call the action directly.
 
@@ -134,4 +134,4 @@ The name resolves off-chain and the gateway failed or answered wrongly. See [Loo
 
 ### `DNSSEC_PROOF_FAILED`
 
-The name is an imported DNS name, such as `ens.domains`, and its DNSSEC proof does not verify. At the time of writing, no DNSSEC proof verifies on Ethereum mainnet or Sepolia, so every DNS name fails this way until ENS updates its DNSSEC trust anchor. See [`DNSSEC_PROOF_FAILED`](/docs/sdk/errors/DNSSEC_PROOF_FAILED).
+The name is a DNS name that resolves through a DNSSEC proof, such as `ens.domains`, and the proof does not verify. At the time of writing, no DNSSEC proof verifies on Ethereum mainnet or Sepolia, so these names fail this way until ENS updates its DNSSEC trust anchor. See [`DNSSEC_PROOF_FAILED`](/docs/sdk/errors/DNSSEC_PROOF_FAILED).

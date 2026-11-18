@@ -5,7 +5,7 @@ keywords:
   [CCIP-Read, EIP-3668, off-chain, gateway, ccipRead, gatewayUrls, wildcard, ENSIP-10, Basenames]
 ---
 
-By the end of this guide you can read the records of an **off-chain name** (a name whose records are not stored on Ethereum, but served by a **gateway**) with the same calls you use for any other name, and configure or turn off the gateway lookup.
+By the end of this guide you can read the records of an **off-chain name** (a name whose records are not stored on Ethereum, but served by a **gateway**) with the same calls you use for any other name, and configure or turn off the gateway lookup ([CCIP-Read](/docs/sdk/reference/glossary#ccip-read)).
 
 ## Prerequisites
 
@@ -31,11 +31,11 @@ const address = await ens.record.getAddress({ name: "jesse.base.eth" });
 const url = await ens.record.getText({ name: "jesse.base.eth", key: "url" });
 ```
 
-`record.getAddress`, `record.getText`, `record.get`, `record.getAvatar` and `primaryName.get` all follow an off-chain lookup when the name needs one. See [Get a name's address](/docs/sdk/get-an-address).
+`record.getAddress`, `record.getText`, `record.get`, `record.getAvatar`, `record.getContentHash` and `primaryName.get` all follow an off-chain lookup when the name needs one. See [Get a name's address](/docs/sdk/get-an-address).
 
 ## How an off-chain lookup works
 
-The name's resolver does not hold the answer. It replies with a request to ask a gateway ([CCIP-Read, EIP-3668](https://eips.ethereum.org/EIPS/eip-3668)). ensforge asks the gateway and hands its answer back to the resolver contract, which checks it and returns the result.
+The name's [resolver](/docs/sdk/reference/glossary#resolver) does not hold the answer. It replies with a request to ask a gateway ([CCIP-Read, EIP-3668](https://eips.ethereum.org/EIPS/eip-3668)). ensforge asks the gateway and hands its answer back to the resolver contract, which checks it and returns the result.
 
 ```mermaid
 sequenceDiagram
@@ -62,9 +62,9 @@ ensforge only follows a lookup that the resolver it called asked for. If a resol
 
 ## Choose the gateways
 
-By default, ensforge uses the Universal Resolver's own gateway. To use your own, set `ccipRead` when you create the client, or `gatewayUrls` on one call.
+The Universal Resolver sends off-chain lookups through a batch gateway, which collects them and forwards each one to the resolver's own gateway. By default, ensforge uses the Universal Resolver's own batch gateway. To use batch gateways you choose, set `ccipRead` when you create the client, or `gatewayUrls` on one call. The resolver's own gateway is set by the resolver and cannot be changed.
 
-**Example** (Setting CCIP-Read Gateways)
+**Example** (Setting Batch Gateways)
 
 ```ts twoslash title="gateways.ts"
 import { ensActions, Ensforge } from "@ensforge/sdk";
@@ -90,10 +90,10 @@ A call's `gatewayUrls` override the client's. To read through the chain only, pa
 
 ## Options
 
-| Option        | Where             | Type                          | Default                              | Description                                             |
-| ------------- | ----------------- | ----------------------------- | ------------------------------------ | ------------------------------------------------------- |
-| `ccipRead`    | `Ensforge.create` | `{ gatewayUrls? }` or `false` | the Universal Resolver's own gateway | Gateways for off-chain lookups. `false` turns them off. |
-| `gatewayUrls` | any read          | `readonly string[]`           | the client's                         | Gateways for one call.                                  |
+| Option        | Where             | Type                          | Default                                    | Description                                                   |
+| ------------- | ----------------- | ----------------------------- | ------------------------------------------ | ------------------------------------------------------------- |
+| `ccipRead`    | `Ensforge.create` | `{ gatewayUrls? }` or `false` | the Universal Resolver's own batch gateway | Batch gateways for off-chain lookups. `false` turns them off. |
+| `gatewayUrls` | any read          | `readonly string[]`           | the client's                               | Batch gateways for one call.                                  |
 
 ## Names that are in no registry
 
@@ -119,7 +119,7 @@ The resolver asked for a lookup from an unexpected sender. ensforge refuses thes
 
 ### `DNSSEC_PROOF_FAILED` on a DNS name
 
-Imported DNS names, such as `ens.domains`, resolve through DNSSEC proofs. At the time of writing, no proof verifies on-chain on Ethereum mainnet or Sepolia, so these reads fail with [`DNSSEC_PROOF_FAILED`](/docs/sdk/errors/DNSSEC_PROOF_FAILED) until ENS updates its DNSSEC trust anchor. See [Use a DNS name](/docs/sdk/use-a-dns-name).
+DNS names without a resolver of their own in ENS, such as `ens.domains`, resolve through DNSSEC proofs. At the time of writing, no proof verifies on-chain on Ethereum mainnet or Sepolia, so these reads fail with [`DNSSEC_PROOF_FAILED`](/docs/sdk/errors/DNSSEC_PROOF_FAILED) until ENS updates its DNSSEC trust anchor. See [Use a DNS name](/docs/sdk/use-a-dns-name).
 
 ### Writing records to an off-chain name fails
 

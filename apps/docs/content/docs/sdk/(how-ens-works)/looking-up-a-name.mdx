@@ -49,7 +49,8 @@ sequenceDiagram
 
 ## When a name has no resolver of its own
 
-Not every name has its own resolver. A parent name can serve all of its subnames from one
+Not every name has its own resolver. A parent name can serve all of its
+[subnames](/docs/sdk/reference/glossary#subname) from one
 **wildcard resolver** (ENSIP-10), without creating each subname on-chain. To find the resolver, the
 Universal Resolver walks up the name: `pay.nick.eth`, then `nick.eth`, then `eth`, and uses the
 first resolver it finds. A resolver found on a parent answers only if it supports wildcard lookups.
@@ -60,9 +61,9 @@ flowchart LR
   B -->|answers for pay.nick.eth| C[Records]
 ```
 
-Basenames resolve this way: `jesse.base.eth` has no resolver of its own and is served by a
-parent's resolver.
-`name.get` reports such a resolver as `inheritedResolver`, because the name has none of its own.
+Basenames resolve this way: `jesse.base.eth` has no resolver of its own and is served by the
+resolver of `base.eth`. `name.get` reports such a resolver as `inheritedResolver`, because the
+name has none of its own.
 
 **Example** (Seeing an Inherited Resolver)
 
@@ -95,6 +96,7 @@ resolver only, never to an inherited one.
 Some resolvers do not store records on Ethereum at all. They answer with a pointer to a
 **gateway**: a server that holds the records, often with a proof that they are correct. This
 protocol is called **CCIP-Read** (EIP-3668), and names served this way are **off-chain names**.
+`jesse.base.eth` is one.
 
 ```mermaid
 sequenceDiagram
@@ -109,15 +111,16 @@ sequenceDiagram
   UR-->>SDK: verified result
 ```
 
-ensforge follows these steps for you, so an off-chain name reads exactly like an on-chain one. By
-default it uses the Universal Resolver's own batch gateway. You can pass your own gateways with
-`ccipRead: { gatewayUrls }` on the client or `gatewayUrls` on one call, or turn off-chain lookups
-off with `ccipRead: false`, after which they fail with
-[`CCIP_READ_DISABLED`](/docs/sdk/errors/CCIP_READ_DISABLED). A gateway that fails or answers
-badly raises a `GatewayError`. See [Look up off-chain names](/docs/sdk/off-chain-names).
+ensforge follows these steps for you, so an off-chain name reads exactly like an on-chain one. The
+Universal Resolver sends off-chain lookups through a **batch gateway**, which collects them and
+forwards each one to the resolver's own gateway. By default ensforge uses the Universal Resolver's own
+batch gateway. `ccipRead: { gatewayUrls }` on the client, or `gatewayUrls` on one call, replaces it
+with batch gateways you choose. `ccipRead: false` turns off-chain lookups off, after which they
+fail with [`CCIP_READ_DISABLED`](/docs/sdk/errors/CCIP_READ_DISABLED). A gateway that fails or
+answers badly raises a `GatewayError`. See [Look up off-chain names](/docs/sdk/off-chain-names).
 
-DNS names such as `example.com` resolve in a similar way: a DNSSEC proof shows that the DNS owner
-set the name's ENS data. A proof that does not verify raises a `DnsError`. See
+DNS names such as `example.com` can resolve in a similar way: a DNSSEC proof shows that the DNS
+owner set the name's ENS data. A proof that does not verify raises a `DnsError`. See
 [Known limitations](/docs/sdk/reference/known-limitations#dns-names).
 
 ## Missing data is `null`, unless you ask for errors
@@ -146,7 +149,7 @@ See [Look up many at once](/docs/sdk/look-up-many-at-once).
 
 - Normalises, validates and encodes the name.
 - Finds the resolver through the Universal Resolver, including wildcard and inherited resolvers.
-- Follows off-chain lookups through gateways and verifies DNS names.
+- Follows off-chain lookups through gateways, including DNS names proven with DNSSEC.
 - Decodes every record type into plain values, and returns `null` for missing data.
 - Reads at the block you choose, with `blockNumber` or `blockTag`.
 - Batches concurrent reads.

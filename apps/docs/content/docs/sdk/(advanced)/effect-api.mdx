@@ -19,7 +19,7 @@ the error channel, interruption, services and streams.
 `@ensforge/sdk/effect` exports the same action tree as the root entry. Each action takes a client
 first and returns an `Effect` whose error channel is the action's documented error union.
 
-**Example** (Reading an address in an Effect program)
+**Example** (Reading an Address in an Effect Program)
 
 ```ts twoslash title="read.ts"
 import { Actions, Ensforge } from "@ensforge/sdk/effect";
@@ -44,7 +44,7 @@ const address = await Effect.runPromise(program);
 `Ensforge.Ensforge` is an Effect `Context.Service`, and `Ensforge.layer(options)` builds a `Layer`
 for it. The layer fails with `ConfigError` when the options are invalid, such as an unknown chain.
 
-**Example** (Using the service)
+**Example** (Using the Service)
 
 ```ts twoslash title="service.ts"
 import { Actions, Ensforge } from "@ensforge/sdk/effect";
@@ -70,7 +70,7 @@ The service key is `@ensforge/sdk/Ensforge`. In tests, provide a different clien
 Errors are the same instances Promise users catch, so `_tag` matches the class name. Use
 `Effect.catchTag` to handle one class and let the others stay in the error type.
 
-**Example** (Recovering from a missing record)
+**Example** (Recovering from a Missing Record)
 
 ```ts twoslash title="errors.ts"
 import { Actions, Ensforge } from "@ensforge/sdk/effect";
@@ -89,7 +89,7 @@ const program = Actions.record
 After `catchTag`, `NotFoundError` is gone from the error type. See
 [Handle errors](/docs/sdk/handle-errors) for the codes.
 
-**Example** (Retrying only what is retryable)
+**Example** (Retrying Only What Is Retryable)
 
 ```ts twoslash title="retry.ts"
 import { Actions, Ensforge } from "@ensforge/sdk/effect";
@@ -111,7 +111,7 @@ Writes keep their methods as Effects: `Actions.record.set`, `Actions.record.set.
 `.simulate` and `.estimateGas`, and the `…Sync` forms. Plans are plain data, so they are the same
 values as in the Promise API.
 
-**Example** (Preparing, simulating and sending)
+**Example** (Preparing, Simulating and Sending)
 
 ```ts twoslash title="write.ts"
 import { Actions, Ensforge } from "@ensforge/sdk/effect";
@@ -143,6 +143,8 @@ See [Preview before sending](/docs/sdk/preview-before-sending) and
 
 `Actions.batch` is an Effect too. Build the requests with the Promise entry's `.request` helpers.
 
+**Example** (Batching Reads in an Effect Program)
+
 ```ts twoslash title="batch.ts"
 import { Actions as Requests } from "@ensforge/sdk";
 import { Actions, Ensforge } from "@ensforge/sdk/effect";
@@ -162,6 +164,8 @@ const program = Actions.batch(ens, {
 `Name.Normalized` is a branded `Schema` for names that are already normalised (ENSIP-15). It
 exists only in the Effect entry.
 
+**Example** (Decoding a Normalised Name)
+
 ```ts twoslash title="schema.ts"
 import { Name } from "@ensforge/sdk/effect";
 import { Schema } from "effect";
@@ -174,6 +178,8 @@ const name = Schema.decodeUnknownSync(Name.Normalized)("nick.eth");
 `Indexer.paginate` turns a list into a `Stream` of pages, following `cursor` until the last page.
 `Indexer.define` is the Effect form of `defineIndexer`. See
 [Custom indexers](/docs/sdk/custom-indexers) and [Load more results](/docs/sdk/load-more-results).
+
+**Example** (Streaming Three Pages of Subnames)
 
 ```ts twoslash title="stream.ts"
 import { Actions, Ensforge, Indexer } from "@ensforge/sdk/effect";

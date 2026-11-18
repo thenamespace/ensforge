@@ -95,20 +95,22 @@ See [Preview before sending](/docs/sdk/preview-before-sending).
 
 ## Steps, waits and bundles
 
-Most writes are one step with one call. Some are longer. Registering a `.eth` name commits first,
-waits at least a minute of chain time, then registers, then writes records and the primary name.
-The plan holds each wait, so ensforge sends the next step only when the chain allows it.
+Most writes are one [step](/docs/sdk/reference/glossary#step) with one call. Some are longer.
+Registering a `.eth` name commits first, waits at least a minute of chain time, then registers.
+When you ask for them, later steps write records to a resolver you chose and set the primary
+name. The plan holds each wait, so ensforge sends
+the next step only when the chain allows it.
 
 ```mermaid
 flowchart LR
   A["Step 1: approve payment and commit"] -->|wait about a minute| B["Step 2: register"]
-  B --> C["Step 3: records and primary name"]
+  B -->|if asked| C["Later steps: records and primary name"]
 ```
 
 How the steps reach the wallet depends on the wallet, set with `mode`:
 
-- `"auto"` (default) sends consecutive steps as one bundle when the wallet supports atomic batches
-  (EIP-5792), and one transaction per call otherwise.
+- `"auto"` (default) sends consecutive steps as one [bundle](/docs/sdk/reference/glossary#bundle)
+  when the wallet supports atomic batches (EIP-5792), and one transaction per call otherwise.
 - `"batch"` always uses one EIP-5792 call per bundle. `"sequential"` sends one transaction at a
   time, each after the previous one is mined.
 - A bundle holds at most `maxBundleCalls` calls (default 10) and never spans a wait.
