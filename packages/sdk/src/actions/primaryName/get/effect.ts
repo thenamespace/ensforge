@@ -55,12 +55,13 @@ export const get = Effect.fn("ensforge.primaryName.get")(
             Effect.map((reversed) => reversed.name),
           )
     ).pipe(
-      // No reverse resolver means no primary name; a failed forward check means no valid one.
+      // No reverse resolver (or one that cannot answer `name`, or a forward resolver that cannot
+      // answer `addr`) means no primary name; a failed forward check means no valid one.
       Effect.catchIf(
         (error: AnyError) =>
-          error._tag === "NotFoundError" &&
-          (error.code === "RESOLVER_NOT_FOUND" ||
-            (error.code === "PRIMARY_NAME_MISMATCH" && !strict)),
+          error.code === "RESOLVER_NOT_FOUND" ||
+          error.code === "RESOLVER_PROFILE_UNSUPPORTED" ||
+          (error.code === "PRIMARY_NAME_MISMATCH" && !strict),
         (error) =>
           strict
             ? Effect.fail(new NotFoundError({ code: "PRIMARY_NAME_NOT_SET", cause: error }))
@@ -73,9 +74,10 @@ export const get = Effect.fn("ensforge.primaryName.get")(
         ? yield* Effect.fail(new NotFoundError({ code: "PRIMARY_NAME_NOT_SET" }))
         : null;
     }
-    // The Universal Resolver returns the stored text; names that are not normalized are unsafe to show.
+    // The Universal Resolver returns the stored text; names that are not normalized are unsafe to
+    // show. Encoded labels (`[af2c…]`) survive `normalizeName` but are no ENSIP-15 name.
     const normalized = yield* normalizeName(name).pipe(
-      Effect.map((normalizedName) => normalizedName === name),
+      Effect.map((normalizedName) => normalizedName === name && !name.includes("[")),
       Effect.orElseSucceed(() => false),
     );
     if (!normalized) {

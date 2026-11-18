@@ -24,6 +24,7 @@ import * as Impl from "./effect.js";
  *   Ownable owner (or ContractNamer for `"default"`).
  * - Before sending, checks that the name resolves back to the address, as readers require.
  * - `name: null` clears it.
+ * - Names with encoded labels (`[af2c…]`) are rejected: readers show only normalized names.
  *
  * **Gotchas**
  *

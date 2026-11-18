@@ -4,6 +4,7 @@ import { isAddressEqual, type Address } from "viem";
 
 import type { Client } from "../../../client/types.js";
 import { ConfigError } from "../../../errors/classes/ConfigError.js";
+import { InvalidInputError } from "../../../errors/classes/InvalidInputError.js";
 import { NotFoundError } from "../../../errors/classes/NotFoundError.js";
 import type { AnyError } from "../../../errors/types.js";
 import * as Action from "../../../internal/action/index.js";
@@ -86,6 +87,16 @@ export const plan = Effect.fnUntraced(function* (
     options.address === undefined ? signer : yield* requireAddress(options.address, "address");
   const coinType = options.coin === "default" ? defaultEvmCoinType : ethCoinType;
   const name = options.name === null ? "" : yield* normalizeName(options.name);
+  // Readers show only ENSIP-15 names, which an encoded label (`[af2c…]`) is not.
+  if (name.includes("[")) {
+    return yield* Effect.fail(
+      new InvalidInputError({
+        code: "INVALID_NAME",
+        input: options.name,
+        shortMessage: "A primary name needs its plain labels, not their hashes.",
+      }),
+    );
+  }
 
   const warnings =
     name !== "" && options.verify !== false
