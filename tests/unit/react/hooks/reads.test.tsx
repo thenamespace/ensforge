@@ -1,16 +1,23 @@
+/* oxlint-disable effecttsgo/async-function -- testing-library `act` and `waitFor` are Promise APIs, so the tests are async functions */
 import { Component, Suspense, type ReactNode } from "react";
 
 import { assert, describe, it } from "@effect/vitest";
 
-import { EnsforgeProvider, useInfiniteRead, useReads, useSuspenseRead } from "@ensforge/react";
+import {
+  EnsforgeProvider,
+  ReadErrorResetBoundary,
+  useInfiniteRead,
+  useReadErrorReset,
+  useReads,
+  useSuspenseRead,
+} from "@ensforge/react";
 import type { Ensforge } from "@ensforge/sdk";
 import { fireEvent, render, renderHook, screen, waitFor } from "@testing-library/react";
 
 import { client, fakeRead } from "../fixtures.js";
 
-// Hooks render through testing-library, whose `act` and `waitFor` are Promise APIs; these tests
-// stay plain async functions.
-(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+// Hooks render through testing-library, whose `act` and `waitFor` are Promise APIs.
+Reflect.set(globalThis, "IS_REACT_ACT_ENVIRONMENT", true);
 
 const wrapper = (ens: Ensforge.Client) =>
   function Wrapper({ children }: { children: ReactNode }) {
@@ -76,7 +83,10 @@ describe("useInfiniteRead", () => {
   });
 });
 
-class Boundary extends Component<{ readonly children: ReactNode }, { readonly failed: boolean }> {
+class Boundary extends Component<
+  { readonly children: ReactNode; readonly onReset?: (() => void) | undefined },
+  { readonly failed: boolean }
+> {
   override state = { failed: false };
 
   static getDerivedStateFromError() {
@@ -85,12 +95,24 @@ class Boundary extends Component<{ readonly children: ReactNode }, { readonly fa
 
   override render() {
     return this.state.failed ? (
-      <button onClick={() => this.setState({ failed: false })}>retry</button>
+      <button
+        onClick={() => {
+          this.props.onReset?.();
+          this.setState({ failed: false });
+        }}
+      >
+        retry
+      </button>
     ) : (
       this.props.children
     );
   }
 }
+
+const ResettingBoundary = ({ children }: { readonly children: ReactNode }) => {
+  const { reset } = useReadErrorReset();
+  return <Boundary onReset={reset}>{children}</Boundary>;
+};
 
 describe("useSuspenseRead", () => {
   // Regression: the failure stayed cached, so a reset boundary threw it again.
@@ -102,11 +124,15 @@ describe("useSuspenseRead", () => {
     const Url = () => <p>{useSuspenseRead(action, { name: "a.eth" }).data}</p>;
     render(
       <EnsforgeProvider client={client()}>
-        <Boundary>
-          <Suspense fallback="loading">
-            <Url />
-          </Suspense>
-        </Boundary>
+        <ReadErrorResetBoundary>
+          {({ reset }) => (
+            <Boundary onReset={reset}>
+              <Suspense fallback="loading">
+                <Url />
+              </Suspense>
+            </Boundary>
+          )}
+        </ReadErrorResetBoundary>
       </EnsforgeProvider>,
       { onCaughtError: () => undefined },
     );
@@ -116,5 +142,56 @@ describe("useSuspenseRead", () => {
 
     await screen.findByText("ok");
     assert.strictEqual(calls.length, 2);
+  });
+
+  it("reads again after the app-wide reset without a boundary component", async () => {
+    let attempts = 0;
+    const { action, calls } = fakeRead("test.flaky2", (_options: { name: string }) =>
+      attempts++ === 0 ? Promise.reject(new Error("blip")) : "ok",
+    );
+    const Url = () => <p>{useSuspenseRead(action, { name: "a.eth" }).data}</p>;
+    render(
+      <EnsforgeProvider client={client()}>
+        <ResettingBoundary>
+          <Suspense fallback="loading">
+            <Url />
+          </Suspense>
+        </ResettingBoundary>
+      </EnsforgeProvider>,
+      { onCaughtError: () => undefined },
+    );
+    await screen.findByText("retry");
+
+    fireEvent.click(screen.getByText("retry"));
+
+    await screen.findByText("ok");
+    assert.strictEqual(calls.length, 2);
+  });
+
+  // React renders a throwing component again before the boundary commits, and a boundary that
+  // resets without calling `reset` renders it again after: neither may read again.
+  it("rethrows the cached failure until reset is called", async () => {
+    const { action, calls } = fakeRead("test.down", (_options: { name: string }) =>
+      Promise.reject(new Error("down")),
+    );
+    const Url = () => <p>{useSuspenseRead(action, { name: "a.eth" }).data}</p>;
+    render(
+      <EnsforgeProvider client={client()}>
+        <ReadErrorResetBoundary>
+          <Boundary>
+            <Suspense fallback="loading">
+              <Url />
+            </Suspense>
+          </Boundary>
+        </ReadErrorResetBoundary>
+      </EnsforgeProvider>,
+      { onCaughtError: () => undefined },
+    );
+    await screen.findByText("retry");
+
+    fireEvent.click(screen.getByText("retry"));
+    await screen.findByText("retry");
+
+    assert.strictEqual(calls.length, 1);
   });
 });

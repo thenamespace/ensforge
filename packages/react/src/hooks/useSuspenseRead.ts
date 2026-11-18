@@ -10,6 +10,7 @@ import { ensAtom } from "../atoms/read.js";
 import { isServer, serverReads } from "../atoms/runtime.js";
 import type { Action, ActionOptions, ActionValue } from "../atoms/types.js";
 import { useEnsforgeContext } from "../provider/context.js";
+import { useErrorResetStore } from "../provider/errorReset.js";
 import type { ReadConfig } from "./useRead.js";
 
 /**
@@ -27,7 +28,9 @@ export type SuspenseReadResult<value> = {
 };
 
 // Failures this hook has thrown to an error boundary.
-const thrown = new WeakSet<AsyncResult.Failure<unknown, unknown>>();
+// The reset count when each was first thrown: a React retry before the boundary commits sees
+// the same count and throws again; only a `reset` since moves a failure on.
+const thrown = new WeakMap<AsyncResult.Failure<unknown, unknown>, number>();
 
 /**
  * Reads with an action and suspends until the value is there; failures throw to the nearest
@@ -40,7 +43,9 @@ const thrown = new WeakSet<AsyncResult.Failure<unknown, unknown>>();
  *
  * **Details**
  *
- * - Resetting the error boundary reads again instead of throwing the same failure.
+ * - A failure is cached and thrown again until `reset` (`useReadErrorReset`, or
+ *   `ReadErrorResetBoundary`) is called, which an error boundary's reset does; the read then runs
+ *   again.
  * - On the server, a read that was not prefetched throws, so React renders the boundary's
  *   fallback there and the read in the browser (React reports it as a recoverable error).
  *
@@ -75,10 +80,18 @@ export const useSuspenseRead = <action extends Action>(
   let result = useAtomSuspense(atom, { includeFailure: true });
   const refresh = useAtomRefresh(atom);
 
-  // A failure thrown in an earlier task is rendered again after an error boundary reset: read
-  // again. A retry in the same task is React re-rendering the throw, which must throw again.
-  if (AsyncResult.isFailure(result) && !result.waiting && thrown.has(result)) {
+  // A failure stays cached and is rethrown until `reset` was called after it was thrown.
+  const resets = useErrorResetStore();
+  const thrownAt = AsyncResult.isFailure(result) ? thrown.get(result) : undefined;
+  if (
+    AsyncResult.isFailure(result) &&
+    !result.waiting &&
+    thrownAt !== undefined &&
+    thrownAt < resets.epoch
+  ) {
     registry.refresh(atom);
+    // Suspense settled the read, so the registry holds a success or failure again.
+    // oxlint-disable-next-line typescript/no-unsafe-type-assertion
     result = registry.get(atom) as typeof result;
   }
   if (AsyncResult.isFailure(result)) {
@@ -87,9 +100,8 @@ export const useSuspenseRead = <action extends Action>(
         AtomRegistry.getResult(registry, atom, { suspendOnWaiting: true }).pipe(Effect.ignore),
       );
     }
-    const failure = result;
-    queueMicrotask(() => thrown.add(failure));
-    throw Cause.squash(failure.cause);
+    if (!thrown.has(result)) thrown.set(result, resets.epoch);
+    throw Cause.squash(result.cause);
   }
 
   return { data: result.value, isRefreshing: result.waiting, refresh };
