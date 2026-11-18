@@ -836,6 +836,7 @@ type Errors.ConfigError.Options = { readonly code: Code; readonly shortMessage?:
 class Errors.ContractRevertError {
   constructor(options: ClassOptions<'CONTRACT_REVERTED'> & { readonly errorName?: string | undefined; readonly args?: readonly unknown[] | undefined; readonly data?: `0x${string}` | undefined; }) => ContractRevertError
   code: 'CONTRACT_REVERTED'
+  ~ensforge/error: true
   _tag: 'ContractRevertError'
   name: 'ContractRevertError'
   shortMessage: string
@@ -846,7 +847,6 @@ class Errors.ContractRevertError {
   message: string
   stack: string
   cause: unknown
-  ~ensforge/error: true
   details: readonly string[]
   retryable: boolean
   context: { readonly operation?: string | undefined; readonly name?: string | undefined; readonly account?: `0x${string}` | undefined; readonly chainId?: number | undefined; readonly contract?: `0x${string}` | undefined; readonly functionName?: string | undefined; readonly contractKind?: 'registrar' | 'registry' | 'resolver' | 'wrapper' | undefined; readonly selector?: `0x${string}` | undefined; readonly registry?: `0x${string}` | undefined; readonly planId?: string | undefined; readonly step?: string | undefined; readonly revert?: { readonly errorName: string | undefined; readonly data: `0x${string}` | undefined; } | undefined; }
@@ -930,13 +930,13 @@ function Errors.fromCause(cause: unknown, context?: Context | undefined) => Ensf
 class Errors.GatewayError {
   constructor(options: ClassOptions<Code> & { readonly status?: number | undefined; readonly url?: string | undefined; }) => GatewayError
   ~ensforge/error: true
-  _tag: 'GatewayError'
   status: number | undefined
   url: string | undefined
   message: string
   stack: string
   cause: unknown
   code: 'GATEWAY_REQUEST_FAILED' | 'GATEWAY_RESPONSE_INVALID' | 'OFFCHAIN_LOOKUP_INVALID'
+  _tag: 'GatewayError'
   name: 'GatewayError'
   shortMessage: string
   hint: string | undefined
@@ -1133,12 +1133,12 @@ type Errors.NameStateError.Options = { readonly code: Code; readonly shortMessag
 class Errors.NetworkError {
   constructor(options: ClassOptions<Code> & { readonly status?: number | undefined; }) => NetworkError
   ~ensforge/error: true
-  _tag: 'NetworkError'
   status: number | undefined
   message: string
   stack: string
   cause: unknown
   code: 'LOG_RANGE_TOO_LARGE' | 'RATE_LIMITED' | 'RPC_REQUEST_FAILED' | 'RPC_TIMEOUT'
+  _tag: 'NetworkError'
   name: 'NetworkError'
   shortMessage: string
   hint: string | undefined
@@ -1334,13 +1334,13 @@ type Errors.UserRejectedError.Options = { readonly code: 'USER_REJECTED'; readon
 class Errors.WalletError {
   constructor(options: ClassOptions<Code> & { readonly expectedChainId?: number | undefined; readonly actualChainId?: number | undefined; }) => WalletError
   ~ensforge/error: true
-  _tag: 'WalletError'
   expectedChainId: number | undefined
   actualChainId: number | undefined
   message: string
   stack: string
   cause: unknown
   code: 'ACCOUNT_NOT_FOUND' | 'CHAIN_MISMATCH'
+  _tag: 'WalletError'
   name: 'WalletError'
   shortMessage: string
   hint: string | undefined
