@@ -1,5 +1,6 @@
+/* oxlint-disable typescript/no-unsafe-type-assertion -- partial Plan and Step fixtures holding only the fields the atoms read */
 import { assert, describe, it } from "@effect/vitest";
-import { Effect } from "effect";
+import { Array as Arr, Effect, String as Str } from "effect";
 import { AsyncResult, AtomRegistry } from "effect/reactivity";
 
 import { ensAtom, ensWriteAtom } from "@ensforge/react/atoms";
@@ -17,19 +18,19 @@ const fakeWrite = () => {
   const step = { id: "records", description: "Set records", calls: [] } as unknown as Plan.Step;
   const sent: unknown[] = [];
   const action = Object.assign(
-    async (
+    (
       _client: Ensforge.Client,
       options: { readonly name: string; readonly onStep?: (event: Plan.Event) => void },
     ): Promise<Write.Result> => {
       sent.push(options.name);
       options.onStep?.({ step, status: "submitted", hashes: [] });
       options.onStep?.({ step, status: "confirmed", hashes: [] });
-      return {
+      return Promise.resolve({
         hash: "0x",
         hashes: [],
         id: undefined,
         plan: { account: signer } as unknown as Plan,
-      };
+      });
     },
     { path: "test.set" },
   );
@@ -50,7 +51,7 @@ describe("ensWriteAtom", () => {
       yield* AtomRegistry.getResult(registry, write.run);
 
       assert.deepStrictEqual(
-        registry.get(write.steps).map((event) => event.status),
+        Arr.map(registry.get(write.steps), (event) => event.status),
         ["submitted", "confirmed"],
       );
       assert.deepStrictEqual(own, ["submitted", "confirmed"]);
@@ -82,7 +83,9 @@ describe("ensWriteAtom", () => {
           ensAtom(ens, indexed, { name: "alice.eth" }),
         ];
         for (const atom of reads) registry.mount(atom);
-        yield* Effect.forEach(reads, (atom) => AtomRegistry.getResult(registry, atom));
+        yield* Effect.forEach(reads, (atom) => AtomRegistry.getResult(registry, atom), {
+          concurrency: 1,
+        });
         const atoms = ensWriteAtom(ens, write);
         registry.mount(atoms.run);
 
@@ -91,7 +94,7 @@ describe("ensWriteAtom", () => {
         yield* Effect.sleep(1);
 
         assert.deepStrictEqual(
-          calls.map(({ options }) => options.name ?? options.address),
+          Arr.map(calls, ({ options }) => options.name ?? options.address),
           ["alice.eth", "bob.eth", signer, "alice.eth", signer],
         );
         assert.strictEqual(indexedCalls.length, 1);
@@ -100,7 +103,7 @@ describe("ensWriteAtom", () => {
 
   it.live("refetches chain reads when waiting for the write's receipt fails", () =>
     Effect.gen(function* () {
-      const hash = `0x${"01".repeat(32)}` as const;
+      const hash = `0x${Str.repeat(32)("01")}` as const;
       // The transaction is known, mined in block 16, but its receipt cannot be fetched.
       const ens = Ensforge.create({
         publicClient: createPublicClient({
@@ -115,12 +118,13 @@ describe("ensWriteAtom", () => {
         }),
       });
       const write = Object.assign(
-        async (_client: Ensforge.Client, _options: { name: string }): Promise<Write.Result> => ({
-          hash,
-          hashes: [hash],
-          id: undefined,
-          plan: { account: signer } as unknown as Plan,
-        }),
+        (_client: Ensforge.Client, _options: { name: string }): Promise<Write.Result> =>
+          Promise.resolve({
+            hash,
+            hashes: [hash],
+            id: undefined,
+            plan: { account: signer } as unknown as Plan,
+          }),
         { path: "test.set" },
       );
       const { action: read, calls } = fakeRead("record.get", (_options: { name: string }) => 1);
@@ -145,12 +149,12 @@ describe("ensWriteAtom", () => {
       const ens = client();
       const step = { id: "approve", description: "Approve", calls: [] } as unknown as Plan.Step;
       const write = Object.assign(
-        async (
+        (
           _client: Ensforge.Client,
           options: { readonly name: string; readonly onStep?: (event: Plan.Event) => void },
         ): Promise<Write.Result> => {
           options.onStep?.({ step, status: "confirmed", hashes: [] });
-          throw Object.assign(new Error("rejected"), { code: "USER_REJECTED" });
+          return Promise.reject(Object.assign(new Error("rejected"), { code: "USER_REJECTED" }));
         },
         { path: "test.set" },
       );

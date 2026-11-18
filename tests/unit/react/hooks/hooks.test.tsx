@@ -1,6 +1,9 @@
+/* oxlint-disable effecttsgo/async-function -- testing-library `act` and `waitFor` are Promise APIs, so the tests are async functions */
+/* oxlint-disable typescript/no-unsafe-type-assertion -- partial Plan and Step fixtures, and the write's name as its hash */
 import type { ReactNode } from "react";
 
 import { assert, describe, it } from "@effect/vitest";
+import { Array as Arr } from "effect";
 
 import { EnsforgeProvider, useInfiniteRead, useRead, useReads, useWrite } from "@ensforge/react";
 import type { Ensforge, Plan, Write } from "@ensforge/sdk";
@@ -9,9 +12,8 @@ import type { Hex } from "viem";
 
 import { client, fakeRead } from "../fixtures.js";
 
-// Hooks render through testing-library, whose `act` and `waitFor` are Promise APIs; these tests
-// stay plain async functions.
-(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+// Hooks render through testing-library, whose `act` and `waitFor` are Promise APIs.
+Reflect.set(globalThis, "IS_REACT_ACT_ENVIRONMENT", true);
 
 const wrapper = (ens: Ensforge.Client) =>
   function Wrapper({ children }: { children: ReactNode }) {
@@ -71,7 +73,7 @@ describe("useReads", () => {
 
     await waitFor(() =>
       assert.deepStrictEqual(
-        result.current.map((read) => read.data),
+        Arr.map(result.current, (read) => read.data),
         [5, 7],
       ),
     );
@@ -103,6 +105,7 @@ const heldWrite = () => {
   const settle: Record<string, (outcome: "succeed" | "fail") => void> = {};
   const action = Object.assign(
     (_client: Ensforge.Client, options: { name: string }) =>
+      // oxlint-disable-next-line effecttsgo/new-promise -- a write the test settles by hand
       new Promise<Write.Result>((resolve, reject) => {
         settle[options.name] = (outcome) =>
           outcome === "succeed"
@@ -137,7 +140,7 @@ describe("useWrite", () => {
     await waitFor(() => assert.strictEqual(result.current.status, "success"));
     assert.strictEqual(result.current.data?.hash, "0x1");
     assert.deepStrictEqual(
-      result.current.steps.map((event) => event.status),
+      Arr.map(result.current.steps, (event) => event.status),
       ["submitted"],
     );
 

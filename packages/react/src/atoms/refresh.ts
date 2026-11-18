@@ -31,9 +31,10 @@ export const refreshAfterWrite = Effect.fnUntraced(function* (
   const minedIn = yield* (
     last === undefined
       ? Effect.undefined
-      : Effect.tryPromise((signal) =>
-          waitForTransactionReceipt(client.publicClient, { hash: last, signal }),
-        ).pipe(
+      : Effect.tryPromise({
+          try: (signal) => waitForTransactionReceipt(client.publicClient, { hash: last, signal }),
+          catch: () => "receipt-failed" as const,
+        }).pipe(
           Effect.map((receipt) => receipt.blockNumber),
           Effect.orElseSucceed(() => undefined),
         )
@@ -43,9 +44,10 @@ export const refreshAfterWrite = Effect.fnUntraced(function* (
   yield* Effect.gen(function* () {
     const block =
       minedIn ??
-      (yield* Effect.tryPromise(() =>
-        client.publicClient.request({ method: "eth_blockNumber" }),
-      ).pipe(Effect.map(BigInt)));
+      (yield* Effect.tryPromise({
+        try: () => client.publicClient.request({ method: "eth_blockNumber" }),
+        catch: () => "block-number-failed" as const,
+      }).pipe(Effect.map(BigInt)));
 
     // Indexers lag the chain. Their reads refresh once the indexer reports the write's block,
     // polled for up to a minute; indexers without a status are given a few seconds instead.

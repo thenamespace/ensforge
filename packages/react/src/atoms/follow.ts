@@ -1,3 +1,4 @@
+import { Array as Arr, String as Str } from "effect";
 import { AsyncResult, Atom } from "effect/reactivity";
 
 import type { Ensforge } from "@ensforge/sdk";
@@ -16,18 +17,23 @@ import { invalidationKeys, resultSubjects, type Subjects } from "./subjects.js";
 export const followResults =
   (client: Ensforge.Client, path: string, subjects: Subjects) =>
   <atom extends Atom.Atom<AsyncResult.AsyncResult<unknown, unknown>>>(atom: atom): atom =>
+    // `transform` returns a plain Atom of the result; callers keep the source atom's own type.
+    // oxlint-disable-next-line typescript/no-unsafe-type-assertion
     Atom.transform(
       atom,
       (get) => {
         const service = AsyncResult.getOrThrow(get(reactivity));
-        const scope = path.startsWith("indexer.") ? "indexer" : "chain";
+        const scope = Str.startsWith("indexer.")(path) ? "indexer" : "chain";
         let unregister: (() => void) | undefined;
         const follow = (result: AsyncResult.AsyncResult<unknown, unknown>) => {
           if (!AsyncResult.isSuccess(result)) return result;
           const found = resultSubjects(result.value);
           const extra = {
-            names: found.names.filter((name) => !subjects.names.includes(name)),
-            addresses: found.addresses.filter((address) => !subjects.addresses.includes(address)),
+            names: Arr.filter(found.names, (name) => !subjects.names.includes(name)),
+            addresses: Arr.filter(
+              found.addresses,
+              (address) => !subjects.addresses.includes(address),
+            ),
           };
           unregister?.();
           unregister = service.registerUnsafe(invalidationKeys(client, scope, extra), () =>

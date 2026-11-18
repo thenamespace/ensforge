@@ -1,4 +1,5 @@
 import { assert, describe, it } from "@effect/vitest";
+import { String as Str } from "effect";
 
 import { optionsKey, readKey } from "@ensforge/react/internal/atoms/key";
 import { bigname } from "@ensforge/sdk/indexer";
@@ -61,7 +62,7 @@ describe("readKey", () => {
 
     assert.strictEqual(
       readKey(client({ account, indexer: bigname() }), action, { name: "nick.eth", key: "url" }),
-      `ensforge:1:${account.toLowerCase()}:bigname:default:record.getText:{"key":"url","name":"nick.eth"}`,
+      `ensforge:1:${Str.toLowerCase(account)}:bigname:default:record.getText:{"key":"url","name":"nick.eth"}`,
     );
     // Two bigname deployments answer differently.
     assert.notStrictEqual(

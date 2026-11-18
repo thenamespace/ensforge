@@ -1,5 +1,7 @@
 "use client";
 
+// Each preset narrows `useWrite`'s generic error to the action's declared error type (`Action.Declared`).
+/* oxlint-disable typescript/no-unsafe-type-assertion */
 import { Actions } from "@ensforge/sdk";
 
 import { useWrite, type WriteResult } from "../useWrite.js";

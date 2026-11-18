@@ -1,5 +1,5 @@
 import { assert, describe, it } from "@effect/vitest";
-import { Duration, Effect } from "effect";
+import { Array as Arr, Duration, Effect } from "effect";
 import { AsyncResult, AtomRegistry } from "effect/reactivity";
 
 import { ensAtom, invalidate, type Freshness } from "@ensforge/react/atoms";
@@ -37,7 +37,7 @@ describe("ensAtom", () => {
       const alice = client({ account: "0x00000000000000000000000000000000000a11ce" });
       const bob = client({ account: "0x0000000000000000000000000000000000000b0b" });
       const action = Object.assign(
-        async (ens: Ensforge.Client, _options: { name: string }) => ens.account,
+        (ens: Ensforge.Client, _options: { name: string }) => Promise.resolve(ens.account),
         { path: "test.account" },
       );
       const registry = AtomRegistry.make();
@@ -47,8 +47,10 @@ describe("ensAtom", () => {
       registry.mount(aliceRead);
       registry.mount(bobRead);
 
-      assert.strictEqual(yield* AtomRegistry.getResult(registry, aliceRead), alice.account);
-      assert.strictEqual(yield* AtomRegistry.getResult(registry, bobRead), bob.account);
+      const aliceAccount = yield* AtomRegistry.getResult(registry, aliceRead);
+      const bobAccount = yield* AtomRegistry.getResult(registry, bobRead);
+      assert.strictEqual(aliceAccount, alice.account);
+      assert.strictEqual(bobAccount, bob.account);
     }),
   );
 
@@ -140,7 +142,7 @@ describe("ensAtom", () => {
       yield* Effect.sleep(10);
 
       assert.deepStrictEqual(
-        calls.map((call) => call.options.name),
+        Arr.map(calls, (call) => call.options.name),
         ["a.eth", "b.eth", "b.eth"],
       );
     }),
@@ -168,6 +170,7 @@ describe("ensAtom", () => {
     Effect.gen(function* () {
       const { action, calls } = fakeRead(
         "test.slow",
+        // oxlint-disable-next-line effecttsgo/new-promise -- a read that never settles
         (_options: { name: string }) => new Promise<never>(() => undefined),
       );
       const registry = AtomRegistry.make();
@@ -226,7 +229,7 @@ describe("invalidate", () => {
       yield* AtomRegistry.getResult(registry, alice, { suspendOnWaiting: true });
 
       assert.deepStrictEqual(
-        calls.map((call) => call.options.name),
+        Arr.map(calls, (call) => call.options.name),
         ["alice.eth", "bob.eth", "alice.eth"],
       );
     }),

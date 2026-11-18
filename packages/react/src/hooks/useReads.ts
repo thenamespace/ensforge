@@ -3,6 +3,7 @@
 import { useContext, useMemo } from "react";
 
 import { RegistryContext, useAtomValue } from "@effect/atom-react";
+import { Array as Arr } from "effect";
 import { Atom } from "effect/reactivity";
 
 import { readKey } from "../atoms/key.js";
@@ -69,21 +70,30 @@ export const useReads = <const reads extends readonly ReadSpec[]>(
   const { client, defaults } = useEnsforgeContext(own);
   const registry = useContext(RegistryContext);
   const settings = { ...defaults, ...freshness };
-  const atoms = reads.map(([action, options]) =>
+  const atoms = Arr.map(reads, ([action, options]) =>
+    // A spec pairs an action with its own options; the erased `Action` cannot express the pairing.
+    // oxlint-disable-next-line typescript/no-unsafe-type-assertion
     ensAtom(client, action, options as ActionOptions<Action>, settings),
   );
 
   // One atom over every read, rebuilt only when a read's key or the freshness changes (read
   // atoms are cached per key and freshness, so equal keys mean equal atoms).
-  const keys = [
-    JSON.stringify(settingsOf(settings)),
-    ...reads.map(([action, options]) => readKey(client, action, options)),
-  ].join("\n");
+  const keys = Arr.join(
+    [
+      // Settings are plain numbers and booleans.
+      // oxlint-disable-next-line effecttsgo/global-json
+      JSON.stringify(settingsOf(settings)),
+      ...Arr.map(reads, ([action, options]) => readKey(client, action, options)),
+    ],
+    "\n",
+  );
   // oxlint-disable-next-line react-hooks/exhaustive-deps
-  const all = useMemo(() => Atom.make((get) => atoms.map((atom) => get(atom))), [keys]);
+  const all = useMemo(() => Atom.make((get) => Arr.map(atoms, (atom) => get(atom))), [keys]);
   const results = useAtomValue(all);
 
-  return results.map((result, index) =>
+  // The tuple of results mirrors `reads`, which `map` cannot express.
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion
+  return Arr.map(results, (result, index) =>
     toReadResult(result, () => {
       const atom = atoms[index];
       if (atom !== undefined) registry.refresh(atom);

@@ -20,12 +20,9 @@ describe("reads follow the subjects of their values", () => {
         (_options: { address: string }) => "alice.eth",
       );
       const write = Object.assign(
-        async (_client: Ensforge.Client, _options: { name: string }): Promise<Write.Result> => ({
-          hash: "0x",
-          hashes: [],
-          id: undefined,
-          plan: {} as Plan,
-        }),
+        (_client: Ensforge.Client, _options: { name: string }): Promise<Write.Result> =>
+          // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- the atoms never read the plan
+          Promise.resolve({ hash: "0x", hashes: [], id: undefined, plan: {} as Plan }),
         { path: "record.set" },
       );
       const registry = AtomRegistry.make();

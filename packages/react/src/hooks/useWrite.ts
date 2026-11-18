@@ -20,6 +20,8 @@ import { errorOf } from "./result.js";
  * @category writes
  * @since 1.0.0
  */
+// `result` is effect/reactivity's AsyncResult: unstable upstream, exposed on purpose for 1.0.
+// oxlint-disable-next-line effecttsgo/api-stability-leak
 export type WriteResult<options, value, error> = {
   /** Sends the write; the outcome lands in `status`, `data` and `error`. Stable across renders. */
   readonly mutate: (options: options) => void;

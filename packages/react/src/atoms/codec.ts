@@ -1,7 +1,7 @@
-import { Schema, SchemaTransformation } from "effect";
+import { Array as Arr, Predicate, Record as Rec, Schema, SchemaTransformation } from "effect";
 import { AsyncResult } from "effect/reactivity";
 
-import { bytesToHex, hexToBytes, type Hex } from "viem";
+import { bytesToHex, hexToBytes, isHex } from "viem";
 
 // ensforge values hold bigints and bytes, which JSON lacks; they travel as tagged objects.
 const bigintTag = "~bigint";
@@ -11,25 +11,27 @@ const toJson = (value: unknown): Schema.Json => {
   if (typeof value === "bigint") return { [bigintTag]: value.toString() };
   if (value instanceof Uint8Array) return { [bytesTag]: bytesToHex(value) };
   if (value instanceof Date) return value.toISOString();
-  if (Array.isArray(value)) return value.map(toJson);
-  if (typeof value === "object" && value !== null) {
-    return Object.fromEntries(
-      Object.entries(value)
-        .filter(([, field]) => field !== undefined)
-        .map(([field, item]) => [field, toJson(item)]),
-    );
+  if (Arr.isArray(value)) return Arr.map(value, toJson);
+  if (Predicate.isObject(value)) {
+    const fields = Arr.filter(Rec.toEntries(value), ([, field]) => field !== undefined);
+    return Rec.fromEntries(Arr.map(fields, ([field, item]) => [field, toJson(item)] as const));
   }
+  // Other primitives pass through as before; encoding validates them against `Schema.Json`.
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion
   return value as Schema.Json;
 };
 
-const fromJson = (value: Schema.Json): unknown => {
-  if (Array.isArray(value)) return value.map(fromJson);
-  if (typeof value !== "object" || value === null) return value;
+const fromJson = (value: unknown): unknown => {
+  if (Arr.isArray(value)) return Arr.map(value, fromJson);
+  if (!Predicate.isObject(value)) return value;
 
-  const tagged = value as Readonly<Record<string, Schema.Json>>;
-  if (typeof tagged[bigintTag] === "string") return BigInt(tagged[bigintTag]);
-  if (typeof tagged[bytesTag] === "string") return hexToBytes(tagged[bytesTag] as Hex);
-  return Object.fromEntries(Object.entries(tagged).map(([field, item]) => [field, fromJson(item)]));
+  const bigint = value[bigintTag];
+  if (typeof bigint === "string") return BigInt(bigint);
+  const bytes = value[bytesTag];
+  if (typeof bytes === "string" && isHex(bytes)) return hexToBytes(bytes);
+  return Rec.fromEntries(
+    Arr.map(Rec.toEntries(value), ([field, item]) => [field, fromJson(item)] as const),
+  );
 };
 
 /** Any ensforge value as JSON, for server-rendered reads. */
@@ -64,11 +66,13 @@ export const resultSchema = Result.pipe(
   Schema.decodeTo(
     Schema.Unknown,
     SchemaTransformation.transform({
-      decode: (result: AsyncResult.AsyncResult<unknown, never>): unknown => {
+      decode: (result: AsyncResult.AsyncResult<unknown>): unknown => {
         hydrated.add(result);
         return result;
       },
-      encode: (result: unknown) => result as AsyncResult.AsyncResult<unknown, never>,
+      // Only results reach this schema, so the `Unknown` side is always an AsyncResult.
+      // oxlint-disable-next-line typescript/no-unsafe-type-assertion
+      encode: (result: unknown) => result as AsyncResult.AsyncResult<unknown>,
     }),
   ),
 );

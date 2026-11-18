@@ -1,4 +1,4 @@
-import { Predicate } from "effect";
+import { Array as Arr, Predicate, String as Str } from "effect";
 
 import { Name } from "@ensforge/sdk";
 import type { Ensforge } from "@ensforge/sdk";
@@ -25,7 +25,7 @@ const addressFields = [
 
 const strings = (value: unknown): readonly string[] => {
   if (typeof value === "string") return [value];
-  if (Array.isArray(value)) return value.filter((item) => typeof item === "string");
+  if (Arr.isArray(value)) return Arr.filter(value, Predicate.isString);
   return [];
 };
 
@@ -37,17 +37,19 @@ const strings = (value: unknown): readonly string[] => {
  * @since 1.0.0
  */
 export const subjectsOf = (options: unknown): Subjects => {
-  const fields = (options ?? {}) as Readonly<Record<string, unknown>>;
-  const names = nameFields.flatMap((field) => strings(fields[field]));
+  const fields: Readonly<Record<string, unknown>> = Predicate.isObject(options) ? options : {};
+  const names = Arr.flatMap(nameFields, (field) => strings(fields[field]));
   // An account option may be a viem account, named by its `address`.
-  const addresses = addressFields.flatMap((field) => {
+  const addresses = Arr.flatMap(addressFields, (field) => {
     const value = fields[field];
     return strings(Predicate.hasProperty(value, "address") ? value.address : value);
   });
 
   return {
-    names: [...new Set(names.flatMap((name) => (Name.isValid(name) ? Name.normalize(name) : [])))],
-    addresses: [...new Set(addresses.map((address) => address.toLowerCase()))],
+    names: [
+      ...new Set(Arr.flatMap(names, (name) => (Name.isValid(name) ? [Name.normalize(name)] : []))),
+    ],
+    addresses: [...new Set(Arr.map(addresses, Str.toLowerCase))],
   };
 };
 
@@ -60,19 +62,22 @@ export const subjectsOf = (options: unknown): Subjects => {
  */
 export const writeSubjects = (options: unknown, signer: string | undefined): Subjects => {
   const named = subjectsOf(options);
-  const parents = named.names.flatMap((name) => Name.getParent(name) ?? []);
+  const parents = Arr.flatMap(named.names, (name) => {
+    const parent = Name.getParent(name);
+    return parent === null ? [] : [parent];
+  });
 
   return {
     names: [...new Set([...named.names, ...parents])],
     addresses: [
-      ...new Set([...named.addresses, ...(signer === undefined ? [] : [signer.toLowerCase()])]),
+      ...new Set([...named.addresses, ...(signer === undefined ? [] : [Str.toLowerCase(signer)])]),
     ],
   };
 };
 
 const mergeSubjects = (all: readonly Subjects[]): Subjects => ({
-  names: [...new Set(all.flatMap((subjects) => subjects.names))],
-  addresses: [...new Set(all.flatMap((subjects) => subjects.addresses))],
+  names: [...new Set(Arr.flatMap(all, (subjects) => subjects.names))],
+  addresses: [...new Set(Arr.flatMap(all, (subjects) => subjects.addresses))],
 });
 
 /**
@@ -83,12 +88,12 @@ const mergeSubjects = (all: readonly Subjects[]): Subjects => ({
  */
 export const resultSubjects = (value: unknown): Subjects => {
   if (typeof value === "string") return subjectsOf({ name: value });
-  if (Array.isArray(value)) return mergeSubjects(value.map(resultSubjects));
+  if (Arr.isArray(value)) return mergeSubjects(Arr.map(value, resultSubjects));
   if (!Predicate.isObject(value)) return { names: [], addresses: [] };
 
   const items =
-    Predicate.hasProperty(value, "items") && Array.isArray(value.items) ? value.items : [];
-  return mergeSubjects([subjectsOf(value), ...items.map(resultSubjects)]);
+    Predicate.hasProperty(value, "items") && Arr.isArray(value.items) ? value.items : [];
+  return mergeSubjects([subjectsOf(value), ...Arr.map(items, resultSubjects)]);
 };
 
 /**
@@ -100,8 +105,11 @@ export const invalidationKeys = (
   scope: "chain" | "indexer",
   subjects: Subjects,
 ): readonly string[] => [
-  ...subjects.names.map((name) => `ensforge/${scope}/name:${client.chain.id}:${name}`),
-  ...subjects.addresses.map((address) => `ensforge/${scope}/address:${client.chain.id}:${address}`),
+  ...Arr.map(subjects.names, (name) => `ensforge/${scope}/name:${client.chain.id}:${name}`),
+  ...Arr.map(
+    subjects.addresses,
+    (address) => `ensforge/${scope}/address:${client.chain.id}:${address}`,
+  ),
 ];
 
 /** Reactivity keys of a read: chain reads and indexer reads are invalidated separately. */
@@ -110,6 +118,6 @@ export const readReactivityKeys = (
   path: string,
   subjects: Subjects,
 ): readonly string[] => [
-  ...invalidationKeys(client, path.startsWith("indexer.") ? "indexer" : "chain", subjects),
+  ...invalidationKeys(client, Str.startsWith("indexer.")(path) ? "indexer" : "chain", subjects),
   `ensforge/path:${client.chain.id}:${path}`,
 ];

@@ -1,7 +1,7 @@
 "use client";
 
 import { useAtom } from "@effect/atom-react";
-import { Option } from "effect";
+import { Array as Arr, Option } from "effect";
 import { AsyncResult, Atom } from "effect/reactivity";
 
 import type { Ensforge } from "@ensforge/sdk";
@@ -25,6 +25,8 @@ type ItemOf<page> = page extends { readonly items: readonly (infer item)[] } ? i
  * @category reads
  * @since 1.0.0
  */
+// `result` is effect/reactivity's AsyncResult: unstable upstream, exposed on purpose for 1.0.
+// oxlint-disable-next-line effecttsgo/api-stability-leak
 export type InfiniteReadResult<page, error> = {
   /** Every page loaded so far. */
   readonly pages: readonly page[];
@@ -93,11 +95,15 @@ export const useInfiniteRead = <action extends PageAction>(
   const atom = enabled && options !== undefined ? ensPagesAtom(client, action, options) : idle;
   const [result, pull] = useAtom(atom);
   const loaded = Option.getOrUndefined(AsyncResult.value(result));
+  // Pages of a paginated action are the action's value; `PageAction` erases that.
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion
   const pages = (loaded?.items ?? []) as readonly ActionValue<action>[];
 
   return {
     pages,
-    items: pages.flatMap(
+    items: Arr.flatMap(
+      pages,
+      // oxlint-disable-next-line typescript/no-unsafe-type-assertion
       (page) => (page as { readonly items: readonly ItemOf<ActionValue<action>>[] }).items,
     ),
     // The pull only learns the stream ended on the next pull; the last page already says so.
@@ -106,11 +112,14 @@ export const useInfiniteRead = <action extends PageAction>(
       loaded === undefined
         ? atom !== idle
         : !loaded.done &&
+          // oxlint-disable-next-line typescript/no-unsafe-type-assertion
           (pages.at(-1) as { readonly hasMore?: boolean } | undefined)?.hasMore !== false,
     loadMore: () => pull(),
     isLoading: AsyncResult.isInitial(result) && result.waiting,
     isLoadingMore: !AsyncResult.isInitial(result) && result.waiting,
+    // oxlint-disable-next-line typescript/no-unsafe-type-assertion
     error: errorOf(result) as ActionError<action> | undefined,
+    // oxlint-disable-next-line typescript/no-unsafe-type-assertion
     result: result as unknown as InfiniteReadResult<
       ActionValue<action>,
       ActionError<action>

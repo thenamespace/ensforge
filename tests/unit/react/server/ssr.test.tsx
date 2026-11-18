@@ -5,7 +5,7 @@ import { prerender } from "react-dom/static";
 
 import { RegistryProvider } from "@effect/atom-react";
 import { assert, describe, it } from "@effect/vitest";
-import { Effect } from "effect";
+import { Effect, Schema } from "effect";
 import { AsyncResult, AtomRegistry, Hydration } from "effect/reactivity";
 
 import {
@@ -30,7 +30,12 @@ describe("prefetch and dehydrate", () => {
       const server = AtomRegistry.make();
       yield* Effect.promise(() => prefetch(server, client(), action, { name: "nick.eth" }));
 
-      const state = JSON.parse(JSON.stringify(dehydrate(server))) as Hydration.DehydratedAtom[];
+      const wire = yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))(
+        dehydrate(server),
+      );
+      const parsed = yield* Schema.decodeEffect(Schema.fromJsonString(Schema.Unknown))(wire);
+      // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Hydration's dehydrated atoms are opaque; the wire round trip returns them
+      const state = parsed as Hydration.DehydratedAtom[];
       const browser = AtomRegistry.make();
       Hydration.hydrate(browser, state);
       const result = browser.get(ensAtom(client(), action, { name: "Nick.eth" }));
@@ -74,6 +79,7 @@ describe("streaming", () => {
       let resolve = (_value: typeof profile): void => undefined;
       const { action } = fakeRead(
         "name.get",
+        // oxlint-disable-next-line effecttsgo/new-promise -- a read the test settles by hand
         (_options: { name: string }) => new Promise<typeof profile>((done) => (resolve = done)),
       );
       const server = AtomRegistry.make();

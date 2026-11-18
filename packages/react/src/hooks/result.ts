@@ -8,6 +8,8 @@ import { AsyncResult } from "effect/reactivity";
  * @category reads
  * @since 1.0.0
  */
+// `result` is effect/reactivity's AsyncResult: unstable upstream, exposed on purpose for 1.0.
+// oxlint-disable-next-line effecttsgo/api-stability-leak
 export type ReadResult<value, error> = {
   /** The latest value, kept while refreshing. */
   readonly data: value | undefined;
@@ -33,15 +35,17 @@ const statusOf = (
   return result.waiting ? "loading" : "idle";
 };
 
-/** The typed error of a failure, or the defect itself when it is not one. */
+/** @internal The typed error of a failure, or the defect itself when it is not one. */
 export const errorOf = <error>(
   result: AsyncResult.AsyncResult<unknown, error>,
 ): error | undefined =>
   AsyncResult.isFailure(result)
-    ? Option.getOrElse(AsyncResult.error(result), () => Cause.squash(result.cause) as error)
+    ? // A defect is surfaced as the error, whatever its type.
+      // oxlint-disable-next-line typescript/no-unsafe-type-assertion
+      Option.getOrElse(AsyncResult.error(result), () => Cause.squash(result.cause) as error)
     : undefined;
 
-/** A read atom's result as the object read hooks return. */
+/** @internal A read atom's result as the object read hooks return. */
 export const toReadResult = <value, error>(
   result: AsyncResult.AsyncResult<value, error>,
   refresh: () => void,

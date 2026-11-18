@@ -91,6 +91,8 @@ const base = Atom.family((input: ReadInput) => {
 
   return Atom.serializable(atom, {
     key: input.id,
+    // The erased cache key type cannot name the result schema `serializable` expects.
+    // oxlint-disable-next-line typescript/no-unsafe-type-assertion
     schema: resultSchema as never,
     skipInitialRun: true,
   });
@@ -122,6 +124,8 @@ const revalidateOnMount = (
       staleTime === undefined &&
       AsyncResult.isSuccess(current) &&
       isHydrated(current) &&
+      // AsyncResult timestamps are wall-clock milliseconds, compared synchronously inside an atom.
+      // oxlint-disable-next-line effecttsgo/global-date
       Date.now() - current.timestamp >= hydratedStaleTime
     ) {
       // After the read, as `Atom.swr` does: hydration renders the server's value first.
@@ -147,8 +151,9 @@ const fresh = Atom.family((input: { readonly read: ReadInput; readonly settings:
   );
   let atom = revalidateOnMount(held, read.id, settings.staleTime);
   // Servers render once: polling there would only keep the request's registry busy.
-  if (!isServer && Number.isFinite(settings.refetchInterval))
-    atom = Atom.withRefresh(atom, settings.refetchInterval as number);
+  const { refetchInterval } = settings;
+  if (!isServer && refetchInterval !== undefined && Number.isFinite(refetchInterval))
+    atom = Atom.withRefresh(atom, refetchInterval);
   if (settings.staleTime !== undefined) {
     atom = Atom.swr(atom, {
       staleTime: settings.staleTime,
@@ -194,6 +199,8 @@ export const ensAtom = <action extends Action>(
   options: ActionOptions<action>,
   freshness: Freshness = {},
 ): ReadAtom<ActionValue<action>, ActionError<action>> =>
+  // The family is keyed by the erased action; the caller's action types the atom.
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion
   fresh({
     read: new ReadInput(client, action, options),
     settings: settingsOf(freshness),

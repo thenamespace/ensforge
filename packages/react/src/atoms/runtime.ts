@@ -1,4 +1,4 @@
-import { Layer } from "effect";
+import { Layer, Predicate } from "effect";
 import { Atom } from "effect/reactivity";
 
 /**
@@ -16,4 +16,4 @@ export const runtime = Atom.runtime(Layer.empty);
  */
 export const serverReads = Atom.make(false).pipe(Atom.keepAlive);
 
-export const isServer = typeof (globalThis as { readonly window?: unknown }).window === "undefined";
+export const isServer = !Predicate.hasProperty(globalThis, "window");

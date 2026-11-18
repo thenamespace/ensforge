@@ -1,5 +1,5 @@
 import { assert, describe, it } from "@effect/vitest";
-import { Effect } from "effect";
+import { Array as Arr, Clock, Effect, Option, Predicate, String as Str } from "effect";
 import { AtomRegistry, Hydration } from "effect/reactivity";
 
 import { ensAtom } from "@ensforge/react/atoms";
@@ -17,8 +17,12 @@ describe("hydrated reads", () => {
       yield* Effect.promise(() => prefetch(server, client(), action, { name: "old.eth" }));
       yield* Effect.promise(() => prefetch(server, client(), action, { name: "new.eth" }));
       const state = Hydration.toValues(dehydrate(server));
-      const old = state.find((entry) => entry.key.includes("old.eth"))?.value;
-      Object.assign(old as object, { timestamp: Date.now() - 31_000 });
+      const old = Option.getOrUndefined(
+        Arr.findFirst(state, (entry) => Str.includes("old.eth")(entry.key)),
+      )?.value;
+      if (!Predicate.isObject(old)) assert.fail("the old.eth read was not dehydrated");
+      const currentTime = yield* Clock.currentTimeMillis;
+      Object.assign(old, { timestamp: currentTime - 31_000 });
       calls.length = 0;
 
       const browser = AtomRegistry.make();
@@ -28,7 +32,7 @@ describe("hydrated reads", () => {
       yield* Effect.sleep(10);
 
       assert.deepStrictEqual(
-        calls.map((call) => call.options.name),
+        Arr.map(calls, (call) => call.options.name),
         ["old.eth"],
       );
     }),

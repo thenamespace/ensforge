@@ -1,5 +1,7 @@
 "use client";
 
+// Each preset narrows `useRead`'s generic error to the action's declared error type (`Action.Declared`).
+/* oxlint-disable typescript/no-unsafe-type-assertion */
 import { Actions } from "@ensforge/sdk";
 
 import type { ReadResult } from "../result.js";

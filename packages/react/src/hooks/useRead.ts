@@ -28,7 +28,7 @@ export type ReadConfig = Freshness & {
   readonly client?: Ensforge.Client | undefined;
 };
 
-const idle = Atom.make(AsyncResult.initial<never, never>(false));
+const idle = Atom.make(AsyncResult.initial(false));
 
 /**
  * Reads with any ensforge action and keeps the result fresh.

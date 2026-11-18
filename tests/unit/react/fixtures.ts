@@ -24,6 +24,7 @@ export const fakeRead = <options, value>(
 ) => {
   const calls: { readonly options: options; readonly signal: AbortSignal | undefined }[] = [];
   const action = Object.assign(
+    // oxlint-disable-next-line effecttsgo/async-function -- a fake Promise-API action
     async (_client: Ensforge.Client, options: options & { readonly signal?: AbortSignal }) => {
       calls.push({ options, signal: options.signal });
       return await answer(options);

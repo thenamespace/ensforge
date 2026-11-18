@@ -84,12 +84,16 @@ export const ensWriteAtom = <action extends Action>(
       if (isLatest()) registry.set(steps, [...registry.get(steps), event]);
     };
 
-    const exit = yield* Effect.exit(runAction(action, client, { ...(options as object), onStep }));
+    const exit = yield* Effect.exit(
+      runAction(action, client, { ...(Predicate.isObject(options) ? options : {}), onStep }),
+    );
     if (isLatest()) registry.set(latest, { write, result: AsyncResult.fromExit(exit) });
 
     const written = Exit.isSuccess(exit) ? exit.value : undefined;
     if (Predicate.hasProperty(written, "hashes") || (Exit.isFailure(exit) && confirmed)) {
       yield* Effect.forkDetach(
+        // `hashes` marks a write result.
+        // oxlint-disable-next-line typescript/no-unsafe-type-assertion
         refreshAfterWrite(client, options, written as Write.Result | undefined).pipe(
           Effect.provideService(
             Reactivity.Reactivity,

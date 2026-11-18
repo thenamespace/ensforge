@@ -44,6 +44,8 @@ export const usePrepare = <action extends PreparableAction>(
   options: ActionOptions<action["prepare"]> | undefined,
   config?: ReadConfig,
 ): ReadResult<Plan, ActionError<action["prepare"]>> =>
+  // Narrows `useRead`'s generic value and error types to the prepare action's.
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion
   useRead(action.prepare, options, config) as unknown as ReadResult<
     Plan,
     ActionError<action["prepare"]>

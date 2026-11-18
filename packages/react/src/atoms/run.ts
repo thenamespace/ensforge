@@ -1,4 +1,6 @@
-import { Effect } from "effect";
+// Actions are type-erased here; their value and error types are restored from `action`.
+/* oxlint-disable typescript/no-unsafe-type-assertion, effecttsgo/unsafe-effect-type-assertion, effecttsgo/any-unknown-in-error-context */
+import { Effect, Predicate } from "effect";
 
 import type { Ensforge } from "@ensforge/sdk";
 
@@ -17,7 +19,10 @@ export const runAction = <action extends Action>(
   Effect.suspend(() => {
     const controller = new AbortController();
     const run = action as unknown as (client: Ensforge.Client, options: unknown) => unknown;
-    const output = run(client, { ...(options as object), signal: controller.signal });
+    const output = run(client, {
+      ...(Predicate.isObject(options) ? options : {}),
+      signal: controller.signal,
+    });
 
     const effect = Effect.isEffect(output)
       ? (output as Effect.Effect<ActionValue<action>, ActionError<action>>)

@@ -1,4 +1,4 @@
-import { Equal, Hash } from "effect";
+import { Array as Arr, Equal, Hash, Record as Rec, String as Str } from "effect";
 
 import { Name } from "@ensforge/sdk";
 import type { Ensforge } from "@ensforge/sdk";
@@ -15,18 +15,23 @@ const isPlainObject = (value: unknown): value is Readonly<Record<string, unknown
 const normalizedName = (name: unknown): unknown =>
   typeof name === "string" && Name.isValid(name) ? Name.normalize(name) : name;
 
+// Keys are derived synchronously during render from `canonical` output, which is plain JSON data.
+/* oxlint-disable effecttsgo/global-json */
 const canonical = (value: unknown): unknown => {
   if (typeof value === "bigint") return `${value}n`;
-  if (Array.isArray(value)) return value.map(canonical);
+  if (Arr.isArray(value)) return Arr.map(value, canonical);
   if (!isPlainObject(value)) return value;
 
-  const fields = Object.keys(value).filter(
+  const fields = Arr.filter(
+    Rec.keys(value),
     (field) =>
       field !== "signal" && value[field] !== undefined && typeof value[field] !== "function",
   );
-  // oxlint-disable-next-line unicorn/no-array-sort -- sorts a fresh array
-  const entries = fields.sort().map((field) => [field, canonical(value[field])]);
-  return Object.fromEntries(entries);
+  const entries = Arr.map(
+    Arr.sort(fields, Str.Order),
+    (field) => [field, canonical(value[field])] as const,
+  );
+  return Rec.fromEntries(entries);
 };
 
 /**
@@ -44,17 +49,17 @@ export const optionsKey = (options: unknown): string => {
 
   const { name, names, parent } = options;
   // Addresses are keyed lowercase, so a checksummed and a lowercase address share one read.
-  const addresses = Object.entries(options).flatMap(([field, value]) =>
+  const addresses = Arr.flatMap(Rec.toEntries(options), ([field, value]) =>
     typeof value === "string" && isAddress(value, { strict: false })
-      ? [[field, value.toLowerCase()]]
+      ? [[field, Str.toLowerCase(value)] as const]
       : [],
   );
   return JSON.stringify(
     canonical({
       ...options,
-      ...Object.fromEntries(addresses),
+      ...Rec.fromEntries(addresses),
       name: normalizedName(name),
-      names: Array.isArray(names) ? names.map(normalizedName) : names,
+      names: Arr.isArray(names) ? Arr.map(names, normalizedName) : names,
       parent: normalizedName(parent),
     }),
   );
@@ -71,7 +76,7 @@ export const optionsKey = (options: unknown): string => {
  * @since 1.0.0
  */
 export const readKey = (client: Ensforge.Client, action: Action, options: unknown): string =>
-  `ensforge:${client.chain.id}:${client.account?.toLowerCase() ?? ""}:${client.config.indexer?.key ?? ""}:${action.path}:${optionsKey(options)}`;
+  `ensforge:${client.chain.id}:${client.account === undefined ? "" : Str.toLowerCase(client.account)}:${client.config.indexer?.key ?? ""}:${action.path}:${optionsKey(options)}`;
 
 /**
  * Identity of a read: its key and its action. Clients with the same chain, account and indexer

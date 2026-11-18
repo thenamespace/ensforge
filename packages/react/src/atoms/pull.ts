@@ -1,4 +1,6 @@
-import { Stream, type Effect } from "effect";
+// Actions are type-erased here; their value and error types are restored from `action`.
+/* oxlint-disable typescript/no-unsafe-type-assertion, effecttsgo/unsafe-effect-type-assertion */
+import { Predicate, Stream, type Effect } from "effect";
 import { Atom } from "effect/reactivity";
 
 import type { Ensforge } from "@ensforge/sdk";
@@ -42,8 +44,8 @@ export type PagesAtom<page, error> = Atom.Writable<Atom.PullResult<page, error>,
 const family = Atom.family((input: ReadInput) => {
   const { client, action, options } = input;
   const pages = Indexer.paginate((cursor) =>
-    runAction(action, client, { ...(options as object), cursor }),
-  ) as Stream.Stream<never, never>;
+    runAction(action, client, { ...(Predicate.isObject(options) ? options : {}), cursor }),
+  ) as Stream.Stream<never>;
 
   const subjects = subjectsOf(options);
 
@@ -78,7 +80,4 @@ export const ensPagesAtom = <action extends PageAction>(
   action: action,
   options: Omit<ActionOptions<action>, "cursor">,
 ): PagesAtom<ActionValue<action>, ActionError<action>> =>
-  family(new ReadInput(client, action, options)) as unknown as PagesAtom<
-    ActionValue<action>,
-    ActionError<action>
-  >;
+  family(new ReadInput(client, action, options));
