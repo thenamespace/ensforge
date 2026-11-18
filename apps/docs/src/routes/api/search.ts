@@ -4,13 +4,21 @@ import { createFromSource } from "fumadocs-core/search/server";
 
 import { source } from "@/lib/source";
 
+/** Hand-written pages in the reference section, searched with the guides. */
+const handWritten = new Set(["entry-points", "known-limitations", "glossary"]);
+
 const server = createFromSource(source, {
   language: "english",
-  // Tag each page with its package (root folder) so search can be scoped per package.
+  // Each page is tagged with its package (root folder) and its kind: the generated API reference
+  // and error pages ("reference") or everything else ("guides"). Search matches every tag it is given,
+  // so the dialog always sends a kind, and the package when the search is scoped to one.
   buildIndex: async (page) => {
     const { structuredData } = await page.data.load();
     const { description } = page.data;
-    const tag = page.slugs[0];
+    const [pkg, section, name] = page.slugs;
+    const generated =
+      section === "errors" || (section === "reference" && !handWritten.has(name ?? ""));
+    const kind = generated ? "reference" : "guides";
 
     return {
       title: page.data.title,
@@ -18,7 +26,7 @@ const server = createFromSource(source, {
       id: page.url,
       structuredData,
       ...(description === undefined ? {} : { description }),
-      ...(tag === undefined ? {} : { tag }),
+      tag: pkg === undefined ? [kind] : [pkg, kind],
     };
   },
 });

@@ -28,6 +28,9 @@ import { documentedPackages, getPackageFromUrl } from "@/lib/packages";
  * Search scoped to the package being read; readers can widen it to all packages.
  * Outside a package (e.g. the home page) every package is searched.
  *
+ * Guides are searched by default. The API reference (hundreds of generated action, hook and
+ * error pages) is searched only when the reader switches to it, so everyday results stay focused.
+ *
  * The footer sits inside `SearchDialogContent` so it's portaled with the popup
  * (the stock dialog renders it outside, which leaks it onto the page with Base UI).
  */
@@ -37,9 +40,12 @@ export default function PackageSearchDialog(props: SharedProps) {
 
   const [tag, setTag] = useState(current);
   useOnChange(current, setTag);
+  const [kind, setKind] = useState<"guides" | "reference">("guides");
 
-  const search = useDocsSearch({ client: fetchClient(tag === undefined ? {} : { tag }) });
-  const scope = tag ?? "all";
+  const search = useDocsSearch({
+    client: fetchClient({ tag: tag === undefined ? [kind] : [tag, kind] }),
+  });
+  const scope = `${tag ?? "all"}:${kind}`;
 
   useSearchAnalytics(props.open, scope, search);
 
@@ -73,6 +79,13 @@ export default function PackageSearchDialog(props: SharedProps) {
                 {pkg.name}
               </TagsListItem>
             ))}
+          </TagsList>
+          <TagsList
+            {...(kind === "reference" ? { tag: "reference" } : {})}
+            onTagChange={(value) => setKind(value === "reference" ? "reference" : "guides")}
+            allowClear
+          >
+            <TagsListItem value="reference">API reference</TagsListItem>
           </TagsList>
         </SearchDialogFooter>
       </SearchDialogContent>
