@@ -55,7 +55,7 @@ export type CommonError =
  * - `UserRejectedError` when the wallet's user declines.
  * - `InsufficientFundsError` (`INSUFFICIENT_ETH`) when the account cannot pay for gas.
  * - `UnsupportedError` (`WALLET_BATCH_UNSUPPORTED`) when the wallet cannot send a batch.
- * - `TransactionError` when a transaction reverts, is replaced, conflicts or is not mined in time.
+ * - `TransactionError` when a transaction reverts, conflicts or is not mined in time.
  * - A `via` route can also fail with its own package's errors (e.g. `HcaError`).
  *
  * @stability stable

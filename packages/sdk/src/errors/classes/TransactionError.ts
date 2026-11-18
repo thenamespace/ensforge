@@ -8,7 +8,6 @@ const defaults: {
   ) => EnsforgeError.Defaults;
 } = {
   TRANSACTION_REVERTED: () => ({ shortMessage: "The transaction reverted on-chain." }),
-  TRANSACTION_REPLACED: () => ({ shortMessage: "The transaction was replaced or cancelled." }),
   RECEIPT_TIMEOUT: () => ({
     shortMessage: "Timed out waiting for the transaction receipt.",
     hint: "The transaction may still confirm; check it by hash before retrying.",
@@ -20,7 +19,7 @@ const defaults: {
 };
 
 /**
- * A submitted transaction failed, was replaced, or did not confirm in time.
+ * A submitted transaction failed, conflicted with another, or did not confirm in time.
  *
  * @stability stable
  * @category errors
@@ -42,11 +41,7 @@ export class TransactionError extends EnsforgeError<"TransactionError", Transact
 }
 
 export declare namespace TransactionError {
-  type Code =
-    | "TRANSACTION_REVERTED"
-    | "TRANSACTION_REPLACED"
-    | "RECEIPT_TIMEOUT"
-    | "NONCE_CONFLICT";
+  type Code = "TRANSACTION_REVERTED" | "RECEIPT_TIMEOUT" | "NONCE_CONFLICT";
   type Options = EnsforgeError.ClassOptions<Code> & {
     readonly hash?: Hex | undefined;
     readonly bundleId?: string | undefined;
