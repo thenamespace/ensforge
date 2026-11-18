@@ -57,7 +57,7 @@ export function SiteImage({ page }: { page: "home" | "blog" }) {
       art={<PackageTiles />}
     >
       <Title text={`${site.tagline}.`} size={88} />
-      <Description>{site.description}</Description>
+      <Description>Read, write and register any name in TypeScript.</Description>
     </Frame>
   );
 }
