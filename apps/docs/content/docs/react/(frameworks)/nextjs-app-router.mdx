@@ -1,6 +1,6 @@
 ---
 title: Next.js App Router
-description: Prefetch ENS reads in a Next.js server component and hand them to the browser with HydrationBoundary.
+description: Prefetch ENS reads in a Next.js server component and hand them to the browser with HydrationBoundary, with streaming for slow reads.
 keywords:
   [Next.js, App Router, prefetch, dehydrate, HydrationBoundary, streaming, server components]
 ---
@@ -47,7 +47,7 @@ export const ens = Ensforge.create({
 
 **Example** (The Providers File)
 
-```tsx title="app/providers.tsx"
+```tsx no-check title="app/providers.tsx"
 "use client";
 
 import type { ReactNode } from "react";
@@ -61,7 +61,7 @@ export function Providers({ children }: { children: ReactNode }) {
 }
 ```
 
-```tsx title="app/layout.tsx"
+```tsx no-check title="app/layout.tsx"
 import type { ReactNode } from "react";
 
 import { Providers } from "./providers";
@@ -83,7 +83,7 @@ Create a new registry for each request, `prefetch` the reads, and pass `dehydrat
 
 **Example** (A Name Page)
 
-```tsx title="app/[name]/page.tsx"
+```tsx no-check title="app/[name]/page.tsx"
 import { AtomRegistry } from "effect/reactivity";
 
 import { HydrationBoundary } from "@ensforge/react";
@@ -127,9 +127,11 @@ export function Profile({ name }: { name: string }) {
 
 Do not await `prefetch` to stream. Call `dehydrate(registry, { streaming: true })`: reads that are still loading reach the browser as promises that resolve there, so the fast parts of the page appear first.
 
+Streaming puts real Promises in the state, so the state must cross to the browser through a serializer that streams promises. React Server Components do this when a server component passes the state to `HydrationBoundary`. A serializer that writes plain JSON drops the promise without an error, and the browser then fetches the read itself.
+
 **Example** (Streaming A Subname List)
 
-```tsx title="app/[name]/page.tsx"
+```tsx no-check title="app/[name]/page.tsx"
 import { Suspense } from "react";
 
 import { AtomRegistry } from "effect/reactivity";

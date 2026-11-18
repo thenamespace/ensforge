@@ -1,6 +1,6 @@
 ---
 title: Use with wagmi
-description: Build the ensforge client from your wagmi config so hooks read through wagmi and write with the connected wallet.
+description: Build the ensforge client from your wagmi config, so hooks read through wagmi's clients and write with the wallet the user connected.
 keywords: [wagmi, fromWagmi, RainbowKit, ConnectKit, Dynamic, Privy, Reown AppKit]
 ---
 
@@ -17,7 +17,7 @@ If your app already uses wagmi, create the ensforge client from the wagmi config
 
 **Example** (Ensforge Inside The Wagmi Providers)
 
-```tsx title="providers.tsx"
+```tsx no-check title="providers.tsx"
 import type { ReactNode } from "react";
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -56,7 +56,7 @@ With RainbowKit or another wallet kit, put its provider around `EnsforgeProvider
 
 **Example** (A Sepolia Client Without Chain Switching)
 
-```ts title="ens.ts"
+```ts no-check title="ens.ts"
 import { Ensforge } from "@ensforge/sdk/wagmi";
 
 import { wagmiConfig } from "./wagmi";

@@ -1,6 +1,6 @@
 ---
 title: Caching and refreshing
-description: Learn how hooks share one read, how long results stay cached, and when they refetch after writes.
+description: Learn how hooks share one read, how long results stay cached, and when they refetch after a write, on window focus or on a timer.
 keywords: [staleTime, idleTTL, refetchInterval, refreshOnWindowFocus, invalidate, cache]
 ---
 
@@ -99,7 +99,7 @@ When another app, or a transaction sent outside ensforge, changes a name, call `
 
 **Example** (Invalidating After An External Transaction)
 
-```tsx title="Invalidate.tsx"
+```tsx no-check title="Invalidate.tsx"
 import { RegistryContext } from "@effect/atom-react";
 import { useContext } from "react";
 

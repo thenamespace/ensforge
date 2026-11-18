@@ -1,6 +1,6 @@
 ---
 title: React Router
-description: Prefetch ENS reads in a React Router or Remix loader and hydrate them in the route component.
+description: Prefetch ENS reads in a React Router or Remix loader and hydrate them in the route component, so names render without a loading state.
 keywords: [React Router, Remix, loader, prefetch, dehydrate, HydrationBoundary]
 ---
 
@@ -17,7 +17,7 @@ Create the client in a shared module and render the provider in `root.tsx`, arou
 
 **Example** (The Root Route)
 
-```tsx title="app/root.tsx"
+```tsx no-check title="app/root.tsx"
 import { Outlet } from "react-router";
 
 import { EnsforgeProvider } from "@ensforge/react";
@@ -50,7 +50,7 @@ Create a new registry in each loader call. The loader returns plain JSON, so the
 
 **Example** (A Name Route)
 
-```tsx title="app/routes/name.tsx"
+```tsx no-check title="app/routes/name.tsx"
 import { AtomRegistry } from "effect/reactivity";
 import { useLoaderData, type LoaderFunctionArgs } from "react-router";
 
@@ -90,3 +90,5 @@ export default function Route() {
 - A failed read is not sent, so the route retries it in the browser.
 
 For streaming, call `dehydrate(registry, { streaming: true })` and do not await `prefetch`, as in [Next.js App Router](/docs/react/nextjs-app-router#stream-slow-reads). Reads still loading then stream to the browser as they resolve.
+
+Streaming puts real Promises in the state, so a loader must return it through a serializer that streams promises. React Router's turbo-stream encoding should do this by its documented behaviour, but this page has not verified it. A plain JSON response drops the promise without an error, and the browser then fetches the read itself.

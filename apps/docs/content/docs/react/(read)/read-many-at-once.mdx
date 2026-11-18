@@ -1,6 +1,6 @@
 ---
 title: Read many at once
-description: Run a list of reads with useReads, such as an avatar for every row, and share multicall batches.
+description: Run a changing list of reads with useReads, such as an avatar for every row, and share multicall batches between components.
 keywords: [useReads, ReadSpec, multicall, batch]
 ---
 
@@ -57,6 +57,10 @@ export function Card({ name }: { name: string }) {
   );
 }
 ```
+
+## Read an HCA account
+
+The `@ensforge/hca` reads, such as `Actions.hca.get`, work in `useReads` like any other read. Pass the pair `[Actions.hca.get, {}]`.
 
 ## Settings
 

@@ -1,6 +1,6 @@
 ---
 title: Next.js Pages Router
-description: Prefetch ENS reads in getServerSideProps or getStaticProps and hydrate them in the page.
+description: Prefetch ENS reads in getServerSideProps or getStaticProps and hydrate them in the page, so names render without a loading state.
 keywords:
   [Next.js, Pages Router, getServerSideProps, getStaticProps, static export, prefetch, dehydrate]
 ---
@@ -29,7 +29,7 @@ export const ens = Ensforge.create({
 });
 ```
 
-```tsx title="pages/_app.tsx"
+```tsx no-check title="pages/_app.tsx"
 import type { AppProps } from "next/app";
 
 import { EnsforgeProvider } from "@ensforge/react";
@@ -47,11 +47,11 @@ export default function App({ Component, pageProps }: AppProps) {
 
 ## 2. Prefetch on the server
 
-Create a new registry for each request. The values are plain JSON (bigints and bytes are tagged). Each entry of `dehydrate`'s result also has an `undefined` field, which Next.js refuses in page props, so pass the state through `JSON.stringify` and `JSON.parse` to drop it.
+Create a new registry for each request. The values are plain JSON (bigints and bytes are tagged). Pass `dehydrate(registry)` straight into the page props.
 
 **Example** (A Name Page)
 
-```tsx title="pages/[name].tsx"
+```tsx no-check title="pages/[name].tsx"
 import type { GetServerSideProps } from "next";
 
 import { AtomRegistry } from "effect/reactivity";

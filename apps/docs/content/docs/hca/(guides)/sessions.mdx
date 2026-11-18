@@ -1,6 +1,6 @@
 ---
 title: Sessions
-description: Let an app register names and edit records from a user's HCA without wallet prompts, and revoke that access.
+description: Let an app register names and edit records from a user's HCA without a wallet prompt for each step, then check and revoke access.
 keywords:
   [session, authorizeSession, getSession, revokeSessions, checkSessionCalls, sessionKey, validUntil]
 ---
@@ -26,13 +26,12 @@ Nothing else is allowed. Renewals, transfers, [subnames](/docs/reference/glossar
 ## Prerequisites
 
 - A client with a wallet and the HCA actions. See [Installation](/docs/hca/installation).
-- The owner's HCA deployed. See [`hca.deploy`](/docs/reference/hca/hca/deploy).
 - A Rhinestone SDK with standalone HCA support and a session key. See [Rhinestone](/docs/hca/rhinestone).
-- A resolver address for the session: the one resolver whose records the session may set. The HCA calls it, so the HCA must be allowed to write records there. The session may also deploy this resolver, but only when it is a PermissionedResolver that the HCA deploys at that address through ENS's VerifiableFactory.
+- A resolver address for the session: the one resolver whose records the session may set. Any resolver that the session policy approves works: an existing resolver, or a PermissionedResolver proxy that the HCA deploys at that address through ENS's VerifiableFactory. There is no separate API for either. The HCA calls the resolver, so the HCA must be allowed to write records there.
 
 ## 1. Authorize the session
 
-`authorizeSession` asks the owner for one signature. It sends no transaction.
+`authorizeSession` asks the owner for one EIP-712 signature, made for the HCA's predicted address. It sends no transaction and needs no deployed HCA, so you can authorize a session before the account exists. Whether the account accepts the session on its first use before it is deployed is not confirmed, so deploy the HCA with [`hca.deploy`](/docs/reference/hca/hca/deploy) before the session runs.
 
 | Option       | Type      | Description                                                                                           |
 | ------------ | --------- | ----------------------------------------------------------------------------------------------------- |

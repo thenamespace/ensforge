@@ -1,8 +1,19 @@
 ---
 title: Known limitations
-description: Check the known limits of ensforge 1.0 and of ENS itself, grouped by topic, with what to do about each.
+description: Check the known limits of ensforge 1.0 and of ENS itself, grouped by topic, with what each one means and what to do about it.
 keywords:
-  [limitations, known issues, DNSSEC, IPFS gateway, eth_simulateV1, indexer, bigname, Goldsky, HCA]
+  [
+    limitations,
+    known issues,
+    DNSSEC,
+    IPFS gateway,
+    eth_simulateV1,
+    indexer,
+    bigname,
+    Goldsky,
+    HCA,
+    streaming,
+  ]
 ---
 
 These are the places where ensforge 1.0, or the ENS contracts and services it uses, behave in a way
@@ -326,6 +337,13 @@ Wrapped names need the HCA approved as an operator on the Name Wrapper. The plan
 
 **What to do:** revoke it afterwards with `approval.setOperator`.
 
+### A session on a not-yet-deployed account is not confirmed to work before deployment
+
+The owner can sign a session for the predicted HCA address before the account is deployed. Whether
+the account accepts that session on its first use, before it is deployed, is not confirmed.
+
+**What to do:** deploy the HCA with `hca.deploy` before the session runs.
+
 ### Session approvals use Rhinestone's signing format
 
 Session approvals are signed as Rhinestone Smart Session data, which an account with Smart Sessions
@@ -333,6 +351,18 @@ installed could also accept.
 
 **What to do:** nothing yet. ENS plans its own signing format for sessions, and ensforge switches
 to it once ENS deploys it.
+
+## React server rendering
+
+### Streamed reads need a serializer that streams promises
+
+`dehydrate(registry, { streaming: true })` puts a real Promise on every read that is still loading.
+TanStack Start's serializer (seroval) sends it, and React Server Components do too. React Router's
+turbo-stream should, by its documented behaviour, but this is not verified. A serializer that
+writes plain JSON drops the Promise without an error, and the browser then fetches the read itself.
+
+**What to do:** stream only through a serializer that supports promises, or await `prefetch` and
+call `dehydrate(registry)` without `streaming`.
 
 ## Errors
 
