@@ -50,8 +50,8 @@ export function pageTitle(title?: string) {
 }
 
 /** `<Page title> | ensforge Docs`, whether the caller passed `Page | SDK Docs` or the bare title. */
-function docsTitle(title: string) {
-  return `${title.split(SEPARATOR)[0]}${SEPARATOR}${site.name} Docs`;
+function docsTitle(title?: string) {
+  return title ? `${title.split(SEPARATOR)[0]}${SEPARATOR}${site.name} Docs` : `${site.name} Docs`;
 }
 
 /**
@@ -60,7 +60,7 @@ function docsTitle(title: string) {
  */
 export function seo(input: SeoInput) {
   const isDocs = input.path === "/docs" || input.path.startsWith("/docs/");
-  const title = isDocs && input.title ? docsTitle(input.title) : pageTitle(input.title);
+  const title = isDocs ? docsTitle(input.title) : pageTitle(input.title);
   const url = absolute(input.path);
   const canonical = input.canonical ?? url;
   const type = input.type ?? "website";

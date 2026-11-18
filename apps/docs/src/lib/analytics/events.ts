@@ -36,6 +36,7 @@ export interface AnalyticsEvents {
   docs_page_viewed: { package: string; slug: string; title: string };
   docs_scroll_depth_reached: { percent: 25 | 50 | 75 | 100; slug: string };
   docs_code_copied: { slug: string; language: string; lines: number };
+  docs_markdown_opened_in_assistant: { slug: string; assistant: "Claude" | "ChatGPT" };
   docs_markdown_copied: { slug: string };
   docs_view_option_clicked: { option: string; slug: string };
   docs_search_opened: { trigger: "button" | "hotkey"; package: string };

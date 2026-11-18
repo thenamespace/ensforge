@@ -4,6 +4,7 @@
     "effect-api",
     "extend-the-client",
     "custom-indexers",
-    "save-and-resume-plans"
+    "save-and-resume-plans",
+    "use-with-ai-agents"
   ]
 }

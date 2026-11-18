@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 
 import { buttonVariants } from "fumadocs-ui/components/ui/button";
-import { Check, Copy, X } from "lucide-react";
+import { ArrowUpRight, Check, Copy, X } from "lucide-react";
 
 import { track } from "@/lib/analytics/client";
 import { cn } from "@/lib/cn";
+import { absolute } from "@/lib/site";
 
 const cache = new Map<string, string>();
 
@@ -83,4 +84,43 @@ export function CopyMarkdownButton({ markdownUrl, slug }: { markdownUrl: string;
           : "Copy Markdown"}
     </button>
   );
+}
+
+const assistants = [
+  { name: "Claude", href: (prompt: string) => `https://claude.ai/new?q=${prompt}` },
+  { name: "ChatGPT", href: (prompt: string) => `https://chatgpt.com/?q=${prompt}` },
+] as const;
+
+/** "Open in Claude" and "Open in ChatGPT": a chat that starts from this page's Markdown. */
+export function OpenInAssistantButtons({
+  markdownUrl,
+  slug,
+}: {
+  markdownUrl: string;
+  slug: string;
+}) {
+  const prompt = encodeURIComponent(
+    `Read ${absolute(markdownUrl)} and answer my questions about it, using the ensforge APIs it documents.`,
+  );
+
+  return assistants.map((assistant) => (
+    <a
+      key={assistant.name}
+      href={assistant.href(prompt)}
+      target="_blank"
+      rel="noopener noreferrer"
+      title={`Open this page in ${assistant.name}`}
+      onClick={() =>
+        track("docs_markdown_opened_in_assistant", { slug, assistant: assistant.name })
+      }
+      className={buttonVariants({
+        variant: "secondary",
+        size: "sm",
+        className: "gap-2 [&_svg]:size-3.5 [&_svg]:text-fd-muted-foreground",
+      })}
+    >
+      Open in {assistant.name}
+      <ArrowUpRight />
+    </a>
+  ));
 }
