@@ -1,6 +1,92 @@
 ---
 title: Get a website
-description: Placeholder, to be written.
+description: Read a name's content hash and turn it into a link to the website or file it points to.
+keywords:
+  [getContentHash, record.getContentHash, ContentHash.toGatewayUrl, ENSIP-7, IPFS, Arweave, Swarm]
 ---
 
-Placeholder: this page is not written yet.
+By the end of this guide you can read the **content hash** of a name (a pointer to decentralized content, such as a website on IPFS) and turn it into a link a browser can open.
+
+## Prerequisites
+
+- An ensforge client with the ENS actions added. See [Create a client](/docs/sdk/create-a-client).
+
+## Read the content hash
+
+`record.getContentHash` reads the content hash record ([ENSIP-7](https://docs.ens.domains/ensip/7)) and decodes it.
+
+**Example** (Reading a Website)
+
+```ts twoslash title="get-website.ts"
+import { ensActions, Ensforge } from "@ensforge/sdk";
+import { createPublicClient, http } from "viem";
+import { mainnet } from "viem/chains";
+
+const ens = Ensforge.create({
+  publicClient: createPublicClient({ chain: mainnet, transport: http() }),
+}).extend(ensActions());
+
+const site = await ens.record.getContentHash({ name: "vitalik.eth" });
+//    ^?
+console.log(site?.uri);
+```
+
+The result is `null` when the record is not set or cannot be decoded. Otherwise it has three fields:
+
+| Field      | Description                                                                                     |
+| ---------- | ----------------------------------------------------------------------------------------------- |
+| `protocol` | The scheme: `ipfs`, `ipns`, `bzz` (Swarm), `onion`, `onion3`, `sia` (Skynet) or `ar` (Arweave). |
+| `value`    | The identifier without the scheme, such as an IPFS CID.                                         |
+| `uri`      | `protocol://value`.                                                                             |
+
+See [`record.getContentHash`](/docs/sdk/reference/actions/record/get-content-hash).
+
+## Turn it into a link
+
+A `uri` such as `ipfs://…` is not a link a browser opens. `ContentHash.toGatewayUrl` turns it into an HTTP URL through a gateway.
+
+**Example** (Building a Gateway Link)
+
+```ts twoslash title="website-link.ts"
+import { ContentHash, ensActions, Ensforge } from "@ensforge/sdk";
+import { createPublicClient, http } from "viem";
+import { mainnet } from "viem/chains";
+
+const ens = Ensforge.create({
+  publicClient: createPublicClient({ chain: mainnet, transport: http() }),
+  gateways: { ipfs: "https://gateway.pinata.cloud" },
+}).extend(ensActions());
+
+const site = await ens.record.getContentHash({ name: "vitalik.eth" });
+const url = site && ContentHash.toGatewayUrl(site.uri, ens.config.gateways);
+//    ^?
+```
+
+- `ens.config.gateways` holds the client's gateways, so the link uses the gateway you configured.
+- `ipfs://` and `ipns://` go through the IPFS gateway, `ar://` through the Arweave gateway and `bzz://` through the Swarm gateway.
+- Unset gateways are the public defaults: `https://ipfs.io`, `https://arweave.net` and `https://api.gateway.ethswarm.org`.
+- A URI with no gateway form (`onion://`, `sia://`) comes back unchanged.
+
+The public `ipfs.io` gateway is rate limited, so set your own in production. See [Configure RPC and gateways](/docs/sdk/rpc-and-gateways).
+
+## Options
+
+| Option | Type     | Default  | Description                           |
+| ------ | -------- | -------- | ------------------------------------- |
+| `name` | `string` | required | The name to read. Normalised for you. |
+
+The action also takes the options every read takes: `signal`, `strict`, `gatewayUrls` and `blockNumber` or `blockTag`.
+
+## Troubleshooting
+
+### The result is `null`
+
+The name has no content hash, no resolver, or the bytes use a codec ensforge does not decode. With `strict: true`, a missing record fails with [`RECORD_NOT_FOUND`](/docs/sdk/errors/RECORD_NOT_FOUND) or [`RESOLVER_NOT_FOUND`](/docs/sdk/errors/RESOLVER_NOT_FOUND).
+
+### `INVALID_CONTENT_HASH`
+
+`ContentHash.encode` and `ContentHash.decode` throw [`INVALID_CONTENT_HASH`](/docs/sdk/errors/INVALID_CONTENT_HASH) when a value is malformed or uses an unsupported scheme. The read itself returns `null` instead.
+
+### The link does not load
+
+The gateway is rate limiting or down. Pass a gateway you control in `gateways` when you create the client.

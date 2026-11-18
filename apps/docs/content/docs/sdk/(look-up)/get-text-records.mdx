@@ -1,6 +1,104 @@
 ---
 title: Get text records
-description: Placeholder, to be written.
+description: Read profile fields such as a URL, an avatar or a social handle from a name.
+keywords: [getText, record.getText, record.get, text records, ENSIP-5]
 ---
 
-Placeholder: this page is not written yet.
+By the end of this guide you can read one **text record** (a key and a string value that a name's owner stores, such as `url` or `com.twitter`), or load several at once.
+
+## Prerequisites
+
+- An ensforge client with the ENS actions added. See [Create a client](/docs/sdk/create-a-client).
+
+## Read one record
+
+`record.getText` reads a single text record. Pass the `name` and the record's `key`.
+
+**Example** (Reading a Profile URL)
+
+```ts twoslash title="get-text.ts"
+import { ensActions, Ensforge } from "@ensforge/sdk";
+import { createPublicClient, http } from "viem";
+import { mainnet } from "viem/chains";
+
+const ens = Ensforge.create({
+  publicClient: createPublicClient({ chain: mainnet, transport: http() }),
+}).extend(ensActions());
+
+const url = await ens.record.getText({ name: "nick.eth", key: "url" });
+//    ^?
+```
+
+The result is a `string`, or `null` when the record is not set. ensforge normalises the name and resolves it through the Universal Resolver, so names on any ENS version, wildcard names and off-chain names all work. Calls made in the same tick are batched into one multicall where possible. See [`record.getText`](/docs/sdk/reference/actions/record/get-text) and [How a lookup works](/docs/sdk/looking-up-a-name).
+
+## Read several records in one call
+
+`record.get` reads any mix of records in one request. List the keys in `texts`, and the result has exactly the fields you asked for.
+
+**Example** (Loading a Profile)
+
+```ts twoslash title="get-profile.ts"
+import { ensActions, Ensforge } from "@ensforge/sdk";
+import { createPublicClient, http } from "viem";
+import { mainnet } from "viem/chains";
+
+const ens = Ensforge.create({
+  publicClient: createPublicClient({ chain: mainnet, transport: http() }),
+}).extend(ensActions());
+
+const profile = await ens.record.get({
+  name: "nick.eth",
+  texts: ["avatar", "url", "com.twitter"],
+  addresses: ["eth", "btc"],
+});
+
+profile.texts.url;
+//      ^?
+profile.addresses.btc;
+profile.resolver;
+```
+
+- `texts` lists text keys. Each key becomes a field of `profile.texts`, typed `string | null`.
+- `addresses` lists coins by symbol or coin type. Each becomes a field of `profile.addresses`.
+- `resolver` is the address of the resolver that answered, or `null` when the name has none.
+- A field you did not ask for does not exist on the result: `profile.texts.url` is there only because `"url"` was requested.
+
+`record.get` is one Universal Resolver call whatever you select. It can also read the content hash (`contentHash: true`), the public key, the `name` record and more. See [`record.get`](/docs/sdk/reference/actions/record/get), [Get a name's address](/docs/sdk/get-an-address) and [Get a website](/docs/sdk/get-a-website).
+
+## Options
+
+`record.getText` takes:
+
+| Option | Type     | Default  | Description                                                    |
+| ------ | -------- | -------- | -------------------------------------------------------------- |
+| `name` | `string` | required | The name to read. Normalised for you.                          |
+| `key`  | `string` | required | The text record key, such as `url`, `avatar` or `com.twitter`. |
+
+`record.get` takes `name` and any of these selections:
+
+| Option        | Type                                 | Default | Description                                        |
+| ------------- | ------------------------------------ | ------- | -------------------------------------------------- |
+| `texts`       | `readonly string[]`                  | none    | Text record keys to read.                          |
+| `addresses`   | `readonly (string \| bigint)[]`      | none    | Coins to read, by symbol or coin type.             |
+| `contentHash` | `true`                               | none    | Read the content hash.                             |
+| `abi`         | `true` or `{ contentTypes: bigint }` | none    | Read the ABI record.                               |
+| `pubkey`      | `true`                               | none    | Read the public key.                               |
+| `nameRecord`  | `true`                               | none    | Read the `name` record.                            |
+| `interfaces`  | `readonly Hex[]`                     | none    | ERC-165 interface IDs to look up implementers for. |
+| `data`        | `readonly string[]`                  | none    | Data record keys.                                  |
+
+Both actions also take the options every read takes: `signal` to cancel, `strict` to throw instead of returning `null`, `gatewayUrls` for off-chain lookups, and `blockNumber` or `blockTag` to read at one block.
+
+## Troubleshooting
+
+### A record is `null`
+
+The record is not set, the name has no resolver, or its resolver does not store text records. With `strict: true`, `getText` fails with [`RECORD_NOT_FOUND`](/docs/sdk/errors/RECORD_NOT_FOUND), [`RESOLVER_NOT_FOUND`](/docs/sdk/errors/RESOLVER_NOT_FOUND) or [`RESOLVER_PROFILE_UNSUPPORTED`](/docs/sdk/errors/RESOLVER_PROFILE_UNSUPPORTED), so you can tell which. `record.get` with `strict: true` fails with `RESOLVER_NOT_FOUND` when the name has no resolver. Without `strict`, it returns `resolver: null` and every record `null`.
+
+### `INVALID_NAME`
+
+The name cannot be normalised. [`INVALID_NAME`](/docs/sdk/errors/INVALID_NAME) is thrown before any request is sent.
+
+### `GATEWAY_REQUEST_FAILED`
+
+The name's resolver sends the lookup to an off-chain gateway, and the gateway failed. See [Look up off-chain names](/docs/sdk/off-chain-names) and [`GATEWAY_REQUEST_FAILED`](/docs/sdk/errors/GATEWAY_REQUEST_FAILED).

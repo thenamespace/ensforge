@@ -1,6 +1,102 @@
 ---
 title: Get an avatar
-description: Placeholder, to be written.
+description: Read a name's avatar and turn it into a URL a browser can load.
+keywords: [getAvatar, record.getAvatar, ENSIP-12, avatar, NFT avatar, IPFS gateway]
 ---
 
-Placeholder: this page is not written yet.
+By the end of this guide you can show a profile picture for a name, whether it is stored as a web link, on IPFS or Arweave, or as an NFT.
+
+## Prerequisites
+
+- An ensforge client with the ENS actions added. See [Create a client](/docs/sdk/create-a-client).
+
+## Get the avatar URL
+
+An **avatar** is a text record named `avatar` ([ENSIP-12](https://docs.ens.domains/ensip/12)). It holds a link, an IPFS or Arweave address, or a reference to an NFT. `record.getAvatar` reads it and returns a URL you can put in an `<img>` tag.
+
+**Example** (Showing a Profile Picture)
+
+```ts twoslash title="get-avatar.ts"
+import { ensActions, Ensforge } from "@ensforge/sdk";
+import { createPublicClient, http } from "viem";
+import { mainnet } from "viem/chains";
+
+const ens = Ensforge.create({
+  publicClient: createPublicClient({ chain: mainnet, transport: http() }),
+}).extend(ensActions());
+
+const src = await ens.record.getAvatar({ name: "nick.eth" });
+//    ^?
+```
+
+The result is an `http(s)` or `data:` URL, or `null` when the avatar is not set or cannot be loaded. See [`record.getAvatar`](/docs/sdk/reference/actions/record/get-avatar).
+
+## What ensforge does with each kind of avatar
+
+| The record holds                                      | The result is                                  |
+| ----------------------------------------------------- | ---------------------------------------------- |
+| An `http(s)` or `data:` URI                           | The same URI.                                  |
+| An `ipfs://`, `ipns://` or `ar://` URI, or a bare CID | A URL on the IPFS or Arweave gateway.          |
+| An NFT reference (`eip155:1/erc721:…/…` or `erc1155`) | The image from the token's metadata, as a URL. |
+
+An NFT avatar resolves only on the client's own chain, and only when the name's Ethereum address owns the token ([ENSIP-12](https://docs.ens.domains/ensip/12)): `ownerOf` for ERC-721, a non-zero balance for ERC-1155.
+
+To read the raw record without resolving it, use [`record.getText`](/docs/sdk/reference/actions/record/get-text) with `key: "avatar"`. See [Get text records](/docs/sdk/get-text-records).
+
+## Use your own gateway
+
+IPFS and Arweave avatars load through a gateway. The defaults are `https://ipfs.io` and `https://arweave.net`. The public `ipfs.io` gateway is rate limited and answers HTTP 429 under load, so set your own gateway in production.
+
+Set the gateways once on the client, or per call.
+
+**Example** (Setting an IPFS Gateway)
+
+```ts twoslash title="avatar-gateway.ts"
+import { ensActions, Ensforge } from "@ensforge/sdk";
+import { createPublicClient, http } from "viem";
+import { mainnet } from "viem/chains";
+
+const publicClient = createPublicClient({ chain: mainnet, transport: http() });
+
+// For every call made with this client.
+const ens = Ensforge.create({
+  publicClient,
+  gateways: { ipfs: "https://gateway.pinata.cloud" },
+}).extend(ensActions());
+
+// For one call only.
+const src = await ens.record.getAvatar({
+  name: "nick.eth",
+  gateways: { ipfs: "https://gateway.pinata.cloud" },
+});
+```
+
+A call's `gateways` override the client's. Each gateway is an origin such as `https://gateway.pinata.cloud`. See [Configure RPC and gateways](/docs/sdk/rpc-and-gateways).
+
+## Options
+
+| Option     | Type                          | Default                                | Description                                |
+| ---------- | ----------------------------- | -------------------------------------- | ------------------------------------------ |
+| `name`     | `string`                      | required                               | The name to read. Normalised for you.      |
+| `gateways` | `{ ipfs?, arweave?, swarm? }` | the client's, then the public defaults | Gateway origins for decentralized storage. |
+| `timeout`  | `number`                      | `10000`                                | Milliseconds to wait for NFT metadata.     |
+
+The action also takes the options every read takes: `signal`, `strict`, `gatewayUrls` and `blockNumber` or `blockTag`.
+
+## Troubleshooting
+
+### The result is `null`
+
+The avatar is not set, or it cannot be loaded. With `strict: true`, a missing record fails with [`RECORD_NOT_FOUND`](/docs/sdk/errors/RECORD_NOT_FOUND) or [`RESOLVER_NOT_FOUND`](/docs/sdk/errors/RESOLVER_NOT_FOUND).
+
+### `GATEWAY_REQUEST_FAILED` or `GATEWAY_RESPONSE_INVALID`
+
+With `strict: true`, NFT metadata that cannot be loaded fails with [`GATEWAY_REQUEST_FAILED`](/docs/sdk/errors/GATEWAY_REQUEST_FAILED) or [`GATEWAY_RESPONSE_INVALID`](/docs/sdk/errors/GATEWAY_RESPONSE_INVALID). Without `strict`, the result is `null`.
+
+### Images fail to load with HTTP 429
+
+The public `ipfs.io` gateway is rate limiting you. Set your own IPFS gateway, as shown above.
+
+### `INVALID_NAME`
+
+The name cannot be normalised. See [`INVALID_NAME`](/docs/sdk/errors/INVALID_NAME).

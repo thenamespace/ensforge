@@ -1,6 +1,182 @@
 ---
 title: Connect an indexer
-description: Placeholder, to be written.
+description: Add an indexer to your client so you can list names, search and read history.
+keywords: [indexer, bigname, goldsky, fallback, indexerActions, Basenames, INDEXER_NOT_CONFIGURED]
 ---
 
-Placeholder: this page is not written yet.
+By the end of this guide your client can answer questions the chain cannot answer on its own, such as "which names does this address own?", by asking an **indexer**: a service that reads every ENS event as it happens and keeps the results in a searchable database.
+
+## Prerequisites
+
+- A viem public client for Ethereum mainnet or Sepolia. See [Create a client](/docs/sdk/create-a-client).
+
+## 1. Add an indexer to the client
+
+Pass an indexer to `Ensforge.create`, then add the `indexerActions()` group. `bigname()` is the built-in indexer for ENS on mainnet and Sepolia.
+
+**Example** (Creating a Client with bigname)
+
+```ts twoslash title="indexer-client.ts"
+import { ensActions, Ensforge } from "@ensforge/sdk";
+import { bigname, indexerActions } from "@ensforge/sdk/indexer";
+import { createPublicClient, http } from "viem";
+import { mainnet } from "viem/chains";
+
+const ens = Ensforge.create({
+  publicClient: createPublicClient({ chain: mainnet, transport: http() }),
+  indexer: bigname(),
+})
+  .extend(ensActions())
+  .extend(indexerActions());
+
+const page = await ens.indexer.search({ query: "vitalik" });
+```
+
+- `indexer: bigname()` tells the client where to send list queries. The client's chain picks the host: `https://api.bigname.sh` for mainnet and `https://sepolia.api.bigname.sh` for Sepolia.
+- `indexerActions()` adds the `ens.indexer.*` actions. `ensActions()` does not include them, because they need an indexer.
+- On-chain actions such as `record.getAddress` do not use the indexer.
+
+See [Name lists and indexers](/docs/sdk/name-lists-and-indexers) and [`bigname`](/docs/sdk/reference/indexers).
+
+## 2. Check the connection
+
+`indexer.getStatus` reads the indexer's health and how far each chain is indexed.
+
+**Example** (Reading the Indexer Status)
+
+```ts twoslash title="indexer-status.ts"
+import { ensActions, Ensforge } from "@ensforge/sdk";
+import { bigname, indexerActions } from "@ensforge/sdk/indexer";
+import { createPublicClient, http } from "viem";
+import { mainnet } from "viem/chains";
+
+const ens = Ensforge.create({
+  publicClient: createPublicClient({ chain: mainnet, transport: http() }),
+  indexer: bigname(),
+})
+  .extend(ensActions())
+  .extend(indexerActions());
+
+// ---cut---
+const status = await ens.indexer.getStatus();
+
+console.log(status.status, status.indexer);
+for (const [chainId, chain] of Object.entries(status.chains)) {
+  console.log(chainId, chain.status, chain.lagBlocks);
+}
+```
+
+`status` is `"ready"`, `"degraded"` or `"stale"`. Each chain reports the block it has `indexed`, the `latest` block, and `lagBlocks` and `lagSeconds`. See [`indexer.getStatus`](/docs/sdk/reference/actions/indexer/get-status).
+
+## 3. Read answers with care
+
+Every indexer answer carries metadata besides its data:
+
+| Field               | Description                                                                                |
+| ------------------- | ------------------------------------------------------------------------------------------ |
+| `asOf`              | The chain snapshot (block and time) the answer was read at.                                |
+| `completeness`      | `"full"`, `"partial"` or `"unsupported"`. A partial answer is never presented as complete. |
+| `unsupportedReason` | Why the answer is partial or unsupported.                                                  |
+| `origin`            | `"indexed"` when answered from the index, `"verified"` when read on-chain.                 |
+| `indexer`           | The id of the indexer that answered, such as `bigname`.                                    |
+
+An indexer is fast but can lag the chain by a few blocks. For an authoritative answer about one name, read the chain with [`name.get`](/docs/sdk/reference/actions/name/get).
+
+## Use Basenames and Goldsky
+
+`goldsky()` serves ENS and Basenames (`*.base.eth`) on mainnet. It reads only the latest state. It has fewer fields than bigname: no verified records, and subnames without expiry. Missing fields are `null`.
+
+**Example** (Reading a Basename)
+
+```ts twoslash title="goldsky-client.ts"
+import { ensActions, Ensforge } from "@ensforge/sdk";
+import { goldsky, indexerActions } from "@ensforge/sdk/indexer";
+import { createPublicClient, http } from "viem";
+import { mainnet } from "viem/chains";
+
+const ens = Ensforge.create({
+  publicClient: createPublicClient({ chain: mainnet, transport: http() }),
+  indexer: goldsky(),
+})
+  .extend(ensActions())
+  .extend(indexerActions());
+
+const name = await ens.indexer.getName({ name: "jesse.base.eth" });
+```
+
+## Use more than one indexer
+
+`fallback` asks indexers in order. Each query goes to the first one that can answer it. The next one is asked when an indexer is unavailable, rate limiting, behind, or does not serve the query or namespace. A name that is not found is an answer, so it is not retried.
+
+**Example** (bigname First, Goldsky After)
+
+```ts twoslash title="fallback-client.ts"
+import { ensActions, Ensforge } from "@ensforge/sdk";
+import { bigname, fallback, goldsky, indexerActions } from "@ensforge/sdk/indexer";
+import { createPublicClient, http } from "viem";
+import { mainnet } from "viem/chains";
+
+const ens = Ensforge.create({
+  publicClient: createPublicClient({ chain: mainnet, transport: http() }),
+  indexer: fallback([bigname(), goldsky()]),
+})
+  .extend(ensActions())
+  .extend(indexerActions());
+```
+
+- Every answer reports which indexer gave it, in `indexer`.
+- A cursor or snapshot token goes back to the indexer that issued it, so paging never switches indexer halfway.
+- `fallback([...], { on: ["unavailable", "rateLimited"] })` limits when the next indexer is asked. The reasons are `"unavailable"`, `"rateLimited"`, `"unsupported"` and `"behind"`.
+
+## Point at your own server
+
+Both built-in indexers take the same connection options, for a self-hosted server, a proxy or an API key.
+
+**Example** (A Self-Hosted bigname with a Header)
+
+```ts twoslash title="self-hosted.ts"
+import { bigname } from "@ensforge/sdk/indexer";
+
+const authorization = "Bearer <token>";
+
+const indexer = bigname({
+  url: "https://bigname.internal",
+  headers: { authorization },
+  timeout: 10_000,
+  retryCount: 1,
+  cache: true,
+});
+```
+
+| Option       | Type                     | Default                                | Description                                                                                 |
+| ------------ | ------------------------ | -------------------------------------- | ------------------------------------------------------------------------------------------- |
+| `url`        | `string`                 | the public host for the client's chain | Base URL of a server with the same API. A `/v1` path is added unless the URL ends with one. |
+| `headers`    | `Record<string, string>` | none                                   | Extra request headers, such as an API key.                                                  |
+| `fetch`      | `typeof fetch`           | `globalThis.fetch`                     | The `fetch` to send requests with.                                                          |
+| `timeout`    | `number`                 | `15000`                                | Milliseconds per request before it is retried or fails.                                     |
+| `retryCount` | `number`                 | `2`                                    | Retries of rate-limited, unavailable and timed-out requests. `Retry-After` is honoured.     |
+| `cache`      | `boolean`                | `false`                                | `bigname` only. Revalidates repeated reads with ETags.                                      |
+
+To adapt another data source, see [Custom indexers](/docs/sdk/custom-indexers).
+
+## Troubleshooting
+
+### `INDEXER_NOT_CONFIGURED`
+
+The client has no indexer. Pass `indexer` to `Ensforge.create`. See [`INDEXER_NOT_CONFIGURED`](/docs/sdk/errors/INDEXER_NOT_CONFIGURED).
+
+### `Property 'indexer' does not exist` in TypeScript
+
+You did not add `indexerActions()` with `.extend(...)`. `ensActions()` does not include the indexer actions.
+
+### `INDEXER_UNSUPPORTED`
+
+The indexer does not serve the query or its namespace. Examples: the client's chain has no public host (pass `url`), the namespace is not indexed (bigname does not serve Basenames at the time of writing), or Goldsky was asked for a snapshot (`at`) or a `safe` or `finalized` read. Combine indexers with `fallback`. See [`INDEXER_UNSUPPORTED`](/docs/sdk/errors/INDEXER_UNSUPPORTED).
+
+### `INDEXER_UNAVAILABLE` or `INDEXER_RATE_LIMITED`
+
+The indexer is down or limiting you. Both are marked retryable. ensforge already retries `retryCount` times, so add a second indexer with `fallback`. See [`INDEXER_UNAVAILABLE`](/docs/sdk/errors/INDEXER_UNAVAILABLE) and [`INDEXER_RATE_LIMITED`](/docs/sdk/errors/INDEXER_RATE_LIMITED).
+
+### `INDEXER_BEHIND`
+
+The indexer is behind the chain. Retry shortly, or read on-chain instead. See [`INDEXER_BEHIND`](/docs/sdk/errors/INDEXER_BEHIND).
