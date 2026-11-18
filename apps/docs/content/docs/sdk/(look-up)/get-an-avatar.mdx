@@ -45,7 +45,7 @@ To read the raw record without resolving it, use [`record.getText`](/docs/sdk/re
 
 ## Use your own gateway
 
-IPFS and Arweave avatars load through a gateway. The defaults are `https://ipfs.io` and `https://arweave.net`. The public `ipfs.io` gateway is rate limited and answers HTTP 429 under load, so set your own gateway in production.
+IPFS and Arweave avatars load through a storage [gateway](/docs/sdk/reference/glossary#gateway). The defaults are `https://ipfs.io` and `https://arweave.net`. The public `ipfs.io` gateway is rate limited and answers HTTP 429 under load, so set your own gateway in production.
 
 Set the gateways once on the client, or per call.
 

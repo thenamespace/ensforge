@@ -8,7 +8,7 @@ By the end of this guide you can show an account's names, for a "my names" page 
 
 ## Prerequisites
 
-- A client with an indexer and `indexerActions()`. See [Connect an indexer](/docs/sdk/connect-an-indexer). The chain cannot list the names of an address, so this needs an indexer.
+- A client with an [indexer](/docs/sdk/reference/glossary#indexer) and `indexerActions()`. See [Connect an indexer](/docs/sdk/connect-an-indexer). The chain cannot list the names of an address, so this needs an indexer.
 
 ## List the names an address is related to
 
@@ -91,25 +91,25 @@ See [Who can change a name](/docs/sdk/who-can-change-a-name) for what owner, man
 
 ## Filter, search and sort
 
-| Option                          | Type                                                | Default                            | Description                                                            |
-| ------------------------------- | --------------------------------------------------- | ---------------------------------- | ---------------------------------------------------------------------- |
-| `address`                       | `string`                                            | required                           | The address to list names for.                                         |
-| `namespace`                     | `"ens"` or `"basenames"`                            | every namespace the indexer serves | Limits the list to one naming system.                                  |
-| `relation`                      | relation, list of relations, or `"any"`             | `"any"`                            | Which relations to list.                                               |
-| `coin`                          | symbol, `{ chainId }`, `bigint` or `"evm"`          | `60`                               | Coin type for `relation: "resolvesTo"`. `"evm"` means every EVM chain. |
-| `parent`                        | `string`                                            | none                               | Only direct children of this name.                                     |
-| `authority`                     | `"ensV0"`, `"ensV1"`, `"ensV2"`, or a list          | none                               | Only names held by that protocol.                                      |
-| `migrated`                      | `boolean`                                           | none                               | Only names that moved to ENSv2, or only those that did not.            |
-| `search`                        | `string`                                            | none                               | Only names that match this text.                                       |
-| `match`                         | `"prefix"` or `"contains"`                          | `"prefix"`                         | How `search` matches.                                                  |
-| `sort`                          | `"name"`, `"expiry"`, `"registered"` or `"created"` | the indexer's default              | What to sort by.                                                       |
-| `order`                         | `"asc"` or `"desc"`                                 | the indexer's default              | Sort direction.                                                        |
-| `dedupe`                        | `"name"` or `"registration"`                        | `"name"`                           | One row per name, or per registration.                                 |
-| `expiresAfter`, `expiresBefore` | `bigint` or `Date`                                  | none                               | Expiry bounds. Only with `relation: "formerOwner"`.                    |
-| `limit`                         | `number`                                            | `50`                               | Names per page, 1 to 200.                                              |
-| `cursor`                        | `string`                                            | none                               | The previous page's `cursor`.                                          |
-| `includeTotal`                  | `boolean`                                           | `false`                            | Count every row into `totalCount`. Slower.                             |
-| `signal`                        | `AbortSignal`                                       | none                               | Cancels the call.                                                      |
+| Option                          | Type                                                | Default                            | Description                                                                |
+| ------------------------------- | --------------------------------------------------- | ---------------------------------- | -------------------------------------------------------------------------- |
+| `address`                       | `string`                                            | required                           | The address to list names for.                                             |
+| `namespace`                     | `"ens"` or `"basenames"`                            | every namespace the indexer serves | Limits the list to one naming system.                                      |
+| `relation`                      | relation, list of relations, or `"any"`             | `"any"`                            | Which relations to list.                                                   |
+| `coin`                          | symbol, `{ chainId }`, `bigint` or `"evm"`          | `60`                               | Coin type for `relation: "resolvesTo"`. `"evm"` means every EVM chain.     |
+| `parent`                        | `string`                                            | none                               | Only direct children of this name.                                         |
+| `authority`                     | `"ensV0"`, `"ensV1"`, `"ensV2"`, or a list          | none                               | Only names held by that protocol.                                          |
+| `migrated`                      | `boolean`                                           | none                               | Only names that moved to ENSv2, or only those that did not.                |
+| `search`                        | `string`                                            | none                               | Only names that match this text.                                           |
+| `match`                         | `"prefix"` or `"contains"`                          | `"prefix"`                         | How `search` matches.                                                      |
+| `sort`                          | `"name"`, `"expiry"`, `"registered"` or `"created"` | the indexer's default              | What to sort by. bigname sorts by name, and `formerOwner` lists by expiry. |
+| `order`                         | `"asc"` or `"desc"`                                 | the indexer's default              | Sort direction. bigname sorts ascending.                                   |
+| `dedupe`                        | `"name"` or `"registration"`                        | `"name"`                           | One row per name, or per registration.                                     |
+| `expiresAfter`, `expiresBefore` | `bigint` or `Date`                                  | none                               | Expiry bounds. Only with `relation: "formerOwner"`.                        |
+| `limit`                         | `number`                                            | `50`                               | Names per page, 1 to 200.                                                  |
+| `cursor`                        | `string`                                            | none                               | The previous page's `cursor`.                                              |
+| `includeTotal`                  | `boolean`                                           | `false`                            | Count every row into `totalCount`. Slower.                                 |
+| `signal`                        | `AbortSignal`                                       | none                               | Cancels the call.                                                          |
 
 ## Read the result
 
@@ -137,7 +137,7 @@ The client has no indexer, or you forgot `indexerActions()`. See [Connect an ind
 
 The `address` is not a valid address. [`INVALID_ADDRESS`](/docs/sdk/errors/INVALID_ADDRESS) is thrown before any request is sent. `INVALID_COIN_TYPE` and `INVALID_NAME` are thrown the same way for a bad `coin` or `parent`.
 
-### The list is missing a name you just registered
+### The list is missing a name you registered recently
 
 The indexer can lag the chain by a few blocks. Read `ens.indexer.getStatus()` to see how far it has indexed, or read the name on-chain with [`name.get`](/docs/sdk/reference/actions/name/get).
 

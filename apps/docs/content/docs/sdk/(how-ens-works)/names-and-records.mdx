@@ -39,8 +39,7 @@ flowchart LR
 
 Names are case-insensitive and can contain emoji and most scripts. Before a name is used, it is
 **normalised** (ENSIP-15): `Nick.ETH` becomes `nick.eth`, and names that could be confused with
-others are rejected. Contracts never see the text of a name, only a hash of it called the
-**namehash**. ensforge normalises and hashes every name you pass, so you work with plain strings.
+others are rejected. Contracts identify a name by a hash of it called the **namehash**. ensforge normalises and hashes every name you pass, so you work with plain strings.
 An invalid name fails with [`INVALID_NAME`](/docs/sdk/errors/INVALID_NAME). See the
 [glossary](/docs/sdk/reference/glossary#namehash) and the `Name` utilities in the
 [utilities reference](/docs/sdk/reference/utilities).

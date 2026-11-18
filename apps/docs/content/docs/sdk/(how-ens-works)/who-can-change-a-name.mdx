@@ -18,7 +18,7 @@ keywords:
 
 Every change to a name, from editing a record to creating a subname, is checked by a contract
 against the account that sends it. The **owner** can do almost everything. Other accounts can be
-allowed to do some things. ensforge reads all of these rules and answers one question for you: what
+allowed to do some things ([permissions](/docs/sdk/reference/glossary#permission)). ensforge reads all of these rules and answers one question for you: what
 may this account do with this name?
 
 ## The owner
@@ -38,7 +38,7 @@ each with a different reach:
 | -------------------- | ------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
 | **Operator**         | Everything the owner can do, for every name the owner holds on that contract.                                       | [`approval.setOperator`](/docs/sdk/reference/actions/approval/set-operator) |
 | **Approved address** | Transfer one name token.                                                                                            | [`approval.setToken`](/docs/sdk/reference/actions/approval/set-token)       |
-| **Delegate**         | Edit the records of one name on a public resolver.                                                                  | [`approval.setDelegate`](/docs/sdk/reference/actions/approval/set-delegate) |
+| **Delegate**         | Edit the records of one name on a public [resolver](/docs/sdk/reference/glossary#resolver).                         | [`approval.setDelegate`](/docs/sdk/reference/actions/approval/set-delegate) |
 | **Role holder**      | Exactly the actions its roles name, such as `setResolver` or `setText`, on one name or on every name of a contract. | [`role.grant`](/docs/sdk/reference/actions/role/grant)                      |
 
 To let someone edit a name's records, whatever kind of resolver it has, use
@@ -60,7 +60,8 @@ flowchart TD
 
 Most names have the same account in both places, and `name.transfer` moves both by default. When
 they differ, `name.get` reports both, and `owner` is the account with final control. Names wrapped
-in the Name Wrapper add **fuses**, permanent switches that remove permissions. See
+in the [Name Wrapper](/docs/sdk/reference/glossary#name-wrapper) add **fuses**, permanent switches
+that remove permissions. See
 [What wrapped names are](/docs/sdk/wrapped-names).
 
 ## Roles

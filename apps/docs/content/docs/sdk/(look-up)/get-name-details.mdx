@@ -47,10 +47,10 @@ See [`name.get`](/docs/sdk/reference/actions/name/get).
 | --------------------- | -------------------------------------------------------------------------------------------------------------------------- |
 | `name`                | The normalised name.                                                                                                       |
 | `status`              | `"available"`, `"registered"`, `"grace"`, `"expired"` or `"reserved"`.                                                     |
-| `owner`               | Who ultimately controls the name.                                                                                          |
+| `owner`               | Who ultimately controls the name ([owner](/docs/sdk/reference/glossary#owner)).                                            |
 | `manager`             | The registry owner of an unwrapped name (the "manager" in the ENS app), or `null`.                                         |
 | `registrant`          | The holder of an unwrapped `.eth` name's registration token, or `null`.                                                    |
-| `resolver`            | The resolver set on the name itself, or `null`.                                                                            |
+| `resolver`            | The [resolver](/docs/sdk/reference/glossary#resolver) set on the name itself, or `null`.                                   |
 | `inheritedResolver`   | The resolver serving a name that has none of its own, such as a parent's wildcard or off-chain resolver. `null` otherwise. |
 | `expiry`              | Unix seconds when the registration ends, grace period excluded. `null` when it never expires.                              |
 | `gracePeriodEnd`      | Unix seconds when the `.eth` grace period ends.                                                                            |
@@ -58,7 +58,7 @@ See [`name.get`](/docs/sdk/reference/actions/name/get).
 | `renewable`           | Whether the name can be renewed now: `.eth` names that are registered or in grace.                                         |
 | `kind` and `protocol` | Where the name lives. Most apps never need them. See [ENS versions under the hood](/docs/sdk/ens-versions).                |
 
-`status: "grace"` applies to `.eth` names after they expire, while only the previous owner can renew. `"expired"` names can be registered again. For who may change a name, see [Who can change a name](/docs/sdk/who-can-change-a-name).
+`status: "grace"` applies to `.eth` names after they expire: during the [grace period](/docs/sdk/reference/glossary#grace-period) anyone can still renew the name, but nobody can register it. `"expired"` names can be registered again. For who may change a name, see [Who can change a name](/docs/sdk/who-can-change-a-name).
 
 ## Check availability
 

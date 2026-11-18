@@ -29,7 +29,7 @@ const url = await ens.record.getText({ name: "nick.eth", key: "url" });
 //    ^?
 ```
 
-The result is a `string`, or `null` when the record is not set. ensforge normalises the name and resolves it through the Universal Resolver, so names on any ENS version, wildcard names and off-chain names all work. Calls made in the same tick are batched into one multicall where possible. See [`record.getText`](/docs/sdk/reference/actions/record/get-text) and [How a lookup works](/docs/sdk/looking-up-a-name).
+The result is a `string`, or `null` when the record is not set. ensforge [normalises](/docs/sdk/reference/glossary#normalisation) the name and finds its [resolver](/docs/sdk/reference/glossary#resolver), so wildcard names and [off-chain names](/docs/sdk/reference/glossary#off-chain-name) work too. Calls made in the same tick are batched into one multicall where possible. See [`record.getText`](/docs/sdk/reference/actions/record/get-text) and [How a lookup works](/docs/sdk/looking-up-a-name).
 
 ## Read several records in one call
 

@@ -40,7 +40,8 @@ hood, see [ENS versions under the hood](/docs/sdk/ens-versions).
 
 ## Typed errors with a code for every failure
 
-Every error ensforge throws has a class, a stable `code`, a hint, and a link to its own page. Every
+Every error ensforge throws has a class, a stable `code`, a link to its own page and, when
+ensforge knows one, a hint to fix it. Every
 action declares the errors it can throw, so TypeScript knows them too.
 
 **Example** (Branching on an Error Code)
@@ -110,7 +111,8 @@ See [Ways to call actions](/docs/sdk/ways-to-call-actions) and
 
 ensforge covers the whole of ENS from one client:
 
-- Lookups: addresses for any chain, text records, avatars, websites, primary names.
+- Lookups: addresses for any chain, text records, avatars, websites,
+  [primary names](/docs/sdk/reference/glossary#primary-name).
 - Registration and renewal of `.eth` names, records, subnames, transfers and primary names on L2s.
 - Permissions: who can do what with a name, before they try.
 - Lists, search and history through an [indexer](/docs/sdk/reference/glossary#indexer).

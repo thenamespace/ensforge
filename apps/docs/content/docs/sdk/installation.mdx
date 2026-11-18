@@ -10,22 +10,23 @@ already has, and works the same in a browser app and on a server.
 
 ## Install the package
 
-Install the SDK with its two peer dependencies, `viem` and `effect`.
+Install the SDK with its two required peer dependencies, `viem` and `effect`.
 
 ```package-install
 @ensforge/sdk viem effect@^4
 ```
 
 - `viem` (2.57 or later) talks to the chain. You create the viem clients; ensforge uses them.
-- `effect` (4.1.4 or later) runs inside ensforge. You never have to write Effect code: every
-  action returns a Promise. See [Ways to call actions](/docs/sdk/ways-to-call-actions) if you want
-  the Effect API.
+- `effect` (4.1.4 or later, version 4 only) is required even if you never use it directly.
+  ensforge runs on it internally. You never have to write Effect code: every action returns a
+  Promise. See [Ways to call actions](/docs/sdk/ways-to-call-actions) if you want the Effect API.
 
 ## Add wagmi support (optional)
 
 Apps built on wagmi (RainbowKit, ConnectKit, Dynamic, Privy, Reown AppKit) can create the client
 from their wagmi config. ensforge supports wagmi 2.14 and later, and wagmi 3. There is nothing more
-to install: `wagmi` is an optional peer dependency, and apps without it never load that code. See [Create a client](/docs/sdk/create-a-client#from-a-wagmi-config).
+to install: `wagmi` is an optional peer dependency, and apps without it never load that code.
+See [Create a client](/docs/sdk/create-a-client#from-a-wagmi-config).
 
 ## Check your setup
 

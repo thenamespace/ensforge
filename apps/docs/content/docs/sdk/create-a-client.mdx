@@ -85,8 +85,9 @@ const ens = Ensforge.fromWagmi(wagmiConfig).extend(ensActions());
   ensforge has contracts for. Pass `{ chainId: 11155111 }` to pick Sepolia.
 - A wallet connected to another chain is asked to switch first. Pass `{ switchChain: false }` to
   turn that off.
-- Every other chain in the wagmi config is added to `chains`, so a primary name on an L2 uses
-  wagmi's client and wallet there.
+- Every other chain in the wagmi config is added to `chains`, so a
+  [primary name](/docs/sdk/reference/glossary#primary-name) on an L2 uses wagmi's client and
+  wallet there.
 - `fromWagmi` takes every option of `Ensforge.create` except the viem clients.
 
 It works with wagmi 2 (2.14 or later) and wagmi 3. For React apps, see
@@ -156,12 +157,12 @@ Every option except `publicClient` is optional.
 | `account`      | `Account \| Address`                               | the wallet client's account                                                  | Default signer for writes. A write's own `account` overrides it.                                                                                                                           |
 | `chains`       | `Record<chainId, { publicClient, walletClient? }>` | none                                                                         | Clients for other chains, for writes ENS makes there, such as a primary name on an L2. Without one, such writes fail with [`CHAIN_NOT_CONFIGURED`](/docs/sdk/errors/CHAIN_NOT_CONFIGURED). |
 | `deployment`   | `Deployments.Profile`                              | the built-in deployment for the chain                                        | ENS contract addresses. Required for devnets, forks and other chains.                                                                                                                      |
-| `ccipRead`     | `{ gatewayUrls? } \| false`                        | the Universal Resolver's own batch gateway                                   | Off-chain lookups ([CCIP-Read](/docs/sdk/reference/glossary#ccip-read)). `false` turns them off.                                                                                           |
+| `ccipRead`     | `{ gatewayUrls? } \| false`                        | the Universal Resolver's own batch gateway                                   | Off-chain lookups ([CCIP-Read](/docs/sdk/reference/glossary#ccip-read)): the batch gateways the Universal Resolver sends them through. `false` turns them off.                             |
 | `batch`        | `{ multicall?: boolean \| { batchSize?, wait? } }` | `{ multicall: true }`                                                        | Groups reads made at the same time into multicall requests. `wait` is in milliseconds.                                                                                                     |
 | `blockTag`     | `BlockTag`                                         | `"latest"`                                                                   | Block that reads run at.                                                                                                                                                                   |
-| `storage`      | `Plan.Storage`                                     | `Plan.memoryStorage()`                                                       | Where multi-step writes save their progress. Use `Plan.localStorage()` to survive a reload.                                                                                                |
+| `storage`      | `Plan.Storage`                                     | `Plan.memoryStorage()`                                                       | Where multi-step writes save their [plan](/docs/sdk/reference/glossary#plan) progress. Use `Plan.localStorage()` to survive a reload.                                                      |
 | `simulate`     | `boolean`                                          | `true`                                                                       | Simulate writes before the wallet prompt.                                                                                                                                                  |
-| `indexer`      | `Indexer`                                          | none                                                                         | Indexer for `indexer.*` actions, from `@ensforge/sdk/indexer`.                                                                                                                             |
+| `indexer`      | `Indexer`                                          | none                                                                         | [Indexer](/docs/sdk/reference/glossary#indexer) for `indexer.*` actions and for finding records and subnames during migration, from `@ensforge/sdk/indexer`.                               |
 | `gateways`     | `{ ipfs?, arweave?, swarm? }`                      | `https://ipfs.io`, `https://arweave.net`, `https://api.gateway.ethswarm.org` | HTTP gateways for avatars and website links. The public IPFS gateway is rate limited: set your own in production.                                                                          |
 
 See [Configure RPC and gateways](/docs/sdk/rpc-and-gateways).

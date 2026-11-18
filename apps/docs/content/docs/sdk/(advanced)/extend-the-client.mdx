@@ -36,7 +36,7 @@ The implementation fails only with ensforge errors (`AnyError`). `Action.withCon
 action's path, name, account and chain to every error, so Promise and Effect users see the same
 `error.context`.
 
-**Example** (A profile read built from two actions)
+**Example** (A Profile Read Built from Two Actions)
 
 ```ts twoslash title="profile/effect.ts"
 import { Actions } from "@ensforge/sdk/effect";
@@ -60,6 +60,8 @@ export const get = Effect.fn("my.profile.get")(function* (
 `Action.promise(path, implementation, client, options)` accepts an ensforge client or a bare viem
 client, rejects with `signal.reason` when the call is aborted, and otherwise rejects with an
 ensforge error.
+
+**Example** (Wrapping the Profile Read as a Promise)
 
 ```ts twoslash title="profile/index.ts"
 import { Actions } from "@ensforge/sdk/effect";
@@ -90,6 +92,8 @@ get.path = "profile.get" as const;
 
 A decorator is a function that takes the client and returns the groups to add. Add it with
 `client.extend`.
+
+**Example** (Adding the Profile Group to a Client)
 
 ```ts twoslash title="profile/decorator.ts"
 import { Ensforge, ensActions } from "@ensforge/sdk";
@@ -132,7 +136,7 @@ A route (`via`) changes how a plan is sent. It is a plain object, and `Write.Via
 
 Without `send`, the signer sends the rewritten plan as usual.
 
-**Example** (A route that adds a warning)
+**Example** (A Route That Adds a Warning)
 
 ```ts twoslash title="route.ts"
 import type { Write } from "@ensforge/sdk";

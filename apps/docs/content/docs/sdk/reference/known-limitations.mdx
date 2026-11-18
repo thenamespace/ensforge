@@ -17,8 +17,11 @@ protocol works and are not bugs.
 `kind: "custom"` with `authorization: "unknown"`. They are not in the deployment's list of known
 resolvers, so ensforge cannot prove how they decide who may write.
 
-**What to do:** reading and writing records still works. To use a resolver ensforge recognises,
-move the name to the current one with `record.set({ resolver: "default", … })`.
+**What to do:** reading and writing records still works, except kinds of record the resolver
+lacks: the 2020 public resolver has no `data` records and cannot `clear`. To use a resolver
+ensforge recognises, pass `resolver: "default"` to `record.set` with the records to keep. It writes
+them to the current public resolver and points the name at it. Records you do not pass are not
+copied.
 
 ### Frozen resolvers cannot change records
 
@@ -42,7 +45,8 @@ only accepts names the Name Wrapper knows.
 default record. Until new records are written, the name reads that default record, which is empty
 unless someone set it.
 
-**What to do:** write the new records in the same `record.set` call as `clear`.
+**What to do:** write the new records in the same `record.set` call as `clear`. ensforge clears
+first and writes the new records in the same transaction.
 
 ### Shared resolvers share record access
 
@@ -171,8 +175,10 @@ right to grant it.
 ### DNSSEC proofs do not verify at the moment
 
 Since the DNS root changed its signing key in October 2026, the ENS DNSSEC oracle no longer accepts
-any proof, on mainnet and Sepolia. `dns.getStatus` reports `proof-invalid`, and `dns.claim` and
-DNS name lookups fail with [`DNSSEC_PROOF_FAILED`](/docs/sdk/errors/DNSSEC_PROOF_FAILED).
+any proof, on mainnet and Sepolia. `dns.getStatus` reports `proof-invalid`, and `dns.claim` fails
+with [`DNSSEC_PROOF_FAILED`](/docs/sdk/errors/DNSSEC_PROOF_FAILED). Lookups of DNS names that
+resolve through a proof, because they have no resolver of their own in ENS (such as
+`ens.domains`), fail the same way.
 
 **What to do:** nothing on the client side. This needs ENS to add the new key to its oracle.
 
@@ -208,9 +214,11 @@ See [Move a name to ENSv2](/docs/sdk/move-a-name-to-ensv2).
 
 ### Subname records stay where they are
 
-Migrated subnames keep their records on their ENSv1 resolvers, as in the ENS app.
+Migrated subnames keep their records on their ENSv1 resolvers, as in the ENS app. Lookups keep
+working: the subnames still point at those resolvers.
 
-**What to do:** move their records with `record.set` after migration if you need them on ENSv2.
+**What to do:** nothing for lookups. To give a subname its own ENSv2 resolver, read its records
+with `record.get`, then create a resolver with them with `resolver.create({ name, records })`.
 
 ### Public keys and DNS records are not copied
 
