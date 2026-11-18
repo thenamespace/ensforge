@@ -24,10 +24,6 @@ const defaults: {
     shortMessage: "The HCA session is expired, revoked or for another resolver.",
     hint: "Authorize a new session with hca.authorizeSession.",
   }),
-  HCA_SAME_CHAIN_SOURCE: () => ({
-    shortMessage: "This deployment rejects funding from the chain the HCA is on.",
-    hint: "Choose another source chain, or fund the HCA directly.",
-  }),
   HCA_BUNDLER_REJECTED: () => ({
     shortMessage: "The bundler rejected the HCA UserOperation.",
     hint: "Check the bundler URL and EntryPoint v0.7 support; HCA UserOperations must be signed by the owner.",
@@ -80,7 +76,6 @@ export declare namespace HcaError {
     | "HCA_EXECUTOR_UNSUPPORTED"
     | "HCA_ACTION_NOT_ALLOWED"
     | "HCA_SESSION_INVALID"
-    | "HCA_SAME_CHAIN_SOURCE"
     | "HCA_BUNDLER_REJECTED"
     | "HCA_PAYMASTER_REJECTED"
     | "HCA_EXECUTION_FAILED"
