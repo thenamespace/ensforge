@@ -37,10 +37,19 @@ const defaults: {
     shortMessage: "This name cannot be transferred right now.",
     hint: "The owner lacks the role to transfer it, or other accounts hold roles on it (revoke them, or transfer with `unsafe: true`); `requirements` says which.",
   }),
+  SIGNATURE_INVALID: () => ({
+    shortMessage: "The signature does not authorize this change.",
+    hint: "Sign again with the account being named (or the contract's Ownable owner), for the same name, chains and expiry.",
+  }),
+  SIGNATURE_EXPIRED: () => ({
+    shortMessage: "The signature has expired.",
+    hint: "Sign again: reverse registrars accept a signature for at most one hour.",
+  }),
 };
 
 /**
- * The account lacks ownership, approval or roles for this change.
+ * The account lacks ownership, approval or roles for this change, or the signature that should
+ * authorize it is invalid or expired.
  *
  * @category errors
  * @since 1.0.0
@@ -95,7 +104,9 @@ export declare namespace UnauthorizedError {
     | "CANNOT_GRANT_ROLES"
     | "NOT_APPROVED"
     | "FUSE_BURNED"
-    | "TRANSFER_DISALLOWED";
+    | "TRANSFER_DISALLOWED"
+    | "SIGNATURE_INVALID"
+    | "SIGNATURE_EXPIRED";
   type Options = EnsforgeError.ClassOptions<Code> & {
     readonly account?: Address | undefined;
     readonly missingRoles?: readonly string[] | undefined;

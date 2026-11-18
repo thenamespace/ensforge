@@ -1,6 +1,7 @@
 export { create } from "./create.js";
 export { from, is } from "./from.js";
 export type {
+  ChainClients,
   Client,
   ClientBase,
   Config,

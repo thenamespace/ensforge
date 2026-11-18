@@ -9,6 +9,7 @@ import * as Action from "../../../internal/action/index.js";
 import { sameAddress } from "../../../internal/address.js";
 import { requireRecord } from "../../../internal/plan/records.js";
 import { fromPromise } from "../../../internal/rpc/fromPromise.js";
+import { chainClient, hasChain } from "../../../internal/write/chain.js";
 import type { reconcile as Promises } from "./index.js";
 
 /** @internal Implementation of `Actions.plan.reconcile`. */
@@ -41,8 +42,10 @@ export const reconcile = Effect.fn("ensforge.plan.reconcile")(function* (
 
   // The transaction must exist and come from the plan's account, or call one of the step's
   // contracts (a smart account or bundle can send from elsewhere).
+  const { chainId } = record.plan;
+  const target = hasChain(client, chainId) ? yield* chainClient(client, chainId) : client;
   const transaction = yield* fromPromise(() =>
-    getTransaction(client.publicClient, { hash: options.hash }),
+    getTransaction(target.publicClient, { hash: options.hash }),
   );
   const plausible =
     sameAddress(record.plan.account, transaction.from) ||

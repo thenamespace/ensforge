@@ -218,7 +218,7 @@ class HcaError {
   cause: unknown
   details: readonly string[]
   retryable: boolean
-  context: { readonly operation?: string | undefined; readonly name?: string | undefined; readonly account?: `0x${string}` | undefined; readonly chainId?: number | undefined; readonly contract?: `0x${string}` | undefined; readonly functionName?: string | undefined; readonly contractKind?: 'registrar' | 'registry' | 'resolver' | 'wrapper' | undefined; readonly registry?: `0x${string}` | undefined; readonly planId?: string | undefined; readonly step?: string | undefined; readonly revert?: { readonly errorName: string | undefined; readonly data: `0x${string}` | undefined; } | undefined; }
+  context: { readonly operation?: string | undefined; readonly name?: string | undefined; readonly account?: `0x${string}` | undefined; readonly chainId?: number | undefined; readonly contract?: `0x${string}` | undefined; readonly functionName?: string | undefined; readonly contractKind?: 'registrar' | 'registry' | 'resolver' | 'wrapper' | undefined; readonly selector?: `0x${string}` | undefined; readonly registry?: `0x${string}` | undefined; readonly planId?: string | undefined; readonly step?: string | undefined; readonly revert?: { readonly errorName: string | undefined; readonly data: `0x${string}` | undefined; } | undefined; }
   docsUrl: string
   withContext: (context: Context | undefined) => HcaError
   withCause: (cause: unknown) => HcaError

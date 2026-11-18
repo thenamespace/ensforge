@@ -5,6 +5,7 @@ import * as Action from "../../../internal/action/index.js";
 import { sameAddress } from "../../../internal/address.js";
 import { requireAddress } from "../../../internal/name/write.js";
 import { fromPromise } from "../../../internal/rpc/fromPromise.js";
+import { hasChain } from "../../../internal/write/chain.js";
 import type { list as Promises } from "./index.js";
 
 /** @internal Implementation of `Actions.plan.list`. */
@@ -18,7 +19,7 @@ export const list = Effect.fn("ensforge.plan.list")(function* (
 
   const matching = records.filter(
     (record) =>
-      record.plan.chainId === client.chain.id &&
+      hasChain(client, record.plan.chainId) &&
       (options.status === undefined || record.status === options.status) &&
       (account === undefined || sameAddress(record.plan.account, account)),
   );

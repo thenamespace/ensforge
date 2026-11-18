@@ -19,6 +19,7 @@ import * as Impl from "./effect.js";
  * - Progress is saved to the client's `storage`, so a failed or interrupted plan continues
  *   with {@link Actions.plan.resume}; failures carry `context.planId`.
  * - `onStep` reports each step as it waits, is submitted, confirmed or fails.
+ * - A plan for one of the client's `chains` (an L2 primary name) is simulated and sent there.
  *
  * **Example** (Sending a merged plan)
  *

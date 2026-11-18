@@ -2,3 +2,4 @@
 
 export { get } from "./get/index.js";
 export { set, setSync } from "./set/index.js";
+export { signClaim } from "./signClaim/index.js";

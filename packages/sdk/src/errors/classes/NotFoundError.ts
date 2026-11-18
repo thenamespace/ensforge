@@ -3,8 +3,8 @@ import { EnsforgeError, withDefaults } from "../EnsforgeError.js";
 const defaults: {
   readonly [code in NotFoundError.Code]: (options: NotFoundError.Options) => EnsforgeError.Defaults;
 } = {
-  RESOLVER_NOT_FOUND: () => ({
-    shortMessage: "The name has no resolver.",
+  RESOLVER_NOT_FOUND: (o: NotFoundError.Options) => ({
+    shortMessage: `The name${o.resource === undefined ? "" : ` ${o.resource}`} has no resolver.`,
     hint: "Set one with resolver.set.",
   }),
   RECORD_NOT_FOUND: (o: NotFoundError.Options) => ({

@@ -13,12 +13,14 @@ import { normalizeName } from "../../../internal/name/normalize.js";
 import { requireAddress } from "../../../internal/name/write.js";
 import { defaultEvmCoinType } from "../../../internal/records/read-profiles.js";
 import { readRecords } from "../../../internal/records/read.js";
-import { defaultPrimaryNameCall, ethPrimaryNameCall } from "../../../internal/reverse/calls.js";
-import { ethCoinType, reverseName } from "../../../internal/reverse/coin.js";
+import { defaultPrimaryNameCall, ethPrimaryNameCalls } from "../../../internal/reverse/calls.js";
+import { ethCoinType, primaryNameCoinType, reverseName } from "../../../internal/reverse/coin.js";
 import { make as makePlan } from "../../../plan/make.js";
 import type { Plan } from "../../../plan/Plan.js";
 import type { Write } from "../../../Types.js";
+import * as CoinType from "../../../utils/CoinType.js";
 import type { set as Promises } from "./index.js";
+import { claimPlan, l2Plan } from "./l2.js";
 
 /**
  * Fails unless `name` resolves to `address`, so the primary name verifies. A default primary
@@ -62,7 +64,7 @@ const forwardMatch = Effect.fnUntraced(function* (
 const shadowingEthCall = Effect.fnUntraced(function* (
   client: Client,
   target: Address,
-  self: boolean,
+  signer: Address,
   name: string,
 ): Effect.fn.Return<Plan.Call[], AnyError> {
   const current = yield* readRecords(client, {
@@ -71,7 +73,7 @@ const shadowingEthCall = Effect.fnUntraced(function* (
   });
   const existing = (current as { readonly nameRecord?: string | null }).nameRecord ?? null;
   if (existing === null || existing === "" || existing === name) return [];
-  return [yield* ethPrimaryNameCall(client, target, self, name)];
+  return yield* ethPrimaryNameCalls(client, target, signer, name);
 });
 
 /** @internal Builds the plan of `Actions.primaryName.set`. */
@@ -79,12 +81,14 @@ export const plan = Effect.fnUntraced(function* (
   client: Client,
   options: Promises.Options & Pick<Write.Options, "account">,
 ): Effect.fn.Return<Plan, AnyError> {
+  if (options.claim !== undefined) return yield* claimPlan(client, options);
+
   const signer = addressOf(options.account) ?? client.account;
   if (signer === undefined)
     return yield* Effect.fail(new ConfigError({ code: "WALLET_NOT_CONFIGURED" }));
   const target =
     options.address === undefined ? signer : yield* requireAddress(options.address, "address");
-  const coinType = options.coin === "default" ? defaultEvmCoinType : ethCoinType;
+  const coinType = yield* primaryNameCoinType(options.coin);
   const name = options.name === null ? "" : yield* normalizeName(options.name);
   // Readers show only ENSIP-15 names, which an encoded label (`[af2c…]`) is not.
   if (name.includes("[")) {
@@ -97,6 +101,12 @@ export const plan = Effect.fnUntraced(function* (
     );
   }
 
+  // Other EVM chains keep their primary names in their own reverse registrar (ENSIP-19).
+  const chainId = CoinType.toChainId(coinType);
+  if (coinType !== ethCoinType && coinType !== defaultEvmCoinType && chainId !== null) {
+    return yield* l2Plan(client, options, chainId, name);
+  }
+
   const warnings =
     name !== "" && options.verify !== false
       ? yield* forwardMatch(client, name, target, coinType)
@@ -105,10 +115,10 @@ export const plan = Effect.fnUntraced(function* (
   const self = isAddressEqual(target, signer);
   const calls =
     coinType === ethCoinType
-      ? [yield* ethPrimaryNameCall(client, target, self, name)]
+      ? yield* ethPrimaryNameCalls(client, target, signer, name)
       : [
           yield* defaultPrimaryNameCall(client, target, self, name),
-          ...(yield* shadowingEthCall(client, target, self, name)),
+          ...(yield* shadowingEthCall(client, target, signer, name)),
         ];
 
   return makePlan({

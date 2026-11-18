@@ -150,6 +150,8 @@ export declare namespace EnsforgeError {
     readonly functionName?: string | undefined;
     /** Kind of contract, used to name roles in `MISSING_ROLES` errors. */
     readonly contractKind?: "registry" | "resolver" | "wrapper" | "registrar" | undefined;
+    /** Function selector the revert names: the resolver profile a resolver does not support. */
+    readonly selector?: Hex | undefined;
     /** ENSv2 registry that wrapped the revert in `ResolutionError` (mainnet). */
     readonly registry?: Address | undefined;
     /** Saved plan a failed write belongs to; pass it to `plan.resume`. */

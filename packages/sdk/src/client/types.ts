@@ -114,6 +114,27 @@ export interface ClientBase<actions extends object = {}> {
 export type Like = Client<object> | ViemClient;
 
 /**
+ * viem clients for a chain other than the ENS chain, e.g. an L2 where an address sets its primary
+ * name for that chain.
+ *
+ * @category client
+ * @since 1.0.0
+ */
+export type ChainClients = {
+  /** viem client for reads and simulation on the chain. */
+  readonly publicClient: ViemClient;
+  /**
+   * viem client for writes on the chain, or a getter for wallets that change (wagmi connectors).
+   *
+   * @default `publicClient` when it has an account
+   */
+  readonly walletClient?:
+    | ViemWalletClient
+    | (() => ViemWalletClient | undefined | Promise<ViemWalletClient | undefined>)
+    | undefined;
+};
+
+/**
  * Options for `Ensforge.create`.
  *
  * @category client
@@ -131,6 +152,13 @@ export type CreateOptions = {
     | ViemWalletClient
     | (() => ViemWalletClient | undefined | Promise<ViemWalletClient | undefined>)
     | undefined;
+  /**
+   * Clients for other chains, by chain ID: writes ENS makes there (an L2 primary name) run on
+   * them, and plans for them resume on them. The signer is the same account on every chain.
+   *
+   * @default none; writes for another chain fail with `CHAIN_NOT_CONFIGURED`
+   */
+  chains?: Readonly<Record<number, ChainClients>> | undefined;
   /**
    * Default signer for writes.
    *

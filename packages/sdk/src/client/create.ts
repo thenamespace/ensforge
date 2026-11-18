@@ -5,7 +5,7 @@ import { addressOf } from "../internal/address.js";
 import { resolveConfig } from "./config.js";
 import { build } from "./extend.js";
 import type { State } from "./state.js";
-import type { Client, CreateOptions } from "./types.js";
+import type { ChainClients, Client, CreateOptions } from "./types.js";
 
 const resolveDeployment = (
   options: CreateOptions,
@@ -32,14 +32,32 @@ const resolveDeployment = (
   return deployment;
 };
 
-const resolveWallet = (options: CreateOptions): State["getWalletClient"] => {
-  const { walletClient, publicClient } = options;
-
+const resolveWallet = ({ walletClient, publicClient }: ChainClients): State["getWalletClient"] => {
   if (typeof walletClient === "function") return async () => walletClient();
   if (walletClient !== undefined) return async () => walletClient;
   if (publicClient.account !== undefined) return async () => publicClient;
   return async () => undefined;
 };
+
+const resolveChains = (options: CreateOptions): State["chains"] =>
+  new Map(
+    Object.entries(options.chains ?? {}).map(([key, clients]) => {
+      const chainId = Number(key);
+      const actual = clients.publicClient.chain?.id;
+      if (actual !== undefined && actual !== chainId) {
+        throw new ConfigError({
+          code: "CHAIN_NOT_CONFIGURED",
+          context: { chainId },
+          shortMessage: `\`chains[${chainId}]\` has a public client for chain ${actual}.`,
+          hint: "Key each entry of `chains` by the chain ID of its clients.",
+        });
+      }
+      return [
+        chainId,
+        { publicClient: clients.publicClient, getWalletClient: resolveWallet(clients) },
+      ];
+    }),
+  );
 
 /**
  * Creates an ensforge client from viem clients.
@@ -52,6 +70,8 @@ const resolveWallet = (options: CreateOptions): State["getWalletClient"] => {
  *
  * - The deployment is chosen by chain ID (mainnet, Sepolia); other chains need `deployment`.
  * - `walletClient` can be a getter, so a wallet that connects later works.
+ * - `chains` adds clients for other chains, for the writes ENS makes there: primary names on L2s
+ *   (`primaryName.set` with `coin: { chainId }`).
  * - The client and its `config` are frozen.
  *
  * **Example** (Creating a client)
@@ -75,7 +95,22 @@ const resolveWallet = (options: CreateOptions): State["getWalletClient"] => {
  * ```
  *
  * @throws `Errors.ConfigError` (`UNKNOWN_CHAIN`) when the chain has no built-in deployment and none is given.
+ * **Example** (Adding an L2 for primary names)
+ *
+ * ```ts
+ * import { Ensforge, ensActions } from "@ensforge/sdk"
+ *
+ * const ens = Ensforge.create({
+ *   publicClient,
+ *   walletClient,
+ *   chains: { 10: { publicClient: optimismClient, walletClient: optimismWallet } },
+ * }).extend(ensActions())
+ *
+ * await ens.primaryName.set({ name: "alice.eth", coin: { chainId: 10 } })
+ * ```
+ *
  * @throws `Errors.ConfigError` (`INVALID_DEPLOYMENT`) when `deployment` is invalid or for another chain.
+ * @throws `Errors.ConfigError` (`CHAIN_NOT_CONFIGURED`) when an entry of `chains` holds clients of another chain.
  * @category client
  * @since 1.0.0
  */
@@ -105,6 +140,10 @@ export const create = (options: CreateOptions): Client => {
       publicClient: options.publicClient,
       config: resolveConfig(options),
     },
-    { getWalletClient: resolveWallet(options), signer: signer ?? walletAccount },
+    {
+      getWalletClient: resolveWallet(options),
+      signer: signer ?? walletAccount,
+      chains: resolveChains(options),
+    },
   );
 };

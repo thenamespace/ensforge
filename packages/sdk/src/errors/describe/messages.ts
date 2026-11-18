@@ -41,6 +41,10 @@ export const messages: { readonly [code in Code]: Template<code> } = {
     title: "Configuration problem",
     message: "This app is misconfigured.",
   }),
+  CHAIN_NOT_CONFIGURED: () => ({
+    title: "Network not set up",
+    message: "This app is not set up for that network.",
+  }),
   CCIP_READ_DISABLED: (error) => ({
     title: "Off-chain name",
     message: `${thisName(error)} is stored off-chain, and off-chain lookups are turned off.`,
@@ -186,6 +190,16 @@ export const messages: { readonly [code in Code]: Template<code> } = {
   TRANSFER_DISALLOWED: (error) => ({
     title: "Transfer blocked",
     message: `${thisName(error)} cannot be transferred with the roles held on it.`,
+  }),
+  SIGNATURE_INVALID: () => ({
+    title: "Signature not valid",
+    message: "The signature does not authorize this change.",
+    action: "Sign the request again with the right account.",
+  }),
+  SIGNATURE_EXPIRED: () => ({
+    title: "Signature expired",
+    message: "The signature for this change has expired.",
+    action: "Sign the request again.",
   }),
   RESOLVER_NOT_FOUND: (error) => ({
     title: "No resolver",

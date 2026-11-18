@@ -8,6 +8,7 @@ import { PlanError } from "../../errors/classes/PlanError.js";
 import type { AnyError } from "../../errors/types.js";
 import type { Plan } from "../../plan/Plan.js";
 import { fromPromise } from "../rpc/fromPromise.js";
+import { hasChain } from "../write/chain.js";
 
 /** The saved record of plan `id`. */
 export const requireRecord = (client: Client, id: string): Effect.Effect<Plan.Record, AnyError> =>
@@ -22,14 +23,23 @@ export const requireRecord = (client: Client, id: string): Effect.Effect<Plan.Re
     ),
   );
 
-/** Fails unless `plan` was prepared for this client's chain and, when it names one, `account`. */
+/**
+ * Fails unless `plan` was prepared for this client's chain or one of its `chains` and, when it
+ * names one, for `account`.
+ */
 export const requireSendable = (
   client: Client,
   plan: Plan,
   account: Address | undefined,
 ): Effect.Effect<Plan, AnyError> => {
-  if (plan.chainId !== client.chain.id) {
-    return Effect.fail(new PlanError({ code: "PLAN_CHAIN_MISMATCH" }));
+  if (!hasChain(client, plan.chainId)) {
+    return Effect.fail(
+      new PlanError({
+        code: "PLAN_CHAIN_MISMATCH",
+        context: { chainId: plan.chainId },
+        hint: `Send it with a client on chain ${plan.chainId}, or add that chain to \`chains\` in Ensforge.create.`,
+      }),
+    );
   }
   if (
     plan.account !== undefined &&

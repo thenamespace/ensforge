@@ -8,6 +8,7 @@ import type { AnyError } from "../../errors/types.js";
 import type { Plan } from "../../plan/Plan.js";
 import type { Write } from "../../Types.js";
 import { addressOf } from "../address.js";
+import { chainClient } from "../write/chain.js";
 import { offchainWriteRefusal } from "../write/offchain.js";
 import { waitForReceipts } from "../write/receipts.js";
 import { sendPlan } from "../write/send.js";
@@ -80,20 +81,31 @@ export const write = <options, error extends EnsforgeError>(
   extra?: EnsforgeError.Context,
   explain?: Explainer<options>,
 ) => {
-  // The plan as the route (`via`) will send it; without a route, as planned.
-  const planned = (client: Client, options: options & Pick<Write.Options, "account" | "via">) =>
-    planner(client, options).pipe(
-      Effect.flatMap((plan) =>
-        routePlan(client, plan, options.via, addressOf(options.account) ?? client.account),
+  // The plan as the route (`via`) will send it (without a route, as planned), and the client of
+  // the chain it runs on.
+  const planned = Effect.fnUntraced(function* (
+    client: Client,
+    options: options & Pick<Write.Options, "account" | "via">,
+  ): Effect.fn.Return<{ readonly plan: Plan; readonly target: Client }, error | AnyError> {
+    const plan = yield* planner(client, options);
+    const target = yield* chainClient(client, plan.chainId);
+    return {
+      plan: yield* routePlan(
+        target,
+        plan,
+        options.via,
+        addressOf(options.account) ?? client.account,
       ),
-    );
+      target,
+    };
+  });
 
   const prepare = Effect.fn(`ensforge.${path}.prepare`)(
     function* (
       client: Client,
       options: options & Pick<Write.Options, "account" | "via">,
     ): Effect.fn.Return<Plan, error | AnyError> {
-      return yield* planned(client, options);
+      return (yield* planned(client, options)).plan;
     },
     withContext(`${path}.prepare`, extra),
   );
@@ -103,9 +115,9 @@ export const write = <options, error extends EnsforgeError>(
       client: Client,
       options: options & Pick<Write.Options, "account" | "via">,
     ): Effect.fn.Return<Plan.Simulation, error | AnyError> {
-      const plan = yield* planned(client, options);
+      const { plan, target } = yield* planned(client, options);
       const account = addressOf(options.account) ?? client.account;
-      const simulation = yield* simulatePlan(client, plan, account);
+      const simulation = yield* simulatePlan(target, plan, account);
       // Step errors are values, not failures, so they get the action's context here.
       const context = contextOf(`${path}.simulate`, client, options, extra);
       const steps = yield* Effect.forEach(simulation.steps, (step) =>
@@ -125,27 +137,29 @@ export const write = <options, error extends EnsforgeError>(
       client: Client,
       options: options & Pick<Write.Options, "account" | "via">,
     ): Effect.fn.Return<Plan.Estimate, error | AnyError> {
-      const plan = yield* planned(client, options);
-      return yield* estimatePlan(client, plan, addressOf(options.account) ?? client.account);
+      const { plan, target } = yield* planned(client, options);
+      return yield* estimatePlan(target, plan, addressOf(options.account) ?? client.account);
     },
     withContext(`${path}.estimateGas`, extra),
   );
 
-  // Shared by `send` and `sendSync`: an opaque revert becomes the explainer's error.
+  // Shared by `send` and `sendSync`: an opaque revert becomes the explainer's error. `sendSync`
+  // waits for the receipts on the plan's chain.
   const sendPlanned = Effect.fnUntraced(function* (
     client: Client,
     options: options & Write.SyncOptions,
     confirmLast: boolean,
-  ): Effect.fn.Return<Write.Result, error | AnyError> {
-    const plan = yield* planned(client, options);
-    const signer = yield* resolveSigner(client, options.account);
-    return yield* sendPlan(client, plan, signer, { ...options, confirmLast }).pipe(
+  ): Effect.fn.Return<Write.Result | Write.SyncResult, error | AnyError> {
+    const { plan, target } = yield* planned(client, options);
+    const signer = yield* resolveSigner(target, options.account);
+    const result = yield* sendPlan(target, plan, signer, { ...options, confirmLast }).pipe(
       Effect.catch((error: AnyError) =>
         explained(client, options, addressOf(signer.account), explain, extra, error).pipe(
           Effect.flatMap(Effect.fail),
         ),
       ),
     );
+    return confirmLast ? yield* waitForReceipts(target, result, options) : result;
   });
 
   const send = Effect.fn(`ensforge.${path}`)(
@@ -163,8 +177,7 @@ export const write = <options, error extends EnsforgeError>(
       client: Client,
       options: options & Write.SyncOptions,
     ): Effect.fn.Return<Write.SyncResult, error | AnyError> {
-      const result = yield* sendPlanned(client, options, true);
-      return yield* waitForReceipts(client, result, options);
+      return (yield* sendPlanned(client, options, true)) as Write.SyncResult;
     },
     withContext(`${path}Sync`, extra),
   );

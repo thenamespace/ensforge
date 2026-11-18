@@ -27,6 +27,10 @@ const defaults: {
     shortMessage: "A decorator added an action group with a reserved name.",
     hint: "Rename the group; chain, account, deployment, publicClient, config and extend are reserved.",
   }),
+  CHAIN_NOT_CONFIGURED: (o: ConfigError.Options) => ({
+    shortMessage: `The client has no clients for chain ${o.context?.chainId ?? "?"}.`,
+    hint: `Add chain ${o.context?.chainId ?? "<chainId>"} to \`chains\` in Ensforge.create, e.g. \`chains: { ${o.context?.chainId ?? "<chainId>"}: { publicClient, walletClient } }\`.`,
+  }),
   CCIP_READ_DISABLED: () => ({
     shortMessage: "This name resolves off-chain, and CCIP-Read is disabled.",
     hint: "Remove `ccipRead: false` from Ensforge.create.",
@@ -53,6 +57,7 @@ export declare namespace ConfigError {
     | "WALLET_NOT_CONFIGURED"
     | "INDEXER_NOT_CONFIGURED"
     | "CCIP_READ_DISABLED"
-    | "INVALID_ACTION_GROUP";
+    | "INVALID_ACTION_GROUP"
+    | "CHAIN_NOT_CONFIGURED";
   type Options = EnsforgeError.ClassOptions<Code>;
 }

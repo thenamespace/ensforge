@@ -1,5 +1,6 @@
 import { isAddressEqual, zeroAddress, type Address, type Hex } from "viem";
 
+import { dnsDecode } from "../../utils/Name.js";
 import {
   CommitmentError,
   ConfigError,
@@ -40,6 +41,26 @@ const notApproved: Mapper = () => new UnauthorizedError({ code: "NOT_APPROVED" }
 const transferDisallowed: Mapper = () => new UnauthorizedError({ code: "TRANSFER_DISALLOWED" });
 const nameNotAvailable: Mapper = () => new NameStateError({ code: "NAME_NOT_AVAILABLE" });
 const dnssecProofFailed: Mapper = () => new DnsError({ code: "DNSSEC_PROOF_FAILED" });
+
+// The Universal Resolver and the ENSv1 bridge name the DNS-encoded name they found no usable
+// resolver for, which need not be the name read (a primary name's forward check reads another).
+const resolverNotFound: Mapper = ([name]) => {
+  let resource: string = name as Hex;
+  try {
+    resource = dnsDecode(name as Hex);
+  } catch {
+    // Not a DNS-encoded name: keep the bytes.
+  }
+  return new NotFoundError({ code: "RESOLVER_NOT_FOUND", resource });
+};
+
+// An L2 resolver's unruggable verifier rejecting the gateway's proof of L2 state.
+const proofNotVerified: Mapper = () =>
+  new GatewayError({
+    code: "GATEWAY_RESPONSE_INVALID",
+    shortMessage: "The gateway's proof of the L2 state did not verify on L1.",
+    hint: "The L2 gateway or its verifier is at fault (a proof too old or too new, or a rollup the verifier no longer accepts); try later, or report it to the gateway's operator.",
+  });
 
 // ENSv2 commitment errors carry (commitment, bound, now); ENSv1 errors carry only the commitment.
 const commitmentTooNew: Mapper = ([commitment, validFrom]) =>
@@ -93,7 +114,16 @@ export const revertMap: Readonly<Record<string, Mapper>> = {
       field: "account",
       shortMessage: "Roles cannot be granted to the zero address.",
     }),
-  Unauthorised: notOwner,
+  // NameWrapper's `Unauthorised(node, addr)`: not the name's owner. The L2 reverse registrar's
+  // `Unauthorised()`: neither the address nor its Ownable owner.
+  Unauthorised: (args) =>
+    args.length === 0
+      ? new UnauthorizedError({
+          code: "NOT_APPROVED",
+          shortMessage: "The signer may not set this address's primary name.",
+          hint: "Send from the address itself or, for a contract, its Ownable owner; or relay a claim from `primaryName.signClaim`.",
+        })
+      : new UnauthorizedError({ code: "NOT_OWNER" }),
   OwnableUnauthorizedAccount: notOwner,
   ERC1155InsufficientBalance: notOwner,
   WrappedOwnerMismatch: notOwner,
@@ -161,11 +191,15 @@ export const revertMap: Readonly<Record<string, Mapper>> = {
   PaymentTokenNotSupported: () => new UnsupportedError({ code: "PAYMENT_TOKEN_UNSUPPORTED" }),
   UpgradeTargetNotApproved: () => new UnsupportedError({ code: "UPGRADE_NOT_APPROVED" }),
   InvalidUpgradeTarget: () => new UnsupportedError({ code: "UPGRADE_NOT_APPROVED" }),
-  UnsupportedResolverProfile: () => new UnsupportedError({ code: "RESOLVER_PROFILE_UNSUPPORTED" }),
-  ResolverNotFound: () => new NotFoundError({ code: "RESOLVER_NOT_FOUND" }),
-  ResolverNotContract: () => new NotFoundError({ code: "RESOLVER_NOT_FOUND" }),
+  UnsupportedResolverProfile: ([selector]) =>
+    new UnsupportedError({
+      code: "RESOLVER_PROFILE_UNSUPPORTED",
+      context: { selector: selector as Hex },
+    }),
+  ResolverNotFound: resolverNotFound,
+  ResolverNotContract: resolverNotFound,
   // The ENSv1 bridge (ENSV1Resolver) finds no usable ENSv1 resolver for the name.
-  UnreachableName: () => new NotFoundError({ code: "RESOLVER_NOT_FOUND" }),
+  UnreachableName: resolverNotFound,
   ReverseAddressMismatch: () => new NotFoundError({ code: "PRIMARY_NAME_MISMATCH" }),
   PrimaryNameNotNormalized: ([name]) =>
     new InvalidInputError({ code: "INVALID_NAME", input: name, field: "primary name" }),
@@ -204,7 +238,46 @@ export const revertMap: Readonly<Record<string, Mapper>> = {
     offchainWriteRefused(`ERC-7884: writes are handled by the gateway at ${String(url)}.`),
   InvalidBatchGatewayResponse: () => new GatewayError({ code: "GATEWAY_RESPONSE_INVALID" }),
   UnsafeBatchGatewayResponse: () => new GatewayError({ code: "GATEWAY_RESPONSE_INVALID" }),
+  CommitTooOld: proofNotVerified,
+  CommitTooNew: proofNotVerified,
+  InvalidProof: proofNotVerified,
+  GameNotFound: proofNotVerified,
+  InvalidGameTypeBitMask: proofNotVerified,
+  OutputNotFound: proofNotVerified,
+  TooManyProofs: proofNotVerified,
+  RequestOverflow: proofNotVerified,
+  InvalidRequest: proofNotVerified,
+  InvalidStackIndex: proofNotVerified,
+  InvalidOutputIndex: proofNotVerified,
+  StackOverflow: proofNotVerified,
+  DataMissing: proofNotVerified,
+  DataIsNotMod32: proofNotVerified,
+  LengthNotMod32: proofNotVerified,
+  MaxTreeLeafIndexExceed: proofNotVerified,
+  WrongBytesLength: proofNotVerified,
+  WrongProofLength: proofNotVerified,
   NameNotLocked: () => new MigrationError({ code: "NAME_NOT_LOCKED" }),
+  // Reverse registrars (`SignatureUtils`) and Hosted Contract Accounts: DNSSEC raises no such
+  // error, it reports signatures it cannot verify as `NoMatchingProof`.
+  InvalidSignature: () => new UnauthorizedError({ code: "SIGNATURE_INVALID" }),
+  SignatureExpiryTooHigh: () =>
+    new InvalidInputError({
+      code: "INVALID_EXPIRY",
+      shortMessage: "The signature expires more than one hour after the chain's current time.",
+    }),
+  // The L2 reverse registrar: a name claim that does not list this chain's coin type.
+  CoinTypeNotFound: () =>
+    new InvalidInputError({
+      code: "INVALID_COIN_TYPE",
+      field: "claim",
+      shortMessage: "The signed claim does not cover this chain.",
+      hint: "Sign a claim whose `chainIds` include this chain.",
+    }),
+  NotOwnerOfContract: () =>
+    new UnauthorizedError({
+      code: "NOT_APPROVED",
+      shortMessage: "The claim's signer is not the contract's Ownable owner.",
+    }),
   TLDNotPublic: () => new DnsError({ code: "TLD_NOT_PUBLIC" }),
   InvalidPublicSuffix: () => new DnsError({ code: "TLD_NOT_PUBLIC" }),
   StaleProof: () => new DnsError({ code: "PROOF_STALE" }),
@@ -213,11 +286,15 @@ export const revertMap: Readonly<Record<string, Mapper>> = {
   InvalidLabelCount: dnssecProofFailed,
   InvalidProofType: dnssecProofFailed,
   InvalidRRSet: dnssecProofFailed,
-  InvalidSignature: dnssecProofFailed,
   InvalidSignerName: dnssecProofFailed,
   NoMatchingProof: dnssecProofFailed,
   ProofNameMismatch: dnssecProofFailed,
-  SignatureExpired: dnssecProofFailed,
+  // DNSSEC's `SignatureExpired(expiration, now)` is an expired RRSIG; the reverse registrars'
+  // `SignatureExpired()` an expired name claim.
+  SignatureExpired: (args) =>
+    args.length === 0
+      ? new UnauthorizedError({ code: "SIGNATURE_EXPIRED" })
+      : new DnsError({ code: "DNSSEC_PROOF_FAILED" }),
   SignatureNotValidYet: dnssecProofFailed,
   SignatureTypeMismatch: dnssecProofFailed,
 };
@@ -236,7 +313,9 @@ export const requireMap: Readonly<Record<string, Mapper>> = {
   "ReverseRegistrar: Caller is not a controller or authorised by address or the address itself":
     notApproved,
   // viem's local batch gateway answers a failed gateway request without an HTTP status as
-  // `Error(shortMessage)` of the viem error.
+  // `Error(shortMessage)` of the viem error. The Universal Resolver raises it unwrapped, but the
+  // ENSv1 bridge (ENSV1Resolver) follows ENSv1 lookups itself, so for bridged names it arrives
+  // inside `ResolverError`, like a resolver's own revert: these apply at any depth.
   "HTTP request failed.": () => new GatewayError({ code: "GATEWAY_REQUEST_FAILED" }),
   "The request took too long to respond.": () =>
     new GatewayError({ code: "GATEWAY_REQUEST_FAILED" }),

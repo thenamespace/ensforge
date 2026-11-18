@@ -5,7 +5,7 @@ import type { Plan } from "../../../plan/Plan.js";
 import * as Impl from "./effect.js";
 
 /**
- * Lists the saved plans of this client's chain, newest first.
+ * Lists the saved plans of this client's chain and of its `chains`, newest first.
  *
  * **When to use**
  *

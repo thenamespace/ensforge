@@ -20,7 +20,11 @@ import * as Impl from "./effect.js";
  * - `coin` selects the chain: `"eth"` (default), any EVM chain such as `{ chainId: 8453 }`, or
  *   `"default"`. Chains without their own primary name fall back to `default.reverse`.
  * - Names that are not normalized are treated as unset.
- * - Returns `null` when there is no valid primary name, unless `strict` is set.
+ * - Returns `null` when there is no valid primary name, unless `strict` is set. With `strict`, an
+ *   address whose reverse name has no resolver or name fails `PRIMARY_NAME_NOT_SET`; a name that
+ *   does not resolve back (no resolver, no address record or another address) fails
+ *   `PRIMARY_NAME_MISMATCH`, whose `cause` names the name or the profile that failed. A resolver
+ *   that reverts without data says neither, and counts as not set.
  *
  * **Example** (Showing a name for an address)
  *

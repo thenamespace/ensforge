@@ -19,6 +19,8 @@ import * as Impl from "./effect.js";
  *   bundle is sent again.
  * - Each remaining step is simulated against current state right before it is sent.
  * - The plan id is `result.plan.id`, or `context.planId` on a write's error.
+ * - A plan for another chain (an L2 primary name) resumes on that chain's clients from the
+ *   client's `chains`.
  *
  * **Gotchas**
  *

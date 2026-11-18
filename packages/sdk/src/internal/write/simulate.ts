@@ -39,7 +39,7 @@ const simulateSequence = (
         ...(account === undefined ? {} : { account }),
         calls: calls.map((call) => ({ to: call.to, data: call.data, value: call.value })),
       }),
-    { account },
+    { account, chainId: client.chain.id },
   ).pipe(
     Effect.map(({ results }) =>
       results.map((result, index) => ({
@@ -55,10 +55,15 @@ const simulateSequence = (
                   context: {
                     contract: calls[index]?.to,
                     account,
+                    chainId: client.chain.id,
                     revert: { errorName: undefined, data: "0x" },
                   },
                 })
-              : (fromCause(result.error, { contract: calls[index]?.to, account }) as AnyError),
+              : (fromCause(result.error, {
+                  contract: calls[index]?.to,
+                  account,
+                  chainId: client.chain.id,
+                }) as AnyError),
         gas: result.gasUsed,
       })),
     ),
@@ -79,7 +84,7 @@ const simulateEach = (
           value: call.value,
           ...(account === undefined ? {} : { account }),
         }),
-      { contract: call.to, account },
+      { contract: call.to, account, chainId: client.chain.id },
     ).pipe(
       Effect.match({
         onFailure: (error): CallOutcome => ({ error, gas: undefined }),

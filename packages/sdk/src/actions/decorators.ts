@@ -439,7 +439,7 @@ export type PlanActions = {
   readonly plan: {
     /** Reads a saved plan and its progress. */
     readonly get: Bound<typeof plan.get>;
-    /** Lists the saved plans of this client's chain, newest first. */
+    /** Lists the saved plans of this client's chain and of its `chains`, newest first. */
     readonly list: Bound<typeof plan.list>;
     /** Records a transaction sent outside ensforge as a plan step's submission. */
     readonly reconcile: Bound<typeof plan.reconcile>;
@@ -493,6 +493,8 @@ export type PrimaryNameActions = {
     readonly set: BoundWrite<typeof primaryName.set>;
     /** Sets or clears the primary name (reverse record) of an address. Resolves once the receipt is in. */
     readonly setSync: Bound<typeof primaryName.setSync>;
+    /** Signs a claim to a primary name on one or more L2s, with one signature and no transaction. Anyone can then submit it on each chain with `primaryName.set`, so the account needs no gas or wallet connection there. */
+    readonly signClaim: Bound<typeof primaryName.signClaim>;
   };
 };
 
@@ -519,6 +521,7 @@ export const primaryNameActions =
         },
       ),
       setSync: (options) => primaryName.setSync(client, options),
+      signClaim: (options) => primaryName.signClaim(client, options),
     },
   });
 

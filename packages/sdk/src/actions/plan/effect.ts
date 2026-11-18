@@ -61,7 +61,7 @@ export declare namespace get {
 }
 
 /**
- * Lists the saved plans of this client's chain, newest first.
+ * Lists the saved plans of this client's chain and of its `chains`, newest first.
  *
  * **When to use**
  *
@@ -177,6 +177,8 @@ export declare namespace reconcile {
  *   bundle is sent again.
  * - Each remaining step is simulated against current state right before it is sent.
  * - The plan id is `result.plan.id`, or `context.planId` on a write's error.
+ * - A plan for another chain (an L2 primary name) resumes on that chain's clients from the
+ *   client's `chains`.
  *
  * **Gotchas**
  *
@@ -281,6 +283,7 @@ export declare namespace resumeSync {
  * - Progress is saved to the client's `storage`, so a failed or interrupted plan continues
  *   with {@link Actions.plan.resume}; failures carry `context.planId`.
  * - `onStep` reports each step as it waits, is submitted, confirmed or fails.
+ * - A plan for one of the client's `chains` (an L2 primary name) is simulated and sent there.
  *
  * **Example** (Sending a merged plan)
  *

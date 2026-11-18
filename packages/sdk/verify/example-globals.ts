@@ -21,11 +21,17 @@ declare global {
   const walletClient: WalletClient;
   const wagmiConfig: WagmiConfig;
   const anvil: PublicClient;
+  const optimismClient: PublicClient;
+  const optimismWallet: WalletClient;
+  const baseClient: PublicClient;
+  const baseWallet: WalletClient;
   const devnetV2: NonNullable<Parameters<typeof Deployments.define>[0]["v2"]>;
   const request: Parameters<WalletClient["writeContract"]>[0];
   const ens: Ensforge.Client<
     ReturnType<ReturnType<typeof ensActions>> & ReturnType<ReturnType<typeof indexerActions>>
   >;
+  const relayer: Ensforge.Client<ReturnType<ReturnType<typeof ensActions>>>;
+  const body: string;
 
   const address: Address;
   const account: Address;

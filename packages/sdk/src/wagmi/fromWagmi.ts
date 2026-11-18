@@ -3,7 +3,7 @@ import type { Config as WagmiConfig } from "wagmi";
 import { getConnectorClient, getPublicClient, switchChain } from "wagmi/actions";
 
 import { create } from "../client/create.js";
-import type { Client, CreateOptions, ViemWalletClient } from "../client/types.js";
+import type { ChainClients, Client, CreateOptions, ViemWalletClient } from "../client/types.js";
 import { ConfigError } from "../errors/classes/ConfigError.js";
 
 // The ENS chain: an explicit one, mainnet when the app has it, or the first chain ensforge
@@ -44,6 +44,8 @@ const chainIdOf = (config: WagmiConfig, options: fromWagmi.Options): number => {
  * - The wallet is looked up on every write, so account and connector changes are followed. With
  *   no wallet connected, writes fail with `WALLET_NOT_CONFIGURED`.
  * - A wallet on another chain is asked to switch first, as wagmi's own `writeContract` does.
+ * - Every other chain of the wagmi config becomes one of the client's `chains`, so writes ENS
+ *   makes there (an L2 primary name) use wagmi's clients and wallet; `chains` adds or overrides.
  *
  * **Gotchas**
  *
@@ -71,6 +73,7 @@ const chainIdOf = (config: WagmiConfig, options: fromWagmi.Options): number => {
  * @throws `Errors.ConfigError` (`UNKNOWN_CHAIN`) when no ENS chain can be chosen or the wagmi
  * config has no transport for it.
  * @throws `Errors.ConfigError` (`INVALID_DEPLOYMENT`) when `deployment` is invalid or for another chain.
+ * @throws `Errors.ConfigError` (`CHAIN_NOT_CONFIGURED`) when an entry of `chains` holds clients of another chain.
  * @category client
  * @since 1.0.0
  */
@@ -87,13 +90,14 @@ export const fromWagmi = (config: WagmiConfig, options: fromWagmi.Options = {}):
     });
   }
 
-  const walletClient = async (): Promise<ViemWalletClient | undefined> => {
+  // The connected wallet, on `target` when it switches; looked up on every write.
+  const walletOn = (target: number) => async (): Promise<ViemWalletClient | undefined> => {
     try {
       const connected = await getConnectorClient(config);
-      if (!autoSwitch || connected.chain.id === chainId) return connected;
+      if (!autoSwitch || connected.chain.id === target) return connected;
 
-      await switchChain(config, { chainId });
-      return await getConnectorClient(config, { chainId });
+      await switchChain(config, { chainId: target });
+      return await getConnectorClient(config, { chainId: target });
     } catch (cause) {
       // wagmi 2 and 3 both throw this without a connected wallet: no wallet, not a failure.
       if ((cause as { readonly name?: unknown } | null)?.name === "ConnectorNotConnectedError") {
@@ -103,7 +107,20 @@ export const fromWagmi = (config: WagmiConfig, options: fromWagmi.Options = {}):
     }
   };
 
-  return create({ ...createOptions, publicClient, walletClient });
+  const chains: Record<number, ChainClients> = {};
+  for (const { id } of config.chains) {
+    const chainClient = id === chainId ? undefined : getPublicClient(config, { chainId: id });
+    if (chainClient !== undefined) {
+      chains[id] = { publicClient: chainClient, walletClient: walletOn(id) };
+    }
+  }
+
+  return create({
+    ...createOptions,
+    publicClient,
+    walletClient: walletOn(chainId),
+    chains: { ...chains, ...createOptions.chains },
+  });
 };
 
 export declare namespace fromWagmi {

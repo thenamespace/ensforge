@@ -62,10 +62,25 @@ export const get = Effect.fn("ensforge.primaryName.get")(
           error.code === "RESOLVER_NOT_FOUND" ||
           error.code === "RESOLVER_PROFILE_UNSUPPORTED" ||
           (error.code === "PRIMARY_NAME_MISMATCH" && !strict),
-        (error) =>
-          strict
-            ? Effect.fail(new NotFoundError({ code: "PRIMARY_NAME_NOT_SET", cause: error }))
-            : Effect.succeed(""),
+        (error) => {
+          if (!strict) return Effect.succeed("");
+          // The Universal Resolver names the name without a resolver and the profile a resolver
+          // lacks: either on the primary name's side means a name that does not resolve back. A
+          // resolver that reverts without data says neither, and counts as no primary name.
+          const forward =
+            (error._tag === "NotFoundError" &&
+              error.resource !== undefined &&
+              error.resource !== reverseName(address, coinType)) ||
+            // `addr(bytes32)` and `addr(bytes32,uint256)`.
+            (error.context.selector !== undefined &&
+              ["0x3b3b57de", "0xf1cb7e06"].includes(error.context.selector));
+          return Effect.fail(
+            new NotFoundError({
+              code: forward ? "PRIMARY_NAME_MISMATCH" : "PRIMARY_NAME_NOT_SET",
+              cause: error,
+            }),
+          );
+        },
       ),
     );
 
