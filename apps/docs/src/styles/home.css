@@ -120,28 +120,7 @@
 /* --- Hero: the floor of names, quiet in the middle under the headline ------- */
 
 .ens-name-field {
-  mask-image: radial-gradient(ellipse 50% 46% at 50% 50%, transparent 20%, #000 80%);
-}
-.ens-card-stem {
-  background: linear-gradient(
-    color-mix(in oklab, var(--card-accent) 30%, transparent),
-    var(--card-accent)
-  );
-  opacity: 0.7;
-}
-/* A story change cross-fades each card's content in place. */
-.ens-card-in {
-  animation: ens-card-in 0.7s ease-out both;
-}
-@keyframes ens-card-in {
-  from {
-    opacity: 0;
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .ens-card-in {
-    animation: none;
-  }
+  mask-image: radial-gradient(ellipse 50% 46% at 50% 50%, transparent 25%, #000 85%);
 }
 
 /* --- Closing: the anvil forging names -------------------------------------- */
