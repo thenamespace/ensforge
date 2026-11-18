@@ -1,10 +1,8 @@
-import type { ReactNode } from "react";
-
 import { site } from "@/lib/site";
 
-import { KitStack, PlateStack } from "./art";
-import { Description, EnsforgeMark, Frame, Title } from "./frame";
-import { type Accent, accents, FAINT, LINE, MUTED } from "./primitives";
+import { PackageTiles, PlateStack } from "./art";
+import { Description, Frame, Slash, Title } from "./frame";
+import { type Accent, accents } from "./primitives";
 
 /**
  * Open Graph images, 1200 × 630: one per landing page, docs page and blog post. Everything is plain
@@ -13,71 +11,97 @@ import { type Accent, accents, FAINT, LINE, MUTED } from "./primitives";
 
 export { OG, accents, type Accent } from "./primitives";
 
+const host = new URL(site.url).host;
+
+/** The page's address for the footer; middle segments give way to "…" when it would not fit. */
+function address(path: string) {
+  const segments = path.split("/").filter(Boolean);
+  let shown = [host, ...segments].join("/");
+
+  for (let keep = segments.length - 2; shown.length > 72 && keep >= 1; keep--)
+    shown = [host, segments[0], "…", ...segments.slice(-keep)].join("/");
+
+  return shown;
+}
+
+const install = "npm i @ensforge/sdk";
+
 export function SiteImage({ page }: { page: "home" | "blog" }) {
   if (page === "blog") {
     return (
-      <Frame accent="kit" crumb="Blog" art={<KitStack />} wide={false}>
-        <Title size={80}>{site.name} blog</Title>
+      <Frame
+        label={{ accent: "kit", text: "blog" }}
+        eyebrow={<span style={{ color: accents.kit }}>Blog</span>}
+        path={address("/blog")}
+        note={install}
+        art={<PackageTiles />}
+      >
+        <Title text={`${site.name} blog`} />
         <Description>Release notes, guides and engineering notes from {site.name}.</Description>
       </Frame>
     );
   }
 
   return (
-    <Frame accent="kit" art={<KitStack />} wide={false}>
-      <Title size={72}>{site.tagline}.</Title>
-      <Description>Placeholder: the landing page is not written yet.</Description>
+    <Frame
+      label={{ accent: "sdk", text: "@ensforge/sdk" }}
+      eyebrow={
+        <>
+          <span style={{ color: accents.kit }}>TypeScript</span>
+          <Slash />
+          Built on viem
+        </>
+      }
+      path={host}
+      note={install}
+      art={<PackageTiles />}
+    >
+      <Title text={`${site.tagline}.`} size={88} />
+      <Description>{site.description}</Description>
     </Frame>
   );
+}
+
+export interface DocsCard {
+  readonly accent: Accent;
+  /** Package or area, e.g. "SDK" or "Errors". */
+  readonly section: string;
+  /** What kind of page this is, e.g. "Guide" or "API reference". */
+  readonly kind: string;
+  /** Header label: the package's npm name, or "docs". */
+  readonly label: string;
+  /** Set the title in mono: API names and error codes. */
+  readonly code: boolean;
 }
 
 export function DocsImage({
-  accent,
-  section,
+  card,
   title,
   description,
+  path,
 }: {
-  accent: Accent;
-  section: string;
+  card: DocsCard;
   title: string;
   description: string | undefined;
+  path: string;
 }) {
-  const size = title.length > 46 ? 56 : title.length > 26 ? 66 : 80;
-
   return (
-    <Frame accent={accent} crumb={section} art={<PlateStack accent={accent} />}>
-      <Pill>
-        <EnsforgeMark height={12} color={accents[accent]} />
-        Documentation
-      </Pill>
-      <Title size={size}>{title}</Title>
-      {description ? (
-        <Description>
-          {description.length > 140 ? `${description.slice(0, 137)}…` : description}
-        </Description>
-      ) : null}
-    </Frame>
-  );
-}
-
-function Pill({ children }: { children: ReactNode }) {
-  return (
-    <div
-      style={{
-        display: "flex",
-        alignSelf: "flex-start",
-        alignItems: "center",
-        gap: 10,
-        padding: "6px 14px",
-        borderRadius: 9999,
-        border: `1px solid ${LINE}`,
-        fontFamily: "JetBrains Mono",
-        fontSize: 18,
-        color: MUTED,
-      }}
+    <Frame
+      label={{ accent: card.accent, text: card.label }}
+      eyebrow={
+        <>
+          <span style={{ color: accents[card.accent] }}>{card.section}</span>
+          <Slash />
+          {card.kind}
+        </>
+      }
+      path={address(path)}
+      note="Documentation"
+      art={<PlateStack accent={card.accent} />}
     >
-      {children}
-    </div>
+      <Title text={title} code={card.code} />
+      {description ? <Description>{description}</Description> : null}
+    </Frame>
   );
 }
 
@@ -87,24 +111,31 @@ export function BlogImage({
   date,
   title,
   byline,
+  path,
 }: {
   accent: Accent;
   category: string;
   date: string;
   title: string;
   byline: string;
+  path: string;
 }) {
-  const size = title.length > 56 ? 54 : title.length > 32 ? 64 : 78;
-
   return (
-    <Frame accent={accent} crumb="Blog" art={<PlateStack accent={accent} />}>
-      <Pill>
-        <span style={{ color: accents[accent] }}>{category}</span>
-        <span style={{ color: FAINT }}>/</span>
-        {date}
-      </Pill>
-      <Title size={size}>{title}</Title>
-      <div style={{ fontSize: 24, color: MUTED }}>{byline}</div>
+    <Frame
+      label={{ accent: "kit", text: "blog" }}
+      eyebrow={
+        <>
+          <span style={{ color: accents[accent] }}>{category}</span>
+          <Slash />
+          {date}
+        </>
+      }
+      path={address(path)}
+      note="Blog"
+      art={<PlateStack accent={accent} />}
+    >
+      <Title text={title} />
+      <Description>{byline}</Description>
     </Frame>
   );
 }
