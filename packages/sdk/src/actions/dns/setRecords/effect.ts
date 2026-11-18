@@ -9,6 +9,7 @@ import { NotFoundError } from "../../../errors/classes/NotFoundError.js";
 import { UnsupportedError } from "../../../errors/classes/UnsupportedError.js";
 import type { AnyError } from "../../../errors/types.js";
 import * as Action from "../../../internal/action/index.js";
+import { lowercaseOwnerNames } from "../../../internal/dns/wire.js";
 import { loadName } from "../../../internal/name/load.js";
 import { requireRegistered, singleStepPlan } from "../../../internal/name/write.js";
 import { explainFor } from "../../../internal/permission/check.js";
@@ -54,6 +55,22 @@ export const plan = Effect.fnUntraced(function* (
     );
   }
 
+  // Owner names in their canonical lowercase form, as `dns.getRecords` reads them.
+  const canonical =
+    records === undefined
+      ? undefined
+      : yield* Effect.try({
+          try: () => lowercaseOwnerNames(records),
+          catch: (cause) =>
+            new InvalidInputError({
+              code: "INVALID_RECORD_VALUE",
+              field: "records",
+              input: records,
+              shortMessage: "`records` must be resource records in DNS wire format.",
+              cause,
+            }),
+        });
+
   const loaded = yield* loadName(client, options.name);
   yield* requireRegistered(loaded);
   const { resolver } = loaded.state;
@@ -73,12 +90,12 @@ export const plan = Effect.fnUntraced(function* (
   }
 
   const calls: Hex[] = [];
-  if (records !== undefined) {
+  if (canonical !== undefined) {
     calls.push(
       encodeFunctionData({
         abi: Abis.v1.publicResolver,
         functionName: "setDNSRecords",
-        args: [node, records],
+        args: [node, canonical],
       }),
     );
   }

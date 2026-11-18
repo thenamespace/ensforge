@@ -7,6 +7,7 @@ import { Actions } from "@ensforge/sdk/effect";
 import { Chain, Devnet } from "@ensforge/test-devnet";
 import { Fixtures } from "@ensforge/test-fixtures";
 import {
+  bytesToHex,
   concat,
   decodeFunctionResult,
   encodeFunctionData,
@@ -18,9 +19,14 @@ import {
   type Address,
   type Hex,
 } from "viem";
+import { packetToBytes } from "viem/ens";
 
 import { Clients } from "../support/clients.ts";
 import { onProfile } from "../support/lane.ts";
+
+/** The header of an A record (type 1, class IN, TTL 3600) owned by `owner`, in wire format. */
+const aRecordHeader = (owner: string) =>
+  concat([bytesToHex(packetToBytes(owner)), "0x0001", "0x0001", "0x00000e10"]);
 
 describe("record writes", () => {
   onProfile("mainnet-shaped")("mainnet-shaped", (it) => {
@@ -303,19 +309,25 @@ describe("record writes", () => {
           const chain = yield* Chain;
           const ens = (yield* Clients).make({ account: accounts.alice });
           const name = fixtures.byId("records.v1").name;
-          // An A record for `www.<name>` (type 1, class IN, TTL 3600), and the same with no data.
-          const header = concat([Name.dnsEncode(`www.${name}`), "0x0001", "0x0001", "0x00000e10"]);
-          const record = concat([header, "0x0004", "0x7f000001"]);
+          // An A record for `www.<name>`, and the same with no data. Owner names are written in any
+          // case and stored lowercase, as they are looked up.
+          const upper = aRecordHeader(`WWW.${name.toUpperCase()}`);
           const www = Actions.dns
-            .getRecords(ens, { name, records: [{ name: `WWW.${name.toUpperCase()}`, type: 1 }] })
+            .getRecords(ens, { name, records: [{ name: `Www.${name}`, type: 1 }] })
             .pipe(Effect.map(({ records }) => records[0]?.data));
 
           yield* chain.isolated(
             Effect.gen(function* () {
-              yield* Actions.dns.setRecordsSync(ens, { name, records: record });
-              assert.strictEqual(yield* www, record);
+              yield* Actions.dns.setRecordsSync(ens, {
+                name,
+                records: concat([upper, "0x0004", "0x7f000001"]),
+              });
+              assert.strictEqual(
+                yield* www,
+                concat([aRecordHeader(`www.${name}`), "0x0004", "0x7f000001"]),
+              );
 
-              yield* Actions.dns.setRecordsSync(ens, { name, records: concat([header, "0x0000"]) });
+              yield* Actions.dns.setRecordsSync(ens, { name, records: concat([upper, "0x0000"]) });
               assert.isNull(yield* www);
             }),
           );

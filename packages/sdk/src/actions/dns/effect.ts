@@ -355,7 +355,8 @@ export declare namespace getStatus {
  *
  * **Details**
  *
- * - `records`: resource records in DNS wire format; a record with no data deletes it.
+ * - `records`: resource records in DNS wire format; a record with no data deletes it. Owner names
+ *   are stored in lowercase, as `dns.getRecords` looks them up; record data is sent as given.
  * - `zonehash: null` clears the zonehash.
  * - Only the ENS public resolvers store DNS records.
  *
@@ -381,7 +382,7 @@ export declare namespace getStatus {
  * yield* Actions.dns.setRecords(ens, { name: "alice.eth", zonehash: "0xe301…" })
  * ```
  *
- * @throws `Errors.InvalidInputError` (`INVALID_NAME`, `INVALID_RECORD_VALUE`) for invalid input.
+ * @throws `Errors.InvalidInputError` (`INVALID_NAME`, `INVALID_RECORD_VALUE`) for invalid input, such as records that are not DNS wire format.
  * @throws `Errors.NameStateError` (`NAME_EXPIRED`, `NAME_RESERVED`, `NAME_NOT_REGISTERED`) when the name is not registered.
  * @throws `Errors.NotFoundError` (`RESOLVER_NOT_FOUND`) when the name has no resolver.
  * @throws `Errors.UnsupportedError` (`RESOLVER_PROFILE_UNSUPPORTED`) for resolvers without DNS records.
@@ -433,7 +434,7 @@ export declare namespace setRecords {
  * yield* Actions.dns.setRecordsSync(ens, { name: "alice.eth", zonehash: "0xe301…" })
  * ```
  *
- * @throws `Errors.InvalidInputError` (`INVALID_NAME`, `INVALID_RECORD_VALUE`) for invalid input.
+ * @throws `Errors.InvalidInputError` (`INVALID_NAME`, `INVALID_RECORD_VALUE`) for invalid input, such as records that are not DNS wire format.
  * @throws `Errors.NameStateError` (`NAME_EXPIRED`, `NAME_RESERVED`, `NAME_NOT_REGISTERED`) when the name is not registered.
  * @throws `Errors.NotFoundError` (`RESOLVER_NOT_FOUND`) when the name has no resolver.
  * @throws `Errors.UnsupportedError` (`RESOLVER_PROFILE_UNSUPPORTED`) for resolvers without DNS records.

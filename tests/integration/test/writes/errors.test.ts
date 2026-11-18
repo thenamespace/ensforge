@@ -812,6 +812,13 @@ const refusals: readonly Refusal[] = [
     expected: invalid("INVALID_RECORD_VALUE"),
   },
   {
+    label: "records that are not DNS wire format",
+    path: "dns.setRecords",
+    account: "alice",
+    options: (f) => ({ name: f.byId("records.v1").name, records: "0x0377777700" }),
+    expected: invalid("INVALID_RECORD_VALUE"),
+  },
+  {
     label: "an expired name",
     path: "dns.setRecords",
     account: "alice",
