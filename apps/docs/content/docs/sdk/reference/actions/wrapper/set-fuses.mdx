@@ -67,7 +67,7 @@ Resolves to `Write.Result`. Submitted transaction hashes and the plan that produ
 | `hash` | `Hex` | Hash of the last transaction. |
 | `hashes` | `readonly Hex[]` | Every submitted transaction, in order. |
 | `id` | `string` | EIP-5792 bundle id when the calls were sent as one batch. |
-| `plan` | `Plan` |  |
+| `plan` | `Plan` | The plan the write executed: its steps, in order, as they were submitted. |
 
 ## Errors
 
@@ -75,9 +75,12 @@ Resolves to `Write.Result`. Submitted transaction hashes and the plan that produ
 | --- | --- | --- |
 | [`InvalidInputError`](/docs/sdk/errors#invalidinputerror) | [`INVALID_NAME`](/docs/sdk/errors/INVALID_NAME), [`INVALID_RECORD_VALUE`](/docs/sdk/errors/INVALID_RECORD_VALUE) | invalid input or fuses. |
 | [`NameStateError`](/docs/sdk/errors#namestateerror) | [`NAME_EXPIRED`](/docs/sdk/errors/NAME_EXPIRED), [`NAME_NOT_REGISTERED`](/docs/sdk/errors/NAME_NOT_REGISTERED), [`NAME_NOT_WRAPPED`](/docs/sdk/errors/NAME_NOT_WRAPPED) | the name is not wrapped. |
+| [`NameStateError`](/docs/sdk/errors#namestateerror) | [`NAME_UNREACHABLE`](/docs/sdk/errors/NAME_UNREACHABLE) | ENSv2 resolution no longer reaches the name. |
 | [`UnsupportedError`](/docs/sdk/errors#unsupportederror) | [`UNSUPPORTED_PROTOCOL`](/docs/sdk/errors/UNSUPPORTED_PROTOCOL) | ENSv2 names; migrated names have no NameWrapper. |
 | [`UnauthorizedError`](/docs/sdk/errors#unauthorizederror) | [`NOT_OWNER`](/docs/sdk/errors/NOT_OWNER), [`FUSE_BURNED`](/docs/sdk/errors/FUSE_BURNED) | the account may not burn them. |
-| [`UserRejectedError`](/docs/sdk/errors#userrejectederror) |  | the user rejects the request. |
+| [`UserRejectedError`](/docs/sdk/errors#userrejectederror) | [`USER_REJECTED`](/docs/sdk/errors/USER_REJECTED) | the user rejects the request. |
+| [`WalletError`](/docs/sdk/errors#walleterror) | [`CHAIN_MISMATCH`](/docs/sdk/errors/CHAIN_MISMATCH), [`ACCOUNT_NOT_FOUND`](/docs/sdk/errors/ACCOUNT_NOT_FOUND) | the wallet is on another chain or has no account to sign with. |
+| [`UnsupportedError`](/docs/sdk/errors#unsupportederror) | [`WALLET_BATCH_UNSUPPORTED`](/docs/sdk/errors/WALLET_BATCH_UNSUPPORTED) | with `mode: "batch"` or a paymaster when the wallet cannot send calls as one batch. |
 
 It can also fail with the errors every write can (`Errors.WriteError`: the common errors plus `InsufficientFundsError`, `TransactionError`, `UnsupportedError`, `UserRejectedError`, `WalletError`).
 

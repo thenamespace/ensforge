@@ -84,7 +84,7 @@ Resolves to `getPrice.ReturnType`. Rent, premium and their total, in `token` uni
 | --- | --- | --- |
 | [`InvalidInputError`](/docs/sdk/errors#invalidinputerror) | [`INVALID_NAME`](/docs/sdk/errors/INVALID_NAME), [`INVALID_ADDRESS`](/docs/sdk/errors/INVALID_ADDRESS), [`DURATION_TOO_SHORT`](/docs/sdk/errors/DURATION_TOO_SHORT) | invalid input. |
 | [`UnsupportedError`](/docs/sdk/errors#unsupportederror) | [`PAYMENT_TOKEN_UNSUPPORTED`](/docs/sdk/errors/PAYMENT_TOKEN_UNSUPPORTED), [`UNSUPPORTED_ON_DEPLOYMENT`](/docs/sdk/errors/UNSUPPORTED_ON_DEPLOYMENT) | an unaccepted token or without ENSv2. |
-| [`NetworkError`](/docs/sdk/errors#networkerror) |  | the RPC request fails. |
+| [`NetworkError`](/docs/sdk/errors#networkerror) | [`RPC_REQUEST_FAILED`](/docs/sdk/errors/RPC_REQUEST_FAILED), [`RPC_TIMEOUT`](/docs/sdk/errors/RPC_TIMEOUT), [`RATE_LIMITED`](/docs/sdk/errors/RATE_LIMITED) | the RPC request fails. |
 
 It can also fail with the errors every read can (`Errors.CommonError`: `ConfigError`, `ContractRevertError`, `InternalError`, `NetworkError`).
 

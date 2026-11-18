@@ -236,7 +236,7 @@ type Contract
 The query of `getEvents`.
 
 ```ts
-type GetEvents = HistoryFilters & { namespace?: Namespace | undefined; name?: string | undefined; address?: Address | undefined; resolver?: { readonly chainId: number; readonly address: Address } | undefined; /** Emitting contract. */ contract?: Address | undefined; registrationId?: string | undefined; fromBlock?: bigint | undefined; toBlock?: bigint | undefined; };
+type GetEvents = HistoryFilters & { /** Only this naming system; every namespace the indexer serves when omitted. */ namespace?: Namespace | undefined; name?: string | undefined; address?: Address | undefined; resolver?: { readonly chainId: number; readonly address: Address } | undefined; /** Emitting contract. */ contract?: Address | undefined; registrationId?: string | undefined; fromBlock?: bigint | undefined; toBlock?: bigint | undefined; };
 ```
 
 | Field | Type | Description |
@@ -249,9 +249,9 @@ type GetEvents = HistoryFilters & { namespace?: Namespace | undefined; name?: st
 | `recordKey` (optional) | `string` | Record key, e.g. `avatar`, `text:url` or `addr:60`. |
 | `from` (optional) | `bigint \| Date` | Inclusive time bounds (Unix seconds or dates). |
 | `to` (optional) | `bigint \| Date` |  |
-| `order` (optional) | `"asc" \| "desc"` |  |
+| `order` (optional) | `"asc" \| "desc"` | Sort direction. |
 | `includeData` (optional) | `boolean` | Include each event's details (`data`, `action`). @default true |
-| `namespace` (optional) | `Namespace` |  |
+| `namespace` (optional) | `Namespace` | Only this naming system; every namespace the indexer serves when omitted. |
 | `name` (optional) | `string` |  |
 | `address` (optional) | `Address` |  |
 | `resolver` (optional) | `{ readonly chainId: number; readonly address: Address }` |  |
@@ -265,7 +265,7 @@ type GetEvents = HistoryFilters & { namespace?: Namespace | undefined; name?: st
 The query of `getHistory`.
 
 ```ts
-type GetHistory = HistoryFilters & ( | { name: string; namespace: Namespace; address?: undefined; /** Name events, registration events, or both. @default "both" */ scope?: "name" | "registration" | "both" | undefined; /** Also the registrations of its children. */ includeChildRegistrations?: boolean | undefined; } | { address: Address; namespace?: Namespace | undefined; name?: undefined; scope?: "name" | "registration" | "both" | undefined; /** @default ["owner", "manager", "roleHolder"] */ relation?: readonly ("owner" | "manager" | "roleHolder")[] | undefined; } );
+type GetHistory = HistoryFilters & ( | { name: string; /** The naming system the name belongs to. */ namespace: Namespace; address?: undefined; /** Name events, registration events, or both. @default "both" */ scope?: "name" | "registration" | "both" | undefined; /** Also the registrations of its children. */ includeChildRegistrations?: boolean | undefined; } | { address: Address; /** Only this naming system; every namespace the indexer serves when omitted. */ namespace?: Namespace | undefined; name?: undefined; scope?: "name" | "registration" | "both" | undefined; /** @default ["owner", "manager", "roleHolder"] */ relation?: readonly ("owner" | "manager" | "roleHolder")[] | undefined; } );
 ```
 
 | Field | Type | Description |
@@ -278,10 +278,10 @@ type GetHistory = HistoryFilters & ( | { name: string; namespace: Namespace; add
 | `recordKey` (optional) | `string` | Record key, e.g. `avatar`, `text:url` or `addr:60`. |
 | `from` (optional) | `bigint \| Date` | Inclusive time bounds (Unix seconds or dates). |
 | `to` (optional) | `bigint \| Date` |  |
-| `order` (optional) | `"asc" \| "desc"` |  |
+| `order` (optional) | `"asc" \| "desc"` | Sort direction. |
 | `includeData` (optional) | `boolean` | Include each event's details (`data`, `action`). @default true |
 | `name` (optional) | `string` |  |
-| `namespace` (optional) | `Namespace` |  |
+| `namespace` (optional) | `Namespace` | The naming system the name belongs to. |
 | `address` (optional) | `undefined` |  |
 | `scope` (optional) | `"name" \| "registration" \| "both"` | Name events, registration events, or both. @default "both" |
 
@@ -290,15 +290,15 @@ type GetHistory = HistoryFilters & ( | { name: string; namespace: Namespace; add
 The query of `getName`.
 
 ```ts
-type GetName = Snapshot & { name: string; namespace: Namespace; /** `verified` reads the answer on-chain through the indexer. @default "indexed" */ source?: "indexed" | "verified" | undefined; };
+type GetName = Snapshot & { name: string; /** The naming system the name belongs to. */ namespace: Namespace; /** `verified` reads the answer on-chain through the indexer. @default "indexed" */ source?: "indexed" | "verified" | undefined; };
 ```
 
 | Field | Type | Description |
 | --- | --- | --- |
 | `at` (optional) | `{ readonly token: string } \| { readonly timestamp: bigint \| Date }` | Read at a snapshot: an earlier answer's `asOfToken`, or a time. |
-| `finality` (optional) | `"latest" \| "safe" \| "finalized"` |  |
+| `finality` (optional) | `"latest" \| "safe" \| "finalized"` | How settled the data must be: `latest`, `safe` or `finalized`. |
 | `name` | `string` |  |
-| `namespace` | `Namespace` |  |
+| `namespace` | `Namespace` | The naming system the name belongs to. |
 | `source` (optional) | `"indexed" \| "verified"` | `verified` reads the answer on-chain through the indexer. @default "indexed" |
 
 ### `Query.GetNamesByExpiry`
@@ -306,7 +306,7 @@ type GetName = Snapshot & { name: string; namespace: Namespace; /** `verified` r
 The query of `getNamesByExpiry`.
 
 ```ts
-type GetNamesByExpiry = List & { namespace: Namespace; expiresAfter?: bigint | Date | undefined; expiresBefore?: bigint | Date | undefined; /** Up to 32 disjoint expiry windows; results report the matching `windowIndex`. */ windows?: readonly Window[] | undefined; graceEndsAfter?: bigint | Date | undefined; graceEndsBefore?: bigint | Date | undefined; graceWindows?: readonly Window[] | undefined; authority?: Authority | readonly Authority[] | undefined; parent?: string | undefined; sort?: "expiry" | "graceEnd" | undefined; order?: "asc" | "desc" | undefined; };
+type GetNamesByExpiry = List & { /** The naming system the name belongs to. */ namespace: Namespace; expiresAfter?: bigint | Date | undefined; expiresBefore?: bigint | Date | undefined; /** Up to 32 disjoint expiry windows; results report the matching `windowIndex`. */ windows?: readonly Window[] | undefined; graceEndsAfter?: bigint | Date | undefined; graceEndsBefore?: bigint | Date | undefined; graceWindows?: readonly Window[] | undefined; authority?: Authority | readonly Authority[] | undefined; parent?: string | undefined; /** Field the rows are sorted by. */ sort?: "expiry" | "graceEnd" | undefined; /** Sort direction. */ order?: "asc" | "desc" | undefined; };
 ```
 
 | Field | Type | Description |
@@ -314,7 +314,7 @@ type GetNamesByExpiry = List & { namespace: Namespace; expiresAfter?: bigint | D
 | `limit` (optional) | `number` | Rows per page, 1–200. @default 50 |
 | `cursor` (optional) | `string` | The previous page's `cursor`. |
 | `includeTotal` (optional) | `boolean` | Count every row (`totalCount`); slower. |
-| `namespace` | `Namespace` |  |
+| `namespace` | `Namespace` | The naming system the name belongs to. |
 | `expiresAfter` (optional) | `bigint \| Date` |  |
 | `expiresBefore` (optional) | `bigint \| Date` |  |
 | `windows` (optional) | `readonly Window[]` | Up to 32 disjoint expiry windows; results report the matching `windowIndex`. |
@@ -323,15 +323,15 @@ type GetNamesByExpiry = List & { namespace: Namespace; expiresAfter?: bigint | D
 | `graceWindows` (optional) | `readonly Window[]` |  |
 | `authority` (optional) | `Authority \| readonly Authority[]` |  |
 | `parent` (optional) | `string` |  |
-| `sort` (optional) | `"expiry" \| "graceEnd"` |  |
-| `order` (optional) | `"asc" \| "desc"` |  |
+| `sort` (optional) | `"expiry" \| "graceEnd"` | Field the rows are sorted by. |
+| `order` (optional) | `"asc" \| "desc"` | Sort direction. |
 
 ### `Query.GetNamesForAddress`
 
 The query of `getNamesForAddress`.
 
 ```ts
-type GetNamesForAddress = List & { address: Address; /** Every namespace the indexer serves when omitted. */ namespace?: Namespace | undefined; /** * Relations to list; `any` is owner, manager and role holder. `resolvesTo` and `formerOwner` * stand alone. @default "any" */ relation?: Relation | "any" | readonly Relation[] | undefined; /** Coin type for `resolvesTo`, or `evm` for every EVM chain. @default 60 */ coinType?: bigint | "evm" | undefined; /** Only direct children of this name. */ parent?: string | undefined; authority?: Authority | readonly Authority[] | undefined; /** Only names migrated to ENSv2 (or only not migrated). */ migrated?: boolean | undefined; /** Expiry bounds (Unix seconds or dates), with `formerOwner` only. */ expiresAfter?: bigint | Date | undefined; expiresBefore?: bigint | Date | undefined; search?: string | undefined; /** @default "prefix" */ match?: "prefix" | "contains" | undefined; sort?: "name" | "expiry" | "registered" | "created" | undefined; order?: "asc" | "desc" | undefined; /** One row per name, or per registration. @default "name" */ dedupe?: "name" | "registration" | undefined; };
+type GetNamesForAddress = List & { address: Address; /** Every namespace the indexer serves when omitted. */ namespace?: Namespace | undefined; /** * Relations to list; `any` is owner, manager and role holder. `resolvesTo` and `formerOwner` * stand alone. @default "any" */ relation?: Relation | "any" | readonly Relation[] | undefined; /** Coin type for `resolvesTo`, or `evm` for every EVM chain. @default 60 */ coinType?: bigint | "evm" | undefined; /** Only direct children of this name. */ parent?: string | undefined; authority?: Authority | readonly Authority[] | undefined; /** Only names migrated to ENSv2 (or only not migrated). */ migrated?: boolean | undefined; /** Expiry bounds (Unix seconds or dates), with `formerOwner` only. */ expiresAfter?: bigint | Date | undefined; expiresBefore?: bigint | Date | undefined; search?: string | undefined; /** * Whether `search` matches from the start of a label (`prefix`) or anywhere (`contains`). * * @default "prefix" */ match?: "prefix" | "contains" | undefined; /** Field the rows are sorted by. */ sort?: "name" | "expiry" | "registered" | "created" | undefined; /** Sort direction. */ order?: "asc" | "desc" | undefined; /** One row per name, or per registration. @default "name" */ dedupe?: "name" | "registration" | undefined; };
 ```
 
 | Field | Type | Description |
@@ -349,9 +349,9 @@ type GetNamesForAddress = List & { address: Address; /** Every namespace the ind
 | `expiresAfter` (optional) | `bigint \| Date` | Expiry bounds (Unix seconds or dates), with `formerOwner` only. |
 | `expiresBefore` (optional) | `bigint \| Date` |  |
 | `search` (optional) | `string` |  |
-| `match` (optional) | `"prefix" \| "contains"` |  |
-| `sort` (optional) | `"name" \| "expiry" \| "registered" \| "created"` |  |
-| `order` (optional) | `"asc" \| "desc"` |  |
+| `match` (optional) | `"prefix" \| "contains"` | Whether `search` matches from the start of a label (`prefix`) or anywhere (`contains`). |
+| `sort` (optional) | `"name" \| "expiry" \| "registered" \| "created"` | Field the rows are sorted by. |
+| `order` (optional) | `"asc" \| "desc"` | Sort direction. |
 | `dedupe` (optional) | `"name" \| "registration"` | One row per name, or per registration. @default "name" |
 
 ### `Query.GetNamespace`
@@ -371,7 +371,7 @@ type GetNamespace
 The query of `getPermissions`.
 
 ```ts
-type GetPermissions = List & { namespace?: Namespace | undefined; /** Include how each grant was obtained. */ includeLineage?: boolean | undefined; } & ( | { name: string; registrationId?: undefined; address?: undefined; registry?: undefined } | { registrationId: string; name?: undefined; address?: undefined; registry?: undefined } | { address: Address; name?: undefined; registrationId?: undefined; registry?: undefined } | { registry: { readonly chainId: number; readonly address: Address }; name?: undefined; registrationId?: undefined; address?: undefined; } );
+type GetPermissions = List & { /** Only this naming system; every namespace the indexer serves when omitted. */ namespace?: Namespace | undefined; /** Include how each grant was obtained. */ includeLineage?: boolean | undefined; } & ( | { name: string; registrationId?: undefined; address?: undefined; registry?: undefined } | { registrationId: string; name?: undefined; address?: undefined; registry?: undefined } | { address: Address; name?: undefined; registrationId?: undefined; registry?: undefined } | { registry: { readonly chainId: number; readonly address: Address }; name?: undefined; registrationId?: undefined; address?: undefined; } );
 ```
 
 | Field | Type | Description |
@@ -379,7 +379,7 @@ type GetPermissions = List & { namespace?: Namespace | undefined; /** Include ho
 | `limit` (optional) | `number` | Rows per page, 1–200. @default 50 |
 | `cursor` (optional) | `string` | The previous page's `cursor`. |
 | `includeTotal` (optional) | `boolean` | Count every row (`totalCount`); slower. |
-| `namespace` (optional) | `Namespace` |  |
+| `namespace` (optional) | `Namespace` | Only this naming system; every namespace the indexer serves when omitted. |
 | `includeLineage` (optional) | `boolean` | Include how each grant was obtained. |
 | `name` (optional) | `string` |  |
 | `registrationId` (optional) | `undefined` |  |
@@ -398,7 +398,7 @@ type GetPrimaryName
 | --- | --- | --- |
 | `address` | `Address` |  |
 | `coinType` (optional) | `bigint` |  |
-| `namespace` (optional) | `Namespace` |  |
+| `namespace` (optional) | `Namespace` | Only this naming system; every namespace the indexer serves when omitted. |
 | `source` (optional) | `"indexed" \| "verified"` | Both, verified first, when omitted. |
 
 ### `Query.GetRecords`
@@ -406,15 +406,15 @@ type GetPrimaryName
 The query of `getRecords`.
 
 ```ts
-type GetRecords = Snapshot & { name: string; namespace: Namespace; /** Record keys (`avatar`, `text:url`, `addr:60`, `contenthash`); the inventory's when omitted. */ keys?: readonly string[] | undefined; /** `false` returns only the inventory, without values. @default true */ values?: boolean | undefined; /** @default "indexed" */ source?: "indexed" | "verified" | "auto" | undefined; /** Read the records the name has on this resolver instead of its current one. */ resolver?: { readonly chainId: number; readonly address: Address } | undefined; };
+type GetRecords = Snapshot & { name: string; /** The naming system the name belongs to. */ namespace: Namespace; /** Record keys (`avatar`, `text:url`, `addr:60`, `contenthash`); the inventory's when omitted. */ keys?: readonly string[] | undefined; /** `false` returns only the inventory, without values. @default true */ values?: boolean | undefined; /** @default "indexed" */ source?: "indexed" | "verified" | "auto" | undefined; /** Read the records the name has on this resolver instead of its current one. */ resolver?: { readonly chainId: number; readonly address: Address } | undefined; };
 ```
 
 | Field | Type | Description |
 | --- | --- | --- |
 | `at` (optional) | `{ readonly token: string } \| { readonly timestamp: bigint \| Date }` | Read at a snapshot: an earlier answer's `asOfToken`, or a time. |
-| `finality` (optional) | `"latest" \| "safe" \| "finalized"` |  |
+| `finality` (optional) | `"latest" \| "safe" \| "finalized"` | How settled the data must be: `latest`, `safe` or `finalized`. |
 | `name` | `string` |  |
-| `namespace` | `Namespace` |  |
+| `namespace` | `Namespace` | The naming system the name belongs to. |
 | `keys` (optional) | `readonly string[]` | Record keys (`avatar`, `text:url`, `addr:60`, `contenthash`); the inventory's when omitted. |
 | `values` (optional) | `boolean` | `false` returns only the inventory, without values. @default true |
 | `source` (optional) | `"indexed" \| "verified" \| "auto"` |  |
@@ -431,7 +431,7 @@ type GetRegistry = Snapshot & Contract & { includeCounts?: boolean | undefined }
 | Field | Type | Description |
 | --- | --- | --- |
 | `at` (optional) | `{ readonly token: string } \| { readonly timestamp: bigint \| Date }` | Read at a snapshot: an earlier answer's `asOfToken`, or a time. |
-| `finality` (optional) | `"latest" \| "safe" \| "finalized"` |  |
+| `finality` (optional) | `"latest" \| "safe" \| "finalized"` | How settled the data must be: `latest`, `safe` or `finalized`. |
 | `address` | `Address` |  |
 | `chainId` | `number` |  |
 | `includeCounts` (optional) | `boolean` |  |
@@ -465,7 +465,7 @@ type GetResolver = Snapshot & Contract & List;
 | Field | Type | Description |
 | --- | --- | --- |
 | `at` (optional) | `{ readonly token: string } \| { readonly timestamp: bigint \| Date }` | Read at a snapshot: an earlier answer's `asOfToken`, or a time. |
-| `finality` (optional) | `"latest" \| "safe" \| "finalized"` |  |
+| `finality` (optional) | `"latest" \| "safe" \| "finalized"` | How settled the data must be: `latest`, `safe` or `finalized`. |
 | `address` | `Address` |  |
 | `chainId` | `number` |  |
 | `limit` (optional) | `number` | Rows per page, 1–200. @default 50 |
@@ -483,7 +483,7 @@ type GetResolverLinks = Snapshot & Contract & List;
 | Field | Type | Description |
 | --- | --- | --- |
 | `at` (optional) | `{ readonly token: string } \| { readonly timestamp: bigint \| Date }` | Read at a snapshot: an earlier answer's `asOfToken`, or a time. |
-| `finality` (optional) | `"latest" \| "safe" \| "finalized"` |  |
+| `finality` (optional) | `"latest" \| "safe" \| "finalized"` | How settled the data must be: `latest`, `safe` or `finalized`. |
 | `address` | `Address` |  |
 | `chainId` | `number` |  |
 | `limit` (optional) | `number` | Rows per page, 1–200. @default 50 |
@@ -501,7 +501,7 @@ type GetResolverRoles = Snapshot & Contract & List;
 | Field | Type | Description |
 | --- | --- | --- |
 | `at` (optional) | `{ readonly token: string } \| { readonly timestamp: bigint \| Date }` | Read at a snapshot: an earlier answer's `asOfToken`, or a time. |
-| `finality` (optional) | `"latest" \| "safe" \| "finalized"` |  |
+| `finality` (optional) | `"latest" \| "safe" \| "finalized"` | How settled the data must be: `latest`, `safe` or `finalized`. |
 | `address` | `Address` |  |
 | `chainId` | `number` |  |
 | `limit` (optional) | `number` | Rows per page, 1–200. @default 50 |
@@ -537,7 +537,7 @@ type GetStatus
 The query of `getSubnames`.
 
 ```ts
-type GetSubnames = List & { name: string; namespace: Namespace; search?: string | undefined; match?: "prefix" | "contains" | undefined; /** @default "name" */ sort?: "name" | "expiry" | "registered" | undefined; order?: "asc" | "desc" | undefined; /** @default true */ includeExpired?: boolean | undefined; };
+type GetSubnames = List & { name: string; /** The naming system the name belongs to. */ namespace: Namespace; search?: string | undefined; /** Whether `search` matches from the start of a label (`prefix`) or anywhere (`contains`). */ match?: "prefix" | "contains" | undefined; /** * Field the rows are sorted by. * * @default "name" */ sort?: "name" | "expiry" | "registered" | undefined; /** Sort direction. */ order?: "asc" | "desc" | undefined; /** @default true */ includeExpired?: boolean | undefined; };
 ```
 
 | Field | Type | Description |
@@ -546,11 +546,11 @@ type GetSubnames = List & { name: string; namespace: Namespace; search?: string 
 | `cursor` (optional) | `string` | The previous page's `cursor`. |
 | `includeTotal` (optional) | `boolean` | Count every row (`totalCount`); slower. |
 | `name` | `string` |  |
-| `namespace` | `Namespace` |  |
+| `namespace` | `Namespace` | The naming system the name belongs to. |
 | `search` (optional) | `string` |  |
-| `match` (optional) | `"prefix" \| "contains"` |  |
-| `sort` (optional) | `"name" \| "expiry" \| "registered"` |  |
-| `order` (optional) | `"asc" \| "desc"` |  |
+| `match` (optional) | `"prefix" \| "contains"` | Whether `search` matches from the start of a label (`prefix`) or anywhere (`contains`). |
+| `sort` (optional) | `"name" \| "expiry" \| "registered"` | Field the rows are sorted by. |
+| `order` (optional) | `"asc" \| "desc"` | Sort direction. |
 | `includeExpired` (optional) | `boolean` |  |
 
 ### `Query.HistoryFilters`
@@ -558,7 +558,7 @@ type GetSubnames = List & { name: string; namespace: Namespace; search?: string 
 History filters shared by `getHistory` and `getEvents`.
 
 ```ts
-type HistoryFilters = List & { types?: readonly EventType[] | undefined; excludeTypes?: readonly EventType[] | undefined; /** Record key, e.g. `avatar`, `text:url` or `addr:60`. */ recordKey?: string | undefined; /** Inclusive time bounds (Unix seconds or dates). */ from?: bigint | Date | undefined; to?: bigint | Date | undefined; /** @default "desc" */ order?: "asc" | "desc" | undefined; /** Include each event's details (`data`, `action`). @default true */ includeData?: boolean | undefined; };
+type HistoryFilters = List & { types?: readonly EventType[] | undefined; excludeTypes?: readonly EventType[] | undefined; /** Record key, e.g. `avatar`, `text:url` or `addr:60`. */ recordKey?: string | undefined; /** Inclusive time bounds (Unix seconds or dates). */ from?: bigint | Date | undefined; to?: bigint | Date | undefined; /** * Sort direction. * * @default "desc" */ order?: "asc" | "desc" | undefined; /** Include each event's details (`data`, `action`). @default true */ includeData?: boolean | undefined; };
 ```
 
 | Field | Type | Description |
@@ -571,7 +571,7 @@ type HistoryFilters = List & { types?: readonly EventType[] | undefined; exclude
 | `recordKey` (optional) | `string` | Record key, e.g. `avatar`, `text:url` or `addr:60`. |
 | `from` (optional) | `bigint \| Date` | Inclusive time bounds (Unix seconds or dates). |
 | `to` (optional) | `bigint \| Date` |  |
-| `order` (optional) | `"asc" \| "desc"` |  |
+| `order` (optional) | `"asc" \| "desc"` | Sort direction. |
 | `includeData` (optional) | `boolean` | Include each event's details (`data`, `action`). @default true |
 
 ### `Query.List`
@@ -599,7 +599,7 @@ type Lookup
 | Field | Type | Description |
 | --- | --- | --- |
 | `inputs` | `readonly string[]` | Names and addresses, up to 1,000. |
-| `namespace` (optional) | `Namespace` |  |
+| `namespace` (optional) | `Namespace` | Only this naming system; every namespace the indexer serves when omitted. |
 | `profile` (optional) | `"feed" \| "detail"` | `detail` adds records and resolution. @default "feed" |
 
 ### `Query.Search`
@@ -607,7 +607,7 @@ type Lookup
 The query of `search`.
 
 ```ts
-type Search = List & { query: string; namespace?: Namespace | undefined; /** @default "prefix" */ match?: "prefix" | "contains" | undefined; };
+type Search = List & { query: string; /** Only this naming system; every namespace the indexer serves when omitted. */ namespace?: Namespace | undefined; /** * Whether `search` matches from the start of a label (`prefix`) or anywhere (`contains`). * * @default "prefix" */ match?: "prefix" | "contains" | undefined; };
 ```
 
 | Field | Type | Description |
@@ -616,8 +616,8 @@ type Search = List & { query: string; namespace?: Namespace | undefined; /** @de
 | `cursor` (optional) | `string` | The previous page's `cursor`. |
 | `includeTotal` (optional) | `boolean` | Count every row (`totalCount`); slower. |
 | `query` | `string` |  |
-| `namespace` (optional) | `Namespace` |  |
-| `match` (optional) | `"prefix" \| "contains"` |  |
+| `namespace` (optional) | `Namespace` | Only this naming system; every namespace the indexer serves when omitted. |
+| `match` (optional) | `"prefix" \| "contains"` | Whether `search` matches from the start of a label (`prefix`) or anywhere (`contains`). |
 
 ### `Query.Snapshot`
 
@@ -630,7 +630,7 @@ type Snapshot
 | Field | Type | Description |
 | --- | --- | --- |
 | `at` (optional) | `{ readonly token: string } \| { readonly timestamp: bigint \| Date }` | Read at a snapshot: an earlier answer's `asOfToken`, or a time. |
-| `finality` (optional) | `"latest" \| "safe" \| "finalized"` |  |
+| `finality` (optional) | `"latest" \| "safe" \| "finalized"` | How settled the data must be: `latest`, `safe` or `finalized`. |
 
 ### `Query.Window`
 

@@ -149,11 +149,11 @@ type Client<actions extends object = {}> = actions & ClientBase<actions>;
 
 | Field | Type | Description |
 | --- | --- | --- |
-| `chain` | `{ readonly id: number; readonly name: string }` |  |
+| `chain` | `{ readonly id: number; readonly name: string }` | The chain the client reads and writes ENS on. |
 | `account` | `Address` | Default signer address, or `undefined` without a wallet. |
 | `deployment` | `Deployments.Profile` | ENS deployments on this chain (addresses, capabilities, provenance). |
 | `publicClient` | `ViemClient` | The viem client used for reads, as an escape hatch. |
-| `config` | `Config` |  |
+| `config` | `Config` | The configuration the client was created with. |
 | `extend` | `<const added extends object>( decorator: (client: Client<object>) => added, ) => Client<object & added>` | Adds action groups; returns a new client. |
 
 ### `Ensforge.ClientBase`
@@ -166,11 +166,11 @@ interface ClientBase<actions extends object = {}>
 
 | Field | Type | Description |
 | --- | --- | --- |
-| `chain` | `{ readonly id: number; readonly name: string }` |  |
+| `chain` | `{ readonly id: number; readonly name: string }` | The chain the client reads and writes ENS on. |
 | `account` | `Address` | Default signer address, or `undefined` without a wallet. |
 | `deployment` | `Deployments.Profile` | ENS deployments on this chain (addresses, capabilities, provenance). |
 | `publicClient` | `ViemClient` | The viem client used for reads, as an escape hatch. |
-| `config` | `Config` |  |
+| `config` | `Config` | The configuration the client was created with. |
 | `extend` | `<const added extends object>( decorator: (client: Client<object>) => added, ) => Client<object & added>` | Adds action groups; returns a new client. |
 
 ### `Ensforge.Config`
@@ -790,7 +790,7 @@ type Result
 | `hash` | `Hex` | Hash of the last transaction. |
 | `hashes` | `readonly Hex[]` | Every submitted transaction, in order. |
 | `id` | `string` | EIP-5792 bundle id when the calls were sent as one batch. |
-| `plan` | `Plan` |  |
+| `plan` | `Plan` | The plan the write executed: its steps, in order, as they were submitted. |
 
 ## Sync options
 
@@ -828,7 +828,7 @@ type SyncResult = Result & { /** Receipt of the last transaction. */ readonly re
 | `hash` | `Hex` | Hash of the last transaction. |
 | `hashes` | `readonly Hex[]` | Every submitted transaction, in order. |
 | `id` | `string` | EIP-5792 bundle id when the calls were sent as one batch. |
-| `plan` | `Plan` |  |
+| `plan` | `Plan` | The plan the write executed: its steps, in order, as they were submitted. |
 | `receipt` | `TransactionReceipt` | Receipt of the last transaction. |
 | `receipts` | `readonly TransactionReceipt[]` |  |
 

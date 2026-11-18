@@ -80,7 +80,7 @@ Resolves to `PermissionCheck`. Whether it is allowed, how, and what is missing.
 | --- | --- | --- |
 | [`InvalidInputError`](/docs/sdk/errors#invalidinputerror) | [`INVALID_NAME`](/docs/sdk/errors/INVALID_NAME), [`INVALID_ADDRESS`](/docs/sdk/errors/INVALID_ADDRESS), [`INVALID_COIN_TYPE`](/docs/sdk/errors/INVALID_COIN_TYPE) | invalid input. |
 | [`ConfigError`](/docs/sdk/errors#configerror) | [`WALLET_NOT_CONFIGURED`](/docs/sdk/errors/WALLET_NOT_CONFIGURED) | without `account` or a client account. |
-| [`NetworkError`](/docs/sdk/errors#networkerror) |  | the RPC request fails. |
+| [`NetworkError`](/docs/sdk/errors#networkerror) | [`RPC_REQUEST_FAILED`](/docs/sdk/errors/RPC_REQUEST_FAILED), [`RPC_TIMEOUT`](/docs/sdk/errors/RPC_TIMEOUT), [`RATE_LIMITED`](/docs/sdk/errors/RATE_LIMITED) | the RPC request fails. |
 
 It can also fail with the errors every read can (`Errors.CommonError`: `ConfigError`, `ContractRevertError`, `InternalError`, `NetworkError`).
 

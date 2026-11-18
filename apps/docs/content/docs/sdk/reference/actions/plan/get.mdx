@@ -75,8 +75,9 @@ Resolves to `Plan.Record | null`. The saved plan and its progress, or `null`.
 
 | Error | Codes | When |
 | --- | --- | --- |
-| [`InternalError`](/docs/sdk/errors#internalerror) |  | the storage fails. |
-| [`NetworkError`](/docs/sdk/errors#networkerror) |  | the RPC request fails. |
+| [`InternalError`](/docs/sdk/errors#internalerror) | [`UNEXPECTED`](/docs/sdk/errors/UNEXPECTED) | the storage fails. |
+| [`PlanError`](/docs/sdk/errors#planerror) | [`PLAN_INVALID`](/docs/sdk/errors/PLAN_INVALID) | a saved plan cannot be read. |
+| [`NetworkError`](/docs/sdk/errors#networkerror) | [`RPC_REQUEST_FAILED`](/docs/sdk/errors/RPC_REQUEST_FAILED), [`RPC_TIMEOUT`](/docs/sdk/errors/RPC_TIMEOUT), [`RATE_LIMITED`](/docs/sdk/errors/RATE_LIMITED) | the RPC request fails. |
 
 It can also fail with the errors every read can (`Errors.CommonError`: `ConfigError`, `ContractRevertError`, `InternalError`, `NetworkError`).
 

@@ -79,7 +79,9 @@ Resolves to `Write.Result & { readonly secret: Hex; readonly commitments: readon
 | [`CommitmentError`](/docs/sdk/errors#commitmenterror) | [`COMMITMENT_TOO_NEW`](/docs/sdk/errors/COMMITMENT_TOO_NEW), [`COMMITMENT_TOO_OLD`](/docs/sdk/errors/COMMITMENT_TOO_OLD), [`COMMITMENT_EXISTS`](/docs/sdk/errors/COMMITMENT_EXISTS) | a resumed commitment outside its window. |
 | [`UnsupportedError`](/docs/sdk/errors#unsupportederror) | [`PAYMENT_TOKEN_UNSUPPORTED`](/docs/sdk/errors/PAYMENT_TOKEN_UNSUPPORTED), [`UNSUPPORTED_ON_DEPLOYMENT`](/docs/sdk/errors/UNSUPPORTED_ON_DEPLOYMENT) | an unaccepted token or without ENSv2. |
 | [`ConfigError`](/docs/sdk/errors#configerror) | [`WALLET_NOT_CONFIGURED`](/docs/sdk/errors/WALLET_NOT_CONFIGURED) | no signing account is known. |
-| [`UserRejectedError`](/docs/sdk/errors#userrejectederror) |  | the user rejects the request. |
+| [`UserRejectedError`](/docs/sdk/errors#userrejectederror) | [`USER_REJECTED`](/docs/sdk/errors/USER_REJECTED) | the user rejects the request. |
+| [`WalletError`](/docs/sdk/errors#walleterror) | [`CHAIN_MISMATCH`](/docs/sdk/errors/CHAIN_MISMATCH), [`ACCOUNT_NOT_FOUND`](/docs/sdk/errors/ACCOUNT_NOT_FOUND) | the wallet is on another chain or has no account to sign with. |
+| [`UnsupportedError`](/docs/sdk/errors#unsupportederror) | [`WALLET_BATCH_UNSUPPORTED`](/docs/sdk/errors/WALLET_BATCH_UNSUPPORTED) | with `mode: "batch"` or a paymaster when the wallet cannot send calls as one batch. |
 
 It can also fail with the errors every write can (`Errors.WriteError`: the common errors plus `InsufficientFundsError`, `TransactionError`, `UnsupportedError`, `UserRejectedError`, `WalletError`).
 

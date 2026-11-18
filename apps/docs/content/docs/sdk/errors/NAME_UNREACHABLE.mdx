@@ -29,7 +29,26 @@ Retrying the same call fails the same way until the cause is fixed (`retryable: 
 
 ## Actions that throw it
 
-No action names this code in its documented errors.
+| Action | When |
+| --- | --- |
+| [`approval.setToken`](/docs/sdk/reference/actions/approval/set-token) | when ENSv2 resolution no longer reaches the name. |
+| [`dns.setRecords`](/docs/sdk/reference/actions/dns/set-records) | when ENSv2 resolution no longer reaches the name. |
+| [`name.reclaim`](/docs/sdk/reference/actions/name/reclaim) | when ENSv2 resolution no longer reaches the name. |
+| [`name.setManager`](/docs/sdk/reference/actions/name/set-manager) | when ENSv2 resolution no longer reaches the name. |
+| [`name.setTtl`](/docs/sdk/reference/actions/name/set-ttl) | when ENSv2 resolution no longer reaches the name. |
+| [`name.transfer`](/docs/sdk/reference/actions/name/transfer) | when ENSv2 resolution no longer reaches the name. |
+| [`record.set`](/docs/sdk/reference/actions/record/set) | when ENSv2 resolution no longer reaches the name. |
+| [`registry.attach`](/docs/sdk/reference/actions/registry/attach) | when ENSv2 resolution no longer reaches the name. |
+| [`resolver.create`](/docs/sdk/reference/actions/resolver/create) | when ENSv2 resolution no longer reaches the name. |
+| [`resolver.link`](/docs/sdk/reference/actions/resolver/link) | when ENSv2 resolution no longer reaches the name. |
+| [`resolver.set`](/docs/sdk/reference/actions/resolver/set) | when ENSv2 resolution no longer reaches the name. |
+| [`subname.create`](/docs/sdk/reference/actions/subname/create) | when ENSv2 resolution no longer reaches the parent. |
+| [`subname.remove`](/docs/sdk/reference/actions/subname/remove) | when ENSv2 resolution no longer reaches the parent. |
+| [`subname.update`](/docs/sdk/reference/actions/subname/update) | when ENSv2 resolution no longer reaches the parent. |
+| [`wrapper.setChildFuses`](/docs/sdk/reference/actions/wrapper/set-child-fuses) | when ENSv2 resolution no longer reaches the name. |
+| [`wrapper.setFuses`](/docs/sdk/reference/actions/wrapper/set-fuses) | when ENSv2 resolution no longer reaches the name. |
+| [`wrapper.unwrap`](/docs/sdk/reference/actions/wrapper/unwrap) | when ENSv2 resolution no longer reaches the name. |
+| [`wrapper.wrap`](/docs/sdk/reference/actions/wrapper/wrap) | when ENSv2 resolution no longer reaches the name. |
 
 ## Catch it
 

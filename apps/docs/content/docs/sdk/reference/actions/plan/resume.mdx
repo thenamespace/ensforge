@@ -66,13 +66,15 @@ Resolves to `Write.Result`. Submitted transaction hashes (earlier steps included
 | `hash` | `Hex` | Hash of the last transaction. |
 | `hashes` | `readonly Hex[]` | Every submitted transaction, in order. |
 | `id` | `string` | EIP-5792 bundle id when the calls were sent as one batch. |
-| `plan` | `Plan` |  |
+| `plan` | `Plan` | The plan the write executed: its steps, in order, as they were submitted. |
 
 ## Errors
 
 | Error | Codes | When |
 | --- | --- | --- |
-| [`NotFoundError`](/docs/sdk/errors#notfounderror) | [`PLAN_NOT_FOUND`](/docs/sdk/errors/PLAN_NOT_FOUND) | or `Errors.PlanError` ([`PLAN_CHAIN_MISMATCH`](/docs/sdk/errors/PLAN_CHAIN_MISMATCH), [`PLAN_ACCOUNT_MISMATCH`](/docs/sdk/errors/PLAN_ACCOUNT_MISMATCH), [`PLAN_ROUTE_REQUIRED`](/docs/sdk/errors/PLAN_ROUTE_REQUIRED)) when the plan cannot continue here. |
+| [`NotFoundError`](/docs/sdk/errors#notfounderror) | [`PLAN_NOT_FOUND`](/docs/sdk/errors/PLAN_NOT_FOUND) | an unknown plan. |
+| [`PlanError`](/docs/sdk/errors#planerror) | [`PLAN_CHAIN_MISMATCH`](/docs/sdk/errors/PLAN_CHAIN_MISMATCH), [`PLAN_ACCOUNT_MISMATCH`](/docs/sdk/errors/PLAN_ACCOUNT_MISMATCH), [`PLAN_ROUTE_REQUIRED`](/docs/sdk/errors/PLAN_ROUTE_REQUIRED) | the plan cannot continue here. |
+| [`PlanError`](/docs/sdk/errors#planerror) | [`PLAN_INVALID`](/docs/sdk/errors/PLAN_INVALID) | a saved plan cannot be read. |
 | [`ContractRevertError`](/docs/sdk/errors#contractreverterror) | [`CONTRACT_REVERTED`](/docs/sdk/errors/CONTRACT_REVERTED) | , or the failing step's own error (`Errors.AnyError`: a plan can hold any step), with `context.planId` and `context.step`. |
 
 It can also fail with the errors every write can (`Errors.WriteError`: the common errors plus `InsufficientFundsError`, `TransactionError`, `UnsupportedError`, `UserRejectedError`, `WalletError`).

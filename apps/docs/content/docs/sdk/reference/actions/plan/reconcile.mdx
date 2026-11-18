@@ -78,8 +78,9 @@ Resolves to `Plan.Record`. The updated record.
 | Error | Codes | When |
 | --- | --- | --- |
 | [`NotFoundError`](/docs/sdk/errors#notfounderror) | [`PLAN_NOT_FOUND`](/docs/sdk/errors/PLAN_NOT_FOUND) | an unknown plan. |
+| [`PlanError`](/docs/sdk/errors#planerror) | [`PLAN_INVALID`](/docs/sdk/errors/PLAN_INVALID) | a saved plan cannot be read. |
 | [`InvalidInputError`](/docs/sdk/errors#invalidinputerror) | [`INVALID_RECORD_VALUE`](/docs/sdk/errors/INVALID_RECORD_VALUE) | an unknown step or an unrelated transaction. |
-| [`NetworkError`](/docs/sdk/errors#networkerror) |  | the RPC request fails. |
+| [`NetworkError`](/docs/sdk/errors#networkerror) | [`RPC_REQUEST_FAILED`](/docs/sdk/errors/RPC_REQUEST_FAILED), [`RPC_TIMEOUT`](/docs/sdk/errors/RPC_TIMEOUT), [`RATE_LIMITED`](/docs/sdk/errors/RATE_LIMITED) | the RPC request fails. |
 
 It can also fail with the errors every read can (`Errors.CommonError`: `ConfigError`, `ContractRevertError`, `InternalError`, `NetworkError`).
 

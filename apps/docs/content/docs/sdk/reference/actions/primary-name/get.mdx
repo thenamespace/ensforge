@@ -75,9 +75,9 @@ Resolves to `string | null`. The primary name, or `null` when there is no valid 
 | --- | --- | --- |
 | [`InvalidInputError`](/docs/sdk/errors#invalidinputerror) | [`INVALID_ADDRESS`](/docs/sdk/errors/INVALID_ADDRESS), [`INVALID_COIN_TYPE`](/docs/sdk/errors/INVALID_COIN_TYPE), [`INVALID_NAME`](/docs/sdk/errors/INVALID_NAME) | invalid input, or with `strict` an unnormalized name. |
 | [`NotFoundError`](/docs/sdk/errors#notfounderror) | [`PRIMARY_NAME_NOT_SET`](/docs/sdk/errors/PRIMARY_NAME_NOT_SET), [`PRIMARY_NAME_MISMATCH`](/docs/sdk/errors/PRIMARY_NAME_MISMATCH) | with `strict` when there is no valid primary name. |
-| [`GatewayError`](/docs/sdk/errors#gatewayerror) |  | an off-chain gateway fails. |
+| [`GatewayError`](/docs/sdk/errors#gatewayerror) | [`GATEWAY_REQUEST_FAILED`](/docs/sdk/errors/GATEWAY_REQUEST_FAILED), [`GATEWAY_RESPONSE_INVALID`](/docs/sdk/errors/GATEWAY_RESPONSE_INVALID), [`OFFCHAIN_LOOKUP_INVALID`](/docs/sdk/errors/OFFCHAIN_LOOKUP_INVALID) | an off-chain gateway fails. |
 | [`DnsError`](/docs/sdk/errors#dnserror) |  | a DNS name's DNSSEC proof does not verify. |
-| [`NetworkError`](/docs/sdk/errors#networkerror) |  | the RPC request fails. |
+| [`NetworkError`](/docs/sdk/errors#networkerror) | [`RPC_REQUEST_FAILED`](/docs/sdk/errors/RPC_REQUEST_FAILED), [`RPC_TIMEOUT`](/docs/sdk/errors/RPC_TIMEOUT), [`RATE_LIMITED`](/docs/sdk/errors/RATE_LIMITED) | the RPC request fails. |
 
 It can also fail with the errors every read can (`Errors.CommonError`: `ConfigError`, `ContractRevertError`, `InternalError`, `NetworkError`).
 

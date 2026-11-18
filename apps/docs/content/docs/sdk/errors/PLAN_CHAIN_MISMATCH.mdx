@@ -27,7 +27,8 @@ Retrying the same call fails the same way until the cause is fixed (`retryable: 
 
 | Action | When |
 | --- | --- |
-| [`plan.send`](/docs/sdk/reference/actions/plan/send) | for a plan prepared elsewhere; ([`PLAN_STALE`](/docs/sdk/errors/PLAN_STALE)) when a token it transfers was reissued since it was prepared. |
+| [`plan.resume`](/docs/sdk/reference/actions/plan/resume) | when the plan cannot continue here. |
+| [`plan.send`](/docs/sdk/reference/actions/plan/send) | for a plan prepared elsewhere. |
 
 ## Catch it
 
