@@ -59,7 +59,7 @@ import * as Impl from "./effect.js";
  *
  * @throws `Errors.InvalidInputError` (`INVALID_NAME`, `INVALID_ADDRESS`, `INVALID_RECORD_VALUE`) for invalid input.
  * @throws `Errors.MigrationError` (`NOT_ELIGIBLE`, `ALREADY_MIGRATED`, `RECORDS_UNKNOWN`, `NAME_NOT_LOCKED`) when a name cannot migrate as asked.
- * @throws `Errors.NameStateError` (`NAME_LOCKED`, `PARENT_NOT_MIGRATED`) when the name is locked or its parent is not migrated yet.
+ * @throws `Errors.NameStateError` (`NAME_LOCKED`) when the name is locked.
  * @throws `Errors.UnsupportedError` (`UNSUPPORTED_ON_DEPLOYMENT`) where ENSv2 is not deployed.
  * @throws `Errors.UnauthorizedError` (`NOT_OWNER`, `FUSE_BURNED`) when the account may not move a token.
  * @throws `Errors.UserRejectedError` (`USER_REJECTED`) when the user rejects the request.
@@ -167,7 +167,7 @@ migrate.estimateGas = Action.promiseOf(
  *
  * @throws `Errors.InvalidInputError` (`INVALID_NAME`, `INVALID_ADDRESS`, `INVALID_RECORD_VALUE`) for invalid input.
  * @throws `Errors.MigrationError` (`NOT_ELIGIBLE`, `ALREADY_MIGRATED`, `RECORDS_UNKNOWN`, `NAME_NOT_LOCKED`) when a name cannot migrate as asked.
- * @throws `Errors.NameStateError` (`NAME_LOCKED`, `PARENT_NOT_MIGRATED`) when the name is locked or its parent is not migrated yet.
+ * @throws `Errors.NameStateError` (`NAME_LOCKED`) when the name is locked.
  * @throws `Errors.UnsupportedError` (`UNSUPPORTED_ON_DEPLOYMENT`) where ENSv2 is not deployed.
  * @throws `Errors.UnauthorizedError` (`NOT_OWNER`, `FUSE_BURNED`) when the account may not move a token.
  * @throws `Errors.TransactionError` (`TRANSACTION_REVERTED`, `RECEIPT_TIMEOUT`, `NONCE_CONFLICT`) when confirmation fails or the wallet's nonce is already used.
