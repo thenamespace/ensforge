@@ -1,6 +1,155 @@
 ---
 title: Upgrades and governance
-description: Placeholder, to be written.
+description: Check and run an HCA upgrade as an owner, and manage implementation approvals as a governance account.
+keywords:
+  [
+    upgrade,
+    getUpgrade,
+    getGovernance,
+    setDeploymentApproval,
+    setUpgradeApproval,
+    upgrade set,
+    hcaAdmin,
+  ]
 ---
 
-Placeholder: this page is not written yet.
+<Callout type="info" title="Experimental">
+  `@ensforge/hca` is experimental for 1.0. The `hcaAdmin` actions are for governance accounts only,
+  and their API can change in a minor release.
+</Callout>
+
+An HCA runs an **implementation**: the contract code behind the account. The DAO decides which implementations exist and which accounts may move to. By the end of this guide you will have checked an upgrade, run it, and, as a governance account, approved a new implementation.
+
+## Upgrade your HCA (owners)
+
+An upgrade keeps the HCA's address and its sessions. Only the owner can run it, and only to an implementation that two checks allow:
+
+1. The implementation is in the DAO's **upgrade set**.
+2. The implementation accepts the account's current implementation as a predecessor.
+
+### 1. Check the upgrade
+
+[`hca.getUpgrade`](/docs/hca/reference/actions/hca/get-upgrade) reports each check, so you can tell the user which approval is missing.
+
+```ts twoslash title="check-upgrade.ts"
+import { hcaActions } from "@ensforge/hca";
+import { Ensforge, ensActions } from "@ensforge/sdk";
+import { createPublicClient, createWalletClient, http } from "viem";
+import { privateKeyToAccount } from "viem/accounts";
+import { sepolia } from "viem/chains";
+
+const account = privateKeyToAccount(
+  "0x0123456789012345678901234567890123456789012345678901234567890123",
+);
+const ens = Ensforge.create({
+  publicClient: createPublicClient({ chain: sepolia, transport: http() }),
+  walletClient: createWalletClient({ account, chain: sepolia, transport: http() }),
+})
+  .extend(ensActions())
+  .extend(hcaActions());
+// ---cut---
+const implementation = "0x0000000000000000000000000000000000000001"; // placeholder: the new implementation
+
+const { allowed, inUpgradeSet, predecessorAllowed } = await ens.hca.getUpgrade({
+  implementation,
+});
+```
+
+| Field                | Meaning                                                            |
+| -------------------- | ------------------------------------------------------------------ |
+| `allowed`            | `true` when both checks pass.                                      |
+| `current`            | The account's current implementation, or `null` before deployment. |
+| `inUpgradeSet`       | The upgrade set includes the implementation.                       |
+| `predecessorAllowed` | The implementation accepts `current` as its predecessor.           |
+
+### 2. Run the upgrade
+
+[`hca.upgrade`](/docs/hca/reference/actions/hca/upgrade) is the owner's own transaction. It fails with `HCA_UPGRADE_NOT_ALLOWED` when the HCA is not deployed or a check fails.
+
+```ts twoslash title="upgrade.ts"
+import { hcaActions } from "@ensforge/hca";
+import { Ensforge, ensActions } from "@ensforge/sdk";
+import { createPublicClient, createWalletClient, http } from "viem";
+import { privateKeyToAccount } from "viem/accounts";
+import { sepolia } from "viem/chains";
+
+const account = privateKeyToAccount(
+  "0x0123456789012345678901234567890123456789012345678901234567890123",
+);
+const ens = Ensforge.create({
+  publicClient: createPublicClient({ chain: sepolia, transport: http() }),
+  walletClient: createWalletClient({ account, chain: sepolia, transport: http() }),
+})
+  .extend(ensActions())
+  .extend(hcaActions());
+const implementation = "0x0000000000000000000000000000000000000001"; // placeholder
+// ---cut---
+await ens.hca.upgradeSync({ implementation });
+```
+
+After an upgrade, `ens.hca.get` returns the new `implementation`. The account's `initialImplementation`, which its address derives from, does not change.
+
+## Inspect governance
+
+[`hcaAdmin.getGovernance`](/docs/hca/reference/actions/hca-admin/get-governance) is a read anyone can run. Add `hcaAdminActions()` to the client first. See [Installation](/docs/hca/installation).
+
+| Field                | Meaning                                                                                          |
+| -------------------- | ------------------------------------------------------------------------------------------------ |
+| `factoryOwner`       | The account that owns the HCA factory.                                                           |
+| `upgradeSet`         | The address of the upgrade set.                                                                  |
+| `deploymentApproved` | Whether the implementation may be used for new accounts. `null` when you pass no implementation. |
+| `upgradeApproved`    | Whether the upgrade set includes the implementation. `null` when you pass no implementation.     |
+
+## Approve implementations (governance accounts)
+
+Each action is limited to the account in the table's second column. Each has a `…Sync` form.
+
+| Action                                                                                    | Who                      | What it does                                                                  |
+| ----------------------------------------------------------------------------------------- | ------------------------ | ----------------------------------------------------------------------------- |
+| [`setDeploymentApproval`](/docs/hca/reference/actions/hca-admin/set-deployment-approval)  | Factory owner            | Approves or revokes an implementation for new HCA deployments.                |
+| [`setUpgradeApproval`](/docs/hca/reference/actions/hca-admin/set-upgrade-approval)        | Upgrade-set role holders | Approves or revokes an implementation in the upgrade set.                     |
+| [`grantUpgradeSetRoles`](/docs/hca/reference/actions/hca-admin/grant-upgrade-set-roles)   | Role admins              | Grants root roles on the upgrade set to `grantee` (`roles` is a bitmap).      |
+| [`revokeUpgradeSetRoles`](/docs/hca/reference/actions/hca-admin/revoke-upgrade-set-roles) | Role admins              | Revokes root roles on the upgrade set from `grantee`.                         |
+| [`transferGovernance`](/docs/hca/reference/actions/hca-admin/transfer-governance)         | Factory owner            | Transfers ownership of the factory to `newOwner`, for example a DAO timelock. |
+| [`renounceGovernance`](/docs/hca/reference/actions/hca-admin/renounce-governance)         | Factory owner            | Gives up factory ownership.                                                   |
+
+**Example** (Allowing an Upgrade Target)
+
+```ts twoslash title="approve-upgrade.ts"
+import { hcaAdminActions } from "@ensforge/hca";
+import { Ensforge, ensActions } from "@ensforge/sdk";
+import { createPublicClient, createWalletClient, http } from "viem";
+import { privateKeyToAccount } from "viem/accounts";
+import { sepolia } from "viem/chains";
+
+const account = privateKeyToAccount(
+  "0x0123456789012345678901234567890123456789012345678901234567890123",
+);
+const ens = Ensforge.create({
+  publicClient: createPublicClient({ chain: sepolia, transport: http() }),
+  walletClient: createWalletClient({ account, chain: sepolia, transport: http() }),
+})
+  .extend(ensActions())
+  .extend(hcaAdminActions());
+const implementation = "0x0000000000000000000000000000000000000001"; // placeholder
+// ---cut---
+await ens.hcaAdmin.setUpgradeApprovalSync({ implementation, approved: true });
+
+const governance = await ens.hcaAdmin.getGovernance({ implementation });
+```
+
+<Callout type="warn" title="Renouncing is permanent">
+  `renounceGovernance` freezes the factory's implementation approvals. After it, nobody can add or
+  retire an implementation for new HCAs. Use it only to make the set of deployable implementations
+  permanent.
+</Callout>
+
+## Troubleshooting
+
+### `HCA_UPGRADE_NOT_ALLOWED`
+
+The HCA is not deployed, the upgrade set does not include the implementation, or the implementation does not accept the current one as predecessor. Run `getUpgrade` to see which. See [`HCA_UPGRADE_NOT_ALLOWED`](/docs/sdk/errors/HCA_UPGRADE_NOT_ALLOWED).
+
+### `untrusted-implementation` in `problems`
+
+The account runs an implementation that is neither the factory's first one nor in the upgrade set. ensforge refuses to route writes through such an account. See [How it works](/docs/hca/how-it-works#how-ensforge-trusts-an-account).

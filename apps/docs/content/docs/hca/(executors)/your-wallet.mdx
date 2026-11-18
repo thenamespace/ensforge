@@ -1,6 +1,101 @@
 ---
 title: Your wallet
-description: Placeholder, to be written.
+description: Run HCA executions as ordinary wallet transactions with the owner executor, the default.
+keywords: [owner, executor, executeByOwner, EIP-5792, hca]
 ---
 
-Placeholder: this page is not written yet.
+<Callout type="info" title="Experimental">
+  `@ensforge/hca` is experimental for 1.0. Its API can change in a minor release.
+</Callout>
+
+The `owner()` executor sends each HCA execution as an `executeByOwner` transaction from the owner's wallet. It is the default, needs no service, and the owner pays gas. By the end of this page you will know when it runs, how to combine it with other executors, and how to run arbitrary calls from the HCA.
+
+## Use it by default
+
+`hca()` with no options is the same as `hca({ executors: [owner()] })`.
+
+**Example** (Running Calls From the HCA)
+
+```ts twoslash title="execute.ts"
+import { hca, hcaActions, owner } from "@ensforge/hca";
+import { Ensforge, ensActions } from "@ensforge/sdk";
+import { createPublicClient, createWalletClient, http, parseEther } from "viem";
+import { privateKeyToAccount } from "viem/accounts";
+import { sepolia } from "viem/chains";
+
+const account = privateKeyToAccount(
+  "0x0123456789012345678901234567890123456789012345678901234567890123",
+);
+const ens = Ensforge.create({
+  publicClient: createPublicClient({ chain: sepolia, transport: http() }),
+  walletClient: createWalletClient({ account, chain: sepolia, transport: http() }),
+})
+  .extend(ensActions())
+  .extend(hcaActions());
+// ---cut---
+const { receipt } = await ens.hca.executeSync({
+  calls: [{ to: "0x000000000000000000000000000000000000dEaD", value: parseEther("0.001") }],
+  via: hca({ executors: [owner()] }),
+});
+```
+
+[`hca.execute`](/docs/hca/reference/actions/hca/execute) runs the calls in order, from the HCA, as one atomic execution. Every call succeeds or the whole execution reverts. The HCA must hold the ETH or tokens the calls spend.
+
+## What the owner executor sends
+
+- With a wallet that supports atomic batches (EIP-5792), the owner's steps share one bundle: the setup, the deployment and the executions.
+- Otherwise the wallet sends one transaction per step.
+- The first step also deploys the HCA, with a factory call, when it does not exist yet.
+- Use `mode` and `maxBundleCalls` on the write to control bundling, as for any [write](/docs/sdk/send-a-transaction).
+
+## Let the wallet sponsor gas
+
+With a wallet that supports the EIP-5792 `paymasterService` capability, pass `paymaster` on the write. The wallet then sponsors its own transactions.
+
+```ts twoslash title="sponsored-by-wallet.ts"
+import { hca, hcaActions } from "@ensforge/hca";
+import { Ensforge, ensActions } from "@ensforge/sdk";
+import { createPublicClient, createWalletClient, http } from "viem";
+import { privateKeyToAccount } from "viem/accounts";
+import { sepolia } from "viem/chains";
+
+const account = privateKeyToAccount(
+  "0x0123456789012345678901234567890123456789012345678901234567890123",
+);
+const ens = Ensforge.create({
+  publicClient: createPublicClient({ chain: sepolia, transport: http() }),
+  walletClient: createWalletClient({ account, chain: sepolia, transport: http() }),
+})
+  .extend(ensActions())
+  .extend(hcaActions());
+// ---cut---
+await ens.migration.migrate({
+  names: ["alice.eth"],
+  via: hca(),
+  paymaster: { url: "https://paymaster.example.com" }, // your EIP-5792 paymaster service
+});
+```
+
+See [Pay gas for users](/docs/sdk/pay-gas-for-users) for the wallet side.
+
+## Combine it with other executors
+
+`executors` lists executors in order of preference. ensforge uses the first one that can run the request. Put `owner()` last as the fallback.
+
+```ts twoslash title="fallback.ts"
+import { hca, owner, pimlico } from "@ensforge/hca";
+
+const via = hca({ executors: [pimlico({ apiKey: "pim_…", sponsor: true }), owner()] });
+```
+
+With a `session`, only an executor that runs sessions qualifies, and the owner executor does not. See [Sessions](/docs/hca/sessions).
+
+## Troubleshooting
+
+### `HCA_EXECUTOR_UNSUPPORTED`
+
+No executor in the list can run the request. `hca()` throws it when you pass a `session` and no executor supports sessions. Add `rhinestone()`. See [`HCA_EXECUTOR_UNSUPPORTED`](/docs/sdk/errors/HCA_EXECUTOR_UNSUPPORTED).
+
+### `HCA_NOT_VERIFIED`
+
+The write has no signer, or the deployed HCA failed its checks. Pass an `account` or a wallet client, and read `details` for the failed checks. See [`HCA_NOT_VERIFIED`](/docs/sdk/errors/HCA_NOT_VERIFIED).

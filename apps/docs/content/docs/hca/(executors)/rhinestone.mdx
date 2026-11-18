@@ -1,6 +1,83 @@
 ---
 title: Rhinestone
-description: Placeholder, to be written.
+description: Run HCA executions as Rhinestone intents, owner-signed or prompt-free with a session.
+keywords: [rhinestone, intents, session, sponsored, refund token, HCA_SDK_UNSUPPORTED]
 ---
 
-Placeholder: this page is not written yet.
+<Callout type="info" title="Experimental">
+  `@ensforge/hca` is experimental for 1.0. The Rhinestone executor needs a Rhinestone SDK with
+  standalone HCA support, and ensforge only tests its wiring, not Rhinestone's orchestrator.
+</Callout>
+
+**Rhinestone** is an intent network. The `rhinestone()` executor sends HCA executions as Rhinestone intents, either signed by the owner or, with a [session](/docs/hca/sessions), signed by a session key without a wallet prompt. By the end of this page you will have an executor ready for both.
+
+## Prerequisites
+
+- A Rhinestone SDK instance that supports the standalone ENS HCA (account type `hca`, version `ens-standalone-1.1.0`). Stock SDK releases may derive another account type. Create the instance in your app. ensforge does not depend on the SDK.
+- For sessions, the session key's signer (a viem account) and an authorized session. See [Sessions](/docs/hca/sessions).
+
+## Create the executor
+
+| Option          | Type            | Default | Description                                                                    |
+| --------------- | --------------- | ------- | ------------------------------------------------------------------------------ |
+| `sdk`           | `RhinestoneSdk` | none    | A Rhinestone SDK instance with standalone HCA support.                         |
+| `sessionSigner` | `Account`       | none    | The session key's signer. Required for session executions.                     |
+| `sponsored`     | `boolean`       | `true`  | Sponsor executions. When `false`, fees are paid in the session's refund token. |
+
+**Example** (A Prompt-Free Route)
+
+```ts twoslash title="rhinestone.ts"
+import { hca, rhinestone, type HcaSession, type RhinestoneSdk } from "@ensforge/hca";
+import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
+
+declare const sdk: RhinestoneSdk; // created by your app from Rhinestone's SDK
+declare const session: HcaSession; // from ens.hca.authorizeSession
+
+const sessionSigner = privateKeyToAccount(generatePrivateKey());
+
+const via = hca({ executors: [rhinestone({ sdk, sessionSigner })], session });
+```
+
+Pass `via` to a write the session allows. See [Sessions](/docs/hca/sessions) for what that includes.
+
+## Owner-signed executions
+
+Without a `session`, `rhinestone({ sdk })` sends owner-signed, sponsored intents.
+
+```ts twoslash title="owner-signed.ts"
+import { hca, rhinestone, type RhinestoneSdk } from "@ensforge/hca";
+
+declare const sdk: RhinestoneSdk;
+
+const via = hca({ executors: [rhinestone({ sdk })] });
+```
+
+## Pay fees in the refund token
+
+With `sponsored: false`, a session execution pays its fees in the session's refund token. The session sets the token and its ceilings when you authorize it.
+
+```ts twoslash title="refund-token.ts"
+import { rhinestone, type RhinestoneSdk } from "@ensforge/hca";
+import type { Account } from "viem";
+
+declare const sdk: RhinestoneSdk;
+declare const sessionSigner: Account;
+
+const executor = rhinestone({ sdk, sessionSigner, sponsored: false });
+```
+
+## What ensforge checks
+
+- Before signing, ensforge checks every session call against the HCA policy. A call outside it fails with `HCA_ACTION_NOT_ALLOWED` and nothing is signed.
+- The SDK account must derive the same HCA address as ensforge. Otherwise the executor fails with `HCA_SDK_UNSUPPORTED`.
+- Status follows the intent until its fill transaction is mined. An intent that is `FAILED` or `EXPIRED` reports as failed.
+
+## Troubleshooting
+
+### `HCA_SDK_UNSUPPORTED`
+
+The Rhinestone SDK derives a different address than the owner's HCA. Use an SDK release with standalone HCA support (`ens-standalone-1.1.0`). See [`HCA_SDK_UNSUPPORTED`](/docs/sdk/errors/HCA_SDK_UNSUPPORTED).
+
+### `HCA_EXECUTOR_UNSUPPORTED`
+
+The write has no wallet account, the chain has no HCA deployment, or a session execution has no `sessionSigner`. See [`HCA_EXECUTOR_UNSUPPORTED`](/docs/sdk/errors/HCA_EXECUTOR_UNSUPPORTED).

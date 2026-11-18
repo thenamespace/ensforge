@@ -1,6 +1,225 @@
 ---
 title: Sessions
-description: Placeholder, to be written.
+description: Let an app register names and edit records from a user's HCA without wallet prompts, and revoke that access.
+keywords:
+  [session, authorizeSession, getSession, revokeSessions, checkSessionCalls, sessionKey, validUntil]
 ---
 
-Placeholder: this page is not written yet.
+<Callout type="info" title="Experimental">
+  `@ensforge/hca` is experimental for 1.0. Sessions run only through Rhinestone, and the signing
+  domain of session approvals can change when ENS deploys a dedicated one.
+</Callout>
+
+A **session** is an approval the HCA's owner signs once so that a session key can act for the HCA within fixed limits. After it, an app registers names and edits records without a wallet prompt for each step. By the end of this guide you will have authorized a session, used it, checked it and revoked it.
+
+## What a session may do
+
+A session may do only these things:
+
+- Register names to the owner, with the session's resolver.
+- Deploy the session's resolver and set its records.
+- Set the owner's primary name.
+- Approve payments to the registrar for a registration.
+
+Nothing else is allowed: renewals, transfers, subnames, registry approvals and calls to other contracts all fail with `HCA_ACTION_NOT_ALLOWED`. A session binds one resolver, the one it may deploy and edit.
+
+## Prerequisites
+
+- A client with a wallet and the HCA actions. See [Installation](/docs/hca/installation).
+- The owner's HCA deployed. See [`hca.deploy`](/docs/hca/reference/actions/hca/deploy).
+- A Rhinestone SDK with standalone HCA support and a session key. See [Rhinestone](/docs/hca/rhinestone).
+- A resolver address for the session. The session may deploy and edit this resolver, an HCA-deployed `PermissionedResolver`.
+
+## 1. Authorize the session
+
+`authorizeSession` asks the owner for one signature. It sends no transaction.
+
+| Option       | Type      | Description                                                                                           |
+| ------------ | --------- | ----------------------------------------------------------------------------------------------------- |
+| `sessionKey` | `string`  | Public address of the session key your app keeps.                                                     |
+| `resolver`   | `string`  | The one resolver the session may deploy and edit.                                                     |
+| `validUntil` | `number`  | Unix seconds after which the session stops working.                                                   |
+| `refund`     | object    | Refund ceilings for Rhinestone executions: `token`, `maxExchangeRate`, `maxGasOverhead`, `maxAmount`. |
+| `account`    | `Address` | The HCA's owner. Defaults to the client's account.                                                    |
+
+Without `refund`, the token is the deployment's USDC and the ceilings are the ENS app's: $20k per ETH, 500k gas of overhead and 100 USDC per intent.
+
+**Example** (Authorizing a Session for One Day)
+
+```ts twoslash title="authorize.ts"
+import { hcaActions } from "@ensforge/hca";
+import { Ensforge, ensActions } from "@ensforge/sdk";
+import { createPublicClient, createWalletClient, http } from "viem";
+import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
+import { sepolia } from "viem/chains";
+
+const account = privateKeyToAccount(
+  "0x0123456789012345678901234567890123456789012345678901234567890123",
+);
+const ens = Ensforge.create({
+  publicClient: createPublicClient({ chain: sepolia, transport: http() }),
+  walletClient: createWalletClient({ account, chain: sepolia, transport: http() }),
+})
+  .extend(ensActions())
+  .extend(hcaActions());
+// ---cut---
+const sessionAccount = privateKeyToAccount(generatePrivateKey());
+const resolver = "0x0000000000000000000000000000000000000001"; // placeholder: your session resolver
+
+const session = await ens.hca.authorizeSession({
+  sessionKey: sessionAccount.address,
+  resolver,
+  validUntil: Math.floor(Date.now() / 1000) + 24 * 60 * 60,
+});
+```
+
+The returned `HcaSession` holds no secret: it has the owner's signature and the session terms, but the key stays with your app. Store it where the app can find it. It contains `bigint` values, so use a serializer that supports them. If the owner declines, the action fails with `USER_REJECTED`.
+
+## 2. Check what a session can do
+
+[`hca.checkSessionCalls`](/docs/hca/reference/actions/hca/check-session-calls) tests calls against the policy before anything is signed. It returns `true`, or throws `HCA_ACTION_NOT_ALLOWED` for the first call outside the policy. Use it to tell users up front what runs without prompts. `hca({ session })` runs the same check on its own.
+
+```ts twoslash title="check.ts"
+import { hcaActions, type HcaSession } from "@ensforge/hca";
+import { Duration, Ensforge, ensActions } from "@ensforge/sdk";
+import { createPublicClient, createWalletClient, http } from "viem";
+import { privateKeyToAccount } from "viem/accounts";
+import { sepolia } from "viem/chains";
+
+const account = privateKeyToAccount(
+  "0x0123456789012345678901234567890123456789012345678901234567890123",
+);
+const ens = Ensforge.create({
+  publicClient: createPublicClient({ chain: sepolia, transport: http() }),
+  walletClient: createWalletClient({ account, chain: sepolia, transport: http() }),
+})
+  .extend(ensActions())
+  .extend(hcaActions());
+declare const session: HcaSession;
+// ---cut---
+const plan = await ens.registration.register.prepare({
+  names: "my-new-name.eth", // placeholder
+  duration: Duration.years(1),
+  resolver: session.terms.resolver,
+});
+
+const allowed = await ens.hca.checkSessionCalls({ session, calls: plan.calls });
+```
+
+A registration that sets a `subregistry`, for example, is outside every session.
+
+## 3. Run a write with the session
+
+Pass the session to `hca()` with an executor that runs sessions. The write is signed by the session key and delivered through Rhinestone.
+
+**Example** (Registering a Name Without a Prompt)
+
+```ts twoslash title="register-with-session.ts"
+import { hca, hcaActions, rhinestone, type HcaSession, type RhinestoneSdk } from "@ensforge/hca";
+import { Duration, Ensforge, ensActions } from "@ensforge/sdk";
+import { createPublicClient, createWalletClient, http } from "viem";
+import { privateKeyToAccount } from "viem/accounts";
+import { sepolia } from "viem/chains";
+
+const account = privateKeyToAccount(
+  "0x0123456789012345678901234567890123456789012345678901234567890123",
+);
+const ens = Ensforge.create({
+  publicClient: createPublicClient({ chain: sepolia, transport: http() }),
+  walletClient: createWalletClient({ account, chain: sepolia, transport: http() }),
+})
+  .extend(ensActions())
+  .extend(hcaActions());
+declare const sdk: RhinestoneSdk;
+declare const session: HcaSession;
+const sessionSigner = privateKeyToAccount(
+  "0x1123456789012345678901234567890123456789012345678901234567890123",
+);
+// ---cut---
+const via = hca({ executors: [rhinestone({ sdk, sessionSigner })], session });
+
+await ens.registration.registerSync({
+  names: "my-new-name.eth", // placeholder
+  duration: Duration.years(1),
+  resolver: session.terms.resolver,
+  via,
+});
+```
+
+A registration through a session must use the session's resolver, `session.terms.resolver`. The HCA pays for the registration, so it must hold the payment token. See [Deposits and gas](/docs/hca/deposits-and-gas).
+
+To edit records, route `ens.record.set` the same way with the session's resolver: `ens.record.set({ name, texts: { url }, via })`.
+
+## 4. Check that a session still works
+
+[`hca.getSession`](/docs/hca/reference/actions/hca/get-session) tells you whether a stored session can still be used, and why not.
+
+```ts twoslash title="get-session.ts"
+import { hcaActions, type HcaSession } from "@ensforge/hca";
+import { Ensforge, ensActions } from "@ensforge/sdk";
+import { createPublicClient, createWalletClient, http } from "viem";
+import { privateKeyToAccount } from "viem/accounts";
+import { sepolia } from "viem/chains";
+
+const account = privateKeyToAccount(
+  "0x0123456789012345678901234567890123456789012345678901234567890123",
+);
+const ens = Ensforge.create({
+  publicClient: createPublicClient({ chain: sepolia, transport: http() }),
+  walletClient: createWalletClient({ account, chain: sepolia, transport: http() }),
+})
+  .extend(ensActions())
+  .extend(hcaActions());
+declare const session: HcaSession;
+// ---cut---
+const { valid, problem } = await ens.hca.getSession({ session });
+```
+
+| `problem`          | Meaning                                                                 |
+| ------------------ | ----------------------------------------------------------------------- |
+| `"chain"`          | The session was authorized for another chain.                           |
+| `"expired"`        | `validUntil` has passed, by the block's timestamp.                      |
+| `"revoked"`        | The owner called `revokeSessions`.                                      |
+| `"signing-domain"` | The deployment's session signing domain changed since the owner signed. |
+
+When `problem` is not `null`, authorize a new session.
+
+## 5. Revoke every session
+
+`revokeSessions` bumps the HCA's session nonce, which invalidates every session approval at once. Use it when a session key may be lost or when you want to end all prompt-free access. It is the owner's own transaction and is never routed through the HCA.
+
+```ts twoslash title="revoke.ts"
+import { hcaActions } from "@ensforge/hca";
+import { Ensforge, ensActions } from "@ensforge/sdk";
+import { createPublicClient, createWalletClient, http } from "viem";
+import { privateKeyToAccount } from "viem/accounts";
+import { sepolia } from "viem/chains";
+
+const account = privateKeyToAccount(
+  "0x0123456789012345678901234567890123456789012345678901234567890123",
+);
+const ens = Ensforge.create({
+  publicClient: createPublicClient({ chain: sepolia, transport: http() }),
+  walletClient: createWalletClient({ account, chain: sepolia, transport: http() }),
+})
+  .extend(ensActions())
+  .extend(hcaActions());
+// ---cut---
+await ens.hca.revokeSessionsSync({});
+```
+
+Afterwards `getSession` reports `"revoked"` for every stored session.
+
+## Troubleshooting
+
+### `HCA_ACTION_NOT_ALLOWED`
+
+A call is outside the session policy. Send that call as the owner, without the session. See [`HCA_ACTION_NOT_ALLOWED`](/docs/sdk/errors/HCA_ACTION_NOT_ALLOWED).
+
+### `HCA_SESSION_INVALID`
+
+The session is expired, revoked, for another chain or signing domain, or for another owner. Authorize a new session. See [`HCA_SESSION_INVALID`](/docs/sdk/errors/HCA_SESSION_INVALID).
+
+### `HCA_EXECUTOR_UNSUPPORTED`
+
+No executor in the list runs sessions. Add `rhinestone()`. See [`HCA_EXECUTOR_UNSUPPORTED`](/docs/sdk/errors/HCA_EXECUTOR_UNSUPPORTED).
