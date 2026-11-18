@@ -33,12 +33,16 @@ import type {
  * - `kind` tells where the name lives (`v1-unwrapped`, `v1-wrapped`, `v2-native`, `v2-migrated`,
  *   `v2-reserved`, `available`); `protocol` is `v1` or `v2`.
  * - Times come from the block the read runs at, not the local clock.
- * - Costs two batched RPC calls, whatever the name kind.
+ * - `inheritedResolver` is the resolver serving a name that has none of its own: a parent's
+ *   wildcard or off-chain resolver, or the ENSv1 resolver behind the ENSv1 bridge.
+ * - Costs two batched RPC calls, whatever the name kind. A name without a resolver of its own
+ *   that a parent's resolver serves costs one more (two behind the ENSv1 bridge).
  *
  * **Gotchas**
  *
- * - `resolver` is the resolver set on the name itself. A name served by a parent's wildcard
- *   resolver has `resolver: null`; use `resolver.get` for the effective resolver.
+ * - `resolver` is the resolver set on the name itself. A name served only by a parent's wildcard
+ *   or off-chain resolver (such as `jesse.base.eth`) has `resolver: null` and is in no registry,
+ *   so it is `available` although it resolves: check `inheritedResolver`.
  *
  * **Example** (Showing a renewal banner)
  *
@@ -66,6 +70,7 @@ import type {
  * @throws `Errors.InvalidInputError` (`INVALID_NAME`) when the name is invalid or the root.
  * @throws `Errors.NetworkError` when the RPC request fails.
  *
+ * @see {@link Actions.resolver.get} to describe the resolver
  * @see {@link Actions.name.transfer} to send a name
  * @stability stable
  * @category reading

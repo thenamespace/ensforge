@@ -1,19 +1,22 @@
 import { Effect } from "effect";
 
-import type { NameKind, NameState } from "../../actions/name/get/types.js";
+import type { NameKind } from "../../actions/name/get/types.js";
 import type { Client } from "../../client/types.js";
 import type { AnyError } from "../../errors/types.js";
 import type { Read } from "../../Types.js";
 import { classify } from "./classify.js";
 import { parseName } from "./normalize.js";
 import { readName, type NameData } from "./read.js";
-import { toNameState } from "./state.js";
+import { toNameState, type RegistryState } from "./state.js";
 
-/** A name's raw data, classification and public state, as write planners need them. */
+/**
+ * A name's raw data, classification and registry state, as write planners need them. The
+ * inherited resolver costs reads of its own; only `name.get` adds it.
+ */
 export type LoadedName = {
   readonly data: NameData;
   readonly kind: NameKind;
-  readonly state: NameState;
+  readonly state: RegistryState;
 };
 
 /** Normalizes, reads and classifies a name. */

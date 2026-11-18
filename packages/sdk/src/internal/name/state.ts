@@ -30,6 +30,9 @@ const v2RenewsForV1 = (now: bigint, v2: V2Data): boolean =>
     nonZeroAddress(v2.state.latestOwner) === null &&
     now - v2.state.expiry < (v2.gracePeriod ?? 0n));
 
+/** A name's state as its registries hold it: `name.get` without the inherited resolver. */
+export type RegistryState = Omit<NameState, "inheritedResolver">;
+
 /** How the deployment registers and renews `.eth` names. */
 export type Registration = {
   /** ENSv1's controllers still register and renew (before the ENSv2 launch). */
@@ -40,7 +43,7 @@ const fromV2 = (
   data: NameData,
   v2: V2Data,
   kind: NameKind,
-): Omit<NameState, "name" | "kind" | "reachable"> => {
+): Omit<RegistryState, "name" | "kind" | "reachable"> => {
   const { state } = v2;
   const neverExpires = state.expiry === maxUint64;
   const status: NameStatus =
@@ -81,7 +84,7 @@ const fromV1 = (
   v1: V1Data,
   wrapped: boolean,
   registration: Registration,
-): Omit<NameState, "name" | "kind" | "reachable"> => {
+): Omit<RegistryState, "name" | "kind" | "reachable"> => {
   const { registrar } = v1;
   const unwrapped2ld = !wrapped && registrar !== undefined;
   const expiry =
@@ -143,7 +146,7 @@ const v1Flags = (data: NameData, status: NameStatus, registration: Registration)
   };
 };
 
-const unregistered = (data: NameData): Omit<NameState, "name" | "kind" | "reachable"> => ({
+const unregistered = (data: NameData): Omit<RegistryState, "name" | "kind" | "reachable"> => ({
   protocol: data.v2 !== undefined || data.v1 === undefined ? "v2" : "v1",
   status: "available",
   owner: null,
@@ -168,7 +171,7 @@ export const toNameState = (
   data: NameData,
   kind: NameKind,
   registration: Registration,
-): NameState => {
+): RegistryState => {
   // ENSv2 resolution of an ENSv1 name stops early when ENSv2 has a registry for its siblings but
   // no reservation for it (reserved names fall back to ENSv1), or when an ancestor below the TLD
   // is registered on ENSv2 without a registry for its children.

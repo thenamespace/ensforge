@@ -6,7 +6,7 @@ import { Actions } from "@ensforge/sdk/effect";
 import { Devnet, profileNames } from "@ensforge/test-devnet";
 import { allFixtures, Fixtures, seededOn } from "@ensforge/test-fixtures";
 import { expectFailure } from "@ensforge/test-harness";
-import { labelhash, namehash } from "viem";
+import { labelhash, namehash, type Address } from "viem";
 
 import { Clients } from "../support/clients.ts";
 import {
@@ -305,27 +305,43 @@ describe("name.get", () => {
       { meta: { cases: ["M:A7"] } },
     );
 
-    // KL-13: a name only a parent's wildcard (or off-chain) resolver answers is in no registry.
+    // A name only a parent's wildcard (or off-chain) resolver answers is in no registry: it is
+    // available, and `inheritedResolver` says what resolves it.
     it.effect(
       "a wildcard subname is available and has no expiry, yet resolves",
       () =>
         Effect.gen(function* () {
-          const wildcard = (yield* Fixtures).byId("resolver.wildcard");
+          const fixtures = yield* Fixtures;
           const { reader } = yield* Clients;
+          const wildcard = fixtures.byId("resolver.wildcard");
           const name = String(wildcard.facts["wildcardChild"]);
+          const stateOf = (target: string) => Actions.name.get(reader, { name: target });
 
-          assert.deepInclude(yield* Actions.name.get(reader, { name }), {
+          assert.deepInclude(yield* stateOf(name), {
             available: true,
             owner: null,
             expiry: null,
             gracePeriodEnd: null,
+            resolver: null,
+            inheritedResolver: wildcard.facts["resolver"] as Address,
           });
           assert.strictEqual(
             yield* Actions.record.getAddress(reader, { name }),
             wildcard.facts["wildcardAddress"],
           );
+
+          // A name with no resolver anywhere, and a registered name with its own.
+          const none = yield* stateOf(fixtures.byId("resolver.none").name);
+          assert.deepInclude(none, {
+            status: "registered",
+            resolver: null,
+            inheritedResolver: null,
+          });
+          const own = yield* stateOf(fixtures.byId("records.v1").name);
+          assert.isNotNull(own.resolver);
+          assert.isNull(own.inheritedResolver);
         }),
-      { meta: { cases: ["X15"] } },
+      { meta: { cases: ["X15", "M:B13"] } },
     );
 
     it.effect(

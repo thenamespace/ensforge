@@ -7,7 +7,7 @@ import { NotFoundError } from "../../../errors/classes/NotFoundError.js";
 import * as Action from "../../../internal/action/index.js";
 import { loadName } from "../../../internal/name/load.js";
 import { describeResolver } from "../../../internal/resolver/describe.js";
-import { nearestV1AncestorResolver } from "../../../internal/resolver/v1-ancestor.js";
+import { isEnsV1Bridge, servingResolver } from "../../../internal/resolver/serving.js";
 import * as Rpc from "../../../internal/rpc/index.js";
 import type { get as Promises } from "./index.js";
 
@@ -34,13 +34,9 @@ export const get = Effect.fn("ensforge.resolver.get")(
     const own = loaded.state.resolver;
     // ENSv2 sends premigrated ENSv1 names to the ENSv1 bridge, which resolves them from the ENSv1
     // registry: describe the ENSv1 resolver it uses, as before the launch.
-    const bridge = client.deployment.v2?.migration.ensV1Resolver;
-    const viaBridge =
-      found !== null && bridge !== undefined && isAddressEqual(found.address, bridge);
-    const bridged = own === null && viaBridge;
-    const served = bridged
-      ? yield* nearestV1AncestorResolver(client, loaded.data.parts.name, options)
-      : found;
+    const viaBridge = found !== null && isEnsV1Bridge(client, found.address);
+    const served =
+      own === null ? yield* servingResolver(client, loaded.data.parts.name, found, options) : null;
     const address = own ?? served?.address;
     if (address === undefined) return yield* notFound;
 

@@ -57,6 +57,14 @@ export type NameState = {
   readonly subregistry: Address | null;
   /** Resolver set on the name itself (not inherited from a parent). */
   readonly resolver: Address | null;
+  /**
+   * For a name without a resolver of its own, the resolver that serves it from an ancestor: a
+   * parent's ENSIP-10 wildcard or off-chain resolver, or, for an ENSv1 name ENSv2 serves through
+   * the ENSv1 bridge, the ENSv1 resolver behind it. `null` when the name has its own resolver or
+   * nothing serves it. A name only an inherited resolver serves is in no registry, so it can be
+   * `available` and still resolve.
+   */
+  readonly inheritedResolver: Address | null;
   /** Unix seconds when the registration ends, grace period excluded. `null` when it never expires. */
   readonly expiry: bigint | null;
   /** Unix seconds when the `.eth` grace period ends. */
