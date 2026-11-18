@@ -1,10 +1,9 @@
-import { Record as Rec } from "effect";
-
 import { InternalError } from "../classes/InternalError.js";
 import type { EnsforgeError } from "../EnsforgeError.js";
 import { fromCause } from "../translate/fromCause.js";
 import type { AnyError, Code } from "../types.js";
 import { messages, type Copy } from "./messages.js";
+import { extensionMessages, type Template } from "./registry.js";
 
 /**
  * User-facing description of an error.
@@ -43,29 +42,10 @@ export type DescribeOptions<error extends EnsforgeError = AnyError> = {
   };
 };
 
-type Template = (error: EnsforgeError) => Copy;
-
 // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- each template receives an error with its code
 const sdkMessages = messages as unknown as Readonly<Partial<Record<string, Template>>>;
-const extensionMessages = new Map<string, Template>();
 const generic: Template = (error) =>
   messages.UNEXPECTED(new InternalError({ code: "UNEXPECTED", context: error.context }));
-
-/**
- * Adds the end-user copy of a package's error codes to `Errors.describe`. Call it once, next to
- * the error class, so the copy is registered wherever the class can be thrown. The sdk's own
- * codes cannot be replaced.
- *
- * @internal
- * @stability unstable
- */
-export const registerMessages = <error extends EnsforgeError>(table: {
-  readonly [code in error["code"]]: (error: error) => Copy;
-}): void => {
-  for (const [code, template] of Rec.toEntries(table))
-    // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- `describe` passes the template only errors with its code
-    if (sdkMessages[code] === undefined) extensionMessages.set(code, template as Template);
-};
 
 const expected = new Set([
   "UserRejectedError",
