@@ -1,5 +1,5 @@
 import { assert, describe } from "@effect/vitest";
-import { Effect, Predicate } from "effect";
+import { Array as Arr, Effect, Predicate, Record as Rec } from "effect";
 
 import { Chain, Devnet } from "@ensforge/test-devnet";
 import { isAddress, type Address } from "viem";
@@ -22,10 +22,10 @@ describe("deployment profiles", () => {
           const walk = (value: unknown, path: string): void => {
             if (Predicate.isString(value) && isAddress(value, { strict: false })) {
               addresses.push([path, value]);
-            } else if (Array.isArray(value)) {
-              value.forEach((entry, index) => walk(entry, `${path}[${index}]`));
+            } else if (Arr.isArray(value)) {
+              Arr.forEach(value, (entry, index) => walk(entry, `${path}[${index}]`));
             } else if (Predicate.isObject(value)) {
-              for (const [key, entry] of Object.entries(value)) walk(entry, `${path}.${key}`);
+              for (const [key, entry] of Rec.toEntries(value)) walk(entry, `${path}.${key}`);
             }
           };
           walk(deployments, network);

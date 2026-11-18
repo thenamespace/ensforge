@@ -41,10 +41,12 @@ describe("legacy public resolvers", () => {
                 );
 
             for (const resolver of v1.legacyPublicResolvers ?? []) {
-              assert.isTrue(yield* writes(resolver), `${network} ${resolver} should be writable`);
+              const writable = yield* writes(resolver);
+              assert.isTrue(writable, `${network} ${resolver} should be writable`);
             }
             for (const resolver of v1.frozenPublicResolvers ?? []) {
-              assert.isFalse(yield* writes(resolver), `${network} ${resolver} should be frozen`);
+              const writable = yield* writes(resolver);
+              assert.isFalse(writable, `${network} ${resolver} should be frozen`);
             }
           }),
         { meta: { cases: ["M:B2"] } },

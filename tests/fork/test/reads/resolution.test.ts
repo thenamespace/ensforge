@@ -15,26 +15,21 @@ describe("fork resolution", () => {
       Effect.gen(function* () {
         const { reader } = yield* Clients;
 
-        assert.deepInclude(yield* Actions.resolver.get(reader, { name: "nick.eth" }), {
-          kind: "permissioned-resolver",
-          inherited: false,
-        });
-        assert.strictEqual(
-          yield* Actions.record.getAddress(reader, { name: "nick.eth" }),
-          "0xb8c2C29ee19D8307cb7255e1Cd9CbDE883A267d5",
-        );
+        const nickResolver = yield* Actions.resolver.get(reader, { name: "nick.eth" });
+        assert.deepInclude(nickResolver, { kind: "permissioned-resolver", inherited: false });
+        const nickAddress = yield* Actions.record.getAddress(reader, { name: "nick.eth" });
+        assert.strictEqual(nickAddress, "0xb8c2C29ee19D8307cb7255e1Cd9CbDE883A267d5");
 
         // Not migrated: ENSv2 serves it through the ENSv1 bridge, from its 2023 PublicResolver.
-        assert.deepInclude(yield* Actions.resolver.get(reader, { name: "vitalik.eth" }), {
+        const vitalikResolver = yield* Actions.resolver.get(reader, { name: "vitalik.eth" });
+        assert.deepInclude(vitalikResolver, {
           address: "0x231b0Ee14048e9dCcD1d247744d114a4EB5E8E63",
           kind: "public-resolver",
         });
-        assert.strictEqual(
-          yield* Actions.primaryName.get(reader, {
-            address: "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045",
-          }),
-          "vitalik.eth",
-        );
+        const vitalikPrimaryName = yield* Actions.primaryName.get(reader, {
+          address: "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045",
+        });
+        assert.strictEqual(vitalikPrimaryName, "vitalik.eth");
       }),
     );
 
@@ -53,10 +48,8 @@ describe("fork resolution", () => {
 
           // Records and `resolver.get` report the ENSv1 resolver behind the ENSv1 bridge.
           assert.strictEqual(records.resolver, resolver);
-          assert.deepInclude(yield* Actions.resolver.get(reader, { name: "jessesum.eth" }), {
-            address: resolver,
-            kind: "public-resolver",
-          });
+          const jessesumResolver = yield* Actions.resolver.get(reader, { name: "jessesum.eth" });
+          assert.deepInclude(jessesumResolver, { address: resolver, kind: "public-resolver" });
           assert.strictEqual(records.addresses.eth, "0x8c4Eb6988A199DAbcae0Ce31052b3f3aC591787e");
           assert.deepStrictEqual(records.texts, { url: null, avatar: null });
         }),
@@ -69,18 +62,12 @@ describe("fork resolution", () => {
         Effect.gen(function* () {
           const { reader } = yield* Clients;
 
-          assert.deepInclude(yield* Actions.resolver.get(reader, { name: "jesse.base.eth" }), {
-            kind: "extended",
-            inherited: true,
-          });
-          assert.strictEqual(
-            yield* Actions.record.getAddress(reader, { name: "jesse.base.eth" }),
-            "0x2211d1D0020DAEA8039E46Cf1367962070d77DA9",
-          );
-          assert.strictEqual(
-            yield* Actions.record.getAddress(reader, { name: "raffy.eth" }),
-            "0x51050ec063d393217B436747617aD1C2285Aeeee",
-          );
+          const jesseResolver = yield* Actions.resolver.get(reader, { name: "jesse.base.eth" });
+          assert.deepInclude(jesseResolver, { kind: "extended", inherited: true });
+          const jesseAddress = yield* Actions.record.getAddress(reader, { name: "jesse.base.eth" });
+          assert.strictEqual(jesseAddress, "0x2211d1D0020DAEA8039E46Cf1367962070d77DA9");
+          const raffyAddress = yield* Actions.record.getAddress(reader, { name: "raffy.eth" });
+          assert.strictEqual(raffyAddress, "0x51050ec063d393217B436747617aD1C2285Aeeee");
         }),
       { meta: { cases: ["F03"] } },
     );
@@ -91,19 +78,18 @@ describe("fork resolution", () => {
         Effect.gen(function* () {
           const { reader } = yield* Clients;
 
-          assert.deepInclude(yield* Actions.resolver.get(reader, { name: "ens.domains" }), {
-            kind: "dns",
-            inherited: true,
-          });
+          const ensDomainsResolver = yield* Actions.resolver.get(reader, { name: "ens.domains" });
+          assert.deepInclude(ensDomainsResolver, { kind: "dns", inherited: true });
           // No DNSSEC proof verifies since the root KSK rollover (KL-29); the inner error comes back.
           const failure = yield* expectFailure(
             Actions.record.getAddress(reader, { name: "ens.domains" }),
             { _tag: "DnsError", code: "DNSSEC_PROOF_FAILED" },
           );
           assert.strictEqual(failure.context.revert?.errorName, "NoMatchingProof");
-          assert.isNull(
-            yield* Actions.record.getAddress(reader, { name: "ensforge-no-such-name-0.com" }),
-          );
+          const unknownAddress = yield* Actions.record.getAddress(reader, {
+            name: "ensforge-no-such-name-0.com",
+          });
+          assert.isNull(unknownAddress);
         }),
       { meta: { cases: ["D13", "D18", "R20", "M:F2"] } },
     );
@@ -116,19 +102,13 @@ describe("fork resolution", () => {
         Effect.gen(function* () {
           const { reader } = yield* Clients;
 
-          assert.deepInclude(yield* Actions.name.get(reader, { name: "nick.eth" }), {
-            status: "registered",
-            wrapped: true,
-          });
-          assert.strictEqual(
-            yield* Actions.record.getAddress(reader, { name: "nick.eth" }),
-            "0xb8c2C29ee19D8307cb7255e1Cd9CbDE883A267d5",
-          );
+          const nickState = yield* Actions.name.get(reader, { name: "nick.eth" });
+          assert.deepInclude(nickState, { status: "registered", wrapped: true });
+          const nickAddress = yield* Actions.record.getAddress(reader, { name: "nick.eth" });
+          assert.strictEqual(nickAddress, "0xb8c2C29ee19D8307cb7255e1Cd9CbDE883A267d5");
 
-          assert.deepInclude(yield* Actions.resolver.get(reader, { name: "gregskril.com" }), {
-            kind: "dns",
-            inherited: true,
-          });
+          const gregResolver = yield* Actions.resolver.get(reader, { name: "gregskril.com" });
+          assert.deepInclude(gregResolver, { kind: "dns", inherited: true });
           yield* expectFailure(Actions.record.getAddress(reader, { name: "gregskril.com" }), {
             _tag: "DnsError",
             code: "DNSSEC_PROOF_FAILED",

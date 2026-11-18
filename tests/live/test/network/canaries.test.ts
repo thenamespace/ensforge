@@ -17,12 +17,14 @@ describe("canary names", () => {
           const state = yield* Actions.name.get(reader, { name });
           assert.strictEqual(state.status, "registered", name);
           assert.isNotNull(state.resolver, name);
-          assert.isNotNull(yield* Actions.record.getAddress(reader, { name }), name);
+          const nameAddress = yield* Actions.record.getAddress(reader, { name });
+          assert.isNotNull(nameAddress, name);
         }
 
         const address = yield* Actions.record.getAddress(reader, { name: "vitalik.eth" });
-        if (address === null) return assert.fail("vitalik.eth resolves to no address");
-        assert.strictEqual(yield* Actions.primaryName.get(reader, { address }), "vitalik.eth");
+        if (address === null) assert.fail("vitalik.eth resolves to no address");
+        const primaryName = yield* Actions.primaryName.get(reader, { address });
+        assert.strictEqual(primaryName, "vitalik.eth");
       }),
     );
   });

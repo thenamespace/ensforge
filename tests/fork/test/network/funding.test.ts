@@ -14,7 +14,7 @@ describe("fork funding", () => {
           const { deployments, accounts } = yield* Devnet;
           const chain = yield* Chain;
           const tokens = deployments.v2?.paymentTokens;
-          if (tokens === undefined) return assert.fail(`${network} lists no payment tokens`);
+          if (tokens === undefined) assert.fail(`${network} lists no payment tokens`);
 
           for (const token of [tokens.usdc, tokens.dai]) {
             yield* fundToken(token, accounts.carol, 123_456_789n);

@@ -1,6 +1,6 @@
 import { NodeServices } from "@effect/platform-node";
 import { layer } from "@effect/vitest";
-import { Effect, Layer, Schema } from "effect";
+import { Array as Arr, Effect, Layer, Record as Rec, Schema } from "effect";
 
 import { Deployments } from "@ensforge/contracts";
 import {
@@ -31,7 +31,9 @@ export class ForkError extends Schema.TaggedError<ForkError, { readonly brand: u
 const startFork = Effect.fn("startFork")(function* (network: Network) {
   const { variable, url } = networkRpc(network);
   if (url === undefined) {
-    return yield* new ForkError({ message: `set ${variable} (an archive RPC) to fork ${network}` });
+    return yield* ForkError.make({
+      message: `set ${variable} (an archive RPC) to fork ${network}`,
+    });
   }
 
   // The RPC is rate limited (Namespace's proxy: 500 requests a minute per IP). 80 compute units
@@ -42,12 +44,13 @@ const startFork = Effect.fn("startFork")(function* (network: Network) {
   });
 
   const deployments = network === "mainnet" ? Deployments.mainnet : Deployments.sepolia;
-  const contracts: Record<string, Address> = Object.fromEntries([
-    ...Object.entries(deployments.v1.contracts).map(([key, address]) => [`v1.${key}`, address]),
-    ...Object.entries(deployments.v2.contracts).map(([key, address]) => [`v2.${key}`, address]),
+  const v1Contracts: Record<string, Address> = deployments.v1.contracts;
+  const contracts: Record<string, Address> = {
+    ...Rec.mapKeys(v1Contracts, (key) => `v1.${key}`),
+    ...Rec.mapKeys(deployments.v2.contracts, (key) => `v2.${key}`),
     // Named as on the devnet, so the integration helpers (`usdcOf`) read the real token.
-    ...Object.entries(deployments.v2.paymentTokens).map(([key, address]) => [`v2.${key}`, address]),
-  ]);
+    ...Rec.mapKeys(deployments.v2.paymentTokens, (key) => `v2.${key}`),
+  };
   const base = network === "mainnet" ? mainnet : sepolia;
   const chain = defineChain({
     ...base,
@@ -64,9 +67,9 @@ const startFork = Effect.fn("startFork")(function* (network: Network) {
   yield* Effect.tryPromise({
     try: () =>
       Promise.all(
-        Object.values(accounts).map((address) => client.setCode({ address, bytecode: "0x" })),
+        Arr.map(Rec.values(accounts), (address) => client.setCode({ address, bytecode: "0x" })),
       ),
-    catch: (cause) => new ForkError({ message: `could not clear account code: ${String(cause)}` }),
+    catch: (cause) => ForkError.make({ message: `could not clear account code: ${String(cause)}` }),
   });
 
   return {
@@ -119,23 +122,17 @@ export const fundToken = Effect.fnUntraced(function* (
     const key = keccak256(
       encodeAbiParameters([{ type: "address" }, { type: "uint256" }], [account, slot]),
     );
-    const before = yield* chain.read({
+    const read = chain.read({
       address: token,
       abi: erc20Abi,
       functionName: "balanceOf",
       args: [account],
     });
+    const before = yield* read;
     yield* chain.setStorage(token, key, value);
-    if (
-      (yield* chain.read({
-        address: token,
-        abi: erc20Abi,
-        functionName: "balanceOf",
-        args: [account],
-      })) === amount
-    )
-      return;
+    const written = yield* read;
+    if (written === amount) return yield* Effect.void;
     yield* chain.setStorage(token, key, toHex(before, { size: 32 }));
   }
-  return yield* new ForkError({ message: `no balance slot found for ${token}` });
+  return yield* ForkError.make({ message: `no balance slot found for ${token}` });
 });

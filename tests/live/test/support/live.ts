@@ -1,5 +1,5 @@
 import { layer } from "@effect/vitest";
-import { Context, Effect, Layer, Schema } from "effect";
+import { Context, Effect, Layer, Schema, String as Str } from "effect";
 
 import { Ensforge, ensActions } from "@ensforge/sdk";
 import { bigname, goldsky, type Indexer } from "@ensforge/sdk/indexer";
@@ -17,6 +17,7 @@ export class LiveError extends Schema.TaggedError<LiveError, { readonly brand: u
 // The RPC is rate limited (Namespace's proxy: 500 requests a minute per IP). Every HTTP request
 // of the process waits its turn, 250 ms apart: at most 240 a minute. JSON-RPC batching and
 // ensforge's multicalls put many reads in one request.
+/* oxlint-disable effecttsgo/async-function, effecttsgo/global-date, effecttsgo/new-promise, effecttsgo/global-timers, effecttsgo/global-fetch -- viem's `fetchFn` is a Promise-returning callback outside any Effect runtime */
 let nextRequestAt = 0;
 const throttledFetch: typeof fetch = async (input, init) => {
   const now = Date.now();
@@ -25,6 +26,7 @@ const throttledFetch: typeof fetch = async (input, init) => {
   if (at > now) await new Promise((resolve) => setTimeout(resolve, at - now));
   return fetch(input, init);
 };
+/* oxlint-enable effecttsgo/async-function, effecttsgo/global-date, effecttsgo/new-promise, effecttsgo/global-timers, effecttsgo/global-fetch */
 
 const makeClient = (network: Network, url: string, indexer?: Indexer) =>
   Ensforge.create({
@@ -59,6 +61,8 @@ export class Live extends Context.Service<
     /** The word at `slot` of `address`, `0x0…0` when unset. */
     readonly storageAt: (address: Address, slot: Hex) => Effect.Effect<Hex, LiveError>;
   }
+  // Service keys are `<package>/<Service>`; this file is not named after the service.
+  // oxlint-disable-next-line effecttsgo/deterministic-keys
 >()("@ensforge/test-live/Live") {
   static readonly layer = (network: Network) =>
     Layer.effect(
@@ -66,7 +70,7 @@ export class Live extends Context.Service<
       Effect.gen(function* () {
         const { variable, url } = networkRpc(network);
         if (url === undefined) {
-          return yield* new LiveError({ message: `set ${variable} to read ${network}` });
+          return yield* LiveError.make({ message: `set ${variable} to read ${network}` });
         }
 
         const reader = makeClient(network, url);
@@ -77,16 +81,14 @@ export class Live extends Context.Service<
           withGoldsky: network === "mainnet" ? makeClient(network, url, goldsky()) : undefined,
           blockNumber: Effect.tryPromise({
             try: () => getBlockNumber(reader.publicClient),
-            catch: (cause) => new LiveError({ message: `block number: ${String(cause)}` }),
+            catch: (cause) => LiveError.make({ message: `block number: ${String(cause)}` }),
           }),
           storageAt: (address, slot) =>
             Effect.tryPromise({
-              try: async () =>
-                (await getStorageAt(reader.publicClient, { address, slot })) ??
-                `0x${"0".repeat(64)}`,
+              try: () => getStorageAt(reader.publicClient, { address, slot }),
               catch: (cause) =>
-                new LiveError({ message: `storage of ${address}: ${String(cause)}` }),
-            }),
+                LiveError.make({ message: `storage of ${address}: ${String(cause)}` }),
+            }).pipe(Effect.map((word): Hex => word ?? `0x${Str.repeat(64)("0")}`)),
         });
       }),
     );

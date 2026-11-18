@@ -16,7 +16,7 @@ describe("fork migration", () => {
         const clients = yield* Clients;
         const name = "vitalik.eth";
         const { registrant } = yield* v1Owners(name);
-        if (registrant === undefined) return assert.fail(`${name} has no registrar token`);
+        if (registrant === undefined) assert.fail(`${name} has no registrar token`);
         const ens = clients.make({ account: registrant });
 
         yield* chain.isolated(
@@ -24,10 +24,8 @@ describe("fork migration", () => {
             yield* chain.impersonate(registrant);
             yield* chain.setBalance(registrant, 10n ** 18n);
             const before = yield* Actions.record.getAddress(ens, { name });
-            assert.strictEqual(
-              (yield* Actions.migration.get(ens, { name, account: registrant })).route,
-              "unwrapped",
-            );
+            const plan = yield* Actions.migration.get(ens, { name, account: registrant });
+            assert.strictEqual(plan.route, "unwrapped");
 
             yield* Actions.migration.migrateSync(ens, {
               names: name,
@@ -35,12 +33,12 @@ describe("fork migration", () => {
               onStep: chain.passWaits,
             });
 
-            assert.strictEqual((yield* ethEntry(name)).owner, registrant);
-            assert.deepInclude(yield* Actions.name.get(ens, { name }), {
-              kind: "v2-migrated",
-              migrated: true,
-            });
-            assert.strictEqual(yield* Actions.record.getAddress(ens, { name }), before);
+            const entry = yield* ethEntry(name);
+            assert.strictEqual(entry.owner, registrant);
+            const migrated = yield* Actions.name.get(ens, { name });
+            assert.deepInclude(migrated, { kind: "v2-migrated", migrated: true });
+            const after = yield* Actions.record.getAddress(ens, { name });
+            assert.strictEqual(after, before);
           }),
         );
       }),

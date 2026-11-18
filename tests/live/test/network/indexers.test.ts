@@ -1,5 +1,5 @@
 import { assert, describe } from "@effect/vitest";
-import { Effect } from "effect";
+import { Effect, Record as Rec } from "effect";
 
 import { Actions } from "@ensforge/sdk/effect";
 
@@ -16,9 +16,9 @@ describe("indexers", () => {
           for (const client of [live.withBigname, live.withGoldsky]) {
             if (client === undefined) continue;
             const status = yield* Actions.indexer.getStatus(client);
-            const indexed = Object.values(status.chains)[0]?.indexed;
+            const indexed = Rec.values(status.chains)[0]?.indexed;
             if (indexed === undefined || indexed === null) {
-              return assert.fail(`${status.indexer} reports no indexed block`);
+              assert.fail(`${status.indexer} reports no indexed block`);
             }
             assert.isBelow(Number(head - indexed), 300, status.indexer);
           }
