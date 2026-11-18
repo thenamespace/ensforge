@@ -41,7 +41,6 @@ catalog:
   fflate: "0.8.3"
   fumadocs-core: "16.19.4"
   fumadocs-mdx: "15.6.3"
-  fumadocs-twoslash: "4.0.5"
   fumadocs-ui: "npm:@fumadocs/base-ui@16.19.4"
   get-port: "7.2.0"
   jsdom: "31.0.1"
