@@ -1,5 +1,7 @@
 import { fileURLToPath } from "node:url";
 
+import { Array as Arr } from "effect";
+
 import { defineConfig } from "vitest/config";
 
 // Fast lanes: `<package>:unit` and `<package>:types` from `tests/unit/<package>`, network-free.
@@ -12,7 +14,11 @@ const unit = (name: (typeof packages)[number]) => ({
     root: "tests/unit",
     include: [`${name}/**/*.test.{ts,tsx}`],
     exclude: [`${name}/types/**`],
-    setupFiles: ["../harness/src/setup.ts", "../harness/src/error-types.ts"],
+    setupFiles: [
+      "../harness/src/setup.ts",
+      "../harness/src/error-types.ts",
+      ...(name === "react" ? ["react/setup.ts"] : []),
+    ],
     // React hooks render in jsdom; files that check server rendering opt into `node` per file.
     ...(name === "react" ? { environment: "jsdom" } : {}),
   },
@@ -158,7 +164,7 @@ export default defineConfig({
   ssr: { resolve: { conditions: ["workspace-source"] } },
   test: {
     projects: [
-      ...packages.flatMap((name) => [unit(name), types(name)]),
+      ...Arr.flatMap(packages, (name) => [unit(name), types(name)]),
       wagmi2,
       tools,
       devnet,
