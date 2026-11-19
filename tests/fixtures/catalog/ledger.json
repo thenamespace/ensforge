@@ -2323,46 +2323,74 @@
     ]
   },
   "N01": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/namespace-state.test.ts > name.get reports owner, expiry and status from each family's L2"
+    ]
   },
   "N02": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/namespace-state.test.ts > name.get reports owner, expiry and status from each family's L2"
+    ]
   },
   "N03": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/namespace-state.test.ts > name.get reports owner, expiry and status from each family's L2"
+    ]
   },
   "N04": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/namespace-state.test.ts > name.get reports owner, expiry and status from each family's L2"
+    ]
   },
   "N05": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/namespace-state.test.ts > reads records from the L2 resolver, without the family's gateway"
+    ]
   },
   "N06": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/namespace-state.test.ts > name.get reports owner, expiry and status from each family's L2"
+    ]
   },
   "N07": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/namespace-state.test.ts > name.get reports owner, expiry and status from each family's L2"
+    ]
   },
   "N08": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/namespace-state.test.ts > reads records from the L2 resolver, without the family's gateway"
+    ]
   },
   "N09": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/namespace-state.test.ts > name.get reports owner, expiry and status from each family's L2"
+    ]
   },
   "N10": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/namespace-state.test.ts > name.get reports owner, expiry and status from each family's L2"
+    ]
   },
   "N11": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/namespace-state.test.ts > reads records from the L2 resolver, without the family's gateway"
+    ]
   },
   "N12": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/namespace-state.test.ts > treats a profile Durin lacks as a missing record, or an error when strict"
+    ]
   },
   "N13": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/namespace-state.test.ts > reads records from the L2 resolver, without the family's gateway"
+    ]
   },
   "N14": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/namespace-state.test.ts > reads records from the L2 resolver, without the family's gateway"
+    ]
   },
   "N15": {
     "tests": [
@@ -2375,10 +2403,14 @@
     ]
   },
   "N17": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/namespace-state.test.ts > name.get reports owner, expiry and status from each family's L2"
+    ]
   },
   "N18": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/namespace-state.test.ts > falls back to Ethereum for an L2 the client cannot reach, or fails when strict"
+    ]
   },
   "N19": {
     "tests": [
