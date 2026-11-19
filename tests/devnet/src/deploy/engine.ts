@@ -1,6 +1,13 @@
 import { Context, Effect, Predicate, type FileSystem } from "effect";
 
-import { getAddress, isHex, type Address, type Hash, type TransactionReceipt } from "viem";
+import {
+  getAddress,
+  isHex,
+  type Abi,
+  type Address,
+  type Hash,
+  type TransactionReceipt,
+} from "viem";
 import { mnemonicToAccount } from "viem/accounts";
 
 import { loadArtifact } from "../artifacts/files.ts";
@@ -54,6 +61,9 @@ export type Variant = {
   readonly artifacts?: Partial<Record<ArtifactName, ArtifactName>>;
 };
 
+/** A ledger key, or a contract with the artifact (or ABI) it answers. */
+export type Target = string | readonly [Address, ArtifactName | Abi];
+
 /** What a step can do: deploy, call and read contracts, and use anvil's cheat RPCs. */
 export type StepContext = {
   readonly network: Variant["network"];
@@ -75,15 +85,18 @@ export type StepContext = {
     key: string,
     artifact: ArtifactName,
   ) => Effect.Effect<Address, DeployError | ArtifactError, FileSystem.FileSystem>;
-  /** Calls a function of a ledger contract, or of `[address, artifact]`. */
+  /**
+   * Calls a function of a ledger contract, or of `[address, artifact]`, or of `[address, abi]` to
+   * pick one of overloads viem cannot tell apart (`bytes32` and `bytes`).
+   */
   readonly write: (
-    target: string | readonly [Address, ArtifactName],
+    target: Target,
     functionName: string,
     args?: readonly unknown[],
     options?: TxOptions,
   ) => Effect.Effect<TransactionReceipt, DeployError | ArtifactError, FileSystem.FileSystem>;
   readonly read: <A = unknown>(
-    target: string | readonly [Address, ArtifactName],
+    target: Target,
     functionName: string,
     args?: readonly unknown[],
   ) => Effect.Effect<A, DeployError | ArtifactError, FileSystem.FileSystem>;
@@ -138,14 +151,16 @@ export const runSteps = Effect.fn("runSteps")(function* (
     const sender = (from: TxOptions["from"] = "deployer"): Address =>
       isHex(from) ? from : accounts[from];
 
-    const resolve = Effect.fnUntraced(function* (
-      target: string | readonly [Address, ArtifactName],
-    ) {
-      if (typeof target !== "string") return { address: target[0], artifact: target[1] };
+    const resolve = Effect.fnUntraced(function* (target: Target) {
+      if (typeof target !== "string") {
+        const [address, abi] = target;
+        if (typeof abi !== "string") return { address, abi };
+        return { address, abi: (yield* loadArtifact(abi)).abi };
+      }
       const deployed = ledger.get(target);
       if (deployed === undefined)
         return yield* DeployError.make({ step: id, message: `${target} is not deployed yet` });
-      return deployed;
+      return { address: deployed.address, abi: (yield* loadArtifact(deployed.artifact)).abi };
     });
 
     // Mines a sent transaction alone in the next block. viem estimates gas when sending, so most
@@ -186,7 +201,12 @@ export const runSteps = Effect.fn("runSteps")(function* (
         },
       },
       accounts,
-      address: (key) => resolve(key).pipe(Effect.map((deployed) => deployed.address)),
+      address: (key) => {
+        const deployed = ledger.get(key);
+        return deployed === undefined
+          ? Effect.fail(DeployError.make({ step: id, message: `${key} is not deployed yet` }))
+          : Effect.succeed(deployed.address);
+      },
       deploy: (key, requested, args = [], options = {}) =>
         Effect.gen(function* () {
           const artifact = variant.artifacts?.[requested] ?? requested;
@@ -223,8 +243,7 @@ export const runSteps = Effect.fn("runSteps")(function* (
         }),
       write: (target, functionName, args = [], options = {}) =>
         Effect.gen(function* () {
-          const { address, artifact } = yield* resolve(target);
-          const { abi } = yield* loadArtifact(artifact);
+          const { address, abi } = yield* resolve(target);
           return yield* mined(() =>
             client.writeContract({
               address,
@@ -237,14 +256,9 @@ export const runSteps = Effect.fn("runSteps")(function* (
             }),
           );
         }),
-      read: <A>(
-        target: string | readonly [Address, ArtifactName],
-        functionName: string,
-        args: readonly unknown[] = [],
-      ) =>
+      read: <A>(target: Target, functionName: string, args: readonly unknown[] = []) =>
         Effect.gen(function* () {
-          const { address, artifact } = yield* resolve(target);
-          const { abi } = yield* loadArtifact(artifact);
+          const { address, abi } = yield* resolve(target);
           const result = yield* attempt(() =>
             client.readContract({ address, abi, functionName, args: [...args] }),
           );

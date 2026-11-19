@@ -3588,5 +3588,181 @@
     "id": "M:F9",
     "axis": "M:F",
     "title": "ENSv2-only deployment profile"
+  },
+  {
+    "id": "N01",
+    "axis": "N",
+    "title": "Basenames name: owner, expiry and records on Base",
+    "component": "Basenames",
+    "expected": "Read from Base (registry, BaseRegistrar, resolver); L1 resolves the same records through the signed gateway",
+    "domains": ["name", "record"]
+  },
+  {
+    "id": "N02",
+    "axis": "N",
+    "title": "Basenames name in grace (90 days after expiry)",
+    "component": "Basenames",
+    "expected": "Expired, renewable only by its owner; the BaseRegistrar reports its expiry, ownerOf reverts",
+    "domains": ["name"]
+  },
+  {
+    "id": "N03",
+    "axis": "N",
+    "title": "Basenames name expired past grace",
+    "component": "Basenames",
+    "expected": "Available on Base; L1's gateway may still answer its old records",
+    "domains": ["name", "record"]
+  },
+  {
+    "id": "N04",
+    "axis": "N",
+    "title": "Basenames subname (a registry record without a registrar token)",
+    "component": "Basenames",
+    "expected": "Owner from the Base registry, expiry from its second-level parent",
+    "domains": ["name"]
+  },
+  {
+    "id": "N05",
+    "axis": "N",
+    "title": "Basenames name on the legacy L2Resolver",
+    "component": "Basenames",
+    "expected": "Records read from and written to the name's own resolver, not the current default",
+    "domains": ["record"]
+  },
+  {
+    "id": "N06",
+    "axis": "N",
+    "title": "Linea Names name (every second-level name is wrapped)",
+    "component": "Linea",
+    "expected": "Owner and expiry from Linea's NameWrapper `getData`",
+    "domains": ["name", "record"]
+  },
+  {
+    "id": "N07",
+    "axis": "N",
+    "title": "Linea Names name in grace or expired",
+    "component": "Linea",
+    "expected": "Wrapper expiry includes the 90-day grace; owner cleared once expired",
+    "domains": ["name"]
+  },
+  {
+    "id": "N08",
+    "axis": "N",
+    "title": "Linea Names subname",
+    "component": "Linea",
+    "expected": "Owner from the NameWrapper, under its wrapped parent",
+    "domains": ["name"]
+  },
+  {
+    "id": "N09",
+    "axis": "N",
+    "title": "Celonames name (the registry is the resolver)",
+    "component": "Celonames",
+    "expected": "Owner from `ownerOf`, expiry from `expiries`, records from the registry",
+    "domains": ["name", "record"]
+  },
+  {
+    "id": "N10",
+    "axis": "N",
+    "title": "Celonames name expired",
+    "component": "Celonames",
+    "expected": "`ownerOf` returns zero; no grace period",
+    "domains": ["name"]
+  },
+  {
+    "id": "N11",
+    "axis": "N",
+    "title": "Durin name, found through the L1 resolver's `l2Registry(parent)`",
+    "component": "Durin",
+    "expected": "Chain and registry from L1; owner from the registry; never expires",
+    "domains": ["name", "record"]
+  },
+  {
+    "id": "N12",
+    "axis": "N",
+    "title": "Durin name without the `name`, `pubkey` or `interface` profiles",
+    "component": "Durin",
+    "expected": "Those records fail `RESOLVER_PROFILE_UNSUPPORTED`; the rest resolve",
+    "domains": ["record"]
+  },
+  {
+    "id": "N13",
+    "axis": "N",
+    "title": "Namespace L2 name on Base (hybrid resolver `configs` 8453)",
+    "component": "Namespace",
+    "expected": "Registry from `nodeRegistries(parent)` on Base; records from its NamePublicResolver",
+    "domains": ["name", "record"]
+  },
+  {
+    "id": "N14",
+    "axis": "N",
+    "title": "Namespace L2 name on OP Mainnet (`configs` 10)",
+    "component": "Namespace",
+    "expected": "As N13, on OP Mainnet",
+    "domains": ["name", "record"]
+  },
+  {
+    "id": "N15",
+    "axis": "N",
+    "title": "Namespace name under a route-table parent (HybridResolverV2 `findRoute`)",
+    "component": "Namespace",
+    "expected": "The route's chain from the deployment's `routes`",
+    "domains": ["name", "record"]
+  },
+  {
+    "id": "N16",
+    "axis": "N",
+    "title": "Namespace off-chain parent (`configs` 9999)",
+    "component": "Namespace",
+    "expected": "Records through the gateway only; no owner or expiry on any chain",
+    "domains": ["name", "record"]
+  },
+  {
+    "id": "N17",
+    "axis": "N",
+    "title": "Namespace L2 name expired",
+    "component": "Namespace",
+    "expected": "`ownerOf` returns zero once expired",
+    "domains": ["name"]
+  },
+  {
+    "id": "N18",
+    "axis": "N",
+    "title": "L2 not reachable (no transport and `publicRpc: false`)",
+    "component": "ensforge",
+    "expected": "Reads fall back to L1 CCIP-Read with owner and expiry `null`; writes and strict reads fail `CHAIN_NOT_CONFIGURED`",
+    "domains": ["name", "record", "write"]
+  },
+  {
+    "id": "N19",
+    "axis": "N",
+    "title": "Gateway of an L2 namespace fails (HTTP 500, hang, bad signature)",
+    "component": "gateway",
+    "expected": "Typed gateway error; the L2 read path is unaffected",
+    "domains": ["record"]
+  },
+  {
+    "id": "N20",
+    "axis": "N",
+    "title": "Record write on an L2 name",
+    "component": "ensforge",
+    "expected": "Sent on the L2 to the name's resolver through the standard setters, as one multicall",
+    "domains": ["write"]
+  },
+  {
+    "id": "N21",
+    "axis": "N",
+    "title": "Creation, transfer or resolver change on an L2 name",
+    "component": "ensforge",
+    "expected": "Refused before sending with `NAME_EXTERNAL` and the L2's `chainId`",
+    "domains": ["write"]
+  },
+  {
+    "id": "N22",
+    "axis": "N",
+    "title": "Name under an off-chain provider's resolver",
+    "component": "ensforge",
+    "expected": "Records only; the provider identified from `offchainProviders`",
+    "domains": ["name", "record"]
   }
 ]

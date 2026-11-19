@@ -23,6 +23,7 @@ export {
   type DevnetOptions,
   type L2Instance,
 } from "./Devnet.ts";
+export type { ArtifactName } from "./artifacts/sources.ts";
 export { AnvilError, ArtifactError, DeployError } from "./errors.ts";
 export {
   chainId,

@@ -4,7 +4,7 @@ import { createHash } from "node:crypto";
 
 import { Array as Arr, Effect, FileSystem, Path, Record as Rec, String as Str } from "effect";
 
-import { step, type ProfileName, type Seed, type Step } from "@ensforge/test-devnet";
+import { step, type BuildName, type Seed, type Step } from "@ensforge/test-devnet";
 import { namehash } from "viem";
 
 import { clockJump, seededOn, type Facts, type Manifest } from "./fixture.ts";
@@ -16,7 +16,7 @@ import { premigration } from "./premigration.ts";
  * (then, on `mainnet-shaped`, the premigration), postlaunch phases, one clock jump, the
  * `afterTime` phases, then every self-check.
  */
-export const fixtureSeed = (profile: ProfileName, key: string): Seed => ({
+export const fixtureSeed = (profile: BuildName, key: string): Seed => ({
   key: `${profile}:${key}`,
   create: () => {
     const selected = Arr.filter(allFixtures, (fixture) => seededOn(fixture, profile));

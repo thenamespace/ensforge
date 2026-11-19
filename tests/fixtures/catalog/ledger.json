@@ -2321,5 +2321,71 @@
     "tests": [
       "tests/integration/test/reads/errors.test.ts > NameWrapper reads where ENSv1 is not deployed"
     ]
+  },
+  "N01": {
+    "status": "pending"
+  },
+  "N02": {
+    "status": "pending"
+  },
+  "N03": {
+    "status": "pending"
+  },
+  "N04": {
+    "status": "pending"
+  },
+  "N05": {
+    "status": "pending"
+  },
+  "N06": {
+    "status": "pending"
+  },
+  "N07": {
+    "status": "pending"
+  },
+  "N08": {
+    "status": "pending"
+  },
+  "N09": {
+    "status": "pending"
+  },
+  "N10": {
+    "status": "pending"
+  },
+  "N11": {
+    "status": "pending"
+  },
+  "N12": {
+    "status": "pending"
+  },
+  "N13": {
+    "status": "pending"
+  },
+  "N14": {
+    "status": "pending"
+  },
+  "N15": {
+    "status": "pending"
+  },
+  "N16": {
+    "status": "pending"
+  },
+  "N17": {
+    "status": "pending"
+  },
+  "N18": {
+    "status": "pending"
+  },
+  "N19": {
+    "status": "pending"
+  },
+  "N20": {
+    "status": "pending"
+  },
+  "N21": {
+    "status": "pending"
+  },
+  "N22": {
+    "status": "pending"
   }
 }

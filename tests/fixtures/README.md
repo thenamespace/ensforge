@@ -44,4 +44,10 @@ as mainnet's launch does, except fixtures marked `unreserved`; reserved fixtures
 `premigrated: true`.
 A seeded build is cached like a profile and is deterministic (`test/chain/determinism.test.ts`).
 
+L2 namespaces: `namespaces.parent.*` register each family's parent name (`base.eth`, `linea.eth`,
+`celo.eth`, a Durin parent and Namespace parents) on `mainnet-shaped` and `v2-only` and point it
+at the family's Ethereum resolver. Names on an L2 (`chain` set) are seeded on that L2's profile
+(`l2-base`, `l2-optimism`, `l2-linea`, `l2-celo`): build it with `fixtureSeed(profile, key)` and
+select from its manifest with `fixturesApi`.
+
 `pnpm test:chain` seeds every profile; `pnpm test` runs the catalog and ledger check.

@@ -3,7 +3,7 @@
 - `cases.json`: every name edge case ensforge's tests must account for. Single-letter axes are the
   edge-case catalog (labels L, hierarchy H, ownership O, wrapper and roles W, resolvers R, gateways
   X, records K, primary names P, registration G, time T, DNS D, migration M, accounts A, HCA Z,
-  network F, indexer I); `M:` axes are the name coverage matrix (ownership `M:A`, resolution `M:B`,
+  network F, indexer I, L2 namespaces N); `M:` axes are the name coverage matrix (ownership `M:A`, resolution `M:B`,
   hierarchy `M:C`, accounts `M:D`, time `M:E`, network `M:F`). Cases marked `bug` are where SDKs
   are likely to be wrong; each deserves its own regression test.
 - `ledger.json`: per case, `{ "na": reason }`, `{ "status": "pending" }`, or
