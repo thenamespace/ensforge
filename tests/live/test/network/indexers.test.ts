@@ -44,5 +44,22 @@ describe("indexers", () => {
         }
       }),
     );
+
+    // Basenames live on Base: Goldsky indexes them, and `name.get` reads them there. Both name
+    // the namespace alike (`namespace.id` and the indexer's `namespace`).
+    it.effect("agree with the chain on a Basename through Goldsky", () =>
+      Effect.gen(function* () {
+        const live = yield* Live;
+        const name = "jesse.base.eth";
+        const client = live.withGoldsky ?? assert.fail("Goldsky serves mainnet");
+        const chainState = yield* Actions.name.get(live.reader, { name });
+        const indexed = yield* Actions.indexer.getName(client, { name });
+
+        assert.strictEqual(indexed?.namespace, "basenames");
+        assert.deepInclude(chainState.namespace, { kind: "l2", id: "basenames" });
+        assert.strictEqual(indexed?.owner ?? null, chainState.owner);
+        assert.strictEqual(indexed?.expiresAt ?? null, chainState.expiry);
+      }),
+    );
   });
 });
