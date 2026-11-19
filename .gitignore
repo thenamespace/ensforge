@@ -1,23 +1,77 @@
-.DS_Store
-.env
-.env.*
-!.env.example
-.turbo/
-coverage/
-dist/
+# Dependencies
 node_modules/
-research/
-*.log
-*.tgz
+.pnpm-store/
+.pnp.*
+.yarn/
 
+# Package builds and packed tarballs
+dist/
+build/
+*.tgz
+*.tsbuildinfo
+
+# App builds: TanStack Start, Nitro, Vinxi, Vite and Fumadocs (apps/docs)
+.output/
+.nitro/
+.vinxi/
+.tanstack/
+.source/
+.vite/
+.next/
+.vercel/
+.netlify/
+.wrangler/
+
+# Tool caches
+.turbo/
+.cache/
+.eslintcache
+.oxlintcache
+.vitest/
+*.cpuprofile
+*.heapprofile
+
+# Tests: coverage, mutation testing, reports and snapshots on failure
+coverage/
+.nyc_output/
+.stryker-tmp/
+reports/
+test-results/
+playwright-report/
+__screenshots__/
+
+# Devnet clones and state dumps (committed artifacts live in tests/devnet/artifacts/)
+tests/devnet/.cache/
+tests/services/.cache/
 
 # codegen --check scratch output
 .codegen-check/
 
-# devnet clones and state dumps
-tests/devnet/.cache/
-tests/services/.cache/
+# Environment and secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
 
-# mutation testing sandboxes and reports
-.stryker-tmp/
-reports/
+# Local working state (plans, research, scratch)
+research/
+scripts-temp/
+*.local
+*.local.*
+
+# Logs
+*.log
+logs/
+
+# Editors and operating systems
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+desktop.ini
