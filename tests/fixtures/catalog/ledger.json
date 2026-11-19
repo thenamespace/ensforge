@@ -2418,10 +2418,15 @@
     ]
   },
   "N20": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/writes/namespaces.test.ts > writes each family's records on its L2, and refuses other accounts",
+      "tests/integration/test/writes/namespaces.test.ts > transfers each family's names on their L2, and their records follow"
+    ]
   },
   "N21": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/writes/namespaces.test.ts > refuses every other write on an L2 name before signing, naming its L2"
+    ]
   },
   "N22": {
     "tests": [

@@ -3744,17 +3744,17 @@
   {
     "id": "N20",
     "axis": "N",
-    "title": "Record write on an L2 name",
+    "title": "Record write, transfer or approval on an L2 name",
     "component": "ensforge",
-    "expected": "Sent on the L2 to the name's resolver through the standard setters, as one multicall",
+    "expected": "Sent on the L2 through the standard setters and token transfers; strangers, expired names and routes refused",
     "domains": ["write"]
   },
   {
     "id": "N21",
     "axis": "N",
-    "title": "Creation, transfer or resolver change on an L2 name",
+    "title": "Creation, resolver or TTL change on an L2 name",
     "component": "ensforge",
-    "expected": "Refused before sending with `NAME_EXTERNAL` and the L2's `chainId`",
+    "expected": "Refused before sending with `NAME_EXTERNAL` naming the L2, with its `chainId`",
     "domains": ["write"]
   },
   {

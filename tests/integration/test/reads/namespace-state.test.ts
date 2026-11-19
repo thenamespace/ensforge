@@ -235,7 +235,7 @@ describe("L2 names read on their L2", () => {
       }),
     );
 
-    it.effect("describes the L2 resolver and who may write its records", () =>
+    it.effect("describes the L2 resolver and who may write its records or move the name", () =>
       Effect.gen(function* () {
         const namespaces = yield* Namespaces;
         const { alice, bob } = (yield* Devnet).accounts;
@@ -275,8 +275,14 @@ describe("L2 names read on their L2", () => {
           account: alice,
           operation: "transfer",
         });
-        assert.isFalse(transfer.allowed);
-        assert.strictEqual(transfer.missing[0]?.type, "blocked");
+        const resolverChange = yield* Actions.permission.check(ens, {
+          name,
+          account: alice,
+          operation: "setResolver",
+        });
+        assert.deepInclude(transfer, { allowed: true, via: "owner" });
+        assert.isFalse(resolverChange.allowed);
+        assert.strictEqual(resolverChange.missing[0]?.type, "blocked");
       }),
     );
   });
