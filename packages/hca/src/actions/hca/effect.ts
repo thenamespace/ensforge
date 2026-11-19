@@ -637,7 +637,7 @@ export declare namespace getSession {
 }
 
 /**
- * Checks whether an HCA may upgrade to an implementation: both DAO sets must allow it.
+ * Checks whether an HCA may upgrade to an implementation: it must be in the DAO's upgrade set and accept the current implementation.
  *
  * **When to use**
  *
@@ -845,7 +845,7 @@ export declare namespace revokeSessionsSync {
 }
 
 /**
- * Upgrades the signer's HCA to an implementation both DAO upgrade sets allow. Resolves once the transaction is submitted.
+ * Upgrades the signer's HCA to an implementation the DAO's upgrade set and its own `canUpgradeFrom` check allow. Resolves once the transaction is submitted.
  *
  * **When to use**
  *
@@ -900,7 +900,7 @@ export declare namespace upgrade {
 }
 
 /**
- * Upgrades the signer's HCA to an implementation both DAO upgrade sets allow. Resolves once the receipt is in.
+ * Upgrades the signer's HCA to an implementation the DAO's upgrade set and its own `canUpgradeFrom` check allow. Resolves once the receipt is in.
  *
  * **When to use**
  *

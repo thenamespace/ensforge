@@ -83,6 +83,8 @@ export type World = Entry & {
    * `OffchainLookup`, an address is an on-chain answer; others answer nothing (`0x`).
    */
   readonly served?: Readonly<Record<Address, "offchain" | Address>> | undefined;
+  /** ENSv2 resolution no longer reaches ENSv1 names (its bridge resolver is gone). */
+  readonly unreachableFromV2?: boolean | undefined;
   /** A deployment without ENSv2, as before its launch. */
   readonly v1Only?: boolean | undefined;
   /** Contract accounts, by address: their Ownable `owner()` and the accounts `isContractNamer` approves. */
@@ -269,6 +271,11 @@ const stubs = (world: World): ContractStub[] => {
       abi: Abis.v2.ethRegistrar,
       functions: { GRACE_PERIOD: () => gracePeriod },
     },
+    {
+      address: v2.verifiableFactory,
+      abi: Abis.v2.verifiableFactory,
+      functions: { proxyLogic: () => resolverA },
+    },
     ...Arr.map(registries, (registry) => registryStub(registry)),
     {
       address: Deployments.mainnet.v2.migration.publicResolverSet,
@@ -292,7 +299,9 @@ const stubs = (world: World): ContractStub[] => {
       abi: Abis.v2.universalResolver,
       functions: {
         findResolver: ([dns]) => [
-          Deployments.mainnet.v2.migration.ensV1Resolver,
+          world.unreachableFromV2 === true
+            ? zeroAddress
+            : Deployments.mainnet.v2.migration.ensV1Resolver,
           namehash(Name.dnsDecode(dns as Hex)),
           0n,
         ],

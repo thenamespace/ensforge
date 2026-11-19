@@ -1,0 +1,1449 @@
+{
+  "packages": [
+    {
+      "slug": "sdk",
+      "name": "SDK",
+      "npm": "@ensforge/sdk",
+      "url": "/docs/reference/sdk",
+      "count": 91,
+      "unit": "actions",
+      "description": "Every action by domain, plus the client, batching, utilities and indexers.",
+      "items": [
+        {
+          "name": "Client",
+          "url": "/docs/reference/sdk/client",
+          "summary": "Ensforge.create, the action groups, and the read, write and plan option types."
+        },
+        {
+          "name": "batch",
+          "url": "/docs/reference/sdk/batch",
+          "summary": "Runs several reads together, in as few round trips as possible."
+        },
+        {
+          "name": "Utilities",
+          "url": "/docs/reference/sdk/utilities",
+          "summary": "Name, coin type, content hash, duration, fuse, role and error helpers."
+        },
+        {
+          "name": "Indexers",
+          "url": "/docs/reference/sdk/indexers",
+          "summary": "The indexers, query options and result types of @ensforge/sdk/indexer."
+        },
+        {
+          "name": "approval.getDelegate",
+          "url": "/docs/reference/sdk/approval/get-delegate",
+          "summary": "Checks whether a delegate may edit a name's records on its public resolver (isApprovedFor)."
+        },
+        {
+          "name": "approval.getOperator",
+          "url": "/docs/reference/sdk/approval/get-operator",
+          "summary": "Checks whether an operator may manage everything an owner holds on an ENS contract (isApprovedForAll)."
+        },
+        {
+          "name": "approval.getToken",
+          "url": "/docs/reference/sdk/approval/get-token",
+          "summary": "Reads the address approved to transfer one ENSv1 name token (getApproved)."
+        },
+        {
+          "name": "approval.setDelegate",
+          "url": "/docs/reference/sdk/approval/set-delegate",
+          "summary": "Approves or revokes a delegate who may edit a name's records on its public resolver."
+        },
+        {
+          "name": "approval.setOperator",
+          "url": "/docs/reference/sdk/approval/set-operator",
+          "summary": "Approves or revokes an operator for everything the signer holds on an ENS contract (setApprovalForAll)."
+        },
+        {
+          "name": "approval.setToken",
+          "url": "/docs/reference/sdk/approval/set-token",
+          "summary": "Approves one address to transfer one ENSv1 name token, or clears the approval."
+        },
+        {
+          "name": "dns.claim",
+          "url": "/docs/reference/sdk/dns/claim",
+          "summary": "Imports a DNS name into ENS with a DNSSEC proof of its _ens TXT record."
+        },
+        {
+          "name": "dns.getOffchainResolver",
+          "url": "/docs/reference/sdk/dns/get-offchain-resolver",
+          "summary": "Reads the gasless DNS resolver a DNS name sets in an ENS1 TXT record."
+        },
+        {
+          "name": "dns.getProof",
+          "url": "/docs/reference/sdk/dns/get-proof",
+          "summary": "Fetches the DNSSEC proof of a DNS name's _ens TXT record."
+        },
+        {
+          "name": "dns.getRecords",
+          "url": "/docs/reference/sdk/dns/get-records",
+          "summary": "Reads DNS records and the zonehash a name stores on its resolver."
+        },
+        {
+          "name": "dns.getStatus",
+          "url": "/docs/reference/sdk/dns/get-status",
+          "summary": "Reads whether a DNS name is imported into ENS, and what it needs to be."
+        },
+        {
+          "name": "dns.setRecords",
+          "url": "/docs/reference/sdk/dns/set-records",
+          "summary": "Sets DNS records or the zonehash of a name on its public resolver."
+        },
+        {
+          "name": "event.decode",
+          "url": "/docs/reference/sdk/event/decode",
+          "summary": "Normalizes the ENS events in logs or transaction receipts."
+        },
+        {
+          "name": "event.get",
+          "url": "/docs/reference/sdk/event/get",
+          "summary": "Reads the ENS events of one name over a block range, across ENSv1 and ENSv2."
+        },
+        {
+          "name": "event.watch",
+          "url": "/docs/reference/sdk/event/watch",
+          "summary": "Watches one name's ENS events as new blocks arrive."
+        },
+        {
+          "name": "indexer.getEvents",
+          "url": "/docs/reference/sdk/indexer/get-events",
+          "summary": "Searches indexed ENS events by name, address, resolver, contract or block range."
+        },
+        {
+          "name": "indexer.getHistory",
+          "url": "/docs/reference/sdk/indexer/get-history",
+          "summary": "Reads the full history of a name, or of every name an address is related to."
+        },
+        {
+          "name": "indexer.getName",
+          "url": "/docs/reference/sdk/indexer/get-name",
+          "summary": "Reads one name from the indexer: owner, manager, expiry, resolver, records and protocol."
+        },
+        {
+          "name": "indexer.getNamesByExpiry",
+          "url": "/docs/reference/sdk/indexer/get-names-by-expiry",
+          "summary": "Lists names by when they expire or leave their grace period."
+        },
+        {
+          "name": "indexer.getNamesForAddress",
+          "url": "/docs/reference/sdk/indexer/get-names-for-address",
+          "summary": "Lists the names an address owns, manages, holds roles on, resolves to, or used to own."
+        },
+        {
+          "name": "indexer.getNamespace",
+          "url": "/docs/reference/sdk/indexer/get-namespace",
+          "summary": "Reads what the indexer serves for a namespace: its networks and which features are complete."
+        },
+        {
+          "name": "indexer.getPermissions",
+          "url": "/docs/reference/sdk/indexer/get-permissions",
+          "summary": "Lists who can do what over a name, a registration, an account or an ENSv2 registry."
+        },
+        {
+          "name": "indexer.getPrimaryName",
+          "url": "/docs/reference/sdk/indexer/get-primary-name",
+          "summary": "Reads an address's primary name from the indexer, verified on-chain when the indexer can."
+        },
+        {
+          "name": "indexer.getRecords",
+          "url": "/docs/reference/sdk/indexer/get-records",
+          "summary": "Reads a name's records and its record inventory from the indexer."
+        },
+        {
+          "name": "indexer.getRegistry",
+          "url": "/docs/reference/sdk/indexer/get-registry",
+          "summary": "Reads an ENSv2 registry: the name it serves, its parent registry, when it was created and its counts."
+        },
+        {
+          "name": "indexer.getRegistryLabels",
+          "url": "/docs/reference/sdk/indexer/get-registry-labels",
+          "summary": "Lists the labels of an ENSv2 registry, optionally only those an address holds or does not hold."
+        },
+        {
+          "name": "indexer.getResolver",
+          "url": "/docs/reference/sdk/indexer/get-resolver",
+          "summary": "Reads a resolver and one page of the names bound to it."
+        },
+        {
+          "name": "indexer.getResolverLinks",
+          "url": "/docs/reference/sdk/indexer/get-resolver-links",
+          "summary": "Lists the names linked to record sets on an ENSv2 resolver."
+        },
+        {
+          "name": "indexer.getResolverRoles",
+          "url": "/docs/reference/sdk/indexer/get-resolver-roles",
+          "summary": "Lists the role grants on an ENSv2 resolver."
+        },
+        {
+          "name": "indexer.getResolvers",
+          "url": "/docs/reference/sdk/indexer/get-resolvers",
+          "summary": "Lists the ENSv2 resolvers on which an address holds roles."
+        },
+        {
+          "name": "indexer.getStatus",
+          "url": "/docs/reference/sdk/indexer/get-status",
+          "summary": "Reads the indexer's health and how far each chain is indexed."
+        },
+        {
+          "name": "indexer.getSubnames",
+          "url": "/docs/reference/sdk/indexer/get-subnames",
+          "summary": "Lists the direct subnames of a name."
+        },
+        {
+          "name": "indexer.lookup",
+          "url": "/docs/reference/sdk/indexer/lookup",
+          "summary": "Reads up to 1,000 names and addresses in one request."
+        },
+        {
+          "name": "indexer.search",
+          "url": "/docs/reference/sdk/indexer/search",
+          "summary": "Searches names by text."
+        },
+        {
+          "name": "migration.get",
+          "url": "/docs/reference/sdk/migration/get",
+          "summary": "Reads whether an ENSv1 name can migrate to ENSv2, how, and what it becomes."
+        },
+        {
+          "name": "migration.migrate",
+          "url": "/docs/reference/sdk/migration/migrate",
+          "summary": "Migrates one or more ENSv1 names to ENSv2, carrying their resolver records and subnames."
+        },
+        {
+          "name": "name.get",
+          "url": "/docs/reference/sdk/name/get",
+          "summary": "Reads the full state of a name across ENSv1 and ENSv2: where it lives, who owns it, its resolver, expiry and whether it can be registered or renewed."
+        },
+        {
+          "name": "name.getLabel",
+          "url": "/docs/reference/sdk/name/get-label",
+          "summary": "Recovers a label from its labelhash through the ENSv2 LabelStore."
+        },
+        {
+          "name": "name.reclaim",
+          "url": "/docs/reference/sdk/name/reclaim",
+          "summary": "Resets the ENSv1 registry owner (manager) of an unwrapped .eth name, as its registrant."
+        },
+        {
+          "name": "name.setManager",
+          "url": "/docs/reference/sdk/name/set-manager",
+          "summary": "Sets the ENSv1 manager (registry owner) of a name."
+        },
+        {
+          "name": "name.setTtl",
+          "url": "/docs/reference/sdk/name/set-ttl",
+          "summary": "Sets the ENSv1 registry TTL of a name."
+        },
+        {
+          "name": "name.transfer",
+          "url": "/docs/reference/sdk/name/transfer",
+          "summary": "Sends a name to another account and resolves once the transaction is submitted."
+        },
+        {
+          "name": "permission.check",
+          "url": "/docs/reference/sdk/permission/check",
+          "summary": "Checks whether an account may perform one operation on an ENS name, and lists exactly what it lacks when it may not."
+        },
+        {
+          "name": "permission.get",
+          "url": "/docs/reference/sdk/permission/get",
+          "summary": "Reads what an account may do with an ENS name: transfer it, change its resolver, edit records, create subnames and more, across ENSv1 ownership and ENSv2 roles."
+        },
+        {
+          "name": "permission.setRecordAccess",
+          "url": "/docs/reference/sdk/permission/set-record-access",
+          "summary": "Lets another account edit a name's records, or takes that access back."
+        },
+        {
+          "name": "plan.get",
+          "url": "/docs/reference/sdk/plan/get",
+          "summary": "Reads a saved plan and its progress."
+        },
+        {
+          "name": "plan.list",
+          "url": "/docs/reference/sdk/plan/list",
+          "summary": "Lists the saved plans of this client's chain and of its chains, newest first."
+        },
+        {
+          "name": "plan.reconcile",
+          "url": "/docs/reference/sdk/plan/reconcile",
+          "summary": "Records a transaction sent outside ensforge as a plan step's submission."
+        },
+        {
+          "name": "plan.resume",
+          "url": "/docs/reference/sdk/plan/resume",
+          "summary": "Continues a saved plan after a failure or a reload."
+        },
+        {
+          "name": "plan.send",
+          "url": "/docs/reference/sdk/plan/send",
+          "summary": "Sends any plan: one prepared by a write's .prepare, or several combined with Plan.merge."
+        },
+        {
+          "name": "primaryName.get",
+          "url": "/docs/reference/sdk/primary-name/get",
+          "summary": "Reads the primary name of an address (ENSIP-19 reverse resolution), verified against the name's address record."
+        },
+        {
+          "name": "primaryName.set",
+          "url": "/docs/reference/sdk/primary-name/set",
+          "summary": "Sets or clears the primary name (reverse record) of an address."
+        },
+        {
+          "name": "primaryName.signClaim",
+          "url": "/docs/reference/sdk/primary-name/sign-claim",
+          "summary": "Signs a claim to a primary name on one or more L2s, with one signature and no transaction."
+        },
+        {
+          "name": "record.get",
+          "url": "/docs/reference/sdk/record/get",
+          "summary": "Reads any mix of a name's records in one request: texts, addresses, content hash, ABI, public key, name record, interface implementers and data records."
+        },
+        {
+          "name": "record.getAddress",
+          "url": "/docs/reference/sdk/record/get-address",
+          "summary": "Reads one address record of an ENS name, for Ethereum by default or any coin (ENSIP-9, ENSIP-11)."
+        },
+        {
+          "name": "record.getAvatar",
+          "url": "/docs/reference/sdk/record/get-avatar",
+          "summary": "Reads the avatar of an ENS name and resolves it to a URL a browser can load (ENSIP-12)."
+        },
+        {
+          "name": "record.getContentHash",
+          "url": "/docs/reference/sdk/record/get-content-hash",
+          "summary": "Reads the content hash of an ENS name (ENSIP-7), decoded into its protocol, value and URI."
+        },
+        {
+          "name": "record.getText",
+          "url": "/docs/reference/sdk/record/get-text",
+          "summary": "Reads one text record of an ENS name, such as url, avatar or com.twitter."
+        },
+        {
+          "name": "record.set",
+          "url": "/docs/reference/sdk/record/set",
+          "summary": "Writes records of an ENS name and resolves once the transaction is submitted."
+        },
+        {
+          "name": "registration.commit",
+          "url": "/docs/reference/sdk/registration/commit",
+          "summary": "Commits to registering .eth names, the first half of a registration."
+        },
+        {
+          "name": "registration.getCommitmentStatus",
+          "url": "/docs/reference/sdk/registration/get-commitment-status",
+          "summary": "Reads where a registration commitment is in its window."
+        },
+        {
+          "name": "registration.getParameters",
+          "url": "/docs/reference/sdk/registration/get-parameters",
+          "summary": "Reads the .eth registration settings: contracts, commitment window, minimum duration, grace period and accepted payment tokens."
+        },
+        {
+          "name": "registration.getPrice",
+          "url": "/docs/reference/sdk/registration/get-price",
+          "summary": "Quotes the price of registering a .eth name, in an ERC-20 payment token."
+        },
+        {
+          "name": "registration.getRenewalPrice",
+          "url": "/docs/reference/sdk/registration/get-renewal-price",
+          "summary": "Quotes renewing one or more .eth names, in an ERC-20 payment token."
+        },
+        {
+          "name": "registration.isAvailable",
+          "url": "/docs/reference/sdk/registration/is-available",
+          "summary": "Checks whether a .eth name can be registered now."
+        },
+        {
+          "name": "registration.register",
+          "url": "/docs/reference/sdk/registration/register",
+          "summary": "Registers one or more .eth names: approve, commit, wait, register, then records and primary name."
+        },
+        {
+          "name": "registration.renew",
+          "url": "/docs/reference/sdk/registration/renew",
+          "summary": "Renews one or more .eth names, ENSv1 or ENSv2, paying in an ERC-20 token."
+        },
+        {
+          "name": "registry.attach",
+          "url": "/docs/reference/sdk/registry/attach",
+          "summary": "Sets or removes the subregistry of an ENSv2 name."
+        },
+        {
+          "name": "registry.deploy",
+          "url": "/docs/reference/sdk/registry/deploy",
+          "summary": "Deploys an ENSv2 UserRegistry, optionally attaching it as a name's subregistry."
+        },
+        {
+          "name": "registry.get",
+          "url": "/docs/reference/sdk/registry/get",
+          "summary": "Reads an ENSv2 registry: its kind, implementation, parent, canonical name, URI, whether it is emancipated, and whether it can be upgraded."
+        },
+        {
+          "name": "registry.setUri",
+          "url": "/docs/reference/sdk/registry/set-uri",
+          "summary": "Sets the metadata URI of an ENSv2 registry."
+        },
+        {
+          "name": "registry.upgrade",
+          "url": "/docs/reference/sdk/registry/upgrade",
+          "summary": "Upgrades an ENSv2 registry to the deployment's latest implementation."
+        },
+        {
+          "name": "resolver.create",
+          "url": "/docs/reference/sdk/resolver/create",
+          "summary": "Deploys an ENSv2 PermissionedResolver, optionally with records, and points a name at it."
+        },
+        {
+          "name": "resolver.get",
+          "url": "/docs/reference/sdk/resolver/get",
+          "summary": "Reads the resolver of an ENS name: its address, what kind of resolver it is, who may write to it and which record profiles it supports."
+        },
+        {
+          "name": "resolver.getLink",
+          "url": "/docs/reference/sdk/resolver/get-link",
+          "summary": "Reads which record set an ENS name uses on its PermissionedResolver."
+        },
+        {
+          "name": "resolver.link",
+          "url": "/docs/reference/sdk/resolver/link",
+          "summary": "Links an ENS name to the records of another name on the same PermissionedResolver."
+        },
+        {
+          "name": "resolver.resolve",
+          "url": "/docs/reference/sdk/resolver/resolve",
+          "summary": "Calls the resolver of an ENS name with raw calldata through the Universal Resolver (ENSIP-10)."
+        },
+        {
+          "name": "resolver.set",
+          "url": "/docs/reference/sdk/resolver/set",
+          "summary": "Points an ENS name at a resolver."
+        },
+        {
+          "name": "resolver.upgrade",
+          "url": "/docs/reference/sdk/resolver/upgrade",
+          "summary": "Upgrades the PermissionedResolver of an ENS name to a newer implementation."
+        },
+        {
+          "name": "role.get",
+          "url": "/docs/reference/sdk/role/get",
+          "summary": "Reads the ENSv2 roles an account holds on a name, or at the root of a registry or resolver."
+        },
+        {
+          "name": "role.grant",
+          "url": "/docs/reference/sdk/role/grant",
+          "summary": "Grants ENSv2 roles to an account on a name, or at the root of a registry or resolver."
+        },
+        {
+          "name": "role.revoke",
+          "url": "/docs/reference/sdk/role/revoke",
+          "summary": "Revokes ENSv2 roles from an account on a name, or at the root of a registry or resolver."
+        },
+        {
+          "name": "subname.create",
+          "url": "/docs/reference/sdk/subname/create",
+          "summary": "Creates a subname, routed by its parent: an ENSv2 subregistry, the ENSv1 registry or the NameWrapper."
+        },
+        {
+          "name": "subname.remove",
+          "url": "/docs/reference/sdk/subname/remove",
+          "summary": "Removes a subname."
+        },
+        {
+          "name": "subname.update",
+          "url": "/docs/reference/sdk/subname/update",
+          "summary": "Changes a subname from its parent: owner, resolver or expiry, in one plan."
+        },
+        {
+          "name": "wrapper.getFuses",
+          "url": "/docs/reference/sdk/wrapper/get-fuses",
+          "summary": "Reads the NameWrapper owner, fuses and expiry of an ENSv1 name."
+        },
+        {
+          "name": "wrapper.setChildFuses",
+          "url": "/docs/reference/sdk/wrapper/set-child-fuses",
+          "summary": "Burns fuses on, or extends, a wrapped ENSv1 subname as its parent's owner."
+        },
+        {
+          "name": "wrapper.setFuses",
+          "url": "/docs/reference/sdk/wrapper/set-fuses",
+          "summary": "Burns owner-controlled fuses on a wrapped ENSv1 name."
+        },
+        {
+          "name": "wrapper.unwrap",
+          "url": "/docs/reference/sdk/wrapper/unwrap",
+          "summary": "Unwraps an ENSv1 name from the NameWrapper."
+        },
+        {
+          "name": "wrapper.wrap",
+          "url": "/docs/reference/sdk/wrapper/wrap",
+          "summary": "Wraps an ENSv1 name in the NameWrapper."
+        }
+      ]
+    },
+    {
+      "slug": "react",
+      "name": "React",
+      "npm": "@ensforge/react",
+      "url": "/docs/reference/react",
+      "count": 30,
+      "unit": "hooks",
+      "description": "Hooks, the provider and boundaries, server prefetching and atoms.",
+      "items": [
+        {
+          "name": "useAddress",
+          "url": "/docs/reference/react/use-address",
+          "summary": "Reads the address a name points to, for ETH or another coin."
+        },
+        {
+          "name": "useAvailability",
+          "url": "/docs/reference/react/use-availability",
+          "summary": "Checks whether a name can be registered now."
+        },
+        {
+          "name": "useAvatar",
+          "url": "/docs/reference/react/use-avatar",
+          "summary": "Reads a name's avatar as an image URL, with NFT avatars resolved."
+        },
+        {
+          "name": "useCreateSubname",
+          "url": "/docs/reference/react/use-create-subname",
+          "summary": "Creates a subname, optionally with records."
+        },
+        {
+          "name": "useEnsforge",
+          "url": "/docs/reference/react/use-ensforge",
+          "summary": "The client of the nearest EnsforgeProvider."
+        },
+        {
+          "name": "useInfiniteRead",
+          "url": "/docs/reference/react/use-infinite-read",
+          "summary": "Reads an indexer list page by page, such as a name's subnames or an account's names."
+        },
+        {
+          "name": "useMigrate",
+          "url": "/docs/reference/react/use-migrate",
+          "summary": "Moves names from ENSv1 to ENSv2."
+        },
+        {
+          "name": "useMigrationStatus",
+          "url": "/docs/reference/react/use-migration-status",
+          "summary": "Reads whether and how a name can move from ENSv1 to ENSv2."
+        },
+        {
+          "name": "useName",
+          "url": "/docs/reference/react/use-name",
+          "summary": "Reads a name's state: owner, manager, expiry, resolver, registry and wrapper status."
+        },
+        {
+          "name": "useNameHistory",
+          "url": "/docs/reference/react/use-name-history",
+          "summary": "Lists a name's events (registrations, transfers, record changes), page by page, from the indexer."
+        },
+        {
+          "name": "useNamesForAddress",
+          "url": "/docs/reference/react/use-names-for-address",
+          "summary": "Lists the names an address owns, manages or is the primary name of, page by page, from the indexer."
+        },
+        {
+          "name": "usePermissions",
+          "url": "/docs/reference/react/use-permissions",
+          "summary": "Reads what an account may do with a name."
+        },
+        {
+          "name": "usePrepare",
+          "url": "/docs/reference/react/use-prepare",
+          "summary": "Plans a write without sending it: its steps, calls and warnings, for a review screen before the wallet prompt."
+        },
+        {
+          "name": "usePrimaryName",
+          "url": "/docs/reference/react/use-primary-name",
+          "summary": "Reads the primary name of an address, verified against its forward address."
+        },
+        {
+          "name": "useRead",
+          "url": "/docs/reference/react/use-read",
+          "summary": "Reads with any ensforge action and keeps the result fresh."
+        },
+        {
+          "name": "useReadErrorReset",
+          "url": "/docs/reference/react/use-read-error-reset",
+          "summary": "The reset handle of the nearest ReadErrorResetBoundary, or of the whole app without one."
+        },
+        {
+          "name": "useReads",
+          "url": "/docs/reference/react/use-reads",
+          "summary": "Runs several reads at once; their RPC calls share the client's multicall batches."
+        },
+        {
+          "name": "useRecords",
+          "url": "/docs/reference/react/use-records",
+          "summary": "Reads any mix of a name's records in one request; the result has exactly the requested fields."
+        },
+        {
+          "name": "useRegister",
+          "url": "/docs/reference/react/use-register",
+          "summary": "Registers names: commit, wait the minimum age, then register, with every step in steps."
+        },
+        {
+          "name": "useRegistrationPrice",
+          "url": "/docs/reference/react/use-registration-price",
+          "summary": "Reads what registering names for a duration costs."
+        },
+        {
+          "name": "useRenew",
+          "url": "/docs/reference/react/use-renew",
+          "summary": "Renews names."
+        },
+        {
+          "name": "useSetPrimaryName",
+          "url": "/docs/reference/react/use-set-primary-name",
+          "summary": "Sets the signer's primary name."
+        },
+        {
+          "name": "useSetRecords",
+          "url": "/docs/reference/react/use-set-records",
+          "summary": "Sets, changes or clears a name's records in one write."
+        },
+        {
+          "name": "useSetResolver",
+          "url": "/docs/reference/react/use-set-resolver",
+          "summary": "Points a name at a resolver."
+        },
+        {
+          "name": "useSignClaim",
+          "url": "/docs/reference/react/use-sign-claim",
+          "summary": "Signs a claim to a primary name on L2s, with one signature and no transaction, for primaryName.set on each chain (or a relaying server)."
+        },
+        {
+          "name": "useSubnames",
+          "url": "/docs/reference/react/use-subnames",
+          "summary": "Lists a name's subnames, page by page, from the indexer."
+        },
+        {
+          "name": "useSuspenseRead",
+          "url": "/docs/reference/react/use-suspense-read",
+          "summary": "Reads with an action and suspends until the value is there; failures throw to the nearest error boundary."
+        },
+        {
+          "name": "useText",
+          "url": "/docs/reference/react/use-text",
+          "summary": "Reads one text record, such as url, avatar or com.twitter."
+        },
+        {
+          "name": "useTransferName",
+          "url": "/docs/reference/react/use-transfer-name",
+          "summary": "Transfers a name to another account."
+        },
+        {
+          "name": "useWrite",
+          "url": "/docs/reference/react/use-write",
+          "summary": "Sends any ensforge write and tracks it."
+        },
+        {
+          "name": "Components",
+          "url": "/docs/reference/react/components",
+          "summary": "EnsforgeProvider and the read error and hydration boundaries."
+        },
+        {
+          "name": "Server",
+          "url": "/docs/reference/react/server",
+          "summary": "Prefetch reads on the server with @ensforge/react/server."
+        },
+        {
+          "name": "Atoms",
+          "url": "/docs/reference/react/atoms",
+          "summary": "The atom layer of @ensforge/react/atoms that the hooks are built on."
+        }
+      ]
+    },
+    {
+      "slug": "hca",
+      "name": "HCA",
+      "npm": "@ensforge/hca",
+      "url": "/docs/reference/hca",
+      "count": 21,
+      "unit": "actions",
+      "description": "Hosted contract account actions and executors (experimental).",
+      "items": [
+        {
+          "name": "hca.addDeposit",
+          "url": "/docs/reference/hca/hca/add-deposit",
+          "summary": "Adds ETH to an HCA's ERC-4337 EntryPoint deposit."
+        },
+        {
+          "name": "hca.authorizeSession",
+          "url": "/docs/reference/hca/hca/authorize-session",
+          "summary": "Asks the owner to approve a session key for their HCA, with one signature and no transaction."
+        },
+        {
+          "name": "hca.checkSessionCalls",
+          "url": "/docs/reference/hca/hca/check-session-calls",
+          "summary": "Checks calls against the HCA session policy before anything is signed."
+        },
+        {
+          "name": "hca.deploy",
+          "url": "/docs/reference/hca/hca/deploy",
+          "summary": "Deploys the signer's HCA through the ENS factory."
+        },
+        {
+          "name": "hca.execute",
+          "url": "/docs/reference/hca/hca/execute",
+          "summary": "Runs calls from the signer's HCA as one atomic execution."
+        },
+        {
+          "name": "hca.get",
+          "url": "/docs/reference/hca/hca/get",
+          "summary": "Reads an ENS HCA (Hosted Contract Account): its address, owner, implementation, session nonce and verification problems."
+        },
+        {
+          "name": "hca.getDeposit",
+          "url": "/docs/reference/hca/hca/get-deposit",
+          "summary": "Reads an HCA's ERC-4337 EntryPoint deposit, which pays for its UserOperations without a paymaster."
+        },
+        {
+          "name": "hca.getSession",
+          "url": "/docs/reference/hca/hca/get-session",
+          "summary": "Checks whether a stored HCA session can still be used."
+        },
+        {
+          "name": "hca.getUpgrade",
+          "url": "/docs/reference/hca/hca/get-upgrade",
+          "summary": "Checks whether an HCA may upgrade to an implementation: it must be in the DAO's upgrade set and accept the current implementation."
+        },
+        {
+          "name": "hca.predictAddress",
+          "url": "/docs/reference/hca/hca/predict-address",
+          "summary": "Computes the address of an owner's ENS HCA, deployed or not."
+        },
+        {
+          "name": "hca.revokeSessions",
+          "url": "/docs/reference/hca/hca/revoke-sessions",
+          "summary": "Invalidates every session approval of the signer's HCA."
+        },
+        {
+          "name": "hca.upgrade",
+          "url": "/docs/reference/hca/hca/upgrade",
+          "summary": "Upgrades the signer's HCA to an implementation the DAO's upgrade set and its own canUpgradeFrom check allow."
+        },
+        {
+          "name": "hca.verify",
+          "url": "/docs/reference/hca/hca/verify",
+          "summary": "Checks that an address is a usable ENS HCA of its owner, and returns it."
+        },
+        {
+          "name": "hca.withdrawDeposit",
+          "url": "/docs/reference/hca/hca/withdraw-deposit",
+          "summary": "Withdraws ETH from the signer's HCA EntryPoint deposit."
+        },
+        {
+          "name": "hcaAdmin.getGovernance",
+          "url": "/docs/reference/hca/hca-admin/get-governance",
+          "summary": "Reads who governs ENS HCAs: the factory owner and whether implementations are approved."
+        },
+        {
+          "name": "hcaAdmin.grantUpgradeSetRoles",
+          "url": "/docs/reference/hca/hca-admin/grant-upgrade-set-roles",
+          "summary": "Grants root roles on the HCA upgrade set (role admins only)."
+        },
+        {
+          "name": "hcaAdmin.renounceGovernance",
+          "url": "/docs/reference/hca/hca-admin/renounce-governance",
+          "summary": "Renounces ownership of the HCA factory, freezing its implementation approvals (factory owner only)."
+        },
+        {
+          "name": "hcaAdmin.revokeUpgradeSetRoles",
+          "url": "/docs/reference/hca/hca-admin/revoke-upgrade-set-roles",
+          "summary": "Revokes root roles on the HCA upgrade set (role admins only)."
+        },
+        {
+          "name": "hcaAdmin.setDeploymentApproval",
+          "url": "/docs/reference/hca/hca-admin/set-deployment-approval",
+          "summary": "Approves or revokes an implementation for new HCA deployments (factory owner only)."
+        },
+        {
+          "name": "hcaAdmin.setUpgradeApproval",
+          "url": "/docs/reference/hca/hca-admin/set-upgrade-approval",
+          "summary": "Approves or revokes an implementation in the HCA upgrade set (role holders only)."
+        },
+        {
+          "name": "hcaAdmin.transferGovernance",
+          "url": "/docs/reference/hca/hca-admin/transfer-governance",
+          "summary": "Transfers ownership of the HCA factory (factory owner only)."
+        },
+        {
+          "name": "Executors",
+          "url": "/docs/reference/hca/executors",
+          "summary": "The HCA route, the executors and their options."
+        }
+      ]
+    },
+    {
+      "slug": "contracts",
+      "name": "Contracts",
+      "npm": "@ensforge/contracts",
+      "url": "/docs/reference/contracts",
+      "count": 5,
+      "unit": "references",
+      "description": "ENS ABIs, addresses per chain, interface IDs and roles.",
+      "items": [
+        {
+          "name": "ABIs",
+          "url": "/docs/reference/contracts/abis",
+          "summary": "Every ENS contract ABI, by protocol version."
+        },
+        {
+          "name": "Deployments",
+          "url": "/docs/reference/contracts/deployments",
+          "summary": "Contract addresses per chain and their capability flags."
+        },
+        {
+          "name": "Interface IDs",
+          "url": "/docs/reference/contracts/interface-ids",
+          "summary": "ERC-165 interface IDs of registries, resolvers and profiles."
+        },
+        {
+          "name": "Roles",
+          "url": "/docs/reference/contracts/roles",
+          "summary": "ENSv2 role bitmaps."
+        },
+        {
+          "name": "Entry points",
+          "url": "/docs/reference/contracts/entry-points",
+          "summary": "What each import path of @ensforge/contracts exports."
+        }
+      ]
+    },
+    {
+      "slug": "errors",
+      "name": "Errors",
+      "npm": null,
+      "url": "/docs/reference/errors",
+      "count": 104,
+      "unit": "codes",
+      "description": "Every error code by class, with what happened, how to fix it and what to show users.",
+      "items": [
+        {
+          "name": "CommitmentError",
+          "url": "/docs/reference/errors/commitment-error",
+          "summary": "A .eth commit-reveal registration step is out of order or out of time."
+        },
+        {
+          "name": "ConfigError",
+          "url": "/docs/reference/errors/config-error",
+          "summary": "The ensforge client or a call is configured incorrectly."
+        },
+        {
+          "name": "ContractRevertError",
+          "url": "/docs/reference/errors/contract-revert-error",
+          "summary": "A contract reverted with an error ensforge does not map to a more specific class."
+        },
+        {
+          "name": "DnsError",
+          "url": "/docs/reference/errors/dns-error",
+          "summary": "Importing or reading a DNS name failed."
+        },
+        {
+          "name": "GatewayError",
+          "url": "/docs/reference/errors/gateway-error",
+          "summary": "Off-chain resolution (CCIP-Read, ERC-3668) failed."
+        },
+        {
+          "name": "IndexerError",
+          "url": "/docs/reference/errors/indexer-error",
+          "summary": "An indexer request failed, or the indexer cannot serve the query (INDEXER_UNSUPPORTED)."
+        },
+        {
+          "name": "InsufficientFundsError",
+          "url": "/docs/reference/errors/insufficient-funds-error",
+          "summary": "The account cannot pay for the operation."
+        },
+        {
+          "name": "InternalError",
+          "url": "/docs/reference/errors/internal-error",
+          "summary": "Something failed that ensforge does not recognise."
+        },
+        {
+          "name": "InvalidInputError",
+          "url": "/docs/reference/errors/invalid-input-error",
+          "summary": "An argument is invalid."
+        },
+        {
+          "name": "MigrationError",
+          "url": "/docs/reference/errors/migration-error",
+          "summary": "ENSv1 to ENSv2 migration is blocked for this name."
+        },
+        {
+          "name": "NameStateError",
+          "url": "/docs/reference/errors/name-state-error",
+          "summary": "The name is in the wrong state for this operation (registered, expired, locked, …)."
+        },
+        {
+          "name": "NetworkError",
+          "url": "/docs/reference/errors/network-error",
+          "summary": "The RPC provider could not be reached or rejected the request."
+        },
+        {
+          "name": "NotFoundError",
+          "url": "/docs/reference/errors/not-found-error",
+          "summary": "Something the call requires does not exist."
+        },
+        {
+          "name": "PlanError",
+          "url": "/docs/reference/errors/plan-error",
+          "summary": "A prepared or saved plan can no longer be sent as-is."
+        },
+        {
+          "name": "TransactionError",
+          "url": "/docs/reference/errors/transaction-error",
+          "summary": "A submitted transaction failed, conflicted with another, or did not confirm in time."
+        },
+        {
+          "name": "UnauthorizedError",
+          "url": "/docs/reference/errors/unauthorized-error",
+          "summary": "The account lacks ownership, approval or roles for this change, or the signature that should authorize it is invalid or expired."
+        },
+        {
+          "name": "UnsupportedError",
+          "url": "/docs/reference/errors/unsupported-error",
+          "summary": "The operation is not available for this name, resolver, deployment or wallet."
+        },
+        {
+          "name": "UserRejectedError",
+          "url": "/docs/reference/errors/user-rejected-error",
+          "summary": "The user declined the request in their wallet."
+        },
+        {
+          "name": "WalletError",
+          "url": "/docs/reference/errors/wallet-error",
+          "summary": "The wallet is not in a state to sign: wrong chain or no account."
+        },
+        {
+          "name": "HcaError",
+          "url": "/docs/reference/errors/hca-error",
+          "summary": "An HCA (Hosted Contract Account) operation failed: the account, its session, an executor (bundler, Rhinestone) or the DAO's upgrade set."
+        },
+        {
+          "name": "COMMITMENT_TOO_NEW",
+          "url": "/docs/reference/errors/COMMITMENT_TOO_NEW",
+          "summary": "The registration commitment is not ready yet."
+        },
+        {
+          "name": "COMMITMENT_TOO_OLD",
+          "url": "/docs/reference/errors/COMMITMENT_TOO_OLD",
+          "summary": "The registration commitment has expired."
+        },
+        {
+          "name": "COMMITMENT_EXISTS",
+          "url": "/docs/reference/errors/COMMITMENT_EXISTS",
+          "summary": "An unexpired commitment with the same data already exists."
+        },
+        {
+          "name": "COMMITMENT_NOT_FOUND",
+          "url": "/docs/reference/errors/COMMITMENT_NOT_FOUND",
+          "summary": "No commitment was found for this registration."
+        },
+        {
+          "name": "UNKNOWN_CHAIN",
+          "url": "/docs/reference/errors/UNKNOWN_CHAIN",
+          "summary": "ensforge has no ENS deployment for this chain."
+        },
+        {
+          "name": "INVALID_DEPLOYMENT",
+          "url": "/docs/reference/errors/INVALID_DEPLOYMENT",
+          "summary": "The deployment profile is invalid."
+        },
+        {
+          "name": "CONTRACT_NOT_DEPLOYED",
+          "url": "/docs/reference/errors/CONTRACT_NOT_DEPLOYED",
+          "summary": "No contract is deployed at the called address."
+        },
+        {
+          "name": "WALLET_NOT_CONFIGURED",
+          "url": "/docs/reference/errors/WALLET_NOT_CONFIGURED",
+          "summary": "This action needs a wallet client with an account."
+        },
+        {
+          "name": "INDEXER_NOT_CONFIGURED",
+          "url": "/docs/reference/errors/INDEXER_NOT_CONFIGURED",
+          "summary": "This action needs an indexer."
+        },
+        {
+          "name": "CCIP_READ_DISABLED",
+          "url": "/docs/reference/errors/CCIP_READ_DISABLED",
+          "summary": "This name resolves off-chain, and CCIP-Read is disabled."
+        },
+        {
+          "name": "INVALID_ACTION_GROUP",
+          "url": "/docs/reference/errors/INVALID_ACTION_GROUP",
+          "summary": "A decorator added an action group with a reserved name."
+        },
+        {
+          "name": "CHAIN_NOT_CONFIGURED",
+          "url": "/docs/reference/errors/CHAIN_NOT_CONFIGURED",
+          "summary": "The client has no clients for chain ?."
+        },
+        {
+          "name": "CONTRACT_REVERTED",
+          "url": "/docs/reference/errors/CONTRACT_REVERTED",
+          "summary": "The contract call reverted."
+        },
+        {
+          "name": "DNS_RECORD_MISSING",
+          "url": "/docs/reference/errors/DNS_RECORD_MISSING",
+          "summary": "The _ens TXT record is missing."
+        },
+        {
+          "name": "DNSSEC_PROOF_FAILED",
+          "url": "/docs/reference/errors/DNSSEC_PROOF_FAILED",
+          "summary": "The DNSSEC proof could not be built or verified."
+        },
+        {
+          "name": "PROOF_STALE",
+          "url": "/docs/reference/errors/PROOF_STALE",
+          "summary": "The DNSSEC proof is older than the one on-chain."
+        },
+        {
+          "name": "TLD_NOT_PUBLIC",
+          "url": "/docs/reference/errors/TLD_NOT_PUBLIC",
+          "summary": "The top-level domain is not a public suffix and cannot be imported."
+        },
+        {
+          "name": "GATEWAY_REQUEST_FAILED",
+          "url": "/docs/reference/errors/GATEWAY_REQUEST_FAILED",
+          "summary": "The off-chain gateway request failed."
+        },
+        {
+          "name": "GATEWAY_RESPONSE_INVALID",
+          "url": "/docs/reference/errors/GATEWAY_RESPONSE_INVALID",
+          "summary": "The off-chain gateway returned an invalid response."
+        },
+        {
+          "name": "OFFCHAIN_LOOKUP_INVALID",
+          "url": "/docs/reference/errors/OFFCHAIN_LOOKUP_INVALID",
+          "summary": "The resolver requested an off-chain lookup from an unexpected sender."
+        },
+        {
+          "name": "INDEXER_UNAVAILABLE",
+          "url": "/docs/reference/errors/INDEXER_UNAVAILABLE",
+          "summary": "The indexer is unavailable."
+        },
+        {
+          "name": "INDEXER_RATE_LIMITED",
+          "url": "/docs/reference/errors/INDEXER_RATE_LIMITED",
+          "summary": "The indexer is rate limiting requests."
+        },
+        {
+          "name": "INDEXER_RESPONSE_INVALID",
+          "url": "/docs/reference/errors/INDEXER_RESPONSE_INVALID",
+          "summary": "The indexer returned an unexpected response."
+        },
+        {
+          "name": "INDEXER_REQUEST_REJECTED",
+          "url": "/docs/reference/errors/INDEXER_REQUEST_REJECTED",
+          "summary": "The indexer rejected the request."
+        },
+        {
+          "name": "INDEXER_BEHIND",
+          "url": "/docs/reference/errors/INDEXER_BEHIND",
+          "summary": "The indexer is behind the chain."
+        },
+        {
+          "name": "INDEXER_UNSUPPORTED",
+          "url": "/docs/reference/errors/INDEXER_UNSUPPORTED",
+          "summary": "The indexer does not support this query."
+        },
+        {
+          "name": "INSUFFICIENT_ETH",
+          "url": "/docs/reference/errors/INSUFFICIENT_ETH",
+          "summary": "The account does not have enough ETH."
+        },
+        {
+          "name": "INSUFFICIENT_TOKEN_BALANCE",
+          "url": "/docs/reference/errors/INSUFFICIENT_TOKEN_BALANCE",
+          "summary": "The account does not have enough of the payment token."
+        },
+        {
+          "name": "UNEXPECTED",
+          "url": "/docs/reference/errors/UNEXPECTED",
+          "summary": "An unexpected error occurred."
+        },
+        {
+          "name": "INVALID_NAME",
+          "url": "/docs/reference/errors/INVALID_NAME",
+          "summary": "undefined is not a valid ENS name."
+        },
+        {
+          "name": "INVALID_ADDRESS",
+          "url": "/docs/reference/errors/INVALID_ADDRESS",
+          "summary": "undefined is not a valid address."
+        },
+        {
+          "name": "INVALID_COIN_TYPE",
+          "url": "/docs/reference/errors/INVALID_COIN_TYPE",
+          "summary": "undefined is not a known coin type."
+        },
+        {
+          "name": "INVALID_CONTENT_HASH",
+          "url": "/docs/reference/errors/INVALID_CONTENT_HASH",
+          "summary": "undefined is not a valid content hash."
+        },
+        {
+          "name": "INVALID_RECORD_VALUE",
+          "url": "/docs/reference/errors/INVALID_RECORD_VALUE",
+          "summary": "undefined is not a valid record value."
+        },
+        {
+          "name": "INVALID_DURATION",
+          "url": "/docs/reference/errors/INVALID_DURATION",
+          "summary": "undefined is not a valid duration."
+        },
+        {
+          "name": "DURATION_TOO_SHORT",
+          "url": "/docs/reference/errors/DURATION_TOO_SHORT",
+          "summary": "The duration is shorter than the registrar's minimum."
+        },
+        {
+          "name": "INVALID_EXPIRY",
+          "url": "/docs/reference/errors/INVALID_EXPIRY",
+          "summary": "The expiry cannot be in the past or earlier than the current expiry."
+        },
+        {
+          "name": "INVALID_ROLES",
+          "url": "/docs/reference/errors/INVALID_ROLES",
+          "summary": "undefined is not a valid role bitmap."
+        },
+        {
+          "name": "SALT_TAKEN",
+          "url": "/docs/reference/errors/SALT_TAKEN",
+          "summary": "A contract was already deployed with this salt."
+        },
+        {
+          "name": "NOT_ELIGIBLE",
+          "url": "/docs/reference/errors/NOT_ELIGIBLE",
+          "summary": "The name cannot be migrated to ENSv2 yet."
+        },
+        {
+          "name": "ALREADY_MIGRATED",
+          "url": "/docs/reference/errors/ALREADY_MIGRATED",
+          "summary": "The name is already on ENSv2."
+        },
+        {
+          "name": "NAME_NOT_LOCKED",
+          "url": "/docs/reference/errors/NAME_NOT_LOCKED",
+          "summary": "The wrapped name is not locked, so it cannot use the locked migration route."
+        },
+        {
+          "name": "RECORDS_UNKNOWN",
+          "url": "/docs/reference/errors/RECORDS_UNKNOWN",
+          "summary": "The name's records are not known, so they cannot be copied to its new resolver."
+        },
+        {
+          "name": "VERIFICATION_FAILED",
+          "url": "/docs/reference/errors/VERIFICATION_FAILED",
+          "summary": "The migration was sent, but the name's ENSv2 state differs from the plan."
+        },
+        {
+          "name": "NAME_NOT_AVAILABLE",
+          "url": "/docs/reference/errors/NAME_NOT_AVAILABLE",
+          "summary": "The name is already registered."
+        },
+        {
+          "name": "NAME_NOT_REGISTERED",
+          "url": "/docs/reference/errors/NAME_NOT_REGISTERED",
+          "summary": "The name is not registered."
+        },
+        {
+          "name": "NAME_EXTERNAL",
+          "url": "/docs/reference/errors/NAME_EXTERNAL",
+          "summary": "The name is not in ENS's registries: its parent's resolver serves it."
+        },
+        {
+          "name": "NAME_RESERVED",
+          "url": "/docs/reference/errors/NAME_RESERVED",
+          "summary": "The name is reserved."
+        },
+        {
+          "name": "NAME_EXPIRED",
+          "url": "/docs/reference/errors/NAME_EXPIRED",
+          "summary": "The name has expired."
+        },
+        {
+          "name": "NAME_NOT_RENEWABLE",
+          "url": "/docs/reference/errors/NAME_NOT_RENEWABLE",
+          "summary": "The name cannot be renewed."
+        },
+        {
+          "name": "NAME_LOCKED",
+          "url": "/docs/reference/errors/NAME_LOCKED",
+          "summary": "The name is locked."
+        },
+        {
+          "name": "NAME_NOT_WRAPPED",
+          "url": "/docs/reference/errors/NAME_NOT_WRAPPED",
+          "summary": "The name is not wrapped in the NameWrapper."
+        },
+        {
+          "name": "NAME_WRAPPED",
+          "url": "/docs/reference/errors/NAME_WRAPPED",
+          "summary": "The name is already wrapped in the NameWrapper."
+        },
+        {
+          "name": "NAME_UNREACHABLE",
+          "url": "/docs/reference/errors/NAME_UNREACHABLE",
+          "summary": "ENSv2 resolution no longer reaches this ENSv1 name."
+        },
+        {
+          "name": "NAME_REQUIRES_MIGRATION",
+          "url": "/docs/reference/errors/NAME_REQUIRES_MIGRATION",
+          "summary": "The name must be migrated to ENSv2 first."
+        },
+        {
+          "name": "PARENT_NOT_MIGRATED",
+          "url": "/docs/reference/errors/PARENT_NOT_MIGRATED",
+          "summary": "The parent name has not been migrated to ENSv2."
+        },
+        {
+          "name": "REGISTRY_NOT_EMANCIPATED",
+          "url": "/docs/reference/errors/REGISTRY_NOT_EMANCIPATED",
+          "summary": "The registry is not emancipated, so this transfer is unsafe."
+        },
+        {
+          "name": "RPC_REQUEST_FAILED",
+          "url": "/docs/reference/errors/RPC_REQUEST_FAILED",
+          "summary": "The RPC request failed."
+        },
+        {
+          "name": "RPC_TIMEOUT",
+          "url": "/docs/reference/errors/RPC_TIMEOUT",
+          "summary": "The RPC request timed out."
+        },
+        {
+          "name": "RATE_LIMITED",
+          "url": "/docs/reference/errors/RATE_LIMITED",
+          "summary": "The RPC provider is rate limiting requests."
+        },
+        {
+          "name": "LOG_RANGE_TOO_LARGE",
+          "url": "/docs/reference/errors/LOG_RANGE_TOO_LARGE",
+          "summary": "The RPC provider's eth_getLogs limits make this block range too expensive."
+        },
+        {
+          "name": "RESOLVER_NOT_FOUND",
+          "url": "/docs/reference/errors/RESOLVER_NOT_FOUND",
+          "summary": "The name has no resolver."
+        },
+        {
+          "name": "RECORD_NOT_FOUND",
+          "url": "/docs/reference/errors/RECORD_NOT_FOUND",
+          "summary": "The record is not set."
+        },
+        {
+          "name": "PRIMARY_NAME_NOT_SET",
+          "url": "/docs/reference/errors/PRIMARY_NAME_NOT_SET",
+          "summary": "The address has no primary name."
+        },
+        {
+          "name": "PRIMARY_NAME_MISMATCH",
+          "url": "/docs/reference/errors/PRIMARY_NAME_MISMATCH",
+          "summary": "The primary name does not resolve back to this address."
+        },
+        {
+          "name": "REGISTRY_NOT_FOUND",
+          "url": "/docs/reference/errors/REGISTRY_NOT_FOUND",
+          "summary": "No registry was found for this name."
+        },
+        {
+          "name": "PLAN_NOT_FOUND",
+          "url": "/docs/reference/errors/PLAN_NOT_FOUND",
+          "summary": "No saved plan was found with this id."
+        },
+        {
+          "name": "INDEXER_NOT_FOUND",
+          "url": "/docs/reference/errors/INDEXER_NOT_FOUND",
+          "summary": "The indexer has no record of this resource."
+        },
+        {
+          "name": "PLAN_STALE",
+          "url": "/docs/reference/errors/PLAN_STALE",
+          "summary": "The plan no longer matches on-chain state."
+        },
+        {
+          "name": "PLAN_CHAIN_MISMATCH",
+          "url": "/docs/reference/errors/PLAN_CHAIN_MISMATCH",
+          "summary": "The plan was prepared for another chain."
+        },
+        {
+          "name": "PLAN_ACCOUNT_MISMATCH",
+          "url": "/docs/reference/errors/PLAN_ACCOUNT_MISMATCH",
+          "summary": "The plan was prepared for another account."
+        },
+        {
+          "name": "PLAN_INVALID",
+          "url": "/docs/reference/errors/PLAN_INVALID",
+          "summary": "The text is not a serialized ensforge plan."
+        },
+        {
+          "name": "PLAN_ROUTE_REQUIRED",
+          "url": "/docs/reference/errors/PLAN_ROUTE_REQUIRED",
+          "summary": "Part of this plan was sent through a route (via), which resuming needs again."
+        },
+        {
+          "name": "TRANSACTION_REVERTED",
+          "url": "/docs/reference/errors/TRANSACTION_REVERTED",
+          "summary": "The transaction reverted on-chain."
+        },
+        {
+          "name": "RECEIPT_TIMEOUT",
+          "url": "/docs/reference/errors/RECEIPT_TIMEOUT",
+          "summary": "Timed out waiting for the transaction receipt."
+        },
+        {
+          "name": "NONCE_CONFLICT",
+          "url": "/docs/reference/errors/NONCE_CONFLICT",
+          "summary": "The transaction nonce conflicts with another transaction."
+        },
+        {
+          "name": "NOT_OWNER",
+          "url": "/docs/reference/errors/NOT_OWNER",
+          "summary": "The account does not own this name."
+        },
+        {
+          "name": "MISSING_ROLES",
+          "url": "/docs/reference/errors/MISSING_ROLES",
+          "summary": "The account is missing the roles this change needs."
+        },
+        {
+          "name": "CANNOT_GRANT_ROLES",
+          "url": "/docs/reference/errors/CANNOT_GRANT_ROLES",
+          "summary": "The account cannot grant or revoke these roles."
+        },
+        {
+          "name": "NOT_APPROVED",
+          "url": "/docs/reference/errors/NOT_APPROVED",
+          "summary": "The account is not approved to manage this name."
+        },
+        {
+          "name": "FUSE_BURNED",
+          "url": "/docs/reference/errors/FUSE_BURNED",
+          "summary": "A burned NameWrapper fuse forbids this change."
+        },
+        {
+          "name": "TRANSFER_DISALLOWED",
+          "url": "/docs/reference/errors/TRANSFER_DISALLOWED",
+          "summary": "This name cannot be transferred right now."
+        },
+        {
+          "name": "SIGNATURE_INVALID",
+          "url": "/docs/reference/errors/SIGNATURE_INVALID",
+          "summary": "The signature does not authorize this change."
+        },
+        {
+          "name": "SIGNATURE_EXPIRED",
+          "url": "/docs/reference/errors/SIGNATURE_EXPIRED",
+          "summary": "The signature has expired."
+        },
+        {
+          "name": "UNSUPPORTED_PROTOCOL",
+          "url": "/docs/reference/errors/UNSUPPORTED_PROTOCOL",
+          "summary": "This operation is not supported for this names."
+        },
+        {
+          "name": "UNSUPPORTED_ON_DEPLOYMENT",
+          "url": "/docs/reference/errors/UNSUPPORTED_ON_DEPLOYMENT",
+          "summary": "This feature is not available on this deployment."
+        },
+        {
+          "name": "RESOLVER_PROFILE_UNSUPPORTED",
+          "url": "/docs/reference/errors/RESOLVER_PROFILE_UNSUPPORTED",
+          "summary": "The resolver does not support this record type."
+        },
+        {
+          "name": "PAYMENT_TOKEN_UNSUPPORTED",
+          "url": "/docs/reference/errors/PAYMENT_TOKEN_UNSUPPORTED",
+          "summary": "The registrar does not accept this payment token."
+        },
+        {
+          "name": "UPGRADE_NOT_APPROVED",
+          "url": "/docs/reference/errors/UPGRADE_NOT_APPROVED",
+          "summary": "The upgrade target is not an approved implementation."
+        },
+        {
+          "name": "WALLET_BATCH_UNSUPPORTED",
+          "url": "/docs/reference/errors/WALLET_BATCH_UNSUPPORTED",
+          "summary": "The wallet cannot send calls as one batch."
+        },
+        {
+          "name": "USER_REJECTED",
+          "url": "/docs/reference/errors/USER_REJECTED",
+          "summary": "The user rejected the request."
+        },
+        {
+          "name": "CHAIN_MISMATCH",
+          "url": "/docs/reference/errors/CHAIN_MISMATCH",
+          "summary": "The wallet is on chain ?, expected ?."
+        },
+        {
+          "name": "ACCOUNT_NOT_FOUND",
+          "url": "/docs/reference/errors/ACCOUNT_NOT_FOUND",
+          "summary": "The wallet has no account to sign with."
+        },
+        {
+          "name": "HCA_UNAVAILABLE",
+          "url": "/docs/reference/errors/HCA_UNAVAILABLE",
+          "summary": "This chain has no ENS HCA deployment."
+        },
+        {
+          "name": "HCA_NOT_VERIFIED",
+          "url": "/docs/reference/errors/HCA_NOT_VERIFIED",
+          "summary": "The account is not a verified ENS HCA of this owner."
+        },
+        {
+          "name": "HCA_EXECUTOR_UNSUPPORTED",
+          "url": "/docs/reference/errors/HCA_EXECUTOR_UNSUPPORTED",
+          "summary": "No configured executor can run this HCA operation."
+        },
+        {
+          "name": "HCA_ACTION_NOT_ALLOWED",
+          "url": "/docs/reference/errors/HCA_ACTION_NOT_ALLOWED",
+          "summary": "The HCA session policy does not allow this call."
+        },
+        {
+          "name": "HCA_SESSION_INVALID",
+          "url": "/docs/reference/errors/HCA_SESSION_INVALID",
+          "summary": "The HCA session is expired, revoked or for another resolver."
+        },
+        {
+          "name": "HCA_BUNDLER_REJECTED",
+          "url": "/docs/reference/errors/HCA_BUNDLER_REJECTED",
+          "summary": "The bundler rejected the HCA UserOperation."
+        },
+        {
+          "name": "HCA_PAYMASTER_REJECTED",
+          "url": "/docs/reference/errors/HCA_PAYMASTER_REJECTED",
+          "summary": "The paymaster refused to sponsor the HCA UserOperation."
+        },
+        {
+          "name": "HCA_EXECUTION_FAILED",
+          "url": "/docs/reference/errors/HCA_EXECUTION_FAILED",
+          "summary": "The HCA execution failed."
+        },
+        {
+          "name": "HCA_EXECUTION_TIMEOUT",
+          "url": "/docs/reference/errors/HCA_EXECUTION_TIMEOUT",
+          "summary": "The HCA execution was not included in time."
+        },
+        {
+          "name": "HCA_UPGRADE_NOT_ALLOWED",
+          "url": "/docs/reference/errors/HCA_UPGRADE_NOT_ALLOWED",
+          "summary": "The upgrade set or the new implementation's canUpgradeFrom check does not allow this HCA upgrade."
+        },
+        {
+          "name": "HCA_SDK_UNSUPPORTED",
+          "url": "/docs/reference/errors/HCA_SDK_UNSUPPORTED",
+          "summary": "The Rhinestone SDK does not support the standalone ENS HCA."
+        }
+      ]
+    }
+  ]
+}

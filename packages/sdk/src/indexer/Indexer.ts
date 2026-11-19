@@ -63,7 +63,11 @@ export declare namespace Query {
   type Snapshot = {
     /** Read at a snapshot: an earlier answer's `asOfToken`, or a time. */
     at?: { readonly token: string } | { readonly timestamp: bigint | Date } | undefined;
-    /** @default "latest" */
+    /**
+     * How settled the data must be: `latest`, `safe` or `finalized`.
+     *
+     * @default "latest"
+     */
     finality?: "latest" | "safe" | "finalized" | undefined;
   };
 
@@ -88,6 +92,7 @@ export declare namespace Query {
    */
   type GetName = Snapshot & {
     name: string;
+    /** The naming system the name belongs to. */
     namespace: Namespace;
     /** `verified` reads the answer on-chain through the indexer. @default "indexed" */
     source?: "indexed" | "verified" | undefined;
@@ -118,9 +123,15 @@ export declare namespace Query {
     expiresAfter?: bigint | Date | undefined;
     expiresBefore?: bigint | Date | undefined;
     search?: string | undefined;
-    /** @default "prefix" */
+    /**
+     * Whether `search` matches from the start of a label (`prefix`) or anywhere (`contains`).
+     *
+     * @default "prefix"
+     */
     match?: "prefix" | "contains" | undefined;
+    /** Field the rows are sorted by. */
     sort?: "name" | "expiry" | "registered" | "created" | undefined;
+    /** Sort direction. */
     order?: "asc" | "desc" | undefined;
     /** One row per name, or per registration. @default "name" */
     dedupe?: "name" | "registration" | undefined;
@@ -133,11 +144,18 @@ export declare namespace Query {
    */
   type GetSubnames = List & {
     name: string;
+    /** The naming system the name belongs to. */
     namespace: Namespace;
     search?: string | undefined;
+    /** Whether `search` matches from the start of a label (`prefix`) or anywhere (`contains`). */
     match?: "prefix" | "contains" | undefined;
-    /** @default "name" */
+    /**
+     * Field the rows are sorted by.
+     *
+     * @default "name"
+     */
     sort?: "name" | "expiry" | "registered" | undefined;
+    /** Sort direction. */
     order?: "asc" | "desc" | undefined;
     /** @default true */
     includeExpired?: boolean | undefined;
@@ -156,7 +174,11 @@ export declare namespace Query {
     /** Inclusive time bounds (Unix seconds or dates). */
     from?: bigint | Date | undefined;
     to?: bigint | Date | undefined;
-    /** @default "desc" */
+    /**
+     * Sort direction.
+     *
+     * @default "desc"
+     */
     order?: "asc" | "desc" | undefined;
     /** Include each event's details (`data`, `action`). @default true */
     includeData?: boolean | undefined;
@@ -171,6 +193,7 @@ export declare namespace Query {
     (
       | {
           name: string;
+          /** The naming system the name belongs to. */
           namespace: Namespace;
           address?: undefined;
           /** Name events, registration events, or both. @default "both" */
@@ -180,6 +203,7 @@ export declare namespace Query {
         }
       | {
           address: Address;
+          /** Only this naming system; every namespace the indexer serves when omitted. */
           namespace?: Namespace | undefined;
           name?: undefined;
           scope?: "name" | "registration" | "both" | undefined;
@@ -194,6 +218,7 @@ export declare namespace Query {
    * @stability stable
    */
   type GetEvents = HistoryFilters & {
+    /** Only this naming system; every namespace the indexer serves when omitted. */
     namespace?: Namespace | undefined;
     name?: string | undefined;
     address?: Address | undefined;
@@ -212,8 +237,13 @@ export declare namespace Query {
    */
   type Search = List & {
     query: string;
+    /** Only this naming system; every namespace the indexer serves when omitted. */
     namespace?: Namespace | undefined;
-    /** @default "prefix" */
+    /**
+     * Whether `search` matches from the start of a label (`prefix`) or anywhere (`contains`).
+     *
+     * @default "prefix"
+     */
     match?: "prefix" | "contains" | undefined;
   };
 
@@ -225,6 +255,7 @@ export declare namespace Query {
   type Lookup = {
     /** Names and addresses, up to 1,000. */
     inputs: readonly string[];
+    /** Only this naming system; every namespace the indexer serves when omitted. */
     namespace?: Namespace | undefined;
     /** `detail` adds records and resolution. @default "feed" */
     profile?: "feed" | "detail" | undefined;
@@ -243,6 +274,7 @@ export declare namespace Query {
    * @stability stable
    */
   type GetNamesByExpiry = List & {
+    /** The naming system the name belongs to. */
     namespace: Namespace;
     expiresAfter?: bigint | Date | undefined;
     expiresBefore?: bigint | Date | undefined;
@@ -253,7 +285,9 @@ export declare namespace Query {
     graceWindows?: readonly Window[] | undefined;
     authority?: Authority | readonly Authority[] | undefined;
     parent?: string | undefined;
+    /** Field the rows are sorted by. */
     sort?: "expiry" | "graceEnd" | undefined;
+    /** Sort direction. */
     order?: "asc" | "desc" | undefined;
   };
 
@@ -266,6 +300,7 @@ export declare namespace Query {
     address: Address;
     /** @default 60n */
     coinType?: bigint | undefined;
+    /** Only this naming system; every namespace the indexer serves when omitted. */
     namespace?: Namespace | undefined;
     /** Both, verified first, when omitted. */
     source?: "indexed" | "verified" | undefined;
@@ -278,6 +313,7 @@ export declare namespace Query {
    */
   type GetRecords = Snapshot & {
     name: string;
+    /** The naming system the name belongs to. */
     namespace: Namespace;
     /** Record keys (`avatar`, `text:url`, `addr:60`, `contenthash`); the inventory's when omitted. */
     keys?: readonly string[] | undefined;
@@ -295,6 +331,7 @@ export declare namespace Query {
    * @stability stable
    */
   type GetPermissions = List & {
+    /** Only this naming system; every namespace the indexer serves when omitted. */
     namespace?: Namespace | undefined;
     /** Include how each grant was obtained. */
     includeLineage?: boolean | undefined;

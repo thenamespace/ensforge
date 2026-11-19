@@ -1,0 +1,161 @@
+---
+title: Lock permissions with fuses
+description: Read and burn Name Wrapper fuses to lock a name's permissions, and emancipate or extend a subname as its parent on ENSv1.
+keywords:
+  [
+    wrapper.setFuses,
+    wrapper.setChildFuses,
+    wrapper.getFuses,
+    Fuse,
+    cannotUnwrap,
+    parentCannotControl,
+    canExtendExpiry,
+  ]
+---
+
+This page is about [ENSv1](/docs/reference/glossary#ensv1) only, because fuses belong to the [Name Wrapper](/docs/reference/glossary#name-wrapper). A **fuse** is a permission on a wrapped name that can be burned, for good, until the name [expires](/docs/reference/glossary#expiry). You will read a name's fuses, burn some, and [emancipate](/docs/reference/glossary#emancipated) a [subname](/docs/reference/glossary#subname) as its parent. See [What wrapped names are](/docs/sdk/wrapped-names).
+
+<Callout type="warn" title="Burned fuses cannot be undone">
+  Fuses cannot be unburned before the name expires. Simulate first. See [Preview before
+  sending](/docs/sdk/preview-before-sending).
+</Callout>
+
+## Prerequisites
+
+- A wallet client for the name's owner, or for the parent's owner when you set child fuses. See [Create a client](/docs/sdk/create-a-client).
+- A wrapped ENSv1 name. See [Wrap and unwrap a name](/docs/sdk/wrap-and-unwrap).
+
+## The fuses
+
+| Fuse                    | Who burns it                                                                                        |
+| ----------------------- | --------------------------------------------------------------------------------------------------- |
+| `cannotUnwrap`          | The owner, or the parent. The name stays wrapped until it expires. Every other owner fuse needs it. |
+| `cannotBurnFuses`       | The owner, or the parent.                                                                           |
+| `cannotTransfer`        | The owner, or the parent.                                                                           |
+| `cannotSetResolver`     | The owner, or the parent.                                                                           |
+| `cannotSetTtl`          | The owner, or the parent.                                                                           |
+| `cannotCreateSubdomain` | The owner, or the parent.                                                                           |
+| `cannotApprove`         | The owner, or the parent.                                                                           |
+| `parentCannotControl`   | Only the parent. Emancipates the name.                                                              |
+| `canExtendExpiry`       | Only the parent. Lets the name's owner extend its expiry.                                           |
+| `isDotEth`              | Nobody. The NameWrapper sets it on wrapped `.eth` names.                                            |
+
+The first seven are owner-controlled fuses. The owner burns them with `wrapper.setFuses`. The parent can burn them too, with `wrapper.setChildFuses`, until it burns `parentCannotControl` on the subname. After that, only the owner can. A `.eth` name has no parent owner, so only its owner burns its fuses.
+
+`Fuse.from(names)` builds the mask, `Fuse.has(mask, name)` tests one fuse and `Fuse.decode(mask)` returns every fuse by name.
+
+## 1. Read the fuses
+
+[`wrapper.getFuses`](/docs/reference/sdk/wrapper/get-fuses) returns the owner, the mask, the burned fuses by name and the expiry.
+
+**Example** (Reading Fuses)
+
+```ts title="get-fuses.ts"
+import { createPublicClient, http } from "viem";
+import { sepolia } from "viem/chains";
+import { Ensforge, ensActions } from "@ensforge/sdk";
+
+const ens = Ensforge.create({
+  publicClient: createPublicClient({ chain: sepolia, transport: http() }),
+}).extend(ensActions());
+
+const wrapped = await ens.wrapper.getFuses({ name: "ensforge-docs-demo.eth" });
+```
+
+It returns `null` when the name is not wrapped, or is an expired emancipated name. Expired names report no fuses.
+
+## 2. Burn fuses
+
+[`wrapper.setFuses`](/docs/reference/sdk/wrapper/set-fuses) burns owner-controlled fuses.
+
+**Example** (Locking a Name)
+
+```ts title="set-fuses.ts"
+import { createPublicClient, createWalletClient, http, type Hex } from "viem";
+import { privateKeyToAccount } from "viem/accounts";
+import { sepolia } from "viem/chains";
+import { Ensforge, ensActions } from "@ensforge/sdk";
+
+const account = privateKeyToAccount(process.env.PRIVATE_KEY as Hex);
+const transport = http(process.env.SEPOLIA_RPC_URL);
+
+const ens = Ensforge.create({
+  publicClient: createPublicClient({ chain: sepolia, transport }),
+  walletClient: createWalletClient({ account, chain: sepolia, transport }),
+}).extend(ensActions());
+
+await ens.wrapper.setFusesSync({
+  name: "ensforge-docs-demo.eth",
+  fuses: ["cannotUnwrap"],
+});
+```
+
+- It needs `parentCannotControl`, which the parent burns, or which every wrapped `.eth` name has.
+- Every fuse other than `cannotUnwrap` needs `cannotUnwrap` burned first.
+- Burning `cannotUnwrap` keeps the name in the NameWrapper until it expires.
+
+To burn fuses while wrapping a `.eth` name, pass `fuses` to `wrapper.wrap`.
+
+## 3. Emancipate or extend a subname
+
+[`wrapper.setChildFuses`](/docs/reference/sdk/wrapper/set-child-fuses) is sent by the owner of the wrapped parent. It burns fuses on a subname, including the parent-controlled ones, and extends its expiry.
+
+**Example** (Emancipating a Subname)
+
+```ts title="set-child-fuses.ts"
+import { createPublicClient, createWalletClient, http, type Hex } from "viem";
+import { privateKeyToAccount } from "viem/accounts";
+import { sepolia } from "viem/chains";
+import { Ensforge, ensActions } from "@ensforge/sdk";
+
+const account = privateKeyToAccount(process.env.PRIVATE_KEY as Hex);
+const transport = http(process.env.SEPOLIA_RPC_URL);
+
+const ens = Ensforge.create({
+  publicClient: createPublicClient({ chain: sepolia, transport }),
+  walletClient: createWalletClient({ account, chain: sepolia, transport }),
+}).extend(ensActions());
+
+await ens.wrapper.setChildFusesSync({
+  name: "pay.ensforge-docs-demo.eth",
+  fuses: ["parentCannotControl"],
+  expiry: 1_900_000_000n,
+});
+```
+
+- `expiry` is a Unix timestamp. It only grows, and it is capped at the parent's expiry.
+- Burning `parentCannotControl` without `expiry` uses the parent's expiry, so the subname does not expire at once.
+- `parentCannotControl` and `canExtendExpiry` need `cannotUnwrap` burned on the parent first, or the write fails with `INVALID_RECORD_VALUE`.
+- After `parentCannotControl`, the parent can only extend the subname. New fuses fail with `FUSE_BURNED`.
+
+You can also burn fuses while creating a subname under a wrapped parent. See [Create subnames](/docs/sdk/create-subnames).
+
+## Check the result
+
+Call `wrapper.getFuses` again, or use [`permission.get`](/docs/reference/sdk/permission/get), whose `fuses` field lists what is burned. See [Roles and permissions](/docs/sdk/roles-and-permissions).
+
+## Troubleshooting
+
+### `INVALID_RECORD_VALUE`
+
+A fuse name is unknown, or a parent-controlled fuse needs `cannotUnwrap` on the parent first. See [`INVALID_RECORD_VALUE`](/docs/reference/errors/INVALID_RECORD_VALUE).
+
+### `INVALID_EXPIRY`
+
+The expiry is not valid for the subname. See [`INVALID_EXPIRY`](/docs/reference/errors/INVALID_EXPIRY).
+
+### `FUSE_BURNED`
+
+A burned fuse forbids the change. See [`FUSE_BURNED`](/docs/reference/errors/FUSE_BURNED).
+
+### `NOT_OWNER`
+
+The account may not burn these fuses. See [`NOT_OWNER`](/docs/reference/errors/NOT_OWNER).
+
+### `NAME_NOT_WRAPPED`
+
+The name is not wrapped. Wrap it first. See [`NAME_NOT_WRAPPED`](/docs/reference/errors/NAME_NOT_WRAPPED).
+
+### `UNSUPPORTED_PROTOCOL`
+
+ENSv2 and migrated names have no NameWrapper. See [`UNSUPPORTED_PROTOCOL`](/docs/reference/errors/UNSUPPORTED_PROTOCOL).

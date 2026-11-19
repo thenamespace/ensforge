@@ -1,0 +1,10 @@
+{
+  "title": "React",
+  "icon": "package-react",
+  "pages": [
+    "(hooks)",
+    "components",
+    "server",
+    "atoms"
+  ]
+}

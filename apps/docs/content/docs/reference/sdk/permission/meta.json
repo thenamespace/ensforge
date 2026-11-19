@@ -1,0 +1,8 @@
+{
+  "title": "permission",
+  "pages": [
+    "check",
+    "get",
+    "set-record-access"
+  ]
+}

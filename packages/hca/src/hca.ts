@@ -22,7 +22,8 @@ import type { ExecutionRequest, Executor, HcaSession } from "./types.js";
  */
 export type HcaOptions = {
   /**
-   * How executions run, in order of preference; the first that can run the request is used.
+   * How executions run. `hca()` picks the first executor that can run the request (one with
+   * sessions when `session` is set) once, and never falls back to another when a send fails.
    *
    * @default [owner()]
    */

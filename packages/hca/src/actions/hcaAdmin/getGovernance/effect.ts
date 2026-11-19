@@ -11,7 +11,7 @@ import type { getGovernance as Promises } from "./index.js";
 /** @internal Implementation of `Actions.hcaAdmin.getGovernance`. */
 export const getGovernance = Effect.fn("ensforge.hcaAdmin.getGovernance")(function* (
   client: Client,
-  options: Promises.Options,
+  options: Promises.Options = {},
 ): Effect.fn.Return<Promises.ReturnType, AnyError | HcaError> {
   const deployment = yield* requireHca(client);
   const factoryOwner = yield* Rpc.readContract(client, {

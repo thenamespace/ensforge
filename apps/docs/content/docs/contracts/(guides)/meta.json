@@ -1,0 +1,8 @@
+{
+  "pages": [
+    "use-abis-with-viem",
+    "addresses-and-chains",
+    "custom-deployments",
+    "interface-ids-and-roles"
+  ]
+}

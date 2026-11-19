@@ -6,6 +6,7 @@ import {
   UserRejectedError,
 } from "@ensforge/sdk/internal/errors/classes/index";
 import { describe as describeError } from "@ensforge/sdk/internal/errors/describe/describe";
+import { EnsforgeError } from "@ensforge/sdk/internal/errors/EnsforgeError";
 
 import { codes, errorsByCode, retryableCodes } from "../codes";
 
@@ -93,6 +94,25 @@ describe("Errors.describe on foreign values", () => {
       assert.strictEqual(description.severity, "error");
     },
   );
+
+  it("gives an error code without copy the generic copy and keeps its code", () => {
+    class PluginError extends EnsforgeError<"PluginError", "PLUGIN_FAILED"> {
+      constructor() {
+        super("PluginError", { code: "PLUGIN_FAILED", shortMessage: "The plugin failed." });
+      }
+    }
+
+    const description = describeError(new PluginError());
+
+    assert.deepStrictEqual(description, {
+      title: "Something went wrong",
+      message: "An unexpected error occurred.",
+      action: "Try again. If it keeps happening, contact support.",
+      code: "PLUGIN_FAILED",
+      retryable: false,
+      severity: "error",
+    });
+  });
 
   it("translates viem-shaped errors first", () => {
     const rejected = Object.assign(new Error("denied"), { code: 4001 });

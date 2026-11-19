@@ -1,0 +1,169 @@
+---
+title: Resolvers and shared records
+description: Create ENSv2 permissioned resolvers, share one set of records between several names, and upgrade a resolver in place safely.
+keywords:
+  [
+    resolver.create,
+    resolver.link,
+    resolver.getLink,
+    resolver.upgrade,
+    PermissionedResolver,
+    recordId,
+    salt,
+  ]
+---
+
+This page is about [ENSv2](/docs/reference/glossary#ensv2) [resolvers](/docs/reference/glossary#resolver). On [ENSv1](/docs/reference/glossary#ensv1) most names use the shared public resolver, which has no roles. ENSv2 uses the **PermissionedResolver**: a resolver whose writes are controlled by [roles](/docs/reference/glossary#role), and in which each name has a **record ID** that says which set of records it reads and writes. Two names with the same record ID on the same resolver share their records.
+
+You will create a resolver, link names to one record set and upgrade the resolver.
+
+## Prerequisites
+
+- A wallet client. See [Create a client](/docs/sdk/create-a-client).
+- An ENSv2 name. Names registered with ensforge already get their own resolver. See [Register a name](/docs/sdk/register-a-name).
+- For roles, see [Roles and permissions](/docs/sdk/roles-and-permissions).
+
+## 1. Create a resolver
+
+[`resolver.create`](/docs/reference/sdk/resolver/create) deploys a PermissionedResolver as a verifiable proxy from the VerifiableFactory. Its address is known before sending (`plan.deploys`) and returned as `resolver`.
+
+**Example** (Creating a Resolver for a Name)
+
+```ts title="resolver-create.ts"
+import { createPublicClient, createWalletClient, http, type Hex } from "viem";
+import { privateKeyToAccount } from "viem/accounts";
+import { sepolia } from "viem/chains";
+import { Ensforge, ensActions } from "@ensforge/sdk";
+
+const account = privateKeyToAccount(process.env.PRIVATE_KEY as Hex);
+const transport = http(process.env.SEPOLIA_RPC_URL);
+
+const ens = Ensforge.create({
+  publicClient: createPublicClient({ chain: sepolia, transport }),
+  walletClient: createWalletClient({ account, chain: sepolia, transport }),
+}).extend(ensActions());
+
+const { resolver } = await ens.resolver.createSync({
+  name: "ensforge-docs-demo.eth",
+  records: { texts: { url: "https://example.com" } },
+});
+```
+
+With `name`, the `records` are written while the resolver is initialised and the name is pointed at it in the same plan.
+
+| Option    | Type                   | Default    | Description                                                     |
+| --------- | ---------------------- | ---------- | --------------------------------------------------------------- |
+| `name`    | `string`               | none       | Name to point at the new resolver. Required for `records`.      |
+| `records` | `object`               | none       | Records for `name`.                                             |
+| `owner`   | `string`               | the signer | Gets every resolver role.                                       |
+| `grants`  | `{ account, roles }[]` | none       | Extra role grants.                                              |
+| `salt`    | `bigint`               | random     | CREATE2 salt. With the sending account, it decides the address. |
+
+<Callout type="warn" title="The address depends on the sender">
+  The address comes from the sending account and `salt`. Send from the account the plan was prepared
+  for. A relayer or a bundler that is not the account itself produces a different address.
+</Callout>
+
+If you reuse a `salt` that the account already used, `resolver.create` fails with `SALT_TAKEN` before sending. The error's `context.contract` is the existing resolver. Point the name at it with [`resolver.set`](/docs/sdk/change-the-resolver).
+
+## 2. Share records between names
+
+[`resolver.link`](/docs/reference/sdk/resolver/link) makes a name read and write the records of another name on the same resolver. Use it for aliases of a main name.
+
+**Example** (Making an Alias Share a Main Name's Records)
+
+```ts title="resolver-link.ts"
+import { createPublicClient, createWalletClient, http, type Hex } from "viem";
+import { privateKeyToAccount } from "viem/accounts";
+import { sepolia } from "viem/chains";
+import { Ensforge, ensActions } from "@ensforge/sdk";
+
+const account = privateKeyToAccount(process.env.PRIVATE_KEY as Hex);
+const transport = http(process.env.SEPOLIA_RPC_URL);
+
+const ens = Ensforge.create({
+  publicClient: createPublicClient({ chain: sepolia, transport }),
+  walletClient: createWalletClient({ account, chain: sepolia, transport }),
+}).extend(ensActions());
+
+await ens.resolver.linkSync({
+  name: "ensforge-docs-alias.eth",
+  to: "ensforge-docs-demo.eth",
+});
+```
+
+- Both names must use the same PermissionedResolver, and the target must already have records.
+- It needs the `link` role on the resolver.
+- `to` is a name, or `{ recordId }` from `resolver.getLink`.
+
+Check whether two names share records with [`resolver.getLink`](/docs/reference/sdk/resolver/get-link). Linked names have the same `recordId` on the same `resolver`.
+
+**Example** (Checking Whether Names Share Records)
+
+```ts title="resolver-get-link.ts"
+import { createPublicClient, http } from "viem";
+import { sepolia } from "viem/chains";
+import { Ensforge, ensActions } from "@ensforge/sdk";
+
+const ens = Ensforge.create({
+  publicClient: createPublicClient({ chain: sepolia, transport: http() }),
+}).extend(ensActions());
+
+const [a, b] = await Promise.all([
+  ens.resolver.getLink({ name: "ensforge-docs-alias.eth" }),
+  ens.resolver.getLink({ name: "ensforge-docs-demo.eth" }),
+]);
+
+const shared = a !== null && b !== null && a.resolver === b.resolver && a.recordId === b.recordId;
+```
+
+`getLink` returns `null` when the name has no records on the resolver yet. Every name gets its own record ID on its first write.
+
+<Callout type="warn" title="Shared resolvers share roles">
+  Setter roles on a PermissionedResolver cover every name that uses it. Names that share a resolver,
+  for example subnames created with `resolver: "parent"`, share who can edit. Keep the default of
+  one resolver per name to scope access per name.
+</Callout>
+
+## 3. Upgrade a resolver
+
+[`resolver.upgrade`](/docs/reference/sdk/resolver/upgrade) moves a name's PermissionedResolver to the deployment's latest implementation, or to `implementation` if you pass one. It checks that the target accepts the current implementation (`canUpgradeFrom`) before sending, and it needs the `upgrade` role on the resolver.
+
+**Example** (Upgrading a Resolver)
+
+```ts title="resolver-upgrade.ts"
+import { createPublicClient, createWalletClient, http, type Hex } from "viem";
+import { privateKeyToAccount } from "viem/accounts";
+import { sepolia } from "viem/chains";
+import { Ensforge, ensActions } from "@ensforge/sdk";
+
+const account = privateKeyToAccount(process.env.PRIVATE_KEY as Hex);
+const transport = http(process.env.SEPOLIA_RPC_URL);
+
+const ens = Ensforge.create({
+  publicClient: createPublicClient({ chain: sepolia, transport }),
+  walletClient: createWalletClient({ account, chain: sepolia, transport }),
+}).extend(ensActions());
+
+await ens.resolver.upgradeSync({ name: "ensforge-docs-demo.eth" });
+```
+
+## Limits to know
+
+- The PermissionedResolver has no `pubkey` or DNS records, so [migration](/docs/reference/glossary#migration) does not copy them.
+- `record.set({ clear: true })` links the name to record 0, which reads the resolver's default record. See [Set records](/docs/sdk/set-records).
+- `resolver: "default"` is for ENSv1 names only. ENSv2's public resolver (PublicResolverV2) only serves names the NameWrapper knows, so ENSv2 names fail with `UNSUPPORTED_PROTOCOL`.
+
+## Troubleshooting
+
+### `SALT_TAKEN`
+
+The account already deployed a resolver with this salt. Use the one in `context.contract`, or pass another `salt`. See [`SALT_TAKEN`](/docs/reference/errors/SALT_TAKEN).
+
+### `MISSING_ROLES`
+
+The account lacks `link` or `upgrade` on the resolver. See [`MISSING_ROLES`](/docs/reference/errors/MISSING_ROLES).
+
+### `UPGRADE_NOT_APPROVED`
+
+The target implementation does not accept the current one. See [`UPGRADE_NOT_APPROVED`](/docs/reference/errors/UPGRADE_NOT_APPROVED).

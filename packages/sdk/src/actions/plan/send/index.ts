@@ -45,9 +45,12 @@ import * as Impl from "./effect.js";
  * yield* Actions.plan.send(ens, { plan: Plan.merge([recordsPlan, primaryNamePlan]) })
  * ```
  *
- * @throws `Errors.PlanError` (`PLAN_CHAIN_MISMATCH`, `PLAN_ACCOUNT_MISMATCH`) for a plan prepared elsewhere; (`PLAN_STALE`) when a token it transfers was reissued since it was prepared.
+ * @throws `Errors.PlanError` (`PLAN_CHAIN_MISMATCH`, `PLAN_ACCOUNT_MISMATCH`) for a plan prepared elsewhere.
+ * @throws `Errors.PlanError` (`PLAN_STALE`) when a token it transfers was reissued since it was prepared.
  * @throws `Errors.ContractRevertError` (`CONTRACT_REVERTED`), or the failing step's own error (`Errors.AnyError`: a plan can hold any step), with `context.planId` and `context.step`.
- * @throws `Errors.UserRejectedError` when the user rejects the request.
+ * @throws `Errors.UserRejectedError` (`USER_REJECTED`) when the user rejects the request.
+ * @throws `Errors.WalletError` (`CHAIN_MISMATCH`, `ACCOUNT_NOT_FOUND`) when the wallet is on another chain or has no account to sign with.
+ * @throws `Errors.UnsupportedError` (`WALLET_BATCH_UNSUPPORTED`) with `mode: "batch"` or a paymaster when the wallet cannot send calls as one batch.
  *
  * @see {@link Actions.plan.resume} to continue a plan
  * @stability stable
@@ -124,9 +127,10 @@ send.estimateGas = Action.promiseOf(
  * yield* Actions.plan.sendSync(ens, { plan: Plan.merge([recordsPlan, primaryNamePlan]) })
  * ```
  *
- * @throws `Errors.PlanError` (`PLAN_CHAIN_MISMATCH`, `PLAN_ACCOUNT_MISMATCH`) for a plan prepared elsewhere; (`PLAN_STALE`) when a token it transfers was reissued since it was prepared.
+ * @throws `Errors.PlanError` (`PLAN_CHAIN_MISMATCH`, `PLAN_ACCOUNT_MISMATCH`) for a plan prepared elsewhere.
+ * @throws `Errors.PlanError` (`PLAN_STALE`) when a token it transfers was reissued since it was prepared.
  * @throws `Errors.ContractRevertError` (`CONTRACT_REVERTED`), or the failing step's own error (`Errors.AnyError`: a plan can hold any step), with `context.planId` and `context.step`.
- * @throws `Errors.TransactionError` (`TRANSACTION_REVERTED`, `RECEIPT_TIMEOUT`) when confirmation fails.
+ * @throws `Errors.TransactionError` (`TRANSACTION_REVERTED`, `RECEIPT_TIMEOUT`, `NONCE_CONFLICT`) when confirmation fails or the wallet's nonce is already used.
  *
  * @see {@link send} to resolve on submission
  * @stability stable

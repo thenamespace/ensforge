@@ -1,0 +1,235 @@
+---
+title: Send a transaction
+description: Send any ensforge write with a wallet client, read the transaction hash, and wait for the receipt when the next step needs it.
+keywords: [wallet client, write, receipt, confirmations, setSync, onStep]
+---
+
+Every write in ensforge (`record.set`, `registration.register`, `name.transfer` and the rest) sends
+the same way. You pass a wallet, call the action, and read the transaction hash it returns.
+
+## Prerequisites
+
+- A client that can read and sign. See [Create a client](/docs/sdk/create-a-client).
+- A name your account may change. Examples use Sepolia and the name `ensforge-docs-demo.eth`; replace it
+  with a name you own.
+
+## 1. Create a client with a wallet
+
+A write needs a viem wallet client and the account that signs. ensforge reads the chain from the
+public client and checks that the wallet is on the same chain before it sends anything.
+
+**Example** (A Sepolia client with a browser wallet)
+
+```ts title="client.ts"
+import type { EIP1193Provider } from "viem";
+
+declare global {
+  interface Window {
+    ethereum?: EIP1193Provider;
+  }
+}
+
+import { Ensforge, ensActions } from "@ensforge/sdk";
+import { createPublicClient, createWalletClient, custom, http } from "viem";
+import { sepolia } from "viem/chains";
+
+const publicClient = createPublicClient({ chain: sepolia, transport: http() });
+const walletClient = createWalletClient({ chain: sepolia, transport: custom(window.ethereum!) });
+const [account] = await walletClient.requestAddresses();
+
+export const ens = Ensforge.create({ publicClient, walletClient, account }).extend(ensActions());
+```
+
+- `walletClient` signs and sends. It can also be a function that returns the client, for wallets
+  that connect later.
+- `account` is the default signer. Without it, and without an account on the wallet client, a
+  write fails with [`ACCOUNT_NOT_FOUND`](/docs/reference/errors/ACCOUNT_NOT_FOUND).
+
+## 2. Send the write
+
+Call the action and wait for it to resolve. The Promise resolves once every transaction of the write
+is submitted, not mined.
+
+**Example** (Setting a text record)
+
+```ts title="send.ts"
+import type { EIP1193Provider } from "viem";
+
+declare global {
+  interface Window {
+    ethereum?: EIP1193Provider;
+  }
+}
+
+import { Ensforge, ensActions } from "@ensforge/sdk";
+import { createPublicClient, createWalletClient, custom, http } from "viem";
+import { sepolia } from "viem/chains";
+
+const publicClient = createPublicClient({ chain: sepolia, transport: http() });
+const walletClient = createWalletClient({ chain: sepolia, transport: custom(window.ethereum!) });
+const [account] = await walletClient.requestAddresses();
+const ens = Ensforge.create({ publicClient, walletClient, account }).extend(ensActions());
+
+const { hash, hashes, plan } = await ens.record.set({
+  name: "ensforge-docs-demo.eth",
+  texts: { url: "https://example.com" },
+});
+```
+
+[`record.set`](/docs/reference/sdk/record/set) simulates the write first, so a revert
+becomes a typed error before the wallet prompt. It then asks the wallet to sign. The result holds:
+
+| Field    | Description                                                                                                                                    |
+| -------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| `hash`   | Hash of the last transaction.                                                                                                                  |
+| `hashes` | Every submitted transaction, in order. Writes with several [steps](/docs/reference/glossary#step), such as a registration, have more than one. |
+| `id`     | The EIP-5792 [bundle](/docs/reference/glossary#bundle) id when the calls went out as one batch, otherwise `undefined`.                         |
+| `plan`   | The [plan](/docs/sdk/writing-to-ens) that was sent. `plan.id` is what [`plan.resume`](/docs/sdk/continue-after-a-failure) needs.               |
+
+## 3. Wait for the receipt
+
+Use the `…Sync` form of an action when the next step depends on the transaction being mined. It
+takes the same options and adds `confirmations` and `timeout`.
+
+**Example** (Waiting for two confirmations)
+
+```ts title="send-sync.ts"
+import type { EIP1193Provider } from "viem";
+
+declare global {
+  interface Window {
+    ethereum?: EIP1193Provider;
+  }
+}
+
+import { Ensforge, ensActions } from "@ensforge/sdk";
+import { createPublicClient, createWalletClient, custom, http } from "viem";
+import { sepolia } from "viem/chains";
+
+const publicClient = createPublicClient({ chain: sepolia, transport: http() });
+const walletClient = createWalletClient({ chain: sepolia, transport: custom(window.ethereum!) });
+const [account] = await walletClient.requestAddresses();
+const ens = Ensforge.create({ publicClient, walletClient, account }).extend(ensActions());
+
+const { receipt, receipts } = await ens.record.setSync({
+  name: "ensforge-docs-demo.eth",
+  texts: { url: "https://example.com" },
+  confirmations: 2,
+  timeout: 120_000,
+});
+
+receipt.status; // "success"
+```
+
+- `confirmations` is the number of confirmations to wait for per transaction. The default is 1.
+- `timeout` is the milliseconds to wait for each receipt. When it passes, the call fails with
+  [`RECEIPT_TIMEOUT`](/docs/reference/errors/RECEIPT_TIMEOUT). The transaction may still land.
+- `receipt` is the receipt of the last transaction and `receipts` holds all of them.
+- A reverted transaction fails with [`TRANSACTION_REVERTED`](/docs/reference/errors/TRANSACTION_REVERTED).
+
+## Follow progress
+
+Pass `onStep` to see each step of a write wait, submit, confirm or fail. It is how a UI shows
+"Step 2 of 3".
+
+**Example** (Logging every step)
+
+```ts title="progress.ts"
+import type { EIP1193Provider } from "viem";
+
+declare global {
+  interface Window {
+    ethereum?: EIP1193Provider;
+  }
+}
+
+import { Ensforge, ensActions } from "@ensforge/sdk";
+import { createPublicClient, createWalletClient, custom, http } from "viem";
+import { sepolia } from "viem/chains";
+
+const publicClient = createPublicClient({ chain: sepolia, transport: http() });
+const walletClient = createWalletClient({ chain: sepolia, transport: custom(window.ethereum!) });
+const [account] = await walletClient.requestAddresses();
+const ens = Ensforge.create({ publicClient, walletClient, account }).extend(ensActions());
+
+await ens.record.setSync({
+  name: "ensforge-docs-demo.eth",
+  texts: { url: "https://example.com" },
+  onStep: ({ step, status, hashes }) => {
+    console.log(step.description, status, hashes);
+  },
+});
+```
+
+`status` is `waiting` while ensforge waits for chain time before a step (a registration waits at least a
+minute between its commit and register steps), `submitted` once the step's transactions are sent,
+`confirmed` once their receipts are in, and `failed` with the error. With `setSync`, the last step
+reports `confirmed` too.
+
+## Change how a write is sent
+
+These options work on every write and every `…Sync` form.
+
+| Option           | Default                                 | Effect                                                                                                                                                                                          |
+| ---------------- | --------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `account`        | the client's `account`                  | Signer for this write.                                                                                                                                                                          |
+| `simulate`       | `true` (the client's `config.simulate`) | Simulate every call before the wallet prompt.                                                                                                                                                   |
+| `mode`           | `"auto"`                                | `"batch"` sends one EIP-5792 call, `"sequential"` one transaction per call, `"auto"` batches when the wallet supports atomic batches. See [Bundle transactions](/docs/sdk/bundle-transactions). |
+| `maxBundleCalls` | `10`                                    | Most calls in one wallet bundle.                                                                                                                                                                |
+| `signal`         | none                                    | Cancels before the next wallet prompt. Transactions already submitted are not undone.                                                                                                           |
+| `onStep`         | none                                    | Called as each step waits, is submitted, is confirmed or fails.                                                                                                                                 |
+| `via`            | none                                    | Send through another [route](/docs/reference/glossary#route), such as a smart account. See [Use smart accounts](/docs/sdk/use-smart-accounts).                                                  |
+| `paymaster`      | none                                    | Sponsor the gas with an EIP-5792 [paymaster](/docs/reference/glossary#paymaster). See [Pay gas for users](/docs/sdk/pay-gas-for-users).                                                         |
+
+An aborted write rejects with `signal.reason`, so its plan id is not on the error. Read it from
+[`plan.list`](/docs/reference/sdk/plan/list) when you need to resume.
+
+## Check the result
+
+Read the change back with the matching read. After `setSync` resolves, the new value is on chain.
+
+```ts title="check.ts"
+import { Ensforge, ensActions } from "@ensforge/sdk";
+import { createPublicClient, http } from "viem";
+import { sepolia } from "viem/chains";
+
+const publicClient = createPublicClient({ chain: sepolia, transport: http() });
+const ens = Ensforge.create({ publicClient }).extend(ensActions());
+
+const url = await ens.record.getText({ name: "ensforge-docs-demo.eth", key: "url" });
+```
+
+## Troubleshooting
+
+### `WALLET_NOT_CONFIGURED`
+
+The client has no wallet. Pass `walletClient` to `Ensforge.create`. See
+[`WALLET_NOT_CONFIGURED`](/docs/reference/errors/WALLET_NOT_CONFIGURED).
+
+### `CHAIN_MISMATCH`
+
+The wallet is on another chain than the client. Switch the wallet's network or create the client
+for the wallet's chain. See [`CHAIN_MISMATCH`](/docs/reference/errors/CHAIN_MISMATCH).
+
+### `USER_REJECTED`
+
+The user closed or rejected the wallet prompt. Nothing was sent. Treat it as a normal outcome, not
+a failure. See [`USER_REJECTED`](/docs/reference/errors/USER_REJECTED).
+
+### `RECEIPT_TIMEOUT`
+
+`setSync` stopped waiting, but the transaction may still be pending. Check the hash before you
+send again. See [`RECEIPT_TIMEOUT`](/docs/reference/errors/RECEIPT_TIMEOUT).
+
+### `INSUFFICIENT_ETH`
+
+The account cannot pay for the gas or value of a step. Every write can fail this way. Fund the
+account, or sponsor the gas with a [paymaster](/docs/sdk/pay-gas-for-users). See
+[`INSUFFICIENT_ETH`](/docs/reference/errors/INSUFFICIENT_ETH).
+
+### `CONTRACT_NOT_DEPLOYED`
+
+The chain has no ENS contract at an address the write calls. Every action can fail this way when the
+client is on the wrong chain. See [`CONTRACT_NOT_DEPLOYED`](/docs/reference/errors/CONTRACT_NOT_DEPLOYED).
+
+For the rest of the codes and when a retry is safe, see [Handle errors](/docs/sdk/handle-errors).

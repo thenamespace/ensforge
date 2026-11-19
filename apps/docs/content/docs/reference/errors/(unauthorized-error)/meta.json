@@ -1,0 +1,14 @@
+{
+  "title": "UnauthorizedError",
+  "pagesIndex": "unauthorized-error",
+  "pages": [
+    "NOT_OWNER",
+    "MISSING_ROLES",
+    "CANNOT_GRANT_ROLES",
+    "NOT_APPROVED",
+    "FUSE_BURNED",
+    "TRANSFER_DISALLOWED",
+    "SIGNATURE_INVALID",
+    "SIGNATURE_EXPIRED"
+  ]
+}

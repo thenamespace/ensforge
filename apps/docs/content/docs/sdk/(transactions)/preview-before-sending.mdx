@@ -1,0 +1,191 @@
+---
+title: Preview before sending
+description: Build, simulate and price a write without sending it, then send the exact plan you reviewed, for confirm screens and dry runs.
+keywords: [prepare, simulate, estimateGas, plan, dry run, gas]
+---
+
+Every write can run in three previews first: `.prepare` builds the plan, `.simulate` runs it against
+the chain, and `.estimateGas` prices it. ensforge never sends a transaction during any of them.
+
+## Prerequisites
+
+- A client with an account. A wallet client is not needed to preview, only an account address. See
+  [Create a client](/docs/sdk/create-a-client).
+- Read [How writes work](/docs/sdk/writing-to-ens) if the word [plan](/docs/reference/glossary#plan) is new: a plan is the list
+  of calls a write will make, as plain data.
+
+## 1. Prepare the plan
+
+`.prepare` takes the same options as the write and returns a [`Plan`](/docs/sdk/writing-to-ens).
+It reads the chain to plan but sends nothing.
+
+**Example** (Planning a record update)
+
+```ts title="prepare.ts"
+import { Ensforge, ensActions } from "@ensforge/sdk";
+import { createPublicClient, http } from "viem";
+import { sepolia } from "viem/chains";
+
+const publicClient = createPublicClient({ chain: sepolia, transport: http() });
+const account = "0xA11Ce00000000000000000000000000000000000"; // the account that will send it
+const ens = Ensforge.create({ publicClient, account }).extend(ensActions());
+
+const plan = await ens.record.set.prepare({
+  name: "ensforge-docs-demo.eth",
+  texts: { url: "https://example.com" },
+});
+
+plan.steps.map((step) => step.description);
+plan.calls.length;
+plan.requirements; // balance or token approval the account needs
+plan.warnings; // notes for the user, such as an unusual resolver
+```
+
+- `plan.steps` are the groups of calls ([steps](/docs/reference/glossary#step)) in order. Most writes have one step; a registration waits
+  between two.
+- `plan.calls` is every call of every step, flattened. Each has `to`, `data` and `value`.
+- `plan.requirements` lists what the account must hold first, such as a balance or an ERC-20
+  approval.
+- `plan.warnings` are notes that do not block the write.
+- `plan.deploys` lists contracts the plan creates, at addresses known before sending.
+
+`.prepare`, `.simulate` and `.estimateGas` accept the write's own options plus `account` and `via`.
+They do not take the options that only matter when sending, such as `mode`, `onStep` or `signal`.
+
+## 2. Simulate the plan
+
+`.simulate` runs the plan's calls on the chain without sending them. It returns whether each step
+would succeed, with the typed error when it would not.
+
+**Example** (Checking a write before the wallet prompt)
+
+```ts title="simulate.ts"
+import { Ensforge, ensActions } from "@ensforge/sdk";
+import { createPublicClient, http } from "viem";
+import { sepolia } from "viem/chains";
+
+const publicClient = createPublicClient({ chain: sepolia, transport: http() });
+const account = "0xA11Ce00000000000000000000000000000000000"; // the account that will send it
+const ens = Ensforge.create({ publicClient, account }).extend(ensActions());
+
+const simulation = await ens.record.set.simulate({
+  name: "ensforge-docs-demo.eth",
+  texts: { url: "https://example.com" },
+});
+
+if (!simulation.ok) {
+  for (const step of simulation.steps) {
+    if (!step.ok) console.log(step.id, step.error?.code, step.error?.hint);
+  }
+}
+```
+
+A failing step is a value in `simulation.steps`, not a thrown error. `.simulate` throws only when
+it cannot plan at all, for example [`INVALID_NAME`](/docs/reference/errors/INVALID_NAME).
+
+Simulation runs the calls in order, so a call sees the state the earlier ones leave (an approval
+before a payment). It uses `eth_simulateV1` when the RPC supports it. On other RPCs each call runs
+alone against current state, and a call that depends on an earlier one can fail in the simulation
+even though sending would succeed. Send with `simulate: false` there.
+
+<Callout type="info" title="Only the steps before the first wait are simulated">
+  A registration waits for chain time between its commit and its register transaction. `.simulate`
+  and `.estimateGas` cover the steps before that wait. ensforge simulates each later step right
+  before it sends it.
+</Callout>
+
+## 3. Estimate the gas
+
+`.estimateGas` returns the gas and the ETH a plan needs.
+
+**Example** (Pricing a write)
+
+```ts title="estimate.ts"
+import { Ensforge, ensActions } from "@ensforge/sdk";
+import { createPublicClient, formatEther, http } from "viem";
+import { sepolia } from "viem/chains";
+
+const publicClient = createPublicClient({ chain: sepolia, transport: http() });
+const account = "0xA11Ce00000000000000000000000000000000000"; // the account that will send it
+const ens = Ensforge.create({ publicClient, account }).extend(ensActions());
+
+const { gas, value } = await ens.record.set.estimateGas({
+  name: "ensforge-docs-demo.eth",
+  texts: { url: "https://example.com" },
+});
+
+const gasPrice = await publicClient.getGasPrice();
+console.log(`about ${formatEther(gas * gasPrice)} ETH for gas`);
+```
+
+- `gas` is the total gas limit across the calls. It includes the fifth more that ensforge adds to
+  each call's estimate when it sends, so a call sent at its estimate cannot run out of gas.
+- `value` is the total ETH the calls send.
+
+## 4. Send the plan you reviewed
+
+Pass the prepared plan to [`plan.send`](/docs/reference/sdk/plan/send). It simulates the
+plan again, sends it step by step and saves its progress, exactly as the write itself would.
+
+**Example** (Reviewing, then sending)
+
+```ts title="review-then-send.ts"
+import type { EIP1193Provider } from "viem";
+
+declare global {
+  interface Window {
+    ethereum?: EIP1193Provider;
+  }
+}
+
+import { Ensforge, ensActions } from "@ensforge/sdk";
+import { createPublicClient, createWalletClient, custom, http } from "viem";
+import { sepolia } from "viem/chains";
+
+const publicClient = createPublicClient({ chain: sepolia, transport: http() });
+const walletClient = createWalletClient({ chain: sepolia, transport: custom(window.ethereum!) });
+const [account] = await walletClient.requestAddresses();
+const ens = Ensforge.create({ publicClient, walletClient, account }).extend(ensActions());
+
+const plan = await ens.record.set.prepare({
+  name: "ensforge-docs-demo.eth",
+  texts: { url: "https://example.com" },
+});
+
+const approved = window.confirm(`Send ${plan.calls.length} call(s)?`);
+if (approved) await ens.plan.send({ plan });
+```
+
+A plan is for one chain and one account. [`plan.send`](/docs/reference/sdk/plan/send) fails
+with [`PLAN_ACCOUNT_MISMATCH`](/docs/reference/errors/PLAN_ACCOUNT_MISMATCH) or
+[`PLAN_CHAIN_MISMATCH`](/docs/reference/errors/PLAN_CHAIN_MISMATCH) for a plan prepared for another. A
+plan that transfers a name token fails with [`PLAN_STALE`](/docs/reference/errors/PLAN_STALE) when the token it
+moves was reissued since you prepared it. Prepare again in both cases.
+
+Plans are plain data, so you can also inspect `plan.calls` and send them with viem yourself, or
+combine several plans with `Plan.merge`. See [Bundle transactions](/docs/sdk/bundle-transactions).
+
+## Check the result
+
+A plan sent through `plan.send` returns the same result as any write: `hash`, `hashes`, `id` and
+`plan`. See [Send a transaction](/docs/sdk/send-a-transaction).
+
+## Troubleshooting
+
+### A simulated step fails with `CONTRACT_REVERTED`
+
+The contract rejected the call and ensforge has no more specific explanation. Read
+`step.error.context.revert` for the contract's error name. See
+[`CONTRACT_REVERTED`](/docs/reference/errors/CONTRACT_REVERTED).
+
+### `NOT_OWNER` or `MISSING_ROLES` in a simulation
+
+The account may not make this change. ensforge checks the account's authority and reports it as a
+typed error instead of an opaque revert. See
+[`NOT_OWNER`](/docs/reference/errors/NOT_OWNER) and [`MISSING_ROLES`](/docs/reference/errors/MISSING_ROLES).
+
+### The simulation passes but sending fails
+
+State changed between the preview and the send, or the RPC could not simulate calls that depend on
+each other. Sending simulates again, so read the error it throws. See
+[Handle errors](/docs/sdk/handle-errors).

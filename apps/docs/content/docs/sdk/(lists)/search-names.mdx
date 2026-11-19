@@ -1,0 +1,135 @@
+---
+title: Search names
+description: Find ENS names by text for a search box or autocomplete, with name.search, and learn what the indexer returns for each match.
+keywords: [indexer.search, search, autocomplete, match, prefix, contains]
+---
+
+By the end of this guide you can back a name search box: type `vitalik`, get a list of names that start with it.
+
+## Prerequisites
+
+- A client with an [indexer](/docs/reference/glossary#indexer) and `indexerActions()`. See [Connect an indexer](/docs/sdk/connect-an-indexer). The chain cannot search names by text, so this needs an indexer.
+
+## Search by text
+
+`indexer.search` returns one page of names that match a text query. By default it matches from the start of a label.
+
+**Example** (Searching Names)
+
+```ts title="search-names.ts"
+import { ensActions, Ensforge } from "@ensforge/sdk";
+import { bigname, indexerActions } from "@ensforge/sdk/indexer";
+import { createPublicClient, http } from "viem";
+import { mainnet } from "viem/chains";
+
+const ens = Ensforge.create({
+  publicClient: createPublicClient({ chain: mainnet, transport: http() }),
+  indexer: bigname(),
+})
+  .extend(ensActions())
+  .extend(indexerActions());
+
+const page = await ens.indexer.search({ query: "vitalik", limit: 10 });
+
+for (const item of page.items) {
+  console.log(item.name, item.status, item.owner);
+}
+```
+
+- `query` is the text to look for. It must not be empty.
+- `limit` is the most names per page, 1 to 200. The default is 50.
+- Without `namespace`, the search covers every namespace the indexer serves, ENS and Basenames where available.
+
+See [`indexer.search`](/docs/reference/sdk/indexer/search).
+
+## Match anywhere in a label
+
+`match: "contains"` finds the text anywhere in a label. `match: "prefix"`, the default, finds names that start with it.
+
+**Example** (Searching Anywhere in a Label)
+
+```ts title="search-contains.ts"
+import { ensActions, Ensforge } from "@ensforge/sdk";
+import { bigname, indexerActions } from "@ensforge/sdk/indexer";
+import { createPublicClient, http } from "viem";
+import { mainnet } from "viem/chains";
+
+const ens = Ensforge.create({
+  publicClient: createPublicClient({ chain: mainnet, transport: http() }),
+  indexer: bigname(),
+})
+  .extend(ensActions())
+  .extend(indexerActions());
+
+const page = await ens.indexer.search({ query: "dao", match: "contains", namespace: "ens" });
+```
+
+## Cancel stale searches in a search box
+
+Each keystroke starts a new search, so cancel the one before it with an `AbortSignal`. The cancelled call rejects with the signal's reason.
+
+**Example** (Cancelling the Previous Search)
+
+```ts title="search-as-you-type.ts"
+import { ensActions, Ensforge } from "@ensforge/sdk";
+import { bigname, indexerActions } from "@ensforge/sdk/indexer";
+import { createPublicClient, http } from "viem";
+import { mainnet } from "viem/chains";
+
+const ens = Ensforge.create({
+  publicClient: createPublicClient({ chain: mainnet, transport: http() }),
+  indexer: bigname(),
+})
+  .extend(ensActions())
+  .extend(indexerActions());
+
+let controller: AbortController | undefined;
+
+export async function suggest(text: string) {
+  controller?.abort();
+  controller = new AbortController();
+
+  const page = await ens.indexer.search({
+    query: text,
+    limit: 8,
+    signal: controller.signal,
+  });
+  return page.items.map((item) => item.name);
+}
+```
+
+## Options
+
+| Option         | Type                       | Default                            | Description                                                                         |
+| -------------- | -------------------------- | ---------------------------------- | ----------------------------------------------------------------------------------- |
+| `query`        | `string`                   | required                           | The text to search for.                                                             |
+| `namespace`    | `"ens"` or `"basenames"`   | every namespace the indexer serves | Limits the search to one naming system.                                             |
+| `match`        | `"prefix"` or `"contains"` | `"prefix"`                         | Match from the start of a label, or anywhere.                                       |
+| `limit`        | `number`                   | `50`                               | Names per page, 1 to 200.                                                           |
+| `cursor`       | `string`                   | none                               | The previous page's `cursor`. See [Load more results](/docs/sdk/load-more-results). |
+| `includeTotal` | `boolean`                  | `false`                            | Count every match into `totalCount`. Slower.                                        |
+| `signal`       | `AbortSignal`              | none                               | Cancels the call.                                                                   |
+
+## Read the result
+
+`page.items` holds names, each with its `name`, `displayName`, `namespace`, `status`, `owner`, `manager`, `expiresAt` and `graceEndsAt`. Times are Unix seconds as `bigint`. A name that never expires has `2^64 - 1`. The page also carries `cursor`, `hasMore` and the indexer metadata described in [Connect an indexer](/docs/sdk/connect-an-indexer#3-read-answers-with-care).
+
+Search finds names the indexer knows about. To check one specific name, read it on-chain with [`name.get`](/docs/reference/sdk/name/get). See [Get a name's owner, expiry and status](/docs/sdk/get-name-details).
+
+## Troubleshooting
+
+### `INVALID_RECORD_VALUE`
+
+The `query` is empty. [`INVALID_RECORD_VALUE`](/docs/reference/errors/INVALID_RECORD_VALUE) is thrown before any request is sent, so do not search until the user has typed something.
+
+### `INDEXER_NOT_CONFIGURED`
+
+The client has no indexer, or you forgot `indexerActions()`. See [Connect an indexer](/docs/sdk/connect-an-indexer) and [`INDEXER_NOT_CONFIGURED`](/docs/reference/errors/INDEXER_NOT_CONFIGURED).
+
+### `INDEXER_UNSUPPORTED`
+
+The indexer does not serve the query or the namespace you asked for. Combine indexers with `fallback`. See [`INDEXER_UNSUPPORTED`](/docs/reference/errors/INDEXER_UNSUPPORTED).
+
+### `INDEXER_RATE_LIMITED`
+
+A search box sends many requests. Debounce the input, cancel stale searches as shown above, and add a second indexer with `fallback`. See [`INDEXER_RATE_LIMITED`](/docs/reference/errors/INDEXER_RATE_LIMITED).

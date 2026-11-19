@@ -266,11 +266,6 @@ export const messages: { readonly [code in Code]: Template<code> } = {
     title: "Insufficient balance",
     message: "Your wallet does not have enough tokens to pay.",
   }),
-  PRICE_ABOVE_MAXIMUM: () => ({
-    title: "Price changed",
-    message: "The price went up since you checked.",
-    action: "Review the new price and try again.",
-  }),
   USER_REJECTED: () => ({
     title: "Request cancelled",
     message: "You cancelled the request in your wallet.",
@@ -309,10 +304,6 @@ export const messages: { readonly [code in Code]: Template<code> } = {
     title: "DNS record missing",
     message: "The required DNS TXT record was not found.",
     action: "Add the TXT record at your DNS provider, then retry.",
-  }),
-  DNS_OWNER_MISMATCH: () => ({
-    title: "Owner mismatch",
-    message: "The owner in DNS does not match the owner on ENS.",
   }),
   DNSSEC_PROOF_FAILED: () => ({
     title: "DNSSEC problem",
@@ -386,10 +377,6 @@ export const messages: { readonly [code in Code]: Template<code> } = {
   TRANSACTION_REVERTED: () => ({
     title: "Transaction failed",
     message: "The transaction was rejected by the network.",
-  }),
-  TRANSACTION_REPLACED: () => ({
-    title: "Transaction replaced",
-    message: "The transaction was replaced or cancelled in your wallet.",
   }),
   RECEIPT_TIMEOUT: () => ({
     title: "Still pending",

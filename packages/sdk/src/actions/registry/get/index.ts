@@ -49,7 +49,7 @@ import type { RegistryInfo } from "./types.js";
  *
  * @throws `Errors.InvalidInputError` (`INVALID_NAME`, `INVALID_ADDRESS`) for invalid input.
  * @throws `Errors.NotFoundError` (`REGISTRY_NOT_FOUND`) with `strict` when the name has no subregistry.
- * @throws `Errors.NetworkError` when the RPC request fails.
+ * @throws `Errors.NetworkError` (`RPC_REQUEST_FAILED`, `RPC_TIMEOUT`, `RATE_LIMITED`) when the RPC request fails.
  *
  * @see {@link Actions.registry.upgrade} to upgrade it
  * @stability stable

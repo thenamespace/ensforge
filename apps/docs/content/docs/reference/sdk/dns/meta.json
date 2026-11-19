@@ -1,0 +1,11 @@
+{
+  "title": "dns",
+  "pages": [
+    "claim",
+    "get-offchain-resolver",
+    "get-proof",
+    "get-records",
+    "get-status",
+    "set-records"
+  ]
+}

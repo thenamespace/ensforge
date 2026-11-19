@@ -35,7 +35,7 @@ export type HcaActions = {
     readonly getDeposit: Bound<typeof hca.getDeposit>;
     /** Checks whether a stored HCA session can still be used. */
     readonly getSession: Bound<typeof hca.getSession>;
-    /** Checks whether an HCA may upgrade to an implementation: both DAO sets must allow it. */
+    /** Checks whether an HCA may upgrade to an implementation: it must be in the DAO's upgrade set and accept the current implementation. */
     readonly getUpgrade: Bound<typeof hca.getUpgrade>;
     /** Computes the address of an owner's ENS HCA, deployed or not. */
     readonly predictAddress: Bound<typeof hca.predictAddress>;
@@ -43,9 +43,9 @@ export type HcaActions = {
     readonly revokeSessions: BoundWrite<typeof hca.revokeSessions>;
     /** Invalidates every session approval of the signer's HCA. Resolves once the receipt is in. */
     readonly revokeSessionsSync: Bound<typeof hca.revokeSessionsSync>;
-    /** Upgrades the signer's HCA to an implementation both DAO upgrade sets allow. Resolves once the transaction is submitted. */
+    /** Upgrades the signer's HCA to an implementation the DAO's upgrade set and its own `canUpgradeFrom` check allow. Resolves once the transaction is submitted. */
     readonly upgrade: BoundWrite<typeof hca.upgrade>;
-    /** Upgrades the signer's HCA to an implementation both DAO upgrade sets allow. Resolves once the receipt is in. */
+    /** Upgrades the signer's HCA to an implementation the DAO's upgrade set and its own `canUpgradeFrom` check allow. Resolves once the receipt is in. */
     readonly upgradeSync: Bound<typeof hca.upgradeSync>;
     /** Checks that an address is a usable ENS HCA of its owner, and returns it. */
     readonly verify: Bound<typeof hca.verify>;

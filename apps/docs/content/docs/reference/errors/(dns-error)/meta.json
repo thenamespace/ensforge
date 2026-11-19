@@ -1,0 +1,10 @@
+{
+  "title": "DnsError",
+  "pagesIndex": "dns-error",
+  "pages": [
+    "DNS_RECORD_MISSING",
+    "DNSSEC_PROOF_FAILED",
+    "PROOF_STALE",
+    "TLD_NOT_PUBLIC"
+  ]
+}

@@ -1,5 +1,21 @@
 # @ensforge/hca
 
+## 1.0.1
+
+### Patch Changes
+
+- 9c3051f: - HCA reads have `.request`, so they run in `Actions.batch` and React's `useReads`.
+  - `Errors.describe` has end-user copy for every `HcaError` code.
+  - Removed `HCA_SAME_CHAIN_SOURCE`, which nothing raised.
+  - A new README.
+- e854649: The docs now say that `hca()` uses one executor and never falls back, that an upgrade needs the DAO's upgrade set plus the new implementation's `canUpgradeFrom` check, what a session's resolver may be, and how to pass `dehydrate` output to Next.js `getServerSideProps`.
+- Updated dependencies [e338a7f]
+- Updated dependencies [9c3051f]
+- Updated dependencies [a393fc9]
+- Updated dependencies [9c3051f]
+  - @ensforge/sdk@1.0.1
+  - @ensforge/contracts@1.0.1
+
 ## 1.0.0
 
 ### Major Changes

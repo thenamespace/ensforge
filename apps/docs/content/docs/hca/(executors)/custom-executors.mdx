@@ -1,0 +1,90 @@
+---
+title: Custom executors
+description: Build your own HCA executor with defineExecutor, for a relayer, another bundler SDK or a test double, and use it with hca().
+keywords: [defineExecutor, Executor, ExecutionRequest, relayer, capabilities]
+---
+
+<Callout type="info" title="Experimental">
+  `@ensforge/hca` is experimental for 1.0. The `Executor` type can change in a minor release.
+</Callout>
+
+An [executor](/docs/reference/glossary#executor) delivers one [HCA](/docs/reference/glossary#hca) execution and reports what happened to it. `defineExecutor` builds one from your own functions. Use it when none of the built-in executors ([your wallet](/docs/hca/your-wallet), [bundlers](/docs/hca/bundlers), [Rhinestone](/docs/hca/rhinestone)) fits, for example a relayer your company runs. By the end of this page you will have an executor that `hca()` can use.
+
+## The shape of an executor
+
+An executor is a plain object with a few members. `defineExecutor` freezes a copy of it.
+
+| Member                     | Type                                      | Description                                                                |
+| -------------------------- | ----------------------------------------- | -------------------------------------------------------------------------- |
+| `id`                       | `string`                                  | Name shown on plans and errors.                                            |
+| `capabilities.sessions`    | `boolean`                                 | The executor can run session-authorized executions (no owner prompt).      |
+| `capabilities.sponsorship` | `boolean`                                 | The executor can run without the owner holding native gas.                 |
+| `capabilities.deploys`     | `boolean`                                 | The executor deploys the HCA on first use, without a separate transaction. |
+| `send`                     | `(request, context) => Promise<string>`   | Sends one execution and returns a reference to follow it.                  |
+| `status`                   | `(reference, context) => Promise<Status>` | Reports where a sent execution is.                                         |
+| `quote`                    | `(request, context) => Promise<Fee[]>`    | Optional. Returns the fees to show on the plan before sending.             |
+
+Leave `send` out and the owner's wallet sends the executions, as `owner()` does. The two cases fund calls differently: without `send`, the owner's transaction carries the ETH the calls spend; with `send`, that ETH comes from the HCA's balance.
+
+The `request` that `send` and `quote` receive carries the chain, the HCA address, the owner, whether the HCA is deployed, the calls to run in order, the session if there is one, and a description. `status` returns `{ status: "pending" }`, `{ status: "success", hashes }` or `{ status: "failed", reason, hashes? }`.
+
+## Build a relayer executor
+
+**Example** (An Executor for Your Relayer)
+
+```ts title="relayer.ts"
+import { defineExecutor, hca } from "@ensforge/hca";
+
+// Your relayer client: it takes a request and returns an id you can poll.
+declare const api: {
+  relay(request: { hca: string; calls: readonly { to: string }[] }): Promise<string>;
+  status(id: string): Promise<{ done: boolean; hash?: `0x${string}` }>;
+};
+
+const relayer = defineExecutor({
+  id: "relayer",
+  capabilities: { sessions: false, sponsorship: true, deploys: false },
+  send: async (request) => api.relay(request),
+  status: async (id) => {
+    const result = await api.status(id);
+    return result.done && result.hash !== undefined
+      ? { status: "success", hashes: [result.hash] }
+      : { status: "pending" };
+  },
+});
+
+const via = hca({ executors: [relayer] });
+```
+
+- `capabilities.deploys: false` makes ensforge add a deployment call to the owner's setup step when the HCA does not exist yet.
+- `send` returns the relayer's id, and `status` polls it until a transaction hash is known.
+
+## Report failures that never landed
+
+Return `{ status: "failed" }` without `hashes` for an execution that never reached the chain. The write can then send it again. Include `hashes` when a transaction was mined and reverted.
+
+## Test with a double
+
+A fake executor makes route tests fast and needs no service.
+
+```ts title="fake-executor.ts"
+import { defineExecutor } from "@ensforge/hca";
+
+const fake = defineExecutor({
+  id: "fake",
+  capabilities: { sessions: false, sponsorship: false, deploys: true },
+  send: async () => "1",
+  status: async () => ({
+    status: "success",
+    hashes: ["0x0000000000000000000000000000000000000000000000000000000000000001"],
+  }),
+});
+```
+
+## Executor rules ensforge follows
+
+- `hca()` picks its executor when you call it: the first in the list, or with a `session` the first with `capabilities.sessions`. It throws [`HCA_EXECUTOR_UNSUPPORTED`](/docs/reference/errors/HCA_EXECUTOR_UNSUPPORTED) when none qualifies.
+- When `quote` throws an `HcaError`, it passes through unchanged. Any other error from `quote` becomes [`HCA_EXECUTION_FAILED`](/docs/reference/errors/HCA_EXECUTION_FAILED).
+- Every executor is a Promise interface, so you can wrap Promise SDKs without Effect.
+
+See the [executor reference](/docs/reference/hca/executors) for the exact types.

@@ -1,0 +1,16 @@
+{
+  "title": "InvalidInputError",
+  "pagesIndex": "invalid-input-error",
+  "pages": [
+    "INVALID_NAME",
+    "INVALID_ADDRESS",
+    "INVALID_COIN_TYPE",
+    "INVALID_CONTENT_HASH",
+    "INVALID_RECORD_VALUE",
+    "INVALID_DURATION",
+    "DURATION_TOO_SHORT",
+    "INVALID_EXPIRY",
+    "INVALID_ROLES",
+    "SALT_TAKEN"
+  ]
+}

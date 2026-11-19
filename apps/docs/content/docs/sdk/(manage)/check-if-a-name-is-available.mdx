@@ -1,0 +1,116 @@
+---
+title: Check if a name is available
+description: Check whether a .eth name can be registered, then quote its price for a duration and read the registration settings of the chain.
+keywords: [isAvailable, getPrice, getParameters, registration, premium]
+---
+
+You will check that a [`.eth` name](/docs/reference/glossary#eth-name) is free, read what it costs, and read the rules a registration follows. These are reads: they need no wallet and never send a transaction.
+
+## Prerequisites
+
+- A client with a public client. See [Create a client](/docs/sdk/create-a-client).
+- A chain with [ENSv2](/docs/reference/glossary#ensv2) deployed, such as Sepolia. Registration actions fail with [`UNSUPPORTED_ON_DEPLOYMENT`](/docs/reference/errors/UNSUPPORTED_ON_DEPLOYMENT) elsewhere.
+
+## 1. Check the name
+
+[`registration.isAvailable`](/docs/reference/sdk/registration/is-available) returns `true` when the name can be registered now.
+
+**Example** (Checking One Name)
+
+```ts title="is-available.ts"
+import { createPublicClient, http } from "viem";
+import { sepolia } from "viem/chains";
+import { Ensforge, ensActions } from "@ensforge/sdk";
+
+const ens = Ensforge.create({
+  publicClient: createPublicClient({ chain: sepolia, transport: http() }),
+}).extend(ensActions());
+
+const free = await ens.registration.isAvailable({ name: "ensforge-docs-demo.eth" });
+```
+
+- The name is [normalised](/docs/reference/glossary#normalisation) for you, so `"ＱＱＱ.eth"` is checked as `qqq.eth`.
+- Only `.eth` second-level names are accepted. Other names fail with [`INVALID_NAME`](/docs/reference/errors/INVALID_NAME).
+- Every new `.eth` name is registered on ENSv2, including names that expired on ENSv1. One check covers both.
+
+A name is not available in these cases:
+
+- It is registered.
+- It is in its [grace period](/docs/reference/glossary#grace-period): it has expired, but it can still be renewed, and nobody can register it yet.
+- The price oracle rejects its label, for example because it is shorter than three characters.
+
+## 2. Quote the price
+
+[`registration.getPrice`](/docs/reference/sdk/registration/get-price) returns the cost in an ERC-20 token. The ENSv2 registrar does not accept ETH.
+
+**Example** (Quoting One Year)
+
+```ts title="get-price.ts"
+import { createPublicClient, http } from "viem";
+import { sepolia } from "viem/chains";
+import { Duration, Ensforge, ensActions } from "@ensforge/sdk";
+
+const ens = Ensforge.create({
+  publicClient: createPublicClient({ chain: sepolia, transport: http() }),
+}).extend(ensActions());
+
+const { base, premium, total, token } = await ens.registration.getPrice({
+  name: "ensforge-docs-demo.eth",
+  duration: Duration.years(1),
+});
+```
+
+| Field     | Meaning                                                                                                                       |
+| --------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `base`    | The yearly rent for the label length, times the duration.                                                                     |
+| `premium` | The [premium](/docs/reference/glossary#premium): an extra charge for names that recently became available. It decays to zero. |
+| `total`   | `base` plus `premium`.                                                                                                        |
+| `token`   | The payment token's `address`, `symbol` and `decimals`.                                                                       |
+
+Amounts are in the token's smallest unit. USDC has 6 decimals, so `1_000_000n` is one USDC.
+
+| Option         | Type                        | Default                       | Description                                                                |
+| -------------- | --------------------------- | ----------------------------- | -------------------------------------------------------------------------- |
+| `name`         | `string`                    | required                      | The `.eth` name.                                                           |
+| `duration`     | `bigint`                    | required                      | Registration length in seconds. Use `Duration.years(1)`.                   |
+| `paymentToken` | `"usdc" \| "dai" \| string` | `"usdc"`                      | A token listed for the deployment, or an address the price oracle accepts. |
+| `at`           | `bigint`                    | the current block's timestamp | Unix time to price at. Use it to show when a premium ends.                 |
+
+## 3. Read the registration settings
+
+[`registration.getParameters`](/docs/reference/sdk/registration/get-parameters) returns the rules to show in a registration screen.
+
+**Example** (Reading the Settings)
+
+```ts title="get-parameters.ts"
+import { createPublicClient, http } from "viem";
+import { sepolia } from "viem/chains";
+import { Ensforge, ensActions } from "@ensforge/sdk";
+
+const ens = Ensforge.create({
+  publicClient: createPublicClient({ chain: sepolia, transport: http() }),
+}).extend(ensActions());
+
+const { minCommitmentAge, minDuration, gracePeriod, paymentTokens } =
+  await ens.registration.getParameters();
+```
+
+All durations and ages are in seconds. `minCommitmentAge` is the wait between the two halves of a registration. `paymentTokens` lists the deployment's tokens that the price oracle accepts right now.
+
+## Check the result
+
+`isAvailable` returns a `boolean`. `getPrice` returns `{ base, premium, total, token }`. Pass the same `name` and `duration` to [Register a name](/docs/sdk/register-a-name) to pay the quote.
+
+## Troubleshooting
+
+### `UNSUPPORTED_ON_DEPLOYMENT`
+
+The chain has no ENSv2 deployment, so the registrar does not exist there. Use Sepolia or a fork of a chain with ENSv2. See [`UNSUPPORTED_ON_DEPLOYMENT`](/docs/reference/errors/UNSUPPORTED_ON_DEPLOYMENT).
+
+### `PAYMENT_TOKEN_UNSUPPORTED`
+
+The price oracle does not accept `paymentToken`. Read `paymentTokens` from `registration.getParameters` and pick one of them. See [`PAYMENT_TOKEN_UNSUPPORTED`](/docs/reference/errors/PAYMENT_TOKEN_UNSUPPORTED).
+
+### `DURATION_TOO_SHORT`
+
+`duration` is below the registrar's `minDuration`. See [`DURATION_TOO_SHORT`](/docs/reference/errors/DURATION_TOO_SHORT).

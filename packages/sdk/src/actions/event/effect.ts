@@ -45,8 +45,8 @@ import type { watch as watchTypes } from "./watch/index.js";
  * const events = yield* Actions.event.decode(ens, { receipts })
  * ```
  *
- * @throws `Errors.InternalError` for malformed logs.
- * @throws `Errors.NetworkError` when the RPC request fails.
+ * @throws `Errors.InternalError` (`UNEXPECTED`) for malformed logs.
+ * @throws `Errors.NetworkError` (`RPC_REQUEST_FAILED`, `RPC_TIMEOUT`, `RATE_LIMITED`) when the RPC request fails.
  *
  * @see {@link Actions.event.get} to fetch a name's events
  * @stability stable
@@ -103,7 +103,7 @@ export declare namespace decode {
  *
  * @throws `Errors.InvalidInputError` (`INVALID_NAME`, `INVALID_RECORD_VALUE`) for invalid input.
  * @throws `Errors.NetworkError` (`LOG_RANGE_TOO_LARGE`) when the provider's log limits make the range too expensive.
- * @throws `Errors.NetworkError` when the RPC request fails.
+ * @throws `Errors.NetworkError` (`RPC_REQUEST_FAILED`, `RPC_TIMEOUT`, `RATE_LIMITED`) when the RPC request fails.
  *
  * @see {@link Actions.event.watch} to follow new events
  * @stability stable

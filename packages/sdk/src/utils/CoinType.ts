@@ -44,6 +44,14 @@ export type Input = string | bigint | { readonly chainId: number };
 /**
  * ENSIP-11 coin type of an EVM chain. Ethereum mainnet is `60`.
  *
+ * **Example** (Coin type of a chain)
+ *
+ * ```ts
+ * import { CoinType } from "@ensforge/sdk"
+ *
+ * CoinType.fromChainId(8453) // 2147492101n (Base)
+ * ```
+ *
  * @throws `Errors.InvalidInputError` (`INVALID_COIN_TYPE`) when `chainId` is not a valid chain ID.
  * @stability stable
  * @category records
@@ -91,6 +99,15 @@ export const from = (input: Input): bigint => {
 /**
  * Whether a coin type is an EVM chain (Ethereum mainnet or ENSIP-11).
  *
+ * **Example** (Telling EVM coins apart)
+ *
+ * ```ts
+ * import { CoinType } from "@ensforge/sdk"
+ *
+ * CoinType.isEvm(CoinType.from("eth")) // true
+ * CoinType.isEvm(CoinType.from("btc")) // false
+ * ```
+ *
  * @stability stable
  * @category records
  * @since 1.0.0
@@ -99,6 +116,14 @@ export const isEvm = (coinType: bigint): boolean => isEvmCoinType(coinType);
 
 /**
  * EVM chain ID of a coin type, or `null` for non-EVM coins.
+ *
+ * **Example** (Recovering a chain ID)
+ *
+ * ```ts
+ * import { CoinType } from "@ensforge/sdk"
+ *
+ * CoinType.toChainId(2147492101n) // 8453
+ * ```
  *
  * @stability stable
  * @category records
@@ -112,6 +137,14 @@ export const toChainId = (coinType: bigint): number | null => {
 
 /**
  * Symbol of a coin type, such as `btc`, or `null` when unknown.
+ *
+ * **Example** (Naming a coin type)
+ *
+ * ```ts
+ * import { CoinType } from "@ensforge/sdk"
+ *
+ * CoinType.toSymbol(0n) // "btc"
+ * ```
  *
  * @stability stable
  * @category records
@@ -130,6 +163,14 @@ export const toSymbol = (coinType: bigint): string | null =>
  * EVM addresses are stored as 20 raw bytes for any EVM coin type, including chains the codec
  * library does not list. Other coins use `@ensdomains/address-encoder`.
  *
+ * **Example** (Encoding an address record)
+ *
+ * ```ts
+ * import { CoinType } from "@ensforge/sdk"
+ *
+ * const bytes = CoinType.encodeAddress(CoinType.from("eth"), address)
+ * ```
+ *
  * @throws `Errors.InvalidInputError` (`INVALID_ADDRESS`) when the address is invalid for the coin.
  * @stability stable
  * @category records
@@ -141,6 +182,14 @@ export const encodeAddress = (coinType: bigint, address: string): Hex =>
 /**
  * Decodes the bytes of an ENS address record into a display address, or `null` when empty (or the
  * zero address, for EVM coins).
+ *
+ * **Example** (Decoding an address record)
+ *
+ * ```ts
+ * import { CoinType } from "@ensforge/sdk"
+ *
+ * const shown = CoinType.decodeAddress(CoinType.from("eth"), data)
+ * ```
  *
  * @throws `Errors.InvalidInputError` (`INVALID_COIN_TYPE`) when no codec exists for the coin.
  * @throws `Errors.InvalidInputError` (`INVALID_ADDRESS`) when the bytes are not an address of the

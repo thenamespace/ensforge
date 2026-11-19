@@ -62,7 +62,9 @@ import type {
  * @throws `Errors.DnsError` (`DNS_RECORD_MISSING`, `PROOF_STALE`, `DNSSEC_PROOF_FAILED`, `TLD_NOT_PUBLIC`) when the name cannot be proven.
  * @throws `Errors.GatewayError` (`GATEWAY_REQUEST_FAILED`, `GATEWAY_RESPONSE_INVALID`) when the proof cannot be fetched.
  * @throws `Errors.UnauthorizedError` (`NOT_OWNER`) when someone other than the DNS owner claims with a resolver.
- * @throws `Errors.UserRejectedError` when the user rejects the request.
+ * @throws `Errors.UserRejectedError` (`USER_REJECTED`) when the user rejects the request.
+ * @throws `Errors.WalletError` (`CHAIN_MISMATCH`, `ACCOUNT_NOT_FOUND`) when the wallet is on another chain or has no account to sign with.
+ * @throws `Errors.UnsupportedError` (`WALLET_BATCH_UNSUPPORTED`) with `mode: "batch"` or a paymaster when the wallet cannot send calls as one batch.
  *
  * @see {@link Actions.dns.getStatus} to check the name first
  * @stability stable
@@ -116,7 +118,7 @@ export declare namespace claim {
  * @throws `Errors.DnsError` (`DNS_RECORD_MISSING`, `PROOF_STALE`, `DNSSEC_PROOF_FAILED`, `TLD_NOT_PUBLIC`) when the name cannot be proven.
  * @throws `Errors.GatewayError` (`GATEWAY_REQUEST_FAILED`, `GATEWAY_RESPONSE_INVALID`) when the proof cannot be fetched.
  * @throws `Errors.UnauthorizedError` (`NOT_OWNER`) when someone other than the DNS owner claims with a resolver.
- * @throws `Errors.TransactionError` (`TRANSACTION_REVERTED`, `RECEIPT_TIMEOUT`) when confirmation fails.
+ * @throws `Errors.TransactionError` (`TRANSACTION_REVERTED`, `RECEIPT_TIMEOUT`, `NONCE_CONFLICT`) when confirmation fails or the wallet's nonce is already used.
  *
  * @see {@link claim} to resolve on submission
  * @stability stable
@@ -174,7 +176,7 @@ export declare namespace claimSync {
  * @throws `Errors.InvalidInputError` (`INVALID_NAME`) for names that are not DNS names.
  * @throws `Errors.GatewayError` (`GATEWAY_REQUEST_FAILED`, `GATEWAY_RESPONSE_INVALID`) when the DNSSEC gateway fails.
  * @throws `Errors.UnsupportedError` (`UNSUPPORTED_ON_DEPLOYMENT`) without a DNSSEC gateway or `gatewayUrls`.
- * @throws `Errors.NetworkError` when the RPC request fails.
+ * @throws `Errors.NetworkError` (`RPC_REQUEST_FAILED`, `RPC_TIMEOUT`, `RATE_LIMITED`) when the RPC request fails.
  *
  * @see {@link Actions.record.get} to resolve its records
  * @stability stable
@@ -231,7 +233,7 @@ export declare namespace getOffchainResolver {
  * @throws `Errors.InvalidInputError` (`INVALID_NAME`) for names that are not DNS names.
  * @throws `Errors.GatewayError` (`GATEWAY_REQUEST_FAILED`, `GATEWAY_RESPONSE_INVALID`) when the DNSSEC gateway fails.
  * @throws `Errors.UnsupportedError` (`UNSUPPORTED_ON_DEPLOYMENT`) without a DNSSEC gateway or `gatewayUrls`.
- * @throws `Errors.NetworkError` when the RPC request fails.
+ * @throws `Errors.NetworkError` (`RPC_REQUEST_FAILED`, `RPC_TIMEOUT`, `RATE_LIMITED`) when the RPC request fails.
  *
  * @see {@link Actions.dns.claim} to import with it
  * @stability stable
@@ -284,7 +286,7 @@ export declare namespace getProof {
  * ```
  *
  * @throws `Errors.InvalidInputError` (`INVALID_NAME`) for invalid names.
- * @throws `Errors.NetworkError` when the RPC request fails.
+ * @throws `Errors.NetworkError` (`RPC_REQUEST_FAILED`, `RPC_TIMEOUT`, `RATE_LIMITED`) when the RPC request fails.
  *
  * @see {@link Actions.dns.setRecords} to change them
  * @stability stable
@@ -344,7 +346,7 @@ export declare namespace getRecords {
  * @throws `Errors.InvalidInputError` (`INVALID_NAME`) for names that are not DNS names.
  * @throws `Errors.GatewayError` (`GATEWAY_REQUEST_FAILED`, `GATEWAY_RESPONSE_INVALID`) when the DNSSEC gateway fails.
  * @throws `Errors.UnsupportedError` (`UNSUPPORTED_ON_DEPLOYMENT`) without a DNSSEC gateway or `gatewayUrls`.
- * @throws `Errors.NetworkError` when the RPC request fails.
+ * @throws `Errors.NetworkError` (`RPC_REQUEST_FAILED`, `RPC_TIMEOUT`, `RATE_LIMITED`) when the RPC request fails.
  *
  * @see {@link Actions.dns.claim} to import it
  * @stability stable
@@ -402,10 +404,13 @@ export declare namespace getStatus {
  *
  * @throws `Errors.InvalidInputError` (`INVALID_NAME`, `INVALID_RECORD_VALUE`) for invalid input, such as records that are not DNS wire format.
  * @throws `Errors.NameStateError` (`NAME_EXPIRED`, `NAME_RESERVED`, `NAME_NOT_REGISTERED`, `NAME_EXTERNAL`) when the name is not registered, or its parent's namespace manages it outside ENS's registries.
+ * @throws `Errors.NameStateError` (`NAME_UNREACHABLE`) when ENSv2 resolution no longer reaches the name.
  * @throws `Errors.NotFoundError` (`RESOLVER_NOT_FOUND`) when the name has no resolver.
  * @throws `Errors.UnsupportedError` (`RESOLVER_PROFILE_UNSUPPORTED`) for resolvers without DNS records.
  * @throws `Errors.UnauthorizedError` (`NOT_OWNER`) when the account may not edit the records.
- * @throws `Errors.UserRejectedError` when the user rejects the request.
+ * @throws `Errors.UserRejectedError` (`USER_REJECTED`) when the user rejects the request.
+ * @throws `Errors.WalletError` (`CHAIN_MISMATCH`, `ACCOUNT_NOT_FOUND`) when the wallet is on another chain or has no account to sign with.
+ * @throws `Errors.UnsupportedError` (`WALLET_BATCH_UNSUPPORTED`) with `mode: "batch"` or a paymaster when the wallet cannot send calls as one batch.
  *
  * @see {@link Actions.dns.getRecords} to read them
  * @stability stable
@@ -461,10 +466,11 @@ export declare namespace setRecords {
  *
  * @throws `Errors.InvalidInputError` (`INVALID_NAME`, `INVALID_RECORD_VALUE`) for invalid input, such as records that are not DNS wire format.
  * @throws `Errors.NameStateError` (`NAME_EXPIRED`, `NAME_RESERVED`, `NAME_NOT_REGISTERED`, `NAME_EXTERNAL`) when the name is not registered, or its parent's namespace manages it outside ENS's registries.
+ * @throws `Errors.NameStateError` (`NAME_UNREACHABLE`) when ENSv2 resolution no longer reaches the name.
  * @throws `Errors.NotFoundError` (`RESOLVER_NOT_FOUND`) when the name has no resolver.
  * @throws `Errors.UnsupportedError` (`RESOLVER_PROFILE_UNSUPPORTED`) for resolvers without DNS records.
  * @throws `Errors.UnauthorizedError` (`NOT_OWNER`) when the account may not edit the records.
- * @throws `Errors.TransactionError` (`TRANSACTION_REVERTED`, `RECEIPT_TIMEOUT`) when confirmation fails.
+ * @throws `Errors.TransactionError` (`TRANSACTION_REVERTED`, `RECEIPT_TIMEOUT`, `NONCE_CONFLICT`) when confirmation fails or the wallet's nonce is already used.
  *
  * @see {@link setRecords} to resolve on submission
  * @stability stable

@@ -1,0 +1,21 @@
+{
+  "title": "React",
+  "description": "React hooks for ENS",
+  "icon": "package-react",
+  "root": true,
+  "pages": [
+    "---[rocket]Getting started---",
+    "installation",
+    "index",
+    "set-up-the-provider",
+    "[history][Changelog](/docs/react/changelog)",
+    "---[data]Read data---",
+    "...(read)",
+    "---[send]Write data---",
+    "...(write)",
+    "---[react]Frameworks---",
+    "...(frameworks)",
+    "---[code]Advanced---",
+    "...(advanced)"
+  ]
+}

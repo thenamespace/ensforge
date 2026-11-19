@@ -28,6 +28,24 @@ const sortedDirectories = Effect.fn("codegen.sortedDirectories")(function* (fold
   return names.sort();
 });
 
+/** The action folders under `actionsDir` (`<domain>/<action>/`), sorted, with their files. */
+export const actionLayout = Effect.fn("codegen.actionLayout")(function* (actionsDir: string) {
+  const fs = yield* FileSystem.FileSystem;
+  const path = yield* Path.Path;
+  const layout: Layout[number][] = [];
+  for (const domain of yield* sortedDirectories(actionsDir)) {
+    const folders: { readonly folder: string; readonly files: readonly string[] }[] = [];
+    for (const folder of yield* sortedDirectories(path.join(actionsDir, domain))) {
+      folders.push({
+        folder,
+        files: yield* fs.readDirectory(path.join(actionsDir, domain, folder)),
+      });
+    }
+    layout.push({ domain, folders });
+  }
+  return layout;
+});
+
 /**
  * Generates the action barrels, the `Actions` trees (Promise and Effect) and the decorators from
  * `src/actions/<domain>/<action>/{index,effect}.ts`; with `check`, fails when they are stale.
@@ -46,17 +64,7 @@ export const codegen = Effect.fn("codegen")(function* (check: boolean) {
   const profile = workspace.config.codegen === "sdk" ? sdkProfile : extensionProfile;
   const actionsDir = path.join(workspace.packageDir, "src/actions");
 
-  const layout: Layout[number][] = [];
-  for (const domain of yield* sortedDirectories(actionsDir)) {
-    const folders: { readonly folder: string; readonly files: readonly string[] }[] = [];
-    for (const folder of yield* sortedDirectories(path.join(actionsDir, domain))) {
-      folders.push({
-        folder,
-        files: yield* fs.readDirectory(path.join(actionsDir, domain, folder)),
-      });
-    }
-    layout.push({ domain, folders });
-  }
+  const layout = yield* actionLayout(actionsDir);
 
   const project = yield* typescript.open(
     Arr.flatMap(layout, ({ domain, folders }) =>

@@ -1,0 +1,62 @@
+---
+title: Privacy policy
+description: What ensforge.com collects when you visit, and what it does not.
+updated: 2026-11-19
+---
+
+ensforge.com is the website and documentation for the ensforge packages, run by Namespace Inc. It has no accounts, no ads and no sign-in.
+
+## Summary
+
+- No cookies. Nothing is stored in your browser for analytics.
+- Your IP address is not kept by analytics.
+- No session replay, no advertising, no data sold.
+- Do Not Track is respected.
+- The packages run in your own apps and send nothing to Namespace.
+
+## The packages
+
+The ensforge packages are libraries that run inside your application. They do not contact Namespace, collect telemetry or report usage. Any network request they make goes to the Ethereum RPC provider, indexer or wallet that you configure. This policy covers this website only.
+
+## Hosting
+
+The site is served by our hosting provider. Like any host, it processes your request and keeps standard server logs, which can include your IP address and user agent.
+
+## Analytics
+
+We use PostHog (EU cloud) to see how the site is used. It is only active when it is configured, and only on the production site at ensforge.com. It runs in cookieless mode: it sets no cookies and uses no local or session storage.
+
+Visitors are counted with a privacy-preserving hash that PostHog's servers compute, instead of an identifier stored on your device. Your IP address is discarded once PostHog has derived your country from it. There are no personal profiles. If your browser sends Do Not Track, nothing is collected. We do not sell this data or share it for advertising.
+
+What is collected:
+
+- Pages visited, referrer and campaign parameters.
+- Approximate country, device type, browser and screen size.
+- Performance metrics.
+- Interactions with the site, such as clicking links and buttons, switching tabs, copying code or install commands, running a playground example, or searching the docs. Search queries are trimmed, and queries that look like an email address are replaced with a placeholder.
+- Answers to "Was this page helpful?", chosen from a fixed list. There is no free text.
+- Errors that happen in your browser.
+
+## Requests from tools and agents
+
+Requests for the Markdown pages, `llms.txt` and `llms-full.txt` do not run JavaScript, so the server counts them. Each count records the path and the requesting tool's user agent, grouped by tool family. It does not identify a person. Search engine crawlers are not counted.
+
+## Browser storage
+
+The site stores your package manager and code example choices in your browser's local storage so it can remember it. This is not analytics, and it never leaves your browser.
+
+## Third parties
+
+- **GitHub and npm.** The changelog pages fetch release notes from the public GitHub API on the server, so your browser does not contact GitHub for them. Links to GitHub and npm take you to those sites, which have their own policies.
+- **Ethereum RPC providers and ENS indexers.** The playground and live examples run in your browser and send ENS lookups to public Ethereum RPC providers and ENS indexers. Those requests go directly from your browser to the provider, and the provider can see your IP address and the names you look up. We do not receive them.
+- **Fonts.** Fonts are served from this site, so no font provider sees your visit.
+
+Links to other sites are covered by those sites' own policies.
+
+## Changes
+
+We can change this policy. The date at the top shows the last update.
+
+## Contact
+
+Open an issue at [github.com/thenamespace/ensforge](https://github.com/thenamespace/ensforge/issues "ensforge on GitHub").

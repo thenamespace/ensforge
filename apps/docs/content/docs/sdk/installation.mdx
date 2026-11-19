@@ -1,0 +1,79 @@
+---
+title: Installation
+icon: install
+description: Install @ensforge/sdk with viem and Effect, and check that your runtime and TypeScript settings can load the package correctly.
+keywords: [install, "@ensforge/sdk", viem, effect, wagmi, ESM]
+---
+
+`@ensforge/sdk` is the SDK for ENS. It builds on the [viem](https://viem.sh) clients your app
+already has, and works the same in a browser app and on a server.
+
+## Install the package
+
+Install the SDK with its two required peer dependencies, `viem` and `effect`.
+
+```package-install
+@ensforge/sdk viem effect@^4
+```
+
+- `viem` (2.57 or later) talks to the chain. You create the viem clients; ensforge uses them.
+- `effect` (4.1.4 or later, version 4 only) is required even if you never use it directly.
+  ensforge runs on it internally. You never have to write Effect code: every action returns a
+  Promise. See [Ways to call actions](/docs/sdk/ways-to-call-actions) if you want the Effect API.
+
+## Add wagmi support (optional)
+
+Apps built on wagmi (RainbowKit, ConnectKit, Dynamic, Privy, Reown AppKit) can create the client
+from their wagmi config. ensforge supports wagmi 2.14 and later, and wagmi 3. There is nothing more
+to install: `wagmi` is an optional peer dependency, and apps without it never load that code.
+See [Create a client](/docs/sdk/create-a-client#from-a-wagmi-config).
+
+## Check your setup
+
+ensforge ships ES modules only, with an `exports` map.
+
+| Requirement                   | Value                                         |
+| ----------------------------- | --------------------------------------------- |
+| Node.js                       | 20.19 or later                                |
+| Module format                 | ES modules (`"type": "module"`, or a bundler) |
+| TypeScript `moduleResolution` | `"bundler"`, `"node16"` or `"nodenext"`       |
+
+The `moduleResolution` setting matters because ensforge has several entry points
+(`@ensforge/sdk/indexer`, `@ensforge/sdk/wagmi`, …). Older settings such as `"node"` cannot see
+them. See [Entry points](/docs/reference/entry-points) for the full list.
+
+## Verify the install
+
+This script reads the address of `nick.eth` on Ethereum mainnet. If it prints an address, the SDK,
+viem and Effect are installed correctly.
+
+**Example** (Checking the Install)
+
+```ts title="check.ts"
+import { Ensforge, ensActions } from "@ensforge/sdk";
+import { createPublicClient, http } from "viem";
+import { mainnet } from "viem/chains";
+
+const ens = Ensforge.create({
+  publicClient: createPublicClient({ chain: mainnet, transport: http() }),
+}).extend(ensActions());
+
+console.log(await ens.record.getAddress({ name: "nick.eth" }));
+```
+
+```text title="Output"
+0xb8c2C29ee19D8307cb7255e1Cd9CbDE883A267d5
+```
+
+`http()` without a URL uses the chain's public RPC, which is rate limited. Pass your own RPC URL
+in production. See [Configure RPC and gateways](/docs/sdk/rpc-and-gateways).
+
+## Other packages
+
+The SDK is the core. The other packages build on it and are installed only when you need them.
+
+| Package               | What it adds                                                                                   |
+| --------------------- | ---------------------------------------------------------------------------------------------- |
+| `@ensforge/react`     | React hooks and a provider. See [React](/docs/react).                                          |
+| `@ensforge/contracts` | ENS ABIs, addresses and deployments. Installed with the SDK. See [Contracts](/docs/contracts). |
+| `@ensforge/hca`       | Writes through an ENS smart account (experimental). See [HCA](/docs/hca).                      |

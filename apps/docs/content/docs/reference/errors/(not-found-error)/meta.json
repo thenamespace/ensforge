@@ -1,0 +1,13 @@
+{
+  "title": "NotFoundError",
+  "pagesIndex": "not-found-error",
+  "pages": [
+    "RESOLVER_NOT_FOUND",
+    "RECORD_NOT_FOUND",
+    "PRIMARY_NAME_NOT_SET",
+    "PRIMARY_NAME_MISMATCH",
+    "REGISTRY_NOT_FOUND",
+    "PLAN_NOT_FOUND",
+    "INDEXER_NOT_FOUND"
+  ]
+}

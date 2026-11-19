@@ -1,0 +1,259 @@
+---
+title: Glossary
+description: Look up the ENS and ensforge terms used across these docs, from name and resolver to plan and role, each explained in plain words.
+keywords:
+  [glossary, ENS terms, namehash, labelhash, resolver, registry, CCIP-Read, fuse, role, plan]
+---
+
+Every term used in these docs, in alphabetical order. Each has its own anchor, so pages link here
+the first time they use it.
+
+## Avatar
+
+A profile picture for a name, stored as the `avatar` text record (ENSIP-12). The record holds a
+link: HTTPS, IPFS, Arweave, or an NFT the name's address owns. `record.getAvatar` turns it into a
+URL a browser can load.
+
+## Batch
+
+Several reads run together in as few requests as possible. `ens.batch` runs the `.request(...)`
+forms of read actions; reads made at the same time are also grouped into multicall requests
+automatically. Not to be confused with a [bundle](#bundle), which groups writes.
+
+## Bundle
+
+Several contract calls a wallet sends as one atomic unit (EIP-5792 `wallet_sendCalls`). ensforge
+bundles a [plan](#plan)'s calls when the wallet supports it.
+
+## CCIP-Read
+
+The protocol that lets a resolver answer from a server instead of the chain (EIP-3668). The resolver
+replies with a pointer to a [gateway](#gateway); ensforge fetches the answer there and has the
+resolver check it. Names served this way are [off-chain names](#off-chain-name).
+
+## Commitment
+
+The first half of registering a `.eth` name. The registrant first submits a hash of the
+registration (the commitment), waits at least a minute, then registers. This stops others from
+seeing the name in a pending transaction and registering it first.
+
+## Emancipated
+
+A name its parent can no longer take back or change. On ENSv1, a wrapped name is emancipated when
+its [PCC](#pcc) fuse is burned. On ENSv2, a registry is emancipated when the owners of its parent
+can no longer take its names back.
+
+## ENSv1
+
+The original ENS contracts: one registry for every name, the `.eth` registrar,
+public resolvers and the [Name Wrapper](#name-wrapper). See
+[ENS versions under the hood](/docs/sdk/ens-versions).
+
+## ENSv2
+
+The successor to ENSv1: a tree of [registries](#registry), names held as ERC-1155 tokens, and
+[roles](#role) for fine-grained permissions. Names move to it by [migration](#migration). ensforge
+reads and writes both versions with the same actions.
+
+## .eth name
+
+A second-level name under `eth`, such as `nick.eth`. It is bought from the [registrar](#registrar)
+for a period of time and renewed before its [expiry](#expiry). Subnames of a `.eth` name, such as
+`pay.nick.eth`, are not `.eth` names in this sense: their parent creates them.
+
+## Executor
+
+How an [HCA](#hca) gets its calls on-chain: the owner's own wallet, an ERC-4337 bundler, or
+Rhinestone. See [HCA](/docs/hca).
+
+## Expiry
+
+When a name's registration ends. After it, a `.eth` name enters its [grace period](#grace-period).
+Subnames can have their own expiry, or never expire.
+
+## Fuse
+
+A permanent switch on a name wrapped in the [Name Wrapper](#name-wrapper). Burning a fuse removes a
+permission, such as `cannotTransfer` or `cannotSetResolver`, until the name expires. See
+[Lock permissions with fuses](/docs/sdk/fuses).
+
+## Gateway
+
+A server that holds records for an [off-chain name](#off-chain-name) and answers
+[CCIP-Read](#ccip-read) requests. Separately, a storage gateway (such as `https://ipfs.io`) turns
+IPFS or Arweave links into web URLs for avatars and websites.
+
+## Grace period
+
+The time after a `.eth` name's [expiry](#expiry) during which it can still be renewed and nobody
+else can register it. `registration.getParameters` returns its length.
+
+## HCA
+
+An ENS smart account (Hosted Contract Account) that can send writes for its owner, in one atomic
+execution, with sessions and sponsored gas. Provided by `@ensforge/hca`, which is experimental.
+
+## Indexer
+
+A service that reads every ENS event and keeps a database of names, so it can answer questions the
+chain cannot: lists, search and history. See
+[Name lists and indexers](/docs/sdk/name-lists-and-indexers).
+
+## Label
+
+One part of a name between dots. `pay.nick.eth` has the labels `pay`, `nick` and `eth`.
+
+## Labelhash
+
+The keccak-256 hash of one [label](#label). Contracts store labels as hashes; a label whose text is
+unknown is written as `[` plus its hash plus `]`. `Name.labelhash` computes it.
+
+## Locked
+
+A wrapped ENSv1 name whose `cannotUnwrap` [fuse](#fuse) is burned: it can never leave the
+[Name Wrapper](#name-wrapper) before it expires, so its other fuses hold. Locked and unlocked names
+move to ENSv2 in different ways.
+
+## Manager
+
+On ENSv1, the account that controls a name in the registry: its resolver, records and subnames. For
+an unwrapped `.eth` name it can differ from the [registrant](#registrant), who can take management
+back. ENSv2 names have no manager; they use [roles](#role).
+
+## Migration
+
+Moving a name from [ENSv1](#ensv1) to [ENSv2](#ensv2), with its records and subnames.
+`migration.get` says whether and how a name can move. See
+[Move a name to ENSv2](/docs/sdk/move-a-name-to-ensv2).
+
+## Name
+
+A human-readable identifier made of [labels](#label) separated by dots, such as `nick.eth`. ENS
+maps names to [records](#record). See [Names and records](/docs/sdk/names-and-records).
+
+## Name Wrapper
+
+An ENSv1 contract that holds a name as an ERC-1155 token and adds [fuses](#fuse). Such names are
+called wrapped. See [What wrapped names are](/docs/sdk/wrapped-names).
+
+## Namehash
+
+The hash that identifies a name in contracts, also called its **node** (EIP-137). It is computed
+from the [labelhashes](#labelhash) of all labels, so it never reveals the name's text.
+`Name.namehash` computes it from a [normalised](#normalisation) name.
+
+## Normalisation
+
+Turning a name into its one canonical form before hashing it (ENSIP-15): lower case, standard
+characters, and rejection of names that could be confused with others. `Nick.ETH` normalises to
+`nick.eth`. ensforge normalises every name you pass; `Name.normalize` does it on its own.
+
+## Off-chain name
+
+A name whose records are not stored on Ethereum but served by a [gateway](#gateway) through
+[CCIP-Read](#ccip-read). Basenames and many subnames given out by apps are served this way.
+ensforge reads them like any other name.
+
+## Owner
+
+The account that holds a name and has final control over it: transfer, resolver, subnames and
+records. `name.get` returns it as `owner`.
+
+## Paymaster
+
+A service that pays gas for a user. ensforge passes one to EIP-5792 wallets with the `paymaster`
+write option, and `@ensforge/hca` supports paymasters through its bundler executors.
+
+## PCC
+
+Short for the `parentCannotControl` [fuse](#fuse). Once burned, the parent of a wrapped name can no
+longer change or take back that name: the name is [emancipated](#emancipated).
+
+## Permission
+
+Whether an account may perform an operation on a name, whatever grants it: ownership, an approval,
+a [role](#role) or a fuse. `permission.get` and `permission.check` answer it. See
+[Who can change a name](/docs/sdk/who-can-change-a-name).
+
+## Plan
+
+A write, fully worked out but not sent: its [steps](#step), the calls of each, and what the account
+needs first. Every write action has `.prepare` to build one. See
+[How writes work](/docs/sdk/writing-to-ens).
+
+## Premium
+
+An extra price on a `.eth` name that has recently left its [grace period](#grace-period). It starts
+high and falls over time, so a released name does not go to whoever sends a transaction first.
+
+## Primary name
+
+The one name an address chooses to be known by, stored in its **reverse record** (ENSIP-19). A
+primary name counts only when the name's address record points back to the same address. Each
+chain can have its own. See [Get the name for an address](/docs/sdk/get-a-primary-name).
+
+## Record
+
+A piece of data a name points to, stored by its [resolver](#resolver):
+
+- **Text**: a string under a key such as `url` or `com.github`.
+- **Address**: an address for one chain or coin, chosen by its **coin type** (ENSIP-9, ENSIP-11).
+  Ethereum is coin type 60.
+- **Content hash**: a website or file on IPFS, Swarm, Arweave and similar (ENSIP-7).
+- **ABI**: a contract ABI (ENSIP-4).
+- **Pubkey**: a SECP256k1 public key.
+- **Data**: raw bytes under a key (ENSIP-24).
+
+## Registrant
+
+On ENSv1, the holder of a `.eth` registration token. The registrant can transfer the registration
+and reset the [manager](#manager).
+
+## Registrar
+
+The contract that sells [.eth names](#eth-name): it quotes prices, takes [commitments](#commitment),
+registers and renews. The contract you call to register is also called the registrar
+**controller**.
+
+## Registry
+
+The contract that records who holds each name and which [resolver](#resolver) serves it. ENSv1 has
+one registry for every name. ENSv2 has a tree of registries: the root registry, the `.eth`
+registry, and a **subregistry** for any name that has subnames.
+
+## Resolver
+
+The contract that stores a name's [records](#record) and answers for them. Kinds you will meet:
+
+- **Public resolver**: shared by many names, run by ENS.
+- **PermissionedResolver**: an ENSv2 resolver for one name or a few, with [roles](#role) per
+  record.
+- **Wildcard or extended resolver** (ENSIP-10): answers for names below the one it is set on, and
+  can answer through [CCIP-Read](#ccip-read).
+- **Inherited resolver**: the resolver that serves a name with none of its own, from a parent.
+  `name.get` returns it as `inheritedResolver`.
+
+## Role
+
+A named permission in [ENSv2](#ensv2), such as `setResolver`, `setText` or `renew`, granted to an
+account on one name or on every name of a registry or resolver. Each role has an admin role that may
+grant and revoke it. See [Roles and permissions](/docs/sdk/roles-and-permissions).
+
+## Route
+
+Another way to send a write than the signer's own transactions, passed as `via`. `hca()` from
+`@ensforge/hca` routes writes through an [HCA](#hca).
+
+## Step
+
+One stage of a [plan](#plan): a group of calls sent together, sometimes after a wait on chain time.
+Registration has several steps; most writes have one.
+
+## Subname
+
+A name under another name, such as `pay.nick.eth` under `nick.eth`. The parent's owner creates it
+and decides who holds it.
+
+## TLD
+
+The top-level domain: the last label of a name, such as `eth` or `com`.

@@ -1,0 +1,102 @@
+---
+title: Wrap and unwrap a name
+description: Wrap an ENSv1 name in the Name Wrapper, optionally burning fuses on the way, and unwrap it again when you need the registry back.
+keywords: [wrapper.wrap, wrapper.unwrap, NameWrapper, NAME_WRAPPED, NAME_NOT_WRAPPED, cannotUnwrap]
+---
+
+This page is about [ENSv1](/docs/reference/glossary#ensv1) only, because the [Name Wrapper](/docs/reference/glossary#name-wrapper) does not exist on [ENSv2](/docs/reference/glossary#ensv2). You will wrap an ENSv1 name, which turns it into an ERC-1155 token, and unwrap it back. See [What wrapped names are](/docs/sdk/wrapped-names).
+
+## Prerequisites
+
+- A wallet client for the account that holds the name. See [Create a client](/docs/sdk/create-a-client).
+- An ENSv1 name. ENSv2 names fail with [`UNSUPPORTED_PROTOCOL`](/docs/reference/errors/UNSUPPORTED_PROTOCOL), and migrated names have no NameWrapper.
+
+## 1. Wrap the name
+
+[`wrapper.wrap`](/docs/reference/sdk/wrapper/wrap) wraps a name. `wrapper.wrapSync` also waits for the receipt.
+
+**Example** (Wrapping a Name)
+
+```ts title="wrap.ts"
+import { createPublicClient, createWalletClient, http, type Hex } from "viem";
+import { privateKeyToAccount } from "viem/accounts";
+import { sepolia } from "viem/chains";
+import { Ensforge, ensActions } from "@ensforge/sdk";
+
+const account = privateKeyToAccount(process.env.PRIVATE_KEY as Hex);
+const transport = http(process.env.SEPOLIA_RPC_URL);
+
+const ens = Ensforge.create({
+  publicClient: createPublicClient({ chain: sepolia, transport }),
+  walletClient: createWalletClient({ account, chain: sepolia, transport }),
+}).extend(ensActions());
+
+const { hash } = await ens.wrapper.wrapSync({ name: "ensforge-docs-demo.eth" });
+```
+
+| Option     | Type          | Default                             | Description                                                   |
+| ---------- | ------------- | ----------------------------------- | ------------------------------------------------------------- |
+| `name`     | `string`      | required                            | The ENSv1 name.                                               |
+| `owner`    | `string`      | the current holder, else the signer | Owner of the wrapped name.                                    |
+| `fuses`    | `Fuse.Name[]` | none                                | Fuses to burn while wrapping. `.eth` second-level names only. |
+| `resolver` | `string`      | the current resolver                | Resolver to set.                                              |
+
+- A [`.eth` name](/docs/reference/glossary#eth-name) is wrapped in one transaction from the [registrant](/docs/reference/glossary#registrant), which may burn owner [fuses](/docs/reference/glossary#fuse) (`cannotUnwrap` first).
+- Any other name needs its registry owner to approve the NameWrapper first. ensforge adds the approval when it is needed.
+- The wrapped name stays with its current holder unless you pass `owner`. This also holds when an approved operator wraps it.
+
+If the name's [manager](/docs/reference/glossary#manager) is not the signer, the manager must approve the NameWrapper first. An operator of the manager cannot approve it for them, and the write fails with `NOT_APPROVED`.
+
+## 2. Unwrap the name
+
+[`wrapper.unwrap`](/docs/reference/sdk/wrapper/unwrap) returns a wrapped name to the ENSv1 registry and, for `.eth` names, to the registrar. `owner` becomes the registry owner and, for `.eth` names, the registrant. It defaults to the signer.
+
+**Example** (Unwrapping a Name)
+
+```ts title="unwrap.ts"
+import { createPublicClient, createWalletClient, http, type Hex } from "viem";
+import { privateKeyToAccount } from "viem/accounts";
+import { sepolia } from "viem/chains";
+import { Ensforge, ensActions } from "@ensforge/sdk";
+
+const account = privateKeyToAccount(process.env.PRIVATE_KEY as Hex);
+const transport = http(process.env.SEPOLIA_RPC_URL);
+
+const ens = Ensforge.create({
+  publicClient: createPublicClient({ chain: sepolia, transport }),
+  walletClient: createWalletClient({ account, chain: sepolia, transport }),
+}).extend(ensActions());
+
+await ens.wrapper.unwrapSync({ name: "ensforge-docs-demo.eth" });
+```
+
+<Callout type="warn" title="A locked name cannot be unwrapped">
+  Once `cannotUnwrap` is burned, `unwrap` fails with `FUSE_BURNED` until the name expires. See [Lock
+  permissions with fuses](/docs/sdk/fuses).
+</Callout>
+
+## Check the result
+
+Read the name with [`wrapper.getFuses`](/docs/reference/sdk/wrapper/get-fuses). It returns `null` when the name is not wrapped. Or use `name.get` and read `wrapped`. See [Get a name's owner, expiry and status](/docs/sdk/get-name-details).
+
+## Troubleshooting
+
+### `NAME_WRAPPED` or `NAME_NOT_WRAPPED`
+
+You wrapped a name that is already wrapped, or unwrapped one that is not. See [`NAME_WRAPPED`](/docs/reference/errors/NAME_WRAPPED) and [`NAME_NOT_WRAPPED`](/docs/reference/errors/NAME_NOT_WRAPPED).
+
+### `NAME_EXPIRED` or `NAME_NOT_REGISTERED`
+
+Only registered names can be wrapped. See [`NAME_EXPIRED`](/docs/reference/errors/NAME_EXPIRED) and [`NAME_NOT_REGISTERED`](/docs/reference/errors/NAME_NOT_REGISTERED).
+
+### `NOT_OWNER` or `NOT_APPROVED`
+
+The account does not own the name, or the manager has not approved the NameWrapper. See [`NOT_OWNER`](/docs/reference/errors/NOT_OWNER) and [`NOT_APPROVED`](/docs/reference/errors/NOT_APPROVED).
+
+### `FUSE_BURNED`
+
+A burned fuse forbids it, such as `cannotUnwrap`. See [`FUSE_BURNED`](/docs/reference/errors/FUSE_BURNED).
+
+### `INVALID_RECORD_VALUE`
+
+A fuse name is not valid. See [`INVALID_RECORD_VALUE`](/docs/reference/errors/INVALID_RECORD_VALUE).

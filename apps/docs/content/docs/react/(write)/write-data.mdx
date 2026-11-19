@@ -1,0 +1,143 @@
+---
+title: Write data
+description: Send ENS writes from components with useWrite or a named hook, track their steps and errors, and await the final result.
+keywords: [useWrite, useSetRecords, useRegister, mutate, mutateAsync, steps, status]
+---
+
+Use a write hook to send a transaction from an event handler. The hook tracks the write for you: its status, its steps, its result and its error. Use a testnet such as Sepolia and a name you own while you build.
+
+## Send a write
+
+`useSetRecords` writes records to a name. Call `mutate` with the action's options. Writes need a wallet on the client. See [Set up the provider](/docs/react/set-up-the-provider).
+
+**Example** (A Save Button)
+
+```tsx title="Save.tsx"
+import { useSetRecords } from "@ensforge/react";
+
+export function Save({ name }: { name: string }) {
+  const { mutate, isPending, status, error } = useSetRecords();
+
+  return (
+    <>
+      <button
+        disabled={isPending}
+        onClick={() => mutate({ name, texts: { url: "https://alice.xyz" } })}
+      >
+        {isPending ? "Saving..." : "Save"}
+      </button>
+      {status === "success" && <p>Saved</p>}
+      {error && <p>{error.message}</p>}
+    </>
+  );
+}
+```
+
+`mutate` returns nothing. The outcome lands in `status`, `data` and `error`. `useSetRecords` runs `record.set`, which resolves once the transaction is submitted. Use the `…Sync` action to wait for the receipt, shown below.
+
+## Pick a write hook
+
+| Hook                                                              | Sends                                                         |
+| ----------------------------------------------------------------- | ------------------------------------------------------------- |
+| [`useSetRecords`](/docs/reference/react/use-set-records)          | Sets, changes or clears a name's records in one write.        |
+| [`useRegister`](/docs/reference/react/use-register)               | Registers names: commit, wait the minimum age, then register. |
+| [`useRenew`](/docs/reference/react/use-renew)                     | Renews names.                                                 |
+| [`useSetResolver`](/docs/reference/react/use-set-resolver)        | Points a name at a resolver.                                  |
+| [`useTransferName`](/docs/reference/react/use-transfer-name)      | Transfers a name to another account.                          |
+| [`useCreateSubname`](/docs/reference/react/use-create-subname)    | Creates a subname, optionally with records.                   |
+| [`useSetPrimaryName`](/docs/reference/react/use-set-primary-name) | Sets the signer's primary name.                               |
+| [`useSignClaim`](/docs/reference/react/use-sign-claim)            | Signs a primary-name claim once, to set it on other chains.   |
+| [`useMigrate`](/docs/reference/react/use-migrate)                 | Moves names from ENSv1 to ENSv2.                              |
+
+For any other write, use `useWrite(action)` with an action from `@ensforge/sdk`. Named hooks are presets of it.
+
+## What the hook returns
+
+| Field                  | Meaning                                                                                             |
+| ---------------------- | --------------------------------------------------------------------------------------------------- |
+| `mutate(options)`      | Sends the write. The outcome lands in `status`, `data` and `error`. Stable across renders.          |
+| `mutateAsync(options)` | Sends the write and resolves with its own result, or rejects with its error. Stable across renders. |
+| `status`               | `"idle"`, `"pending"`, `"success"` or `"error"`, for the latest write started.                      |
+| `isPending`            | A write is running.                                                                                 |
+| `data`                 | The latest write's value, once it succeeded.                                                        |
+| `error`                | The latest write's typed error.                                                                     |
+| `steps`                | Plan events of the latest write: `waiting`, `submitted`, `confirmed`, `failed`.                     |
+| `reset()`              | Clears the result and steps.                                                                        |
+
+Each component gets its own state, so two buttons never share a result. The state follows the latest write started, while each `mutateAsync` settles with its own write.
+
+## Show progress
+
+Multi-step writes, such as a registration (commit, wait, register), push an event to `steps` as each [step](/docs/reference/glossary#step) changes. Each event names its `step` and its `status`. `submitted` events carry the transaction `hashes`, and `failed` events carry the `error`.
+
+**Example** (Registering With Progress)
+
+```tsx title="Register.tsx"
+import { useRegister } from "@ensforge/react";
+import { Duration } from "@ensforge/sdk";
+
+export function Register({ name }: { name: string }) {
+  const { mutate, isPending, steps, error } = useRegister();
+
+  return (
+    <>
+      <button
+        disabled={isPending}
+        onClick={() => mutate({ names: name, duration: Duration.years(1) })}
+      >
+        Register
+      </button>
+      <ol>
+        {steps.map((event, index) => (
+          <li key={index}>
+            {event.step.description}: {event.status}
+          </li>
+        ))}
+      </ol>
+      {error && <p>{error.message}</p>}
+    </>
+  );
+}
+```
+
+## Await a write
+
+Use `mutateAsync` to run code after the write, such as closing a dialog. It rejects with the action's error, so catch it.
+
+**Example** (Waiting For The Receipt)
+
+```tsx title="SaveAndClose.tsx"
+import { useWrite } from "@ensforge/react";
+import { Actions } from "@ensforge/sdk";
+
+export function SaveAndClose({ name, onDone }: { name: string; onDone: () => void }) {
+  const { mutateAsync, isPending } = useWrite(Actions.record.setSync);
+
+  const save = async () => {
+    try {
+      await mutateAsync({ name, texts: { url: "https://alice.xyz" } });
+      onDone();
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  return (
+    <button disabled={isPending} onClick={save}>
+      Save
+    </button>
+  );
+}
+```
+
+`Actions.record.setSync` resolves with receipts, once the transaction is mined. `Actions.record.set` resolves when it is submitted.
+
+## Start over
+
+`reset()` clears `status`, `data`, `error` and `steps`. It never cancels a write in flight, because a sent transaction cannot be taken back. Their `mutateAsync` promises still settle, but they no longer update the state.
+
+## What refreshes afterwards
+
+Once a write succeeds, every read of the names and accounts it touched refetches: chain reads once the transaction is mined, indexer reads once the indexer has caught up. Components that show the data update on their own. See [Caching and refreshing](/docs/react/caching-and-refreshing#refresh-after-a-write).
+
+To show what a write will do before the wallet prompt, see [Preview before sending](/docs/react/preview-before-sending). For how [plans](/docs/reference/glossary#plan) work, see [How writes work](/docs/sdk/writing-to-ens).

@@ -1,0 +1,12 @@
+{
+  "title": "hcaAdmin",
+  "pages": [
+    "get-governance",
+    "grant-upgrade-set-roles",
+    "renounce-governance",
+    "revoke-upgrade-set-roles",
+    "set-deployment-approval",
+    "set-upgrade-approval",
+    "transfer-governance"
+  ]
+}

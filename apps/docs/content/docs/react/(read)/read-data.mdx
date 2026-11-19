@@ -1,0 +1,129 @@
+---
+title: Read data
+description: Read names, records and lists in components with hooks that share and cache every request, and handle loading and errors.
+keywords: [useRead, useAddress, useRecords, useText, useName, enabled, ReadResult]
+---
+
+Use a read hook in a component to get a value for a [name](/docs/reference/glossary#name) or an address. Every hook returns the same result object, and components that ask for the same thing share one request.
+
+## Read with a named hook
+
+Named hooks cover the common reads. Pass the same options as the matching [SDK action](/docs/reference/sdk/record/get-address).
+
+**Example** (Reading An Address And A Profile)
+
+```tsx title="Profile.tsx"
+import { useAddress, useRecords } from "@ensforge/react";
+
+export function Profile({ name }: { name: string }) {
+  const { data: address } = useAddress({ name });
+  const { data: profile, isLoading } = useRecords({ name, texts: ["url", "avatar"] });
+
+  if (isLoading) return <p>Loading...</p>;
+  return (
+    <dl>
+      <dt>Address</dt>
+      <dd>{address}</dd>
+      <dt>Website</dt>
+      <dd>{profile?.texts.url}</dd>
+    </dl>
+  );
+}
+```
+
+`useRecords` reads several [records](/docs/reference/glossary#record) in one call and returns them under `texts` and `addresses`.
+
+| Hook                                                                   | Reads                                                                   |
+| ---------------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| [`useAddress`](/docs/reference/react/use-address)                      | The address a name points to, for ETH or another coin.                  |
+| [`useText`](/docs/reference/react/use-text)                            | One text record, such as `url` or `com.twitter`.                        |
+| [`useRecords`](/docs/reference/react/use-records)                      | Several records at once.                                                |
+| [`useAvatar`](/docs/reference/react/use-avatar)                        | An avatar as an image URL, with NFT avatars resolved.                   |
+| [`usePrimaryName`](/docs/reference/react/use-primary-name)             | The primary name of an address, verified against its forward address.   |
+| [`useName`](/docs/reference/react/use-name)                            | A name's owner, manager, expiry, resolver, registry and wrapper status. |
+| [`useAvailability`](/docs/reference/react/use-availability)            | Whether a name can be registered now.                                   |
+| [`useRegistrationPrice`](/docs/reference/react/use-registration-price) | What registering names for a duration costs.                            |
+| [`usePermissions`](/docs/reference/react/use-permissions)              | What an account may do with a name.                                     |
+| [`useMigrationStatus`](/docs/reference/react/use-migration-status)     | Whether and how a name can move from ENSv1 to ENSv2.                    |
+
+Lists from an [indexer](/docs/reference/glossary#indexer) have their own hooks. See [Infinite lists](/docs/react/infinite-lists).
+
+## Read the result
+
+Every read hook returns a `ReadResult`.
+
+| Field          | Type                                          | Meaning                                                  |
+| -------------- | --------------------------------------------- | -------------------------------------------------------- |
+| `data`         | `value \| undefined`                          | The latest value. It stays while the read refreshes.     |
+| `error`        | `error \| undefined`                          | The action's error when it failed.                       |
+| `status`       | `"idle" \| "loading" \| "success" \| "error"` | `idle` while disabled, `loading` until the first result. |
+| `isLoading`    | `boolean`                                     | No result yet, and loading.                              |
+| `isRefreshing` | `boolean`                                     | Loading again, with a previous result shown.             |
+| `refresh`      | `() => void`                                  | Refetches the read.                                      |
+| `result`       | `AsyncResult`                                 | The Effect Atom result, for `AsyncResult.match`.         |
+
+`error` is a typed ensforge error. Read its `code` to decide what to show. See [Handle errors](/docs/sdk/handle-errors).
+
+## Read with any action
+
+`useRead(action, options, config)` runs any SDK action. Pass the action itself, not a call to it.
+
+**Example** (Reading An Account's Permissions)
+
+```tsx title="CanEdit.tsx"
+import type { Address } from "viem";
+
+import { useRead } from "@ensforge/react";
+import { Actions } from "@ensforge/sdk";
+
+export function CanEdit({ name, account }: { name: string; account: Address }) {
+  const { data, isLoading } = useRead(Actions.permission.get, { name, account });
+
+  if (isLoading) return null;
+  return <span>{String(data?.can.setRecords)}</span>;
+}
+```
+
+`useRead` accepts actions from `@ensforge/sdk` and from `@ensforge/sdk/effect`. Named hooks are presets of it.
+
+## Wait for input
+
+Pass `undefined` options, or `enabled: false`, to hold a read back until you have what it needs, such as a name the user is still typing. `status` is `"idle"` meanwhile.
+
+**Example** (Reading After The User Types)
+
+```tsx title="Lookup.tsx"
+import { useState } from "react";
+
+import { useAddress } from "@ensforge/react";
+
+export function Lookup() {
+  const [name, setName] = useState("");
+  const { data, status } = useAddress(name === "" ? undefined : { name });
+
+  return (
+    <>
+      <input value={name} onChange={(event) => setName(event.target.value)} />
+      <p>{status === "idle" ? "Type a name" : data}</p>
+    </>
+  );
+}
+```
+
+## Settings for one hook
+
+Every read hook takes a config as its last argument: `staleTime`, `idleTTL`, `refetchInterval`, `refreshOnWindowFocus`, `enabled` and `client`. See [Caching and refreshing](/docs/react/caching-and-refreshing).
+
+**Example** (Polling A Name's State)
+
+```tsx title="Expiry.tsx"
+import { useName } from "@ensforge/react";
+
+export function Expiry({ name }: { name: string }) {
+  const { data } = useName({ name }, { refetchInterval: "1 minute" });
+
+  return <span>{String(data?.expiry)}</span>;
+}
+```
+
+To read inside `<Suspense>` instead of checking `isLoading`, see [Use Suspense](/docs/react/suspense).

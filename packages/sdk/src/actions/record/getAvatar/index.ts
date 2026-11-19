@@ -15,7 +15,8 @@ import * as Impl from "./effect.js";
  *
  * - `http(s)` and `data:` URIs are returned as-is; `ipfs://`, `ipns://`, `ar://` and bare CIDs go
  *   through `gateways`: the call's, else the client's (`Ensforge.create({ gateways })`), else
- *   `https://ipfs.io` and `https://arweave.net`.
+ *   `https://ipfs.io` and `https://arweave.net` (the client config also has a Swarm gateway,
+ *   `https://api.gateway.ethswarm.org`, used for `bzz://` content hashes, not avatars).
  * - NFT avatars (`eip155:1/erc721:…/…`, `erc1155`) read the token's metadata and return its image.
  *   They resolve only on the client's own chain, and only when the name's ETH address owns the
  *   token (ENSIP-12): `ownerOf` for ERC-721, a non-zero balance for ERC-1155.
@@ -53,7 +54,7 @@ import * as Impl from "./effect.js";
  * @throws `Errors.UnsupportedError` (`RESOLVER_PROFILE_UNSUPPORTED`) with `strict` when the resolver supports none of the records.
  * @throws `Errors.GatewayError` (`GATEWAY_REQUEST_FAILED`, `GATEWAY_RESPONSE_INVALID`) with `strict` when NFT metadata cannot be loaded.
  * @throws `Errors.DnsError` when a DNS name's DNSSEC proof does not verify.
- * @throws `Errors.NetworkError` when the RPC request fails.
+ * @throws `Errors.NetworkError` (`RPC_REQUEST_FAILED`, `RPC_TIMEOUT`, `RATE_LIMITED`) when the RPC request fails.
  *
  * @see {@link Actions.record.getText} to read the raw avatar record
  * @stability stable

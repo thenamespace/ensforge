@@ -1,0 +1,99 @@
+---
+title: Next.js Pages Router
+description: Prefetch ENS reads in getServerSideProps or getStaticProps and hydrate them in the page, so names render without a loading state.
+keywords:
+  [Next.js, Pages Router, getServerSideProps, getStaticProps, static export, prefetch, dehydrate]
+---
+
+In the Pages Router, prefetch the reads in `getServerSideProps` or `getStaticProps`, return the state as a prop, and render `HydrationBoundary` in the page. `getStaticProps` also works for a static export.
+
+<Callout type="info" title="Server rendering helpers are unstable">
+  `prefetch`, `dehydrate` and `HydrationBoundary` are marked `unstable`. Their names and shapes can
+  change in a minor release.
+</Callout>
+
+## 1. Provide the client in `_app`
+
+Create the client once in a shared module and render the provider in `_app`. Pages Router components are all client-capable, so no `"use client"` is needed.
+
+**Example** (A Shared Client And The App Component)
+
+```ts title="lib/ens.ts"
+import { createPublicClient, http } from "viem";
+import { mainnet } from "viem/chains";
+
+import { Ensforge } from "@ensforge/sdk";
+
+export const ens = Ensforge.create({
+  publicClient: createPublicClient({ chain: mainnet, transport: http() }),
+});
+```
+
+```tsx no-check title="pages/_app.tsx"
+import type { AppProps } from "next/app";
+
+import { EnsforgeProvider } from "@ensforge/react";
+
+import { ens } from "../lib/ens";
+
+export default function App({ Component, pageProps }: AppProps) {
+  return (
+    <EnsforgeProvider client={ens}>
+      <Component {...pageProps} />
+    </EnsforgeProvider>
+  );
+}
+```
+
+## 2. Prefetch on the server
+
+Create a new registry for each request. The values are plain JSON (bigints and bytes are tagged). Pass `dehydrate(registry)` straight into the page props.
+
+**Example** (A Name Page)
+
+```tsx no-check title="pages/[name].tsx"
+import type { GetServerSideProps } from "next";
+
+import { AtomRegistry } from "effect/reactivity";
+
+import { HydrationBoundary, useName } from "@ensforge/react";
+import { dehydrate, prefetch } from "@ensforge/react/server";
+import { Actions } from "@ensforge/sdk";
+
+import { ens } from "../lib/ens";
+
+type Props = { name: string; state: ReturnType<typeof dehydrate> };
+
+export const getServerSideProps: GetServerSideProps<Props> = async ({ params }) => {
+  const name = String(params?.name);
+  const registry = AtomRegistry.make();
+
+  await prefetch(registry, ens, Actions.name.get, { name });
+
+  return { props: { name, state: dehydrate(registry) } };
+};
+
+function Profile({ name }: { name: string }) {
+  const { data } = useName({ name });
+
+  return <p>{data?.owner}</p>;
+}
+
+export default function Page({ name, state }: Props) {
+  return (
+    <HydrationBoundary state={state}>
+      <Profile name={name} />
+    </HydrationBoundary>
+  );
+}
+```
+
+- `useName` reads the same action and options as `prefetch`, so it uses the prefetched value.
+- `dehydrate` returns plain JSON, so Next.js can serialize it as props without a conversion.
+- A failed read is not sent, so the browser retries it.
+
+## Static pages
+
+Use the same `prefetch` and `dehydrate`, in `getStaticProps`. The state is baked into the page at build time. Set `staleTime` on the hooks for data that changes. Without it, a hydrated value revalidates once it is 30 seconds old.
+
+For the App Router version with streaming, see [Next.js App Router](/docs/react/nextjs-app-router).

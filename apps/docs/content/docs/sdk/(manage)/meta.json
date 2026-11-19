@@ -1,0 +1,13 @@
+{
+  "pages": [
+    "check-if-a-name-is-available",
+    "register-a-name",
+    "renew-a-name",
+    "transfer-a-name",
+    "set-records",
+    "change-the-resolver",
+    "set-a-primary-name",
+    "create-subnames",
+    "use-a-dns-name"
+  ]
+}

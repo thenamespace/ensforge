@@ -1,0 +1,10 @@
+{
+  "title": "NetworkError",
+  "pagesIndex": "network-error",
+  "pages": [
+    "RPC_REQUEST_FAILED",
+    "RPC_TIMEOUT",
+    "RATE_LIMITED",
+    "LOG_RANGE_TOO_LARGE"
+  ]
+}
