@@ -9,6 +9,7 @@ import { NameStateError } from "../../../errors/classes/NameStateError.js";
 import { UnsupportedError } from "../../../errors/classes/UnsupportedError.js";
 import type { AnyError } from "../../../errors/types.js";
 import * as Action from "../../../internal/action/index.js";
+import * as V1Calls from "../../../internal/name/v1-calls.js";
 import {
   notRegistered,
   requireAddress,
@@ -78,6 +79,14 @@ const v1Calls = Effect.fnUntraced(function* (
   const owner = changes.owner ?? state.owner ?? zeroAddress;
   const resolver = changes.resolver ?? state.resolver ?? zeroAddress;
   const record = changes.owner !== undefined || changes.resolver !== undefined;
+  const subnode = {
+    parentNode: parent.data.parts.node,
+    label,
+    labelhash: data.parts.labelhash,
+    owner,
+    resolver,
+  };
+  const ttl = state.ttl ?? 0n;
 
   if (!state.wrapped || (route === "v1" && record)) {
     if (changes.expiry !== undefined) {
@@ -89,39 +98,17 @@ const v1Calls = Effect.fnUntraced(function* (
         }),
       );
     }
-    return [
-      {
-        to: contracts.registry,
-        data: encodeFunctionData({
-          abi: Abis.v1.ensRegistry,
-          functionName: "setSubnodeRecord",
-          args: [parent.data.parts.node, data.parts.labelhash, owner, resolver, state.ttl ?? 0n],
-        }),
-        value: 0n,
-      },
-    ];
+    return [V1Calls.setSubnodeRecord(contracts.registry, false, { ...subnode, ttl })];
   }
 
   return [
     ...(record
       ? [
-          {
-            to: contracts.nameWrapper,
-            data: encodeFunctionData({
-              abi: Abis.v1.nameWrapper,
-              functionName: "setSubnodeRecord",
-              args: [
-                parent.data.parts.node,
-                label,
-                owner,
-                resolver,
-                state.ttl ?? 0n,
-                0,
-                changes.expiry ?? state.expiry ?? 0n,
-              ],
-            }),
-            value: 0n,
-          },
+          V1Calls.setSubnodeRecord(contracts.nameWrapper, true, {
+            ...subnode,
+            ttl,
+            expiry: changes.expiry ?? state.expiry ?? 0n,
+          }),
         ]
       : []),
     ...(changes.expiry !== undefined && !record
