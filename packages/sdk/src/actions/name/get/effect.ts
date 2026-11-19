@@ -4,7 +4,8 @@ import type { Client } from "../../../client/types.js";
 import type { AnyError } from "../../../errors/types.js";
 import * as Action from "../../../internal/action/index.js";
 import { loadName } from "../../../internal/name/load.js";
-import { inheritedResolver, probeServed } from "../../../internal/name/served.js";
+import { servedNamespace } from "../../../internal/name/namespace.js";
+import { inheritedResolver } from "../../../internal/name/served.js";
 import { toServedState } from "../../../internal/name/state.js";
 import * as Rpc from "../../../internal/rpc/index.js";
 import type { get as Promises } from "./index.js";
@@ -25,18 +26,21 @@ export const get = Effect.fn("ensforge.name.get")(
       { concurrency: "unbounded" },
     );
     const { state, data } = loaded;
-    if (state.resolver !== null) return { ...state, inheritedResolver: null };
+    const ens = { chainId: client.chain.id, namespace: null };
+    if (state.resolver !== null) return { ...state, ...ens, inheritedResolver: null };
 
     const foundName = yield* Effect.fromResult(found);
     const served = yield* inheritedResolver(client, data.parts, foundName, options);
-    if (served === null) return { ...state, inheritedResolver: null };
+    if (served === null) return { ...state, ...ens, inheritedResolver: null };
     if (loaded.kind !== "available" || !served.inherited) {
-      return { ...state, inheritedResolver: served.address };
+      return { ...state, ...ens, inheritedResolver: served.address };
     }
 
-    const kind = yield* probeServed(client, data.parts, served.address, options);
+    const { kind, namespace } = yield* servedNamespace(client, data.parts, served, options);
     return {
       ...(kind === null ? state : toServedState(state, kind)),
+      chainId: namespace?.kind === "l2" ? namespace.chainId : client.chain.id,
+      namespace,
       inheritedResolver: served.address,
     };
   },

@@ -35,6 +35,7 @@ import { search as indexerSearch } from "./indexer/search/effect.js";
 import { get as migrationGet } from "./migration/get/effect.js";
 import { get as nameGet } from "./name/get/effect.js";
 import { getLabel as nameGetLabel } from "./name/getLabel/effect.js";
+import { getNamespace as nameGetNamespace } from "./name/getNamespace/effect.js";
 import { check as permissionCheck } from "./permission/check/effect.js";
 import { get as permissionGet } from "./permission/get/effect.js";
 import { get as planGet } from "./plan/get/effect.js";
@@ -97,6 +98,7 @@ export const requests: Readonly<
   "migration.get": migrationGet,
   "name.get": nameGet,
   "name.getLabel": nameGetLabel,
+  "name.getNamespace": nameGetNamespace,
   "permission.check": permissionCheck,
   "permission.get": permissionGet,
   "plan.get": planGet,

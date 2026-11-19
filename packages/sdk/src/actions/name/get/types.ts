@@ -1,3 +1,4 @@
+import type { Deployments } from "@ensforge/contracts";
 import type { Address } from "viem";
 
 /**
@@ -11,6 +12,8 @@ import type { Address } from "viem";
  * - `offchain`: in no registry, but a parent's resolver serves it through a CCIP-Read gateway
  *   (`jesse.base.eth`, `test.uni.eth`). ENS cannot tell whether the gateway holds the label.
  * - `wildcard`: in no registry, but a parent's on-chain ENSIP-10 resolver serves it.
+ * - `l2`: in an L2 namespace's registry on another chain (`jesse.base.eth`); `namespace` says
+ *   which.
  *
  * @category names
  * @since 1.0.0
@@ -23,18 +26,48 @@ export type NameKind =
   | "v2-migrated"
   | "v2-reserved"
   | "offchain"
-  | "wildcard";
+  | "wildcard"
+  | "l2";
 
 /**
  * Registration status. `grace` applies to `.eth` second-level names after expiry, while anyone can
- * still renew; `expired` names can be registered again. `external` names (`offchain` and
- * `wildcard` kinds) are managed outside ENS's registries, by their parent's namespace: they cannot
+ * still renew; `expired` names can be registered again. `external` names (`offchain`, `wildcard`
+ * and `l2` kinds) are managed outside ENS's registries, by their parent's namespace: they cannot
  * be registered through ENS.
  *
  * @category names
  * @since 1.0.0
  */
 export type NameStatus = "available" | "registered" | "grace" | "expired" | "reserved" | "external";
+
+/**
+ * Where a name outside ENS's registries lives:
+ *
+ * - `l2`: in an L2 namespace (Basenames, Linea Names, Celonames, Durin, Namespace), on `chainId`.
+ * - `offchain`: in an off-chain provider's database, served through its CCIP-Read gateway.
+ *
+ * @category names
+ * @since 1.1.0
+ */
+export type NameNamespace =
+  | {
+      readonly kind: "l2";
+      /** The namespace family, as `Deployments.Profile.namespaces` names it. */
+      readonly id: Deployments.NamespaceId;
+      /** The parent name the namespace hangs off, e.g. `base.eth`. */
+      readonly parent: string;
+      /** Chain ID of the L2 that holds the name. */
+      readonly chainId: number;
+      /** The registry on the L2 that holds the name; `null` when the L2 could not be reached. */
+      readonly registry: Address | null;
+    }
+  | {
+      readonly kind: "offchain";
+      /** The provider whose gateway serves the name; `null` when ensforge does not know it. */
+      readonly provider: Deployments.OffchainProvider | null;
+      /** The ancestor whose resolver serves the name, e.g. `cb.id`. */
+      readonly parent: string;
+    };
 
 /**
  * Full state of one name across ENSv1 and ENSv2.
@@ -46,6 +79,10 @@ export type NameState = {
   /** The normalized name. */
   readonly name: string;
   readonly kind: NameKind;
+  /** Chain ID where the name lives: the L2's for an `l2` name, the ENS deployment's otherwise. */
+  readonly chainId: number;
+  /** The L2 namespace or off-chain provider that holds the name; `null` for names in ENS. */
+  readonly namespace: NameNamespace | null;
   /** Protocol that controls the name. */
   readonly protocol: "v1" | "v2";
   readonly status: NameStatus;

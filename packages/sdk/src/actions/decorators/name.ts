@@ -15,6 +15,8 @@ export type NameActions = {
     readonly get: Bound<typeof name.get>;
     /** Recovers a label from its labelhash through the ENSv2 LabelStore. */
     readonly getLabel: Bound<typeof name.getLabel>;
+    /** Finds where a name lives outside ENS's registries: the L2 namespace that holds it (Basenames, Linea Names, Celonames, Durin, Namespace) or the off-chain provider that serves it. */
+    readonly getNamespace: Bound<typeof name.getNamespace>;
     /** Resets the ENSv1 registry owner (manager) of an unwrapped `.eth` name, as its registrant. Resolves once the transaction is submitted. */
     readonly reclaim: BoundWrite<typeof name.reclaim>;
     /** Resets the ENSv1 registry owner (manager) of an unwrapped `.eth` name, as its registrant. Resolves once the receipt is in. */
@@ -47,6 +49,7 @@ export const nameActions =
     name: {
       get: (options) => name.get(client, options),
       getLabel: (options) => name.getLabel(client, options),
+      getNamespace: (options) => name.getNamespace(client, options),
       reclaim: Object.assign(
         (options: Parameters<typeof name.reclaim>[1]) => name.reclaim(client, options),
         {

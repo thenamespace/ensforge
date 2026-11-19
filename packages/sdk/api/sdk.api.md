@@ -288,13 +288,19 @@ type Actions.name.get.ErrorType = InvalidInputError | CommonError
 type Actions.name.get.Options = Pick<Options, 'signal'> & (BlockOptions & { name: string; })
 const Actions.name.get.path: 'name.get'
 function Actions.name.get.request(options: Pick<Options, 'signal'> & (BlockOptions & { name: string; })) => Request<NameState, ErrorType>
-type Actions.name.get.ReturnType = { readonly name: string; readonly kind: NameKind; readonly protocol: 'v1' | 'v2'; readonly status: NameStatus; readonly owner: `0x${string}` | null; readonly manager: `0x${string}` | null; readonly registrant: `0x${string}` | null; readonly registry: `0x${string}` | null; readonly subregistry: `0x${string}` | null; readonly resolver: `0x${string}` | null; readonly inheritedResolver: `0x${string}` | null; readonly expiry: bigint | null; readonly gracePeriodEnd: bigint | null; readonly tokenId: bigint | null; readonly resource: bigint | null; readonly ttl: bigint | null; readonly wrapped: boolean; readonly migrated: boolean; readonly reachable: boolean; readonly available: boolean; readonly renewable: boolean; }
+type Actions.name.get.ReturnType = { readonly name: string; readonly kind: NameKind; readonly chainId: number; readonly namespace: NameNamespace | null; readonly protocol: 'v1' | 'v2'; readonly status: NameStatus; readonly owner: `0x${string}` | null; readonly manager: `0x${string}` | null; readonly registrant: `0x${string}` | null; readonly registry: `0x${string}` | null; readonly subregistry: `0x${string}` | null; readonly resolver: `0x${string}` | null; readonly inheritedResolver: `0x${string}` | null; readonly expiry: bigint | null; readonly gracePeriodEnd: bigint | null; readonly tokenId: bigint | null; readonly resource: bigint | null; readonly ttl: bigint | null; readonly wrapped: boolean; readonly migrated: boolean; readonly reachable: boolean; readonly available: boolean; readonly renewable: boolean; }
 function Actions.name.getLabel(client: Client<object> | ViemClientLike, options: Pick<Options, 'signal'> & (BlockOptions & { labelhash: `0x${string}`; })) => Promise<ReturnType>
 type Actions.name.getLabel.ErrorType = InvalidInputError | UnsupportedError | CommonError
 type Actions.name.getLabel.Options = Pick<Options, 'signal'> & (BlockOptions & { labelhash: `0x${string}`; })
 const Actions.name.getLabel.path: 'name.getLabel'
 function Actions.name.getLabel.request(options: Pick<Options, 'signal'> & (BlockOptions & { labelhash: `0x${string}`; })) => Request<ReturnType, ErrorType>
 type Actions.name.getLabel.ReturnType = string | null
+function Actions.name.getNamespace(client: Client<object> | ViemClientLike, options: Pick<Options, 'signal'> & (BlockOptions & { name: string; })) => Promise<ReturnType>
+type Actions.name.getNamespace.ErrorType = InvalidInputError | CommonError
+type Actions.name.getNamespace.Options = Pick<Options, 'signal'> & (BlockOptions & { name: string; })
+const Actions.name.getNamespace.path: 'name.getNamespace'
+function Actions.name.getNamespace.request(options: Pick<Options, 'signal'> & (BlockOptions & { name: string; })) => Request<ReturnType, ErrorType>
+type Actions.name.getNamespace.ReturnType = NameNamespace | null
 function Actions.name.reclaim(client: Client<object> | ViemClientLike, options: reclaim.Options & Write.Options) => Promise<Result>
 type Actions.name.reclaim.ErrorType = InvalidInputError | NameStateError | UnauthorizedError | WriteError
 function Actions.name.reclaim.estimateGas(client: Client<object> | ViemClientLike, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Estimate>
@@ -1449,7 +1455,7 @@ function Name.parse(name: string) => { readonly labels: readonly string[]; reado
 type Name.Parsed = { readonly labels: readonly string[]; readonly label: string; readonly tld: string; readonly parent: string | null; readonly is2ld: boolean; readonly isSubname: boolean; }
 function Name.toTokenId(name: string) => bigint
 function nameActions() => (client: Client<object>) => NameActions
-type NameActions = { readonly name: { readonly get: Bound<typeof get>; readonly getLabel: Bound<typeof getLabel>; readonly reclaim: BoundWrite<typeof reclaim>; readonly reclaimSync: Bound<typeof reclaimSync>; readonly setManager: BoundWrite<typeof setManager>; readonly setManagerSync: Bound<typeof setManagerSync>; readonly setTtl: BoundWrite<typeof setTtl>; readonly setTtlSync: Bound<typeof setTtlSync>; readonly transfer: BoundWrite<typeof transfer>; readonly transferSync: Bound<typeof transferSync>; }; }
+type NameActions = { readonly name: { readonly get: Bound<typeof get>; readonly getLabel: Bound<typeof getLabel>; readonly getNamespace: Bound<typeof getNamespace>; readonly reclaim: BoundWrite<typeof reclaim>; readonly reclaimSync: Bound<typeof reclaimSync>; readonly setManager: BoundWrite<typeof setManager>; readonly setManagerSync: Bound<typeof setManagerSync>; readonly setTtl: BoundWrite<typeof setTtl>; readonly setTtlSync: Bound<typeof setTtlSync>; readonly transfer: BoundWrite<typeof transfer>; readonly transferSync: Bound<typeof transferSync>; }; }
 function permissionActions() => (client: Client<object>) => PermissionActions
 type PermissionActions = { readonly permission: { readonly check: Bound<typeof check>; readonly get: Bound<typeof get>; readonly setRecordAccess: BoundWrite<typeof setRecordAccess>; readonly setRecordAccessSync: Bound<typeof setRecordAccessSync>; }; }
 const Plan: { readonly merge: (plans: readonly [Plan, ...Plan[]]) => Plan; readonly serialize: (value: Plan | Record) => string; readonly deserialize: (text: string) => Plan; readonly deserializeRecord: (text: string) => Record; readonly memoryStorage: () => Storage; readonly localStorage: (key?: string | undefined) => Storage; }

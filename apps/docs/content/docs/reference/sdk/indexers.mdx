@@ -1124,10 +1124,11 @@ type NameStatus = "active" | "expired" | "released" | "unregistered";
 
 ### `Namespace`
 
-A naming system an indexer serves: ENS, or Basenames (`*.base.eth`, on Base).
+A naming system an indexer serves: ENS, or Basenames (`*.base.eth`, on Base). Its L2 namespace
+IDs are `Deployments.NamespaceId`s, as `name.get` reports them in `namespace.id`.
 
 ```ts
-type Namespace = "ens" | "basenames";
+type Namespace = "ens" | Extract<Deployments.NamespaceId, "basenames">;
 ```
 
 ### `NamespaceInfo`

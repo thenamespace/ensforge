@@ -6,6 +6,8 @@ import * as getImpl from "./get/effect.js";
 import type { get as getTypes } from "./get/index.js";
 import * as getLabelImpl from "./getLabel/effect.js";
 import type { getLabel as getLabelTypes } from "./getLabel/index.js";
+import * as getNamespaceImpl from "./getNamespace/effect.js";
+import type { getNamespace as getNamespaceTypes } from "./getNamespace/index.js";
 import * as reclaimImpl from "./reclaim/effect.js";
 import type { reclaim as reclaimTypes, reclaimSync as reclaimSyncTypes } from "./reclaim/index.js";
 import * as setManagerImpl from "./setManager/effect.js";
@@ -143,6 +145,75 @@ export declare namespace getLabel {
   type Options = getLabelTypes.Options;
   type ReturnType = getLabelTypes.ReturnType;
   type ErrorType = getLabelTypes.ErrorType;
+}
+
+/**
+ * Finds where a name lives outside ENS's registries: the L2 namespace that holds it (Basenames,
+ * Linea Names, Celonames, Durin, Namespace) or the off-chain provider that serves it.
+ *
+ * **When to use**
+ *
+ * Use to know which chain to read a name from or send its record writes to, without reading its
+ * full state. `name.get` returns the same location as `namespace`.
+ *
+ * **Details**
+ *
+ * - `kind: "l2"` names the namespace family, its parent name, the L2's `chainId` and the registry
+ *   there that holds the name (`null` when the L2 could not be reached).
+ * - `kind: "offchain"` names the provider whose gateway serves the name, or `null` when ensforge
+ *   does not know it. No gateway is contacted.
+ * - Returns `null` for names in ENS, and for names nothing serves.
+ * - The L2 namespaces come from the client's deployment profile (`Deployments.Profile.namespaces`).
+ *   Durin and Namespace names cost a read on Ethereum and one on their L2.
+ * - A client remembers a name's location for a minute, and forgets it after its own writes.
+ *
+ * **Gotchas**
+ *
+ * - The location says where the name would live, not that it is registered there:
+ *   `unclaimed.base.eth` is on Base too.
+ *
+ * **Example** (Finding the chain of a Basename)
+ *
+ * ```ts
+ * const namespace = await ens.name.getNamespace({ name: "jesse.base.eth" })
+ * if (namespace?.kind === "l2") console.log(namespace.id, namespace.chainId) // "basenames" 8453
+ * ```
+ *
+ * **Example** (Finding with a bare viem client)
+ *
+ * ```ts
+ * import { Actions } from "@ensforge/sdk"
+ *
+ * const namespace = await Actions.name.getNamespace(publicClient, { name: "jesse.base.eth" })
+ * ```
+ *
+ * **Example** (Finding in an Effect program)
+ *
+ * ```ts
+ * import { Actions } from "@ensforge/sdk/effect"
+ *
+ * const namespace = yield* Actions.name.getNamespace(ens, { name: "jesse.base.eth" })
+ * ```
+ *
+ * @throws `Errors.InvalidInputError` (`INVALID_NAME`) when the name is invalid or the root.
+ * @throws `Errors.NetworkError` (`RPC_REQUEST_FAILED`, `RPC_TIMEOUT`, `RATE_LIMITED`) when the RPC request fails.
+ *
+ * @see {@link Actions.name.get} for the name's full state
+ * @stability stable
+ * @category reading
+ * @since 1.1.0
+ */
+export const getNamespace = /* @__PURE__ */ Object.assign(
+  getNamespaceImpl.getNamespace as Action.Declared<
+    typeof getNamespaceImpl.getNamespace,
+    getNamespaceTypes.ErrorType
+  >,
+  { path: "name.getNamespace" as const },
+);
+export declare namespace getNamespace {
+  type Options = getNamespaceTypes.Options;
+  type ReturnType = getNamespaceTypes.ReturnType;
+  type ErrorType = getNamespaceTypes.ErrorType;
 }
 
 /**

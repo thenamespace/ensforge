@@ -288,13 +288,19 @@ type name.get.ErrorType = InvalidInputError | CommonError
 type name.get.Options = Pick<Options, 'signal'> & (BlockOptions & { name: string; })
 const name.get.path: 'name.get'
 function name.get.request(options: Pick<Options, 'signal'> & (BlockOptions & { name: string; })) => Request<NameState, ErrorType>
-type name.get.ReturnType = { readonly name: string; readonly kind: NameKind; readonly protocol: 'v1' | 'v2'; readonly status: NameStatus; readonly owner: `0x${string}` | null; readonly manager: `0x${string}` | null; readonly registrant: `0x${string}` | null; readonly registry: `0x${string}` | null; readonly subregistry: `0x${string}` | null; readonly resolver: `0x${string}` | null; readonly inheritedResolver: `0x${string}` | null; readonly expiry: bigint | null; readonly gracePeriodEnd: bigint | null; readonly tokenId: bigint | null; readonly resource: bigint | null; readonly ttl: bigint | null; readonly wrapped: boolean; readonly migrated: boolean; readonly reachable: boolean; readonly available: boolean; readonly renewable: boolean; }
+type name.get.ReturnType = { readonly name: string; readonly kind: NameKind; readonly chainId: number; readonly namespace: NameNamespace | null; readonly protocol: 'v1' | 'v2'; readonly status: NameStatus; readonly owner: `0x${string}` | null; readonly manager: `0x${string}` | null; readonly registrant: `0x${string}` | null; readonly registry: `0x${string}` | null; readonly subregistry: `0x${string}` | null; readonly resolver: `0x${string}` | null; readonly inheritedResolver: `0x${string}` | null; readonly expiry: bigint | null; readonly gracePeriodEnd: bigint | null; readonly tokenId: bigint | null; readonly resource: bigint | null; readonly ttl: bigint | null; readonly wrapped: boolean; readonly migrated: boolean; readonly reachable: boolean; readonly available: boolean; readonly renewable: boolean; }
 function name.getLabel(client: Client<object> | ViemClientLike, options: Pick<Options, 'signal'> & (BlockOptions & { labelhash: `0x${string}`; })) => Promise<ReturnType>
 type name.getLabel.ErrorType = InvalidInputError | UnsupportedError | CommonError
 type name.getLabel.Options = Pick<Options, 'signal'> & (BlockOptions & { labelhash: `0x${string}`; })
 const name.getLabel.path: 'name.getLabel'
 function name.getLabel.request(options: Pick<Options, 'signal'> & (BlockOptions & { labelhash: `0x${string}`; })) => Request<ReturnType, ErrorType>
 type name.getLabel.ReturnType = string | null
+function name.getNamespace(client: Client<object> | ViemClientLike, options: Pick<Options, 'signal'> & (BlockOptions & { name: string; })) => Promise<ReturnType>
+type name.getNamespace.ErrorType = InvalidInputError | CommonError
+type name.getNamespace.Options = Pick<Options, 'signal'> & (BlockOptions & { name: string; })
+const name.getNamespace.path: 'name.getNamespace'
+function name.getNamespace.request(options: Pick<Options, 'signal'> & (BlockOptions & { name: string; })) => Request<ReturnType, ErrorType>
+type name.getNamespace.ReturnType = NameNamespace | null
 function name.reclaim(client: Client<object> | ViemClientLike, options: reclaim.Options & Write.Options) => Promise<Result>
 type name.reclaim.ErrorType = InvalidInputError | NameStateError | UnauthorizedError | WriteError
 function name.reclaim.estimateGas(client: Client<object> | ViemClientLike, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Estimate>

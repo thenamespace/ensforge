@@ -86,6 +86,8 @@ export type World = Entry & {
   readonly unreachableFromV2?: boolean | undefined;
   /** A deployment without ENSv2, as before its launch. */
   readonly v1Only?: boolean | undefined;
+  /** Further contracts, e.g. an L2 namespace's Ethereum resolver. */
+  readonly stubs?: readonly ContractStub[] | undefined;
   /** Contract accounts, by address: their Ownable `owner()` and the accounts `isContractNamer` approves. */
   readonly contracts?:
     | Readonly<Record<Address, { readonly owner: Address; readonly namers: readonly Address[] }>>
@@ -317,6 +319,7 @@ const stubs = (world: World): ContractStub[] => {
         },
       }),
     ),
+    ...(world.stubs ?? []),
     ...Arr.map([...new Set(deployedResolvers)], (address): ContractStub => ({
       address,
       abi: [

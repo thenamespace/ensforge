@@ -5,7 +5,7 @@ import type { Read } from "../../../Types.js";
 import * as Impl from "./effect.js";
 import type { NameState } from "./types.js";
 
-export type { NameKind, NameState, NameStatus } from "./types.js";
+export type { NameKind, NameNamespace, NameState, NameStatus } from "./types.js";
 
 /**
  * Reads the full state of a name across ENSv1 and ENSv2: where it lives, who owns it, its

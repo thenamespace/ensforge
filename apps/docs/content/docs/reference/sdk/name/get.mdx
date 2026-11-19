@@ -68,6 +68,8 @@ Resolves to `NameState`. The name's full state.
 | --- | --- | --- |
 | `name` | `string` | The normalized name. |
 | `kind` | `NameKind` |  |
+| `chainId` | `number` | Chain ID where the name lives: the L2's for an `l2` name, the ENS deployment's otherwise. |
+| `namespace` | `NameNamespace \| null` | The L2 namespace or off-chain provider that holds the name; `null` for names in ENS. |
 | `protocol` | `"v1" \| "v2"` | Protocol that controls the name. |
 | `status` | `NameStatus` |  |
 | `owner` | `Address \| null` | Who ultimately controls the name: the ENSv2 token holder; on ENSv1 the NameWrapper token holder, the `.eth` registrant, or otherwise the registry owner. |

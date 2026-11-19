@@ -236,12 +236,17 @@ function Actions.name.get(client: ClientBase<{}>, options: Pick<Options, 'signal
 const Actions.name.get.path: 'name.get'
 type Actions.name.get.ErrorType = InvalidInputError | CommonError
 type Actions.name.get.Options = Pick<Options, 'signal'> & (BlockOptions & { name: string; })
-type Actions.name.get.ReturnType = { readonly name: string; readonly kind: NameKind; readonly protocol: 'v1' | 'v2'; readonly status: NameStatus; readonly owner: `0x${string}` | null; readonly manager: `0x${string}` | null; readonly registrant: `0x${string}` | null; readonly registry: `0x${string}` | null; readonly subregistry: `0x${string}` | null; readonly resolver: `0x${string}` | null; readonly inheritedResolver: `0x${string}` | null; readonly expiry: bigint | null; readonly gracePeriodEnd: bigint | null; readonly tokenId: bigint | null; readonly resource: bigint | null; readonly ttl: bigint | null; readonly wrapped: boolean; readonly migrated: boolean; readonly reachable: boolean; readonly available: boolean; readonly renewable: boolean; }
+type Actions.name.get.ReturnType = { readonly name: string; readonly kind: NameKind; readonly chainId: number; readonly namespace: NameNamespace | null; readonly protocol: 'v1' | 'v2'; readonly status: NameStatus; readonly owner: `0x${string}` | null; readonly manager: `0x${string}` | null; readonly registrant: `0x${string}` | null; readonly registry: `0x${string}` | null; readonly subregistry: `0x${string}` | null; readonly resolver: `0x${string}` | null; readonly inheritedResolver: `0x${string}` | null; readonly expiry: bigint | null; readonly gracePeriodEnd: bigint | null; readonly tokenId: bigint | null; readonly resource: bigint | null; readonly ttl: bigint | null; readonly wrapped: boolean; readonly migrated: boolean; readonly reachable: boolean; readonly available: boolean; readonly renewable: boolean; }
 function Actions.name.getLabel(client: ClientBase<{}>, options: Pick<Options, 'signal'> & (BlockOptions & { labelhash: `0x${string}`; })) => Effect<ReturnType, ErrorType, never>
 const Actions.name.getLabel.path: 'name.getLabel'
 type Actions.name.getLabel.ErrorType = InvalidInputError | UnsupportedError | CommonError
 type Actions.name.getLabel.Options = Pick<Options, 'signal'> & (BlockOptions & { labelhash: `0x${string}`; })
 type Actions.name.getLabel.ReturnType = string | null
+function Actions.name.getNamespace(client: ClientBase<{}>, options: Pick<Options, 'signal'> & (BlockOptions & { name: string; })) => Effect<ReturnType, ErrorType, never>
+const Actions.name.getNamespace.path: 'name.getNamespace'
+type Actions.name.getNamespace.ErrorType = InvalidInputError | CommonError
+type Actions.name.getNamespace.Options = Pick<Options, 'signal'> & (BlockOptions & { name: string; })
+type Actions.name.getNamespace.ReturnType = NameNamespace | null
 function Actions.name.reclaim(client: ClientBase<{}>, options: reclaim.Options & Write.Options) => Effect<Result, ErrorType, never>
 const Actions.name.reclaim.prepare: ((client: ClientBase<{}>, options: Options & Pick<Options, 'account' | 'via'>) => Effect<Plan, ErrorType, never>) & { readonly path: string; }
 const Actions.name.reclaim.simulate: ((client: ClientBase<{}>, options: Options & Pick<Options, 'account' | 'via'>) => Effect<Simulation, ErrorType, never>) & { readonly path: string; }

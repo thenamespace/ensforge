@@ -1,15 +1,17 @@
+import type { Deployments } from "@ensforge/contracts";
 import type { Address, Hex } from "viem";
 
 import type { EventAction, EventType } from "../actions/event/types.js";
 
 /**
- * A naming system an indexer serves: ENS, or Basenames (`*.base.eth`, on Base).
+ * A naming system an indexer serves: ENS, or Basenames (`*.base.eth`, on Base). Its L2 namespace
+ * IDs are `Deployments.NamespaceId`s, as `name.get` reports them in `namespace.id`.
  *
  * @stability stable
  * @category indexer
  * @since 1.0.0
  */
-export type Namespace = "ens" | "basenames";
+export type Namespace = "ens" | Extract<Deployments.NamespaceId, "basenames">;
 
 /**
  * Which ENS protocol holds a name: `ensV0` is the pre-2020 registry, `ensV1` the current ENSv1

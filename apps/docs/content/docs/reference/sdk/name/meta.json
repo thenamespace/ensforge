@@ -3,6 +3,7 @@
   "pages": [
     "get",
     "get-label",
+    "get-namespace",
     "reclaim",
     "set-manager",
     "set-ttl",
