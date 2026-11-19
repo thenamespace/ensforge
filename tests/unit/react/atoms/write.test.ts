@@ -6,7 +6,6 @@ import { AsyncResult, AtomRegistry } from "effect/reactivity";
 import { ensAtom, ensWriteAtom } from "@ensforge/react/atoms";
 import { Ensforge, type Plan, type Write } from "@ensforge/sdk";
 import { scriptedTransport } from "@ensforge/test-harness";
-import { createPublicClient } from "viem";
 import { mainnet } from "viem/chains";
 
 import { client, fakeRead } from "../fixtures.js";
@@ -106,16 +105,17 @@ describe("ensWriteAtom", () => {
       const hash = `0x${Str.repeat(32)("01")}` as const;
       // The transaction is known, mined in block 16, but its receipt cannot be fetched.
       const ens = Ensforge.create({
-        publicClient: createPublicClient({
-          chain: mainnet,
-          pollingInterval: 5,
-          transport: scriptedTransport(({ method }) => {
+        chain: mainnet,
+        transports: {
+          [mainnet.id]: scriptedTransport(({ method }) => {
             if (method === "eth_blockNumber") return "0x10";
             if (method === "eth_getTransactionByHash")
               return { hash, blockNumber: "0x10", from: signer, nonce: "0x0" };
             throw Object.assign(new Error(`rpc down: ${method}`), { code: -32_000 });
           }).transport,
-        }),
+        },
+        publicRpc: false,
+        pollingInterval: 5,
       });
       const write = Object.assign(
         (_client: Ensforge.Client, _options: { name: string }): Promise<Write.Result> =>

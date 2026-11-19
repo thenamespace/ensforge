@@ -8,7 +8,7 @@ import type { PreparedRegistration } from "@ensforge/sdk/internal/internal/regis
 import { pendingCommitments } from "@ensforge/sdk/internal/internal/registration/steps";
 import { scriptedTransport } from "@ensforge/test-harness";
 import { contractScript } from "@ensforge/test-harness/contracts-eth-call";
-import { createPublicClient, keccak256, multicall3Abi, toHex } from "viem";
+import { keccak256, multicall3Abi, toHex } from "viem";
 import { mainnet } from "viem/chains";
 
 // ETHRegistrar accepts a commitment while `committedAt + minAge <= now < committedAt + maxAge`;
@@ -46,7 +46,9 @@ describe("registration.getCommitmentStatus", () => {
             }),
           );
           const ens = Ensforge.create({
-            publicClient: createPublicClient({ chain: mainnet, transport }),
+            chain: mainnet,
+            transports: { [mainnet.id]: transport },
+            publicRpc: false,
             batch: { multicall: false },
           });
 

@@ -8,7 +8,6 @@ import type { Gateways } from "@ensforge/sdk/internal/client/types";
 import { scriptedTransport } from "@ensforge/test-harness";
 import { contractScript } from "@ensforge/test-harness/contracts-eth-call";
 import {
-  createPublicClient,
   decodeFunctionData,
   encodeAbiParameters,
   encodeFunctionResult,
@@ -25,9 +24,9 @@ const textSelector = toFunctionSelector("text(bytes32,string)");
 // A name whose avatar record is `ipfs://<cid>`, without an ETH address.
 const clientWith = (gateways?: Gateways) =>
   Ensforge.create({
-    publicClient: createPublicClient({
-      chain: mainnet,
-      transport: scriptedTransport(
+    chain: mainnet,
+    transports: {
+      [mainnet.id]: scriptedTransport(
         contractScript({
           contracts: [
             {
@@ -59,7 +58,8 @@ const clientWith = (gateways?: Gateways) =>
           ],
         }),
       ).transport,
-    }),
+    },
+    publicRpc: false,
     batch: { multicall: false },
     ...(gateways === undefined ? {} : { gateways }),
   });

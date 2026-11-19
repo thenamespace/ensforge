@@ -13,7 +13,6 @@ import { factAddress, Fixtures } from "@ensforge/test-fixtures";
 import { expectFailure } from "@ensforge/test-harness";
 import {
   concatBytes,
-  createPublicClient,
   encodeAbiParameters,
   encodeErrorResult,
   encodeFunctionData,
@@ -427,10 +426,9 @@ describe("CCIP-Read", () => {
                 yield* Deferred.await(dropped).pipe(Effect.timeout("2 seconds"));
 
                 const impatient = Ensforge.create({
-                  publicClient: createPublicClient({
-                    chain: devnet.chain,
-                    transport: http(devnet.rpcUrl, { timeout: 500 }),
-                  }),
+                  chain: devnet.chain,
+                  transports: { [devnet.chain.id]: http(devnet.rpcUrl, { timeout: 500 }) },
+                  publicRpc: false,
                   deployment: devnet.deployments,
                 });
                 yield* expectFailure(Actions.resolver.resolve(impatient, { name, data }), {

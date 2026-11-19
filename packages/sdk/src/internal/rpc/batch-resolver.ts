@@ -67,7 +67,7 @@ const makeResolver = (client: Client, batchSize: number, wait: number) =>
         (group) =>
           Effect.tryPromise({
             try: () =>
-              multicall(client.publicClient, {
+              multicall(client.client(), {
                 contracts: Arr.map(group, ({ request }) => ({
                   address: request.address,
                   abi: request.abi,

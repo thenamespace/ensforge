@@ -5,7 +5,6 @@ import { Abis } from "@ensforge/contracts";
 import { Duration, Ensforge, ensActions } from "@ensforge/sdk";
 import { Actions } from "@ensforge/sdk/effect";
 import {
-  createPublicClient,
   createWalletClient,
   decodeFunctionResult,
   encodeFunctionData,
@@ -22,10 +21,12 @@ import { Chain, Devnet, dnsEncode, type DevnetInstance } from "../../src/index.t
 const ensforgeOn = (devnet: DevnetInstance, account?: Address) => {
   const transport = http(devnet.rpcUrl);
   return Ensforge.create({
-    publicClient: createPublicClient({ chain: devnet.chain, transport }),
+    chain: devnet.chain,
+    transports: { [devnet.chain.id]: transport },
+    publicRpc: false,
     ...(account === undefined
       ? {}
-      : { walletClient: createWalletClient({ chain: devnet.chain, transport, account }) }),
+      : { wallet: createWalletClient({ chain: devnet.chain, transport, account }) }),
     deployment: devnet.deployments,
   }).extend(ensActions());
 };

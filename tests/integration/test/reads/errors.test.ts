@@ -7,7 +7,7 @@ import { Actions } from "@ensforge/sdk/effect";
 import { Devnet } from "@ensforge/test-devnet";
 import { Fixtures } from "@ensforge/test-fixtures";
 import { expectFailure } from "@ensforge/test-harness";
-import { createPublicClient, http } from "viem";
+import { http } from "viem";
 
 import { Clients } from "../support/clients.ts";
 import { onProfile } from "../support/lane.ts";
@@ -130,10 +130,9 @@ describe("read errors", () => {
         Effect.gen(function* () {
           const devnet = yield* Devnet;
           const ens = Ensforge.create({
-            publicClient: createPublicClient({
-              chain: devnet.chain,
-              transport: http(devnet.rpcUrl),
-            }),
+            chain: devnet.chain,
+            transports: { [devnet.chain.id]: http(devnet.rpcUrl) },
+            publicRpc: false,
             deployment: {
               ...devnet.deployments,
               v2: { ...Deployments.mainnet.v2, chainId: devnet.chain.id },

@@ -4,7 +4,7 @@ import { Context, Effect, Layer, Schema, String as Str } from "effect";
 import { Ensforge, ensActions } from "@ensforge/sdk";
 import { bigname, goldsky, type Indexer } from "@ensforge/sdk/indexer";
 import { networkRpc, type Network } from "@ensforge/test-harness/networks";
-import { createPublicClient, http, type Address, type Hex } from "viem";
+import { http, type Address, type Hex } from "viem";
 import { getBlockNumber, getStorageAt } from "viem/actions";
 import { mainnet, sepolia } from "viem/chains";
 
@@ -28,19 +28,22 @@ const throttledFetch: typeof fetch = async (input, init) => {
 };
 /* oxlint-enable effecttsgo/async-function, effecttsgo/global-date, effecttsgo/new-promise, effecttsgo/global-timers, effecttsgo/global-fetch */
 
-const makeClient = (network: Network, url: string, indexer?: Indexer) =>
-  Ensforge.create({
-    publicClient: createPublicClient({
-      chain: network === "mainnet" ? mainnet : sepolia,
-      transport: http(url, {
+const makeClient = (network: Network, url: string, indexer?: Indexer) => {
+  const chain = network === "mainnet" ? mainnet : sepolia;
+  return Ensforge.create({
+    chain,
+    transports: {
+      [chain.id]: http(url, {
         fetchFn: throttledFetch,
         batch: { batchSize: 50, wait: 20 },
         retryCount: 5,
         retryDelay: 3_000,
       }),
-    }),
+    },
+    publicRpc: false,
     ...(indexer === undefined ? {} : { indexer }),
   }).extend(ensActions());
+};
 
 /** An ensforge client on a live network. */
 export type LiveClient = ReturnType<typeof makeClient>;
@@ -80,12 +83,12 @@ export class Live extends Context.Service<
           withBigname: makeClient(network, url, bigname()),
           withGoldsky: network === "mainnet" ? makeClient(network, url, goldsky()) : undefined,
           blockNumber: Effect.tryPromise({
-            try: () => getBlockNumber(reader.publicClient),
+            try: () => getBlockNumber(reader.client()),
             catch: (cause) => LiveError.make({ message: `block number: ${String(cause)}` }),
           }),
           storageAt: (address, slot) =>
             Effect.tryPromise({
-              try: () => getStorageAt(reader.publicClient, { address, slot }),
+              try: () => getStorageAt(reader.client(), { address, slot }),
               catch: (cause) =>
                 LiveError.make({ message: `storage of ${address}: ${String(cause)}` }),
             }).pipe(Effect.map((word): Hex => word ?? `0x${Str.repeat(64)("0")}`)),

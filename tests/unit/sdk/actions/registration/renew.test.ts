@@ -7,14 +7,7 @@ import { Actions, Duration } from "@ensforge/sdk/effect";
 import * as Ensforge from "@ensforge/sdk/internal/client/Ensforge";
 import { expectFailure, scriptedTransport } from "@ensforge/test-harness";
 import { contractScript } from "@ensforge/test-harness/contracts-eth-call";
-import {
-  createPublicClient,
-  decodeFunctionData,
-  isAddressEqual,
-  numberToHex,
-  zeroHash,
-  type Address,
-} from "viem";
+import { decodeFunctionData, isAddressEqual, numberToHex, zeroHash, type Address } from "viem";
 import { mainnet } from "viem/chains";
 
 import { other, signer } from "../world.js";
@@ -66,7 +59,9 @@ const clientFor = (renewal: Renewal) => {
   );
 
   return Ensforge.create({
-    publicClient: createPublicClient({ chain: mainnet, transport }),
+    chain: mainnet,
+    transports: { [mainnet.id]: transport },
+    publicRpc: false,
     account: signer,
     batch: { multicall: false },
   });

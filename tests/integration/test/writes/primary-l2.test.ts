@@ -40,7 +40,7 @@ describe("primaryName.set on an L2", () => {
           const clients = yield* Clients;
           const { alice, bob } = (yield* Devnet).accounts;
           const name = (yield* Fixtures).byId("records.v1").name;
-          const ens = clients.make({ account: alice, chains: op.chains(alice) });
+          const ens = clients.make({ account: alice, ...op.chains(alice) });
 
           yield* op.isolated(
             Effect.gen(function* () {
@@ -80,7 +80,7 @@ describe("primaryName.set on an L2", () => {
           const { alice, bob, carol, user } = devnet.accounts;
           const name = (yield* Fixtures).byId("records.v1").name;
           const owner = clients.make({ account: alice });
-          const relayer = clients.make({ account: carol, chains: op.chains(carol) });
+          const relayer = clients.make({ account: carol, ...op.chains(carol) });
           const wallet = devnet.contract("mock.smartContractWallet");
           const ownable = devnet.contract("mock.ownable");
           // The smart account signs as itself; its owner's key makes the ERC-1271 signature.
@@ -130,7 +130,7 @@ describe("primaryName.set on an L2", () => {
               yield* Actions.record.setSync(owner, { name, addresses: { [optimismCoin]: named } });
               // The L2 in `chains` only sets the claim's clock; the signer sends nothing there.
               const signed = yield* Actions.primaryName.signClaim(
-                clients.make({ ...signer, chains: op.chains(carol) }),
+                clients.make({ ...signer, ...op.chains(carol) }),
                 {
                   name,
                   chainIds: [op.chainId],
@@ -177,7 +177,7 @@ describe("primaryName.set on an L2", () => {
           const { alice, bob, carol } = (yield* Devnet).accounts;
           const name = (yield* Fixtures).byId("records.v1").name;
           const signer = clients.make({ account: bob });
-          const relayer = clients.make({ account: carol, chains: op.chains(carol) });
+          const relayer = clients.make({ account: carol, ...op.chains(carol) });
 
           yield* op.isolated(
             Effect.gen(function* () {
@@ -281,9 +281,9 @@ describe("primaryName.set on an L2", () => {
           const rejecting = clients.make({
             account: alice,
             storage,
-            chains: op.chains(alice, { reject: true }),
+            ...op.chains(alice, { reject: true }),
           });
-          const ens = clients.make({ account: alice, storage, chains: op.chains(alice) });
+          const ens = clients.make({ account: alice, storage, ...op.chains(alice) });
 
           yield* op.isolated(
             Effect.gen(function* () {

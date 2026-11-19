@@ -24,8 +24,9 @@ import type { Indexer } from "./Indexer.js";
  * ```ts
  * import { Ensforge } from "@ensforge/sdk"
  * import { goldsky, indexerActions } from "@ensforge/sdk/indexer"
+ * import { mainnet } from "viem/chains"
  *
- * const ens = Ensforge.create({ publicClient, indexer: goldsky() }).extend(indexerActions())
+ * const ens = Ensforge.create({ chain: mainnet, indexer: goldsky() }).extend(indexerActions())
  * const name = await ens.indexer.getName({ name: "jesse.base.eth" })
  * ```
  *

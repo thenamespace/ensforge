@@ -1,3 +1,6 @@
+import { custom } from "viem";
+
+import { ConfigError } from "../errors/classes/ConfigError.js";
 import { create } from "./create.js";
 import { stateOf } from "./state.js";
 import type { Client, Like, ViemClientLike } from "./types.js";
@@ -34,7 +37,20 @@ export const from = (client: Like): Client => {
   const existing = created.get(viemClient);
   if (existing !== undefined) return existing;
 
-  const ens = create({ publicClient: viemClient });
+  const { chain } = viemClient;
+  if (chain === undefined) {
+    throw new ConfigError({
+      code: "UNKNOWN_CHAIN",
+      hint: "Create the viem client with a `chain`.",
+    });
+  }
+  // Reads go through the client itself; a client with an account also signs.
+  const ens = create({
+    chain,
+    transports: { [chain.id]: custom({ request: viemClient.request }) },
+    pollingInterval: viemClient.pollingInterval,
+    ...(viemClient.account === undefined ? {} : { wallet: viemClient }),
+  });
   created.set(viemClient, ens);
   return ens;
 };

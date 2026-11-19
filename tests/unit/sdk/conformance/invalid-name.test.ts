@@ -105,7 +105,10 @@ describe("invalid names fail before any RPC", () => {
         const { transport, calls } = scriptedTransport(noRpc);
         // An account, so writes that need a signer reach their name check.
         const ens = Ensforge.create({
-          publicClient: createClient({ chain: mainnet, transport, account: address }),
+          chain: mainnet,
+          transports: { [mainnet.id]: transport },
+          publicRpc: false,
+          wallet: createClient({ chain: mainnet, transport, account: address }),
         });
         const options = { name: invalidName, names: invalidName, ...otherOptions[base] };
         assertDefined(effectFn);
@@ -132,7 +135,10 @@ describe("invalid names fail before any RPC", () => {
       Effect.gen(function* () {
         const { transport, calls } = scriptedTransport(noRpc);
         const ens = Ensforge.create({
-          publicClient: createClient({ chain: mainnet, transport, account: address }),
+          chain: mainnet,
+          transports: { [mainnet.id]: transport },
+          publicRpc: false,
+          wallet: createClient({ chain: mainnet, transport, account: address }),
         });
         const registration = EffectActions.registration;
 

@@ -17,12 +17,12 @@ export const viaContext = Effect.fnUntraced(function* (
 ): Effect.fn.Return<Write.Via.Context, AnyError> {
   const state = stateOf(client);
   const walletClient =
-    state === undefined ? undefined : yield* fromPromise(() => state.getWalletClient());
+    state === undefined ? undefined : yield* fromPromise(() => state.walletOn(client.chain.id));
   return {
     client,
     chainId: client.chain.id,
     account,
-    publicClient: client.publicClient,
+    publicClient: client.client(),
     walletClient,
   };
 });

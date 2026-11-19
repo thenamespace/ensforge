@@ -2,10 +2,8 @@ import { NodeServices } from "@effect/platform-node";
 import { Context, Effect, Layer, Array as Arr } from "effect";
 
 import { Abis, Deployments } from "@ensforge/contracts";
-import type { Ensforge } from "@ensforge/sdk";
 import { Anvil, Chain, ChainError, Devnet, devnetClient } from "@ensforge/test-devnet";
 import {
-  createPublicClient,
   createWalletClient,
   custom,
   decodeFunctionData,
@@ -23,6 +21,7 @@ import {
 } from "viem";
 import { foundry } from "viem/chains";
 
+import type { ClientOptions } from "./clients.ts";
 import { Gateways } from "./gateways.ts";
 
 /** OP Mainnet: its chain ID, and the ENSIP-11 coin type its primary names live under. */
@@ -59,11 +58,11 @@ export class Optimism extends Context.Service<
     readonly nameOf: (address: Address) => Effect.Effect<string, ChainError>;
     /** Moves the L2's clock forward by `seconds` and mines a block. */
     readonly passTime: (seconds: number) => Effect.Effect<void, ChainError>;
-    /** `chains` for `Ensforge.create`: the L2's clients, signing as `account`. */
+    /** Client options for the L2: its transport, and a wallet on it signing as `account`. */
     readonly chains: (
       account: Address,
       options?: L2WalletOptions,
-    ) => NonNullable<Ensforge.CreateOptions["chains"]>;
+    ) => Pick<ClientOptions, "transports" | "wallets">;
     /** Runs `effect` and then restores both chains. */
     readonly isolated: <A, E, R>(
       effect: Effect.Effect<A, E, R>,
@@ -152,9 +151,9 @@ export class Optimism extends Context.Service<
           Promise.reject(Object.assign(new Error("User rejected the request."), { code: 4001 })),
       });
       const chains = (account: Address, options: L2WalletOptions = {}) => ({
-        [chainId]: {
-          publicClient: createPublicClient({ chain: l2Chain, transport, pollingInterval: 50 }),
-          walletClient: createWalletClient({
+        transports: { [chainId]: transport },
+        wallets: {
+          [chainId]: createWalletClient({
             chain: l2Chain,
             account,
             pollingInterval: 50,

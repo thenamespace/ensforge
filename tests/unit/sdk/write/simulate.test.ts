@@ -6,15 +6,7 @@ import * as Ensforge from "@ensforge/sdk/internal/client/Ensforge";
 import { estimatePlan, simulatePlan } from "@ensforge/sdk/internal/internal/write/simulate";
 import { make as makePlan } from "@ensforge/sdk/internal/plan/make";
 import { expectFailure, scriptedTransport } from "@ensforge/test-harness";
-import {
-  createPublicClient,
-  encodeErrorResult,
-  getAddress,
-  isHex,
-  pad,
-  type Address,
-  type Hex,
-} from "viem";
+import { encodeErrorResult, getAddress, isHex, pad, type Address, type Hex } from "viem";
 import { mainnet } from "viem/chains";
 
 import { paramsOf, recordOf, requestsOf, simulatedCalls } from "./wallet";
@@ -70,7 +62,9 @@ const node = (reverts: Readonly<Record<Hex, Hex>> = {}, sequential = true) => {
     return undefined;
   });
   const client = Ensforge.create({
-    publicClient: createPublicClient({ chain: mainnet, transport }),
+    chain: mainnet,
+    transports: { [mainnet.id]: transport },
+    publicRpc: false,
   });
   return { client, calls };
 };

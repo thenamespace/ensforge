@@ -12,7 +12,6 @@ import {
   scriptedTransport,
   type ExpectedError,
 } from "@ensforge/test-harness";
-import { createPublicClient } from "viem";
 import { mainnet } from "viem/chains";
 
 // Write options that cannot be right fail with a typed error before any RPC request (`noRpc`).
@@ -23,10 +22,9 @@ const badAddress = "0x1234";
 
 const client = (deployment?: Deployments.Profile) =>
   Ensforge.create({
-    publicClient: createPublicClient({
-      chain: mainnet,
-      transport: scriptedTransport(noRpc).transport,
-    }),
+    chain: mainnet,
+    transports: { [mainnet.id]: scriptedTransport(noRpc).transport },
+    publicRpc: false,
     account,
     ...(deployment === undefined ? {} : { deployment }),
   });

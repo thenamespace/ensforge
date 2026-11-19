@@ -44,7 +44,7 @@ export const scanLogs = Effect.fnUntraced(function* (
         fromPromise(
           () =>
             // oxlint-disable-next-line typescript/no-unnecessary-type-assertion, typescript/no-unsafe-type-assertion -- viem's typed `request` has no `eth_getLogs` overload taking address arrays; tsc needs the assertions
-            client.publicClient.request({
+            client.client().request({
               method: "eth_getLogs",
               params: [
                 {

@@ -127,7 +127,7 @@ export const sendPlan = Effect.fnUntraced(function* (
         if (step.waitFor !== undefined && confirmed !== undefined) {
           emit({ step, status: "waiting" });
           const block = yield* fromPromise(() =>
-            getBlock(client.publicClient, { blockNumber: confirmed.blockNumber }),
+            getBlock(client.client(), { blockNumber: confirmed.blockNumber }),
           );
           yield* waitForChainTime(client, block.timestamp + step.waitFor.seconds);
         }
@@ -255,7 +255,7 @@ const recordedHashes = Effect.fnUntraced(function* (
     const known = yield* Effect.forEach(
       submitted,
       (hash) =>
-        fromPromise(() => getTransaction(client.publicClient, { hash })).pipe(
+        fromPromise(() => getTransaction(client.client(), { hash })).pipe(
           Effect.as(true),
           Effect.orElseSucceed(() => false),
         ),

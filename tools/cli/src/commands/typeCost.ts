@@ -6,9 +6,6 @@ import { CheckFailed, ToolFailed } from "../errors.ts";
 import { baseCompilerOptions, TypeScript } from "../services/TypeScript.ts";
 import { Workspace } from "../services/Workspace.ts";
 
-const viemClient = `import { createPublicClient, http } from "viem";
-import { mainnet } from "viem/chains";`;
-
 const reads = `export const state = await ens.name.get({ name: "nick.eth" });
 export const records = await ens.record.get({ name: "nick.eth", texts: ["url"], addresses: ["eth", "btc"] });
 export const primary = await ens.primaryName.get({ address: "0xb8c2C29ee19D8307cb7255e1Cd9CbDE883A267d5" });
@@ -17,27 +14,30 @@ export const sent = await ens.record.set({ name: "nick.eth", texts: { url: "http
 // What typical apps write, type-checked against the built `.d.ts` of the package that would
 // install them. Instantiations count what an app's type checker does for ensforge's types.
 export const scenarios: Readonly<Record<string, readonly [pkg: string, source: string]>> = {
-  "sdk: Ensforge client, viem client in a variable": [
+  "sdk: Ensforge client, public RPCs": [
     "sdk",
     `import { Ensforge, ensActions } from "@ensforge/sdk";
-${viemClient}
-const publicClient = createPublicClient({ chain: mainnet, transport: http() });
-const ens = Ensforge.create({ publicClient }).extend(ensActions());
+import { mainnet } from "viem/chains";
+const ens = Ensforge.create({ chain: mainnet }).extend(ensActions());
 ${reads}`,
   ],
-  "sdk: Ensforge client, viem client created inline": [
+  "sdk: Ensforge client, transports and a wallet created inline": [
     "sdk",
     `import { Ensforge, ensActions } from "@ensforge/sdk";
-${viemClient}
+import { createWalletClient, http } from "viem";
+import { base, mainnet } from "viem/chains";
 const ens = Ensforge.create({
-  publicClient: createPublicClient({ chain: mainnet, transport: http() }),
+  chain: mainnet,
+  transports: { [mainnet.id]: http("https://rpc.example"), [base.id]: http("https://base.example") },
+  wallet: createWalletClient({ chain: mainnet, transport: http() }),
 }).extend(ensActions());
 ${reads}`,
   ],
   "sdk: Actions with a viem client": [
     "sdk",
     `import { Actions } from "@ensforge/sdk";
-${viemClient}
+import { createPublicClient, http } from "viem";
+import { mainnet } from "viem/chains";
 const client = createPublicClient({ chain: mainnet, transport: http() });
 export const state = await Actions.name.get(client, { name: "nick.eth" });
 export const records = await Actions.record.get(client, { name: "nick.eth", texts: ["url"], addresses: ["eth"] });`,
@@ -46,8 +46,8 @@ export const records = await Actions.record.get(client, { name: "nick.eth", text
     "sdk",
     `import { Effect } from "effect";
 import { Actions, Ensforge } from "@ensforge/sdk/effect";
-${viemClient}
-const ens = Ensforge.create({ publicClient: createPublicClient({ chain: mainnet, transport: http() }) });
+import { mainnet } from "viem/chains";
+const ens = Ensforge.create({ chain: mainnet });
 export const program = Effect.gen(function* () {
   const state = yield* Actions.name.get(ens, { name: "nick.eth" });
   const records = yield* Actions.record.get(ens, { name: "nick.eth", texts: ["url"], addresses: ["eth"] });
@@ -63,9 +63,8 @@ export const useProfile = (name: string) => [useName({ name }), useAddress({ nam
     "hca",
     `import { hca, hcaActions } from "@ensforge/hca";
 import { Ensforge, ensActions } from "@ensforge/sdk";
-${viemClient}
-const publicClient = createPublicClient({ chain: mainnet, transport: http() });
-const ens = Ensforge.create({ publicClient }).extend(ensActions()).extend(hcaActions());
+import { mainnet } from "viem/chains";
+const ens = Ensforge.create({ chain: mainnet }).extend(ensActions()).extend(hcaActions());
 export const account = await ens.hca.get();
 export const migrated = await ens.migration.migrateSync({ names: ["alice.eth"], via: hca() });`,
   ],

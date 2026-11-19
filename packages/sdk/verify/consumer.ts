@@ -18,7 +18,7 @@ import { mainnet } from "viem/chains";
 import { createConfig } from "wagmi";
 
 const publicClient = createPublicClient({ chain: mainnet, transport: http() });
-const ens = Ensforge.create({ publicClient, simulate: true }).extend(ensActions());
+const ens = Ensforge.create({ chain: mainnet, simulate: true }).extend(ensActions());
 
 export const url: Promise<string | null> = ens.record.getText({ name: "nick.eth", key: "url" });
 export const standalone: Promise<string | null> = Actions.record.getText(publicClient, {
@@ -54,10 +54,10 @@ export const both = Actions.record.getText(publicClient, {
 });
 
 // @ts-expect-error only extended domains exist
-export const missing = Ensforge.create({ publicClient }).record;
+export const missing = Ensforge.create({ chain: mainnet }).record;
 
 const indexed = Ensforge.create({
-  publicClient,
+  chain: mainnet,
   indexer: fallback([bigname({ cache: true }), goldsky()]),
 }).extend(indexerActions());
 export const subnames: Promise<Page<Subname>> = indexed.indexer.getSubnames({ name: "ens.eth" });

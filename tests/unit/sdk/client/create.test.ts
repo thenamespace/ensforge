@@ -4,15 +4,9 @@ import { String as Str } from "effect";
 import { Deployments } from "@ensforge/contracts";
 import { Ensforge } from "@ensforge/sdk";
 import { expectThrow, noRpc, scriptedTransport } from "@ensforge/test-harness";
-import {
-  createClient,
-  createPublicClient,
-  createWalletClient,
-  defineChain,
-  type Chain,
-} from "viem";
+import { createWalletClient, defineChain, type Chain } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
-import { mainnet, sepolia } from "viem/chains";
+import { base, mainnet, sepolia } from "viem/chains";
 
 const unknownChain = defineChain({
   id: 31337,
@@ -29,10 +23,16 @@ const devnet = Deployments.define({
 
 const signer = privateKeyToAccount(`0x${Str.repeat(32)("11")}`);
 
-/** A viem public client that must not be asked anything. */
-const publicClient = (chain: Chain = mainnet) => {
+/** A client on `chain` whose transport must not be asked anything, and no public RPCs. */
+const clientOn = (chain: Chain = mainnet, options: Partial<Ensforge.CreateOptions> = {}) => {
   const { transport, calls } = scriptedTransport(noRpc);
-  return { client: createPublicClient({ chain, transport }), calls };
+  const ens = Ensforge.create({
+    chain,
+    transports: { [chain.id]: transport },
+    publicRpc: false,
+    ...options,
+  });
+  return { ens, calls };
 };
 
 describe("Ensforge.create deployment resolution", () => {
@@ -40,68 +40,41 @@ describe("Ensforge.create deployment resolution", () => {
     [mainnet, Deployments.mainnet],
     [sepolia, Deployments.sepolia],
   ] as const)("picks the built-in deployment of %s", (chain, deployment) => {
-    const { client, calls } = publicClient(chain);
-    const ens = Ensforge.create({ publicClient: client });
+    const { ens, calls } = clientOn(chain);
 
     assert.strictEqual(ens.deployment, deployment);
     assert.deepStrictEqual(ens.chain, { id: chain.id, name: chain.name });
     assert.lengthOf(calls, 0);
   });
 
-  it("fails with UNKNOWN_CHAIN for a chain without a built-in deployment", () => {
-    const { client } = publicClient(unknownChain);
-
-    const error = expectThrow(() => Ensforge.create({ publicClient: client }), {
+  it("fails with UNKNOWN_CHAIN and a hint for a chain without a built-in deployment", () => {
+    const error = expectThrow(() => clientOn(unknownChain), {
       _tag: "ConfigError",
       code: "UNKNOWN_CHAIN",
     });
 
     assert.nestedPropertyVal(error, "context.chainId", 31337);
-  });
-
-  it("fails with UNKNOWN_CHAIN and a hint when the client has no chain", () => {
-    const { transport } = scriptedTransport(noRpc);
-
-    const error = expectThrow(
-      () => Ensforge.create({ publicClient: createClient({ transport }) }),
-      {
-        _tag: "ConfigError",
-        code: "UNKNOWN_CHAIN",
-      },
-    );
-
     assert.match(Reflect.get(error, "hint") ?? "", /deployment/);
   });
 
   it("accepts a custom deployment for its chain", () => {
-    const { client } = publicClient(unknownChain);
-    const ens = Ensforge.create({ publicClient: client, deployment: devnet });
+    const { ens } = clientOn(unknownChain, { deployment: devnet });
 
     assert.strictEqual(ens.deployment, devnet);
     assert.deepStrictEqual(ens.chain, { id: 31337, name: "Devnet" });
   });
 
-  it("takes the chain from the deployment when the client has no chain", () => {
-    const { transport } = scriptedTransport(noRpc);
-    const ens = Ensforge.create({ publicClient: createClient({ transport }), deployment: devnet });
-
-    assert.deepStrictEqual(ens.chain, { id: 31337, name: "devnet" });
-  });
-
   it("rejects a deployment for another chain with INVALID_DEPLOYMENT", () => {
-    const { client } = publicClient(mainnet);
-
-    expectThrow(() => Ensforge.create({ publicClient: client, deployment: devnet }), {
+    expectThrow(() => clientOn(mainnet, { deployment: devnet }), {
       _tag: "ConfigError",
       code: "INVALID_DEPLOYMENT",
     });
   });
 
   it("rejects an invalid deployment with INVALID_DEPLOYMENT and keeps the cause", () => {
-    const { client } = publicClient(unknownChain);
     const broken = { name: "devnet", chainId: 31337 } as Deployments.Profile;
 
-    const error = expectThrow(() => Ensforge.create({ publicClient: client, deployment: broken }), {
+    const error = expectThrow(() => clientOn(unknownChain, { deployment: broken }), {
       _tag: "ConfigError",
       code: "INVALID_DEPLOYMENT",
     });
@@ -110,25 +83,68 @@ describe("Ensforge.create deployment resolution", () => {
   });
 });
 
-describe("Ensforge.create chains", () => {
-  it("rejects clients of another chain than their key with CHAIN_NOT_CONFIGURED", () => {
-    const error = expectThrow(
-      () =>
-        Ensforge.create({
-          publicClient: publicClient().client,
-          chains: { 10: { publicClient: publicClient(sepolia).client } },
-        }),
-      { _tag: "ConfigError", code: "CHAIN_NOT_CONFIGURED" },
-    );
+describe("Ensforge.create transports", () => {
+  it("reads the ENS chain through its transport, building the client once", () => {
+    const { ens } = clientOn(mainnet, { pollingInterval: 50 });
 
-    assert.nestedPropertyVal(error, "context.chainId", 10);
+    assert.strictEqual(ens.client(), ens.client(mainnet.id));
+    assert.strictEqual(ens.client().chain?.id, mainnet.id);
+    assert.strictEqual(ens.client().pollingInterval, 50);
+  });
+
+  it("works without configuration, on the ENS chain's public RPC", () => {
+    const ens = Ensforge.create({ chain: mainnet });
+
+    assert.strictEqual(ens.client().transport.url, mainnet.rpcUrls.default.http[0]);
+  });
+
+  // Names can live on an L2: ensforge reaches the chains it knows without a transport.
+  it("reaches a known L2 through its public RPC, or the transport given for it", () => {
+    const { transport } = scriptedTransport(noRpc);
+    const withPublicRpc = Ensforge.create({ chain: mainnet });
+    const withTransport = Ensforge.create({
+      chain: mainnet,
+      transports: { [base.id]: transport },
+    });
+
+    assert.strictEqual(withPublicRpc.client(base.id).transport.url, base.rpcUrls.default.http[0]);
+    assert.strictEqual(withPublicRpc.client(base.id).chain?.id, base.id);
+    assert.strictEqual(withTransport.client(base.id).transport.key, "custom");
+  });
+
+  it("fails with CHAIN_NOT_CONFIGURED for a chain it cannot reach", () => {
+    const { ens } = clientOn(mainnet);
+
+    const offline = expectThrow(() => ens.client(base.id), {
+      _tag: "ConfigError",
+      code: "CHAIN_NOT_CONFIGURED",
+    });
+    expectThrow(() => Ensforge.create({ chain: mainnet }).client(4663), {
+      _tag: "ConfigError",
+      code: "CHAIN_NOT_CONFIGURED",
+    });
+
+    assert.nestedPropertyVal(offline, "context.chainId", base.id);
+  });
+
+  it("fails with CHAIN_NOT_CONFIGURED when the ENS chain has no transport and no public RPC", () => {
+    expectThrow(() => Ensforge.create({ chain: mainnet, publicRpc: false }), {
+      _tag: "ConfigError",
+      code: "CHAIN_NOT_CONFIGURED",
+    });
+  });
+
+  it("reaches a chain it does not know through the transport given for it", () => {
+    const { transport } = scriptedTransport(noRpc);
+    const ens = Ensforge.create({ chain: mainnet, transports: { 4663: transport } });
+
+    assert.strictEqual(ens.client(4663).transport.key, "custom");
   });
 });
 
 describe("Ensforge.create config", () => {
   it("fills every default", () => {
-    const { client } = publicClient();
-    const { config } = Ensforge.create({ publicClient: client });
+    const { config } = clientOn().ens;
 
     assert.deepStrictEqual(config.ccipRead, { gatewayUrls: [] });
     assert.deepStrictEqual(config.batch, { multicall: { batchSize: 16_384, wait: 0 } });
@@ -144,11 +160,7 @@ describe("Ensforge.create config", () => {
   });
 
   it("fills the gateways a client does not set", () => {
-    const { client } = publicClient();
-    const { config } = Ensforge.create({
-      publicClient: client,
-      gateways: { ipfs: "https://gateway.example/" },
-    });
+    const { config } = clientOn(mainnet, { gateways: { ipfs: "https://gateway.example/" } }).ens;
 
     assert.deepInclude(config.gateways, {
       ipfs: "https://gateway.example",
@@ -163,13 +175,11 @@ describe("Ensforge.create config", () => {
     [{ multicall: { batchSize: 1024 } }, { multicall: { batchSize: 1024, wait: 0 } }],
     [{}, { multicall: { batchSize: 16_384, wait: 0 } }],
   ] as const)("resolves batch %j to %j", (batch, expected) => {
-    const { client } = publicClient();
-    assert.deepStrictEqual(Ensforge.create({ publicClient: client, batch }).config.batch, expected);
+    assert.deepStrictEqual(clientOn(mainnet, { batch }).ens.config.batch, expected);
   });
 
   it("freezes the client, its chain and its config", () => {
-    const { client } = publicClient();
-    const ens = Ensforge.create({ publicClient: client });
+    const { ens } = clientOn();
 
     assert.isTrue(Object.isFrozen(ens));
     assert.isTrue(Object.isFrozen(ens.chain));
@@ -181,41 +191,29 @@ describe("Ensforge.create config", () => {
 });
 
 describe("Ensforge.create account", () => {
-  it("takes the public client's account", () => {
-    const { transport } = scriptedTransport(noRpc);
-    const client = createClient({ chain: mainnet, transport, account: signer });
-
-    assert.strictEqual(Ensforge.create({ publicClient: client }).account, signer.address);
+  it("takes a local account's address", () => {
+    assert.strictEqual(clientOn(mainnet, { account: signer }).ens.account, signer.address);
   });
 
-  it("takes the wallet client's account", () => {
-    const { client } = publicClient();
+  it("takes the wallet's account", () => {
     const { transport } = scriptedTransport(noRpc);
-    const walletClient = createWalletClient({ chain: mainnet, transport, account: signer });
+    const wallet = createWalletClient({ chain: mainnet, transport, account: signer });
 
-    assert.strictEqual(
-      Ensforge.create({ publicClient: client, walletClient }).account,
-      signer.address,
-    );
+    assert.strictEqual(clientOn(mainnet, { wallet }).ens.account, signer.address);
   });
 
   it("prefers the account option over the wallet's account", () => {
-    const { client } = publicClient();
     const { transport } = scriptedTransport(noRpc);
-    const walletClient = createWalletClient({ chain: mainnet, transport, account: signer });
+    const wallet = createWalletClient({ chain: mainnet, transport, account: signer });
     const account = "0x225f137127d9067788314bc7fcc1f36746a3c3B5";
 
-    const ens = Ensforge.create({ publicClient: client, walletClient, account });
-
-    assert.strictEqual(ens.account, account);
+    assert.strictEqual(clientOn(mainnet, { wallet, account }).ens.account, account);
   });
 
-  it("does not read a wallet getter's account at creation", () => {
-    const { client } = publicClient();
+  it("does not ask a wallet getter for a wallet at creation", () => {
     let reads = 0;
-    const ens = Ensforge.create({
-      publicClient: client,
-      walletClient: () => {
+    const { ens } = clientOn(mainnet, {
+      wallet: () => {
         reads++;
         return undefined;
       },

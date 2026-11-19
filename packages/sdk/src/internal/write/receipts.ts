@@ -23,7 +23,7 @@ export const receiptsOf = Effect.fnUntraced(function* (
 
   for (const hash of hashes) {
     const receipt = yield* fromPromise(() =>
-      waitForTransactionReceipt(client.publicClient, {
+      waitForTransactionReceipt(client.client(), {
         hash,
         confirmations: options.confirmations ?? 1,
         ...(options.timeout === undefined ? {} : { timeout: options.timeout }),

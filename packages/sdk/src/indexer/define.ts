@@ -71,8 +71,9 @@ export type Adapter = {
  * ```ts
  * import { Ensforge } from "@ensforge/sdk"
  * import { bigname, fallback } from "@ensforge/sdk/indexer"
+ * import { mainnet } from "viem/chains"
  *
- * const ens = Ensforge.create({ publicClient, indexer: fallback([inHouse, bigname()]) })
+ * const ens = Ensforge.create({ chain: mainnet, indexer: fallback([inHouse, bigname()]) })
  * ```
  *
  * **Example** (A test double)

@@ -7,7 +7,6 @@ import type { Plan } from "@ensforge/sdk/internal/plan/Plan";
 import { scriptedTransport } from "@ensforge/test-harness";
 import { contractScript, type ContractStub } from "@ensforge/test-harness/contracts-eth-call";
 import {
-  createPublicClient,
   decodeFunctionData,
   encodeErrorResult,
   encodeFunctionResult,
@@ -365,7 +364,9 @@ export const clientFor = (world: World) => {
   );
   const { name, chainId, v1: deploymentV1 } = Deployments.mainnet;
   const ens = Ensforge.create({
-    publicClient: createPublicClient({ chain: mainnet, transport }),
+    chain: mainnet,
+    transports: { [mainnet.id]: transport },
+    publicRpc: false,
     account: signer,
     ...(world.v1Only === true ? { deployment: { name, chainId, v1: deploymentV1 } } : {}),
     // One eth_call per read keeps the script simple; batching is not under test here.

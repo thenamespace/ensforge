@@ -127,9 +127,11 @@ export const makeClient = (world: World = {}) => {
       ? createWalletClient({ chain: sepolia, transport, account: owner })
       : undefined;
   const client = Ensforge.create({
-    publicClient,
+    chain: sepolia,
+    transports: { [sepolia.id]: transport },
+    publicRpc: false,
     account: owner,
-    ...(walletClient === undefined ? {} : { walletClient }),
+    ...(walletClient === undefined ? {} : { wallet: walletClient }),
     batch: { multicall: false },
     ...(world.deployment === undefined ? {} : { deployment: world.deployment }),
     simulate: false,

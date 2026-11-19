@@ -6,7 +6,7 @@ import * as Ensforge from "@ensforge/sdk/internal/client/Ensforge";
 import { resolveAvatar } from "@ensforge/sdk/internal/internal/avatar/resolve";
 import { expectFailure, scriptedTransport } from "@ensforge/test-harness";
 import { contractScript } from "@ensforge/test-harness/contracts-eth-call";
-import { createPublicClient, getAddress, type Abi, type Address } from "viem";
+import { getAddress, type Abi, type Address } from "viem";
 import { mainnet } from "viem/chains";
 
 const token = getAddress("0x00000000000000000000000000000000000000ac");
@@ -16,9 +16,9 @@ const image = "https://example.com/token.png";
 
 // A token held by alice, as both an ERC-721 and an ERC-1155.
 const ens = Ensforge.create({
-  publicClient: createPublicClient({
-    chain: mainnet,
-    transport: scriptedTransport(
+  chain: mainnet,
+  transports: {
+    [mainnet.id]: scriptedTransport(
       contractScript({
         contracts: [
           {
@@ -34,7 +34,8 @@ const ens = Ensforge.create({
         ],
       }),
     ).transport,
-  }),
+  },
+  publicRpc: false,
   batch: { multicall: false },
 });
 

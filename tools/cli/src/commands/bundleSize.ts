@@ -21,7 +21,7 @@ import { Workspace } from "../services/Workspace.ts";
 export type Scope = "initial" | "lazy";
 
 const ensClient =
-  'import { Ensforge, ensActions } from "@ensforge/sdk"; export const make = (publicClient) => Ensforge.create({ publicClient }).extend(ensActions());';
+  'import { Ensforge, ensActions } from "@ensforge/sdk"; export const make = (chain) => Ensforge.create({ chain }).extend(ensActions());';
 
 // What typical apps import, bundled from the package that would install them (built `dist`,
 // published exports). viem and React are external: apps already ship them.
@@ -38,13 +38,13 @@ export const scenarios: Readonly<
   ],
   "sdk: record, name and primaryName actions": [
     "sdk",
-    'import { Ensforge, nameActions, primaryNameActions, recordActions } from "@ensforge/sdk"; export const make = (publicClient) => Ensforge.create({ publicClient }).extend(recordActions()).extend(nameActions()).extend(primaryNameActions());',
+    'import { Ensforge, nameActions, primaryNameActions, recordActions } from "@ensforge/sdk"; export const make = (chain) => Ensforge.create({ chain }).extend(recordActions()).extend(nameActions()).extend(primaryNameActions());',
   ],
   "sdk: ensActions()": ["sdk", ensClient],
   "sdk: ensActions(), loaded on demand": ["sdk", ensClient, "lazy"],
   "sdk: ensActions() + indexerActions()": [
     "sdk",
-    'import { Ensforge, ensActions } from "@ensforge/sdk"; import { bigname, indexerActions } from "@ensforge/sdk/indexer"; export const make = (publicClient) => Ensforge.create({ publicClient, indexer: bigname() }).extend(ensActions()).extend(indexerActions());',
+    'import { Ensforge, ensActions } from "@ensforge/sdk"; import { bigname, indexerActions } from "@ensforge/sdk/indexer"; export const make = (chain) => Ensforge.create({ chain, indexer: bigname() }).extend(ensActions()).extend(indexerActions());',
   ],
   "sdk/effect: Actions.record.get": [
     "sdk",

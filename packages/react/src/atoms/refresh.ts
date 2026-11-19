@@ -32,7 +32,7 @@ export const refreshAfterWrite = Effect.fnUntraced(function* (
     last === undefined
       ? Effect.undefined
       : Effect.tryPromise({
-          try: (signal) => waitForTransactionReceipt(client.publicClient, { hash: last, signal }),
+          try: (signal) => waitForTransactionReceipt(client.client(), { hash: last, signal }),
           catch: () => "receipt-failed" as const,
         }).pipe(
           Effect.map((receipt) => receipt.blockNumber),
@@ -45,7 +45,7 @@ export const refreshAfterWrite = Effect.fnUntraced(function* (
     const block =
       minedIn ??
       (yield* Effect.tryPromise({
-        try: () => client.publicClient.request({ method: "eth_blockNumber" }),
+        try: () => client.client().request({ method: "eth_blockNumber" }),
         catch: () => "block-number-failed" as const,
       }).pipe(Effect.map(BigInt)));
 

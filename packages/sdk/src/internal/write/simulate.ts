@@ -35,7 +35,7 @@ const simulateSequence = (
 ): Effect.Effect<readonly CallOutcome[], AnyError> =>
   fromPromise(
     () =>
-      simulateCalls(client.publicClient, {
+      simulateCalls(client.client(), {
         ...(account === undefined ? {} : { account }),
         calls: Arr.map(calls, (call) => ({ to: call.to, data: call.data, value: call.value })),
       }),
@@ -78,7 +78,7 @@ const simulateEach = (
     (call) =>
       fromPromise(
         () =>
-          viemCall(client.publicClient, {
+          viemCall(client.client(), {
             to: call.to,
             data: call.data,
             value: call.value,
@@ -184,7 +184,7 @@ export const estimatePlan = Effect.fnUntraced(function* (
       (call) =>
         fromPromise(
           () =>
-            viemEstimateGas(client.publicClient, {
+            viemEstimateGas(client.client(), {
               to: call.to,
               data: call.data,
               value: call.value,

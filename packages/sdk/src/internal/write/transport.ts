@@ -54,7 +54,7 @@ export const sendSequential = Effect.fnUntraced(function* (
     const context = { contract: call.to, account, chainId: client.chain.id };
     const estimate = yield* fromPromise(
       () =>
-        estimateGas(client.publicClient, {
+        estimateGas(client.client(), {
           account,
           to: call.to,
           data: call.data,
@@ -144,14 +144,12 @@ export const sendBatch = Effect.fnUntraced(function* (
 /** Waits until the latest block's timestamp reaches `timestamp` (chain time, not wall time). */
 export const waitForChainTime = Effect.fnUntraced(function* (client: Client, timestamp: bigint) {
   for (;;) {
-    const block = yield* fromPromise(() => getBlock(client.publicClient, { blockTag: "latest" }));
+    const block = yield* fromPromise(() => getBlock(client.client(), { blockTag: "latest" }));
     if (block.timestamp >= timestamp) return;
     // Chain time can run ahead of wall time (devnets, forks), so check again at least every
     // polling interval instead of sleeping the whole difference.
     const remaining = Duration.seconds(Math.max(1, Number(timestamp - block.timestamp)));
-    yield* Effect.sleep(
-      Duration.min(remaining, Duration.millis(client.publicClient.pollingInterval)),
-    );
+    yield* Effect.sleep(Duration.min(remaining, Duration.millis(client.client().pollingInterval)));
   }
 });
 

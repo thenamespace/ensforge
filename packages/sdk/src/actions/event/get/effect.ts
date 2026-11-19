@@ -23,7 +23,7 @@ export const get = Effect.fn("ensforge.event.get")(function* (
   yield* parseName(options.name);
   const toBlock =
     options.toBlock === undefined || options.toBlock === "latest"
-      ? yield* fromPromise(() => getBlockNumber(client.publicClient, { cacheTime: 0 }))
+      ? yield* fromPromise(() => getBlockNumber(client.client(), { cacheTime: 0 }))
       : options.toBlock;
   if (options.fromBlock < 0n || options.fromBlock > toBlock) {
     return yield* Effect.fail(

@@ -5,7 +5,6 @@ import * as Ensforge from "@ensforge/sdk/internal/client/Ensforge";
 import { estimatePlan } from "@ensforge/sdk/internal/internal/write/simulate";
 import { make as makePlan } from "@ensforge/sdk/internal/plan/make";
 import { scriptedTransport } from "@ensforge/test-harness";
-import { createPublicClient } from "viem";
 import { mainnet } from "viem/chains";
 
 describe("estimatePlan", () => {
@@ -16,7 +15,9 @@ describe("estimatePlan", () => {
         method === "eth_estimateGas" ? "0x5208" : undefined,
       );
       const client = Ensforge.create({
-        publicClient: createPublicClient({ chain: mainnet, transport }),
+        chain: mainnet,
+        transports: { [mainnet.id]: transport },
+        publicRpc: false,
       });
       const account = "0x00000000000000000000000000000000000a11ce";
       const target = "0x00000000000000000000000000000000000000c0";

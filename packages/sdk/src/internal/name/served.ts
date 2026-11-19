@@ -72,7 +72,7 @@ const probe = (
     (signal) =>
       // viem follows CCIP-Read unless the client disables it, so the probe uses a copy that does.
       call(
-        { ...client.publicClient, ccipRead: false },
+        { ...client.client(), ccipRead: false },
         {
           to: resolver,
           data: encodeFunctionData({

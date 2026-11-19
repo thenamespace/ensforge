@@ -43,7 +43,7 @@ const callUniversalResolver = (
     (signal) =>
       // viem reads `ccipRead` from the client, not from the call. The signal fires when the read
       // is interrupted (an aborted Promise call), and cancels the gateway requests in flight.
-      call(ccipRead === false ? { ...client.publicClient, ccipRead: false } : client.publicClient, {
+      call(ccipRead === false ? { ...client.client(), ccipRead: false } : client.client(), {
         to: universalResolver,
         data,
         requestOptions: { signal },

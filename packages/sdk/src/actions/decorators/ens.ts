@@ -361,8 +361,9 @@ export type EnsActions = ApprovalActions &
  *
  * ```ts
  * import { Ensforge, ensActions } from "@ensforge/sdk"
+ * import { mainnet } from "viem/chains"
  *
- * const ens = Ensforge.create({ publicClient, walletClient }).extend(ensActions())
+ * const ens = Ensforge.create({ chain: mainnet, wallet: walletClient }).extend(ensActions())
  * ```
  *
  * @stability stable

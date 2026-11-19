@@ -36,7 +36,7 @@ export type ViemWalletClient = ViemBaseClient<Transport, Chain | undefined, Acco
 /**
  * A viem client as ensforge's options and actions take it: any `PublicClient`, `WalletClient` or
  * `createClient` client fits. It leaves out viem's generic `extend` and typed `request`, so app
- * code that creates the client inline (`publicClient: createPublicClient(...)`) does not make the
+ * code that creates a client inline (`wallet: createWalletClient(...)`) does not make the
  * type checker infer viem's generics against them (about 120k type instantiations).
  *
  * @stability stable
@@ -138,8 +138,13 @@ export interface ClientBase<actions extends object = {}> {
   readonly account: Address | undefined;
   /** ENS deployments on this chain (addresses, capabilities, provenance). */
   readonly deployment: Deployments.Profile;
-  /** The viem client used for reads, as an escape hatch. */
-  readonly publicClient: ViemClient;
+  /**
+   * The viem client ensforge reads a chain with, as an escape hatch: the ENS chain's by default.
+   *
+   * @throws `Errors.ConfigError` (`CHAIN_NOT_CONFIGURED`) when the chain has no transport and no
+   * public RPC (`publicRpc: false`, or a chain ensforge does not know).
+   */
+  readonly client: (chainId?: number) => ViemClient;
   /** The configuration the client was created with. */
   readonly config: Config;
   /** Adds action groups; returns a new client. */
@@ -158,28 +163,6 @@ export interface ClientBase<actions extends object = {}> {
 export type Like = Client<object> | ViemClientLike;
 
 /**
- * viem clients for a chain other than the ENS chain, e.g. an L2 where an address sets its primary
- * name for that chain.
- *
- * @stability stable
- * @category client
- * @since 1.0.0
- */
-export type ChainClients = {
-  /** viem client for reads and simulation on the chain. */
-  readonly publicClient: ViemClientLike;
-  /**
-   * viem client for writes on the chain, or a getter for wallets that change (wagmi connectors).
-   *
-   * @default `publicClient` when it has an account
-   */
-  readonly walletClient?:
-    | ViemClientLike
-    | (() => ViemClientLike | undefined | Promise<ViemClientLike | undefined>)
-    | undefined;
-};
-
-/**
  * Options for `Ensforge.create`.
  *
  * @stability stable
@@ -187,30 +170,60 @@ export type ChainClients = {
  * @since 1.0.0
  */
 export type CreateOptions = {
-  /** viem client for reads. Its chain selects the deployment. */
-  publicClient: ViemClientLike;
+  /** The chain ENS lives on (`mainnet` or `sepolia` from `viem/chains`); it selects the deployment. */
+  chain: Chain;
   /**
-   * viem client for writes, or a getter for wallets that change (wagmi connectors).
+   * RPC transports by chain ID, the ENS chain included: `{ [mainnet.id]: http(url) }`. Reuse a
+   * viem client with `custom(client)`.
    *
-   * @default `publicClient` when it has an account
+   * @default each chain's public RPC (see `publicRpc`)
    */
-  walletClient?:
+  transports?: Readonly<Record<number, Transport>> | undefined;
+  /**
+   * Use a chain's public RPC when `transports` has none for it: `chain`'s own for the ENS chain,
+   * viem's for the chains L2 namespaces live on. Public RPCs are rate limited; pass `transports`
+   * in production. With `false`, reaching a chain without a transport fails with
+   * `CHAIN_NOT_CONFIGURED`.
+   *
+   * @default true
+   */
+  publicRpc?: boolean | undefined;
+  /**
+   * The wallet that signs writes on every chain, or a getter for wallets that connect later. A
+   * getter receives the chain the write is sent on and returns a wallet on it.
+   *
+   * @default none: writes need `account` set to a local account, or fail with `WALLET_NOT_CONFIGURED`
+   */
+  wallet?:
     | ViemClientLike
-    | (() => ViemClientLike | undefined | Promise<ViemClientLike | undefined>)
+    | ((chainId: number) => ViemClientLike | undefined | Promise<ViemClientLike | undefined>)
     | undefined;
   /**
-   * Clients for other chains, by chain ID: writes ENS makes there (an L2 primary name) run on
-   * them, and plans for them resume on them. The signer is the same account on every chain.
+   * Ask `wallet` to switch chains before a write on another chain (`wallet_switchEthereumChain`).
+   * With `false`, a wallet on another chain fails with `WalletError` (`CHAIN_MISMATCH`).
    *
-   * @default none; writes for another chain fail with `CHAIN_NOT_CONFIGURED`
+   * @default true
    */
-  chains?: Readonly<Record<number, ChainClients>> | undefined;
+  switchChain?: boolean | undefined;
   /**
-   * Default signer for writes.
+   * The signer. A local account (`privateKeyToAccount(key)`) signs on any chain itself, through
+   * that chain's transport; an address selects the wallet's account.
    *
-   * @default the wallet client's account
+   * @default the wallet's account
    */
   account?: Account | Address | undefined;
+  /**
+   * Polling interval of the clients ensforge builds, in milliseconds (receipts, block numbers).
+   *
+   * @default viem's (4 seconds)
+   */
+  pollingInterval?: number | undefined;
+  /**
+   * How long the clients ensforge builds cache block numbers, in milliseconds.
+   *
+   * @default `pollingInterval`
+   */
+  cacheTime?: number | undefined;
   /**
    * ENS deployments. Required for chains ensforge does not ship (devnets, forks, other chains).
    *

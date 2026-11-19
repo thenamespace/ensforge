@@ -1,8 +1,8 @@
 {
-  "sdk: Ensforge client, viem client in a variable": 54435,
-  "sdk: Ensforge client, viem client created inline": 54777,
+  "sdk: Ensforge client, public RPCs": 53531,
+  "sdk: Ensforge client, transports and a wallet created inline": 54698,
   "sdk: Actions with a viem client": 53905,
-  "sdk/effect: Actions in Effect.gen": 54839,
+  "sdk/effect: Actions in Effect.gen": 53580,
   "react: useName and useAddress": 44,
-  "hca: hcaActions() and hca()": 51834
+  "hca: hcaActions() and hca()": 50931
 }

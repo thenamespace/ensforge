@@ -4,10 +4,10 @@ import { ConfigError } from "../errors/classes/ConfigError.js";
 import { setState, type State } from "./state.js";
 import type { Client } from "./types.js";
 
-type Base = Omit<Client, "extend">;
+type Base = Omit<Client, "extend" | "client">;
 
 /** Top-level names an action group may not use. */
-const reserved = new Set(["chain", "account", "deployment", "publicClient", "config", "extend"]);
+const reserved = new Set(["chain", "account", "deployment", "client", "config", "extend"]);
 
 const mergeGroups = (
   current: Readonly<Record<string, object>>,
@@ -42,6 +42,15 @@ export const build = (
   const client = Object.freeze({
     ...base,
     ...groups,
+    client: (chainId: number = base.chain.id) => {
+      const viemClient = state.clientOf(chainId);
+      if (viemClient !== undefined) return viemClient;
+      throw new ConfigError({
+        code: "CHAIN_NOT_CONFIGURED",
+        context: { chainId },
+        hint: `Add chain ${chainId} to \`transports\` in Ensforge.create.`,
+      });
+    },
     extend: (decorator: (client: Client) => object) =>
       build(base, state, mergeGroups(groups, decorator(client))),
   }) as Client;

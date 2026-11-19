@@ -100,7 +100,7 @@ export const fetchTxtProof = Effect.fnUntraced(function* (
     functionName: "resolve",
     args: [dnsEncode(name), RecordType.txt],
   });
-  const ccipRead = client.publicClient.ccipRead;
+  const ccipRead = client.client().ccipRead;
   const request = (ccipRead === false ? undefined : ccipRead?.request) ?? ccipRequest;
 
   // The gateway answers any sender; there is no calling contract to name.
