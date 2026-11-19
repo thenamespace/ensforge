@@ -274,6 +274,7 @@ export const offchainProviders = {
     resolvers: [
       "0xA87361C4E58B619c390f469B9E6F27d759715125",
       "0x2291053F49Cd008306b92f84a61c6a1bC9B5CB65",
+      "0xd17347fA0a6eeC89a226c96a9ae354F785e94241",
     ],
     gateways: [
       "https://gateway.namestone.com/namestone-pg/o2",
