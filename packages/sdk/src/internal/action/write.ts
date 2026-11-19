@@ -89,6 +89,13 @@ export const write = <options, error extends EnsforgeError>(
   planner: Planner<options, error>,
   extra?: EnsforgeError.Context,
   explain?: Explainer<options>,
+  behaviour?: {
+    /**
+     * Routes (`via`) may send this write's plans on another chain than the client's. L2 reverse
+     * records take them; writes on names in L2 namespaces do not.
+     */
+    readonly routesOnOtherChains?: boolean;
+  },
 ) => {
   // The plan as the route (`via`) will send it (without a route, as planned), and the client of
   // the chain it runs on.
@@ -99,7 +106,7 @@ export const write = <options, error extends EnsforgeError>(
     const plan = yield* planner(client, options);
     const target = yield* chainClient(client, plan.chainId);
     // Routes are written for the ENS chain; a write on an L2 name goes to the wallet.
-    if (target !== client && options.via !== undefined) {
+    if (target !== client && options.via !== undefined && behaviour?.routesOnOtherChains !== true) {
       return yield* Effect.fail(
         new UnsupportedError({
           code: "UNSUPPORTED_ON_DEPLOYMENT",

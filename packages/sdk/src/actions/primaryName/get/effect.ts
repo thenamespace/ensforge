@@ -1,17 +1,21 @@
 import { Effect, String as Str } from "effect";
 
-import { Abis } from "@ensforge/contracts";
+import { Abis, Deployments } from "@ensforge/contracts";
 import { decodeFunctionResult, encodeFunctionData, type Address } from "viem";
 
 import type { Client } from "../../../client/types.js";
+import { GatewayError } from "../../../errors/classes/GatewayError.js";
 import { InvalidInputError } from "../../../errors/classes/InvalidInputError.js";
 import { NotFoundError } from "../../../errors/classes/NotFoundError.js";
 import type { AnyError } from "../../../errors/types.js";
 import * as Action from "../../../internal/action/index.js";
 import { normalizeName } from "../../../internal/name/normalize.js";
 import { requireAddress } from "../../../internal/name/write.js";
-import { primaryNameCoinType, reverseName } from "../../../internal/reverse/coin.js";
+import { defaultEvmCoinType } from "../../../internal/records/read-profiles.js";
+import { ethCoinType, primaryNameCoinType, reverseName } from "../../../internal/reverse/coin.js";
 import * as Rpc from "../../../internal/rpc/index.js";
+import { chainClient, hasChain } from "../../../internal/write/chain.js";
+import * as CoinType from "../../../utils/CoinType.js";
 import { namehash } from "../../../utils/Name.js";
 import type { get as Promises } from "./index.js";
 
@@ -38,6 +42,82 @@ const unverified = (
   );
 };
 
+/**
+ * The primary name through Ethereum's Universal Resolver, verified unless `verify: false`. When
+ * the proof of an `unreachable` L2's name fails, the error says how to read it on the L2.
+ */
+const throughEthereum = (
+  client: Client,
+  address: Address,
+  coinType: bigint,
+  options: Promises.Options,
+  unreachable: number | null,
+): Effect.Effect<string, AnyError> =>
+  (options.verify === false
+    ? unverified(client, address, coinType, options)
+    : Rpc.reverse(client, { ...options, address, coinType }).pipe(
+        Effect.map((reversed) => reversed.name),
+      )
+  ).pipe(
+    Effect.mapError((error) =>
+      error._tag === "GatewayError" && unreachable !== null
+        ? new GatewayError({
+            code: error.code,
+            shortMessage: error.shortMessage,
+            hint: `Ethereum could not prove chain ${unreachable}'s primary name; give the client a transport for chain ${unreachable} to read it there.`,
+            context: error.context,
+            cause: error,
+          })
+        : error,
+    ),
+  );
+
+/**
+ * The primary name, read where it lives: on the L2 itself for a chain with ENS's L2 reverse
+ * registrar that the client reaches (reads at a past block stay on Ethereum, whose block numbers
+ * they are), otherwise through Ethereum.
+ */
+const lookup = Effect.fnUntraced(function* (
+  client: Client,
+  address: Address,
+  coinType: bigint,
+  options: Promises.Options,
+): Effect.fn.Return<string, AnyError> {
+  const chainId =
+    coinType === ethCoinType || coinType === defaultEvmCoinType
+      ? null
+      : CoinType.toChainId(coinType);
+  const registrar =
+    chainId === null
+      ? undefined
+      : (Deployments.l2ReverseRegistrars as Readonly<Record<number, Address>>)[chainId];
+  if (
+    chainId === null ||
+    registrar === undefined ||
+    !hasChain(client, chainId) ||
+    options.blockNumber !== undefined
+  ) {
+    return yield* throughEthereum(
+      client,
+      address,
+      coinType,
+      options,
+      registrar !== undefined && chainId !== null && !hasChain(client, chainId) ? chainId : null,
+    );
+  }
+
+  const l2 = yield* chainClient(client, chainId);
+  const { reverseOnL2 } = yield* Effect.promise(
+    () => import("../../../internal/reverse/read-l2.js"),
+  );
+  return yield* reverseOnL2(client, l2, registrar, {
+    address,
+    coinType,
+    verify: options.verify !== false,
+    defaultName: unverified(client, address, defaultEvmCoinType, options),
+  });
+});
+
 /** @internal Implementation of `Actions.primaryName.get`. */
 export const get = Effect.fn("ensforge.primaryName.get")(
   function* (
@@ -48,13 +128,7 @@ export const get = Effect.fn("ensforge.primaryName.get")(
     const coinType = yield* primaryNameCoinType(options.coin);
     const strict = options.strict === true;
 
-    const name = yield* (
-      options.verify === false
-        ? unverified(client, address, coinType, options)
-        : Rpc.reverse(client, { ...options, address, coinType }).pipe(
-            Effect.map((reversed) => reversed.name),
-          )
-    ).pipe(
+    const name = yield* lookup(client, address, coinType, options).pipe(
       // No reverse resolver (or one that cannot answer `name`, or a forward resolver that cannot
       // answer `addr`) means no primary name; a failed forward check means no valid one.
       Effect.catchIf(
