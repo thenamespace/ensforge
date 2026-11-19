@@ -100,6 +100,12 @@ const ens = Ensforge.create({
 const name = await ens.indexer.getName({ name: "jesse.base.eth" });
 ```
 
+The indexer's `namespace` for a Basename is `"basenames"`, the same id `name.get` reports in `namespace.id`.
+
+### Names no indexer serves
+
+No indexer serves the other L2 namespaces. For a Linea Names (`*.linea.eth`) or Celonames (`*.celo.eth`) name, `indexer.getName`, `getRecords`, `getHistory` and `getSubnames` fail with [`INDEXER_UNSUPPORTED`](/docs/reference/errors/INDEXER_UNSUPPORTED) before asking the indexer. Read these names on-chain with `name.get` and `record.get`, which read them on their L2. Durin and Namespace names have no fixed parent name, so they are sent to the indexer as ENS names, which does not list them.
+
 ## Use more than one indexer
 
 `fallback` asks indexers in order. Each query goes to the first one that can answer it. The next one is asked when an indexer is unavailable, rate limiting, behind, or does not serve the query or namespace. A name that is not found is an answer, so it is not retried.
@@ -166,7 +172,7 @@ You did not add `indexerActions()` with `.extend(...)`. `ensActions()` does not 
 
 ### `INDEXER_UNSUPPORTED`
 
-The indexer does not serve the query or its namespace. Examples: the client's chain has no public host (pass `url`), the namespace is not indexed (bigname does not serve Basenames at the time of writing), or Goldsky was asked for a snapshot (`at`) or a `safe` or `finalized` read. Combine indexers with `fallback`. See [`INDEXER_UNSUPPORTED`](/docs/reference/errors/INDEXER_UNSUPPORTED).
+The indexer does not serve the query or its namespace. Examples: the client's chain has no public host (pass `url`), the namespace is not indexed (bigname does not serve Basenames at the time of writing), the name is in an L2 namespace no indexer serves (Linea Names, Celonames), or Goldsky was asked for a snapshot (`at`) or a `safe` or `finalized` read. Combine indexers with `fallback`. See [`INDEXER_UNSUPPORTED`](/docs/reference/errors/INDEXER_UNSUPPORTED).
 
 ### `INDEXER_UNAVAILABLE` or `INDEXER_RATE_LIMITED`
 
