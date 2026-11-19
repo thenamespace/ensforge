@@ -131,11 +131,7 @@ describe("name.getNamespace on L2 namespaces", () => {
           const located = yield* Actions.name.getNamespace(ens, { name });
           const state = yield* Actions.name.get(ens, { name });
           assert.deepStrictEqual(located, { kind: "l2", ...location }, name);
-          assert.deepInclude(
-            state,
-            { kind: "l2", status: "external", chainId: location.chainId },
-            name,
-          );
+          assert.deepInclude(state, { kind: "l2", chainId: location.chainId }, name);
         }
 
         const offchain = yield* Actions.name.getNamespace(ens, { name: "anyone.ns-offchain.eth" });

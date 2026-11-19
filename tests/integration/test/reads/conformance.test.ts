@@ -87,7 +87,9 @@ describe("read conformance", () => {
           ],
           { concurrency: 1 },
         );
-        assert.deepStrictEqual(budgets, [2, 2, 1, 3, 1]);
+        // `record.get` also asks `findResolver`, alongside its Universal Resolver call, whether the
+        // name lives on an L2.
+        assert.deepStrictEqual(budgets, [2, 2, 2, 3, 1]);
       }),
     );
 

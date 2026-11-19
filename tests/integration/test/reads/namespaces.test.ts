@@ -11,8 +11,8 @@ import { chainServices } from "../support/lane.ts";
 import { Namespaces, offchainAddress } from "../support/namespaces.ts";
 
 // L2 namespaces on Ethereum: each family's parent resolves its names through its gateway, which
-// answers from the L2's state. ensforge reads these names on their L2 itself in later phases; this
-// is the path every client already takes.
+// answers from the L2's state. ensforge reads names on their L2 when it reaches it; without an L2
+// transport, it takes this path, as every other client does.
 
 const services = Namespaces.layer.pipe(
   Layer.provideMerge(chainServices),
@@ -24,7 +24,8 @@ describe("L2 namespace names on Ethereum", () => {
     it.effect("resolve through each family's gateway from the L2's records", () =>
       Effect.gen(function* () {
         const namespaces = yield* Namespaces;
-        const ens = (yield* Clients).make(namespaces.clientOptions());
+        // No L2 transports: these names resolve through Ethereum and their gateways.
+        const ens = (yield* Clients).make({ deployment: namespaces.deployment });
         const names = [
           ...namespaces.fixtures["l2-base"].where({ kind: "l2-name", state: "active" }),
           ...namespaces.fixtures["l2-base"].where({ kind: "l2-name", state: "subname" }),
@@ -49,7 +50,8 @@ describe("L2 namespace names on Ethereum", () => {
       () =>
         Effect.gen(function* () {
           const namespaces = yield* Namespaces;
-          const ens = (yield* Clients).make(namespaces.clientOptions());
+          // No L2 transports: these names resolve through Ethereum and their gateways.
+          const ens = (yield* Clients).make({ deployment: namespaces.deployment });
           const address = yield* Actions.record.getAddress(ens, {
             name: "anyone.ns-offchain.eth",
           });
@@ -64,7 +66,8 @@ describe("L2 namespace names on Ethereum", () => {
         Effect.gen(function* () {
           const namespaces = yield* Namespaces;
           const gateways = yield* Gateways;
-          const ens = (yield* Clients).make(namespaces.clientOptions());
+          // No L2 transports: these names resolve through Ethereum and their gateways.
+          const ens = (yield* Clients).make({ deployment: namespaces.deployment });
           const name = namespaces.fixtures["l2-base"].byId("namespaces.basenames.active").name;
           const failing = yield* gateways.serve(() => ({ status: 500, body: "{}" }));
           const forged = yield* gateways.serveLookups(() =>
