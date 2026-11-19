@@ -12,7 +12,7 @@ export const getRecords = Effect.fn("ensforge.indexer.getRecords")(function* (
   client: Client,
   options: Promises.Options,
 ): Effect.fn.Return<Promises.ReturnType, AnyError> {
-  const input = yield* nameInput(options.name, options.namespace);
+  const input = yield* nameInput(client, options.name, options.namespace);
   const resolver =
     options.resolver === undefined
       ? undefined

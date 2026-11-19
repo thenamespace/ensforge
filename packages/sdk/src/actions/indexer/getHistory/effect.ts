@@ -14,7 +14,7 @@ export const getHistory = Effect.fn("ensforge.indexer.getHistory")(function* (
   options: Promises.Options,
 ): Effect.fn.Return<Promises.ReturnType, AnyError> {
   if (options.name !== undefined) {
-    const input = yield* nameInput(options.name, options.namespace);
+    const input = yield* nameInput(client, options.name, options.namespace);
     return yield* callIndexer(client, "getHistory", { ...queryOf(options), ...input });
   }
 

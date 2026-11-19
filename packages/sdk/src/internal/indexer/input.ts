@@ -3,6 +3,7 @@ import { Effect, Array as Arr, String as Str } from "effect";
 import { namehash, type Address } from "viem";
 
 import type { Client } from "../../client/types.js";
+import { IndexerError } from "../../errors/classes/IndexerError.js";
 import { InvalidInputError } from "../../errors/classes/InvalidInputError.js";
 import type { AnyError } from "../../errors/types.js";
 import type { Namespace } from "../../indexer/types.js";
@@ -36,22 +37,62 @@ export const queryOf = <options extends CallOptions>(
   return query;
 };
 
-/** A normalized name and its namespace (`namespace` wins over the inferred one). */
+// L2 namespaces with a fixed parent that no indexer serves; their names live only on their L2.
+const unindexed = [
+  ["linea", "Linea Names", "Linea"],
+  ["celonames", "Celonames", "Celo"],
+] as const;
+
+/**
+ * A normalized name and its namespace (`namespace` wins over the inferred one). A name in an L2
+ * namespace no indexer serves (Linea Names, Celonames) fails with `INDEXER_UNSUPPORTED` rather
+ * than reading as unknown to ENS's index; with `children`, so does its parent name, whose
+ * children live on the L2.
+ */
 export const nameInput = (
+  client: Client,
   name: string,
   namespace: Namespace | undefined,
+  children = false,
 ): Effect.Effect<{ readonly name: string; readonly namespace: Namespace }, AnyError> =>
   normalizeName(name).pipe(
-    Effect.flatMap((normalized) =>
-      normalized === ""
-        ? Effect.fail(
+    Effect.flatMap(
+      (
+        normalized,
+      ): Effect.Effect<{ readonly name: string; readonly namespace: Namespace }, AnyError> => {
+        if (normalized === "") {
+          return Effect.fail(
             new InvalidInputError({
               code: "INVALID_NAME",
               input: name,
               shortMessage: "The root name is not indexed; pass a name.",
             }),
-          )
-        : Effect.succeed({ name: normalized, namespace: namespace ?? namespaceOf(normalized) }),
+          );
+        }
+        if (namespace === undefined) {
+          const namespaces = client.deployment.namespaces ?? {};
+          for (const [id, family, chain] of unindexed) {
+            const parent = namespaces[id]?.parent;
+            if (
+              parent !== undefined &&
+              (Str.endsWith(`.${parent}`)(normalized) || (children && normalized === parent))
+            ) {
+              return Effect.fail(
+                new IndexerError({
+                  code: "INDEXER_UNSUPPORTED",
+                  shortMessage: `No indexer serves ${family}: ${normalized} lives on ${chain}.`,
+                  hint: "Read it on-chain with name.get and record.get.",
+                  context: { name: normalized },
+                }),
+              );
+            }
+          }
+        }
+        return Effect.succeed({
+          name: normalized,
+          namespace: namespace ?? namespaceOf(normalized),
+        });
+      },
     ),
   );
 

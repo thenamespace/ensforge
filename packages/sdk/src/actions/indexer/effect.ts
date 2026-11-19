@@ -138,7 +138,7 @@ export declare namespace getEvents {
  * @throws `Errors.InvalidInputError` (`INVALID_NAME`, `INVALID_ADDRESS`) for invalid input.
  * @throws `Errors.NotFoundError` (`INDEXER_NOT_FOUND`) when the indexer has no such name.
  * @throws `Errors.ConfigError` (`INDEXER_NOT_CONFIGURED`) when the client has no indexer.
- * @throws `Errors.IndexerError` (`INDEXER_UNSUPPORTED`) when the indexer does not serve the query or its namespace.
+ * @throws `Errors.IndexerError` (`INDEXER_UNSUPPORTED`) when the indexer does not serve the query or its namespace, or for a Linea Names or Celonames name, which no indexer serves.
  * @throws `Errors.IndexerError` (`INDEXER_UNAVAILABLE`, `INDEXER_RATE_LIMITED`, `INDEXER_BEHIND`, `INDEXER_REQUEST_REJECTED`, `INDEXER_RESPONSE_INVALID`) when the indexer is unavailable, rate limiting, behind, rejects the request or answers unexpectedly.
  *
  * @see {@link Actions.event.get} for recent events from the chain
@@ -171,6 +171,8 @@ export declare namespace getHistory {
  * **Details**
  *
  * - Basenames (`*.base.eth`) are read from the `basenames` namespace.
+ * - Linea Names and Celonames have no indexer: their names fail with `INDEXER_UNSUPPORTED`; read
+ *   them on-chain with `name.get`.
  * - `authority` says which protocol holds the name (`ensV0`, `ensV1` or `ensV2`).
  * - `source: "verified"` asks the indexer to read the answer on-chain (bigname).
  * - Returns `null` when the indexer has no such name, or throws with `strict: true`.
@@ -200,7 +202,7 @@ export declare namespace getHistory {
  * @throws `Errors.InvalidInputError` (`INVALID_NAME`) when the name does not normalize.
  * @throws `Errors.NotFoundError` (`INDEXER_NOT_FOUND`) with `strict: true` when the indexer has no such name.
  * @throws `Errors.ConfigError` (`INDEXER_NOT_CONFIGURED`) when the client has no indexer.
- * @throws `Errors.IndexerError` (`INDEXER_UNSUPPORTED`) when the indexer does not serve the query or its namespace.
+ * @throws `Errors.IndexerError` (`INDEXER_UNSUPPORTED`) when the indexer does not serve the query or its namespace, or for a Linea Names or Celonames name, which no indexer serves.
  * @throws `Errors.IndexerError` (`INDEXER_UNAVAILABLE`, `INDEXER_RATE_LIMITED`, `INDEXER_BEHIND`, `INDEXER_REQUEST_REJECTED`, `INDEXER_RESPONSE_INVALID`) when the indexer is unavailable, rate limiting, behind, rejects the request or answers unexpectedly.
  *
  * @see {@link Actions.name.get} for the on-chain state
@@ -545,7 +547,7 @@ export declare namespace getPrimaryName {
  * @throws `Errors.InvalidInputError` (`INVALID_NAME`, `INVALID_ADDRESS`) for invalid input.
  * @throws `Errors.NotFoundError` (`INDEXER_NOT_FOUND`) with `strict: true` when the indexer has no such name.
  * @throws `Errors.ConfigError` (`INDEXER_NOT_CONFIGURED`) when the client has no indexer.
- * @throws `Errors.IndexerError` (`INDEXER_UNSUPPORTED`) when the indexer does not serve the query or its namespace.
+ * @throws `Errors.IndexerError` (`INDEXER_UNSUPPORTED`) when the indexer does not serve the query or its namespace, or for a Linea Names or Celonames name, which no indexer serves.
  * @throws `Errors.IndexerError` (`INDEXER_UNAVAILABLE`, `INDEXER_RATE_LIMITED`, `INDEXER_BEHIND`, `INDEXER_REQUEST_REJECTED`, `INDEXER_RESPONSE_INVALID`) when the indexer is unavailable, rate limiting, behind, rejects the request or answers unexpectedly.
  *
  * @see {@link Actions.record.get} for the on-chain read
@@ -996,7 +998,7 @@ export declare namespace getStatus {
  * @throws `Errors.InvalidInputError` (`INVALID_NAME`) when the name does not normalize.
  * @throws `Errors.NotFoundError` (`INDEXER_NOT_FOUND`) when the indexer has no such name.
  * @throws `Errors.ConfigError` (`INDEXER_NOT_CONFIGURED`) when the client has no indexer.
- * @throws `Errors.IndexerError` (`INDEXER_UNSUPPORTED`) when the indexer does not serve the query or its namespace.
+ * @throws `Errors.IndexerError` (`INDEXER_UNSUPPORTED`) when the indexer does not serve the query or its namespace, or for a Linea Names or Celonames name, which no indexer serves.
  * @throws `Errors.IndexerError` (`INDEXER_UNAVAILABLE`, `INDEXER_RATE_LIMITED`, `INDEXER_BEHIND`, `INDEXER_REQUEST_REJECTED`, `INDEXER_RESPONSE_INVALID`) when the indexer is unavailable, rate limiting, behind, rejects the request or answers unexpectedly.
  *
  * @see `paginate` from `@ensforge/sdk/indexer` to walk every page

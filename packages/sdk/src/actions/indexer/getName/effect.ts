@@ -12,7 +12,7 @@ export const getName = Effect.fn("ensforge.indexer.getName")(function* (
   client: Client,
   options: Promises.Options,
 ): Effect.fn.Return<Promises.ReturnType, AnyError> {
-  const input = yield* nameInput(options.name, options.namespace);
+  const input = yield* nameInput(client, options.name, options.namespace);
   const result = yield* callIndexer(client, "getName", { ...queryOf(options), ...input });
 
   return yield* orNotFound(result, options.strict, input.name);
