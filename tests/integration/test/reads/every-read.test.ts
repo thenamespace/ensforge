@@ -48,6 +48,7 @@ describe("every read", () => {
           "migration.get": { name: nameOf("v2.reserved"), account: accounts.alice },
           "name.get": { name: nameOf("v1.wrapped") },
           "name.getLabel": { labelhash: labelhash("v2-plain") },
+          "name.getNamespace": { name: nameOf("v1.wrapped") },
           "permission.check": {
             name: nameOf("v2.roles"),
             operation: "transfer",
