@@ -73,6 +73,9 @@ const Abis.basenames.baseRegistrar: Abi
   function tokenURI(uint256) view returns (string)
   function transferFrom(address,address,uint256) payable
   function transferOwnership(address) payable
+const Abis.basenames.interfaces.baseRegistrar: Abi
+  function nameExpires(uint256) view returns (uint256)
+  function ownerOf(uint256) view returns (address)
 const Abis.basenames.l2Resolver: Abi
   constructor()
   error CantSetSelfAsDelegate()
@@ -146,6 +149,11 @@ const Abis.basenames.l2Resolver: Abi
   function text(bytes32,string) view returns (string)
   function transferOwnership(address)
   function zonehash(bytes32) view returns (bytes)
+const Abis.celonames.interfaces.registry: Abi
+  function expiries(bytes32) view returns (uint256)
+  function isApprovedForAll(address,address) view returns (bool)
+  function isRegistrar(address) view returns (bool)
+  function ownerOf(uint256) view returns (address)
 const Abis.celonames.registry: Abi
   constructor(string,string,string,bytes32,string)
   error ERC721IncorrectOwner(address,uint256,address)
@@ -246,6 +254,10 @@ const Abis.durin.interfaces.l1Resolver: Abi
 // @stability experimental
 const Abis.durin.interfaces.l2Registry: Abi
   function baseNode() view returns (bytes32)
+  function getApproved(uint256) view returns (address)
+  function owner(bytes32) view returns (address)
+  function owner() view returns (address)
+  function registrars(address) view returns (bool)
 // @stability experimental
 const Abis.durin.l1Resolver: Abi
   constructor(string,address,address)
@@ -550,6 +562,9 @@ const Abis.namespace.hybridResolverV2: Abi
   function text(bytes32,string) view returns (string)
   function transferOwnership(address)
   function updateRoute(uint256,string,address)
+const Abis.namespace.interfaces.ensNameRegistry: Abi
+  function expiries(bytes32) view returns (uint256)
+  function ownerOf(uint256) view returns (address)
 const Abis.namespace.interfaces.hybridResolver: Abi
   function configs(bytes32) view returns (bool,uint256)
 const Abis.namespace.interfaces.hybridResolverV2: Abi

@@ -6,3 +6,4 @@
 export { namespaceHybridResolverInterfaceAbi as hybridResolver } from "../namespaces/namespace/hybrid-resolver.js";
 export { namespaceHybridResolverV2InterfaceAbi as hybridResolverV2 } from "../namespaces/namespace/hybrid-resolver-v2.js";
 export { namespaceNodeRegistryResolverInterfaceAbi as nodeRegistryResolver } from "../namespaces/namespace/node-registry-resolver.js";
+export { namespaceEnsNameRegistryInterfaceAbi as ensNameRegistry } from "../namespaces/namespace/ens-name-registry.js";

@@ -73,6 +73,9 @@ const basenamesBaseRegistrarAbi: Abi
   function tokenURI(uint256) view returns (string)
   function transferFrom(address,address,uint256) payable
   function transferOwnership(address) payable
+const basenamesBaseRegistrarInterfaceAbi: Abi
+  function nameExpires(uint256) view returns (uint256)
+  function ownerOf(uint256) view returns (address)
 const basenamesL2ResolverAbi: Abi
   constructor()
   error CantSetSelfAsDelegate()
@@ -240,6 +243,11 @@ const celonamesRegistryAbi: Abi
   function totalSupply() view returns (uint256)
   function transferFrom(address,address,uint256)
   function transferOwnership(address)
+const celonamesRegistryInterfaceAbi: Abi
+  function expiries(bytes32) view returns (uint256)
+  function isApprovedForAll(address,address) view returns (bool)
+  function isRegistrar(address) view returns (bool)
+  function ownerOf(uint256) view returns (address)
 // @stability experimental
 const durinL1ResolverAbi: Abi
   constructor(string,address,address)
@@ -357,6 +365,10 @@ const durinL2RegistryAbi: Abi
 // @stability experimental
 const durinL2RegistryInterfaceAbi: Abi
   function baseNode() view returns (bytes32)
+  function getApproved(uint256) view returns (address)
+  function owner(bytes32) view returns (address)
+  function owner() view returns (address)
+  function registrars(address) view returns (bool)
 const namespaceEnsNameRegistryAbi: Abi
   constructor((uint8,uint8,string,string,string,address,bytes32,address))
   error ERC721IncorrectOwner(address,uint256,address)
@@ -405,6 +417,9 @@ const namespaceEnsNameRegistryAbi: Abi
   function tokenURI(uint256) view returns (string)
   function transferFrom(address,address,uint256)
   function transferOwnership(address)
+const namespaceEnsNameRegistryInterfaceAbi: Abi
+  function expiries(bytes32) view returns (uint256)
+  function ownerOf(uint256) view returns (address)
 const namespaceHybridResolverAbi: Abi
   constructor(address[],address,address,address)
   error ECDSAInvalidSignature()

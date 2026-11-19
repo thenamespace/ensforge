@@ -1469,7 +1469,7 @@ export const durinL2RegistryAbi = [
 ] as const;
 
 /**
- * The functions ensforge reads from Durin's L2Registry: the name a registry serves (`baseNode`).
+ * The functions ensforge reads from Durin's L2Registry: the name a registry serves, owners and who may write records.
  *
  * @stability experimental
  * @since 1.1.0
@@ -1484,6 +1484,76 @@ export const durinL2RegistryInterfaceAbi = [
         name: "",
         type: "bytes32",
         internalType: "bytes32",
+      },
+    ],
+    stateMutability: "view",
+  },
+  {
+    name: "getApproved",
+    type: "function",
+    inputs: [
+      {
+        name: "tokenId",
+        type: "uint256",
+        internalType: "uint256",
+      },
+    ],
+    outputs: [
+      {
+        name: "",
+        type: "address",
+        internalType: "address",
+      },
+    ],
+    stateMutability: "view",
+  },
+  {
+    name: "owner",
+    type: "function",
+    inputs: [
+      {
+        name: "node",
+        type: "bytes32",
+        internalType: "bytes32",
+      },
+    ],
+    outputs: [
+      {
+        name: "",
+        type: "address",
+        internalType: "address",
+      },
+    ],
+    stateMutability: "view",
+  },
+  {
+    name: "owner",
+    type: "function",
+    inputs: [],
+    outputs: [
+      {
+        name: "",
+        type: "address",
+        internalType: "address",
+      },
+    ],
+    stateMutability: "view",
+  },
+  {
+    name: "registrars",
+    type: "function",
+    inputs: [
+      {
+        name: "registrar",
+        type: "address",
+        internalType: "address",
+      },
+    ],
+    outputs: [
+      {
+        name: "approved",
+        type: "bool",
+        internalType: "bool",
       },
     ],
     stateMutability: "view",

@@ -1054,3 +1054,50 @@ export const basenamesBaseRegistrarAbi = [
     stateMutability: "payable",
   },
 ] as const;
+
+/**
+ * The functions ensforge reads from Basenames' BaseRegistrar: who holds a name and until when.
+ *
+ * @stability stable
+ * @since 1.1.0
+ */
+export const basenamesBaseRegistrarInterfaceAbi = [
+  {
+    name: "nameExpires",
+    type: "function",
+    inputs: [
+      {
+        name: "id",
+        type: "uint256",
+        internalType: "uint256",
+      },
+    ],
+    outputs: [
+      {
+        name: "expiry",
+        type: "uint256",
+        internalType: "uint256",
+      },
+    ],
+    stateMutability: "view",
+  },
+  {
+    name: "ownerOf",
+    type: "function",
+    inputs: [
+      {
+        name: "tokenId",
+        type: "uint256",
+        internalType: "uint256",
+      },
+    ],
+    outputs: [
+      {
+        name: "",
+        type: "address",
+        internalType: "address",
+      },
+    ],
+    stateMutability: "view",
+  },
+] as const;

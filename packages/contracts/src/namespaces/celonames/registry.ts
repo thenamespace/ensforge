@@ -1741,3 +1741,93 @@ export const celonamesRegistryAbi = [
     stateMutability: "nonpayable",
   },
 ] as const;
+
+/**
+ * The functions ensforge reads from the Celonames registry: who holds a name, until when, and who may write its records.
+ *
+ * @stability stable
+ * @since 1.1.0
+ */
+export const celonamesRegistryInterfaceAbi = [
+  {
+    name: "expiries",
+    type: "function",
+    inputs: [
+      {
+        name: "",
+        type: "bytes32",
+        internalType: "bytes32",
+      },
+    ],
+    outputs: [
+      {
+        name: "",
+        type: "uint256",
+        internalType: "uint256",
+      },
+    ],
+    stateMutability: "view",
+  },
+  {
+    name: "isApprovedForAll",
+    type: "function",
+    inputs: [
+      {
+        name: "owner",
+        type: "address",
+        internalType: "address",
+      },
+      {
+        name: "operator",
+        type: "address",
+        internalType: "address",
+      },
+    ],
+    outputs: [
+      {
+        name: "",
+        type: "bool",
+        internalType: "bool",
+      },
+    ],
+    stateMutability: "view",
+  },
+  {
+    name: "isRegistrar",
+    type: "function",
+    inputs: [
+      {
+        name: "account",
+        type: "address",
+        internalType: "address",
+      },
+    ],
+    outputs: [
+      {
+        name: "",
+        type: "bool",
+        internalType: "bool",
+      },
+    ],
+    stateMutability: "view",
+  },
+  {
+    name: "ownerOf",
+    type: "function",
+    inputs: [
+      {
+        name: "tokenId",
+        type: "uint256",
+        internalType: "uint256",
+      },
+    ],
+    outputs: [
+      {
+        name: "",
+        type: "address",
+        internalType: "address",
+      },
+    ],
+    stateMutability: "view",
+  },
+] as const;

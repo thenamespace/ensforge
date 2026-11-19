@@ -16,6 +16,18 @@ generated: true
 | `Abis.basenames.baseRegistrar` | 36 | 13 | 19 | Complete BaseRegistrar ABI: the ERC-721 registrar of `base.eth` and `basetest.eth` names (token ID: the labelhash). |
 | `Abis.basenames.l2Resolver` | 41 | 19 | 11 | Complete UpgradeableL2Resolver ABI: the resolver of Basenames on Base. |
 
+## `Abis.basenames.interfaces`
+
+| ABI | Functions | Events | Errors | Description |
+| --- | --- | --- | --- | --- |
+| `Abis.basenames.interfaces.baseRegistrar` | 2 | 0 | 0 | The functions ensforge reads from Basenames' BaseRegistrar: who holds a name and until when. |
+
+## `Abis.celonames.interfaces`
+
+| ABI | Functions | Events | Errors | Description |
+| --- | --- | --- | --- | --- |
+| `Abis.celonames.interfaces.registry` | 4 | 0 | 0 | The functions ensforge reads from the Celonames registry: who holds a name, until when, and who may write its records. |
+
 ## `Abis.celonames`
 
 | ABI | Functions | Events | Errors | Description |
@@ -27,7 +39,7 @@ generated: true
 | ABI | Functions | Events | Errors | Description |
 | --- | --- | --- | --- | --- |
 | `Abis.durin.interfaces.l1Resolver` | 1 | 0 | 0 | The functions ensforge reads from Durin's L1Resolver: where a second-level name's registry lives (`l2Registry`). |
-| `Abis.durin.interfaces.l2Registry` | 1 | 0 | 0 | The functions ensforge reads from Durin's L2Registry: the name a registry serves (`baseNode`). |
+| `Abis.durin.interfaces.l2Registry` | 5 | 0 | 0 | The functions ensforge reads from Durin's L2Registry: the name a registry serves, owners and who may write records. |
 
 ## `Abis.durin`
 
@@ -50,6 +62,7 @@ generated: true
 
 | ABI | Functions | Events | Errors | Description |
 | --- | --- | --- | --- | --- |
+| `Abis.namespace.interfaces.ensNameRegistry` | 2 | 0 | 0 | The functions ensforge reads from a Namespace registry: who holds a name and until when. |
 | `Abis.namespace.interfaces.hybridResolver` | 1 | 0 | 0 | The functions ensforge reads from Namespace's hybrid resolver: where a parent's names resolve (`configs`). |
 | `Abis.namespace.interfaces.hybridResolverV2` | 1 | 0 | 0 | The functions ensforge reads from Namespace's HybridResolverV2: the route a name resolves through (`findRoute`). |
 | `Abis.namespace.interfaces.nodeRegistryResolver` | 1 | 0 | 0 | The functions ensforge reads from Namespace's NodeRegistryResolver: a parent's registry (`nodeRegistries`). |

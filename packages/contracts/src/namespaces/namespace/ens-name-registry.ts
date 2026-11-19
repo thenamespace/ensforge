@@ -863,3 +863,50 @@ export const namespaceEnsNameRegistryAbi = [
     stateMutability: "nonpayable",
   },
 ] as const;
+
+/**
+ * The functions ensforge reads from a Namespace registry: who holds a name and until when.
+ *
+ * @stability stable
+ * @since 1.1.0
+ */
+export const namespaceEnsNameRegistryInterfaceAbi = [
+  {
+    name: "expiries",
+    type: "function",
+    inputs: [
+      {
+        name: "",
+        type: "bytes32",
+        internalType: "bytes32",
+      },
+    ],
+    outputs: [
+      {
+        name: "",
+        type: "uint256",
+        internalType: "uint256",
+      },
+    ],
+    stateMutability: "view",
+  },
+  {
+    name: "ownerOf",
+    type: "function",
+    inputs: [
+      {
+        name: "tokenId",
+        type: "uint256",
+        internalType: "uint256",
+      },
+    ],
+    outputs: [
+      {
+        name: "",
+        type: "address",
+        internalType: "address",
+      },
+    ],
+    stateMutability: "view",
+  },
+] as const;
