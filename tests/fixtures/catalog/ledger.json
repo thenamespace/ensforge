@@ -2365,7 +2365,9 @@
     "status": "pending"
   },
   "N15": {
-    "status": "pending"
+    "tests": [
+      "tests/unit/sdk/actions/name/getNamespace.test.ts > locates Namespace names from the nearest configured ancestor or the V2 route"
+    ]
   },
   "N16": {
     "tests": [
@@ -2390,6 +2392,8 @@
     "status": "pending"
   },
   "N22": {
-    "status": "pending"
+    "tests": [
+      "tests/unit/sdk/actions/name/getNamespace.test.ts > names the off-chain provider whose resolver serves a name"
+    ]
   }
 }
