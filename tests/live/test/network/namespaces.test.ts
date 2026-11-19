@@ -5,7 +5,7 @@ import { FetchHttpClient, HttpClient } from "effect/http";
 import { Abis, Deployments } from "@ensforge/contracts";
 import { Actions } from "@ensforge/sdk/effect";
 import { getAddress, namehash, parseAbi, type Address } from "viem";
-import { getCode, readContract } from "viem/actions";
+import { getCode, getStorageAt, readContract } from "viem/actions";
 
 import { Live, onLive } from "../support/live.ts";
 
@@ -147,6 +147,31 @@ describe("L2 namespaces", () => {
             );
             assert.strictEqual(implementation, durin[key].registryImplementation, `${chainId}`);
           }
+        }),
+      );
+
+      // The one upgradeable L2 contract ensforge calls: Basenames' resolver, an ERC-1967 proxy.
+      // A new implementation may change what it answers or authorizes: check Abis.basenames
+      // against it, then update the address here.
+      it.effect("Basenames' resolver still runs the implementation its ABI came from", () =>
+        Effect.gen(function* () {
+          const live = yield* Live;
+          const pinned = {
+            mainnet: "0xf74b949f2105178eEEd4Ef35a131715E967337ab",
+            testnet: "0xC014B9c02b0EDeA17255Ce019e6ab6c24E4AD073",
+          } as const;
+          const base = basenames[key];
+
+          const word = yield* live.read(
+            base.chainId,
+            "basenames resolver implementation",
+            (client) =>
+              getStorageAt(client, {
+                address: base.contracts.resolver,
+                slot: "0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc",
+              }),
+          );
+          assert.strictEqual(getAddress(`0x${Str.slice(-40)(word ?? "")}`), pinned[key]);
         }),
       );
     });
