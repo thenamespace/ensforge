@@ -28,6 +28,10 @@ const all: [string, Abi][] = [
   ...abisOf("v1", Abis.v1),
   ...abisOf("v2", Abis.v2),
   ...abisOf("shared", Abis.shared),
+  ...abisOf("basenames", Abis.basenames),
+  ...abisOf("durin", Abis.durin),
+  ...abisOf("celonames", Abis.celonames),
+  ...abisOf("namespace", Abis.namespace),
   ["hca.standaloneSingleOwnerHca", standaloneSingleOwnerHcaV2Abi],
   ["hca.standaloneHcaFactory", standaloneHcaFactoryV2Abi],
   ["hca.ownerAndSessionValidator", hcaOwnerAndSessionValidatorV2Abi],
@@ -144,6 +148,14 @@ describe("ABI coverage of SDK calls", () => {
       ["canUpgradeFrom", "getURI", "initialize", "register", "setParent", "upgradeToAndCall"],
     ],
     [Abis.v2.verifiableFactory, ["deployProxy", "proxyLogic"]],
+    [Abis.basenames.baseRegistrar, ["baseNode", "nameExpires", "ownerOf"]],
+    [Abis.durin.l1Resolver, ["l2Registry"]],
+    [Abis.durin.l2Registry, ["baseNode", "ownerOf"]],
+    [Abis.celonames.registry, ["expiries", "ownerOf"]],
+    [Abis.namespace.hybridResolver, ["configs"]],
+    [Abis.namespace.hybridResolverV2, ["findRoute"]],
+    [Abis.namespace.nodeRegistryResolver, ["nodeRegistries"]],
+    [Abis.namespace.ensNameRegistry, ["expiries", "ownerOf"]],
     [Abis.v2.defaultReverseRegistrarAdapter, ["setName", "setNameWithHCA"]],
     [Abis.v2.reverseRegistrarAdapter, ["claimWithHCA"]],
     [
@@ -180,5 +192,43 @@ describe("ABI coverage of SDK calls", () => {
       ),
     );
     for (const name of called) assert.isTrue(present.has(name), `missing ${name}`);
+  });
+});
+
+const selectorsOf = (abi: Abi) =>
+  new Set(
+    Arr.map(
+      Arr.filter(abi, (entry): entry is AbiFunction => entry.type === "function"),
+      toFunctionSelector,
+    ),
+  );
+
+// Record reads and writes on L2 names go through the shared resolver profiles, so every L2
+// resolver must answer their selectors. Linea's resolver is the ENSv1 public resolver.
+describe("L2 resolvers implement the standard resolver profiles", () => {
+  const resolverAbi: Abi = Abis.v1.publicResolver;
+  const setters = Arr.filter(
+    resolverAbi,
+    (entry): entry is AbiFunction =>
+      entry.type === "function" && ["setAddr", "setText", "setContenthash"].includes(entry.name),
+  );
+  const profile = [
+    ...Abis.shared.addrResolver,
+    ...Abis.shared.addressResolver,
+    ...Abis.shared.textResolver,
+    ...Abis.shared.contenthashResolver,
+    ...Abis.shared.multicallResolver,
+    ...setters,
+  ];
+
+  it.each([
+    ["basenames.l2Resolver", Abis.basenames.l2Resolver],
+    ["celonames.registry", Abis.celonames.registry],
+    ["durin.l2Registry", Abis.durin.l2Registry],
+    ["namespace.namePublicResolver", Abis.namespace.namePublicResolver],
+  ] as const)("%s", (_, abi) => {
+    const present = selectorsOf(abi);
+    for (const selector of selectorsOf(profile))
+      assert.isTrue(present.has(selector), `missing ${selector}`);
   });
 });

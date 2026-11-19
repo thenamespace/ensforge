@@ -1,8 +1,10 @@
 /**
- * Contract ABIs as `as const` arrays, grouped by protocol (`v1`, `v2`, `shared`).
+ * Contract ABIs as `as const` arrays, grouped by protocol (`v1`, `v2`, `shared`) and L2 namespace.
  *
  * @stability stable
  */
+// Stable apart from `Abis.durin`, experimental like Durin upstream.
+// oxlint-disable-next-line effecttsgo/api-stability-leak
 export * as Abis from "./Abis.js";
 
 /**

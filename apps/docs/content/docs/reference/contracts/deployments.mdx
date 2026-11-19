@@ -1,7 +1,7 @@
 ---
 title: "Deployments"
 description: "Look up ENS contract addresses per chain, the capability flags of each deployment and the Deployments helpers in @ensforge/contracts."
-keywords: ["Deployments","addresses","mainnet","sepolia","Capabilities"]
+keywords: ["Deployments","addresses","mainnet","sepolia","Capabilities","L2","Basenames","Durin"]
 generated: true
 ---
 
@@ -190,7 +190,177 @@ Deployments differ in some behaviours; ensforge reads these flags instead of the
 | 534352 | `0x0000000000D8e504002cC26E3Ec46D81971C1664` |
 | 11155420 | `0x00000BeEF055f7934784D6d81b6BC86665630dbA` |
 
+## L2 namespaces
+
+Names under these parents live on an L2: their owner, expiry and records are read there. Durin and Namespace serve any parent whose ENS resolver is theirs.
+
+### `basenames` (stable)
+
+From https://github.com/base/basenames.
+
+| Network | Field | Value |
+| --- | --- | --- |
+| mainnet | `parent` | `base.eth` |
+| mainnet | `ensChainId` | `1` |
+| mainnet | `chainId` | `8453` |
+| mainnet | `l1Resolver` | `0xde9049636F4a1dfE0a64d1bFe3155C0A14C54F31` |
+| mainnet | `gracePeriod` | `7776000` |
+| mainnet | `contracts.registry` | `0xB94704422c2a1E396835A571837Aa5AE53285a95` |
+| mainnet | `contracts.baseRegistrar` | `0x03c4738Ee98aE44591e1A4A4F3CaB6641d95DD9a` |
+| mainnet | `contracts.resolver` | `0x426fA03fB86E510d0Dd9F70335Cf102a98b10875` |
+| mainnet | `contracts.legacyResolver` | `0xC6d566A56A1aFf6508b41f6c90ff131615583BCD` |
+| testnet | `parent` | `basetest.eth` |
+| testnet | `ensChainId` | `11155111` |
+| testnet | `chainId` | `84532` |
+| testnet | `l1Resolver` | `0x084D10C07EfEecD9fFc73DEb38ecb72f9eEb65aB` |
+| testnet | `gracePeriod` | `7776000` |
+| testnet | `contracts.registry` | `0x1493b2567056c2181630115660963E13A8E32735` |
+| testnet | `contracts.baseRegistrar` | `0xA0c70ec36c010B55E3C434D6c6EbEEC50c705794` |
+| testnet | `contracts.resolver` | `0x85C87e548091f204C2d0350b39ce1874f02197c6` |
+| testnet | `contracts.legacyResolver` | `0x6533C94869D28fAA8dF77cc63f9e2b2D6Cf77eBA` |
+
+### `linea` (stable)
+
+From https://github.com/Consensys/linea-ens.
+
+| Network | Field | Value |
+| --- | --- | --- |
+| mainnet | `parent` | `linea.eth` |
+| mainnet | `ensChainId` | `1` |
+| mainnet | `chainId` | `59144` |
+| mainnet | `l1Resolver` | `0x1507cE9421232FDBd302f5EbE4590F8D77FeBBFF` |
+| mainnet | `gracePeriod` | `7776000` |
+| mainnet | `contracts.registry` | `0x50130b669B28C339991d8676FA73CF122a121267` |
+| mainnet | `contracts.baseRegistrar` | `0x6e84390dCc5195414eC91A8c56A5c91021B95704` |
+| mainnet | `contracts.nameWrapper` | `0xA53cca02F98D590819141Aa85C891e2Af713C223` |
+| mainnet | `contracts.resolver` | `0x86c5AED9F27837074612288610fB98ccC1733126` |
+| testnet | `parent` | `linea-sepolia.eth` |
+| testnet | `ensChainId` | `11155111` |
+| testnet | `chainId` | `59141` |
+| testnet | `l1Resolver` | `0xb4B2748f543265E7E0d471F5d1BDa81Da4e74624` |
+| testnet | `gracePeriod` | `7776000` |
+| testnet | `contracts.registry` | `0x5B2636F0f2137B4aE722C01dd5122D7d3e9541f7` |
+| testnet | `contracts.baseRegistrar` | `0x83475a84C0ea834F06c8e636A62631e7d2e07A44` |
+| testnet | `contracts.nameWrapper` | `0xF127De9E039a789806fEd4C6b1C0f3aFfeA9425e` |
+| testnet | `contracts.resolver` | `0xA2008916Ed2d7ED0Ecd747a8a5309267e42cf1f1` |
+
+### `celonames` (stable)
+
+From https://github.com/thenamespace/celo-names.
+
+| Network | Field | Value |
+| --- | --- | --- |
+| mainnet | `parent` | `celo.eth` |
+| mainnet | `ensChainId` | `1` |
+| mainnet | `chainId` | `42220` |
+| mainnet | `l1Resolver` | `0xC6FC912C5DACb6BF0a24Bad113493c900fEA254a` |
+| mainnet | `gracePeriod` | `0` |
+| mainnet | `contracts.registry` | `0x4d7912779679AFdC592CBd4674b32Fcb189395F7` |
+| testnet | `` | `null` |
+
+### `durin` (experimental)
+
+From https://github.com/ensdomains/durin.
+
+| Network | Field | Value |
+| --- | --- | --- |
+| mainnet | `ensChainId` | `1` |
+| mainnet | `l1Resolver` | `0x8A968aB9eb8C084FBC44c531058Fc9ef945c3D61` |
+| mainnet | `factory` | `0xDddddDdDDD8Aa1f237b4fa0669cb46892346d22d` |
+| mainnet | `registryImplementation` | `0xdeB09eB3111cB75d538216e8B8fC30047d75fb34` |
+| mainnet | `chainIds` | `[8453,10,42161,59144,534352,137,42220,480]` |
+| testnet | `ensChainId` | `11155111` |
+| testnet | `l1Resolver` | `0x8A968aB9eb8C084FBC44c531058Fc9ef945c3D61` |
+| testnet | `factory` | `0xDddddDdDDD8Aa1f237b4fa0669cb46892346d22d` |
+| testnet | `registryImplementation` | `0xdeB09eB3111cB75d538216e8B8fC30047d75fb34` |
+| testnet | `chainIds` | `[84532,11155420,421614,59141,534351,80002,11142220,4801]` |
+
+### `namespace` (stable)
+
+From https://github.com/thenamespace/contracts.
+
+| Network | Field | Value |
+| --- | --- | --- |
+| mainnet | `ensChainId` | `1` |
+| mainnet | `hybridResolvers.current` | `0xe5A0277018879679d18cCDb66B52BD06f7fE95FD` |
+| mainnet | `hybridResolvers.previous` | `0x0dcD506D1Be162E50A2b434028A9a148F2686444` |
+| mainnet | `hybridResolvers.v2` | `0x0A67542cbD8d71CB760d1EeB5a4b4a77ea35Ff9b` |
+| mainnet | `chains.10.nodeRegistryResolver` | `0x0798278Ff2c8aD096447B5C368Ce682118D87f63` |
+| mainnet | `chains.10.publicResolver` | `0xD8de4F5D7117BA37bA171ec9180Da798056f2CEd` |
+| mainnet | `chains.8453.nodeRegistryResolver` | `0x0D8e2772B4D8d58C8a66EEc5bf77c07934b84942` |
+| mainnet | `chains.8453.publicResolver` | `0x32d63B83BBA5a25f1f8aE308d7fd1F3c0b1abfA6` |
+| testnet | `ensChainId` | `11155111` |
+| testnet | `hybridResolvers.current` | `0xd5568c739f3A615C27e8926f1067B9a791893c3E` |
+| testnet | `hybridResolvers.previous` | `0x2F5E9E8B4495e4CDC5bC6C5FCBa93B8AaBDeF595` |
+| testnet | `hybridResolvers.v2` | `0x976a3E43b2a6706F52D9555931c68eb62D134ff7` |
+| testnet | `chains.84532.nodeRegistryResolver` | `0x71C79717Bb907DBd73b564DA0F591209005a6695` |
+| testnet | `chains.84532.publicResolver` | `0x91FE109266b2EEcf6018Cb1ECd957fF9caAd0657` |
+
+## Off-chain providers
+
+These providers keep names in their own database and serve their records through CCIP-Read, on Ethereum mainnet. The status is from the last check of their gateways.
+
+| Provider | Parents | Resolvers | Status |
+| --- | --- | --- | --- |
+| Coinbase | `cb.id` | `0x1934FC75aD10d7eEd51dc7A92773cAc96A06BE56` | active |
+| Uniswap | `uni.eth` | `0x532cbe81b2c043667753DD4B6a0EB4d5a461D162` | active |
+| World App | `world.id` | `0xB4E36A6C3403137d8fdaf4e91b91D1aBC2caF3Dd` | active |
+| Gemini | `gemini.eth` | `0x0002Df5Cd440F8899344Da52Be33c4A970803668` | active |
+| JustaName | `justan.id`, `yodl.eth`, `peanut.me` | `0x48De002d3c64e4cFD130A87A35ECD960c01954bc` | active |
+| Namespace | `calderans.eth`, `offchainsub.eth` | `0xe5A0277018879679d18cCDb66B52BD06f7fE95FD`, `0x0dcD506D1Be162E50A2b434028A9a148F2686444`, `0x0A67542cbD8d71CB760d1EeB5a4b4a77ea35Ff9b` | active |
+| Clave | `clv.eth` | `0x96317e8648866012885F56E0562EA1Ae1b66D81e` | active |
+| NameStone | `namestone.eth`, `slobo.eth` | `0xA87361C4E58B619c390f469B9E6F27d759715125`, `0x2291053F49Cd008306b92f84a61c6a1bC9B5CB65` | unavailable |
+| Lens | `lens.xyz` | `0x0cd35436774c7337a1f946653552C59249FeF519` | unavailable |
+| SPACE ID | `bnb.eth` | `0x6F45141CBC8Bc4e01e4B49a0ae407a94b68ceF4D` | unavailable |
+| WalletConnect | `wcn.id` | `0x5043E1865c9c508C4DfE02d9934391A4092BCD8e` | unavailable |
+
 ## API
+
+### `Deployments.BasenamesContracts`
+
+Basenames contracts on Base or Base Sepolia.
+
+```ts
+interface BasenamesContracts
+```
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `registry` | `Address` | ENS registry fork (`Abis.v1.ensRegistry`): owner and resolver of every node. |
+| `baseRegistrar` | `Address` | ERC-721 registrar of second-level names (`Abis.basenames.baseRegistrar`). |
+| `resolver` | `Address` | Resolver of new registrations (`Abis.basenames.l2Resolver`). |
+| `legacyResolver` | `Address` | Resolver of names registered before the upgradeable resolver. |
+
+### `Deployments.CelonamesContracts`
+
+Celonames contracts on Celo.
+
+```ts
+interface CelonamesContracts
+```
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `registry` | `Address` | Registry, ERC-721 and resolver of every name (`Abis.celonames.registry`). |
+
+### `Deployments.DurinDeployment`
+
+**Experimental**
+
+Durin on one ENS network. Any second-level name can point at a Durin registry on an L2: the
+Ethereum resolver's `l2Registry(node)` returns its chain and address.
+
+```ts
+interface DurinDeployment
+```
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `ensChainId` | `number` | Chain ID of the ENS deployment (1 or 11155111). |
+| `l1Resolver` | `Address` | Ethereum resolver of Durin parent names (`Abis.durin.l1Resolver`). |
+| `factory` | `Address` | Registry factory, at the same address on every chain in `chainIds`. |
+| `registryImplementation` | `Address` | Implementation behind every registry the factory deploys (`Abis.durin.l2Registry`). |
+| `chainIds` | `readonly number[]` | L2s the factory is deployed on. |
 
 ### `Deployments.InvalidProfileError`
 
@@ -205,6 +375,128 @@ class InvalidProfileError
 | `name` | `unknown` |  |
 | `_tag` | `unknown` |  |
 | `issues` | `readonly string[]` |  |
+
+### `Deployments.LineaContracts`
+
+Linea Names contracts on Linea or Linea Sepolia, an ENSv1 fork (`Abis.v1`). Every second-level
+name is wrapped.
+
+```ts
+interface LineaContracts
+```
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `registry` | `Address` | ENS registry fork. |
+| `baseRegistrar` | `Address` | ERC-721 registrar of second-level names. |
+| `nameWrapper` | `Address` | NameWrapper: owner and expiry of every name. |
+| `resolver` | `Address` | Public resolver, the only resolver the parent's Ethereum resolver reads. |
+
+### `Deployments.NamespaceChainContracts`
+
+Namespace's contracts on one L2.
+
+```ts
+interface NamespaceChainContracts
+```
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `nodeRegistryResolver` | `Address` | Maps a parent name to its registry (`Abis.namespace.nodeRegistryResolver`). |
+| `publicResolver` | `Address` | Shared resolver of every name on the chain (`Abis.namespace.namePublicResolver`). |
+
+### `Deployments.NamespaceDeployment`
+
+Namespace L2 subnames on one ENS network. Each parent name has its own registry
+(`Abis.namespace.ensNameRegistry`) on one L2.
+
+```ts
+interface NamespaceDeployment
+```
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `ensChainId` | `number` | Chain ID of the ENS deployment (1 or 11155111). |
+| `hybridResolvers` | `` { readonly current: Address; readonly previous: Address; /** Route-table resolver (`findRoute`), `Abis.namespace.hybridResolverV2`. */ readonly v2: Address; } `` | Ethereum resolvers of Namespace parent names. `configs(node)` names their L2. |
+| `chains` | `Readonly<Record<number, NamespaceChainContracts>>` | Contracts on each L2, by chain ID. |
+
+### `Deployments.NamespaceFamily`
+
+A namespace family: its deployments on each ENS network and where they come from.
+
+```ts
+interface NamespaceFamily<id extends NamespaceId, deployment>
+```
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `id` | `unknown` |  |
+| `stability` | `"stable" \| "experimental"` | `experimental` when upstream may still change the contracts. |
+| `repository` | `string` | Source repository of the contracts. |
+| `mainnet` | `deployment` |  |
+| `testnet` (optional) | `deployment` |  |
+
+### `Deployments.NamespaceId`
+
+Identifier of an L2 namespace family.
+
+```ts
+type NamespaceId = "basenames" | "linea" | "celonames" | "durin" | "namespace";
+```
+
+### `Deployments.NamespaceNetwork`
+
+The ENS network a namespace deployment belongs to: `mainnet` resolves through Ethereum mainnet,
+`testnet` through Sepolia.
+
+```ts
+type NamespaceNetwork = "mainnet" | "testnet";
+```
+
+### `Deployments.OffchainProvider`
+
+A provider that stores names in its own database and serves them through a signed CCIP-Read
+gateway. Its records can be read, not written, through ENS.
+
+```ts
+interface OffchainProvider
+```
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `id` | `string` |  |
+| `name` | `string` | Display name, e.g. `Coinbase`. |
+| `ensChainId` | `number` | Chain ID of the ENS deployment its resolvers are on. |
+| `parents` | `readonly string[]` | Parent names it serves, e.g. `cb.id`. Shared resolvers serve more. |
+| `resolvers` | `readonly Address[]` | Its resolvers on the ENS chain. |
+| `gateways` | `readonly string[]` | CCIP-Read gateway URLs its resolvers name. |
+| `status` | `OffchainProviderStatus` |  |
+
+### `Deployments.OffchainProviderStatus`
+
+Whether an off-chain provider's gateway answered when the table was last checked.
+
+```ts
+type OffchainProviderStatus = "active" | "unavailable";
+```
+
+### `Deployments.ParentNamespace`
+
+Names under one parent name that live on one L2: the parent, the chains involved and the
+contracts that answer for its names.
+
+```ts
+interface ParentNamespace<contracts>
+```
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `contracts` | `unknown` |  |
+| `parent` | `string` | The parent name, e.g. `base.eth`. |
+| `ensChainId` | `number` | Chain ID of the ENS deployment that resolves the parent name (1 or 11155111). |
+| `chainId` | `number` | Chain ID of the L2 that stores the names. |
+| `l1Resolver` | `Address` | Resolver of the parent name on the ENS chain. |
+| `gracePeriod` | `number` | Seconds after expiry during which only the last owner can renew. `0`: names have none. |
 
 ### `Deployments.Profile`
 
@@ -506,6 +798,67 @@ const chainIds = Deployments.list().map((profile) => profile.chainId)
 ### `Deployments.mainnet`
 
 ENSv1 and ENSv2 on Ethereum mainnet.
+
+### `Deployments.namespaceOf`
+
+Returns the L2 namespace whose ENS resolver is `resolver`, or `undefined` when no listed
+namespace uses it.
+
+```ts
+function namespaceOf(options: { readonly chainId: number; readonly resolver: string; }): { readonly id: NamespaceId; readonly network: NamespaceNetwork } | undefined
+```
+
+`resolver` is the resolver of the parent name on the ENS chain `chainId`. Matching the resolver,
+not the name, also finds every Durin and Namespace parent.
+
+```ts title="Finding the namespace of a parent name"
+import { Deployments } from "@ensforge/contracts"
+
+Deployments.namespaceOf({
+  chainId: 1,
+  resolver: "0xde9049636F4a1dfE0a64d1bFe3155C0A14C54F31",
+})
+// { id: "basenames", network: "mainnet" }
+```
+
+### `Deployments.namespaces`
+
+L2 namespaces by ID: names whose owner, expiry and records live on an L2, not on the ENS chain.
+
+`basenames`, `linea` and `celonames` each serve one parent name. `durin` and `namespace` serve
+any parent whose ENS resolver is theirs, and their resolver tells which L2 a parent uses. Durin
+is experimental upstream.
+
+```ts title="Reading the Basenames registrar"
+import { Deployments } from "@ensforge/contracts"
+
+const { chainId, contracts } = Deployments.namespaces.basenames.mainnet
+contracts.baseRegistrar
+```
+
+### `Deployments.offchainProvider`
+
+Returns the off-chain provider that owns `resolver` on the ENS chain `chainId`, or `undefined`.
+
+```ts
+function offchainProvider(options: { readonly chainId: number; readonly resolver: string; }): OffchainProvider | undefined
+```
+
+```ts title="Identifying cb.id's resolver"
+import { Deployments } from "@ensforge/contracts"
+
+const provider = Deployments.offchainProvider({
+  chainId: 1,
+  resolver: "0x1934FC75aD10d7eEd51dc7A92773cAc96A06BE56",
+})
+provider?.status // "active"
+```
+
+### `Deployments.offchainProviders`
+
+Off-chain providers on Ethereum mainnet, by ID, with the status of their gateways on
+2026-11-19. A name under one of their resolvers resolves through CCIP-Read; its owner and expiry
+are not on any chain.
 
 ### `Deployments.sepolia`
 

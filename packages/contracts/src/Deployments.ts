@@ -15,6 +15,19 @@
  */
 import { mainnetV1 } from "./deployments/mainnet-v1.js";
 import { mainnetV2 } from "./deployments/mainnet-v2.js";
+import type {
+  NamespaceId,
+  NamespaceNetwork,
+  OffchainProvider,
+} from "./deployments/namespace-types.js";
+import {
+  basenames,
+  celonames,
+  durin,
+  linea,
+  namespace,
+  offchainProviders,
+} from "./deployments/namespaces.js";
 import { sepoliaV1 } from "./deployments/sepolia-v1.js";
 import { sepoliaV2 } from "./deployments/sepolia-v2.js";
 import type {
@@ -33,6 +46,23 @@ import type {
 } from "./deployments/types.js";
 
 export { l2ReverseRegistrars } from "./deployments/l2-reverse-registrars.js";
+export { offchainProviders } from "./deployments/namespaces.js";
+export type {
+  NamespaceId,
+  NamespaceNetwork,
+  ParentNamespace,
+  BasenamesContracts,
+  LineaContracts,
+  CelonamesContracts,
+  // Durin is experimental upstream; the rest of the namespace table is stable.
+  // oxlint-disable-next-line effecttsgo/api-stability-leak
+  DurinDeployment,
+  NamespaceChainContracts,
+  NamespaceDeployment,
+  NamespaceFamily,
+  OffchainProviderStatus,
+  OffchainProvider,
+} from "./deployments/namespace-types.js";
 export type {
   Status,
   Provenance,
@@ -113,6 +143,109 @@ export const get = (options: { readonly chainId: number }): Profile | undefined 
  * @since 1.0.0
  */
 export const list = (): readonly Profile[] => builtIn;
+
+/**
+ * L2 namespaces by ID: names whose owner, expiry and records live on an L2, not on the ENS chain.
+ *
+ * **Details**
+ *
+ * `basenames`, `linea` and `celonames` each serve one parent name. `durin` and `namespace` serve
+ * any parent whose ENS resolver is theirs, and their resolver tells which L2 a parent uses. Durin
+ * is experimental upstream.
+ *
+ * **Example** (Reading the Basenames registrar)
+ *
+ * ```ts
+ * import { Deployments } from "@ensforge/contracts"
+ *
+ * const { chainId, contracts } = Deployments.namespaces.basenames.mainnet
+ * contracts.baseRegistrar
+ * ```
+ *
+ * @stability stable
+ * @since 1.1.0
+ */
+export const namespaces = { basenames, linea, celonames, durin, namespace } as const;
+
+/**
+ * Returns the L2 namespace whose ENS resolver is `resolver`, or `undefined` when no listed
+ * namespace uses it.
+ *
+ * **Details**
+ *
+ * `resolver` is the resolver of the parent name on the ENS chain `chainId`. Matching the resolver,
+ * not the name, also finds every Durin and Namespace parent.
+ *
+ * **Example** (Finding the namespace of a parent name)
+ *
+ * ```ts
+ * import { Deployments } from "@ensforge/contracts"
+ *
+ * Deployments.namespaceOf({
+ *   chainId: 1,
+ *   resolver: "0xde9049636F4a1dfE0a64d1bFe3155C0A14C54F31",
+ * })
+ * // { id: "basenames", network: "mainnet" }
+ * ```
+ *
+ * @stability stable
+ * @since 1.1.0
+ */
+export const namespaceOf = (options: {
+  readonly chainId: number;
+  readonly resolver: string;
+}): { readonly id: NamespaceId; readonly network: NamespaceNetwork } | undefined => {
+  const resolver = options.resolver.toLowerCase();
+
+  for (const family of Object.values(namespaces)) {
+    const networks = [
+      ["mainnet", family.mainnet],
+      ["testnet", "testnet" in family ? family.testnet : undefined],
+    ] as const;
+
+    for (const [network, deployment] of networks) {
+      if (deployment?.ensChainId !== options.chainId) continue;
+
+      const resolvers: readonly string[] =
+        "hybridResolvers" in deployment
+          ? Object.values(deployment.hybridResolvers)
+          : [deployment.l1Resolver];
+      if (resolvers.some((address) => address.toLowerCase() === resolver))
+        return { id: family.id, network };
+    }
+  }
+  return undefined;
+};
+
+/**
+ * Returns the off-chain provider that owns `resolver` on the ENS chain `chainId`, or `undefined`.
+ *
+ * **Example** (Identifying cb.id's resolver)
+ *
+ * ```ts
+ * import { Deployments } from "@ensforge/contracts"
+ *
+ * const provider = Deployments.offchainProvider({
+ *   chainId: 1,
+ *   resolver: "0x1934FC75aD10d7eEd51dc7A92773cAc96A06BE56",
+ * })
+ * provider?.status // "active"
+ * ```
+ *
+ * @stability stable
+ * @since 1.1.0
+ */
+export const offchainProvider = (options: {
+  readonly chainId: number;
+  readonly resolver: string;
+}): OffchainProvider | undefined => {
+  const resolver = options.resolver.toLowerCase();
+  return Object.values(offchainProviders).find(
+    (provider: OffchainProvider) =>
+      provider.ensChainId === options.chainId &&
+      provider.resolvers.some((address) => address.toLowerCase() === resolver),
+  );
+};
 
 /**
  * Thrown by {@link define} with every problem found in a profile.

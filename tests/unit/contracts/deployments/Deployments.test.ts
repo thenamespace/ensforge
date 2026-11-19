@@ -1,5 +1,5 @@
 import { assert, describe, it } from "@effect/vitest";
-import { Array as Arr, Record as Rec, String as Str } from "effect";
+import { Array as Arr, Predicate, Record as Rec, String as Str } from "effect";
 
 import { Deployments } from "@ensforge/contracts";
 import { getAddress, type Address } from "viem";
@@ -165,5 +165,106 @@ describe("Deployments.define", () => {
       "v1.contracts.registry must be a 0x-prefixed 20-byte address",
       "v2.status must be active, beta or legacy",
     ]);
+  });
+});
+
+// Every leaf of a nested record of constants.
+const flatValues = (value: unknown): readonly unknown[] =>
+  Predicate.isObject(value)
+    ? Arr.flatten(Arr.map(Rec.values<string, unknown>({ ...value }), flatValues))
+    : [value];
+
+describe("Deployments.namespaces", () => {
+  const families = Rec.toEntries(Deployments.namespaces);
+
+  it.each(families)("%s addresses are checksummed", (_, family) => {
+    const addresses = Arr.filter(
+      Arr.flatMap([family.mainnet, "testnet" in family ? family.testnet : {}], (deployment) =>
+        Arr.flatten(Arr.map(Rec.values<string, unknown>({ ...deployment }), flatValues)),
+      ),
+      (value): value is string =>
+        Predicate.isString(value) && Str.startsWith("0x")(value) && value.length === 42,
+    );
+    assert.isAbove(addresses.length, 0);
+    for (const address of addresses) assert.strictEqual(address, getAddress(address));
+  });
+
+  it.each(families)(
+    "%s resolves through mainnet, and its testnet through Sepolia",
+    (id, family) => {
+      assert.strictEqual(family.id, id);
+      assert.strictEqual(family.mainnet.ensChainId, 1);
+      if ("testnet" in family) assert.strictEqual(family.testnet.ensChainId, 11155111);
+    },
+  );
+
+  it("finds the namespace of a parent's ENS resolver", () => {
+    const { basenames, celonames, durin, linea, namespace } = Deployments.namespaces;
+
+    assert.deepStrictEqual(
+      Deployments.namespaceOf({ chainId: 1, resolver: basenames.mainnet.l1Resolver }),
+      { id: "basenames", network: "mainnet" },
+    );
+    assert.deepStrictEqual(
+      Deployments.namespaceOf({
+        chainId: 11155111,
+        resolver: Str.toLowerCase(linea.testnet.l1Resolver),
+      }),
+      { id: "linea", network: "testnet" },
+    );
+    assert.deepStrictEqual(
+      Deployments.namespaceOf({ chainId: 1, resolver: celonames.mainnet.l1Resolver }),
+      { id: "celonames", network: "mainnet" },
+    );
+    // Durin uses one resolver address on both networks: the ENS chain tells them apart.
+    assert.deepStrictEqual(
+      Deployments.namespaceOf({ chainId: 11155111, resolver: durin.mainnet.l1Resolver }),
+      { id: "durin", network: "testnet" },
+    );
+    assert.deepStrictEqual(
+      Deployments.namespaceOf({ chainId: 1, resolver: namespace.mainnet.hybridResolvers.v2 }),
+      { id: "namespace", network: "mainnet" },
+    );
+  });
+
+  it("returns undefined for other resolvers and chains", () => {
+    const resolver = Deployments.namespaces.basenames.mainnet.l1Resolver;
+
+    assert.isUndefined(Deployments.namespaceOf({ chainId: 11155111, resolver }));
+    assert.isUndefined(
+      Deployments.namespaceOf({
+        chainId: 1,
+        resolver: Deployments.mainnet.v1.contracts.publicResolver,
+      }),
+    );
+  });
+});
+
+describe("Deployments.offchainProviders", () => {
+  const providers = Rec.toEntries(Deployments.offchainProviders);
+
+  it.each(providers)("%s is well-formed", (id, provider) => {
+    assert.strictEqual(provider.id, id);
+    assert.isAbove(provider.resolvers.length, 0);
+    assert.isAbove(provider.gateways.length, 0);
+    for (const address of provider.resolvers) assert.strictEqual(address, getAddress(address));
+    for (const gateway of provider.gateways) assert.isTrue(Str.startsWith("https://")(gateway));
+  });
+
+  it("gives each resolver one provider", () => {
+    const resolvers = Arr.flatMap(Rec.values(Deployments.offchainProviders), (provider) =>
+      Arr.map(provider.resolvers, Str.toLowerCase),
+    );
+    assert.strictEqual(new Set(resolvers).size, resolvers.length);
+  });
+
+  it("finds the provider of a resolver on its ENS chain", () => {
+    const resolver = "0x1934fc75ad10d7eed51dc7a92773cac96a06be56";
+
+    assert.strictEqual(
+      Deployments.offchainProvider({ chainId: 1, resolver }),
+      Deployments.offchainProviders.coinbase,
+    );
+    assert.isUndefined(Deployments.offchainProvider({ chainId: 11155111, resolver }));
   });
 });

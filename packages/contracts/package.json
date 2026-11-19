@@ -4,12 +4,14 @@
   "description": "ENS contract ABIs, deployment addresses and constants for viem",
   "keywords": [
     "abi",
+    "basenames",
     "contracts",
     "deployments",
     "ens",
     "ensv2",
     "ethereum",
     "ethereum-name-service",
+    "l2",
     "names",
     "resolver",
     "typescript",
@@ -53,6 +55,10 @@
       "workspace-source": "./src/v2/experimental/hca/index.ts",
       "default": "./dist/v2/experimental/hca/index.js"
     },
+    "./namespaces": {
+      "workspace-source": "./src/namespaces/index.ts",
+      "default": "./dist/namespaces/index.js"
+    },
     "./internal/*": {
       "workspace-source": "./src/*.ts"
     },
@@ -68,6 +74,7 @@
       "./v1": "./dist/v1/index.js",
       "./v2": "./dist/v2/index.js",
       "./v2/experimental/hca": "./dist/v2/experimental/hca/index.js",
+      "./namespaces": "./dist/namespaces/index.js",
       "./package.json": "./package.json"
     },
     "access": "public",
@@ -98,7 +105,8 @@
       "./v1",
       "./v2",
       "./shared",
-      "./v2/experimental/hca"
+      "./v2/experimental/hca",
+      "./namespaces"
     ]
   }
 }

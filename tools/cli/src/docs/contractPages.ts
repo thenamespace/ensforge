@@ -49,7 +49,7 @@ export const abisPage = (
       keywords: ["Abis", "ABI", "viem"],
     },
     [
-      "`Abis` holds every ENS contract ABI as a `const` array, so viem infers function names, arguments and results. ENSv1 ABIs are in `Abis.v1`, ENSv2 ABIs in `Abis.v2`, and resolver profiles, token standards, errors and events shared by both in `Abis.shared`. See [Use ABIs with viem](/docs/contracts/use-abis-with-viem).",
+      "`Abis` holds every ENS contract ABI as a `const` array, so viem infers function names, arguments and results. ENSv1 ABIs are in `Abis.v1`, ENSv2 ABIs in `Abis.v2`, and resolver profiles, token standards, errors and events shared by both in `Abis.shared`. The contracts of L2 namespaces are in `Abis.basenames`, `Abis.durin`, `Abis.celonames` and `Abis.namespace`. See [Use ABIs with viem](/docs/contracts/use-abis-with-viem).",
       ...Arr.map(Rec.toEntries(groups), ([group, entries]) =>
         Arr.join(
           [
@@ -114,6 +114,8 @@ export const constantsPage = (
 export const deploymentsPage = (
   deployments: readonly unknown[],
   l2ReverseRegistrars: Readonly<Record<string, unknown>>,
+  namespaces: Readonly<Record<string, unknown>>,
+  offchainProviders: Readonly<Record<string, unknown>>,
   docs: ReadonlyMap<string, ExportDoc>,
   resolve: LinkResolver,
 ): string => {
@@ -165,6 +167,49 @@ export const deploymentsPage = (
     ]),
   );
 
+  const namespaceSections = Arr.map(Rec.toEntries(namespaces), ([id, value]) => {
+    const family = recordOf(value);
+    return Arr.join(
+      [
+        `### ${code(id)} (${shown(family["stability"])})`,
+        `From ${shown(family["repository"])}.`,
+        table(
+          ["Network", "Field", "Value"],
+          Arr.flatMap(["mainnet", "testnet"], (network) =>
+            Arr.map(leaves("", family[network]), ([field, constant]) => [
+              network,
+              code(field),
+              code(shown(constant)),
+            ]),
+          ),
+        ),
+      ],
+      "\n\n",
+    );
+  });
+
+  const providers = table(
+    ["Provider", "Parents", "Resolvers", "Status"],
+    Arr.map(Rec.values(offchainProviders), (value) => {
+      const provider = recordOf(value);
+      const list = (key: string) => {
+        const items = provider[key];
+        return Arr.isArray(items)
+          ? Arr.join(
+              Arr.map(items, (item) => code(shown(item))),
+              ", ",
+            )
+          : "";
+      };
+      return [
+        shown(provider["name"]),
+        list("parents"),
+        list("resolvers"),
+        shown(provider["status"]),
+      ];
+    }),
+  );
+
   const api = Arr.filter(
     [...docs.values()],
     (entry) =>
@@ -176,7 +221,16 @@ export const deploymentsPage = (
       title: "Deployments",
       description:
         "Look up ENS contract addresses per chain, the capability flags of each deployment and the Deployments helpers in @ensforge/contracts.",
-      keywords: ["Deployments", "addresses", "mainnet", "sepolia", "Capabilities"],
+      keywords: [
+        "Deployments",
+        "addresses",
+        "mainnet",
+        "sepolia",
+        "Capabilities",
+        "L2",
+        "Basenames",
+        "Durin",
+      ],
     },
     [
       "`Deployments` holds the address of every ENS contract per chain, for ENSv1 and ENSv2. ensforge picks the deployment from the client's chain. See [Addresses and chains](/docs/contracts/addresses-and-chains).",
@@ -189,6 +243,8 @@ export const deploymentsPage = (
           code(shown(address)),
         ]),
       )}`,
+      `## L2 namespaces\n\nNames under these parents live on an L2: their owner, expiry and records are read there. Durin and Namespace serve any parent whose ENS resolver is theirs.\n\n${Arr.join(namespaceSections, "\n\n")}`,
+      `## Off-chain providers\n\nThese providers keep names in their own database and serve their records through CCIP-Read, on Ethereum mainnet. The status is from the last check of their gateways.\n\n${providers}`,
       `## API\n\n${Arr.join(
         Arr.map(api, (entry) => exportSection(entry, resolve)),
         "\n\n",
@@ -253,6 +309,8 @@ export const contractsReference = (
       deploymentsPage(
         Arr.isArray(listed) ? listed : [],
         recordOf(deployments["l2ReverseRegistrars"]),
+        recordOf(deployments["namespaces"]),
+        recordOf(deployments["offchainProviders"]),
         docs,
         resolve,
       ),
