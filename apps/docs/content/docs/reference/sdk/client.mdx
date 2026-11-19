@@ -122,6 +122,9 @@ AppKit), instead of passing viem clients to `Ensforge.create`.
 - A wallet on another chain is asked to switch first, as wagmi's own `writeContract` does.
 - Every other chain of the wagmi config becomes one of the client's `chains`, so writes ENS
   makes there (an L2 primary name) use wagmi's clients and wallet; `chains` adds or overrides.
+- Names on an L2 (Basenames, Linea Names, Celonames, Durin, Namespace) and L2 primary names are
+  read on chains the config lacks through public RPCs, but written only on chains the config
+  has: a write elsewhere fails with [`CHAIN_NOT_CONFIGURED`](/docs/reference/errors/CHAIN_NOT_CONFIGURED) before the wallet is asked.
 
 - `fromWagmi` lives on the `Ensforge` from `@ensforge/sdk/wagmi`, so apps without wagmi never
   load it. The client it returns works with everything in `@ensforge/sdk`.
@@ -144,6 +147,7 @@ Errors:
 
 - `ConfigError` ([`UNKNOWN_CHAIN`](/docs/reference/errors/UNKNOWN_CHAIN)) when no ENS chain can be chosen or the wagmi config has no transport for it.
 - `ConfigError` ([`INVALID_DEPLOYMENT`](/docs/reference/errors/INVALID_DEPLOYMENT)) when `deployment` is invalid or for another chain.
+- `ConfigError` ([`CHAIN_NOT_CONFIGURED`](/docs/reference/errors/CHAIN_NOT_CONFIGURED)) on a write on a chain the wagmi config does not have.
 
 ### `Ensforge.layer`
 

@@ -643,12 +643,13 @@ describe("indexer actions on L2 names no indexer serves", () => {
     Effect.gen(function* () {
       const { fake, ens } = onBigname();
 
-      for (const read of [
+      const reads: readonly Effect.Effect<unknown, AnyError>[] = [
         Actions.indexer.getName(ens, { name: "alice.linea.eth" }),
         Actions.indexer.getRecords(ens, { name: "alice.celo.eth" }),
         Actions.indexer.getHistory(ens, { name: "alice.linea.eth" }),
         Actions.indexer.getSubnames(ens, { name: "linea.eth" }),
-      ]) {
+      ];
+      for (const read of reads) {
         const error = yield* expectFailure(read, {
           _tag: "IndexerError",
           code: "INDEXER_UNSUPPORTED",
