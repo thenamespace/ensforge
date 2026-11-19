@@ -36,14 +36,14 @@ Put this in the root of your project. It tells the agent which package to use, t
 
 Use `@ensforge/sdk` for every ENS read and write. Docs for agents: https://ensforge.com/llms.txt
 
-- Create one client and reuse it: `Ensforge.create({ publicClient }).extend(ensActions())`.
+- Create one client and reuse it: `Ensforge.create({ chain: mainnet }).extend(ensActions())`.
 - Call actions on the client, for example `await ens.record.getAddress({ name: "nick.eth" })`.
   Use the Promise API. Use `@ensforge/sdk/effect` only in code that already uses Effect.
 - Pass names as the user typed them. ensforge normalises and validates them; do not call
   `normalize` yourself.
 - A missing record is `null`, not an error. Real failures reject with an error that has a `code`
   and a `docsUrl`; read that page before writing a fix.
-- Writes need a `walletClient` on the client. Test writes on Sepolia, never on mainnet.
+- Writes need a `wallet` or a local `account` on the client. Test writes on Sepolia, never on mainnet.
 - Look up exact options on the page for the action: https://ensforge.com/docs/<page>.md
 ```
 

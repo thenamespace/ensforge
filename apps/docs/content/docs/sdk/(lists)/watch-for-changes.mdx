@@ -18,11 +18,10 @@ By the end of this guide you can update a name's page as it changes, or react wh
 
 ```ts title="watch-name.ts"
 import { ensActions, Ensforge } from "@ensforge/sdk";
-import { createPublicClient, http } from "viem";
 import { mainnet } from "viem/chains";
 
 const ens = Ensforge.create({
-  publicClient: createPublicClient({ chain: mainnet, transport: http() }),
+  chain: mainnet,
 }).extend(ensActions());
 
 const unwatch = await ens.event.watch({
@@ -54,11 +53,10 @@ See [`event.watch`](/docs/reference/sdk/event/watch).
 
 ```ts title="watch-records.ts"
 import { ensActions, Ensforge } from "@ensforge/sdk";
-import { createPublicClient, http } from "viem";
 import { mainnet } from "viem/chains";
 
 const ens = Ensforge.create({
-  publicClient: createPublicClient({ chain: mainnet, transport: http() }),
+  chain: mainnet,
 }).extend(ensActions());
 
 const unwatch = await ens.event.watch({
@@ -79,13 +77,13 @@ An event has `type`, `action`, `event` (the contract's event name), `contract`, 
 
 ## Options
 
-| Option            | Type                | Default             | Description                                   |
-| ----------------- | ------------------- | ------------------- | --------------------------------------------- |
-| `name`            | `string`            | required            | The name to watch. Normalised for you.        |
-| `onEvents`        | `(events) => void`  | required            | Called with each new batch of events.         |
-| `types`           | list of event types | all                 | Only these event types.                       |
-| `pollingInterval` | `number`            | the public client's | Milliseconds between polls.                   |
-| `onError`         | `(error) => void`   | none                | Called when a poll fails. Watching continues. |
+| Option            | Type                | Default      | Description                                   |
+| ----------------- | ------------------- | ------------ | --------------------------------------------- |
+| `name`            | `string`            | required     | The name to watch. Normalised for you.        |
+| `onEvents`        | `(events) => void`  | required     | Called with each new batch of events.         |
+| `types`           | list of event types | all          | Only these event types.                       |
+| `pollingInterval` | `number`            | the client's | Milliseconds between polls.                   |
+| `onError`         | `(error) => void`   | none         | Called when a poll fails. Watching continues. |
 
 ## Troubleshooting
 

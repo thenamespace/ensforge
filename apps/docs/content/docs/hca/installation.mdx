@@ -33,7 +33,7 @@ keywords: [installation, "@ensforge/hca", hcaActions, hcaAdminActions]
 ```ts title="client.ts"
 import { hcaActions, hcaAdminActions } from "@ensforge/hca";
 import { Ensforge, ensActions } from "@ensforge/sdk";
-import { createPublicClient, createWalletClient, http } from "viem";
+import { createWalletClient, http } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { sepolia } from "viem/chains";
 
@@ -42,8 +42,8 @@ const account = privateKeyToAccount(
 );
 
 const ens = Ensforge.create({
-  publicClient: createPublicClient({ chain: sepolia, transport: http() }),
-  walletClient: createWalletClient({ account, chain: sepolia, transport: http() }),
+  chain: sepolia,
+  wallet: createWalletClient({ account, chain: sepolia, transport: http() }),
 })
   .extend(ensActions())
   .extend(hcaActions())

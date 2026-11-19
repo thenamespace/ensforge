@@ -18,11 +18,10 @@ import type { ReactNode } from "react";
 import { EnsforgeProvider } from "@ensforge/react";
 import { Ensforge } from "@ensforge/sdk";
 import { goldsky } from "@ensforge/sdk/indexer";
-import { createPublicClient, http } from "viem";
 import { mainnet } from "viem/chains";
 
 const ens = Ensforge.create({
-  publicClient: createPublicClient({ chain: mainnet, transport: http() }),
+  chain: mainnet,
   indexer: goldsky(),
 });
 

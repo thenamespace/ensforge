@@ -29,26 +29,23 @@ create it at module scope and reuse it. Create a separate client only when the s
 
 ## Sign on the server
 
-There is no wallet extension on a server. Give the wallet client an account built from a key, and
-load the key from a secret store or environment variable. Never put a key in source code.
+There is no wallet extension on a server. Pass an account built from a key as `account`, and load
+the key from a secret store or environment variable. Never put a key in source code. The account
+signs on any chain through that chain's transport.
 
 **Example** (A server-side signer)
 
 ```ts title="server.ts"
 import { Ensforge, ensActions } from "@ensforge/sdk";
-import { createPublicClient, createWalletClient, http } from "viem";
+import { http } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { sepolia } from "viem/chains";
 
-const account = privateKeyToAccount(process.env.SIGNER_KEY as `0x${string}`);
-const publicClient = createPublicClient({ chain: sepolia, transport: http(process.env.RPC_URL) });
-const walletClient = createWalletClient({
-  account,
+export const ens = Ensforge.create({
   chain: sepolia,
-  transport: http(process.env.RPC_URL),
-});
-
-export const ens = Ensforge.create({ publicClient, walletClient }).extend(ensActions());
+  transports: { [sepolia.id]: http(process.env.RPC_URL) },
+  account: privateKeyToAccount(process.env.SIGNER_KEY as `0x${string}`),
+}).extend(ensActions());
 ```
 
 A server signer has no wallet prompt, so there is no [`USER_REJECTED`](/docs/reference/errors/USER_REJECTED)
@@ -75,11 +72,9 @@ the Promise rejects with `signal.reason` when it aborts.
 
 ```ts title="deadline.ts"
 import { Ensforge, ensActions } from "@ensforge/sdk";
-import { createPublicClient, http } from "viem";
 import { mainnet } from "viem/chains";
 
-const publicClient = createPublicClient({ chain: mainnet, transport: http() });
-const ens = Ensforge.create({ publicClient }).extend(ensActions());
+const ens = Ensforge.create({ chain: mainnet }).extend(ensActions());
 
 const address = await ens.record.getAddress({
   name: "nick.eth",

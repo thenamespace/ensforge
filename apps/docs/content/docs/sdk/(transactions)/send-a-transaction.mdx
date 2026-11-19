@@ -15,8 +15,8 @@ the same way. You pass a wallet, call the action, and read the transaction hash 
 
 ## 1. Create a client with a wallet
 
-A write needs a viem wallet client and the account that signs. ensforge reads the chain from the
-public client and checks that the wallet is on the same chain before it sends anything.
+A write needs a signer: a viem wallet client and the account that signs, or a local account. When
+the wallet is on another chain than the write, ensforge asks it to switch before it sends anything.
 
 **Example** (A Sepolia client with a browser wallet)
 
@@ -30,18 +30,19 @@ declare global {
 }
 
 import { Ensforge, ensActions } from "@ensforge/sdk";
-import { createPublicClient, createWalletClient, custom, http } from "viem";
+import { createWalletClient, custom } from "viem";
 import { sepolia } from "viem/chains";
 
-const publicClient = createPublicClient({ chain: sepolia, transport: http() });
 const walletClient = createWalletClient({ chain: sepolia, transport: custom(window.ethereum!) });
 const [account] = await walletClient.requestAddresses();
 
-export const ens = Ensforge.create({ publicClient, walletClient, account }).extend(ensActions());
+export const ens = Ensforge.create({ chain: sepolia, wallet: walletClient, account }).extend(
+  ensActions(),
+);
 ```
 
-- `walletClient` signs and sends. It can also be a function that returns the client, for wallets
-  that connect later.
+- `wallet` signs and sends, on every chain. It can also be a function that returns the wallet, for
+  wallets that connect later.
 - `account` is the default signer. Without it, and without an account on the wallet client, a
   write fails with [`ACCOUNT_NOT_FOUND`](/docs/reference/errors/ACCOUNT_NOT_FOUND).
 
@@ -62,13 +63,12 @@ declare global {
 }
 
 import { Ensforge, ensActions } from "@ensforge/sdk";
-import { createPublicClient, createWalletClient, custom, http } from "viem";
+import { createWalletClient, custom } from "viem";
 import { sepolia } from "viem/chains";
 
-const publicClient = createPublicClient({ chain: sepolia, transport: http() });
 const walletClient = createWalletClient({ chain: sepolia, transport: custom(window.ethereum!) });
 const [account] = await walletClient.requestAddresses();
-const ens = Ensforge.create({ publicClient, walletClient, account }).extend(ensActions());
+const ens = Ensforge.create({ chain: sepolia, wallet: walletClient, account }).extend(ensActions());
 
 const { hash, hashes, plan } = await ens.record.set({
   name: "ensforge-docs-demo.eth",
@@ -103,13 +103,12 @@ declare global {
 }
 
 import { Ensforge, ensActions } from "@ensforge/sdk";
-import { createPublicClient, createWalletClient, custom, http } from "viem";
+import { createWalletClient, custom } from "viem";
 import { sepolia } from "viem/chains";
 
-const publicClient = createPublicClient({ chain: sepolia, transport: http() });
 const walletClient = createWalletClient({ chain: sepolia, transport: custom(window.ethereum!) });
 const [account] = await walletClient.requestAddresses();
-const ens = Ensforge.create({ publicClient, walletClient, account }).extend(ensActions());
+const ens = Ensforge.create({ chain: sepolia, wallet: walletClient, account }).extend(ensActions());
 
 const { receipt, receipts } = await ens.record.setSync({
   name: "ensforge-docs-demo.eth",
@@ -144,13 +143,12 @@ declare global {
 }
 
 import { Ensforge, ensActions } from "@ensforge/sdk";
-import { createPublicClient, createWalletClient, custom, http } from "viem";
+import { createWalletClient, custom } from "viem";
 import { sepolia } from "viem/chains";
 
-const publicClient = createPublicClient({ chain: sepolia, transport: http() });
 const walletClient = createWalletClient({ chain: sepolia, transport: custom(window.ethereum!) });
 const [account] = await walletClient.requestAddresses();
-const ens = Ensforge.create({ publicClient, walletClient, account }).extend(ensActions());
+const ens = Ensforge.create({ chain: sepolia, wallet: walletClient, account }).extend(ensActions());
 
 await ens.record.setSync({
   name: "ensforge-docs-demo.eth",
@@ -190,11 +188,9 @@ Read the change back with the matching read. After `setSync` resolves, the new v
 
 ```ts title="check.ts"
 import { Ensforge, ensActions } from "@ensforge/sdk";
-import { createPublicClient, http } from "viem";
 import { sepolia } from "viem/chains";
 
-const publicClient = createPublicClient({ chain: sepolia, transport: http() });
-const ens = Ensforge.create({ publicClient }).extend(ensActions());
+const ens = Ensforge.create({ chain: sepolia }).extend(ensActions());
 
 const url = await ens.record.getText({ name: "ensforge-docs-demo.eth", key: "url" });
 ```
@@ -203,7 +199,7 @@ const url = await ens.record.getText({ name: "ensforge-docs-demo.eth", key: "url
 
 ### `WALLET_NOT_CONFIGURED`
 
-The client has no wallet. Pass `walletClient` to `Ensforge.create`. See
+The client has no wallet. Pass `wallet` (or a local `account`) to `Ensforge.create`. See
 [`WALLET_NOT_CONFIGURED`](/docs/reference/errors/WALLET_NOT_CONFIGURED).
 
 ### `CHAIN_MISMATCH`

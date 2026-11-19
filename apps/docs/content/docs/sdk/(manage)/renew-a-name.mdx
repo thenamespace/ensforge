@@ -18,12 +18,11 @@ You will extend the registration of one or more [`.eth` names](/docs/reference/g
 **Example** (Quoting Two Names)
 
 ```ts title="renewal-price.ts"
-import { createPublicClient, http } from "viem";
 import { sepolia } from "viem/chains";
 import { Duration, Ensforge, ensActions } from "@ensforge/sdk";
 
 const ens = Ensforge.create({
-  publicClient: createPublicClient({ chain: sepolia, transport: http() }),
+  chain: sepolia,
 }).extend(ensActions());
 
 const { total, token, items } = await ens.registration.getRenewalPrice({
@@ -46,7 +45,7 @@ Each entry of `items` has the `name`, its `amount` and its `route`:
 **Example** (Renewing Two Names)
 
 ```ts title="renew.ts"
-import { createPublicClient, createWalletClient, http, type Hex } from "viem";
+import { createWalletClient, http, type Hex } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { sepolia } from "viem/chains";
 import { Duration, Ensforge, ensActions } from "@ensforge/sdk";
@@ -55,8 +54,9 @@ const account = privateKeyToAccount(process.env.PRIVATE_KEY as Hex);
 const transport = http(process.env.SEPOLIA_RPC_URL);
 
 const ens = Ensforge.create({
-  publicClient: createPublicClient({ chain: sepolia, transport }),
-  walletClient: createWalletClient({ account, chain: sepolia, transport }),
+  chain: sepolia,
+  transports: { [sepolia.id]: transport },
+  wallet: createWalletClient({ account, chain: sepolia, transport }),
 }).extend(ensActions());
 
 const { hashes } = await ens.registration.renewSync({

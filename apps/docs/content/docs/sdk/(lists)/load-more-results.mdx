@@ -32,11 +32,10 @@ Keep the `cursor` and pass it back. This fits a "Load more" button.
 ```ts title="load-more.ts"
 import { ensActions, Ensforge } from "@ensforge/sdk";
 import { bigname, indexerActions } from "@ensforge/sdk/indexer";
-import { createPublicClient, http } from "viem";
 import { mainnet } from "viem/chains";
 
 const ens = Ensforge.create({
-  publicClient: createPublicClient({ chain: mainnet, transport: http() }),
+  chain: mainnet,
   indexer: bigname(),
 })
   .extend(ensActions())
@@ -67,11 +66,10 @@ Send the same options with each request and change only `cursor`. A cursor belon
 ```ts title="paginate.ts"
 import { ensActions, Ensforge } from "@ensforge/sdk";
 import { bigname, indexerActions, paginate } from "@ensforge/sdk/indexer";
-import { createPublicClient, http } from "viem";
 import { mainnet } from "viem/chains";
 
 const ens = Ensforge.create({
-  publicClient: createPublicClient({ chain: mainnet, transport: http() }),
+  chain: mainnet,
   indexer: bigname(),
 })
   .extend(ensActions())
@@ -103,11 +101,10 @@ Pass `includeTotal: true` to fill `totalCount` on the first request. It makes th
 ```ts title="total-count.ts"
 import { ensActions, Ensforge } from "@ensforge/sdk";
 import { bigname, indexerActions } from "@ensforge/sdk/indexer";
-import { createPublicClient, http } from "viem";
 import { mainnet } from "viem/chains";
 
 const ens = Ensforge.create({
-  publicClient: createPublicClient({ chain: mainnet, transport: http() }),
+  chain: mainnet,
   indexer: bigname(),
 })
   .extend(ensActions())

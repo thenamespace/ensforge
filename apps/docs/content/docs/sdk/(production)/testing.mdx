@@ -34,18 +34,18 @@ Create the clients against the local URL and use viem's test client to control t
 
 ```ts title="fork.ts"
 import { Ensforge, ensActions } from "@ensforge/sdk";
-import { createPublicClient, createTestClient, createWalletClient, http } from "viem";
+import { createTestClient, createWalletClient, http } from "viem";
 import { mainnet } from "viem/chains";
 
 const transport = http("http://127.0.0.1:8545");
 
-export const publicClient = createPublicClient({ chain: mainnet, transport });
 export const testClient = createTestClient({ chain: mainnet, mode: "anvil", transport });
 
 export const forkEns = (account: `0x${string}`) =>
   Ensforge.create({
-    publicClient,
-    walletClient: createWalletClient({ chain: mainnet, transport, account }),
+    chain: mainnet,
+    transports: { [mainnet.id]: transport },
+    wallet: createWalletClient({ chain: mainnet, transport, account }),
   }).extend(ensActions());
 ```
 
@@ -60,13 +60,14 @@ Impersonate the owner of a real name, fund the account, and send the write.
 
 ```ts title="fork-write.ts"
 import { Ensforge, ensActions } from "@ensforge/sdk";
-import { createPublicClient, createTestClient, createWalletClient, http, parseEther } from "viem";
+import { createTestClient, createWalletClient, http, parseEther } from "viem";
 import { mainnet } from "viem/chains";
 
 const transport = http("http://127.0.0.1:8545");
-const publicClient = createPublicClient({ chain: mainnet, transport });
 const testClient = createTestClient({ chain: mainnet, mode: "anvil", transport });
-const reader = Ensforge.create({ publicClient }).extend(ensActions());
+const reader = Ensforge.create({ chain: mainnet, transports: { [mainnet.id]: transport } }).extend(
+  ensActions(),
+);
 
 const state = await reader.name.get({ name: "nick.eth" });
 const owner = state.owner;
@@ -76,8 +77,9 @@ await testClient.impersonateAccount({ address: owner });
 await testClient.setBalance({ address: owner, value: parseEther("10") });
 
 const ens = Ensforge.create({
-  publicClient,
-  walletClient: createWalletClient({ chain: mainnet, transport, account: owner }),
+  chain: mainnet,
+  transports: { [mainnet.id]: transport },
+  wallet: createWalletClient({ chain: mainnet, transport, account: owner }),
 }).extend(ensActions());
 
 await ens.record.setSync({ name: "nick.eth", texts: { url: "https://example.com" } });
@@ -100,16 +102,16 @@ with its blocks. Use `onStep` to advance it when a step waits.
 
 ```ts title="fork-wait.ts"
 import { Duration, Ensforge, ensActions } from "@ensforge/sdk";
-import { createPublicClient, createTestClient, createWalletClient, http } from "viem";
+import { createTestClient, createWalletClient, http } from "viem";
 import { mainnet } from "viem/chains";
 
 const transport = http("http://127.0.0.1:8545");
-const publicClient = createPublicClient({ chain: mainnet, transport });
 const testClient = createTestClient({ chain: mainnet, mode: "anvil", transport });
 declare const account: `0x${string}`;
 const ens = Ensforge.create({
-  publicClient,
-  walletClient: createWalletClient({ chain: mainnet, transport, account }),
+  chain: mainnet,
+  transports: { [mainnet.id]: transport },
+  wallet: createWalletClient({ chain: mainnet, transport, account }),
 }).extend(ensActions());
 
 await ens.registration.registerSync({

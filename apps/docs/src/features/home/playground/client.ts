@@ -1,5 +1,5 @@
 import { Actions, Ensforge, Errors } from "@ensforge/sdk";
-import { createPublicClient, http } from "viem";
+import { http } from "viem";
 import { mainnet } from "viem/chains";
 
 import type { Chain, ExampleId, ResultView, RunOutcome, SocialRecord } from "./examples";
@@ -20,10 +20,9 @@ const MAX_RUNS = 40;
 let sentRequests = 0;
 
 const ens = Ensforge.create({
-  publicClient: createPublicClient({
-    chain: mainnet,
-    batch: { multicall: true },
-    transport: http(RPC_URL, {
+  chain: mainnet,
+  transports: {
+    [mainnet.id]: http(RPC_URL, {
       batch: { wait: 16 },
       retryCount: 1,
       timeout: 15_000,
@@ -31,7 +30,7 @@ const ens = Ensforge.create({
         sentRequests += 1;
       },
     }),
-  }),
+  },
 });
 
 const coins = { eth: "eth", btc: "btc", base: { chainId: 8453 } } as const;

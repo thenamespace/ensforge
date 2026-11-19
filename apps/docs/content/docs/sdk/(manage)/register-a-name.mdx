@@ -56,7 +56,7 @@ By default each name gets its own [resolver](/docs/reference/glossary#resolver),
 **Example** (Registering With Records and a Primary Name)
 
 ```ts title="register.ts"
-import { createPublicClient, createWalletClient, http, type Hex } from "viem";
+import { createWalletClient, http, type Hex } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { sepolia } from "viem/chains";
 import { Duration, Ensforge, ensActions } from "@ensforge/sdk";
@@ -65,8 +65,9 @@ const account = privateKeyToAccount(process.env.PRIVATE_KEY as Hex);
 const transport = http(process.env.SEPOLIA_RPC_URL);
 
 const ens = Ensforge.create({
-  publicClient: createPublicClient({ chain: sepolia, transport }),
-  walletClient: createWalletClient({ account, chain: sepolia, transport }),
+  chain: sepolia,
+  transports: { [sepolia.id]: transport },
+  wallet: createWalletClient({ account, chain: sepolia, transport }),
 }).extend(ensActions());
 
 const { names, paid, secret } = await ens.registration.registerSync({
@@ -122,7 +123,7 @@ The approval covers the quote plus 2%, because the price is charged at `register
 **Example** (Committing Now and Registering Later)
 
 ```ts title="commit-then-register.ts"
-import { createPublicClient, createWalletClient, http, type Hex } from "viem";
+import { createWalletClient, http, type Hex } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { sepolia } from "viem/chains";
 import { Duration, Ensforge, ensActions } from "@ensforge/sdk";
@@ -131,8 +132,9 @@ const account = privateKeyToAccount(process.env.PRIVATE_KEY as Hex);
 const transport = http(process.env.SEPOLIA_RPC_URL);
 
 const ens = Ensforge.create({
-  publicClient: createPublicClient({ chain: sepolia, transport }),
-  walletClient: createWalletClient({ account, chain: sepolia, transport }),
+  chain: sepolia,
+  transports: { [sepolia.id]: transport },
+  wallet: createWalletClient({ account, chain: sepolia, transport }),
 }).extend(ensActions());
 
 const options = { names: "ensforge-docs-demo.eth", duration: Duration.years(1) };
@@ -201,7 +203,7 @@ The registrar does not accept `paymentToken`. See [`PAYMENT_TOKEN_UNSUPPORTED`](
 
 ### `WALLET_NOT_CONFIGURED`
 
-The client has no wallet client and you passed no `account`. Pass `walletClient` to `Ensforge.create`. See [`WALLET_NOT_CONFIGURED`](/docs/reference/errors/WALLET_NOT_CONFIGURED).
+The client has no wallet and you passed no `account`. Pass `wallet` (or a local `account`) to `Ensforge.create`. See [`WALLET_NOT_CONFIGURED`](/docs/reference/errors/WALLET_NOT_CONFIGURED).
 
 ### `RECEIPT_TIMEOUT` or `TRANSACTION_REVERTED`
 

@@ -18,11 +18,10 @@ By the end of this guide you can show `vitalik.eth` instead of `0xd8dA…6045`. 
 
 ```ts title="get-primary-name.ts"
 import { ensActions, Ensforge } from "@ensforge/sdk";
-import { createPublicClient, http } from "viem";
 import { mainnet } from "viem/chains";
 
 const ens = Ensforge.create({
-  publicClient: createPublicClient({ chain: mainnet, transport: http() }),
+  chain: mainnet,
 }).extend(ensActions());
 
 const address = "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045";
@@ -60,11 +59,10 @@ A primary name is stored per chain. `coin` selects the chain. It takes `"eth"` (
 
 ```ts title="get-base-primary-name.ts"
 import { ensActions, Ensforge } from "@ensforge/sdk";
-import { createPublicClient, http } from "viem";
 import { mainnet } from "viem/chains";
 
 const ens = Ensforge.create({
-  publicClient: createPublicClient({ chain: mainnet, transport: http() }),
+  chain: mainnet,
 }).extend(ensActions());
 
 const baseName = await ens.primaryName.get({

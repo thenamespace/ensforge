@@ -13,24 +13,26 @@ covers each setting you may want to change before you go live.
 
 ## Use a dedicated RPC URL
 
-ensforge makes the RPC requests your public client makes. Public endpoints are rate limited, which
-shows up as [`RATE_LIMITED`](/docs/reference/errors/RATE_LIMITED) or
-[`RPC_TIMEOUT`](/docs/reference/errors/RPC_TIMEOUT). Give the public client a dedicated URL, and use
-viem's `fallback` transport to add a second provider.
+ensforge sends its RPC requests through `transports`, one per chain. A chain without one uses its
+public RPC. Public endpoints are rate limited, which shows up as
+[`RATE_LIMITED`](/docs/reference/errors/RATE_LIMITED) or
+[`RPC_TIMEOUT`](/docs/reference/errors/RPC_TIMEOUT). Give each chain you use a dedicated URL, and use
+viem's `fallback` transport to add a second provider. Set `publicRpc: false` to make sure ensforge
+never falls back to a public RPC.
 
 **Example** (Two providers with fallback)
 
 ```ts title="rpc.ts"
 import { Ensforge, ensActions } from "@ensforge/sdk";
-import { createPublicClient, fallback, http } from "viem";
+import { fallback, http } from "viem";
 import { mainnet } from "viem/chains";
 
-const publicClient = createPublicClient({
+export const ens = Ensforge.create({
   chain: mainnet,
-  transport: fallback([http("https://rpc-a.example.com"), http("https://rpc-b.example.com")]),
-});
-
-export const ens = Ensforge.create({ publicClient }).extend(ensActions());
+  transports: {
+    [mainnet.id]: fallback([http("https://rpc-a.example.com"), http("https://rpc-b.example.com")]),
+  },
+}).extend(ensActions());
 ```
 
 Two features need more from the RPC:
@@ -55,13 +57,10 @@ sets the batch gateways instead, and `ccipRead: false` turns off-chain lookups o
 
 ```ts title="ccip.ts"
 import { Ensforge } from "@ensforge/sdk";
-import { createPublicClient, http } from "viem";
 import { mainnet } from "viem/chains";
 
-const publicClient = createPublicClient({ chain: mainnet, transport: http() });
-
 const ens = Ensforge.create({
-  publicClient,
+  chain: mainnet,
   ccipRead: { gatewayUrls: ["x-batch-gateway:true"] },
 });
 ```
@@ -87,13 +86,10 @@ ensforge coalesces concurrent contract reads into Multicall3 calls ([batching](/
 
 ```ts title="batching.ts"
 import { Ensforge } from "@ensforge/sdk";
-import { createPublicClient, http } from "viem";
 import { mainnet } from "viem/chains";
 
-const publicClient = createPublicClient({ chain: mainnet, transport: http() });
-
 const ens = Ensforge.create({
-  publicClient,
+  chain: mainnet,
   batch: { multicall: { batchSize: 8_192, wait: 10 } },
 });
 ```
@@ -112,13 +108,10 @@ The public `ipfs.io` gateway is rate limited. Use a dedicated gateway in product
 
 ```ts title="gateways.ts"
 import { Ensforge } from "@ensforge/sdk";
-import { createPublicClient, http } from "viem";
 import { mainnet } from "viem/chains";
 
-const publicClient = createPublicClient({ chain: mainnet, transport: http() });
-
 const ens = Ensforge.create({
-  publicClient,
+  chain: mainnet,
   gateways: { ipfs: "https://gateway.pinata.cloud" },
 });
 ```
@@ -128,11 +121,11 @@ ens.config.gateways)` reuses the client's gateways for content hashes.
 
 ## Other defaults
 
-| Option     | Default    | Description                                                                                                                                |
-| ---------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| `blockTag` | `"latest"` | Block tag for reads. A call can pass `blockNumber` or `blockTag`.                                                                          |
-| `simulate` | `true`     | Simulate writes before the wallet prompt.                                                                                                  |
-| `chains`   | none       | Clients for other chains, needed to set L2 primary names. Otherwise [`CHAIN_NOT_CONFIGURED`](/docs/reference/errors/CHAIN_NOT_CONFIGURED). |
+| Option      | Default    | Description                                                                                                                                                              |
+| ----------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `blockTag`  | `"latest"` | Block tag for reads. A call can pass `blockNumber` or `blockTag`.                                                                                                        |
+| `simulate`  | `true`     | Simulate writes before the wallet prompt.                                                                                                                                |
+| `publicRpc` | `true`     | Use a chain's public RPC when `transports` has none for it. With `false`, such a chain fails with [`CHAIN_NOT_CONFIGURED`](/docs/reference/errors/CHAIN_NOT_CONFIGURED). |
 
 ## Check the result
 
@@ -152,5 +145,5 @@ The default `ipfs.io` gateway is rate limited. Set `gateways.ipfs`.
 
 ### `CONTRACT_NOT_DEPLOYED`
 
-The chain has no ENS contracts at the addresses ensforge uses. Check the chain of your public client.
+The chain has no ENS contracts at the addresses ensforge uses. Check the `chain` you passed to `Ensforge.create`.
 See [`CONTRACT_NOT_DEPLOYED`](/docs/reference/errors/CONTRACT_NOT_DEPLOYED).

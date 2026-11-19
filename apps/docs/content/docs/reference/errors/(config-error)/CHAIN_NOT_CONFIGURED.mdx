@@ -11,7 +11,7 @@ generated: true
 
 ## What happened
 
-The client has no clients for chain ?.
+The client cannot reach chain ?.
 
 ## What to show users
 
@@ -21,7 +21,7 @@ The client has no clients for chain ?.
 
 ## How to fix
 
-Add chain \<chainId\> to `chains` in Ensforge.create, e.g. `chains: { <chainId>: { publicClient, walletClient } }`.
+Add a transport for chain \<chainId\> to Ensforge.create, e.g. `transports: { <chainId>: http(rpcUrl) }`.
 
 ## Retry safety
 

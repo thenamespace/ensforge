@@ -30,12 +30,11 @@ DNS names are imported into [ENSv1](/docs/reference/glossary#ensv1). [ENSv2](/do
 **Example** (Checking a DNS Name)
 
 ```ts title="dns-status.ts"
-import { createPublicClient, http } from "viem";
 import { sepolia } from "viem/chains";
 import { Ensforge, ensActions } from "@ensforge/sdk";
 
 const ens = Ensforge.create({
-  publicClient: createPublicClient({ chain: sepolia, transport: http() }),
+  chain: sepolia,
 }).extend(ensActions());
 
 const status = await ens.dns.getStatus({ name: "example.com" });
@@ -67,7 +66,7 @@ _ens.example.com.  TXT  "a=0xB0b0000000000000000000000000000000000000"
 **Example** (Claiming a DNS Name)
 
 ```ts title="dns-claim.ts"
-import { createPublicClient, createWalletClient, http, type Hex } from "viem";
+import { createWalletClient, http, type Hex } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { sepolia } from "viem/chains";
 import { Ensforge, ensActions } from "@ensforge/sdk";
@@ -76,8 +75,9 @@ const account = privateKeyToAccount(process.env.PRIVATE_KEY as Hex);
 const transport = http(process.env.SEPOLIA_RPC_URL);
 
 const ens = Ensforge.create({
-  publicClient: createPublicClient({ chain: sepolia, transport }),
-  walletClient: createWalletClient({ account, chain: sepolia, transport }),
+  chain: sepolia,
+  transports: { [sepolia.id]: transport },
+  wallet: createWalletClient({ account, chain: sepolia, transport }),
 }).extend(ensActions());
 
 const status = await ens.dns.getStatus({ name: "example.com" });
@@ -105,12 +105,11 @@ A gasless DNS name resolves without being imported, as an [off-chain name](/docs
 **Example** (Reading a Gasless DNS Setup)
 
 ```ts title="dns-offchain.ts"
-import { createPublicClient, http } from "viem";
 import { sepolia } from "viem/chains";
 import { Ensforge, ensActions } from "@ensforge/sdk";
 
 const ens = Ensforge.create({
-  publicClient: createPublicClient({ chain: sepolia, transport: http() }),
+  chain: sepolia,
 }).extend(ensActions());
 
 const offchain = await ens.dns.getOffchainResolver({ name: "example.com" });

@@ -16,12 +16,9 @@ an optional peer, needed only for `Ensforge.fromWagmi`.
 
 ```ts
 import { Ensforge, ensActions } from "@ensforge/sdk";
-import { createPublicClient, http } from "viem";
 import { mainnet } from "viem/chains";
 
-const ens = Ensforge.create({
-  publicClient: createPublicClient({ chain: mainnet, transport: http() }),
-}).extend(ensActions());
+const ens = Ensforge.create({ chain: mainnet }).extend(ensActions());
 
 const address = await ens.record.getAddress({ name: "nick.eth" });
 ```

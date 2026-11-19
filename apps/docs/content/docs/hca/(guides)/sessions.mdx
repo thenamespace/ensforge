@@ -48,7 +48,7 @@ Without `refund`, the token is the deployment's USDC and the ceilings are the EN
 ```ts title="authorize.ts"
 import { hcaActions } from "@ensforge/hca";
 import { Ensforge, ensActions } from "@ensforge/sdk";
-import { createPublicClient, createWalletClient, http } from "viem";
+import { createWalletClient, http } from "viem";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 import { sepolia } from "viem/chains";
 
@@ -56,8 +56,8 @@ const account = privateKeyToAccount(
   "0x0123456789012345678901234567890123456789012345678901234567890123",
 );
 const ens = Ensforge.create({
-  publicClient: createPublicClient({ chain: sepolia, transport: http() }),
-  walletClient: createWalletClient({ account, chain: sepolia, transport: http() }),
+  chain: sepolia,
+  wallet: createWalletClient({ account, chain: sepolia, transport: http() }),
 })
   .extend(ensActions())
   .extend(hcaActions());
@@ -80,7 +80,7 @@ The returned `HcaSession` holds no secret: it has the owner's signature and the 
 ```ts title="check.ts"
 import { hcaActions, type HcaSession } from "@ensforge/hca";
 import { Duration, Ensforge, ensActions } from "@ensforge/sdk";
-import { createPublicClient, createWalletClient, http } from "viem";
+import { createWalletClient, http } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { sepolia } from "viem/chains";
 
@@ -88,8 +88,8 @@ const account = privateKeyToAccount(
   "0x0123456789012345678901234567890123456789012345678901234567890123",
 );
 const ens = Ensforge.create({
-  publicClient: createPublicClient({ chain: sepolia, transport: http() }),
-  walletClient: createWalletClient({ account, chain: sepolia, transport: http() }),
+  chain: sepolia,
+  wallet: createWalletClient({ account, chain: sepolia, transport: http() }),
 })
   .extend(ensActions())
   .extend(hcaActions());
@@ -114,7 +114,7 @@ Pass the session to `hca()` with an executor that runs sessions. The write is si
 ```ts title="register-with-session.ts"
 import { hca, hcaActions, rhinestone, type HcaSession, type RhinestoneSdk } from "@ensforge/hca";
 import { Duration, Ensforge, ensActions } from "@ensforge/sdk";
-import { createPublicClient, createWalletClient, http } from "viem";
+import { createWalletClient, http } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { sepolia } from "viem/chains";
 
@@ -122,8 +122,8 @@ const account = privateKeyToAccount(
   "0x0123456789012345678901234567890123456789012345678901234567890123",
 );
 const ens = Ensforge.create({
-  publicClient: createPublicClient({ chain: sepolia, transport: http() }),
-  walletClient: createWalletClient({ account, chain: sepolia, transport: http() }),
+  chain: sepolia,
+  wallet: createWalletClient({ account, chain: sepolia, transport: http() }),
 })
   .extend(ensActions())
   .extend(hcaActions());
@@ -153,7 +153,7 @@ To edit records, route `ens.record.set` the same way: `ens.record.set({ name, te
 ```ts title="get-session.ts"
 import { hcaActions, type HcaSession } from "@ensforge/hca";
 import { Ensforge, ensActions } from "@ensforge/sdk";
-import { createPublicClient, createWalletClient, http } from "viem";
+import { createWalletClient, http } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { sepolia } from "viem/chains";
 
@@ -161,8 +161,8 @@ const account = privateKeyToAccount(
   "0x0123456789012345678901234567890123456789012345678901234567890123",
 );
 const ens = Ensforge.create({
-  publicClient: createPublicClient({ chain: sepolia, transport: http() }),
-  walletClient: createWalletClient({ account, chain: sepolia, transport: http() }),
+  chain: sepolia,
+  wallet: createWalletClient({ account, chain: sepolia, transport: http() }),
 })
   .extend(ensActions())
   .extend(hcaActions());
@@ -186,7 +186,7 @@ When `problem` is not `null`, authorize a new session.
 ```ts title="revoke.ts"
 import { hcaActions } from "@ensforge/hca";
 import { Ensforge, ensActions } from "@ensforge/sdk";
-import { createPublicClient, createWalletClient, http } from "viem";
+import { createWalletClient, http } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { sepolia } from "viem/chains";
 
@@ -194,8 +194,8 @@ const account = privateKeyToAccount(
   "0x0123456789012345678901234567890123456789012345678901234567890123",
 );
 const ens = Ensforge.create({
-  publicClient: createPublicClient({ chain: sepolia, transport: http() }),
-  walletClient: createWalletClient({ account, chain: sepolia, transport: http() }),
+  chain: sepolia,
+  wallet: createWalletClient({ account, chain: sepolia, transport: http() }),
 })
   .extend(ensActions())
   .extend(hcaActions());

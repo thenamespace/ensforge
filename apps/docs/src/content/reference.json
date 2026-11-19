@@ -981,7 +981,7 @@
         {
           "name": "CHAIN_NOT_CONFIGURED",
           "url": "/docs/reference/errors/CHAIN_NOT_CONFIGURED",
-          "summary": "The client has no clients for chain ?."
+          "summary": "The client cannot reach chain ?."
         },
         {
           "name": "CONTRACT_REVERTED",

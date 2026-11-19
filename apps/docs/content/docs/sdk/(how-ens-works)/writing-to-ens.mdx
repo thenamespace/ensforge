@@ -50,14 +50,14 @@ Each write action carries methods for each stage.
 
 ```ts title="review.ts"
 import { Ensforge, ensActions } from "@ensforge/sdk";
-import { createPublicClient, createWalletClient, custom, http, type EIP1193Provider } from "viem";
+import { createWalletClient, custom, type EIP1193Provider } from "viem";
 import { sepolia } from "viem/chains";
 
 declare const provider: EIP1193Provider;
 
 const ens = Ensforge.create({
-  publicClient: createPublicClient({ chain: sepolia, transport: http() }),
-  walletClient: createWalletClient({ chain: sepolia, transport: custom(provider) }),
+  chain: sepolia,
+  wallet: createWalletClient({ chain: sepolia, transport: custom(provider) }),
 }).extend(ensActions());
 
 const options = { name: "ensforge-docs-demo.eth", texts: { url: "https://example.com" } };

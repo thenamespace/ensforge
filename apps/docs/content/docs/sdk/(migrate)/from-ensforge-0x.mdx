@@ -16,7 +16,7 @@ Code blocks that mark lines with `[!code --]` and `[!code ++]` are diffs: they s
 | 0.x                                                                                             | 1.0                                                                                                                                                 |
 | ----------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `@ensforge/core` (actions) and `@ensforge/sdk` (the `Ensforge` class)                           | One package, `@ensforge/sdk`. `@ensforge/core` is gone.                                                                                             |
-| `new Ensforge({ network, publicClient })` or `createConfig`                                     | `Ensforge.create({ publicClient })`. The chain of the public client picks the deployment.                                                           |
+| `new Ensforge({ network, publicClient })` or `createConfig`                                     | `Ensforge.create({ chain })`. `chain` picks the deployment; `transports` sets the RPCs.                                                             |
 | Groups on the instance: `sdk.records`, `sdk.name`, `sdk.resolution`, `sdk.reverse` …            | Decorators you add: `.extend(ensActions())`. Groups are `record`, `name`, `resolver`, `primaryName`, `registration`, `subname`, `wrapper` and more. |
 | One setter per record kind (`setText`, `setAddress`, `setContentHash` …)                        | One action, `record.set`, with `texts`, `addresses`, `contentHash` and more.                                                                        |
 | Writes that waited for the receipt by default, with `status`, `hash` and `receipt`              | Writes resolve once submitted with `Write.Result` (`hash`, `hashes`, `id`, `plan`). The `…Sync` form waits for receipts.                            |
@@ -37,27 +37,27 @@ Also update `@ensforge/react` and `@ensforge/contracts` to 1.x. The public packa
 
 ## 2. Create the client
 
-The 0.x `network` option is gone. The public client's chain picks the deployment (Ethereum mainnet or
-Sepolia). For another chain, pass `deployment`.
+The 0.x `network` option is gone. `chain` picks the deployment (Ethereum mainnet or Sepolia). For
+another chain, pass `deployment`.
 
 ```ts no-check title="client.ts"
 import { Ensforge } from "@ensforge/sdk"; // [!code --]
 import { Ensforge, ensActions } from "@ensforge/sdk"; // [!code ++]
-import { createPublicClient, http } from "viem";
+import { createPublicClient, http } from "viem"; // [!code --]
 import { mainnet } from "viem/chains";
 
-const publicClient = createPublicClient({ chain: mainnet, transport: http() });
+const publicClient = createPublicClient({ chain: mainnet, transport: http() }); // [!code --]
 
 const sdk = new Ensforge({ network: "mainnet", publicClient }); // [!code --]
-const ens = Ensforge.create({ publicClient }).extend(ensActions()); // [!code ++]
+const ens = Ensforge.create({ chain: mainnet }).extend(ensActions()); // [!code ++]
 ```
 
 Other options moved too:
 
 | 0.x                                                        | 1.0                                                                                                                                     |
 | ---------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
-| `network`                                                  | Gone. The public client's chain picks the deployment, or pass `deployment`.                                                             |
-| `walletClient`                                             | `walletClient` (also a function for wallets that connect later)                                                                         |
+| `network`                                                  | `chain`, which picks the deployment, or pass `deployment`.                                                                              |
+| `walletClient`                                             | `wallet` (also a function for wallets that connect later), or a local `account`                                                         |
 | `reads: { concurrency, multicallBatchSize }`               | `batch: { multicall: { batchSize, wait } }`. See [Configure RPC and gateways](/docs/sdk/rpc-and-gateways).                              |
 | `gateways` (allowed hosts and limits for gateway requests) | No counterpart. 1.0 `gateways` sets storage gateways for avatars and content hashes, and `ccipRead` sets the off-chain lookup gateways. |
 | `writes.simulation: "required" \| "skip"`                  | `simulate: true \| false`                                                                                                               |
@@ -215,7 +215,7 @@ The group is called `record` in 1.0. See the table above.
 
 ### `UNKNOWN_CHAIN`
 
-0.x took `network: "mainnet"`. In 1.0 the public client needs a `chain`, or you pass `deployment`.
+0.x took `network: "mainnet"`. In 1.1, pass `chain`, or `deployment` for another chain.
 See [`UNKNOWN_CHAIN`](/docs/reference/errors/UNKNOWN_CHAIN).
 
 ### Receipts are missing from a write result

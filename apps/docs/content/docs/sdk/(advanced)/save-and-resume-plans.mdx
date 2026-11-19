@@ -56,13 +56,10 @@ Pass `storage` to `Ensforge.create`.
 
 ```ts title="storage.ts"
 import { Ensforge, Plan, ensActions } from "@ensforge/sdk";
-import { createPublicClient, http } from "viem";
 import { sepolia } from "viem/chains";
 
-const publicClient = createPublicClient({ chain: sepolia, transport: http() });
-
 export const ens = Ensforge.create({
-  publicClient,
+  chain: sepolia,
   storage: Plan.localStorage("my-app:plans"),
 }).extend(ensActions());
 ```
@@ -73,12 +70,10 @@ After a reload, list what did not finish and resume it:
 
 ```ts title="recover.ts"
 import { Ensforge, Plan, ensActions } from "@ensforge/sdk";
-import { createPublicClient, http } from "viem";
 import { sepolia } from "viem/chains";
 
-const publicClient = createPublicClient({ chain: sepolia, transport: http() });
 const ens = Ensforge.create({
-  publicClient,
+  chain: sepolia,
   storage: Plan.localStorage("my-app:plans"),
 }).extend(ensActions());
 
@@ -140,12 +135,10 @@ service, for review or signing elsewhere.
 
 ```ts title="serialize.ts"
 import { Ensforge, Plan, ensActions } from "@ensforge/sdk";
-import { createPublicClient, http } from "viem";
 import { sepolia } from "viem/chains";
 
-const publicClient = createPublicClient({ chain: sepolia, transport: http() });
 const account = "0x225f137127d9067788314bc7fcc1f36746a3c3B5";
-const ens = Ensforge.create({ publicClient, account }).extend(ensActions());
+const ens = Ensforge.create({ chain: sepolia, account }).extend(ensActions());
 
 const plan = await ens.record.set.prepare({
   name: "ensforge-docs-demo.eth",

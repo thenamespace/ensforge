@@ -18,11 +18,10 @@ Nothing changes in your code. Ask for a record as usual.
 
 ```ts title="off-chain.ts"
 import { ensActions, Ensforge } from "@ensforge/sdk";
-import { createPublicClient, http } from "viem";
 import { mainnet } from "viem/chains";
 
 const ens = Ensforge.create({
-  publicClient: createPublicClient({ chain: mainnet, transport: http() }),
+  chain: mainnet,
 }).extend(ensActions());
 
 // jesse.base.eth is a subname of an on-chain name, answered off-chain by its parent's resolver.
@@ -69,14 +68,11 @@ The Universal Resolver sends off-chain lookups through a batch gateway, which co
 
 ```ts title="gateways.ts"
 import { ensActions, Ensforge } from "@ensforge/sdk";
-import { createPublicClient, http } from "viem";
 import { mainnet } from "viem/chains";
-
-const publicClient = createPublicClient({ chain: mainnet, transport: http() });
 
 // For every call made with this client.
 const ens = Ensforge.create({
-  publicClient,
+  chain: mainnet,
   ccipRead: { gatewayUrls: ["x-batch-gateway:true"] },
 }).extend(ensActions());
 

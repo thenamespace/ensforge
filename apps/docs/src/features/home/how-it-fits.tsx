@@ -43,9 +43,9 @@ const steps: readonly Step[] = [
     id: "client",
     label: "The client",
     title: "One client, on viem",
-    body: "Ensforge.create takes the viem client you already have. Its chain picks the ENS contracts; add a wallet only when you write.",
+    body: "Ensforge.create takes the chain ENS lives on and your viem transports. It reads every chain names live on; add a wallet only when you write.",
     notes: [
-      { at: [40, 182], label: "Your viem\nclient", side: "left" },
+      { at: [40, 182], label: "Your viem\ntransports", side: "left" },
       { at: [190, 60], label: "Wallet for\nwrites", side: "right" },
     ],
   },

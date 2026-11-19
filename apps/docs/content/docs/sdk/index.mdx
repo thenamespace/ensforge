@@ -26,18 +26,17 @@ too.
 
 ## 2. Create a client
 
-The client is the object you call ENS actions on. Create it once from a viem public client; the
-chain of that client tells ensforge which ENS contracts to use.
+The client is the object you call ENS actions on. Create it once for the chain ENS lives on, which
+tells ensforge which ENS contracts to use.
 
 **Example** (Creating a Mainnet Client)
 
 ```ts title="ens.ts"
 import { Ensforge, ensActions } from "@ensforge/sdk";
-import { createPublicClient, http } from "viem";
 import { mainnet } from "viem/chains";
 
 export const ens = Ensforge.create({
-  publicClient: createPublicClient({ chain: mainnet, transport: http() }),
+  chain: mainnet,
 }).extend(ensActions());
 ```
 
@@ -147,22 +146,20 @@ export PRIVATE_KEY=0x...
 
 ## 6. Preview the write
 
-Add a wallet client to a Sepolia client, then ask ensforge to plan a text record change without
-sending it. Replace `ensforge-docs-demo.eth` with your Sepolia name.
+Add a signer to a Sepolia client, then ask ensforge to plan a text record change without sending
+it. Replace `ensforge-docs-demo.eth` with your Sepolia name.
 
 **Example** (Planning a Write on Sepolia)
 
 ```ts title="write.ts"
 import { Ensforge, ensActions } from "@ensforge/sdk";
-import { createPublicClient, createWalletClient, http, type Hex } from "viem";
+import { type Hex } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { sepolia } from "viem/chains";
 
-const account = privateKeyToAccount(process.env.PRIVATE_KEY as Hex);
-
 const ens = Ensforge.create({
-  publicClient: createPublicClient({ chain: sepolia, transport: http() }),
-  walletClient: createWalletClient({ account, chain: sepolia, transport: http() }),
+  chain: sepolia,
+  account: privateKeyToAccount(process.env.PRIVATE_KEY as Hex),
 }).extend(ensActions());
 
 const records = { name: "ensforge-docs-demo.eth", texts: { url: "https://example.com" } };
@@ -175,7 +172,8 @@ console.log(plan.steps.map((step) => step.description));
 [ 'Set records' ]
 ```
 
-- The wallet client signs. The public client still does every read.
+- The account signs, here a local account from a private key. In a browser app, pass the user's
+  wallet as `wallet` instead.
 - `record.set.prepare` returns a **plan**: the transactions the write needs, in order. Nothing is
   sent and the wallet is not asked to sign.
 - Every write has `.prepare`, so a UI can show what will happen before the user confirms.
@@ -191,15 +189,15 @@ then you read the record back to see the change.
 
 ```ts title="write.ts"
 import { Ensforge, ensActions } from "@ensforge/sdk";
-import { createPublicClient, createWalletClient, http, type Hex } from "viem";
+import { createWalletClient, http, type Hex } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { sepolia } from "viem/chains";
 
 const account = privateKeyToAccount(process.env.PRIVATE_KEY as Hex);
 
 const ens = Ensforge.create({
-  publicClient: createPublicClient({ chain: sepolia, transport: http() }),
-  walletClient: createWalletClient({ account, chain: sepolia, transport: http() }),
+  chain: sepolia,
+  wallet: createWalletClient({ account, chain: sepolia, transport: http() }),
 }).extend(ensActions());
 
 const records = { name: "ensforge-docs-demo.eth", texts: { url: "https://example.com" } };
