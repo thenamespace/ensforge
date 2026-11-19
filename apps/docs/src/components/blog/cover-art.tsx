@@ -10,7 +10,7 @@ import {
 } from "@/components/logos";
 import { useReducedMotion } from "@/components/marketing/hooks";
 import { isoProjector, type Point } from "@/components/marketing/iso";
-import type { BlogCategory, BlogPackage } from "@/lib/blog/schema";
+import type { BlogCategory, BlogPackage } from "@/lib/blog/taxonomy";
 import { cn } from "@/lib/cn";
 
 /**

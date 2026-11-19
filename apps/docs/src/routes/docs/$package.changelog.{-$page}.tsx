@@ -13,6 +13,7 @@ import { track } from "@/lib/analytics/client";
 import { baseOptions } from "@/lib/layout.shared";
 import { docsImageUrl } from "@/lib/og/urls";
 import { getChangelogPackage, getPackage, releasesUrl } from "@/lib/packages";
+import { sidebarTree } from "@/lib/page-tree";
 import { breadcrumbLd, seo } from "@/lib/seo";
 import { site } from "@/lib/site";
 import { source } from "@/lib/source";
@@ -25,7 +26,10 @@ const loadChangelog = createServerFn({ method: "GET" })
     if (!pkg || !Number.isInteger(page) || page < 1) throw notFound();
 
     const { packageReleases, releaseHtml } = await import("@/lib/changelog.server");
-    const pageTree = await source.serializePageTree(source.getPageTree());
+    // The changelog sits beside the package's guides, so their sidebar stays open.
+    const pageTree = await source.serializePageTree(
+      sidebarTree(source.getPageTree(), `/docs/${slug}`),
+    );
 
     // GitHub can be down or rate limited; the page still renders and links to the releases.
     const result = await packageReleases(pkg, page).catch(() => undefined);

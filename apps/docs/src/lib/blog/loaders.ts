@@ -4,7 +4,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { blogImageUrl } from "@/lib/og/urls";
 
 import { blogPages, getBlogPage, listPosts, postImage, relatedPages, summarizePost } from "./posts";
-import { isBlogTag } from "./schema";
+import { isBlogTag } from "./taxonomy";
 
 export const loadBlogIndex = createServerFn({ method: "GET" }).handler(async () => ({
   posts: await listPosts(),

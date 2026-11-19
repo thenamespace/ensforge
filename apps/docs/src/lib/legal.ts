@@ -2,7 +2,8 @@ import { notFound } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
 
 import type { LegalData } from "@/components/marketing/legal-page";
-import { legal, legalSource } from "@/lib/source";
+import { legal } from "@/lib/content/legal";
+import { legalSource } from "@/lib/source";
 
 /** Loads a terms or privacy page's frontmatter on the server and preloads its compiled body. */
 export const loadLegal = createServerFn({ method: "GET" })

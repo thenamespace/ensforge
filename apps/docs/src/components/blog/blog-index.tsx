@@ -9,7 +9,7 @@ import { Container } from "@/components/marketing/section";
 import { track } from "@/lib/analytics/client";
 import { blogDescription, categoryLabels } from "@/lib/blog/format";
 import type { PostSummary } from "@/lib/blog/posts";
-import { type BlogCategory, blogCategories } from "@/lib/blog/schema";
+import { type BlogCategory, blogCategories } from "@/lib/blog/taxonomy";
 import { cn } from "@/lib/cn";
 import { site } from "@/lib/site";
 

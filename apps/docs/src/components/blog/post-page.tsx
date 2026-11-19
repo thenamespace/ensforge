@@ -12,8 +12,8 @@ import { track } from "@/lib/analytics/client";
 import { categoryLabels, formatDate, readingTime, tagLabels } from "@/lib/blog/format";
 import type { BlogPostData } from "@/lib/blog/loaders";
 import type { PostSummary } from "@/lib/blog/posts";
+import { blog } from "@/lib/content/blog";
 import { getPackage } from "@/lib/packages";
-import { blog } from "@/lib/source";
 
 import { BlogPostAnalytics } from "./analytics";
 import { Byline } from "./authors";
