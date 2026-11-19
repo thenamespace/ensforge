@@ -5,68 +5,65 @@ import {
   Console,
   Effect,
   FileSystem,
-  Formatter,
   Path,
   Record as Rec,
-  Schema,
   String as Str,
 } from "effect";
 import { Command, Flag } from "effect/cli";
 
 import { build } from "rolldown";
 
-import { CheckFailed, SetupError, ToolFailed } from "../errors.ts";
+import { overBudget, readBudgets, writeBudgets } from "../budgets.ts";
+import { CheckFailed, ToolFailed } from "../errors.ts";
 import { Workspace } from "../services/Workspace.ts";
+
+/** Which chunks a scenario counts: what an app loads up front, or what it loads on demand. */
+export type Scope = "initial" | "lazy";
+
+const ensClient =
+  'import { Ensforge, ensActions } from "@ensforge/sdk"; export const make = (publicClient) => Ensforge.create({ publicClient }).extend(ensActions());';
 
 // What typical apps import, bundled from the package that would install them (built `dist`,
 // published exports). viem and React are external: apps already ship them.
-export const scenarios: Readonly<Record<string, readonly [pkg: string, source: string]>> = {
+export const scenarios: Readonly<
+  Record<string, readonly [pkg: string, source: string, scope?: Scope]>
+> = {
   "sdk: Actions.record.getText": [
     "sdk",
     'import { Actions } from "@ensforge/sdk"; export const read = Actions.record.getText;',
   ],
-  "sdk: ensActions()": [
+  "sdk: Actions.record.set": [
     "sdk",
-    'import { Ensforge, ensActions } from "@ensforge/sdk"; export const make = (publicClient) => Ensforge.create({ publicClient }).extend(ensActions());',
+    'import { Actions } from "@ensforge/sdk"; export const write = Actions.record.set;',
   ],
+  "sdk: record, name and primaryName actions": [
+    "sdk",
+    'import { Ensforge, nameActions, primaryNameActions, recordActions } from "@ensforge/sdk"; export const make = (publicClient) => Ensforge.create({ publicClient }).extend(recordActions()).extend(nameActions()).extend(primaryNameActions());',
+  ],
+  "sdk: ensActions()": ["sdk", ensClient],
+  "sdk: ensActions(), loaded on demand": ["sdk", ensClient, "lazy"],
   "sdk: ensActions() + indexerActions()": [
     "sdk",
     'import { Ensforge, ensActions } from "@ensforge/sdk"; import { bigname, indexerActions } from "@ensforge/sdk/indexer"; export const make = (publicClient) => Ensforge.create({ publicClient, indexer: bigname() }).extend(ensActions()).extend(indexerActions());',
   ],
+  "sdk/effect: Actions.record.get": [
+    "sdk",
+    'import { Actions } from "@ensforge/sdk/effect"; export const read = Actions.record.get;',
+  ],
   "react: useAddress": ["react", 'export { EnsforgeProvider, useAddress } from "@ensforge/react";'],
+  "react: useName": ["react", 'export { EnsforgeProvider, useName } from "@ensforge/react";'],
   "hca: hca() with owner()": ["hca", 'export { hca, owner } from "@ensforge/hca";'],
 };
 
-const Budgets = Schema.fromJsonString(Schema.Record(Schema.String, Schema.Finite));
-
-/** `.config/bundle-budgets.json`. */
-export const readBudgets = Effect.fn("bundleSize.readBudgets")(function* (root: string) {
-  const fs = yield* FileSystem.FileSystem;
-  const path = yield* Path.Path;
-  const budgetsFile = path.join(root, ".config/bundle-budgets.json");
-  return yield* fs.readFileString(budgetsFile).pipe(
-    Effect.flatMap(Schema.decodeUnknownEffect(Budgets)),
-    Effect.mapError((cause) => SetupError.make({ message: `${budgetsFile}: ${String(cause)}` })),
-  );
-});
-
-/** Scenarios more than 5% over their budget, or without one. */
-export const overBudget = (
-  sizes: ReadonlyArray<readonly [name: string, size: number]>,
-  budgets: Readonly<Record<string, number>>,
-) =>
-  Arr.flatMap(sizes, ([name, size]) => {
-    const budget = budgets[name];
-    return budget === undefined || size > budget * 1.05
-      ? [`${name}: ${size} B gzip (budget ${budget ?? "none"} B)`]
-      : [];
-  });
-
 /**
- * Gzipped bytes an app loads up front: the entry and its static imports, not lazy chunks. Imports
- * resolve from `folder`, as they would in an app there.
+ * Gzipped bytes an app loads up front (the entry and its static imports), or on demand (every
+ * other chunk). Imports resolve from `folder`, as they would in an app there.
  */
-export const measure = Effect.fn("bundleSize.measure")(function* (folder: string, source: string) {
+export const measure = Effect.fn("bundleSize.measure")(function* (
+  folder: string,
+  source: string,
+  scope: Scope = "initial",
+) {
   const fs = yield* FileSystem.FileSystem;
   const path = yield* Path.Path;
   yield* fs.remove(folder, { recursive: true, force: true });
@@ -101,8 +98,12 @@ export const measure = Effect.fn("bundleSize.measure")(function* (folder: string
   for (const chunk of result.output)
     if (chunk.type === "chunk" && chunk.isEntry) visit(chunk.fileName);
 
+  const counted = Arr.filter(
+    [...chunks.keys()],
+    (fileName) => initial.has(fileName) === (scope === "initial"),
+  );
   const code = Arr.join(
-    Arr.map([...initial], (fileName) => {
+    Arr.map(counted, (fileName) => {
       const chunk = chunks.get(fileName);
       return chunk?.type === "chunk" ? chunk.code : "";
     }),
@@ -117,16 +118,16 @@ export const measure = Effect.fn("bundleSize.measure")(function* (folder: string
  */
 export const bundleSize = Effect.fn("bundleSize")(function* (write: boolean) {
   const workspace = yield* Workspace;
-  const fs = yield* FileSystem.FileSystem;
   const path = yield* Path.Path;
-  const budgets = write ? {} : yield* readBudgets(workspace.root);
+  const budgets = write ? {} : yield* readBudgets(workspace.root, "bundle-budgets.json");
 
   const sizes = yield* Effect.forEach(
     Rec.toEntries(scenarios),
-    ([name, [pkg, source]], index) =>
+    ([name, [pkg, source, scope]], index) =>
       measure(
         path.join(workspace.root, "packages", pkg, `node_modules/.cache/bundle-size/${index}`),
         source,
+        scope,
       ).pipe(Effect.map((size) => [name, size] as const)),
     { concurrency: "unbounded" },
   );
@@ -134,14 +135,11 @@ export const bundleSize = Effect.fn("bundleSize")(function* (write: boolean) {
   for (const [name, size] of sizes)
     yield* Console.log(`${Str.padStart(8)(String(size))} B  ${name}`);
   if (write) {
-    yield* fs.writeFileString(
-      path.join(workspace.root, ".config/bundle-budgets.json"),
-      `${Formatter.formatJson(Rec.fromEntries(sizes), { space: 2 })}\n`,
-    );
+    yield* writeBudgets(workspace.root, "bundle-budgets.json", sizes);
     return yield* Console.log("bundle-size: budgets written");
   }
 
-  const problems = overBudget(sizes, budgets);
+  const problems = overBudget(sizes, budgets, "B gzip");
   if (problems.length > 0) return yield* CheckFailed.make({ check: "bundle-size", problems });
   return yield* Console.log("bundle-size: ok");
 });
