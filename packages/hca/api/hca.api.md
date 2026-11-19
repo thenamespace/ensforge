@@ -4,271 +4,271 @@
 
 ```ts
 // @stability experimental
-function Actions.hca.addDeposit(client: Client<object> | ViemClient, options: addDeposit.Options & Write.Options) => Promise<Result>
+function Actions.hca.addDeposit(client: Client<object> | ViemClientLike, options: addDeposit.Options & Write.Options) => Promise<Result>
 type Actions.hca.addDeposit.ErrorType = HcaError | InvalidInputError | WriteError
-function Actions.hca.addDeposit.estimateGas(client: Client<object> | ViemClient, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Estimate>
+function Actions.hca.addDeposit.estimateGas(client: Client<object> | ViemClientLike, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Estimate>
 const Actions.hca.addDeposit.estimateGas.path: string
 type Actions.hca.addDeposit.Options = { amount: bigint; address?: string | undefined; }
 const Actions.hca.addDeposit.path: 'hca.addDeposit'
-function Actions.hca.addDeposit.prepare(client: Client<object> | ViemClient, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Plan>
+function Actions.hca.addDeposit.prepare(client: Client<object> | ViemClientLike, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Plan>
 const Actions.hca.addDeposit.prepare.path: string
 type Actions.hca.addDeposit.ReturnType = { readonly hash: `0x${string}`; readonly hashes: readonly `0x${string}`[]; readonly id: string | undefined; readonly plan: Plan; }
-function Actions.hca.addDeposit.simulate(client: Client<object> | ViemClient, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Simulation>
+function Actions.hca.addDeposit.simulate(client: Client<object> | ViemClientLike, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Simulation>
 const Actions.hca.addDeposit.simulate.path: string
 // @stability experimental
-function Actions.hca.addDepositSync(client: Client<object> | ViemClient, options: addDeposit.Options & Write.Options & { confirmations?: number | undefined; timeout?: number | undefined; }) => Promise<SyncResult>
+function Actions.hca.addDepositSync(client: Client<object> | ViemClientLike, options: addDeposit.Options & Write.Options & { confirmations?: number | undefined; timeout?: number | undefined; }) => Promise<SyncResult>
 type Actions.hca.addDepositSync.ErrorType = HcaError | InvalidInputError | WriteError
 type Actions.hca.addDepositSync.Options = addDeposit.Options & Write.Options & { confirmations?: number | undefined; timeout?: number | undefined; }
 const Actions.hca.addDepositSync.path: 'hca.addDepositSync'
 type Actions.hca.addDepositSync.ReturnType = Result & { readonly receipt: TransactionReceipt; readonly receipts: readonly TransactionReceipt[]; }
 // @stability experimental
-function Actions.hca.authorizeSession(client: Client<object> | ViemClient, options: { sessionKey: string; resolver: string; validUntil: number; refund?: { readonly token?: `0x${string}` | undefined; readonly maxExchangeRate?: bigint | undefined; readonly maxGasOverhead?: bigint | undefined; readonly maxAmount?: bigint | undefined; } | undefined; account?: `0x${string}` | undefined; }) => Promise<HcaSession>
+function Actions.hca.authorizeSession(client: Client<object> | ViemClientLike, options: { sessionKey: string; resolver: string; validUntil: number; refund?: { readonly token?: `0x${string}` | undefined; readonly maxExchangeRate?: bigint | undefined; readonly maxGasOverhead?: bigint | undefined; readonly maxAmount?: bigint | undefined; } | undefined; account?: `0x${string}` | undefined; }) => Promise<HcaSession>
 type Actions.hca.authorizeSession.ErrorType = HcaError | InvalidInputError | UserRejectedError | CommonError
 type Actions.hca.authorizeSession.Options = { sessionKey: string; resolver: string; validUntil: number; refund?: { readonly token?: `0x${string}` | undefined; readonly maxExchangeRate?: bigint | undefined; readonly maxGasOverhead?: bigint | undefined; readonly maxAmount?: bigint | undefined; } | undefined; account?: `0x${string}` | undefined; }
 const Actions.hca.authorizeSession.path: 'hca.authorizeSession'
 type Actions.hca.authorizeSession.ReturnType = { readonly chainId: number; readonly hca: `0x${string}`; readonly owner: `0x${string}`; readonly sessionKey: `0x${string}`; readonly terms: HcaSessionTerms; readonly permissionId: `0x${string}`; readonly sessionDigest: `0x${string}`; readonly chains: readonly { readonly chainId: number; readonly sessionDigest: `0x${string}`; }[]; readonly ownerSignature: `0x${string}`; readonly signingDomain: 'hca' | 'smart-session'; }
 // @stability experimental
-function Actions.hca.checkSessionCalls(client: Client<object> | ViemClient, options: { session: HcaSession; calls: readonly Call[]; }) => Promise<true>
+function Actions.hca.checkSessionCalls(client: Client<object> | ViemClientLike, options: { session: HcaSession; calls: readonly Call[]; }) => Promise<true>
 type Actions.hca.checkSessionCalls.ErrorType = HcaError | CommonError
 type Actions.hca.checkSessionCalls.Options = { session: HcaSession; calls: readonly Call[]; }
 const Actions.hca.checkSessionCalls.path: 'hca.checkSessionCalls'
 type Actions.hca.checkSessionCalls.ReturnType = true
 // @stability experimental
-function Actions.hca.deploy(client: Client<object> | ViemClient, options: { account?: `0x${string}` | Account | undefined; simulate?: boolean | undefined; signal?: AbortSignal | undefined; mode?: Mode | undefined; maxBundleCalls?: number | undefined; onStep?: ((event: Event) => void) | undefined; via?: Via | undefined; paymaster?: { readonly url: string; readonly context?: Readonly<Record<string, unknown>>; } | undefined; }) => Promise<Result>
+function Actions.hca.deploy(client: Client<object> | ViemClientLike, options: { account?: `0x${string}` | Account | undefined; simulate?: boolean | undefined; signal?: AbortSignal | undefined; mode?: Mode | undefined; maxBundleCalls?: number | undefined; onStep?: ((event: Event) => void) | undefined; via?: Via | undefined; paymaster?: { readonly url: string; readonly context?: Readonly<Record<string, unknown>>; } | undefined; }) => Promise<Result>
 type Actions.hca.deploy.ErrorType = HcaError | WriteError
-function Actions.hca.deploy.estimateGas(client: Client<object> | ViemClient, options: { account?: `0x${string}` | Account | undefined; via?: Via | undefined; }) => Promise<Estimate>
+function Actions.hca.deploy.estimateGas(client: Client<object> | ViemClientLike, options: { account?: `0x${string}` | Account | undefined; via?: Via | undefined; }) => Promise<Estimate>
 const Actions.hca.deploy.estimateGas.path: string
 type Actions.hca.deploy.Options = {}
 const Actions.hca.deploy.path: 'hca.deploy'
-function Actions.hca.deploy.prepare(client: Client<object> | ViemClient, options: { account?: `0x${string}` | Account | undefined; via?: Via | undefined; }) => Promise<Plan>
+function Actions.hca.deploy.prepare(client: Client<object> | ViemClientLike, options: { account?: `0x${string}` | Account | undefined; via?: Via | undefined; }) => Promise<Plan>
 const Actions.hca.deploy.prepare.path: string
 type Actions.hca.deploy.ReturnType = { readonly hash: `0x${string}`; readonly hashes: readonly `0x${string}`[]; readonly id: string | undefined; readonly plan: Plan; }
-function Actions.hca.deploy.simulate(client: Client<object> | ViemClient, options: { account?: `0x${string}` | Account | undefined; via?: Via | undefined; }) => Promise<Simulation>
+function Actions.hca.deploy.simulate(client: Client<object> | ViemClientLike, options: { account?: `0x${string}` | Account | undefined; via?: Via | undefined; }) => Promise<Simulation>
 const Actions.hca.deploy.simulate.path: string
 // @stability experimental
-function Actions.hca.deploySync(client: Client<object> | ViemClient, options: Options & { confirmations?: number | undefined; timeout?: number | undefined; }) => Promise<SyncResult>
+function Actions.hca.deploySync(client: Client<object> | ViemClientLike, options: Options & { confirmations?: number | undefined; timeout?: number | undefined; }) => Promise<SyncResult>
 type Actions.hca.deploySync.ErrorType = HcaError | WriteError
 type Actions.hca.deploySync.Options = Options & { confirmations?: number | undefined; timeout?: number | undefined; }
 const Actions.hca.deploySync.path: 'hca.deploySync'
 type Actions.hca.deploySync.ReturnType = Result & { readonly receipt: TransactionReceipt; readonly receipts: readonly TransactionReceipt[]; }
 // @stability experimental
-function Actions.hca.execute(client: Client<object> | ViemClient, options: execute.Options & Write.Options) => Promise<Result>
+function Actions.hca.execute(client: Client<object> | ViemClientLike, options: execute.Options & Write.Options) => Promise<Result>
 type Actions.hca.execute.ErrorType = HcaError | WriteError
-function Actions.hca.execute.estimateGas(client: Client<object> | ViemClient, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Estimate>
+function Actions.hca.execute.estimateGas(client: Client<object> | ViemClientLike, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Estimate>
 const Actions.hca.execute.estimateGas.path: string
 type Actions.hca.execute.Options = { calls: readonly { readonly to: `0x${string}`; readonly data?: `0x${string}` | undefined; readonly value?: bigint | undefined; }[]; }
 const Actions.hca.execute.path: 'hca.execute'
-function Actions.hca.execute.prepare(client: Client<object> | ViemClient, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Plan>
+function Actions.hca.execute.prepare(client: Client<object> | ViemClientLike, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Plan>
 const Actions.hca.execute.prepare.path: string
 type Actions.hca.execute.ReturnType = { readonly hash: `0x${string}`; readonly hashes: readonly `0x${string}`[]; readonly id: string | undefined; readonly plan: Plan; }
-function Actions.hca.execute.simulate(client: Client<object> | ViemClient, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Simulation>
+function Actions.hca.execute.simulate(client: Client<object> | ViemClientLike, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Simulation>
 const Actions.hca.execute.simulate.path: string
 // @stability experimental
-function Actions.hca.executeSync(client: Client<object> | ViemClient, options: execute.Options & Write.Options & { confirmations?: number | undefined; timeout?: number | undefined; }) => Promise<SyncResult>
+function Actions.hca.executeSync(client: Client<object> | ViemClientLike, options: execute.Options & Write.Options & { confirmations?: number | undefined; timeout?: number | undefined; }) => Promise<SyncResult>
 type Actions.hca.executeSync.ErrorType = HcaError | WriteError
 type Actions.hca.executeSync.Options = execute.Options & Write.Options & { confirmations?: number | undefined; timeout?: number | undefined; }
 const Actions.hca.executeSync.path: 'hca.executeSync'
 type Actions.hca.executeSync.ReturnType = Result & { readonly receipt: TransactionReceipt; readonly receipts: readonly TransactionReceipt[]; }
 // @stability experimental
-function Actions.hca.get(client: Client<object> | ViemClient, options?: Options | undefined) => Promise<HcaAccount>
+function Actions.hca.get(client: Client<object> | ViemClientLike, options?: Options | undefined) => Promise<HcaAccount>
 type Actions.hca.get.ErrorType = HcaError | InvalidInputError | CommonError
 type Actions.hca.get.Options = { address?: string | undefined; owner?: string | undefined; }
 const Actions.hca.get.path: 'hca.get'
 type Actions.hca.get.ReturnType = { readonly address: `0x${string}`; readonly owner: `0x${string}` | null; readonly deployed: boolean; readonly authorizedOwner: `0x${string}` | null; readonly accountId: string | null; readonly implementation: `0x${string}` | null; readonly initialImplementation: `0x${string}`; readonly sessionNonce: bigint; readonly upgradeSet: `0x${string}`; readonly problems: readonly HcaProblem[]; }
 // @stability experimental
-function Actions.hca.getDeposit(client: Client<object> | ViemClient, options?: Options | undefined) => Promise<bigint>
+function Actions.hca.getDeposit(client: Client<object> | ViemClientLike, options?: Options | undefined) => Promise<bigint>
 type Actions.hca.getDeposit.ErrorType = HcaError | InvalidInputError | CommonError
 type Actions.hca.getDeposit.Options = { address?: string | undefined; owner?: string | undefined; }
 const Actions.hca.getDeposit.path: 'hca.getDeposit'
 type Actions.hca.getDeposit.ReturnType = bigint
 // @stability experimental
-function Actions.hca.getSession(client: Client<object> | ViemClient, options: { session: HcaSession; }) => Promise<ReturnType>
+function Actions.hca.getSession(client: Client<object> | ViemClientLike, options: { session: HcaSession; }) => Promise<ReturnType>
 type Actions.hca.getSession.ErrorType = HcaError | CommonError
 type Actions.hca.getSession.Options = { session: HcaSession; }
 const Actions.hca.getSession.path: 'hca.getSession'
 type Actions.hca.getSession.ReturnType = { readonly valid: boolean; readonly problem: 'chain' | 'expired' | 'revoked' | 'signing-domain' | null; }
 // @stability experimental
-function Actions.hca.getUpgrade(client: Client<object> | ViemClient, options: { implementation: string; address?: string | undefined; owner?: string | undefined; }) => Promise<ReturnType>
+function Actions.hca.getUpgrade(client: Client<object> | ViemClientLike, options: { implementation: string; address?: string | undefined; owner?: string | undefined; }) => Promise<ReturnType>
 type Actions.hca.getUpgrade.ErrorType = HcaError | InvalidInputError | CommonError
 type Actions.hca.getUpgrade.Options = { implementation: string; address?: string | undefined; owner?: string | undefined; }
 const Actions.hca.getUpgrade.path: 'hca.getUpgrade'
 type Actions.hca.getUpgrade.ReturnType = { readonly allowed: boolean; readonly current: `0x${string}` | null; readonly inUpgradeSet: boolean; readonly predecessorAllowed: boolean; }
 // @stability experimental
-function Actions.hca.predictAddress(client: Client<object> | ViemClient, options?: Options | undefined) => Promise<`0x${string}`>
+function Actions.hca.predictAddress(client: Client<object> | ViemClientLike, options?: Options | undefined) => Promise<`0x${string}`>
 type Actions.hca.predictAddress.ErrorType = HcaError | InvalidInputError | CommonError
 type Actions.hca.predictAddress.Options = { owner?: string | undefined; }
 const Actions.hca.predictAddress.path: 'hca.predictAddress'
 type Actions.hca.predictAddress.ReturnType = `0x${string}`
 // @stability experimental
-function Actions.hca.revokeSessions(client: Client<object> | ViemClient, options: { account?: `0x${string}` | Account | undefined; simulate?: boolean | undefined; signal?: AbortSignal | undefined; mode?: Mode | undefined; maxBundleCalls?: number | undefined; onStep?: ((event: Event) => void) | undefined; via?: Via | undefined; paymaster?: { readonly url: string; readonly context?: Readonly<Record<string, unknown>>; } | undefined; }) => Promise<Result>
+function Actions.hca.revokeSessions(client: Client<object> | ViemClientLike, options: { account?: `0x${string}` | Account | undefined; simulate?: boolean | undefined; signal?: AbortSignal | undefined; mode?: Mode | undefined; maxBundleCalls?: number | undefined; onStep?: ((event: Event) => void) | undefined; via?: Via | undefined; paymaster?: { readonly url: string; readonly context?: Readonly<Record<string, unknown>>; } | undefined; }) => Promise<Result>
 type Actions.hca.revokeSessions.ErrorType = HcaError | WriteError
-function Actions.hca.revokeSessions.estimateGas(client: Client<object> | ViemClient, options: { account?: `0x${string}` | Account | undefined; via?: Via | undefined; }) => Promise<Estimate>
+function Actions.hca.revokeSessions.estimateGas(client: Client<object> | ViemClientLike, options: { account?: `0x${string}` | Account | undefined; via?: Via | undefined; }) => Promise<Estimate>
 const Actions.hca.revokeSessions.estimateGas.path: string
 type Actions.hca.revokeSessions.Options = {}
 const Actions.hca.revokeSessions.path: 'hca.revokeSessions'
-function Actions.hca.revokeSessions.prepare(client: Client<object> | ViemClient, options: { account?: `0x${string}` | Account | undefined; via?: Via | undefined; }) => Promise<Plan>
+function Actions.hca.revokeSessions.prepare(client: Client<object> | ViemClientLike, options: { account?: `0x${string}` | Account | undefined; via?: Via | undefined; }) => Promise<Plan>
 const Actions.hca.revokeSessions.prepare.path: string
 type Actions.hca.revokeSessions.ReturnType = { readonly hash: `0x${string}`; readonly hashes: readonly `0x${string}`[]; readonly id: string | undefined; readonly plan: Plan; }
-function Actions.hca.revokeSessions.simulate(client: Client<object> | ViemClient, options: { account?: `0x${string}` | Account | undefined; via?: Via | undefined; }) => Promise<Simulation>
+function Actions.hca.revokeSessions.simulate(client: Client<object> | ViemClientLike, options: { account?: `0x${string}` | Account | undefined; via?: Via | undefined; }) => Promise<Simulation>
 const Actions.hca.revokeSessions.simulate.path: string
 // @stability experimental
-function Actions.hca.revokeSessionsSync(client: Client<object> | ViemClient, options: Options & { confirmations?: number | undefined; timeout?: number | undefined; }) => Promise<SyncResult>
+function Actions.hca.revokeSessionsSync(client: Client<object> | ViemClientLike, options: Options & { confirmations?: number | undefined; timeout?: number | undefined; }) => Promise<SyncResult>
 type Actions.hca.revokeSessionsSync.ErrorType = HcaError | WriteError
 type Actions.hca.revokeSessionsSync.Options = Options & { confirmations?: number | undefined; timeout?: number | undefined; }
 const Actions.hca.revokeSessionsSync.path: 'hca.revokeSessionsSync'
 type Actions.hca.revokeSessionsSync.ReturnType = Result & { readonly receipt: TransactionReceipt; readonly receipts: readonly TransactionReceipt[]; }
 // @stability experimental
-function Actions.hca.upgrade(client: Client<object> | ViemClient, options: upgrade.Options & Write.Options) => Promise<Result>
+function Actions.hca.upgrade(client: Client<object> | ViemClientLike, options: upgrade.Options & Write.Options) => Promise<Result>
 type Actions.hca.upgrade.ErrorType = HcaError | InvalidInputError | WriteError
-function Actions.hca.upgrade.estimateGas(client: Client<object> | ViemClient, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Estimate>
+function Actions.hca.upgrade.estimateGas(client: Client<object> | ViemClientLike, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Estimate>
 const Actions.hca.upgrade.estimateGas.path: string
 type Actions.hca.upgrade.Options = { implementation: string; }
 const Actions.hca.upgrade.path: 'hca.upgrade'
-function Actions.hca.upgrade.prepare(client: Client<object> | ViemClient, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Plan>
+function Actions.hca.upgrade.prepare(client: Client<object> | ViemClientLike, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Plan>
 const Actions.hca.upgrade.prepare.path: string
 type Actions.hca.upgrade.ReturnType = { readonly hash: `0x${string}`; readonly hashes: readonly `0x${string}`[]; readonly id: string | undefined; readonly plan: Plan; }
-function Actions.hca.upgrade.simulate(client: Client<object> | ViemClient, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Simulation>
+function Actions.hca.upgrade.simulate(client: Client<object> | ViemClientLike, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Simulation>
 const Actions.hca.upgrade.simulate.path: string
 // @stability experimental
-function Actions.hca.upgradeSync(client: Client<object> | ViemClient, options: upgrade.Options & Write.Options & { confirmations?: number | undefined; timeout?: number | undefined; }) => Promise<SyncResult>
+function Actions.hca.upgradeSync(client: Client<object> | ViemClientLike, options: upgrade.Options & Write.Options & { confirmations?: number | undefined; timeout?: number | undefined; }) => Promise<SyncResult>
 type Actions.hca.upgradeSync.ErrorType = HcaError | InvalidInputError | WriteError
 type Actions.hca.upgradeSync.Options = upgrade.Options & Write.Options & { confirmations?: number | undefined; timeout?: number | undefined; }
 const Actions.hca.upgradeSync.path: 'hca.upgradeSync'
 type Actions.hca.upgradeSync.ReturnType = Result & { readonly receipt: TransactionReceipt; readonly receipts: readonly TransactionReceipt[]; }
 // @stability experimental
-function Actions.hca.verify(client: Client<object> | ViemClient, options?: Options | undefined) => Promise<HcaAccount>
+function Actions.hca.verify(client: Client<object> | ViemClientLike, options?: Options | undefined) => Promise<HcaAccount>
 type Actions.hca.verify.ErrorType = HcaError | InvalidInputError | CommonError
 type Actions.hca.verify.Options = { address?: string | undefined; owner?: string | undefined; }
 const Actions.hca.verify.path: 'hca.verify'
 type Actions.hca.verify.ReturnType = { readonly address: `0x${string}`; readonly owner: `0x${string}` | null; readonly deployed: boolean; readonly authorizedOwner: `0x${string}` | null; readonly accountId: string | null; readonly implementation: `0x${string}` | null; readonly initialImplementation: `0x${string}`; readonly sessionNonce: bigint; readonly upgradeSet: `0x${string}`; readonly problems: readonly HcaProblem[]; }
 // @stability experimental
-function Actions.hca.withdrawDeposit(client: Client<object> | ViemClient, options: withdrawDeposit.Options & Write.Options) => Promise<Result>
+function Actions.hca.withdrawDeposit(client: Client<object> | ViemClientLike, options: withdrawDeposit.Options & Write.Options) => Promise<Result>
 type Actions.hca.withdrawDeposit.ErrorType = HcaError | InvalidInputError | WriteError
-function Actions.hca.withdrawDeposit.estimateGas(client: Client<object> | ViemClient, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Estimate>
+function Actions.hca.withdrawDeposit.estimateGas(client: Client<object> | ViemClientLike, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Estimate>
 const Actions.hca.withdrawDeposit.estimateGas.path: string
 type Actions.hca.withdrawDeposit.Options = { to: string; amount: bigint; }
 const Actions.hca.withdrawDeposit.path: 'hca.withdrawDeposit'
-function Actions.hca.withdrawDeposit.prepare(client: Client<object> | ViemClient, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Plan>
+function Actions.hca.withdrawDeposit.prepare(client: Client<object> | ViemClientLike, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Plan>
 const Actions.hca.withdrawDeposit.prepare.path: string
 type Actions.hca.withdrawDeposit.ReturnType = { readonly hash: `0x${string}`; readonly hashes: readonly `0x${string}`[]; readonly id: string | undefined; readonly plan: Plan; }
-function Actions.hca.withdrawDeposit.simulate(client: Client<object> | ViemClient, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Simulation>
+function Actions.hca.withdrawDeposit.simulate(client: Client<object> | ViemClientLike, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Simulation>
 const Actions.hca.withdrawDeposit.simulate.path: string
 // @stability experimental
-function Actions.hca.withdrawDepositSync(client: Client<object> | ViemClient, options: withdrawDeposit.Options & Write.Options & { confirmations?: number | undefined; timeout?: number | undefined; }) => Promise<SyncResult>
+function Actions.hca.withdrawDepositSync(client: Client<object> | ViemClientLike, options: withdrawDeposit.Options & Write.Options & { confirmations?: number | undefined; timeout?: number | undefined; }) => Promise<SyncResult>
 type Actions.hca.withdrawDepositSync.ErrorType = HcaError | InvalidInputError | WriteError
 type Actions.hca.withdrawDepositSync.Options = withdrawDeposit.Options & Write.Options & { confirmations?: number | undefined; timeout?: number | undefined; }
 const Actions.hca.withdrawDepositSync.path: 'hca.withdrawDepositSync'
 type Actions.hca.withdrawDepositSync.ReturnType = Result & { readonly receipt: TransactionReceipt; readonly receipts: readonly TransactionReceipt[]; }
 // @stability experimental
-function Actions.hcaAdmin.getGovernance(client: Client<object> | ViemClient, options?: Options | undefined) => Promise<ReturnType>
+function Actions.hcaAdmin.getGovernance(client: Client<object> | ViemClientLike, options?: Options | undefined) => Promise<ReturnType>
 type Actions.hcaAdmin.getGovernance.ErrorType = HcaError | InvalidInputError | CommonError
 type Actions.hcaAdmin.getGovernance.Options = { implementation?: string | undefined; }
 const Actions.hcaAdmin.getGovernance.path: 'hcaAdmin.getGovernance'
 type Actions.hcaAdmin.getGovernance.ReturnType = { readonly factoryOwner: `0x${string}`; readonly upgradeSet: `0x${string}`; readonly deploymentApproved: boolean | null; readonly upgradeApproved: boolean | null; }
 // @stability experimental
-function Actions.hcaAdmin.grantUpgradeSetRoles(client: Client<object> | ViemClient, options: grantUpgradeSetRoles.Options & Write.Options) => Promise<Result>
+function Actions.hcaAdmin.grantUpgradeSetRoles(client: Client<object> | ViemClientLike, options: grantUpgradeSetRoles.Options & Write.Options) => Promise<Result>
 type Actions.hcaAdmin.grantUpgradeSetRoles.ErrorType = HcaError | InvalidInputError | WriteError
-function Actions.hcaAdmin.grantUpgradeSetRoles.estimateGas(client: Client<object> | ViemClient, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Estimate>
+function Actions.hcaAdmin.grantUpgradeSetRoles.estimateGas(client: Client<object> | ViemClientLike, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Estimate>
 const Actions.hcaAdmin.grantUpgradeSetRoles.estimateGas.path: string
 type Actions.hcaAdmin.grantUpgradeSetRoles.Options = { grantee: string; roles: bigint; }
 const Actions.hcaAdmin.grantUpgradeSetRoles.path: 'hcaAdmin.grantUpgradeSetRoles'
-function Actions.hcaAdmin.grantUpgradeSetRoles.prepare(client: Client<object> | ViemClient, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Plan>
+function Actions.hcaAdmin.grantUpgradeSetRoles.prepare(client: Client<object> | ViemClientLike, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Plan>
 const Actions.hcaAdmin.grantUpgradeSetRoles.prepare.path: string
 type Actions.hcaAdmin.grantUpgradeSetRoles.ReturnType = { readonly hash: `0x${string}`; readonly hashes: readonly `0x${string}`[]; readonly id: string | undefined; readonly plan: Plan; }
-function Actions.hcaAdmin.grantUpgradeSetRoles.simulate(client: Client<object> | ViemClient, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Simulation>
+function Actions.hcaAdmin.grantUpgradeSetRoles.simulate(client: Client<object> | ViemClientLike, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Simulation>
 const Actions.hcaAdmin.grantUpgradeSetRoles.simulate.path: string
 // @stability experimental
-function Actions.hcaAdmin.grantUpgradeSetRolesSync(client: Client<object> | ViemClient, options: grantUpgradeSetRoles.Options & Write.Options & { confirmations?: number | undefined; timeout?: number | undefined; }) => Promise<SyncResult>
+function Actions.hcaAdmin.grantUpgradeSetRolesSync(client: Client<object> | ViemClientLike, options: grantUpgradeSetRoles.Options & Write.Options & { confirmations?: number | undefined; timeout?: number | undefined; }) => Promise<SyncResult>
 type Actions.hcaAdmin.grantUpgradeSetRolesSync.ErrorType = HcaError | InvalidInputError | WriteError
 type Actions.hcaAdmin.grantUpgradeSetRolesSync.Options = grantUpgradeSetRoles.Options & Write.Options & { confirmations?: number | undefined; timeout?: number | undefined; }
 const Actions.hcaAdmin.grantUpgradeSetRolesSync.path: 'hcaAdmin.grantUpgradeSetRolesSync'
 type Actions.hcaAdmin.grantUpgradeSetRolesSync.ReturnType = Result & { readonly receipt: TransactionReceipt; readonly receipts: readonly TransactionReceipt[]; }
 // @stability experimental
-function Actions.hcaAdmin.renounceGovernance(client: Client<object> | ViemClient, options: { account?: `0x${string}` | Account | undefined; simulate?: boolean | undefined; signal?: AbortSignal | undefined; mode?: Mode | undefined; maxBundleCalls?: number | undefined; onStep?: ((event: Event) => void) | undefined; via?: Via | undefined; paymaster?: { readonly url: string; readonly context?: Readonly<Record<string, unknown>>; } | undefined; }) => Promise<Result>
+function Actions.hcaAdmin.renounceGovernance(client: Client<object> | ViemClientLike, options: { account?: `0x${string}` | Account | undefined; simulate?: boolean | undefined; signal?: AbortSignal | undefined; mode?: Mode | undefined; maxBundleCalls?: number | undefined; onStep?: ((event: Event) => void) | undefined; via?: Via | undefined; paymaster?: { readonly url: string; readonly context?: Readonly<Record<string, unknown>>; } | undefined; }) => Promise<Result>
 type Actions.hcaAdmin.renounceGovernance.ErrorType = HcaError | WriteError
-function Actions.hcaAdmin.renounceGovernance.estimateGas(client: Client<object> | ViemClient, options: { account?: `0x${string}` | Account | undefined; via?: Via | undefined; }) => Promise<Estimate>
+function Actions.hcaAdmin.renounceGovernance.estimateGas(client: Client<object> | ViemClientLike, options: { account?: `0x${string}` | Account | undefined; via?: Via | undefined; }) => Promise<Estimate>
 const Actions.hcaAdmin.renounceGovernance.estimateGas.path: string
 type Actions.hcaAdmin.renounceGovernance.Options = {}
 const Actions.hcaAdmin.renounceGovernance.path: 'hcaAdmin.renounceGovernance'
-function Actions.hcaAdmin.renounceGovernance.prepare(client: Client<object> | ViemClient, options: { account?: `0x${string}` | Account | undefined; via?: Via | undefined; }) => Promise<Plan>
+function Actions.hcaAdmin.renounceGovernance.prepare(client: Client<object> | ViemClientLike, options: { account?: `0x${string}` | Account | undefined; via?: Via | undefined; }) => Promise<Plan>
 const Actions.hcaAdmin.renounceGovernance.prepare.path: string
 type Actions.hcaAdmin.renounceGovernance.ReturnType = { readonly hash: `0x${string}`; readonly hashes: readonly `0x${string}`[]; readonly id: string | undefined; readonly plan: Plan; }
-function Actions.hcaAdmin.renounceGovernance.simulate(client: Client<object> | ViemClient, options: { account?: `0x${string}` | Account | undefined; via?: Via | undefined; }) => Promise<Simulation>
+function Actions.hcaAdmin.renounceGovernance.simulate(client: Client<object> | ViemClientLike, options: { account?: `0x${string}` | Account | undefined; via?: Via | undefined; }) => Promise<Simulation>
 const Actions.hcaAdmin.renounceGovernance.simulate.path: string
 // @stability experimental
-function Actions.hcaAdmin.renounceGovernanceSync(client: Client<object> | ViemClient, options: Options & { confirmations?: number | undefined; timeout?: number | undefined; }) => Promise<SyncResult>
+function Actions.hcaAdmin.renounceGovernanceSync(client: Client<object> | ViemClientLike, options: Options & { confirmations?: number | undefined; timeout?: number | undefined; }) => Promise<SyncResult>
 type Actions.hcaAdmin.renounceGovernanceSync.ErrorType = HcaError | WriteError
 type Actions.hcaAdmin.renounceGovernanceSync.Options = Options & { confirmations?: number | undefined; timeout?: number | undefined; }
 const Actions.hcaAdmin.renounceGovernanceSync.path: 'hcaAdmin.renounceGovernanceSync'
 type Actions.hcaAdmin.renounceGovernanceSync.ReturnType = Result & { readonly receipt: TransactionReceipt; readonly receipts: readonly TransactionReceipt[]; }
 // @stability experimental
-function Actions.hcaAdmin.revokeUpgradeSetRoles(client: Client<object> | ViemClient, options: revokeUpgradeSetRoles.Options & Write.Options) => Promise<Result>
+function Actions.hcaAdmin.revokeUpgradeSetRoles(client: Client<object> | ViemClientLike, options: revokeUpgradeSetRoles.Options & Write.Options) => Promise<Result>
 type Actions.hcaAdmin.revokeUpgradeSetRoles.ErrorType = HcaError | InvalidInputError | WriteError
-function Actions.hcaAdmin.revokeUpgradeSetRoles.estimateGas(client: Client<object> | ViemClient, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Estimate>
+function Actions.hcaAdmin.revokeUpgradeSetRoles.estimateGas(client: Client<object> | ViemClientLike, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Estimate>
 const Actions.hcaAdmin.revokeUpgradeSetRoles.estimateGas.path: string
 type Actions.hcaAdmin.revokeUpgradeSetRoles.Options = { grantee: string; roles: bigint; }
 const Actions.hcaAdmin.revokeUpgradeSetRoles.path: 'hcaAdmin.revokeUpgradeSetRoles'
-function Actions.hcaAdmin.revokeUpgradeSetRoles.prepare(client: Client<object> | ViemClient, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Plan>
+function Actions.hcaAdmin.revokeUpgradeSetRoles.prepare(client: Client<object> | ViemClientLike, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Plan>
 const Actions.hcaAdmin.revokeUpgradeSetRoles.prepare.path: string
 type Actions.hcaAdmin.revokeUpgradeSetRoles.ReturnType = { readonly hash: `0x${string}`; readonly hashes: readonly `0x${string}`[]; readonly id: string | undefined; readonly plan: Plan; }
-function Actions.hcaAdmin.revokeUpgradeSetRoles.simulate(client: Client<object> | ViemClient, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Simulation>
+function Actions.hcaAdmin.revokeUpgradeSetRoles.simulate(client: Client<object> | ViemClientLike, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Simulation>
 const Actions.hcaAdmin.revokeUpgradeSetRoles.simulate.path: string
 // @stability experimental
-function Actions.hcaAdmin.revokeUpgradeSetRolesSync(client: Client<object> | ViemClient, options: revokeUpgradeSetRoles.Options & Write.Options & { confirmations?: number | undefined; timeout?: number | undefined; }) => Promise<SyncResult>
+function Actions.hcaAdmin.revokeUpgradeSetRolesSync(client: Client<object> | ViemClientLike, options: revokeUpgradeSetRoles.Options & Write.Options & { confirmations?: number | undefined; timeout?: number | undefined; }) => Promise<SyncResult>
 type Actions.hcaAdmin.revokeUpgradeSetRolesSync.ErrorType = HcaError | InvalidInputError | WriteError
 type Actions.hcaAdmin.revokeUpgradeSetRolesSync.Options = revokeUpgradeSetRoles.Options & Write.Options & { confirmations?: number | undefined; timeout?: number | undefined; }
 const Actions.hcaAdmin.revokeUpgradeSetRolesSync.path: 'hcaAdmin.revokeUpgradeSetRolesSync'
 type Actions.hcaAdmin.revokeUpgradeSetRolesSync.ReturnType = Result & { readonly receipt: TransactionReceipt; readonly receipts: readonly TransactionReceipt[]; }
 // @stability experimental
-function Actions.hcaAdmin.setDeploymentApproval(client: Client<object> | ViemClient, options: setDeploymentApproval.Options & Write.Options) => Promise<Result>
+function Actions.hcaAdmin.setDeploymentApproval(client: Client<object> | ViemClientLike, options: setDeploymentApproval.Options & Write.Options) => Promise<Result>
 type Actions.hcaAdmin.setDeploymentApproval.ErrorType = HcaError | InvalidInputError | WriteError
-function Actions.hcaAdmin.setDeploymentApproval.estimateGas(client: Client<object> | ViemClient, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Estimate>
+function Actions.hcaAdmin.setDeploymentApproval.estimateGas(client: Client<object> | ViemClientLike, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Estimate>
 const Actions.hcaAdmin.setDeploymentApproval.estimateGas.path: string
 type Actions.hcaAdmin.setDeploymentApproval.Options = { implementation: string; approved: boolean; }
 const Actions.hcaAdmin.setDeploymentApproval.path: 'hcaAdmin.setDeploymentApproval'
-function Actions.hcaAdmin.setDeploymentApproval.prepare(client: Client<object> | ViemClient, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Plan>
+function Actions.hcaAdmin.setDeploymentApproval.prepare(client: Client<object> | ViemClientLike, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Plan>
 const Actions.hcaAdmin.setDeploymentApproval.prepare.path: string
 type Actions.hcaAdmin.setDeploymentApproval.ReturnType = { readonly hash: `0x${string}`; readonly hashes: readonly `0x${string}`[]; readonly id: string | undefined; readonly plan: Plan; }
-function Actions.hcaAdmin.setDeploymentApproval.simulate(client: Client<object> | ViemClient, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Simulation>
+function Actions.hcaAdmin.setDeploymentApproval.simulate(client: Client<object> | ViemClientLike, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Simulation>
 const Actions.hcaAdmin.setDeploymentApproval.simulate.path: string
 // @stability experimental
-function Actions.hcaAdmin.setDeploymentApprovalSync(client: Client<object> | ViemClient, options: setDeploymentApproval.Options & Write.Options & { confirmations?: number | undefined; timeout?: number | undefined; }) => Promise<SyncResult>
+function Actions.hcaAdmin.setDeploymentApprovalSync(client: Client<object> | ViemClientLike, options: setDeploymentApproval.Options & Write.Options & { confirmations?: number | undefined; timeout?: number | undefined; }) => Promise<SyncResult>
 type Actions.hcaAdmin.setDeploymentApprovalSync.ErrorType = HcaError | InvalidInputError | WriteError
 type Actions.hcaAdmin.setDeploymentApprovalSync.Options = setDeploymentApproval.Options & Write.Options & { confirmations?: number | undefined; timeout?: number | undefined; }
 const Actions.hcaAdmin.setDeploymentApprovalSync.path: 'hcaAdmin.setDeploymentApprovalSync'
 type Actions.hcaAdmin.setDeploymentApprovalSync.ReturnType = Result & { readonly receipt: TransactionReceipt; readonly receipts: readonly TransactionReceipt[]; }
 // @stability experimental
-function Actions.hcaAdmin.setUpgradeApproval(client: Client<object> | ViemClient, options: setUpgradeApproval.Options & Write.Options) => Promise<Result>
+function Actions.hcaAdmin.setUpgradeApproval(client: Client<object> | ViemClientLike, options: setUpgradeApproval.Options & Write.Options) => Promise<Result>
 type Actions.hcaAdmin.setUpgradeApproval.ErrorType = HcaError | InvalidInputError | WriteError
-function Actions.hcaAdmin.setUpgradeApproval.estimateGas(client: Client<object> | ViemClient, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Estimate>
+function Actions.hcaAdmin.setUpgradeApproval.estimateGas(client: Client<object> | ViemClientLike, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Estimate>
 const Actions.hcaAdmin.setUpgradeApproval.estimateGas.path: string
 type Actions.hcaAdmin.setUpgradeApproval.Options = { implementation: string; approved: boolean; }
 const Actions.hcaAdmin.setUpgradeApproval.path: 'hcaAdmin.setUpgradeApproval'
-function Actions.hcaAdmin.setUpgradeApproval.prepare(client: Client<object> | ViemClient, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Plan>
+function Actions.hcaAdmin.setUpgradeApproval.prepare(client: Client<object> | ViemClientLike, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Plan>
 const Actions.hcaAdmin.setUpgradeApproval.prepare.path: string
 type Actions.hcaAdmin.setUpgradeApproval.ReturnType = { readonly hash: `0x${string}`; readonly hashes: readonly `0x${string}`[]; readonly id: string | undefined; readonly plan: Plan; }
-function Actions.hcaAdmin.setUpgradeApproval.simulate(client: Client<object> | ViemClient, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Simulation>
+function Actions.hcaAdmin.setUpgradeApproval.simulate(client: Client<object> | ViemClientLike, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Simulation>
 const Actions.hcaAdmin.setUpgradeApproval.simulate.path: string
 // @stability experimental
-function Actions.hcaAdmin.setUpgradeApprovalSync(client: Client<object> | ViemClient, options: setUpgradeApproval.Options & Write.Options & { confirmations?: number | undefined; timeout?: number | undefined; }) => Promise<SyncResult>
+function Actions.hcaAdmin.setUpgradeApprovalSync(client: Client<object> | ViemClientLike, options: setUpgradeApproval.Options & Write.Options & { confirmations?: number | undefined; timeout?: number | undefined; }) => Promise<SyncResult>
 type Actions.hcaAdmin.setUpgradeApprovalSync.ErrorType = HcaError | InvalidInputError | WriteError
 type Actions.hcaAdmin.setUpgradeApprovalSync.Options = setUpgradeApproval.Options & Write.Options & { confirmations?: number | undefined; timeout?: number | undefined; }
 const Actions.hcaAdmin.setUpgradeApprovalSync.path: 'hcaAdmin.setUpgradeApprovalSync'
 type Actions.hcaAdmin.setUpgradeApprovalSync.ReturnType = Result & { readonly receipt: TransactionReceipt; readonly receipts: readonly TransactionReceipt[]; }
 // @stability experimental
-function Actions.hcaAdmin.transferGovernance(client: Client<object> | ViemClient, options: transferGovernance.Options & Write.Options) => Promise<Result>
+function Actions.hcaAdmin.transferGovernance(client: Client<object> | ViemClientLike, options: transferGovernance.Options & Write.Options) => Promise<Result>
 type Actions.hcaAdmin.transferGovernance.ErrorType = HcaError | InvalidInputError | WriteError
-function Actions.hcaAdmin.transferGovernance.estimateGas(client: Client<object> | ViemClient, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Estimate>
+function Actions.hcaAdmin.transferGovernance.estimateGas(client: Client<object> | ViemClientLike, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Estimate>
 const Actions.hcaAdmin.transferGovernance.estimateGas.path: string
 type Actions.hcaAdmin.transferGovernance.Options = { newOwner: string; }
 const Actions.hcaAdmin.transferGovernance.path: 'hcaAdmin.transferGovernance'
-function Actions.hcaAdmin.transferGovernance.prepare(client: Client<object> | ViemClient, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Plan>
+function Actions.hcaAdmin.transferGovernance.prepare(client: Client<object> | ViemClientLike, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Plan>
 const Actions.hcaAdmin.transferGovernance.prepare.path: string
 type Actions.hcaAdmin.transferGovernance.ReturnType = { readonly hash: `0x${string}`; readonly hashes: readonly `0x${string}`[]; readonly id: string | undefined; readonly plan: Plan; }
-function Actions.hcaAdmin.transferGovernance.simulate(client: Client<object> | ViemClient, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Simulation>
+function Actions.hcaAdmin.transferGovernance.simulate(client: Client<object> | ViemClientLike, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Simulation>
 const Actions.hcaAdmin.transferGovernance.simulate.path: string
 // @stability experimental
-function Actions.hcaAdmin.transferGovernanceSync(client: Client<object> | ViemClient, options: transferGovernance.Options & Write.Options & { confirmations?: number | undefined; timeout?: number | undefined; }) => Promise<SyncResult>
+function Actions.hcaAdmin.transferGovernanceSync(client: Client<object> | ViemClientLike, options: transferGovernance.Options & Write.Options & { confirmations?: number | undefined; timeout?: number | undefined; }) => Promise<SyncResult>
 type Actions.hcaAdmin.transferGovernanceSync.ErrorType = HcaError | InvalidInputError | WriteError
 type Actions.hcaAdmin.transferGovernanceSync.Options = transferGovernance.Options & Write.Options & { confirmations?: number | undefined; timeout?: number | undefined; }
 const Actions.hcaAdmin.transferGovernanceSync.path: 'hcaAdmin.transferGovernanceSync'

@@ -7,6 +7,15 @@ import {
   type EnsActions,
   type RecordActions,
 } from "@ensforge/sdk";
+import {
+  createClient,
+  createPublicClient,
+  createTestClient,
+  createWalletClient,
+  http,
+  zeroAddress,
+} from "viem";
+import { mainnet, optimism } from "viem/chains";
 
 declare const base: Ensforge.Client;
 
@@ -52,5 +61,25 @@ describe("Client.extend", () => {
   it("accepts any extended client where a client is expected", () => {
     expectTypeOf(base.extend(ensActions())).toMatchTypeOf<Ensforge.Like>();
     expectTypeOf(Ensforge.from).returns.toEqualTypeOf<Ensforge.Client>();
+  });
+});
+
+describe("Ensforge.create", () => {
+  it("accepts every kind of viem client, created inline or not", () => {
+    const transport = http();
+    const publicClient = createPublicClient({ chain: mainnet, transport });
+    const walletClient = createWalletClient({ chain: mainnet, transport, account: zeroAddress });
+    const testClient = createTestClient({ chain: mainnet, mode: "anvil", transport });
+
+    expectTypeOf(Ensforge.create({ publicClient, walletClient })).toEqualTypeOf<Ensforge.Client>();
+    Ensforge.create({
+      publicClient: createPublicClient({ chain: mainnet, transport }),
+      walletClient: () => createWalletClient({ chain: mainnet, transport }),
+      chains: { 10: { publicClient: createClient({ chain: optimism, transport }) } },
+    });
+    Ensforge.create({ publicClient: testClient });
+    expectTypeOf(Ensforge.from(publicClient)).toEqualTypeOf<Ensforge.Client>();
+    // The client keeps exposing the full viem client.
+    expectTypeOf<Ensforge.Client["publicClient"]>().toEqualTypeOf<Ensforge.ViemClient>();
   });
 });

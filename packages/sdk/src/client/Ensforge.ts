@@ -9,5 +9,6 @@ export type {
   Gateways,
   Like,
   ViemClient,
+  ViemClientLike,
   ViemWalletClient,
 } from "./types.js";

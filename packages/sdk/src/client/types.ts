@@ -1,5 +1,13 @@
 import type { Deployments } from "@ensforge/contracts";
-import type { Account, Address, BlockTag, Chain, Client as ViemBaseClient, Transport } from "viem";
+import type {
+  Account,
+  Address,
+  BlockTag,
+  Chain,
+  EIP1193RequestFn,
+  Client as ViemBaseClient,
+  Transport,
+} from "viem";
 
 import type { Indexer } from "../indexer/Indexer.js";
 import type { Plan } from "../plan/Plan.js";
@@ -24,6 +32,31 @@ export type ViemClient = ViemBaseClient<Transport, Chain | undefined>;
  */
 // oxlint-disable-next-line typescript/no-unnecessary-type-arguments -- the literal or explicit type argument documents the public type
 export type ViemWalletClient = ViemBaseClient<Transport, Chain | undefined, Account | undefined>;
+
+/**
+ * A viem client as ensforge's options and actions take it: any `PublicClient`, `WalletClient` or
+ * `createClient` client fits. It leaves out viem's generic `extend` and typed `request`, so app
+ * code that creates the client inline (`publicClient: createPublicClient(...)`) does not make the
+ * type checker infer viem's generics against them (about 120k type instantiations).
+ *
+ * @stability stable
+ * @category client
+ * @since 1.1.0
+ */
+export type ViemClientLike = Pick<
+  ViemWalletClient,
+  | "account"
+  | "batch"
+  | "cacheTime"
+  | "ccipRead"
+  | "chain"
+  | "key"
+  | "name"
+  | "pollingInterval"
+  | "transport"
+  | "type"
+  | "uid"
+> & { readonly request: EIP1193RequestFn };
 
 /**
  * HTTP gateways that turn decentralized-storage URIs (avatars, content hashes) into URLs a
@@ -120,7 +153,7 @@ export interface ClientBase<actions extends object = {}> {
  * @category client
  * @since 1.0.0
  */
-export type Like = Client<object> | ViemClient;
+export type Like = Client<object> | ViemClientLike;
 
 /**
  * viem clients for a chain other than the ENS chain, e.g. an L2 where an address sets its primary
@@ -132,15 +165,15 @@ export type Like = Client<object> | ViemClient;
  */
 export type ChainClients = {
   /** viem client for reads and simulation on the chain. */
-  readonly publicClient: ViemClient;
+  readonly publicClient: ViemClientLike;
   /**
    * viem client for writes on the chain, or a getter for wallets that change (wagmi connectors).
    *
    * @default `publicClient` when it has an account
    */
   readonly walletClient?:
-    | ViemWalletClient
-    | (() => ViemWalletClient | undefined | Promise<ViemWalletClient | undefined>)
+    | ViemClientLike
+    | (() => ViemClientLike | undefined | Promise<ViemClientLike | undefined>)
     | undefined;
 };
 
@@ -153,15 +186,15 @@ export type ChainClients = {
  */
 export type CreateOptions = {
   /** viem client for reads. Its chain selects the deployment. */
-  publicClient: ViemClient;
+  publicClient: ViemClientLike;
   /**
    * viem client for writes, or a getter for wallets that change (wagmi connectors).
    *
    * @default `publicClient` when it has an account
    */
   walletClient?:
-    | ViemWalletClient
-    | (() => ViemWalletClient | undefined | Promise<ViemWalletClient | undefined>)
+    | ViemClientLike
+    | (() => ViemClientLike | undefined | Promise<ViemClientLike | undefined>)
     | undefined;
   /**
    * Clients for other chains, by chain ID: writes ENS makes there (an L2 primary name) run on

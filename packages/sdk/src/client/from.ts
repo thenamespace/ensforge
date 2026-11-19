@@ -1,6 +1,6 @@
 import { create } from "./create.js";
 import { stateOf } from "./state.js";
-import type { Client, Like, ViemClient } from "./types.js";
+import type { Client, Like, ViemClientLike } from "./types.js";
 
 /**
  * Whether `value` is an ensforge client.
@@ -11,7 +11,7 @@ import type { Client, Like, ViemClient } from "./types.js";
  */
 export const is = (value: unknown): value is Client => stateOf(value) !== undefined;
 
-const created = new WeakMap<ViemClient, Client>();
+const created = new WeakMap<ViemClientLike, Client>();
 
 /**
  * Returns `client` when it is an ensforge client, otherwise an ensforge client for the viem

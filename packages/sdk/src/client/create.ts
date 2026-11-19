@@ -7,7 +7,12 @@ import { addressOf } from "../internal/address.js";
 import { resolveConfig } from "./config.js";
 import { build } from "./extend.js";
 import type { State } from "./state.js";
-import type { ChainClients, Client, CreateOptions } from "./types.js";
+import type { ChainClients, Client, CreateOptions, ViemClient, ViemClientLike } from "./types.js";
+
+// Options take `ViemClientLike` only to keep app type checking cheap: the clients passed in are
+// viem clients, which ensforge calls viem actions with.
+// oxlint-disable-next-line typescript/no-unsafe-type-assertion -- every viem client is a `ViemClient`
+const viemClient = (client: ViemClientLike): ViemClient => client as ViemClient;
 
 const resolveDeployment = (
   options: CreateOptions,
@@ -37,9 +42,13 @@ const resolveDeployment = (
 const resolveWallet = ({ walletClient, publicClient }: ChainClients): State["getWalletClient"] => {
   // `getWalletClient` is a Promise boundary: a wallet can connect after the client is created.
   /* oxlint-disable effecttsgo/async-function */
-  if (typeof walletClient === "function") return async () => walletClient();
-  if (walletClient !== undefined) return async () => walletClient;
-  if (publicClient.account !== undefined) return async () => publicClient;
+  if (typeof walletClient === "function")
+    return async () => {
+      const wallet = await walletClient();
+      return wallet === undefined ? undefined : viemClient(wallet);
+    };
+  if (walletClient !== undefined) return async () => viemClient(walletClient);
+  if (publicClient.account !== undefined) return async () => viemClient(publicClient);
   return async () => undefined;
   /* oxlint-enable effecttsgo/async-function */
 };
@@ -59,7 +68,10 @@ const resolveChains = (options: CreateOptions): State["chains"] =>
       }
       return [
         chainId,
-        { publicClient: clients.publicClient, getWalletClient: resolveWallet(clients) },
+        {
+          publicClient: viemClient(clients.publicClient),
+          getWalletClient: resolveWallet(clients),
+        },
       ];
     }),
   );
@@ -143,7 +155,7 @@ export const create = (options: CreateOptions): Client => {
       }),
       account: addressOf(signer) ?? addressOf(walletAccount),
       deployment,
-      publicClient: options.publicClient,
+      publicClient: viemClient(options.publicClient),
       config: resolveConfig(options),
     },
     {
