@@ -136,7 +136,8 @@ export const durin = {
     l1Resolver: durinL1Resolver,
     factory: durinFactory,
     registryImplementation: durinRegistryImplementation,
-    chainIds: [84532, 11155420, 421614, 59141, 534351, 80002, 11142220, 4801],
+    // Durin also lists Scroll Sepolia (534351), which no public RPC reaches any more.
+    chainIds: [84532, 11155420, 421614, 59141, 80002, 11142220, 4801],
   },
 } as const satisfies NamespaceFamily<"durin", DurinDeployment>;
 

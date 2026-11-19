@@ -36,7 +36,8 @@ const known: ReadonlyMap<number, Chain> = new Map(
       define(59144, "Linea Mainnet", "https://rpc.linea.build"),
       define(59141, "Linea Sepolia Testnet", "https://rpc.sepolia.linea.build"),
       define(534352, "Scroll", "https://rpc.scroll.io"),
-      define(534351, "Scroll Sepolia", "https://sepolia-rpc.scroll.io"),
+      // Scroll Sepolia (534351) is left out: it has no working public RPC. A transport for it
+      // in `transports` still reaches it.
       define(137, "Polygon", "https://polygon.drpc.org", { name: "POL", symbol: "POL" }),
       define(80002, "Polygon Amoy", "https://polygon-amoy.drpc.org", {
         name: "POL",
