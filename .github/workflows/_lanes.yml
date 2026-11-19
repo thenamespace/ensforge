@@ -28,6 +28,51 @@ on:
       ENSFORGE_SEPOLIA_RPC_URL:
         description: Archive RPC for Sepolia (fork, live and watch lanes only)
         required: false
+      ENSFORGE_ARBITRUM_RPC_URL:
+        description: RPC of the L2 (live lane only); its public RPC when unset
+        required: false
+      ENSFORGE_ARBITRUM_SEPOLIA_RPC_URL:
+        description: RPC of the L2 (live lane only); its public RPC when unset
+        required: false
+      ENSFORGE_BASE_RPC_URL:
+        description: RPC of the L2 (live lane only); its public RPC when unset
+        required: false
+      ENSFORGE_BASE_SEPOLIA_RPC_URL:
+        description: RPC of the L2 (live lane only); its public RPC when unset
+        required: false
+      ENSFORGE_CELO_RPC_URL:
+        description: RPC of the L2 (live lane only); its public RPC when unset
+        required: false
+      ENSFORGE_CELO_SEPOLIA_RPC_URL:
+        description: RPC of the L2 (live lane only); its public RPC when unset
+        required: false
+      ENSFORGE_LINEA_RPC_URL:
+        description: RPC of the L2 (live lane only); its public RPC when unset
+        required: false
+      ENSFORGE_LINEA_SEPOLIA_RPC_URL:
+        description: RPC of the L2 (live lane only); its public RPC when unset
+        required: false
+      ENSFORGE_OP_RPC_URL:
+        description: RPC of the L2 (live lane only); its public RPC when unset
+        required: false
+      ENSFORGE_OP_SEPOLIA_RPC_URL:
+        description: RPC of the L2 (live lane only); its public RPC when unset
+        required: false
+      ENSFORGE_POLYGON_RPC_URL:
+        description: RPC of the L2 (live lane only); its public RPC when unset
+        required: false
+      ENSFORGE_POLYGON_AMOY_RPC_URL:
+        description: RPC of the L2 (live lane only); its public RPC when unset
+        required: false
+      ENSFORGE_SCROLL_RPC_URL:
+        description: RPC of the L2 (live lane only); its public RPC when unset
+        required: false
+      ENSFORGE_WORLDCHAIN_RPC_URL:
+        description: RPC of the L2 (live lane only); its public RPC when unset
+        required: false
+      ENSFORGE_WORLDCHAIN_SEPOLIA_RPC_URL:
+        description: RPC of the L2 (live lane only); its public RPC when unset
+        required: false
 
 permissions:
   contents: read
@@ -74,6 +119,22 @@ jobs:
           # Callers pass these only for the network lanes (networks.yml).
           ENSFORGE_MAINNET_RPC_URL: ${{ secrets.ENSFORGE_MAINNET_RPC_URL }}
           ENSFORGE_SEPOLIA_RPC_URL: ${{ secrets.ENSFORGE_SEPOLIA_RPC_URL }}
+          # The live lane's L2 reads; each L2 without one uses its public RPC.
+          ENSFORGE_ARBITRUM_RPC_URL: ${{ secrets.ENSFORGE_ARBITRUM_RPC_URL }}
+          ENSFORGE_ARBITRUM_SEPOLIA_RPC_URL: ${{ secrets.ENSFORGE_ARBITRUM_SEPOLIA_RPC_URL }}
+          ENSFORGE_BASE_RPC_URL: ${{ secrets.ENSFORGE_BASE_RPC_URL }}
+          ENSFORGE_BASE_SEPOLIA_RPC_URL: ${{ secrets.ENSFORGE_BASE_SEPOLIA_RPC_URL }}
+          ENSFORGE_CELO_RPC_URL: ${{ secrets.ENSFORGE_CELO_RPC_URL }}
+          ENSFORGE_CELO_SEPOLIA_RPC_URL: ${{ secrets.ENSFORGE_CELO_SEPOLIA_RPC_URL }}
+          ENSFORGE_LINEA_RPC_URL: ${{ secrets.ENSFORGE_LINEA_RPC_URL }}
+          ENSFORGE_LINEA_SEPOLIA_RPC_URL: ${{ secrets.ENSFORGE_LINEA_SEPOLIA_RPC_URL }}
+          ENSFORGE_OP_RPC_URL: ${{ secrets.ENSFORGE_OP_RPC_URL }}
+          ENSFORGE_OP_SEPOLIA_RPC_URL: ${{ secrets.ENSFORGE_OP_SEPOLIA_RPC_URL }}
+          ENSFORGE_POLYGON_RPC_URL: ${{ secrets.ENSFORGE_POLYGON_RPC_URL }}
+          ENSFORGE_POLYGON_AMOY_RPC_URL: ${{ secrets.ENSFORGE_POLYGON_AMOY_RPC_URL }}
+          ENSFORGE_SCROLL_RPC_URL: ${{ secrets.ENSFORGE_SCROLL_RPC_URL }}
+          ENSFORGE_WORLDCHAIN_RPC_URL: ${{ secrets.ENSFORGE_WORLDCHAIN_RPC_URL }}
+          ENSFORGE_WORLDCHAIN_SEPOLIA_RPC_URL: ${{ secrets.ENSFORGE_WORLDCHAIN_SEPOLIA_RPC_URL }}
           # The services lane pulls bigname from here (bigname-image.yml) instead of compiling it.
           ENSFORGE_BIGNAME_REGISTRY: ghcr.io/${{ github.repository_owner }}/ensforge-bigname-devnet
         run: |
@@ -105,10 +166,25 @@ jobs:
         env:
           ENSFORGE_MAINNET_RPC_URL: ${{ secrets.ENSFORGE_MAINNET_RPC_URL }}
           ENSFORGE_SEPOLIA_RPC_URL: ${{ secrets.ENSFORGE_SEPOLIA_RPC_URL }}
+          ENSFORGE_ARBITRUM_RPC_URL: ${{ secrets.ENSFORGE_ARBITRUM_RPC_URL }}
+          ENSFORGE_ARBITRUM_SEPOLIA_RPC_URL: ${{ secrets.ENSFORGE_ARBITRUM_SEPOLIA_RPC_URL }}
+          ENSFORGE_BASE_RPC_URL: ${{ secrets.ENSFORGE_BASE_RPC_URL }}
+          ENSFORGE_BASE_SEPOLIA_RPC_URL: ${{ secrets.ENSFORGE_BASE_SEPOLIA_RPC_URL }}
+          ENSFORGE_CELO_RPC_URL: ${{ secrets.ENSFORGE_CELO_RPC_URL }}
+          ENSFORGE_CELO_SEPOLIA_RPC_URL: ${{ secrets.ENSFORGE_CELO_SEPOLIA_RPC_URL }}
+          ENSFORGE_LINEA_RPC_URL: ${{ secrets.ENSFORGE_LINEA_RPC_URL }}
+          ENSFORGE_LINEA_SEPOLIA_RPC_URL: ${{ secrets.ENSFORGE_LINEA_SEPOLIA_RPC_URL }}
+          ENSFORGE_OP_RPC_URL: ${{ secrets.ENSFORGE_OP_RPC_URL }}
+          ENSFORGE_OP_SEPOLIA_RPC_URL: ${{ secrets.ENSFORGE_OP_SEPOLIA_RPC_URL }}
+          ENSFORGE_POLYGON_RPC_URL: ${{ secrets.ENSFORGE_POLYGON_RPC_URL }}
+          ENSFORGE_POLYGON_AMOY_RPC_URL: ${{ secrets.ENSFORGE_POLYGON_AMOY_RPC_URL }}
+          ENSFORGE_SCROLL_RPC_URL: ${{ secrets.ENSFORGE_SCROLL_RPC_URL }}
+          ENSFORGE_WORLDCHAIN_RPC_URL: ${{ secrets.ENSFORGE_WORLDCHAIN_RPC_URL }}
+          ENSFORGE_WORLDCHAIN_SEPOLIA_RPC_URL: ${{ secrets.ENSFORGE_WORLDCHAIN_SEPOLIA_RPC_URL }}
         run: |
           if [ -d reports ]; then
             find reports -type f -exec perl -pi -e '
-              for my $url (grep { length } @ENV{qw(ENSFORGE_MAINNET_RPC_URL ENSFORGE_SEPOLIA_RPC_URL)}) {
+              for my $url (grep { length } map { $ENV{$_} } grep { /^ENSFORGE_.+_RPC_URL$/ } keys %ENV) {
                 s/\Q$url\E/[redacted RPC URL]/g;
               }' {} +
           fi
