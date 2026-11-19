@@ -27,13 +27,18 @@ import type { set as setTypes, setSync as setSyncTypes } from "./set/index.js";
  * **Details**
  *
  * - One Universal Resolver call, whatever the selection (ENSv1, ENSv2, wildcard and off-chain
- *   names). ENSv1 names answered through the ENSv1 bridge cost one more batched call, to report
- *   the ENSv1 resolver behind it in `resolver`.
+ *   names), with a batched `findResolver` alongside it that tells whether the name lives on an L2.
+ *   ENSv1 names answered through the ENSv1 bridge cost one more batched call, to report the ENSv1
+ *   resolver behind it in `resolver`.
  * - The result has exactly the selected fields: `texts.url` exists only when `"url"` was
  *   requested.
  * - Missing records are `null`. A missing resolver gives `resolver: null` and every record `null`,
  *   unless `strict` is set.
  * - EVM chain addresses fall back to the default EVM address (ENSIP-19).
+ * - Names in an L2 namespace (`jesse.base.eth`) are read from their resolver on the L2, at its
+ *   latest block, and `resolver` is that resolver. Without a transport or public RPC for the L2,
+ *   they are read through Ethereum's gateway instead. Reads at a past `blockNumber` always use
+ *   Ethereum.
  *
  * **Example** (Loading a profile)
  *
@@ -60,6 +65,7 @@ import type { set as setTypes, setSync as setSyncTypes } from "./set/index.js";
  *
  * @throws `Errors.InvalidInputError` (`INVALID_NAME`, `INVALID_COIN_TYPE`) for invalid input.
  * @throws `Errors.NotFoundError` (`RESOLVER_NOT_FOUND`) with `strict` when the name has no resolver.
+ * @throws `Errors.ConfigError` (`CHAIN_NOT_CONFIGURED`) with `strict` when the name lives on an L2 the client cannot reach.
  * @throws `Errors.UnsupportedError` (`RESOLVER_PROFILE_UNSUPPORTED`) with `strict` when the resolver supports none of the records.
  * @throws `Errors.GatewayError` (`GATEWAY_REQUEST_FAILED`, `GATEWAY_RESPONSE_INVALID`, `OFFCHAIN_LOOKUP_INVALID`) when an off-chain gateway fails.
  * @throws `Errors.DnsError` when a DNS name's DNSSEC proof does not verify.
@@ -90,6 +96,7 @@ export declare namespace get {
  * - EVM coins return a checksummed `Address`; other coins their native format.
  * - EVM chains other than mainnet fall back to the default EVM address (ENSIP-19).
  * - Returns `null` when the record is not set, unless `strict` is set.
+ * - Names in an L2 namespace are read on their L2, as `record.get` reads them.
  *
  * **Example** (Resolving an Ethereum address)
  *
@@ -115,6 +122,7 @@ export declare namespace get {
  *
  * @throws `Errors.InvalidInputError` (`INVALID_NAME`, `INVALID_COIN_TYPE`) for invalid input.
  * @throws `Errors.NotFoundError` (`RECORD_NOT_FOUND`, `RESOLVER_NOT_FOUND`) with `strict`.
+ * @throws `Errors.ConfigError` (`CHAIN_NOT_CONFIGURED`) with `strict` when the name lives on an L2 the client cannot reach.
  * @throws `Errors.UnsupportedError` (`RESOLVER_PROFILE_UNSUPPORTED`) with `strict` when the resolver supports none of the records.
  * @throws `Errors.GatewayError` (`GATEWAY_REQUEST_FAILED`, `GATEWAY_RESPONSE_INVALID`, `OFFCHAIN_LOOKUP_INVALID`) when an off-chain gateway fails.
  * @throws `Errors.DnsError` when a DNS name's DNSSEC proof does not verify.
@@ -346,6 +354,9 @@ export declare namespace getText {
  *   and `clear` against its record versions, before anything is simulated; a resolver without
  *   ERC-165 is left to the simulation.
  * - The plan is simulated before the wallet prompt, so permission errors surface first.
+ * - A name in an L2 namespace (Basenames, Linea Names, Celonames, Durin, Namespace) is written on
+ *   its L2, to its resolver there, by the client's wallet on that chain. `resolver` works for
+ *   Basenames and Linea Names; a Linea name accepts only Linea's PublicResolver (`"default"`).
  *
  * **Gotchas**
  *
@@ -392,6 +403,8 @@ export declare namespace getText {
  * @throws `Errors.InvalidInputError` (`INVALID_NAME`, `INVALID_ADDRESS`, `INVALID_COIN_TYPE`, `INVALID_CONTENT_HASH`, `INVALID_RECORD_VALUE`) for invalid input.
  * @throws `Errors.NotFoundError` (`RESOLVER_NOT_FOUND`) when the name has no resolver of its own.
  * @throws `Errors.UnsupportedError` (`RESOLVER_PROFILE_UNSUPPORTED`, `UNSUPPORTED_PROTOCOL`) for records the resolver does not support (`feature` names them), a resolver that keeps its records off-chain or takes no writes, or `resolver: "default"` on an ENSv2 name.
+ * @throws `Errors.UnsupportedError` (`UNSUPPORTED_ON_DEPLOYMENT`) for a route (`via`) on an L2 name, or a resolver other than Linea's PublicResolver on a Linea name.
+ * @throws `Errors.ConfigError` (`CHAIN_NOT_CONFIGURED`) when the name lives on an L2 the client cannot reach.
  * @throws `Errors.NameStateError` (`NAME_EXPIRED`, `NAME_RESERVED`, `NAME_NOT_REGISTERED`, `NAME_EXTERNAL`) when the name is not registered, or its parent's namespace manages it outside ENS's registries.
  * @throws `Errors.NameStateError` (`NAME_UNREACHABLE`) when ENSv2 resolution no longer reaches the name.
  * @throws `Errors.UnauthorizedError` (`NOT_OWNER`, `MISSING_ROLES`) when the account may not edit records.

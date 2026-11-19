@@ -1,11 +1,12 @@
 import { Array as Arr, Option } from "effect";
 
 import { Deployments } from "@ensforge/contracts";
+import { custom, type Transport } from "viem";
 import type { Config as WagmiConfig } from "wagmi";
 import { getConnectorClient, getPublicClient, switchChain } from "wagmi/actions";
 
 import { create } from "../client/create.js";
-import type { ChainClients, Client, CreateOptions, ViemWalletClient } from "../client/types.js";
+import type { Client, CreateOptions, ViemWalletClient } from "../client/types.js";
 import { ConfigError } from "../errors/classes/ConfigError.js";
 
 // The ENS chain: an explicit one, mainnet when the app has it, or the first chain ensforge
@@ -50,6 +51,9 @@ const chainIdOf = (config: WagmiConfig, options: fromWagmi.Options): number => {
  * - A wallet on another chain is asked to switch first, as wagmi's own `writeContract` does.
  * - Every other chain of the wagmi config becomes one of the client's `chains`, so writes ENS
  *   makes there (an L2 primary name) use wagmi's clients and wallet; `chains` adds or overrides.
+ * - Names on an L2 (Basenames, Linea Names, Celonames, Durin, Namespace) and L2 primary names are
+ *   read on chains the config lacks through public RPCs, but written only on chains the config
+ *   has: a write elsewhere fails with `CHAIN_NOT_CONFIGURED` before the wallet is asked.
  *
  * **Gotchas**
  *
@@ -77,7 +81,7 @@ const chainIdOf = (config: WagmiConfig, options: fromWagmi.Options): number => {
  * @throws `Errors.ConfigError` (`UNKNOWN_CHAIN`) when no ENS chain can be chosen or the wagmi
  * config has no transport for it.
  * @throws `Errors.ConfigError` (`INVALID_DEPLOYMENT`) when `deployment` is invalid or for another chain.
- * @throws `Errors.ConfigError` (`CHAIN_NOT_CONFIGURED`) when an entry of `chains` holds clients of another chain.
+ * @throws `Errors.ConfigError` (`CHAIN_NOT_CONFIGURED`) on a write on a chain the wagmi config does not have.
  * @stability stable
  * @category client
  * @since 1.0.0
@@ -85,9 +89,9 @@ const chainIdOf = (config: WagmiConfig, options: fromWagmi.Options): number => {
 export const fromWagmi = (config: WagmiConfig, options: fromWagmi.Options = {}): Client => {
   const { chainId: _chainId, switchChain: autoSwitch = true, ...createOptions } = options;
   const chainId = chainIdOf(config, options);
-
-  const publicClient = getPublicClient(config, { chainId });
-  if (publicClient === undefined) {
+  const chain = Option.getOrUndefined(Arr.findFirst(config.chains, ({ id }) => id === chainId));
+  const publicClient = chain === undefined ? undefined : getPublicClient(config, { chainId });
+  if (chain === undefined || publicClient === undefined) {
     throw new ConfigError({
       code: "UNKNOWN_CHAIN",
       context: { chainId },
@@ -98,10 +102,19 @@ export const fromWagmi = (config: WagmiConfig, options: fromWagmi.Options = {}):
   // The connected wallet, on `target` when it switches; looked up on every write. wagmi's actions
   // are Promises, and so is `getWalletClient`.
   // oxlint-disable-next-line effecttsgo/async-function
-  const walletOn = (target: number) => async (): Promise<ViemWalletClient | undefined> => {
+  const walletOn = async (target: number): Promise<ViemWalletClient | undefined> => {
     try {
       const connected = await getConnectorClient(config);
       if (!autoSwitch || connected.chain.id === target) return connected;
+      // wagmi switches only to chains in its config; reads on others still use public RPCs.
+      const known = Option.getOrUndefined(Arr.findFirst(config.chains, ({ id }) => id === target));
+      if (known === undefined) {
+        throw new ConfigError({
+          code: "CHAIN_NOT_CONFIGURED",
+          context: { chainId: target },
+          hint: `Add chain ${target} to the wagmi config so the wallet can switch to it and sign there.`,
+        });
+      }
 
       await switchChain(config, { chainId: target });
       return await getConnectorClient(config, { chainId: target });
@@ -115,37 +128,31 @@ export const fromWagmi = (config: WagmiConfig, options: fromWagmi.Options = {}):
     }
   };
 
-  const chains: Record<number, ChainClients> = {};
+  // ensforge reads every chain the wagmi config has through wagmi's own clients (its transports).
+  const transports: Record<number, Transport> = {};
   for (const { id } of config.chains) {
-    const chainClient = id === chainId ? undefined : getPublicClient(config, { chainId: id });
-    if (chainClient !== undefined) {
-      chains[id] = { publicClient: chainClient, walletClient: walletOn(id) };
-    }
+    const client = getPublicClient(config, { chainId: id });
+    if (client !== undefined) transports[id] = custom({ request: client.request });
   }
 
   return create({
+    pollingInterval: publicClient.pollingInterval,
     ...createOptions,
-    publicClient,
-    walletClient: walletOn(chainId),
-    chains: { ...chains, ...createOptions.chains },
+    chain,
+    transports: { ...transports, ...createOptions.transports },
+    wallet: walletOn,
+    switchChain: autoSwitch,
   });
 };
 
 export declare namespace fromWagmi {
-  /** Options for {@link fromWagmi}: those of `Ensforge.create`, without the viem clients. */
-  type Options = Omit<CreateOptions, "publicClient" | "walletClient"> & {
+  /** Options for {@link fromWagmi}: those of `Ensforge.create`, with the chain and wallet from wagmi. */
+  type Options = Omit<CreateOptions, "chain" | "wallet"> & {
     /**
      * The ENS chain.
      *
      * @default mainnet when configured, else the first configured chain with a built-in deployment
      */
     chainId?: number | undefined;
-    /**
-     * Ask the wallet to switch to the ENS chain before a write. With `false`, a wallet on another
-     * chain fails with `WalletError` (`CHAIN_MISMATCH`).
-     *
-     * @default true
-     */
-    switchChain?: boolean | undefined;
   };
 }

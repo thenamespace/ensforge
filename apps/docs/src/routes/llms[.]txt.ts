@@ -10,7 +10,7 @@ import { source } from "@/lib/source";
 
 const agentInstructions = `## Instructions for agents
 
-- Use \`@ensforge/sdk\`. Create one client and reuse it: \`Ensforge.create({ publicClient }).extend(ensActions())\`, where \`publicClient\` is a viem public client.
+- Use \`@ensforge/sdk\`. Create one client and reuse it: \`Ensforge.create({ chain: mainnet }).extend(ensActions())\`, with \`transports\` for your own RPCs.
 - Call actions as \`await ens.record.getAddress({ name: "nick.eth" })\`. Prefer this Promise API; the Effect API (\`@ensforge/sdk/effect\`) is for code that already uses Effect.
 - Names are normalised and validated for you. Do not call \`normalize\` before passing a name.
 - Reads return \`null\` for a missing record. Failures reject with an error that has a \`code\` and a \`docsUrl\`; fetch the \`docsUrl\` for the cause and the fix.

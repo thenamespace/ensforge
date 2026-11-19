@@ -5,9 +5,11 @@ import { encodeFunctionData, hexToBigInt, zeroAddress, type Address } from "viem
 
 import type { Client } from "../../../client/types.js";
 import { ConfigError } from "../../../errors/classes/ConfigError.js";
+import { NameStateError } from "../../../errors/classes/NameStateError.js";
 import type { AnyError } from "../../../errors/types.js";
 import * as Action from "../../../internal/action/index.js";
 import { addressOf } from "../../../internal/address.js";
+import * as V1Calls from "../../../internal/name/v1-calls.js";
 import { notRegistered, requireV1Contracts, singleStepPlan } from "../../../internal/name/write.js";
 import { checkLoaded } from "../../../internal/permission/check.js";
 import { explainRemoval } from "../../../internal/permission/subname.js";
@@ -45,46 +47,21 @@ const removeCall = Effect.fnUntraced(function* (
   const [parentCheck] =
     route === "v2" ? [] : yield* checkLoaded(client, parent, signer, ["removeSubname"]);
   const viaParent = parentCheck?.allowed === true;
+  const cleared = {
+    parentNode: parent.data.parts.node,
+    label,
+    labelhash,
+    owner: zeroAddress,
+    resolver: zeroAddress,
+  };
   if (child.state.wrapped && !(route === "v1" && viaParent)) {
     return viaParent
-      ? {
-          to: contracts.nameWrapper,
-          data: encodeFunctionData({
-            abi: Abis.v1.nameWrapper,
-            functionName: "setSubnodeRecord",
-            args: [parent.data.parts.node, label, zeroAddress, zeroAddress, 0n, 0, 0n],
-          }),
-          value: 0n,
-        }
-      : {
-          to: contracts.nameWrapper,
-          data: encodeFunctionData({
-            abi: Abis.v1.nameWrapper,
-            functionName: "setRecord",
-            args: [node, zeroAddress, zeroAddress, 0n],
-          }),
-          value: 0n,
-        };
+      ? V1Calls.setSubnodeRecord(contracts.nameWrapper, true, cleared)
+      : V1Calls.clearRecord(contracts.nameWrapper, node);
   }
   return route === "v1" && viaParent
-    ? {
-        to: contracts.registry,
-        data: encodeFunctionData({
-          abi: Abis.v1.ensRegistry,
-          functionName: "setSubnodeRecord",
-          args: [parent.data.parts.node, labelhash, zeroAddress, zeroAddress, 0n],
-        }),
-        value: 0n,
-      }
-    : {
-        to: contracts.registry,
-        data: encodeFunctionData({
-          abi: Abis.v1.ensRegistry,
-          functionName: "setRecord",
-          args: [node, zeroAddress, zeroAddress, 0n],
-        }),
-        value: 0n,
-      };
+    ? V1Calls.setSubnodeRecord(contracts.registry, false, cleared)
+    : V1Calls.clearRecord(contracts.registry, node);
 });
 
 /** @internal Builds the plan of `Actions.subname.remove`. */
@@ -98,6 +75,26 @@ export const plan = Effect.fnUntraced(function* (
   }
 
   const subname = yield* loadSubname(client, options.name);
+  if (subname.route === "l2") {
+    if (subname.childState.status !== "registered") {
+      return yield* Effect.fail(
+        new NameStateError({
+          code: "NAME_NOT_REGISTERED",
+          shortMessage: `${subname.child.data.parts.name} does not exist.`,
+          context: { chainId: subname.target.location.chainId },
+        }),
+      );
+    }
+    const { removeCall: l2RemoveCall } = yield* Effect.promise(
+      () => import("../../../internal/namespace/l2/index.js"),
+    );
+    return singleStepPlan(subname.target.client, {
+      operation: "subname.remove",
+      account: options.account,
+      description: "Remove subname",
+      calls: [yield* l2RemoveCall(subname, signer)],
+    });
+  }
   if (subname.child.state.status === "available") {
     return yield* notRegistered(
       client,

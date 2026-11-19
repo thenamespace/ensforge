@@ -71,7 +71,7 @@ The fix is upstream: ENS must add the new trust anchor to the oracle. See
 
 ### `This action needs a wallet client with an account.`
 
-The client has no wallet. Pass `walletClient` to `Ensforge.create`, or `account` to the action. See
+The client has no wallet. Pass `wallet` or a local `account` to `Ensforge.create`, or `account` to the action. See
 [`WALLET_NOT_CONFIGURED`](/docs/reference/errors/WALLET_NOT_CONFIGURED).
 
 ### `The wallet has no account to sign with.`
@@ -147,7 +147,7 @@ and [Create a client](/docs/sdk/create-a-client).
 
 ### `A decorator added an action group with a reserved name.`
 
-An extension added a group named `chain`, `account`, `deployment`, `publicClient`, `config` or
+An extension added a group named `chain`, `account`, `deployment`, `client`, `config` or
 `extend`. Rename the group. See [`INVALID_ACTION_GROUP`](/docs/reference/errors/INVALID_ACTION_GROUP) and
 [Extend the client](/docs/sdk/extend-the-client).
 

@@ -25,11 +25,11 @@ const defaults: {
   }),
   INVALID_ACTION_GROUP: () => ({
     shortMessage: "A decorator added an action group with a reserved name.",
-    hint: "Rename the group; chain, account, deployment, publicClient, config and extend are reserved.",
+    hint: "Rename the group; chain, account, deployment, client, config and extend are reserved.",
   }),
   CHAIN_NOT_CONFIGURED: (o: ConfigError.Options) => ({
-    shortMessage: `The client has no clients for chain ${o.context?.chainId ?? "?"}.`,
-    hint: `Add chain ${o.context?.chainId ?? "<chainId>"} to \`chains\` in Ensforge.create, e.g. \`chains: { ${o.context?.chainId ?? "<chainId>"}: { publicClient, walletClient } }\`.`,
+    shortMessage: `The client cannot reach chain ${o.context?.chainId ?? "?"}.`,
+    hint: `Add a transport for chain ${o.context?.chainId ?? "<chainId>"} to Ensforge.create, e.g. \`transports: { ${o.context?.chainId ?? "<chainId>"}: http(rpcUrl) }\`.`,
   }),
   CCIP_READ_DISABLED: () => ({
     shortMessage: "This name resolves off-chain, and CCIP-Read is disabled.",

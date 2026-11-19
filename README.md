@@ -20,18 +20,16 @@ pnpm add @ensforge/sdk effect@^4 viem
 
 ```ts
 import { Ensforge, ensActions } from "@ensforge/sdk";
-import { createPublicClient, http } from "viem";
 import { mainnet } from "viem/chains";
 
-const ens = Ensforge.create({
-  publicClient: createPublicClient({ chain: mainnet, transport: http() }),
-}).extend(ensActions());
+const ens = Ensforge.create({ chain: mainnet }).extend(ensActions());
 
 const address = await ens.record.getAddress({ name: "nick.eth" });
 const profile = await ens.record.get({ name: "nick.eth", texts: ["url", "avatar"] });
 ```
 
-Pass a `walletClient` (or use `Ensforge.fromWagmi` from `@ensforge/sdk/wagmi`) to write, and
+Pass `transports` for your own RPCs and a `wallet` (or use `Ensforge.fromWagmi` from
+`@ensforge/sdk/wagmi`) to write, and
 import the same actions from `@ensforge/sdk/effect` in Effect programs. Each package README covers
 its API.
 

@@ -19,12 +19,11 @@ You will move a name to a different [resolver](/docs/reference/glossary#resolver
 **Example** (Reading a Name's Resolver)
 
 ```ts title="get-resolver.ts"
-import { createPublicClient, http } from "viem";
 import { sepolia } from "viem/chains";
 import { Ensforge, ensActions } from "@ensforge/sdk";
 
 const ens = Ensforge.create({
-  publicClient: createPublicClient({ chain: sepolia, transport: http() }),
+  chain: sepolia,
 }).extend(ensActions());
 
 const resolver = await ens.resolver.get({ name: "ensforge-docs-demo.eth" });
@@ -42,7 +41,7 @@ const resolver = await ens.resolver.get({ name: "ensforge-docs-demo.eth" });
 **Example** (Switching Resolver and Copying a Profile)
 
 ```ts title="switch-resolver.ts"
-import { createPublicClient, createWalletClient, http, type Hex } from "viem";
+import { createWalletClient, http, type Hex } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { sepolia } from "viem/chains";
 import { Ensforge, ensActions } from "@ensforge/sdk";
@@ -51,8 +50,9 @@ const account = privateKeyToAccount(process.env.PRIVATE_KEY as Hex);
 const transport = http(process.env.SEPOLIA_RPC_URL);
 
 const ens = Ensforge.create({
-  publicClient: createPublicClient({ chain: sepolia, transport }),
-  walletClient: createWalletClient({ account, chain: sepolia, transport }),
+  chain: sepolia,
+  transports: { [sepolia.id]: transport },
+  wallet: createWalletClient({ account, chain: sepolia, transport }),
 }).extend(ensActions());
 
 await ens.record.setSync({
@@ -70,7 +70,7 @@ await ens.record.setSync({
 **Example** (Pointing a Name at Another Resolver)
 
 ```ts title="set-resolver.ts"
-import { createPublicClient, createWalletClient, http, type Hex } from "viem";
+import { createWalletClient, http, type Hex } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { sepolia } from "viem/chains";
 import { Ensforge, ensActions } from "@ensforge/sdk";
@@ -79,8 +79,9 @@ const account = privateKeyToAccount(process.env.PRIVATE_KEY as Hex);
 const transport = http(process.env.SEPOLIA_RPC_URL);
 
 const ens = Ensforge.create({
-  publicClient: createPublicClient({ chain: sepolia, transport }),
-  walletClient: createWalletClient({ account, chain: sepolia, transport }),
+  chain: sepolia,
+  transports: { [sepolia.id]: transport },
+  wallet: createWalletClient({ account, chain: sepolia, transport }),
 }).extend(ensActions());
 
 await ens.resolver.setSync({
@@ -104,7 +105,7 @@ ENSv2 names have no shared default resolver, so `resolver: "default"` fails for 
 **Example** (Creating a Resolver With Records)
 
 ```ts title="create-resolver.ts"
-import { createPublicClient, createWalletClient, http, type Hex } from "viem";
+import { createWalletClient, http, type Hex } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { sepolia } from "viem/chains";
 import { Ensforge, ensActions } from "@ensforge/sdk";
@@ -113,8 +114,9 @@ const account = privateKeyToAccount(process.env.PRIVATE_KEY as Hex);
 const transport = http(process.env.SEPOLIA_RPC_URL);
 
 const ens = Ensforge.create({
-  publicClient: createPublicClient({ chain: sepolia, transport }),
-  walletClient: createWalletClient({ account, chain: sepolia, transport }),
+  chain: sepolia,
+  transports: { [sepolia.id]: transport },
+  wallet: createWalletClient({ account, chain: sepolia, transport }),
 }).extend(ensActions());
 
 const { resolver } = await ens.resolver.createSync({
@@ -124,6 +126,10 @@ const { resolver } = await ens.resolver.createSync({
 ```
 
 `resolver` is the new contract's address, known before the transaction is sent. See [Resolvers and shared records](/docs/sdk/resolvers-and-shared-records) for the options and for sharing one resolver between names.
+
+## Names on L2s
+
+A Basenames or Linea name changes its resolver on the L2. `"default"` is the family's current resolver. A Linea name accepts only Linea's PublicResolver, because Linea's resolver on Ethereum reads no other: any other address, or `null`, fails with [`UNSUPPORTED_ON_DEPLOYMENT`](/docs/reference/errors/UNSUPPORTED_ON_DEPLOYMENT). Celonames, Durin and Namespace names have no resolver to change. See [Work with names on L2s](/docs/sdk/names-on-l2s).
 
 ## Check the result
 

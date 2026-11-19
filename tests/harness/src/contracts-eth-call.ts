@@ -4,6 +4,8 @@ import {
   decodeFunctionData,
   encodeFunctionResult,
   isAddressEqual,
+  slice,
+  toFunctionSelector,
   type Abi,
   type Address,
   type Hex,
@@ -42,9 +44,23 @@ export const contractScript =
     // JSON-RPC fixes the shape of `eth_call` params.
     // oxlint-disable-next-line typescript/no-unsafe-type-assertion
     const [call] = request.params as readonly [{ readonly to: Address; readonly data: Hex }];
-    const stub = Arr.findFirst(options.contracts, (contract) =>
+    // Several stubs may share an address (a contract with many interfaces): the first that
+    // implements the called function answers.
+    const stubs = Arr.filter(options.contracts, (contract) =>
       isAddressEqual(contract.address, call.to),
-    ).pipe(Option.getOrUndefined);
+    );
+    if (stubs.length === 0) throw new Error(`Unscripted eth_call to ${call.to}`);
+    const selector = slice(call.data, 0, 4);
+    const stub =
+      Arr.findFirst(stubs, (contract) =>
+        Arr.some(
+          contract.abi,
+          (item) =>
+            item.type === "function" &&
+            toFunctionSelector(item) === selector &&
+            contract.functions[item.name] !== undefined,
+        ),
+      ).pipe(Option.getOrUndefined) ?? stubs[0];
     if (stub === undefined) throw new Error(`Unscripted eth_call to ${call.to}`);
     const { functionName, args } = decodeFunctionData({ abi: stub.abi, data: call.data });
     const answer = stub.functions[functionName];

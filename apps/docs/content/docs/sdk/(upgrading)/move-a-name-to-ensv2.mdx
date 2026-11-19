@@ -45,7 +45,7 @@ After it, ENSv2 holds the name and its ENSv1 record is held by the Graveyard. Re
 **Example** (Checking a Name Before Migrating)
 
 ```ts title="migration-get.ts"
-import { createPublicClient, createWalletClient, http, type Hex } from "viem";
+import { createWalletClient, http, type Hex } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { sepolia } from "viem/chains";
 import { Ensforge, ensActions } from "@ensforge/sdk";
@@ -54,8 +54,9 @@ const account = privateKeyToAccount(process.env.PRIVATE_KEY as Hex);
 const transport = http(process.env.SEPOLIA_RPC_URL);
 
 const ens = Ensforge.create({
-  publicClient: createPublicClient({ chain: sepolia, transport }),
-  walletClient: createWalletClient({ account, chain: sepolia, transport }),
+  chain: sepolia,
+  transports: { [sepolia.id]: transport },
+  wallet: createWalletClient({ account, chain: sepolia, transport }),
 }).extend(ensActions());
 
 const status = await ens.migration.get({ name: "ensforge-docs-demo.eth" });
@@ -103,7 +104,7 @@ const status = await ens.migration.get({ name: "ensforge-docs-demo.eth" });
 **Example** (Migrating a Name With Its Profile)
 
 ```ts title="migrate.ts"
-import { createPublicClient, createWalletClient, http, type Hex } from "viem";
+import { createWalletClient, http, type Hex } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { sepolia } from "viem/chains";
 import { Ensforge, ensActions } from "@ensforge/sdk";
@@ -112,8 +113,9 @@ const account = privateKeyToAccount(process.env.PRIVATE_KEY as Hex);
 const transport = http(process.env.SEPOLIA_RPC_URL);
 
 const ens = Ensforge.create({
-  publicClient: createPublicClient({ chain: sepolia, transport }),
-  walletClient: createWalletClient({ account, chain: sepolia, transport }),
+  chain: sepolia,
+  transports: { [sepolia.id]: transport },
+  wallet: createWalletClient({ account, chain: sepolia, transport }),
 }).extend(ensActions());
 
 const { plan } = await ens.migration.migrateSync({

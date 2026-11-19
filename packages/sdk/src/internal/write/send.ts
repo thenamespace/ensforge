@@ -9,6 +9,7 @@ import type { AnyError } from "../../errors/types.js";
 import type { Plan } from "../../plan/Plan.js";
 import type { Write } from "../../Types.js";
 import { addressOf } from "../address.js";
+import { forgetLocations } from "../namespace/cache.js";
 import { fromPromise } from "../rpc/fromPromise.js";
 import { receiptsOf } from "./receipts.js";
 import type { Signer } from "./signer.js";
@@ -37,205 +38,217 @@ import { routeOutcome, sendThroughRoute, viaContext } from "./via.js";
  *   is saved so a resumed write follows it instead of sending again.
  * - With `paymaster`, every step goes through `wallet_sendCalls` with the paymaster service.
  */
-export const sendPlan = Effect.fnUntraced(function* (
-  client: Client,
-  plan: Plan,
-  signer: Signer,
-  options: Write.Options &
-    Pick<Write.SyncOptions, "confirmations" | "timeout"> & {
-      /** Wait for the last step's receipts too (`…Sync` writes), so it reports `confirmed`. */
-      readonly confirmLast?: boolean | undefined;
-    },
-  resumed?: Plan.Record,
-): Effect.fn.Return<Write.Result, AnyError> {
-  const simulate = options.simulate ?? client.config.simulate;
-  const account = addressOf(signer.account);
-  const mode = options.mode ?? "auto";
-  // MetaMask's limit; other wallets accept more, which `maxBundleCalls` allows.
-  const maxBundleCalls = options.maxBundleCalls ?? 10;
-  const emit = (event: Plan.Event) => options.onStep?.(event);
-  const route = options.via?.send === undefined ? undefined : options.via;
-  const routeContext = route === undefined ? undefined : yield* viaContext(client, account);
+export const sendPlan = Effect.fnUntraced(
+  function* (
+    client: Client,
+    plan: Plan,
+    signer: Signer,
+    options: Write.Options &
+      Pick<Write.SyncOptions, "confirmations" | "timeout"> & {
+        /** Wait for the last step's receipts too (`…Sync` writes), so it reports `confirmed`. */
+        readonly confirmLast?: boolean | undefined;
+      },
+    resumed?: Plan.Record,
+  ): Effect.fn.Return<Write.Result, AnyError> {
+    const simulate = options.simulate ?? client.config.simulate;
+    const account = addressOf(signer.account);
+    const mode = options.mode ?? "auto";
+    // MetaMask's limit; other wallets accept more, which `maxBundleCalls` allows.
+    const maxBundleCalls = options.maxBundleCalls ?? 10;
+    const emit = (event: Plan.Event) => options.onStep?.(event);
+    const route = options.via?.send === undefined ? undefined : options.via;
+    const routeContext = route === undefined ? undefined : yield* viaContext(client, account);
 
-  // Steps sent through a route are only known to that route; sending them again from the wallet
-  // would execute them twice.
-  if (route === undefined && Rec.keys(resumed?.references ?? {}).length > 0) {
-    return yield* Effect.fail(new PlanError({ code: "PLAN_ROUTE_REQUIRED" }));
-  }
+    // Steps sent through a route are only known to that route; sending them again from the wallet
+    // would execute them twice.
+    if (route === undefined && Rec.keys(resumed?.references ?? {}).length > 0) {
+      return yield* Effect.fail(new PlanError({ code: "PLAN_ROUTE_REQUIRED" }));
+    }
 
-  let record: Plan.Record = resumed ?? {
-    plan,
-    status: "pending",
-    submitted: {},
-    bundles: {},
-    references: {},
-    updatedAt: yield* Clock.currentTimeMillis,
-  };
-  // Saving is best effort: storage that is unavailable (server rendering) must not stop a write.
-  const save = (update: Partial<Plan.Record>) =>
-    Effect.flatMap(Clock.currentTimeMillis, (updatedAt) => {
-      record = { ...record, ...update, updatedAt };
-      return Effect.ignore(fromPromise(() => client.config.storage.set(record)));
+    let record: Plan.Record = resumed ?? {
+      plan,
+      status: "pending",
+      submitted: {},
+      bundles: {},
+      references: {},
+      updatedAt: yield* Clock.currentTimeMillis,
+    };
+    // Saving is best effort: storage that is unavailable (server rendering) must not stop a write.
+    const save = (update: Partial<Plan.Record>) =>
+      Effect.flatMap(Clock.currentTimeMillis, (updatedAt) => {
+        record = { ...record, ...update, updatedAt };
+        return Effect.ignore(fromPromise(() => client.config.storage.set(record)));
+      });
+
+    // A resumed plan is simulated step by step: its earlier steps already changed the state.
+    if (simulate && resumed === undefined) {
+      const simulation = yield* simulatePlan(client, plan, account);
+      const failed = Option.getOrUndefined(Arr.findFirst(simulation.steps, (step) => !step.ok));
+      if (failed?.error !== undefined) return yield* Effect.fail(failed.error);
+    }
+
+    const simulatedUpFront = resumed === undefined ? simulatableSteps(plan).length : 0;
+    yield* save({ status: "pending" });
+
+    let atomic: boolean | undefined;
+    const bundles = Effect.gen(function* () {
+      if (route !== undefined) return false;
+      if (mode === "batch" || options.paymaster !== undefined) return true;
+      if (mode === "sequential") return false;
+      atomic ??= yield* supportsAtomicBatch(signer, client.chain.id);
+      return atomic;
     });
 
-  // A resumed plan is simulated step by step: its earlier steps already changed the state.
-  if (simulate && resumed === undefined) {
-    const simulation = yield* simulatePlan(client, plan, account);
-    const failed = Option.getOrUndefined(Arr.findFirst(simulation.steps, (step) => !step.ok));
-    if (failed?.error !== undefined) return yield* Effect.fail(failed.error);
-  }
+    const hashes: Hex[] = [];
+    let previous: { readonly steps: readonly Plan.Step[]; readonly hashes: readonly Hex[] } = {
+      steps: [],
+      hashes: [],
+    };
+    let id: string | undefined;
+    let index = 0;
 
-  const simulatedUpFront = resumed === undefined ? simulatableSteps(plan).length : 0;
-  yield* save({ status: "pending" });
+    const run = Effect.gen(function* () {
+      while (index < plan.steps.length) {
+        // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- the collection is known to be non-empty or the index in range here; `noUncheckedIndexedAccess` cannot see it
+        const step = plan.steps[index] as Plan.Step;
 
-  let atomic: boolean | undefined;
-  const bundles = Effect.gen(function* () {
-    if (route !== undefined) return false;
-    if (mode === "batch" || options.paymaster !== undefined) return true;
-    if (mode === "sequential") return false;
-    atomic ??= yield* supportsAtomicBatch(signer, client.chain.id);
-    return atomic;
-  });
-
-  const hashes: Hex[] = [];
-  let previous: { readonly steps: readonly Plan.Step[]; readonly hashes: readonly Hex[] } = {
-    steps: [],
-    hashes: [],
-  };
-  let id: string | undefined;
-  let index = 0;
-
-  const run = Effect.gen(function* () {
-    while (index < plan.steps.length) {
-      // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- the collection is known to be non-empty or the index in range here; `noUncheckedIndexedAccess` cannot see it
-      const step = plan.steps[index] as Plan.Step;
-
-      // Resuming: a step submitted before is confirmed, unless its transactions vanished.
-      const recorded = yield* recordedHashes(client, signer, record, step, route, routeContext);
-      if (recorded !== undefined) {
-        hashes.push(...recorded);
-        previous = { steps: [step], hashes: recorded };
-        index += 1;
-        continue;
-      }
-
-      if (previous.hashes.length > 0) {
-        const receipts = yield* receiptsOf(client, previous.hashes);
-        for (const done of previous.steps)
-          emit({ step: done, status: "confirmed", hashes: previous.hashes });
-        const confirmed = receipts.at(-1);
-        if (step.waitFor !== undefined && confirmed !== undefined) {
-          emit({ step, status: "waiting" });
-          const block = yield* fromPromise(() =>
-            getBlock(client.publicClient, { blockNumber: confirmed.blockNumber }),
-          );
-          yield* waitForChainTime(client, block.timestamp + step.waitFor.seconds);
+        // Resuming: a step submitted before is confirmed, unless its transactions vanished.
+        const recorded = yield* recordedHashes(client, signer, record, step, route, routeContext);
+        if (recorded !== undefined) {
+          hashes.push(...recorded);
+          previous = { steps: [step], hashes: recorded };
+          index += 1;
+          continue;
         }
-      }
 
-      // Consecutive steps without a wait join one bundle when the wallet sends bundles.
-      const group = [step];
-      const bundled = yield* bundles;
-      if (bundled) {
-        for (
-          let next = plan.steps[index + 1];
-          next !== undefined;
-          next = plan.steps[index + group.length]
-        ) {
-          const calls = Arr.reduce(group, 0, (total, member) => total + member.calls.length);
-          if (
-            next.waitFor !== undefined ||
-            record.submitted[next.id] !== undefined ||
-            calls + next.calls.length > maxBundleCalls
-          ) {
-            break;
+        if (previous.hashes.length > 0) {
+          const receipts = yield* receiptsOf(client, previous.hashes);
+          for (const done of previous.steps)
+            emit({ step: done, status: "confirmed", hashes: previous.hashes });
+          const confirmed = receipts.at(-1);
+          if (step.waitFor !== undefined && confirmed !== undefined) {
+            emit({ step, status: "waiting" });
+            const block = yield* fromPromise(() =>
+              getBlock(client.client(), { blockNumber: confirmed.blockNumber }),
+            );
+            yield* waitForChainTime(client, block.timestamp + step.waitFor.seconds);
           }
-          group.push(next);
         }
-      }
 
-      const merged: Plan.Step = {
-        id: Arr.join(
-          Arr.map(group, (member) => member.id),
-          "+",
-        ),
-        description: Arr.join(
-          Arr.map(group, (member) => member.description),
-          ", ",
-        ),
-        calls: Arr.flatMap(group, (member) => member.calls),
-      };
+        // Consecutive steps without a wait join one bundle when the wallet sends bundles.
+        const group = [step];
+        const bundled = yield* bundles;
+        if (bundled) {
+          for (
+            let next = plan.steps[index + 1];
+            next !== undefined;
+            next = plan.steps[index + group.length]
+          ) {
+            const calls = Arr.reduce(group, 0, (total, member) => total + member.calls.length);
+            if (
+              next.waitFor !== undefined ||
+              record.submitted[next.id] !== undefined ||
+              calls + next.calls.length > maxBundleCalls
+            ) {
+              break;
+            }
+            group.push(next);
+          }
+        }
 
-      if (simulate && index + group.length > simulatedUpFront) {
-        const result = yield* simulateStep(client, merged, account);
-        if (result.error !== undefined) return yield* Effect.fail(result.error);
-      }
+        const merged: Plan.Step = {
+          id: Arr.join(
+            Arr.map(group, (member) => member.id),
+            "+",
+          ),
+          description: Arr.join(
+            Arr.map(group, (member) => member.description),
+            ", ",
+          ),
+          calls: Arr.flatMap(group, (member) => member.calls),
+        };
 
-      let sent: readonly Hex[];
-      let reference: string | undefined;
-      if (route !== undefined && routeContext !== undefined && step.from !== "signer") {
-        sent = yield* sendThroughRoute(route, routeContext, merged, (sentReference) => {
-          reference = sentReference;
-          emit({ step, status: "submitted", reference: sentReference });
-          return save({ references: { ...record.references, [step.id]: sentReference } });
-        });
-      } else if (
-        bundled &&
-        (merged.calls.length > 1 || mode === "batch" || options.paymaster !== undefined)
-      ) {
-        const batch = yield* sendBatch(client, signer, merged, options.timeout, options.paymaster);
-        id = batch.id;
-        sent = batch.hashes;
+        if (simulate && index + group.length > simulatedUpFront) {
+          const result = yield* simulateStep(client, merged, account);
+          if (result.error !== undefined) return yield* Effect.fail(result.error);
+        }
+
+        let sent: readonly Hex[];
+        let reference: string | undefined;
+        if (route !== undefined && routeContext !== undefined && step.from !== "signer") {
+          sent = yield* sendThroughRoute(route, routeContext, merged, (sentReference) => {
+            reference = sentReference;
+            emit({ step, status: "submitted", reference: sentReference });
+            return save({ references: { ...record.references, [step.id]: sentReference } });
+          });
+        } else if (
+          bundled &&
+          (merged.calls.length > 1 || mode === "batch" || options.paymaster !== undefined)
+        ) {
+          const batch = yield* sendBatch(
+            client,
+            signer,
+            merged,
+            options.timeout,
+            options.paymaster,
+          );
+          id = batch.id;
+          sent = batch.hashes;
+          yield* save({
+            bundles: {
+              ...record.bundles,
+              ...Rec.fromEntries(Arr.map(group, (member) => [member.id, batch.id])),
+            },
+          });
+        } else {
+          sent = yield* sendSequential(client, signer, merged);
+        }
+
         yield* save({
-          bundles: {
-            ...record.bundles,
-            ...Rec.fromEntries(Arr.map(group, (member) => [member.id, batch.id])),
+          submitted: {
+            ...record.submitted,
+            ...Rec.fromEntries(Arr.map(group, (member) => [member.id, sent])),
           },
         });
-      } else {
-        sent = yield* sendSequential(client, signer, merged);
+        // A routed step reported `submitted` with its reference as soon as it was sent.
+        if (reference === undefined) {
+          for (const member of group)
+            emit({ step: member, status: "submitted", hashes: sent, bundleId: id });
+        }
+        hashes.push(...sent);
+        previous = { steps: group, hashes: sent };
+        index += group.length;
       }
 
-      yield* save({
-        submitted: {
-          ...record.submitted,
-          ...Rec.fromEntries(Arr.map(group, (member) => [member.id, sent])),
-        },
-      });
-      // A routed step reported `submitted` with its reference as soon as it was sent.
-      if (reference === undefined) {
-        for (const member of group)
-          emit({ step: member, status: "submitted", hashes: sent, bundleId: id });
+      if (options.confirmLast === true && previous.hashes.length > 0) {
+        yield* receiptsOf(client, previous.hashes, options);
+        for (const done of previous.steps)
+          emit({ step: done, status: "confirmed", hashes: previous.hashes });
       }
-      hashes.push(...sent);
-      previous = { steps: group, hashes: sent };
-      index += group.length;
-    }
+      return undefined;
+    });
 
-    if (options.confirmLast === true && previous.hashes.length > 0) {
-      yield* receiptsOf(client, previous.hashes, options);
-      for (const done of previous.steps)
-        emit({ step: done, status: "confirmed", hashes: previous.hashes });
-    }
-    return undefined;
-  });
+    yield* run.pipe(
+      Effect.tapError((error) => {
+        const step = plan.steps[index];
+        if (step !== undefined) emit({ step, status: "failed", error });
+        return save({ status: "failed", error: error.shortMessage });
+      }),
+      Effect.mapError((error) =>
+        error.withContext({ planId: plan.id, step: plan.steps[index]?.id }),
+      ),
+    );
+    yield* save({ status: "completed", error: undefined });
 
-  yield* run.pipe(
-    Effect.tapError((error) => {
-      const step = plan.steps[index];
-      if (step !== undefined) emit({ step, status: "failed", error });
-      return save({ status: "failed", error: error.shortMessage });
-    }),
-    Effect.mapError((error) => error.withContext({ planId: plan.id, step: plan.steps[index]?.id })),
-  );
-  yield* save({ status: "completed", error: undefined });
+    const hash = hashes.at(-1);
+    // Planners never return empty plans; a write with nothing to send fails before this point.
+    if (hash === undefined) throw new Error("plan produced no transactions");
 
-  const hash = hashes.at(-1);
-  // Planners never return empty plans; a write with nothing to send fails before this point.
-  if (hash === undefined) throw new Error("plan produced no transactions");
-
-  return { hash, hashes, id, plan };
-});
+    return { hash, hashes, id, plan };
+    // A write may move a name (a new resolver, owner or registry): later reads locate it again.
+  },
+  (effect, client) => Effect.ensuring(effect, forgetLocations(client)),
+);
 
 /**
  * The transactions a resumed step was submitted with, once confirmed to exist; `undefined` when
@@ -255,7 +268,7 @@ const recordedHashes = Effect.fnUntraced(function* (
     const known = yield* Effect.forEach(
       submitted,
       (hash) =>
-        fromPromise(() => getTransaction(client.publicClient, { hash })).pipe(
+        fromPromise(() => getTransaction(client.client(), { hash })).pipe(
           Effect.as(true),
           Effect.orElseSucceed(() => false),
         ),

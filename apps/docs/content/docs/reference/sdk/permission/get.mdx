@@ -58,7 +58,7 @@ Resolves to `get.ReturnType`. What the account may do; `null` when unknown.
 | `status` | `NameStatus` |  |
 | `can` | `{ readonly [operation in NameOperation \| "setRecords"]: boolean \| null }` |  |
 | `records` (optional) | `Readonly<Record<string, unknown>>` | Per-record answers, shaped like the `records` selection. |
-| `fuses` | `readonly Fuse.Name[]` | Burned NameWrapper fuses (wrapped ENSv1 names). |
+| `fuses` | `readonly Fuse.Name[]` | Burned NameWrapper fuses (wrapped ENSv1 names, and Linea Names on their L2). |
 
 ## Errors
 

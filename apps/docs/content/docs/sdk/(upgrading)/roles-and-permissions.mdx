@@ -19,7 +19,7 @@ You will check what an account may do, grant and revoke roles, and give an app a
 
 ## Prerequisites
 
-- A client. Reads need only a public client. Writes need a wallet client. See [Create a client](/docs/sdk/create-a-client).
+- A client. Writes need a wallet or a local account. See [Create a client](/docs/sdk/create-a-client).
 - An ENSv2 name for the role actions. See [Who can change a name](/docs/sdk/who-can-change-a-name).
 
 ## 1. Check what an account may do
@@ -29,12 +29,11 @@ You will check what an account may do, grant and revoke roles, and give an app a
 **Example** (Gating a UI)
 
 ```ts title="permission-get.ts"
-import { createPublicClient, http } from "viem";
 import { sepolia } from "viem/chains";
 import { Ensforge, ensActions } from "@ensforge/sdk";
 
 const ens = Ensforge.create({
-  publicClient: createPublicClient({ chain: sepolia, transport: http() }),
+  chain: sepolia,
 }).extend(ensActions());
 
 const { can, fuses } = await ens.permission.get({
@@ -55,12 +54,11 @@ if (can.setRecords) console.log("show the edit button");
 **Example** (Explaining a Disabled Button)
 
 ```ts title="permission-check.ts"
-import { createPublicClient, http } from "viem";
 import { sepolia } from "viem/chains";
 import { Ensforge, ensActions } from "@ensforge/sdk";
 
 const ens = Ensforge.create({
-  publicClient: createPublicClient({ chain: sepolia, transport: http() }),
+  chain: sepolia,
 }).extend(ensActions());
 
 const { allowed, via, missing } = await ens.permission.check({
@@ -79,12 +77,11 @@ const { allowed, via, missing } = await ens.permission.check({
 **Example** (Reading Roles on a Name)
 
 ```ts title="role-get.ts"
-import { createPublicClient, http } from "viem";
 import { sepolia } from "viem/chains";
 import { Ensforge, ensActions } from "@ensforge/sdk";
 
 const ens = Ensforge.create({
-  publicClient: createPublicClient({ chain: sepolia, transport: http() }),
+  chain: sepolia,
 }).extend(ensActions());
 
 const { names, admin, rootRoles } = await ens.role.get({
@@ -106,7 +103,7 @@ const { names, admin, rootRoles } = await ens.role.get({
 **Example** (Granting and Revoking a Role)
 
 ```ts title="role-grant.ts"
-import { createPublicClient, createWalletClient, http, type Hex } from "viem";
+import { createWalletClient, http, type Hex } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { sepolia } from "viem/chains";
 import { Ensforge, ensActions } from "@ensforge/sdk";
@@ -115,8 +112,9 @@ const account = privateKeyToAccount(process.env.PRIVATE_KEY as Hex);
 const transport = http(process.env.SEPOLIA_RPC_URL);
 
 const ens = Ensforge.create({
-  publicClient: createPublicClient({ chain: sepolia, transport }),
-  walletClient: createWalletClient({ account, chain: sepolia, transport }),
+  chain: sepolia,
+  transports: { [sepolia.id]: transport },
+  wallet: createWalletClient({ account, chain: sepolia, transport }),
 }).extend(ensActions());
 
 const bob = "0xB0b0000000000000000000000000000000000000";
@@ -169,7 +167,7 @@ Some roles regenerate the name's token ID. The plan then carries a `TOKEN_ID_REG
 **Example** (Letting an App Edit One Text Record)
 
 ```ts title="set-record-access.ts"
-import { createPublicClient, createWalletClient, http, type Hex } from "viem";
+import { createWalletClient, http, type Hex } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { sepolia } from "viem/chains";
 import { Ensforge, ensActions } from "@ensforge/sdk";
@@ -178,8 +176,9 @@ const account = privateKeyToAccount(process.env.PRIVATE_KEY as Hex);
 const transport = http(process.env.SEPOLIA_RPC_URL);
 
 const ens = Ensforge.create({
-  publicClient: createPublicClient({ chain: sepolia, transport }),
-  walletClient: createWalletClient({ account, chain: sepolia, transport }),
+  chain: sepolia,
+  transports: { [sepolia.id]: transport },
+  wallet: createWalletClient({ account, chain: sepolia, transport }),
 }).extend(ensActions());
 
 await ens.permission.setRecordAccessSync({

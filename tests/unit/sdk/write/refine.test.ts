@@ -14,15 +14,7 @@ import {
 import { make as makePlan } from "@ensforge/sdk/internal/plan/make";
 import { expectFailure, scriptedTransport } from "@ensforge/test-harness";
 import { contractScript } from "@ensforge/test-harness/contracts-eth-call";
-import {
-  createPublicClient,
-  encodeErrorResult,
-  encodeFunctionData,
-  getAddress,
-  pad,
-  parseAbi,
-  type Hex,
-} from "viem";
+import { encodeErrorResult, encodeFunctionData, getAddress, pad, parseAbi, type Hex } from "viem";
 import { mainnet } from "viem/chains";
 
 import { paramsOf, recordOf, requestsOf, scriptedWallet, simulatedCalls } from "./wallet";
@@ -135,7 +127,9 @@ const node = (options: {
     }),
   );
   const client = Ensforge.create({
-    publicClient: createPublicClient({ chain: mainnet, transport }),
+    chain: mainnet,
+    transports: { [mainnet.id]: transport },
+    publicRpc: false,
     ...(options.anonymous === true ? {} : { account }),
     batch: { multicall: false },
   });

@@ -7,15 +7,15 @@ import { expectFailure, expectThrow, noRpc, scriptedTransport } from "@ensforge/
 import { createPublicClient, defineChain } from "viem";
 import { mainnet } from "viem/chains";
 
-/** A viem public client that must not be asked anything. */
-const makeClient = () => {
+/** Options for a mainnet client whose transport must not be asked anything. */
+const offline = () => {
   const { transport } = scriptedTransport(noRpc);
-  return createPublicClient({ chain: mainnet, transport });
+  return { chain: mainnet, transports: { [mainnet.id]: transport }, publicRpc: false } as const;
 };
 
 describe("Client.extend", () => {
   it("returns a new client and leaves the original unchanged", () => {
-    const base = Ensforge.create({ publicClient: makeClient() });
+    const base = Ensforge.create(offline());
     const extended = base.extend(() => ({ greet: { hello: () => "hi" } }));
 
     assert.notStrictEqual(extended, base);
@@ -25,7 +25,7 @@ describe("Client.extend", () => {
   });
 
   it("merges groups by key, later actions winning", () => {
-    const ens = Ensforge.create({ publicClient: makeClient() })
+    const ens = Ensforge.create(offline())
       .extend(() => ({ tools: { a: () => "first", b: () => "first" } }))
       .extend(() => ({ tools: { b: () => "second", c: () => "second" } }));
 
@@ -36,17 +36,17 @@ describe("Client.extend", () => {
   });
 
   it("passes the current client, with earlier groups, to the decorator", () => {
-    const ens = Ensforge.create({ publicClient: makeClient() })
+    const ens = Ensforge.create(offline())
       .extend(() => ({ one: { value: () => 1 } }))
       .extend((client) => ({ two: { value: () => client.one.value() + 1 } }));
 
     assert.strictEqual(ens.two.value(), 2);
   });
 
-  it.each(["chain", "account", "deployment", "publicClient", "config", "extend"])(
+  it.each(["chain", "account", "deployment", "client", "config", "extend"])(
     "rejects the reserved group %j",
     (group) => {
-      const base = Ensforge.create({ publicClient: makeClient() });
+      const base = Ensforge.create(offline());
 
       expectThrow(() => base.extend(() => ({ [group]: {} })), {
         _tag: "ConfigError",
@@ -56,7 +56,7 @@ describe("Client.extend", () => {
   );
 
   it("binds every action group of ensActions to the client", () => {
-    const ens = Ensforge.create({ publicClient: makeClient() }).extend(ensActions());
+    const ens = Ensforge.create(offline()).extend(ensActions());
 
     for (const [domain, group] of Rec.toEntries(Actions)) {
       // The indexer group is added by `indexerActions` from `@ensforge/sdk/indexer`.
@@ -73,13 +73,14 @@ describe("Client.extend", () => {
 });
 
 describe("Ensforge.from and Ensforge.is", () => {
-  it("wraps a bare viem client once and reuses it", () => {
-    const client = makeClient();
+  it("wraps a bare viem client once, reading through it", () => {
+    const { transport } = scriptedTransport(noRpc);
+    const client = createPublicClient({ chain: mainnet, transport });
 
     const ens = Ensforge.from(client);
 
     assert.isTrue(Ensforge.is(ens));
-    assert.strictEqual(ens.publicClient, client);
+    assert.strictEqual(ens.chain.id, mainnet.id);
     assert.strictEqual(Ensforge.from(client), ens);
   });
 
@@ -102,15 +103,13 @@ describe("Ensforge.from and Ensforge.is", () => {
 describe("Ensforge.layer", () => {
   it.effect("provides the client as a service", () =>
     Effect.gen(function* () {
-      const publicClient = makeClient();
-
       const ens = yield* EffectEnsforge.Ensforge.pipe(
         // oxlint-disable-next-line effecttsgo/strict-effect-provide -- the test is the entry point
-        Effect.provide(EffectEnsforge.layer({ publicClient })),
+        Effect.provide(EffectEnsforge.layer(offline())),
       );
 
       assert.isTrue(EffectEnsforge.is(ens));
-      assert.strictEqual(ens.publicClient, publicClient);
+      assert.strictEqual(ens.chain.id, mainnet.id);
     }),
   );
 
@@ -128,7 +127,11 @@ describe("Ensforge.layer", () => {
         EffectEnsforge.Ensforge.pipe(
           // oxlint-disable-next-line effecttsgo/strict-effect-provide -- the test is the entry point
           Effect.provide(
-            EffectEnsforge.layer({ publicClient: createPublicClient({ chain, transport }) }),
+            EffectEnsforge.layer({
+              chain,
+              transports: { [chain.id]: transport },
+              publicRpc: false,
+            }),
           ),
         ),
         { _tag: "ConfigError", code: "UNKNOWN_CHAIN" },

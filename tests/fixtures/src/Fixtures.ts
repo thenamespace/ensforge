@@ -18,7 +18,8 @@ export type FixturesApi = {
   readonly one: (tags: Tags) => FixtureEntry;
 };
 
-const api = (manifest: Manifest): FixturesApi => {
+/** Selection over a seeded build's manifest (a devnet's, or an L2's). */
+export const fixturesApi = (manifest: Manifest): FixturesApi => {
   const where = (tags: Tags) =>
     Arr.filter(manifest.fixtures, (fixture) =>
       Arr.every(Rec.toEntries(tags), ([axis, value]) => fixture.tags[axis] === value),
@@ -66,7 +67,7 @@ export class Fixtures extends Context.Service<Fixtures, FixturesApi>()(
       Effect.map(Effect.service(Devnet), (instance) =>
         // The seed is this package's own `fixtureSeed` output, which is a `Manifest`.
         // oxlint-disable-next-line typescript/no-unsafe-type-assertion
-        api(instance.seed as Manifest),
+        fixturesApi(instance.seed as Manifest),
       ),
     );
     return fixtures.pipe(Layer.provideMerge(devnet));

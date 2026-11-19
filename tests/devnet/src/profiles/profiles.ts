@@ -6,6 +6,7 @@ import { cutoverSteps } from "../deploy/cutover.ts";
 import type { Ledger, Step, Variant } from "../deploy/engine.ts";
 import { canonicalSteps, hcaSteps } from "../deploy/hca.ts";
 import { l2MockSteps, mockSteps } from "../deploy/mocks.ts";
+import { l2Steps, namespaceSteps } from "../deploy/namespaces.ts";
 import { v1Steps } from "../deploy/v1.ts";
 import { v2ResolutionSteps, v2Steps } from "../deploy/v2.ts";
 import { v1Deployment, v2Deployment } from "./deployments.ts";
@@ -71,7 +72,7 @@ export const profiles = {
   },
   "mainnet-shaped": {
     description: "ENSv1 and ENSv2 as on mainnet today: after the launch and the registry hand-over",
-    steps: [...mainnetShaped, ...l2MockSteps],
+    steps: [...mainnetShaped, ...l2MockSteps, ...namespaceSteps],
     deployments: (ledger) =>
       profile({
         v1: v1Deployment(ledger, chainId, "legacy"),
@@ -93,7 +94,7 @@ export const profiles = {
   // its ENSv2-only paths.
   "v2-only": {
     description: "The mainnet-shaped chain, with an ensforge profile that knows only ENSv2",
-    steps: [...mainnetShaped, ...l2MockSteps],
+    steps: [...mainnetShaped, ...l2MockSteps, ...namespaceSteps],
     deployments: (ledger) => profile({ v2: v2Deployment(ledger, chainId, mainnetCapabilities) }),
   },
 } as const satisfies Record<string, ProfileDefinition>;
@@ -101,3 +102,29 @@ export const profiles = {
 export type ProfileName = keyof typeof profiles;
 
 export const profileNames = Rec.keys(profiles) as readonly ProfileName[];
+
+export type L2ProfileDefinition = {
+  readonly description: string;
+  /** The L2's chain ID, which its anvil answers as. */
+  readonly chainId: number;
+  readonly steps: readonly Step[];
+};
+
+/**
+ * L2 chains with the L2 namespaces' contracts, each on its own anvil next to a `mainnet-shaped`
+ * devnet. Their names are fixtures (`@ensforge/test-fixtures`).
+ */
+export const l2Profiles = {
+  "l2-base": {
+    description: "Base: Basenames, Durin and Namespace",
+    chainId: 8453,
+    steps: l2Steps.base,
+  },
+  "l2-optimism": { description: "OP Mainnet: Namespace", chainId: 10, steps: l2Steps.optimism },
+  "l2-linea": { description: "Linea: Linea Names", chainId: 59_144, steps: l2Steps.linea },
+  "l2-celo": { description: "Celo: Celonames", chainId: 42_220, steps: l2Steps.celo },
+} as const satisfies Record<string, L2ProfileDefinition>;
+
+export type L2ProfileName = keyof typeof l2Profiles;
+
+export const l2ProfileNames = Rec.keys(l2Profiles) as readonly L2ProfileName[];

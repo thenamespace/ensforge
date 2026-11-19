@@ -9,6 +9,7 @@ import { NameStateError } from "../../../errors/classes/NameStateError.js";
 import { UnsupportedError } from "../../../errors/classes/UnsupportedError.js";
 import type { AnyError } from "../../../errors/types.js";
 import * as Action from "../../../internal/action/index.js";
+import * as V1Calls from "../../../internal/name/v1-calls.js";
 import {
   notRegistered,
   requireAddress,
@@ -78,6 +79,14 @@ const v1Calls = Effect.fnUntraced(function* (
   const owner = changes.owner ?? state.owner ?? zeroAddress;
   const resolver = changes.resolver ?? state.resolver ?? zeroAddress;
   const record = changes.owner !== undefined || changes.resolver !== undefined;
+  const subnode = {
+    parentNode: parent.data.parts.node,
+    label,
+    labelhash: data.parts.labelhash,
+    owner,
+    resolver,
+  };
+  const ttl = state.ttl ?? 0n;
 
   if (!state.wrapped || (route === "v1" && record)) {
     if (changes.expiry !== undefined) {
@@ -89,39 +98,17 @@ const v1Calls = Effect.fnUntraced(function* (
         }),
       );
     }
-    return [
-      {
-        to: contracts.registry,
-        data: encodeFunctionData({
-          abi: Abis.v1.ensRegistry,
-          functionName: "setSubnodeRecord",
-          args: [parent.data.parts.node, data.parts.labelhash, owner, resolver, state.ttl ?? 0n],
-        }),
-        value: 0n,
-      },
-    ];
+    return [V1Calls.setSubnodeRecord(contracts.registry, false, { ...subnode, ttl })];
   }
 
   return [
     ...(record
       ? [
-          {
-            to: contracts.nameWrapper,
-            data: encodeFunctionData({
-              abi: Abis.v1.nameWrapper,
-              functionName: "setSubnodeRecord",
-              args: [
-                parent.data.parts.node,
-                label,
-                owner,
-                resolver,
-                state.ttl ?? 0n,
-                0,
-                changes.expiry ?? state.expiry ?? 0n,
-              ],
-            }),
-            value: 0n,
-          },
+          V1Calls.setSubnodeRecord(contracts.nameWrapper, true, {
+            ...subnode,
+            ttl,
+            expiry: changes.expiry ?? state.expiry ?? 0n,
+          }),
         ]
       : []),
     ...(changes.expiry !== undefined && !record
@@ -161,6 +148,26 @@ export const plan = Effect.fnUntraced(function* (
   }
 
   const subname = yield* loadSubname(client, options.name);
+  if (subname.route === "l2") {
+    if (subname.childState.status !== "registered") {
+      return yield* Effect.fail(
+        new NameStateError({
+          code: "NAME_NOT_REGISTERED",
+          shortMessage: `${subname.child.data.parts.name} does not exist.`,
+          context: { chainId: subname.target.location.chainId },
+        }),
+      );
+    }
+    const { updateCall } = yield* Effect.promise(
+      () => import("../../../internal/namespace/l2/index.js"),
+    );
+    return singleStepPlan(subname.target.client, {
+      operation: "subname.update",
+      account: options.account,
+      description: "Update subname",
+      calls: [yield* updateCall(subname, options)],
+    });
+  }
   if (subname.child.state.status === "available") {
     return yield* notRegistered(
       client,

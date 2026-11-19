@@ -637,3 +637,29 @@ describe("bigname and Goldsky together", () => {
     });
   });
 });
+
+describe("indexer actions on L2 names no indexer serves", () => {
+  it.effect("refuse Linea Names and Celonames before asking the indexer", () =>
+    Effect.gen(function* () {
+      const { fake, ens } = onBigname();
+
+      const reads: readonly Effect.Effect<unknown, AnyError>[] = [
+        Actions.indexer.getName(ens, { name: "alice.linea.eth" }),
+        Actions.indexer.getRecords(ens, { name: "alice.celo.eth" }),
+        Actions.indexer.getHistory(ens, { name: "alice.linea.eth" }),
+        Actions.indexer.getSubnames(ens, { name: "linea.eth" }),
+      ];
+      for (const read of reads) {
+        const error = yield* expectFailure(read, {
+          _tag: "IndexerError",
+          code: "INDEXER_UNSUPPORTED",
+        });
+        assert.include(error.shortMessage, "No indexer serves");
+      }
+      // The parent itself is an ENS name; an explicit namespace is taken as asked.
+      yield* Actions.indexer.getName(ens, { name: "linea.eth" });
+      yield* Actions.indexer.getName(ens, { name: "alice.linea.eth", namespace: "ens" });
+      assert.strictEqual(fake.requestsTo("/names/{name}").length, 2);
+    }),
+  );
+});

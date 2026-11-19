@@ -17,6 +17,7 @@ import * as Impl from "./effect.js";
  * - The owner defaults to the one the resolver authorizes against: the ENS registry owner (or
  *   NameWrapper owner) for ENSv1 resolvers, the ENSv2 owner for PublicResolverV2.
  * - PermissionedResolvers have roles instead of delegates and answer `false`.
+ * - Basenames and Linea names are read on their resolver on the L2.
  *
  * **Example** (Checking a delegate)
  *
@@ -42,6 +43,8 @@ import * as Impl from "./effect.js";
  *
  * @throws `Errors.InvalidInputError` (`INVALID_NAME`, `INVALID_ADDRESS`) for invalid input.
  * @throws `Errors.NotFoundError` (`RESOLVER_NOT_FOUND`) when the name has no resolver.
+ * @throws `Errors.NameStateError` (`NAME_EXTERNAL`) for a name in an L2 namespace without delegates.
+ * @throws `Errors.ConfigError` (`CHAIN_NOT_CONFIGURED`) when the name lives on an L2 the client cannot reach.
  * @throws `Errors.NetworkError` (`RPC_REQUEST_FAILED`, `RPC_TIMEOUT`, `RATE_LIMITED`) when the RPC request fails.
  *
  * @see {@link Actions.approval.setDelegate} to change it
@@ -74,7 +77,11 @@ export declare namespace getDelegate {
   /** Whether `delegate` may edit the name's records. */
   type ReturnType = boolean;
   /** Errors {@link getDelegate} can fail with. */
-  type ErrorType = Errors.CommonError | Errors.InvalidInputError | Errors.NotFoundError;
+  type ErrorType =
+    | Errors.CommonError
+    | Errors.InvalidInputError
+    | Errors.NotFoundError
+    | Errors.NameStateError;
 }
 
 /** Builds a deferred read for `Actions.batch`. */

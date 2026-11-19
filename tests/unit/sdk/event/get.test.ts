@@ -6,7 +6,6 @@ import { Ensforge } from "@ensforge/sdk";
 import { Actions } from "@ensforge/sdk/effect";
 import { expectFailure, scriptedTransport } from "@ensforge/test-harness";
 import {
-  createPublicClient,
   decodeFunctionData,
   encodeFunctionResult,
   isAddressEqual,
@@ -123,7 +122,9 @@ const ensOver = (logs: readonly Log[], head = 100n) => {
 
   // Without multicall every read is its own `eth_call`, answered from `contracts`.
   const ens = Ensforge.create({
-    publicClient: createPublicClient({ chain: mainnet, transport }),
+    chain: mainnet,
+    transports: { [mainnet.id]: transport },
+    publicRpc: false,
     batch: { multicall: false },
   });
   return { ens, calls };

@@ -12,13 +12,14 @@ import type { Client, CreateOptions } from "./types.js";
  * ```ts
  * import { Effect } from "effect"
  * import { Actions, Ensforge } from "@ensforge/sdk/effect"
+ * import { mainnet } from "viem/chains"
  *
  * const program = Effect.gen(function* () {
  *   const ens = yield* Ensforge.Ensforge
  *   return yield* Actions.record.getText(ens, { name: "nick.eth", key: "url" })
  * })
  *
- * await Effect.runPromise(program.pipe(Effect.provide(Ensforge.layer({ publicClient }))))
+ * await Effect.runPromise(program.pipe(Effect.provide(Ensforge.layer({ chain: mainnet }))))
  * ```
  *
  * @stability stable

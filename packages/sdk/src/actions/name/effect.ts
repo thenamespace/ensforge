@@ -6,6 +6,8 @@ import * as getImpl from "./get/effect.js";
 import type { get as getTypes } from "./get/index.js";
 import * as getLabelImpl from "./getLabel/effect.js";
 import type { getLabel as getLabelTypes } from "./getLabel/index.js";
+import * as getNamespaceImpl from "./getNamespace/effect.js";
+import type { getNamespace as getNamespaceTypes } from "./getNamespace/index.js";
 import * as reclaimImpl from "./reclaim/effect.js";
 import type { reclaim as reclaimTypes, reclaimSync as reclaimSyncTypes } from "./reclaim/index.js";
 import * as setManagerImpl from "./setManager/effect.js";
@@ -33,20 +35,29 @@ import type {
  * **Details**
  *
  * - `kind` tells where the name lives (`v1-unwrapped`, `v1-wrapped`, `v2-native`, `v2-migrated`,
- *   `v2-reserved`, `available`); `protocol` is `v1` or `v2`.
+ *   `v2-reserved`, `available`, or outside ENS's registries `l2`, `offchain`, `wildcard`);
+ *   `protocol` is `v1` or `v2`.
+ * - `namespace` names the L2 namespace (`kind: "l2"`: family, parent, L2 and registry) or the
+ *   off-chain provider that holds a name outside ENS's registries; `chainId` is where the name
+ *   lives. The namespaces come from the client's deployment profile.
+ * - An `l2` name (`protocol: "l2"`) is read on its L2: its owner, expiry and status there, with
+ *   `available` when nobody holds it and `renewable: false` (ensforge does not renew L2 names).
+ *   Without a transport or public RPC for the L2, only its location is known: status `external`.
  * - Times come from the block the read runs at, not the local clock.
  * - `inheritedResolver` is the resolver serving a name that has none of its own: a parent's
  *   wildcard or off-chain resolver, or the ENSv1 resolver behind the ENSv1 bridge.
  * - Costs two batched RPC calls, whatever the name kind. A name without a resolver of its own
  *   that a parent's resolver serves costs one more (two behind the ENSv1 bridge), and one more
- *   when no registry holds it (an `eth_call` asking the resolver whether it serves the name).
+ *   when no registry holds it (an `eth_call` asking the resolver whether it serves the name, or,
+ *   for an L2 namespace, locating it: a read on Ethereum and one on the L2 for Durin and
+ *   Namespace names).
  *
  * **Gotchas**
  *
- * - `resolver` is the resolver set on the name itself. A name served only by a parent's wildcard
- *   or off-chain resolver (such as `jesse.base.eth` or `test.uni.eth`) has `resolver: null` and is
- *   in no registry: it is `offchain` or `wildcard` with status `external`, and its parent's
- *   namespace (an L2, or the provider) manages it. `inheritedResolver` is the resolver serving it.
+ * - `resolver` is the resolver set on the name itself. A name served only by a parent's resolver
+ *   (such as `jesse.base.eth` or `test.uni.eth`) has `resolver: null` and is in no ENS registry:
+ *   it is `l2`, `offchain` or `wildcard` with status `external`, and its parent's namespace (an
+ *   L2, or the provider) manages it. `inheritedResolver` is the resolver serving it.
  * - `offchain` means a gateway answers for the name, not that the gateway holds it: ENS cannot
  *   tell, so an unclaimed label under such a parent is `offchain` too. The check never contacts
  *   the gateway.
@@ -143,6 +154,75 @@ export declare namespace getLabel {
   type Options = getLabelTypes.Options;
   type ReturnType = getLabelTypes.ReturnType;
   type ErrorType = getLabelTypes.ErrorType;
+}
+
+/**
+ * Finds where a name lives outside ENS's registries: the L2 namespace that holds it (Basenames,
+ * Linea Names, Celonames, Durin, Namespace) or the off-chain provider that serves it.
+ *
+ * **When to use**
+ *
+ * Use to know which chain to read a name from or send its record writes to, without reading its
+ * full state. `name.get` returns the same location as `namespace`.
+ *
+ * **Details**
+ *
+ * - `kind: "l2"` names the namespace family, its parent name, the L2's `chainId` and the registry
+ *   there that holds the name (`null` when the L2 could not be reached).
+ * - `kind: "offchain"` names the provider whose gateway serves the name, or `null` when ensforge
+ *   does not know it. No gateway is contacted.
+ * - Returns `null` for names in ENS, and for names nothing serves.
+ * - The L2 namespaces come from the client's deployment profile (`Deployments.Profile.namespaces`).
+ *   Durin and Namespace names cost a read on Ethereum and one on their L2.
+ * - A client remembers a name's location for a minute, and forgets it after its own writes.
+ *
+ * **Gotchas**
+ *
+ * - The location says where the name would live, not that it is registered there:
+ *   `unclaimed.base.eth` is on Base too.
+ *
+ * **Example** (Finding the chain of a Basename)
+ *
+ * ```ts
+ * const namespace = await ens.name.getNamespace({ name: "jesse.base.eth" })
+ * if (namespace?.kind === "l2") console.log(namespace.id, namespace.chainId) // "basenames" 8453
+ * ```
+ *
+ * **Example** (Finding with a bare viem client)
+ *
+ * ```ts
+ * import { Actions } from "@ensforge/sdk"
+ *
+ * const namespace = await Actions.name.getNamespace(publicClient, { name: "jesse.base.eth" })
+ * ```
+ *
+ * **Example** (Finding in an Effect program)
+ *
+ * ```ts
+ * import { Actions } from "@ensforge/sdk/effect"
+ *
+ * const namespace = yield* Actions.name.getNamespace(ens, { name: "jesse.base.eth" })
+ * ```
+ *
+ * @throws `Errors.InvalidInputError` (`INVALID_NAME`) when the name is invalid or the root.
+ * @throws `Errors.NetworkError` (`RPC_REQUEST_FAILED`, `RPC_TIMEOUT`, `RATE_LIMITED`) when the RPC request fails.
+ *
+ * @see {@link Actions.name.get} for the name's full state
+ * @stability stable
+ * @category reading
+ * @since 1.1.0
+ */
+export const getNamespace = /* @__PURE__ */ Object.assign(
+  getNamespaceImpl.getNamespace as Action.Declared<
+    typeof getNamespaceImpl.getNamespace,
+    getNamespaceTypes.ErrorType
+  >,
+  { path: "name.getNamespace" as const },
+);
+export declare namespace getNamespace {
+  type Options = getNamespaceTypes.Options;
+  type ReturnType = getNamespaceTypes.ReturnType;
+  type ErrorType = getNamespaceTypes.ErrorType;
 }
 
 /**
@@ -398,6 +478,7 @@ export declare namespace setManagerSync {
  *
  * - Wrapped names change their TTL through the NameWrapper.
  * - ENSv2 has no registry TTL.
+ * - Basenames and Linea Names change it on their L2, in the registry or Linea's NameWrapper.
  *
  * **Example** (Setting a TTL)
  *
@@ -425,6 +506,7 @@ export declare namespace setManagerSync {
  * @throws `Errors.NameStateError` (`NAME_EXPIRED`, `NAME_RESERVED`, `NAME_NOT_REGISTERED`, `NAME_EXTERNAL`) when the name is not registered, or its parent's namespace manages it outside ENS's registries.
  * @throws `Errors.NameStateError` (`NAME_UNREACHABLE`) when ENSv2 resolution no longer reaches the name.
  * @throws `Errors.UnsupportedError` (`UNSUPPORTED_PROTOCOL`) for ENSv2 names.
+ * @throws `Errors.ConfigError` (`CHAIN_NOT_CONFIGURED`) when the name lives on an L2 the client cannot reach.
  * @throws `Errors.UnauthorizedError` (`NOT_OWNER`, `FUSE_BURNED`) when the account may not change it.
  * @throws `Errors.UserRejectedError` (`USER_REJECTED`) when the user rejects the request.
  * @throws `Errors.WalletError` (`CHAIN_MISMATCH`, `ACCOUNT_NOT_FOUND`) when the wallet is on another chain or has no account to sign with.
@@ -483,6 +565,7 @@ export declare namespace setTtl {
  * @throws `Errors.NameStateError` (`NAME_EXPIRED`, `NAME_RESERVED`, `NAME_NOT_REGISTERED`, `NAME_EXTERNAL`) when the name is not registered, or its parent's namespace manages it outside ENS's registries.
  * @throws `Errors.NameStateError` (`NAME_UNREACHABLE`) when ENSv2 resolution no longer reaches the name.
  * @throws `Errors.UnsupportedError` (`UNSUPPORTED_PROTOCOL`) for ENSv2 names.
+ * @throws `Errors.ConfigError` (`CHAIN_NOT_CONFIGURED`) when the name lives on an L2 the client cannot reach.
  * @throws `Errors.UnauthorizedError` (`NOT_OWNER`, `FUSE_BURNED`) when the account may not change it.
  * @throws `Errors.TransactionError` (`TRANSACTION_REVERTED`, `RECEIPT_TIMEOUT`, `NONCE_CONFLICT`) when confirmation fails or the wallet's nonce is already used.
  *
@@ -517,6 +600,10 @@ export declare namespace setTtlSync {
  * - Unwrapped `.eth` names: `role: "owner"` (default) moves the registrar token and the registry
  *   ownership (manager); `role: "registrant"` moves only the registrar token.
  * - Other unwrapped ENSv1 names change their registry owner.
+ * - A name in an L2 namespace moves on its L2, by the client's wallet on that chain: its ERC-721
+ *   token, or Linea Names' NameWrapper token. A Basenames second-level name also moves its
+ *   registry record (`reclaim`) unless `role` is `"registrant"`; a Basenames subname changes its
+ *   registry owner.
  *
  * **Gotchas**
  *
@@ -554,6 +641,8 @@ export declare namespace setTtlSync {
  * @throws `Errors.NameStateError` (`REGISTRY_NOT_EMANCIPATED`) when the name's registry is not emancipated and `unsafe` is not set.
  * @throws `Errors.UnauthorizedError` (`NOT_OWNER`, `TRANSFER_DISALLOWED`) when the account may not send it, or the recipient (an HCA) refuses it.
  * @throws `Errors.UnsupportedError` (`UNSUPPORTED_PROTOCOL`) for `role: "registrant"` on names without a registrant.
+ * @throws `Errors.UnsupportedError` (`UNSUPPORTED_ON_DEPLOYMENT`) for `role: "registrant"` on an L2 name without a token, or a route (`via`) on an L2 name.
+ * @throws `Errors.ConfigError` (`CHAIN_NOT_CONFIGURED`) when the name lives on an L2 the client cannot reach.
  * @throws `Errors.UserRejectedError` (`USER_REJECTED`) when the user rejects the request.
  * @throws `Errors.WalletError` (`CHAIN_MISMATCH`, `ACCOUNT_NOT_FOUND`) when the wallet is on another chain or has no account to sign with.
  * @throws `Errors.UnsupportedError` (`WALLET_BATCH_UNSUPPORTED`) with `mode: "batch"` or a paymaster when the wallet cannot send calls as one batch.
@@ -616,6 +705,8 @@ export declare namespace transfer {
  * @throws `Errors.NameStateError` (`REGISTRY_NOT_EMANCIPATED`) when the name's registry is not emancipated and `unsafe` is not set.
  * @throws `Errors.UnauthorizedError` (`NOT_OWNER`, `TRANSFER_DISALLOWED`) when the account may not send it, or the recipient (an HCA) refuses it.
  * @throws `Errors.UnsupportedError` (`UNSUPPORTED_PROTOCOL`) for `role: "registrant"` on names without a registrant.
+ * @throws `Errors.UnsupportedError` (`UNSUPPORTED_ON_DEPLOYMENT`) for `role: "registrant"` on an L2 name without a token, or a route (`via`) on an L2 name.
+ * @throws `Errors.ConfigError` (`CHAIN_NOT_CONFIGURED`) when the name lives on an L2 the client cannot reach.
  * @throws `Errors.TransactionError` (`TRANSACTION_REVERTED`, `RECEIPT_TIMEOUT`, `NONCE_CONFLICT`) when confirmation fails or the wallet's nonce is already used.
  *
  * @see {@link transfer} to resolve on submission

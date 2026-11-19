@@ -35,8 +35,10 @@ Retrying the same call fails the same way until the cause is fixed (`retryable: 
 | [`migration.get`](/docs/reference/sdk/migration/get) | where ENSv2 is not deployed. |
 | [`migration.migrate`](/docs/reference/sdk/migration/migrate) | where ENSv2 is not deployed. |
 | [`name.getLabel`](/docs/reference/sdk/name/get-label) | without an ENSv2 deployment. |
+| [`name.transfer`](/docs/reference/sdk/name/transfer) | for `role: "registrant"` on an L2 name without a token, or a route (`via`) on an L2 name. |
 | [`primaryName.set`](/docs/reference/sdk/primary-name/set) | for a chain without an L2 reverse registrar. |
 | [`primaryName.signClaim`](/docs/reference/sdk/primary-name/sign-claim) | for a chain without an L2 reverse registrar. |
+| [`record.set`](/docs/reference/sdk/record/set) | for a route (`via`) on an L2 name, or a resolver other than Linea's PublicResolver on a Linea name. |
 | [`registration.commit`](/docs/reference/sdk/registration/commit) | for an unaccepted token or without ENSv2. |
 | [`registration.getCommitmentStatus`](/docs/reference/sdk/registration/get-commitment-status) | without ENSv2. |
 | [`registration.getParameters`](/docs/reference/sdk/registration/get-parameters) | without ENSv2. |
@@ -47,6 +49,9 @@ Retrying the same call fails the same way until the cause is fixed (`retryable: 
 | [`registration.renew`](/docs/reference/sdk/registration/renew) | for an unaccepted token or without ENSv2. |
 | [`registry.deploy`](/docs/reference/sdk/registry/deploy) | without ENSv2, or for an ENSv1 `attachTo`. |
 | [`resolver.create`](/docs/reference/sdk/resolver/create) | without ENSv2, or for records a PermissionedResolver cannot store. |
+| [`resolver.set`](/docs/reference/sdk/resolver/set) | for a resolver other than Linea's PublicResolver on a Linea name. |
+| [`subname.create`](/docs/reference/sdk/subname/create) | for `fuses`, `expiry`, `roles` or `emancipate` under an L2 name, or a resolver other than Linea's PublicResolver under a Linea name. |
+| [`subname.update`](/docs/reference/sdk/subname/update) | for `expiry` under an L2 name, or a resolver other than Linea's PublicResolver under a Linea name. |
 | [`wrapper.getFuses`](/docs/reference/sdk/wrapper/get-fuses) | without ENSv1. |
 
 Any write can fail with `UnsupportedError`: it is part of `Errors.WriteError`.

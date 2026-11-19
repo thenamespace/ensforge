@@ -15,6 +15,15 @@
  */
 import { mainnetV1 } from "./deployments/mainnet-v1.js";
 import { mainnetV2 } from "./deployments/mainnet-v2.js";
+import type { NamespaceId, OffchainProvider } from "./deployments/namespace-types.js";
+import {
+  basenames,
+  celonames,
+  durin,
+  linea,
+  namespace,
+  offchainProviders,
+} from "./deployments/namespaces.js";
 import { sepoliaV1 } from "./deployments/sepolia-v1.js";
 import { sepoliaV2 } from "./deployments/sepolia-v2.js";
 import type {
@@ -33,6 +42,25 @@ import type {
 } from "./deployments/types.js";
 
 export { l2ReverseRegistrars } from "./deployments/l2-reverse-registrars.js";
+export { offchainProviders } from "./deployments/namespaces.js";
+export type {
+  NamespaceId,
+  // Holds Durin's deployment, experimental like Durin upstream.
+  // oxlint-disable-next-line effecttsgo/api-stability-leak
+  Namespaces,
+  ParentNamespace,
+  BasenamesContracts,
+  LineaContracts,
+  CelonamesContracts,
+  // Durin is experimental upstream; the rest of the namespace table is stable.
+  // oxlint-disable-next-line effecttsgo/api-stability-leak
+  DurinDeployment,
+  NamespaceChainContracts,
+  NamespaceDeployment,
+  NamespaceFamily,
+  OffchainProviderStatus,
+  OffchainProvider,
+} from "./deployments/namespace-types.js";
 export type {
   Status,
   Provenance,
@@ -63,6 +91,13 @@ export const mainnet = {
   chainId: 1,
   v1: mainnetV1,
   v2: mainnetV2,
+  namespaces: {
+    basenames: basenames.mainnet,
+    linea: linea.mainnet,
+    celonames: celonames.mainnet,
+    durin: durin.mainnet,
+    namespace: namespace.mainnet,
+  },
 } as const satisfies Profile;
 
 /**
@@ -76,6 +111,12 @@ export const sepolia = {
   chainId: 11155111,
   v1: sepoliaV1,
   v2: sepoliaV2,
+  namespaces: {
+    basenames: basenames.testnet,
+    linea: linea.testnet,
+    durin: durin.testnet,
+    namespace: namespace.testnet,
+  },
 } as const satisfies Profile;
 
 const builtIn: readonly Profile[] = [mainnet, sepolia];
@@ -113,6 +154,105 @@ export const get = (options: { readonly chainId: number }): Profile | undefined 
  * @since 1.0.0
  */
 export const list = (): readonly Profile[] => builtIn;
+
+/**
+ * L2 namespaces by ID: names whose owner, expiry and records live on an L2, not on the ENS chain.
+ *
+ * **Details**
+ *
+ * `basenames`, `linea` and `celonames` each serve one parent name. `durin` and `namespace` serve
+ * any parent whose ENS resolver is theirs, and their resolver tells which L2 a parent uses. Durin
+ * is experimental upstream.
+ *
+ * **Example** (Reading the Basenames registrar)
+ *
+ * ```ts
+ * import { Deployments } from "@ensforge/contracts"
+ *
+ * const { chainId, contracts } = Deployments.namespaces.basenames.mainnet
+ * contracts.baseRegistrar
+ * ```
+ *
+ * @stability stable
+ * @since 1.1.0
+ */
+export const namespaces = { basenames, linea, celonames, durin, namespace } as const;
+
+/**
+ * Returns the L2 namespace of `profile` whose ENS resolver is `resolver`, or `undefined` when none
+ * uses it.
+ *
+ * **Details**
+ *
+ * `resolver` is the resolver of a parent name in the ENS deployment `profile` describes. Matching
+ * the resolver, not the name, also finds every Durin and Namespace parent.
+ *
+ * **Example** (Finding the namespace of a parent name)
+ *
+ * ```ts
+ * import { Deployments } from "@ensforge/contracts"
+ *
+ * Deployments.namespaceOf({
+ *   profile: Deployments.mainnet,
+ *   resolver: "0xde9049636F4a1dfE0a64d1bFe3155C0A14C54F31",
+ * })
+ * // "basenames"
+ * ```
+ *
+ * @stability stable
+ * @since 1.1.0
+ */
+export const namespaceOf = (options: {
+  readonly profile: Profile;
+  readonly resolver: string;
+}): NamespaceId | undefined => {
+  const resolver = options.resolver.toLowerCase();
+  const table = options.profile.namespaces ?? {};
+  const candidates: readonly (readonly [NamespaceId, readonly string[]])[] = [
+    ["basenames", table.basenames === undefined ? [] : [table.basenames.l1Resolver]],
+    ["linea", table.linea === undefined ? [] : [table.linea.l1Resolver]],
+    ["celonames", table.celonames === undefined ? [] : [table.celonames.l1Resolver]],
+    ["durin", table.durin === undefined ? [] : [table.durin.l1Resolver]],
+    [
+      "namespace",
+      table.namespace === undefined ? [] : Object.values(table.namespace.hybridResolvers),
+    ],
+  ];
+
+  return candidates.find(([, resolvers]) =>
+    resolvers.some((address) => address.toLowerCase() === resolver),
+  )?.[0];
+};
+
+/**
+ * Returns the off-chain provider that owns `resolver` on the ENS chain `chainId`, or `undefined`.
+ *
+ * **Example** (Identifying cb.id's resolver)
+ *
+ * ```ts
+ * import { Deployments } from "@ensforge/contracts"
+ *
+ * const provider = Deployments.offchainProvider({
+ *   chainId: 1,
+ *   resolver: "0x1934FC75aD10d7eEd51dc7A92773cAc96A06BE56",
+ * })
+ * provider?.status // "active"
+ * ```
+ *
+ * @stability stable
+ * @since 1.1.0
+ */
+export const offchainProvider = (options: {
+  readonly chainId: number;
+  readonly resolver: string;
+}): OffchainProvider | undefined => {
+  const resolver = options.resolver.toLowerCase();
+  return Object.values(offchainProviders).find(
+    (provider: OffchainProvider) =>
+      provider.ensChainId === options.chainId &&
+      provider.resolvers.some((address) => address.toLowerCase() === resolver),
+  );
+};
 
 /**
  * Thrown by {@link define} with every problem found in a profile.
@@ -170,6 +310,8 @@ export const define = <const profile extends Profile>(profile: profile): profile
     issues.push("at least one of v1 and v2 is required");
   if (profile.v1 !== undefined) validateV1(profile.v1, profile.chainId, issues);
   if (profile.v2 !== undefined) validateV2(profile.v2, profile.chainId, issues);
+  if (profile.namespaces !== undefined)
+    validateNamespaces(profile.namespaces, profile.chainId, issues);
 
   if (issues.length > 0) throw new InvalidProfileError({ issues });
   return profile;
@@ -361,6 +503,45 @@ const validateV2 = (deployment: V2, chainId: number, issues: string[]): void => 
       issues.push(
         `v2.capabilities.${flag} must be one of ${allowed.map((value) => JSON.stringify(value)).join(", ")}`,
       );
+    }
+  }
+};
+
+const namespaceIds: readonly string[] = [
+  "basenames",
+  "linea",
+  "celonames",
+  "durin",
+  "namespace",
+] satisfies readonly NamespaceId[];
+
+// Every string leaf that looks like an address must be one; the shapes are checked by the types.
+const validateAddresses = (path: string, value: object, issues: string[]): void => {
+  for (const [key, child] of Object.entries(value)) {
+    const childPath = `${path}.${key}`;
+    if (typeof child === "string" && child.startsWith("0x") && !addressPattern.test(child))
+      issues.push(`${childPath} must be a 0x-prefixed 20-byte address`);
+    else if (typeof child === "object" && child !== null)
+      validateAddresses(childPath, child, issues);
+  }
+};
+
+const validateNamespaces = (table: unknown, chainId: number, issues: string[]): void => {
+  if (typeof table !== "object" || table === null) {
+    issues.push("namespaces must be an object");
+    return;
+  }
+
+  for (const [id, deployment] of Object.entries(table)) {
+    const path = `namespaces.${id}`;
+    if (!namespaceIds.includes(id)) issues.push(`${path} is not a known namespace`);
+    else if (deployment === undefined) continue;
+    else if (typeof deployment !== "object" || deployment === null)
+      issues.push(`${path} must be an object`);
+    else {
+      if (Reflect.get(deployment, "ensChainId") !== chainId)
+        issues.push(`${path}.ensChainId must equal the profile chainId ${chainId}`);
+      validateAddresses(path, deployment, issues);
     }
   }
 };

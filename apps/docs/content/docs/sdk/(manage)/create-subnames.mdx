@@ -18,7 +18,7 @@ You will create a **subname** (a name under one you own, such as `pay.ensforge-d
 **Example** (Creating a Subname With Records)
 
 ```ts title="create-subname.ts"
-import { createPublicClient, createWalletClient, http, type Hex } from "viem";
+import { createWalletClient, http, type Hex } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { sepolia } from "viem/chains";
 import { Ensforge, ensActions } from "@ensforge/sdk";
@@ -27,8 +27,9 @@ const account = privateKeyToAccount(process.env.PRIVATE_KEY as Hex);
 const transport = http(process.env.SEPOLIA_RPC_URL);
 
 const ens = Ensforge.create({
-  publicClient: createPublicClient({ chain: sepolia, transport }),
-  walletClient: createWalletClient({ account, chain: sepolia, transport }),
+  chain: sepolia,
+  transports: { [sepolia.id]: transport },
+  wallet: createWalletClient({ account, chain: sepolia, transport }),
 }).extend(ensActions());
 
 const { hash } = await ens.subname.createSync({
@@ -75,7 +76,7 @@ const { hash } = await ens.subname.createSync({
 **Example** (Repointing a Subname)
 
 ```ts title="update-subname.ts"
-import { createPublicClient, createWalletClient, http, type Hex } from "viem";
+import { createWalletClient, http, type Hex } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { sepolia } from "viem/chains";
 import { Ensforge, ensActions } from "@ensforge/sdk";
@@ -84,8 +85,9 @@ const account = privateKeyToAccount(process.env.PRIVATE_KEY as Hex);
 const transport = http(process.env.SEPOLIA_RPC_URL);
 
 const ens = Ensforge.create({
-  publicClient: createPublicClient({ chain: sepolia, transport }),
-  walletClient: createWalletClient({ account, chain: sepolia, transport }),
+  chain: sepolia,
+  transports: { [sepolia.id]: transport },
+  wallet: createWalletClient({ account, chain: sepolia, transport }),
 }).extend(ensActions());
 
 await ens.subname.updateSync({
@@ -105,7 +107,7 @@ await ens.subname.updateSync({
 **Example** (Removing a Subname)
 
 ```ts title="remove-subname.ts"
-import { createPublicClient, createWalletClient, http, type Hex } from "viem";
+import { createWalletClient, http, type Hex } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { sepolia } from "viem/chains";
 import { Ensforge, ensActions } from "@ensforge/sdk";
@@ -114,14 +116,19 @@ const account = privateKeyToAccount(process.env.PRIVATE_KEY as Hex);
 const transport = http(process.env.SEPOLIA_RPC_URL);
 
 const ens = Ensforge.create({
-  publicClient: createPublicClient({ chain: sepolia, transport }),
-  walletClient: createWalletClient({ account, chain: sepolia, transport }),
+  chain: sepolia,
+  transports: { [sepolia.id]: transport },
+  wallet: createWalletClient({ account, chain: sepolia, transport }),
 }).extend(ensActions());
 
 await ens.subname.removeSync({ name: "pay.ensforge-docs-demo.eth" });
 ```
 
 A parent cannot remove an [emancipated](/docs/reference/glossary#emancipated) child: an ENSv1 child with `parentCannotControl` burned, or a child of an emancipated ENSv2 subregistry.
+
+## Under a name on an L2
+
+Under a Basenames or Linea name, the subname is created on the L2 with the parent's registry or NameWrapper. It gets the family's current resolver by default. Records for another `owner` are written while the signer holds the child, which then goes to `owner` in the same step. `fuses`, `expiry`, `roles` and `emancipate` are not supported there, and other L2 namespaces do not let ensforge create subnames. See [Work with names on L2s](/docs/sdk/names-on-l2s).
 
 ## Check the result
 

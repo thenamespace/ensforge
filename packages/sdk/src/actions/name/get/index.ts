@@ -5,7 +5,7 @@ import type { Read } from "../../../Types.js";
 import * as Impl from "./effect.js";
 import type { NameState } from "./types.js";
 
-export type { NameKind, NameState, NameStatus } from "./types.js";
+export type { NameKind, NameNamespace, NameState, NameStatus } from "./types.js";
 
 /**
  * Reads the full state of a name across ENSv1 and ENSv2: where it lives, who owns it, its
@@ -19,20 +19,29 @@ export type { NameKind, NameState, NameStatus } from "./types.js";
  * **Details**
  *
  * - `kind` tells where the name lives (`v1-unwrapped`, `v1-wrapped`, `v2-native`, `v2-migrated`,
- *   `v2-reserved`, `available`); `protocol` is `v1` or `v2`.
+ *   `v2-reserved`, `available`, or outside ENS's registries `l2`, `offchain`, `wildcard`);
+ *   `protocol` is `v1` or `v2`.
+ * - `namespace` names the L2 namespace (`kind: "l2"`: family, parent, L2 and registry) or the
+ *   off-chain provider that holds a name outside ENS's registries; `chainId` is where the name
+ *   lives. The namespaces come from the client's deployment profile.
+ * - An `l2` name (`protocol: "l2"`) is read on its L2: its owner, expiry and status there, with
+ *   `available` when nobody holds it and `renewable: false` (ensforge does not renew L2 names).
+ *   Without a transport or public RPC for the L2, only its location is known: status `external`.
  * - Times come from the block the read runs at, not the local clock.
  * - `inheritedResolver` is the resolver serving a name that has none of its own: a parent's
  *   wildcard or off-chain resolver, or the ENSv1 resolver behind the ENSv1 bridge.
  * - Costs two batched RPC calls, whatever the name kind. A name without a resolver of its own
  *   that a parent's resolver serves costs one more (two behind the ENSv1 bridge), and one more
- *   when no registry holds it (an `eth_call` asking the resolver whether it serves the name).
+ *   when no registry holds it (an `eth_call` asking the resolver whether it serves the name, or,
+ *   for an L2 namespace, locating it: a read on Ethereum and one on the L2 for Durin and
+ *   Namespace names).
  *
  * **Gotchas**
  *
- * - `resolver` is the resolver set on the name itself. A name served only by a parent's wildcard
- *   or off-chain resolver (such as `jesse.base.eth` or `test.uni.eth`) has `resolver: null` and is
- *   in no registry: it is `offchain` or `wildcard` with status `external`, and its parent's
- *   namespace (an L2, or the provider) manages it. `inheritedResolver` is the resolver serving it.
+ * - `resolver` is the resolver set on the name itself. A name served only by a parent's resolver
+ *   (such as `jesse.base.eth` or `test.uni.eth`) has `resolver: null` and is in no ENS registry:
+ *   it is `l2`, `offchain` or `wildcard` with status `external`, and its parent's namespace (an
+ *   L2, or the provider) manages it. `inheritedResolver` is the resolver serving it.
  * - `offchain` means a gateway answers for the name, not that the gateway holds it: ENS cannot
  *   tell, so an unclaimed label under such a parent is `offchain` too. The check never contacts
  *   the gateway.

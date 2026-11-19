@@ -1,4 +1,4 @@
-import { Effect } from "effect";
+import { Array as Arr, Effect, String as Str } from "effect";
 
 import { Abis } from "@ensforge/contracts";
 import {
@@ -43,7 +43,7 @@ const callUniversalResolver = (
     (signal) =>
       // viem reads `ccipRead` from the client, not from the call. The signal fires when the read
       // is interrupted (an aborted Promise call), and cancels the gateway requests in flight.
-      call(ccipRead === false ? { ...client.publicClient, ccipRead: false } : client.publicClient, {
+      call(ccipRead === false ? { ...client.client(), ccipRead: false } : client.client(), {
         to: universalResolver,
         data,
         requestOptions: { signal },
@@ -176,6 +176,19 @@ export type FoundResolver = {
   readonly address: Address;
   /** Whether it was found on a parent (an ENSIP-10 wildcard). */
   readonly inherited: boolean;
+  /** The name it was found on: the name itself, or the ancestor that holds it. */
+  readonly level: string;
+};
+
+/** The ancestor of `name` that starts `offset` bytes into its DNS encoding. */
+const levelAt = (name: string, offset: bigint): string => {
+  const labels = Str.split(".")(name);
+  let position = 0n;
+  for (const [index, label] of labels.entries()) {
+    if (position === offset) return Arr.join(labels.slice(index), ".");
+    position += BigInt(new TextEncoder().encode(label).length + 1);
+  }
+  return name;
 };
 
 /**
@@ -201,6 +214,8 @@ export const findResolver = (
       }),
     ),
     Effect.map(([address, , offset]) =>
-      address === zeroAddress ? null : { address, inherited: offset !== 0n },
+      address === zeroAddress
+        ? null
+        : { address, inherited: offset !== 0n, level: levelAt(options.name, offset) },
     ),
   );

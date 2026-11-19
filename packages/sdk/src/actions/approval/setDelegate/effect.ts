@@ -10,6 +10,7 @@ import { UnsupportedError } from "../../../errors/classes/UnsupportedError.js";
 import type { AnyError } from "../../../errors/types.js";
 import * as Action from "../../../internal/action/index.js";
 import { addressOf, sameAddress } from "../../../internal/address.js";
+import { l2DelegateTarget } from "../../../internal/approval/delegate.js";
 import { loadName } from "../../../internal/name/load.js";
 import { requireAddress, singleStepPlan } from "../../../internal/name/write.js";
 import { resolverOwnerOf } from "../../../internal/permission/facts.js";
@@ -25,11 +26,15 @@ export const plan = Effect.fnUntraced(function* (
 ): Effect.fn.Return<Plan, AnyError> {
   const delegate = yield* requireAddress(options.delegate, "delegate");
   const loaded = yield* loadName(client, options.name);
-  const resolver = loaded.state.resolver;
+  const signer = addressOf(options.account) ?? client.account;
+  // A Basenames or Linea name's resolver keeps its delegates on its L2.
+  const l2 = yield* l2DelegateTarget(client, loaded);
+  const target = l2?.client ?? client;
+  const resolver = l2 === null ? loaded.state.resolver : l2.resolver;
   if (resolver === null) {
     return yield* Effect.fail(new NotFoundError({ code: "RESOLVER_NOT_FOUND" }));
   }
-  if ((yield* setterKeying(client, resolver)) === "name") {
+  if ((yield* setterKeying(target, resolver)) === "name") {
     return yield* Effect.fail(
       new UnsupportedError({
         code: "RESOLVER_PROFILE_UNSUPPORTED",
@@ -42,8 +47,7 @@ export const plan = Effect.fnUntraced(function* (
 
   // The resolver keeps a delegate under the account that approves it and honours only the name
   // owner's: anyone else's approval would change nothing.
-  const signer = addressOf(options.account) ?? client.account;
-  const owner = resolverOwnerOf(client, loaded);
+  const owner = l2 === null ? resolverOwnerOf(client, loaded) : l2.owner;
   if (signer !== undefined && !sameAddress(owner, signer)) {
     return yield* Effect.fail(
       new UnauthorizedError({
@@ -54,7 +58,7 @@ export const plan = Effect.fnUntraced(function* (
     );
   }
 
-  return singleStepPlan(client, {
+  return singleStepPlan(target, {
     operation: "approval.setDelegate",
     account: options.account,
     description: options.approved ? "Approve delegate" : "Revoke delegate",

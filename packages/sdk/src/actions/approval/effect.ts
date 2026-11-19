@@ -37,6 +37,7 @@ import type {
  * - The owner defaults to the one the resolver authorizes against: the ENS registry owner (or
  *   NameWrapper owner) for ENSv1 resolvers, the ENSv2 owner for PublicResolverV2.
  * - PermissionedResolvers have roles instead of delegates and answer `false`.
+ * - Basenames and Linea names are read on their resolver on the L2.
  *
  * **Example** (Checking a delegate)
  *
@@ -62,6 +63,8 @@ import type {
  *
  * @throws `Errors.InvalidInputError` (`INVALID_NAME`, `INVALID_ADDRESS`) for invalid input.
  * @throws `Errors.NotFoundError` (`RESOLVER_NOT_FOUND`) when the name has no resolver.
+ * @throws `Errors.NameStateError` (`NAME_EXTERNAL`) for a name in an L2 namespace without delegates.
+ * @throws `Errors.ConfigError` (`CHAIN_NOT_CONFIGURED`) when the name lives on an L2 the client cannot reach.
  * @throws `Errors.NetworkError` (`RPC_REQUEST_FAILED`, `RPC_TIMEOUT`, `RATE_LIMITED`) when the RPC request fails.
  *
  * @see {@link Actions.approval.setDelegate} to change it
@@ -94,6 +97,8 @@ export declare namespace getDelegate {
  *
  * - `contract`: the ENSv1 `"registry"`, `"registrar"` (BaseRegistrar) or `"wrapper"`
  *   (NameWrapper), or any ENSv2 registry or resolver by address.
+ * - `name` instead of `contract`: the contract that holds the name's token, on the chain the name
+ *   lives on.
  *
  * **Example** (Checking a NameWrapper operator)
  *
@@ -119,6 +124,7 @@ export declare namespace getDelegate {
  *
  * @throws `Errors.InvalidInputError` (`INVALID_ADDRESS`) for invalid addresses.
  * @throws `Errors.UnsupportedError` (`UNSUPPORTED_ON_DEPLOYMENT`) for ENSv1 contracts without ENSv1.
+ * @throws `Errors.NameStateError` (`NAME_NOT_REGISTERED`, `NAME_EXTERNAL`) for a `name` that is not registered, or that a namespace outside ENS and its L2s manages.
  * @throws `Errors.NetworkError` (`RPC_REQUEST_FAILED`, `RPC_TIMEOUT`, `RATE_LIMITED`) when the RPC request fails.
  *
  * @see {@link Actions.approval.setOperator} to change it
@@ -150,6 +156,7 @@ export declare namespace getOperator {
  *
  * - Wrapped names use the NameWrapper token; unwrapped `.eth` names the BaseRegistrar token.
  * - ENSv2 names have no single-token approval; use operators.
+ * - A name in an L2 namespace reads its token's approval on its L2.
  *
  * **Example** (Reading a name's approval)
  *
@@ -203,6 +210,8 @@ export declare namespace getToken {
  *
  * - A delegate can edit every record of the name; for per-record access on a
  *   PermissionedResolver use {@link Actions.permission.setRecordAccess}.
+ * - Basenames and Linea names approve it on their resolver on the L2. Other L2 namespaces have
+ *   no delegates.
  *
  * **Example** (Approving a delegate)
  *
@@ -229,6 +238,8 @@ export declare namespace getToken {
  * @throws `Errors.InvalidInputError` (`INVALID_NAME`, `INVALID_ADDRESS`) for invalid input.
  * @throws `Errors.NotFoundError` (`RESOLVER_NOT_FOUND`) when the name has no resolver.
  * @throws `Errors.UnsupportedError` (`RESOLVER_PROFILE_UNSUPPORTED`) for PermissionedResolvers.
+ * @throws `Errors.NameStateError` (`NAME_EXTERNAL`) for a name in an L2 namespace without delegates.
+ * @throws `Errors.ConfigError` (`CHAIN_NOT_CONFIGURED`) when the name lives on an L2 the client cannot reach.
  * @throws `Errors.UnauthorizedError` (`NOT_OWNER`) when the signer does not own the name.
  * @throws `Errors.UserRejectedError` (`USER_REJECTED`) when the user rejects the request.
  * @throws `Errors.WalletError` (`CHAIN_MISMATCH`, `ACCOUNT_NOT_FOUND`) when the wallet is on another chain or has no account to sign with.
@@ -289,6 +300,8 @@ export declare namespace setDelegate {
  * @throws `Errors.InvalidInputError` (`INVALID_NAME`, `INVALID_ADDRESS`) for invalid input.
  * @throws `Errors.NotFoundError` (`RESOLVER_NOT_FOUND`) when the name has no resolver.
  * @throws `Errors.UnsupportedError` (`RESOLVER_PROFILE_UNSUPPORTED`) for PermissionedResolvers.
+ * @throws `Errors.NameStateError` (`NAME_EXTERNAL`) for a name in an L2 namespace without delegates.
+ * @throws `Errors.ConfigError` (`CHAIN_NOT_CONFIGURED`) when the name lives on an L2 the client cannot reach.
  * @throws `Errors.UnauthorizedError` (`NOT_OWNER`) when the signer does not own the name.
  * @throws `Errors.TransactionError` (`TRANSACTION_REVERTED`, `RECEIPT_TIMEOUT`, `NONCE_CONFLICT`) when confirmation fails or the wallet's nonce is already used.
  *
@@ -321,6 +334,9 @@ export declare namespace setDelegateSync {
  *
  * - `contract`: the ENSv1 `"registry"`, `"registrar"` or `"wrapper"`, or any ENSv2 registry
  *   or resolver by address.
+ * - `name` instead of `contract`: the contract that holds the name's token (for an unwrapped
+ *   ENSv1 subname, the registry), on the chain the name lives on. For an L2 name the approval is
+ *   sent on its L2.
  * - On ENSv2 registries an operator can transfer names; other changes need roles.
  *
  * **Example** (Approving a manager)
@@ -347,6 +363,7 @@ export declare namespace setDelegateSync {
  *
  * @throws `Errors.InvalidInputError` (`INVALID_ADDRESS`) for invalid addresses.
  * @throws `Errors.UnsupportedError` (`UNSUPPORTED_ON_DEPLOYMENT`) for ENSv1 contracts without ENSv1.
+ * @throws `Errors.NameStateError` (`NAME_NOT_REGISTERED`, `NAME_EXTERNAL`) for a `name` that is not registered, or that a namespace outside ENS and its L2s manages.
  * @throws `Errors.UserRejectedError` (`USER_REJECTED`) when the user rejects the request.
  * @throws `Errors.WalletError` (`CHAIN_MISMATCH`, `ACCOUNT_NOT_FOUND`) when the wallet is on another chain or has no account to sign with.
  * @throws `Errors.UnsupportedError` (`WALLET_BATCH_UNSUPPORTED`) with `mode: "batch"` or a paymaster when the wallet cannot send calls as one batch.
@@ -405,6 +422,7 @@ export declare namespace setOperator {
  *
  * @throws `Errors.InvalidInputError` (`INVALID_ADDRESS`) for invalid addresses.
  * @throws `Errors.UnsupportedError` (`UNSUPPORTED_ON_DEPLOYMENT`) for ENSv1 contracts without ENSv1.
+ * @throws `Errors.NameStateError` (`NAME_NOT_REGISTERED`, `NAME_EXTERNAL`) for a `name` that is not registered, or that a namespace outside ENS and its L2s manages.
  * @throws `Errors.TransactionError` (`TRANSACTION_REVERTED`, `RECEIPT_TIMEOUT`, `NONCE_CONFLICT`) when confirmation fails or the wallet's nonce is already used.
  *
  * @see {@link setOperator} to resolve on submission
@@ -437,6 +455,8 @@ export declare namespace setOperatorSync {
  * - Wrapped names approve on the NameWrapper (blocked by `cannotApprove`); unwrapped `.eth`
  *   names on the BaseRegistrar.
  * - `to: null` clears it. ENSv2 names use operators instead.
+ * - A name in an L2 namespace approves its token on its L2: Linea Names on their NameWrapper,
+ *   other families on their ERC-721 registrar or registry. Basenames subnames have no token.
  *
  * **Example** (Approving a buyer)
  *

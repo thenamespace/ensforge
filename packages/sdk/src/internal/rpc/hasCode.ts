@@ -13,6 +13,6 @@ import { fromPromise } from "./fromPromise.js";
  * @stability unstable
  */
 export const hasCode = (client: Client, address: Address): Effect.Effect<boolean, AnyError> =>
-  fromPromise(() => getCode(client.publicClient, { address })).pipe(
+  fromPromise(() => getCode(client.client(), { address })).pipe(
     Effect.map((code) => code !== undefined && code !== "0x"),
   );

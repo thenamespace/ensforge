@@ -9,7 +9,7 @@ import type { Subname } from "@ensforge/sdk/internal/indexer/types";
 import { discoverSubnames } from "@ensforge/sdk/internal/internal/migration/discover";
 import { expectFailure, scriptedTransport } from "@ensforge/test-harness";
 import { contractScript } from "@ensforge/test-harness/contracts-eth-call";
-import { createPublicClient, labelhash, namehash } from "viem";
+import { labelhash, namehash } from "viem";
 import { mainnet } from "viem/chains";
 
 import { clientWith } from "../indexer/client.js";
@@ -90,7 +90,9 @@ describe("discoverSubnames", () => {
         }),
       );
       const ens = create({
-        publicClient: createPublicClient({ chain: mainnet, transport }),
+        chain: mainnet,
+        transports: { [mainnet.id]: transport },
+        publicRpc: false,
         indexer: indexerOf({ "x.eth": 2, [wrapped]: 1 }, [], [wrapped, "c1.x.eth"]),
         batch: { multicall: false },
       });

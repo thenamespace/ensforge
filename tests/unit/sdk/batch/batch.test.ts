@@ -12,7 +12,6 @@ import type { Request } from "@ensforge/sdk/internal/Types";
 import { expectFailure, scriptedTransport, type RecordedCall } from "@ensforge/test-harness";
 import { callScript } from "@ensforge/test-harness/multicall";
 import {
-  createPublicClient,
   decodeFunctionData,
   encodeErrorResult,
   encodeFunctionResult,
@@ -28,7 +27,7 @@ const stranger = getAddress("0x00000000000000000000000000000000000000a3");
 const reverting = getAddress("0x00000000000000000000000000000000000000a4");
 
 /** A client on a chain where `approved` is an operator of `owner` and asking about `reverting` reverts. */
-const clientFor = (options: Omit<CreateOptions, "publicClient"> = {}) => {
+const clientFor = (options: Omit<CreateOptions, "chain" | "transports" | "publicRpc"> = {}) => {
   const { transport, calls } = scriptedTransport(
     callScript(mainnet.contracts.multicall3.address, ({ to, data }) => {
       if (to !== contract) return undefined;
@@ -54,8 +53,13 @@ const clientFor = (options: Omit<CreateOptions, "publicClient"> = {}) => {
       };
     }),
   );
-  const publicClient = createPublicClient({ chain: mainnet, transport });
-  return { publicClient, ens: create({ publicClient, ...options }), calls };
+  const ens = create({
+    chain: mainnet,
+    transports: { [mainnet.id]: transport },
+    publicRpc: false,
+    ...options,
+  });
+  return { ens, calls };
 };
 
 const ethCalls = (calls: readonly RecordedCall[]) =>
@@ -200,7 +204,11 @@ describe("batch failure isolation", () => {
       const { transport, calls } = scriptedTransport(({ method }) =>
         method === "eth_call" ? "0x" : undefined,
       );
-      const ens = create({ publicClient: createPublicClient({ chain: mainnet, transport }) });
+      const ens = create({
+        chain: mainnet,
+        transports: { [mainnet.id]: transport },
+        publicRpc: false,
+      });
 
       const { results } = yield* Actions.batch(ens, {
         requests: [operatorRequest(approved), operatorRequest(stranger)],
@@ -249,7 +257,7 @@ describe("batch with allowFailure: false", () => {
 describe("batch cancellation", () => {
   it.effect("rejects with the abort reason", () =>
     Effect.gen(function* () {
-      const { publicClient } = clientFor();
+      const { ens } = clientFor();
       // The caller's own controller is what `signal` is for.
       // @effect-diagnostics-next-line abortControllerInEffect:off
       const controller = new AbortController();
@@ -259,7 +267,7 @@ describe("batch cancellation", () => {
       const error = yield* Effect.flip(
         Effect.tryPromise({
           try: () =>
-            batch(publicClient, {
+            batch(ens, {
               requests: [operatorRequest(approved)],
               signal: controller.signal,
             }),

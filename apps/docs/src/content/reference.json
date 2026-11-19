@@ -5,7 +5,7 @@
       "name": "SDK",
       "npm": "@ensforge/sdk",
       "url": "/docs/reference/sdk",
-      "count": 91,
+      "count": 92,
       "unit": "actions",
       "description": "Every action by domain, plus the client, batching, utilities and indexers.",
       "items": [
@@ -218,6 +218,11 @@
           "name": "name.getLabel",
           "url": "/docs/reference/sdk/name/get-label",
           "summary": "Recovers a label from its labelhash through the ENSv2 LabelStore."
+        },
+        {
+          "name": "name.getNamespace",
+          "url": "/docs/reference/sdk/name/get-namespace",
+          "summary": "Finds where a name lives outside ENS's registries: the L2 namespace that holds it (Basenames, Linea Names, Celonames, Durin, Namespace) or the off-chain provider that serves it."
         },
         {
           "name": "name.reclaim",
@@ -981,7 +986,7 @@
         {
           "name": "CHAIN_NOT_CONFIGURED",
           "url": "/docs/reference/errors/CHAIN_NOT_CONFIGURED",
-          "summary": "The client has no clients for chain ?."
+          "summary": "The client cannot reach chain ?."
         },
         {
           "name": "CONTRACT_REVERTED",

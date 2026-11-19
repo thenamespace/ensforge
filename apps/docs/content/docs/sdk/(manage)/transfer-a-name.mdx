@@ -19,7 +19,7 @@ You will send a [name](/docs/reference/glossary#name) you own to another address
 **Example** (Sending a Name)
 
 ```ts title="transfer.ts"
-import { createPublicClient, createWalletClient, http, type Hex } from "viem";
+import { createWalletClient, http, type Hex } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { sepolia } from "viem/chains";
 import { Ensforge, ensActions } from "@ensforge/sdk";
@@ -28,8 +28,9 @@ const account = privateKeyToAccount(process.env.PRIVATE_KEY as Hex);
 const transport = http(process.env.SEPOLIA_RPC_URL);
 
 const ens = Ensforge.create({
-  publicClient: createPublicClient({ chain: sepolia, transport }),
-  walletClient: createWalletClient({ account, chain: sepolia, transport }),
+  chain: sepolia,
+  transports: { [sepolia.id]: transport },
+  wallet: createWalletClient({ account, chain: sepolia, transport }),
 }).extend(ensActions());
 
 const { hash } = await ens.name.transfer({
@@ -64,7 +65,7 @@ Pass `records: "handover"` to grant them to the recipient and revoke the sender'
 **Example** (Handing Over Record Control)
 
 ```ts title="transfer-handover.ts"
-import { createPublicClient, createWalletClient, http, type Hex } from "viem";
+import { createWalletClient, http, type Hex } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { sepolia } from "viem/chains";
 import { Ensforge, ensActions } from "@ensforge/sdk";
@@ -73,8 +74,9 @@ const account = privateKeyToAccount(process.env.PRIVATE_KEY as Hex);
 const transport = http(process.env.SEPOLIA_RPC_URL);
 
 const ens = Ensforge.create({
-  publicClient: createPublicClient({ chain: sepolia, transport }),
-  walletClient: createWalletClient({ account, chain: sepolia, transport }),
+  chain: sepolia,
+  transports: { [sepolia.id]: transport },
+  wallet: createWalletClient({ account, chain: sepolia, transport }),
 }).extend(ensActions());
 
 await ens.name.transferSync({
@@ -95,6 +97,10 @@ An unwrapped `.eth` name on ENSv1 has two holders. The [registrant](/docs/refere
 - [`name.reclaim`](/docs/reference/sdk/name/reclaim) resets the manager to the registrant (or to `owner`). Use it after receiving a registrar token, or to repair a lost manager.
 
 `setManager` and `reclaim` fail with [`UNSUPPORTED_PROTOCOL`](/docs/reference/errors/UNSUPPORTED_PROTOCOL) for ENSv2 names and wrapped names, and `reclaim` also for names that are not `.eth` names. ENSv2 uses roles instead. See [Roles and permissions](/docs/sdk/roles-and-permissions).
+
+## Names on L2s
+
+For a name that lives on an L2, `name.transfer` moves its token on the L2: an ERC-721 token, or Linea Names' NameWrapper token. A Basenames second-level name also moves its registry record unless `role` is `"registrant"`. `records: "handover"` is not needed there: the records follow the owner. See [Work with names on L2s](/docs/sdk/names-on-l2s).
 
 ## Check the result
 

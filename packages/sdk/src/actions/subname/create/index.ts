@@ -25,6 +25,9 @@ import * as Impl from "./effect.js";
  * - By default the child gets its own PermissionedResolver with `records` written at creation;
  *   `resolver: "parent"` shares the parent's resolver, `null` creates it without one.
  * - `upsert` updates an existing child's resolver and records instead of failing.
+ * - Under a Basenames or Linea name the child is created on the L2 with `setSubnodeRecord`, on
+ *   the family's current resolver by default. Records for another `owner` are written while
+ *   the signer holds the child, which then goes to `owner`, in the same step.
  *
  * **Gotchas**
  *
@@ -60,6 +63,8 @@ import * as Impl from "./effect.js";
  * @throws `Errors.NameStateError` (`NAME_NOT_AVAILABLE`, `NAME_NOT_REGISTERED`, `NAME_EXTERNAL`, `NAME_EXPIRED`) when the child exists or the parent is not registered, or its parent's namespace manages it outside ENS's registries.
  * @throws `Errors.NameStateError` (`NAME_RESERVED`, `NAME_UNREACHABLE`) when the parent is reserved or ENSv2 resolution no longer reaches it.
  * @throws `Errors.UnsupportedError` (`UNSUPPORTED_PROTOCOL`) for `roles` on ENSv1 or `fuses` on unwrapped parents.
+ * @throws `Errors.UnsupportedError` (`UNSUPPORTED_ON_DEPLOYMENT`) for `fuses`, `expiry`, `roles` or `emancipate` under an L2 name, or a resolver other than Linea's PublicResolver under a Linea name.
+ * @throws `Errors.ConfigError` (`CHAIN_NOT_CONFIGURED`) when the name lives on an L2 the client cannot reach.
  * @throws `Errors.UnauthorizedError` (`MISSING_ROLES`, `NOT_OWNER`, `FUSE_BURNED`) when the account may not create children.
  * @throws `Errors.ConfigError` (`WALLET_NOT_CONFIGURED`) when no signing account is known.
  * @throws `Errors.UserRejectedError` (`USER_REJECTED`) when the user rejects the request.
@@ -175,6 +180,8 @@ create.estimateGas = Action.promiseOf(
  * @throws `Errors.NameStateError` (`NAME_NOT_AVAILABLE`, `NAME_NOT_REGISTERED`, `NAME_EXTERNAL`, `NAME_EXPIRED`) when the child exists or the parent is not registered, or its parent's namespace manages it outside ENS's registries.
  * @throws `Errors.NameStateError` (`NAME_RESERVED`, `NAME_UNREACHABLE`) when the parent is reserved or ENSv2 resolution no longer reaches it.
  * @throws `Errors.UnsupportedError` (`UNSUPPORTED_PROTOCOL`) for `roles` on ENSv1 or `fuses` on unwrapped parents.
+ * @throws `Errors.UnsupportedError` (`UNSUPPORTED_ON_DEPLOYMENT`) for `fuses`, `expiry`, `roles` or `emancipate` under an L2 name, or a resolver other than Linea's PublicResolver under a Linea name.
+ * @throws `Errors.ConfigError` (`CHAIN_NOT_CONFIGURED`) when the name lives on an L2 the client cannot reach.
  * @throws `Errors.UnauthorizedError` (`MISSING_ROLES`, `NOT_OWNER`, `FUSE_BURNED`) when the account may not create children.
  * @throws `Errors.ConfigError` (`WALLET_NOT_CONFIGURED`) when no signing account is known.
  * @throws `Errors.TransactionError` (`TRANSACTION_REVERTED`, `RECEIPT_TIMEOUT`, `NONCE_CONFLICT`) when confirmation fails or the wallet's nonce is already used.

@@ -12,7 +12,7 @@ export const getSubnames = Effect.fn("ensforge.indexer.getSubnames")(function* (
   client: Client,
   options: Promises.Options,
 ): Effect.fn.Return<Promises.ReturnType, AnyError> {
-  const input = yield* nameInput(options.name, options.namespace);
+  const input = yield* nameInput(client, options.name, options.namespace, true);
 
   return yield* callIndexer(client, "getSubnames", { ...queryOf(options), ...input });
 }, Action.withContext("indexer.getSubnames"));

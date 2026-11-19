@@ -19,11 +19,10 @@ By the end of this guide you can turn a [name](/docs/reference/glossary#name) su
 
 ```ts title="get-address.ts"
 import { ensActions, Ensforge } from "@ensforge/sdk";
-import { createPublicClient, http } from "viem";
 import { mainnet } from "viem/chains";
 
 const ens = Ensforge.create({
-  publicClient: createPublicClient({ chain: mainnet, transport: http() }),
+  chain: mainnet,
 }).extend(ensActions());
 
 const address = await ens.record.getAddress({ name: "nick.eth" });
@@ -43,11 +42,10 @@ To read with a plain viem public client instead, call the action directly.
 
 ```ts title="get-address.ts"
 import { ensActions, Ensforge } from "@ensforge/sdk";
-import { createPublicClient, http } from "viem";
 import { mainnet } from "viem/chains";
 
 const ens = Ensforge.create({
-  publicClient: createPublicClient({ chain: mainnet, transport: http() }),
+  chain: mainnet,
 }).extend(ensActions());
 
 const address = await ens.record.getAddress({ name: "ens.eth" });
@@ -79,11 +77,10 @@ A name can hold one address per coin. Set `coin` to pick which one to read. It t
 
 ```ts title="get-other-coins.ts"
 import { ensActions, Ensforge } from "@ensforge/sdk";
-import { createPublicClient, http } from "viem";
 import { mainnet } from "viem/chains";
 
 const ens = Ensforge.create({
-  publicClient: createPublicClient({ chain: mainnet, transport: http() }),
+  chain: mainnet,
 }).extend(ensActions());
 
 const btc = await ens.record.getAddress({ name: "nick.eth", coin: "btc" });

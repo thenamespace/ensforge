@@ -2,6 +2,7 @@
 
 export { get } from "./get/index.js";
 export { getLabel } from "./getLabel/index.js";
+export { getNamespace } from "./getNamespace/index.js";
 export { reclaim, reclaimSync } from "./reclaim/index.js";
 export { setManager, setManagerSync } from "./setManager/index.js";
 export { setTtl, setTtlSync } from "./setTtl/index.js";

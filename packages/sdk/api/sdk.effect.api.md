@@ -5,13 +5,13 @@
 ```ts
 function Actions.approval.getDelegate(client: ClientBase<{}>, options: Pick<Options, 'signal'> & (BlockOptions & { name: string; delegate: string; owner?: string | undefined; })) => Effect<boolean, ErrorType, never>
 const Actions.approval.getDelegate.path: 'approval.getDelegate'
-type Actions.approval.getDelegate.ErrorType = InvalidInputError | NotFoundError | CommonError
+type Actions.approval.getDelegate.ErrorType = InvalidInputError | NameStateError | NotFoundError | CommonError
 type Actions.approval.getDelegate.Options = Pick<Options, 'signal'> & (BlockOptions & { name: string; delegate: string; owner?: string | undefined; })
 type Actions.approval.getDelegate.ReturnType = boolean
-function Actions.approval.getOperator(client: ClientBase<{}>, options: Pick<Options, 'signal'> & (BlockOptions & { owner: string; operator: string; contract: ApprovalContract; })) => Effect<boolean, ErrorType, never>
+function Actions.approval.getOperator(client: ClientBase<{}>, options: (Pick<Options, 'signal'> & BlockOptions) & ({ owner: string; operator: string; } & ({ contract: ApprovalContract; name?: undefined; } | { name: string; contract?: undefined; }))) => Effect<boolean, ErrorType, never>
 const Actions.approval.getOperator.path: 'approval.getOperator'
-type Actions.approval.getOperator.ErrorType = InvalidInputError | UnsupportedError | CommonError
-type Actions.approval.getOperator.Options = Pick<Options, 'signal'> & (BlockOptions & { owner: string; operator: string; contract: ApprovalContract; })
+type Actions.approval.getOperator.ErrorType = InvalidInputError | NameStateError | UnsupportedError | CommonError
+type Actions.approval.getOperator.Options = (Pick<Options, 'signal'> & BlockOptions) & ({ owner: string; operator: string; } & ({ contract: ApprovalContract; name?: undefined; } | { name: string; contract?: undefined; }))
 type Actions.approval.getOperator.ReturnType = boolean
 function Actions.approval.getToken(client: ClientBase<{}>, options: Pick<Options, 'signal'> & (BlockOptions & { name: string; })) => Effect<ReturnType, ErrorType, never>
 const Actions.approval.getToken.path: 'approval.getToken'
@@ -23,25 +23,25 @@ const Actions.approval.setDelegate.prepare: ((client: ClientBase<{}>, options: O
 const Actions.approval.setDelegate.simulate: ((client: ClientBase<{}>, options: Options & Pick<Options, 'account' | 'via'>) => Effect<Simulation, ErrorType, never>) & { readonly path: string; }
 const Actions.approval.setDelegate.estimateGas: ((client: ClientBase<{}>, options: Options & Pick<Options, 'account' | 'via'>) => Effect<Estimate, ErrorType, never>) & { readonly path: string; }
 const Actions.approval.setDelegate.path: 'approval.setDelegate'
-type Actions.approval.setDelegate.ErrorType = InvalidInputError | NotFoundError | UnauthorizedError | WriteError
+type Actions.approval.setDelegate.ErrorType = InvalidInputError | NameStateError | NotFoundError | UnauthorizedError | WriteError
 type Actions.approval.setDelegate.Options = { name: string; delegate: string; approved: boolean; }
 type Actions.approval.setDelegate.ReturnType = { readonly hash: `0x${string}`; readonly hashes: readonly `0x${string}`[]; readonly id: string | undefined; readonly plan: Plan; }
 function Actions.approval.setDelegateSync(client: ClientBase<{}>, options: setDelegate.Options & Write.Options & { confirmations?: number | undefined; timeout?: number | undefined; }) => Effect<SyncResult, ErrorType, never>
 const Actions.approval.setDelegateSync.path: 'approval.setDelegateSync'
-type Actions.approval.setDelegateSync.ErrorType = InvalidInputError | NotFoundError | UnauthorizedError | WriteError
+type Actions.approval.setDelegateSync.ErrorType = InvalidInputError | NameStateError | NotFoundError | UnauthorizedError | WriteError
 type Actions.approval.setDelegateSync.Options = setDelegate.Options & Write.Options & { confirmations?: number | undefined; timeout?: number | undefined; }
 type Actions.approval.setDelegateSync.ReturnType = Result & { readonly receipt: TransactionReceipt; readonly receipts: readonly TransactionReceipt[]; }
-function Actions.approval.setOperator(client: ClientBase<{}>, options: setOperator.Options & Write.Options) => Effect<Result, ErrorType, never>
-const Actions.approval.setOperator.prepare: ((client: ClientBase<{}>, options: Options & Pick<Options, 'account' | 'via'>) => Effect<Plan, ErrorType, never>) & { readonly path: string; }
-const Actions.approval.setOperator.simulate: ((client: ClientBase<{}>, options: Options & Pick<Options, 'account' | 'via'>) => Effect<Simulation, ErrorType, never>) & { readonly path: string; }
-const Actions.approval.setOperator.estimateGas: ((client: ClientBase<{}>, options: Options & Pick<Options, 'account' | 'via'>) => Effect<Estimate, ErrorType, never>) & { readonly path: string; }
+function Actions.approval.setOperator(client: ClientBase<{}>, options: (Options & Pick<Options, 'account'>) & Options) => Effect<Result, ErrorType, never>
+const Actions.approval.setOperator.prepare: ((client: ClientBase<{}>, options: (Options & Pick<Options, 'account'>) & Pick<Options, 'account' | 'via'>) => Effect<Plan, ErrorType, never>) & { readonly path: string; }
+const Actions.approval.setOperator.simulate: ((client: ClientBase<{}>, options: (Options & Pick<Options, 'account'>) & Pick<Options, 'account' | 'via'>) => Effect<Simulation, ErrorType, never>) & { readonly path: string; }
+const Actions.approval.setOperator.estimateGas: ((client: ClientBase<{}>, options: (Options & Pick<Options, 'account'>) & Pick<Options, 'account' | 'via'>) => Effect<Estimate, ErrorType, never>) & { readonly path: string; }
 const Actions.approval.setOperator.path: 'approval.setOperator'
-type Actions.approval.setOperator.ErrorType = InvalidInputError | WriteError
-type Actions.approval.setOperator.Options = { operator: string; approved: boolean; contract: ApprovalContract; }
+type Actions.approval.setOperator.ErrorType = InvalidInputError | NameStateError | WriteError
+type Actions.approval.setOperator.Options = { operator: string; approved: boolean; } & ({ contract: ApprovalContract; name?: undefined; } | { name: string; contract?: undefined; })
 type Actions.approval.setOperator.ReturnType = { readonly hash: `0x${string}`; readonly hashes: readonly `0x${string}`[]; readonly id: string | undefined; readonly plan: Plan; }
-function Actions.approval.setOperatorSync(client: ClientBase<{}>, options: setOperator.Options & Write.Options & { confirmations?: number | undefined; timeout?: number | undefined; }) => Effect<SyncResult, ErrorType, never>
+function Actions.approval.setOperatorSync(client: ClientBase<{}>, options: (Options & Pick<Options, 'account'>) & Options & { confirmations?: number | undefined; timeout?: number | undefined; }) => Effect<SyncResult, ErrorType, never>
 const Actions.approval.setOperatorSync.path: 'approval.setOperatorSync'
-type Actions.approval.setOperatorSync.ErrorType = InvalidInputError | WriteError
+type Actions.approval.setOperatorSync.ErrorType = InvalidInputError | NameStateError | WriteError
 type Actions.approval.setOperatorSync.Options = setOperator.Options & Write.Options & { confirmations?: number | undefined; timeout?: number | undefined; }
 type Actions.approval.setOperatorSync.ReturnType = Result & { readonly receipt: TransactionReceipt; readonly receipts: readonly TransactionReceipt[]; }
 function Actions.approval.setToken(client: ClientBase<{}>, options: setToken.Options & Write.Options) => Effect<Result, ErrorType, never>
@@ -236,12 +236,17 @@ function Actions.name.get(client: ClientBase<{}>, options: Pick<Options, 'signal
 const Actions.name.get.path: 'name.get'
 type Actions.name.get.ErrorType = InvalidInputError | CommonError
 type Actions.name.get.Options = Pick<Options, 'signal'> & (BlockOptions & { name: string; })
-type Actions.name.get.ReturnType = { readonly name: string; readonly kind: NameKind; readonly protocol: 'v1' | 'v2'; readonly status: NameStatus; readonly owner: `0x${string}` | null; readonly manager: `0x${string}` | null; readonly registrant: `0x${string}` | null; readonly registry: `0x${string}` | null; readonly subregistry: `0x${string}` | null; readonly resolver: `0x${string}` | null; readonly inheritedResolver: `0x${string}` | null; readonly expiry: bigint | null; readonly gracePeriodEnd: bigint | null; readonly tokenId: bigint | null; readonly resource: bigint | null; readonly ttl: bigint | null; readonly wrapped: boolean; readonly migrated: boolean; readonly reachable: boolean; readonly available: boolean; readonly renewable: boolean; }
+type Actions.name.get.ReturnType = { readonly name: string; readonly kind: NameKind; readonly chainId: number; readonly namespace: NameNamespace | null; readonly protocol: 'l2' | 'v1' | 'v2'; readonly status: NameStatus; readonly owner: `0x${string}` | null; readonly manager: `0x${string}` | null; readonly registrant: `0x${string}` | null; readonly registry: `0x${string}` | null; readonly subregistry: `0x${string}` | null; readonly resolver: `0x${string}` | null; readonly inheritedResolver: `0x${string}` | null; readonly expiry: bigint | null; readonly gracePeriodEnd: bigint | null; readonly tokenId: bigint | null; readonly resource: bigint | null; readonly ttl: bigint | null; readonly wrapped: boolean; readonly migrated: boolean; readonly reachable: boolean; readonly available: boolean; readonly renewable: boolean; }
 function Actions.name.getLabel(client: ClientBase<{}>, options: Pick<Options, 'signal'> & (BlockOptions & { labelhash: `0x${string}`; })) => Effect<ReturnType, ErrorType, never>
 const Actions.name.getLabel.path: 'name.getLabel'
 type Actions.name.getLabel.ErrorType = InvalidInputError | UnsupportedError | CommonError
 type Actions.name.getLabel.Options = Pick<Options, 'signal'> & (BlockOptions & { labelhash: `0x${string}`; })
 type Actions.name.getLabel.ReturnType = string | null
+function Actions.name.getNamespace(client: ClientBase<{}>, options: Pick<Options, 'signal'> & (BlockOptions & { name: string; })) => Effect<ReturnType, ErrorType, never>
+const Actions.name.getNamespace.path: 'name.getNamespace'
+type Actions.name.getNamespace.ErrorType = InvalidInputError | CommonError
+type Actions.name.getNamespace.Options = Pick<Options, 'signal'> & (BlockOptions & { name: string; })
+type Actions.name.getNamespace.ReturnType = NameNamespace | null
 function Actions.name.reclaim(client: ClientBase<{}>, options: reclaim.Options & Write.Options) => Effect<Result, ErrorType, never>
 const Actions.name.reclaim.prepare: ((client: ClientBase<{}>, options: Options & Pick<Options, 'account' | 'via'>) => Effect<Plan, ErrorType, never>) & { readonly path: string; }
 const Actions.name.reclaim.simulate: ((client: ClientBase<{}>, options: Options & Pick<Options, 'account' | 'via'>) => Effect<Simulation, ErrorType, never>) & { readonly path: string; }
@@ -746,19 +751,18 @@ type ContentHash.Protocol = 'ar' | 'bzz' | 'ipfs' | 'ipns' | 'onion' | 'onion3' 
 function ContentHash.toGatewayUrl(uri: string, gateways?: Gateways | undefined) => string
 function Duration.days(n: number | bigint) => bigint
 function Duration.years(n: number | bigint) => bigint
-type Ensforge.ChainClients = { readonly publicClient: ViemClientLike; readonly walletClient?: (() => Promise<ViemClientLike | undefined> | ViemClientLike | undefined) | ViemClientLike | undefined; }
 type Ensforge.Client = actions & ClientBase<actions>
 interface Ensforge.ClientBase {
   chain: { readonly id: number; readonly name: string; }
   account: `0x${string}` | undefined
   deployment: Profile
-  publicClient: Client_Base<Transport, Chain | undefined, Account | undefined, undefined, Tokens | undefined> & { extend: <const client extends Extended & ExactPartial<ExtendableProtectedActions<Transport, Chain | undefined, Account | undefined, Tokens | undefined>>>(fn: (client: Client<Transport, Chain | undefined, Account | undefined, undefined, { [x: string]: unknown; account?: undefined; batch?: undefined; cacheTime?: undefined; ccipRead?: undefined; chain?: undefined; dataSuffix?: undefined; experimental_blockTag?: undefined; key?: undefined; name?: undefined; pollingInterval?: undefined; request?: undefined; tokens?: undefined; transport?: undefined; type?: undefined; uid?: undefined; } | undefined, Tokens | undefined>) => client) => Client<Transport, Chain | undefined, Account | undefined, undefined, { [K in keyof client]: client[K]; }, Tokens | undefined>; scope: (options?: { signal?: AbortSignal | undefined; } | undefined) => Client<Transport, Chain | undefined, Account | undefined, undefined, { [x: string]: unknown; account?: undefined; batch?: undefined; cacheTime?: undefined; ccipRead?: undefined; chain?: undefined; dataSuffix?: undefined; experimental_blockTag?: undefined; key?: undefined; name?: undefined; pollingInterval?: undefined; request?: undefined; tokens?: undefined; transport?: undefined; type?: undefined; uid?: undefined; } | undefined, Tokens | undefined>; }
+  client: (chainId?: number | undefined) => ViemClient
   config: { readonly ccipRead: false | { readonly gatewayUrls: readonly string[]; }; readonly batch: { readonly multicall: false | { readonly batchSize: number; readonly wait: number; }; }; readonly blockTag: BlockTag; readonly storage: Storage; readonly simulate: boolean; readonly indexer: Indexer | undefined; readonly gateways: { readonly ipfs: string; readonly arweave: string; readonly swarm: string; }; }
   extend: <const added extends object>(decorator: (client: Client<actions>) => added) => Client<actions & added>
 }
 type Ensforge.Config = { readonly ccipRead: false | { readonly gatewayUrls: readonly string[]; }; readonly batch: { readonly multicall: false | { readonly batchSize: number; readonly wait: number; }; }; readonly blockTag: BlockTag; readonly storage: Storage; readonly simulate: boolean; readonly indexer: Indexer | undefined; readonly gateways: { readonly ipfs: string; readonly arweave: string; readonly swarm: string; }; }
-function Ensforge.create(options: { publicClient: ViemClientLike; walletClient?: (() => Promise<ViemClientLike | undefined> | ViemClientLike | undefined) | ViemClientLike | undefined; chains?: Readonly<Record<number, ChainClients>> | undefined; account?: `0x${string}` | Account | undefined; deployment?: Profile | undefined; ccipRead?: false | { readonly gatewayUrls?: readonly string[] | undefined; } | undefined; batch?: { readonly multicall?: boolean | { readonly batchSize?: number; readonly wait?: number; } | undefined; } | undefined; blockTag?: BlockTag | undefined; storage?: Storage | undefined; simulate?: boolean | undefined; indexer?: Indexer | undefined; gateways?: Gateways | undefined; }) => ClientBase<{}>
-type Ensforge.CreateOptions = { publicClient: ViemClientLike; walletClient?: (() => Promise<ViemClientLike | undefined> | ViemClientLike | undefined) | ViemClientLike | undefined; chains?: Readonly<Record<number, ChainClients>> | undefined; account?: `0x${string}` | Account | undefined; deployment?: Profile | undefined; ccipRead?: false | { readonly gatewayUrls?: readonly string[] | undefined; } | undefined; batch?: { readonly multicall?: boolean | { readonly batchSize?: number; readonly wait?: number; } | undefined; } | undefined; blockTag?: BlockTag | undefined; storage?: Storage | undefined; simulate?: boolean | undefined; indexer?: Indexer | undefined; gateways?: Gateways | undefined; }
+function Ensforge.create(options: { chain: Chain; transports?: Readonly<Record<number, Transport>> | undefined; publicRpc?: boolean | undefined; wallet?: ((chainId: number) => Promise<ViemClientLike | undefined> | ViemClientLike | undefined) | ViemClientLike | undefined; switchChain?: boolean | undefined; account?: `0x${string}` | Account | undefined; pollingInterval?: number | undefined; cacheTime?: number | undefined; deployment?: Profile | undefined; ccipRead?: false | { readonly gatewayUrls?: readonly string[] | undefined; } | undefined; batch?: { readonly multicall?: boolean | { readonly batchSize?: number; readonly wait?: number; } | undefined; } | undefined; blockTag?: BlockTag | undefined; storage?: Storage | undefined; simulate?: boolean | undefined; indexer?: Indexer | undefined; gateways?: Gateways | undefined; }) => ClientBase<{}>
+type Ensforge.CreateOptions = { chain: Chain; transports?: Readonly<Record<number, Transport>> | undefined; publicRpc?: boolean | undefined; wallet?: ((chainId: number) => Promise<ViemClientLike | undefined> | ViemClientLike | undefined) | ViemClientLike | undefined; switchChain?: boolean | undefined; account?: `0x${string}` | Account | undefined; pollingInterval?: number | undefined; cacheTime?: number | undefined; deployment?: Profile | undefined; ccipRead?: false | { readonly gatewayUrls?: readonly string[] | undefined; } | undefined; batch?: { readonly multicall?: boolean | { readonly batchSize?: number; readonly wait?: number; } | undefined; } | undefined; blockTag?: BlockTag | undefined; storage?: Storage | undefined; simulate?: boolean | undefined; indexer?: Indexer | undefined; gateways?: Gateways | undefined; }
 class Ensforge.Ensforge {
   constructor(_: never) => Ensforge
   Service: object & ClientBase<object>
@@ -768,7 +772,7 @@ class Ensforge.Ensforge {
 function Ensforge.from(client: Client<object> | ViemClientLike) => ClientBase<{}>
 type Ensforge.Gateways = { readonly ipfs?: string | undefined; readonly arweave?: string | undefined; readonly swarm?: string | undefined; }
 function Ensforge.is(value: unknown) => value is ClientBase<{}>
-function Ensforge.layer(options: { publicClient: ViemClientLike; walletClient?: (() => Promise<ViemClientLike | undefined> | ViemClientLike | undefined) | ViemClientLike | undefined; chains?: Readonly<Record<number, ChainClients>> | undefined; account?: `0x${string}` | Account | undefined; deployment?: Profile | undefined; ccipRead?: false | { readonly gatewayUrls?: readonly string[] | undefined; } | undefined; batch?: { readonly multicall?: boolean | { readonly batchSize?: number; readonly wait?: number; } | undefined; } | undefined; blockTag?: BlockTag | undefined; storage?: Storage | undefined; simulate?: boolean | undefined; indexer?: Indexer | undefined; gateways?: Gateways | undefined; }) => Layer<Ensforge, ConfigError, never>
+function Ensforge.layer(options: { chain: Chain; transports?: Readonly<Record<number, Transport>> | undefined; publicRpc?: boolean | undefined; wallet?: ((chainId: number) => Promise<ViemClientLike | undefined> | ViemClientLike | undefined) | ViemClientLike | undefined; switchChain?: boolean | undefined; account?: `0x${string}` | Account | undefined; pollingInterval?: number | undefined; cacheTime?: number | undefined; deployment?: Profile | undefined; ccipRead?: false | { readonly gatewayUrls?: readonly string[] | undefined; } | undefined; batch?: { readonly multicall?: boolean | { readonly batchSize?: number; readonly wait?: number; } | undefined; } | undefined; blockTag?: BlockTag | undefined; storage?: Storage | undefined; simulate?: boolean | undefined; indexer?: Indexer | undefined; gateways?: Gateways | undefined; }) => Layer<Ensforge, ConfigError, never>
 type Ensforge.Like = Client<object> | ViemClientLike
 type Ensforge.ViemClient = Client_Base<Transport, Chain | undefined, Account | undefined, undefined, Tokens | undefined> & { extend: <const client extends Extended & ExactPartial<ExtendableProtectedActions<Transport, Chain | undefined, Account | undefined, Tokens | undefined>>>(fn: (client: Client<Transport, Chain | undefined, Account | undefined, undefined, { [x: string]: unknown; account?: undefined; batch?: undefined; cacheTime?: undefined; ccipRead?: undefined; chain?: undefined; dataSuffix?: undefined; experimental_blockTag?: undefined; key?: undefined; name?: undefined; pollingInterval?: undefined; request?: undefined; tokens?: undefined; transport?: undefined; type?: undefined; uid?: undefined; } | undefined, Tokens | undefined>) => client) => Client<Transport, Chain | undefined, Account | undefined, undefined, { [K in keyof client]: client[K]; }, Tokens | undefined>; scope: (options?: { signal?: AbortSignal | undefined; } | undefined) => Client<Transport, Chain | undefined, Account | undefined, undefined, { [x: string]: unknown; account?: undefined; batch?: undefined; cacheTime?: undefined; ccipRead?: undefined; chain?: undefined; dataSuffix?: undefined; experimental_blockTag?: undefined; key?: undefined; name?: undefined; pollingInterval?: undefined; request?: undefined; tokens?: undefined; transport?: undefined; type?: undefined; uid?: undefined; } | undefined, Tokens | undefined>; }
 type Ensforge.ViemClientLike = Pick<ViemWalletClient, 'account' | 'batch' | 'cacheTime' | 'ccipRead' | 'chain' | 'key' | 'name' | 'pollingInterval' | 'transport' | 'type' | 'uid'> & { readonly request: EIP1193RequestFn; }

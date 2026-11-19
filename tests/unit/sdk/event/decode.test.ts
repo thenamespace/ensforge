@@ -7,7 +7,6 @@ import { Actions } from "@ensforge/sdk/effect";
 import { noRpc, scriptedTransport } from "@ensforge/test-harness";
 import {
   concatHex,
-  createPublicClient,
   encodeAbiParameters,
   keccak256,
   pad,
@@ -26,7 +25,11 @@ const v2 = Deployments.mainnet.v2;
 const stranger: Address = "0x00000000000000000000000000000000000000aa";
 
 const { transport, calls } = scriptedTransport(noRpc);
-const ens = Ensforge.create({ publicClient: createPublicClient({ chain: mainnet, transport }) });
+const ens = Ensforge.create({
+  chain: mainnet,
+  transports: { [mainnet.id]: transport },
+  publicRpc: false,
+});
 
 /** The reported category of each event signature, per the `event.get` documentation. */
 const expected: Readonly<Record<string, readonly [type: string, action: string, v2Only: boolean]>> =

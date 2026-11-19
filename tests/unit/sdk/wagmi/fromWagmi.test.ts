@@ -65,7 +65,7 @@ describe("fromWagmi chain selection", () => {
       const ens = fromWagmi(wagmiConfig(chains), options);
       requests.length = 0;
 
-      yield* Effect.promise(() => getBlockNumber(ens.publicClient, { cacheTime: 0 }));
+      yield* Effect.promise(() => getBlockNumber(ens.client(), { cacheTime: 0 }));
 
       assert.strictEqual(ens.chain.id, expected);
       assert.deepStrictEqual(requests, [{ chainId: expected, method: "eth_blockNumber" }]);
@@ -161,7 +161,7 @@ describe("fromWagmi chains", () => {
 
       const onBase = yield* chainClient(ens, base.id);
       requests.length = 0;
-      yield* Effect.promise(() => getBlockNumber(onBase.publicClient, { cacheTime: 0 }));
+      yield* Effect.promise(() => getBlockNumber(onBase.client(), { cacheTime: 0 }));
       const { walletClient } = yield* resolveSigner(onBase, undefined);
 
       assert.strictEqual(onBase.chain.id, base.id);
@@ -170,10 +170,33 @@ describe("fromWagmi chains", () => {
     }),
   );
 
-  it.effect("fails with CHAIN_NOT_CONFIGURED for a chain wagmi does not have", () =>
-    expectFailure(chainClient(fromWagmi(wagmiConfig([mainnet])), base.id), {
-      _tag: "ConfigError",
-      code: "CHAIN_NOT_CONFIGURED",
+  // Names can live on chains the app did not add to wagmi: ensforge reads them on public RPCs.
+  it.effect("reaches a chain wagmi does not have through its public RPC, unless turned off", () =>
+    Effect.gen(function* () {
+      const onBase = yield* chainClient(fromWagmi(wagmiConfig([mainnet])), base.id);
+
+      assert.strictEqual(onBase.client().transport.url, base.rpcUrls.default.http[0]);
+      yield* expectFailure(
+        chainClient(fromWagmi(wagmiConfig([mainnet]), { publicRpc: false }), base.id),
+        { _tag: "ConfigError", code: "CHAIN_NOT_CONFIGURED" },
+      );
+    }),
+  );
+
+  it.effect("fails before the wallet prompt to sign on a chain wagmi does not have", () =>
+    Effect.gen(function* () {
+      const config = wagmiConfig([mainnet]);
+      const onBase = yield* chainClient(fromWagmi(config), base.id);
+      yield* connectOn(config, mainnet.id);
+
+      const error = yield* expectFailure(resolveSigner(onBase, undefined), {
+        _tag: "ConfigError",
+        code: "CHAIN_NOT_CONFIGURED",
+      });
+      const connected = yield* Effect.promise(() => getConnectorClient(config));
+
+      assert.strictEqual(error.context.chainId, base.id);
+      assert.strictEqual(connected.chain.id, mainnet.id);
     }),
   );
 });

@@ -18,8 +18,9 @@ Required peer dependencies: `viem` (`^2.57.0`) and `effect` (`^4.1.4`).
 ```ts
 import { hca, hcaActions } from "@ensforge/hca";
 import { Ensforge, ensActions } from "@ensforge/sdk";
+import { mainnet } from "viem/chains";
 
-const ens = Ensforge.create({ publicClient, walletClient })
+const ens = Ensforge.create({ chain: mainnet, wallet: walletClient })
   .extend(ensActions())
   .extend(hcaActions());
 

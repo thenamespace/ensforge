@@ -6,7 +6,6 @@ import * as Ensforge from "@ensforge/sdk/internal/client/Ensforge";
 import type { Signer } from "@ensforge/sdk/internal/internal/write/signer";
 import { scriptedTransport, type RecordedCall } from "@ensforge/test-harness";
 import {
-  createPublicClient,
   createWalletClient,
   getAddress,
   isHex,
@@ -225,8 +224,11 @@ export const scriptedWallet = (options: WalletOptions = {}) => {
     pollingInterval: 1,
   });
   const client = Ensforge.create({
-    publicClient: createPublicClient({ chain: mainnet, transport, pollingInterval: 1 }),
-    walletClient,
+    chain: mainnet,
+    transports: { [mainnet.id]: transport },
+    publicRpc: false,
+    pollingInterval: 1,
+    wallet: walletClient,
     simulate: options.simulate ?? false,
     storage: {
       ...storage,

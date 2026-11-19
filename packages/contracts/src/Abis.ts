@@ -63,3 +63,50 @@ export * as v2 from "./abis/v2.js";
  * @stability stable
  */
 export * as shared from "./abis/shared.js";
+
+/**
+ * Basenames ABIs: `base.eth` and `basetest.eth` names on Base. Their registry is
+ * `Abis.v1.ensRegistry`.
+ *
+ * **Example** (Reading a Basename's expiry)
+ *
+ * ```ts
+ * import { Abis, Deployments } from "@ensforge/contracts"
+ * import { labelhash } from "viem"
+ *
+ * const expires = await baseClient.readContract({
+ *   address: Deployments.namespaces.basenames.mainnet.contracts.baseRegistrar,
+ *   abi: Abis.basenames.baseRegistrar,
+ *   functionName: "nameExpires",
+ *   args: [BigInt(labelhash("jesse"))],
+ * })
+ * ```
+ *
+ * @stability stable
+ * @since 1.1.0
+ */
+export * as basenames from "./abis/basenames.js";
+
+/**
+ * Durin ABIs: ENS Labs' L2 registries, on many L2s. Durin is experimental upstream.
+ *
+ * @stability experimental
+ * @since 1.1.0
+ */
+export * as durin from "./abis/durin.js";
+
+/**
+ * Celonames ABIs: `celo.eth` names on Celo.
+ *
+ * @stability stable
+ * @since 1.1.0
+ */
+export * as celonames from "./abis/celonames.js";
+
+/**
+ * Namespace ABIs: L2 subnames issued through Namespace, on Base and OP Mainnet.
+ *
+ * @stability stable
+ * @since 1.1.0
+ */
+export * as namespace from "./abis/namespace.js";

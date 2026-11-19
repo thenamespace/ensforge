@@ -27,17 +27,15 @@ You will set the **primary name** of an address: the name wallets and apps show 
 **Example** (Setting Your Primary Name)
 
 ```ts title="set-primary-name.ts"
-import { createPublicClient, createWalletClient, http, type Hex } from "viem";
+import { http, type Hex } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { sepolia } from "viem/chains";
 import { Ensforge, ensActions } from "@ensforge/sdk";
 
-const account = privateKeyToAccount(process.env.PRIVATE_KEY as Hex);
-const transport = http(process.env.SEPOLIA_RPC_URL);
-
 const ens = Ensforge.create({
-  publicClient: createPublicClient({ chain: sepolia, transport }),
-  walletClient: createWalletClient({ account, chain: sepolia, transport }),
+  chain: sepolia,
+  transports: { [sepolia.id]: http(process.env.SEPOLIA_RPC_URL) },
+  account: privateKeyToAccount(process.env.PRIVATE_KEY as Hex),
 }).extend(ensActions());
 
 const { hash } = await ens.primaryName.setSync({ name: "ensforge-docs-demo.eth" });
@@ -66,29 +64,23 @@ A name in `addr.reverse` outranks `default.reverse` on Ethereum, so `"default"` 
 
 ## 3. Set a primary name on an L2
 
-An L2 primary name is a transaction on that L2, so the client needs clients for it in `chains`. The signer is the same account on every chain.
+An L2 primary name is a transaction on that L2. The same client sends it there: a local `account` signs through that chain's transport, and a browser `wallet` is asked to switch to the L2 first. Give the L2 a transport for production; without one, ensforge uses its public RPC.
 
 **Example** (Setting a Primary Name on Base Sepolia)
 
 ```ts title="set-primary-name-l2.ts"
-import { createPublicClient, createWalletClient, http, type Hex } from "viem";
+import { http, type Hex } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { baseSepolia, sepolia } from "viem/chains";
 import { Ensforge, ensActions } from "@ensforge/sdk";
 
-const account = privateKeyToAccount(process.env.PRIVATE_KEY as Hex);
-const baseTransport = http(process.env.BASE_SEPOLIA_RPC_URL);
-const transport = http(process.env.SEPOLIA_RPC_URL);
-
 const ens = Ensforge.create({
-  publicClient: createPublicClient({ chain: sepolia, transport }),
-  walletClient: createWalletClient({ account, chain: sepolia, transport }),
-  chains: {
-    [baseSepolia.id]: {
-      publicClient: createPublicClient({ chain: baseSepolia, transport: baseTransport }),
-      walletClient: createWalletClient({ account, chain: baseSepolia, transport: baseTransport }),
-    },
+  chain: sepolia,
+  transports: {
+    [sepolia.id]: http(process.env.SEPOLIA_RPC_URL),
+    [baseSepolia.id]: http(process.env.BASE_SEPOLIA_RPC_URL),
   },
+  account: privateKeyToAccount(process.env.PRIVATE_KEY as Hex),
 }).extend(ensActions());
 
 await ens.primaryName.setSync({
@@ -97,7 +89,7 @@ await ens.primaryName.setSync({
 });
 ```
 
-The plan is for the L2, and resumes there. Readers on Ethereum verify an L2 primary name against the L2's state as committed to Ethereum, so they see it only once that state is, which can take a while after the receipt.
+The plan is for the L2, and resumes there. `primaryName.get` on a client that reaches the L2 sees the name as soon as the transaction is mined. Readers that go through Ethereum verify it against the L2's state as committed to Ethereum, so they see it only once that state is, which can take a while after the receipt.
 
 Supported L2s are those with an L2 reverse registrar: OP Mainnet, Base, Arbitrum One, Linea and Scroll, and their Sepolia testnets. Other chains fail with [`UNSUPPORTED_ON_DEPLOYMENT`](/docs/reference/errors/UNSUPPORTED_ON_DEPLOYMENT).
 
@@ -108,27 +100,15 @@ Supported L2s are those with an L2 reverse registrar: OP Mainnet, Base, Arbitrum
 **Example** (Signing One Claim for Two Chains)
 
 ```ts title="sign-claim.ts"
-import { createPublicClient, createWalletClient, http, type Hex } from "viem";
+import { http, type Hex } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { baseSepolia, optimismSepolia, sepolia } from "viem/chains";
 import { Ensforge, ensActions } from "@ensforge/sdk";
 
-const account = privateKeyToAccount(process.env.PRIVATE_KEY as Hex);
-const transport = http(process.env.SEPOLIA_RPC_URL);
-
 const ens = Ensforge.create({
-  publicClient: createPublicClient({ chain: sepolia, transport }),
-  walletClient: createWalletClient({ account, chain: sepolia, transport }),
-  chains: {
-    [baseSepolia.id]: {
-      publicClient: createPublicClient({ chain: baseSepolia, transport: http() }),
-      walletClient: createWalletClient({ account, chain: baseSepolia, transport: http() }),
-    },
-    [optimismSepolia.id]: {
-      publicClient: createPublicClient({ chain: optimismSepolia, transport: http() }),
-      walletClient: createWalletClient({ account, chain: optimismSepolia, transport: http() }),
-    },
-  },
+  chain: sepolia,
+  transports: { [sepolia.id]: http(process.env.SEPOLIA_RPC_URL) },
+  account: privateKeyToAccount(process.env.PRIVATE_KEY as Hex),
 }).extend(ensActions());
 
 const signed = await ens.primaryName.signClaim({
@@ -151,25 +131,15 @@ The claim is plain JSON. The app signs and posts it. A server with a funded wall
 **Example** (Relaying a Signed Claim)
 
 ```ts title="relay-claim.ts"
-import { createPublicClient, createWalletClient, http, type Hex } from "viem";
+import { http, type Hex } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { baseSepolia, sepolia } from "viem/chains";
 import { Ensforge, ensActions } from "@ensforge/sdk";
 
-const relayerAccount = privateKeyToAccount(process.env.RELAYER_PRIVATE_KEY as Hex);
-
 const relayer = Ensforge.create({
-  publicClient: createPublicClient({ chain: sepolia, transport: http() }),
-  chains: {
-    [baseSepolia.id]: {
-      publicClient: createPublicClient({ chain: baseSepolia, transport: http() }),
-      walletClient: createWalletClient({
-        account: relayerAccount,
-        chain: baseSepolia,
-        transport: http(),
-      }),
-    },
-  },
+  chain: sepolia,
+  transports: { [baseSepolia.id]: http(process.env.BASE_SEPOLIA_RPC_URL) },
+  account: privateKeyToAccount(process.env.RELAYER_PRIVATE_KEY as Hex),
 }).extend(ensActions());
 
 export async function relayClaim(body: string) {
@@ -178,7 +148,7 @@ export async function relayClaim(body: string) {
 }
 ```
 
-`relayer` is a client whose `chains` holds a funded wallet for that L2, and the relayer pays the gas. Validate the posted body before you submit it. The signature, not the sender, authorises the name.
+`relayer` signs with an account funded on that L2, and pays the gas. Validate the posted body before you submit it. The signature, not the sender, authorises the name.
 
 ## Name another address
 
@@ -198,7 +168,7 @@ The name does not resolve to the address. Add an address record with `record.set
 
 ### `CHAIN_NOT_CONFIGURED`
 
-The L2 is not in the client's `chains`. Add it to `Ensforge.create`, or to the wagmi config with `fromWagmi`. See [`CHAIN_NOT_CONFIGURED`](/docs/reference/errors/CHAIN_NOT_CONFIGURED).
+The client cannot reach the L2: it has no transport for it and `publicRpc` is `false`. Add the L2 to `transports` in `Ensforge.create`. See [`CHAIN_NOT_CONFIGURED`](/docs/reference/errors/CHAIN_NOT_CONFIGURED).
 
 ### `INVALID_COIN_TYPE`
 

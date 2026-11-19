@@ -8,6 +8,7 @@ import { UnsupportedError } from "../../errors/classes/UnsupportedError.js";
 import type { AnyError } from "../../errors/types.js";
 import type { Plan } from "../../plan/Plan.js";
 import type { LoadedName } from "./load.js";
+import * as V1Calls from "./v1-calls.js";
 import { requireAddress, requireV1Contracts } from "./write.js";
 
 /** The call that points a registered name at `resolver`, routed by where the name lives. */
@@ -32,25 +33,11 @@ export const setResolverCall = (
 
   return requireV1Contracts(client).pipe(
     Effect.map((contracts) =>
-      state.wrapped
-        ? {
-            to: contracts.nameWrapper,
-            data: encodeFunctionData({
-              abi: Abis.v1.nameWrapper,
-              functionName: "setResolver",
-              args: [data.parts.node, resolver],
-            }),
-            value: 0n,
-          }
-        : {
-            to: contracts.registry,
-            data: encodeFunctionData({
-              abi: Abis.v1.ensRegistry,
-              functionName: "setResolver",
-              args: [data.parts.node, resolver],
-            }),
-            value: 0n,
-          },
+      V1Calls.setResolver(
+        state.wrapped ? contracts.nameWrapper : contracts.registry,
+        data.parts.node,
+        resolver,
+      ),
     ),
   );
 };

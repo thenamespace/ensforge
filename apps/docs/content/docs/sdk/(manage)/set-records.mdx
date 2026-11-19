@@ -28,7 +28,7 @@ You will write [records](/docs/reference/glossary#record) (a website, an avatar,
 **Example** (Updating a Profile)
 
 ```ts title="set-records.ts"
-import { createPublicClient, createWalletClient, http, type Hex } from "viem";
+import { createWalletClient, http, type Hex } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { sepolia } from "viem/chains";
 import { Ensforge, ensActions } from "@ensforge/sdk";
@@ -37,8 +37,9 @@ const account = privateKeyToAccount(process.env.PRIVATE_KEY as Hex);
 const transport = http(process.env.SEPOLIA_RPC_URL);
 
 const ens = Ensforge.create({
-  publicClient: createPublicClient({ chain: sepolia, transport }),
-  walletClient: createWalletClient({ account, chain: sepolia, transport }),
+  chain: sepolia,
+  transports: { [sepolia.id]: transport },
+  wallet: createWalletClient({ account, chain: sepolia, transport }),
 }).extend(ensActions());
 
 const { hash } = await ens.record.setSync({
@@ -74,7 +75,7 @@ Pass `null` to delete a record. `clear: true` deletes every record first, then w
 **Example** (Deleting a Record)
 
 ```ts title="delete-record.ts"
-import { createPublicClient, createWalletClient, http, type Hex } from "viem";
+import { createWalletClient, http, type Hex } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { sepolia } from "viem/chains";
 import { Ensforge, ensActions } from "@ensforge/sdk";
@@ -83,8 +84,9 @@ const account = privateKeyToAccount(process.env.PRIVATE_KEY as Hex);
 const transport = http(process.env.SEPOLIA_RPC_URL);
 
 const ens = Ensforge.create({
-  publicClient: createPublicClient({ chain: sepolia, transport }),
-  walletClient: createWalletClient({ account, chain: sepolia, transport }),
+  chain: sepolia,
+  transports: { [sepolia.id]: transport },
+  wallet: createWalletClient({ account, chain: sepolia, transport }),
 }).extend(ensActions());
 
 await ens.record.setSync({
@@ -102,7 +104,7 @@ On an ENSv2 PermissionedResolver, `clear` links the name to record 0 instead of 
 **Example** (Moving to a New Resolver With Records)
 
 ```ts title="set-records-resolver.ts"
-import { createPublicClient, createWalletClient, http, type Hex } from "viem";
+import { createWalletClient, http, type Hex } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { sepolia } from "viem/chains";
 import { Ensforge, ensActions } from "@ensforge/sdk";
@@ -111,8 +113,9 @@ const account = privateKeyToAccount(process.env.PRIVATE_KEY as Hex);
 const transport = http(process.env.SEPOLIA_RPC_URL);
 
 const ens = Ensforge.create({
-  publicClient: createPublicClient({ chain: sepolia, transport }),
-  walletClient: createWalletClient({ account, chain: sepolia, transport }),
+  chain: sepolia,
+  transports: { [sepolia.id]: transport },
+  wallet: createWalletClient({ account, chain: sepolia, transport }),
 }).extend(ensActions());
 
 await ens.record.setSync({
@@ -129,6 +132,10 @@ await ens.record.setSync({
 - Each kind of record is checked against the profiles the resolver declares through ERC-165, and `clear` against its record versions, before anything is simulated. A resolver that does not declare ERC-165 is left to the simulation.
 - The plan is simulated before the wallet prompt, so permission errors appear first.
 - Records go to the resolver set on the name in its registry, never to a wildcard resolver inherited from a parent.
+
+## Names on L2s
+
+For a name that lives on an L2, such as a Basename, `record.set` writes to its resolver on the L2, signed by the client's wallet or account on that chain. `resolver` works only for Basenames and Linea Names, and a Linea name accepts only Linea's PublicResolver. See [Work with names on L2s](/docs/sdk/names-on-l2s).
 
 ## Check the result
 

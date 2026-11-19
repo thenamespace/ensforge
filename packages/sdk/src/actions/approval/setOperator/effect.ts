@@ -6,7 +6,7 @@ import { encodeFunctionData } from "viem";
 import type { Client } from "../../../client/types.js";
 import type { AnyError } from "../../../errors/types.js";
 import * as Action from "../../../internal/action/index.js";
-import { approvalContract } from "../../../internal/approval/contract.js";
+import { approvalContract, nameApprovalTarget } from "../../../internal/approval/contract.js";
 import { requireAddress, singleStepPlan } from "../../../internal/name/write.js";
 import type { Plan } from "../../../plan/Plan.js";
 import type { Write } from "../../../Types.js";
@@ -18,9 +18,12 @@ export const plan = Effect.fnUntraced(function* (
   options: Promises.Options & Pick<Write.Options, "account">,
 ): Effect.fn.Return<Plan, AnyError> {
   const operator = yield* requireAddress(options.operator, "operator");
-  const contract = yield* approvalContract(client, options.contract);
+  const { client: target, contract } =
+    options.name === undefined
+      ? { client, contract: yield* approvalContract(client, options.contract) }
+      : yield* nameApprovalTarget(client, options.name);
 
-  return singleStepPlan(client, {
+  return singleStepPlan(target, {
     operation: "approval.setOperator",
     account: options.account,
     description: options.approved ? "Approve operator" : "Revoke operator",

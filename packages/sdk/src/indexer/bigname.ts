@@ -54,8 +54,9 @@ export type RestIndexerOptions = {
  * ```ts
  * import { Ensforge } from "@ensforge/sdk"
  * import { bigname, indexerActions } from "@ensforge/sdk/indexer"
+ * import { mainnet } from "viem/chains"
  *
- * const ens = Ensforge.create({ publicClient, indexer: bigname() }).extend(indexerActions())
+ * const ens = Ensforge.create({ chain: mainnet, indexer: bigname() }).extend(indexerActions())
  * ```
  *
  * **Example** (A self-hosted bigname)

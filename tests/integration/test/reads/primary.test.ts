@@ -9,7 +9,6 @@ import { factAddress, Fixtures } from "@ensforge/test-fixtures";
 import { expectFailure } from "@ensforge/test-harness";
 import {
   concat,
-  createPublicClient,
   encodeAbiParameters,
   encodeErrorResult,
   encodeFunctionData,
@@ -356,10 +355,9 @@ describe("primaryName.get", () => {
             const hanging = yield* gateways.hang;
             const answering = yield* gateways.serve(() => ({ status: 200, body: '{"data":"0x"}' }));
             const impatient = Ensforge.create({
-              publicClient: createPublicClient({
-                chain: devnet.chain,
-                transport: http(devnet.rpcUrl, { timeout: 500 }),
-              }),
+              chain: devnet.chain,
+              transports: { [devnet.chain.id]: http(devnet.rpcUrl, { timeout: 500 }) },
+              publicRpc: false,
               deployment: devnet.deployments,
             });
 

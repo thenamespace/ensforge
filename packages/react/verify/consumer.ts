@@ -16,12 +16,12 @@ import { dehydrate, prefetch } from "@ensforge/react/server";
 import { Actions, Ensforge, type Write } from "@ensforge/sdk";
 import { Actions as EffectActions } from "@ensforge/sdk/effect";
 import { Ensforge as WagmiEnsforge } from "@ensforge/sdk/wagmi";
-import { createPublicClient, http } from "viem";
+import { http } from "viem";
 import { mainnet } from "viem/chains";
 import { createConfig } from "wagmi";
 
 const ens = Ensforge.create({
-  publicClient: createPublicClient({ chain: mainnet, transport: http() }),
+  chain: mainnet,
 });
 const wagmiEns = WagmiEnsforge.fromWagmi(
   createConfig({ chains: [mainnet], transports: { [mainnet.id]: http() } }),

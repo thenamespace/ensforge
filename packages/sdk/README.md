@@ -16,21 +16,20 @@ an optional peer, needed only for `Ensforge.fromWagmi`.
 
 ```ts
 import { Ensforge, ensActions } from "@ensforge/sdk";
-import { createPublicClient, http } from "viem";
 import { mainnet } from "viem/chains";
 
-const ens = Ensforge.create({
-  publicClient: createPublicClient({ chain: mainnet, transport: http() }),
-}).extend(ensActions());
+const ens = Ensforge.create({ chain: mainnet }).extend(ensActions());
 
 const address = await ens.record.getAddress({ name: "nick.eth" });
 ```
 
 ## Features
 
-- Viem-style Promise API: pass your own viem clients, or a wagmi config.
+- Viem-style Promise API: one client for every chain, with your own transports, or a wagmi config.
 - Names, records, resolvers, registration, renewal, subnames, primary names, roles and migration.
-- Batched reads with off-chain (CCIP-Read) names resolved for you.
+- Names on L2s (Basenames, Linea Names, Celonames, Durin, Namespace) read and changed on their L2,
+  and L2 primary names read there.
+- Batched reads with off-chain (CCIP-Read) names resolved for you, and their provider named.
 - Writes are plans you can inspect, simulate, send and resume.
 - Typed errors, and pluggable indexers for lists, history and search.
 - An optional Effect API from `@ensforge/sdk/effect`.

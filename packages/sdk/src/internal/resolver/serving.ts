@@ -16,6 +16,8 @@ export type ServingResolver = {
   readonly address: Address;
   /** Whether it is set on an ancestor (an ENSIP-10 wildcard) rather than on the name itself. */
   readonly inherited: boolean;
+  /** The name it is set on: the name itself, or the ancestor that holds it. */
+  readonly level: string;
 };
 
 /**
@@ -63,7 +65,14 @@ export const behindEnsV1Bridge = (
           resolvers,
           (resolver) => nonZeroAddress(resolver) !== null && !sameAddress(loop, resolver),
         ),
-        { onNone: () => null, onSome: ([address, index]) => ({ address, inherited: index > 0 }) },
+        {
+          onNone: () => null,
+          onSome: ([address, index]) => ({
+            address,
+            inherited: index > 0,
+            level: levels[index] ?? name,
+          }),
+        },
       ),
     ),
   );

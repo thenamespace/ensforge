@@ -27,7 +27,11 @@
           "effect/Path",
           "effect/reactivity"
         ],
-        "allowedExperimentalApis": ["@ensforge/hca", "@ensforge/contracts/v2/experimental/hca"]
+        "allowedExperimentalApis": [
+          "@ensforge/hca",
+          "@ensforge/contracts/v2/experimental/hca",
+          "@ensforge/contracts/namespaces/durin"
+        ]
       }
     ]
   },

@@ -28,11 +28,10 @@ Every hook reads atoms. The atom layer lets you build your own derived state fro
 import { Actions, Ensforge } from "@ensforge/sdk";
 import { ensAtom } from "@ensforge/react/atoms";
 import { Atom } from "effect/reactivity";
-import { createPublicClient, http } from "viem";
 import { mainnet } from "viem/chains";
 
 const ens = Ensforge.create({
-  publicClient: createPublicClient({ chain: mainnet, transport: http() }),
+  chain: mainnet,
 });
 
 export const profile = Atom.make((get) => ({
@@ -53,11 +52,10 @@ An atom registry runs atoms anywhere. Mount an atom to keep it alive, then read 
 import { Actions, Ensforge } from "@ensforge/sdk";
 import { ensAtom } from "@ensforge/react/atoms";
 import { AtomRegistry } from "effect/reactivity";
-import { createPublicClient, http } from "viem";
 import { mainnet } from "viem/chains";
 
 const ens = Ensforge.create({
-  publicClient: createPublicClient({ chain: mainnet, transport: http() }),
+  chain: mainnet,
 });
 
 const registry = AtomRegistry.make();
@@ -83,11 +81,10 @@ registry.subscribe(owner, (result) => console.log(result._tag));
 import { Actions, Ensforge } from "@ensforge/sdk";
 import { ensWriteAtom } from "@ensforge/react/atoms";
 import { AtomRegistry } from "effect/reactivity";
-import { createPublicClient, http } from "viem";
 import { sepolia } from "viem/chains";
 
 const ens = Ensforge.create({
-  publicClient: createPublicClient({ chain: sepolia, transport: http() }),
+  chain: sepolia,
 });
 
 const registry = AtomRegistry.make();
@@ -110,11 +107,10 @@ import { Actions, Ensforge } from "@ensforge/sdk";
 import { goldsky } from "@ensforge/sdk/indexer";
 import { ensPagesAtom } from "@ensforge/react/atoms";
 import { AtomRegistry } from "effect/reactivity";
-import { createPublicClient, http } from "viem";
 import { mainnet } from "viem/chains";
 
 const ens = Ensforge.create({
-  publicClient: createPublicClient({ chain: mainnet, transport: http() }),
+  chain: mainnet,
   indexer: goldsky(),
 });
 

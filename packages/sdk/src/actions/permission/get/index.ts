@@ -86,7 +86,7 @@ export declare namespace get {
     readonly can: { readonly [operation in NameOperation | "setRecords"]: boolean | null };
     /** Per-record answers, shaped like the `records` selection. */
     readonly records?: Readonly<Record<string, unknown>>;
-    /** Burned NameWrapper fuses (wrapped ENSv1 names). */
+    /** Burned NameWrapper fuses (wrapped ENSv1 names, and Linea Names on their L2). */
     readonly fuses: readonly Fuse.Name[];
   };
   /** Errors {@link get} can fail with. */

@@ -67,7 +67,7 @@ const makeResolver = (client: Client, batchSize: number, wait: number) =>
         (group) =>
           Effect.tryPromise({
             try: () =>
-              multicall(client.publicClient, {
+              multicall(client.client(), {
                 contracts: Arr.map(group, ({ request }) => ({
                   address: request.address,
                   abi: request.abi,
@@ -108,15 +108,21 @@ const makeResolver = (client: Client, batchSize: number, wait: number) =>
 
 // One resolver per client, shared by its `extend` copies: Effect collects requests per resolver
 // object, including requests from separate Promise calls made in the same tick.
-const resolvers = new WeakMap<State, RequestResolver.RequestResolver<ContractRead>>();
+// Clients derived from one `Ensforge.create` share a state, one per chain: each chain batches on
+// its own.
+const resolvers = new WeakMap<State, Map<number, RequestResolver.RequestResolver<ContractRead>>>();
 
-/** The multicall batch resolver of a client, created on first use. */
+/** The multicall batch resolver of a client's chain, created on first use. */
 export const resolverOf = (client: Client, batchSize: number, wait: number) => {
   const state = stateOf(client);
-  const existing = state === undefined ? undefined : resolvers.get(state);
+  const byChain = state === undefined ? undefined : (resolvers.get(state) ?? new Map());
+  const existing = byChain?.get(client.chain.id);
   if (existing !== undefined) return existing;
 
   const resolver = makeResolver(client, batchSize, wait);
-  if (state !== undefined) resolvers.set(state, resolver);
+  if (state !== undefined && byChain !== undefined) {
+    byChain.set(client.chain.id, resolver);
+    resolvers.set(state, byChain);
+  }
   return resolver;
 };

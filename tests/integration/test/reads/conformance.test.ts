@@ -5,15 +5,7 @@ import { Duration, Ensforge, Actions as Promises } from "@ensforge/sdk";
 import { Actions } from "@ensforge/sdk/effect";
 import { Chain, Devnet } from "@ensforge/test-devnet";
 import { Fixtures } from "@ensforge/test-fixtures";
-import {
-  createPublicClient,
-  custom,
-  getAbiItem,
-  http,
-  multicall3Abi,
-  numberToHex,
-  toFunctionSelector,
-} from "viem";
+import { custom, getAbiItem, http, multicall3Abi, numberToHex, toFunctionSelector } from "viem";
 
 import { Clients } from "../support/clients.ts";
 import { onProfile } from "../support/lane.ts";
@@ -67,7 +59,9 @@ describe("read conformance", () => {
           },
         });
         const ens = Ensforge.create({
-          publicClient: createPublicClient({ chain: devnet.chain, transport }),
+          chain: devnet.chain,
+          transports: { [devnet.chain.id]: transport },
+          publicRpc: false,
           deployment: devnet.deployments,
         });
         const ethCalls = <E>(read: Effect.Effect<unknown, E>) =>
@@ -93,7 +87,9 @@ describe("read conformance", () => {
           ],
           { concurrency: 1 },
         );
-        assert.deepStrictEqual(budgets, [2, 2, 1, 3, 1]);
+        // `record.get` also asks `findResolver`, alongside its Universal Resolver call, whether the
+        // name lives on an L2.
+        assert.deepStrictEqual(budgets, [2, 2, 2, 3, 1]);
       }),
     );
 
@@ -124,17 +120,23 @@ describe("read conformance", () => {
             },
           });
           const withoutMulticall = Ensforge.create({
-            publicClient: createPublicClient({
-              chain: {
+            chain: {
+              ...devnet.chain,
+              contracts: { ...devnet.chain.contracts, multicall3: undefined },
+            },
+            transports: {
+              [{
                 ...devnet.chain,
                 contracts: { ...devnet.chain.contracts, multicall3: undefined },
-              },
-              transport,
-            }),
+              }.id]: transport,
+            },
+            publicRpc: false,
             deployment: devnet.deployments,
           });
           const unbatched = Ensforge.create({
-            publicClient: createPublicClient({ chain: devnet.chain, transport }),
+            chain: devnet.chain,
+            transports: { [devnet.chain.id]: transport },
+            publicRpc: false,
             deployment: devnet.deployments,
             batch: { multicall: false },
           });
@@ -184,7 +186,9 @@ describe("read conformance", () => {
             },
           });
           const ens = Ensforge.create({
-            publicClient: createPublicClient({ chain: devnet.chain, transport }),
+            chain: devnet.chain,
+            transports: { [devnet.chain.id]: transport },
+            publicRpc: false,
             deployment: devnet.deployments,
           });
           const blockNumber = yield* chain.blockNumber;

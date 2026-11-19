@@ -141,7 +141,7 @@ export const signClaim = Effect.fn("ensforge.primaryName.signClaim")(function* (
     (chainId) =>
       (hasChain(client, chainId) ? chainClient(client, chainId) : Effect.succeed(client)).pipe(
         Effect.flatMap((target) =>
-          fromPromise(() => getBlock(target.publicClient, { blockTag: "latest" })),
+          fromPromise(() => getBlock(target.client(), { blockTag: "latest" })),
         ),
         Effect.map((block) => block.timestamp),
       ),

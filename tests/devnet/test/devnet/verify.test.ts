@@ -4,7 +4,16 @@ import { Effect, Layer } from "effect";
 
 import { parseAbi } from "viem";
 
-import { Chain, Devnet, profileNames, verify } from "../../src/index.ts";
+import {
+  Anvil,
+  Chain,
+  Devnet,
+  l2ProfileNames,
+  profileNames,
+  startL2,
+  verify,
+  verifyL2,
+} from "../../src/index.ts";
 
 describe("verify", () => {
   for (const profile of profileNames) {
@@ -19,6 +28,19 @@ describe("verify", () => {
       );
     });
   }
+
+  layer(Anvil.layer.pipe(Layer.provideMerge(NodeServices.layer)), {
+    excludeTestServices: true,
+  })("L2 profiles", (it) => {
+    for (const profile of l2ProfileNames) {
+      it.effect(`finds ${profile} wired as intended`, () =>
+        Effect.gen(function* () {
+          const problems = yield* startL2({ profile }).pipe(Effect.flatMap(verifyL2));
+          assert.deepStrictEqual(problems, []);
+        }).pipe(Effect.scoped),
+      );
+    }
+  });
 
   layer(
     Chain.layer.pipe(

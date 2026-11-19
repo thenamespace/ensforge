@@ -8,13 +8,15 @@ import {
   type RecordActions,
 } from "@ensforge/sdk";
 import {
-  createClient,
   createPublicClient,
   createTestClient,
   createWalletClient,
+  custom,
   http,
   zeroAddress,
+  zeroHash,
 } from "viem";
+import { privateKeyToAccount } from "viem/accounts";
 import { mainnet, optimism } from "viem/chains";
 
 declare const base: Ensforge.Client;
@@ -65,21 +67,34 @@ describe("Client.extend", () => {
 });
 
 describe("Ensforge.create", () => {
-  it("accepts every kind of viem client, created inline or not", () => {
+  it("takes transports, any viem wallet or a getter, and a local account", () => {
     const transport = http();
-    const publicClient = createPublicClient({ chain: mainnet, transport });
     const walletClient = createWalletClient({ chain: mainnet, transport, account: zeroAddress });
     const testClient = createTestClient({ chain: mainnet, mode: "anvil", transport });
 
-    expectTypeOf(Ensforge.create({ publicClient, walletClient })).toEqualTypeOf<Ensforge.Client>();
+    expectTypeOf(Ensforge.create({ chain: mainnet })).toEqualTypeOf<Ensforge.Client>();
     Ensforge.create({
-      publicClient: createPublicClient({ chain: mainnet, transport }),
-      walletClient: () => createWalletClient({ chain: mainnet, transport }),
-      chains: { 10: { publicClient: createClient({ chain: optimism, transport }) } },
+      chain: mainnet,
+      transports: { [mainnet.id]: transport, [optimism.id]: custom(testClient) },
+      wallet: walletClient,
     });
-    Ensforge.create({ publicClient: testClient });
-    expectTypeOf(Ensforge.from(publicClient)).toEqualTypeOf<Ensforge.Client>();
-    // The client keeps exposing the full viem client.
-    expectTypeOf<Ensforge.Client["publicClient"]>().toEqualTypeOf<Ensforge.ViemClient>();
+    Ensforge.create({
+      chain: mainnet,
+      wallet: (chainId) => createWalletClient({ chain: { ...mainnet, id: chainId }, transport }),
+      switchChain: false,
+    });
+    Ensforge.create({ chain: mainnet, wallet: testClient });
+    Ensforge.create({
+      chain: mainnet,
+      account: privateKeyToAccount(zeroHash),
+      pollingInterval: 50,
+    });
+    expectTypeOf(
+      Ensforge.from(createPublicClient({ chain: mainnet, transport })),
+    ).toEqualTypeOf<Ensforge.Client>();
+    // Every chain's viem client stays reachable.
+    expectTypeOf<Ensforge.Client["client"]>().toEqualTypeOf<
+      (chainId?: number) => Ensforge.ViemClient
+    >();
   });
 });

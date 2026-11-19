@@ -1,0 +1,132 @@
+---
+title: From ensforge 1.0
+description: Upgrade an app from ensforge 1.0 to 1.1, with before and after code for the client options and the names that now live on L2s or with off-chain providers.
+keywords:
+  [
+    migration,
+    upgrade,
+    "1.1",
+    breaking changes,
+    transports,
+    wallet,
+    publicClient,
+    NAME_EXTERNAL,
+    kind,
+    L2,
+  ]
+---
+
+ensforge 1.1 configures one client for every chain and reads and changes names that live on an L2 or with an off-chain provider. Most apps change only how they create the client. This guide lists every change that can break 1.0 code, with before and after code.
+
+Code blocks that mark lines with `[!code --]` and `[!code ++]` are diffs: they show the old and the new line together, so the docs build does not compile them.
+
+## What changed
+
+| 1.0                                                                                              | 1.1                                                                                                                               |
+| ------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------- |
+| `Ensforge.create({ publicClient })`                                                              | `Ensforge.create({ chain })`, with `transports` for your own RPCs                                                                 |
+| `walletClient`                                                                                   | `wallet`, or a local `account`                                                                                                    |
+| `chains: { [id]: { publicClient, walletClient } }`                                               | `transports: { [id]: transport }`; the one `wallet` or `account` signs on every chain                                             |
+| `ens.publicClient`                                                                               | `ens.client()`, or `ens.client(chainId)` for another chain                                                                        |
+| `ChainClients` type                                                                              | removed                                                                                                                           |
+| Names served by a parent's resolver, such as `jesse.base.eth`, reported as `status: "available"` | `kind: "l2"` with the L2's `status`, or `kind: "offchain"` / `"wildcard"` with `status: "external"`                               |
+| Writes on such names failed with `NAME_NOT_REGISTERED`                                           | Records, transfers and approvals work on L2 names; other writes fail with [`NAME_EXTERNAL`](/docs/reference/errors/NAME_EXTERNAL) |
+| Records of L2 names read through Ethereum's gateway                                              | Read on their L2                                                                                                                  |
+| Indexer reads of Linea Names and Celonames names answered as unknown                             | [`INDEXER_UNSUPPORTED`](/docs/reference/errors/INDEXER_UNSUPPORTED)                                                               |
+
+## 1. Update the packages
+
+```sh title="terminal"
+pnpm add @ensforge/sdk@latest @ensforge/contracts@latest
+```
+
+Also update `@ensforge/react` and `@ensforge/hca` if you use them. The public packages version together.
+
+## 2. Create the client
+
+`chain` is enough to read: ensforge builds its own viem clients and uses each chain's public RPC when `transports` has none for it. `transports` sets the RPC of any chain, the ENS chain included.
+
+```ts no-check title="client.ts"
+import { ensActions, Ensforge } from "@ensforge/sdk";
+import { createPublicClient, http } from "viem"; // [!code --]
+import { http } from "viem"; // [!code ++]
+import { mainnet } from "viem/chains";
+
+const publicClient = createPublicClient({ chain: mainnet, transport: http(rpcUrl) }); // [!code --]
+const ens = Ensforge.create({ publicClient }).extend(ensActions()); // [!code --]
+const ens = Ensforge.create({
+  // [!code ++]
+  chain: mainnet, // [!code ++]
+  transports: { [mainnet.id]: http(rpcUrl) }, // [!code ++]
+}).extend(ensActions()); // [!code ++]
+```
+
+- To reuse a viem client you already have, pass `custom(client)` as its chain's transport.
+- `publicRpc: false` makes sure ensforge never uses a public RPC: a chain without a transport then fails with [`CHAIN_NOT_CONFIGURED`](/docs/reference/errors/CHAIN_NOT_CONFIGURED).
+- `ens.publicClient` is now `ens.client()`.
+
+## 3. Sign with one wallet on every chain
+
+`walletClient` is now `wallet`. The same wallet signs on every chain: a write on another chain, such as an L2 primary name, asks it to switch first. Pass `switchChain: false` to turn that off.
+
+```ts no-check title="wallet.ts"
+const ens = Ensforge.create({
+  chain: mainnet,
+  walletClient, // [!code --]
+  chains: { [base.id]: { publicClient: basePublic, walletClient: baseWallet } }, // [!code --]
+  wallet: walletClient, // [!code ++]
+  transports: { [base.id]: http(baseRpcUrl) }, // [!code ++]
+}).extend(ensActions());
+```
+
+A local account signs on any chain itself, without a wallet client:
+
+```ts title="local-account.ts"
+import { ensActions, Ensforge } from "@ensforge/sdk";
+import { privateKeyToAccount } from "viem/accounts";
+import { mainnet } from "viem/chains";
+
+const ens = Ensforge.create({
+  chain: mainnet,
+  account: privateKeyToAccount("0x..."),
+}).extend(ensActions());
+```
+
+Apps on wagmi change nothing: `Ensforge.fromWagmi` builds on the same options. See [Use with wagmi](/docs/react/with-wagmi).
+
+## 4. Handle names that live outside ENS's registries
+
+`name.get` now says where a name lives. Code that switches over every `kind`, `status` or `protocol` must handle the new members:
+
+| Field      | New values                         |
+| ---------- | ---------------------------------- |
+| `kind`     | `"l2"`, `"offchain"`, `"wildcard"` |
+| `status`   | `"external"`                       |
+| `protocol` | `"l2"`                             |
+
+Two new fields say where: `chainId`, the chain the name lives on, and `namespace`, the L2 namespace or off-chain provider, or `null` for names in ENS.
+
+```ts no-check title="status.ts"
+const state = await ens.name.get({ name });
+
+if (state.status === "available") showRegisterButton(); // [!code --]
+if (state.available) showRegisterButton(); // [!code ++]
+```
+
+Before 1.1, a name only a parent's resolver serves (`jesse.base.eth`, `jesse.cb.id`) was `status: "available"` and `available: true`, although it resolves. In 1.1:
+
+- An L2 name reports its owner, expiry and status from its L2. It is `available` only when nobody holds it there, and never `renewable` through ensforge.
+- An off-chain or wildcard name is `status: "external"` with `available: false`.
+
+Use `available` to decide whether to offer registration: it is `false` for every name someone holds, wherever it lives.
+
+## 5. Expect `NAME_EXTERNAL` instead of `NAME_NOT_REGISTERED`
+
+Writes on names ensforge cannot change there fail with [`NAME_EXTERNAL`](/docs/reference/errors/NAME_EXTERNAL), whose message names the L2 and namespace, or the off-chain provider. They failed with [`NAME_NOT_REGISTERED`](/docs/reference/errors/NAME_NOT_REGISTERED) in 1.0. Writes that now work on L2 names, such as `record.set` and `name.transfer`, need the client to reach the name's L2. See [Work with names on L2s](/docs/sdk/names-on-l2s).
+
+## 6. Check the smaller changes
+
+- `approval.setOperator` and `approval.getOperator` take `name` instead of `contract`, to target the contract that holds a name's token. `contract` works as before.
+- `primaryName.get` for Base, OP Mainnet, Arbitrum, Linea and Scroll reads on that L2 when the client reaches it, so results can be newer than Ethereum's.
+- `indexer.getName`, `getRecords`, `getHistory` and `getSubnames` fail with `INDEXER_UNSUPPORTED` for Linea Names and Celonames names. See [Connect an indexer](/docs/sdk/connect-an-indexer).
+- `@ensforge/contracts` adds `Abis.basenames`, `Abis.durin`, `Abis.celonames`, `Abis.namespace`, `Deployments.namespaces` and `Deployments.offchainProviders`. A custom `Deployments.Profile` can carry `namespaces`; without it, L2 names are not recognised and read through Ethereum.

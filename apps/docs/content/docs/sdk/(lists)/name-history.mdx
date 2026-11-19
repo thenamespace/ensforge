@@ -20,11 +20,10 @@ By the end of this guide you can show an activity feed for a name or an account:
 ```ts title="name-history.ts"
 import { ensActions, Ensforge } from "@ensforge/sdk";
 import { bigname, indexerActions } from "@ensforge/sdk/indexer";
-import { createPublicClient, http } from "viem";
 import { mainnet } from "viem/chains";
 
 const ens = Ensforge.create({
-  publicClient: createPublicClient({ chain: mainnet, transport: http() }),
+  chain: mainnet,
   indexer: bigname(),
 })
   .extend(ensActions())
@@ -51,11 +50,10 @@ See [`indexer.getHistory`](/docs/reference/sdk/indexer/get-history) and [Load mo
 ```ts title="history-filters.ts"
 import { ensActions, Ensforge } from "@ensforge/sdk";
 import { bigname, indexerActions } from "@ensforge/sdk/indexer";
-import { createPublicClient, http } from "viem";
 import { mainnet } from "viem/chains";
 
 const ens = Ensforge.create({
-  publicClient: createPublicClient({ chain: mainnet, transport: http() }),
+  chain: mainnet,
   indexer: bigname(),
 })
   .extend(ensActions())
@@ -79,11 +77,10 @@ Pass an `address` instead of a `name` to read the events of every name the addre
 ```ts title="account-history.ts"
 import { ensActions, Ensforge } from "@ensforge/sdk";
 import { bigname, indexerActions } from "@ensforge/sdk/indexer";
-import { createPublicClient, http } from "viem";
 import { mainnet } from "viem/chains";
 
 const ens = Ensforge.create({
-  publicClient: createPublicClient({ chain: mainnet, transport: http() }),
+  chain: mainnet,
   indexer: bigname(),
 })
   .extend(ensActions())
@@ -107,7 +104,7 @@ import { createPublicClient, http } from "viem";
 import { mainnet } from "viem/chains";
 
 const publicClient = createPublicClient({ chain: mainnet, transport: http() });
-const ens = Ensforge.create({ publicClient }).extend(ensActions());
+const ens = Ensforge.create({ chain: mainnet }).extend(ensActions());
 
 const head = await publicClient.getBlockNumber();
 const events = await ens.event.get({ name: "nick.eth", fromBlock: head - 50_000n });

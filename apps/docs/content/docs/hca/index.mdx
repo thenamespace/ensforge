@@ -18,7 +18,7 @@ Add `hcaActions()` to a client that has a wallet. The example uses Sepolia.
 ```ts title="client.ts"
 import { hcaActions } from "@ensforge/hca";
 import { Ensforge, ensActions } from "@ensforge/sdk";
-import { createPublicClient, createWalletClient, http } from "viem";
+import { createWalletClient, http } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { sepolia } from "viem/chains";
 
@@ -27,8 +27,8 @@ const account = privateKeyToAccount(
 );
 
 export const ens = Ensforge.create({
-  publicClient: createPublicClient({ chain: sepolia, transport: http() }),
-  walletClient: createWalletClient({ account, chain: sepolia, transport: http() }),
+  chain: sepolia,
+  wallet: createWalletClient({ account, chain: sepolia, transport: http() }),
 })
   .extend(ensActions())
   .extend(hcaActions());
@@ -46,7 +46,7 @@ Pass `via: hca()` to any write. `hca()` is a [route](/docs/reference/glossary#ro
 ```ts title="migrate.ts"
 import { hca, hcaActions } from "@ensforge/hca";
 import { Ensforge, ensActions } from "@ensforge/sdk";
-import { createPublicClient, createWalletClient, http } from "viem";
+import { createWalletClient, http } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { sepolia } from "viem/chains";
 
@@ -54,8 +54,8 @@ const account = privateKeyToAccount(
   "0x0123456789012345678901234567890123456789012345678901234567890123",
 );
 const ens = Ensforge.create({
-  publicClient: createPublicClient({ chain: sepolia, transport: http() }),
-  walletClient: createWalletClient({ account, chain: sepolia, transport: http() }),
+  chain: sepolia,
+  wallet: createWalletClient({ account, chain: sepolia, transport: http() }),
 })
   .extend(ensActions())
   .extend(hcaActions());
@@ -81,7 +81,7 @@ With an EIP-5792 wallet, the owner's steps share one [bundle](/docs/reference/gl
 ```ts title="get-account.ts"
 import { hcaActions } from "@ensforge/hca";
 import { Ensforge, ensActions } from "@ensforge/sdk";
-import { createPublicClient, createWalletClient, http } from "viem";
+import { createWalletClient, http } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { sepolia } from "viem/chains";
 
@@ -89,8 +89,8 @@ const account = privateKeyToAccount(
   "0x0123456789012345678901234567890123456789012345678901234567890123",
 );
 const ens = Ensforge.create({
-  publicClient: createPublicClient({ chain: sepolia, transport: http() }),
-  walletClient: createWalletClient({ account, chain: sepolia, transport: http() }),
+  chain: sepolia,
+  wallet: createWalletClient({ account, chain: sepolia, transport: http() }),
 })
   .extend(ensActions())
   .extend(hcaActions());

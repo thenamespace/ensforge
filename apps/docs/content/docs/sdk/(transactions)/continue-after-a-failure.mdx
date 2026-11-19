@@ -45,13 +45,12 @@ declare global {
 }
 
 import { Duration, Ensforge, Errors, ensActions } from "@ensforge/sdk";
-import { createPublicClient, createWalletClient, custom, http } from "viem";
+import { createWalletClient, custom } from "viem";
 import { sepolia } from "viem/chains";
 
-const publicClient = createPublicClient({ chain: sepolia, transport: http() });
 const walletClient = createWalletClient({ chain: sepolia, transport: custom(window.ethereum!) });
 const [account] = await walletClient.requestAddresses();
-const ens = Ensforge.create({ publicClient, walletClient, account }).extend(ensActions());
+const ens = Ensforge.create({ chain: sepolia, wallet: walletClient, account }).extend(ensActions());
 
 let planId: string | undefined;
 try {
@@ -68,12 +67,10 @@ with [`plan.list`](/docs/reference/sdk/plan/list), newest first.
 
 ```ts title="list.ts"
 import { Ensforge, ensActions } from "@ensforge/sdk";
-import { createPublicClient, http } from "viem";
 import { sepolia } from "viem/chains";
 
-const publicClient = createPublicClient({ chain: sepolia, transport: http() });
 const account = "0xA11Ce00000000000000000000000000000000000"; // the account that sent the plans
-const ens = Ensforge.create({ publicClient, account }).extend(ensActions());
+const ens = Ensforge.create({ chain: sepolia, account }).extend(ensActions());
 
 const failed = await ens.plan.list({ account, status: "failed" });
 ```
@@ -85,11 +82,9 @@ has that id.
 
 ```ts title="get.ts"
 import { Ensforge, ensActions } from "@ensforge/sdk";
-import { createPublicClient, http } from "viem";
 import { sepolia } from "viem/chains";
 
-const publicClient = createPublicClient({ chain: sepolia, transport: http() });
-const ens = Ensforge.create({ publicClient }).extend(ensActions());
+const ens = Ensforge.create({ chain: sepolia }).extend(ensActions());
 declare const planId: string;
 
 const record = await ens.plan.get({ id: planId });
@@ -116,13 +111,12 @@ declare global {
 }
 
 import { Ensforge, ensActions } from "@ensforge/sdk";
-import { createPublicClient, createWalletClient, custom, http } from "viem";
+import { createWalletClient, custom } from "viem";
 import { sepolia } from "viem/chains";
 
-const publicClient = createPublicClient({ chain: sepolia, transport: http() });
 const walletClient = createWalletClient({ chain: sepolia, transport: custom(window.ethereum!) });
 const [account] = await walletClient.requestAddresses();
-const ens = Ensforge.create({ publicClient, walletClient, account }).extend(ensActions());
+const ens = Ensforge.create({ chain: sepolia, wallet: walletClient, account }).extend(ensActions());
 declare const planId: string;
 
 const { receipts } = await ens.plan.resumeSync({ id: planId });

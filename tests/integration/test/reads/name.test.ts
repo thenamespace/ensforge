@@ -157,6 +157,16 @@ const expected: Readonly<Record<string, NameExpectation>> = {
   "account.resolver-delegate": v1Eth([], "alice"),
   "account.hca": v1Eth([], "alice"),
   "account.eip7702": v1Eth([], "alice"),
+  // L2 namespace parents are ENSv1 names, as on mainnet; their subnames live on the L2.
+  "namespaces.parent.basenames": v1Eth([], "alice"),
+  "namespaces.parent.linea": v1Eth([], "alice"),
+  "namespaces.parent.celonames": v1Eth([], "alice"),
+  "namespaces.parent.durin": v1Eth([], "alice"),
+  "namespaces.parent.namespace.base": v1Eth([], "alice"),
+  "namespaces.parent.namespace.optimism": v1Eth([], "alice"),
+  "namespaces.parent.namespace.previous": v1Eth([], "alice"),
+  "namespaces.parent.namespace.offchain": v1Eth([], "alice"),
+  "namespaces.parent.namespace.v2": v1Eth([], "alice"),
 };
 
 describe("name.get", () => {

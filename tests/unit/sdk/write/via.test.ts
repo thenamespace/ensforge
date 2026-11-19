@@ -60,7 +60,7 @@ describe("route context", () => {
           client: wallet.client,
           chainId: 1,
           account,
-          publicClient: wallet.client.publicClient,
+          publicClient: wallet.client.client(),
           walletClient: wallet.signer.walletClient,
         },
       ]);

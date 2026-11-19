@@ -4,7 +4,7 @@ import { Array, Effect } from "effect";
 import { Ensforge } from "@ensforge/sdk";
 import { scanLogs, type LogQuery } from "@ensforge/sdk/internal/internal/event/scan";
 import { expectFailure, scriptedTransport } from "@ensforge/test-harness";
-import { createPublicClient, hexToBigInt, type Address, type Hex } from "viem";
+import { hexToBigInt, type Address, type Hex } from "viem";
 import { mainnet } from "viem/chains";
 
 import { eventBySignature, logOf, rpcLog, sampleArgs } from "./logs.js";
@@ -34,10 +34,9 @@ const ensAnswering = (answer: (from: bigint, to: bigint) => unknown) => {
 
   // No transport retries, so each rejected range is requested once.
   const ens = Ensforge.create({
-    publicClient: createPublicClient({
-      chain: mainnet,
-      transport: (options) => transport({ ...options, retryCount: 0 }),
-    }),
+    chain: mainnet,
+    transports: { [mainnet.id]: (options) => transport({ ...options, retryCount: 0 }) },
+    publicRpc: false,
   });
   return { ens, ranges, calls };
 };

@@ -16,6 +16,7 @@ import { addressOf } from "../../../internal/address.js";
 import { tryAny } from "../../../internal/anyError.js";
 import { randomSalt } from "../../../internal/factory/verifiable-proxy.js";
 import { parentOf } from "../../../internal/name/parts.js";
+import * as V1Calls from "../../../internal/name/v1-calls.js";
 import { requireAddress, requireV1Contracts } from "../../../internal/name/write.js";
 import { explainFor } from "../../../internal/permission/check.js";
 import { recordsCall } from "../../../internal/records/write-call.js";
@@ -167,23 +168,14 @@ const v1Call = Effect.fnUntraced(function* (
   const contracts = yield* requireV1Contracts(client);
   const { parent, child, label } = subname;
 
-  if (subname.route === "v1") {
-    return {
-      to: contracts.registry,
-      data: encodeFunctionData({
-        abi: Abis.v1.ensRegistry,
-        functionName: "setSubnodeRecord",
-        args: [
-          parent.data.parts.node,
-          child.data.parts.labelhash,
-          context.owner,
-          context.resolver,
-          0n,
-        ],
-      }),
-      value: 0n,
-    };
-  }
+  const record = {
+    parentNode: parent.data.parts.node,
+    label,
+    labelhash: child.data.parts.labelhash,
+    owner: context.owner,
+    resolver: context.resolver,
+  };
+  if (subname.route === "v1") return V1Calls.setSubnodeRecord(contracts.registry, false, record);
 
   const fuses = yield* tryAny(() => Fuse.from(options.fuses ?? []));
   // An emancipated child is out of its parent's reach until it expires.
@@ -201,15 +193,7 @@ const v1Call = Effect.fnUntraced(function* (
   yield* requireLockedParent(options.fuses, fuses, parent.data.v1?.wrapper.fuses ?? 0);
   // As in ensjs: an emancipated child needs an expiry (capped at the parent's by the wrapper).
   const expiry = options.expiry ?? (Fuse.has(fuses, "parentCannotControl") ? maxUint64 : 0n);
-  return {
-    to: contracts.nameWrapper,
-    data: encodeFunctionData({
-      abi: Abis.v1.nameWrapper,
-      functionName: "setSubnodeRecord",
-      args: [parent.data.parts.node, label, context.owner, context.resolver, 0n, fuses, expiry],
-    }),
-    value: 0n,
-  };
+  return V1Calls.setSubnodeRecord(contracts.nameWrapper, true, { ...record, fuses, expiry });
 });
 
 /** @internal Builds the plan of `Actions.subname.create`. */
@@ -232,6 +216,25 @@ export const plan = Effect.fnUntraced(function* (
         shortMessage: "Subnames need a known label.",
       }),
     );
+  }
+  if (subname.route === "l2") {
+    const { createCalls } = yield* Effect.promise(
+      () => import("../../../internal/namespace/l2/index.js"),
+    );
+    const calls = yield* createCalls(subname, options, signer);
+    return makePlan({
+      operation: "subname.create",
+      chainId: subname.target.client.chain.id,
+      account: signer,
+      steps: [
+        {
+          id: "create",
+          description:
+            subname.childState.status === "registered" ? "Update subname" : "Create subname",
+          calls,
+        },
+      ],
+    });
   }
   if (child.state.status === "registered" && options.upsert !== true) {
     return yield* Effect.fail(

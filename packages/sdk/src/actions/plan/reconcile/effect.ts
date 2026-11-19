@@ -48,7 +48,7 @@ export const reconcile = Effect.fn("ensforge.plan.reconcile")(function* (
   const { chainId } = record.plan;
   const target = hasChain(client, chainId) ? yield* chainClient(client, chainId) : client;
   const transaction = yield* fromPromise(() =>
-    getTransaction(target.publicClient, { hash: options.hash }),
+    getTransaction(target.client(), { hash: options.hash }),
   );
   const plausible =
     sameAddress(record.plan.account, transaction.from) ||

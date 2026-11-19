@@ -21,7 +21,8 @@ export type Signer = {
 };
 
 /**
- * Resolves the wallet for a write: the per-call `account`, then the client's, then the wallet's.
+ * Resolves the wallet for a write on the client's chain (switched there, or built for a local
+ * account) and its account: the per-call `account`, then the client's, then the wallet's.
  *
  * @stability unstable
  */
@@ -31,7 +32,7 @@ export const resolveSigner = Effect.fnUntraced(function* (
 ): Effect.fn.Return<Signer, AnyError> {
   const state = stateOf(client);
   const walletClient =
-    state === undefined ? undefined : yield* fromPromise(() => state.getWalletClient());
+    state === undefined ? undefined : yield* fromPromise(() => state.walletOn(client.chain.id));
   if (walletClient === undefined)
     return yield* Effect.fail(new ConfigError({ code: "WALLET_NOT_CONFIGURED" }));
 

@@ -5,7 +5,7 @@ import { Abis, Deployments } from "@ensforge/contracts";
 import { Actions } from "@ensforge/sdk/effect";
 import * as Ensforge from "@ensforge/sdk/internal/client/Ensforge";
 import { expectFailure, scriptedTransport } from "@ensforge/test-harness";
-import { createPublicClient, encodeErrorResult, encodeFunctionData, namehash } from "viem";
+import { encodeErrorResult, encodeFunctionData, namehash } from "viem";
 import { mainnet } from "viem/chains";
 
 describe("resolver.resolve", () => {
@@ -28,7 +28,9 @@ describe("resolver.resolve", () => {
         throw Object.assign(new Error("execution reverted"), { code: 3, data: lookup });
       });
       const ens = Ensforge.create({
-        publicClient: createPublicClient({ chain: mainnet, transport }),
+        chain: mainnet,
+        transports: { [mainnet.id]: transport },
+        publicRpc: false,
         ccipRead: false,
         batch: { multicall: false },
       });

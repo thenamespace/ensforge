@@ -23,12 +23,10 @@ It reads the chain to plan but sends nothing.
 
 ```ts title="prepare.ts"
 import { Ensforge, ensActions } from "@ensforge/sdk";
-import { createPublicClient, http } from "viem";
 import { sepolia } from "viem/chains";
 
-const publicClient = createPublicClient({ chain: sepolia, transport: http() });
 const account = "0xA11Ce00000000000000000000000000000000000"; // the account that will send it
-const ens = Ensforge.create({ publicClient, account }).extend(ensActions());
+const ens = Ensforge.create({ chain: sepolia, account }).extend(ensActions());
 
 const plan = await ens.record.set.prepare({
   name: "ensforge-docs-demo.eth",
@@ -61,12 +59,10 @@ would succeed, with the typed error when it would not.
 
 ```ts title="simulate.ts"
 import { Ensforge, ensActions } from "@ensforge/sdk";
-import { createPublicClient, http } from "viem";
 import { sepolia } from "viem/chains";
 
-const publicClient = createPublicClient({ chain: sepolia, transport: http() });
 const account = "0xA11Ce00000000000000000000000000000000000"; // the account that will send it
-const ens = Ensforge.create({ publicClient, account }).extend(ensActions());
+const ens = Ensforge.create({ chain: sepolia, account }).extend(ensActions());
 
 const simulation = await ens.record.set.simulate({
   name: "ensforge-docs-demo.eth",
@@ -107,7 +103,7 @@ import { sepolia } from "viem/chains";
 
 const publicClient = createPublicClient({ chain: sepolia, transport: http() });
 const account = "0xA11Ce00000000000000000000000000000000000"; // the account that will send it
-const ens = Ensforge.create({ publicClient, account }).extend(ensActions());
+const ens = Ensforge.create({ chain: sepolia, account }).extend(ensActions());
 
 const { gas, value } = await ens.record.set.estimateGas({
   name: "ensforge-docs-demo.eth",
@@ -139,13 +135,12 @@ declare global {
 }
 
 import { Ensforge, ensActions } from "@ensforge/sdk";
-import { createPublicClient, createWalletClient, custom, http } from "viem";
+import { createWalletClient, custom } from "viem";
 import { sepolia } from "viem/chains";
 
-const publicClient = createPublicClient({ chain: sepolia, transport: http() });
 const walletClient = createWalletClient({ chain: sepolia, transport: custom(window.ethereum!) });
 const [account] = await walletClient.requestAddresses();
-const ens = Ensforge.create({ publicClient, walletClient, account }).extend(ensActions());
+const ens = Ensforge.create({ chain: sepolia, wallet: walletClient, account }).extend(ensActions());
 
 const plan = await ens.record.set.prepare({
   name: "ensforge-docs-demo.eth",

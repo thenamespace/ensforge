@@ -55,11 +55,11 @@ export const readContract = <
   if (
     multicall === false ||
     parameters.gas !== undefined ||
-    client.publicClient.chain?.contracts?.multicall3 === undefined
+    client.client().chain?.contracts?.multicall3 === undefined
   ) {
     return fromPromise(
       () =>
-        viemReadContract(client.publicClient, {
+        viemReadContract(client.client(), {
           address: parameters.address,
           // oxlint-disable-next-line typescript/no-unnecessary-type-assertion -- tsc requires this assertion; tsgolint resolves the parameter type differently
           abi: parameters.abi as Abi,

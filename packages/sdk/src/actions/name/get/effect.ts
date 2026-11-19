@@ -4,7 +4,8 @@ import type { Client } from "../../../client/types.js";
 import type { AnyError } from "../../../errors/types.js";
 import * as Action from "../../../internal/action/index.js";
 import { loadName } from "../../../internal/name/load.js";
-import { inheritedResolver, probeServed } from "../../../internal/name/served.js";
+import { servedNamespace } from "../../../internal/name/namespace.js";
+import { inheritedResolver } from "../../../internal/name/served.js";
 import { toServedState } from "../../../internal/name/state.js";
 import * as Rpc from "../../../internal/rpc/index.js";
 import type { get as Promises } from "./index.js";
@@ -25,20 +26,42 @@ export const get = Effect.fn("ensforge.name.get")(
       { concurrency: "unbounded" },
     );
     const { state, data } = loaded;
-    if (state.resolver !== null) return { ...state, inheritedResolver: null };
+    const ens = { chainId: client.chain.id, namespace: null };
+    if (state.resolver !== null) return { ...state, ...ens, inheritedResolver: null };
 
     const foundName = yield* Effect.fromResult(found);
     const served = yield* inheritedResolver(client, data.parts, foundName, options);
-    if (served === null) return { ...state, inheritedResolver: null };
+    if (served === null) return { ...state, ...ens, inheritedResolver: null };
     if (loaded.kind !== "available" || !served.inherited) {
-      return { ...state, inheritedResolver: served.address };
+      return { ...state, ...ens, inheritedResolver: served.address };
     }
 
-    const kind = yield* probeServed(client, data.parts, served.address, options);
-    return {
-      ...(kind === null ? state : toServedState(state, kind)),
+    const { kind, namespace } = yield* servedNamespace(client, data.parts, served, options);
+    if (namespace?.kind !== "l2") {
+      return {
+        ...(kind === null ? state : toServedState(state, kind)),
+        chainId: client.chain.id,
+        namespace,
+        inheritedResolver: served.address,
+      };
+    }
+
+    // An L2 name is read on its L2; one the client cannot reach keeps only its location.
+    const external = {
+      ...toServedState(state, "l2"),
+      protocol: "l2",
+      chainId: namespace.chainId,
+      namespace,
       inheritedResolver: served.address,
-    };
+    } as const;
+    const { l2Client } = yield* Effect.promise(() => import("../../../internal/name/location.js"));
+    const l2 = yield* l2Client(client, namespace, false);
+    if (l2 === null) return external;
+    const { readL2State } = yield* Effect.promise(
+      () => import("../../../internal/namespace/l2/index.js"),
+    );
+    const { fuses: _fuses, ...l2State } = yield* readL2State(l2, namespace, data.parts);
+    return { ...external, ...l2State };
   },
   Action.withContext("name.get", { contractKind: "registry" }),
 );

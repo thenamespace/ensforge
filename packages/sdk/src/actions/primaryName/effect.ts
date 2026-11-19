@@ -23,6 +23,11 @@ import type { signClaim as signClaimTypes } from "./signClaim/index.js";
  *   account's name. `verify: false` skips this and returns the raw reverse record.
  * - `coin` selects the chain: `"eth"` (default), any EVM chain such as `{ chainId: 8453 }`, or
  *   `"default"`. Chains without their own primary name fall back to `default.reverse`.
+ * - An L2 with ENS's L2 reverse registrar (Base, OP Mainnet, Arbitrum, Linea, Scroll) is read on
+ *   the L2 when the client reaches it: its registrar, then the default name, then the forward
+ *   check. That is fresher than Ethereum's proof of the L2, and works while the proof path fails.
+ *   Without a transport or public RPC for the chain, and for a past `blockNumber`, it is read
+ *   through Ethereum.
  * - Names that are not normalized are treated as unset.
  * - Returns `null` when there is no valid primary name, unless `strict` is set. With `strict`, an
  *   address whose reverse name has no resolver or name fails `PRIMARY_NAME_NOT_SET`; a name that
@@ -120,12 +125,10 @@ export declare namespace get {
  *
  * ```ts
  * import { Ensforge, ensActions } from "@ensforge/sdk"
+ * import { mainnet } from "viem/chains"
  *
- * const ens = Ensforge.create({
- *   publicClient,
- *   walletClient,
- *   chains: { 8453: { publicClient: baseClient, walletClient: baseWallet } },
- * }).extend(ensActions())
+ * // The wallet is asked to switch to Base before the write.
+ * const ens = Ensforge.create({ chain: mainnet, wallet: walletClient }).extend(ensActions())
  *
  * await ens.primaryName.set({ name: "alice.eth", coin: { chainId: 8453 } })
  * ```

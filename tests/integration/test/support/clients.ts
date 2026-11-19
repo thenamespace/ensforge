@@ -1,9 +1,10 @@
 import { Context, Effect, Layer } from "effect";
 
+import type { Deployments } from "@ensforge/contracts";
 import { Ensforge, ensActions, type Plan } from "@ensforge/sdk";
 import type { Indexer } from "@ensforge/sdk/indexer";
 import { Devnet } from "@ensforge/test-devnet";
-import { createPublicClient, createWalletClient, http, type Account, type Address } from "viem";
+import { createWalletClient, http, type Account, type Address, type Transport } from "viem";
 
 import type { TestWallet } from "./wallets.ts";
 
@@ -17,32 +18,45 @@ export type ClientOptions = {
   readonly storage?: Plan.Storage | undefined;
   readonly indexer?: Indexer | undefined;
   readonly ccipRead?: false | { readonly gatewayUrls?: readonly string[] } | undefined;
-  /** Clients of other chains, e.g. an L2 from the `Optimism` service. */
-  readonly chains?: Ensforge.CreateOptions["chains"];
+  /** Transports of other chains, e.g. the L2s of the `Namespaces` service. */
+  readonly transports?: Readonly<Record<number, Transport>> | undefined;
+  /** The account's wallets on other chains (their own anvils), by chain ID. */
+  readonly wallets?: Readonly<Record<number, Ensforge.ViemClientLike>> | undefined;
+  /** The deployment profile; the devnet's by default (`Namespaces` adds its L2 namespaces). */
+  readonly deployment?: Deployments.Profile | undefined;
 };
 
 const makeClient = (devnet: Devnet["Service"], options: ClientOptions) => {
   const transport = http(devnet.rpcUrl);
-  // The devnet answers at once; short polling keeps receipt and chain-time waits short.
-  const publicClient = createPublicClient({ chain: devnet.chain, transport, pollingInterval: 50 });
-
-  return Ensforge.create({
-    publicClient,
-    deployment: devnet.deployments,
-    ...(options.ccipRead === undefined ? {} : { ccipRead: options.ccipRead }),
-    ...(options.storage === undefined ? {} : { storage: options.storage }),
-    ...(options.indexer === undefined ? {} : { indexer: options.indexer }),
-    ...(options.chains === undefined ? {} : { chains: options.chains }),
+  const wallets = {
     ...(options.account === undefined
       ? {}
       : {
-          walletClient: createWalletClient({
+          [devnet.chain.id]: createWalletClient({
             chain: devnet.chain,
             pollingInterval: 50,
             transport: options.wallet?.transport ?? transport,
             account: options.account,
           }),
         }),
+    ...options.wallets,
+  };
+
+  return Ensforge.create({
+    chain: devnet.chain,
+    transports: { [devnet.chain.id]: transport, ...options.transports },
+    // Tests never reach a public RPC.
+    publicRpc: false,
+    // The devnet answers at once; short polling keeps receipt and chain-time waits short.
+    pollingInterval: 50,
+    deployment: options.deployment ?? devnet.deployments,
+    ...(options.ccipRead === undefined ? {} : { ccipRead: options.ccipRead }),
+    ...(options.storage === undefined ? {} : { storage: options.storage }),
+    ...(options.indexer === undefined ? {} : { indexer: options.indexer }),
+    // Each anvil has its own unlocked accounts, so the wallet for a chain is that chain's.
+    ...(options.account === undefined
+      ? {}
+      : { account: options.account, wallet: (chainId: number) => wallets[chainId] }),
   }).extend(ensActions());
 };
 

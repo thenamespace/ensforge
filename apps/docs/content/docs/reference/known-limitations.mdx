@@ -1,6 +1,6 @@
 ---
 title: Known limitations
-description: Check the known limits of ensforge 1.0 and of ENS itself, grouped by topic, with what each one means and what to do about it.
+description: Check the known limits of ensforge and of ENS itself, grouped by topic, with what each one means and what to do about it.
 keywords:
   [
     limitations,
@@ -13,10 +13,13 @@ keywords:
     Goldsky,
     HCA,
     streaming,
+    L2,
+    Basenames,
+    Linea Names,
   ]
 ---
 
-These are the places where ensforge 1.0, or the ENS contracts and services it uses, behave in a way
+These are the places where ensforge, or the ENS contracts and services it uses, behave in a way
 you might not expect. Each entry says what happens and what to do. Most come from how the ENS
 protocol works and are not bugs.
 
@@ -180,6 +183,62 @@ with [`UPGRADE_NOT_APPROVED`](/docs/reference/errors/UPGRADE_NOT_APPROVED).
 right to grant it.
 
 **What to do:** nothing is needed. Anyone can renew a `.eth` name with `registration.renew`.
+
+## L2 and off-chain names
+
+### L2 primary names do not resolve through Ethereum at the moment
+
+When last checked (2026-11-20), Ethereum's Universal Resolver reverted for every address asked for a Base primary name (`InvalidGameTypeBitMask()` from ENS's Base verifier), and for OP Mainnet, Linea and Scroll primary names. Ethereum, Arbitrum and the default name resolved.
+
+**What to do:** let the client reach the L2. ensforge then reads the primary name on the L2 itself and does not use Ethereum's proof. This is the default for chains with a public RPC. See [Get a primary name](/docs/sdk/get-a-primary-name).
+
+### Records of expired L2 names still resolve
+
+An L2 name's resolver keeps its records after the name expires, and the namespaces' resolvers on Ethereum return them too: Basenames and Linea Names answer for expired names. `name.get` reports the name `expired` from its L2.
+
+**What to do:** check `status` before you trust the records of an L2 name.
+
+### Linea Names on Ethereum read only Linea's PublicResolver, with a lag
+
+Linea's resolver on Ethereum proves records from Linea's PublicResolver storage, as of the Linea state finalized on Ethereum, about three hours behind Linea. It ignores the name's resolver, owner and expiry on Linea.
+
+**What to do:** give the client a transport for Linea, or leave `publicRpc` on: ensforge then reads Linea names on Linea, with no lag. Keep Linea names on Linea's PublicResolver, which ensforge enforces.
+
+### Reads at a past block stay on Ethereum
+
+A `blockNumber` is a block of the ENS chain, which means nothing on an L2. Reads of L2 names and L2 primary names at a past block go through Ethereum and its gateways.
+
+**What to do:** read L2 names at the latest block, or with `blockTag`.
+
+### Testnet L2 names do not resolve through Ethereum
+
+Base Sepolia's gateway and Linea Sepolia's callback were down when last checked, so `*.basetest.eth` and `*.linea-sepolia.eth` names do not resolve through Sepolia.
+
+**What to do:** let the client reach Base Sepolia and Linea Sepolia: ensforge reads these names there.
+
+### Some writes on L2 names are not supported
+
+ensforge does not register, renew, wrap or burn fuses on L2 names, and does not create subnames under Celonames, Durin or Namespace names. Durin's signed setters (`*WithSignature`) are not exposed: their signatures name no chain or nonce, so they could be replayed. These writes fail with `NAME_EXTERNAL` before anything is signed.
+
+**What to do:** use the namespace's own app for them. See [Work with names on L2s](/docs/sdk/names-on-l2s).
+
+### No indexer serves most L2 namespaces
+
+Goldsky indexes Basenames. bigname's public API indexes Ethereum only at the time of writing, and no indexer serves Linea Names, Celonames, Durin or Namespace names.
+
+**What to do:** read these names on-chain with `name.get` and `record.get`. See [Connect an indexer](/docs/sdk/connect-an-indexer).
+
+### Basenames' own reverse records are not read
+
+Some Base accounts set a primary name only in Basenames' older reverse registrar, not in ENS's L2 reverse registrar. ENS does not read it (ENSIP-19), and neither does ensforge.
+
+**What to do:** set the primary name again with `primaryName.set` and `coin: { chainId: 8453 }`.
+
+### Off-chain names are read-only
+
+Names an off-chain provider serves, such as `jesse.cb.id`, live in the provider's database. ensforge reads them and cannot change them. Some providers' gateways no longer answer: `Deployments.offchainProviders` marks them `unavailable`.
+
+**What to do:** change them with the provider's app or API. See [Look up off-chain names](/docs/sdk/off-chain-names).
 
 ## DNS names
 

@@ -29,6 +29,8 @@ const roles = await publicClient.readContract({
 
 - ABIs for ENSv1 (ens-contracts v1.7.0) and ENSv2 (contracts-v2 v1.0.1).
 - Mainnet and Sepolia deployment profiles with every address.
+- ABIs and deployments of the L2 namespaces (Basenames, Linea Names, Celonames, Durin, Namespace),
+  and the off-chain providers that serve names through a gateway.
 - Registry and resolver role bitmaps and ERC-165 interface IDs.
 - Flat named exports from `/v1`, `/v2` and `/shared`.
 

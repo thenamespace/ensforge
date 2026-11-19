@@ -24,7 +24,7 @@ export const watch = Effect.fn("ensforge.event.watch")(function* (
 
   // Each new block range is read like `event.get`, so a resolver or subregistry change while
   // watching is followed from the next block on.
-  return watchBlockNumber(client.publicClient, {
+  return watchBlockNumber(client.client(), {
     emitOnBegin: true,
     ...(options.pollingInterval === undefined ? {} : { pollingInterval: options.pollingInterval }),
     onBlockNumber: (blockNumber) => {

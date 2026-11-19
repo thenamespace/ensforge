@@ -78,11 +78,10 @@ source of permission that applies to a name and returns the same shape for any n
 
 ```ts title="permissions.ts"
 import { Ensforge, ensActions } from "@ensforge/sdk";
-import { createPublicClient, http } from "viem";
 import { mainnet } from "viem/chains";
 
 const ens = Ensforge.create({
-  publicClient: createPublicClient({ chain: mainnet, transport: http() }),
+  chain: mainnet,
 }).extend(ensActions());
 
 const { can } = await ens.permission.get({
@@ -115,6 +114,10 @@ console.log(can);
 
 `permission.check` answers for one operation and lists exactly what is missing, such as the roles
 to request. See [`permission.check`](/docs/reference/sdk/permission/check).
+
+## Names on L2s
+
+An L2 name is controlled by its namespace's contracts on the L2. The holder of its token may change it, and so may an approved address or an operator. On Basenames and Linea Names, resolver delegates may write records too, and burned NameWrapper fuses limit a Linea name. `permission.check` and `permission.get` answer from the L2. See [Work with names on L2s](/docs/sdk/names-on-l2s).
 
 ## What ensforge does for you
 

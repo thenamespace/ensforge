@@ -38,6 +38,31 @@ export const get = Effect.fn("ensforge.resolver.get")(
     const viaBridge = found !== null && isEnsV1Bridge(client, found.address);
     const served =
       own === null ? yield* servingResolver(client, loaded.data.parts.name, found, options) : null;
+    // A name a parent's resolver serves may live on an L2: describe its resolver there.
+    if (own === null && served?.inherited === true) {
+      const { l2Client, l2LocationOf } = yield* Effect.promise(
+        () => import("../../../internal/name/location.js"),
+      );
+      const location = yield* l2LocationOf(client, loaded.data.parts, options);
+      const l2 = location === null ? null : yield* l2Client(client, location, options.strict);
+      if (location !== null && l2 !== null) {
+        const { l2ResolverOf } = yield* Effect.promise(
+          () => import("../../../internal/namespace/l2/index.js"),
+        );
+        const resolver = yield* l2ResolverOf(l2, location, loaded.data.parts);
+        if (resolver === null) return yield* notFound;
+        const description = yield* describeResolver(l2, resolver, loaded.data.parts.node, {});
+        // Every L2 namespace's resolver lets the name's owner write its records.
+        return {
+          address: resolver,
+          inherited: false,
+          serving: true,
+          ...description,
+          authorization: "owner",
+        };
+      }
+    }
+
     const address = own ?? served?.address;
     if (address === undefined) return yield* notFound;
 

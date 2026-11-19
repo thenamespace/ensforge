@@ -5,7 +5,7 @@ import { TestClock } from "effect/testing";
 import * as Ensforge from "@ensforge/sdk/internal/client/Ensforge";
 import { waitForChainTime } from "@ensforge/sdk/internal/internal/write/transport";
 import { scriptedTransport } from "@ensforge/test-harness";
-import { createPublicClient, numberToHex } from "viem";
+import { numberToHex } from "viem";
 import { mainnet } from "viem/chains";
 
 import { paramsOf } from "./wallet";
@@ -29,7 +29,10 @@ describe("waitForChainTime", () => {
           : undefined,
       );
       const client = Ensforge.create({
-        publicClient: createPublicClient({ chain: mainnet, transport, pollingInterval: 4_000 }),
+        chain: mainnet,
+        transports: { [mainnet.id]: transport },
+        publicRpc: false,
+        pollingInterval: 4_000,
       });
 
       const wait = yield* waitForChainTime(client, committedAt + 61n).pipe(Effect.forkChild);
@@ -58,7 +61,9 @@ describe("waitForChainTime", () => {
           : undefined,
       );
       const client = Ensforge.create({
-        publicClient: createPublicClient({ chain: mainnet, transport }),
+        chain: mainnet,
+        transports: { [mainnet.id]: transport },
+        publicRpc: false,
       });
 
       yield* waitForChainTime(client, committedAt);
@@ -85,7 +90,10 @@ describe("waitForChainTime", () => {
           : undefined,
       );
       const client = Ensforge.create({
-        publicClient: createPublicClient({ chain: mainnet, transport, pollingInterval: 600_000 }),
+        chain: mainnet,
+        transports: { [mainnet.id]: transport },
+        publicRpc: false,
+        pollingInterval: 600_000,
       });
 
       const wait = yield* waitForChainTime(client, committedAt + 61n).pipe(Effect.forkChild);

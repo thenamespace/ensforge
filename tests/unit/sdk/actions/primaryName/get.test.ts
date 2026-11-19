@@ -7,7 +7,7 @@ import { Actions } from "@ensforge/sdk/effect";
 import * as Ensforge from "@ensforge/sdk/internal/client/Ensforge";
 import { primaryNameCoinType, reverseName } from "@ensforge/sdk/internal/internal/reverse/coin";
 import { expectFailure, scriptedTransport } from "@ensforge/test-harness";
-import { createPublicClient, encodeErrorResult, zeroAddress, type Hex } from "viem";
+import { encodeErrorResult, zeroAddress, type Hex } from "viem";
 import { mainnet } from "viem/chains";
 
 import { clientFor, other } from "../world.js";
@@ -23,10 +23,9 @@ const readReverting = (data: Hex, strict: boolean) => {
     throw Object.assign(new Error("execution reverted"), { code: 3, data });
   });
   const ens = Ensforge.create({
-    publicClient: createPublicClient({
-      chain: mainnet,
-      transport: (options) => transport({ ...options, retryCount: 0 }),
-    }),
+    chain: mainnet,
+    transports: { [mainnet.id]: (options) => transport({ ...options, retryCount: 0 }) },
+    publicRpc: false,
     batch: { multicall: false },
   });
   return Actions.primaryName.get(ens, { address: other, strict });

@@ -8,7 +8,7 @@ You will check that a [`.eth` name](/docs/reference/glossary#eth-name) is free, 
 
 ## Prerequisites
 
-- A client with a public client. See [Create a client](/docs/sdk/create-a-client).
+- A client. See [Create a client](/docs/sdk/create-a-client).
 - A chain with [ENSv2](/docs/reference/glossary#ensv2) deployed, such as Sepolia. Registration actions fail with [`UNSUPPORTED_ON_DEPLOYMENT`](/docs/reference/errors/UNSUPPORTED_ON_DEPLOYMENT) elsewhere.
 
 ## 1. Check the name
@@ -18,12 +18,11 @@ You will check that a [`.eth` name](/docs/reference/glossary#eth-name) is free, 
 **Example** (Checking One Name)
 
 ```ts title="is-available.ts"
-import { createPublicClient, http } from "viem";
 import { sepolia } from "viem/chains";
 import { Ensforge, ensActions } from "@ensforge/sdk";
 
 const ens = Ensforge.create({
-  publicClient: createPublicClient({ chain: sepolia, transport: http() }),
+  chain: sepolia,
 }).extend(ensActions());
 
 const free = await ens.registration.isAvailable({ name: "ensforge-docs-demo.eth" });
@@ -46,12 +45,11 @@ A name is not available in these cases:
 **Example** (Quoting One Year)
 
 ```ts title="get-price.ts"
-import { createPublicClient, http } from "viem";
 import { sepolia } from "viem/chains";
 import { Duration, Ensforge, ensActions } from "@ensforge/sdk";
 
 const ens = Ensforge.create({
-  publicClient: createPublicClient({ chain: sepolia, transport: http() }),
+  chain: sepolia,
 }).extend(ensActions());
 
 const { base, premium, total, token } = await ens.registration.getPrice({
@@ -83,12 +81,11 @@ Amounts are in the token's smallest unit. USDC has 6 decimals, so `1_000_000n` i
 **Example** (Reading the Settings)
 
 ```ts title="get-parameters.ts"
-import { createPublicClient, http } from "viem";
 import { sepolia } from "viem/chains";
 import { Ensforge, ensActions } from "@ensforge/sdk";
 
 const ens = Ensforge.create({
-  publicClient: createPublicClient({ chain: sepolia, transport: http() }),
+  chain: sepolia,
 }).extend(ensActions());
 
 const { minCommitmentAge, minDuration, gracePeriod, paymentTokens } =

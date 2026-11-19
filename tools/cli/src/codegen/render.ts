@@ -317,7 +317,7 @@ export const decorators = (domains: readonly Domain[], profile: Profile = sdkPro
           "/**\n * Every action group bound to a client.\n *\n * @stability stable\n */",
           `export type ${profile.aggregate.type} = ${all} & BatchActions;`,
           "",
-          '/**\n * Adds every ENS action group to a client.\n *\n * **Example** (A client with every action)\n *\n * ```ts\n * import { Ensforge, ensActions } from "@ensforge/sdk"\n *\n * const ens = Ensforge.create({ publicClient, walletClient }).extend(ensActions())\n * ```\n *\n * @stability stable\n * @category decorators\n * @since 1.0.0\n */',
+          '/**\n * Adds every ENS action group to a client.\n *\n * **Example** (A client with every action)\n *\n * ```ts\n * import { Ensforge, ensActions } from "@ensforge/sdk"\n * import { mainnet } from "viem/chains"\n *\n * const ens = Ensforge.create({ chain: mainnet, wallet: walletClient }).extend(ensActions())\n * ```\n *\n * @stability stable\n * @category decorators\n * @since 1.0.0\n */',
           `export const ${profile.aggregate.name} =\n  () =>\n  (client: Client<object>): ${profile.aggregate.type} => ({\n${indent(spread, 4)}\n  });`,
         ];
 
@@ -339,7 +339,7 @@ export const decorators = (domains: readonly Domain[], profile: Profile = sdkPro
 };
 
 const ensActionsDoc =
-  '/**\n * Adds every ENS action group to a client. Rarely used groups (approval, dns, event, migration,\n * permission, registry, role, wrapper) and `batch` load with their first call, so a client with\n * every action stays small; their own decorators (`migrationActions()`) load with the client.\n *\n * **Example** (A client with every action)\n *\n * ```ts\n * import { Ensforge, ensActions } from "@ensforge/sdk"\n *\n * const ens = Ensforge.create({ publicClient, walletClient }).extend(ensActions())\n * ```\n *\n * @stability stable\n * @category decorators\n * @since 1.0.0\n */';
+  '/**\n * Adds every ENS action group to a client. Rarely used groups (approval, dns, event, migration,\n * permission, registry, role, wrapper) and `batch` load with their first call, so a client with\n * every action stays small; their own decorators (`migrationActions()`) load with the client.\n *\n * **Example** (A client with every action)\n *\n * ```ts\n * import { Ensforge, ensActions } from "@ensforge/sdk"\n * import { mainnet } from "viem/chains"\n *\n * const ens = Ensforge.create({ chain: mainnet, wallet: walletClient }).extend(ensActions())\n * ```\n *\n * @stability stable\n * @category decorators\n * @since 1.0.0\n */';
 
 // Relative imports move one folder down, into `actions/decorators/`.
 const nested = (specifier: string) =>

@@ -112,7 +112,11 @@ export const describeResolver = Effect.fnUntraced(function* (
   AnyError
 > {
   const at = blockAt(block);
-  const publicResolverSet = client.deployment.v2?.migration.publicResolverSet;
+  // The deployment's resolvers live on its own chain; on another (an L2) only ERC-165 tells.
+  const onDeploymentChain = client.chain.id === client.deployment.chainId;
+  const publicResolverSet = onDeploymentChain
+    ? client.deployment.v2?.migration.publicResolverSet
+    : undefined;
 
   const supports = (interfaceId: Hex, gas: bigint | undefined) =>
     fromResolver(
@@ -173,7 +177,7 @@ export const describeResolver = Effect.fnUntraced(function* (
   );
 
   const kind: ResolverKind =
-    knownKind(client, resolver) ??
+    (onDeploymentChain ? knownKind(client, resolver) : undefined) ??
     (permissioned
       ? "permissioned-resolver"
       : listed
@@ -183,9 +187,11 @@ export const describeResolver = Effect.fnUntraced(function* (
           : "custom");
 
   // Resolvers bound to the registry ENS replaced in 2020 can no longer be written.
-  const frozen = Arr.some(client.deployment.v1?.frozenPublicResolvers ?? [], (address) =>
-    isAddressEqual(address, resolver),
-  );
+  const frozen =
+    onDeploymentChain &&
+    Arr.some(client.deployment.v1?.frozenPublicResolvers ?? [], (address) =>
+      isAddressEqual(address, resolver),
+    );
 
   return {
     kind,

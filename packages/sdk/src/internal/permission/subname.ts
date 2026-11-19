@@ -8,10 +8,20 @@ import type { update } from "../../actions/subname/update/index.js";
 import type { Client } from "../../client/types.js";
 import type { AnyError } from "../../errors/types.js";
 import { isOpaqueRevert } from "../action/write.js";
+import type { LoadedName } from "../name/load.js";
 import { loadSubname } from "../subname/load.js";
 import { checkLoaded, expiringBeforeNextBlock, explainDenied } from "./check.js";
 import { evaluateChildRewrite, evaluateSelfRemoval } from "./evaluate.js";
 import { readPermissionFacts } from "./facts.js";
+
+/**
+ * A child of an L2 name is rewritten or removed with its parent's authority there; the child's
+ * own owner may also clear it, which the planner chose when the signer lacked the parent's.
+ */
+const explainOnL2 = (client: Client, parent: LoadedName, account: Address) =>
+  checkLoaded(client, parent, account, ["removeSubname"]).pipe(
+    Effect.map((checks) => explainDenied(checks, account)),
+  );
 
 /** The account has the authority a denied check needs, and something else blocks it. */
 const authorized = (check: PermissionCheck): boolean =>
@@ -29,9 +39,11 @@ export const explainRemoval = Effect.fnUntraced(function* (
   account: Address,
   error: AnyError,
 ): Effect.fn.Return<AnyError | undefined, AnyError> {
-  const { parent, child } = yield* loadSubname(client, options.name);
+  const subname = yield* loadSubname(client, options.name);
+  const { parent, child } = subname;
   const expiring = expiringBeforeNextBlock(parent);
   if (expiring !== undefined || !isOpaqueRevert(error)) return expiring;
+  if (subname.route === "l2") return yield* explainOnL2(client, parent, account);
 
   const contracts = client.deployment.v1?.contracts;
   const facts = yield* Effect.all(
@@ -63,9 +75,11 @@ export const explainUpdate = Effect.fnUntraced(function* (
   account: Address,
   error: AnyError,
 ): Effect.fn.Return<AnyError | undefined, AnyError> {
-  const { parent, child } = yield* loadSubname(client, options.name);
+  const subname = yield* loadSubname(client, options.name);
+  const { parent, child } = subname;
   const expiring = expiringBeforeNextBlock(parent);
   if (expiring !== undefined || !isOpaqueRevert(error)) return expiring;
+  if (subname.route === "l2") return yield* explainOnL2(client, parent, account);
 
   const rewrite = options.owner !== undefined || options.resolver !== undefined;
 

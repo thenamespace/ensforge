@@ -40,14 +40,14 @@ export const docsRecordResponses = Effect.fn("docs.recordResponses")(function* (
   const viem = yield* load(path.join(sdkDir, "node_modules/viem/_esm/index.js"));
   const chains = yield* load(path.join(sdkDir, "node_modules/viem/_esm/chains/index.js"));
 
-  const publicClient = invoke(viem, "createPublicClient", {
-    chain: Reflect.get(Object(chains), "mainnet"),
-    transport: invoke(viem, "http", endpoint),
-  });
+  const mainnet = Reflect.get(Object(chains), "mainnet");
+  const transport = invoke(viem, "http", endpoint);
+  const publicClient = invoke(viem, "createPublicClient", { chain: mainnet, transport });
   const ens = invoke(
     invoke(
       invoke(Reflect.get(Object(sdk), "Ensforge"), "create", {
-        publicClient,
+        chain: mainnet,
+        transports: { [Number(Reflect.get(Object(mainnet), "id"))]: transport },
         indexer: invoke(indexer, "bigname"),
       }),
       "extend",

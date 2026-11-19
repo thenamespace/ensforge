@@ -2,19 +2,17 @@ import type { Effect } from "effect";
 
 import { Ensforge } from "@ensforge/sdk";
 import { noRpc, scriptedTransport } from "@ensforge/test-harness";
-import { createPublicClient } from "viem";
 import { mainnet } from "viem/chains";
 
 /** A mainnet client that fails on any RPC call: actions under test are fakes. */
 export const client = (
-  options: Omit<Ensforge.CreateOptions, "publicClient"> = {},
+  options: Omit<Ensforge.CreateOptions, "chain" | "transports" | "publicRpc"> = {},
 ): Ensforge.Client =>
   Ensforge.create({
     ...options,
-    publicClient: createPublicClient({
-      chain: mainnet,
-      transport: scriptedTransport(noRpc).transport,
-    }),
+    chain: mainnet,
+    transports: { [mainnet.id]: scriptedTransport(noRpc).transport },
+    publicRpc: false,
   });
 
 /** A fake read action: records its calls and resolves with `answer(options)`. */

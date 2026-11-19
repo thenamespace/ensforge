@@ -35,11 +35,10 @@ Branch on codes, never on message text.
 
 ```ts title="catch.ts"
 import { Ensforge, Errors, ensActions } from "@ensforge/sdk";
-import { createPublicClient, http } from "viem";
 import { mainnet } from "viem/chains";
 
 const ens = Ensforge.create({
-  publicClient: createPublicClient({ chain: mainnet, transport: http() }),
+  chain: mainnet,
 }).extend(ensActions());
 
 try {
@@ -96,11 +95,10 @@ a failing RPC, an unexpected revert). Writes add the errors of signing and sendi
 
 ```ts title="has-code.ts"
 import { Ensforge, Errors, ensActions } from "@ensforge/sdk";
-import { createPublicClient, http } from "viem";
 import { mainnet } from "viem/chains";
 
 const ens = Ensforge.create({
-  publicClient: createPublicClient({ chain: mainnet, transport: http() }),
+  chain: mainnet,
 }).extend(ensActions());
 
 try {

@@ -24,11 +24,9 @@ first and returns an `Effect` whose error channel is the action's documented err
 ```ts title="read.ts"
 import { Actions, Ensforge } from "@ensforge/sdk/effect";
 import { Effect } from "effect";
-import { createPublicClient, http } from "viem";
 import { mainnet } from "viem/chains";
 
-const publicClient = createPublicClient({ chain: mainnet, transport: http() });
-const ens = Ensforge.create({ publicClient });
+const ens = Ensforge.create({ chain: mainnet });
 
 const program = Actions.record.getAddress(ens, { name: "nick.eth" });
 const address = await Effect.runPromise(program);
@@ -47,17 +45,14 @@ for it. The layer fails with `ConfigError` when the options are invalid, such as
 ```ts title="service.ts"
 import { Actions, Ensforge } from "@ensforge/sdk/effect";
 import { Effect } from "effect";
-import { createPublicClient, http } from "viem";
 import { mainnet } from "viem/chains";
-
-const publicClient = createPublicClient({ chain: mainnet, transport: http() });
 
 const program = Effect.gen(function* () {
   const ens = yield* Ensforge.Ensforge;
   return yield* Actions.record.getText(ens, { name: "nick.eth", key: "url" });
 });
 
-await Effect.runPromise(program.pipe(Effect.provide(Ensforge.layer({ publicClient }))));
+await Effect.runPromise(program.pipe(Effect.provide(Ensforge.layer({ chain: mainnet }))));
 ```
 
 The service key is `@ensforge/sdk/Ensforge`. In tests, provide a different client with
@@ -73,11 +68,9 @@ Errors are the same instances Promise users catch, so `_tag` matches the class n
 ```ts title="errors.ts"
 import { Actions, Ensforge } from "@ensforge/sdk/effect";
 import { Effect } from "effect";
-import { createPublicClient, http } from "viem";
 import { mainnet } from "viem/chains";
 
-const publicClient = createPublicClient({ chain: mainnet, transport: http() });
-const ens = Ensforge.create({ publicClient });
+const ens = Ensforge.create({ chain: mainnet });
 
 const program = Actions.record
   .getAddress(ens, { name: "nobody-here.eth", strict: true })
@@ -92,11 +85,9 @@ After `catchTag`, `NotFoundError` is gone from the error type. See
 ```ts title="retry.ts"
 import { Actions, Ensforge } from "@ensforge/sdk/effect";
 import { Effect } from "effect";
-import { createPublicClient, http } from "viem";
 import { mainnet } from "viem/chains";
 
-const publicClient = createPublicClient({ chain: mainnet, transport: http() });
-const ens = Ensforge.create({ publicClient });
+const ens = Ensforge.create({ chain: mainnet });
 
 const program = Actions.record
   .getAddress(ens, { name: "nick.eth" })
@@ -114,12 +105,10 @@ values as in the Promise API.
 ```ts title="write.ts"
 import { Actions, Ensforge } from "@ensforge/sdk/effect";
 import { Effect } from "effect";
-import { createPublicClient, http } from "viem";
 import { sepolia } from "viem/chains";
 
-const publicClient = createPublicClient({ chain: sepolia, transport: http() });
 const ens = Ensforge.create({
-  publicClient,
+  chain: sepolia,
   account: "0x225f137127d9067788314bc7fcc1f36746a3c3B5",
 });
 
@@ -146,11 +135,9 @@ See [Preview before sending](/docs/sdk/preview-before-sending) and
 ```ts title="batch.ts"
 import { Actions as Requests } from "@ensforge/sdk";
 import { Actions, Ensforge } from "@ensforge/sdk/effect";
-import { createPublicClient, http } from "viem";
 import { mainnet } from "viem/chains";
 
-const publicClient = createPublicClient({ chain: mainnet, transport: http() });
-const ens = Ensforge.create({ publicClient });
+const ens = Ensforge.create({ chain: mainnet });
 
 const program = Actions.batch(ens, {
   requests: [Requests.name.get.request({ name: "nick.eth" })],
@@ -183,11 +170,9 @@ const name = Schema.decodeUnknownSync(Name.Normalized)("nick.eth");
 import { Actions, Ensforge, Indexer } from "@ensforge/sdk/effect";
 import { bigname } from "@ensforge/sdk/indexer";
 import { Effect, Stream } from "effect";
-import { createPublicClient, http } from "viem";
 import { mainnet } from "viem/chains";
 
-const publicClient = createPublicClient({ chain: mainnet, transport: http() });
-const ens = Ensforge.create({ publicClient, indexer: bigname() });
+const ens = Ensforge.create({ chain: mainnet, indexer: bigname() });
 
 const subnames = Indexer.paginate((cursor) =>
   Actions.indexer.getSubnames(ens, { name: "ens.eth", namespace: "ens", limit: 200, cursor }),

@@ -24,5 +24,5 @@ export const implementation = (
   options: Read.BlockOptions = {},
 ): Effect.Effect<Address | null, AnyError> =>
   fromPromise(() =>
-    getStorageAt(client.publicClient, { address, slot: implementationSlot, ...blockAt(options) }),
+    getStorageAt(client.client(), { address, slot: implementationSlot, ...blockAt(options) }),
   ).pipe(Effect.map((word) => nonZeroAddress(getAddress(sliceHex(word ?? zeroHash, 12)))));

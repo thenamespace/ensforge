@@ -133,7 +133,10 @@ export const plan = Effect.fnUntraced(function* (
   });
 });
 
-const write = Action.write("primaryName.set", plan, { contractKind: "registrar" });
+// L2 reverse records took routes in 1.0, unlike writes on L2 namespace names.
+const write = Action.write("primaryName.set", plan, { contractKind: "registrar" }, undefined, {
+  routesOnOtherChains: true,
+});
 
 /** @internal Implementation of `Actions.primaryName.set`. */
 export const set = write.send;

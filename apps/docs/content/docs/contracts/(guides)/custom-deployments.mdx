@@ -67,13 +67,12 @@ Pass the profile as `deployment` when you create the client. The client's chain 
 ```ts title="client.ts"
 import { Deployments } from "@ensforge/contracts";
 import { Ensforge, ensActions } from "@ensforge/sdk";
-import { createPublicClient, http } from "viem";
 import { foundry } from "viem/chains";
 
 declare const devnet: Deployments.Profile;
 
 const ens = Ensforge.create({
-  publicClient: createPublicClient({ chain: foundry, transport: http() }),
+  chain: foundry,
   deployment: devnet,
 }).extend(ensActions());
 ```

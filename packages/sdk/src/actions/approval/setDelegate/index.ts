@@ -16,6 +16,8 @@ import * as Impl from "./effect.js";
  *
  * - A delegate can edit every record of the name; for per-record access on a
  *   PermissionedResolver use {@link Actions.permission.setRecordAccess}.
+ * - Basenames and Linea names approve it on their resolver on the L2. Other L2 namespaces have
+ *   no delegates.
  *
  * **Example** (Approving a delegate)
  *
@@ -42,6 +44,8 @@ import * as Impl from "./effect.js";
  * @throws `Errors.InvalidInputError` (`INVALID_NAME`, `INVALID_ADDRESS`) for invalid input.
  * @throws `Errors.NotFoundError` (`RESOLVER_NOT_FOUND`) when the name has no resolver.
  * @throws `Errors.UnsupportedError` (`RESOLVER_PROFILE_UNSUPPORTED`) for PermissionedResolvers.
+ * @throws `Errors.NameStateError` (`NAME_EXTERNAL`) for a name in an L2 namespace without delegates.
+ * @throws `Errors.ConfigError` (`CHAIN_NOT_CONFIGURED`) when the name lives on an L2 the client cannot reach.
  * @throws `Errors.UnauthorizedError` (`NOT_OWNER`) when the signer does not own the name.
  * @throws `Errors.UserRejectedError` (`USER_REJECTED`) when the user rejects the request.
  * @throws `Errors.WalletError` (`CHAIN_MISMATCH`, `ACCOUNT_NOT_FOUND`) when the wallet is on another chain or has no account to sign with.
@@ -76,6 +80,7 @@ export declare namespace setDelegate {
     | Errors.WriteError
     | Errors.InvalidInputError
     | Errors.NotFoundError
+    | Errors.NameStateError
     | Errors.UnauthorizedError;
 }
 
@@ -131,6 +136,8 @@ setDelegate.estimateGas = Action.promiseOf(
  * @throws `Errors.InvalidInputError` (`INVALID_NAME`, `INVALID_ADDRESS`) for invalid input.
  * @throws `Errors.NotFoundError` (`RESOLVER_NOT_FOUND`) when the name has no resolver.
  * @throws `Errors.UnsupportedError` (`RESOLVER_PROFILE_UNSUPPORTED`) for PermissionedResolvers.
+ * @throws `Errors.NameStateError` (`NAME_EXTERNAL`) for a name in an L2 namespace without delegates.
+ * @throws `Errors.ConfigError` (`CHAIN_NOT_CONFIGURED`) when the name lives on an L2 the client cannot reach.
  * @throws `Errors.UnauthorizedError` (`NOT_OWNER`) when the signer does not own the name.
  * @throws `Errors.TransactionError` (`TRANSACTION_REVERTED`, `RECEIPT_TIMEOUT`, `NONCE_CONFLICT`) when confirmation fails or the wallet's nonce is already used.
  *
@@ -156,6 +163,7 @@ export declare namespace setDelegateSync {
     | Errors.WriteError
     | Errors.InvalidInputError
     | Errors.NotFoundError
+    | Errors.NameStateError
     | Errors.UnauthorizedError;
 }
 

@@ -6,6 +6,7 @@ import type { Address, PublicClient } from "viem";
 declare global {
   const client: PublicClient;
   const publicClient: PublicClient;
+  const baseClient: PublicClient;
   const address: Address;
   const account: Address;
   const owner: Address;

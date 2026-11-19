@@ -14,12 +14,9 @@ const ts = (code: string): Snippet => ({ lang: "ts", code: code.trim() });
 export const snippets = {
   "sdk.quickstart": ts(`
 import { Ensforge, ensActions } from "@ensforge/sdk";
-import { createPublicClient, http } from "viem";
 import { mainnet } from "viem/chains";
 
-const ens = Ensforge.create({
-  publicClient: createPublicClient({ chain: mainnet, transport: http() }),
-}).extend(ensActions());
+const ens = Ensforge.create({ chain: mainnet }).extend(ensActions());
 
 const address = await ens.record.getAddress({ name: "ens.eth" });
 `),
@@ -33,12 +30,9 @@ const address = await ens.record.getAddress({ name: "ens.eth" });
 `),
   "home.profile": ts(`
 import { Ensforge, ensActions } from "@ensforge/sdk";
-import { createPublicClient, http } from "viem";
 import { mainnet } from "viem/chains";
 
-const ens = Ensforge.create({
-  publicClient: createPublicClient({ chain: mainnet, transport: http() }),
-}).extend(ensActions());
+const ens = Ensforge.create({ chain: mainnet }).extend(ensActions());
 
 const [state, records, avatar] = await Promise.all([
   ens.name.get({ name: "nick.eth" }),

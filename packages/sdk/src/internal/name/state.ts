@@ -31,8 +31,14 @@ const v2RenewsForV1 = (now: bigint, v2: V2Data): boolean =>
     nonZeroAddress(v2.state.latestOwner) === null &&
     now - v2.state.expiry < (v2.gracePeriod ?? 0n));
 
-/** A name's state as its registries hold it: `name.get` without the inherited resolver. */
-export type RegistryState = Omit<NameState, "inheritedResolver">;
+/** A name's state as its registries hold it: `name.get` without where it is served from. */
+export type RegistryState = Omit<
+  NameState,
+  "inheritedResolver" | "chainId" | "namespace" | "protocol"
+> & {
+  /** ENS's registries hold the name; L2 names are read on their L2. */
+  readonly protocol: "v1" | "v2";
+};
 
 /** How the deployment registers and renews `.eth` names. */
 export type Registration = {
@@ -167,8 +173,8 @@ const unregistered = (data: NameData): Omit<RegistryState, "name" | "kind" | "re
   renewable: false,
 });
 
-/** The state of a name no registry holds that a parent's resolver serves. */
-export const toServedState = (state: RegistryState, kind: ServedKind): RegistryState => ({
+/** The state of a name no registry holds that a parent's resolver or an L2 namespace serves. */
+export const toServedState = (state: RegistryState, kind: ServedKind | "l2"): RegistryState => ({
   ...state,
   kind,
   status: "external",

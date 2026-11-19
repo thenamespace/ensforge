@@ -4,16 +4,16 @@
 
 ```ts
 function Actions.approval.getDelegate(client: Client<object> | ViemClientLike, options: Pick<Options, 'signal'> & (BlockOptions & { name: string; delegate: string; owner?: string | undefined; })) => Promise<boolean>
-type Actions.approval.getDelegate.ErrorType = InvalidInputError | NotFoundError | CommonError
+type Actions.approval.getDelegate.ErrorType = InvalidInputError | NameStateError | NotFoundError | CommonError
 type Actions.approval.getDelegate.Options = Pick<Options, 'signal'> & (BlockOptions & { name: string; delegate: string; owner?: string | undefined; })
 const Actions.approval.getDelegate.path: 'approval.getDelegate'
 function Actions.approval.getDelegate.request(options: Pick<Options, 'signal'> & (BlockOptions & { name: string; delegate: string; owner?: string | undefined; })) => Request<boolean, ErrorType>
 type Actions.approval.getDelegate.ReturnType = boolean
-function Actions.approval.getOperator(client: Client<object> | ViemClientLike, options: Pick<Options, 'signal'> & (BlockOptions & { owner: string; operator: string; contract: ApprovalContract; })) => Promise<boolean>
-type Actions.approval.getOperator.ErrorType = InvalidInputError | UnsupportedError | CommonError
-type Actions.approval.getOperator.Options = Pick<Options, 'signal'> & (BlockOptions & { owner: string; operator: string; contract: ApprovalContract; })
+function Actions.approval.getOperator(client: Client<object> | ViemClientLike, options: (Pick<Options, 'signal'> & BlockOptions) & ({ owner: string; operator: string; } & ({ contract: ApprovalContract; name?: undefined; } | { name: string; contract?: undefined; }))) => Promise<boolean>
+type Actions.approval.getOperator.ErrorType = InvalidInputError | NameStateError | UnsupportedError | CommonError
+type Actions.approval.getOperator.Options = (Pick<Options, 'signal'> & BlockOptions) & ({ owner: string; operator: string; } & ({ contract: ApprovalContract; name?: undefined; } | { name: string; contract?: undefined; }))
 const Actions.approval.getOperator.path: 'approval.getOperator'
-function Actions.approval.getOperator.request(options: Pick<Options, 'signal'> & (BlockOptions & { owner: string; operator: string; contract: ApprovalContract; })) => Request<boolean, ErrorType>
+function Actions.approval.getOperator.request(options: (Pick<Options, 'signal'> & BlockOptions) & ({ owner: string; operator: string; } & ({ contract: ApprovalContract; name?: undefined; } | { name: string; contract?: undefined; }))) => Request<boolean, ErrorType>
 type Actions.approval.getOperator.ReturnType = boolean
 function Actions.approval.getToken(client: Client<object> | ViemClientLike, options: Pick<Options, 'signal'> & (BlockOptions & { name: string; })) => Promise<ReturnType>
 type Actions.approval.getToken.ErrorType = InvalidInputError | UnsupportedError | CommonError
@@ -22,7 +22,7 @@ const Actions.approval.getToken.path: 'approval.getToken'
 function Actions.approval.getToken.request(options: Pick<Options, 'signal'> & (BlockOptions & { name: string; })) => Request<ReturnType, ErrorType>
 type Actions.approval.getToken.ReturnType = `0x${string}` | null
 function Actions.approval.setDelegate(client: Client<object> | ViemClientLike, options: setDelegate.Options & Write.Options) => Promise<Result>
-type Actions.approval.setDelegate.ErrorType = InvalidInputError | NotFoundError | UnauthorizedError | WriteError
+type Actions.approval.setDelegate.ErrorType = InvalidInputError | NameStateError | NotFoundError | UnauthorizedError | WriteError
 function Actions.approval.setDelegate.estimateGas(client: Client<object> | ViemClientLike, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Estimate>
 const Actions.approval.setDelegate.estimateGas.path: string
 type Actions.approval.setDelegate.Options = { name: string; delegate: string; approved: boolean; }
@@ -33,15 +33,15 @@ type Actions.approval.setDelegate.ReturnType = { readonly hash: `0x${string}`; r
 function Actions.approval.setDelegate.simulate(client: Client<object> | ViemClientLike, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Simulation>
 const Actions.approval.setDelegate.simulate.path: string
 function Actions.approval.setDelegateSync(client: Client<object> | ViemClientLike, options: setDelegate.Options & Write.Options & { confirmations?: number | undefined; timeout?: number | undefined; }) => Promise<SyncResult>
-type Actions.approval.setDelegateSync.ErrorType = InvalidInputError | NotFoundError | UnauthorizedError | WriteError
+type Actions.approval.setDelegateSync.ErrorType = InvalidInputError | NameStateError | NotFoundError | UnauthorizedError | WriteError
 type Actions.approval.setDelegateSync.Options = setDelegate.Options & Write.Options & { confirmations?: number | undefined; timeout?: number | undefined; }
 const Actions.approval.setDelegateSync.path: 'approval.setDelegateSync'
 type Actions.approval.setDelegateSync.ReturnType = Result & { readonly receipt: TransactionReceipt; readonly receipts: readonly TransactionReceipt[]; }
 function Actions.approval.setOperator(client: Client<object> | ViemClientLike, options: setOperator.Options & Write.Options) => Promise<Result>
-type Actions.approval.setOperator.ErrorType = InvalidInputError | WriteError
+type Actions.approval.setOperator.ErrorType = InvalidInputError | NameStateError | WriteError
 function Actions.approval.setOperator.estimateGas(client: Client<object> | ViemClientLike, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Estimate>
 const Actions.approval.setOperator.estimateGas.path: string
-type Actions.approval.setOperator.Options = { operator: string; approved: boolean; contract: ApprovalContract; }
+type Actions.approval.setOperator.Options = { operator: string; approved: boolean; } & ({ contract: ApprovalContract; name?: undefined; } | { name: string; contract?: undefined; })
 const Actions.approval.setOperator.path: 'approval.setOperator'
 function Actions.approval.setOperator.prepare(client: Client<object> | ViemClientLike, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Plan>
 const Actions.approval.setOperator.prepare.path: string
@@ -49,7 +49,7 @@ type Actions.approval.setOperator.ReturnType = { readonly hash: `0x${string}`; r
 function Actions.approval.setOperator.simulate(client: Client<object> | ViemClientLike, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Simulation>
 const Actions.approval.setOperator.simulate.path: string
 function Actions.approval.setOperatorSync(client: Client<object> | ViemClientLike, options: setOperator.Options & Write.Options & { confirmations?: number | undefined; timeout?: number | undefined; }) => Promise<SyncResult>
-type Actions.approval.setOperatorSync.ErrorType = InvalidInputError | WriteError
+type Actions.approval.setOperatorSync.ErrorType = InvalidInputError | NameStateError | WriteError
 type Actions.approval.setOperatorSync.Options = setOperator.Options & Write.Options & { confirmations?: number | undefined; timeout?: number | undefined; }
 const Actions.approval.setOperatorSync.path: 'approval.setOperatorSync'
 type Actions.approval.setOperatorSync.ReturnType = Result & { readonly receipt: TransactionReceipt; readonly receipts: readonly TransactionReceipt[]; }
@@ -288,13 +288,19 @@ type Actions.name.get.ErrorType = InvalidInputError | CommonError
 type Actions.name.get.Options = Pick<Options, 'signal'> & (BlockOptions & { name: string; })
 const Actions.name.get.path: 'name.get'
 function Actions.name.get.request(options: Pick<Options, 'signal'> & (BlockOptions & { name: string; })) => Request<NameState, ErrorType>
-type Actions.name.get.ReturnType = { readonly name: string; readonly kind: NameKind; readonly protocol: 'v1' | 'v2'; readonly status: NameStatus; readonly owner: `0x${string}` | null; readonly manager: `0x${string}` | null; readonly registrant: `0x${string}` | null; readonly registry: `0x${string}` | null; readonly subregistry: `0x${string}` | null; readonly resolver: `0x${string}` | null; readonly inheritedResolver: `0x${string}` | null; readonly expiry: bigint | null; readonly gracePeriodEnd: bigint | null; readonly tokenId: bigint | null; readonly resource: bigint | null; readonly ttl: bigint | null; readonly wrapped: boolean; readonly migrated: boolean; readonly reachable: boolean; readonly available: boolean; readonly renewable: boolean; }
+type Actions.name.get.ReturnType = { readonly name: string; readonly kind: NameKind; readonly chainId: number; readonly namespace: NameNamespace | null; readonly protocol: 'l2' | 'v1' | 'v2'; readonly status: NameStatus; readonly owner: `0x${string}` | null; readonly manager: `0x${string}` | null; readonly registrant: `0x${string}` | null; readonly registry: `0x${string}` | null; readonly subregistry: `0x${string}` | null; readonly resolver: `0x${string}` | null; readonly inheritedResolver: `0x${string}` | null; readonly expiry: bigint | null; readonly gracePeriodEnd: bigint | null; readonly tokenId: bigint | null; readonly resource: bigint | null; readonly ttl: bigint | null; readonly wrapped: boolean; readonly migrated: boolean; readonly reachable: boolean; readonly available: boolean; readonly renewable: boolean; }
 function Actions.name.getLabel(client: Client<object> | ViemClientLike, options: Pick<Options, 'signal'> & (BlockOptions & { labelhash: `0x${string}`; })) => Promise<ReturnType>
 type Actions.name.getLabel.ErrorType = InvalidInputError | UnsupportedError | CommonError
 type Actions.name.getLabel.Options = Pick<Options, 'signal'> & (BlockOptions & { labelhash: `0x${string}`; })
 const Actions.name.getLabel.path: 'name.getLabel'
 function Actions.name.getLabel.request(options: Pick<Options, 'signal'> & (BlockOptions & { labelhash: `0x${string}`; })) => Request<ReturnType, ErrorType>
 type Actions.name.getLabel.ReturnType = string | null
+function Actions.name.getNamespace(client: Client<object> | ViemClientLike, options: Pick<Options, 'signal'> & (BlockOptions & { name: string; })) => Promise<ReturnType>
+type Actions.name.getNamespace.ErrorType = InvalidInputError | CommonError
+type Actions.name.getNamespace.Options = Pick<Options, 'signal'> & (BlockOptions & { name: string; })
+const Actions.name.getNamespace.path: 'name.getNamespace'
+function Actions.name.getNamespace.request(options: Pick<Options, 'signal'> & (BlockOptions & { name: string; })) => Request<ReturnType, ErrorType>
+type Actions.name.getNamespace.ReturnType = NameNamespace | null
 function Actions.name.reclaim(client: Client<object> | ViemClientLike, options: reclaim.Options & Write.Options) => Promise<Result>
 type Actions.name.reclaim.ErrorType = InvalidInputError | NameStateError | UnauthorizedError | WriteError
 function Actions.name.reclaim.estimateGas(client: Client<object> | ViemClientLike, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Estimate>
@@ -918,19 +924,18 @@ function Duration.days(n: number | bigint) => bigint
 function Duration.years(n: number | bigint) => bigint
 function ensActions() => (client: Client<object>) => EnsActions
 type EnsActions = ApprovalActions & DnsActions & EventActions & MigrationActions & NameActions & PermissionActions & PlanActions & PrimaryNameActions & RecordActions & RegistrationActions & RegistryActions & ResolverActions & RoleActions & SubnameActions & WrapperActions & BatchActions
-type Ensforge.ChainClients = { readonly publicClient: ViemClientLike; readonly walletClient?: (() => Promise<ViemClientLike | undefined> | ViemClientLike | undefined) | ViemClientLike | undefined; }
 type Ensforge.Client = actions & ClientBase<actions>
 interface Ensforge.ClientBase {
   chain: { readonly id: number; readonly name: string; }
   account: `0x${string}` | undefined
   deployment: Profile
-  publicClient: Client_Base<Transport, Chain | undefined, Account | undefined, undefined, Tokens | undefined> & { extend: <const client extends Extended & ExactPartial<ExtendableProtectedActions<Transport, Chain | undefined, Account | undefined, Tokens | undefined>>>(fn: (client: Client<Transport, Chain | undefined, Account | undefined, undefined, { [x: string]: unknown; account?: undefined; batch?: undefined; cacheTime?: undefined; ccipRead?: undefined; chain?: undefined; dataSuffix?: undefined; experimental_blockTag?: undefined; key?: undefined; name?: undefined; pollingInterval?: undefined; request?: undefined; tokens?: undefined; transport?: undefined; type?: undefined; uid?: undefined; } | undefined, Tokens | undefined>) => client) => Client<Transport, Chain | undefined, Account | undefined, undefined, { [K in keyof client]: client[K]; }, Tokens | undefined>; scope: (options?: { signal?: AbortSignal | undefined; } | undefined) => Client<Transport, Chain | undefined, Account | undefined, undefined, { [x: string]: unknown; account?: undefined; batch?: undefined; cacheTime?: undefined; ccipRead?: undefined; chain?: undefined; dataSuffix?: undefined; experimental_blockTag?: undefined; key?: undefined; name?: undefined; pollingInterval?: undefined; request?: undefined; tokens?: undefined; transport?: undefined; type?: undefined; uid?: undefined; } | undefined, Tokens | undefined>; }
+  client: (chainId?: number | undefined) => ViemClient
   config: { readonly ccipRead: false | { readonly gatewayUrls: readonly string[]; }; readonly batch: { readonly multicall: false | { readonly batchSize: number; readonly wait: number; }; }; readonly blockTag: BlockTag; readonly storage: Storage; readonly simulate: boolean; readonly indexer: Indexer | undefined; readonly gateways: { readonly ipfs: string; readonly arweave: string; readonly swarm: string; }; }
   extend: <const added extends object>(decorator: (client: Client<actions>) => added) => Client<actions & added>
 }
 type Ensforge.Config = { readonly ccipRead: false | { readonly gatewayUrls: readonly string[]; }; readonly batch: { readonly multicall: false | { readonly batchSize: number; readonly wait: number; }; }; readonly blockTag: BlockTag; readonly storage: Storage; readonly simulate: boolean; readonly indexer: Indexer | undefined; readonly gateways: { readonly ipfs: string; readonly arweave: string; readonly swarm: string; }; }
-function Ensforge.create(options: { publicClient: ViemClientLike; walletClient?: (() => Promise<ViemClientLike | undefined> | ViemClientLike | undefined) | ViemClientLike | undefined; chains?: Readonly<Record<number, ChainClients>> | undefined; account?: `0x${string}` | Account | undefined; deployment?: Profile | undefined; ccipRead?: false | { readonly gatewayUrls?: readonly string[] | undefined; } | undefined; batch?: { readonly multicall?: boolean | { readonly batchSize?: number; readonly wait?: number; } | undefined; } | undefined; blockTag?: BlockTag | undefined; storage?: Storage | undefined; simulate?: boolean | undefined; indexer?: Indexer | undefined; gateways?: Gateways | undefined; }) => ClientBase<{}>
-type Ensforge.CreateOptions = { publicClient: ViemClientLike; walletClient?: (() => Promise<ViemClientLike | undefined> | ViemClientLike | undefined) | ViemClientLike | undefined; chains?: Readonly<Record<number, ChainClients>> | undefined; account?: `0x${string}` | Account | undefined; deployment?: Profile | undefined; ccipRead?: false | { readonly gatewayUrls?: readonly string[] | undefined; } | undefined; batch?: { readonly multicall?: boolean | { readonly batchSize?: number; readonly wait?: number; } | undefined; } | undefined; blockTag?: BlockTag | undefined; storage?: Storage | undefined; simulate?: boolean | undefined; indexer?: Indexer | undefined; gateways?: Gateways | undefined; }
+function Ensforge.create(options: { chain: Chain; transports?: Readonly<Record<number, Transport>> | undefined; publicRpc?: boolean | undefined; wallet?: ((chainId: number) => Promise<ViemClientLike | undefined> | ViemClientLike | undefined) | ViemClientLike | undefined; switchChain?: boolean | undefined; account?: `0x${string}` | Account | undefined; pollingInterval?: number | undefined; cacheTime?: number | undefined; deployment?: Profile | undefined; ccipRead?: false | { readonly gatewayUrls?: readonly string[] | undefined; } | undefined; batch?: { readonly multicall?: boolean | { readonly batchSize?: number; readonly wait?: number; } | undefined; } | undefined; blockTag?: BlockTag | undefined; storage?: Storage | undefined; simulate?: boolean | undefined; indexer?: Indexer | undefined; gateways?: Gateways | undefined; }) => ClientBase<{}>
+type Ensforge.CreateOptions = { chain: Chain; transports?: Readonly<Record<number, Transport>> | undefined; publicRpc?: boolean | undefined; wallet?: ((chainId: number) => Promise<ViemClientLike | undefined> | ViemClientLike | undefined) | ViemClientLike | undefined; switchChain?: boolean | undefined; account?: `0x${string}` | Account | undefined; pollingInterval?: number | undefined; cacheTime?: number | undefined; deployment?: Profile | undefined; ccipRead?: false | { readonly gatewayUrls?: readonly string[] | undefined; } | undefined; batch?: { readonly multicall?: boolean | { readonly batchSize?: number; readonly wait?: number; } | undefined; } | undefined; blockTag?: BlockTag | undefined; storage?: Storage | undefined; simulate?: boolean | undefined; indexer?: Indexer | undefined; gateways?: Gateways | undefined; }
 function Ensforge.from(client: Client<object> | ViemClientLike) => ClientBase<{}>
 type Ensforge.Gateways = { readonly ipfs?: string | undefined; readonly arweave?: string | undefined; readonly swarm?: string | undefined; }
 function Ensforge.is(value: unknown) => value is ClientBase<{}>
@@ -1450,7 +1455,7 @@ function Name.parse(name: string) => { readonly labels: readonly string[]; reado
 type Name.Parsed = { readonly labels: readonly string[]; readonly label: string; readonly tld: string; readonly parent: string | null; readonly is2ld: boolean; readonly isSubname: boolean; }
 function Name.toTokenId(name: string) => bigint
 function nameActions() => (client: Client<object>) => NameActions
-type NameActions = { readonly name: { readonly get: Bound<typeof get>; readonly getLabel: Bound<typeof getLabel>; readonly reclaim: BoundWrite<typeof reclaim>; readonly reclaimSync: Bound<typeof reclaimSync>; readonly setManager: BoundWrite<typeof setManager>; readonly setManagerSync: Bound<typeof setManagerSync>; readonly setTtl: BoundWrite<typeof setTtl>; readonly setTtlSync: Bound<typeof setTtlSync>; readonly transfer: BoundWrite<typeof transfer>; readonly transferSync: Bound<typeof transferSync>; }; }
+type NameActions = { readonly name: { readonly get: Bound<typeof get>; readonly getLabel: Bound<typeof getLabel>; readonly getNamespace: Bound<typeof getNamespace>; readonly reclaim: BoundWrite<typeof reclaim>; readonly reclaimSync: Bound<typeof reclaimSync>; readonly setManager: BoundWrite<typeof setManager>; readonly setManagerSync: Bound<typeof setManagerSync>; readonly setTtl: BoundWrite<typeof setTtl>; readonly setTtlSync: Bound<typeof setTtlSync>; readonly transfer: BoundWrite<typeof transfer>; readonly transferSync: Bound<typeof transferSync>; }; }
 function permissionActions() => (client: Client<object>) => PermissionActions
 type PermissionActions = { readonly permission: { readonly check: Bound<typeof check>; readonly get: Bound<typeof get>; readonly setRecordAccess: BoundWrite<typeof setRecordAccess>; readonly setRecordAccessSync: Bound<typeof setRecordAccessSync>; }; }
 const Plan: { readonly merge: (plans: readonly [Plan, ...Plan[]]) => Plan; readonly serialize: (value: Plan | Record) => string; readonly deserialize: (text: string) => Plan; readonly deserializeRecord: (text: string) => Record; readonly memoryStorage: () => Storage; readonly localStorage: (key?: string | undefined) => Storage; }

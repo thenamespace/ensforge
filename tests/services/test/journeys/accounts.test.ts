@@ -9,7 +9,7 @@ import { Chain, Devnet } from "@ensforge/test-devnet";
 import { Clients } from "@ensforge/test-integration/support/clients";
 import { mintUsdc, usdcOf } from "@ensforge/test-integration/support/contracts";
 import { Wallets } from "@ensforge/test-integration/support/wallets";
-import { createPublicClient, http } from "viem";
+import { http } from "viem";
 
 import { Services } from "../stack/stack.ts";
 
@@ -131,10 +131,9 @@ layer(Services.layer({ profile: "mainnet-shaped", services: ["indexer", "aa"] })
         // oxlint-disable-next-line effecttsgo/strict-effect-provide
         Effect.provide(
           Ensforge.layer({
-            publicClient: createPublicClient({
-              chain: devnet.chain,
-              transport: http(devnet.rpcUrl),
-            }),
+            chain: devnet.chain,
+            transports: { [devnet.chain.id]: http(devnet.rpcUrl) },
+            publicRpc: false,
             deployment: devnet.deployments,
             indexer: services.indexer,
           }),

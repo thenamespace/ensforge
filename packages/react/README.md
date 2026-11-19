@@ -16,8 +16,9 @@ Required peer dependencies: `react` (`^19.0.0`), `viem` (`^2.57.0`), `effect` (`
 ```tsx
 import { EnsforgeProvider, useAddress } from "@ensforge/react";
 import { Ensforge } from "@ensforge/sdk";
+import { mainnet } from "viem/chains";
 
-const ens = Ensforge.create({ publicClient });
+const ens = Ensforge.create({ chain: mainnet });
 
 function Address() {
   const { data: address, isLoading } = useAddress({ name: "nick.eth" });

@@ -99,6 +99,13 @@ A service that reads every ENS event and keeps a database of names, so it can an
 chain cannot: lists, search and history. See
 [Name lists and indexers](/docs/sdk/name-lists-and-indexers).
 
+## L2 name
+
+A name whose owner and records live on an L2 (a second chain such as Base), not in ENS's registry on
+Ethereum. Its parent is an ENS name whose resolver answers for it. Basenames (`*.base.eth`) are L2
+names. ensforge reads and changes them on their L2. See
+[Work with names on L2s](/docs/sdk/names-on-l2s).
+
 ## Label
 
 One part of a name between dots. `pay.nick.eth` has the labels `pay`, `nick` and `eth`.
@@ -131,6 +138,12 @@ Moving a name from [ENSv1](#ensv1) to [ENSv2](#ensv2), with its records and subn
 A human-readable identifier made of [labels](#label) separated by dots, such as `nick.eth`. ENS
 maps names to [records](#record). See [Names and records](/docs/sdk/names-and-records).
 
+## Namespace
+
+A set of names under one or more parent names, stored by one project's contracts: Basenames, Linea
+Names, Celonames, Durin and Namespace are the L2 namespaces ensforge supports. `name.get` reports a
+name's namespace as `namespace`, and `name.getNamespace` returns it alone.
+
 ## Name Wrapper
 
 An ENSv1 contract that holds a name as an ERC-1155 token and adds [fuses](#fuse). Such names are
@@ -150,9 +163,16 @@ characters, and rejection of names that could be confused with others. `Nick.ETH
 
 ## Off-chain name
 
-A name whose records are not stored on Ethereum but served by a [gateway](#gateway) through
-[CCIP-Read](#ccip-read). Basenames and many subnames given out by apps are served this way.
-ensforge reads them like any other name.
+A name whose records are not stored on any chain but served by a [gateway](#gateway) through
+[CCIP-Read](#ccip-read), from an [off-chain provider](#off-chain-provider)'s database. Many subnames
+given out by apps, such as `*.cb.id`, are served this way. ensforge reads them like any other name,
+and cannot change them.
+
+## Off-chain provider
+
+A company or app that keeps names in its own database and serves them through a signed gateway, such
+as Coinbase for `cb.id`. `Deployments.offchainProviders` lists the ones ensforge knows, and
+`name.get` names the provider in `namespace.provider`.
 
 ## Owner
 

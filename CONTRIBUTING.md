@@ -101,7 +101,10 @@ in `Effect.promise`.
   `tests/fuzz` runs random operation sequences against a model, on-chain properties and a
   comparison with viem and ensjs (`pnpm test:fuzz`, see its README). `tests/services` runs
   ensforge against bigname, alto and a paymaster in Docker, and the end-to-end journeys
-  (`pnpm test:services`, see its README). Tag tests with the
+  (`pnpm test:services`, see its README). L2 namespaces run on one anvil per L2 profile
+  (`l2-base`, `l2-optimism`, `l2-linea`, `l2-celo`) next to the devnet: the integration lane's
+  `Namespaces` service starts them with their fixtures, serves each family's gateway from them and
+  gives clients their transports and the devnet profile with its `namespaces`. Tag tests with the
   catalog cases they cover (`meta: { cases: ["O08"] }`) and list them in
   `tests/fixtures/catalog/ledger.json`.
 - Every error code an action documents in `@throws` must be asserted by a test that names the
@@ -152,7 +155,10 @@ The fork and live lanes read `ENSFORGE_MAINNET_RPC_URL` and `ENSFORGE_SEPOLIA_RP
 environment or `.env` (`.env.example`). They are throttled for a rate-limited RPC (forks at 80
 compute units a second, cached in `~/.foundry/cache/rpc`; live reads 250 ms apart) and run one
 file at a time: never run them alongside each other. Both keep to a few essential checks; new
-coverage belongs on the devnet.
+coverage belongs on the devnet. The live lane reads L2s (the namespace table, L2 names and primary names) through
+`ENSFORGE_<CHAIN>_RPC_URL` (`ENSFORGE_BASE_RPC_URL`, …, listed in `.env.example`) when set, and
+each chain's public RPC otherwise. In CI they are repository secrets of the same names, passed by
+`networks.yml`.
 
 Flaky tests are not retried. A test that fails without a code change is quarantined (`it.skip`
 with a link to its issue and the seed or block that reproduces it) and fixed or removed; a lane is

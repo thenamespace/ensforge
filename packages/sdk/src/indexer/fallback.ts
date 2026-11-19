@@ -90,8 +90,9 @@ const tagged = (index: number, answer: unknown): unknown => {
  * ```ts
  * import { Ensforge } from "@ensforge/sdk"
  * import { bigname, fallback, goldsky } from "@ensforge/sdk/indexer"
+ * import { mainnet } from "viem/chains"
  *
- * const ens = Ensforge.create({ publicClient, indexer: fallback([bigname(), goldsky()]) })
+ * const ens = Ensforge.create({ chain: mainnet, indexer: fallback([bigname(), goldsky()]) })
  * ```
  *
  * **Example** (Only when the first is down)

@@ -20,6 +20,26 @@ Requires Foundry at the version in [`foundry-version`](./foundry-version)
 | `sepolia-shaped`   | `mainnet-shaped` on Sepolia's builds and capabilities                                 |
 | `v2-only`          | The `mainnet-shaped` chain with an ensforge profile that has no ENSv1                 |
 
+`mainnet-shaped` and `v2-only` also deploy each L2 namespace family's Ethereum resolver (Basenames,
+Celonames, Durin, Namespace's hybrid resolvers, and a gateway resolver standing in for Linea's
+proof-verifying one). They trust `gatewaySigner` and ask `unservedGateway` until a test serves a
+gateway. Durin's and Namespace's V2 resolvers read the ENS registry at its mainnet address, where a
+forwarder to the devnet's registry is placed.
+
+### L2 profiles
+
+Each runs on its own anvil, answering as the L2's chain ID, next to a `mainnet-shaped` devnet. The
+contracts are the ones deployed on that L2 (Sourcify exact matches); their names are fixtures.
+
+| Profile       | Chain           | Contracts                                                          |
+| ------------- | --------------- | ------------------------------------------------------------------ |
+| `l2-base`     | Base (8453)     | Basenames registry, registrar and both resolvers; Durin; Namespace |
+| `l2-optimism` | OP Mainnet (10) | Namespace                                                          |
+| `l2-linea`    | Linea (59144)   | Linea Names: registry, registrar, NameWrapper, PublicResolver      |
+| `l2-celo`     | Celo (42220)    | Celonames                                                          |
+
+`startL2({ profile })` starts one; `verify` checks them too.
+
 A profile builds in under a second, deterministically, and is cached as anvil state in `.cache/`
 (keyed by the deploy code, artifacts and anvil version); a devnet starts from it in under 100 ms.
 

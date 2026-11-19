@@ -13,7 +13,8 @@ import { addressOf } from "../../../internal/address.js";
 import { tryAny } from "../../../internal/anyError.js";
 import { loadName } from "../../../internal/name/load.js";
 import { requestedResolver, setResolverCall } from "../../../internal/name/set-resolver.js";
-import { requireRegistered } from "../../../internal/name/write.js";
+import * as V1Calls from "../../../internal/name/v1-calls.js";
+import { l2WriteTargetOf, requireRegistered } from "../../../internal/name/write.js";
 import { explainFor } from "../../../internal/permission/check.js";
 import { writeOperations } from "../../../internal/permission/records.js";
 import { setterKeying } from "../../../internal/records/setter-keying.js";
@@ -38,11 +39,35 @@ export const plan = Effect.fnUntraced(function* (
   // The registry holding the name knows its own resolver. The Universal Resolver would also
   // return wildcards and, for names still on ENSv1, the read-only ENSv1 bridge resolver.
   const loaded = yield* loadName(client, options.name);
-  yield* requireRegistered(client, loaded);
+  // A name ENS does not hold may live on an L2: its records are written there.
+  const l2 = yield* l2WriteTargetOf(client, loaded);
+  if (l2 === null) yield* requireRegistered(client, loaded);
+  const target = l2?.client ?? client;
 
   let resolver: Address;
   let resolverChange: Plan.Call | undefined;
-  if (options.resolver === undefined) {
+  if (l2 !== null) {
+    if (options.resolver === undefined) {
+      const current = l2.state.resolver;
+      if (current === null) {
+        return yield* Effect.fail(
+          new NotFoundError({
+            code: "RESOLVER_NOT_FOUND",
+            context: { chainId: l2.location.chainId },
+          }),
+        );
+      }
+      resolver = current;
+    } else {
+      // Only Basenames and Linea Names have a resolver pointer to change.
+      const { forkTarget, forkResolver } = yield* Effect.promise(
+        () => import("../../../internal/namespace/l2/index.js"),
+      );
+      const fork = yield* forkTarget(l2, loaded.data.parts);
+      resolver = yield* forkResolver(l2.location, fork.contracts, options.resolver);
+      resolverChange = V1Calls.setResolver(fork.to, loaded.data.parts.node, resolver);
+    }
+  } else if (options.resolver === undefined) {
     const current = loaded.state.resolver;
     if (current === null) {
       return yield* Effect.fail(new NotFoundError({ code: "RESOLVER_NOT_FOUND" }));
@@ -69,9 +94,9 @@ export const plan = Effect.fnUntraced(function* (
   // implements ERC-165 at all (within the gas EIP-165 allows `supportsInterface`).
   const { keying, resolverInfo, erc165 } = yield* Effect.all(
     {
-      keying: setterKeying(client, resolver),
-      resolverInfo: describeResolver(client, resolver, loaded.data.parts.node),
-      erc165: Rpc.readContractOrUndefined(client, {
+      keying: setterKeying(target, resolver),
+      resolverInfo: describeResolver(target, resolver, loaded.data.parts.node),
+      erc165: Rpc.readContractOrUndefined(target, {
         address: resolver,
         abi: Abis.shared.erc165,
         functionName: "supportsInterface",
@@ -139,7 +164,7 @@ export const plan = Effect.fnUntraced(function* (
 
   return makePlan({
     operation: "record.set",
-    chainId: client.chain.id,
+    chainId: target.chain.id,
     account: addressOf(options.account) ?? client.account,
     steps: [
       {

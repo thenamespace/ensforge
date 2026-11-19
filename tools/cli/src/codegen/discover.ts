@@ -157,7 +157,7 @@ export const discover = (
 
   const domains = Arr.map(layout, ({ domain, folders }) => {
     // Top-level client members that an action group's name would shadow.
-    if (["chain", "account", "deployment", "publicClient", "config", "extend"].includes(domain))
+    if (["chain", "account", "deployment", "client", "config", "extend"].includes(domain))
       problems.push(`domain "${domain}" uses a reserved client name`);
 
     const actions = Arr.flatMap(folders, ({ folder, files }) => {

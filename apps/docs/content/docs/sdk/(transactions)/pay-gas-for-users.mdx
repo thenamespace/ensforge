@@ -31,13 +31,12 @@ declare global {
 }
 
 import { Ensforge, ensActions } from "@ensforge/sdk";
-import { createPublicClient, createWalletClient, custom, http } from "viem";
+import { createWalletClient, custom } from "viem";
 import { sepolia } from "viem/chains";
 
-const publicClient = createPublicClient({ chain: sepolia, transport: http() });
 const walletClient = createWalletClient({ chain: sepolia, transport: custom(window.ethereum!) });
 const [account] = await walletClient.requestAddresses();
-const ens = Ensforge.create({ publicClient, walletClient, account }).extend(ensActions());
+const ens = Ensforge.create({ chain: sepolia, wallet: walletClient, account }).extend(ensActions());
 
 const { id } = await ens.record.set({
   name: "ensforge-docs-demo.eth",

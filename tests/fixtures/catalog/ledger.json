@@ -1229,6 +1229,16 @@
       "tests/integration/test/writes/primary-l2.test.ts > resumes a saved L2 plan on the L2"
     ]
   },
+  "P41": {
+    "tests": [
+      "tests/integration/test/reads/primary-l2.test.ts > reads each L2's primary name on the L2, and through Ethereum without it"
+    ]
+  },
+  "P42": {
+    "tests": [
+      "tests/integration/test/reads/primary-l2.test.ts > falls back to the default name, and verifies the name resolves back"
+    ]
+  },
   "G01": {
     "tests": [
       "tests/integration/test/reads/registration.test.ts > prices labels by code point and refuses labels below the minimum"
@@ -2320,6 +2330,128 @@
   "M:F9": {
     "tests": [
       "tests/integration/test/reads/errors.test.ts > NameWrapper reads where ENSv1 is not deployed"
+    ]
+  },
+  "N01": {
+    "tests": [
+      "tests/integration/test/reads/namespace-state.test.ts > name.get reports owner, expiry and status from each family's L2"
+    ]
+  },
+  "N02": {
+    "tests": [
+      "tests/integration/test/reads/namespace-state.test.ts > name.get reports owner, expiry and status from each family's L2"
+    ]
+  },
+  "N03": {
+    "tests": [
+      "tests/integration/test/reads/namespace-state.test.ts > name.get reports owner, expiry and status from each family's L2"
+    ]
+  },
+  "N04": {
+    "tests": [
+      "tests/integration/test/reads/namespace-state.test.ts > name.get reports owner, expiry and status from each family's L2"
+    ]
+  },
+  "N05": {
+    "tests": [
+      "tests/integration/test/reads/namespace-state.test.ts > reads records from the L2 resolver, without the family's gateway"
+    ]
+  },
+  "N06": {
+    "tests": [
+      "tests/integration/test/reads/namespace-state.test.ts > name.get reports owner, expiry and status from each family's L2"
+    ]
+  },
+  "N07": {
+    "tests": [
+      "tests/integration/test/reads/namespace-state.test.ts > name.get reports owner, expiry and status from each family's L2"
+    ]
+  },
+  "N08": {
+    "tests": [
+      "tests/integration/test/reads/namespace-state.test.ts > reads records from the L2 resolver, without the family's gateway"
+    ]
+  },
+  "N09": {
+    "tests": [
+      "tests/integration/test/reads/namespace-state.test.ts > name.get reports owner, expiry and status from each family's L2"
+    ]
+  },
+  "N10": {
+    "tests": [
+      "tests/integration/test/reads/namespace-state.test.ts > name.get reports owner, expiry and status from each family's L2"
+    ]
+  },
+  "N11": {
+    "tests": [
+      "tests/integration/test/reads/namespace-state.test.ts > reads records from the L2 resolver, without the family's gateway"
+    ]
+  },
+  "N12": {
+    "tests": [
+      "tests/integration/test/reads/namespace-state.test.ts > treats a profile Durin lacks as a missing record, or an error when strict"
+    ]
+  },
+  "N13": {
+    "tests": [
+      "tests/integration/test/reads/namespace-state.test.ts > reads records from the L2 resolver, without the family's gateway"
+    ]
+  },
+  "N14": {
+    "tests": [
+      "tests/integration/test/reads/namespace-state.test.ts > reads records from the L2 resolver, without the family's gateway"
+    ]
+  },
+  "N15": {
+    "tests": [
+      "tests/unit/sdk/actions/name/getNamespace.test.ts > locates Namespace names from the nearest configured ancestor or the V2 route"
+    ]
+  },
+  "N16": {
+    "tests": [
+      "tests/integration/test/reads/namespaces.test.ts > resolves a Namespace off-chain parent's names from its database"
+    ]
+  },
+  "N17": {
+    "tests": [
+      "tests/integration/test/reads/namespace-state.test.ts > name.get reports owner, expiry and status from each family's L2"
+    ]
+  },
+  "N18": {
+    "tests": [
+      "tests/integration/test/reads/namespace-state.test.ts > falls back to Ethereum for an L2 the client cannot reach, or fails when strict"
+    ]
+  },
+  "N19": {
+    "tests": [
+      "tests/integration/test/reads/namespaces.test.ts > fails with a typed error when a family's gateway fails or signs with another key"
+    ]
+  },
+  "N20": {
+    "tests": [
+      "tests/integration/test/writes/namespaces.test.ts > writes each family's records on its L2, and refuses other accounts",
+      "tests/integration/test/writes/namespaces.test.ts > transfers each family's names on their L2, and their records follow"
+    ]
+  },
+  "N21": {
+    "tests": [
+      "tests/integration/test/writes/namespaces.test.ts > refuses every other write on an L2 name before signing, naming its L2"
+    ]
+  },
+  "N22": {
+    "tests": [
+      "tests/unit/sdk/actions/name/getNamespace.test.ts > names the off-chain provider whose resolver serves a name"
+    ]
+  },
+  "N23": {
+    "tests": [
+      "tests/integration/test/writes/namespace-registry.test.ts > sets the resolver and TTL on the L2, keeping Linea names on Linea's PublicResolver",
+      "tests/integration/test/writes/namespace-registry.test.ts > creates, updates and removes subnames of Basenames and Linea names"
+    ]
+  },
+  "N24": {
+    "tests": [
+      "tests/integration/test/writes/namespace-registry.test.ts > reports a Linea name's burned fuses and refuses what they block"
     ]
   }
 }

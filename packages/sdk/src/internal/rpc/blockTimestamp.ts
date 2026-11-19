@@ -20,7 +20,7 @@ export const blockTimestamp = (
   client: Client,
   block: Read.BlockOptions,
 ): Effect.Effect<bigint, AnyError> => {
-  const multicall3 = client.publicClient.chain?.contracts?.multicall3?.address;
+  const multicall3 = client.client().chain?.contracts?.multicall3?.address;
   const at = blockAt(block);
 
   if (multicall3 !== undefined) {
@@ -34,7 +34,7 @@ export const blockTimestamp = (
 
   return fromPromise(() =>
     getBlock(
-      client.publicClient,
+      client.client(),
       block.blockNumber === undefined
         ? { blockTag: block.blockTag ?? client.config.blockTag }
         : { blockNumber: block.blockNumber },

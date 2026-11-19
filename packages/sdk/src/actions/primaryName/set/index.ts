@@ -55,12 +55,10 @@ import * as Impl from "./effect.js";
  *
  * ```ts
  * import { Ensforge, ensActions } from "@ensforge/sdk"
+ * import { mainnet } from "viem/chains"
  *
- * const ens = Ensforge.create({
- *   publicClient,
- *   walletClient,
- *   chains: { 8453: { publicClient: baseClient, walletClient: baseWallet } },
- * }).extend(ensActions())
+ * // The wallet is asked to switch to Base before the write.
+ * const ens = Ensforge.create({ chain: mainnet, wallet: walletClient }).extend(ensActions())
  *
  * await ens.primaryName.set({ name: "alice.eth", coin: { chainId: 8453 } })
  * ```

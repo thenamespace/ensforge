@@ -34,11 +34,10 @@ default.
 
 ```ts title="client-method.ts"
 import { Ensforge, ensActions } from "@ensforge/sdk";
-import { createPublicClient, http } from "viem";
 import { mainnet } from "viem/chains";
 
 const ens = Ensforge.create({
-  publicClient: createPublicClient({ chain: mainnet, transport: http() }),
+  chain: mainnet,
 }).extend(ensActions());
 
 const url = await ens.record.getText({ name: "nick.eth", key: "url" });
@@ -56,11 +55,10 @@ the actions you call, so this is the smallest form.
 
 ```ts title="standalone.ts"
 import { Actions, Ensforge } from "@ensforge/sdk";
-import { createPublicClient, http } from "viem";
 import { mainnet } from "viem/chains";
 
 const ens = Ensforge.create({
-  publicClient: createPublicClient({ chain: mainnet, transport: http() }),
+  chain: mainnet,
 });
 
 const url = await Actions.record.getText(ens, { name: "nick.eth", key: "url" });
@@ -84,7 +82,6 @@ error union, so you handle failures with `Effect.catchTag` and the other Effect 
 ```ts title="effect.ts"
 import { Actions, Ensforge } from "@ensforge/sdk/effect";
 import { Effect } from "effect";
-import { createPublicClient, http } from "viem";
 import { mainnet } from "viem/chains";
 
 const program = Effect.gen(function* () {
@@ -93,11 +90,7 @@ const program = Effect.gen(function* () {
 });
 
 const url = await Effect.runPromise(
-  program.pipe(
-    Effect.provide(
-      Ensforge.layer({ publicClient: createPublicClient({ chain: mainnet, transport: http() }) }),
-    ),
-  ),
+  program.pipe(Effect.provide(Ensforge.layer({ chain: mainnet }))),
 );
 ```
 
@@ -124,11 +117,10 @@ way of calling.
 
 ```ts title="requests.ts"
 import { Actions, Ensforge, ensActions } from "@ensforge/sdk";
-import { createPublicClient, http } from "viem";
 import { mainnet } from "viem/chains";
 
 const ens = Ensforge.create({
-  publicClient: createPublicClient({ chain: mainnet, transport: http() }),
+  chain: mainnet,
 }).extend(ensActions());
 
 const {

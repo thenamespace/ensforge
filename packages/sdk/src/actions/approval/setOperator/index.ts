@@ -17,6 +17,9 @@ import * as Impl from "./effect.js";
  *
  * - `contract`: the ENSv1 `"registry"`, `"registrar"` or `"wrapper"`, or any ENSv2 registry
  *   or resolver by address.
+ * - `name` instead of `contract`: the contract that holds the name's token (for an unwrapped
+ *   ENSv1 subname, the registry), on the chain the name lives on. For an L2 name the approval is
+ *   sent on its L2.
  * - On ENSv2 registries an operator can transfer names; other changes need roles.
  *
  * **Example** (Approving a manager)
@@ -43,6 +46,7 @@ import * as Impl from "./effect.js";
  *
  * @throws `Errors.InvalidInputError` (`INVALID_ADDRESS`) for invalid addresses.
  * @throws `Errors.UnsupportedError` (`UNSUPPORTED_ON_DEPLOYMENT`) for ENSv1 contracts without ENSv1.
+ * @throws `Errors.NameStateError` (`NAME_NOT_REGISTERED`, `NAME_EXTERNAL`) for a `name` that is not registered, or that a namespace outside ENS and its L2s manages.
  * @throws `Errors.UserRejectedError` (`USER_REJECTED`) when the user rejects the request.
  * @throws `Errors.WalletError` (`CHAIN_MISMATCH`, `ACCOUNT_NOT_FOUND`) when the wallet is on another chain or has no account to sign with.
  * @throws `Errors.UnsupportedError` (`WALLET_BATCH_UNSUPPORTED`) with `mode: "batch"` or a paymaster when the wallet cannot send calls as one batch.
@@ -66,13 +70,22 @@ export declare namespace setOperator {
     operator: string;
     /** `true` to approve the operator, `false` to revoke it. */
     approved: boolean;
-    /** `"registry"`, `"registrar"`, `"wrapper"`, or a registry or resolver address. */
-    contract: ApprovalContract;
-  };
+  } & (
+    | {
+        /** `"registry"`, `"registrar"`, `"wrapper"`, or a registry or resolver address. */
+        contract: ApprovalContract;
+        name?: undefined;
+      }
+    | {
+        /** A name whose token contract to approve on, on the chain the name lives on. */
+        name: string;
+        contract?: undefined;
+      }
+  );
   /** Submitted transaction hashes and the plan that produced them. */
   type ReturnType = Write.Result;
   /** Errors {@link setOperator} can fail with. */
-  type ErrorType = Errors.WriteError | Errors.InvalidInputError;
+  type ErrorType = Errors.WriteError | Errors.InvalidInputError | Errors.NameStateError;
 }
 
 // Explicit types keep these declarations free of Effect types.
@@ -126,6 +139,7 @@ setOperator.estimateGas = Action.promiseOf(
  *
  * @throws `Errors.InvalidInputError` (`INVALID_ADDRESS`) for invalid addresses.
  * @throws `Errors.UnsupportedError` (`UNSUPPORTED_ON_DEPLOYMENT`) for ENSv1 contracts without ENSv1.
+ * @throws `Errors.NameStateError` (`NAME_NOT_REGISTERED`, `NAME_EXTERNAL`) for a `name` that is not registered, or that a namespace outside ENS and its L2s manages.
  * @throws `Errors.TransactionError` (`TRANSACTION_REVERTED`, `RECEIPT_TIMEOUT`, `NONCE_CONFLICT`) when confirmation fails or the wallet's nonce is already used.
  *
  * @see {@link setOperator} to resolve on submission
@@ -146,7 +160,7 @@ export declare namespace setOperatorSync {
   /** Receipts plus the submitted hashes and plan. */
   type ReturnType = Write.SyncResult;
   /** Errors {@link setOperatorSync} can fail with. */
-  type ErrorType = Errors.WriteError | Errors.InvalidInputError;
+  type ErrorType = Errors.WriteError | Errors.InvalidInputError | Errors.NameStateError;
 }
 
 /** Path of the action, e.g. for cache keys. */

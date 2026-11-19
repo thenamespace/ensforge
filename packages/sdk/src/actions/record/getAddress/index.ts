@@ -20,6 +20,7 @@ import * as Impl from "./effect.js";
  * - EVM coins return a checksummed `Address`; other coins their native format.
  * - EVM chains other than mainnet fall back to the default EVM address (ENSIP-19).
  * - Returns `null` when the record is not set, unless `strict` is set.
+ * - Names in an L2 namespace are read on their L2, as `record.get` reads them.
  *
  * **Example** (Resolving an Ethereum address)
  *
@@ -45,6 +46,7 @@ import * as Impl from "./effect.js";
  *
  * @throws `Errors.InvalidInputError` (`INVALID_NAME`, `INVALID_COIN_TYPE`) for invalid input.
  * @throws `Errors.NotFoundError` (`RECORD_NOT_FOUND`, `RESOLVER_NOT_FOUND`) with `strict`.
+ * @throws `Errors.ConfigError` (`CHAIN_NOT_CONFIGURED`) with `strict` when the name lives on an L2 the client cannot reach.
  * @throws `Errors.UnsupportedError` (`RESOLVER_PROFILE_UNSUPPORTED`) with `strict` when the resolver supports none of the records.
  * @throws `Errors.GatewayError` (`GATEWAY_REQUEST_FAILED`, `GATEWAY_RESPONSE_INVALID`, `OFFCHAIN_LOOKUP_INVALID`) when an off-chain gateway fails.
  * @throws `Errors.DnsError` when a DNS name's DNSSEC proof does not verify.

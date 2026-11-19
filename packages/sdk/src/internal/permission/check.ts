@@ -21,6 +21,16 @@ export const checkLoaded = Effect.fnUntraced(function* (
   account: Address,
   operations: readonly Operation[],
 ): Effect.fn.Return<readonly PermissionCheck[], AnyError> {
+  // A name in no ENS registry may live on an L2, where its namespace's rules apply.
+  if (loaded.kind === "available") {
+    const { l2LocationOf } = yield* Effect.promise(() => import("../name/location.js"));
+    const location = yield* l2LocationOf(client, loaded.data.parts, {});
+    if (location !== null) {
+      const { checkOnL2 } = yield* Effect.promise(() => import("../namespace/l2/index.js"));
+      return yield* checkOnL2(client, location, loaded.data.parts, account, operations);
+    }
+  }
+
   const facts = yield* readPermissionFacts(client, loaded, account, operations);
   return Arr.map(operations, (operation) =>
     evaluate(facts, operation, client.deployment.v1?.contracts),

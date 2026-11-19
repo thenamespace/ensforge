@@ -1,11 +1,13 @@
 import { absurd, type Effect, type FileSystem } from "effect";
 
-import type {
-  ArtifactError,
-  CurrentStep,
-  DeployError,
-  ProfileName,
-  StepContext,
+import {
+  isL2Profile,
+  type ArtifactError,
+  type BuildName,
+  type CurrentStep,
+  type DeployError,
+  type L2ProfileName,
+  type StepContext,
 } from "@ensforge/test-devnet";
 import { getAddress, type Address, type Hex } from "viem";
 
@@ -50,6 +52,10 @@ export type Fixture = {
    * second-level name.
    */
   readonly unreserved?: true;
+  /** Needs the L2 namespaces' Ethereum resolvers (only `mainnet-shaped` and `v2-only`). */
+  readonly namespaces?: true;
+  /** A name on this L2, seeded on its L2 profile only. */
+  readonly chain?: L2ProfileName;
   readonly prelaunch?: Phase;
   readonly postlaunch?: Phase;
   readonly afterTime?: Phase;
@@ -71,7 +77,7 @@ export type FixtureEntry = {
 
 /** What a profile's build seeded. */
 export type Manifest = {
-  readonly profile: ProfileName;
+  readonly profile: BuildName;
   /** Timestamp of the build's clock jump, and its length in seconds. */
   readonly clock: { readonly jumpedAt: string; readonly jump: string };
   readonly fixtures: readonly FixtureEntry[];
@@ -81,7 +87,10 @@ export type Manifest = {
 export const clockJump = 400n * 86_400n;
 
 /** Whether `fixture` is seeded on `profile`. */
-export const seededOn = (fixture: Fixture, profile: ProfileName): boolean => {
+export const seededOn = (fixture: Fixture, profile: BuildName): boolean => {
+  if (fixture.chain !== undefined || isL2Profile(profile)) return fixture.chain === profile;
+  if (fixture.namespaces === true && profile !== "mainnet-shaped" && profile !== "v2-only")
+    return false;
   switch (profile) {
     case "v1-live":
       return fixture.v2 !== true && fixture.launched !== true;

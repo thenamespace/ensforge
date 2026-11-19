@@ -97,7 +97,6 @@ A decorator is a function that takes the client and returns the groups to add. A
 ```ts title="profile/decorator.ts"
 import { Ensforge, ensActions } from "@ensforge/sdk";
 import type { Client, Like } from "@ensforge/sdk/extension";
-import { createPublicClient, http } from "viem";
 import { mainnet } from "viem/chains";
 
 declare const get: (client: Like, options: { name: string }) => Promise<{ url: string | null }>;
@@ -106,8 +105,7 @@ const profileActions = () => (client: Client<object>) => ({
   profile: { get: (options: { name: string }) => get(client, options) },
 });
 
-const publicClient = createPublicClient({ chain: mainnet, transport: http() });
-const ens = Ensforge.create({ publicClient }).extend(ensActions()).extend(profileActions());
+const ens = Ensforge.create({ chain: mainnet }).extend(ensActions()).extend(profileActions());
 
 const { url } = await ens.profile.get({ name: "nick.eth" });
 ```

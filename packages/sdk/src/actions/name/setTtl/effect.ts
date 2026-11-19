@@ -1,14 +1,15 @@
 import { Effect } from "effect";
 
-import { Abis } from "@ensforge/contracts";
-import { encodeFunctionData, maxUint64 } from "viem";
+import { maxUint64 } from "viem";
 
 import type { Client } from "../../../client/types.js";
 import { InvalidInputError } from "../../../errors/classes/InvalidInputError.js";
 import type { AnyError } from "../../../errors/types.js";
 import * as Action from "../../../internal/action/index.js";
 import { loadName } from "../../../internal/name/load.js";
+import * as V1Calls from "../../../internal/name/v1-calls.js";
 import {
+  l2WriteTargetOf,
   requireProtocol,
   requireRegistered,
   requireV1Contracts,
@@ -31,34 +32,35 @@ export const plan = Effect.fnUntraced(function* (
   }
 
   const loaded = yield* loadName(client, options.name);
+  // A Basenames or Linea name keeps its TTL on its L2.
+  const l2 = yield* l2WriteTargetOf(client, loaded);
+  if (l2 !== null) {
+    const { forkTarget } = yield* Effect.promise(
+      () => import("../../../internal/namespace/l2/index.js"),
+    );
+    const fork = yield* forkTarget(l2, loaded.data.parts);
+    return singleStepPlan(l2.client, {
+      operation: "name.setTtl",
+      account: options.account,
+      description: "Set TTL",
+      calls: [V1Calls.setTtl(fork.to, loaded.data.parts.node, options.ttl)],
+    });
+  }
   yield* requireRegistered(client, loaded);
   yield* requireProtocol(loaded, "v1", "TTL");
 
   const contracts = yield* requireV1Contracts(client);
-  const { node } = loaded.data.parts;
-  const call = loaded.state.wrapped
-    ? {
-        to: contracts.nameWrapper,
-        data: encodeFunctionData({
-          abi: Abis.v1.nameWrapper,
-          functionName: "setTTL",
-          args: [node, options.ttl],
-        }),
-      }
-    : {
-        to: contracts.registry,
-        data: encodeFunctionData({
-          abi: Abis.v1.ensRegistry,
-          functionName: "setTTL",
-          args: [node, options.ttl],
-        }),
-      };
+  const call = V1Calls.setTtl(
+    loaded.state.wrapped ? contracts.nameWrapper : contracts.registry,
+    loaded.data.parts.node,
+    options.ttl,
+  );
 
   return singleStepPlan(client, {
     operation: "name.setTtl",
     account: options.account,
     description: "Set TTL",
-    calls: [{ ...call, value: 0n }],
+    calls: [call],
   });
 });
 
