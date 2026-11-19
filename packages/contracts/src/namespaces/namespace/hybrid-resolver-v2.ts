@@ -1696,3 +1696,31 @@ export const namespaceHybridResolverV2Abi = [
     stateMutability: "nonpayable",
   },
 ] as const;
+
+/**
+ * The functions ensforge reads from Namespace's HybridResolverV2: the route a name resolves through (`findRoute`).
+ *
+ * @stability stable
+ * @since 1.1.0
+ */
+export const namespaceHybridResolverV2InterfaceAbi = [
+  {
+    name: "findRoute",
+    type: "function",
+    inputs: [
+      {
+        name: "fullName",
+        type: "bytes",
+        internalType: "bytes",
+      },
+    ],
+    outputs: [
+      {
+        name: "id",
+        type: "uint256",
+        internalType: "uint256",
+      },
+    ],
+    stateMutability: "view",
+  },
+] as const;

@@ -1083,3 +1083,36 @@ export const namespaceHybridResolverAbi = [
     stateMutability: "nonpayable",
   },
 ] as const;
+
+/**
+ * The functions ensforge reads from Namespace's hybrid resolver: where a parent's names resolve (`configs`).
+ *
+ * @stability stable
+ * @since 1.1.0
+ */
+export const namespaceHybridResolverInterfaceAbi = [
+  {
+    name: "configs",
+    type: "function",
+    inputs: [
+      {
+        name: "",
+        type: "bytes32",
+        internalType: "bytes32",
+      },
+    ],
+    outputs: [
+      {
+        name: "resolveOffchain",
+        type: "bool",
+        internalType: "bool",
+      },
+      {
+        name: "resolutionType",
+        type: "uint256",
+        internalType: "uint256",
+      },
+    ],
+    stateMutability: "view",
+  },
+] as const;

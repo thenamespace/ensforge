@@ -241,6 +241,12 @@ const Abis.celonames.registry: Abi
   function transferFrom(address,address,uint256)
   function transferOwnership(address)
 // @stability experimental
+const Abis.durin.interfaces.l1Resolver: Abi
+  function l2Registry(bytes32) view returns (uint64,address)
+// @stability experimental
+const Abis.durin.interfaces.l2Registry: Abi
+  function baseNode() view returns (bytes32)
+// @stability experimental
 const Abis.durin.l1Resolver: Abi
   constructor(string,address,address)
   error ECDSAInvalidSignature()
@@ -544,6 +550,12 @@ const Abis.namespace.hybridResolverV2: Abi
   function text(bytes32,string) view returns (string)
   function transferOwnership(address)
   function updateRoute(uint256,string,address)
+const Abis.namespace.interfaces.hybridResolver: Abi
+  function configs(bytes32) view returns (bool,uint256)
+const Abis.namespace.interfaces.hybridResolverV2: Abi
+  function findRoute(bytes) view returns (uint256)
+const Abis.namespace.interfaces.nodeRegistryResolver: Abi
+  function nodeRegistries(bytes32) view returns (address)
 const Abis.namespace.namePublicResolver: Abi
   constructor(address)
   event ABIChanged(bytes32,uint256)

@@ -8,3 +8,10 @@ export { namespaceHybridResolverAbi as hybridResolver } from "../namespaces/name
 export { namespaceHybridResolverV2Abi as hybridResolverV2 } from "../namespaces/namespace/hybrid-resolver-v2.js";
 export { namespacePublicResolverAbi as namePublicResolver } from "../namespaces/namespace/name-public-resolver.js";
 export { namespaceNodeRegistryResolverAbi as nodeRegistryResolver } from "../namespaces/namespace/node-registry-resolver.js";
+
+/**
+ * Namespace interface ABIs: only the functions ensforge reads, for small bundles.
+ *
+ * @stability stable
+ */
+export * as interfaces from "./namespace-interfaces.js";

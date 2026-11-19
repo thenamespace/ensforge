@@ -272,6 +272,9 @@ const durinL1ResolverAbi: Abi
   function transferOwnership(address)
   function url() view returns (string)
 // @stability experimental
+const durinL1ResolverInterfaceAbi: Abi
+  function l2Registry(bytes32) view returns (uint64,address)
+// @stability experimental
 const durinL2RegistryAbi: Abi
   constructor()
   error ERC721IncorrectOwner(address,uint256,address)
@@ -351,6 +354,9 @@ const durinL2RegistryAbi: Abi
   function tokenURI(uint256) view returns (string)
   function totalSupply() view returns (uint256)
   function transferFrom(address,address,uint256)
+// @stability experimental
+const durinL2RegistryInterfaceAbi: Abi
+  function baseNode() view returns (bytes32)
 const namespaceEnsNameRegistryAbi: Abi
   constructor((uint8,uint8,string,string,string,address,bytes32,address))
   error ERC721IncorrectOwner(address,uint256,address)
@@ -456,6 +462,8 @@ const namespaceHybridResolverAbi: Abi
   function supportsInterface(bytes4) view returns (bool)
   function text(bytes32,string) view returns (string)
   function transferOwnership(address)
+const namespaceHybridResolverInterfaceAbi: Abi
+  function configs(bytes32) view returns (bool,uint256)
 const namespaceHybridResolverV2Abi: Abi
   constructor(address,address,address)
   error DNSDecodingFailed(bytes)
@@ -544,6 +552,8 @@ const namespaceHybridResolverV2Abi: Abi
   function text(bytes32,string) view returns (string)
   function transferOwnership(address)
   function updateRoute(uint256,string,address)
+const namespaceHybridResolverV2InterfaceAbi: Abi
+  function findRoute(bytes) view returns (uint256)
 const namespaceNodeRegistryResolverAbi: Abi
   error OwnableInvalidOwner(address)
   error OwnableUnauthorizedAccount(address)
@@ -558,6 +568,8 @@ const namespaceNodeRegistryResolverAbi: Abi
   function setNodeRegistry(bytes32,address)
   function subnodeOwner(bytes32,bytes32) view returns (address)
   function transferOwnership(address)
+const namespaceNodeRegistryResolverInterfaceAbi: Abi
+  function nodeRegistries(bytes32) view returns (address)
 const namespacePublicResolverAbi: Abi
   constructor(address)
   event ABIChanged(bytes32,uint256)

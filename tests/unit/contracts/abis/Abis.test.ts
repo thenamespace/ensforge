@@ -232,3 +232,29 @@ describe("L2 resolvers implement the standard resolver profiles", () => {
       assert.isTrue(present.has(selector), `missing ${selector}`);
   });
 });
+
+// An interface ABI holds the functions ensforge calls, each exactly as the contract declares it.
+describe("L2 namespace interface ABIs are subsets of their contracts' ABIs", () => {
+  it.each([
+    ["durin.l1Resolver", Abis.durin.interfaces.l1Resolver, Abis.durin.l1Resolver],
+    ["durin.l2Registry", Abis.durin.interfaces.l2Registry, Abis.durin.l2Registry],
+    [
+      "namespace.hybridResolver",
+      Abis.namespace.interfaces.hybridResolver,
+      Abis.namespace.hybridResolver,
+    ],
+    [
+      "namespace.hybridResolverV2",
+      Abis.namespace.interfaces.hybridResolverV2,
+      Abis.namespace.hybridResolverV2,
+    ],
+    [
+      "namespace.nodeRegistryResolver",
+      Abis.namespace.interfaces.nodeRegistryResolver,
+      Abis.namespace.nodeRegistryResolver,
+    ],
+  ] as const)("%s", (_, subset, full) => {
+    const declared = selectorsOf(full);
+    for (const selector of selectorsOf(subset)) assert.isTrue(declared.has(selector), selector);
+  });
+});

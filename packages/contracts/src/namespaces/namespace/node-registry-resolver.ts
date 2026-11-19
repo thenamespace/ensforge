@@ -217,3 +217,31 @@ export const namespaceNodeRegistryResolverAbi = [
     stateMutability: "nonpayable",
   },
 ] as const;
+
+/**
+ * The functions ensforge reads from Namespace's NodeRegistryResolver: a parent's registry (`nodeRegistries`).
+ *
+ * @stability stable
+ * @since 1.1.0
+ */
+export const namespaceNodeRegistryResolverInterfaceAbi = [
+  {
+    name: "nodeRegistries",
+    type: "function",
+    inputs: [
+      {
+        name: "",
+        type: "bytes32",
+        internalType: "bytes32",
+      },
+    ],
+    outputs: [
+      {
+        name: "",
+        type: "address",
+        internalType: "address",
+      },
+    ],
+    stateMutability: "view",
+  },
+] as const;

@@ -22,6 +22,13 @@ generated: true
 | --- | --- | --- | --- | --- |
 | `Abis.celonames.registry` | 52 | 19 | 21 | Complete CeloNames ABI: the registry of `celo.eth` names on Celo: an ERC-721 with `expiries` that is also their resolver. |
 
+## `Abis.durin.interfaces`
+
+| ABI | Functions | Events | Errors | Description |
+| --- | --- | --- | --- | --- |
+| `Abis.durin.interfaces.l1Resolver` | 1 | 0 | 0 | The functions ensforge reads from Durin's L1Resolver: where a second-level name's registry lives (`l2Registry`). |
+| `Abis.durin.interfaces.l2Registry` | 1 | 0 | 0 | The functions ensforge reads from Durin's L2Registry: the name a registry serves (`baseNode`). |
+
 ## `Abis.durin`
 
 | ABI | Functions | Events | Errors | Description |
@@ -38,6 +45,14 @@ generated: true
 | `Abis.namespace.hybridResolverV2` | 50 | 22 | 14 | Complete HybridResolverV2 ABI: the ENSv2-aware Ethereum resolver of Namespace parent names, with a route table (`findRoute`). |
 | `Abis.namespace.namePublicResolver` | 23 | 9 | 0 | Complete NamePublicResolver ABI: the shared resolver of Namespace L2 names, which stores their records. |
 | `Abis.namespace.nodeRegistryResolver` | 8 | 3 | 2 | Complete NodeRegistryResolver ABI: maps a Namespace parent name to its L2 registry (`nodeRegistries`). |
+
+## `Abis.namespace.interfaces`
+
+| ABI | Functions | Events | Errors | Description |
+| --- | --- | --- | --- | --- |
+| `Abis.namespace.interfaces.hybridResolver` | 1 | 0 | 0 | The functions ensforge reads from Namespace's hybrid resolver: where a parent's names resolve (`configs`). |
+| `Abis.namespace.interfaces.hybridResolverV2` | 1 | 0 | 0 | The functions ensforge reads from Namespace's HybridResolverV2: the route a name resolves through (`findRoute`). |
+| `Abis.namespace.interfaces.nodeRegistryResolver` | 1 | 0 | 0 | The functions ensforge reads from Namespace's NodeRegistryResolver: a parent's registry (`nodeRegistries`). |
 
 ## `Abis.shared`
 

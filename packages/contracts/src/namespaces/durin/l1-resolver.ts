@@ -423,3 +423,36 @@ export const durinL1ResolverAbi = [
     type: "function",
   },
 ] as const;
+
+/**
+ * The functions ensforge reads from Durin's L1Resolver: where a second-level name's registry lives (`l2Registry`).
+ *
+ * @stability experimental
+ * @since 1.1.0
+ */
+export const durinL1ResolverInterfaceAbi = [
+  {
+    inputs: [
+      {
+        internalType: "bytes32",
+        name: "node",
+        type: "bytes32",
+      },
+    ],
+    name: "l2Registry",
+    outputs: [
+      {
+        internalType: "uint64",
+        name: "chainId",
+        type: "uint64",
+      },
+      {
+        internalType: "address",
+        name: "registryAddress",
+        type: "address",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+] as const;

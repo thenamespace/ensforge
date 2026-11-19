@@ -1467,3 +1467,25 @@ export const durinL2RegistryAbi = [
     stateMutability: "nonpayable",
   },
 ] as const;
+
+/**
+ * The functions ensforge reads from Durin's L2Registry: the name a registry serves (`baseNode`).
+ *
+ * @stability experimental
+ * @since 1.1.0
+ */
+export const durinL2RegistryInterfaceAbi = [
+  {
+    name: "baseNode",
+    type: "function",
+    inputs: [],
+    outputs: [
+      {
+        name: "",
+        type: "bytes32",
+        internalType: "bytes32",
+      },
+    ],
+    stateMutability: "view",
+  },
+] as const;
