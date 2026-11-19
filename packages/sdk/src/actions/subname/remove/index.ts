@@ -48,7 +48,7 @@ import * as Impl from "./effect.js";
  * ```
  *
  * @throws `Errors.InvalidInputError` (`INVALID_NAME`) for invalid input.
- * @throws `Errors.NameStateError` (`NAME_NOT_REGISTERED`, `NAME_EXPIRED`) when the child or parent does not exist.
+ * @throws `Errors.NameStateError` (`NAME_NOT_REGISTERED`, `NAME_EXTERNAL`, `NAME_EXPIRED`) when the child or parent does not exist, or its parent's namespace manages it outside ENS's registries.
  * @throws `Errors.UnauthorizedError` (`MISSING_ROLES`, `NOT_OWNER`, `FUSE_BURNED`) when the account may not remove it.
  * @throws `Errors.ConfigError` (`WALLET_NOT_CONFIGURED`) when no signing account is known.
  * @throws `Errors.UserRejectedError` when the user rejects the request.
@@ -131,7 +131,7 @@ remove.estimateGas = Action.promiseOf(
  * ```
  *
  * @throws `Errors.InvalidInputError` (`INVALID_NAME`) for invalid input.
- * @throws `Errors.NameStateError` (`NAME_NOT_REGISTERED`, `NAME_EXPIRED`) when the child or parent does not exist.
+ * @throws `Errors.NameStateError` (`NAME_NOT_REGISTERED`, `NAME_EXTERNAL`, `NAME_EXPIRED`) when the child or parent does not exist, or its parent's namespace manages it outside ENS's registries.
  * @throws `Errors.UnauthorizedError` (`MISSING_ROLES`, `NOT_OWNER`, `FUSE_BURNED`) when the account may not remove it.
  * @throws `Errors.ConfigError` (`WALLET_NOT_CONFIGURED`) when no signing account is known.
  * @throws `Errors.TransactionError` (`TRANSACTION_REVERTED`, `RECEIPT_TIMEOUT`) when confirmation fails.

@@ -72,6 +72,35 @@ describe("fork resolution", () => {
       { meta: { cases: ["F03"] } },
     );
 
+    it.effect("classifies names that L2 and off-chain namespaces serve as external", () =>
+      Effect.gen(function* () {
+        const { reader } = yield* Clients;
+        const stateOf = (name: string) => Actions.name.get(reader, { name });
+
+        // Basenames, Uniswap, and Coinbase under `cb.id` (reached through ENSv2's DNS TLD resolver).
+        const jesse = yield* stateOf("jesse.base.eth");
+        const uni = yield* stateOf("test.uni.eth");
+        const coinbase = yield* stateOf("jesse.cb.id");
+        // ENSv2's resolver declares ENSIP-10 without serving labels its registry lacks; DNS names
+        // without an ENS record are claimed with `dns.claim`.
+        const missing = yield* stateOf("ensforge-no-such-name-0.nick.eth");
+        const dns = yield* stateOf("ensforge-no-such-name-0.com");
+
+        const external = { kind: "offchain", status: "external", available: false } as const;
+        assert.deepInclude(jesse, {
+          ...external,
+          inheritedResolver: "0xde9049636F4a1dfE0a64d1bFe3155C0A14C54F31",
+        });
+        assert.deepInclude(uni, external);
+        assert.deepInclude(coinbase, {
+          ...external,
+          inheritedResolver: "0x1934FC75aD10d7eEd51dc7A92773cAc96A06BE56",
+        });
+        assert.deepInclude(missing, { kind: "available", available: true });
+        assert.deepInclude(dns, { kind: "available", available: true });
+      }),
+    );
+
     it.effect(
       "unwraps the Universal Resolver's ResolutionError for DNS names (KL-14, KL-29)",
       () =>

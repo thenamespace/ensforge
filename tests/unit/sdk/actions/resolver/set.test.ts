@@ -73,6 +73,17 @@ describe("resolver.set.prepare", () => {
       { _tag: "NameStateError", code: "NAME_NOT_REGISTERED" },
     ],
     [
+      "a name its parent's off-chain resolver serves",
+      {
+        name,
+        found: { resolver: resolverA, offset: 6n },
+        extended: [resolverA],
+        served: { [resolverA]: "offchain" },
+      },
+      resolverA,
+      { _tag: "NameStateError", code: "NAME_EXTERNAL" },
+    ],
+    [
       "an expired name",
       { name, v1: { owner: other, expiry: now - 1n } },
       resolverA,

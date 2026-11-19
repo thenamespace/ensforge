@@ -8,6 +8,9 @@ import type { Address } from "viem";
  * - `v2-native`: registered on ENSv2.
  * - `v2-migrated`: moved from ENSv1 to ENSv2 (its ENSv1 record is held by the Graveyard).
  * - `v2-reserved`: reserved on ENSv2 without an ENSv1 owner.
+ * - `offchain`: in no registry, but a parent's resolver serves it through a CCIP-Read gateway
+ *   (`jesse.base.eth`, `test.uni.eth`). ENS cannot tell whether the gateway holds the label.
+ * - `wildcard`: in no registry, but a parent's on-chain ENSIP-10 resolver serves it.
  *
  * @category names
  * @since 1.0.0
@@ -18,16 +21,20 @@ export type NameKind =
   | "v1-wrapped"
   | "v2-native"
   | "v2-migrated"
-  | "v2-reserved";
+  | "v2-reserved"
+  | "offchain"
+  | "wildcard";
 
 /**
  * Registration status. `grace` applies to `.eth` second-level names after expiry, while only the
- * previous owner can renew; `expired` names can be registered again.
+ * previous owner can renew; `expired` names can be registered again. `external` names (`offchain`
+ * and `wildcard` kinds) are managed outside ENS's registries, by their parent's namespace: they
+ * cannot be registered through ENS.
  *
  * @category names
  * @since 1.0.0
  */
-export type NameStatus = "available" | "registered" | "grace" | "expired" | "reserved";
+export type NameStatus = "available" | "registered" | "grace" | "expired" | "reserved" | "external";
 
 /**
  * Full state of one name across ENSv1 and ENSv2.
@@ -61,8 +68,8 @@ export type NameState = {
    * For a name without a resolver of its own, the resolver that serves it from an ancestor: a
    * parent's ENSIP-10 wildcard or off-chain resolver, or, for an ENSv1 name ENSv2 serves through
    * the ENSv1 bridge, the ENSv1 resolver behind it. `null` when the name has its own resolver or
-   * nothing serves it. A name only an inherited resolver serves is in no registry, so it can be
-   * `available` and still resolve.
+   * nothing serves it. A name only an inherited resolver serves is in no registry: it is
+   * `offchain` or `wildcard`, or `available` when the resolver does not answer for it.
    */
   readonly inheritedResolver: Address | null;
   /** Unix seconds when the registration ends, grace period excluded. `null` when it never expires. */

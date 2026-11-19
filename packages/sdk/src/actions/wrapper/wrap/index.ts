@@ -51,7 +51,7 @@ import * as Impl from "./effect.js";
  * ```
  *
  * @throws `Errors.InvalidInputError` (`INVALID_NAME`, `INVALID_ADDRESS`, `INVALID_RECORD_VALUE`) for invalid input or fuses.
- * @throws `Errors.NameStateError` (`NAME_EXPIRED`, `NAME_NOT_REGISTERED`, `NAME_WRAPPED`) when the name cannot be wrapped.
+ * @throws `Errors.NameStateError` (`NAME_EXPIRED`, `NAME_NOT_REGISTERED`, `NAME_EXTERNAL`, `NAME_WRAPPED`) when the name cannot be wrapped, or its parent's namespace manages it outside ENS's registries.
  * @throws `Errors.UnsupportedError` (`UNSUPPORTED_PROTOCOL`) for ENSv2 names; migrated names have no NameWrapper.
  * @throws `Errors.UnauthorizedError` (`NOT_OWNER`, `NOT_APPROVED`) when the account does not own the name, or the manager has not approved the NameWrapper.
  * @throws `Errors.UserRejectedError` when the user rejects the request.
@@ -140,7 +140,7 @@ wrap.estimateGas = Action.promiseOf(
  * ```
  *
  * @throws `Errors.InvalidInputError` (`INVALID_NAME`, `INVALID_ADDRESS`, `INVALID_RECORD_VALUE`) for invalid input or fuses.
- * @throws `Errors.NameStateError` (`NAME_EXPIRED`, `NAME_NOT_REGISTERED`, `NAME_WRAPPED`) when the name cannot be wrapped.
+ * @throws `Errors.NameStateError` (`NAME_EXPIRED`, `NAME_NOT_REGISTERED`, `NAME_EXTERNAL`, `NAME_WRAPPED`) when the name cannot be wrapped, or its parent's namespace manages it outside ENS's registries.
  * @throws `Errors.UnsupportedError` (`UNSUPPORTED_PROTOCOL`) for ENSv2 names; migrated names have no NameWrapper.
  * @throws `Errors.UnauthorizedError` (`NOT_OWNER`, `NOT_APPROVED`) when the account does not own the name, or the manager has not approved the NameWrapper.
  * @throws `Errors.TransactionError` (`TRANSACTION_REVERTED`, `RECEIPT_TIMEOUT`) when confirmation fails.

@@ -100,6 +100,11 @@ export const messages: { readonly [code in Code]: Template<code> } = {
     title: "Name not registered",
     message: `${thisName(error)} is not registered.`,
   }),
+  NAME_EXTERNAL: (error) => ({
+    title: "Managed elsewhere",
+    message: `${thisName(error)} is managed by the service that issued it, not by ENS directly.`,
+    action: "Manage it in the app or network that issued it.",
+  }),
   NAME_RESERVED: (error) => ({
     title: "Name reserved",
     message: `${thisName(error)} is reserved.`,

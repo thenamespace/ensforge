@@ -26,6 +26,8 @@ type Refusal = {
 const bad = "0x1234";
 const stranger = "0x000000000000000000000000000000000000dEaD";
 const unregistered = "nothing-here.eth";
+// A child of `rsv-offchain.eth`, whose resolver answers every name with an `OffchainLookup`.
+const offchainName = (fixtures: FixturesApi) => `nope.${fixtures.byId("resolver.offchain").name}`;
 const err = (_tag: string, code: string): ExpectedError => ({ _tag, code });
 
 const nameState = (code: string) => err("NameStateError", code);
@@ -906,6 +908,134 @@ const refusals: readonly Refusal[] = [
     account: "alice",
     options: (f) => ({ names: f.byId("v2.reserved").name, resolver: "new" }),
     expected: err("MigrationError", "RECORDS_UNKNOWN"),
+  },
+  // A name in no registry that its parent's off-chain resolver serves is managed by that
+  // namespace (an L2 or a gateway), not through ENS's registries.
+  {
+    label: "an off-chain name",
+    path: "approval.setToken",
+    account: "alice",
+    options: (f, d) => ({ name: offchainName(f), to: d.accounts.carol }),
+    expected: nameState("NAME_EXTERNAL"),
+  },
+  {
+    label: "an off-chain name",
+    path: "dns.setRecords",
+    account: "alice",
+    options: (f) => ({ name: offchainName(f), zonehash: null }),
+    expected: nameState("NAME_EXTERNAL"),
+  },
+  {
+    label: "an off-chain name",
+    path: "name.reclaim",
+    account: "alice",
+    options: (f) => ({ name: offchainName(f) }),
+    expected: nameState("NAME_EXTERNAL"),
+  },
+  {
+    label: "an off-chain name",
+    path: "name.setManager",
+    account: "alice",
+    options: (f, d) => ({ name: offchainName(f), manager: d.accounts.carol }),
+    expected: nameState("NAME_EXTERNAL"),
+  },
+  {
+    label: "an off-chain name",
+    path: "name.setTtl",
+    account: "alice",
+    options: (f) => ({ name: offchainName(f), ttl: 60n }),
+    expected: nameState("NAME_EXTERNAL"),
+  },
+  {
+    label: "an off-chain name",
+    path: "name.transfer",
+    account: "alice",
+    options: (f, d) => ({ name: offchainName(f), to: d.accounts.carol }),
+    expected: nameState("NAME_EXTERNAL"),
+  },
+  {
+    label: "an off-chain name",
+    path: "record.set",
+    account: "alice",
+    options: (f) => ({ name: offchainName(f), texts: { url: "x" } }),
+    expected: nameState("NAME_EXTERNAL"),
+  },
+  {
+    label: "an off-chain name",
+    path: "registry.attach",
+    account: "alice",
+    options: (f) => ({ name: offchainName(f), registry: null }),
+    expected: nameState("NAME_EXTERNAL"),
+  },
+  {
+    label: "an off-chain name",
+    path: "resolver.create",
+    account: "alice",
+    options: (f) => ({ name: offchainName(f) }),
+    expected: nameState("NAME_EXTERNAL"),
+  },
+  {
+    label: "an off-chain name",
+    path: "resolver.link",
+    account: "alice",
+    options: (f) => ({ name: offchainName(f), to: f.byId("records.v2").name }),
+    expected: nameState("NAME_EXTERNAL"),
+  },
+  {
+    label: "an off-chain name",
+    path: "resolver.set",
+    account: "alice",
+    options: (f, d) => ({ name: offchainName(f), resolver: d.accounts.carol }),
+    expected: nameState("NAME_EXTERNAL"),
+  },
+  {
+    label: "a subname of an off-chain name",
+    path: "subname.create",
+    account: "alice",
+    options: (f) => ({ name: `x.${offchainName(f)}` }),
+    expected: nameState("NAME_EXTERNAL"),
+  },
+  {
+    label: "an off-chain name",
+    path: "subname.remove",
+    account: "alice",
+    options: (f) => ({ name: offchainName(f) }),
+    expected: nameState("NAME_EXTERNAL"),
+  },
+  {
+    label: "an off-chain name",
+    path: "subname.update",
+    account: "alice",
+    options: (f, d) => ({ name: offchainName(f), owner: d.accounts.carol }),
+    expected: nameState("NAME_EXTERNAL"),
+  },
+  {
+    label: "an off-chain name",
+    path: "wrapper.wrap",
+    account: "alice",
+    options: (f) => ({ name: offchainName(f) }),
+    expected: nameState("NAME_EXTERNAL"),
+  },
+  {
+    label: "an off-chain name",
+    path: "wrapper.unwrap",
+    account: "alice",
+    options: (f) => ({ name: offchainName(f) }),
+    expected: nameState("NAME_EXTERNAL"),
+  },
+  {
+    label: "an off-chain name",
+    path: "wrapper.setFuses",
+    account: "alice",
+    options: (f) => ({ name: offchainName(f), fuses: ["cannotUnwrap"] }),
+    expected: nameState("NAME_EXTERNAL"),
+  },
+  {
+    label: "an off-chain name",
+    path: "wrapper.setChildFuses",
+    account: "alice",
+    options: (f) => ({ name: offchainName(f), fuses: ["parentCannotControl"] }),
+    expected: nameState("NAME_EXTERNAL"),
   },
 ];
 

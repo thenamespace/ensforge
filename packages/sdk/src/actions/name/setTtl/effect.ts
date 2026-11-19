@@ -31,7 +31,7 @@ export const plan = Effect.fnUntraced(function* (
   }
 
   const loaded = yield* loadName(client, options.name);
-  yield* requireRegistered(loaded);
+  yield* requireRegistered(client, loaded);
   yield* requireProtocol(loaded, "v1", "TTL");
 
   const contracts = yield* requireV1Contracts(client);

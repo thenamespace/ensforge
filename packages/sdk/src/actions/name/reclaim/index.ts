@@ -40,7 +40,7 @@ import * as Impl from "./effect.js";
  * ```
  *
  * @throws `Errors.InvalidInputError` (`INVALID_NAME`, `INVALID_ADDRESS`) for invalid input.
- * @throws `Errors.NameStateError` (`NAME_EXPIRED`, `NAME_RESERVED`, `NAME_NOT_REGISTERED`) when the name is not registered.
+ * @throws `Errors.NameStateError` (`NAME_EXPIRED`, `NAME_RESERVED`, `NAME_NOT_REGISTERED`, `NAME_EXTERNAL`) when the name is not registered, or its parent's namespace manages it outside ENS's registries.
  * @throws `Errors.UnsupportedError` (`UNSUPPORTED_PROTOCOL`) for wrapped, ENSv2 and non-`.eth` names.
  * @throws `Errors.UnauthorizedError` (`NOT_OWNER`) when the account is not the registrant.
  * @throws `Errors.UserRejectedError` when the user rejects the request.
@@ -129,7 +129,7 @@ reclaim.estimateGas = Action.promiseOf(
  * ```
  *
  * @throws `Errors.InvalidInputError` (`INVALID_NAME`, `INVALID_ADDRESS`) for invalid input.
- * @throws `Errors.NameStateError` (`NAME_EXPIRED`, `NAME_RESERVED`, `NAME_NOT_REGISTERED`) when the name is not registered.
+ * @throws `Errors.NameStateError` (`NAME_EXPIRED`, `NAME_RESERVED`, `NAME_NOT_REGISTERED`, `NAME_EXTERNAL`) when the name is not registered, or its parent's namespace manages it outside ENS's registries.
  * @throws `Errors.UnsupportedError` (`UNSUPPORTED_PROTOCOL`) for wrapped, ENSv2 and non-`.eth` names.
  * @throws `Errors.UnauthorizedError` (`NOT_OWNER`) when the account is not the registrant.
  * @throws `Errors.TransactionError` (`TRANSACTION_REVERTED`, `RECEIPT_TIMEOUT`) when confirmation fails.

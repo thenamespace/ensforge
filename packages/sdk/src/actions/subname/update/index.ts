@@ -51,7 +51,7 @@ import * as Impl from "./effect.js";
  * ```
  *
  * @throws `Errors.InvalidInputError` (`INVALID_NAME`, `INVALID_ADDRESS`, `INVALID_RECORD_VALUE`, `INVALID_EXPIRY`) for invalid input.
- * @throws `Errors.NameStateError` (`NAME_NOT_REGISTERED`, `NAME_EXPIRED`) when the child or parent does not exist, or an emancipated child expired.
+ * @throws `Errors.NameStateError` (`NAME_NOT_REGISTERED`, `NAME_EXTERNAL`, `NAME_EXPIRED`) when the child or parent does not exist, or an emancipated child expired, or its parent's namespace manages it outside ENS's registries.
  * @throws `Errors.UnsupportedError` (`UNSUPPORTED_PROTOCOL`) for an ENSv2 owner change or an unwrapped ENSv1 expiry.
  * @throws `Errors.UnauthorizedError` (`MISSING_ROLES`, `NOT_OWNER`, `FUSE_BURNED`) when the account may not change it.
  * @throws `Errors.UserRejectedError` when the user rejects the request.
@@ -140,7 +140,7 @@ update.estimateGas = Action.promiseOf(
  * ```
  *
  * @throws `Errors.InvalidInputError` (`INVALID_NAME`, `INVALID_ADDRESS`, `INVALID_RECORD_VALUE`, `INVALID_EXPIRY`) for invalid input.
- * @throws `Errors.NameStateError` (`NAME_NOT_REGISTERED`, `NAME_EXPIRED`) when the child or parent does not exist, or an emancipated child expired.
+ * @throws `Errors.NameStateError` (`NAME_NOT_REGISTERED`, `NAME_EXTERNAL`, `NAME_EXPIRED`) when the child or parent does not exist, or an emancipated child expired, or its parent's namespace manages it outside ENS's registries.
  * @throws `Errors.UnsupportedError` (`UNSUPPORTED_PROTOCOL`) for an ENSv2 owner change or an unwrapped ENSv1 expiry.
  * @throws `Errors.UnauthorizedError` (`MISSING_ROLES`, `NOT_OWNER`, `FUSE_BURNED`) when the account may not change it.
  * @throws `Errors.TransactionError` (`TRANSACTION_REVERTED`, `RECEIPT_TIMEOUT`) when confirmation fails.

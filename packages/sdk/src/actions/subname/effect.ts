@@ -58,7 +58,7 @@ import type { update as updateTypes, updateSync as updateSyncTypes } from "./upd
  * ```
  *
  * @throws `Errors.InvalidInputError` (`INVALID_NAME`, `INVALID_ADDRESS`, `INVALID_ROLES`, `INVALID_RECORD_VALUE`) for invalid input.
- * @throws `Errors.NameStateError` (`NAME_NOT_AVAILABLE`, `NAME_NOT_REGISTERED`, `NAME_EXPIRED`) when the child exists or the parent is not registered.
+ * @throws `Errors.NameStateError` (`NAME_NOT_AVAILABLE`, `NAME_NOT_REGISTERED`, `NAME_EXTERNAL`, `NAME_EXPIRED`) when the child exists or the parent is not registered, or its parent's namespace manages it outside ENS's registries.
  * @throws `Errors.UnsupportedError` (`UNSUPPORTED_PROTOCOL`) for `roles` on ENSv1 or `fuses` on unwrapped parents.
  * @throws `Errors.UnauthorizedError` (`MISSING_ROLES`, `NOT_OWNER`, `FUSE_BURNED`) when the account may not create children.
  * @throws `Errors.ConfigError` (`WALLET_NOT_CONFIGURED`) when no signing account is known.
@@ -114,7 +114,7 @@ export declare namespace create {
  * ```
  *
  * @throws `Errors.InvalidInputError` (`INVALID_NAME`, `INVALID_ADDRESS`, `INVALID_ROLES`, `INVALID_RECORD_VALUE`) for invalid input.
- * @throws `Errors.NameStateError` (`NAME_NOT_AVAILABLE`, `NAME_NOT_REGISTERED`, `NAME_EXPIRED`) when the child exists or the parent is not registered.
+ * @throws `Errors.NameStateError` (`NAME_NOT_AVAILABLE`, `NAME_NOT_REGISTERED`, `NAME_EXTERNAL`, `NAME_EXPIRED`) when the child exists or the parent is not registered, or its parent's namespace manages it outside ENS's registries.
  * @throws `Errors.UnsupportedError` (`UNSUPPORTED_PROTOCOL`) for `roles` on ENSv1 or `fuses` on unwrapped parents.
  * @throws `Errors.UnauthorizedError` (`MISSING_ROLES`, `NOT_OWNER`, `FUSE_BURNED`) when the account may not create children.
  * @throws `Errors.ConfigError` (`WALLET_NOT_CONFIGURED`) when no signing account is known.
@@ -178,7 +178,7 @@ export declare namespace createSync {
  * ```
  *
  * @throws `Errors.InvalidInputError` (`INVALID_NAME`) for invalid input.
- * @throws `Errors.NameStateError` (`NAME_NOT_REGISTERED`, `NAME_EXPIRED`) when the child or parent does not exist.
+ * @throws `Errors.NameStateError` (`NAME_NOT_REGISTERED`, `NAME_EXTERNAL`, `NAME_EXPIRED`) when the child or parent does not exist, or its parent's namespace manages it outside ENS's registries.
  * @throws `Errors.UnauthorizedError` (`MISSING_ROLES`, `NOT_OWNER`, `FUSE_BURNED`) when the account may not remove it.
  * @throws `Errors.ConfigError` (`WALLET_NOT_CONFIGURED`) when no signing account is known.
  * @throws `Errors.UserRejectedError` when the user rejects the request.
@@ -233,7 +233,7 @@ export declare namespace remove {
  * ```
  *
  * @throws `Errors.InvalidInputError` (`INVALID_NAME`) for invalid input.
- * @throws `Errors.NameStateError` (`NAME_NOT_REGISTERED`, `NAME_EXPIRED`) when the child or parent does not exist.
+ * @throws `Errors.NameStateError` (`NAME_NOT_REGISTERED`, `NAME_EXTERNAL`, `NAME_EXPIRED`) when the child or parent does not exist, or its parent's namespace manages it outside ENS's registries.
  * @throws `Errors.UnauthorizedError` (`MISSING_ROLES`, `NOT_OWNER`, `FUSE_BURNED`) when the account may not remove it.
  * @throws `Errors.ConfigError` (`WALLET_NOT_CONFIGURED`) when no signing account is known.
  * @throws `Errors.TransactionError` (`TRANSACTION_REVERTED`, `RECEIPT_TIMEOUT`) when confirmation fails.
@@ -299,7 +299,7 @@ export declare namespace removeSync {
  * ```
  *
  * @throws `Errors.InvalidInputError` (`INVALID_NAME`, `INVALID_ADDRESS`, `INVALID_RECORD_VALUE`, `INVALID_EXPIRY`) for invalid input.
- * @throws `Errors.NameStateError` (`NAME_NOT_REGISTERED`, `NAME_EXPIRED`) when the child or parent does not exist, or an emancipated child expired.
+ * @throws `Errors.NameStateError` (`NAME_NOT_REGISTERED`, `NAME_EXTERNAL`, `NAME_EXPIRED`) when the child or parent does not exist, or an emancipated child expired, or its parent's namespace manages it outside ENS's registries.
  * @throws `Errors.UnsupportedError` (`UNSUPPORTED_PROTOCOL`) for an ENSv2 owner change or an unwrapped ENSv1 expiry.
  * @throws `Errors.UnauthorizedError` (`MISSING_ROLES`, `NOT_OWNER`, `FUSE_BURNED`) when the account may not change it.
  * @throws `Errors.UserRejectedError` when the user rejects the request.
@@ -354,7 +354,7 @@ export declare namespace update {
  * ```
  *
  * @throws `Errors.InvalidInputError` (`INVALID_NAME`, `INVALID_ADDRESS`, `INVALID_RECORD_VALUE`, `INVALID_EXPIRY`) for invalid input.
- * @throws `Errors.NameStateError` (`NAME_NOT_REGISTERED`, `NAME_EXPIRED`) when the child or parent does not exist, or an emancipated child expired.
+ * @throws `Errors.NameStateError` (`NAME_NOT_REGISTERED`, `NAME_EXTERNAL`, `NAME_EXPIRED`) when the child or parent does not exist, or an emancipated child expired, or its parent's namespace manages it outside ENS's registries.
  * @throws `Errors.UnsupportedError` (`UNSUPPORTED_PROTOCOL`) for an ENSv2 owner change or an unwrapped ENSv1 expiry.
  * @throws `Errors.UnauthorizedError` (`MISSING_ROLES`, `NOT_OWNER`, `FUSE_BURNED`) when the account may not change it.
  * @throws `Errors.TransactionError` (`TRANSACTION_REVERTED`, `RECEIPT_TIMEOUT`) when confirmation fails.

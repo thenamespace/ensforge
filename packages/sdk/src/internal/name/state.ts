@@ -3,6 +3,7 @@ import { hexToBigInt, maxUint64 } from "viem";
 import type { NameKind, NameState, NameStatus } from "../../actions/name/get/types.js";
 import { nonZeroAddress } from "../address.js";
 import { RegistryStatus, type NameData, type V1Data, type V2Data } from "./read.js";
+import type { ServedKind } from "./served.js";
 
 // ENSv1 counts the last second of a window as inside it: BaseRegistrar renews and withholds a
 // name through `expiry + GRACE_PERIOD`, and NameWrapper expires a token only once `expiry < now`.
@@ -163,6 +164,15 @@ const unregistered = (data: NameData): Omit<RegistryState, "name" | "kind" | "re
   wrapped: false,
   migrated: false,
   available: true,
+  renewable: false,
+});
+
+/** The state of a name no registry holds that a parent's resolver serves. */
+export const toServedState = (state: RegistryState, kind: ServedKind): RegistryState => ({
+  ...state,
+  kind,
+  status: "external",
+  available: false,
   renewable: false,
 });
 

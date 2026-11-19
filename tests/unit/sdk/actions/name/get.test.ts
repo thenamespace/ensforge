@@ -3,7 +3,7 @@ import { Effect } from "effect";
 
 import { Deployments } from "@ensforge/contracts";
 import { Actions } from "@ensforge/sdk/effect";
-import { getAddress } from "viem";
+import { getAddress, type Address } from "viem";
 
 import { clientFor, resolverA, signer } from "../world.js";
 
@@ -31,6 +31,39 @@ describe("name.get", () => {
         inheritedResolver: parentResolver,
       });
       assert.isNull((yield* Actions.name.get(plain.ens, { name: subname.name })).inheritedResolver);
+    }),
+  );
+
+  // A name in no registry that its parent's resolver answers for is managed by that namespace
+  // (an L2 or a gateway), so it cannot be registered through ENS.
+  it.effect("classifies names a parent's resolver serves as external", () =>
+    Effect.gen(function* () {
+      const served = (answer: "offchain" | Address | undefined) =>
+        clientFor({
+          ...subname,
+          found: { resolver: parentResolver, offset: 4n },
+          extended: [parentResolver],
+          ...(answer === undefined ? {} : { served: { [parentResolver]: answer } }),
+        }).ens;
+
+      const offchain = yield* Actions.name.get(served("offchain"), { name: subname.name });
+      const wildcard = yield* Actions.name.get(served(signer), { name: subname.name });
+      const unanswered = yield* Actions.name.get(served(undefined), { name: subname.name });
+
+      const external = {
+        status: "external",
+        available: false,
+        renewable: false,
+        owner: null,
+      } as const;
+      assert.deepInclude(offchain, {
+        ...external,
+        kind: "offchain",
+        inheritedResolver: parentResolver,
+      });
+      assert.deepInclude(wildcard, { ...external, kind: "wildcard" });
+      // ENSv2 resolvers declare ENSIP-10 without answering for labels their registry lacks.
+      assert.deepInclude(unanswered, { kind: "available", available: true });
     }),
   );
 

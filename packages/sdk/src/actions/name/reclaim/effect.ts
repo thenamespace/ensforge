@@ -27,7 +27,7 @@ export const plan = Effect.fnUntraced(function* (
   options: Promises.Options & Pick<Write.Options, "account">,
 ): Effect.fn.Return<Plan, AnyError> {
   const loaded = yield* loadName(client, options.name);
-  yield* requireRegistered(loaded);
+  yield* requireRegistered(client, loaded);
   yield* requireProtocol(loaded, "v1", "reclaim");
 
   const { state, data } = loaded;

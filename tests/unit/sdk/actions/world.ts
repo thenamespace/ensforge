@@ -9,6 +9,8 @@ import { contractScript, type ContractStub } from "@ensforge/test-harness/contra
 import {
   createPublicClient,
   decodeFunctionData,
+  encodeErrorResult,
+  encodeFunctionResult,
   getAddress,
   hexToBigInt,
   isAddressEqual,
@@ -76,6 +78,11 @@ export type World = Entry & {
   readonly found?: { readonly resolver: Address; readonly offset: bigint } | undefined;
   /** Resolvers that report ENSIP-10 `resolve` (extended resolvers). */
   readonly extended?: readonly Address[] | undefined;
+  /**
+   * How extended resolvers answer `resolve(name, addr(node))`: `"offchain"` reverts with an
+   * `OffchainLookup`, an address is an on-chain answer; others answer nothing (`0x`).
+   */
+  readonly served?: Readonly<Record<Address, "offchain" | Address>> | undefined;
   /** A deployment without ENSv2, as before its launch. */
   readonly v1Only?: boolean | undefined;
   /** Contract accounts, by address: their Ownable `owner()` and the accounts `isContractNamer` approves. */
@@ -304,12 +311,36 @@ const stubs = (world: World): ContractStub[] => {
     ),
     ...Arr.map([...new Set(deployedResolvers)], (address): ContractStub => ({
       address,
-      abi: [...Abis.shared.erc165, ...Abis.shared.versionableResolver],
+      abi: [
+        ...Abis.shared.erc165,
+        ...Abis.shared.versionableResolver,
+        ...Abis.shared.extendedResolver,
+      ],
       functions: {
         supportsInterface: ([id]) =>
           includes(world.permissioned, address) ||
           (id === InterfaceIds.resolverProfiles.extended && includes(world.extended, address)),
         recordVersions: () => 0n,
+        resolve: () => {
+          const answer = world.served?.[address];
+          if (answer === "offchain") {
+            throw Object.assign(new Error("execution reverted"), {
+              code: 3,
+              data: encodeErrorResult({
+                abi: Abis.shared.errors,
+                errorName: "OffchainLookup",
+                args: [address, ["https://gateway.test/{sender}/{data}"], "0x", "0x12345678", "0x"],
+              }),
+            });
+          }
+          return answer === undefined
+            ? "0x"
+            : encodeFunctionResult({
+                abi: Abis.shared.addrResolver,
+                functionName: "addr",
+                result: answer,
+              });
+        },
       },
     })),
   ];

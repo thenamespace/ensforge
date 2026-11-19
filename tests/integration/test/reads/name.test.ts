@@ -318,7 +318,7 @@ describe("name.get", () => {
     // A name only a parent's wildcard (or off-chain) resolver answers is in no registry: it is
     // available, and `inheritedResolver` says what resolves it.
     it.effect(
-      "a wildcard subname is available and has no expiry, yet resolves",
+      "a wildcard subname is in no registry, yet resolves",
       () =>
         Effect.gen(function* () {
           const fixtures = yield* Fixtures;
@@ -329,7 +329,9 @@ describe("name.get", () => {
 
           const state = yield* stateOf(name);
           assert.deepInclude(state, {
-            available: true,
+            kind: "wildcard",
+            status: "external",
+            available: false,
             owner: null,
             expiry: null,
             gracePeriodEnd: null,

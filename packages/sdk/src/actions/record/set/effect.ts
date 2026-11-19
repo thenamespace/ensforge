@@ -38,7 +38,7 @@ export const plan = Effect.fnUntraced(function* (
   // The registry holding the name knows its own resolver. The Universal Resolver would also
   // return wildcards and, for names still on ENSv1, the read-only ENSv1 bridge resolver.
   const loaded = yield* loadName(client, options.name);
-  yield* requireRegistered(loaded);
+  yield* requireRegistered(client, loaded);
 
   let resolver: Address;
   let resolverChange: Plan.Call | undefined;

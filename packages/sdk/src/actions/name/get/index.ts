@@ -24,13 +24,18 @@ export type { NameKind, NameState, NameStatus } from "./types.js";
  * - `inheritedResolver` is the resolver serving a name that has none of its own: a parent's
  *   wildcard or off-chain resolver, or the ENSv1 resolver behind the ENSv1 bridge.
  * - Costs two batched RPC calls, whatever the name kind. A name without a resolver of its own
- *   that a parent's resolver serves costs one more (two behind the ENSv1 bridge).
+ *   that a parent's resolver serves costs one more (two behind the ENSv1 bridge), and one more
+ *   when no registry holds it (an `eth_call` asking the resolver whether it serves the name).
  *
  * **Gotchas**
  *
  * - `resolver` is the resolver set on the name itself. A name served only by a parent's wildcard
- *   or off-chain resolver (such as `jesse.base.eth`) has `resolver: null` and is in no registry,
- *   so it is `available` although it resolves: check `inheritedResolver`.
+ *   or off-chain resolver (such as `jesse.base.eth` or `test.uni.eth`) has `resolver: null` and is
+ *   in no registry: it is `offchain` or `wildcard` with status `external`, and its parent's
+ *   namespace (an L2, or the provider) manages it. `inheritedResolver` is the resolver serving it.
+ * - `offchain` means a gateway answers for the name, not that the gateway holds it: ENS cannot
+ *   tell, so an unclaimed label under such a parent is `offchain` too. The check never contacts
+ *   the gateway.
  *
  * **Example** (Showing a renewal banner)
  *

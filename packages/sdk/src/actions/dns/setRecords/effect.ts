@@ -72,7 +72,7 @@ export const plan = Effect.fnUntraced(function* (
         });
 
   const loaded = yield* loadName(client, options.name);
-  yield* requireRegistered(loaded);
+  yield* requireRegistered(client, loaded);
   const { resolver } = loaded.state;
   if (resolver === null)
     return yield* Effect.fail(new NotFoundError({ code: "RESOLVER_NOT_FOUND" }));

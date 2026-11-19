@@ -47,7 +47,7 @@ export const loadSubname = Effect.fnUntraced(function* (
     { child: loadName(client, parts.name), parent: loadName(client, parentName) },
     { concurrency: "unbounded" },
   );
-  yield* requireRegistered(parent);
+  yield* requireRegistered(client, parent);
 
   const route: SubnameRoute =
     parent.state.protocol === "v2" ? "v2" : parent.state.wrapped ? "v1-wrapped" : "v1";

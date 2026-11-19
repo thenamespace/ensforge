@@ -21,7 +21,7 @@ export const plan = Effect.fnUntraced(function* (
 ): Effect.fn.Return<Plan, AnyError> {
   const to = options.to === null ? zeroAddress : yield* requireAddress(options.to, "to");
   const loaded = yield* loadName(client, options.name);
-  yield* requireRegistered(loaded);
+  yield* requireRegistered(client, loaded);
   const token = yield* approvableToken(client, loaded);
 
   return singleStepPlan(client, {

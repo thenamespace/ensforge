@@ -46,7 +46,7 @@ export const plan = Effect.fnUntraced(function* (
   const attachTo =
     options.attachTo === undefined ? undefined : yield* loadName(client, options.attachTo);
   if (attachTo !== undefined) {
-    yield* requireRegistered(attachTo);
+    yield* requireRegistered(client, attachTo);
     yield* requireProtocol(attachTo, "v2", "subregistries");
   }
 

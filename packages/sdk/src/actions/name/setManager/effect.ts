@@ -28,7 +28,7 @@ export const plan = Effect.fnUntraced(function* (
 ): Effect.fn.Return<Plan, AnyError> {
   const manager = yield* requireAddress(options.manager, "manager");
   const loaded = yield* loadName(client, options.name);
-  yield* requireRegistered(loaded);
+  yield* requireRegistered(client, loaded);
   yield* requireProtocol(loaded, "v1", "managers");
 
   const { state, data } = loaded;

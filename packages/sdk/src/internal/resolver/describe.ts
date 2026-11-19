@@ -55,7 +55,7 @@ const authorizationOf: Record<ResolverKind, ResolverAuthorization> = {
 };
 
 /** Kinds recognised by address alone, from the client's deployment. */
-const knownKind = (client: Client, resolver: Address): ResolverKind | undefined => {
+export const knownKind = (client: Client, resolver: Address): ResolverKind | undefined => {
   const { v1, v2 } = client.deployment;
   const known: readonly (readonly [Address | undefined, ResolverKind])[] = [
     [v2?.migration.ensV1Resolver, "ens-v1-resolver"],

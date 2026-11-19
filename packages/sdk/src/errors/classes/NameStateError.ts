@@ -7,6 +7,10 @@ const defaults: {
 } = {
   NAME_NOT_AVAILABLE: () => ({ shortMessage: "The name is already registered." }),
   NAME_NOT_REGISTERED: () => ({ shortMessage: "The name is not registered." }),
+  NAME_EXTERNAL: () => ({
+    shortMessage: "The name is not in ENS's registries: its parent's resolver serves it.",
+    hint: "Its parent's namespace manages it (an L2, or the provider's app or API); ENS writes cannot change it.",
+  }),
   NAME_RESERVED: () => ({ shortMessage: "The name is reserved." }),
   NAME_EXPIRED: () => ({ shortMessage: "The name has expired." }),
   NAME_NOT_RENEWABLE: () => ({ shortMessage: "The name cannot be renewed." }),
@@ -46,6 +50,7 @@ export declare namespace NameStateError {
   type Code =
     | "NAME_NOT_AVAILABLE"
     | "NAME_NOT_REGISTERED"
+    | "NAME_EXTERNAL"
     | "NAME_RESERVED"
     | "NAME_EXPIRED"
     | "NAME_NOT_RENEWABLE"

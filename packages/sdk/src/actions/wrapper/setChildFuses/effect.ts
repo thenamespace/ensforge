@@ -47,7 +47,7 @@ export const plan = Effect.fnUntraced(function* (
   }
 
   const loaded = yield* loadName(client, options.name);
-  yield* requireRegistered(loaded);
+  yield* requireRegistered(client, loaded);
   yield* requireProtocol(loaded, "v1", "the NameWrapper");
 
   const { parts } = loaded.data;
