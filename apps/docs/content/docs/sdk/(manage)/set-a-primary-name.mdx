@@ -89,7 +89,7 @@ await ens.primaryName.setSync({
 });
 ```
 
-The plan is for the L2, and resumes there. Readers on Ethereum verify an L2 primary name against the L2's state as committed to Ethereum, so they see it only once that state is, which can take a while after the receipt.
+The plan is for the L2, and resumes there. `primaryName.get` on a client that reaches the L2 sees the name as soon as the transaction is mined. Readers that go through Ethereum verify it against the L2's state as committed to Ethereum, so they see it only once that state is, which can take a while after the receipt.
 
 Supported L2s are those with an L2 reverse registrar: OP Mainnet, Base, Arbitrum One, Linea and Scroll, and their Sepolia testnets. Other chains fail with [`UNSUPPORTED_ON_DEPLOYMENT`](/docs/reference/errors/UNSUPPORTED_ON_DEPLOYMENT).
 

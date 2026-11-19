@@ -126,6 +126,10 @@ await ens.subname.removeSync({ name: "pay.ensforge-docs-demo.eth" });
 
 A parent cannot remove an [emancipated](/docs/reference/glossary#emancipated) child: an ENSv1 child with `parentCannotControl` burned, or a child of an emancipated ENSv2 subregistry.
 
+## Under a name on an L2
+
+Under a Basenames or Linea name, the subname is created on the L2 with the parent's registry or NameWrapper. It gets the family's current resolver by default. Records for another `owner` are written while the signer holds the child, which then goes to `owner` in the same step. `fuses`, `expiry`, `roles` and `emancipate` are not supported there, and other L2 namespaces do not let ensforge create subnames. See [Work with names on L2s](/docs/sdk/names-on-l2s).
+
 ## Check the result
 
 Read the child with [`name.get`](/docs/reference/sdk/name/get). See [Get a name's owner, expiry and status](/docs/sdk/get-name-details).

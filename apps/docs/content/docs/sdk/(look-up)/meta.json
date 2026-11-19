@@ -7,6 +7,7 @@
     "get-a-primary-name",
     "get-name-details",
     "look-up-many-at-once",
+    "names-on-l2s",
     "off-chain-names"
   ]
 }

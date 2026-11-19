@@ -45,6 +45,12 @@ Two features need more from the RPC:
   [`LOG_RANGE_TOO_LARGE`](/docs/reference/errors/LOG_RANGE_TOO_LARGE). Use an indexer for history. See
   [Connect an indexer](/docs/sdk/connect-an-indexer).
 
+## Give each L2 an RPC
+
+Names on L2s, and primary names on L2s, are read on their L2 through the same `transports`. Each L2 without a transport uses its public RPC. Give a dedicated URL to the L2s your users' names live on: Base for Basenames, Linea for Linea Names, Celo for Celonames, and OP Mainnet or Base for Namespace names.
+
+A read on the L2 trusts that L2's RPC, as a read on Ethereum trusts Ethereum's. When the client cannot reach the L2, the name is read through Ethereum instead, where Linea Names' resolver checks a proof of Linea's state and the other namespaces' resolvers trust their gateway's signature. See [Work with names on L2s](/docs/sdk/names-on-l2s#when-the-client-cannot-reach-the-l2).
+
 ## Set off-chain lookup gateways
 
 Some names keep their records off-chain and resolve through [CCIP-Read](/docs/reference/glossary#ccip-read)

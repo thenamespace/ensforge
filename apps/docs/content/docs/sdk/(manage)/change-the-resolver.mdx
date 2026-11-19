@@ -127,6 +127,10 @@ const { resolver } = await ens.resolver.createSync({
 
 `resolver` is the new contract's address, known before the transaction is sent. See [Resolvers and shared records](/docs/sdk/resolvers-and-shared-records) for the options and for sharing one resolver between names.
 
+## Names on L2s
+
+A Basenames or Linea name changes its resolver on the L2. `"default"` is the family's current resolver. A Linea name accepts only Linea's PublicResolver, because Linea's resolver on Ethereum reads no other: any other address, or `null`, fails with [`UNSUPPORTED_ON_DEPLOYMENT`](/docs/reference/errors/UNSUPPORTED_ON_DEPLOYMENT). Celonames, Durin and Namespace names have no resolver to change. See [Work with names on L2s](/docs/sdk/names-on-l2s).
+
 ## Check the result
 
 Call `resolver.get` again and compare `address` with the one you set. See [Get a name's owner, expiry and status](/docs/sdk/get-name-details).

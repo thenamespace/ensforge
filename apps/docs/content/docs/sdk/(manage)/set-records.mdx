@@ -133,6 +133,10 @@ await ens.record.setSync({
 - The plan is simulated before the wallet prompt, so permission errors appear first.
 - Records go to the resolver set on the name in its registry, never to a wildcard resolver inherited from a parent.
 
+## Names on L2s
+
+For a name that lives on an L2, such as a Basename, `record.set` writes to its resolver on the L2, signed by the client's wallet or account on that chain. `resolver` works only for Basenames and Linea Names, and a Linea name accepts only Linea's PublicResolver. See [Work with names on L2s](/docs/sdk/names-on-l2s).
+
 ## Check the result
 
 Read the records back with [`record.get`](/docs/reference/sdk/record/get). See [Get text records](/docs/sdk/get-text-records) and [Get a name's address](/docs/sdk/get-an-address).

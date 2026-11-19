@@ -98,6 +98,10 @@ An unwrapped `.eth` name on ENSv1 has two holders. The [registrant](/docs/refere
 
 `setManager` and `reclaim` fail with [`UNSUPPORTED_PROTOCOL`](/docs/reference/errors/UNSUPPORTED_PROTOCOL) for ENSv2 names and wrapped names, and `reclaim` also for names that are not `.eth` names. ENSv2 uses roles instead. See [Roles and permissions](/docs/sdk/roles-and-permissions).
 
+## Names on L2s
+
+For a name that lives on an L2, `name.transfer` moves its token on the L2: an ERC-721 token, or Linea Names' NameWrapper token. A Basenames second-level name also moves its registry record unless `role` is `"registrant"`. `records: "handover"` is not needed there: the records follow the owner. See [Work with names on L2s](/docs/sdk/names-on-l2s).
+
 ## Check the result
 
 Read the name with [`name.get`](/docs/reference/sdk/name/get) and compare `owner` with the recipient. See [Get a name's owner, expiry and status](/docs/sdk/get-name-details).

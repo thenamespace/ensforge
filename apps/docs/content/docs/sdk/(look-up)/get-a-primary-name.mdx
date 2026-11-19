@@ -71,6 +71,8 @@ const baseName = await ens.primaryName.get({
 });
 ```
 
+For Base, OP Mainnet, Arbitrum One, Linea and Scroll, ensforge reads the name on that L2 when the client reaches it: the chain's L2 reverse registrar, then the default name, then a check that the name resolves back to the address for that chain. This is fresher than Ethereum's proof of the L2, and works while that proof fails. Without a transport or public RPC for the chain, and for a past `blockNumber`, it is read through Ethereum.
+
 A chain without its own primary name falls back to the address's default primary name (`default.reverse`, [ENSIP-19](https://docs.ens.domains/ensip/19)). For Ethereum, the name set for Ethereum itself takes priority over the default. To set a primary name, see [Set a primary name](/docs/sdk/set-a-primary-name).
 
 ## Options
@@ -106,6 +108,6 @@ The address has no primary name, or the name it set does not resolve back to it.
 
 The `address` is not a valid address. [`INVALID_ADDRESS`](/docs/reference/errors/INVALID_ADDRESS) is thrown before any request is sent. [`INVALID_COIN_TYPE`](/docs/reference/errors/INVALID_COIN_TYPE) means the `coin` is unknown.
 
-### `GATEWAY_REQUEST_FAILED` on an L2 name
+### `GATEWAY_REQUEST_FAILED` or `GATEWAY_RESPONSE_INVALID` on an L2 primary name
 
-Primary names on other chains can be proven through off-chain gateways, and the gateway failed. See [Look up off-chain names](/docs/sdk/off-chain-names) and [`GATEWAY_REQUEST_FAILED`](/docs/reference/errors/GATEWAY_REQUEST_FAILED).
+The client cannot reach the chain, so the name was read through Ethereum, whose proof of the L2 failed. At the time of writing this fails for Base for every address. Give the client a transport for the chain, or leave `publicRpc` on, so the name is read on the L2. See [`GATEWAY_RESPONSE_INVALID`](/docs/reference/errors/GATEWAY_RESPONSE_INVALID).

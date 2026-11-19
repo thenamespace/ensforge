@@ -50,9 +50,9 @@ flowchart LR
   B -->|answers for pay.nick.eth| C[Records]
 ```
 
-Basenames resolve this way: `jesse.base.eth` has no resolver of its own and is served by the
-resolver of `base.eth`. `name.get` reports such a resolver as `inheritedResolver`, because the
-name has none of its own.
+Off-chain providers serve their names this way: `jesse.cb.id` has no resolver of its own and is
+served by the resolver of `cb.id`. `name.get` reports such a resolver as `inheritedResolver`,
+because the name has none of its own.
 
 **Example** (Seeing an Inherited Resolver)
 
@@ -64,27 +64,31 @@ const ens = Ensforge.create({
   chain: mainnet,
 }).extend(ensActions());
 
-const state = await ens.name.get({ name: "jesse.base.eth" });
-console.log(state.resolver, state.inheritedResolver, state.available);
-
-console.log(await ens.record.getAddress({ name: "jesse.base.eth" }));
+const state = await ens.name.get({ name: "jesse.cb.id" });
+console.log(state.kind, state.status, state.resolver, state.inheritedResolver !== null);
 ```
 
 ```text title="Output"
-null 0xde9049636F4a1dfE0a64d1bFe3155C0A14C54F31 true
-0x2211d1D0020DAEA8039E46Cf1367962070d77DA9
+offchain external null true
 ```
 
-`available` is `true` because the name is in no registry on Ethereum, yet it resolves. Check
-`inheritedResolver` before you tell a user that such a name is free. Writes go to the name's own
-resolver only, never to an inherited one.
+The name is in no registry on Ethereum, yet it resolves: `status` is `"external"` and `available`
+is `false`. Writes go to the name's own resolver only, never to an inherited one.
+
+## When a name lives on an L2
+
+Some parents' resolvers belong to an **L2 namespace**: Basenames on Base, Linea Names on Linea,
+and others. `jesse.base.eth` is one. Its owner and records live on Base, and `base.eth`'s resolver
+on Ethereum answers for it through a gateway. ensforge recognises these resolvers and reads the
+name on its L2 instead, which is faster and fresher. `name.get` reports `kind: "l2"` and the L2's
+`chainId`. See [Work with names on L2s](/docs/sdk/names-on-l2s).
 
 ## When records live off-chain
 
 Some resolvers do not store records on Ethereum at all. They answer with a pointer to a
 **gateway**: a server that holds the records, often with a proof that they are correct. This
 protocol is called **CCIP-Read** (EIP-3668), and names served this way are **off-chain names**.
-`jesse.base.eth` is one.
+`jesse.cb.id` is one.
 
 ```mermaid
 sequenceDiagram

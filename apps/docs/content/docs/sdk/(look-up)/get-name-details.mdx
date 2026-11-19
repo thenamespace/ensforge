@@ -43,7 +43,7 @@ See [`name.get`](/docs/reference/sdk/name/get).
 | Field                 | Description                                                                                                                |
 | --------------------- | -------------------------------------------------------------------------------------------------------------------------- |
 | `name`                | The normalised name.                                                                                                       |
-| `status`              | `"available"`, `"registered"`, `"grace"`, `"expired"` or `"reserved"`.                                                     |
+| `status`              | `"available"`, `"registered"`, `"grace"`, `"expired"`, `"reserved"`, or `"external"` for a name served from outside ENS.   |
 | `owner`               | Who ultimately controls the name ([owner](/docs/reference/glossary#owner)).                                                |
 | `manager`             | The registry owner of an unwrapped name (the "manager" in the ENS app), or `null`.                                         |
 | `registrant`          | The holder of an unwrapped `.eth` name's registration token, or `null`.                                                    |
@@ -54,6 +54,10 @@ See [`name.get`](/docs/reference/sdk/name/get).
 | `available`           | Whether the name can be registered now.                                                                                    |
 | `renewable`           | Whether the name can be renewed now: `.eth` names that are registered or in grace.                                         |
 | `kind` and `protocol` | Where the name lives. Most apps never need them. See [ENS versions under the hood](/docs/sdk/ens-versions).                |
+| `chainId`             | The chain the name lives on: its L2's for an L2 name, the ENS chain's otherwise.                                           |
+| `namespace`           | The L2 namespace or off-chain provider that holds the name, or `null` for names in ENS.                                    |
+
+An L2 name, such as a Basename, has `kind: "l2"` and `protocol: "l2"`, and its `owner`, `expiry` and `status` come from its L2. See [Work with names on L2s](/docs/sdk/names-on-l2s).
 
 `status: "grace"` applies to `.eth` names after they expire: during the [grace period](/docs/reference/glossary#grace-period) anyone can still renew the name, but nobody can register it. `"expired"` names can be registered again. For who may change a name, see [Who can change a name](/docs/sdk/who-can-change-a-name).
 
@@ -86,9 +90,9 @@ const { available, renewable } = await ens.name.get({ name: "nick.eth" });
 
 ## Troubleshooting
 
-### A name that resolves is reported as `available`
+### A name that resolves is reported as `external`
 
-A name served only by a parent's wildcard or off-chain resolver, such as `jesse.base.eth`, is in no registry. Its `resolver` is `null` and its `status` is `"available"`, although it resolves. Check `inheritedResolver`: when it is not `null`, something serves the name. See [Look up off-chain names](/docs/sdk/off-chain-names).
+A name served only by a parent's wildcard or off-chain resolver, such as `jesse.cb.id`, is in no registry. Its `kind` is `"offchain"` or `"wildcard"`, its `status` is `"external"` and `available` is `false`. `inheritedResolver` is the resolver that serves it, and `namespace.provider` names a known off-chain provider. See [Look up off-chain names](/docs/sdk/off-chain-names).
 
 ### `INVALID_NAME`
 
