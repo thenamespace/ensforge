@@ -10,7 +10,8 @@ export const Route = createFileRoute("/og/$")({
   server: {
     handlers: {
       GET: ({ params }) => {
-        const page = (params._splat ?? "").replace(/\.png$/, "");
+        // `.png` comes from links shared before the switch to WebP.
+        const page = (params._splat ?? "").replace(/\.(webp|png)$/, "");
         if (!isSitePage(page)) return new Response("Not found", { status: 404 });
 
         return ogResponse(<SiteImage page={page} />);

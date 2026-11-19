@@ -34,6 +34,7 @@ export interface SeoInput {
 export const SEPARATOR = " | ";
 
 const imageTypes: Record<string, string> = {
+  png: "image/png",
   jpg: "image/jpeg",
   jpeg: "image/jpeg",
   webp: "image/webp",
@@ -41,9 +42,9 @@ const imageTypes: Record<string, string> = {
   gif: "image/gif",
 };
 
-/** Generated images are PNGs; CDN overrides can be any web format. */
+/** Generated images are WebP; CDN overrides can be any web format. */
 const imageType = (url: string) =>
-  imageTypes[url.split(".").pop()?.toLowerCase() ?? ""] ?? "image/png";
+  imageTypes[url.split(".").pop()?.toLowerCase() ?? ""] ?? "image/webp";
 
 export function pageTitle(title?: string) {
   return title ? `${title}${SEPARATOR}${site.name}` : `${site.name}${SEPARATOR}${site.tagline}`;

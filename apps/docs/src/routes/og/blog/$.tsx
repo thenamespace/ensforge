@@ -13,7 +13,9 @@ export const Route = createFileRoute("/og/blog/$")({
       GET: ({ params }) => {
         if (!site.blogEnabled) return new Response("Not found", { status: 404 });
 
-        const slug = (params._splat ?? "").replace(/\.png$/, "");
+        // `.png` comes from links shared before the switch to WebP.
+
+        const slug = (params._splat ?? "").replace(/\.(webp|png)$/, "");
         const page = getBlogPage(slug);
         if (!page) return new Response("Not found", { status: 404 });
 
