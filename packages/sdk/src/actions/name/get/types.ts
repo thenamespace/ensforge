@@ -83,8 +83,8 @@ export type NameState = {
   readonly chainId: number;
   /** The L2 namespace or off-chain provider that holds the name; `null` for names in ENS. */
   readonly namespace: NameNamespace | null;
-  /** Protocol that controls the name. */
-  readonly protocol: "v1" | "v2";
+  /** Protocol that controls the name: ENSv1, ENSv2, or its L2 namespace. */
+  readonly protocol: "v1" | "v2" | "l2";
   readonly status: NameStatus;
   /**
    * Who ultimately controls the name: the ENSv2 token holder; on ENSv1 the NameWrapper token

@@ -37,12 +37,30 @@ export const get = Effect.fn("ensforge.name.get")(
     }
 
     const { kind, namespace } = yield* servedNamespace(client, data.parts, served, options);
-    return {
-      ...(kind === null ? state : toServedState(state, kind)),
-      chainId: namespace?.kind === "l2" ? namespace.chainId : client.chain.id,
+    if (namespace?.kind !== "l2") {
+      return {
+        ...(kind === null ? state : toServedState(state, kind)),
+        chainId: client.chain.id,
+        namespace,
+        inheritedResolver: served.address,
+      };
+    }
+
+    // An L2 name is read on its L2; one the client cannot reach keeps only its location.
+    const external = {
+      ...toServedState(state, "l2"),
+      protocol: "l2",
+      chainId: namespace.chainId,
       namespace,
       inheritedResolver: served.address,
-    };
+    } as const;
+    const { l2Client } = yield* Effect.promise(() => import("../../../internal/name/location.js"));
+    const l2 = yield* l2Client(client, namespace, false);
+    if (l2 === null) return external;
+    const { readL2State } = yield* Effect.promise(
+      () => import("../../../internal/namespace/l2/index.js"),
+    );
+    return { ...external, ...(yield* readL2State(l2, namespace, data.parts)) };
   },
   Action.withContext("name.get", { contractKind: "registry" }),
 );

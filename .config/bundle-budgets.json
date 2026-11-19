@@ -1,12 +1,12 @@
 {
-  "sdk: Actions.record.getText": 36993,
-  "sdk: Actions.record.set": 60953,
-  "sdk: record, name and primaryName actions": 71207,
-  "sdk: ensActions()": 94587,
-  "sdk: ensActions(), loaded on demand": 91918,
-  "sdk: ensActions() + indexerActions()": 119649,
-  "sdk/effect: Actions.record.get": 28366,
-  "react: useAddress": 75407,
-  "react: useName": 79772,
-  "hca: hca() with owner()": 30507
+  "sdk: Actions.record.getText": 41892,
+  "sdk: Actions.record.set": 65284,
+  "sdk: record, name and primaryName actions": 76466,
+  "sdk: ensActions()": 98634,
+  "sdk: ensActions(), loaded on demand": 95714,
+  "sdk: ensActions() + indexerActions()": 123855,
+  "sdk/effect: Actions.record.get": 29676,
+  "react: useAddress": 81204,
+  "react: useName": 84903,
+  "hca: hca() with owner()": 30531
 }

@@ -32,6 +32,8 @@ Retrying the same call fails the same way until the cause is fixed (`retryable: 
 | Action | When |
 | --- | --- |
 | [`primaryName.set`](/docs/reference/sdk/primary-name/set) | for an L2 that is not in the client's `chains`. |
+| [`record.get`](/docs/reference/sdk/record/get) | with `strict` when the name lives on an L2 the client cannot reach. |
+| [`record.getAddress`](/docs/reference/sdk/record/get-address) | with `strict` when the name lives on an L2 the client cannot reach. |
 
 Any action can fail with `ConfigError`: it is part of `Errors.CommonError`.
 

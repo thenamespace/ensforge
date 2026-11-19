@@ -10,6 +10,7 @@ import { UnauthorizedError } from "../../errors/classes/UnauthorizedError.js";
 import type { AnyError } from "../../errors/types.js";
 import { isOpaqueRevert, type Explainer } from "../action/write.js";
 import { loadName, type LoadedName } from "../name/load.js";
+import type { L2Location } from "../name/location.js";
 import { requireAddress } from "../name/write.js";
 import { evaluate } from "./evaluate.js";
 import { readPermissionFacts } from "./facts.js";
@@ -21,10 +22,71 @@ export const checkLoaded = Effect.fnUntraced(function* (
   account: Address,
   operations: readonly Operation[],
 ): Effect.fn.Return<readonly PermissionCheck[], AnyError> {
+  // A name in no ENS registry may live on an L2, where its namespace's rules apply.
+  if (loaded.kind === "available") {
+    const { l2LocationOf } = yield* Effect.promise(() => import("../name/location.js"));
+    const location = yield* l2LocationOf(client, loaded.data.parts, {});
+    if (location !== null) return yield* checkOnL2(client, location, loaded, account, operations);
+  }
+
   const facts = yield* readPermissionFacts(client, loaded, account, operations);
   return Arr.map(operations, (operation) =>
     evaluate(facts, operation, client.deployment.v1?.contracts),
   );
+});
+
+const unsupportedOnL2: PermissionCheck = {
+  allowed: false,
+  via: null,
+  contract: null,
+  resource: null,
+  missing: [
+    {
+      type: "blocked",
+      reason: "unsupported",
+      detail: "ensforge writes only the records of L2 names; their namespace manages the rest.",
+    },
+  ],
+};
+
+/**
+ * Checks on a name in an L2 namespace: record writes as its resolver authorizes them on the L2,
+ * everything else unsupported. Unknown (`allowed: null`) when the client cannot reach the L2.
+ */
+const checkOnL2 = Effect.fnUntraced(function* (
+  client: Client,
+  location: L2Location,
+  loaded: LoadedName,
+  account: Address,
+  operations: readonly Operation[],
+): Effect.fn.Return<readonly PermissionCheck[], AnyError> {
+  const { l2Client } = yield* Effect.promise(() => import("../name/location.js"));
+  const l2 = yield* l2Client(client, location, false);
+  const access =
+    l2 === null
+      ? null
+      : yield* Effect.promise(() => import("../namespace/l2/index.js")).pipe(
+          Effect.flatMap(({ recordAccess }) =>
+            recordAccess(l2, location, loaded.data.parts, account),
+          ),
+        );
+
+  return Arr.map(operations, (operation): PermissionCheck => {
+    if (typeof operation !== "object") return unsupportedOnL2;
+    if (access === null) {
+      return { allowed: null, via: null, contract: null, resource: null, missing: [] };
+    }
+    return {
+      allowed: access.allowed,
+      via: access.via,
+      contract: access.contract,
+      resource: null,
+      missing:
+        access.allowed || access.contract === null
+          ? []
+          : [{ type: "owner", contract: access.contract, owner: access.owner }],
+    };
+  });
 });
 
 /** Like {@link checkLoaded}, loading the name first. */

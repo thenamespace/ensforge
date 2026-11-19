@@ -1,4 +1,4 @@
-import { Effect, Array as Arr, Option } from "effect";
+import { Effect, Array as Arr, Fiber, Option } from "effect";
 
 import { Abis } from "@ensforge/contracts";
 import { decodeFunctionResult, encodeFunctionData, type Address, type Hex } from "viem";
@@ -8,6 +8,7 @@ import { UnsupportedError } from "../../errors/classes/UnsupportedError.js";
 import type { AnyError } from "../../errors/types.js";
 import type { Read } from "../../Types.js";
 import { fromRevertData } from "../anyError.js";
+import { nameParts } from "../name/parts.js";
 import * as Rpc from "../rpc/index.js";
 
 /** Results of resolving several record calls at once. */
@@ -21,16 +22,41 @@ export type Resolved = {
 // Missing resolvers and missing profiles mean "no records"; strict reads surface them instead.
 const noRecordCodes = new Set(["RESOLVER_NOT_FOUND", "RESOLVER_PROFILE_UNSUPPORTED"]);
 
+type ResolveOptions = { readonly name: string; readonly calls: readonly Hex[] } & Pick<
+  Read.Options,
+  "blockNumber" | "blockTag" | "gatewayUrls" | "strict"
+>;
+
+/**
+ * Resolves several resolver calls for one name where it lives: on its L2 for a name in an L2
+ * namespace the client reaches, else through the Universal Resolver. The Ethereum read starts at
+ * once and is dropped when the name turns out to live on an L2, so ENS names cost no extra round.
+ * Reads at a past block stay on Ethereum: its block numbers mean nothing on an L2.
+ */
+export const resolveCalls = Effect.fnUntraced(function* (
+  client: Client,
+  options: ResolveOptions,
+): Effect.fn.Return<Resolved, AnyError> {
+  const ethereum = yield* Effect.forkChild(resolveOnEthereum(client, options));
+  if (options.blockNumber !== undefined) return yield* Fiber.join(ethereum);
+
+  const parts = nameParts(options.name);
+  const { l2ReadTarget } = yield* Effect.promise(() => import("../name/location.js"));
+  const target = yield* l2ReadTarget(client, parts, { blockTag: options.blockTag }, options.strict);
+  if (target === null) return yield* Fiber.join(ethereum);
+
+  yield* Fiber.interrupt(ethereum);
+  const { resolveOnL2 } = yield* Effect.promise(() => import("../namespace/l2/index.js"));
+  return yield* resolveOnL2(target.client, target.location, parts, options.calls, options.strict);
+});
+
 /**
  * Resolves several resolver calls for one name in a single Universal Resolver request, as
  * `resolve(name, multicall(calls))`. One call is sent as-is.
  */
-export const resolveCalls = Effect.fnUntraced(function* (
+const resolveOnEthereum = Effect.fnUntraced(function* (
   client: Client,
-  options: { readonly name: string; readonly calls: readonly Hex[] } & Pick<
-    Read.Options,
-    "blockNumber" | "blockTag" | "gatewayUrls" | "strict"
-  >,
+  options: ResolveOptions,
 ): Effect.fn.Return<Resolved, AnyError> {
   const single = options.calls.length === 1;
   const data = single

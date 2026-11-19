@@ -40,6 +40,9 @@ import type {
  * - `namespace` names the L2 namespace (`kind: "l2"`: family, parent, L2 and registry) or the
  *   off-chain provider that holds a name outside ENS's registries; `chainId` is where the name
  *   lives. The namespaces come from the client's deployment profile.
+ * - An `l2` name (`protocol: "l2"`) is read on its L2: its owner, expiry and status there, with
+ *   `available` when nobody holds it and `renewable: false` (ensforge does not renew L2 names).
+ *   Without a transport or public RPC for the L2, only its location is known: status `external`.
  * - Times come from the block the read runs at, not the local clock.
  * - `inheritedResolver` is the resolver serving a name that has none of its own: a parent's
  *   wildcard or off-chain resolver, or the ENSv1 resolver behind the ENSv1 bridge.

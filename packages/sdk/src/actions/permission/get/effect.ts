@@ -51,9 +51,16 @@ export const get = Effect.fn("ensforge.permission.get")(function* (
   }
 
   const fuses = loaded.state.wrapped ? Fuse.decode(loaded.data.v1?.wrapper.fuses ?? 0) : undefined;
+  // A name in no ENS registry reports its status on the L2 it lives on, if any.
+  const l2Status =
+    loaded.kind === "available"
+      ? yield* Effect.promise(() => import("../../../internal/name/location.js")).pipe(
+          Effect.flatMap(({ l2StatusOf }) => l2StatusOf(client, loaded.data.parts)),
+        )
+      : null;
   return {
     account,
-    status: loaded.state.status,
+    status: l2Status ?? loaded.state.status,
     can: { ...can, setRecords: checks[nameOperations.length]?.allowed ?? null },
     ...(options.records === undefined ? {} : { records: recordAccess }),
     fuses: fuses === undefined ? [] : Arr.filter(Rec.keys(fuses), (fuse) => fuses[fuse]),
