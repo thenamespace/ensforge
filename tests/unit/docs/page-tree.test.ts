@@ -57,8 +57,8 @@ describe("sidebarTree", () => {
 
   it("keeps the page's root folder and the pages the package picker links to", () => {
     assert.deepStrictEqual(sidebarTree(tree, "/docs/reference/sdk/record/get").children, [
-      { ...sdk, children: [sdk.children[1]] },
-      { ...react, children: [react.children[1]] },
+      { ...sdk, children: sdk.children.slice(1, 2) },
+      { ...react, children: react.children.slice(1, 2) },
       reference,
     ]);
   });
@@ -66,7 +66,7 @@ describe("sidebarTree", () => {
   it("keeps the current page's counterpart in the other packages", () => {
     assert.deepStrictEqual(sidebarTree(tree, "/docs/sdk").children, [
       sdk,
-      { ...react, children: [react.children[1], react.children[2]] },
+      { ...react, children: react.children.slice(1) },
       { ...reference, children: [] },
     ]);
   });
