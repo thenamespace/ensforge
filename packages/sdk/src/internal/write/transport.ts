@@ -16,7 +16,7 @@ import { TransactionError } from "../../errors/classes/TransactionError.js";
 import type { Plan } from "../../plan/Plan.js";
 import type { Write } from "../../Types.js";
 import { addressOf } from "../address.js";
-import { toAnyError } from "../anyError.js";
+import { failWith, Untranslated } from "../anyError.js";
 import { fromPromise } from "../rpc/fromPromise.js";
 import { withHeadroom } from "./gas.js";
 import { receiptsOf } from "./receipts.js";
@@ -122,11 +122,14 @@ export const sendBatch = Effect.fnUntraced(function* (
         status: ({ statusCode, receipts }) =>
           statusCode >= 300 || (statusCode >= 200 && (receipts?.length ?? 0) > 0),
       }),
-    catch: (cause) =>
+    catch: (cause) => new Untranslated({ cause }),
+  }).pipe(
+    Effect.catchTag("Untranslated", ({ cause }) =>
       cause instanceof WaitForCallsStatusTimeoutError
-        ? new TransactionError({ code: "RECEIPT_TIMEOUT", bundleId: id, cause })
-        : toAnyError(cause, context),
-  });
+        ? Effect.fail(new TransactionError({ code: "RECEIPT_TIMEOUT", bundleId: id, cause }))
+        : failWith(cause, context),
+    ),
+  );
 
   const hashes = Arr.map(result.receipts ?? [], (receipt) => receipt.transactionHash);
   // `failure` is a revert even when the transaction carrying the bundle succeeded (ERC-4337).

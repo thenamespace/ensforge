@@ -15,7 +15,7 @@ import { ConfigError } from "../../errors/classes/ConfigError.js";
 import type { AnyError } from "../../errors/types.js";
 import type { Read } from "../../Types.js";
 import { dnsEncode } from "../../utils/Name.js";
-import { toAnyError } from "../anyError.js";
+import { tryAny } from "../anyError.js";
 import { universalResolverOf } from "../deployment.js";
 import { blockAt } from "./block.js";
 import { fromPromise } from "./fromPromise.js";
@@ -190,7 +190,7 @@ export const findResolver = (
   options: { readonly name: string } & Read.BlockOptions,
 ): Effect.Effect<FoundResolver | null, AnyError> =>
   // `dnsEncode` throws `INVALID_NAME`; inside the Effect it is a typed failure, not a defect.
-  Effect.try({ try: () => dnsEncode(options.name), catch: toAnyError }).pipe(
+  tryAny(() => dnsEncode(options.name)).pipe(
     Effect.flatMap((dns) =>
       readContract(client, {
         address: universalResolverOf(client),

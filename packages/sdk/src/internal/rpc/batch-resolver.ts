@@ -6,7 +6,7 @@ import { multicall } from "viem/actions";
 import { stateOf, type State } from "../../client/state.js";
 import type { Client } from "../../client/types.js";
 import type { AnyError } from "../../errors/types.js";
-import { toAnyError } from "../anyError.js";
+import { toAnyError, Untranslated } from "../anyError.js";
 
 /** One contract read waiting to be batched. */
 export class ContractRead extends Request.Class<
@@ -78,22 +78,27 @@ const makeResolver = (client: Client, batchSize: number, wait: number) =>
                 batchSize: 0,
                 ...block,
               }),
-            catch: toAnyError,
+            catch: (cause) => new Untranslated({ cause }),
           }).pipe(
-            Effect.match({
-              onFailure: (error) => {
-                for (const entry of group) entry.completeUnsafe(Exit.fail(error));
-              },
-              onSuccess: (results) => {
-                for (const [index, entry] of group.entries()) {
-                  const result = results[index];
-                  entry.completeUnsafe(
-                    result?.status === "success"
-                      ? Exit.succeed(result.result)
-                      : Exit.fail(toAnyError(result?.error, { contract: entry.request.address })),
-                  );
-                }
-              },
+            Effect.matchEffect({
+              onFailure: (failure) =>
+                Effect.map(toAnyError(failure.cause), (error) => {
+                  for (const entry of group) entry.completeUnsafe(Exit.fail(error));
+                }),
+              onSuccess: (results) =>
+                Effect.forEach(
+                  group.entries(),
+                  ([index, entry]) => {
+                    const result = results[index];
+                    return result?.status === "success"
+                      ? Effect.sync(() => entry.completeUnsafe(Exit.succeed(result.result)))
+                      : Effect.map(
+                          toAnyError(result?.error, { contract: entry.request.address }),
+                          (error) => entry.completeUnsafe(Exit.fail(error)),
+                        );
+                  },
+                  { concurrency: "unbounded", discard: true },
+                ),
             }),
           ),
         { concurrency: "unbounded", discard: true },

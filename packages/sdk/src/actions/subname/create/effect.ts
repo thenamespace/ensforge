@@ -13,7 +13,7 @@ import { UnsupportedError } from "../../../errors/classes/UnsupportedError.js";
 import type { AnyError } from "../../../errors/types.js";
 import * as Action from "../../../internal/action/index.js";
 import { addressOf } from "../../../internal/address.js";
-import { toAnyError } from "../../../internal/anyError.js";
+import { tryAny } from "../../../internal/anyError.js";
 import { randomSalt } from "../../../internal/factory/verifiable-proxy.js";
 import { parentOf } from "../../../internal/name/parts.js";
 import { requireAddress, requireV1Contracts } from "../../../internal/name/write.js";
@@ -185,10 +185,7 @@ const v1Call = Effect.fnUntraced(function* (
     };
   }
 
-  const fuses = yield* Effect.try({
-    try: () => Fuse.from(options.fuses ?? []),
-    catch: toAnyError,
-  });
+  const fuses = yield* tryAny(() => Fuse.from(options.fuses ?? []));
   // An emancipated child is out of its parent's reach until it expires.
   if (
     child.state.status === "registered" &&

@@ -11,7 +11,7 @@ import type { AnyError } from "../../errors/types.js";
 import * as CoinType from "../../utils/CoinType.js";
 import { namehash } from "../../utils/Name.js";
 import { nonZeroAddress, sameAddress } from "../address.js";
-import { toAnyError } from "../anyError.js";
+import { tryAny } from "../anyError.js";
 import type { LoadedName } from "../name/load.js";
 import { parentOf } from "../name/parts.js";
 import { setterKeying } from "../records/setter-keying.js";
@@ -167,11 +167,9 @@ export const readPermissionFacts = Effect.fnUntraced(function* (
   const v2PublicResolver = isV2PublicResolver(client, resolver);
   const resolverOwner = resolverOwnerOf(client, loaded);
   // Coin keys are parsed here, so an unknown coin fails as InvalidInputError, not a defect.
-  const resources = yield* Effect.try({
-    try: () =>
-      Arr.filter([...new Set(Arr.map(records, recordResource))], (resource) => resource !== 0n),
-    catch: toAnyError,
-  });
+  const resources = yield* tryAny(() =>
+    Arr.filter([...new Set(Arr.map(records, recordResource))], (resource) => resource !== 0n),
+  );
   // Frozen resolvers cannot be written, and the oldest burn all gas on unknown calls, which would
   // sink the whole multicall: they are never probed.
   const frozen = Arr.some(client.deployment.v1?.frozenPublicResolvers ?? [], (address) =>

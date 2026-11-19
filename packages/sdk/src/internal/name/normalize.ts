@@ -3,12 +3,12 @@ import { Effect } from "effect";
 import { InvalidInputError } from "../../errors/classes/InvalidInputError.js";
 import type { AnyError } from "../../errors/types.js";
 import { normalize } from "../../utils/Name.js";
-import { toAnyError } from "../anyError.js";
+import { tryAny } from "../anyError.js";
 import { nameParts, type NameParts } from "./parts.js";
 
 /** `Name.normalize` as an Effect; fails with `InvalidInputError` (`INVALID_NAME`). */
 export const normalizeName = (name: string): Effect.Effect<string, AnyError> =>
-  Effect.try({ try: () => normalize(name), catch: toAnyError });
+  tryAny(() => normalize(name));
 
 /** Normalizes a name that must not be the root (`""`), and computes its hashes. */
 export const parseName = (name: string): Effect.Effect<NameParts, AnyError> =>

@@ -3,7 +3,7 @@ import { Effect } from "effect";
 
 import type { Client } from "../../../client/types.js";
 import * as Action from "../../../internal/action/index.js";
-import { toAnyError } from "../../../internal/anyError.js";
+import { tryAny } from "../../../internal/anyError.js";
 import { readSingleRecord } from "../../../internal/records/single.js";
 import * as CoinType from "../../../utils/CoinType.js";
 import type { getAddress as Promises } from "./index.js";
@@ -11,10 +11,7 @@ import type { getAddress as Promises } from "./index.js";
 /** @internal Implementation of `Actions.record.getAddress`. */
 export const getAddress = Effect.fn("ensforge.record.getAddress")(
   function* (client: Client, options: Promises.Options) {
-    const coinType = yield* Effect.try({
-      try: () => CoinType.from(options.coin ?? "eth"),
-      catch: toAnyError,
-    });
+    const coinType = yield* tryAny(() => CoinType.from(options.coin ?? "eth"));
 
     return yield* readSingleRecord(
       client,

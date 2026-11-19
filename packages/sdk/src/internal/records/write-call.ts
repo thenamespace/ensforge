@@ -5,7 +5,7 @@ import type { Address } from "viem";
 import type { Client } from "../../client/types.js";
 import type { AnyError } from "../../errors/types.js";
 import type { Plan } from "../../plan/Plan.js";
-import { toAnyError } from "../anyError.js";
+import { tryAny } from "../anyError.js";
 import type { NameParts } from "../name/parts.js";
 import { setterKeying, type SetterKeying } from "./setter-keying.js";
 import {
@@ -28,9 +28,6 @@ export const recordsCall = Effect.fnUntraced(function* (
 ): Effect.fn.Return<Plan.Call, AnyError> {
   const setters = keying ?? (yield* setterKeying(client, resolver));
   const codecs = yield* recordWriteCodecs(records);
-  const calls = yield* Effect.try({
-    try: () => encodeRecordWrites(setters, name, records, codecs),
-    catch: toAnyError,
-  });
+  const calls = yield* tryAny(() => encodeRecordWrites(setters, name, records, codecs));
   return resolverCall(resolver, calls);
 });

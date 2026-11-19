@@ -41,31 +41,29 @@ const simulateSequence = (
       }),
     { account, chainId: client.chain.id },
   ).pipe(
-    Effect.map(({ results }) =>
-      Arr.map(results, (result, index) => ({
-        error:
-          result.status === "success"
-            ? undefined
-            : // A failure is always a revert; without data viem reports it as "zero data", which
-              // would read as a missing contract.
-              result.data === "0x"
-              ? new ContractRevertError({
-                  code: "CONTRACT_REVERTED",
-                  data: "0x",
-                  context: {
-                    contract: calls[index]?.to,
-                    account,
-                    chainId: client.chain.id,
-                    revert: { errorName: undefined, data: "0x" },
-                  },
-                })
-              : toAnyError(result.error, {
-                  contract: calls[index]?.to,
-                  account,
-                  chainId: client.chain.id,
-                }),
-        gas: result.gasUsed,
-      })),
+    Effect.flatMap(({ results }) =>
+      Effect.forEach(
+        results,
+        (result, index) => {
+          const context = { contract: calls[index]?.to, account, chainId: client.chain.id };
+          const error =
+            result.status === "success"
+              ? Effect.undefined
+              : // A failure is always a revert; without data viem reports it as "zero data", which
+                // would read as a missing contract.
+                result.data === "0x"
+                ? Effect.succeed(
+                    new ContractRevertError({
+                      code: "CONTRACT_REVERTED",
+                      data: "0x",
+                      context: { ...context, revert: { errorName: undefined, data: "0x" } },
+                    }),
+                  )
+                : toAnyError(result.error, context);
+          return Effect.map(error, (failure) => ({ error: failure, gas: result.gasUsed }));
+        },
+        { concurrency: "unbounded" },
+      ),
     ),
   );
 

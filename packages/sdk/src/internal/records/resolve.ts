@@ -5,10 +5,9 @@ import { decodeFunctionResult, encodeFunctionData, type Address, type Hex } from
 
 import type { Client } from "../../client/types.js";
 import { UnsupportedError } from "../../errors/classes/UnsupportedError.js";
-import { fromRevert } from "../../errors/translate/revert.js";
 import type { AnyError } from "../../errors/types.js";
 import type { Read } from "../../Types.js";
-import { toAnyError } from "../anyError.js";
+import { fromRevertData } from "../anyError.js";
 import * as Rpc from "../rpc/index.js";
 
 /** Results of resolving several record calls at once. */
@@ -70,14 +69,18 @@ export const resolveCalls = Effect.fnUntraced(function* (
   // profile is an error only for strict reads.
   if (!single && Arr.every(answered, (result) => result === undefined)) {
     const unsupported = new UnsupportedError({ code: "RESOLVER_PROFILE_UNSUPPORTED" });
+    const failures = yield* Effect.forEach(
+      results,
+      (result) =>
+        result === "0x"
+          ? Effect.undefined
+          : fromRevertData(result, { contract: resolved.resolver }),
+      { concurrency: "unbounded" },
+    );
     const error =
       Option.getOrUndefined(
         Arr.findFirst(
-          Arr.map(results, (result) =>
-            result === "0x"
-              ? undefined
-              : toAnyError(fromRevert({ data: result }, { contract: resolved.resolver })),
-          ),
+          failures,
           (failure) =>
             failure !== undefined &&
             failure._tag !== "ContractRevertError" &&

@@ -8,7 +8,7 @@ import { UnsupportedError } from "../../errors/classes/UnsupportedError.js";
 import type { AnyError } from "../../errors/types.js";
 import type { Plan } from "../../plan/Plan.js";
 import * as Role from "../../utils/Role.js";
-import { toAnyError } from "../anyError.js";
+import { tryAny } from "../anyError.js";
 import { deployProxy } from "../factory/verifiable-proxy.js";
 import type { NameParts } from "../name/parts.js";
 import {
@@ -46,10 +46,7 @@ export const deployPermissionedResolver = Effect.fnUntraced(function* (
       ? []
       : yield* recordWriteCodecs(records).pipe(
           Effect.flatMap((codecs) =>
-            Effect.try({
-              try: () => encodeRecordWrites("name", name, records, codecs),
-              catch: toAnyError,
-            }),
+            tryAny(() => encodeRecordWrites("name", name, records, codecs)),
           ),
         );
   return yield* deployProxy(client, {

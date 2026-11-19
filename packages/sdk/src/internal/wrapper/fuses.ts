@@ -5,7 +5,7 @@ import { nameWrapperFuses } from "@ensforge/contracts/v1";
 import { InvalidInputError } from "../../errors/classes/InvalidInputError.js";
 import type { AnyError } from "../../errors/types.js";
 import * as Fuse from "../../utils/Fuse.js";
-import { toAnyError } from "../anyError.js";
+import { tryAny } from "../anyError.js";
 
 /** Fuses the owner burns live in the low 16 bits; the parent sets the ones above. */
 const ownerControlled = 0xffff;
@@ -25,10 +25,7 @@ export const fuseMask = Effect.fnUntraced(function* (
   burned: number,
   by: "owner" | "parent",
 ): Effect.fn.Return<number, AnyError> {
-  const mask = yield* Effect.try({
-    try: () => Fuse.from(names),
-    catch: toAnyError,
-  });
+  const mask = yield* tryAny(() => Fuse.from(names));
   if (Fuse.has(mask, "isDotEth")) {
     return yield* Effect.fail(invalid(names, "`isDotEth` is set by the NameWrapper."));
   }

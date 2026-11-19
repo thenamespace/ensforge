@@ -4,8 +4,8 @@ import { Cause, Effect, Exit, Array as Arr, Record as Rec } from "effect";
 import { requests as implementations } from "../actions/requests.js";
 import type { Client } from "../client/types.js";
 import { InvalidInputError } from "../errors/classes/InvalidInputError.js";
-import { fromCause } from "../errors/translate/fromCause.js";
 import type { AnyError } from "../errors/types.js";
+import { toAnyError } from "../internal/anyError.js";
 import type { Request } from "../Types.js";
 import type { batch as Promises } from "./index.js";
 import type { BatchOptions, Requests, Results } from "./types.js";
@@ -44,13 +44,18 @@ export const batch = Effect.fn("ensforge.batch")(function* <
   const effectOf = (request: Request) =>
     settle
       ? Effect.exit(run(client, request)).pipe(
-          Effect.map((exit) =>
-            Exit.isSuccess(exit)
-              ? { status: "success" as const, result: exit.value }
-              : {
-                  status: "failure" as const,
-                  error: fromCause(Cause.squash(exit.cause), { operation: request.path }),
-                },
+          Effect.flatMap(
+            (
+              exit,
+            ): Effect.Effect<
+              | { readonly status: "success"; readonly result: unknown }
+              | { readonly status: "failure"; readonly error: AnyError }
+            > =>
+              Exit.isSuccess(exit)
+                ? Effect.succeed({ status: "success", result: exit.value })
+                : toAnyError(Cause.squash(exit.cause), { operation: request.path }).pipe(
+                    Effect.map((error) => ({ status: "failure", error })),
+                  ),
           ),
         )
       : run(client, request);

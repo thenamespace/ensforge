@@ -1,4 +1,4 @@
-import { Effect, Array as Arr, Record as Rec } from "effect";
+import { type Effect, Array as Arr, Record as Rec } from "effect";
 
 import type { Roles } from "@ensforge/contracts";
 
@@ -6,7 +6,7 @@ import type { RecordOperation } from "../../actions/permission/get/types.js";
 import type { Selection } from "../../actions/record/get/types.js";
 import type { AnyError } from "../../errors/types.js";
 import * as CoinType from "../../utils/CoinType.js";
-import { toAnyError } from "../anyError.js";
+import { tryAny } from "../anyError.js";
 import type { RecordWrites } from "../records/write-profiles.js";
 
 /** The PermissionedResolver role each record needs; public keys are not stored there. */
@@ -57,39 +57,36 @@ type SelectionOperation = {
 export const selectionOperations = (
   selection: Selection,
 ): Effect.Effect<SelectionOperation[], AnyError> =>
-  Effect.try({
-    try: (): SelectionOperation[] => [
-      ...Arr.map(selection.texts ?? [], (key) => ({
-        path: ["texts", key] as const,
-        operation: { setRecord: "text" as const, key },
-      })),
-      ...Arr.map(selection.addresses ?? [], (coin) => ({
-        path: ["addresses", String(coin)] as const,
-        operation: {
-          setRecord: "address" as const,
-          key: typeof coin === "bigint" ? coin : CoinType.from(coin),
-        },
-      })),
-      ...(selection.contentHash === true
-        ? [{ path: ["contentHash"] as const, operation: { setRecord: "contentHash" as const } }]
-        : []),
-      ...(selection.abi === undefined
-        ? []
-        : [{ path: ["abi"] as const, operation: { setRecord: "abi" as const } }]),
-      ...(selection.pubkey === true
-        ? [{ path: ["pubkey"] as const, operation: { setRecord: "pubkey" as const } }]
-        : []),
-      ...(selection.nameRecord === true
-        ? [{ path: ["nameRecord"] as const, operation: { setRecord: "name" as const } }]
-        : []),
-      ...Arr.map(selection.interfaces ?? [], (id) => ({
-        path: ["interfaces", id] as const,
-        operation: { setRecord: "interface" as const, key: id },
-      })),
-      ...Arr.map(selection.data ?? [], (key) => ({
-        path: ["data", key] as const,
-        operation: { setRecord: "data" as const, key },
-      })),
-    ],
-    catch: toAnyError,
-  });
+  tryAny((): SelectionOperation[] => [
+    ...Arr.map(selection.texts ?? [], (key) => ({
+      path: ["texts", key] as const,
+      operation: { setRecord: "text" as const, key },
+    })),
+    ...Arr.map(selection.addresses ?? [], (coin) => ({
+      path: ["addresses", String(coin)] as const,
+      operation: {
+        setRecord: "address" as const,
+        key: typeof coin === "bigint" ? coin : CoinType.from(coin),
+      },
+    })),
+    ...(selection.contentHash === true
+      ? [{ path: ["contentHash"] as const, operation: { setRecord: "contentHash" as const } }]
+      : []),
+    ...(selection.abi === undefined
+      ? []
+      : [{ path: ["abi"] as const, operation: { setRecord: "abi" as const } }]),
+    ...(selection.pubkey === true
+      ? [{ path: ["pubkey"] as const, operation: { setRecord: "pubkey" as const } }]
+      : []),
+    ...(selection.nameRecord === true
+      ? [{ path: ["nameRecord"] as const, operation: { setRecord: "name" as const } }]
+      : []),
+    ...Arr.map(selection.interfaces ?? [], (id) => ({
+      path: ["interfaces", id] as const,
+      operation: { setRecord: "interface" as const, key: id },
+    })),
+    ...Arr.map(selection.data ?? [], (key) => ({
+      path: ["data", key] as const,
+      operation: { setRecord: "data" as const, key },
+    })),
+  ]);

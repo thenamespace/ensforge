@@ -1,4 +1,4 @@
-import { toAnyError } from "../../internal/anyError.js";
+import { fromCause } from "../translate/fromCause.js";
 import type { AnyError, Code, ErrorOf } from "../types.js";
 import { messages, type Copy } from "./messages.js";
 
@@ -77,7 +77,8 @@ const expected = new Set<AnyError["_tag"]>([
  * @since 1.0.0
  */
 export const describe = (value: unknown, options: DescribeOptions = {}): Description => {
-  const error = toAnyError(value);
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- every EnsforgeError is one of the AnyError classes
+  const error = fromCause(value) as AnyError;
   // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- the message tables are keyed by every error code
   const template = messages[error.code] as (error: AnyError) => Copy;
   // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- the message tables are keyed by every error code
