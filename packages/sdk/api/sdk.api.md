@@ -4,7 +4,7 @@
 
 ```ts
 function Actions.approval.getDelegate(client: Client<object> | ViemClientLike, options: Pick<Options, 'signal'> & (BlockOptions & { name: string; delegate: string; owner?: string | undefined; })) => Promise<boolean>
-type Actions.approval.getDelegate.ErrorType = InvalidInputError | NotFoundError | CommonError
+type Actions.approval.getDelegate.ErrorType = InvalidInputError | NameStateError | NotFoundError | CommonError
 type Actions.approval.getDelegate.Options = Pick<Options, 'signal'> & (BlockOptions & { name: string; delegate: string; owner?: string | undefined; })
 const Actions.approval.getDelegate.path: 'approval.getDelegate'
 function Actions.approval.getDelegate.request(options: Pick<Options, 'signal'> & (BlockOptions & { name: string; delegate: string; owner?: string | undefined; })) => Request<boolean, ErrorType>
@@ -22,7 +22,7 @@ const Actions.approval.getToken.path: 'approval.getToken'
 function Actions.approval.getToken.request(options: Pick<Options, 'signal'> & (BlockOptions & { name: string; })) => Request<ReturnType, ErrorType>
 type Actions.approval.getToken.ReturnType = `0x${string}` | null
 function Actions.approval.setDelegate(client: Client<object> | ViemClientLike, options: setDelegate.Options & Write.Options) => Promise<Result>
-type Actions.approval.setDelegate.ErrorType = InvalidInputError | NotFoundError | UnauthorizedError | WriteError
+type Actions.approval.setDelegate.ErrorType = InvalidInputError | NameStateError | NotFoundError | UnauthorizedError | WriteError
 function Actions.approval.setDelegate.estimateGas(client: Client<object> | ViemClientLike, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Estimate>
 const Actions.approval.setDelegate.estimateGas.path: string
 type Actions.approval.setDelegate.Options = { name: string; delegate: string; approved: boolean; }
@@ -33,7 +33,7 @@ type Actions.approval.setDelegate.ReturnType = { readonly hash: `0x${string}`; r
 function Actions.approval.setDelegate.simulate(client: Client<object> | ViemClientLike, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Simulation>
 const Actions.approval.setDelegate.simulate.path: string
 function Actions.approval.setDelegateSync(client: Client<object> | ViemClientLike, options: setDelegate.Options & Write.Options & { confirmations?: number | undefined; timeout?: number | undefined; }) => Promise<SyncResult>
-type Actions.approval.setDelegateSync.ErrorType = InvalidInputError | NotFoundError | UnauthorizedError | WriteError
+type Actions.approval.setDelegateSync.ErrorType = InvalidInputError | NameStateError | NotFoundError | UnauthorizedError | WriteError
 type Actions.approval.setDelegateSync.Options = setDelegate.Options & Write.Options & { confirmations?: number | undefined; timeout?: number | undefined; }
 const Actions.approval.setDelegateSync.path: 'approval.setDelegateSync'
 type Actions.approval.setDelegateSync.ReturnType = Result & { readonly receipt: TransactionReceipt; readonly receipts: readonly TransactionReceipt[]; }

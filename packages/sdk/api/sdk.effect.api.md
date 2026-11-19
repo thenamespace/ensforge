@@ -5,7 +5,7 @@
 ```ts
 function Actions.approval.getDelegate(client: ClientBase<{}>, options: Pick<Options, 'signal'> & (BlockOptions & { name: string; delegate: string; owner?: string | undefined; })) => Effect<boolean, ErrorType, never>
 const Actions.approval.getDelegate.path: 'approval.getDelegate'
-type Actions.approval.getDelegate.ErrorType = InvalidInputError | NotFoundError | CommonError
+type Actions.approval.getDelegate.ErrorType = InvalidInputError | NameStateError | NotFoundError | CommonError
 type Actions.approval.getDelegate.Options = Pick<Options, 'signal'> & (BlockOptions & { name: string; delegate: string; owner?: string | undefined; })
 type Actions.approval.getDelegate.ReturnType = boolean
 function Actions.approval.getOperator(client: ClientBase<{}>, options: (Pick<Options, 'signal'> & BlockOptions) & ({ owner: string; operator: string; } & ({ contract: ApprovalContract; name?: undefined; } | { name: string; contract?: undefined; }))) => Effect<boolean, ErrorType, never>
@@ -23,12 +23,12 @@ const Actions.approval.setDelegate.prepare: ((client: ClientBase<{}>, options: O
 const Actions.approval.setDelegate.simulate: ((client: ClientBase<{}>, options: Options & Pick<Options, 'account' | 'via'>) => Effect<Simulation, ErrorType, never>) & { readonly path: string; }
 const Actions.approval.setDelegate.estimateGas: ((client: ClientBase<{}>, options: Options & Pick<Options, 'account' | 'via'>) => Effect<Estimate, ErrorType, never>) & { readonly path: string; }
 const Actions.approval.setDelegate.path: 'approval.setDelegate'
-type Actions.approval.setDelegate.ErrorType = InvalidInputError | NotFoundError | UnauthorizedError | WriteError
+type Actions.approval.setDelegate.ErrorType = InvalidInputError | NameStateError | NotFoundError | UnauthorizedError | WriteError
 type Actions.approval.setDelegate.Options = { name: string; delegate: string; approved: boolean; }
 type Actions.approval.setDelegate.ReturnType = { readonly hash: `0x${string}`; readonly hashes: readonly `0x${string}`[]; readonly id: string | undefined; readonly plan: Plan; }
 function Actions.approval.setDelegateSync(client: ClientBase<{}>, options: setDelegate.Options & Write.Options & { confirmations?: number | undefined; timeout?: number | undefined; }) => Effect<SyncResult, ErrorType, never>
 const Actions.approval.setDelegateSync.path: 'approval.setDelegateSync'
-type Actions.approval.setDelegateSync.ErrorType = InvalidInputError | NotFoundError | UnauthorizedError | WriteError
+type Actions.approval.setDelegateSync.ErrorType = InvalidInputError | NameStateError | NotFoundError | UnauthorizedError | WriteError
 type Actions.approval.setDelegateSync.Options = setDelegate.Options & Write.Options & { confirmations?: number | undefined; timeout?: number | undefined; }
 type Actions.approval.setDelegateSync.ReturnType = Result & { readonly receipt: TransactionReceipt; readonly receipts: readonly TransactionReceipt[]; }
 function Actions.approval.setOperator(client: ClientBase<{}>, options: (Options & Pick<Options, 'account'>) & Options) => Effect<Result, ErrorType, never>

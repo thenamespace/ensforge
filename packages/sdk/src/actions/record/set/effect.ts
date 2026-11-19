@@ -13,6 +13,7 @@ import { addressOf } from "../../../internal/address.js";
 import { tryAny } from "../../../internal/anyError.js";
 import { loadName } from "../../../internal/name/load.js";
 import { requestedResolver, setResolverCall } from "../../../internal/name/set-resolver.js";
+import * as V1Calls from "../../../internal/name/v1-calls.js";
 import { l2WriteTargetOf, requireRegistered } from "../../../internal/name/write.js";
 import { explainFor } from "../../../internal/permission/check.js";
 import { writeOperations } from "../../../internal/permission/records.js";
@@ -46,25 +47,26 @@ export const plan = Effect.fnUntraced(function* (
   let resolver: Address;
   let resolverChange: Plan.Call | undefined;
   if (l2 !== null) {
-    if (options.resolver !== undefined) {
-      return yield* Effect.fail(
-        new UnsupportedError({
-          code: "UNSUPPORTED_ON_DEPLOYMENT",
-          feature: "Changing the resolver of an L2 name",
-          shortMessage: "ensforge cannot change the resolver of a name on an L2.",
-          hint: "Write the records without `resolver`.",
-        }),
+    if (options.resolver === undefined) {
+      const current = l2.state.resolver;
+      if (current === null) {
+        return yield* Effect.fail(
+          new NotFoundError({
+            code: "RESOLVER_NOT_FOUND",
+            context: { chainId: l2.location.chainId },
+          }),
+        );
+      }
+      resolver = current;
+    } else {
+      // Only Basenames and Linea Names have a resolver pointer to change.
+      const { forkTarget, forkResolver } = yield* Effect.promise(
+        () => import("../../../internal/namespace/l2/index.js"),
       );
+      const fork = yield* forkTarget(l2, loaded.data.parts);
+      resolver = yield* forkResolver(l2.location, fork.contracts, options.resolver);
+      resolverChange = V1Calls.setResolver(fork.to, loaded.data.parts.node, resolver);
     }
-    if (l2.state.resolver === null) {
-      return yield* Effect.fail(
-        new NotFoundError({
-          code: "RESOLVER_NOT_FOUND",
-          context: { chainId: l2.location.chainId },
-        }),
-      );
-    }
-    resolver = l2.state.resolver;
   } else if (options.resolver === undefined) {
     const current = loaded.state.resolver;
     if (current === null) {

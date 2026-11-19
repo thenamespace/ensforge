@@ -26,6 +26,9 @@ import type { update as updateTypes, updateSync as updateSyncTypes } from "./upd
  * - By default the child gets its own PermissionedResolver with `records` written at creation;
  *   `resolver: "parent"` shares the parent's resolver, `null` creates it without one.
  * - `upsert` updates an existing child's resolver and records instead of failing.
+ * - Under a Basenames or Linea name the child is created on the L2 with `setSubnodeRecord`, on
+ *   the family's current resolver by default. Records for another `owner` are written while
+ *   the signer holds the child, which then goes to `owner`, in the same step.
  *
  * **Gotchas**
  *
@@ -61,6 +64,8 @@ import type { update as updateTypes, updateSync as updateSyncTypes } from "./upd
  * @throws `Errors.NameStateError` (`NAME_NOT_AVAILABLE`, `NAME_NOT_REGISTERED`, `NAME_EXTERNAL`, `NAME_EXPIRED`) when the child exists or the parent is not registered, or its parent's namespace manages it outside ENS's registries.
  * @throws `Errors.NameStateError` (`NAME_RESERVED`, `NAME_UNREACHABLE`) when the parent is reserved or ENSv2 resolution no longer reaches it.
  * @throws `Errors.UnsupportedError` (`UNSUPPORTED_PROTOCOL`) for `roles` on ENSv1 or `fuses` on unwrapped parents.
+ * @throws `Errors.UnsupportedError` (`UNSUPPORTED_ON_DEPLOYMENT`) for `fuses`, `expiry`, `roles` or `emancipate` under an L2 name, or a resolver other than Linea's PublicResolver under a Linea name.
+ * @throws `Errors.ConfigError` (`CHAIN_NOT_CONFIGURED`) when the name lives on an L2 the client cannot reach.
  * @throws `Errors.UnauthorizedError` (`MISSING_ROLES`, `NOT_OWNER`, `FUSE_BURNED`) when the account may not create children.
  * @throws `Errors.ConfigError` (`WALLET_NOT_CONFIGURED`) when no signing account is known.
  * @throws `Errors.UserRejectedError` (`USER_REJECTED`) when the user rejects the request.
@@ -120,6 +125,8 @@ export declare namespace create {
  * @throws `Errors.NameStateError` (`NAME_NOT_AVAILABLE`, `NAME_NOT_REGISTERED`, `NAME_EXTERNAL`, `NAME_EXPIRED`) when the child exists or the parent is not registered, or its parent's namespace manages it outside ENS's registries.
  * @throws `Errors.NameStateError` (`NAME_RESERVED`, `NAME_UNREACHABLE`) when the parent is reserved or ENSv2 resolution no longer reaches it.
  * @throws `Errors.UnsupportedError` (`UNSUPPORTED_PROTOCOL`) for `roles` on ENSv1 or `fuses` on unwrapped parents.
+ * @throws `Errors.UnsupportedError` (`UNSUPPORTED_ON_DEPLOYMENT`) for `fuses`, `expiry`, `roles` or `emancipate` under an L2 name, or a resolver other than Linea's PublicResolver under a Linea name.
+ * @throws `Errors.ConfigError` (`CHAIN_NOT_CONFIGURED`) when the name lives on an L2 the client cannot reach.
  * @throws `Errors.UnauthorizedError` (`MISSING_ROLES`, `NOT_OWNER`, `FUSE_BURNED`) when the account may not create children.
  * @throws `Errors.ConfigError` (`WALLET_NOT_CONFIGURED`) when no signing account is known.
  * @throws `Errors.TransactionError` (`TRANSACTION_REVERTED`, `RECEIPT_TIMEOUT`, `NONCE_CONFLICT`) when confirmation fails or the wallet's nonce is already used.
@@ -153,6 +160,7 @@ export declare namespace createSync {
  * - ENSv1: owner and resolver are set to zero, from the parent when the signer owns it or is
  *   its operator, otherwise as the child's owner. Under an unwrapped parent the registry clears a wrapped
  *   child, which unwraps it.
+ * - Under a Basenames or Linea name the same calls run on the L2.
  *
  * **Gotchas**
  *
@@ -186,6 +194,7 @@ export declare namespace createSync {
  * @throws `Errors.NameStateError` (`NAME_RESERVED`, `NAME_UNREACHABLE`) when the parent is reserved or ENSv2 resolution no longer reaches it.
  * @throws `Errors.UnauthorizedError` (`MISSING_ROLES`, `NOT_OWNER`, `FUSE_BURNED`) when the account may not remove it.
  * @throws `Errors.ConfigError` (`WALLET_NOT_CONFIGURED`) when no signing account is known.
+ * @throws `Errors.ConfigError` (`CHAIN_NOT_CONFIGURED`) when the name lives on an L2 the client cannot reach.
  * @throws `Errors.UserRejectedError` (`USER_REJECTED`) when the user rejects the request.
  * @throws `Errors.WalletError` (`CHAIN_MISMATCH`, `ACCOUNT_NOT_FOUND`) when the wallet is on another chain or has no account to sign with.
  * @throws `Errors.UnsupportedError` (`WALLET_BATCH_UNSUPPORTED`) with `mode: "batch"` or a paymaster when the wallet cannot send calls as one batch.
@@ -244,6 +253,7 @@ export declare namespace remove {
  * @throws `Errors.NameStateError` (`NAME_RESERVED`, `NAME_UNREACHABLE`) when the parent is reserved or ENSv2 resolution no longer reaches it.
  * @throws `Errors.UnauthorizedError` (`MISSING_ROLES`, `NOT_OWNER`, `FUSE_BURNED`) when the account may not remove it.
  * @throws `Errors.ConfigError` (`WALLET_NOT_CONFIGURED`) when no signing account is known.
+ * @throws `Errors.ConfigError` (`CHAIN_NOT_CONFIGURED`) when the name lives on an L2 the client cannot reach.
  * @throws `Errors.TransactionError` (`TRANSACTION_REVERTED`, `RECEIPT_TIMEOUT`, `NONCE_CONFLICT`) when confirmation fails or the wallet's nonce is already used.
  *
  * @see {@link remove} to resolve on submission
@@ -277,6 +287,7 @@ export declare namespace removeSync {
  * - ENSv1: one `setSubnodeRecord` keeps what is not changed; wrapped children extend their
  *   expiry with `extendExpiry`. Unwrapped ENSv1 subnames have no expiry. Under an unwrapped
  *   parent the registry rewrites a wrapped child, which unwraps it.
+ * - Under a Basenames or Linea name: one `setSubnodeRecord` on the L2; `expiry` is not supported.
  *
  * **Gotchas**
  *
@@ -310,6 +321,8 @@ export declare namespace removeSync {
  * @throws `Errors.NameStateError` (`NAME_NOT_REGISTERED`, `NAME_EXTERNAL`, `NAME_EXPIRED`) when the child or parent does not exist, or an emancipated child expired, or its parent's namespace manages it outside ENS's registries.
  * @throws `Errors.NameStateError` (`NAME_RESERVED`, `NAME_UNREACHABLE`) when the parent is reserved or ENSv2 resolution no longer reaches it.
  * @throws `Errors.UnsupportedError` (`UNSUPPORTED_PROTOCOL`) for an ENSv2 owner change or an unwrapped ENSv1 expiry.
+ * @throws `Errors.UnsupportedError` (`UNSUPPORTED_ON_DEPLOYMENT`) for `expiry` under an L2 name, or a resolver other than Linea's PublicResolver under a Linea name.
+ * @throws `Errors.ConfigError` (`CHAIN_NOT_CONFIGURED`) when the name lives on an L2 the client cannot reach.
  * @throws `Errors.UnauthorizedError` (`MISSING_ROLES`, `NOT_OWNER`, `FUSE_BURNED`) when the account may not change it.
  * @throws `Errors.UserRejectedError` (`USER_REJECTED`) when the user rejects the request.
  * @throws `Errors.WalletError` (`CHAIN_MISMATCH`, `ACCOUNT_NOT_FOUND`) when the wallet is on another chain or has no account to sign with.
@@ -368,6 +381,8 @@ export declare namespace update {
  * @throws `Errors.NameStateError` (`NAME_NOT_REGISTERED`, `NAME_EXTERNAL`, `NAME_EXPIRED`) when the child or parent does not exist, or an emancipated child expired, or its parent's namespace manages it outside ENS's registries.
  * @throws `Errors.NameStateError` (`NAME_RESERVED`, `NAME_UNREACHABLE`) when the parent is reserved or ENSv2 resolution no longer reaches it.
  * @throws `Errors.UnsupportedError` (`UNSUPPORTED_PROTOCOL`) for an ENSv2 owner change or an unwrapped ENSv1 expiry.
+ * @throws `Errors.UnsupportedError` (`UNSUPPORTED_ON_DEPLOYMENT`) for `expiry` under an L2 name, or a resolver other than Linea's PublicResolver under a Linea name.
+ * @throws `Errors.ConfigError` (`CHAIN_NOT_CONFIGURED`) when the name lives on an L2 the client cannot reach.
  * @throws `Errors.UnauthorizedError` (`MISSING_ROLES`, `NOT_OWNER`, `FUSE_BURNED`) when the account may not change it.
  * @throws `Errors.TransactionError` (`TRANSACTION_REVERTED`, `RECEIPT_TIMEOUT`, `NONCE_CONFLICT`) when confirmation fails or the wallet's nonce is already used.
  *

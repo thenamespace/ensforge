@@ -355,8 +355,8 @@ export declare namespace getText {
  *   ERC-165 is left to the simulation.
  * - The plan is simulated before the wallet prompt, so permission errors surface first.
  * - A name in an L2 namespace (Basenames, Linea Names, Celonames, Durin, Namespace) is written on
- *   its L2, to its resolver there, by the client's wallet on that chain. `resolver` is not
- *   supported for it.
+ *   its L2, to its resolver there, by the client's wallet on that chain. `resolver` works for
+ *   Basenames and Linea Names; a Linea name accepts only Linea's PublicResolver (`"default"`).
  *
  * **Gotchas**
  *
@@ -403,7 +403,7 @@ export declare namespace getText {
  * @throws `Errors.InvalidInputError` (`INVALID_NAME`, `INVALID_ADDRESS`, `INVALID_COIN_TYPE`, `INVALID_CONTENT_HASH`, `INVALID_RECORD_VALUE`) for invalid input.
  * @throws `Errors.NotFoundError` (`RESOLVER_NOT_FOUND`) when the name has no resolver of its own.
  * @throws `Errors.UnsupportedError` (`RESOLVER_PROFILE_UNSUPPORTED`, `UNSUPPORTED_PROTOCOL`) for records the resolver does not support (`feature` names them), a resolver that keeps its records off-chain or takes no writes, or `resolver: "default"` on an ENSv2 name.
- * @throws `Errors.UnsupportedError` (`UNSUPPORTED_ON_DEPLOYMENT`) for `resolver` or a route (`via`) on an L2 name.
+ * @throws `Errors.UnsupportedError` (`UNSUPPORTED_ON_DEPLOYMENT`) for a route (`via`) on an L2 name, or a resolver other than Linea's PublicResolver on a Linea name.
  * @throws `Errors.ConfigError` (`CHAIN_NOT_CONFIGURED`) when the name lives on an L2 the client cannot reach.
  * @throws `Errors.NameStateError` (`NAME_EXPIRED`, `NAME_RESERVED`, `NAME_NOT_REGISTERED`, `NAME_EXTERNAL`) when the name is not registered, or its parent's namespace manages it outside ENS's registries.
  * @throws `Errors.NameStateError` (`NAME_UNREACHABLE`) when ENSv2 resolution no longer reaches the name.

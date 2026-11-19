@@ -30,8 +30,8 @@ confirmation itself. Use [`setSync`](/docs/reference/sdk/record/set#wait-for-the
   ERC-165 is left to the simulation.
 - The plan is simulated before the wallet prompt, so permission errors surface first.
 - A name in an L2 namespace (Basenames, Linea Names, Celonames, Durin, Namespace) is written on
-  its L2, to its resolver there, by the client's wallet on that chain. `resolver` is not
-  supported for it.
+  its L2, to its resolver there, by the client's wallet on that chain. `resolver` works for
+  Basenames and Linea Names; a Linea name accepts only Linea's PublicResolver (`"default"`).
 
 <Callout type="warn" title="Gotchas">
 
@@ -93,7 +93,7 @@ Resolves to `Write.Result`. Submitted transaction hashes and the plan that produ
 | [`InvalidInputError`](/docs/reference/errors/invalid-input-error) | [`INVALID_NAME`](/docs/reference/errors/INVALID_NAME), [`INVALID_ADDRESS`](/docs/reference/errors/INVALID_ADDRESS), [`INVALID_COIN_TYPE`](/docs/reference/errors/INVALID_COIN_TYPE), [`INVALID_CONTENT_HASH`](/docs/reference/errors/INVALID_CONTENT_HASH), [`INVALID_RECORD_VALUE`](/docs/reference/errors/INVALID_RECORD_VALUE) | invalid input. |
 | [`NotFoundError`](/docs/reference/errors/not-found-error) | [`RESOLVER_NOT_FOUND`](/docs/reference/errors/RESOLVER_NOT_FOUND) | the name has no resolver of its own. |
 | [`UnsupportedError`](/docs/reference/errors/unsupported-error) | [`RESOLVER_PROFILE_UNSUPPORTED`](/docs/reference/errors/RESOLVER_PROFILE_UNSUPPORTED), [`UNSUPPORTED_PROTOCOL`](/docs/reference/errors/UNSUPPORTED_PROTOCOL) | records the resolver does not support (`feature` names them), a resolver that keeps its records off-chain or takes no writes, or `resolver: "default"` on an ENSv2 name. |
-| [`UnsupportedError`](/docs/reference/errors/unsupported-error) | [`UNSUPPORTED_ON_DEPLOYMENT`](/docs/reference/errors/UNSUPPORTED_ON_DEPLOYMENT) | `resolver` or a route (`via`) on an L2 name. |
+| [`UnsupportedError`](/docs/reference/errors/unsupported-error) | [`UNSUPPORTED_ON_DEPLOYMENT`](/docs/reference/errors/UNSUPPORTED_ON_DEPLOYMENT) | a route (`via`) on an L2 name, or a resolver other than Linea's PublicResolver on a Linea name. |
 | [`ConfigError`](/docs/reference/errors/config-error) | [`CHAIN_NOT_CONFIGURED`](/docs/reference/errors/CHAIN_NOT_CONFIGURED) | the name lives on an L2 the client cannot reach. |
 | [`NameStateError`](/docs/reference/errors/name-state-error) | [`NAME_EXPIRED`](/docs/reference/errors/NAME_EXPIRED), [`NAME_RESERVED`](/docs/reference/errors/NAME_RESERVED), [`NAME_NOT_REGISTERED`](/docs/reference/errors/NAME_NOT_REGISTERED), [`NAME_EXTERNAL`](/docs/reference/errors/NAME_EXTERNAL) | the name is not registered, or its parent's namespace manages it outside ENS's registries. |
 | [`NameStateError`](/docs/reference/errors/name-state-error) | [`NAME_UNREACHABLE`](/docs/reference/errors/NAME_UNREACHABLE) | ENSv2 resolution no longer reaches the name. |

@@ -50,19 +50,20 @@ export const get = Effect.fn("ensforge.permission.get")(function* (
     else recordAccess[field] = { ...(recordAccess[field] as object | undefined), [key]: allowed };
   }
 
-  const fuses = loaded.state.wrapped ? Fuse.decode(loaded.data.v1?.wrapper.fuses ?? 0) : undefined;
-  // A name in no ENS registry reports its status on the L2 it lives on, if any.
-  const l2Status =
+  // A name in no ENS registry reports its status and fuses on the L2 it lives on, if any.
+  const l2 =
     loaded.kind === "available"
       ? yield* Effect.promise(() => import("../../../internal/name/location.js")).pipe(
-          Effect.flatMap(({ l2StatusOf }) => l2StatusOf(client, loaded.data.parts)),
+          Effect.flatMap(({ l2StateOf }) => l2StateOf(client, loaded.data.parts)),
         )
       : null;
+  const burned = l2?.fuses ?? (loaded.state.wrapped ? (loaded.data.v1?.wrapper.fuses ?? 0) : 0);
+  const fuses = Fuse.decode(burned);
   return {
     account,
-    status: l2Status ?? loaded.state.status,
+    status: l2?.status ?? loaded.state.status,
     can: { ...can, setRecords: checks[nameOperations.length]?.allowed ?? null },
     ...(options.records === undefined ? {} : { records: recordAccess }),
-    fuses: fuses === undefined ? [] : Arr.filter(Rec.keys(fuses), (fuse) => fuses[fuse]),
+    fuses: Arr.filter(Rec.keys(fuses), (fuse) => fuses[fuse]),
   };
 }, Action.withContext("permission.get"));

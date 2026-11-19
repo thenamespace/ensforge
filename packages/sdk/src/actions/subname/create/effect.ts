@@ -217,6 +217,25 @@ export const plan = Effect.fnUntraced(function* (
       }),
     );
   }
+  if (subname.route === "l2") {
+    const { createCalls } = yield* Effect.promise(
+      () => import("../../../internal/namespace/l2/index.js"),
+    );
+    const calls = yield* createCalls(subname, options, signer);
+    return makePlan({
+      operation: "subname.create",
+      chainId: subname.target.client.chain.id,
+      account: signer,
+      steps: [
+        {
+          id: "create",
+          description:
+            subname.childState.status === "registered" ? "Update subname" : "Create subname",
+          calls,
+        },
+      ],
+    });
+  }
   if (child.state.status === "registered" && options.upsert !== true) {
     return yield* Effect.fail(
       new NameStateError({

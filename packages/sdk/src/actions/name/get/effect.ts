@@ -60,7 +60,8 @@ export const get = Effect.fn("ensforge.name.get")(
     const { readL2State } = yield* Effect.promise(
       () => import("../../../internal/namespace/l2/index.js"),
     );
-    return { ...external, ...(yield* readL2State(l2, namespace, data.parts)) };
+    const { fuses: _fuses, ...l2State } = yield* readL2State(l2, namespace, data.parts);
+    return { ...external, ...l2State };
   },
   Action.withContext("name.get", { contractKind: "registry" }),
 );

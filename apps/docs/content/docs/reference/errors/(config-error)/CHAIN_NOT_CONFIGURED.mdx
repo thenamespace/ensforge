@@ -31,11 +31,18 @@ Retrying the same call fails the same way until the cause is fixed (`retryable: 
 
 | Action | When |
 | --- | --- |
+| [`approval.getDelegate`](/docs/reference/sdk/approval/get-delegate) | when the name lives on an L2 the client cannot reach. |
+| [`approval.setDelegate`](/docs/reference/sdk/approval/set-delegate) | when the name lives on an L2 the client cannot reach. |
+| [`name.setTtl`](/docs/reference/sdk/name/set-ttl) | when the name lives on an L2 the client cannot reach. |
 | [`name.transfer`](/docs/reference/sdk/name/transfer) | when the name lives on an L2 the client cannot reach. |
 | [`primaryName.set`](/docs/reference/sdk/primary-name/set) | for an L2 that is not in the client's `chains`. |
 | [`record.get`](/docs/reference/sdk/record/get) | with `strict` when the name lives on an L2 the client cannot reach. |
 | [`record.getAddress`](/docs/reference/sdk/record/get-address) | with `strict` when the name lives on an L2 the client cannot reach. |
 | [`record.set`](/docs/reference/sdk/record/set) | when the name lives on an L2 the client cannot reach. |
+| [`resolver.set`](/docs/reference/sdk/resolver/set) | when the name lives on an L2 the client cannot reach. |
+| [`subname.create`](/docs/reference/sdk/subname/create) | when the name lives on an L2 the client cannot reach. |
+| [`subname.remove`](/docs/reference/sdk/subname/remove) | when the name lives on an L2 the client cannot reach. |
+| [`subname.update`](/docs/reference/sdk/subname/update) | when the name lives on an L2 the client cannot reach. |
 
 Any action can fail with `ConfigError`: it is part of `Errors.CommonError`.
 

@@ -5,6 +5,7 @@ import { encodeFunctionData, hexToBigInt, zeroAddress, type Address } from "viem
 
 import type { Client } from "../../../client/types.js";
 import { ConfigError } from "../../../errors/classes/ConfigError.js";
+import { NameStateError } from "../../../errors/classes/NameStateError.js";
 import type { AnyError } from "../../../errors/types.js";
 import * as Action from "../../../internal/action/index.js";
 import { addressOf } from "../../../internal/address.js";
@@ -74,6 +75,26 @@ export const plan = Effect.fnUntraced(function* (
   }
 
   const subname = yield* loadSubname(client, options.name);
+  if (subname.route === "l2") {
+    if (subname.childState.status !== "registered") {
+      return yield* Effect.fail(
+        new NameStateError({
+          code: "NAME_NOT_REGISTERED",
+          shortMessage: `${subname.child.data.parts.name} does not exist.`,
+          context: { chainId: subname.target.location.chainId },
+        }),
+      );
+    }
+    const { removeCall: l2RemoveCall } = yield* Effect.promise(
+      () => import("../../../internal/namespace/l2/index.js"),
+    );
+    return singleStepPlan(subname.target.client, {
+      operation: "subname.remove",
+      account: options.account,
+      description: "Remove subname",
+      calls: [yield* l2RemoveCall(subname, signer)],
+    });
+  }
   if (subname.child.state.status === "available") {
     return yield* notRegistered(
       client,

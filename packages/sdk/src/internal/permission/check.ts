@@ -10,9 +10,7 @@ import { UnauthorizedError } from "../../errors/classes/UnauthorizedError.js";
 import type { AnyError } from "../../errors/types.js";
 import { isOpaqueRevert, type Explainer } from "../action/write.js";
 import { loadName, type LoadedName } from "../name/load.js";
-import type { L2Location } from "../name/location.js";
 import { requireAddress } from "../name/write.js";
-import type { RecordAccess } from "../namespace/l2/index.js";
 import { evaluate } from "./evaluate.js";
 import { readPermissionFacts } from "./facts.js";
 
@@ -27,84 +25,16 @@ export const checkLoaded = Effect.fnUntraced(function* (
   if (loaded.kind === "available") {
     const { l2LocationOf } = yield* Effect.promise(() => import("../name/location.js"));
     const location = yield* l2LocationOf(client, loaded.data.parts, {});
-    if (location !== null) return yield* checkOnL2(client, location, loaded, account, operations);
+    if (location !== null) {
+      const { checkOnL2 } = yield* Effect.promise(() => import("../namespace/l2/index.js"));
+      return yield* checkOnL2(client, location, loaded.data.parts, account, operations);
+    }
   }
 
   const facts = yield* readPermissionFacts(client, loaded, account, operations);
   return Arr.map(operations, (operation) =>
     evaluate(facts, operation, client.deployment.v1?.contracts),
   );
-});
-
-const unsupportedOnL2: PermissionCheck = {
-  allowed: false,
-  via: null,
-  contract: null,
-  resource: null,
-  missing: [
-    {
-      type: "blocked",
-      reason: "unsupported",
-      detail:
-        "ensforge writes the records, owner and approvals of L2 names; their namespace manages the rest.",
-    },
-  ],
-};
-
-/**
- * Checks on a name in an L2 namespace, as its contracts authorize them on the L2: record writes,
- * and transfers (which approving the token takes too); everything else unsupported. Unknown
- * (`allowed: null`) when the client cannot reach the L2.
- */
-const checkOnL2 = Effect.fnUntraced(function* (
-  client: Client,
-  location: L2Location,
-  loaded: LoadedName,
-  account: Address,
-  operations: readonly Operation[],
-): Effect.fn.Return<readonly PermissionCheck[], AnyError> {
-  const { l2Client } = yield* Effect.promise(() => import("../name/location.js"));
-  const l2 = yield* l2Client(client, location, false);
-  const { parts } = loaded.data;
-  const { recordAccess, transferAccess } = yield* Effect.promise(
-    () => import("../namespace/l2/index.js"),
-  );
-  // Each access is read once, and only when an operation needs it.
-  const accessFor = (
-    test: (operation: Operation) => boolean,
-    read: (l2: Client) => Effect.Effect<RecordAccess, AnyError>,
-  ) => (l2 === null || !Arr.some(operations, test) ? Effect.undefined : read(l2));
-  const [records, transfer] = yield* Effect.all(
-    [
-      accessFor(
-        (operation) => typeof operation === "object",
-        (on) => recordAccess(on, location, parts, account),
-      ),
-      accessFor(
-        (operation) => operation === "transfer",
-        (on) => transferAccess(on, location, parts, account),
-      ),
-    ],
-    { concurrency: "unbounded" },
-  );
-
-  return Arr.map(operations, (operation): PermissionCheck => {
-    if (typeof operation !== "object" && operation !== "transfer") return unsupportedOnL2;
-    const access = typeof operation === "object" ? records : transfer;
-    if (access === undefined) {
-      return { allowed: null, via: null, contract: null, resource: null, missing: [] };
-    }
-    return {
-      allowed: access.allowed,
-      via: access.via,
-      contract: access.contract,
-      resource: null,
-      missing:
-        access.allowed || access.contract === null
-          ? []
-          : [{ type: "owner", contract: access.contract, owner: access.owner }],
-    };
-  });
 });
 
 /** Like {@link checkLoaded}, loading the name first. */

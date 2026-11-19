@@ -12,10 +12,14 @@ import type { NameParts } from "../../name/parts.js";
 import type { RegistryState } from "../../name/state.js";
 import * as Rpc from "../../rpc/index.js";
 
-/** What an L2 holds about a name, in `name.get`'s terms. */
+/**
+ * What an L2 holds about a name, in `name.get`'s terms, and the fuses Linea Names' NameWrapper
+ * burned on it (`0` elsewhere).
+ */
 export type L2State = Pick<
   RegistryState,
   | "status"
+  | "ttl"
   | "owner"
   | "registry"
   | "resolver"
@@ -25,7 +29,7 @@ export type L2State = Pick<
   | "wrapped"
   | "available"
   | "renewable"
->;
+> & { readonly fuses: number };
 
 /** Status from an expiry on the L2's clock; `grace` seconds after it only the holder can renew. */
 const statusAt = (now: bigint, expiry: bigint, grace: bigint): NameStatus =>
@@ -33,24 +37,37 @@ const statusAt = (now: bigint, expiry: bigint, grace: bigint): NameStatus =>
 
 /** The fields every family fills alike; ensforge neither registers nor renews L2 names. */
 const fields = (
-  state: Omit<L2State, "available" | "renewable" | "wrapped" | "gracePeriodEnd"> &
-    Partial<Pick<L2State, "wrapped" | "gracePeriodEnd">>,
+  state: Omit<L2State, "available" | "renewable" | "wrapped" | "gracePeriodEnd" | "ttl" | "fuses"> &
+    Partial<Pick<L2State, "wrapped" | "gracePeriodEnd" | "ttl" | "fuses">>,
 ): L2State => ({
   gracePeriodEnd: null,
   wrapped: false,
+  ttl: null,
+  fuses: 0,
   ...state,
   available: state.status === "available" || state.status === "expired",
   renewable: false,
 });
 
-/** A registry record's resolver, `null` when unset. */
-const resolverIn = (client: Client, registry: Address, parts: NameParts) =>
-  Rpc.readContract(client, {
-    address: registry,
-    abi: Abis.v1.ensRegistry,
-    functionName: "resolver",
-    args: [parts.node],
-  }).pipe(Effect.map(nonZeroAddress));
+/** A registry record's resolver (`null` when unset) and TTL. */
+const recordIn = (client: Client, registry: Address, parts: NameParts) =>
+  Effect.all(
+    [
+      Rpc.readContract(client, {
+        address: registry,
+        abi: Abis.v1.ensRegistry,
+        functionName: "resolver",
+        args: [parts.node],
+      }).pipe(Effect.map(nonZeroAddress)),
+      Rpc.readContract(client, {
+        address: registry,
+        abi: Abis.v1.ensRegistry,
+        functionName: "ttl",
+        args: [parts.node],
+      }),
+    ],
+    { concurrency: "unbounded" },
+  );
 
 /**
  * Reads a name's owner, expiry and status on its L2 (`client` is on that chain), in one batched
@@ -86,7 +103,7 @@ export const readL2State: (
       const { registry, baseRegistrar } = basenames.contracts;
       const grace = BigInt(basenames.gracePeriod);
       const label = hexToBigInt(parts.labelhash);
-      const [manager, resolver, expiry, holder] = yield* Effect.all(
+      const [manager, [resolver, ttl], expiry, holder] = yield* Effect.all(
         [
           Rpc.readContract(client, {
             address: registry,
@@ -94,7 +111,7 @@ export const readL2State: (
             functionName: "owner",
             args: [parts.node],
           }),
-          resolverIn(client, registry, parts),
+          recordIn(client, registry, parts),
           secondLevel
             ? Rpc.readContract(client, {
                 address: baseRegistrar,
@@ -122,6 +139,7 @@ export const readL2State: (
           owner,
           registry,
           resolver,
+          ttl,
           expiry: null,
           tokenId: null,
         });
@@ -131,6 +149,7 @@ export const readL2State: (
         owner: nonZeroAddress(holder),
         registry,
         resolver,
+        ttl,
         expiry: expiry === 0n ? null : expiry,
         gracePeriodEnd: expiry === 0n ? null : expiry + grace,
         tokenId: label,
@@ -142,7 +161,7 @@ export const readL2State: (
       if (linea === undefined) return yield* unknownFamily(location);
       const { registry, baseRegistrar, nameWrapper } = linea.contracts;
       const grace = BigInt(linea.gracePeriod);
-      const [[holder, , wrapperExpiry], resolver, registrarExpiry] = yield* Effect.all(
+      const [[holder, fuses, wrapperExpiry], [resolver, ttl], registrarExpiry] = yield* Effect.all(
         [
           Rpc.readContract(client, {
             address: nameWrapper,
@@ -150,7 +169,7 @@ export const readL2State: (
             functionName: "getData",
             args: [tokenId],
           }),
-          resolverIn(client, registry, parts),
+          recordIn(client, registry, parts),
           secondLevel
             ? Rpc.readContract(client, {
                 address: baseRegistrar,
@@ -171,8 +190,10 @@ export const readL2State: (
           resolver,
           expiry: registrarExpiry === 0n ? null : registrarExpiry,
           gracePeriodEnd: registrarExpiry === 0n ? null : registrarExpiry + grace,
+          ttl,
           tokenId,
           wrapped: true,
+          fuses,
         });
       }
       // A wrapped subname keeps the NameWrapper's expiry (capped at its parent's).
@@ -187,9 +208,11 @@ export const readL2State: (
         owner,
         registry,
         resolver,
+        ttl,
         expiry,
         tokenId,
         wrapped: owner !== null,
+        fuses,
       });
     }
 

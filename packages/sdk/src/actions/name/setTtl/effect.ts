@@ -9,6 +9,7 @@ import * as Action from "../../../internal/action/index.js";
 import { loadName } from "../../../internal/name/load.js";
 import * as V1Calls from "../../../internal/name/v1-calls.js";
 import {
+  l2WriteTargetOf,
   requireProtocol,
   requireRegistered,
   requireV1Contracts,
@@ -31,6 +32,20 @@ export const plan = Effect.fnUntraced(function* (
   }
 
   const loaded = yield* loadName(client, options.name);
+  // A Basenames or Linea name keeps its TTL on its L2.
+  const l2 = yield* l2WriteTargetOf(client, loaded);
+  if (l2 !== null) {
+    const { forkTarget } = yield* Effect.promise(
+      () => import("../../../internal/namespace/l2/index.js"),
+    );
+    const fork = yield* forkTarget(l2, loaded.data.parts);
+    return singleStepPlan(l2.client, {
+      operation: "name.setTtl",
+      account: options.account,
+      description: "Set TTL",
+      calls: [V1Calls.setTtl(fork.to, loaded.data.parts.node, options.ttl)],
+    });
+  }
   yield* requireRegistered(client, loaded);
   yield* requireProtocol(loaded, "v1", "TTL");
 

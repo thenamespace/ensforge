@@ -19,6 +19,7 @@ import * as Impl from "./effect.js";
  * - ENSv1: owner and resolver are set to zero, from the parent when the signer owns it or is
  *   its operator, otherwise as the child's owner. Under an unwrapped parent the registry clears a wrapped
  *   child, which unwraps it.
+ * - Under a Basenames or Linea name the same calls run on the L2.
  *
  * **Gotchas**
  *
@@ -52,6 +53,7 @@ import * as Impl from "./effect.js";
  * @throws `Errors.NameStateError` (`NAME_RESERVED`, `NAME_UNREACHABLE`) when the parent is reserved or ENSv2 resolution no longer reaches it.
  * @throws `Errors.UnauthorizedError` (`MISSING_ROLES`, `NOT_OWNER`, `FUSE_BURNED`) when the account may not remove it.
  * @throws `Errors.ConfigError` (`WALLET_NOT_CONFIGURED`) when no signing account is known.
+ * @throws `Errors.ConfigError` (`CHAIN_NOT_CONFIGURED`) when the name lives on an L2 the client cannot reach.
  * @throws `Errors.UserRejectedError` (`USER_REJECTED`) when the user rejects the request.
  * @throws `Errors.WalletError` (`CHAIN_MISMATCH`, `ACCOUNT_NOT_FOUND`) when the wallet is on another chain or has no account to sign with.
  * @throws `Errors.UnsupportedError` (`WALLET_BATCH_UNSUPPORTED`) with `mode: "batch"` or a paymaster when the wallet cannot send calls as one batch.
@@ -138,6 +140,7 @@ remove.estimateGas = Action.promiseOf(
  * @throws `Errors.NameStateError` (`NAME_RESERVED`, `NAME_UNREACHABLE`) when the parent is reserved or ENSv2 resolution no longer reaches it.
  * @throws `Errors.UnauthorizedError` (`MISSING_ROLES`, `NOT_OWNER`, `FUSE_BURNED`) when the account may not remove it.
  * @throws `Errors.ConfigError` (`WALLET_NOT_CONFIGURED`) when no signing account is known.
+ * @throws `Errors.ConfigError` (`CHAIN_NOT_CONFIGURED`) when the name lives on an L2 the client cannot reach.
  * @throws `Errors.TransactionError` (`TRANSACTION_REVERTED`, `RECEIPT_TIMEOUT`, `NONCE_CONFLICT`) when confirmation fails or the wallet's nonce is already used.
  *
  * @see {@link remove} to resolve on submission

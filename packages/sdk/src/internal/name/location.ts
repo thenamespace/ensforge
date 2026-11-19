@@ -2,7 +2,7 @@ import { Effect } from "effect";
 
 import { Deployments } from "@ensforge/contracts";
 
-import type { NameNamespace, NameStatus } from "../../actions/name/get/types.js";
+import type { NameNamespace } from "../../actions/name/get/types.js";
 import { stateOf } from "../../client/state.js";
 import type { Client } from "../../client/types.js";
 import { ConfigError } from "../../errors/classes/ConfigError.js";
@@ -69,19 +69,18 @@ export const l2Client = (
       : Effect.succeed(null);
 
 /**
- * The status of a name on its L2, or `null` for names in ENS and ones on an L2 the client cannot
+ * What a name's L2 holds about it, or `null` for names in ENS and ones on an L2 the client cannot
  * reach.
  */
-export const l2StatusOf = Effect.fnUntraced(function* (
+export const l2StateOf = Effect.fnUntraced(function* (
   client: Client,
   parts: NameParts,
-): Effect.fn.Return<NameStatus | null, AnyError> {
+): Effect.fn.Return<L2State | null, AnyError> {
   const location = yield* l2LocationOf(client, parts, {});
   const l2 = location === null ? null : yield* l2Client(client, location, false);
   if (location === null || l2 === null) return null;
   const { readL2State } = yield* Effect.promise(() => import("../namespace/l2/index.js"));
-  const state = yield* readL2State(l2, location, parts);
-  return state.status;
+  return yield* readL2State(l2, location, parts);
 });
 
 /**
@@ -170,9 +169,32 @@ export const l2WriteTarget = Effect.fnUntraced(function* (
   }
 });
 
+// What ensforge writes on each family's names; ENSv1 forks take ENS's registry calls too.
+const writable = (location: L2Location): string =>
+  location.id === "basenames" || location.id === "linea"
+    ? "its records, resolver, TTL, subnames, owner and approvals"
+    : "its records, owner and approvals";
+
+/** `NAME_EXTERNAL` for a write ensforge does not make on an L2 name, naming where it lives. */
+export const l2RefusalAt = (
+  client: Client,
+  location: L2Location,
+  parts: NameParts,
+): NameStateError =>
+  new NameStateError({
+    code: "NAME_EXTERNAL",
+    shortMessage: `${parts.name} lives on ${placeOf(client, location)}. ensforge can change ${writable(location)}, not this.`,
+    hint: "Use the namespace's own app for anything else.",
+    context: {
+      name: parts.name,
+      chainId: location.chainId,
+      ...(location.registry === null ? {} : { contract: location.registry }),
+    },
+  });
+
 /**
- * `NAME_EXTERNAL` for a write ensforge does not make on L2 names, naming where the name lives, or
- * `null` for names in no L2 namespace. A name that cannot be located is left to the caller.
+ * `NAME_EXTERNAL` for a write ensforge does not make on L2 names, or `null` for names in no L2
+ * namespace. A name that cannot be located is left to the caller.
  */
 export const l2Refusal = (
   client: Client,
@@ -180,18 +202,5 @@ export const l2Refusal = (
 ): Effect.Effect<NameStateError | null, AnyError> =>
   l2LocationOf(client, parts, {}).pipe(
     Effect.orElseSucceed(() => null),
-    Effect.map((location) =>
-      location === null
-        ? null
-        : new NameStateError({
-            code: "NAME_EXTERNAL",
-            shortMessage: `${parts.name} lives on ${placeOf(client, location)}. ensforge can change its records, owner and approvals, not this.`,
-            hint: "Use record.set, name.transfer or the approval actions, or the namespace's own app.",
-            context: {
-              name: parts.name,
-              chainId: location.chainId,
-              ...(location.registry === null ? {} : { contract: location.registry }),
-            },
-          }),
-    ),
+    Effect.map((location) => (location === null ? null : l2RefusalAt(client, location, parts))),
   );
