@@ -82,6 +82,8 @@ export default defineConfig(({ mode }) => ({
     // A Node server (`.output/server/index.mjs`) for the Docker image in apps/docs/Dockerfile.
     nitro({
       preset: "node-server",
+      // Assets ship with .br and .gz copies that Nitro serves by Accept-Encoding.
+      compressPublicAssets: { gzip: true, brotli: true },
       // Takumi stays an external, fully traced package so it loads its native binary at
       // runtime. Bundled, it pulls in the WASM build and the server fails to start.
       wasm: false,

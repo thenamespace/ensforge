@@ -1,5 +1,6 @@
 import { createCsrfMiddleware, createStart } from "@tanstack/react-start";
 
+import { compression, prerenderedPages } from "@/lib/delivery";
 import { markdownNegotiation } from "@/lib/markdown-negotiation";
 
 const csrfMiddleware = createCsrfMiddleware({
@@ -7,5 +8,7 @@ const csrfMiddleware = createCsrfMiddleware({
 });
 
 export const startInstance = createStart(() => ({
-  requestMiddleware: [markdownNegotiation, csrfMiddleware],
+  // Compression wraps everything; Markdown negotiation runs before prerendered HTML so agents
+  // asking for `text/markdown` still get Markdown.
+  requestMiddleware: [compression, markdownNegotiation, prerenderedPages, csrfMiddleware],
 }));
