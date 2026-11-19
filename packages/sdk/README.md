@@ -61,6 +61,21 @@ await ens.plan.resume({ id: planId });
 
 The same actions run in Effect programs from `@ensforge/sdk/effect`.
 
+## Bundle size
+
+`ensActions()` adds every group but loads the rarely used ones (approval, dns, event, migration,
+permission, registry, role, wrapper) and `batch` with their first call. For the smallest bundle,
+add only the groups you use, or call actions directly with a viem client:
+
+```ts
+import { Actions, Ensforge, nameActions, recordActions } from "@ensforge/sdk";
+
+const ens = Ensforge.create({ publicClient }).extend(nameActions()).extend(recordActions());
+const url = await Actions.record.getText(publicClient, { name: "ens.eth", key: "url" });
+```
+
+Error translation (decoding reverts against every ENS contract error) loads on the first failure.
+
 ## wagmi
 
 Apps with a wagmi config (RainbowKit, ConnectKit, Dynamic, Privy, Reown AppKit) create the client
