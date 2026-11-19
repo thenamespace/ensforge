@@ -3,6 +3,7 @@ import { Command, Flag } from "effect/cli";
 
 import { discover, type Layout } from "../codegen/discover.ts";
 import {
+  decoratorFiles,
   decorators,
   domainBarrel,
   effectBarrel,
@@ -48,6 +49,8 @@ export const codegen = Effect.fn("codegen")(function* (check: boolean) {
 
   const layout: Layout[number][] = [];
   for (const domain of yield* sortedDirectories(actionsDir)) {
+    // Generated decorator modules, not a domain.
+    if (domain === "decorators") continue;
     const folders: { readonly folder: string; readonly files: readonly string[] }[] = [];
     for (const folder of yield* sortedDirectories(path.join(actionsDir, domain))) {
       folders.push({
@@ -101,7 +104,9 @@ export const codegen = Effect.fn("codegen")(function* (check: boolean) {
   const outputs = new Map<string, string>([
     ["src/actions/index.ts", treeBarrel(domains, "index", profile)],
     ["src/actions/effect.ts", treeBarrel(domains, "effect", profile)],
-    ["src/actions/decorators.ts", decorators(domains, profile)],
+    ...(profile.lazy.length > 0
+      ? decoratorFiles(domains, profile)
+      : [["src/actions/decorators.ts", decorators(domains, profile)] as const]),
     ...(profile.batch ? [["src/actions/requests.ts", requestsTable(domains)] as const] : []),
     ...Arr.flatMap(domains, (entry) => [
       [`src/actions/${entry.domain}/index.ts`, domainBarrel(entry)] as const,
