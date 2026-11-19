@@ -1,7 +1,9 @@
 import { assert, describe, it } from "@effect/vitest";
 import { Effect } from "effect";
 
+import { Abis } from "@ensforge/contracts";
 import { Ensforge } from "@ensforge/sdk";
+import * as Rpc from "@ensforge/sdk/internal/internal/rpc/index";
 import { chainClient, hasChain } from "@ensforge/sdk/internal/internal/write/chain";
 import { resolveSigner } from "@ensforge/sdk/internal/internal/write/signer";
 import { expectFailure, noRpc, scriptedTransport } from "@ensforge/test-harness";
@@ -56,6 +58,40 @@ describe("chain clients", () => {
       assert.isTrue(hasChain(copy, 1));
       assert.isTrue(hasChain(client(), 10));
       assert.isFalse(hasChain(client(), 8453));
+    }),
+  );
+});
+
+// Clients derived from one `Ensforge.create` share their state; batched reads must still go to
+// each client's own chain.
+describe("chain client reads", () => {
+  it.effect("batches each chain's reads on that chain's transport", () =>
+    Effect.gen(function* () {
+      const l1 = scriptedTransport(noRpc);
+      const l2 = scriptedTransport(noRpc);
+      const ens = Ensforge.create({
+        chain: mainnet,
+        transports: { [mainnet.id]: l1.transport, [optimism.id]: l2.transport },
+        publicRpc: false,
+      });
+      const read = (on: typeof ens) =>
+        Effect.exit(
+          Rpc.readContract(on, {
+            address: alice,
+            abi: Abis.shared.erc165,
+            functionName: "supportsInterface",
+            args: ["0x01ffc9a7"],
+          }),
+        );
+
+      yield* read(ens);
+      const onEthereum = l1.calls.length;
+      const op = yield* chainClient(ens, optimism.id);
+      yield* read(op);
+
+      assert.isAbove(onEthereum, 0);
+      assert.strictEqual(l1.calls.length, onEthereum);
+      assert.isAbove(l2.calls.length, 0);
     }),
   );
 });
