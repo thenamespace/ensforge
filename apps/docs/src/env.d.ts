@@ -5,7 +5,7 @@ interface ImportMetaEnv {
   readonly VITE_SITE_URL?: string;
   /** PostHog project key (public). Analytics stays off without it. */
   readonly VITE_POSTHOG_KEY?: string;
-  /** PostHog ingestion host or reverse proxy. Defaults to PostHog US cloud. */
+  /** PostHog ingestion host. Defaults to the managed reverse proxy. */
   readonly VITE_POSTHOG_HOST?: string;
   /** Git SHA of the deploy, set at build time. */
   readonly VITE_RELEASE: string;
