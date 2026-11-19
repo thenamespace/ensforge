@@ -1,5 +1,5 @@
 import { assert, describe } from "@effect/vitest";
-import { Array as Arr, Effect, Predicate, Record as Rec } from "effect";
+import { Array as Arr, Effect, Predicate, Record as Rec, String as Str } from "effect";
 
 import { Chain, Devnet } from "@ensforge/test-devnet";
 import { isAddress, type Address } from "viem";
@@ -7,7 +7,14 @@ import { isAddress, type Address } from "viem";
 import { onFork } from "../support/fork.ts";
 
 // The deployment profiles ensforge ships name real contracts: every address in them has code on
-// the network at the pinned block.
+// the network at the pinned block. Their L2 namespaces' contracts live on the L2s, where the live
+// lane checks them; only the namespaces' Ethereum resolvers are on this network.
+
+// The L2 namespaces' contracts, which are not on the ENS network.
+const onL2 = (path: string) =>
+  Str.includes(".namespaces.")(path) &&
+  !Str.endsWith(".l1Resolver")(path) &&
+  !Str.includes(".hybridResolvers.")(path);
 
 describe("deployment profiles", () => {
   for (const network of ["mainnet", "sepolia"] as const) {
@@ -21,6 +28,7 @@ describe("deployment profiles", () => {
           const addresses: (readonly [string, Address])[] = [];
           const walk = (value: unknown, path: string): void => {
             if (Predicate.isString(value) && isAddress(value, { strict: false })) {
+              if (onL2(path)) return;
               addresses.push([path, value]);
             } else if (Arr.isArray(value)) {
               Arr.forEach(value, (entry, index) => walk(entry, `${path}[${index}]`));

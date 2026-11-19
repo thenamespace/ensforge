@@ -72,12 +72,13 @@ describe("fork resolution", () => {
       { meta: { cases: ["F03"] } },
     );
 
-    it.effect("classifies names that L2 and off-chain namespaces serve as external", () =>
+    it.effect("classifies names that L2 and off-chain namespaces serve", () =>
       Effect.gen(function* () {
         const { reader } = yield* Clients;
         const stateOf = (name: string) => Actions.name.get(reader, { name });
 
-        // Basenames, Uniswap, and Coinbase under `cb.id` (reached through ENSv2's DNS TLD resolver).
+        // Basenames (an L2 namespace this client cannot reach: it has no Base transport), Uniswap,
+        // and Coinbase under `cb.id` (reached through ENSv2's DNS TLD resolver).
         const jesse = yield* stateOf("jesse.base.eth");
         const uni = yield* stateOf("test.uni.eth");
         const coinbase = yield* stateOf("jesse.cb.id");
@@ -88,9 +89,13 @@ describe("fork resolution", () => {
 
         const external = { kind: "offchain", status: "external", available: false } as const;
         assert.deepInclude(jesse, {
-          ...external,
+          kind: "l2",
+          status: "external",
+          available: false,
+          chainId: 8453,
           inheritedResolver: "0xde9049636F4a1dfE0a64d1bFe3155C0A14C54F31",
         });
+        assert.deepInclude(jesse.namespace, { kind: "l2", id: "basenames", parent: "base.eth" });
         assert.deepInclude(uni, external);
         assert.deepInclude(coinbase, {
           ...external,
