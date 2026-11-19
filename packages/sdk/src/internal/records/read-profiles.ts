@@ -67,14 +67,20 @@ const textReads = (node: Hex, keys: readonly string[]): Read[] =>
     },
   }));
 
+// An answer that is not ABI-encoded bytes counts as none: World's resolver answers
+// `addr(bytes32,uint256)` with a bare address word.
+const addressBytes = (result: Hex | undefined): Hex | undefined =>
+  result === undefined ? undefined : (orNull(() => decode("addr", result) as Hex) ?? undefined);
+
 const decodeAddress = (
   codecs: RecordCodecs,
   coinType: bigint,
   result: Hex | undefined,
 ): string | null => {
-  if (result === undefined) return null;
-  const bytes = decode("addr", result) as Hex;
-  return bytes === "0x" ? null : orNull(() => codecs.decodeAddress(coinType, bytes));
+  const bytes = addressBytes(result);
+  return bytes === undefined || bytes === "0x"
+    ? null
+    : orNull(() => codecs.decodeAddress(coinType, bytes));
 };
 
 const decodeLegacyEth = (codecs: RecordCodecs, result: Hex | undefined): string | null => {
@@ -100,12 +106,12 @@ const addressReads = (node: Hex, coins: readonly (string | bigint)[]): Read[] =>
       apply: (result, output, results, codecs) => {
         // Only a coin without a record of its own uses the default; an explicit zero address
         // is a record and blocks it.
-        const unset = result === undefined || decode("addr", result) === "0x";
+        const bytes = addressBytes(result);
         (output.addresses as Record<string, unknown>)[String(coin)] =
-          unset && usesDefault
+          (bytes === undefined || bytes === "0x") && usesDefault
             ? decodeAddress(codecs, coinType, results.defaultAddress)
             : // A resolver without ENSIP-9 answers ETH only through the legacy `addr(bytes32)`.
-              result === undefined && coinType === 60n
+              bytes === undefined && coinType === 60n
               ? decodeLegacyEth(codecs, results.legacyEth)
               : decodeAddress(codecs, coinType, result);
       },

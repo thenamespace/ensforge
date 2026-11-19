@@ -55,6 +55,25 @@ describe("planRecordReads", () => {
 
   // A record that does not decode reads as missing (or as raw bytes, for an ABI); the rest of the
   // read keeps its values.
+  // World's resolver (world.id) answers `addr(bytes32,uint256)` with a bare address word.
+  it.effect("treats an address answer that is not bytes as none", () =>
+    Effect.gen(function* () {
+      const plan = planRecordReads(namehash("test.world.id"), {
+        addresses: ["eth", 0x8000_2105n],
+      });
+      const codecs = yield* plan.codecs;
+      const word = encodeAbiParameters([{ type: "address" }], [defaultAddress]);
+
+      assert.deepStrictEqual(
+        plan.assemble([word, word, addrResult(defaultAddress), word], codecs).addresses,
+        {
+          eth: defaultAddress,
+          [String(0x8000_2105n)]: defaultAddress,
+        },
+      );
+    }),
+  );
+
   it.effect(
     "reads undecodable records as missing and keeps the others",
     () =>
