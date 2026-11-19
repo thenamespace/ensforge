@@ -182,4 +182,21 @@ describe("fromWagmi chains", () => {
       );
     }),
   );
+
+  it.effect("fails before the wallet prompt to sign on a chain wagmi does not have", () =>
+    Effect.gen(function* () {
+      const config = wagmiConfig([mainnet]);
+      const onBase = yield* chainClient(fromWagmi(config), base.id);
+      yield* connectOn(config, mainnet.id);
+
+      const error = yield* expectFailure(resolveSigner(onBase, undefined), {
+        _tag: "ConfigError",
+        code: "CHAIN_NOT_CONFIGURED",
+      });
+      const connected = yield* Effect.promise(() => getConnectorClient(config));
+
+      assert.strictEqual(error.context.chainId, base.id);
+      assert.strictEqual(connected.chain.id, mainnet.id);
+    }),
+  );
 });

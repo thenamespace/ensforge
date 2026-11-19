@@ -54,6 +54,35 @@ With RainbowKit or another wallet kit, put its provider around `EnsforgeProvider
 - A wallet on another chain is asked to switch first, as wagmi's own `writeContract` does. Pass `switchChain: false` to turn that off. A wallet on another chain then fails with [`CHAIN_MISMATCH`](/docs/reference/errors/CHAIN_MISMATCH).
 - Every other chain of the wagmi config becomes one of the client's `chains`, so writes ENS makes there (an L2 [primary name](/docs/reference/glossary#primary-name)) use wagmi's clients and wallet.
 
+## Add the chains where names live
+
+Some names live on an L2, not on Ethereum: Basenames on Base, Linea Names on Linea, and others. ensforge reads them on their L2. It uses wagmi's transport when the config has the chain, and the chain's public RPC when it does not. A write on such a name is signed on its L2, so the wallet must switch there. wagmi switches only to chains in its config.
+
+| Chain        | ID     | Needed to write                                                  |
+| ------------ | ------ | ---------------------------------------------------------------- |
+| Base         | 8453   | Basenames, Durin and Namespace names on Base, Base primary names |
+| OP Mainnet   | 10     | Namespace names on OP Mainnet, OP Mainnet primary names          |
+| Linea        | 59144  | Linea Names, Linea primary names                                 |
+| Celo         | 42220  | Celonames                                                        |
+| Arbitrum One | 42161  | Arbitrum primary names                                           |
+| Scroll       | 534352 | Scroll primary names                                             |
+
+Add the chains your users write on, each with a transport. A write on a chain the config does not have fails with [`CHAIN_NOT_CONFIGURED`](/docs/reference/errors/CHAIN_NOT_CONFIGURED) before the wallet is asked.
+
+**Example** (A Config With Base)
+
+```tsx no-check title="wagmi.ts"
+import { createConfig, http } from "wagmi";
+import { base, mainnet } from "wagmi/chains";
+
+export const wagmiConfig = createConfig({
+  chains: [mainnet, base],
+  transports: { [mainnet.id]: http(), [base.id]: http() },
+});
+```
+
+Mainnet stays the ENS chain, because the config has it. Base becomes one of the client's chains, so reads and writes of Basenames go through wagmi.
+
 **Example** (A Sepolia Client Without Chain Switching)
 
 ```ts no-check title="ens.ts"
@@ -69,6 +98,10 @@ export const ens = Ensforge.fromWagmi(wagmiConfig, { chainId: 11155111, switchCh
 ### A write fails with `WALLET_NOT_CONFIGURED`
 
 No wallet is connected. Connect one first, then send the write.
+
+### A write fails with `CHAIN_NOT_CONFIGURED`
+
+The name lives on an L2 the wagmi config does not have. Add that chain and its transport to the config. The error's `context.chainId` names the chain.
 
 ### `fromWagmi` throws `UNKNOWN_CHAIN`
 

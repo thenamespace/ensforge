@@ -51,6 +51,9 @@ const chainIdOf = (config: WagmiConfig, options: fromWagmi.Options): number => {
  * - A wallet on another chain is asked to switch first, as wagmi's own `writeContract` does.
  * - Every other chain of the wagmi config becomes one of the client's `chains`, so writes ENS
  *   makes there (an L2 primary name) use wagmi's clients and wallet; `chains` adds or overrides.
+ * - Names on an L2 (Basenames, Linea Names, Celonames, Durin, Namespace) and L2 primary names are
+ *   read on chains the config lacks through public RPCs, but written only on chains the config
+ *   has: a write elsewhere fails with `CHAIN_NOT_CONFIGURED` before the wallet is asked.
  *
  * **Gotchas**
  *
@@ -78,6 +81,7 @@ const chainIdOf = (config: WagmiConfig, options: fromWagmi.Options): number => {
  * @throws `Errors.ConfigError` (`UNKNOWN_CHAIN`) when no ENS chain can be chosen or the wagmi
  * config has no transport for it.
  * @throws `Errors.ConfigError` (`INVALID_DEPLOYMENT`) when `deployment` is invalid or for another chain.
+ * @throws `Errors.ConfigError` (`CHAIN_NOT_CONFIGURED`) on a write on a chain the wagmi config does not have.
  * @stability stable
  * @category client
  * @since 1.0.0
@@ -102,6 +106,15 @@ export const fromWagmi = (config: WagmiConfig, options: fromWagmi.Options = {}):
     try {
       const connected = await getConnectorClient(config);
       if (!autoSwitch || connected.chain.id === target) return connected;
+      // wagmi switches only to chains in its config; reads on others still use public RPCs.
+      const known = Option.getOrUndefined(Arr.findFirst(config.chains, ({ id }) => id === target));
+      if (known === undefined) {
+        throw new ConfigError({
+          code: "CHAIN_NOT_CONFIGURED",
+          context: { chainId: target },
+          hint: `Add chain ${target} to the wagmi config so the wallet can switch to it and sign there.`,
+        });
+      }
 
       await switchChain(config, { chainId: target });
       return await getConnectorClient(config, { chainId: target });
