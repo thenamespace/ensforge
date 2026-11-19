@@ -83,6 +83,15 @@ const builtIn: readonly Profile[] = [mainnet, sepolia];
 /**
  * Returns the built-in profile for a chain, or `undefined` when ensforge ships none.
  *
+ * **Example** (Looking up the connected chain)
+ *
+ * ```ts
+ * import { Deployments } from "@ensforge/contracts"
+ *
+ * const profile = Deployments.get({ chainId: await client.getChainId() })
+ * const registry = profile?.v1?.contracts.registry
+ * ```
+ *
  * @stability stable
  * @since 1.0.0
  */
@@ -91,6 +100,14 @@ export const get = (options: { readonly chainId: number }): Profile | undefined 
 
 /**
  * Lists the built-in profiles.
+ *
+ * **Example** (Listing supported chains)
+ *
+ * ```ts
+ * import { Deployments } from "@ensforge/contracts"
+ *
+ * const chainIds = Deployments.list().map((profile) => profile.chainId)
+ * ```
  *
  * @stability stable
  * @since 1.0.0

@@ -1,20 +1,25 @@
 {
   "name": "@ensforge/hca",
-  "version": "1.0.0",
-  "description": "ENS Hosted Contract Accounts: one-transaction writes, sessions and gasless execution",
+  "version": "1.0.1",
+  "description": "Hosted Contract Accounts for ENS: one-transaction writes, sessions and gasless execution (experimental)",
   "keywords": [
     "account-abstraction",
-    "effect",
     "ens",
+    "ensv2",
     "ethereum",
+    "ethereum-name-service",
     "hca",
+    "names",
+    "resolver",
     "sessions",
-    "typescript",
-    "viem"
+    "smart-account",
+    "viem",
+    "web3"
   ],
-  "homepage": "https://ensforge.com",
+  "homepage": "https://ensforge.com/docs/hca",
   "bugs": "https://github.com/thenamespace/ensforge/issues",
   "license": "Apache-2.0",
+  "author": "Namespace Inc.",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/thenamespace/ensforge.git",

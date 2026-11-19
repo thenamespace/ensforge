@@ -1,0 +1,14 @@
+{
+  "$schema": "https://turborepo.com/schema.json",
+  "extends": ["//"],
+  "tasks": {
+    "build": {
+      "env": ["VITE_*", "GIT_SHA"],
+      "passThroughEnv": ["POSTHOG_PERSONAL_API_KEY", "POSTHOG_PROJECT_ID"]
+    },
+    "verify": {
+      "dependsOn": ["^build"],
+      "outputs": []
+    }
+  }
+}

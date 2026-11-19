@@ -17,6 +17,7 @@ export type {
 } from "./client/types.js";
 export type { AnyError } from "./errors/types.js";
 export { withDefaults } from "./errors/EnsforgeError.js";
+export { registerMessages } from "./errors/describe/registry.js";
 export { fromCause } from "./errors/translate/fromCause.js";
 
 /**

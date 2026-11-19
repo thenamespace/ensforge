@@ -1,0 +1,8 @@
+{
+  "title": "event",
+  "pages": [
+    "decode",
+    "get",
+    "watch"
+  ]
+}

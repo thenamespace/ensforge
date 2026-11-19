@@ -65,5 +65,12 @@ export declare namespace getGovernance {
   type ErrorType = Errors.CommonError | Errors.InvalidInputError | HcaError;
 }
 
+/** Builds a deferred read for `Actions.batch`. */
+getGovernance.request = Action.request(
+  "hcaAdmin.getGovernance",
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Action.Declared narrows errors to the documented @throws
+  Impl.getGovernance as Action.Declared<typeof Impl.getGovernance, getGovernance.ErrorType>,
+);
+
 /** Path of the action, e.g. for cache keys. */
 getGovernance.path = "hcaAdmin.getGovernance" as const;

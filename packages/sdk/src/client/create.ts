@@ -111,7 +111,6 @@ const resolveChains = (options: CreateOptions): State["chains"] =>
  * })
  * ```
  *
- * @throws `Errors.ConfigError` (`UNKNOWN_CHAIN`) when the chain has no built-in deployment and none is given.
  * **Example** (Adding an L2 for primary names)
  *
  * ```ts
@@ -126,6 +125,7 @@ const resolveChains = (options: CreateOptions): State["chains"] =>
  * await ens.primaryName.set({ name: "alice.eth", coin: { chainId: 10 } })
  * ```
  *
+ * @throws `Errors.ConfigError` (`UNKNOWN_CHAIN`) when the chain has no built-in deployment and none is given.
  * @throws `Errors.ConfigError` (`INVALID_DEPLOYMENT`) when `deployment` is invalid or for another chain.
  * @throws `Errors.ConfigError` (`CHAIN_NOT_CONFIGURED`) when an entry of `chains` holds clients of another chain.
  * @stability stable

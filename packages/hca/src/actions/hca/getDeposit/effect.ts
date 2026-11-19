@@ -11,7 +11,7 @@ import type { getDeposit as Promises } from "./index.js";
 /** @internal Implementation of `Actions.hca.getDeposit`. */
 export const getDeposit = Effect.fn("ensforge.hca.getDeposit")(function* (
   client: Client,
-  options: Promises.Options,
+  options: Promises.Options = {},
 ): Effect.fn.Return<Promises.ReturnType, AnyError | HcaError> {
   const deployment = yield* requireHca(client);
   const account = yield* accountInput(client, options);

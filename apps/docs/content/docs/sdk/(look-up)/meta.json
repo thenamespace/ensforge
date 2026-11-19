@@ -1,0 +1,12 @@
+{
+  "pages": [
+    "get-an-address",
+    "get-text-records",
+    "get-an-avatar",
+    "get-a-website",
+    "get-a-primary-name",
+    "get-name-details",
+    "look-up-many-at-once",
+    "off-chain-names"
+  ]
+}

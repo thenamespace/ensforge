@@ -61,9 +61,9 @@ import type { set as setTypes, setSync as setSyncTypes } from "./set/index.js";
  * @throws `Errors.InvalidInputError` (`INVALID_NAME`, `INVALID_COIN_TYPE`) for invalid input.
  * @throws `Errors.NotFoundError` (`RESOLVER_NOT_FOUND`) with `strict` when the name has no resolver.
  * @throws `Errors.UnsupportedError` (`RESOLVER_PROFILE_UNSUPPORTED`) with `strict` when the resolver supports none of the records.
- * @throws `Errors.GatewayError` when an off-chain gateway fails.
+ * @throws `Errors.GatewayError` (`GATEWAY_REQUEST_FAILED`, `GATEWAY_RESPONSE_INVALID`, `OFFCHAIN_LOOKUP_INVALID`) when an off-chain gateway fails.
  * @throws `Errors.DnsError` when a DNS name's DNSSEC proof does not verify.
- * @throws `Errors.NetworkError` when the RPC request fails.
+ * @throws `Errors.NetworkError` (`RPC_REQUEST_FAILED`, `RPC_TIMEOUT`, `RATE_LIMITED`) when the RPC request fails.
  *
  * @see {@link Actions.record.set} to write records
  * @stability stable
@@ -116,9 +116,9 @@ export declare namespace get {
  * @throws `Errors.InvalidInputError` (`INVALID_NAME`, `INVALID_COIN_TYPE`) for invalid input.
  * @throws `Errors.NotFoundError` (`RECORD_NOT_FOUND`, `RESOLVER_NOT_FOUND`) with `strict`.
  * @throws `Errors.UnsupportedError` (`RESOLVER_PROFILE_UNSUPPORTED`) with `strict` when the resolver supports none of the records.
- * @throws `Errors.GatewayError` when an off-chain gateway fails.
+ * @throws `Errors.GatewayError` (`GATEWAY_REQUEST_FAILED`, `GATEWAY_RESPONSE_INVALID`, `OFFCHAIN_LOOKUP_INVALID`) when an off-chain gateway fails.
  * @throws `Errors.DnsError` when a DNS name's DNSSEC proof does not verify.
- * @throws `Errors.NetworkError` when the RPC request fails.
+ * @throws `Errors.NetworkError` (`RPC_REQUEST_FAILED`, `RPC_TIMEOUT`, `RATE_LIMITED`) when the RPC request fails.
  *
  * @see {@link Actions.record.get} to read several records
  * @stability stable
@@ -145,7 +145,8 @@ export declare namespace getAddress {
  *
  * - `http(s)` and `data:` URIs are returned as-is; `ipfs://`, `ipns://`, `ar://` and bare CIDs go
  *   through `gateways`: the call's, else the client's (`Ensforge.create({ gateways })`), else
- *   `https://ipfs.io` and `https://arweave.net`.
+ *   `https://ipfs.io` and `https://arweave.net` (the client config also has a Swarm gateway,
+ *   `https://api.gateway.ethswarm.org`, used for `bzz://` content hashes, not avatars).
  * - NFT avatars (`eip155:1/erc721:…/…`, `erc1155`) read the token's metadata and return its image.
  *   They resolve only on the client's own chain, and only when the name's ETH address owns the
  *   token (ENSIP-12): `ownerOf` for ERC-721, a non-zero balance for ERC-1155.
@@ -183,7 +184,7 @@ export declare namespace getAddress {
  * @throws `Errors.UnsupportedError` (`RESOLVER_PROFILE_UNSUPPORTED`) with `strict` when the resolver supports none of the records.
  * @throws `Errors.GatewayError` (`GATEWAY_REQUEST_FAILED`, `GATEWAY_RESPONSE_INVALID`) with `strict` when NFT metadata cannot be loaded.
  * @throws `Errors.DnsError` when a DNS name's DNSSEC proof does not verify.
- * @throws `Errors.NetworkError` when the RPC request fails.
+ * @throws `Errors.NetworkError` (`RPC_REQUEST_FAILED`, `RPC_TIMEOUT`, `RATE_LIMITED`) when the RPC request fails.
  *
  * @see {@link Actions.record.getText} to read the raw avatar record
  * @stability stable
@@ -243,9 +244,9 @@ export declare namespace getAvatar {
  * @throws `Errors.InvalidInputError` (`INVALID_NAME`) when the name cannot be normalized.
  * @throws `Errors.NotFoundError` (`RECORD_NOT_FOUND`, `RESOLVER_NOT_FOUND`) with `strict`.
  * @throws `Errors.UnsupportedError` (`RESOLVER_PROFILE_UNSUPPORTED`) with `strict` when the resolver supports none of the records.
- * @throws `Errors.GatewayError` when an off-chain gateway fails.
+ * @throws `Errors.GatewayError` (`GATEWAY_REQUEST_FAILED`, `GATEWAY_RESPONSE_INVALID`, `OFFCHAIN_LOOKUP_INVALID`) when an off-chain gateway fails.
  * @throws `Errors.DnsError` when a DNS name's DNSSEC proof does not verify.
- * @throws `Errors.NetworkError` when the RPC request fails.
+ * @throws `Errors.NetworkError` (`RPC_REQUEST_FAILED`, `RPC_TIMEOUT`, `RATE_LIMITED`) when the RPC request fails.
  *
  * @see {@link Actions.record.get} to read several records
  * @stability stable
@@ -305,9 +306,9 @@ export declare namespace getContentHash {
  * @throws `Errors.InvalidInputError` (`INVALID_NAME`) when the name cannot be normalized.
  * @throws `Errors.NotFoundError` (`RECORD_NOT_FOUND`, `RESOLVER_NOT_FOUND`) with `strict`.
  * @throws `Errors.UnsupportedError` (`RESOLVER_PROFILE_UNSUPPORTED`) with `strict` when the resolver supports none of the records.
- * @throws `Errors.GatewayError` when an off-chain gateway fails.
+ * @throws `Errors.GatewayError` (`GATEWAY_REQUEST_FAILED`, `GATEWAY_RESPONSE_INVALID`, `OFFCHAIN_LOOKUP_INVALID`) when an off-chain gateway fails.
  * @throws `Errors.DnsError` when a DNS name's DNSSEC proof does not verify.
- * @throws `Errors.NetworkError` when the RPC request fails.
+ * @throws `Errors.NetworkError` (`RPC_REQUEST_FAILED`, `RPC_TIMEOUT`, `RATE_LIMITED`) when the RPC request fails.
  *
  * @see {@link Actions.record.set} to write text records
  * @stability stable
@@ -392,9 +393,12 @@ export declare namespace getText {
  * @throws `Errors.NotFoundError` (`RESOLVER_NOT_FOUND`) when the name has no resolver of its own.
  * @throws `Errors.UnsupportedError` (`RESOLVER_PROFILE_UNSUPPORTED`, `UNSUPPORTED_PROTOCOL`) for records the resolver does not support (`feature` names them), a resolver that keeps its records off-chain or takes no writes, or `resolver: "default"` on an ENSv2 name.
  * @throws `Errors.NameStateError` (`NAME_EXPIRED`, `NAME_RESERVED`, `NAME_NOT_REGISTERED`, `NAME_EXTERNAL`) when the name is not registered, or its parent's namespace manages it outside ENS's registries.
+ * @throws `Errors.NameStateError` (`NAME_UNREACHABLE`) when ENSv2 resolution no longer reaches the name.
  * @throws `Errors.UnauthorizedError` (`NOT_OWNER`, `MISSING_ROLES`) when the account may not edit records.
  * @throws `Errors.ConfigError` (`WALLET_NOT_CONFIGURED`) when the client has no wallet.
- * @throws `Errors.UserRejectedError` when the user rejects the request.
+ * @throws `Errors.UserRejectedError` (`USER_REJECTED`) when the user rejects the request.
+ * @throws `Errors.WalletError` (`CHAIN_MISMATCH`, `ACCOUNT_NOT_FOUND`) when the wallet is on another chain or has no account to sign with.
+ * @throws `Errors.UnsupportedError` (`WALLET_BATCH_UNSUPPORTED`) with `mode: "batch"` or a paymaster when the wallet cannot send calls as one batch.
  *
  * @see {@link Actions.record.get} to read records
  * @stability stable
@@ -448,8 +452,9 @@ export declare namespace set {
  * @throws `Errors.NotFoundError` (`RESOLVER_NOT_FOUND`) when the name has no resolver of its own.
  * @throws `Errors.UnsupportedError` (`RESOLVER_PROFILE_UNSUPPORTED`, `UNSUPPORTED_PROTOCOL`) for records the resolver does not support, a resolver that keeps its records off-chain or takes no writes, or `resolver: "default"` on an ENSv2 name.
  * @throws `Errors.NameStateError` (`NAME_EXPIRED`, `NAME_RESERVED`, `NAME_NOT_REGISTERED`, `NAME_EXTERNAL`) when the name is not registered, or its parent's namespace manages it outside ENS's registries.
+ * @throws `Errors.NameStateError` (`NAME_UNREACHABLE`) when ENSv2 resolution no longer reaches the name.
  * @throws `Errors.UnauthorizedError` (`NOT_OWNER`, `MISSING_ROLES`) when the account may not edit records.
- * @throws `Errors.TransactionError` (`TRANSACTION_REVERTED`, `RECEIPT_TIMEOUT`) when confirmation fails.
+ * @throws `Errors.TransactionError` (`TRANSACTION_REVERTED`, `RECEIPT_TIMEOUT`, `NONCE_CONFLICT`) when confirmation fails or the wallet's nonce is already used.
  *
  * @see {@link set} to resolve on submission
  * @stability stable

@@ -1,0 +1,14 @@
+{
+  "title": "Contracts",
+  "description": "ENS ABIs, addresses and constants",
+  "icon": "package-contracts",
+  "root": true,
+  "pages": [
+    "---[rocket]Getting started---",
+    "installation",
+    "index",
+    "[history][Changelog](/docs/contracts/changelog)",
+    "---[guide]Guides---",
+    "...(guides)"
+  ]
+}

@@ -26,10 +26,10 @@ export type NameKind =
   | "wildcard";
 
 /**
- * Registration status. `grace` applies to `.eth` second-level names after expiry, while only the
- * previous owner can renew; `expired` names can be registered again. `external` names (`offchain`
- * and `wildcard` kinds) are managed outside ENS's registries, by their parent's namespace: they
- * cannot be registered through ENS.
+ * Registration status. `grace` applies to `.eth` second-level names after expiry, while anyone can
+ * still renew; `expired` names can be registered again. `external` names (`offchain` and
+ * `wildcard` kinds) are managed outside ENS's registries, by their parent's namespace: they cannot
+ * be registered through ENS.
  *
  * @category names
  * @since 1.0.0

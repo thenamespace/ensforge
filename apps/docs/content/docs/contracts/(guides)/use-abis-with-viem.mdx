@@ -1,0 +1,131 @@
+---
+title: Use ABIs with viem
+description: Read contracts, simulate and send writes, and decode events with viem, using the typed ENS ABIs from @ensforge/contracts.
+keywords:
+  [Abis, readContract, simulateContract, writeContract, getContractEvents, as const, interfaces]
+---
+
+Every ABI in `@ensforge/contracts` is an `as const` array. viem uses that to type `functionName`, `args` and the result, and to catch a misspelled function at compile time. By the end of this guide you will have read a contract, sent a write and decoded events with these ABIs.
+
+## Prerequisites
+
+- `@ensforge/contracts` and `viem` installed. See [Installation](/docs/contracts/installation).
+- A viem public client, and a wallet client for writes.
+
+## Find the ABI you need
+
+`Abis` groups ABIs by protocol, and each key is a contract name in camel case.
+
+| Group                                      | What it holds                                                                                            | Example                        |
+| ------------------------------------------ | -------------------------------------------------------------------------------------------------------- | ------------------------------ |
+| `Abis.v2`                                  | ENSv2 contracts at contracts-v2 v1.0.1. Each ABI is the superset of the mainnet and Sepolia deployments. | `Abis.v2.permissionedRegistry` |
+| `Abis.v1`                                  | ENSv1 contracts at ens-contracts v1.7.0.                                                                 | `Abis.v1.ensRegistry`          |
+| `Abis.shared`                              | Token standards, ERC-165, resolver profiles, errors and events that both versions share.                 | `Abis.shared.erc165`           |
+| `Abis.v2.interfaces`, `Abis.v1.interfaces` | The ABIs of interfaces, for code that targets an interface instead of one contract.                      | `Abis.v2.interfaces.registry`  |
+
+The addresses come from [`Deployments`](/docs/contracts/addresses-and-chains). Browse every key in the [ABI reference](/docs/reference/contracts/abis).
+
+## Read a contract
+
+Pass the address, the ABI, the function name and the arguments to `readContract`. This example asks a registry whether it implements an interface, using the ERC-165 ABI from `Abis.shared`.
+
+**Example** (Checking an Interface With ERC-165)
+
+```ts title="supports-interface.ts"
+import { Abis, Deployments, InterfaceIds } from "@ensforge/contracts";
+import { createPublicClient, http } from "viem";
+import { mainnet } from "viem/chains";
+
+const publicClient = createPublicClient({ chain: mainnet, transport: http() });
+
+const supported = await publicClient.readContract({
+  address: Deployments.mainnet.v2.contracts.ethRegistry,
+  abi: Abis.shared.erc165,
+  functionName: "supportsInterface",
+  args: [InterfaceIds.registry.permissionedRegistry],
+});
+
+supported;
+```
+
+`InterfaceIds.registry.permissionedRegistry` is the ERC-165 ID of the `IPermissionedRegistry` interface. See [Interface IDs and roles](/docs/contracts/interface-ids-and-roles).
+
+## Send a write
+
+Simulate first, then send. `simulateContract` returns a typed request that `writeContract` accepts, so a revert shows up before the wallet prompt. This example sets a text [record](/docs/reference/glossary#record) on Sepolia with the [ENSv2](/docs/reference/glossary#ensv2) public [resolver](/docs/reference/glossary#resolver).
+
+**Example** (Setting a Text Record on Sepolia)
+
+```ts title="set-text.ts"
+import { Abis, Deployments } from "@ensforge/contracts";
+import { createPublicClient, createWalletClient, http } from "viem";
+import { privateKeyToAccount } from "viem/accounts";
+import { namehash, normalize } from "viem/ens";
+import { sepolia } from "viem/chains";
+
+const account = privateKeyToAccount(
+  "0x0123456789012345678901234567890123456789012345678901234567890123",
+);
+const publicClient = createPublicClient({ chain: sepolia, transport: http() });
+const walletClient = createWalletClient({ account, chain: sepolia, transport: http() });
+
+const { request } = await publicClient.simulateContract({
+  account,
+  address: Deployments.sepolia.v2.contracts.publicResolver,
+  abi: Abis.v2.publicResolver,
+  functionName: "setText",
+  args: [namehash(normalize("my-name.eth")), "url", "https://example.com"], // placeholder name
+});
+
+const hash = await walletClient.writeContract(request);
+```
+
+- `namehash(normalize(name))` is the [namehash](/docs/reference/glossary#namehash), the node the resolver stores records under. Always [normalise](/docs/reference/glossary#normalisation) a name before you hash it, or the hash points to another node.
+- The call succeeds only when the name uses this resolver and the account may set its records.
+
+<Callout type="info" title="Prefer the SDK for ENS writes">
+  Many ENS writes take several dependent calls, waits and approvals. `@ensforge/sdk` plans them for
+  you. See [Set records](/docs/sdk/set-records). Use raw ABIs when you need a single call that the
+  SDK does not wrap.
+</Callout>
+
+## Decode events
+
+`Abis.shared.events` holds the events that ENS indexers consume, from registries, registrars, the Name Wrapper, resolvers, reverse registrars and the DNS registrar, across both versions. Pass it to `getContractEvents` or `parseEventLogs` to get typed logs. This example reads the `TextChanged` events of the last 1,000 blocks.
+
+**Example** (Reading Recent TextChanged Events)
+
+```ts title="events.ts"
+import { Abis, Deployments } from "@ensforge/contracts";
+import { createPublicClient, http } from "viem";
+import { sepolia } from "viem/chains";
+
+const publicClient = createPublicClient({ chain: sepolia, transport: http() });
+const latest = await publicClient.getBlockNumber();
+
+const logs = await publicClient.getContractEvents({
+  address: Deployments.sepolia.v2.contracts.publicResolver,
+  abi: Abis.shared.events,
+  eventName: "TextChanged",
+  fromBlock: latest - 1000n,
+  toBlock: latest,
+});
+```
+
+## Import ABIs one by one
+
+Each ABI is also a flat named export, so a bundler can drop every ABI you do not use. The export name is the contract name plus the protocol: `permissionedRegistryV2Abi` from `@ensforge/contracts/v2`, `baseRegistrarV1Abi` from `@ensforge/contracts/v1`. Shared ABIs keep their plain name, such as `erc165Abi`.
+
+**Example** (Importing Flat ABIs)
+
+```ts title="flat-import.ts"
+import { permissionedRegistryV2Abi } from "@ensforge/contracts/v2";
+import { baseRegistrarV1Abi } from "@ensforge/contracts/v1";
+import { erc165Abi } from "@ensforge/contracts/shared";
+```
+
+## Troubleshooting
+
+### A function is missing from an ABI
+
+Each ABI belongs to one contract. A registry's ABI has no resolver functions. Check the contract in [Addresses and chains](/docs/contracts/addresses-and-chains) and pick the matching key in `Abis`.

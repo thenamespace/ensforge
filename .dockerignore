@@ -1,0 +1,23 @@
+# The docs image (apps/docs/Dockerfile) builds from the repository root. `.git` stays: the docs
+# read each page's last change from it.
+.github
+.changeset
+.turbo
+**/.turbo
+**/node_modules
+**/dist
+**/.output
+**/.tanstack
+**/.source
+**/.env*
+!**/.env.example
+**/.cache
+**/coverage
+**/reports
+.stryker-tmp
+.vscode
+research
+out
+gha-creds-*.json
+*.log
+*.tgz

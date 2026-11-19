@@ -53,7 +53,7 @@ import type { NameOperation } from "./types.js";
  *
  * @throws `Errors.InvalidInputError` (`INVALID_NAME`, `INVALID_ADDRESS`) for invalid input.
  * @throws `Errors.ConfigError` (`WALLET_NOT_CONFIGURED`) without `account` or a client account.
- * @throws `Errors.NetworkError` when the RPC request fails.
+ * @throws `Errors.NetworkError` (`RPC_REQUEST_FAILED`, `RPC_TIMEOUT`, `RATE_LIMITED`) when the RPC request fails.
  *
  * @see {@link Actions.permission.check} for one operation and what is missing
  * @stability stable

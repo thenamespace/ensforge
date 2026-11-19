@@ -1,0 +1,11 @@
+{
+  "title": "approval",
+  "pages": [
+    "get-delegate",
+    "get-operator",
+    "get-token",
+    "set-delegate",
+    "set-operator",
+    "set-token"
+  ]
+}

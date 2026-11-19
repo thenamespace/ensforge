@@ -32,6 +32,7 @@ function Actions.hca.checkSessionCalls(client: Client<object> | ViemClientLike, 
 type Actions.hca.checkSessionCalls.ErrorType = HcaError | CommonError
 type Actions.hca.checkSessionCalls.Options = { session: HcaSession; calls: readonly Call[]; }
 const Actions.hca.checkSessionCalls.path: 'hca.checkSessionCalls'
+function Actions.hca.checkSessionCalls.request(options: { session: HcaSession; calls: readonly Call[]; }) => Request<true, ErrorType>
 type Actions.hca.checkSessionCalls.ReturnType = true
 // @stability experimental
 function Actions.hca.deploy(client: Client<object> | ViemClientLike, options: { account?: `0x${string}` | Account | undefined; simulate?: boolean | undefined; signal?: AbortSignal | undefined; mode?: Mode | undefined; maxBundleCalls?: number | undefined; onStep?: ((event: Event) => void) | undefined; via?: Via | undefined; paymaster?: { readonly url: string; readonly context?: Readonly<Record<string, unknown>>; } | undefined; }) => Promise<Result>
@@ -74,30 +75,35 @@ function Actions.hca.get(client: Client<object> | ViemClientLike, options?: Opti
 type Actions.hca.get.ErrorType = HcaError | InvalidInputError | CommonError
 type Actions.hca.get.Options = { address?: string | undefined; owner?: string | undefined; }
 const Actions.hca.get.path: 'hca.get'
+function Actions.hca.get.request(options?: Options | undefined) => Request<HcaAccount, ErrorType>
 type Actions.hca.get.ReturnType = { readonly address: `0x${string}`; readonly owner: `0x${string}` | null; readonly deployed: boolean; readonly authorizedOwner: `0x${string}` | null; readonly accountId: string | null; readonly implementation: `0x${string}` | null; readonly initialImplementation: `0x${string}`; readonly sessionNonce: bigint; readonly upgradeSet: `0x${string}`; readonly problems: readonly HcaProblem[]; }
 // @stability experimental
 function Actions.hca.getDeposit(client: Client<object> | ViemClientLike, options?: Options | undefined) => Promise<bigint>
 type Actions.hca.getDeposit.ErrorType = HcaError | InvalidInputError | CommonError
 type Actions.hca.getDeposit.Options = { address?: string | undefined; owner?: string | undefined; }
 const Actions.hca.getDeposit.path: 'hca.getDeposit'
+function Actions.hca.getDeposit.request(options?: Options | undefined) => Request<bigint, ErrorType>
 type Actions.hca.getDeposit.ReturnType = bigint
 // @stability experimental
 function Actions.hca.getSession(client: Client<object> | ViemClientLike, options: { session: HcaSession; }) => Promise<ReturnType>
 type Actions.hca.getSession.ErrorType = HcaError | CommonError
 type Actions.hca.getSession.Options = { session: HcaSession; }
 const Actions.hca.getSession.path: 'hca.getSession'
+function Actions.hca.getSession.request(options: { session: HcaSession; }) => Request<ReturnType, ErrorType>
 type Actions.hca.getSession.ReturnType = { readonly valid: boolean; readonly problem: 'chain' | 'expired' | 'revoked' | 'signing-domain' | null; }
 // @stability experimental
 function Actions.hca.getUpgrade(client: Client<object> | ViemClientLike, options: { implementation: string; address?: string | undefined; owner?: string | undefined; }) => Promise<ReturnType>
 type Actions.hca.getUpgrade.ErrorType = HcaError | InvalidInputError | CommonError
 type Actions.hca.getUpgrade.Options = { implementation: string; address?: string | undefined; owner?: string | undefined; }
 const Actions.hca.getUpgrade.path: 'hca.getUpgrade'
+function Actions.hca.getUpgrade.request(options: { implementation: string; address?: string | undefined; owner?: string | undefined; }) => Request<ReturnType, ErrorType>
 type Actions.hca.getUpgrade.ReturnType = { readonly allowed: boolean; readonly current: `0x${string}` | null; readonly inUpgradeSet: boolean; readonly predecessorAllowed: boolean; }
 // @stability experimental
 function Actions.hca.predictAddress(client: Client<object> | ViemClientLike, options?: Options | undefined) => Promise<`0x${string}`>
 type Actions.hca.predictAddress.ErrorType = HcaError | InvalidInputError | CommonError
 type Actions.hca.predictAddress.Options = { owner?: string | undefined; }
 const Actions.hca.predictAddress.path: 'hca.predictAddress'
+function Actions.hca.predictAddress.request(options?: Options | undefined) => Request<`0x${string}`, ErrorType>
 type Actions.hca.predictAddress.ReturnType = `0x${string}`
 // @stability experimental
 function Actions.hca.revokeSessions(client: Client<object> | ViemClientLike, options: { account?: `0x${string}` | Account | undefined; simulate?: boolean | undefined; signal?: AbortSignal | undefined; mode?: Mode | undefined; maxBundleCalls?: number | undefined; onStep?: ((event: Event) => void) | undefined; via?: Via | undefined; paymaster?: { readonly url: string; readonly context?: Readonly<Record<string, unknown>>; } | undefined; }) => Promise<Result>
@@ -140,6 +146,7 @@ function Actions.hca.verify(client: Client<object> | ViemClientLike, options?: O
 type Actions.hca.verify.ErrorType = HcaError | InvalidInputError | CommonError
 type Actions.hca.verify.Options = { address?: string | undefined; owner?: string | undefined; }
 const Actions.hca.verify.path: 'hca.verify'
+function Actions.hca.verify.request(options?: Options | undefined) => Request<HcaAccount, ErrorType>
 type Actions.hca.verify.ReturnType = { readonly address: `0x${string}`; readonly owner: `0x${string}` | null; readonly deployed: boolean; readonly authorizedOwner: `0x${string}` | null; readonly accountId: string | null; readonly implementation: `0x${string}` | null; readonly initialImplementation: `0x${string}`; readonly sessionNonce: bigint; readonly upgradeSet: `0x${string}`; readonly problems: readonly HcaProblem[]; }
 // @stability experimental
 function Actions.hca.withdrawDeposit(client: Client<object> | ViemClientLike, options: withdrawDeposit.Options & Write.Options) => Promise<Result>
@@ -164,6 +171,7 @@ function Actions.hcaAdmin.getGovernance(client: Client<object> | ViemClientLike,
 type Actions.hcaAdmin.getGovernance.ErrorType = HcaError | InvalidInputError | CommonError
 type Actions.hcaAdmin.getGovernance.Options = { implementation?: string | undefined; }
 const Actions.hcaAdmin.getGovernance.path: 'hcaAdmin.getGovernance'
+function Actions.hcaAdmin.getGovernance.request(options?: Options | undefined) => Request<ReturnType, ErrorType>
 type Actions.hcaAdmin.getGovernance.ReturnType = { readonly factoryOwner: `0x${string}`; readonly upgradeSet: `0x${string}`; readonly deploymentApproved: boolean | null; readonly upgradeApproved: boolean | null; }
 // @stability experimental
 function Actions.hcaAdmin.grantUpgradeSetRoles(client: Client<object> | ViemClientLike, options: grantUpgradeSetRoles.Options & Write.Options) => Promise<Result>
@@ -298,8 +306,7 @@ type HcaAdminActions = { readonly hcaAdmin: { readonly getGovernance: Bound<type
 // @stability experimental
 class HcaError {
   constructor(options: ClassOptions<Code> & { readonly executor?: string | undefined; }) => HcaError
-  cause: unknown
-  code: 'HCA_ACTION_NOT_ALLOWED' | 'HCA_BUNDLER_REJECTED' | 'HCA_EXECUTION_FAILED' | 'HCA_EXECUTION_TIMEOUT' | 'HCA_EXECUTOR_UNSUPPORTED' | 'HCA_NOT_VERIFIED' | 'HCA_PAYMASTER_REJECTED' | 'HCA_SAME_CHAIN_SOURCE' | 'HCA_SDK_UNSUPPORTED' | 'HCA_SESSION_INVALID' | 'HCA_UNAVAILABLE' | 'HCA_UPGRADE_NOT_ALLOWED'
+  code: 'HCA_ACTION_NOT_ALLOWED' | 'HCA_BUNDLER_REJECTED' | 'HCA_EXECUTION_FAILED' | 'HCA_EXECUTION_TIMEOUT' | 'HCA_EXECUTOR_UNSUPPORTED' | 'HCA_NOT_VERIFIED' | 'HCA_PAYMASTER_REJECTED' | 'HCA_SDK_UNSUPPORTED' | 'HCA_SESSION_INVALID' | 'HCA_UNAVAILABLE' | 'HCA_UPGRADE_NOT_ALLOWED'
   ~ensforge/error: true
   _tag: 'HcaError'
   name: 'HcaError'
@@ -308,6 +315,7 @@ class HcaError {
   executor: string | undefined
   message: string
   stack: string
+  cause: unknown
   details: readonly string[]
   retryable: boolean
   context: { readonly operation?: string | undefined; readonly name?: string | undefined; readonly account?: `0x${string}` | undefined; readonly chainId?: number | undefined; readonly contract?: `0x${string}` | undefined; readonly functionName?: string | undefined; readonly contractKind?: 'registrar' | 'registry' | 'resolver' | 'wrapper' | undefined; readonly selector?: `0x${string}` | undefined; readonly registry?: `0x${string}` | undefined; readonly planId?: string | undefined; readonly step?: string | undefined; readonly revert?: { readonly errorName: string | undefined; readonly data: `0x${string}` | undefined; } | undefined; }
@@ -322,7 +330,7 @@ class HcaError {
   ~effect/Runtime/errorExitCode: number
   ~effect/Runtime/errorReported: boolean
 }
-type HcaError.Code = 'HCA_ACTION_NOT_ALLOWED' | 'HCA_BUNDLER_REJECTED' | 'HCA_EXECUTION_FAILED' | 'HCA_EXECUTION_TIMEOUT' | 'HCA_EXECUTOR_UNSUPPORTED' | 'HCA_NOT_VERIFIED' | 'HCA_PAYMASTER_REJECTED' | 'HCA_SAME_CHAIN_SOURCE' | 'HCA_SDK_UNSUPPORTED' | 'HCA_SESSION_INVALID' | 'HCA_UNAVAILABLE' | 'HCA_UPGRADE_NOT_ALLOWED'
+type HcaError.Code = 'HCA_ACTION_NOT_ALLOWED' | 'HCA_BUNDLER_REJECTED' | 'HCA_EXECUTION_FAILED' | 'HCA_EXECUTION_TIMEOUT' | 'HCA_EXECUTOR_UNSUPPORTED' | 'HCA_NOT_VERIFIED' | 'HCA_PAYMASTER_REJECTED' | 'HCA_SDK_UNSUPPORTED' | 'HCA_SESSION_INVALID' | 'HCA_UNAVAILABLE' | 'HCA_UPGRADE_NOT_ALLOWED'
 type HcaError.Options = ClassOptions<Code> & { readonly executor?: string | undefined; }
 // @stability experimental
 type HcaOptions = { executors?: readonly Executor[] | undefined; session?: HcaSession | undefined; }

@@ -1,0 +1,10 @@
+{
+  "pages": [
+    "send-a-transaction",
+    "preview-before-sending",
+    "bundle-transactions",
+    "continue-after-a-failure",
+    "use-smart-accounts",
+    "pay-gas-for-users"
+  ]
+}

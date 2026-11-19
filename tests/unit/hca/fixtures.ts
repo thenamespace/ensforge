@@ -18,6 +18,7 @@ import {
   keccak256,
   multicall3Abi,
   type Address,
+  type Hex,
 } from "viem";
 import { sepolia } from "viem/chains";
 
@@ -67,6 +68,12 @@ export const hcaOf = (hcaOwner: Address): Address =>
 
 export const hcaAddress = hcaOf(owner);
 
+export const ownerSignature: Hex = concat([
+  "0x1111111111111111111111111111111111111111111111111111111111111111",
+  "0x2222222222222222222222222222222222222222222222222222222222222222",
+  "0x1b",
+]);
+
 /** The chain as an HCA sees it: undeployed by default, or a verified, deployed account. */
 export type World = {
   readonly deployed?: boolean;
@@ -82,6 +89,8 @@ export type World = {
 /** An Ensforge client of `owner` on Sepolia, whose chain answers from `world`. */
 export const makeClient = (world: World = {}) => {
   const script = contractScript({
+    // A wallet that signs typed data without asking: its answer is a fixed signature.
+    fallback: ({ method }) => (method === "eth_signTypedData_v4" ? ownerSignature : undefined),
     code: world.deployed === true ? [hcaAddress] : [],
     contracts: [
       ...(world.stubs ?? []),
@@ -111,7 +120,7 @@ export const makeClient = (world: World = {}) => {
       },
     ],
   });
-  const { transport } = scriptedTransport(script);
+  const { transport, calls } = scriptedTransport(script);
   const publicClient = createPublicClient({ chain: sepolia, transport });
   const walletClient =
     world.wallet === true
@@ -132,5 +141,5 @@ export const makeClient = (world: World = {}) => {
     publicClient,
     walletClient,
   };
-  return { client, context };
+  return { client, context, calls };
 };

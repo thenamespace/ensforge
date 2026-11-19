@@ -69,3 +69,24 @@ describe("Plan.deserialize invalid input", () => {
     assert.instanceOf(Reflect.get(error, "cause"), Error);
   });
 });
+
+describe("Plan.deserializeRecord invalid input", () => {
+  it.each([
+    { label: "malformed JSON", text: "{" },
+    { label: "a bare plan", text: serialize(minimal) },
+    {
+      label: "a plan without steps",
+      text: '{"plan":{"id":"x"},"status":"pending","submitted":{},"bundles":{},"updatedAt":1}',
+    },
+    {
+      label: "a missing status",
+      text: `{"plan":${serialize(minimal)},"submitted":{},"bundles":{},"updatedAt":1}`,
+    },
+    {
+      label: "a text updatedAt",
+      text: `{"plan":${serialize(minimal)},"status":"pending","submitted":{},"bundles":{},"updatedAt":"now"}`,
+    },
+  ])("rejects $label with PLAN_INVALID", ({ text }) => {
+    expectThrow(() => deserializeRecord(text), { _tag: "PlanError", code: "PLAN_INVALID" });
+  });
+});

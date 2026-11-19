@@ -96,7 +96,7 @@ export type Gateways = {
  * @since 1.0.0
  */
 export type Config = {
-  /** Off-chain resolution (CCIP-Read). `false` disables it. */
+  /** Off-chain resolution (CCIP-Read) through the Universal Resolver's batch gateways. `false` disables it. */
   readonly ccipRead: { readonly gatewayUrls: readonly string[] } | false;
   /** Coalescing of concurrent contract reads into multicall. */
   readonly batch: {
@@ -132,6 +132,7 @@ export type Client<actions extends object = {}> = actions & ClientBase<actions>;
  * @since 1.0.0
  */
 export interface ClientBase<actions extends object = {}> {
+  /** The chain the client reads and writes ENS on. */
   readonly chain: { readonly id: number; readonly name: string };
   /** Default signer address, or `undefined` without a wallet. */
   readonly account: Address | undefined;
@@ -139,6 +140,7 @@ export interface ClientBase<actions extends object = {}> {
   readonly deployment: Deployments.Profile;
   /** The viem client used for reads, as an escape hatch. */
   readonly publicClient: ViemClient;
+  /** The configuration the client was created with. */
   readonly config: Config;
   /** Adds action groups; returns a new client. */
   readonly extend: <const added extends object>(
@@ -216,7 +218,8 @@ export type CreateOptions = {
    */
   deployment?: Deployments.Profile | undefined;
   /**
-   * Off-chain resolution. `false` disables CCIP-Read.
+   * Off-chain resolution. `false` disables CCIP-Read. `gatewayUrls` are the Universal Resolver's
+   * batch gateways and replace its default, not the gateways of individual resolvers.
    *
    * @default the Universal Resolver's own batch gateway
    */

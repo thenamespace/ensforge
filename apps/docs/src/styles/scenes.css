@@ -1,0 +1,77 @@
+/*
+ * Isometric line scenes shared by the drawn blog covers and the error pages: a plate for the
+ * app, blocks for the packages, engraved lines, cables and packets in the page accent.
+ */
+.ek-cta-top {
+  fill: var(--color-fd-background);
+  stroke: color-mix(in oklab, var(--color-fd-foreground) 40%, transparent);
+  stroke-width: 1;
+}
+.ek-cta-side {
+  fill: color-mix(in oklab, var(--color-fd-background) 82%, var(--color-fd-foreground));
+  stroke: color-mix(in oklab, var(--color-fd-foreground) 40%, transparent);
+  stroke-width: 1;
+}
+.ek-cta-side-dark {
+  fill: color-mix(in oklab, var(--color-fd-background) 90%, var(--color-fd-foreground));
+  stroke: color-mix(in oklab, var(--color-fd-foreground) 40%, transparent);
+  stroke-width: 1;
+}
+.ek-cta-line {
+  stroke: color-mix(in oklab, var(--color-fd-foreground) 22%, transparent);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+.ek-cta-engrave {
+  fill: color-mix(in oklab, var(--color-fd-foreground) 40%, transparent);
+}
+.ek-cta-slot {
+  fill: transparent;
+  stroke: color-mix(in oklab, var(--color-fd-foreground) 28%, transparent);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+  transition:
+    fill 0.5s ease,
+    stroke 0.5s ease;
+}
+.ek-cta-slot.is-docked {
+  fill: color-mix(in oklab, var(--ek-accent) 14%, transparent);
+  stroke: var(--ek-accent);
+}
+.ek-cta-module {
+  transition: transform 0.9s var(--ease-pop);
+}
+.ek-cta-module-top {
+  fill: var(--color-fd-card);
+  stroke: color-mix(in oklab, var(--color-fd-foreground) 55%, transparent);
+  stroke-width: 1;
+  transition: fill 0.5s ease;
+}
+.ek-cta-module-side {
+  fill: color-mix(in oklab, var(--color-fd-background) 74%, var(--color-fd-foreground));
+  stroke: color-mix(in oklab, var(--color-fd-foreground) 55%, transparent);
+  stroke-width: 1;
+}
+.ek-cta-module-side-dark {
+  fill: color-mix(in oklab, var(--color-fd-background) 84%, var(--color-fd-foreground));
+  stroke: color-mix(in oklab, var(--color-fd-foreground) 55%, transparent);
+  stroke-width: 1;
+}
+.ek-cta-module.is-docked .ek-cta-module-top {
+  fill: color-mix(in oklab, var(--ek-accent) 16%, var(--color-fd-card));
+}
+.ek-cta-logo {
+  color: color-mix(in oklab, var(--color-fd-foreground) 55%, transparent);
+  transition: color 0.5s ease;
+}
+.ek-cta-module.is-docked .ek-cta-logo {
+  color: var(--ek-accent);
+}
+.ek-cta-cable {
+  fill: none;
+  stroke: color-mix(in oklab, var(--color-fd-foreground) 35%, transparent);
+  stroke-width: 1.5;
+}
+.ek-cta-packet {
+  fill: var(--ek-accent);
+}

@@ -1,0 +1,9 @@
+{
+  "pages": [
+    "with-wagmi",
+    "nextjs-app-router",
+    "nextjs-pages-router",
+    "react-router",
+    "tanstack-start"
+  ]
+}

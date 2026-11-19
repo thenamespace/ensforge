@@ -1,0 +1,135 @@
+---
+title: Why ensforge
+icon: sparkles
+description: See what ensforge does for you when you work with ENS, and when a smaller tool such as viem alone is the better choice for you.
+keywords: [ENS SDK, ensjs, viem ENS, typed errors, plans, tree-shaking]
+---
+
+ensforge is the SDK for ENS. You ask for a name, an address, a record or a registration, and
+ensforge does the work in between: it finds the right contracts, reads them in as few requests as
+possible, plans and checks every write, and tells you exactly what went wrong when something fails.
+
+## Everything works the same for every name
+
+ENS has grown over the years. Names can live in different places, be held in different ways, and
+have their records on-chain or on a server. ensforge hides those differences: one call works for
+every name.
+
+**Example** (Reading Two Very Different Names)
+
+```ts title="same-call.ts"
+import { Ensforge, ensActions } from "@ensforge/sdk";
+import { createPublicClient, http } from "viem";
+import { mainnet } from "viem/chains";
+
+const ens = Ensforge.create({
+  publicClient: createPublicClient({ chain: mainnet, transport: http() }),
+}).extend(ensActions());
+
+const nick = await ens.record.getAddress({ name: "nick.eth" });
+const jesse = await ens.record.getAddress({ name: "jesse.base.eth" });
+```
+
+`nick.eth` keeps its records on Ethereum. `jesse.base.eth` is a Basename whose records live off
+Ethereum and are fetched through a [gateway](/docs/reference/glossary#gateway). The call and
+the result type are the same. Writes work the same way: `record.set`, `name.transfer` and
+`subname.create` pick the right contracts for the name you pass.
+
+See [How a lookup works](/docs/sdk/looking-up-a-name). For the details ensforge handles under the
+hood, see [ENS versions under the hood](/docs/sdk/ens-versions).
+
+## Typed errors with a code for every failure
+
+Every error ensforge throws has a class, a stable `code`, a link to its own page and, when
+ensforge knows one, a hint to fix it. Every
+action declares the errors it can throw, so TypeScript knows them too.
+
+**Example** (Branching on an Error Code)
+
+```ts title="errors.ts"
+import { Ensforge, Errors, ensActions } from "@ensforge/sdk";
+import { createPublicClient, http } from "viem";
+import { mainnet } from "viem/chains";
+
+const ens = Ensforge.create({
+  publicClient: createPublicClient({ chain: mainnet, transport: http() }),
+}).extend(ensActions());
+
+try {
+  await ens.record.getText({ name: "unregistered-example.eth", key: "url", strict: true });
+} catch (error) {
+  if (Errors.hasCode("RESOLVER_NOT_FOUND")(error)) {
+    console.log(error.hint, error.docsUrl);
+  }
+  console.log(Errors.describe(error).title);
+}
+```
+
+- `Errors.hasCode` narrows the error to the codes you name.
+- `Errors.describe` turns any error into a title, message and suggested action you can show to
+  users, so `error.message` (written for developers) stays out of your UI.
+
+See [How errors work](/docs/sdk/errors-explained).
+
+## Writes you can inspect before sending
+
+Many ENS tasks take more than one transaction. Registering a name approves a payment, commits,
+waits at least a minute, then registers ([commitment](/docs/reference/glossary#commitment)). ensforge turns every write into a **plan** you can look
+at, simulate, estimate and save before anything is signed.
+
+- Every write is simulated before the wallet prompt, so a write that would fail throws a typed
+  error and sends nothing.
+- Wallets that support atomic batches (EIP-5792) get each step's calls as one bundle.
+- A plan that stops halfway, because of a rejection or a closed tab, resumes where it stopped with
+  `plan.resume`.
+
+See [How writes work](/docs/sdk/writing-to-ens).
+
+## Built on viem, shaped like viem
+
+ensforge takes the viem clients you already have and returns plain values: `0x` addresses as viem
+`Address`, amounts as `bigint`. The API is Promise-based, with one options object per call, as in
+viem. Apps on wagmi create the client from their wagmi config in one line.
+
+See [Create a client](/docs/sdk/create-a-client).
+
+## Pay only for what you import
+
+Every action is a separate function, and the package has no side effects, so bundlers drop what you
+do not import. Two ways of importing keep a bundle small:
+
+- `Actions.record.getText(client, options)`: one action, no client methods.
+- `recordActions()` instead of `ensActions()`: only the `record` methods on the client.
+
+The repository checks these sizes on every change. As of release 1.0, `Actions.record.getText` alone
+costs about 41 kB gzipped and a client with `ensActions()` about 106 kB, viem excluded.
+
+See [Ways to call actions](/docs/sdk/ways-to-call-actions) and
+[Keep bundles small](/docs/sdk/bundle-size).
+
+## More than lookups
+
+ensforge covers the whole of ENS from one client:
+
+- Lookups: addresses for any chain, text records, avatars, websites,
+  [primary names](/docs/reference/glossary#primary-name).
+- Registration and renewal of `.eth` names, records, subnames, transfers and primary names on L2s.
+- Permissions: who can do what with a name, before they try.
+- Lists, search and history through an [indexer](/docs/reference/glossary#indexer).
+- React hooks in `@ensforge/react`, and an optional Effect API for Effect programs.
+
+## When to use something else
+
+ensforge is not always the right tool. Choose something smaller when:
+
+- **You only show a name or an address.** viem's built-in ENS actions (`getEnsAddress`,
+  `getEnsName`, `getEnsAvatar`, `getEnsText`) cover simple lookups with nothing more to install.
+- **Every kilobyte matters on one page.** One ensforge action is about 41 kB gzipped on top of viem,
+  because ensforge runs on Effect internally. viem's ENS actions are smaller.
+- **You need lists or search but no chain access.** Lists of names come from an indexer, not from
+  the chain. If that is all you need, the indexer's own API may be enough.
+- **Your runtime cannot load ES modules.** ensforge needs Node.js 20.19 or later, or a bundler. See
+  [Installation](/docs/sdk/installation).
+
+Moving from another library? See [From viem](/docs/sdk/from-viem) and
+[From ensjs](/docs/sdk/from-ensjs).

@@ -35,7 +35,7 @@ describe("EnsforgeError message", () => {
               "Name: nick.eth",
               `Contract: ${contract}`,
               "Function: setText",
-              "Docs: https://ensforge.com/errors/NAME_EXPIRED",
+              "Docs: https://ensforge.com/docs/reference/errors/NAME_EXPIRED",
               `Version: @ensforge/sdk@${version}`,
             ],
             "\n",
@@ -57,7 +57,7 @@ describe("EnsforgeError message", () => {
           Arr.join(
             [
               "Code: NAME_LOCKED",
-              "Docs: https://ensforge.com/errors/NAME_LOCKED",
+              "Docs: https://ensforge.com/docs/reference/errors/NAME_LOCKED",
               `Version: @ensforge/sdk@${version}`,
             ],
             "\n",
@@ -81,8 +81,8 @@ describe("EnsforgeError docs URL", () => {
     setConfig({});
     const error = new UnauthorizedError({ code: "NOT_OWNER" });
 
-    assert.strictEqual(error.docsUrl, "https://docs.example/errors/NOT_OWNER");
-    assert.include(error.message, "Docs: https://docs.example/errors/NOT_OWNER");
+    assert.strictEqual(error.docsUrl, "https://docs.example/docs/reference/errors/NOT_OWNER");
+    assert.include(error.message, "Docs: https://docs.example/docs/reference/errors/NOT_OWNER");
   });
 });
 
@@ -136,7 +136,7 @@ describe("EnsforgeError.toJSON", () => {
         details: [],
         retryable: false,
         context: { name: "a.eth" },
-        docsUrl: "https://ensforge.com/errors/NAME_EXPIRED",
+        docsUrl: "https://ensforge.com/docs/reference/errors/NAME_EXPIRED",
       });
     }),
   );

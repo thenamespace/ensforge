@@ -1,0 +1,43 @@
+---
+title: What wrapped names are
+description: Learn what the ENSv1 Name Wrapper does, how it changes who controls a name, and what happens to wrapped names on ENSv2 later.
+keywords: [NameWrapper, wrapped name, ERC-1155, fuses, emancipated, locked, ENSv1]
+---
+
+This page is about [ENSv1](/docs/reference/glossary#ensv1) only. The **Name Wrapper** is an ENSv1 contract that turns a name into an ERC-1155 token and adds **fuses**: permissions that can be burned, for good, until the name expires. [ENSv2](/docs/reference/glossary#ensv2) has no Name Wrapper. Wrapped names [migrate](/docs/reference/glossary#migration) to ENSv2 like unwrapped ones.
+
+You never need to wrap a name to use ensforge. Wrapping matters when you want the token form or want to give up powers permanently.
+
+## What wrapping changes
+
+|                 | Unwrapped                                                                                               | Wrapped                                      |
+| --------------- | ------------------------------------------------------------------------------------------------------- | -------------------------------------------- |
+| Token           | `.eth` names: an ERC-721 registrar token. Others: none.                                                 | An ERC-1155 token in the NameWrapper.        |
+| Who controls it | A **registrant** (the registrar token holder, for `.eth` names) and a **manager** (the registry owner). | One **owner**: the NameWrapper token holder. |
+| Fuses           | None.                                                                                                   | Yes.                                         |
+| Subnames        | The manager creates them freely.                                                                        | Created with fuses and an expiry.            |
+
+On a wrapped name there is no separate manager. `name.get` reports the token holder as `owner`.
+
+## Fuses and name states
+
+A **fuse** is a permission that can be burned. A burned fuse cannot be unburned before the name expires. Two states matter:
+
+- **Emancipated** (`parentCannotControl` burned): a [subname](/docs/reference/glossary#subname) its parent can no longer control. The parent can only extend it, until it expires.
+- **Locked** (`cannotUnwrap` burned): a name that stays in the NameWrapper until it expires. Every other owner-controlled fuse needs it first.
+
+See [Lock permissions with fuses](/docs/sdk/fuses) for the full list.
+
+## What ensforge does for you
+
+- [`name.get`](/docs/reference/sdk/name/get) reports `kind: "v1-wrapped"` and `wrapped: true` for wrapped names. See [Get a name's owner, expiry and status](/docs/sdk/get-name-details).
+- Writes such as `name.transfer`, `resolver.set` and `subname.create` use the NameWrapper when the name is wrapped. You pass the same options.
+- [`wrapper.getFuses`](/docs/reference/sdk/wrapper/get-fuses) reads the owner, the burned fuses and the expiry.
+- Wrapper actions on ENSv2 names fail with [`UNSUPPORTED_PROTOCOL`](/docs/reference/errors/UNSUPPORTED_PROTOCOL).
+- Locked names migrate into a WrapperRegistry whose roles follow their fuses. See [Move a name to ENSv2](/docs/sdk/move-a-name-to-ensv2).
+
+## Renewal
+
+`.eth` names still on ENSv1, wrapped or not, renew through `ETHRenewerV1`, which also extends the wrapped name's expiry. `registration.renew` picks it for you. See [Renew a name](/docs/sdk/renew-a-name).
+
+To wrap or unwrap a name, see [Wrap and unwrap a name](/docs/sdk/wrap-and-unwrap).

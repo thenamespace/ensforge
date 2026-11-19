@@ -34,6 +34,7 @@ packages/contracts/ ENS ABIs, interfaces, roles and deployments
 packages/sdk/       Standalone ENS actions and Effect APIs
 packages/react/     Hooks, Effect Atom atoms and server rendering
 packages/hca/       Hosted Contract Account route and executors
+apps/docs/          Documentation site and blog (TanStack Start, Fumadocs)
 tests/harness/      Shared test harness for every test suite
 tests/devnet/       ENS deployed on a local anvil for chain test suites
 tests/fixtures/     Name states seeded on the devnet, edge-case catalog and coverage ledger
@@ -162,7 +163,8 @@ green when it passes three consecutive runs.
 Update documentation when changing a public API, configuration option, return type, error, deployment,
 or package entrypoint: the TSDoc on the export (with examples, which `verify` type-checks), the
 package README, and the API report (`pnpm --filter <package> api:report`). Package READMEs stay short
-introductions; the documentation site comes later.
+introductions; guides and reference live in the documentation site, `apps/docs/content` (run it with
+`pnpm --filter @ensforge/docs dev`; copy `apps/docs/.env.example` to `.env.local` for optional keys).
 
 ## API stability
 
@@ -230,6 +232,7 @@ and the reusable workflows `_check.yml` and `_lanes.yml`.
 | `release.yml`          | the release (below)                                                                                                        | manual, default branch                     |
 | `release-smoke.yml`    | published packages against the archives a release verified                                                                 | manual                                     |
 | `bigname-image.yml`    | the services lane, then its bigname images to `ghcr.io/<owner>/ensforge-bigname-devnet`, which the services lanes pull     | manual, default branch                     |
+| `deploy-docs.yml`      | the docs image (`apps/docs/Dockerfile`, a Node server) to Artifact Registry, then the image tag to `thenamespace/infra`    | manual, default branch                     |
 
 Lanes upload their logs, JUnit reports, fuzz corpus and mutation reports as an artifact named
 `lane-<lane>-<run>-<attempt>` for 14 days; the network lanes redact the RPC URLs from them first.

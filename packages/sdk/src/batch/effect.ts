@@ -5,13 +5,14 @@ import { requests as implementations } from "../actions/requests.js";
 import type { Client } from "../client/types.js";
 import { InvalidInputError } from "../errors/classes/InvalidInputError.js";
 import type { AnyError } from "../errors/types.js";
+import { implementationOf } from "../internal/action/request.js";
 import { toAnyError } from "../internal/anyError.js";
 import type { Request } from "../Types.js";
 import type { batch as Promises } from "./index.js";
 import type { BatchOptions, Requests, Results } from "./types.js";
 
 const run = (client: Client, request: Request): Effect.Effect<unknown, AnyError> => {
-  const implementation = implementations[request.path];
+  const implementation = implementationOf(request) ?? implementations[request.path];
   if (implementation === undefined) {
     return Effect.fail(
       new InvalidInputError({

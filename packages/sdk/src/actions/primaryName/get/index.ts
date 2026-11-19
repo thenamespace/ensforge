@@ -51,9 +51,9 @@ import * as Impl from "./effect.js";
  *
  * @throws `Errors.InvalidInputError` (`INVALID_ADDRESS`, `INVALID_COIN_TYPE`, `INVALID_NAME`) for invalid input, or with `strict` an unnormalized name.
  * @throws `Errors.NotFoundError` (`PRIMARY_NAME_NOT_SET`, `PRIMARY_NAME_MISMATCH`) with `strict` when there is no valid primary name.
- * @throws `Errors.GatewayError` when an off-chain gateway fails.
+ * @throws `Errors.GatewayError` (`GATEWAY_REQUEST_FAILED`, `GATEWAY_RESPONSE_INVALID`, `OFFCHAIN_LOOKUP_INVALID`) when an off-chain gateway fails.
  * @throws `Errors.DnsError` when a DNS name's DNSSEC proof does not verify.
- * @throws `Errors.NetworkError` when the RPC request fails.
+ * @throws `Errors.NetworkError` (`RPC_REQUEST_FAILED`, `RPC_TIMEOUT`, `RATE_LIMITED`) when the RPC request fails.
  *
  * @see {@link Actions.primaryName.set} to set it
  * @stability stable

@@ -1,0 +1,119 @@
+---
+title: Servers and edge runtimes
+description: Run ensforge in Node, serverless functions and edge runtimes, with a server-side signer and plan storage that outlives the request.
+keywords:
+  [server, serverless, edge, Cloudflare Workers, Node, privateKeyToAccount, plan storage, fetch]
+---
+
+ensforge depends on no browser or Node APIs, so the same code can run in a Node server, a
+serverless function or an edge runtime. Three things differ from the browser: where the signer comes from, where plans
+are saved, and how long a process lives.
+
+## Prerequisites
+
+- An `ens` client. See [Create a client](/docs/sdk/create-a-client).
+
+## What ensforge needs from the runtime
+
+The SDK imports no Node built-ins and reads no browser globals, except `localStorage` when you use
+`Plan.localStorage()`. It makes network requests through your viem transports and, for off-chain
+data ([indexers](/docs/reference/glossary#indexer), avatars, DNS proofs), through the global
+`fetch`. A runtime with `fetch` and viem support can run ensforge. The built-in indexers,
+`bigname()` and `goldsky()`, take a `fetch` option if you need to supply one. ensforge's own tests
+run on Node only. See [Connect an indexer](/docs/sdk/connect-an-indexer).
+
+## Create the client once per process
+
+An ensforge client's settings are fixed when you create it, and it keeps no per-request state, so
+create it at module scope and reuse it. Create a separate client only when the signer differs per request.
+
+## Sign on the server
+
+There is no wallet extension on a server. Give the wallet client an account built from a key, and
+load the key from a secret store or environment variable. Never put a key in source code.
+
+**Example** (A server-side signer)
+
+```ts title="server.ts"
+import { Ensforge, ensActions } from "@ensforge/sdk";
+import { createPublicClient, createWalletClient, http } from "viem";
+import { privateKeyToAccount } from "viem/accounts";
+import { sepolia } from "viem/chains";
+
+const account = privateKeyToAccount(process.env.SIGNER_KEY as `0x${string}`);
+const publicClient = createPublicClient({ chain: sepolia, transport: http(process.env.RPC_URL) });
+const walletClient = createWalletClient({
+  account,
+  chain: sepolia,
+  transport: http(process.env.RPC_URL),
+});
+
+export const ens = Ensforge.create({ publicClient, walletClient }).extend(ensActions());
+```
+
+A server signer has no wallet prompt, so there is no [`USER_REJECTED`](/docs/reference/errors/USER_REJECTED)
+and no EIP-5792 bundle: ensforge sends one transaction per call. Handle the failures that remain
+with [Handle errors](/docs/sdk/handle-errors).
+
+## Save plans somewhere that outlives the process
+
+By default [plans](/docs/reference/glossary#plan) are kept in memory. A serverless function starts fresh on each cold start, so a
+plan from an earlier invocation is gone and `plan.resume` fails with
+[`PLAN_NOT_FOUND`](/docs/reference/errors/PLAN_NOT_FOUND). `Plan.localStorage()` does not exist on a
+server: its calls reject, and a write ignores a store that fails to save, so the write still runs
+but cannot be resumed.
+
+Pass your own `Plan.Storage` backed by a database or key-value store. See
+[Save and resume plans](/docs/sdk/save-and-resume-plans).
+
+## Set deadlines
+
+A function with a time limit should cancel work that runs long. Every read takes a `signal`, and
+the Promise rejects with `signal.reason` when it aborts.
+
+**Example** (A five-second deadline)
+
+```ts title="deadline.ts"
+import { Ensforge, ensActions } from "@ensforge/sdk";
+import { createPublicClient, http } from "viem";
+import { mainnet } from "viem/chains";
+
+const publicClient = createPublicClient({ chain: mainnet, transport: http() });
+const ens = Ensforge.create({ publicClient }).extend(ensActions());
+
+const address = await ens.record.getAddress({
+  name: "nick.eth",
+  signal: AbortSignal.timeout(5_000),
+});
+```
+
+A write's `signal` cancels before the next wallet prompt. Transactions already submitted are not
+undone.
+
+## Avoid long-lived subscriptions
+
+[`event.watch`](/docs/reference/sdk/event/watch) polls for new blocks until you stop it,
+which does not fit a function that exits after a request. Use
+[`event.get`](/docs/reference/sdk/event/get) over a block range, or an indexer, for
+request-scoped history. See [Watch for changes](/docs/sdk/watch-for-changes).
+
+## Check the result
+
+Call the server route once. It should read a name, and a write should return a `hash` you can find
+on a block explorer.
+
+## Troubleshooting
+
+### `ACCOUNT_NOT_FOUND`
+
+The wallet client has no account. Create it with `account`, as above. See
+[`ACCOUNT_NOT_FOUND`](/docs/reference/errors/ACCOUNT_NOT_FOUND).
+
+### `localStorage is not available in this environment`
+
+You used `Plan.localStorage()` on a server. Use a custom `Plan.Storage`.
+
+### `RPC_TIMEOUT` on cold starts
+
+Your RPC provider is slow to answer. Set a `timeout` on viem's `http` transport and retry.
+See [`RPC_TIMEOUT`](/docs/reference/errors/RPC_TIMEOUT).

@@ -1,0 +1,164 @@
+---
+title: How errors work
+description: Learn how ensforge errors are grouped into classes and codes, what each error carries, and how to turn one into a message for users.
+keywords:
+  [errors, Errors.hasCode, Errors.describe, ErrorType, EnsforgeError, code, retryable, strict]
+---
+
+When an ENS call fails, ensforge never hands you a raw contract revert or an RPC message. It
+translates every failure into an **ensforge error** with a class that says what kind of problem it
+is, a **code** that says exactly what happened, and the context you need to fix or report it.
+
+## Classes and codes
+
+Each error has two names. The class groups related failures; the code is precise and stable.
+
+| Class               | Example codes                            | Means                                    |
+| ------------------- | ---------------------------------------- | ---------------------------------------- |
+| `InvalidInputError` | `INVALID_NAME`, `INVALID_ADDRESS`        | The input is wrong. Nothing was sent.    |
+| `NotFoundError`     | `RESOLVER_NOT_FOUND`, `RECORD_NOT_FOUND` | The data does not exist.                 |
+| `NameStateError`    | `NAME_NOT_AVAILABLE`, `NAME_EXPIRED`     | The name is in the wrong state for this. |
+| `UnauthorizedError` | `NOT_OWNER`, `MISSING_ROLES`             | The account may not do this.             |
+| `UserRejectedError` | `USER_REJECTED`                          | The user declined in their wallet.       |
+| `NetworkError`      | `RPC_TIMEOUT`, `RATE_LIMITED`            | The RPC failed. Often worth a retry.     |
+| `GatewayError`      | `GATEWAY_REQUEST_FAILED`                 | An off-chain gateway failed.             |
+
+There are 19 classes in all. Every code has its own page under [Errors](/docs/reference/errors), with
+its causes and how to fix it.
+
+Codes are stable: renaming or removing one is a breaking change, made only in a major release.
+Branch on codes, never on message text.
+
+## What an error carries
+
+**Example** (Catching an Error)
+
+```ts title="catch.ts"
+import { Ensforge, Errors, ensActions } from "@ensforge/sdk";
+import { createPublicClient, http } from "viem";
+import { mainnet } from "viem/chains";
+
+const ens = Ensforge.create({
+  publicClient: createPublicClient({ chain: mainnet, transport: http() }),
+}).extend(ensActions());
+
+try {
+  await ens.record.getText({ name: "no-such-name-ensforge-docs.eth", key: "url", strict: true });
+} catch (error) {
+  if (Errors.is(error)) console.log(error.toJSON());
+}
+```
+
+```text title="Output (trimmed)"
+{
+  name: 'NotFoundError',
+  code: 'RESOLVER_NOT_FOUND',
+  shortMessage: 'The name no-such-name-ensforge-docs.eth has no resolver.',
+  hint: 'Set one with resolver.set.',
+  details: [],
+  retryable: false,
+  context: {
+    operation: 'record.getText',
+    name: 'no-such-name-ensforge-docs.eth',
+    chainId: 1,
+    contract: '0xeEeEEEeE14D718C2B47D9923Deab1335E144EeEe',
+    functionName: 'resolve',
+    ...
+  },
+  docsUrl: 'https://ensforge.com/docs/reference/errors/RESOLVER_NOT_FOUND'
+}
+```
+
+| Field          | What it is                                                                                                        |
+| -------------- | ----------------------------------------------------------------------------------------------------------------- |
+| `name`, `_tag` | The class name, such as `"NotFoundError"`.                                                                        |
+| `code`         | What happened, such as `"RESOLVER_NOT_FOUND"`.                                                                    |
+| `shortMessage` | One line for developers.                                                                                          |
+| `hint`         | How to fix it, when ensforge knows.                                                                               |
+| `retryable`    | Whether the same call can succeed if you try again.                                                               |
+| `context`      | Where it happened: the action, name, account, chain, contract and, for writes, the `planId` and `step` to resume. |
+| `docsUrl`      | The page for this code.                                                                                           |
+| `cause`        | The original error, such as viem's, when there was one.                                                           |
+
+`error.message` combines these into a readable block for logs, ending with the code, the docs link
+and the SDK version. `toJSON()` returns a plain object that is safe to send to an error tracker.
+
+## Every action declares its errors
+
+Each action lists the errors it can throw, as a type: `Actions.record.getText.ErrorType`. It is the
+union of the classes the action documents, plus a few every action can hit (a misconfigured client,
+a failing RPC, an unexpected revert). Writes add the errors of signing and sending, such as
+`UserRejectedError`. Each action's reference page lists them with their codes.
+
+`Errors.hasCode` narrows an unknown error to the codes you name:
+
+**Example** (Handling One Code)
+
+```ts title="has-code.ts"
+import { Ensforge, Errors, ensActions } from "@ensforge/sdk";
+import { createPublicClient, http } from "viem";
+import { mainnet } from "viem/chains";
+
+const ens = Ensforge.create({
+  publicClient: createPublicClient({ chain: mainnet, transport: http() }),
+}).extend(ensActions());
+
+try {
+  await ens.record.getAddress({ name: "nick.eth", coin: "btc", strict: true });
+} catch (error) {
+  if (Errors.hasCode("RECORD_NOT_FOUND", "RESOLVER_NOT_FOUND")(error)) {
+    console.log("Nothing to show for", error.context.name);
+  } else {
+    throw error;
+  }
+}
+```
+
+`Errors.is(value)` tells whether a value is an ensforge error at all. It also works when two copies
+of the SDK are installed, where `instanceof` would not.
+
+## Missing data is not an error
+
+Reads return `null` for data that is not there: a record that is not set, a name without a
+resolver, an address without a primary name. Pass `strict: true` when you want a `NotFoundError`
+instead. Invalid input, network and gateway failures are always errors.
+
+## Show users a message, not the error
+
+`error.message` is written for developers. `Errors.describe` turns any error, from ensforge or
+not, into a title, message and suggested action that are safe to show users.
+
+**Example** (Describing an Error for Users)
+
+```ts title="describe.ts"
+import { Errors } from "@ensforge/sdk";
+
+declare const error: unknown;
+const { title, message, action, severity } = Errors.describe(error);
+```
+
+For the error above, it returns:
+
+```text title="Output"
+{
+  title: 'No resolver',
+  message: 'no-such-name-ensforge-docs.eth is not set up to hold records yet.',
+  action: 'Set a resolver first.',
+  code: 'RESOLVER_NOT_FOUND',
+  retryable: false,
+  severity: 'info'
+}
+```
+
+- `severity` is `"info"` for expected outcomes (a declined prompt, a taken name), `"warning"` for
+  temporary problems worth retrying, and `"error"` for anything that needs attention.
+- Pass `messages` to replace the copy for some codes, for example to translate it.
+- Every code has copy, including the HCA codes. An unknown code gets a generic message; `describe` never throws.
+
+See [Handle errors](/docs/sdk/handle-errors).
+
+## Errors in the Effect API
+
+The Effect API throws the same error instances. Each action's error channel is its `ErrorType`, and
+the `_tag` is the class name, so `Effect.catchTag("NotFoundError", …)` handles one class. See
+[The Effect API](/docs/sdk/effect-api).

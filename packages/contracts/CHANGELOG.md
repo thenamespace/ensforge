@@ -1,5 +1,11 @@
 # @ensforge/contracts
 
+## 1.0.1
+
+### Patch Changes
+
+- 9c3051f: Examples for `Abis`, `Deployments`, `InterfaceIds` and `Roles`, and a new README.
+
 ## 1.0.0
 
 ### Major Changes

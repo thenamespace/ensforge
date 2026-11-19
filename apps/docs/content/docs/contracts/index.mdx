@@ -1,0 +1,69 @@
+---
+title: Quick start
+icon: rocket
+description: Read an ENS contract with viem in a few minutes, using a typed ABI and the deployed address for your chain from @ensforge/contracts.
+keywords: [readContract, Abis, Deployments, viem, getState]
+---
+
+By the end of this page you will have read a name's state from the [ENSv2](/docs/reference/glossary#ensv2) `.eth` [registry](/docs/reference/glossary#registry) with viem, using an ABI and an address from `@ensforge/contracts`. Install the package first: [Installation](/docs/contracts/installation).
+
+## 1. Pick an address and an ABI
+
+`Deployments.mainnet.v2.contracts.ethRegistry` is the address of the registry that holds [`.eth` names](/docs/reference/glossary#eth-name). `Abis.v2.permissionedRegistry` is the ABI to read it with. The ABI is an `as const` array, so viem infers the function names, arguments and return types.
+
+## 2. Read the contract
+
+`getState` takes a [label](/docs/reference/glossary#label)'s hash as a number and returns the name's status, [expiry](/docs/reference/glossary#expiry), latest [owner](/docs/reference/glossary#owner), token ID and role resource.
+
+**Example** (Reading a Name's State)
+
+```ts title="get-state.ts"
+import { Abis, Deployments } from "@ensforge/contracts";
+import { createPublicClient, hexToBigInt, http } from "viem";
+import { labelhash } from "viem/ens";
+import { mainnet } from "viem/chains";
+
+const publicClient = createPublicClient({ chain: mainnet, transport: http() });
+
+const state = await publicClient.readContract({
+  address: Deployments.mainnet.v2.contracts.ethRegistry,
+  abi: Abis.v2.permissionedRegistry,
+  functionName: "getState",
+  args: [hexToBigInt(labelhash("vitalik"))],
+});
+
+state;
+```
+
+- `labelhash("vitalik")` hashes the label (the part before `.eth`), giving its [labelhash](/docs/reference/glossary#labelhash). [Normalise](/docs/reference/glossary#normalisation) a label before you hash it.
+- `status` is the contract's `Status` enum, returned as a number: `0` (`AVAILABLE`), `1` (`RESERVED`) or `2` (`REGISTERED`).
+- A `.eth` name that has not moved from [ENSv1](/docs/reference/glossary#ensv1) yet reads as `1` (`RESERVED`) with a zero `latestOwner`, because its owner is still in the ENSv1 registry. `vitalik.eth` reads this way while it stays on ENSv1. The SDK reads both registries for you: see [Get a name's owner, expiry and status](/docs/sdk/get-name-details).
+
+## 3. Read another chain
+
+`Deployments.sepolia` has the same shape. Use `Deployments.get({ chainId })` when the chain comes from a variable.
+
+**Example** (Looking Up a Chain by ID)
+
+```ts title="by-chain.ts"
+import { Deployments } from "@ensforge/contracts";
+
+const profile = Deployments.get({ chainId: 11155111 });
+const ethRegistry = profile?.v2?.contracts.ethRegistry;
+```
+
+`get` returns `undefined` for a chain ensforge does not ship. See [Addresses and chains](/docs/contracts/addresses-and-chains).
+
+## Learn more
+
+<Cards>
+  <Card title="Use ABIs with viem" href="/docs/contracts/use-abis-with-viem">
+    Reads, writes, events and the flat exports.
+  </Card>
+  <Card title="Addresses and chains" href="/docs/contracts/addresses-and-chains">
+    Every address group and behaviour flag.
+  </Card>
+  <Card title="Interface IDs and roles" href="/docs/contracts/interface-ids-and-roles">
+    Detect contracts and check ENSv2 roles.
+  </Card>
+</Cards>

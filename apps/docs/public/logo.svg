@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="200" height="200">
+  <title>ensforge</title>
+  <rect width="100" height="100" fill="#070707"/>
+  <path fill="#f8f8f8" d="M10 31L30 28H84L88 32V45H40L30 41ZM50 50H74L70 58L83 64V73H67V69H57V73H41V64L54 58Z"/>
+</svg>

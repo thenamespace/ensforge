@@ -1,0 +1,12 @@
+{
+  "title": "UnsupportedError",
+  "pagesIndex": "unsupported-error",
+  "pages": [
+    "UNSUPPORTED_PROTOCOL",
+    "UNSUPPORTED_ON_DEPLOYMENT",
+    "RESOLVER_PROFILE_UNSUPPORTED",
+    "PAYMENT_TOKEN_UNSUPPORTED",
+    "UPGRADE_NOT_APPROVED",
+    "WALLET_BATCH_UNSUPPORTED"
+  ]
+}

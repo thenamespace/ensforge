@@ -1,0 +1,69 @@
+{
+  "name": "@ensforge/docs",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Documentation site and blog for ensforge.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "exports": {
+    "./internal/*": {
+      "workspace-source": "./src/*.ts"
+    }
+  },
+  "scripts": {
+    "build": "vite build",
+    "clean": "rm -rf dist .output .tanstack .source",
+    "dev": "vite dev",
+    "docs:generate": "ensforge-dev docs generate",
+    "lint": "oxlint -c ../../.config/oxlint.config.ts --deny-warnings .",
+    "preview": "vite preview",
+    "start": "node .output/server/index.mjs",
+    "typecheck": "tsc --noEmit",
+    "verify": "ensforge-dev docs check && ensforge-dev docs lint && ensforge-dev docs examples"
+  },
+  "dependencies": {
+    "@fontsource-variable/inter": "catalog:",
+    "@fontsource-variable/jetbrains-mono": "catalog:",
+    "@fumadocs/changelog": "catalog:",
+    "@hugeicons/core-free-icons": "catalog:",
+    "@hugeicons/react": "catalog:",
+    "@shikijs/magic-move": "catalog:",
+    "@tanstack/react-router": "catalog:",
+    "@tanstack/react-start": "catalog:",
+    "cn": "catalog:",
+    "fumadocs-core": "catalog:",
+    "fumadocs-mdx": "catalog:",
+    "fumadocs-ui": "catalog:",
+    "lucide-react": "catalog:",
+    "mermaid": "catalog:",
+    "nitro": "catalog:",
+    "posthog-js": "catalog:",
+    "posthog-node": "catalog:",
+    "react": "catalog:",
+    "react-dom": "catalog:",
+    "shiki": "catalog:",
+    "takumi-js": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@ensforge/contracts": "workspace:*",
+    "@ensforge/hca": "workspace:*",
+    "@ensforge/react": "workspace:*",
+    "@ensforge/sdk": "workspace:*",
+    "@ensforge/tools": "workspace:*",
+    "@posthog/rollup-plugin": "catalog:",
+    "@shikijs/themes": "catalog:",
+    "@tailwindcss/vite": "catalog:",
+    "@types/mdx": "catalog:",
+    "@types/node": "catalog:",
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
+    "@vitejs/plugin-react": "catalog:",
+    "effect": "catalog:",
+    "oxlint": "catalog:",
+    "tailwindcss": "catalog:",
+    "typescript": "catalog:",
+    "viem": "catalog:",
+    "vite": "catalog:"
+  }
+}

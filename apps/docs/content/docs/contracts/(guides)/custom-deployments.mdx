@@ -1,0 +1,91 @@
+---
+title: Custom deployments
+description: Validate the ENS profile of a devnet, fork or custom chain with Deployments.define, then pass it to the ensforge SDK to use it.
+keywords: [Deployments.define, InvalidProfileError, devnet, fork, custom chain, profile]
+---
+
+ensforge ships profiles for mainnet and Sepolia. For a local devnet, a fork or any other chain, you write the profile yourself. `Deployments.define` checks it and returns it unchanged. By the end of this guide you will have a validated profile and an SDK client that uses it.
+
+## Prerequisites
+
+- The addresses of the ENS contracts on your chain.
+- `@ensforge/contracts` installed. See [Installation](/docs/contracts/installation).
+
+## 1. Write the profile
+
+A profile is `{ name, chainId, v1?, v2? }`, and at least one of `v1` and `v2` is required. Each deployment needs an `id`, the same `chainId` as the profile, a `protocol`, a `status` and its address groups. See [Addresses and chains](/docs/contracts/addresses-and-chains) for the groups.
+
+The simplest start is to copy a built-in deployment and change the addresses you deploy yourself.
+
+**Example** (A Devnet Profile Based on Mainnet)
+
+```ts title="devnet.ts"
+import { Deployments } from "@ensforge/contracts";
+
+export const devnet = Deployments.define({
+  name: "devnet",
+  chainId: 31337,
+  v2: {
+    ...Deployments.mainnet.v2,
+    id: "devnet-v2",
+    chainId: 31337,
+    contracts: {
+      ...Deployments.mainnet.v2.contracts,
+      ethRegistry: "0x5FbDB2315678afecb367f032d93F642f64180aa3", // your devnet address
+    },
+  },
+});
+```
+
+- Every address must be a `0x`-prefixed 20-byte address.
+- `capabilities` is required on a `v2` deployment. Copy it from the release your contracts match, then adjust flags that differ. See [Addresses and chains](/docs/contracts/addresses-and-chains#check-behaviour-flags-before-you-branch-on-a-chain).
+
+## 2. Handle validation errors
+
+`define` throws `Deployments.InvalidProfileError` with every problem it finds, not only the first. It checks that the chain IDs agree, that every required group and address is present and well-formed, that no unknown contract name appears, and that every capability flag has a known value. It does not read the chain.
+
+**Example** (Catching an Invalid Profile)
+
+```ts title="invalid.ts"
+import { Deployments } from "@ensforge/contracts";
+
+try {
+  Deployments.define({ name: "broken", chainId: 31337 });
+} catch (error) {
+  if (error instanceof Deployments.InvalidProfileError) {
+    console.log(error.issues); // ["at least one of v1 and v2 is required"]
+  }
+}
+```
+
+## 3. Use the profile with the SDK
+
+Pass the profile as `deployment` when you create the client. The client's chain must match the profile's `chainId`, or creation fails with [`INVALID_DEPLOYMENT`](/docs/reference/errors/INVALID_DEPLOYMENT).
+
+**Example** (Creating a Client for the Devnet)
+
+```ts title="client.ts"
+import { Deployments } from "@ensforge/contracts";
+import { Ensforge, ensActions } from "@ensforge/sdk";
+import { createPublicClient, http } from "viem";
+import { foundry } from "viem/chains";
+
+declare const devnet: Deployments.Profile;
+
+const ens = Ensforge.create({
+  publicClient: createPublicClient({ chain: foundry, transport: http() }),
+  deployment: devnet,
+}).extend(ensActions());
+```
+
+See [Create a client](/docs/sdk/create-a-client).
+
+## Troubleshooting
+
+### `Deployments.InvalidProfileError`
+
+Read `error.issues`. Each entry names the path, such as `v2.contracts.ethRegistry is required` or `v2.capabilities.hcaSessionDomain must be one of "smart-session", "hca"`. Fix each and call `define` again.
+
+### `INVALID_DEPLOYMENT`
+
+`Deployments.define` rejected the profile, or the profile is for another chain than the client's. Read the error's `cause` for the profile's issues, and match `chainId` to the viem client's chain. See [`INVALID_DEPLOYMENT`](/docs/reference/errors/INVALID_DEPLOYMENT).

@@ -1,0 +1,8 @@
+{
+  "title": "subname",
+  "pages": [
+    "create",
+    "remove",
+    "update"
+  ]
+}

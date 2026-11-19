@@ -61,13 +61,13 @@ type Actions.hca.executeSync.ErrorType = HcaError | WriteError
 type Actions.hca.executeSync.Options = execute.Options & Write.Options & { confirmations?: number | undefined; timeout?: number | undefined; }
 type Actions.hca.executeSync.ReturnType = Result & { readonly receipt: TransactionReceipt; readonly receipts: readonly TransactionReceipt[]; }
 // @stability experimental
-function Actions.hca.get(client: ClientBase<{}>, options: { address?: string | undefined; owner?: string | undefined; }) => Effect<HcaAccount, ErrorType, never>
+function Actions.hca.get(client: ClientBase<{}>, options?: Options | undefined) => Effect<HcaAccount, ErrorType, never>
 const Actions.hca.get.path: 'hca.get'
 type Actions.hca.get.ErrorType = HcaError | InvalidInputError | CommonError
 type Actions.hca.get.Options = { address?: string | undefined; owner?: string | undefined; }
 type Actions.hca.get.ReturnType = { readonly address: `0x${string}`; readonly owner: `0x${string}` | null; readonly deployed: boolean; readonly authorizedOwner: `0x${string}` | null; readonly accountId: string | null; readonly implementation: `0x${string}` | null; readonly initialImplementation: `0x${string}`; readonly sessionNonce: bigint; readonly upgradeSet: `0x${string}`; readonly problems: readonly HcaProblem[]; }
 // @stability experimental
-function Actions.hca.getDeposit(client: ClientBase<{}>, options: { address?: string | undefined; owner?: string | undefined; }) => Effect<bigint, ErrorType, never>
+function Actions.hca.getDeposit(client: ClientBase<{}>, options?: Options | undefined) => Effect<bigint, ErrorType, never>
 const Actions.hca.getDeposit.path: 'hca.getDeposit'
 type Actions.hca.getDeposit.ErrorType = HcaError | InvalidInputError | CommonError
 type Actions.hca.getDeposit.Options = { address?: string | undefined; owner?: string | undefined; }
@@ -85,7 +85,7 @@ type Actions.hca.getUpgrade.ErrorType = HcaError | InvalidInputError | CommonErr
 type Actions.hca.getUpgrade.Options = { implementation: string; address?: string | undefined; owner?: string | undefined; }
 type Actions.hca.getUpgrade.ReturnType = { readonly allowed: boolean; readonly current: `0x${string}` | null; readonly inUpgradeSet: boolean; readonly predecessorAllowed: boolean; }
 // @stability experimental
-function Actions.hca.predictAddress(client: ClientBase<{}>, options: { owner?: string | undefined; }) => Effect<`0x${string}`, ErrorType, never>
+function Actions.hca.predictAddress(client: ClientBase<{}>, options?: Options | undefined) => Effect<`0x${string}`, ErrorType, never>
 const Actions.hca.predictAddress.path: 'hca.predictAddress'
 type Actions.hca.predictAddress.ErrorType = HcaError | InvalidInputError | CommonError
 type Actions.hca.predictAddress.Options = { owner?: string | undefined; }
@@ -121,7 +121,7 @@ type Actions.hca.upgradeSync.ErrorType = HcaError | InvalidInputError | WriteErr
 type Actions.hca.upgradeSync.Options = upgrade.Options & Write.Options & { confirmations?: number | undefined; timeout?: number | undefined; }
 type Actions.hca.upgradeSync.ReturnType = Result & { readonly receipt: TransactionReceipt; readonly receipts: readonly TransactionReceipt[]; }
 // @stability experimental
-function Actions.hca.verify(client: ClientBase<{}>, options: { address?: string | undefined; owner?: string | undefined; }) => Effect<HcaAccount, ErrorType, never>
+function Actions.hca.verify(client: ClientBase<{}>, options?: Options | undefined) => Effect<HcaAccount, ErrorType, never>
 const Actions.hca.verify.path: 'hca.verify'
 type Actions.hca.verify.ErrorType = HcaError | InvalidInputError | CommonError
 type Actions.hca.verify.Options = { address?: string | undefined; owner?: string | undefined; }
@@ -142,7 +142,7 @@ type Actions.hca.withdrawDepositSync.ErrorType = HcaError | InvalidInputError | 
 type Actions.hca.withdrawDepositSync.Options = withdrawDeposit.Options & Write.Options & { confirmations?: number | undefined; timeout?: number | undefined; }
 type Actions.hca.withdrawDepositSync.ReturnType = Result & { readonly receipt: TransactionReceipt; readonly receipts: readonly TransactionReceipt[]; }
 // @stability experimental
-function Actions.hcaAdmin.getGovernance(client: ClientBase<{}>, options: { implementation?: string | undefined; }) => Effect<ReturnType, ErrorType, never>
+function Actions.hcaAdmin.getGovernance(client: ClientBase<{}>, options?: Options | undefined) => Effect<ReturnType, ErrorType, never>
 const Actions.hcaAdmin.getGovernance.path: 'hcaAdmin.getGovernance'
 type Actions.hcaAdmin.getGovernance.ErrorType = HcaError | InvalidInputError | CommonError
 type Actions.hcaAdmin.getGovernance.Options = { implementation?: string | undefined; }
@@ -240,8 +240,7 @@ type Actions.hcaAdmin.transferGovernanceSync.ReturnType = Result & { readonly re
 // @stability experimental
 class HcaError {
   constructor(options: ClassOptions<Code> & { readonly executor?: string | undefined; }) => HcaError
-  cause: unknown
-  code: 'HCA_ACTION_NOT_ALLOWED' | 'HCA_BUNDLER_REJECTED' | 'HCA_EXECUTION_FAILED' | 'HCA_EXECUTION_TIMEOUT' | 'HCA_EXECUTOR_UNSUPPORTED' | 'HCA_NOT_VERIFIED' | 'HCA_PAYMASTER_REJECTED' | 'HCA_SAME_CHAIN_SOURCE' | 'HCA_SDK_UNSUPPORTED' | 'HCA_SESSION_INVALID' | 'HCA_UNAVAILABLE' | 'HCA_UPGRADE_NOT_ALLOWED'
+  code: 'HCA_ACTION_NOT_ALLOWED' | 'HCA_BUNDLER_REJECTED' | 'HCA_EXECUTION_FAILED' | 'HCA_EXECUTION_TIMEOUT' | 'HCA_EXECUTOR_UNSUPPORTED' | 'HCA_NOT_VERIFIED' | 'HCA_PAYMASTER_REJECTED' | 'HCA_SDK_UNSUPPORTED' | 'HCA_SESSION_INVALID' | 'HCA_UNAVAILABLE' | 'HCA_UPGRADE_NOT_ALLOWED'
   ~ensforge/error: true
   _tag: 'HcaError'
   name: 'HcaError'
@@ -250,6 +249,7 @@ class HcaError {
   executor: string | undefined
   message: string
   stack: string
+  cause: unknown
   details: readonly string[]
   retryable: boolean
   context: { readonly operation?: string | undefined; readonly name?: string | undefined; readonly account?: `0x${string}` | undefined; readonly chainId?: number | undefined; readonly contract?: `0x${string}` | undefined; readonly functionName?: string | undefined; readonly contractKind?: 'registrar' | 'registry' | 'resolver' | 'wrapper' | undefined; readonly selector?: `0x${string}` | undefined; readonly registry?: `0x${string}` | undefined; readonly planId?: string | undefined; readonly step?: string | undefined; readonly revert?: { readonly errorName: string | undefined; readonly data: `0x${string}` | undefined; } | undefined; }
@@ -264,6 +264,6 @@ class HcaError {
   ~effect/Runtime/errorExitCode: number
   ~effect/Runtime/errorReported: boolean
 }
-type HcaError.Code = 'HCA_ACTION_NOT_ALLOWED' | 'HCA_BUNDLER_REJECTED' | 'HCA_EXECUTION_FAILED' | 'HCA_EXECUTION_TIMEOUT' | 'HCA_EXECUTOR_UNSUPPORTED' | 'HCA_NOT_VERIFIED' | 'HCA_PAYMASTER_REJECTED' | 'HCA_SAME_CHAIN_SOURCE' | 'HCA_SDK_UNSUPPORTED' | 'HCA_SESSION_INVALID' | 'HCA_UNAVAILABLE' | 'HCA_UPGRADE_NOT_ALLOWED'
+type HcaError.Code = 'HCA_ACTION_NOT_ALLOWED' | 'HCA_BUNDLER_REJECTED' | 'HCA_EXECUTION_FAILED' | 'HCA_EXECUTION_TIMEOUT' | 'HCA_EXECUTOR_UNSUPPORTED' | 'HCA_NOT_VERIFIED' | 'HCA_PAYMASTER_REJECTED' | 'HCA_SDK_UNSUPPORTED' | 'HCA_SESSION_INVALID' | 'HCA_UNAVAILABLE' | 'HCA_UPGRADE_NOT_ALLOWED'
 type HcaError.Options = ClassOptions<Code> & { readonly executor?: string | undefined; }
 ```

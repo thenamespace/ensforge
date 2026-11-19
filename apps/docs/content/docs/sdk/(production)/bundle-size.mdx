@@ -1,0 +1,109 @@
+---
+title: Keep bundles small
+description: Ship only the ensforge actions you use, with standalone actions, per-domain groups and tree-shaking, to keep your bundle small.
+keywords: [bundle size, tree-shaking, standalone actions, ensActions, sideEffects, recordActions]
+---
+
+`ensActions()` adds every action except the indexer group to your client, which is the easiest way to start and the largest
+thing to ship. It loads the rarely used groups (approval, dns, event, migration, permission,
+registry, role, wrapper) and `batch` only when you first call one of them. For a browser app that
+reads one or two values, import the actions you use instead.
+
+## Prerequisites
+
+- A bundler that tree-shakes ES modules (Vite, Rollup, esbuild, webpack in production mode).
+- Your app already ships `viem`. ensforge uses it as a peer and does not bundle it.
+
+## What each choice costs
+
+ensforge's CI bundles typical imports with viem excluded and fails when one grows more than 5% over
+its recorded budget. At the time of writing the recorded sizes are:
+
+| Import                                                     | Gzipped size |
+| ---------------------------------------------------------- | ------------ |
+| `Actions.record.getText`                                   | about 34 kB  |
+| `Actions.record.set`                                       | about 58 kB  |
+| `recordActions()`, `nameActions()`, `primaryNameActions()` | about 69 kB  |
+| `Ensforge.create(...).extend(ensActions())`                | about 92 kB  |
+| `ensActions()` plus `indexerActions()` and `bigname()`     | about 117 kB |
+
+These are what loads up front. The groups `ensActions()` loads on first use, and the code that
+translates a failure into a typed error (it loads on the first failure), come on top only when your
+app reaches them. The numbers move with each release. The point is the ratio: one action costs well
+under half of the full client.
+
+## Import one action
+
+Every action is a function that takes a client first. Pass a bare viem public client, so you do not
+create an ensforge client at all.
+
+**Example** (One read, nothing else)
+
+```ts title="standalone.ts"
+import { Actions } from "@ensforge/sdk";
+import { createPublicClient, http } from "viem";
+import { mainnet } from "viem/chains";
+
+const publicClient = createPublicClient({ chain: mainnet, transport: http() });
+
+const url = await Actions.record.getText(publicClient, { name: "nick.eth", key: "url" });
+```
+
+`Actions` is a namespace tree (`Actions.record.getText`). The package marks itself side-effect free
+and ships ES modules built so that bundlers drop every action you do not reference. The flat entry
+`@ensforge/sdk/actions` exports the same tree if you prefer named imports:
+
+```ts title="flat-entry.ts"
+import { record } from "@ensforge/sdk/actions";
+import { createPublicClient, http } from "viem";
+import { mainnet } from "viem/chains";
+
+const publicClient = createPublicClient({ chain: mainnet, transport: http() });
+
+const address = await record.getAddress(publicClient, { name: "nick.eth" });
+```
+
+Standalone actions give up client-wide settings (`ccipRead`, `gateways`, plan `storage`). To keep
+them, create a client with `Ensforge.create` and pass it where you passed `publicClient`. Creating the
+client adds no actions until you extend it.
+
+## Add only some groups to a client
+
+When you want `ens.record.*` methods without the rest, extend the client with the domain groups you
+need. Each domain has its own decorator.
+
+**Example** (Records and names only)
+
+```ts title="groups.ts"
+import { Ensforge, nameActions, recordActions } from "@ensforge/sdk";
+import { createPublicClient, http } from "viem";
+import { mainnet } from "viem/chains";
+
+const publicClient = createPublicClient({ chain: mainnet, transport: http() });
+
+const ens = Ensforge.create({ publicClient }).extend(recordActions()).extend(nameActions());
+
+await ens.record.getAddress({ name: "nick.eth" });
+```
+
+`ensActions()` is all the domains except `indexer`, plus `batch`. Add the [indexer](/docs/reference/glossary#indexer) group with
+`indexerActions()` only if you use it. See [Ways to call actions](/docs/sdk/ways-to-call-actions).
+
+## Choose the entry that matches your style
+
+The root entry `@ensforge/sdk` is the Promise API. `@ensforge/sdk/effect` is the Effect API, for
+programs written with Effect. Import it only where you write those programs. See
+[The Effect API](/docs/sdk/effect-api).
+
+## Check the result
+
+Build your app and inspect the output with your bundler's analyzer. A page that reads one record
+should not contain the registration, migration or indexer code.
+
+## Troubleshooting
+
+### The bundle still includes every action
+
+Something imports `ensActions` or the whole `Actions` object (for example by spreading it or
+iterating over it). Reference actions by name. Also check that your bundler is not set to treat
+`@ensforge/sdk` as having side effects.

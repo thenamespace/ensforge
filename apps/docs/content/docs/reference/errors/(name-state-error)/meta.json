@@ -1,0 +1,19 @@
+{
+  "title": "NameStateError",
+  "pagesIndex": "name-state-error",
+  "pages": [
+    "NAME_NOT_AVAILABLE",
+    "NAME_NOT_REGISTERED",
+    "NAME_EXTERNAL",
+    "NAME_RESERVED",
+    "NAME_EXPIRED",
+    "NAME_NOT_RENEWABLE",
+    "NAME_LOCKED",
+    "NAME_NOT_WRAPPED",
+    "NAME_WRAPPED",
+    "NAME_UNREACHABLE",
+    "NAME_REQUIRES_MIGRATION",
+    "PARENT_NOT_MIGRATED",
+    "REGISTRY_NOT_EMANCIPATED"
+  ]
+}

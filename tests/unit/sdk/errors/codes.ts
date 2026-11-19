@@ -22,7 +22,6 @@ export const errorsByCode: { readonly [code in Code]: () => AnyError } = {
   CHAIN_NOT_CONFIGURED: () => new Classes.ConfigError({ code: "CHAIN_NOT_CONFIGURED" }),
   CONTRACT_REVERTED: () => new Classes.ContractRevertError({ code: "CONTRACT_REVERTED" }),
   DNS_RECORD_MISSING: () => new Classes.DnsError({ code: "DNS_RECORD_MISSING" }),
-  DNS_OWNER_MISMATCH: () => new Classes.DnsError({ code: "DNS_OWNER_MISMATCH" }),
   DNSSEC_PROOF_FAILED: () => new Classes.DnsError({ code: "DNSSEC_PROOF_FAILED" }),
   PROOF_STALE: () => new Classes.DnsError({ code: "PROOF_STALE" }),
   TLD_NOT_PUBLIC: () => new Classes.DnsError({ code: "TLD_NOT_PUBLIC" }),
@@ -38,7 +37,6 @@ export const errorsByCode: { readonly [code in Code]: () => AnyError } = {
   INSUFFICIENT_ETH: () => new Classes.InsufficientFundsError({ code: "INSUFFICIENT_ETH" }),
   INSUFFICIENT_TOKEN_BALANCE: () =>
     new Classes.InsufficientFundsError({ code: "INSUFFICIENT_TOKEN_BALANCE" }),
-  PRICE_ABOVE_MAXIMUM: () => new Classes.InsufficientFundsError({ code: "PRICE_ABOVE_MAXIMUM" }),
   UNEXPECTED: () => new Classes.InternalError({ code: "UNEXPECTED" }),
   INVALID_NAME: () => new Classes.InvalidInputError({ code: "INVALID_NAME" }),
   INVALID_ADDRESS: () => new Classes.InvalidInputError({ code: "INVALID_ADDRESS" }),
@@ -85,7 +83,6 @@ export const errorsByCode: { readonly [code in Code]: () => AnyError } = {
   PLAN_INVALID: () => new Classes.PlanError({ code: "PLAN_INVALID" }),
   PLAN_ROUTE_REQUIRED: () => new Classes.PlanError({ code: "PLAN_ROUTE_REQUIRED" }),
   TRANSACTION_REVERTED: () => new Classes.TransactionError({ code: "TRANSACTION_REVERTED" }),
-  TRANSACTION_REPLACED: () => new Classes.TransactionError({ code: "TRANSACTION_REPLACED" }),
   RECEIPT_TIMEOUT: () => new Classes.TransactionError({ code: "RECEIPT_TIMEOUT" }),
   NONCE_CONFLICT: () => new Classes.TransactionError({ code: "NONCE_CONFLICT" }),
   NOT_OWNER: () => new Classes.UnauthorizedError({ code: "NOT_OWNER" }),

@@ -1,0 +1,12 @@
+{
+  "title": "IndexerError",
+  "pagesIndex": "indexer-error",
+  "pages": [
+    "INDEXER_UNAVAILABLE",
+    "INDEXER_RATE_LIMITED",
+    "INDEXER_RESPONSE_INVALID",
+    "INDEXER_REQUEST_REJECTED",
+    "INDEXER_BEHIND",
+    "INDEXER_UNSUPPORTED"
+  ]
+}

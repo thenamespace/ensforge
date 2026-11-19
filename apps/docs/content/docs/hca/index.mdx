@@ -1,0 +1,120 @@
+---
+title: Quick start
+icon: rocket
+description: Send a write through your hosted contract account with the hca() route, then read the account back, in a few minutes on Sepolia.
+keywords: [hca, via, migrateSync, executeByOwner]
+---
+
+<Callout type="info" title="Experimental">
+  `@ensforge/hca` is experimental for 1.0. Its API can change in a minor release.
+</Callout>
+
+By the end of this page you will have moved two names to ENSv2 ([migration](/docs/reference/glossary#migration)) in one execution of your [HCA](/docs/reference/glossary#hca), and read the account that ran it. Install the package first: [Installation](/docs/hca/installation).
+
+## 1. Create the client
+
+Add `hcaActions()` to a client that has a wallet. The example uses Sepolia.
+
+```ts title="client.ts"
+import { hcaActions } from "@ensforge/hca";
+import { Ensforge, ensActions } from "@ensforge/sdk";
+import { createPublicClient, createWalletClient, http } from "viem";
+import { privateKeyToAccount } from "viem/accounts";
+import { sepolia } from "viem/chains";
+
+const account = privateKeyToAccount(
+  "0x0123456789012345678901234567890123456789012345678901234567890123",
+);
+
+export const ens = Ensforge.create({
+  publicClient: createPublicClient({ chain: sepolia, transport: http() }),
+  walletClient: createWalletClient({ account, chain: sepolia, transport: http() }),
+})
+  .extend(ensActions())
+  .extend(hcaActions());
+```
+
+- Replace the placeholder key with your signer. Never commit a real key.
+- `hcaActions()` adds the `ens.hca` actions, such as `ens.hca.get`.
+
+## 2. Send a write through the HCA
+
+Pass `via: hca()` to any write. `hca()` is a [route](/docs/reference/glossary#route): it rewrites the write's [plan](/docs/reference/glossary#plan) so that the HCA runs the calls. ensforge never selects it on its own, so the user agrees to it through the code you write.
+
+**Example** (Migrating Two Names Through the HCA)
+
+```ts title="migrate.ts"
+import { hca, hcaActions } from "@ensforge/hca";
+import { Ensforge, ensActions } from "@ensforge/sdk";
+import { createPublicClient, createWalletClient, http } from "viem";
+import { privateKeyToAccount } from "viem/accounts";
+import { sepolia } from "viem/chains";
+
+const account = privateKeyToAccount(
+  "0x0123456789012345678901234567890123456789012345678901234567890123",
+);
+const ens = Ensforge.create({
+  publicClient: createPublicClient({ chain: sepolia, transport: http() }),
+  walletClient: createWalletClient({ account, chain: sepolia, transport: http() }),
+})
+  .extend(ensActions())
+  .extend(hcaActions());
+const result = await ens.migration.migrateSync({
+  names: ["alice.eth", "bob.eth"], // placeholders: ENSv1 .eth names your wallet owns
+  via: hca(),
+});
+
+console.log(result.plan.steps.map((step) => step.id));
+```
+
+Replace the two names with names your wallet owns that are not on ENSv2 yet. With the default [executor](/docs/reference/glossary#executor), your wallet sends every transaction:
+
+1. A first [step](/docs/reference/glossary#step) named `hca-setup` deploys the HCA, when it does not exist yet, and approves it to move your names.
+2. Both migrations run as one atomic `executeByOwner` call, so either every name moves or none does.
+
+With an EIP-5792 wallet, the owner's steps share one [bundle](/docs/reference/glossary#bundle). See [Your wallet](/docs/hca/your-wallet).
+
+## 3. Read the account
+
+`ens.hca.get` reads the HCA's address, owner, implementation and any problems. It works before deployment, using the predicted address.
+
+```ts title="get-account.ts"
+import { hcaActions } from "@ensforge/hca";
+import { Ensforge, ensActions } from "@ensforge/sdk";
+import { createPublicClient, createWalletClient, http } from "viem";
+import { privateKeyToAccount } from "viem/accounts";
+import { sepolia } from "viem/chains";
+
+const account = privateKeyToAccount(
+  "0x0123456789012345678901234567890123456789012345678901234567890123",
+);
+const ens = Ensforge.create({
+  publicClient: createPublicClient({ chain: sepolia, transport: http() }),
+  walletClient: createWalletClient({ account, chain: sepolia, transport: http() }),
+})
+  .extend(ensActions())
+  .extend(hcaActions());
+const hcaAccount = await ens.hca.get({});
+```
+
+`problems` is empty for an account that is safe to use. See [`hca.get`](/docs/reference/hca/hca/get).
+
+<Callout type="warn" title="The HCA is msg.sender">
+  Through `via: hca()` the HCA, not your wallet, calls the contracts. Migration, registration and
+  renewal work through it. Other writes, such as records or transfers, work only where the HCA holds
+  the [roles](/docs/reference/glossary#role) they need, and fail at simulation otherwise.
+</Callout>
+
+## Learn more
+
+<Cards>
+  <Card title="How it works" href="/docs/hca/how-it-works">
+    What an HCA is and why a write runs from it.
+  </Card>
+  <Card title="Bundlers" href="/docs/hca/bundlers">
+    Run writes gaslessly with Pimlico or any ERC-4337 bundler.
+  </Card>
+  <Card title="Sessions" href="/docs/hca/sessions">
+    Register names and edit records without wallet prompts.
+  </Card>
+</Cards>

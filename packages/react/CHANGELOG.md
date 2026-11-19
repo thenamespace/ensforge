@@ -1,5 +1,17 @@
 # @ensforge/react
 
+## 1.0.1
+
+### Patch Changes
+
+- e854649: The docs now say that `hca()` uses one executor and never falls back, that an upgrade needs the DAO's upgrade set plus the new implementation's `canUpgradeFrom` check, what a session's resolver may be, and how to pass `dehydrate` output to Next.js `getServerSideProps`.
+- 9c3051f: `dehydrate` returns plain JSON-safe data, so its result can be returned straight from Next.js `getServerSideProps` and `getStaticProps`. A new README.
+- e338a7f: The named read hooks now have verb-first descriptions in the API reference.
+- Updated dependencies [e338a7f]
+- Updated dependencies [a393fc9]
+- Updated dependencies [9c3051f]
+  - @ensforge/sdk@1.0.1
+
 ## 1.0.0
 
 ### Major Changes

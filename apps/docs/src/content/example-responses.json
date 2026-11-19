@@ -1,0 +1,1565 @@
+{
+  "approval.getDelegate": {
+    "call": "await ens.approval.getDelegate({ name: \"nick.eth\", delegate: \"0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045\" })",
+    "response": false,
+    "recordedAt": "2026-11-18T19:12:25.789Z",
+    "block": 26443964
+  },
+  "dns.getRecords": {
+    "call": "await ens.dns.getRecords({ name: \"ens.domains\" })",
+    "response": {
+      "resolver": null,
+      "zonehash": null,
+      "records": []
+    },
+    "recordedAt": "2026-11-18T19:12:25.789Z",
+    "block": 26443964
+  },
+  "dns.getStatus": {
+    "call": "await ens.dns.getStatus({ name: \"ens.domains\" })",
+    "response": {
+      "name": "ens.domains",
+      "imported": true,
+      "owner": "0xb8c2C29ee19D8307cb7255e1Cd9CbDE883A267d5",
+      "dnsOwner": "0xb8c2C29ee19D8307cb7255e1Cd9CbDE883A267d5",
+      "proofValid": false,
+      "importedInception": null,
+      "proofInception": 1794939171,
+      "action": "proof-invalid"
+    },
+    "recordedAt": "2026-11-18T19:12:25.789Z",
+    "block": 26443964
+  },
+  "indexer.getEvents": {
+    "call": "await ens.indexer.getEvents({ name: \"ens.eth\", limit: 3 })",
+    "response": {
+      "asOf": {
+        "chainId": 1,
+        "blockNumber": "26443964n",
+        "blockHash": "0xe75c58ea2f28bd7c6cc53c28a5ab4fc02023f3563661f0a7236a36b779e3ac86",
+        "timestamp": "1795029143n"
+      },
+      "snapshots": {
+        "1": {
+          "chainId": 1,
+          "blockNumber": "26443964n",
+          "blockHash": "0xe75c58ea2f28bd7c6cc53c28a5ab4fc02023f3563661f0a7236a36b779e3ac86",
+          "timestamp": "1795029143n"
+        }
+      },
+      "asOfToken": null,
+      "completeness": "full",
+      "unsupportedReason": null,
+      "unsupportedFields": [],
+      "origin": null,
+      "indexer": "bigname",
+      "items": [
+        {
+          "id": "c3632a2b4582290d29bcc6f8c3b3b542664ce1257e2783dd83dcf02554451942",
+          "type": "record",
+          "action": "record_changed",
+          "kind": null,
+          "name": "ens.eth",
+          "namespace": "ens",
+          "subject": null,
+          "registrationId": "04316989-63d2-5789-b7a6-c454b62d0294",
+          "contract": "0x4976fb03C32e5B8cfe2b6cCB31c09Ba78EBaBa41",
+          "blockNumber": "26405156n",
+          "timestamp": "1794562235n",
+          "transactionHash": "0xfc3c4b113b1e57565527d606e84511ee168437c9579f1d7e18ce132b86176687",
+          "logIndex": 434,
+          "data": {
+            "action": "record_changed",
+            "key": "contenthash",
+            "node": "0x4e34d3a81dc3a20f71bbdf2160492ddaa17ee7e5523757d47153379c13cb46df",
+            "resolver": {
+              "address": "0x4976fb03c32e5b8cfe2b6ccb31c09ba78ebaba41",
+              "chainId": 1
+            }
+          }
+        },
+        {
+          "id": "ba6ade15daa5bccf278f9290bfe87e3e673541adf7667e7afb436261a44b4ded",
+          "type": "record",
+          "action": "record_changed",
+          "kind": null,
+          "name": "ens.eth",
+          "namespace": "ens",
+          "subject": null,
+          "registrationId": "04316989-63d2-5789-b7a6-c454b62d0294",
+          "contract": "0x4976fb03C32e5B8cfe2b6cCB31c09Ba78EBaBa41",
+          "blockNumber": "26350975n",
+          "timestamp": "1793909915n",
+          "transactionHash": "0xba75418b56c3b12e2702ad3e4436f799af3d544ddcd1a97d92ad7de7e458c166",
+          "logIndex": 419,
+          "data": {
+            "action": "record_changed",
+            "key": "contenthash",
+            "node": "0x4e34d3a81dc3a20f71bbdf2160492ddaa17ee7e5523757d47153379c13cb46df",
+            "resolver": {
+              "address": "0x4976fb03c32e5b8cfe2b6ccb31c09ba78ebaba41",
+              "chainId": 1
+            }
+          }
+        },
+        {
+          "id": "5bcef94bca0d5de81f752ca12517fbf833d03f1ace6bf1aafd20a561601c3534",
+          "type": "record",
+          "action": "record_changed",
+          "kind": null,
+          "name": "ens.eth",
+          "namespace": "ens",
+          "subject": null,
+          "registrationId": "04316989-63d2-5789-b7a6-c454b62d0294",
+          "contract": "0x4976fb03C32e5B8cfe2b6cCB31c09Ba78EBaBa41",
+          "blockNumber": "26350931n",
+          "timestamp": "1793909387n",
+          "transactionHash": "0x403b425f4242030a1beec24a67240f0fbca92cab8ff0768e0c055bbcbe467f53",
+          "logIndex": 606,
+          "data": {
+            "action": "record_changed",
+            "key": "contenthash",
+            "node": "0x4e34d3a81dc3a20f71bbdf2160492ddaa17ee7e5523757d47153379c13cb46df",
+            "resolver": {
+              "address": "0x4976fb03c32e5b8cfe2b6ccb31c09ba78ebaba41",
+              "chainId": 1
+            }
+          }
+        }
+      ],
+      "cursor": "7b2276657273696f6e223a312c22736f7274223a22636861696e5f706f736974696f6e5f64657363222c2266696c74657273223a7b22686973746f72795f636f6e7472616374223a2232222c226e616d65223a22656e733a307834653334643361383164633361323066373162626466323136303439326464616131376565376535353233373537643437313533333739633133636234366466222c226e616d657370616365223a22656e73227d2c226c6173745f6974656d223a7b22626c6f636b5f68617368223a22307864343233346166643533616636353032356364653662396364323032363136343164656138326661646333393432353833346361346331353733353238356637222c22626c6f636b5f6e756d626572223a223236333530393331222c22636861696e5f6964223a22657468657265756d2d6d61696e6e6574222c226576656e745f6964656e74697479223a22656e735f76315f756e777261707065645f617574686f726974793a31343a657468657265756d2d6d61696e6e65743a3078643432333461666435336166363530323563646536623963643230323631363431646561383266616463333934323538333463613463313537333532383566373a3078343033623432356634323432303330613162656563323461363732343066306662636139326361623866663037363865306330353562626362653436376635333a3630363a5265636f72644368616e6765643a30222c226c6f675f696e646578223a22363036222c227472616e73616374696f6e5f696e646578223a22343038227d2c22736e617073686f74223a6e756c6c7d",
+      "hasMore": true,
+      "totalCount": null
+    },
+    "recordedAt": "2026-11-18T19:12:25.789Z",
+    "block": 26443964
+  },
+  "indexer.getHistory": {
+    "call": "await ens.indexer.getHistory({ name: \"ens.eth\", namespace: \"ens\", limit: 3 })",
+    "response": {
+      "asOf": {
+        "chainId": 1,
+        "blockNumber": "26443964n",
+        "blockHash": "0xe75c58ea2f28bd7c6cc53c28a5ab4fc02023f3563661f0a7236a36b779e3ac86",
+        "timestamp": "1795029143n"
+      },
+      "snapshots": {
+        "1": {
+          "chainId": 1,
+          "blockNumber": "26443964n",
+          "blockHash": "0xe75c58ea2f28bd7c6cc53c28a5ab4fc02023f3563661f0a7236a36b779e3ac86",
+          "timestamp": "1795029143n"
+        }
+      },
+      "asOfToken": null,
+      "completeness": "full",
+      "unsupportedReason": null,
+      "unsupportedFields": [],
+      "origin": null,
+      "indexer": "bigname",
+      "items": [
+        {
+          "id": "c3632a2b4582290d29bcc6f8c3b3b542664ce1257e2783dd83dcf02554451942",
+          "type": "record",
+          "action": "record_changed",
+          "kind": null,
+          "name": "ens.eth",
+          "namespace": "ens",
+          "subject": null,
+          "registrationId": "04316989-63d2-5789-b7a6-c454b62d0294",
+          "contract": "0x4976fb03C32e5B8cfe2b6cCB31c09Ba78EBaBa41",
+          "blockNumber": "26405156n",
+          "timestamp": "1794562235n",
+          "transactionHash": "0xfc3c4b113b1e57565527d606e84511ee168437c9579f1d7e18ce132b86176687",
+          "logIndex": 434,
+          "data": {
+            "action": "record_changed",
+            "key": "contenthash",
+            "node": "0x4e34d3a81dc3a20f71bbdf2160492ddaa17ee7e5523757d47153379c13cb46df",
+            "resolver": {
+              "address": "0x4976fb03c32e5b8cfe2b6ccb31c09ba78ebaba41",
+              "chainId": 1
+            }
+          }
+        },
+        {
+          "id": "ba6ade15daa5bccf278f9290bfe87e3e673541adf7667e7afb436261a44b4ded",
+          "type": "record",
+          "action": "record_changed",
+          "kind": null,
+          "name": "ens.eth",
+          "namespace": "ens",
+          "subject": null,
+          "registrationId": "04316989-63d2-5789-b7a6-c454b62d0294",
+          "contract": "0x4976fb03C32e5B8cfe2b6cCB31c09Ba78EBaBa41",
+          "blockNumber": "26350975n",
+          "timestamp": "1793909915n",
+          "transactionHash": "0xba75418b56c3b12e2702ad3e4436f799af3d544ddcd1a97d92ad7de7e458c166",
+          "logIndex": 419,
+          "data": {
+            "action": "record_changed",
+            "key": "contenthash",
+            "node": "0x4e34d3a81dc3a20f71bbdf2160492ddaa17ee7e5523757d47153379c13cb46df",
+            "resolver": {
+              "address": "0x4976fb03c32e5b8cfe2b6ccb31c09ba78ebaba41",
+              "chainId": 1
+            }
+          }
+        },
+        {
+          "id": "5bcef94bca0d5de81f752ca12517fbf833d03f1ace6bf1aafd20a561601c3534",
+          "type": "record",
+          "action": "record_changed",
+          "kind": null,
+          "name": "ens.eth",
+          "namespace": "ens",
+          "subject": null,
+          "registrationId": "04316989-63d2-5789-b7a6-c454b62d0294",
+          "contract": "0x4976fb03C32e5B8cfe2b6cCB31c09Ba78EBaBa41",
+          "blockNumber": "26350931n",
+          "timestamp": "1793909387n",
+          "transactionHash": "0x403b425f4242030a1beec24a67240f0fbca92cab8ff0768e0c055bbcbe467f53",
+          "logIndex": 606,
+          "data": {
+            "action": "record_changed",
+            "key": "contenthash",
+            "node": "0x4e34d3a81dc3a20f71bbdf2160492ddaa17ee7e5523757d47153379c13cb46df",
+            "resolver": {
+              "address": "0x4976fb03c32e5b8cfe2b6ccb31c09ba78ebaba41",
+              "chainId": 1
+            }
+          }
+        }
+      ],
+      "cursor": "7b2276657273696f6e223a312c22736f7274223a22636861696e5f706f736974696f6e5f64657363222c2266696c74657273223a7b22686973746f72795f636f6e7472616374223a2232222c226e616d65223a22656e733a307834653334643361383164633361323066373162626466323136303439326464616131376565376535353233373537643437313533333739633133636234366466222c226e616d657370616365223a22656e73222c2273636f7065223a22626f7468227d2c226c6173745f6974656d223a7b22626c6f636b5f68617368223a22307864343233346166643533616636353032356364653662396364323032363136343164656138326661646333393432353833346361346331353733353238356637222c22626c6f636b5f6e756d626572223a223236333530393331222c22636861696e5f6964223a22657468657265756d2d6d61696e6e6574222c226576656e745f6964656e74697479223a22656e735f76315f756e777261707065645f617574686f726974793a31343a657468657265756d2d6d61696e6e65743a3078643432333461666435336166363530323563646536623963643230323631363431646561383266616463333934323538333463613463313537333532383566373a3078343033623432356634323432303330613162656563323461363732343066306662636139326361623866663037363865306330353562626362653436376635333a3630363a5265636f72644368616e6765643a30222c226c6f675f696e646578223a22363036222c227472616e73616374696f6e5f696e646578223a22343038227d2c22736e617073686f74223a6e756c6c7d",
+      "hasMore": true,
+      "totalCount": 171
+    },
+    "recordedAt": "2026-11-18T19:12:25.789Z",
+    "block": 26443964
+  },
+  "indexer.getName": {
+    "call": "await ens.indexer.getName({ name: \"ens.eth\", namespace: \"ens\" })",
+    "response": {
+      "name": "ens.eth",
+      "displayName": "ens.eth",
+      "namespace": "ens",
+      "node": "0x4e34d3a81dc3a20f71bbdf2160492ddaa17ee7e5523757d47153379c13cb46df",
+      "status": "active",
+      "authority": "ensV1",
+      "owner": "0x690F0581eCecCf8389c223170778cD9D029606F2",
+      "manager": "0x2d2e339c93dA91682Db720ee73e3c8F854f5F246",
+      "registeredAt": "1580760321n",
+      "createdAt": "1566796141n",
+      "expiresAt": "1919549217n",
+      "graceEndsAt": "1921968417n",
+      "expiryReason": null,
+      "ensV1": {
+        "resolver": {
+          "chainId": 1,
+          "address": "0x4976fb03C32e5B8cfe2b6cCB31c09Ba78EBaBa41"
+        },
+        "expiresAt": "1914192417n",
+        "wrapperState": "unwrapped",
+        "wrapperExpiresAt": null,
+        "wrapperFuses": null
+      },
+      "chainId": 1,
+      "registrationId": "04316989-63d2-5789-b7a6-c454b62d0294",
+      "tokenId": "42033647921836720708986079437023664695436352815832009766988496528855301124570n",
+      "resolver": {
+        "chainId": 1,
+        "address": "0x4976fb03C32e5B8cfe2b6cCB31c09Ba78EBaBa41"
+      },
+      "subregistry": null,
+      "primaryAddress": "0xFe89cc7aBB2C4183683ab71653C4cdc9B02D44b7",
+      "migratedAt": null,
+      "records": {
+        "texts": {
+          "avatar": "https://i.imgur.com/ga6y0c0.jpg",
+          "com.github": "ensdomains",
+          "com.twitter": "ensdomains",
+          "snapshot": "ipns://storage.snapshot.page/registry/0xb6E040C9ECAaE172a89bD561c5F73e1C48d28cd9/ens.eth",
+          "url": "https://ens.domains/"
+        },
+        "addresses": {
+          "60": "0xfe89cc7abb2c4183683ab71653c4cdc9b02d44b7"
+        },
+        "contentHash": "0xe40101fa011b20f5909b5286d9279a1f6a23d5155ddd72bb0f28f56b6b82c32de54a6529e6b1b0",
+        "name": null,
+        "textKeys": ["avatar", "com.github", "com.twitter", "snapshot", "url"],
+        "coinTypes": ["60"]
+      },
+      "recordCount": null,
+      "subnameCount": null,
+      "asOf": {
+        "chainId": 1,
+        "blockNumber": "26443964n",
+        "blockHash": "0xe75c58ea2f28bd7c6cc53c28a5ab4fc02023f3563661f0a7236a36b779e3ac86",
+        "timestamp": "1795029143n"
+      },
+      "snapshots": {
+        "1": {
+          "chainId": 1,
+          "blockNumber": "26443964n",
+          "blockHash": "0xe75c58ea2f28bd7c6cc53c28a5ab4fc02023f3563661f0a7236a36b779e3ac86",
+          "timestamp": "1795029143n"
+        }
+      },
+      "asOfToken": "7b22657468657265756d223a7b22626c6f636b5f68617368223a22307865373563353865613266323862643763366363353363323861356162346663303230323366333536333636316630613732333661333662373739653361633836222c22626c6f636b5f6e756d626572223a32363434333936342c22636861696e5f6964223a22657468657265756d2d6d61696e6e6574222c2274696d657374616d70223a22323032362d31312d31385431393a31323a32335a227d7d",
+      "completeness": "full",
+      "unsupportedReason": null,
+      "unsupportedFields": [],
+      "origin": "indexed",
+      "indexer": "bigname"
+    },
+    "recordedAt": "2026-11-18T19:12:25.789Z",
+    "block": 26443964
+  },
+  "indexer.getNamesForAddress": {
+    "call": "await ens.indexer.getNamesForAddress({ address: \"0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045\", limit: 3 })",
+    "response": {
+      "asOf": {
+        "chainId": 1,
+        "blockNumber": "26443964n",
+        "blockHash": "0xe75c58ea2f28bd7c6cc53c28a5ab4fc02023f3563661f0a7236a36b779e3ac86",
+        "timestamp": "1795029143n"
+      },
+      "snapshots": {
+        "1": {
+          "chainId": 1,
+          "blockNumber": "26443964n",
+          "blockHash": "0xe75c58ea2f28bd7c6cc53c28a5ab4fc02023f3563661f0a7236a36b779e3ac86",
+          "timestamp": "1795029143n"
+        }
+      },
+      "asOfToken": null,
+      "completeness": "full",
+      "unsupportedReason": null,
+      "unsupportedFields": [],
+      "origin": null,
+      "indexer": "bigname",
+      "items": [
+        {
+          "name": "$ethereum.eth",
+          "displayName": "$ethereum.eth",
+          "namespace": "ens",
+          "node": "0x19dcf664810b0725d51d9e71dd02c5be734f14803394fb2d5574dfb8efd402a7",
+          "status": "active",
+          "authority": "ensV1",
+          "owner": "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045",
+          "manager": "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045",
+          "registeredAt": "1715951615n",
+          "createdAt": "1659177236n",
+          "expiresAt": "1815916415n",
+          "graceEndsAt": "1818335615n",
+          "expiryReason": null,
+          "ensV1": {
+            "resolver": {
+              "chainId": 1,
+              "address": "0x231b0Ee14048e9dCcD1d247744d114a4EB5E8E63"
+            },
+            "expiresAt": "1810559615n",
+            "wrapperState": "locked",
+            "wrapperExpiresAt": "1818335615n",
+            "wrapperFuses": 196609
+          },
+          "relations": ["owner", "manager"],
+          "isPrimary": false,
+          "migratedAt": null,
+          "recordCount": null,
+          "subnameCount": null
+        },
+        {
+          "name": "$tmnt.eth",
+          "displayName": "$tmnt.eth",
+          "namespace": "ens",
+          "node": "0x0b6f1e9f5b9f267f7d9b57fad7971998a4710835d0c9007a02edc5d0f59c7960",
+          "status": "active",
+          "authority": "ensV1",
+          "owner": "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045",
+          "manager": "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045",
+          "registeredAt": "1750871663n",
+          "createdAt": "1703971235n",
+          "expiresAt": "1819300463n",
+          "graceEndsAt": "1821719663n",
+          "expiryReason": null,
+          "ensV1": {
+            "resolver": {
+              "chainId": 1,
+              "address": "0x231b0Ee14048e9dCcD1d247744d114a4EB5E8E63"
+            },
+            "expiresAt": "1813943663n",
+            "wrapperState": "emancipated",
+            "wrapperExpiresAt": "1821719663n",
+            "wrapperFuses": 196608
+          },
+          "relations": ["owner", "manager"],
+          "isPrimary": false,
+          "migratedAt": null,
+          "recordCount": null,
+          "subnameCount": null
+        },
+        {
+          "name": "0x2cd.eth",
+          "displayName": "0x2cd.eth",
+          "namespace": "ens",
+          "node": "0x017e683f998ef30ad2d628fa36ade474ef6f40aa8fa042d87e41730273a7145c",
+          "status": "active",
+          "authority": "ensV1",
+          "owner": "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045",
+          "manager": "0x32869721EF080442ec128FC1ddb6673006bc5aa9",
+          "registeredAt": "1651234372n",
+          "createdAt": "1651234372n",
+          "expiresAt": "1845932884n",
+          "graceEndsAt": "1848352084n",
+          "expiryReason": null,
+          "ensV1": {
+            "resolver": {
+              "chainId": 1,
+              "address": "0x4976fb03C32e5B8cfe2b6cCB31c09Ba78EBaBa41"
+            },
+            "expiresAt": "1840576084n",
+            "wrapperState": "unwrapped",
+            "wrapperExpiresAt": null,
+            "wrapperFuses": null
+          },
+          "relations": ["owner"],
+          "isPrimary": false,
+          "migratedAt": null,
+          "recordCount": null,
+          "subnameCount": null
+        }
+      ],
+      "cursor": "7b2276657273696f6e223a312c22736f7274223a226e616d65222c2266696c74657273223a7b2261646472657373223a22307864386461366266323639363461663964376565643965303365353334313564333761613936303435222c22617574686f72697479223a22222c22646564757065223a226e616d65222c2269735f6d69677261746564223a22222c226e616d657370616365223a22222c226f72646572223a22617363222c2271223a22222c2272656c6174696f6e223a22227d2c226c6173745f6974656d223a7b226c6f676963616c5f6e616d655f6964223a22656e733a307830313765363833663939386566333061643264363238666133366164653437346566366634306161386661303432643837653431373330323733613731343563222c227265736f757263655f6964223a2232643539636630332d613131382d353862372d623264382d373033646561653936316336222c22736f72745f6b696e64223a226e616d65222c22736f72745f76616c7565223a2230783263642e657468227d2c22736e617073686f74223a6e756c6c7d",
+      "hasMore": true,
+      "totalCount": 90
+    },
+    "recordedAt": "2026-11-18T19:12:25.789Z",
+    "block": 26443964
+  },
+  "indexer.getNamespace": {
+    "call": "await ens.indexer.getNamespace({ namespace: \"ens\" })",
+    "response": {
+      "namespace": "ens",
+      "capabilities": {
+        "name_history": "full",
+        "name_profile": "full",
+        "subnames": "full",
+        "verified_primary_name": "full",
+        "verified_records": "full"
+      },
+      "networks": [
+        {
+          "network": "ethereum",
+          "chainId": 1,
+          "protocol": "ensV2",
+          "sinceBlock": "26183742n"
+        }
+      ],
+      "asOf": null,
+      "snapshots": {},
+      "asOfToken": null,
+      "completeness": "full",
+      "unsupportedReason": null,
+      "unsupportedFields": [],
+      "origin": null,
+      "indexer": "bigname"
+    },
+    "recordedAt": "2026-11-18T19:12:25.789Z",
+    "block": 26443964
+  },
+  "indexer.getPermissions": {
+    "call": "await ens.indexer.getPermissions({ name: \"ens.eth\", limit: 3 })",
+    "response": {
+      "asOf": {
+        "chainId": 1,
+        "blockNumber": "26443964n",
+        "blockHash": "0xe75c58ea2f28bd7c6cc53c28a5ab4fc02023f3563661f0a7236a36b779e3ac86",
+        "timestamp": "1795029143n"
+      },
+      "snapshots": {
+        "1": {
+          "chainId": 1,
+          "blockNumber": "26443964n",
+          "blockHash": "0xe75c58ea2f28bd7c6cc53c28a5ab4fc02023f3563661f0a7236a36b779e3ac86",
+          "timestamp": "1795029143n"
+        }
+      },
+      "asOfToken": null,
+      "completeness": "partial",
+      "unsupportedReason": "permissions_partially_listed",
+      "unsupportedFields": [],
+      "origin": null,
+      "indexer": "bigname",
+      "items": [
+        {
+          "address": "0x2d2e339c93dA91682Db720ee73e3c8F854f5F246",
+          "name": "ens.eth",
+          "registrationId": "4f225413-df3a-50b3-832a-1b91e29b6a9c",
+          "powers": ["resolver_control"],
+          "scope": "resolver",
+          "relation": null,
+          "wrapperState": null,
+          "lineage": null
+        },
+        {
+          "address": "0x2d2e339c93dA91682Db720ee73e3c8F854f5F246",
+          "name": "ens.eth",
+          "registrationId": "4f225413-df3a-50b3-832a-1b91e29b6a9c",
+          "powers": ["registration_control"],
+          "scope": "registration",
+          "relation": null,
+          "wrapperState": null,
+          "lineage": null
+        }
+      ],
+      "cursor": null,
+      "hasMore": false,
+      "totalCount": null
+    },
+    "recordedAt": "2026-11-18T19:12:25.789Z",
+    "block": 26443964
+  },
+  "indexer.getPrimaryName": {
+    "call": "await ens.indexer.getPrimaryName({ address: \"0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045\" })",
+    "response": {
+      "address": "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045",
+      "coinType": 60,
+      "namespace": "ens",
+      "name": "vitalik.eth",
+      "source": "verified",
+      "answers": [
+        {
+          "source": "indexed",
+          "status": "notFound",
+          "name": null,
+          "reason": null
+        },
+        {
+          "source": "verified",
+          "status": "ok",
+          "name": "vitalik.eth",
+          "reason": null
+        }
+      ],
+      "asOf": {
+        "chainId": 1,
+        "blockNumber": "26443964n",
+        "blockHash": "0xe75c58ea2f28bd7c6cc53c28a5ab4fc02023f3563661f0a7236a36b779e3ac86",
+        "timestamp": "1795029143n"
+      },
+      "snapshots": {
+        "1": {
+          "chainId": 1,
+          "blockNumber": "26443964n",
+          "blockHash": "0xe75c58ea2f28bd7c6cc53c28a5ab4fc02023f3563661f0a7236a36b779e3ac86",
+          "timestamp": "1795029143n"
+        }
+      },
+      "asOfToken": "7b22657468657265756d223a7b22626c6f636b5f68617368223a22307865373563353865613266323862643763366363353363323861356162346663303230323366333536333636316630613732333661333662373739653361633836222c22626c6f636b5f6e756d626572223a32363434333936342c22636861696e5f6964223a22657468657265756d2d6d61696e6e6574222c2274696d657374616d70223a22323032362d31312d31385431393a31323a32335a227d7d",
+      "completeness": "full",
+      "unsupportedReason": null,
+      "unsupportedFields": [],
+      "origin": null,
+      "indexer": "bigname"
+    },
+    "recordedAt": "2026-11-18T19:12:25.789Z",
+    "block": 26443964
+  },
+  "indexer.getRecords": {
+    "call": "await ens.indexer.getRecords({ name: \"ens.eth\", namespace: \"ens\" })",
+    "response": {
+      "namespace": "ens",
+      "resolver": {
+        "chainId": 1,
+        "address": "0x4976fb03C32e5B8cfe2b6cCB31c09Ba78EBaBa41"
+      },
+      "texts": {
+        "avatar": "https://i.imgur.com/ga6y0c0.jpg",
+        "com.github": "ensdomains",
+        "com.twitter": "ensdomains",
+        "snapshot": "ipns://storage.snapshot.page/registry/0xb6E040C9ECAaE172a89bD561c5F73e1C48d28cd9/ens.eth",
+        "url": "https://ens.domains/"
+      },
+      "addresses": {
+        "60": "0xfe89cc7abb2c4183683ab71653c4cdc9b02d44b7"
+      },
+      "contentHash": "0xe40101fa011b20f5909b5286d9279a1f6a23d5155ddd72bb0f28f56b6b82c32de54a6529e6b1b0",
+      "answers": {
+        "addr:60": {
+          "status": "ok",
+          "value": "0xfe89cc7abb2c4183683ab71653c4cdc9b02d44b7",
+          "reason": null
+        },
+        "contenthash": {
+          "status": "ok",
+          "value": "0xe40101fa011b20f5909b5286d9279a1f6a23d5155ddd72bb0f28f56b6b82c32de54a6529e6b1b0",
+          "reason": null
+        },
+        "text:avatar": {
+          "status": "ok",
+          "value": "https://i.imgur.com/ga6y0c0.jpg",
+          "reason": null
+        },
+        "text:com.github": {
+          "status": "ok",
+          "value": "ensdomains",
+          "reason": null
+        },
+        "text:com.twitter": {
+          "status": "ok",
+          "value": "ensdomains",
+          "reason": null
+        },
+        "text:snapshot": {
+          "status": "ok",
+          "value": "ipns://storage.snapshot.page/registry/0xb6E040C9ECAaE172a89bD561c5F73e1C48d28cd9/ens.eth",
+          "reason": null
+        },
+        "text:url": {
+          "status": "ok",
+          "value": "https://ens.domains/",
+          "reason": null
+        }
+      },
+      "inventory": {
+        "keys": [
+          "addr:60",
+          "contenthash",
+          "text:avatar",
+          "text:com.github",
+          "text:com.twitter",
+          "text:snapshot",
+          "text:url"
+        ],
+        "unsetKeys": [],
+        "unsupportedKeys": []
+      },
+      "asOf": {
+        "chainId": 1,
+        "blockNumber": "26443964n",
+        "blockHash": "0xe75c58ea2f28bd7c6cc53c28a5ab4fc02023f3563661f0a7236a36b779e3ac86",
+        "timestamp": "1795029143n"
+      },
+      "snapshots": {
+        "1": {
+          "chainId": 1,
+          "blockNumber": "26443964n",
+          "blockHash": "0xe75c58ea2f28bd7c6cc53c28a5ab4fc02023f3563661f0a7236a36b779e3ac86",
+          "timestamp": "1795029143n"
+        }
+      },
+      "asOfToken": "7b22657468657265756d223a7b22626c6f636b5f68617368223a22307865373563353865613266323862643763366363353363323861356162346663303230323366333536333636316630613732333661333662373739653361633836222c22626c6f636b5f6e756d626572223a32363434333936342c22636861696e5f6964223a22657468657265756d2d6d61696e6e6574222c2274696d657374616d70223a22323032362d31312d31385431393a31323a32335a227d7d",
+      "completeness": "full",
+      "unsupportedReason": null,
+      "unsupportedFields": [],
+      "origin": "indexed",
+      "indexer": "bigname"
+    },
+    "recordedAt": "2026-11-18T19:12:25.789Z",
+    "block": 26443964
+  },
+  "indexer.getRegistry": {
+    "call": "await ens.indexer.getRegistry({ address: \"0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e\", chainId: 1 })",
+    "response": {
+      "chainId": 1,
+      "address": "0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e",
+      "name": "wh1tehat.eth",
+      "parent": {
+        "chainId": 1,
+        "address": "0xf60aba43E1f7F3DAB1186Ff03B561401C9Df85E2"
+      },
+      "createdAt": "1794139355n",
+      "createdBlockNumber": "26370025n",
+      "createdTransactionHash": "0xcd43345f1d89446fcf0f8d088a8b0d2f8d15e5a188fadee5000d4781c3ae7669",
+      "counts": {
+        "labels": null,
+        "roles": null,
+        "events": null
+      },
+      "referencedBy": ["wh1tehat.eth"],
+      "asOf": {
+        "chainId": 1,
+        "blockNumber": "26443964n",
+        "blockHash": "0xe75c58ea2f28bd7c6cc53c28a5ab4fc02023f3563661f0a7236a36b779e3ac86",
+        "timestamp": "1795029143n"
+      },
+      "snapshots": {
+        "1": {
+          "chainId": 1,
+          "blockNumber": "26443964n",
+          "blockHash": "0xe75c58ea2f28bd7c6cc53c28a5ab4fc02023f3563661f0a7236a36b779e3ac86",
+          "timestamp": "1795029143n"
+        }
+      },
+      "asOfToken": "7b22657468657265756d223a7b22626c6f636b5f68617368223a22307865373563353865613266323862643763366363353363323861356162346663303230323366333536333636316630613732333661333662373739653361633836222c22626c6f636b5f6e756d626572223a32363434333936342c22636861696e5f6964223a22657468657265756d2d6d61696e6e6574222c2274696d657374616d70223a22323032362d31312d31385431393a31323a32335a227d7d",
+      "completeness": "full",
+      "unsupportedReason": null,
+      "unsupportedFields": [],
+      "origin": null,
+      "indexer": "bigname"
+    },
+    "recordedAt": "2026-11-18T19:12:25.789Z",
+    "block": 26443964
+  },
+  "indexer.getRegistryLabels": {
+    "call": "await ens.indexer.getRegistryLabels({ address: \"0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e\", chainId: 1, limit: 3 })",
+    "response": {
+      "asOf": {
+        "chainId": 1,
+        "blockNumber": "26443964n",
+        "blockHash": "0xe75c58ea2f28bd7c6cc53c28a5ab4fc02023f3563661f0a7236a36b779e3ac86",
+        "timestamp": "1795029143n"
+      },
+      "snapshots": {
+        "1": {
+          "chainId": 1,
+          "blockNumber": "26443964n",
+          "blockHash": "0xe75c58ea2f28bd7c6cc53c28a5ab4fc02023f3563661f0a7236a36b779e3ac86",
+          "timestamp": "1795029143n"
+        }
+      },
+      "asOfToken": null,
+      "completeness": "full",
+      "unsupportedReason": null,
+      "unsupportedFields": [],
+      "origin": null,
+      "indexer": "bigname",
+      "items": [],
+      "cursor": null,
+      "hasMore": false,
+      "totalCount": 0
+    },
+    "recordedAt": "2026-11-18T19:12:25.789Z",
+    "block": 26443964
+  },
+  "indexer.getResolver": {
+    "call": "await ens.indexer.getResolver({ address: \"0xF29100983E058B709F3D539b0c765937B804AC15\", chainId: 1, limit: 3 })",
+    "response": {
+      "chainId": 1,
+      "address": "0xF29100983E058B709F3D539b0c765937B804AC15",
+      "names": ["$$$$$$$$$$$.eth", "$-$-$.eth", "$$0$$.eth"],
+      "cursor": "7b2276657273696f6e223a312c22736f7274223a226e616d655f617363222c2266696c74657273223a7b22636861696e5f6964223a2231222c226e616d657370616365223a22222c227265736f6c766572223a22307866323931303039383365303538623730396633643533396230633736353933376238303461633135227d2c226c6173745f6974656d223a7b226e616d6568617368223a22307834356637383564353561643462313234613366356231653865376238353661363438623838376261386462653961613166313437393962373533636663633037222c226e616d657370616365223a22656e73222c226f726465725f6e616d65223a2224243024242e657468222c22736f72745f76616c7565223a2224243024242e657468227d2c22736e617073686f74223a6e756c6c7d",
+      "hasMore": true,
+      "mirrors": null,
+      "asOf": {
+        "chainId": 1,
+        "blockNumber": "26443964n",
+        "blockHash": "0xe75c58ea2f28bd7c6cc53c28a5ab4fc02023f3563661f0a7236a36b779e3ac86",
+        "timestamp": "1795029143n"
+      },
+      "snapshots": {
+        "1": {
+          "chainId": 1,
+          "blockNumber": "26443964n",
+          "blockHash": "0xe75c58ea2f28bd7c6cc53c28a5ab4fc02023f3563661f0a7236a36b779e3ac86",
+          "timestamp": "1795029143n"
+        }
+      },
+      "asOfToken": "7b22657468657265756d223a7b22626c6f636b5f68617368223a22307865373563353865613266323862643763366363353363323861356162346663303230323366333536333636316630613732333661333662373739653361633836222c22626c6f636b5f6e756d626572223a32363434333936342c22636861696e5f6964223a22657468657265756d2d6d61696e6e6574222c2274696d657374616d70223a22323032362d31312d31385431393a31323a32335a227d7d",
+      "completeness": "full",
+      "unsupportedReason": null,
+      "unsupportedFields": [],
+      "origin": null,
+      "indexer": "bigname"
+    },
+    "recordedAt": "2026-11-18T19:12:25.789Z",
+    "block": 26443964
+  },
+  "indexer.getResolverLinks": {
+    "call": "await ens.indexer.getResolverLinks({ address: \"0xF29100983E058B709F3D539b0c765937B804AC15\", chainId: 1, limit: 3 })",
+    "response": {
+      "asOf": {
+        "chainId": 1,
+        "blockNumber": "26443964n",
+        "blockHash": "0xe75c58ea2f28bd7c6cc53c28a5ab4fc02023f3563661f0a7236a36b779e3ac86",
+        "timestamp": "1795029143n"
+      },
+      "snapshots": {
+        "1": {
+          "chainId": 1,
+          "blockNumber": "26443964n",
+          "blockHash": "0xe75c58ea2f28bd7c6cc53c28a5ab4fc02023f3563661f0a7236a36b779e3ac86",
+          "timestamp": "1795029143n"
+        }
+      },
+      "asOfToken": "7b22657468657265756d223a7b22626c6f636b5f68617368223a22307865373563353865613266323862643763366363353363323861356162346663303230323366333536333636316630613732333661333662373739653361633836222c22626c6f636b5f6e756d626572223a32363434333936342c22636861696e5f6964223a22657468657265756d2d6d61696e6e6574222c2274696d657374616d70223a22323032362d31312d31385431393a31323a32335a227d7d",
+      "completeness": "unsupported",
+      "unsupportedReason": "record_links_not_applicable",
+      "unsupportedFields": ["links"],
+      "origin": null,
+      "indexer": "bigname",
+      "items": [],
+      "cursor": null,
+      "hasMore": false,
+      "totalCount": null
+    },
+    "recordedAt": "2026-11-18T19:12:25.789Z",
+    "block": 26443964
+  },
+  "indexer.getResolverRoles": {
+    "call": "await ens.indexer.getResolverRoles({ address: \"0xF29100983E058B709F3D539b0c765937B804AC15\", chainId: 1, limit: 3 })",
+    "response": {
+      "asOf": {
+        "chainId": 1,
+        "blockNumber": "26443964n",
+        "blockHash": "0xe75c58ea2f28bd7c6cc53c28a5ab4fc02023f3563661f0a7236a36b779e3ac86",
+        "timestamp": "1795029143n"
+      },
+      "snapshots": {
+        "1": {
+          "chainId": 1,
+          "blockNumber": "26443964n",
+          "blockHash": "0xe75c58ea2f28bd7c6cc53c28a5ab4fc02023f3563661f0a7236a36b779e3ac86",
+          "timestamp": "1795029143n"
+        }
+      },
+      "asOfToken": "7b22657468657265756d223a7b22626c6f636b5f68617368223a22307865373563353865613266323862643763366363353363323861356162346663303230323366333536333636316630613732333661333662373739653361633836222c22626c6f636b5f6e756d626572223a32363434333936342c22636861696e5f6964223a22657468657265756d2d6d61696e6e6574222c2274696d657374616d70223a22323032362d31312d31385431393a31323a32335a227d7d",
+      "completeness": "unsupported",
+      "unsupportedReason": "binding_enumeration_not_supported",
+      "unsupportedFields": ["roles"],
+      "origin": null,
+      "indexer": "bigname",
+      "items": [],
+      "cursor": null,
+      "hasMore": false,
+      "totalCount": null
+    },
+    "recordedAt": "2026-11-18T19:12:25.789Z",
+    "block": 26443964
+  },
+  "indexer.getResolvers": {
+    "call": "await ens.indexer.getResolvers({ roleHolder: \"0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045\", limit: 3 })",
+    "response": {
+      "asOf": {
+        "chainId": 1,
+        "blockNumber": "26443964n",
+        "blockHash": "0xe75c58ea2f28bd7c6cc53c28a5ab4fc02023f3563661f0a7236a36b779e3ac86",
+        "timestamp": "1795029143n"
+      },
+      "snapshots": {
+        "1": {
+          "chainId": 1,
+          "blockNumber": "26443964n",
+          "blockHash": "0xe75c58ea2f28bd7c6cc53c28a5ab4fc02023f3563661f0a7236a36b779e3ac86",
+          "timestamp": "1795029143n"
+        }
+      },
+      "asOfToken": null,
+      "completeness": "full",
+      "unsupportedReason": null,
+      "unsupportedFields": [],
+      "origin": null,
+      "indexer": "bigname",
+      "items": [],
+      "cursor": null,
+      "hasMore": false,
+      "totalCount": null
+    },
+    "recordedAt": "2026-11-18T19:12:25.789Z",
+    "block": 26443964
+  },
+  "indexer.getStatus": {
+    "call": "await ens.indexer.getStatus({})",
+    "response": {
+      "status": "ready",
+      "chains": {
+        "1": {
+          "status": "ready",
+          "indexed": "26443964n",
+          "latest": "26443965n",
+          "safe": "26443916n",
+          "finalized": "26443884n",
+          "lagBlocks": 1,
+          "lagSeconds": 12
+        }
+      },
+      "indexer": "bigname"
+    },
+    "recordedAt": "2026-11-18T19:12:25.789Z",
+    "block": 26443964
+  },
+  "indexer.getSubnames": {
+    "call": "await ens.indexer.getSubnames({ name: \"ens.eth\", namespace: \"ens\", limit: 3 })",
+    "response": {
+      "asOf": {
+        "chainId": 1,
+        "blockNumber": "26443964n",
+        "blockHash": "0xe75c58ea2f28bd7c6cc53c28a5ab4fc02023f3563661f0a7236a36b779e3ac86",
+        "timestamp": "1795029143n"
+      },
+      "snapshots": {
+        "1": {
+          "chainId": 1,
+          "blockNumber": "26443964n",
+          "blockHash": "0xe75c58ea2f28bd7c6cc53c28a5ab4fc02023f3563661f0a7236a36b779e3ac86",
+          "timestamp": "1795029143n"
+        }
+      },
+      "asOfToken": null,
+      "completeness": "full",
+      "unsupportedReason": null,
+      "unsupportedFields": [],
+      "origin": null,
+      "indexer": "bigname",
+      "items": [
+        {
+          "name": "app.ens.eth",
+          "displayName": "app.ens.eth",
+          "namespace": "ens",
+          "node": "0x50a74dcf107973068dfc00db69ecf98b49d52f5361cb4db5feb740fc9f4f74d1",
+          "status": "active",
+          "authority": "ensV1",
+          "owner": "0xb6E040C9ECAaE172a89bD561c5F73e1C48d28cd9",
+          "manager": "0xb6E040C9ECAaE172a89bD561c5F73e1C48d28cd9",
+          "registeredAt": null,
+          "createdAt": "1611624962n",
+          "expiresAt": null,
+          "graceEndsAt": null,
+          "expiryReason": null,
+          "ensV1": {
+            "resolver": {
+              "chainId": 1,
+              "address": "0x4976fb03C32e5B8cfe2b6cCB31c09Ba78EBaBa41"
+            },
+            "expiresAt": null,
+            "wrapperState": "unwrapped",
+            "wrapperExpiresAt": null,
+            "wrapperFuses": null
+          },
+          "labelhash": "0xd6f028ca0e8edb4a8c9757ca4fdccab25fa1e0317da1188108f7d2dee14902fb",
+          "subnameCount": null,
+          "subregistry": null
+        },
+        {
+          "name": "attestations.ens.eth",
+          "displayName": "attestations.ens.eth",
+          "namespace": "ens",
+          "node": "0x9e5c7a2f2ab8b565c6d2c4851a73decb53d1f6a23c97a2b5b66f21d8ace1bbd5",
+          "status": "active",
+          "authority": "ensV1",
+          "owner": "0xb6E040C9ECAaE172a89bD561c5F73e1C48d28cd9",
+          "manager": "0xb6E040C9ECAaE172a89bD561c5F73e1C48d28cd9",
+          "registeredAt": null,
+          "createdAt": "1744877879n",
+          "expiresAt": null,
+          "graceEndsAt": null,
+          "expiryReason": null,
+          "ensV1": {
+            "resolver": {
+              "chainId": 1,
+              "address": "0x231b0Ee14048e9dCcD1d247744d114a4EB5E8E63"
+            },
+            "expiresAt": null,
+            "wrapperState": "unwrapped",
+            "wrapperExpiresAt": null,
+            "wrapperFuses": null
+          },
+          "labelhash": "0x14a804be56ac3478cdc58c820cb1271d39e4a2511f4c5aec7d2c25d624f24918",
+          "subnameCount": null,
+          "subregistry": null
+        },
+        {
+          "name": "coldwallet.ens.eth",
+          "displayName": "coldwallet.ens.eth",
+          "namespace": "ens",
+          "node": "0xc867d2bd24b8a88c7d5d416dfab28fec6858b5a86f3a1c94faeab450c34023f6",
+          "status": "active",
+          "authority": "ensV1",
+          "owner": "0x690F0581eCecCf8389c223170778cD9D029606F2",
+          "manager": "0x690F0581eCecCf8389c223170778cD9D029606F2",
+          "registeredAt": null,
+          "createdAt": "1614125684n",
+          "expiresAt": null,
+          "graceEndsAt": null,
+          "expiryReason": null,
+          "ensV1": {
+            "resolver": {
+              "chainId": 1,
+              "address": "0x4976fb03C32e5B8cfe2b6cCB31c09Ba78EBaBa41"
+            },
+            "expiresAt": null,
+            "wrapperState": "unwrapped",
+            "wrapperExpiresAt": null,
+            "wrapperFuses": null
+          },
+          "labelhash": "0x7d044acfeccf1426368be42c96e62a4cf73d3ea32c44c023cffe9c50ca329c62",
+          "subnameCount": null,
+          "subregistry": null
+        }
+      ],
+      "cursor": "7b2276657273696f6e223a312c22736f7274223a226e616d65222c2266696c74657273223a7b22696e636c7564655f65787069726564223a2274727565222c226e616d657370616365223a22656e73222c226f72646572223a22617363222c22706172656e74223a22656e733a307834653334643361383164633361323066373162626466323136303439326464616131376565376535353233373537643437313533333739633133636234366466222c2271223a22227d2c226c6173745f6974656d223a7b226368696c645f6c6f676963616c5f6e616d655f6964223a22656e733a307863383637643262643234623861383863376435643431366466616232386665633638353862356138366633613163393466616561623435306333343032336636222c22646973706c61795f6e616d65223a22636f6c6477616c6c65742e656e732e657468222c22736f72745f6b696e64223a226e616d65222c22736f72745f76616c7565223a22227d2c22736e617073686f74223a6e756c6c7d",
+      "hasMore": true,
+      "totalCount": 23
+    },
+    "recordedAt": "2026-11-18T19:12:25.789Z",
+    "block": 26443964
+  },
+  "indexer.lookup": {
+    "call": "await ens.indexer.lookup({ inputs: [\"nick.eth\", \"vitalik.eth\"] })",
+    "response": {
+      "results": [
+        {
+          "input": "nick.eth",
+          "kind": "name",
+          "status": "ok",
+          "name": {
+            "name": "nick.eth",
+            "displayName": "nick.eth",
+            "namespace": "ens",
+            "node": "0x05a67c0ee82964c4f7394cdd47fee7f4d9503a23c09c38341779ea012afe6e00",
+            "status": "active",
+            "authority": "ensV2",
+            "owner": "0xb8c2C29ee19D8307cb7255e1Cd9CbDE883A267d5",
+            "manager": "0xb8c2C29ee19D8307cb7255e1Cd9CbDE883A267d5",
+            "registeredAt": "1600896646n",
+            "createdAt": "1571924851n",
+            "expiresAt": "2051983306n",
+            "graceEndsAt": "2054402506n",
+            "expiryReason": null,
+            "ensV1": null,
+            "chainId": 1,
+            "registrationId": "0cf467d0-e851-5285-bf04-bcab99cab4da",
+            "tokenId": "42219085255511335250589442208301538195142221433306354426240614732610656010240n",
+            "resolver": {
+              "chainId": 1,
+              "address": "0xF4f1007EA430848F2fAd60e405A54Fc100fEc341"
+            },
+            "subregistry": {
+              "chainId": 1,
+              "address": "0x02cA46F62f6C9F655364bf9Fd4f11Fb8f01C5753"
+            },
+            "primaryAddress": "0xb8c2C29ee19D8307cb7255e1Cd9CbDE883A267d5",
+            "migratedAt": "1793114183n",
+            "records": {
+              "texts": {
+                "avatar": "https://euc.li/nick.eth",
+                "com.discord": "nickjohnson",
+                "com.github": "arachnid",
+                "com.reddit": "nickjohnson",
+                "com.twitter": "nicksdjohnson",
+                "description": "Lead developer of ENS & Ethereum Foundation alum. Certified rat tickler. he/him.",
+                "email": "arachnid@notdot.net",
+                "eth.ens.delegate": "https://discuss.ens.domains/t/ens-dao-delegate-applications/815/716",
+                "org.telegram": "nicksdjohnson",
+                "snapshot": "ipns://storage.snapshot.page/registry/0xb8c2C29ee19D8307cb7255e1Cd9CbDE883A267d5/nick.eth",
+                "url": "https://ens.domains/"
+              },
+              "addresses": {
+                "60": "0xb8c2c29ee19d8307cb7255e1cd9cbde883a267d5"
+              },
+              "contentHash": "0xe5010172002408011220066e20f72cc583d769bc8df5fedff24942b3b8941e827f023d306bdc7aecf5ac",
+              "name": null,
+              "textKeys": [
+                "avatar",
+                "com.discord",
+                "com.github",
+                "com.reddit",
+                "com.twitter",
+                "description",
+                "email",
+                "eth.ens.delegate",
+                "org.telegram",
+                "snapshot",
+                "url"
+              ],
+              "coinTypes": ["60"]
+            },
+            "recordCount": null,
+            "subnameCount": null,
+            "isPrimary": null
+          },
+          "names": [],
+          "reason": null
+        },
+        {
+          "input": "vitalik.eth",
+          "kind": "name",
+          "status": "ok",
+          "name": {
+            "name": "vitalik.eth",
+            "displayName": "vitalik.eth",
+            "namespace": "ens",
+            "node": "0xee6c4522aab0003e8d14cd40a6af439055fd2577951148c14b6cea9a53475835",
+            "status": "active",
+            "authority": "ensV1",
+            "owner": "0x220866B1A2219f40e72f5c628B65D54268cA3A9D",
+            "manager": "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045",
+            "registeredAt": "1581013420n",
+            "createdAt": "1497775154n",
+            "expiresAt": "2469399224n",
+            "graceEndsAt": "2471818424n",
+            "expiryReason": null,
+            "ensV1": {
+              "resolver": {
+                "chainId": 1,
+                "address": "0x231b0Ee14048e9dCcD1d247744d114a4EB5E8E63"
+              },
+              "expiresAt": "2464042424n",
+              "wrapperState": "unwrapped",
+              "wrapperExpiresAt": null,
+              "wrapperFuses": null
+            },
+            "chainId": 1,
+            "registrationId": "1e452d59-7d47-54a4-adfa-80a8ed0c09d2",
+            "tokenId": "79233663829379634837589865448569342784712482819484549289560981379859480642508n",
+            "resolver": {
+              "chainId": 1,
+              "address": "0x231b0Ee14048e9dCcD1d247744d114a4EB5E8E63"
+            },
+            "subregistry": null,
+            "primaryAddress": "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045",
+            "migratedAt": null,
+            "records": {
+              "texts": {
+                "avatar": "https://euc.li/vitalik.eth",
+                "com.github": "vbuterin",
+                "com.twitter": "VitalikButerin",
+                "description": "mi pinxe lo crino tcati",
+                "header": "https://pbs.twimg.com/profile_banners/295218901/1638557376/1500x500",
+                "pgp": "527E406252E06A11416D7487698FEAC70F922A21",
+                "url": "https://vitalik.ca"
+              },
+              "addresses": {
+                "60": "0xd8da6bf26964af9d7eed9e03e53415d37aa96045"
+              },
+              "contentHash": "0xe301017012201d261cc098861d9952e6c8954801800e56aa34aabd8a9651b04b4e2498a45c53",
+              "name": null,
+              "textKeys": [
+                "avatar",
+                "com.github",
+                "com.twitter",
+                "description",
+                "header",
+                "pgp",
+                "url"
+              ],
+              "coinTypes": ["60"]
+            },
+            "recordCount": null,
+            "subnameCount": null,
+            "isPrimary": null
+          },
+          "names": [],
+          "reason": null
+        }
+      ],
+      "asOf": {
+        "chainId": 1,
+        "blockNumber": "26443965n",
+        "blockHash": "0xc9de37cc3c9ec10dde4ac1f9abcd65d3dca66f5c50f248ff60d142bb09e0e52a",
+        "timestamp": "1795029155n"
+      },
+      "snapshots": {
+        "1": {
+          "chainId": 1,
+          "blockNumber": "26443965n",
+          "blockHash": "0xc9de37cc3c9ec10dde4ac1f9abcd65d3dca66f5c50f248ff60d142bb09e0e52a",
+          "timestamp": "1795029155n"
+        }
+      },
+      "asOfToken": "7b22657468657265756d223a7b22626c6f636b5f68617368223a22307863396465333763633363396563313064646534616331663961626364363564336463613636663563353066323438666636306431343262623039653065353261222c22626c6f636b5f6e756d626572223a32363434333936352c22636861696e5f6964223a22657468657265756d2d6d61696e6e6574222c2274696d657374616d70223a22323032362d31312d31385431393a31323a33355a227d7d",
+      "completeness": "full",
+      "unsupportedReason": null,
+      "unsupportedFields": [],
+      "origin": null,
+      "indexer": "bigname"
+    },
+    "recordedAt": "2026-11-18T19:12:25.789Z",
+    "block": 26443964
+  },
+  "indexer.search": {
+    "call": "await ens.indexer.search({ query: \"nick\", limit: 3 })",
+    "response": {
+      "asOf": {
+        "chainId": 1,
+        "blockNumber": "26443964n",
+        "blockHash": "0xe75c58ea2f28bd7c6cc53c28a5ab4fc02023f3563661f0a7236a36b779e3ac86",
+        "timestamp": "1795029143n"
+      },
+      "snapshots": {
+        "1": {
+          "chainId": 1,
+          "blockNumber": "26443964n",
+          "blockHash": "0xe75c58ea2f28bd7c6cc53c28a5ab4fc02023f3563661f0a7236a36b779e3ac86",
+          "timestamp": "1795029143n"
+        }
+      },
+      "asOfToken": null,
+      "completeness": "full",
+      "unsupportedReason": null,
+      "unsupportedFields": [],
+      "origin": null,
+      "indexer": "bigname",
+      "items": [
+        {
+          "name": "nick$.eth",
+          "displayName": "nick$.eth",
+          "namespace": "ens",
+          "node": "0xde12a72f054d0acbde40e76aac0645dfaccb693266992519cbe037cc63de6772",
+          "status": "released",
+          "authority": "ensV1",
+          "owner": null,
+          "manager": null,
+          "registeredAt": "1686782675n",
+          "createdAt": "1686782675n",
+          "expiresAt": "1718318675n",
+          "graceEndsAt": "1726094675n",
+          "expiryReason": null,
+          "ensV1": {
+            "resolver": {
+              "chainId": 1,
+              "address": "0x231b0Ee14048e9dCcD1d247744d114a4EB5E8E63"
+            },
+            "expiresAt": "1718318675n",
+            "wrapperState": "lapsed",
+            "wrapperExpiresAt": "1726094675n",
+            "wrapperFuses": null
+          }
+        },
+        {
+          "name": "nick000.eth",
+          "displayName": "nick000.eth",
+          "namespace": "ens",
+          "node": "0xef756a95f9f619232d5086dc8d59281e17d3252ff42705f5a0930e30a37d3d8b",
+          "status": "released",
+          "authority": "ensV1",
+          "owner": null,
+          "manager": null,
+          "registeredAt": "1650609765n",
+          "createdAt": "1650609765n",
+          "expiresAt": "1682166717n",
+          "graceEndsAt": "1689942717n",
+          "expiryReason": null,
+          "ensV1": {
+            "resolver": null,
+            "expiresAt": "1682166717n",
+            "wrapperState": null,
+            "wrapperExpiresAt": null,
+            "wrapperFuses": null
+          }
+        },
+        {
+          "name": "nick007.eth",
+          "displayName": "nick007.eth",
+          "namespace": "ens",
+          "node": "0x6c8a6fd915fddafd8238c2c23f8bf1f89421220a5ce071f2b9161cf2d84b0a1d",
+          "status": "active",
+          "authority": "ensV1",
+          "owner": "0xAF09Db90C6Fa32326485bC9759c154D3AD1bA43F",
+          "manager": "0xAF09Db90C6Fa32326485bC9759c154D3AD1bA43F",
+          "registeredAt": "1644098284n",
+          "createdAt": "1644098284n",
+          "expiresAt": "1807239844n",
+          "graceEndsAt": "1809659044n",
+          "expiryReason": null,
+          "ensV1": {
+            "resolver": {
+              "chainId": 1,
+              "address": "0x4976fb03C32e5B8cfe2b6cCB31c09Ba78EBaBa41"
+            },
+            "expiresAt": "1801883044n",
+            "wrapperState": "unwrapped",
+            "wrapperExpiresAt": null,
+            "wrapperFuses": null
+          }
+        }
+      ],
+      "cursor": "7b2276657273696f6e223a312c22736f7274223a226e616d655f617363222c2266696c74657273223a7b226d61746368223a22707265666978222c226e616d657370616365223a227075626c69633a656e73222c2271223a226e69636b227d2c226c6173745f6974656d223a7b22646973706c61795f6e616d65223a226e69636b3030372e657468222c226e616d6568617368223a22307836633861366664393135666464616664383233386332633233663862663166383934323132323061356365303731663262393136316366326438346230613164222c226e616d657370616365223a22656e73222c226e6f726d616c697a65645f6e616d65223a226e69636b3030372e657468227d2c22736e617073686f74223a6e756c6c7d",
+      "hasMore": true,
+      "totalCount": null
+    },
+    "recordedAt": "2026-11-18T19:12:25.789Z",
+    "block": 26443964
+  },
+  "migration.get": {
+    "call": "await ens.migration.get({ name: \"nick.eth\" })",
+    "response": {
+      "name": "nick.eth",
+      "status": "migrated",
+      "route": null,
+      "blockers": [],
+      "owner": null,
+      "manager": null,
+      "fuses": null,
+      "expiry": null,
+      "reservationExpiry": null,
+      "resolver": {
+        "current": null,
+        "plan": "none"
+      },
+      "after": {
+        "registry": null,
+        "subregistry": null,
+        "expiry": null,
+        "roles": []
+      },
+      "discovered": null
+    },
+    "recordedAt": "2026-11-18T19:12:25.789Z",
+    "block": 26443964
+  },
+  "name.get": {
+    "call": "await ens.name.get({ name: \"nick.eth\" })",
+    "response": {
+      "name": "nick.eth",
+      "kind": "v2-migrated",
+      "protocol": "v2",
+      "status": "registered",
+      "owner": "0xb8c2C29ee19D8307cb7255e1Cd9CbDE883A267d5",
+      "manager": null,
+      "registrant": null,
+      "registry": "0xf60aba43E1f7F3DAB1186Ff03B561401C9Df85E2",
+      "subregistry": "0x02cA46F62f6C9F655364bf9Fd4f11Fb8f01C5753",
+      "resolver": "0xF4f1007EA430848F2fAd60e405A54Fc100fEc341",
+      "expiry": "2051983306n",
+      "gracePeriodEnd": "2054402506n",
+      "tokenId": "42219085255511335250589442208301538195142221433306354426240614732610656010240n",
+      "resource": "42219085255511335250589442208301538195142221433306354426240614732610656010240n",
+      "ttl": null,
+      "wrapped": false,
+      "migrated": true,
+      "available": false,
+      "renewable": true,
+      "reachable": true,
+      "inheritedResolver": null
+    },
+    "recordedAt": "2026-11-18T19:12:25.789Z",
+    "block": 26443964
+  },
+  "name.getLabel": {
+    "call": "await ens.name.getLabel({ labelhash: \"0xaf2caa1c2ca1d027f1ac823b529d0a67cd144264b2789fa2ea4d63a67c7103cc\" })",
+    "response": "vitalik",
+    "recordedAt": "2026-11-18T19:12:25.789Z",
+    "block": 26443964
+  },
+  "permission.check": {
+    "call": "await ens.permission.check({ name: \"nick.eth\", operation: \"transfer\", account: \"0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045\" })",
+    "response": {
+      "allowed": false,
+      "via": null,
+      "contract": "0xf60aba43E1f7F3DAB1186Ff03B561401C9Df85E2",
+      "resource": null,
+      "missing": [
+        {
+          "type": "owner",
+          "contract": "0xf60aba43E1f7F3DAB1186Ff03B561401C9Df85E2",
+          "owner": "0xb8c2C29ee19D8307cb7255e1Cd9CbDE883A267d5"
+        }
+      ]
+    },
+    "recordedAt": "2026-11-18T19:12:25.789Z",
+    "block": 26443964
+  },
+  "permission.get": {
+    "call": "await ens.permission.get({ name: \"nick.eth\", account: \"0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045\" })",
+    "response": {
+      "account": "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045",
+      "status": "registered",
+      "can": {
+        "transfer": false,
+        "setResolver": false,
+        "setSubregistry": false,
+        "createSubname": false,
+        "removeSubname": false,
+        "renew": true,
+        "setTtl": false,
+        "setManager": false,
+        "reclaim": false,
+        "setRecords": false
+      },
+      "fuses": []
+    },
+    "recordedAt": "2026-11-18T19:12:25.789Z",
+    "block": 26443964
+  },
+  "primaryName.get": {
+    "call": "await ens.primaryName.get({ address: \"0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045\" })",
+    "response": "vitalik.eth",
+    "recordedAt": "2026-11-18T19:12:25.789Z",
+    "block": 26443964
+  },
+  "record.get": {
+    "call": "await ens.record.get({ name: \"vitalik.eth\", texts: [\"url\", \"com.twitter\"], addresses: [\"eth\"] })",
+    "response": {
+      "resolver": "0x231b0Ee14048e9dCcD1d247744d114a4EB5E8E63",
+      "texts": {
+        "url": "https://vitalik.ca",
+        "com.twitter": "VitalikButerin"
+      },
+      "addresses": {
+        "eth": "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045"
+      }
+    },
+    "recordedAt": "2026-11-18T19:12:25.789Z",
+    "block": 26443964
+  },
+  "record.getAddress": {
+    "call": "await ens.record.getAddress({ name: \"nick.eth\" })",
+    "response": "0xb8c2C29ee19D8307cb7255e1Cd9CbDE883A267d5",
+    "recordedAt": "2026-11-18T19:12:25.789Z",
+    "block": 26443964
+  },
+  "record.getAvatar": {
+    "call": "await ens.record.getAvatar({ name: \"jesse.base.eth\" })",
+    "response": "https://zku9gdedgba48lmr.public.blob.vercel-storage.com/basenames/avatar/jesse.base.eth/1722020142962/cryptopunk-diuDROjlL5OLY6EcC5keHTsNAiWMSL.png",
+    "recordedAt": "2026-11-18T19:12:25.789Z",
+    "block": 26443964
+  },
+  "record.getContentHash": {
+    "call": "await ens.record.getContentHash({ name: \"ens.eth\" })",
+    "response": {
+      "protocol": "bzz",
+      "value": "f5909b5286d9279a1f6a23d5155ddd72bb0f28f56b6b82c32de54a6529e6b1b0",
+      "uri": "bzz://f5909b5286d9279a1f6a23d5155ddd72bb0f28f56b6b82c32de54a6529e6b1b0"
+    },
+    "recordedAt": "2026-11-18T19:12:25.789Z",
+    "block": 26443964
+  },
+  "record.getText": {
+    "call": "await ens.record.getText({ name: \"vitalik.eth\", key: \"url\" })",
+    "response": "https://vitalik.ca",
+    "recordedAt": "2026-11-18T19:12:25.789Z",
+    "block": 26443964
+  },
+  "registration.getParameters": {
+    "call": "await ens.registration.getParameters({})",
+    "response": {
+      "registrar": "0xD6D8369e55c94Ae8AFA714E6cF7AB5bE54D5CC81",
+      "renewer": "0x56c447F308F463A01121C41E72b0E7e7557fCb68",
+      "priceOracle": "0x76F29609A363a8A1a2a6abe2e859C0F8916Af469",
+      "minCommitmentAge": "60n",
+      "maxCommitmentAge": "86400n",
+      "minDuration": "2419200n",
+      "gracePeriod": "2419200n",
+      "paymentTokens": [
+        {
+          "address": "0x6B175474E89094C44Da98b954EedeAC495271d0F",
+          "symbol": "DAI",
+          "decimals": 18
+        },
+        {
+          "address": "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+          "symbol": "USDC",
+          "decimals": 6
+        }
+      ]
+    },
+    "recordedAt": "2026-11-18T19:12:25.789Z",
+    "block": 26443964
+  },
+  "registration.getPrice": {
+    "call": "await ens.registration.getPrice({ name: \"ensforge-example.eth\", duration: 31_536_000n })",
+    "response": {
+      "base": "8000021n",
+      "premium": "0n",
+      "total": "8000021n",
+      "token": {
+        "address": "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+        "symbol": "USDC",
+        "decimals": 6
+      }
+    },
+    "recordedAt": "2026-11-18T19:12:25.789Z",
+    "block": 26443964
+  },
+  "registration.getRenewalPrice": {
+    "call": "await ens.registration.getRenewalPrice({ names: \"nick.eth\", duration: 31_536_000n })",
+    "response": {
+      "total": "160000009n",
+      "token": {
+        "address": "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+        "symbol": "USDC",
+        "decimals": 6
+      },
+      "items": [
+        {
+          "name": "nick.eth",
+          "route": "v2-registrar",
+          "amount": "160000009n"
+        }
+      ]
+    },
+    "recordedAt": "2026-11-18T19:12:25.789Z",
+    "block": 26443964
+  },
+  "registration.isAvailable": {
+    "call": "await ens.registration.isAvailable({ name: \"nick.eth\" })",
+    "response": false,
+    "recordedAt": "2026-11-18T19:12:25.789Z",
+    "block": 26443964
+  },
+  "registry.get": {
+    "call": "await ens.registry.get({ name: \"nick.eth\" })",
+    "response": {
+      "address": "0x02cA46F62f6C9F655364bf9Fd4f11Fb8f01C5753",
+      "kind": "user",
+      "implementation": "0xFAA23592ACA10A6d8875b18eA86954e8EB6d8d72",
+      "parent": {
+        "registry": "0xf60aba43E1f7F3DAB1186Ff03B561401C9Df85E2",
+        "label": "nick"
+      },
+      "canonicalName": "nick.eth",
+      "uri": null,
+      "renderer": "0x6f412Ff4144d525f791777d3384e9A1B170492Fb",
+      "emancipated": false,
+      "upgrade": {
+        "latest": "0x3269b830b61b3186Dc6d2f57Cab118E2FBC3E2df",
+        "eligible": false,
+        "blocker": "not-approved"
+      }
+    },
+    "recordedAt": "2026-11-18T19:12:25.789Z",
+    "block": 26443964
+  },
+  "resolver.get": {
+    "call": "await ens.resolver.get({ name: \"nick.eth\" })",
+    "response": {
+      "address": "0xF4f1007EA430848F2fAd60e405A54Fc100fEc341",
+      "inherited": false,
+      "serving": true,
+      "kind": "permissioned-resolver",
+      "authorization": "roles",
+      "profiles": {
+        "addr": true,
+        "addresses": true,
+        "text": true,
+        "contentHash": true,
+        "abi": true,
+        "pubkey": false,
+        "name": true,
+        "interfaces": true,
+        "data": true,
+        "extended": true
+      },
+      "version": null
+    },
+    "recordedAt": "2026-11-18T19:12:25.789Z",
+    "block": 26443964
+  },
+  "resolver.getLink": {
+    "call": "await ens.resolver.getLink({ name: \"nick.eth\" })",
+    "response": {
+      "resolver": "0xF4f1007EA430848F2fAd60e405A54Fc100fEc341",
+      "recordId": "3n"
+    },
+    "recordedAt": "2026-11-18T19:12:25.789Z",
+    "block": 26443964
+  },
+  "resolver.resolve": {
+    "call": "await ens.resolver.resolve({ name: \"nick.eth\", data: \"0x3b3b57de05a67c0ee82964c4f7394cdd47fee7f4d9503a23c09c38341779ea012afe6e00\" })",
+    "response": {
+      "data": "0x000000000000000000000000b8c2c29ee19d8307cb7255e1cd9cbde883a267d5",
+      "resolver": "0xF4f1007EA430848F2fAd60e405A54Fc100fEc341"
+    },
+    "recordedAt": "2026-11-18T19:12:25.789Z",
+    "block": 26443964
+  },
+  "wrapper.getFuses": {
+    "call": "await ens.wrapper.getFuses({ name: \"ens.eth\" })",
+    "response": null,
+    "recordedAt": "2026-11-18T19:12:25.789Z",
+    "block": 26443964
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "title": "InsufficientFundsError",
+  "pagesIndex": "insufficient-funds-error",
+  "pages": [
+    "INSUFFICIENT_ETH",
+    "INSUFFICIENT_TOKEN_BALANCE"
+  ]
+}

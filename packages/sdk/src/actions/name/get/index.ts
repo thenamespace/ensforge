@@ -61,7 +61,7 @@ export type { NameKind, NameState, NameStatus } from "./types.js";
  * ```
  *
  * @throws `Errors.InvalidInputError` (`INVALID_NAME`) when the name is invalid or the root.
- * @throws `Errors.NetworkError` when the RPC request fails.
+ * @throws `Errors.NetworkError` (`RPC_REQUEST_FAILED`, `RPC_TIMEOUT`, `RATE_LIMITED`) when the RPC request fails.
  *
  * @see {@link Actions.resolver.get} to describe the resolver
  * @see {@link Actions.name.transfer} to send a name

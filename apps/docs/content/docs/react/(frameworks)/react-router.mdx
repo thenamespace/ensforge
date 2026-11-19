@@ -1,0 +1,94 @@
+---
+title: React Router
+description: Prefetch ENS reads in a React Router or Remix loader and hydrate them in the route component, so names render without a loading state.
+keywords: [React Router, Remix, loader, prefetch, dehydrate, HydrationBoundary]
+---
+
+In React Router (framework mode) and Remix, prefetch the reads in a route `loader`, return the state, and render `HydrationBoundary` in the route component.
+
+<Callout type="info" title="Server rendering helpers are unstable">
+  `prefetch`, `dehydrate` and `HydrationBoundary` are marked `unstable`. Their names and shapes can
+  change in a minor release.
+</Callout>
+
+## 1. Provide the client in the root
+
+Create the client in a shared module and render the provider in `root.tsx`, around the `<Outlet />`.
+
+**Example** (The Root Route)
+
+```tsx no-check title="app/root.tsx"
+import { Outlet } from "react-router";
+
+import { EnsforgeProvider } from "@ensforge/react";
+
+import { ens } from "./lib/ens";
+
+export default function Root() {
+  return (
+    <EnsforgeProvider client={ens}>
+      <Outlet />
+    </EnsforgeProvider>
+  );
+}
+```
+
+```ts title="app/lib/ens.ts"
+import { createPublicClient, http } from "viem";
+import { mainnet } from "viem/chains";
+
+import { Ensforge } from "@ensforge/sdk";
+
+export const ens = Ensforge.create({
+  publicClient: createPublicClient({ chain: mainnet, transport: http() }),
+});
+```
+
+## 2. Prefetch in the loader
+
+Create a new registry in each loader call. The loader returns plain JSON, so the state serializes to the browser.
+
+**Example** (A Name Route)
+
+```tsx no-check title="app/routes/name.tsx"
+import { AtomRegistry } from "effect/reactivity";
+import { useLoaderData, type LoaderFunctionArgs } from "react-router";
+
+import { HydrationBoundary, useName } from "@ensforge/react";
+import { dehydrate, prefetch } from "@ensforge/react/server";
+import { Actions } from "@ensforge/sdk";
+
+import { ens } from "../lib/ens";
+
+export async function loader({ params }: LoaderFunctionArgs) {
+  const name = String(params.name);
+  const registry = AtomRegistry.make();
+
+  await prefetch(registry, ens, Actions.name.get, { name });
+
+  return { name, state: dehydrate(registry) };
+}
+
+function Profile({ name }: { name: string }) {
+  const { data } = useName({ name });
+
+  return <p>{data?.owner}</p>;
+}
+
+export default function Route() {
+  const { name, state } = useLoaderData<typeof loader>();
+
+  return (
+    <HydrationBoundary state={state}>
+      <Profile name={name} />
+    </HydrationBoundary>
+  );
+}
+```
+
+- `useName` reads the same action and options as `prefetch`, so it uses the prefetched value.
+- A failed read is not sent, so the route retries it in the browser.
+
+For streaming, call `dehydrate(registry, { streaming: true })` and do not await `prefetch`, as in [Next.js App Router](/docs/react/nextjs-app-router#stream-slow-reads). Reads still loading then stream to the browser as they resolve.
+
+Streaming puts real Promises in the state, so a loader must return it through a serializer that streams promises. React Router's turbo-stream encoding should do this by its documented behaviour, but this page has not verified it. A plain JSON response drops the promise without an error, and the browser then fetches the read itself.

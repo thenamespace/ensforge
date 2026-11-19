@@ -64,5 +64,12 @@ export declare namespace predictAddress {
   type ErrorType = Errors.CommonError | Errors.InvalidInputError | HcaError;
 }
 
+/** Builds a deferred read for `Actions.batch`. */
+predictAddress.request = Action.request(
+  "hca.predictAddress",
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Action.Declared narrows errors to the documented @throws
+  Impl.predictAddress as Action.Declared<typeof Impl.predictAddress, predictAddress.ErrorType>,
+);
+
 /** Path of the action, e.g. for cache keys. */
 predictAddress.path = "hca.predictAddress" as const;
