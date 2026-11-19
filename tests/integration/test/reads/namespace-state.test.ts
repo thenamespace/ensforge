@@ -280,9 +280,16 @@ describe("L2 names read on their L2", () => {
           account: alice,
           operation: "setResolver",
         });
+        // Celonames' registry is its resolver: there is no resolver pointer to change.
+        const celoResolverChange = yield* Actions.permission.check(ens, {
+          name: "alice.celo.eth",
+          account: alice,
+          operation: "setResolver",
+        });
         assert.deepInclude(transfer, { allowed: true, via: "owner" });
-        assert.isFalse(resolverChange.allowed);
-        assert.strictEqual(resolverChange.missing[0]?.type, "blocked");
+        assert.deepInclude(resolverChange, { allowed: true, via: "owner" });
+        assert.isFalse(celoResolverChange.allowed);
+        assert.strictEqual(celoResolverChange.missing[0]?.type, "blocked");
       }),
     );
   });

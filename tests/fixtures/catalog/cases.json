@@ -3764,5 +3764,21 @@
     "component": "ensforge",
     "expected": "Records only; the provider identified from `offchainProviders`",
     "domains": ["name", "record"]
+  },
+  {
+    "id": "N23",
+    "axis": "N",
+    "title": "Resolver, TTL, subname or delegate write on a Basenames or Linea name",
+    "component": "ensforge",
+    "expected": "Sent on the L2 to its registry or NameWrapper with ENS's calls; Linea accepts only its PublicResolver",
+    "domains": ["write"]
+  },
+  {
+    "id": "N24",
+    "axis": "N",
+    "title": "Linea name with a burned NameWrapper fuse",
+    "component": "ensforge",
+    "expected": "permission.get reports the fuse; the write it blocks is explained as FUSE_BURNED",
+    "domains": ["write", "permission"]
   }
 ]

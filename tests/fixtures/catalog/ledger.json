@@ -2432,5 +2432,16 @@
     "tests": [
       "tests/unit/sdk/actions/name/getNamespace.test.ts > names the off-chain provider whose resolver serves a name"
     ]
+  },
+  "N23": {
+    "tests": [
+      "tests/integration/test/writes/namespace-registry.test.ts > sets the resolver and TTL on the L2, keeping Linea names on Linea's PublicResolver",
+      "tests/integration/test/writes/namespace-registry.test.ts > creates, updates and removes subnames of Basenames and Linea names"
+    ]
+  },
+  "N24": {
+    "tests": [
+      "tests/integration/test/writes/namespace-registry.test.ts > reports a Linea name's burned fuses and refuses what they block"
+    ]
   }
 }

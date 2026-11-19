@@ -109,6 +109,7 @@ const lineaName = (options: {
   readonly cases: readonly string[];
   readonly state: string;
   readonly duration: bigint;
+  readonly fuses?: number;
 }): Fixture =>
   l2Name({
     id: options.id,
@@ -123,6 +124,7 @@ const lineaName = (options: {
           label: options.label,
           owner,
           duration: options.duration,
+          ...(options.fuses === undefined ? {} : { fuses: options.fuses }),
         });
         const resolver = yield* c.address("linea.resolver");
         yield* setL2Records({
@@ -293,6 +295,15 @@ export const namespaceNames: readonly Fixture[] = [
     cases: ["N06"],
     state: "active",
     duration: durations.active,
+  }),
+  lineaName({
+    id: "namespaces.linea.locked",
+    label: "locked",
+    cases: ["N24"],
+    state: "locked",
+    duration: durations.active,
+    // cannotUnwrap (1) and cannotSetResolver (8).
+    fuses: 9,
   }),
   lineaName({
     id: "namespaces.linea.grace",

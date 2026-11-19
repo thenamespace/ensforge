@@ -241,21 +241,31 @@ describe("writes on L2 names", () => {
           const clients = yield* Clients;
           const { alice } = (yield* Devnet).accounts;
           const ens = clients.make({ account: alice, ...namespaces.clientOptions(alice) });
-          const name = "alice.base.eth";
+          const name = "alice.celo.eth";
           const external = { _tag: "NameStateError", code: "NAME_EXTERNAL" } as const;
 
+          // Celonames' registry is its resolver, and only its registrar creates names.
           for (const write of [
             Actions.resolver.set(ens, { name, resolver: alice }),
             Actions.name.setTtl(ens, { name, ttl: 60n }),
             Actions.subname.create(ens, { name: `sub.${name}`, owner: alice }),
+            Actions.record.set(ens, { name, texts: { url: "x" }, resolver: alice }),
           ]) {
             const error = yield* expectFailure(write, external);
-            assert.strictEqual(error.context.chainId, 8453);
-            assert.include(error.shortMessage, "lives on");
+            assert.strictEqual(error.context.chainId, 42220);
+            assert.include(
+              error.shortMessage,
+              "ensforge can change its records, owner and approvals",
+            );
           }
-          yield* expectFailure(
-            Actions.record.set(ens, { name, texts: { url: "x" }, resolver: alice }),
-            { _tag: "UnsupportedError", code: "UNSUPPORTED_ON_DEPLOYMENT" },
+          // Basenames takes ENS's registry calls, not a manager of its own.
+          const manager = yield* expectFailure(
+            Actions.name.setManager(ens, { name: "alice.base.eth", manager: alice }),
+            external,
+          );
+          assert.include(
+            manager.shortMessage,
+            "ensforge can change its records, resolver, TTL, subnames, owner and approvals",
           );
         }),
       { meta: { cases: ["N21"] } },

@@ -59,6 +59,8 @@ export const registerLineaName = Effect.fnUntraced(function* (options: {
   readonly label: string;
   readonly owner: Address;
   readonly duration: bigint;
+  /** Owner-controlled NameWrapper fuses to burn at registration. */
+  readonly fuses?: number;
 }) {
   const c = yield* CurrentStep;
   yield* c.write("linea.nameWrapper", "registerAndWrap", [
@@ -66,7 +68,7 @@ export const registerLineaName = Effect.fnUntraced(function* (options: {
     options.owner,
     options.duration,
     yield* c.address("linea.resolver"),
-    0,
+    options.fuses ?? 0,
   ]);
   return yield* c.read<bigint>("linea.baseRegistrar", "nameExpires", [
     BigInt(labelhash(options.label)),
