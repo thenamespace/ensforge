@@ -45,7 +45,8 @@ export const Route = createFileRoute("/og/docs/$")({
   server: {
     handlers: {
       GET: ({ params }) => {
-        // The last segment is the file name (`image.png`); the rest are the page's slugs.
+        // The last segment is the file name (`image.webp`, or `image.png` from links shared before the
+        // switch to WebP); the rest are the page's slugs.
         const slugs = (params._splat?.split("/") ?? []).filter(Boolean).slice(0, -1);
         const page = source.getPage(slugs);
         if (!page) return new Response("Not found", { status: 404 });
