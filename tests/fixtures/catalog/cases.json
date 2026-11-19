@@ -2134,6 +2134,22 @@
     "domains": ["primary"]
   },
   {
+    "id": "P41",
+    "axis": "P",
+    "title": "L2 primary name read on the L2 the client reaches",
+    "component": "ensforge",
+    "expected": "Read from the chain's L2ReverseRegistrar and verified, without Ethereum's proof path; through Ethereum otherwise, with a hint when that path fails",
+    "domains": ["primary"]
+  },
+  {
+    "id": "P42",
+    "axis": "P",
+    "title": "L2 primary name falls back to the default name, or does not resolve back",
+    "component": "ensforge",
+    "expected": "The default name when the L2 has none; null (or PRIMARY_NAME_MISMATCH with strict) when the forward record differs",
+    "domains": ["primary"]
+  },
+  {
     "id": "G01",
     "axis": "G",
     "title": "Length in code points vs graphemes: `💩💩` (2) invalid; `🇺🇸` = 2 cp; `🍄‍🟫` = 3 cp → valid 3-char price",

@@ -1229,6 +1229,16 @@
       "tests/integration/test/writes/primary-l2.test.ts > resumes a saved L2 plan on the L2"
     ]
   },
+  "P41": {
+    "tests": [
+      "tests/integration/test/reads/primary-l2.test.ts > reads each L2's primary name on the L2, and through Ethereum without it"
+    ]
+  },
+  "P42": {
+    "tests": [
+      "tests/integration/test/reads/primary-l2.test.ts > falls back to the default name, and verifies the name resolves back"
+    ]
+  },
   "G01": {
     "tests": [
       "tests/integration/test/reads/registration.test.ts > prices labels by code point and refuses labels below the minimum"

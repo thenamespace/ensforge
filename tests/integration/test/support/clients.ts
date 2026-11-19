@@ -18,7 +18,7 @@ export type ClientOptions = {
   readonly storage?: Plan.Storage | undefined;
   readonly indexer?: Indexer | undefined;
   readonly ccipRead?: false | { readonly gatewayUrls?: readonly string[] } | undefined;
-  /** Transports of other chains, e.g. an L2 from the `Optimism` service. */
+  /** Transports of other chains, e.g. the L2s of the `Namespaces` service. */
   readonly transports?: Readonly<Record<number, Transport>> | undefined;
   /** The account's wallets on other chains (their own anvils), by chain ID. */
   readonly wallets?: Readonly<Record<number, Ensforge.ViemClientLike>> | undefined;

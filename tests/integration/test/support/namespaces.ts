@@ -22,10 +22,19 @@ import {
   type FixturesApi,
   type Manifest,
 } from "@ensforge/test-fixtures";
-import { createWalletClient, http, namehash, parseAbi, type Address, type Transport } from "viem";
+import {
+  createWalletClient,
+  custom,
+  http,
+  namehash,
+  parseAbi,
+  type Address,
+  type Transport,
+} from "viem";
 
 import type { ClientOptions } from "./clients.ts";
 import { Gateways, type Lookup } from "./gateways.ts";
+import { serveL2PrimaryNames } from "./l2-primary-names.ts";
 import { l2Answers, offchainAnswer, signed } from "./namespace-gateways.ts";
 
 /**
@@ -75,10 +84,16 @@ export class Namespaces extends Context.Service<
     readonly fixtures: { readonly [profile in L2ProfileName]: FixturesApi };
     /** The devnet's deployment profile with its L2 namespaces. */
     readonly deployment: Deployments.Profile;
-    /** Client options for every L2, with `account`'s wallet on each when given. */
+    /**
+     * Client options for every L2, with `account`'s wallet on each when given; with `reject`,
+     * wallets that reject every transaction, as a user who clicks "reject".
+     */
     readonly clientOptions: (
       account?: Address,
+      options?: { readonly reject?: boolean },
     ) => Pick<ClientOptions, "transports" | "wallets" | "deployment">;
+    /** The primary name `address` set on `chainId`'s ENS L2 reverse registrar. */
+    readonly nameOf: (chainId: number, address: Address) => Effect.Effect<string, ChainError>;
     /** The gateway URL `route` is served at. */
     readonly gatewayUrl: (route: GatewayRoute) => string;
     /** Points `route`'s resolvers at `url` instead (use inside `isolated` to undo it). */
@@ -207,13 +222,23 @@ export class Namespaces extends Context.Service<
         ],
       });
 
+      const nameOf = yield* serveL2PrimaryNames(devnet, chain, gateways, [
+        l2s["l2-base"],
+        l2s["l2-optimism"],
+        l2s["l2-linea"],
+      ]);
+
       const deployment = Deployments.define({
         ...devnet.deployments,
         namespaces: namespacesOf(devnet, l2s),
       });
       const transports: Record<number, Transport> = {};
       for (const l2 of chains) transports[l2.chainId] = http(l2.rpcUrl);
-      const clientOptions = (account?: Address) => {
+      const rejecting = custom({
+        request: () =>
+          Promise.reject(Object.assign(new Error("User rejected the request."), { code: 4001 })),
+      });
+      const clientOptions = (account?: Address, options: { readonly reject?: boolean } = {}) => {
         const wallets: Record<number, Ensforge.ViemClientLike> = {};
         for (const l2 of chains) {
           if (account === undefined) continue;
@@ -221,7 +246,7 @@ export class Namespaces extends Context.Service<
             chain: l2.chain,
             account,
             pollingInterval: 50,
-            transport: http(l2.rpcUrl),
+            transport: options.reject === true ? rejecting : http(l2.rpcUrl),
           });
         }
         return { transports, deployment, wallets };
@@ -258,6 +283,7 @@ export class Namespaces extends Context.Service<
         fixtures,
         deployment,
         clientOptions,
+        nameOf,
         gatewayUrl,
         pointAt,
         isolated,

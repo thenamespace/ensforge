@@ -1,6 +1,6 @@
 import { Effect } from "effect";
 
-import { Abis } from "@ensforge/contracts";
+import { Abis, Deployments } from "@ensforge/contracts";
 import { encodeFunctionData, labelhash, namehash, zeroHash, type Address } from "viem";
 import { mnemonicToAccount } from "viem/accounts";
 
@@ -286,10 +286,35 @@ const celonames = step("l2.celonames", (c) =>
   }),
 );
 
+/**
+ * ENS's `L2ReverseRegistrar` for the chain's coin type, at its mainnet address
+ * (`Deployments.l2ReverseRegistrars`), where addresses set their primary name for the chain. Celo
+ * has none. Deployed, then its code (with the coin type) and owner copied to that address.
+ */
+const l2ReverseRegistrar = (chainId: number) =>
+  step("l2.reverseRegistrar", (c) =>
+    Effect.gen(function* () {
+      const canonical = Deployments.l2ReverseRegistrars[10];
+      const deployed = yield* c.deploy(
+        "ens.l2ReverseRegistrarDeployment",
+        "v1/L2ReverseRegistrar",
+        [0x8000_0000n | BigInt(chainId)],
+      );
+      const code = yield* c.cheat((client) => client.getCode({ address: deployed }));
+      const owner = yield* c.cheat((client) =>
+        client.getStorageAt({ address: deployed, slot: zeroHash }),
+      );
+      yield* c.cheat((client) => client.setCode({ address: canonical, bytecode: code ?? "0x" }));
+      yield* c.cheat((client) =>
+        client.setStorageAt({ address: canonical, index: zeroHash, value: owner ?? zeroHash }),
+      );
+    }),
+  );
+
 /** Each L2 chain's contracts, as deployed on Base, OP Mainnet, Linea and Celo. */
 export const l2Steps = {
-  base: [multicall, basenames, durin, namespace],
-  optimism: [multicall, namespace],
-  linea: [multicall, linea],
+  base: [multicall, l2ReverseRegistrar(8453), basenames, durin, namespace],
+  optimism: [multicall, l2ReverseRegistrar(10), namespace],
+  linea: [multicall, l2ReverseRegistrar(59144), linea],
   celo: [multicall, celonames],
 } as const satisfies Record<string, readonly Step[]>;

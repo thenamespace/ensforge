@@ -198,6 +198,20 @@ describe("L2 namespaces", () => {
       }),
     );
 
+    // Ethereum's proof of Base's reverse registrar fails for every address (2026-11-20: ENS's
+    // Base verifier reverts `InvalidGameTypeBitMask`), so a reader that reaches Base reads it
+    // there. Only the address can change its name; a failure may mean it did.
+    it.effect("a real Base primary name reads on Base", () =>
+      Effect.gen(function* () {
+        const { reader } = yield* Live;
+        const name = yield* Actions.primaryName.get(reader, {
+          address: "0x7c9bf46900c56fb094537cfce7ae3b326f16f71f",
+          coin: { chainId: 8453 },
+        });
+        assert.strictEqual(name, "mrbagg.base.eth");
+      }),
+    );
+
     it.effect("active providers' gateways answer and unavailable ones still fail", () =>
       Effect.gen(function* () {
         const { reader } = yield* Live;

@@ -17,15 +17,16 @@ import { toAccount, mnemonicToAccount } from "viem/accounts";
 
 import { Clients } from "../support/clients.ts";
 import { chainServices } from "../support/lane.ts";
-import { Optimism } from "../support/optimism.ts";
+import { Namespaces } from "../support/namespaces.ts";
 
-// L2 primary names on a second anvil answering as OP Mainnet: set on the L2 by the signer or by a
-// relayer with a signed claim, and read back on the devnet through `8000000a.reverse`.
+// L2 primary names on the namespace L2 answering as OP Mainnet: set on the L2 by the signer or by
+// a relayer with a signed claim, and read back through `8000000a.reverse` on the devnet (clients
+// without an OP transport) or on the L2.
 
 const optimism = { chainId: 10 } as const;
 const optimismCoin = String(CoinType.fromChainId(10));
 
-const services = Optimism.layer.pipe(
+const services = Namespaces.layer.pipe(
   Layer.provideMerge(chainServices),
   Layer.provideMerge(Fixtures.layer({ profile: "mainnet-shaped" })),
 );
@@ -36,19 +37,19 @@ describe("primaryName.set on an L2", () => {
       "sets the signer's L2 primary name on the L2, read back on Ethereum",
       () =>
         Effect.gen(function* () {
-          const op = yield* Optimism;
+          const namespaces = yield* Namespaces;
           const clients = yield* Clients;
           const { alice, bob } = (yield* Devnet).accounts;
           const name = (yield* Fixtures).byId("records.v1").name;
-          const ens = clients.make({ account: alice, ...op.chains(alice) });
+          const ens = clients.make({ account: alice, ...namespaces.clientOptions(alice) });
 
-          yield* op.isolated(
+          yield* namespaces.isolated(
             Effect.gen(function* () {
               yield* Actions.record.setSync(ens, { name, addresses: { [optimismCoin]: alice } });
               const { plan } = yield* Actions.primaryName.setSync(ens, { name, coin: optimism });
 
-              assert.strictEqual(plan.chainId, op.chainId);
-              const optimismName = yield* op.nameOf(alice);
+              assert.strictEqual(plan.chainId, optimism.chainId);
+              const optimismName = yield* namespaces.nameOf(optimism.chainId, alice);
               assert.strictEqual(optimismName, name);
               for (const coin of [optimism, "op"] as const) {
                 const optimismPrimaryName = yield* Actions.primaryName.get(clients.reader, {
@@ -73,14 +74,14 @@ describe("primaryName.set on an L2", () => {
       "submits one signed claim from a relayer, for an EOA, ERC-1271 and ERC-6492 accounts and an Ownable",
       () =>
         Effect.gen(function* () {
-          const op = yield* Optimism;
+          const namespaces = yield* Namespaces;
           const clients = yield* Clients;
           const devnet = yield* Devnet;
           const chain = yield* Chain;
           const { alice, bob, carol, user } = devnet.accounts;
           const name = (yield* Fixtures).byId("records.v1").name;
           const owner = clients.make({ account: alice });
-          const relayer = clients.make({ account: carol, ...op.chains(carol) });
+          const relayer = clients.make({ account: carol, ...namespaces.clientOptions(carol) });
           const wallet = devnet.contract("mock.smartContractWallet");
           const ownable = devnet.contract("mock.ownable");
           // The smart account signs as itself; its owner's key makes the ERC-1271 signature.
@@ -130,16 +131,16 @@ describe("primaryName.set on an L2", () => {
               yield* Actions.record.setSync(owner, { name, addresses: { [optimismCoin]: named } });
               // The L2 in `chains` only sets the claim's clock; the signer sends nothing there.
               const signed = yield* Actions.primaryName.signClaim(
-                clients.make({ ...signer, ...op.chains(carol) }),
+                clients.make({ ...signer, ...namespaces.clientOptions(carol) }),
                 {
                   name,
-                  chainIds: [op.chainId],
+                  chainIds: [optimism.chainId],
                   ...(signer.account === user ? { address: named } : {}),
                 },
               );
               yield* Actions.primaryName.setSync(relayer, signed);
 
-              const optimismName = yield* op.nameOf(named);
+              const optimismName = yield* namespaces.nameOf(optimism.chainId, named);
               assert.strictEqual(optimismName, name);
               const optimismPrimaryName = yield* Actions.primaryName.get(clients.reader, {
                 address: named,
@@ -149,10 +150,14 @@ describe("primaryName.set on an L2", () => {
               return signed;
             });
 
-          yield* op.isolated(
+          yield* namespaces.isolated(
             Effect.gen(function* () {
               const signed = yield* claimAndRead({ account: bob }, bob);
-              assert.deepInclude(signed.claim, { address: bob, name, chainIds: [op.chainId] });
+              assert.deepInclude(signed.claim, {
+                address: bob,
+                name,
+                chainIds: [optimism.chainId],
+              });
               assert.isUndefined(signed.claim.owner);
 
               yield* claimAndRead({ account: smartAccount }, wallet);
@@ -172,19 +177,19 @@ describe("primaryName.set on an L2", () => {
       "rejects expired, tampered and misdirected claims, and claims for other names",
       () =>
         Effect.gen(function* () {
-          const op = yield* Optimism;
+          const namespaces = yield* Namespaces;
           const clients = yield* Clients;
           const { alice, bob, carol } = (yield* Devnet).accounts;
           const name = (yield* Fixtures).byId("records.v1").name;
           const signer = clients.make({ account: bob });
-          const relayer = clients.make({ account: carol, ...op.chains(carol) });
+          const relayer = clients.make({ account: carol, ...namespaces.clientOptions(carol) });
 
-          yield* op.isolated(
+          yield* namespaces.isolated(
             Effect.gen(function* () {
               // records.v1 has no OP Mainnet address: bob's comes from its default EVM address.
               const signed = yield* Actions.primaryName.signClaim(signer, {
                 name,
-                chainIds: [op.chainId],
+                chainIds: [optimism.chainId],
                 expiresIn: 60n,
               });
 
@@ -194,13 +199,13 @@ describe("primaryName.set on an L2", () => {
                 { _tag: "UnauthorizedError", code: "SIGNATURE_INVALID" },
               );
               assert.strictEqual(invalid.context.revert?.errorName, "InvalidSignature");
-              assert.strictEqual(invalid.context.chainId, op.chainId);
+              assert.strictEqual(invalid.context.chainId, optimism.chainId);
               yield* expectFailure(
                 Actions.primaryName.set(relayer, { ...signed, coin: { chainId: 8453 } }),
                 { _tag: "InvalidInputError", code: "INVALID_COIN_TYPE" },
               );
 
-              yield* op.passTime(120);
+              yield* namespaces.passTime(120);
               const expired = yield* expectFailure(Actions.primaryName.set(relayer, signed), {
                 _tag: "UnauthorizedError",
                 code: "SIGNATURE_EXPIRED",
@@ -213,7 +218,7 @@ describe("primaryName.set on an L2", () => {
                 addresses: { [optimismCoin]: alice },
               });
               yield* expectFailure(
-                Actions.primaryName.signClaim(signer, { name, chainIds: [op.chainId] }),
+                Actions.primaryName.signClaim(signer, { name, chainIds: [optimism.chainId] }),
                 { _tag: "NotFoundError", code: "PRIMARY_NAME_MISMATCH" },
               );
             }),
@@ -273,7 +278,7 @@ describe("primaryName.set on an L2", () => {
       "resumes a saved L2 plan on the L2",
       () =>
         Effect.gen(function* () {
-          const op = yield* Optimism;
+          const namespaces = yield* Namespaces;
           const clients = yield* Clients;
           const { alice } = (yield* Devnet).accounts;
           const name = (yield* Fixtures).byId("records.v1").name;
@@ -281,11 +286,11 @@ describe("primaryName.set on an L2", () => {
           const rejecting = clients.make({
             account: alice,
             storage,
-            ...op.chains(alice, { reject: true }),
+            ...namespaces.clientOptions(alice, { reject: true }),
           });
-          const ens = clients.make({ account: alice, storage, ...op.chains(alice) });
+          const ens = clients.make({ account: alice, storage, ...namespaces.clientOptions(alice) });
 
-          yield* op.isolated(
+          yield* namespaces.isolated(
             Effect.gen(function* () {
               yield* Actions.record.setSync(ens, { name, addresses: { [optimismCoin]: alice } });
               const rejected = yield* expectFailure(
@@ -296,9 +301,9 @@ describe("primaryName.set on an L2", () => {
 
               const { receipt, plan } = yield* Actions.plan.resumeSync(ens, { id });
 
-              assert.strictEqual(plan.chainId, op.chainId);
+              assert.strictEqual(plan.chainId, optimism.chainId);
               assert.strictEqual(receipt.status, "success");
-              const optimismName = yield* op.nameOf(alice);
+              const optimismName = yield* namespaces.nameOf(optimism.chainId, alice);
               assert.strictEqual(optimismName, name);
               const completed = yield* Actions.plan.list(ens, { status: "completed" });
               assert.include(
