@@ -9,9 +9,10 @@ import { invalidationKeys, writeSubjects } from "./subjects.js";
 
 /**
  * Refreshes the reads a write touched: chain reads once its transactions are mined, indexer
- * reads once the indexer has indexed them. Runs in the background; a write's result never waits
- * for it. Without a result (a write that failed after a step was confirmed), nothing is left to
- * wait for and the signer is the client's account.
+ * reads once the indexer has indexed them. Both are watched on the chain the plan ran on, an L2
+ * for names that live there. Runs in the background; a write's result never waits for it.
+ * Without a result (a write that failed after a step was confirmed), nothing is left to wait for
+ * and the signer is the client's account.
  *
  * @stability unstable
  */
@@ -21,6 +22,7 @@ export const refreshAfterWrite = Effect.fnUntraced(function* (
   written: Write.Result | undefined,
 ): Effect.fn.Return<void, never, Reactivity.Reactivity> {
   const subjects = writeSubjects(options, written?.plan.account ?? client.account);
+  const chainId = written?.plan.chainId ?? client.chain.id;
   const last =
     written === undefined || Predicate.hasProperty(written, "receipts")
       ? undefined
@@ -32,7 +34,8 @@ export const refreshAfterWrite = Effect.fnUntraced(function* (
     last === undefined
       ? Effect.undefined
       : Effect.tryPromise({
-          try: (signal) => waitForTransactionReceipt(client.client(), { hash: last, signal }),
+          try: (signal) =>
+            waitForTransactionReceipt(client.client(chainId), { hash: last, signal }),
           catch: () => "receipt-failed" as const,
         }).pipe(
           Effect.map((receipt) => receipt.blockNumber),
@@ -45,7 +48,7 @@ export const refreshAfterWrite = Effect.fnUntraced(function* (
     const block =
       minedIn ??
       (yield* Effect.tryPromise({
-        try: () => client.client().request({ method: "eth_blockNumber" }),
+        try: () => client.client(chainId).request({ method: "eth_blockNumber" }),
         catch: () => "block-number-failed" as const,
       }).pipe(Effect.map(BigInt)));
 
@@ -53,7 +56,7 @@ export const refreshAfterWrite = Effect.fnUntraced(function* (
     // polled for up to a minute; indexers without a status are given a few seconds instead.
     yield* Actions.indexer.getStatus(client).pipe(
       Effect.flatMap((status) =>
-        (status.chains[client.chain.id]?.indexed ?? -1n) >= block
+        (status.chains[chainId]?.indexed ?? -1n) >= block
           ? Effect.void
           : Effect.fail("behind" as const),
       ),

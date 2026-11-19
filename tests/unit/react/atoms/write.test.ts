@@ -6,7 +6,7 @@ import { AsyncResult, AtomRegistry } from "effect/reactivity";
 import { ensAtom, ensWriteAtom } from "@ensforge/react/atoms";
 import { Ensforge, type Plan, type Write } from "@ensforge/sdk";
 import { scriptedTransport } from "@ensforge/test-harness";
-import { mainnet } from "viem/chains";
+import { base, mainnet } from "viem/chains";
 
 import { client, fakeRead } from "../fixtures.js";
 
@@ -169,6 +169,70 @@ describe("ensWriteAtom", () => {
       registry.set(atoms.run, { name: "alice.eth" });
       yield* Effect.flip(AtomRegistry.getResult(registry, atoms.run));
       yield* Effect.sleep(1);
+
+      assert.strictEqual(calls.length, 2);
+    }),
+  );
+
+  it.live("refetches reads once the write's transaction is mined on the plan's chain", () =>
+    Effect.gen(function* () {
+      const hash = `0x${Str.repeat(32)("02")}` as const;
+      // The write ran on Base: Ethereum never sees its transaction, Base mines it in block 32.
+      const ens = Ensforge.create({
+        chain: mainnet,
+        transports: {
+          [mainnet.id]: scriptedTransport(({ method }) => {
+            if (method === "eth_blockNumber") return "0x10";
+            if (method === "eth_getTransactionReceipt" || method === "eth_getTransactionByHash")
+              return null;
+            throw Object.assign(new Error(`unexpected: ${method}`), { code: -32_000 });
+          }).transport,
+          [base.id]: scriptedTransport(({ method }) => {
+            if (method === "eth_blockNumber") return "0x20";
+            if (method === "eth_getTransactionReceipt")
+              return {
+                transactionHash: hash,
+                blockHash: `0x${Str.repeat(32)("03")}`,
+                blockNumber: "0x20",
+                transactionIndex: "0x0",
+                from: signer,
+                to: signer,
+                cumulativeGasUsed: "0x0",
+                gasUsed: "0x0",
+                effectiveGasPrice: "0x0",
+                logs: [],
+                logsBloom: `0x${Str.repeat(256)("00")}`,
+                status: "0x1",
+                type: "0x2",
+              };
+            throw Object.assign(new Error(`unexpected: ${method}`), { code: -32_000 });
+          }).transport,
+        },
+        publicRpc: false,
+        pollingInterval: 5,
+      });
+      const write = Object.assign(
+        (_client: Ensforge.Client, _options: { name: string }): Promise<Write.Result> =>
+          Promise.resolve({
+            hash,
+            hashes: [hash],
+            id: undefined,
+            plan: { account: signer, chainId: base.id } as unknown as Plan,
+          }),
+        { path: "test.set" },
+      );
+      const { action: read, calls } = fakeRead("record.get", (_options: { name: string }) => 1);
+      const registry = AtomRegistry.make();
+      const atom = ensAtom(ens, read, { name: "alice.base.eth" });
+      registry.mount(atom);
+      yield* AtomRegistry.getResult(registry, atom);
+      const atoms = ensWriteAtom(ens, write);
+      registry.mount(atoms.run);
+
+      yield* atoms
+        .send({ name: "alice.base.eth" })
+        .pipe(Effect.provideService(AtomRegistry.AtomRegistry, registry));
+      yield* Effect.sleep(200);
 
       assert.strictEqual(calls.length, 2);
     }),
