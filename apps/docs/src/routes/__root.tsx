@@ -8,6 +8,8 @@ import {
   useRouterState,
 } from "@tanstack/react-router";
 
+import interLatin from "@fontsource-variable/inter/files/inter-latin-wght-normal.woff2?url";
+import monoLatin from "@fontsource-variable/jetbrains-mono/files/jetbrains-mono-latin-wght-normal.woff2?url";
 import { RootProvider } from "fumadocs-ui/provider/tanstack";
 
 import SearchDialog from "@/components/search";
@@ -53,6 +55,15 @@ export const Route = createRootRoute({
       ],
       links: [
         { rel: "stylesheet", href: appCss },
+        // The body and code fonts (Latin), fetched with the stylesheet instead of after it, so
+        // text and code do not swap fonts after the first paint. Same files as the @font-face rules.
+        ...[interLatin, monoLatin].map((href) => ({
+          rel: "preload",
+          href,
+          as: "font",
+          type: "font/woff2",
+          crossOrigin: "anonymous" as const,
+        })),
         { rel: "icon", href: "/favicon.ico", sizes: "32x32" },
         { rel: "icon", type: "image/svg+xml", href: "/favicon.svg" },
         { rel: "apple-touch-icon", href: "/apple-touch-icon.png" },
