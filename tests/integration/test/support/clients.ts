@@ -1,5 +1,6 @@
 import { Context, Effect, Layer } from "effect";
 
+import type { Deployments } from "@ensforge/contracts";
 import { Ensforge, ensActions, type Plan } from "@ensforge/sdk";
 import type { Indexer } from "@ensforge/sdk/indexer";
 import { Devnet } from "@ensforge/test-devnet";
@@ -21,6 +22,8 @@ export type ClientOptions = {
   readonly transports?: Readonly<Record<number, Transport>> | undefined;
   /** The account's wallets on other chains (their own anvils), by chain ID. */
   readonly wallets?: Readonly<Record<number, Ensforge.ViemClientLike>> | undefined;
+  /** The deployment profile; the devnet's by default (`Namespaces` adds its L2 namespaces). */
+  readonly deployment?: Deployments.Profile | undefined;
 };
 
 const makeClient = (devnet: Devnet["Service"], options: ClientOptions) => {
@@ -46,7 +49,7 @@ const makeClient = (devnet: Devnet["Service"], options: ClientOptions) => {
     publicRpc: false,
     // The devnet answers at once; short polling keeps receipt and chain-time waits short.
     pollingInterval: 50,
-    deployment: devnet.deployments,
+    deployment: options.deployment ?? devnet.deployments,
     ...(options.ccipRead === undefined ? {} : { ccipRead: options.ccipRead }),
     ...(options.storage === undefined ? {} : { storage: options.storage }),
     ...(options.indexer === undefined ? {} : { indexer: options.indexer }),

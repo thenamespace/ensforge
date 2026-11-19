@@ -25,6 +25,7 @@ export {
 } from "./Devnet.ts";
 export type { ArtifactName } from "./artifacts/sources.ts";
 export { AnvilError, ArtifactError, DeployError } from "./errors.ts";
+export { namespacesOf } from "./namespaces.ts";
 export {
   chainId,
   l2ProfileNames,

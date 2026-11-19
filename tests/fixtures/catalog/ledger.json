@@ -2368,7 +2368,9 @@
     "status": "pending"
   },
   "N16": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/namespaces.test.ts > resolves a Namespace off-chain parent's names from its database"
+    ]
   },
   "N17": {
     "status": "pending"
@@ -2377,7 +2379,9 @@
     "status": "pending"
   },
   "N19": {
-    "status": "pending"
+    "tests": [
+      "tests/integration/test/reads/namespaces.test.ts > fails with a typed error when a family's gateway fails or signs with another key"
+    ]
   },
   "N20": {
     "status": "pending"
