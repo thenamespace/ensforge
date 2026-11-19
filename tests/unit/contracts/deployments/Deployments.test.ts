@@ -198,44 +198,85 @@ describe("Deployments.namespaces", () => {
     },
   );
 
-  it("finds the namespace of a parent's ENS resolver", () => {
+  it("finds the namespace of a parent's ENS resolver in a profile", () => {
     const { basenames, celonames, durin, linea, namespace } = Deployments.namespaces;
+    const { mainnet, sepolia } = Deployments;
 
-    assert.deepStrictEqual(
-      Deployments.namespaceOf({ chainId: 1, resolver: basenames.mainnet.l1Resolver }),
-      { id: "basenames", network: "mainnet" },
+    assert.strictEqual(
+      Deployments.namespaceOf({ profile: mainnet, resolver: basenames.mainnet.l1Resolver }),
+      "basenames",
     );
-    assert.deepStrictEqual(
+    assert.strictEqual(
       Deployments.namespaceOf({
-        chainId: 11155111,
+        profile: sepolia,
         resolver: Str.toLowerCase(linea.testnet.l1Resolver),
       }),
-      { id: "linea", network: "testnet" },
+      "linea",
     );
-    assert.deepStrictEqual(
-      Deployments.namespaceOf({ chainId: 1, resolver: celonames.mainnet.l1Resolver }),
-      { id: "celonames", network: "mainnet" },
+    assert.strictEqual(
+      Deployments.namespaceOf({ profile: mainnet, resolver: celonames.mainnet.l1Resolver }),
+      "celonames",
     );
-    // Durin uses one resolver address on both networks: the ENS chain tells them apart.
-    assert.deepStrictEqual(
-      Deployments.namespaceOf({ chainId: 11155111, resolver: durin.mainnet.l1Resolver }),
-      { id: "durin", network: "testnet" },
+    // Durin uses one resolver address on both networks.
+    assert.strictEqual(
+      Deployments.namespaceOf({ profile: sepolia, resolver: durin.mainnet.l1Resolver }),
+      "durin",
     );
-    assert.deepStrictEqual(
-      Deployments.namespaceOf({ chainId: 1, resolver: namespace.mainnet.hybridResolvers.v2 }),
-      { id: "namespace", network: "mainnet" },
+    assert.strictEqual(
+      Deployments.namespaceOf({ profile: mainnet, resolver: namespace.mainnet.hybridResolvers.v2 }),
+      "namespace",
     );
   });
 
-  it("returns undefined for other resolvers and chains", () => {
+  it("returns undefined for resolvers the profile does not list", () => {
     const resolver = Deployments.namespaces.basenames.mainnet.l1Resolver;
 
-    assert.isUndefined(Deployments.namespaceOf({ chainId: 11155111, resolver }));
+    assert.isUndefined(Deployments.namespaceOf({ profile: Deployments.sepolia, resolver }));
     assert.isUndefined(
       Deployments.namespaceOf({
-        chainId: 1,
+        profile: Deployments.mainnet,
         resolver: Deployments.mainnet.v1.contracts.publicResolver,
       }),
+    );
+    assert.isUndefined(
+      Deployments.namespaceOf({
+        profile: { name: "devnet", chainId: 31337, v1: Deployments.mainnet.v1 },
+        resolver,
+      }),
+    );
+  });
+
+  it("is validated by define", () => {
+    const { basenames } = Deployments.namespaces;
+    const profile = {
+      name: "devnet",
+      chainId: 31337,
+      v1: { ...Deployments.mainnet.v1, chainId: 31337 },
+    };
+
+    assert.deepStrictEqual(
+      issuesOf({
+        ...profile,
+        namespaces: { basenames: { ...basenames.mainnet, ensChainId: 31337 } },
+      }),
+      [],
+    );
+    assert.deepStrictEqual(
+      issuesOf({
+        ...profile,
+        namespaces: {
+          basenames: {
+            ...basenames.mainnet,
+            contracts: { ...basenames.mainnet.contracts, registry: "0x1234" },
+          },
+          ens: {},
+        },
+      }),
+      [
+        "namespaces.basenames.ensChainId must equal the profile chainId 31337",
+        "namespaces.basenames.contracts.registry must be a 0x-prefixed 20-byte address",
+        "namespaces.ens is not a known namespace",
+      ],
     );
   });
 });

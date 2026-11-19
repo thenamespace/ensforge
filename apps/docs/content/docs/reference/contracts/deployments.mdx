@@ -285,6 +285,8 @@ From https://github.com/thenamespace/contracts.
 | mainnet | `hybridResolvers.current` | `0xe5A0277018879679d18cCDb66B52BD06f7fE95FD` |
 | mainnet | `hybridResolvers.previous` | `0x0dcD506D1Be162E50A2b434028A9a148F2686444` |
 | mainnet | `hybridResolvers.v2` | `0x0A67542cbD8d71CB760d1EeB5a4b4a77ea35Ff9b` |
+| mainnet | `routes.2` | `8453` |
+| mainnet | `routes.3` | `10` |
 | mainnet | `chains.10.nodeRegistryResolver` | `0x0798278Ff2c8aD096447B5C368Ce682118D87f63` |
 | mainnet | `chains.10.publicResolver` | `0xD8de4F5D7117BA37bA171ec9180Da798056f2CEd` |
 | mainnet | `chains.8453.nodeRegistryResolver` | `0x0D8e2772B4D8d58C8a66EEc5bf77c07934b84942` |
@@ -293,6 +295,7 @@ From https://github.com/thenamespace/contracts.
 | testnet | `hybridResolvers.current` | `0xd5568c739f3A615C27e8926f1067B9a791893c3E` |
 | testnet | `hybridResolvers.previous` | `0x2F5E9E8B4495e4CDC5bC6C5FCBa93B8AaBDeF595` |
 | testnet | `hybridResolvers.v2` | `0x976a3E43b2a6706F52D9555931c68eb62D134ff7` |
+| testnet | `routes.2` | `84532` |
 | testnet | `chains.84532.nodeRegistryResolver` | `0x71C79717Bb907DBd73b564DA0F591209005a6695` |
 | testnet | `chains.84532.publicResolver` | `0x91FE109266b2EEcf6018Cb1ECd957fF9caAd0657` |
 
@@ -418,6 +421,7 @@ interface NamespaceDeployment
 | --- | --- | --- |
 | `ensChainId` | `number` | Chain ID of the ENS deployment (1 or 11155111). |
 | `hybridResolvers` | `` { readonly current: Address; readonly previous: Address; /** Route-table resolver (`findRoute`), `Abis.namespace.hybridResolverV2`. */ readonly v2: Address; } `` | Ethereum resolvers of Namespace parent names. `configs(node)` names their L2. |
+| `routes` | `Readonly<Record<number, number>>` | Chain ID of each `hybridResolvers.v2` route (`findRoute`) that leads to an L2, by route ID. Other routes are off-chain. The older hybrid resolvers name the chain ID itself (`configs(node).resolutionType`), with `9999` for off-chain. |
 | `chains` | `Readonly<Record<number, NamespaceChainContracts>>` | Contracts on each L2, by chain ID. |
 
 ### `Deployments.NamespaceFamily`
@@ -444,14 +448,21 @@ Identifier of an L2 namespace family.
 type NamespaceId = "basenames" | "linea" | "celonames" | "durin" | "namespace";
 ```
 
-### `Deployments.NamespaceNetwork`
+### `Deployments.Namespaces`
 
-The ENS network a namespace deployment belongs to: `mainnet` resolves through Ethereum mainnet,
-`testnet` through Sepolia.
+The L2 namespaces of one ENS deployment, by ID: what `Deployments.Profile.namespaces` holds.
 
 ```ts
-type NamespaceNetwork = "mainnet" | "testnet";
+interface Namespaces
 ```
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `basenames` (optional) | `ParentNamespace<BasenamesContracts>` |  |
+| `linea` (optional) | `ParentNamespace<LineaContracts>` |  |
+| `celonames` (optional) | `ParentNamespace<CelonamesContracts>` |  |
+| `durin` (optional) | `DurinDeployment` |  |
+| `namespace` (optional) | `NamespaceDeployment` |  |
 
 ### `Deployments.OffchainProvider`
 
@@ -512,6 +523,7 @@ interface Profile
 | `chainId` | `number` |  |
 | `v1` (optional) | `V1` |  |
 | `v2` (optional) | `V2` |  |
+| `namespaces` (optional) | `Namespaces` | L2 namespaces whose parent names this deployment resolves: where their names live and the contracts that hold them. ensforge reads names under these parents from their L2. |
 
 ### `Deployments.Provenance`
 
@@ -801,24 +813,24 @@ ENSv1 and ENSv2 on Ethereum mainnet.
 
 ### `Deployments.namespaceOf`
 
-Returns the L2 namespace whose ENS resolver is `resolver`, or `undefined` when no listed
-namespace uses it.
+Returns the L2 namespace of `profile` whose ENS resolver is `resolver`, or `undefined` when none
+uses it.
 
 ```ts
-function namespaceOf(options: { readonly chainId: number; readonly resolver: string; }): { readonly id: NamespaceId; readonly network: NamespaceNetwork } | undefined
+function namespaceOf(options: { readonly profile: Profile; readonly resolver: string; }): NamespaceId | undefined
 ```
 
-`resolver` is the resolver of the parent name on the ENS chain `chainId`. Matching the resolver,
-not the name, also finds every Durin and Namespace parent.
+`resolver` is the resolver of a parent name in the ENS deployment `profile` describes. Matching
+the resolver, not the name, also finds every Durin and Namespace parent.
 
 ```ts title="Finding the namespace of a parent name"
 import { Deployments } from "@ensforge/contracts"
 
 Deployments.namespaceOf({
-  chainId: 1,
+  profile: Deployments.mainnet,
   resolver: "0xde9049636F4a1dfE0a64d1bFe3155C0A14C54F31",
 })
-// { id: "basenames", network: "mainnet" }
+// "basenames"
 ```
 
 ### `Deployments.namespaces`

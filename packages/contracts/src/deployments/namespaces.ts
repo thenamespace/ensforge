@@ -159,6 +159,7 @@ export const namespace = {
       previous: "0x0dcD506D1Be162E50A2b434028A9a148F2686444",
       v2: "0x0A67542cbD8d71CB760d1EeB5a4b4a77ea35Ff9b",
     },
+    routes: { 2: 8453, 3: 10 },
     chains: {
       8453: {
         nodeRegistryResolver: "0x0D8e2772B4D8d58C8a66EEc5bf77c07934b84942",
@@ -177,6 +178,7 @@ export const namespace = {
       previous: "0x2F5E9E8B4495e4CDC5bC6C5FCBa93B8AaBDeF595",
       v2: "0x976a3E43b2a6706F52D9555931c68eb62D134ff7",
     },
+    routes: { 2: 84532 },
     chains: {
       84532: {
         nodeRegistryResolver: "0x71C79717Bb907DBd73b564DA0F591209005a6695",

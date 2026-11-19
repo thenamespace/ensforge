@@ -1,5 +1,7 @@
 import type { Address } from "viem";
 
+import type { Namespaces } from "./namespace-types.js";
+
 /**
  * Lifecycle of a deployment: `active` is the current protocol on that chain, `legacy` is kept for
  * compatibility and migration, `beta` is not yet recommended for production names.
@@ -341,4 +343,9 @@ export interface Profile {
   readonly chainId: number;
   readonly v1?: V1;
   readonly v2?: V2;
+  /**
+   * L2 namespaces whose parent names this deployment resolves: where their names live and the
+   * contracts that hold them. ensforge reads names under these parents from their L2.
+   */
+  readonly namespaces?: Namespaces;
 }

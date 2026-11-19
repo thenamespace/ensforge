@@ -9,15 +9,6 @@ import type { Address } from "viem";
 export type NamespaceId = "basenames" | "linea" | "celonames" | "durin" | "namespace";
 
 /**
- * The ENS network a namespace deployment belongs to: `mainnet` resolves through Ethereum mainnet,
- * `testnet` through Sepolia.
- *
- * @stability stable
- * @since 1.1.0
- */
-export type NamespaceNetwork = "mainnet" | "testnet";
-
-/**
  * Names under one parent name that live on one L2: the parent, the chains involved and the
  * contracts that answer for its names.
  *
@@ -135,8 +126,30 @@ export interface NamespaceDeployment {
     /** Route-table resolver (`findRoute`), `Abis.namespace.hybridResolverV2`. */
     readonly v2: Address;
   };
+  /**
+   * Chain ID of each `hybridResolvers.v2` route (`findRoute`) that leads to an L2, by route ID.
+   * Other routes are off-chain. The older hybrid resolvers name the chain ID itself
+   * (`configs(node).resolutionType`), with `9999` for off-chain.
+   */
+  readonly routes: Readonly<Record<number, number>>;
   /** Contracts on each L2, by chain ID. */
   readonly chains: Readonly<Record<number, NamespaceChainContracts>>;
+}
+
+/**
+ * The L2 namespaces of one ENS deployment, by ID: what `Deployments.Profile.namespaces` holds.
+ *
+ * @stability stable
+ * @since 1.1.0
+ */
+// `durin` is experimental upstream; the rest of the table is stable.
+// oxlint-disable-next-line effecttsgo/api-stability-leak
+export interface Namespaces {
+  readonly basenames?: ParentNamespace<BasenamesContracts>;
+  readonly linea?: ParentNamespace<LineaContracts>;
+  readonly celonames?: ParentNamespace<CelonamesContracts>;
+  readonly durin?: DurinDeployment;
+  readonly namespace?: NamespaceDeployment;
 }
 
 /**
