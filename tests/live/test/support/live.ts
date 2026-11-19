@@ -1,10 +1,10 @@
 import { layer } from "@effect/vitest";
-import { Context, Effect, Layer, Schema, String as Str } from "effect";
+import { Context, Effect, Layer, Record as Rec, Schema, String as Str } from "effect";
 
 import { Ensforge, ensActions } from "@ensforge/sdk";
 import { bigname, goldsky, type Indexer } from "@ensforge/sdk/indexer";
-import { networkRpc, type Network } from "@ensforge/test-harness/networks";
-import { http, type Address, type Hex } from "viem";
+import { l2Rpcs, networkRpc, type Network } from "@ensforge/test-harness/networks";
+import { http, type Address, type Client, type Hex } from "viem";
 import { getBlockNumber, getStorageAt } from "viem/actions";
 import { mainnet, sepolia } from "viem/chains";
 
@@ -32,7 +32,9 @@ const makeClient = (network: Network, url: string, indexer?: Indexer) => {
   const chain = network === "mainnet" ? mainnet : sepolia;
   return Ensforge.create({
     chain,
+    // L2s without an RPC set use their public RPC.
     transports: {
+      ...Rec.map(l2Rpcs(), (l2Url) => http(l2Url, { retryCount: 5, retryDelay: 3_000 })),
       [chain.id]: http(url, {
         fetchFn: throttledFetch,
         batch: { batchSize: 50, wait: 20 },
@@ -40,7 +42,6 @@ const makeClient = (network: Network, url: string, indexer?: Indexer) => {
         retryDelay: 3_000,
       }),
     },
-    publicRpc: false,
     ...(indexer === undefined ? {} : { indexer }),
   }).extend(ensActions());
 };
@@ -63,6 +64,12 @@ export class Live extends Context.Service<
     readonly blockNumber: Effect.Effect<bigint, LiveError>;
     /** The word at `slot` of `address`, `0x0…0` when unset. */
     readonly storageAt: (address: Address, slot: Hex) => Effect.Effect<Hex, LiveError>;
+    /** A viem read on any chain (the network's, or an L2 through its RPC). */
+    readonly read: <A>(
+      chainId: number,
+      label: string,
+      read: (client: Client) => Promise<A>,
+    ) => Effect.Effect<A, LiveError>;
   }
   // Service keys are `<package>/<Service>`; this file is not named after the service.
   // oxlint-disable-next-line effecttsgo/deterministic-keys
@@ -92,6 +99,12 @@ export class Live extends Context.Service<
               catch: (cause) =>
                 LiveError.make({ message: `storage of ${address}: ${String(cause)}` }),
             }).pipe(Effect.map((word): Hex => word ?? `0x${Str.repeat(64)("0")}`)),
+          read: (chainId, label, read) =>
+            Effect.tryPromise({
+              try: () => read(reader.client(chainId)),
+              catch: (cause) =>
+                LiveError.make({ message: `${label} on chain ${chainId}: ${String(cause)}` }),
+            }),
         });
       }),
     );
