@@ -180,6 +180,24 @@ describe("L2 namespaces", () => {
       }).pipe(Effect.provide(FetchHttpClient.layer)),
     );
 
+    // Names that only their owners can change: each family's gateway must still answer.
+    it.effect("real names of every family resolve through their gateways", () =>
+      Effect.gen(function* () {
+        const { reader } = yield* Live;
+
+        for (const name of [
+          "jesse.base.eth",
+          "bobbob.linea.eth",
+          "samvai.celo.eth",
+          "test.worldfair.eth",
+          "thecap.gotbased.eth",
+        ]) {
+          const address = yield* Actions.record.getAddress(reader, { name });
+          assert.isNotNull(address, name);
+        }
+      }),
+    );
+
     it.effect("active providers' gateways answer and unavailable ones still fail", () =>
       Effect.gen(function* () {
         const { reader } = yield* Live;
