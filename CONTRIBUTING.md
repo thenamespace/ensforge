@@ -101,7 +101,10 @@ in `Effect.promise`.
   `tests/fuzz` runs random operation sequences against a model, on-chain properties and a
   comparison with viem and ensjs (`pnpm test:fuzz`, see its README). `tests/services` runs
   ensforge against bigname, alto and a paymaster in Docker, and the end-to-end journeys
-  (`pnpm test:services`, see its README). Tag tests with the
+  (`pnpm test:services`, see its README). L2 namespaces run on one anvil per L2 profile
+  (`l2-base`, `l2-optimism`, `l2-linea`, `l2-celo`) next to the devnet: the integration lane's
+  `Namespaces` service starts them with their fixtures, serves each family's gateway from them and
+  gives clients their transports and the devnet profile with its `namespaces`. Tag tests with the
   catalog cases they cover (`meta: { cases: ["O08"] }`) and list them in
   `tests/fixtures/catalog/ledger.json`.
 - Every error code an action documents in `@throws` must be asserted by a test that names the
