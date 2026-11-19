@@ -48,3 +48,16 @@ add(
     `mainnet-shaped resolver.spoofed-offchain-lookup address: ${library}`,
   ]),
 );
+
+// This lane serves no namespace gateways: the Ethereum resolvers of `linea.eth` and
+// `durin-names.eth` ask one about the parent name itself (Basenames', Celonames' and Namespace's
+// answer their parent on-chain).
+add(
+  "ensforge reports the namespace parent's unserved gateway as a GatewayError; viem and ensjs return null.",
+  Arr.flatMap(["viem", "ensjs"], (library) =>
+    Arr.flatMap(["namespaces.parent.linea", "namespaces.parent.durin"], (id) => [
+      `mainnet-shaped ${id} address: ${library}`,
+      `mainnet-shaped ${id} url: ${library}`,
+    ]),
+  ),
+);
