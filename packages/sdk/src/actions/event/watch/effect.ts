@@ -5,7 +5,7 @@ import { watchBlockNumber } from "viem/actions";
 import type { Client } from "../../../client/types.js";
 import type { AnyError } from "../../../errors/types.js";
 import * as Action from "../../../internal/action/index.js";
-import { toAnyError } from "../../../internal/anyError.js";
+import { toAnyError, toAnyErrorAsync } from "../../../internal/anyError.js";
 import { normalizeName } from "../../../internal/name/normalize.js";
 import { get } from "../get/effect.js";
 import type { watch as Promises } from "./index.js";
@@ -18,6 +18,7 @@ export const watch = Effect.fn("ensforge.event.watch")(function* (
   const name = yield* normalizeName(options.name);
   const context = yield* Effect.context();
   const runPromise = Effect.runPromiseWith(context);
+  const runFork = Effect.runForkWith(context);
   let last: bigint | undefined;
   let running = false;
 
@@ -43,13 +44,19 @@ export const watch = Effect.fn("ensforge.event.watch")(function* (
           last = blockNumber;
           if (events.length > 0) options.onEvents(events);
         } catch (error) {
-          options.onError?.(toAnyError(error, { operation: "event.watch", name }));
+          options.onError?.(await toAnyErrorAsync(error, { operation: "event.watch", name }));
         } finally {
           running = false;
         }
       };
       void poll();
     },
-    onError: (error) => options.onError?.(toAnyError(error, { operation: "event.watch", name })),
+    onError: (error) => {
+      runFork(
+        Effect.map(toAnyError(error, { operation: "event.watch", name }), (translated) =>
+          options.onError?.(translated),
+        ),
+      );
+    },
   });
 }, Action.withContext("event.watch"));

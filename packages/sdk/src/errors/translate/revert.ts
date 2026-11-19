@@ -2,7 +2,7 @@
 import { String as Str } from "effect";
 
 import { Abis } from "@ensforge/contracts";
-import { decodeErrorResult, isHex, type Address, type Hex } from "viem";
+import { decodeErrorResult, isHex, type Abi, type Address, type Hex } from "viem";
 
 import { ContractRevertError, UnsupportedError } from "../classes/index.js";
 import type { EnsforgeError } from "../EnsforgeError.js";
@@ -21,9 +21,13 @@ const maxDepth = 8;
 /** Prefix of `WrappedErrorLib`: NameWrapper-based contracts revert `Error("WrappedError::0x…")`. */
 const wrappedErrorPrefix = "WrappedError::0x";
 
+// Decoding reads only the error's name and arguments; typing the 548 errors as a plain `Abi`
+// spares the type checker a union over all of them.
+const errorsAbi: Abi = Abis.shared.errors;
+
 const decode = (data: Hex): Revert => {
   try {
-    const decoded = decodeErrorResult({ abi: Abis.shared.errors, data });
+    const decoded = decodeErrorResult({ abi: errorsAbi, data });
     return { errorName: decoded.errorName, args: decoded.args, data };
   } catch {
     return { data };

@@ -3,7 +3,7 @@ import { Effect, Array as Arr } from "effect";
 
 import { IndexerError } from "../errors/classes/IndexerError.js";
 import type { AnyError } from "../errors/types.js";
-import { toAnyError } from "../internal/anyError.js";
+import { failWith } from "../internal/anyError.js";
 import {
   implementationOf,
   makeIndexer,
@@ -187,7 +187,7 @@ export const fallback = (
           failure = outcome.error;
         }
       }
-      return yield* Effect.fail(toAnyError(failure));
+      return yield* failWith(failure);
     });
   }
 

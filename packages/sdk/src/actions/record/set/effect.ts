@@ -10,7 +10,7 @@ import { UnsupportedError } from "../../../errors/classes/UnsupportedError.js";
 import type { AnyError } from "../../../errors/types.js";
 import * as Action from "../../../internal/action/index.js";
 import { addressOf } from "../../../internal/address.js";
-import { toAnyError } from "../../../internal/anyError.js";
+import { tryAny } from "../../../internal/anyError.js";
 import { loadName } from "../../../internal/name/load.js";
 import { requestedResolver, setResolverCall } from "../../../internal/name/set-resolver.js";
 import { requireRegistered } from "../../../internal/name/write.js";
@@ -117,10 +117,7 @@ export const plan = Effect.fnUntraced(function* (
   }
 
   const codecs = yield* recordWriteCodecs(options);
-  const calls = yield* Effect.try({
-    try: () => encodeRecordWrites(keying, loaded.data.parts, options, codecs),
-    catch: toAnyError,
-  });
+  const calls = yield* tryAny(() => encodeRecordWrites(keying, loaded.data.parts, options, codecs));
 
   // Records go to the new resolver before the name points at it, so a failed or rejected write
   // never leaves the name on an empty resolver. Neither resolver family authorizes record writes

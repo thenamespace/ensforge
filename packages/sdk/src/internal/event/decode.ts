@@ -1,8 +1,12 @@
 import { Abis } from "@ensforge/contracts";
-import { parseEventLogs, type Log } from "viem";
+import { parseEventLogs, type Abi, type Log } from "viem";
 
 import type { Event } from "../../actions/event/types.js";
 import { categorize, nameOf, nodeOf, protocolOf, type KnownContracts } from "./classify.js";
+
+// Events are read by name with untyped args; typing the shared events as a plain `Abi` spares the
+// type checker a union over all of them.
+const eventsAbi: Abi = Abis.shared.events;
 
 /**
  * Normalizes the ENS events among `logs`. Logs that are not ENS events (token transfers, other
@@ -11,7 +15,7 @@ import { categorize, nameOf, nodeOf, protocolOf, type KnownContracts } from "./c
 export const decodeLogs = (known: KnownContracts, logs: readonly Log[], name?: string): Event[] => {
   const events: Event[] = [];
   // `strict` drops logs whose indexed layout differs, e.g. ERC-20 transfers sharing a topic.
-  for (const log of parseEventLogs({ abi: Abis.shared.events, logs: [...logs], strict: true })) {
+  for (const log of parseEventLogs({ abi: eventsAbi, logs: [...logs], strict: true })) {
     // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- decoded log args are keyed by parameter name
     const args = (log.args ?? {}) as Readonly<Record<string, unknown>>;
     const kind = categorize(known, log.eventName, args);

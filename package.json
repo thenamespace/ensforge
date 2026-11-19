@@ -6,7 +6,7 @@
   "scripts": {
     "build": "turbo --root-turbo-json .config/turbo.json run build",
     "changeset": "changeset",
-    "check": "pnpm format:check && pnpm lint && turbo --root-turbo-json .config/turbo.json run typecheck build verify && pnpm bundle:size && pnpm test",
+    "check": "pnpm format:check && pnpm lint && turbo --root-turbo-json .config/turbo.json run typecheck build verify && pnpm bundle:size && pnpm type:cost && pnpm test",
     "ci:check": "pnpm check",
     "dev": "turbo --root-turbo-json .config/turbo.json run dev",
     "docs:generate": "pnpm --filter @ensforge/docs docs:generate",
@@ -25,6 +25,7 @@
     "release:check": "ensforge-dev release check",
     "release:smoke": "ensforge-dev release smoke",
     "bundle:size": "ensforge-dev bundle-size",
+    "type:cost": "ensforge-dev type-cost",
     "test": "vitest run -c .config/vitest.config.ts --project \"*:unit\" --project \"*:types\"",
     "test:chain": "vitest run -c .config/vitest.config.ts --project devnet --project fixtures --project integration",
     "test:fuzz": "vitest run -c .config/vitest.config.ts --project fuzz",

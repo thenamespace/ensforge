@@ -2,7 +2,7 @@ import { Effect } from "effect";
 
 import { from } from "../../client/from.js";
 import type { Client, Like } from "../../client/types.js";
-import { fromCause } from "../../errors/translate/fromCause.js";
+import { toAnyErrorAsync } from "../anyError.js";
 import { contextOf } from "./context.js";
 
 /**
@@ -35,14 +35,16 @@ export const promise = <options, value, error>(
   try {
     ens = from(client);
   } catch (cause) {
-    return Promise.reject(fromCause(cause, { operation: path }));
+    return toAnyErrorAsync(cause, { operation: path }).then((error) => Promise.reject(error));
   }
 
-  return Effect.runPromise(implementation(ens, options), { signal }).catch((cause: unknown) => {
-    throw signal?.aborted === true
-      ? signal.reason
-      : fromCause(cause, contextOf(path, ens, options));
-  });
+  return Effect.runPromise(implementation(ens, options), { signal }).catch((cause: unknown) =>
+    signal?.aborted === true
+      ? Promise.reject(signal.reason)
+      : toAnyErrorAsync(cause, contextOf(path, ens, options)).then((error) =>
+          Promise.reject(error),
+        ),
+  );
 };
 
 /**

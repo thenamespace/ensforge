@@ -23,6 +23,11 @@ export type Profile = {
   readonly batch: boolean;
   /** Domains left out of the all-domains decorator. */
   readonly optIn: readonly string[];
+  /**
+   * Domains the all-domains decorator loads on their first call instead of with the client (rarely
+   * used groups), with `batch`. Their own decorators (`migrationActions()`) stay static.
+   */
+  readonly lazy: readonly string[];
   /** The all-domains decorator, when the package has one (`ensActions`). */
   readonly aggregate?: { readonly name: string; readonly type: string } | undefined;
   /** Imports the `Action` namespace (for `Action.Declared`) into `src/actions/<domain>/effect.ts`. */
@@ -37,6 +42,7 @@ export const sdkProfile: Profile = {
   batch: true,
   // `indexer` needs an indexer and has its own entry point.
   optIn: ["indexer"],
+  lazy: ["approval", "dns", "event", "migration", "permission", "registry", "role", "wrapper"],
   aggregate: { name: "ensActions", type: "EnsActions" },
   actionImport: 'import type * as Action from "../../internal/action/index.js";',
   ownErrors: [],
@@ -47,6 +53,7 @@ export const extensionProfile: Profile = {
   boundImport: "@ensforge/sdk/extension",
   batch: false,
   optIn: [],
+  lazy: [],
   actionImport: 'import type { Action } from "@ensforge/sdk/extension";',
   ownErrors: ["HcaError"],
 };
@@ -258,6 +265,25 @@ const decoratorBlock = (entry: Domain): string => {
   );
 };
 
+/** The decorator `ensActions()` uses for a lazy domain: each call imports the domain first. */
+const onDemandBlock = ({ domain, actions }: Domain): string => {
+  const load = `load${pascal(domain)}`;
+  const values = Arr.map(actions, (action) => {
+    const ref = `${domain}.${action.name}`;
+    const call = (method: string) =>
+      `${load}().then((actions) => actions.${action.name}${method}(client, options))`;
+    if (!isWrite(action)) return `${action.name}: (options) => ${call("")},`;
+
+    const methods = Arr.map(
+      writeMethods,
+      (method) =>
+        `${method}: (options: Parameters<typeof ${ref}.${method}>[1]) => ${call(`.${method}`)},`,
+    );
+    return `${action.name}: Object.assign((options: Parameters<typeof ${ref}>[1]) => ${call("")}, {\n${indent(Arr.join(methods, "\n"), 2)}\n}),`;
+  });
+  return `const ${load} = () => import("../${domain}/index.js");\n\nconst ${domain}OnDemand = (client: Client<object>): ${pascal(domain)}Actions => ({\n  ${domain}: {\n${indent(Arr.join(values, "\n"), 4)}\n  },\n});`;
+};
+
 /** `actions/decorators.ts`: one decorator per domain, plus `batchActions()` and `ensActions()` in the sdk. */
 export const decorators = (domains: readonly Domain[], profile: Profile = sdkProfile): string => {
   const included = Arr.filter(domains, ({ domain }) => !profile.optIn.includes(domain));
@@ -310,4 +336,114 @@ export const decorators = (domains: readonly Domain[], profile: Profile = sdkPro
     ],
     "\n",
   );
+};
+
+const ensActionsDoc =
+  '/**\n * Adds every ENS action group to a client. Rarely used groups (approval, dns, event, migration,\n * permission, registry, role, wrapper) and `batch` load with their first call, so a client with\n * every action stays small; their own decorators (`migrationActions()`) load with the client.\n *\n * **Example** (A client with every action)\n *\n * ```ts\n * import { Ensforge, ensActions } from "@ensforge/sdk"\n *\n * const ens = Ensforge.create({ publicClient, walletClient }).extend(ensActions())\n * ```\n *\n * @stability stable\n * @category decorators\n * @since 1.0.0\n */';
+
+// Relative imports move one folder down, into `actions/decorators/`.
+const nested = (specifier: string) =>
+  Str.startsWith("./")(specifier) ? `../${Str.slice(2)(specifier)}` : `../${specifier}`;
+
+/**
+ * `actions/decorators/*.ts` for a package with lazy domains: one module per domain decorator, so
+ * `ensActions()` (in `ens.ts`) imports only the domains it loads up front. A bundler keeps a
+ * dynamically imported module up front when a module the app uses imports it statically.
+ */
+export const decoratorFiles = (
+  domains: readonly Domain[],
+  profile: Profile,
+): ReadonlyArray<readonly [file: string, text: string]> => {
+  const aggregate = profile.aggregate ?? { name: "ensActions", type: "EnsActions" };
+  const included = Arr.filter(domains, ({ domain }) => !profile.optIn.includes(domain));
+  const isLazy = ({ domain }: Domain) => profile.lazy.includes(domain);
+  const clientImport = `import type { Client } from "${nested(profile.clientImport)}";`;
+  // A domain file imports only the bound types its members use.
+  const boundImport = (entry: Domain) => {
+    const used = Arr.filter(["Bound", "BoundWrite"], (name) =>
+      Arr.some(entry.actions, (action) =>
+        name === "BoundWrite"
+          ? isWrite(action)
+          : !isWrite(action) && !action.types.includes("Bound"),
+      ),
+    );
+    return used.length === 0
+      ? ""
+      : `import type { ${Arr.join(used, ", ")} } from "${nested(profile.boundImport)}";\n`;
+  };
+
+  const domainFiles = Arr.map(
+    domains,
+    (entry) =>
+      [
+        `src/actions/decorators/${entry.domain}.ts`,
+        `${header}${clientImport}\n${boundImport(entry)}import * as ${entry.domain} from "../${entry.domain}/index.js";\n\n${decoratorBlock(entry)}\n`,
+      ] as const,
+  );
+  const batchFile = [
+    "src/actions/decorators/batch.ts",
+    `${header}import { batch } from "../../batch/index.js";\n${clientImport}\n\n/**\n * \`batch\` bound to a client.\n *\n * @stability stable\n */\nexport type BatchActions = { readonly batch: batch.Bound };\n\n/**\n * Adds \`batch\` to a client.\n *\n * @stability stable\n * @category decorators\n * @since 1.0.0\n */\nexport const batchActions =\n  () =>\n  (client: Client<object>): BatchActions => ({\n    batch: (options) => batch(client, options),\n  });\n`,
+  ] as const;
+
+  const decoratorImports = Arr.map(included, (entry) =>
+    isLazy(entry)
+      ? `import type { ${pascal(entry.domain)}Actions } from "./${entry.domain}.js";`
+      : `import { ${entry.domain}Actions, type ${pascal(entry.domain)}Actions } from "./${entry.domain}.js";`,
+  );
+  // Only writes name their action's type (\`Parameters<typeof dns.claim>\`).
+  const lazyTypes = Arr.map(
+    Arr.filter(included, (entry) => isLazy(entry) && Arr.some(entry.actions, isWrite)),
+    ({ domain }) => `import type * as ${domain} from "../${domain}/index.js";`,
+  );
+  const spread = Arr.join(
+    [
+      ...Arr.map(included, (entry) =>
+        isLazy(entry)
+          ? `...${entry.domain}OnDemand(client),`
+          : `...${entry.domain}Actions()(client),`,
+      ),
+      // \`batch\` reaches every read, so it loads with its first call too.
+      'batch: (options) => import("../../batch/index.js").then((module) => module.batch(client, options)),',
+    ],
+    "\n",
+  );
+  const all = Arr.join(
+    Arr.map(included, ({ domain }) => `${pascal(domain)}Actions`),
+    " & ",
+  );
+  const ensFile = [
+    "src/actions/decorators/ens.ts",
+    Arr.join(
+      [
+        header,
+        clientImport,
+        'import type { BatchActions } from "./batch.js";',
+        ...decoratorImports,
+        ...lazyTypes,
+        "",
+        Arr.join(Arr.map(Arr.filter(included, isLazy), onDemandBlock), "\n\n"),
+        "",
+        "/**\n * Every action group bound to a client.\n *\n * @stability stable\n */",
+        `export type ${aggregate.type} = ${all} & BatchActions;`,
+        "",
+        ensActionsDoc,
+        `export const ${aggregate.name} =\n  () =>\n  (client: Client<object>): ${aggregate.type} => ({\n${indent(spread, 4)}\n  });`,
+        "",
+      ],
+      "\n",
+    ),
+  ] as const;
+
+  const barrel = [
+    "src/actions/decorators.ts",
+    `${header}${Arr.join(
+      Arr.map(
+        [...Arr.map(domains, ({ domain }) => domain), "batch", "ens"],
+        (file) => `export * from "./decorators/${file}.js";`,
+      ),
+      "\n",
+    )}\n`,
+  ] as const;
+
+  return [...domainFiles, batchFile, ensFile, barrel];
 };

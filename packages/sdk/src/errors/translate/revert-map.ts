@@ -16,6 +16,7 @@ import {
   UnsupportedError,
 } from "../classes/index.js";
 import type { EnsforgeError } from "../EnsforgeError.js";
+import { offchainWriteRefused } from "./offchainWrite.js";
 import { roleNames } from "./role-names.js";
 
 /** Builds the ensforge error for one decoded contract error. */
@@ -76,19 +77,6 @@ const commitmentTooOld: Mapper = ([commitment, validTo]) =>
     code: "COMMITMENT_TOO_OLD",
     commitment: commitment as Hex,
     expiresAt: validTo as bigint | undefined,
-  });
-
-/**
- * A resolver that keeps its records elsewhere (an L2, a database behind a gateway) refusing an
- * on-chain write; `detail` says where its records live.
- */
-export const offchainWriteRefused = (detail: string): UnsupportedError =>
-  new UnsupportedError({
-    code: "RESOLVER_PROFILE_UNSUPPORTED",
-    feature: "on-chain records",
-    shortMessage: "The resolver keeps its records off-chain; it does not accept on-chain writes.",
-    hint: "Update the records where the resolver keeps them (its own app or gateway), or point the name at an on-chain resolver with `resolver.set`.",
-    details: [detail],
   });
 
 /**

@@ -1,7 +1,7 @@
 ---
 title: "Client"
 description: "Look up the options of Ensforge.create, the action groups, and the read, write and plan option types that every @ensforge/sdk action shares."
-keywords: ["Ensforge.ChainClients","Ensforge.Client","Ensforge.ClientBase","Ensforge.Config","Ensforge.CreateOptions","Ensforge.Gateways","Ensforge.Like","Ensforge.ViemClient","Ensforge.ViemWalletClient","Ensforge.create","Ensforge.from","Ensforge.is","Ensforge.fromWagmi","Ensforge.fromWagmi.Options","Ensforge.Ensforge","Ensforge.layer","ApprovalActions","BatchActions","DnsActions","EnsActions"]
+keywords: ["Ensforge.ChainClients","Ensforge.Client","Ensforge.ClientBase","Ensforge.Config","Ensforge.CreateOptions","Ensforge.Gateways","Ensforge.Like","Ensforge.ViemClient","Ensforge.ViemClientLike","Ensforge.ViemWalletClient","Ensforge.create","Ensforge.from","Ensforge.is","Ensforge.fromWagmi","Ensforge.fromWagmi.Options","Ensforge.Ensforge","Ensforge.layer","ApprovalActions","BatchActions","DnsActions"]
 generated: true
 ---
 
@@ -147,8 +147,8 @@ type ChainClients
 
 | Field | Type | Description |
 | --- | --- | --- |
-| `publicClient` | `ViemClient` | viem client for reads and simulation on the chain. |
-| `walletClient` (optional) | `ViemWalletClient \| (() => ViemWalletClient \| undefined \| Promise<ViemWalletClient \| undefined>)` | viem client for writes on the chain, or a getter for wallets that change (wagmi connectors). |
+| `publicClient` | `ViemClientLike` | viem client for reads and simulation on the chain. |
+| `walletClient` (optional) | `ViemClientLike \| (() => ViemClientLike \| undefined \| Promise<ViemClientLike \| undefined>)` | viem client for writes on the chain, or a getter for wallets that change (wagmi connectors). |
 
 ### `Ensforge.Client`
 
@@ -213,8 +213,8 @@ type CreateOptions
 
 | Option | Type | Default | Description |
 | --- | --- | --- | --- |
-| `publicClient` (required) | `ViemClient` |  | viem client for reads. Its chain selects the deployment. |
-| `walletClient` | `ViemWalletClient \| (() => ViemWalletClient \| undefined \| Promise<ViemWalletClient \| undefined>)` | `publicClient` when it has an account | viem client for writes, or a getter for wallets that change (wagmi connectors). |
+| `publicClient` (required) | `ViemClientLike` |  | viem client for reads. Its chain selects the deployment. |
+| `walletClient` | `ViemClientLike \| (() => ViemClientLike \| undefined \| Promise<ViemClientLike \| undefined>)` | `publicClient` when it has an account | viem client for writes, or a getter for wallets that change (wagmi connectors). |
 | `chains` | `Readonly<Record<number, ChainClients>>` | none; writes for another chain fail with [`CHAIN_NOT_CONFIGURED`](/docs/reference/errors/CHAIN_NOT_CONFIGURED) | Clients for other chains, by chain ID: writes ENS makes there (an L2 primary name) run on them, and plans for them resume on them. The signer is the same account on every chain. |
 | `account` | `Account \| Address` | the wallet client's account | Default signer for writes. |
 | `deployment` | `Deployments.Profile` | `Deployments.get({ chainId })` | ENS deployments. Required for chains ensforge does not ship (devnets, forks, other chains). |
@@ -246,7 +246,7 @@ type Gateways
 Anything an action accepts: an ensforge client or a bare viem client.
 
 ```ts
-type Like = Client<object> | ViemClient;
+type Like = Client<object> | ViemClientLike;
 ```
 
 ### `Ensforge.ViemClient`
@@ -257,6 +257,21 @@ A viem client used for reads. viem's base client type keeps type checking fast; 
 ```ts
 type ViemClient = ViemBaseClient<Transport, Chain | undefined>;
 ```
+
+### `Ensforge.ViemClientLike`
+
+A viem client as ensforge's options and actions take it: any `PublicClient`, `WalletClient` or
+`createClient` client fits. It leaves out viem's generic `extend` and typed `request`, so app
+code that creates the client inline (`publicClient: createPublicClient(...)`) does not make the
+type checker infer viem's generics against them (about 120k type instantiations).
+
+```ts
+type ViemClientLike = Pick< ViemWalletClient, | "account" | "batch" | "cacheTime" | "ccipRead" | "chain" | "key" | "name" | "pollingInterval" | "transport" | "type" | "uid" > & { readonly request: EIP1193RequestFn };
+```
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `request` | `EIP1193RequestFn` |  |
 
 ### `Ensforge.ViemWalletClient`
 
@@ -339,7 +354,9 @@ function dnsActions()
 
 ### `ensActions`
 
-Adds every ENS action group to a client.
+Adds every ENS action group to a client. Rarely used groups (approval, dns, event, migration,
+permission, registry, role, wrapper) and `batch` load with their first call, so a client with
+every action stays small; their own decorators (`migrationActions()`) load with the client.
 
 ```ts
 function ensActions()

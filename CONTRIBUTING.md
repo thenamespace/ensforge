@@ -60,8 +60,9 @@ CI runs the same (`pnpm ci:check`, then `pnpm pack:check`). `pnpm check` covers 
 and each package's `verify`: generated code, JSDoc lint, API reports, published types compiled by a
 consumer, OpenAPI snapshots and every JSDoc example. `pnpm pack:check` validates package metadata
 and exports. `pnpm check` also bundles typical imports and fails when one grows more than 5% over
-`.config/bundle-budgets.json`; after an intended change, record new sizes with
-`pnpm bundle:size --write`.
+`.config/bundle-budgets.json`, and type-checks typical app code against the built `.d.ts`, failing
+when its type instantiations grow more than 5% over `.config/type-budgets.json`. After an intended
+change, record new numbers with `pnpm bundle:size --write` or `pnpm type:cost --write`.
 
 During development, run a focused package command when it provides a faster feedback loop:
 

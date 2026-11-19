@@ -5,7 +5,9 @@ keywords: [bundle size, tree-shaking, standalone actions, ensActions, sideEffect
 ---
 
 `ensActions()` adds every action except the indexer group to your client, which is the easiest way to start and the largest
-thing to ship. For a browser app that reads one or two values, import the actions you use instead.
+thing to ship. It loads the rarely used groups (approval, dns, event, migration, permission,
+registry, role, wrapper) and `batch` only when you first call one of them. For a browser app that
+reads one or two values, import the actions you use instead.
 
 ## Prerequisites
 
@@ -17,14 +19,18 @@ thing to ship. For a browser app that reads one or two values, import the action
 ensforge's CI bundles typical imports with viem excluded and fails when one grows more than 5% over
 its recorded budget. At the time of writing the recorded sizes are:
 
-| Import                                                 | Gzipped size |
-| ------------------------------------------------------ | ------------ |
-| `Actions.record.getText`                               | about 41 kB  |
-| `Ensforge.create(...).extend(ensActions())`            | about 106 kB |
-| `ensActions()` plus `indexerActions()` and `bigname()` | about 128 kB |
+| Import                                                     | Gzipped size |
+| ---------------------------------------------------------- | ------------ |
+| `Actions.record.getText`                                   | about 34 kB  |
+| `Actions.record.set`                                       | about 58 kB  |
+| `recordActions()`, `nameActions()`, `primaryNameActions()` | about 69 kB  |
+| `Ensforge.create(...).extend(ensActions())`                | about 92 kB  |
+| `ensActions()` plus `indexerActions()` and `bigname()`     | about 117 kB |
 
-The numbers move with each release. The point is the ratio: one action costs well under half of the
-full client.
+These are what loads up front. The groups `ensActions()` loads on first use, and the code that
+translates a failure into a typed error (it loads on the first failure), come on top only when your
+app reaches them. The numbers move with each release. The point is the ratio: one action costs well
+under half of the full client.
 
 ## Import one action
 

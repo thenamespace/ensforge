@@ -14,6 +14,7 @@ import {
 } from "effect";
 import { Command, Flag } from "effect/cli";
 
+import { overBudget, readBudgets } from "../budgets.ts";
 import { CheckFailed, SetupError, type ToolFailed } from "../errors.ts";
 import { consumerManifests, entriesModule, publicEntries } from "../release/consumer.ts";
 import { contentProblems } from "../release/contents.ts";
@@ -21,7 +22,7 @@ import { checksums, integrityOf, planProblems, readPackDir } from "../release/pa
 import { Tools } from "../services/Tools.ts";
 import { TypeScript } from "../services/TypeScript.ts";
 import { Workspace } from "../services/Workspace.ts";
-import { measure, overBudget, readBudgets, scenarios } from "./bundleSize.ts";
+import { measure, scenarios } from "./bundleSize.ts";
 
 const PackageManifest = Schema.fromJsonString(
   Schema.Struct({
@@ -223,18 +224,18 @@ export const releaseCheck = Effect.fn("releaseCheck")(
           typescript.tsc(["-p", config, "--pretty", "false"], { cwd: consumer }),
         );
 
-        const budgets = yield* readBudgets(workspace.root);
+        const budgets = yield* readBudgets(workspace.root, "bundle-budgets.json");
         yield* step(
           "bundle budgets",
           Effect.forEach(
             Rec.toEntries(scenarios),
-            ([name, [, source]], index) =>
-              measure(path.join(consumer, "bundles", String(index)), source).pipe(
+            ([name, [, source, scope]], index) =>
+              measure(path.join(consumer, "bundles", String(index)), source, scope).pipe(
                 Effect.catchTag("PlatformError", Effect.die),
                 Effect.map((size) => [name, size] as const),
               ),
             { concurrency: 1 },
-          ).pipe(Effect.flatMap((sizes) => fail(overBudget(sizes, budgets)))),
+          ).pipe(Effect.flatMap((sizes) => fail(overBudget(sizes, budgets, "B gzip")))),
         );
       }
     }

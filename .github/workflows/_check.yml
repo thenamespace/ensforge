@@ -1,5 +1,5 @@
-# The fast lane, shared by CI: formatting, lint, types, builds, verify, bundle budgets, the unit
-# and type tests, package metadata, and a security audit of the workflows. Network- and
+# The fast lane, shared by CI: formatting, lint, types, builds, verify, bundle and type budgets, the
+# unit and type tests, package metadata, and a security audit of the workflows. Network- and
 # chain-free; the devnet, fuzz, services, fork and live lanes run in _lanes.yml.
 name: Check
 

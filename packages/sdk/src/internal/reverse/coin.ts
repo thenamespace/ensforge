@@ -1,11 +1,11 @@
-import { Effect, String as Str } from "effect";
+import { type Effect, String as Str } from "effect";
 
 import type { Address } from "viem";
 
 import { InvalidInputError } from "../../errors/classes/InvalidInputError.js";
 import type { AnyError } from "../../errors/types.js";
 import * as CoinType from "../../utils/CoinType.js";
-import { toAnyError } from "../anyError.js";
+import { tryAny } from "../anyError.js";
 import { defaultEvmCoinType } from "../records/read-profiles.js";
 
 /** Ethereum mainnet's coin type, whose reverse names live under `addr.reverse`. */
@@ -19,24 +19,21 @@ export const primaryNameCoinType = (
   // oxlint-disable-next-line typescript/no-redundant-type-constituents -- the literal or explicit type argument documents the public type
   coin: CoinType.Input | "default" | undefined,
 ): Effect.Effect<bigint, AnyError> =>
-  Effect.try({
-    try: () => {
-      const coinType =
-        coin === undefined
-          ? ethCoinType
-          : coin === "default"
-            ? defaultEvmCoinType
-            : CoinType.from(coin);
-      if (!CoinType.isEvm(coinType)) {
-        throw new InvalidInputError({
-          code: "INVALID_COIN_TYPE",
-          input: coin,
-          hint: 'Primary names exist for EVM chains: `eth`, `{ chainId }` or `"default"`.',
-        });
-      }
-      return coinType;
-    },
-    catch: toAnyError,
+  tryAny(() => {
+    const coinType =
+      coin === undefined
+        ? ethCoinType
+        : coin === "default"
+          ? defaultEvmCoinType
+          : CoinType.from(coin);
+    if (!CoinType.isEvm(coinType)) {
+      throw new InvalidInputError({
+        code: "INVALID_COIN_TYPE",
+        input: coin,
+        hint: 'Primary names exist for EVM chains: `eth`, `{ chainId }` or `"default"`.',
+      });
+    }
+    return coinType;
   });
 
 /** ENSIP-19 reverse name of an address for an EVM coin type. */

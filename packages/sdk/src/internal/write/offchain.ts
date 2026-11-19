@@ -3,7 +3,7 @@ import { Effect } from "effect";
 import { Abis, InterfaceIds } from "@ensforge/contracts";
 
 import type { Client } from "../../client/types.js";
-import { offchainWriteRefused } from "../../errors/translate/revert-map.js";
+import { offchainWriteRefused } from "../../errors/translate/offchainWrite.js";
 import type { AnyError } from "../../errors/types.js";
 import * as Rpc from "../rpc/index.js";
 
