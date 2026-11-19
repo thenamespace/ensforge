@@ -74,7 +74,7 @@ export const resolveCalls = Effect.fnUntraced(function* (
       (result) =>
         result === "0x"
           ? Effect.undefined
-          : fromRevertData(result, { contract: resolved.resolver }),
+          : fromRevertData(result, { contract: resolved.resolver, contractKind: "resolver" }),
       { concurrency: "unbounded" },
     );
     const error =

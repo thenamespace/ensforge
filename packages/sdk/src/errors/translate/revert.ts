@@ -4,7 +4,12 @@ import { String as Str } from "effect";
 import { Abis } from "@ensforge/contracts";
 import { decodeErrorResult, isHex, type Abi, type Address, type Hex } from "viem";
 
-import { ContractRevertError, UnsupportedError } from "../classes/index.js";
+import {
+  ContractRevertError,
+  GatewayError,
+  UnauthorizedError,
+  UnsupportedError,
+} from "../classes/index.js";
 import type { EnsforgeError } from "../EnsforgeError.js";
 import { requireMap, revertMap } from "./revert-map.js";
 
@@ -35,6 +40,21 @@ const decode = (data: Hex): Revert => {
 };
 
 /**
+ * A resolver rejecting a signature (EIP-3668 `resolveWithProof`), directly or inside a resolution,
+ * rejects its gateway's signed answer, not anything the reader did.
+ */
+const rejectedAnswer = (inner: EnsforgeError, context: EnsforgeError.Context): EnsforgeError =>
+  inner instanceof UnauthorizedError &&
+  (inner.code === "SIGNATURE_EXPIRED" || inner.code === "SIGNATURE_INVALID")
+    ? new GatewayError({
+        code: "GATEWAY_RESPONSE_INVALID",
+        shortMessage: "The resolver rejected its gateway's signed answer.",
+        cause: inner,
+        context,
+      })
+    : inner;
+
+/**
  * Translates a contract revert into an ensforge error. `ResolverError(bytes)` and the mainnet
  * `ResolutionError(address,bytes)` are unwrapped so the inner cause decides the class.
  */
@@ -57,7 +77,7 @@ export const fromRevert = (
         context,
       });
     }
-    return fromRevert({ data: args[0] as Hex }, context, depth + 1);
+    return rejectedAnswer(fromRevert({ data: args[0] as Hex }, context, depth + 1), context);
   }
 
   if (depth < maxDepth && errorName === "Error" && typeof args[0] === "string") {
@@ -75,14 +95,20 @@ export const fromRevert = (
 
   if (depth < maxDepth && errorName === "ResolutionError") {
     const registry = args[0] as Address;
-    return fromRevert({ data: args[1] as Hex }, { ...context, registry }, depth + 1).withContext({
-      registry,
-    });
+    const inner = fromRevert({ data: args[1] as Hex }, { ...context, registry }, depth + 1);
+    return rejectedAnswer(inner, { ...context, registry }).withContext({ registry });
   }
 
   const revertContext = { ...context, revert: { errorName, data: decoded.data } };
   const mapper = errorName === undefined ? undefined : revertMap[errorName];
-  if (mapper !== undefined) return mapper(args, revertContext).withContext(revertContext);
+  if (mapper !== undefined) {
+    const error = mapper(args, revertContext).withContext(revertContext);
+    // A resolver's answer, or a `resolve…` call: where CCIP-Read callbacks check signatures.
+    return context.contractKind === "resolver" ||
+      Str.startsWith("resolve")(context.functionName ?? "")
+      ? rejectedAnswer(error, revertContext)
+      : error;
+  }
 
   return new ContractRevertError({
     code: "CONTRACT_REVERTED",

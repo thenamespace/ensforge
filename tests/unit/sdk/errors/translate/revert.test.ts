@@ -62,6 +62,27 @@ describe("fromRevert unwrapping", () => {
     assert.strictEqual(error.context.registry, registry);
   });
 
+  // An off-chain resolver's `resolveWithProof` rejecting its gateway's signature (L2 namespaces'
+  // gateways sign their answers).
+  it.each(["SignatureExpired", "InvalidSignature"] as const)(
+    "a resolver rejecting a signature (%s) rejects its gateway's answer",
+    (errorName) => {
+      const inner = encodeErrorResult({ abi: parseAbi([`error ${errorName}()`]), errorName });
+
+      for (const [data, context] of [
+        [resolverError(inner), {}],
+        [resolutionError(inner), {}],
+        [inner, { functionName: "resolve" }],
+        [inner, { contractKind: "resolver" }],
+      ] as const) {
+        const error = fromRevert({ data }, { name: "alice.base.eth", ...context });
+        assert.strictEqual(error._tag, "GatewayError");
+        assert.strictEqual(error.code, "GATEWAY_RESPONSE_INVALID");
+        assert.strictEqual(error.context.name, "alice.base.eth");
+      }
+    },
+  );
+
   it("an empty ResolverError means the resolver lacks the profile", () => {
     const error = fromRevert({ data: resolverError("0x") }, { name: "nick.eth" });
 
