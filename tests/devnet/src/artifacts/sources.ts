@@ -60,7 +60,13 @@ export type Source =
    * singletons, and old ENS generations no source reproduces. `abi` names an artifact whose ABI
    * covers the code's functions. Needs `ENSFORGE_MAINNET_RPC_URL`.
    */
-  | { readonly kind: "runtime"; readonly address: `0x${string}`; readonly abi?: string };
+  | { readonly kind: "runtime"; readonly address: `0x${string}`; readonly abi?: string }
+  /**
+   * Creation code Sourcify recompiled from the verified sources of the contract at `address` on
+   * `chainId` (an exact match), with its ABI: contracts from outside ENS's repositories (the L2
+   * namespaces), deployed with the devnet's own constructor arguments. Needs network access.
+   */
+  | { readonly kind: "sourcify"; readonly chainId: number; readonly address: `0x${string}` };
 
 const v1Deployment = (name: string): Source => ({
   kind: "deployment",
@@ -86,6 +92,14 @@ const v2Build = (contract: string): Source => ({
 });
 
 const ensContracts = "project/lib/ens-contracts/contracts";
+
+const sourcify = (chainId: number, address: `0x${string}`): Source => ({
+  kind: "sourcify",
+  chainId,
+  address,
+});
+const base = (address: `0x${string}`) => sourcify(8453, address);
+const linea = (address: `0x${string}`) => sourcify(59144, address);
 
 /** Artifact name (its path under `artifacts/`, without `.json`) → source. */
 export const sources = {
@@ -376,6 +390,39 @@ export const sources = {
   "canonical/UniversalSigValidator": {
     kind: "runtime",
     address: "0x164af34fAF9879394370C7f09064127C043A35E9",
+  },
+
+  // L2 namespaces: each family's contracts as deployed on its L2 and on Ethereum (verified exact
+  // matches on Sourcify), deployed with devnet owners, signers and gateways. Durin's L1Resolver
+  // is the Sepolia deployment of the code mainnet runs at the same address.
+  "basenames/Registry": base("0xB94704422c2a1E396835A571837Aa5AE53285a95"),
+  "basenames/BaseRegistrar": base("0x03c4738Ee98aE44591e1A4A4F3CaB6641d95DD9a"),
+  "basenames/L2Resolver": base("0xC6d566A56A1aFf6508b41f6c90ff131615583BCD"),
+  "basenames/UpgradeableL2Resolver": base("0xf74b949f2105178eEEd4Ef35a131715E967337ab"),
+  "basenames/TransparentUpgradeableProxy": base("0x426fA03fB86E510d0Dd9F70335Cf102a98b10875"),
+  "basenames/L1Resolver": sourcify(1, "0xde9049636F4a1dfE0a64d1bFe3155C0A14C54F31"),
+  "linea/ENSRegistry": linea("0x50130b669B28C339991d8676FA73CF122a121267"),
+  "linea/BaseRegistrarImplementation": linea("0x6e84390dCc5195414eC91A8c56A5c91021B95704"),
+  "linea/NameWrapper": linea("0xA53cca02F98D590819141Aa85C891e2Af713C223"),
+  "linea/PublicResolver": linea("0x86c5AED9F27837074612288610fB98ccC1733126"),
+  "linea/StaticMetadataService": linea("0x18703D0117121f6a7476221e2afC57Faf9866E4c"),
+  "celonames/CeloNames": sourcify(42220, "0x4d7912779679AFdC592CBd4674b32Fcb189395F7"),
+  "celonames/L1Resolver": sourcify(1, "0xC6FC912C5DACb6BF0a24Bad113493c900fEA254a"),
+  "durin/L1Resolver": sourcify(11155111, "0x8A968aB9eb8C084FBC44c531058Fc9ef945c3D61"),
+  "durin/L2RegistryFactory": base("0xDddddDdDDD8Aa1f237b4fa0669cb46892346d22d"),
+  "durin/L2Registry": base("0xdeB09eB3111cB75d538216e8B8fC30047d75fb34"),
+  "namespace/NamespaceHybridResolver": sourcify(1, "0xe5A0277018879679d18cCDb66B52BD06f7fE95FD"),
+  "namespace/HybridResolverV2": sourcify(1, "0x0A67542cbD8d71CB760d1EeB5a4b4a77ea35Ff9b"),
+  "namespace/NodeRegistryResolver": base("0x0D8e2772B4D8d58C8a66EEc5bf77c07934b84942"),
+  "namespace/RegistryEmitter": base("0xA9EA3fbBDB2d1696dC67C5FA45D9A64Ac432888C"),
+  // The registry generation without `registryVersion`; ensforge reads both generations alike.
+  "namespace/EnsNameRegistry": base("0x46952fF2321498cB56447c76740966621b709706"),
+  "namespace/NamePublicResolver": base("0x32d63B83BBA5a25f1f8aE308d7fd1F3c0b1abfA6"),
+  // Durin's L1Resolver reads the ENS registry at its mainnet address; this forwards there.
+  "mocks/RegistryForwarder": {
+    kind: "local",
+    file: "RegistryForwarder.sol",
+    contract: "RegistryForwarder",
   },
 } as const satisfies Record<string, Source>;
 

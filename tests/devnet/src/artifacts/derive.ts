@@ -10,6 +10,7 @@ import {
   Stream,
   String as Str,
 } from "effect";
+import { HttpClient, HttpClientResponse } from "effect/http";
 import { ChildProcess, ChildProcessSpawner } from "effect/process";
 
 import { createPublicClient, http, type Abi, type Hex } from "viem";
@@ -86,6 +87,33 @@ const checkout = Effect.fn("checkout")(function* (repository: Repository) {
 });
 
 const Deployment = Schema.Struct({ abi: AbiSchema, bytecode: Schema.optional(HexSchema) });
+
+const SourcifyContract = Schema.Struct({
+  match: Schema.NullOr(Schema.String),
+  abi: AbiSchema,
+  creationBytecode: Schema.Struct({ recompiledBytecode: HexSchema }),
+});
+
+/** The ABI and recompiled creation code of an exact Sourcify match. */
+const fromSourcify = Effect.fnUntraced(function* (
+  name: ArtifactName,
+  source: Extract<Source, { readonly kind: "sourcify" }>,
+) {
+  const url = `https://sourcify.dev/server/v2/contract/${source.chainId}/${source.address}?fields=abi,creationBytecode`;
+  const contract = yield* HttpClient.get(url).pipe(
+    Effect.flatMap(HttpClientResponse.filterStatusOk),
+    Effect.flatMap((response) => response.text),
+    Effect.flatMap(Schema.decodeEffect(Schema.fromJsonString(SourcifyContract))),
+    Effect.mapError((cause) => ArtifactError.make({ artifact: name, message: String(cause) })),
+  );
+  if (contract.match !== "exact_match") {
+    return yield* ArtifactError.make({
+      artifact: name,
+      message: `${source.address} on ${source.chainId} is a ${contract.match ?? "missing"} match`,
+    });
+  }
+  return { abi: contract.abi, bytecode: contract.creationBytecode.recompiledBytecode, source };
+});
 
 const BuildInfo = Schema.Struct({
   solcVersion: Schema.String,
@@ -268,6 +296,12 @@ export const deriveAll = Effect.fn("deriveAll")(function* () {
       }
       derived.set(name, { abi, bytecode: code, source });
     }
+  }
+
+  for (const [name, source] of entries) {
+    if (source.kind !== "sourcify") continue;
+    const artifact = yield* fromSourcify(name, source);
+    derived.set(name, artifact);
   }
 
   return derived;
