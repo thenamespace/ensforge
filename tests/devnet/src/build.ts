@@ -19,10 +19,29 @@ import { Anvil } from "./anvil/Anvil.ts";
 import { HexSchema } from "./artifacts/json.ts";
 import { sources, type ArtifactName } from "./artifacts/sources.ts";
 import { devnetClient } from "./client.ts";
-import { genesisTimestamp, runSteps, type Ledger, type Step } from "./deploy/engine.ts";
+import {
+  genesisTimestamp,
+  runSteps,
+  type Ledger,
+  type Step,
+  type Variant,
+} from "./deploy/engine.ts";
 import { DeployError } from "./errors.ts";
 import { cacheDir, packageDir } from "./package.ts";
-import { profiles, type ProfileDefinition, type ProfileName } from "./profiles/profiles.ts";
+import { l2Profiles, profiles, type L2ProfileName, type ProfileName } from "./profiles/profiles.ts";
+
+/** A profile to build: an ENS deployment on the devnet's chain, or an L2 next to it. */
+export type BuildName = ProfileName | L2ProfileName;
+
+export const isL2Profile = (name: BuildName): name is L2ProfileName => name in l2Profiles;
+
+const definitionOf = (
+  name: BuildName,
+): {
+  readonly steps: readonly Step[];
+  readonly variant?: Variant | undefined;
+  readonly chainId?: number | undefined;
+} => (isL2Profile(name) ? l2Profiles[name] : profiles[name]);
 
 /**
  * Extra state on top of a profile, e.g. test fixtures. `create` returns fresh steps for one build:
@@ -41,7 +60,7 @@ export type Seed = {
 
 /** A built profile: the chain state to load and what was deployed where. */
 export type Build = {
-  readonly profile: ProfileName;
+  readonly profile: BuildName;
   /** What the seed's `output()` returned, when the build had a seed. */
   readonly seed?: unknown;
   /** anvil `--load-state` file: accounts, blocks and transactions of the build. */
@@ -70,7 +89,7 @@ const StoredBuild = Schema.Struct({
 });
 
 // Builds depend on the deploy code, the artifacts and anvil itself.
-const buildKey = Effect.fn("buildKey")(function* (profile: ProfileName) {
+const buildKey = Effect.fn("buildKey")(function* (profile: BuildName) {
   const fs = yield* FileSystem.FileSystem;
   const path = yield* Path.Path;
   const hash = createHash("sha256").update(profile);
@@ -90,10 +109,14 @@ const buildKey = Effect.fn("buildKey")(function* (profile: ProfileName) {
   return Str.slice(0, 16)(hash.digest("hex"));
 });
 
-const buildFresh = Effect.fn("buildFresh")(function* (profile: ProfileName, seed?: Seed) {
+const buildFresh = Effect.fn("buildFresh")(function* (profile: BuildName, seed?: Seed) {
   const anvil = yield* Anvil;
-  const { rpcUrl } = yield* anvil.start({ mining: false, timestamp: genesisTimestamp });
-  const definition: ProfileDefinition = profiles[profile];
+  const definition = definitionOf(profile);
+  const { rpcUrl } = yield* anvil.start({
+    mining: false,
+    timestamp: genesisTimestamp,
+    ...(definition.chainId === undefined ? {} : { chainId: definition.chainId }),
+  });
   const seeded = seed?.create();
   // A seed's prelaunch steps go right before the ENSv2 launch, or last when there is none.
   const split = Arr.findFirstIndex(definition.steps, (step) =>
@@ -134,7 +157,7 @@ const buildFresh = Effect.fn("buildFresh")(function* (profile: ProfileName, seed
  * one.
  */
 export const build = Effect.fn("build")(function* (
-  profile: ProfileName,
+  profile: BuildName,
   options: { readonly force?: boolean; readonly seed?: Seed } = {},
 ) {
   const fs = yield* FileSystem.FileSystem;

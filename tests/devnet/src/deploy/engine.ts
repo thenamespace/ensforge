@@ -9,7 +9,7 @@ import { devnetClient, type DevnetClient } from "../client.ts";
 import { DeployError, type ArtifactError } from "../errors.ts";
 
 /** anvil's default mnemonic: the devnet's accounts are anvil's prefunded ones. */
-const mnemonic = "test test test test test test test test test test test junk";
+export const mnemonic = "test test test test test test test test test test test junk";
 
 const account = (addressIndex: number) => mnemonicToAccount(mnemonic, { addressIndex }).address;
 

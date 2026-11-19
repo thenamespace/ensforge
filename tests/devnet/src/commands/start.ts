@@ -10,12 +10,12 @@ import {
 } from "effect";
 import { Argument, Command, Flag } from "effect/cli";
 
-import { build } from "../build.ts";
-import { Devnet, startDevnet } from "../Devnet.ts";
+import { build, isL2Profile } from "../build.ts";
+import { Devnet, startDevnet, startL2 } from "../Devnet.ts";
 import { VerifyFailed } from "../errors.ts";
-import { chainId, profileNames, profiles } from "../profiles/profiles.ts";
-import { verify } from "../verify.ts";
-import { profileArgument } from "./build.ts";
+import { chainId, profiles } from "../profiles/profiles.ts";
+import { verify, verifyL2 } from "../verify.ts";
+import { buildNames, profileArgument } from "./build.ts";
 
 export const startCommand = Command.make(
   "start",
@@ -81,14 +81,20 @@ export const profileCommand = Command.make("profile", { profile: profileArgument
 
 export const verifyCommand = Command.make(
   "verify",
-  { profiles: profileArgument.pipe(Argument.variadic()) },
+  {
+    profiles: Argument.Literals("profile", buildNames).pipe(
+      Argument.withDescription("Devnet or L2 profile"),
+      Argument.variadic(),
+    ),
+  },
   ({ profiles: selected }) =>
     Effect.forEach(
-      selected.length > 0 ? selected : profileNames,
+      selected.length > 0 ? selected : buildNames,
       (profile) =>
         Effect.gen(function* () {
-          const devnet = yield* startDevnet({ profile });
-          const problems = yield* verify().pipe(Effect.provideService(Devnet, devnet));
+          const problems = isL2Profile(profile)
+            ? yield* startL2({ profile }).pipe(Effect.flatMap(verifyL2))
+            : yield* verify().pipe(Effect.provideServiceEffect(Devnet, startDevnet({ profile })));
           if (problems.length > 0) return yield* VerifyFailed.make({ profile, problems });
           return yield* Console.log(`${profile}: ok`);
         }).pipe(Effect.scoped),

@@ -9,7 +9,7 @@ import { Anvil } from "./anvil/Anvil.ts";
 import { build, type Seed } from "./build.ts";
 import { devnetClient, type DevnetClient } from "./client.ts";
 import { accounts, type Ledger } from "./deploy/engine.ts";
-import { profiles, type ProfileName } from "./profiles/profiles.ts";
+import { l2Profiles, profiles, type L2ProfileName, type ProfileName } from "./profiles/profiles.ts";
 
 export type DevnetOptions = {
   readonly profile: ProfileName;
@@ -113,6 +113,67 @@ export const startDevnet = Effect.fn("startDevnet")(function* (options: DevnetOp
     ledger: built.ledger,
     seed: built.seed,
     accounts,
+    client: devnetClient(rpcUrl, chain),
+  };
+  return instance;
+});
+
+/** A running L2 next to a devnet: anvil, answering as the L2's chain, loaded with its build. */
+export type L2Instance = {
+  readonly profile: L2ProfileName;
+  readonly chainId: number;
+  readonly rpcUrl: string;
+  /** viem chain with Multicall3. */
+  readonly chain: Chain;
+  /** Every deployed contract by ledger key (`basenames.registry`, `durin.factory`, …). */
+  readonly contracts: Readonly<Record<string, Address>>;
+  /** The contract deployed under `key`; throws for a key the profile lacks. */
+  readonly contract: (key: string) => Address;
+  readonly ledger: Ledger;
+  /** The seed's output, when started with one. */
+  readonly seed: unknown;
+  readonly client: DevnetClient;
+};
+
+/** Starts an L2 for `options.profile`, building and caching it first if needed. */
+export const startL2 = Effect.fn("startL2")(function* (options: {
+  readonly profile: L2ProfileName;
+  readonly seed?: Seed;
+}) {
+  const built = yield* build(
+    options.profile,
+    options.seed === undefined ? {} : { seed: options.seed },
+  );
+  const { chainId } = l2Profiles[options.profile];
+  const { rpcUrl } = yield* (yield* Anvil).start({ loadState: built.stateFile, chainId });
+
+  const contracts = Rec.fromEntries(
+    Arr.map([...built.ledger], ([key, deployed]) => [key, deployed.address]),
+  );
+  const chain = defineChain({
+    ...foundry,
+    id: chainId,
+    name: l2Profiles[options.profile].description,
+    contracts: {
+      // Every L2 profile places the canonical Multicall3.
+      // oxlint-disable-next-line typescript/no-unsafe-type-assertion
+      multicall3: { address: contracts["canonical.multicall3"] as Address },
+    },
+  });
+
+  const instance: L2Instance = {
+    profile: options.profile,
+    chainId,
+    rpcUrl,
+    chain,
+    contracts,
+    contract: (key) => {
+      const address = contracts[key];
+      if (address === undefined) throw new Error(`${options.profile} deploys no ${key}`);
+      return address;
+    },
+    ledger: built.ledger,
+    seed: built.seed,
     client: devnetClient(rpcUrl, chain),
   };
   return instance;

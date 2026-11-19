@@ -3,8 +3,11 @@ import { Array as Arr, Effect, String as Str, type FileSystem } from "effect";
 import { isAddress, isAddressEqual, labelhash, namehash, zeroAddress, zeroHash } from "viem";
 
 import { loadArtifact } from "./artifacts/files.ts";
+import type { DevnetClient } from "./client.ts";
 import { ethResolverInterfaces, deploymentRoles, dnsTlds } from "./deploy/constants.ts";
-import { Devnet } from "./Devnet.ts";
+import { accounts as devnetAccounts, type Ledger } from "./deploy/engine.ts";
+import { gatewaySigner } from "./deploy/namespaces.ts";
+import { Devnet, type L2Instance } from "./Devnet.ts";
 import { DeployError, type ArtifactError } from "./errors.ts";
 import { profiles } from "./profiles/profiles.ts";
 
@@ -13,14 +16,8 @@ import { profiles } from "./profiles/profiles.ts";
  * everywhere, ownership and controllers for its stage (before or after the ENSv2 launch),
  * interface registrations, ENSv2 roles and root names. Returns one line per problem.
  */
-export const verify = Effect.fn("verify")(function* () {
-  const devnet = yield* Devnet;
-  const { client, accounts, ledger, contract, profile } = devnet;
-  if (profile === "mainnet" || profile === "sepolia") {
-    return yield* Effect.die(new Error(`verify checks a built profile, not a fork of ${profile}`));
-  }
-  const launched = Arr.some(profiles[profile].steps, (step) => Str.startsWith("cutover")(step.id));
-  const hasV2 = ledger.has("v2.rootRegistry");
+/** Reads, comparisons and code checks against a chain's ledger; problems accumulate. */
+const checker = Effect.fnUntraced(function* (client: DevnetClient, ledger: Ledger) {
   const problems: string[] = [];
 
   const read = <A = unknown>(
@@ -69,6 +66,20 @@ export const verify = Effect.fn("verify")(function* () {
       problems.push(`${key}: placed code differs from mainnet's`);
     }
   }
+
+  return { problems, read, expect };
+});
+
+export const verify = Effect.fn("verify")(function* () {
+  const devnet = yield* Devnet;
+  const { client, accounts, ledger, contract, profile } = devnet;
+  if (profile === "mainnet" || profile === "sepolia") {
+    return yield* Effect.die(new Error(`verify checks a built profile, not a fork of ${profile}`));
+  }
+  const launched = Arr.some(profiles[profile].steps, (step) => Str.startsWith("cutover")(step.id));
+  const hasV2 = ledger.has("v2.rootRegistry");
+
+  const { problems, read, expect } = yield* checker(client, ledger);
 
   // ENSv1 registry tree.
   yield* expect(
@@ -199,6 +210,86 @@ export const verify = Effect.fn("verify")(function* () {
       read("hca.standaloneFactory", "approvedImplementations", [
         contract("hca.standaloneImplementation"),
       ]),
+      true,
+    );
+  }
+
+  // The L2 namespaces' Ethereum resolvers trust the devnet's gateway signer, and the ENS
+  // registry's mainnet address reaches the devnet's registry (Durin found the NameWrapper there).
+  if (ledger.has("namespaces.durin.l1Resolver")) {
+    yield* expect(
+      "Durin's NameWrapper",
+      read("namespaces.durin.l1Resolver", "nameWrapper"),
+      contract("v1.nameWrapper"),
+    );
+    yield* expect(
+      "Durin's signer",
+      read("namespaces.durin.l1Resolver", "signer"),
+      gatewaySigner.address,
+    );
+    yield* expect(
+      "Basenames' signer",
+      read("namespaces.basenames.l1Resolver", "signers", [gatewaySigner.address]),
+      true,
+    );
+    for (const route of [1n, 2n, 3n]) {
+      yield* expect(
+        `Namespace route ${route} signer`,
+        read<readonly [string, string]>("namespaces.namespace.hybridResolver.v2", "routes", [
+          route,
+        ]).pipe(Effect.map(([, signer]) => signer)),
+        gatewaySigner.address,
+      );
+    }
+  }
+
+  return problems;
+});
+
+/** Checks a running L2 against what its profile's steps should have produced. */
+export const verifyL2 = Effect.fn("verifyL2")(function* (l2: L2Instance) {
+  const { problems, read, expect } = yield* checker(l2.client, l2.ledger);
+  const { contract, ledger } = l2;
+  const { deployer } = devnetAccounts;
+
+  if (ledger.has("basenames.registry")) {
+    yield* expect(
+      "base.eth owner",
+      read("basenames.registry", "owner", [namehash("base.eth")]),
+      contract("basenames.baseRegistrar"),
+    );
+    yield* expect(
+      "Basenames controller",
+      read("basenames.baseRegistrar", "controllers", [deployer]),
+      true,
+    );
+  }
+  if (ledger.has("linea.registry")) {
+    yield* expect(
+      "linea.eth owner",
+      read("linea.registry", "owner", [namehash("linea.eth")]),
+      contract("linea.baseRegistrar"),
+    );
+    yield* expect(
+      "Linea registrar controller",
+      read("linea.baseRegistrar", "controllers", [contract("linea.nameWrapper")]),
+      true,
+    );
+  }
+  if (ledger.has("celonames.registry")) {
+    yield* expect("celo.eth root", read("celonames.registry", "rootNode"), namehash("celo.eth"));
+  }
+  if (ledger.has("durin.factory")) {
+    yield* expect(
+      "Durin implementation",
+      read("durin.factory", "registryImplementation"),
+      contract("durin.registryImplementation"),
+    );
+  }
+  if (ledger.has("namespace.nodeRegistryResolver")) {
+    yield* expect(
+      "Namespace controller",
+      read("namespace.nodeRegistryResolver", "controllers", [deployer]),
       true,
     );
   }
