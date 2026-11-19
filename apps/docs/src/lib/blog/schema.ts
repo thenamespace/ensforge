@@ -2,6 +2,7 @@ import { pageSchema } from "fumadocs-core/source/schema";
 import { z } from "zod";
 
 import { type AuthorId, authors } from "./authors";
+import { blogCategories, blogPackages, blogTags } from "./taxonomy";
 
 /** A key on the CDN, e.g. `blog/<slug>/cover.webp`: no leading slash, no host. */
 export const cdnKey = z
@@ -18,31 +19,6 @@ export const blogImage = z.object({
   width: z.number().int().positive(),
   height: z.number().int().positive(),
 });
-
-/** A closed list, so tag pages stay meaningful. Add a tag here before using it in a post. */
-export const blogTags = [
-  "release",
-  "sdk",
-  "contracts",
-  "react",
-  "hca",
-  "ens",
-  "effect",
-  "guide",
-  "engineering",
-  "community",
-] as const;
-
-export const blogCategories = ["announcement", "release", "guide", "engineering"] as const;
-
-export const blogPackages = ["sdk", "contracts", "react", "hca"] as const;
-
-export type BlogTag = (typeof blogTags)[number];
-
-export const isBlogTag = (tag: string): tag is BlogTag =>
-  (blogTags as readonly string[]).includes(tag);
-export type BlogCategory = (typeof blogCategories)[number];
-export type BlogPackage = (typeof blogPackages)[number];
 
 export const blogSchema = pageSchema.extend({
   title: z.string().min(1).max(90),

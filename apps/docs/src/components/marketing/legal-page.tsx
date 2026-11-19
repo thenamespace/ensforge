@@ -3,7 +3,7 @@ import { Suspense, use } from "react";
 import { DocsBody } from "fumadocs-ui/layouts/spacious/page";
 
 import { useMDXComponents } from "@/components/mdx";
-import { legal } from "@/lib/source";
+import { legal } from "@/lib/content/legal";
 
 import { Container } from "./section";
 

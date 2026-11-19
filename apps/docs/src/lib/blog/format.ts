@@ -1,4 +1,4 @@
-import type { BlogCategory, BlogTag } from "./schema";
+import type { BlogCategory, BlogTag } from "./taxonomy";
 
 /** One line on what the blog is, for its header, feed, Markdown and JSON-LD. */
 export const blogDescription = "Release notes, guides and engineering notes from ensforge.";

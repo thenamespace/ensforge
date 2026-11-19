@@ -1,17 +1,20 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 
-import { z } from "zod";
-
 import { BlogIndex } from "@/components/blog/blog-index";
 import { blogDescription } from "@/lib/blog/format";
 import { loadBlogIndex } from "@/lib/blog/loaders";
-import { blogCategories } from "@/lib/blog/schema";
 import { blogLd } from "@/lib/blog/seo";
+import { type BlogCategory, blogCategories } from "@/lib/blog/taxonomy";
 import { siteImageUrl } from "@/lib/og/urls";
 import { breadcrumbLd, seo } from "@/lib/seo";
 import { absolute, site } from "@/lib/site";
 
-const search = z.object({ category: z.enum(blogCategories).optional().catch(undefined) });
+/** `?category=` when it names a category; anything else is dropped. */
+const search = (input: Record<string, unknown>): { category?: BlogCategory } => {
+  const category = blogCategories.find((value) => value === input["category"]);
+
+  return category ? { category } : {};
+};
 
 export const Route = createFileRoute("/_marketing/blog/")({
   beforeLoad: () => {

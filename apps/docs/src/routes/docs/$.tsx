@@ -21,14 +21,16 @@ import { useMDXComponents } from "@/components/mdx";
 import { ApiMeta, ErrorMeta } from "@/components/reference/api-meta";
 import { ReferenceBreadcrumb } from "@/components/reference/breadcrumb";
 import { type DocKind, describeDocsPage } from "@/lib/analytics/docs-page";
+import { docs } from "@/lib/content/docs";
 import { baseOptions } from "@/lib/layout.shared";
 import { docsImageUrl } from "@/lib/og/urls";
 import { getPackage } from "@/lib/packages";
+import { sidebarTree } from "@/lib/page-tree";
 import { movedReference } from "@/lib/reference-redirects";
 import { breadcrumbLd, seo, techArticleLd } from "@/lib/seo";
 import { getPageMarkdownUrl, gitConfig } from "@/lib/shared";
 import { absolute, site } from "@/lib/site";
-import { docs, source } from "@/lib/source";
+import { source } from "@/lib/source";
 import { tabs } from "@/lib/tabs";
 
 // Only the reference landing renders it; lazy keeps its search data out of every other page.
@@ -73,7 +75,7 @@ const serverLoader = createServerFn({ method: "GET" })
       path: page.path,
       packageSlug: pkg?.slug,
       analytics: { docKind, apiName: apiName ?? null },
-      pageTree: await source.serializePageTree(source.getPageTree()),
+      pageTree: await source.serializePageTree(sidebarTree(source.getPageTree(), page.url)),
       meta: {
         url: page.url,
         slugs: page.slugs,
@@ -99,7 +101,10 @@ export const Route = createFileRoute("/docs/$")({
     if (moved) throw redirect({ href: `/docs/${moved.join("/")}`, statusCode: 301 });
     const data = await serverLoader({ data: slugs });
 
-    await docs.getPage(data.path)?.preload();
+    // Imported here as well as by the page component: route options ship with every page,
+    // and the collection carries every docs page's frontmatter.
+    const content = await import("@/lib/content/docs");
+    await content.docs.getPage(data.path)?.preload();
 
     return data;
   },

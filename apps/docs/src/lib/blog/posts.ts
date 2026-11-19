@@ -2,7 +2,7 @@ import { cdn } from "@/lib/cdn";
 import { blogSource } from "@/lib/source";
 
 import { getAuthor } from "./authors";
-import type { BlogCategory, BlogPackage, BlogTag } from "./schema";
+import type { BlogCategory, BlogPackage, BlogTag } from "./taxonomy";
 
 /*
  * Blog posts as plain, serialisable data for loaders, feeds, the sitemap and OG images. Runs

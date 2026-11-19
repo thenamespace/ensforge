@@ -7,7 +7,6 @@ import { blogPostingLd } from "@/lib/blog/seo";
 import { getPackage } from "@/lib/packages";
 import { breadcrumbLd, seo } from "@/lib/seo";
 import { absolute, site } from "@/lib/site";
-import { blog } from "@/lib/source";
 
 export const Route = createFileRoute("/_marketing/blog/$slug")({
   beforeLoad: () => {
@@ -16,6 +15,9 @@ export const Route = createFileRoute("/_marketing/blog/$slug")({
   loader: async ({ params }) => {
     const data = await loadBlogPost({ data: params.slug });
 
+    // Loaded here, not imported above: route options are in every page's bundle, and the
+    // collection brings every post's frontmatter.
+    const { blog } = await import("@/lib/content/blog");
     await blog.getPage(data.path)?.preload();
 
     return data;
