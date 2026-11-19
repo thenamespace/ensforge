@@ -66,7 +66,7 @@ Resolves to `Write.Result`. Submitted transaction hashes and the plan that produ
 | Error | Codes | When |
 | --- | --- | --- |
 | [`InvalidInputError`](/docs/reference/errors/invalid-input-error) | [`INVALID_NAME`](/docs/reference/errors/INVALID_NAME), [`INVALID_RECORD_VALUE`](/docs/reference/errors/INVALID_RECORD_VALUE), [`INVALID_EXPIRY`](/docs/reference/errors/INVALID_EXPIRY) | invalid input or fuses. |
-| [`NameStateError`](/docs/reference/errors/name-state-error) | [`NAME_EXPIRED`](/docs/reference/errors/NAME_EXPIRED), [`NAME_NOT_REGISTERED`](/docs/reference/errors/NAME_NOT_REGISTERED), [`NAME_NOT_WRAPPED`](/docs/reference/errors/NAME_NOT_WRAPPED) | the name is not wrapped. |
+| [`NameStateError`](/docs/reference/errors/name-state-error) | [`NAME_EXPIRED`](/docs/reference/errors/NAME_EXPIRED), [`NAME_NOT_REGISTERED`](/docs/reference/errors/NAME_NOT_REGISTERED), [`NAME_EXTERNAL`](/docs/reference/errors/NAME_EXTERNAL), [`NAME_NOT_WRAPPED`](/docs/reference/errors/NAME_NOT_WRAPPED) | the name is not wrapped, or its parent's namespace manages it outside ENS's registries. |
 | [`NameStateError`](/docs/reference/errors/name-state-error) | [`NAME_UNREACHABLE`](/docs/reference/errors/NAME_UNREACHABLE) | ENSv2 resolution no longer reaches the name. |
 | [`UnsupportedError`](/docs/reference/errors/unsupported-error) | [`UNSUPPORTED_PROTOCOL`](/docs/reference/errors/UNSUPPORTED_PROTOCOL) | ENSv2 names; migrated names have no NameWrapper. |
 | [`UnauthorizedError`](/docs/reference/errors/unauthorized-error) | [`NOT_OWNER`](/docs/reference/errors/NOT_OWNER), [`FUSE_BURNED`](/docs/reference/errors/FUSE_BURNED) | the account may not change it. |

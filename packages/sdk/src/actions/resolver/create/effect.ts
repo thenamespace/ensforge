@@ -91,7 +91,7 @@ export const plan = Effect.fnUntraced(function* (
 
   if (parts !== undefined) {
     const loaded = yield* loadName(client, parts.name);
-    yield* requireRegistered(loaded);
+    yield* requireRegistered(client, loaded);
     steps.push({
       id: "resolver",
       description: "Set resolver",

@@ -4,6 +4,7 @@
   "pages": [
     "NAME_NOT_AVAILABLE",
     "NAME_NOT_REGISTERED",
+    "NAME_EXTERNAL",
     "NAME_RESERVED",
     "NAME_EXPIRED",
     "NAME_NOT_RENEWABLE",

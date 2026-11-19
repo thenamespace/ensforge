@@ -819,7 +819,7 @@
       "name": "Errors",
       "npm": null,
       "url": "/docs/reference/errors",
-      "count": 103,
+      "count": 104,
       "unit": "codes",
       "description": "Every error code by class, with what happened, how to fix it and what to show users.",
       "items": [
@@ -1152,6 +1152,11 @@
           "name": "NAME_NOT_REGISTERED",
           "url": "/docs/reference/errors/NAME_NOT_REGISTERED",
           "summary": "The name is not registered."
+        },
+        {
+          "name": "NAME_EXTERNAL",
+          "url": "/docs/reference/errors/NAME_EXTERNAL",
+          "summary": "The name is not in ENS's registries: its parent's resolver serves it."
         },
         {
           "name": "NAME_RESERVED",

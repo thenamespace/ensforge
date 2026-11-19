@@ -76,7 +76,7 @@ Resolves to `Write.Result`. Submitted transaction hashes and the plan that produ
 | Error | Codes | When |
 | --- | --- | --- |
 | [`InvalidInputError`](/docs/reference/errors/invalid-input-error) | [`INVALID_NAME`](/docs/reference/errors/INVALID_NAME), [`INVALID_ADDRESS`](/docs/reference/errors/INVALID_ADDRESS) | invalid input. |
-| [`NameStateError`](/docs/reference/errors/name-state-error) | [`NAME_EXPIRED`](/docs/reference/errors/NAME_EXPIRED), [`NAME_RESERVED`](/docs/reference/errors/NAME_RESERVED), [`NAME_NOT_REGISTERED`](/docs/reference/errors/NAME_NOT_REGISTERED) | the name cannot be sent. |
+| [`NameStateError`](/docs/reference/errors/name-state-error) | [`NAME_EXPIRED`](/docs/reference/errors/NAME_EXPIRED), [`NAME_RESERVED`](/docs/reference/errors/NAME_RESERVED), [`NAME_NOT_REGISTERED`](/docs/reference/errors/NAME_NOT_REGISTERED), [`NAME_EXTERNAL`](/docs/reference/errors/NAME_EXTERNAL) | the name cannot be sent, or its parent's namespace manages it outside ENS's registries. |
 | [`NameStateError`](/docs/reference/errors/name-state-error) | [`NAME_UNREACHABLE`](/docs/reference/errors/NAME_UNREACHABLE) | ENSv2 resolution no longer reaches the name. |
 | [`NameStateError`](/docs/reference/errors/name-state-error) | [`REGISTRY_NOT_EMANCIPATED`](/docs/reference/errors/REGISTRY_NOT_EMANCIPATED) | the name's registry is not emancipated and `unsafe` is not set. |
 | [`UnauthorizedError`](/docs/reference/errors/unauthorized-error) | [`NOT_OWNER`](/docs/reference/errors/NOT_OWNER), [`TRANSFER_DISALLOWED`](/docs/reference/errors/TRANSFER_DISALLOWED) | the account may not send it, or the recipient (an HCA) refuses it. |

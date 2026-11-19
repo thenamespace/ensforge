@@ -13,12 +13,39 @@ import { make as makePlan } from "../../plan/make.js";
 import type { Plan } from "../../plan/Plan.js";
 import { addressOf } from "../address.js";
 import type { LoadedName } from "./load.js";
+import { servedName } from "./served.js";
 
 /**
- * Fails unless the name is registered (not available, expired, in grace or reserved) and ENSv2
- * resolution still reaches it.
+ * The failure for a name no registry holds: `NAME_EXTERNAL` when a parent's resolver serves it
+ * (an L2 or off-chain name), otherwise `NAME_NOT_REGISTERED` with `shortMessage`.
  */
-export const requireRegistered = ({ state }: LoadedName): Effect.Effect<void, AnyError> => {
+export const notRegistered = (
+  client: Client,
+  loaded: LoadedName,
+  shortMessage?: string,
+): Effect.Effect<never, AnyError> =>
+  servedName(client, loaded).pipe(
+    Effect.flatMap((served) =>
+      Effect.fail(
+        served === null
+          ? new NameStateError({ code: "NAME_NOT_REGISTERED", shortMessage })
+          : new NameStateError({
+              code: "NAME_EXTERNAL",
+              context: { name: loaded.data.parts.name, contract: served.resolver },
+            }),
+      ),
+    ),
+  );
+
+/**
+ * Fails unless the name is registered (not available, expired, in grace, reserved or managed
+ * outside ENS's registries) and ENSv2 resolution still reaches it.
+ */
+export const requireRegistered = (
+  client: Client,
+  loaded: LoadedName,
+): Effect.Effect<void, AnyError> => {
+  const { state } = loaded;
   switch (state.status) {
     case "registered":
       return state.reachable
@@ -29,8 +56,10 @@ export const requireRegistered = ({ state }: LoadedName): Effect.Effect<void, An
       return Effect.fail(new NameStateError({ code: "NAME_EXPIRED" }));
     case "reserved":
       return Effect.fail(new NameStateError({ code: "NAME_RESERVED" }));
+    case "external":
+      return Effect.fail(new NameStateError({ code: "NAME_EXTERNAL" }));
     case "available":
-      return Effect.fail(new NameStateError({ code: "NAME_NOT_REGISTERED" }));
+      return notRegistered(client, loaded);
     default:
       return absurd(state.status);
   }

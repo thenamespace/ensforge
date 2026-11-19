@@ -31,7 +31,7 @@ export const plan = Effect.fnUntraced(function* (
   options: Promises.Options & Pick<Write.Options, "account">,
 ): Effect.fn.Return<Plan, AnyError> {
   const loaded = yield* loadName(client, options.name);
-  yield* requireRegistered(loaded);
+  yield* requireRegistered(client, loaded);
   const resolver = yield* requirePermissionedResolver(client, loaded, "record links");
   const source = loaded.data.parts.dns;
 

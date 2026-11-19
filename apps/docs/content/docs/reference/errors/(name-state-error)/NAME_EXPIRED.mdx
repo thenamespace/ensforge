@@ -27,24 +27,24 @@ Retrying the same call fails the same way until the cause is fixed (`retryable: 
 
 | Action | When |
 | --- | --- |
-| [`approval.setToken`](/docs/reference/sdk/approval/set-token) | when the name is not registered. |
-| [`dns.setRecords`](/docs/reference/sdk/dns/set-records) | when the name is not registered. |
-| [`name.reclaim`](/docs/reference/sdk/name/reclaim) | when the name is not registered. |
-| [`name.setManager`](/docs/reference/sdk/name/set-manager) | when the name is not registered. |
-| [`name.setTtl`](/docs/reference/sdk/name/set-ttl) | when the name is not registered. |
-| [`name.transfer`](/docs/reference/sdk/name/transfer) | when the name cannot be sent. |
-| [`record.set`](/docs/reference/sdk/record/set) | when the name is not registered. |
-| [`registry.attach`](/docs/reference/sdk/registry/attach) | when the name is not registered. |
-| [`resolver.create`](/docs/reference/sdk/resolver/create) | when the name is not registered. |
-| [`resolver.link`](/docs/reference/sdk/resolver/link) | when the name is not registered. |
-| [`resolver.set`](/docs/reference/sdk/resolver/set) | when the name is not registered. |
-| [`subname.create`](/docs/reference/sdk/subname/create) | when the child exists or the parent is not registered. |
-| [`subname.remove`](/docs/reference/sdk/subname/remove) | when the child or parent does not exist. |
-| [`subname.update`](/docs/reference/sdk/subname/update) | when the child or parent does not exist, or an emancipated child expired. |
-| [`wrapper.setChildFuses`](/docs/reference/sdk/wrapper/set-child-fuses) | when the name is not wrapped. |
-| [`wrapper.setFuses`](/docs/reference/sdk/wrapper/set-fuses) | when the name is not wrapped. |
-| [`wrapper.unwrap`](/docs/reference/sdk/wrapper/unwrap) | when the name is not wrapped. |
-| [`wrapper.wrap`](/docs/reference/sdk/wrapper/wrap) | when the name cannot be wrapped. |
+| [`approval.setToken`](/docs/reference/sdk/approval/set-token) | when the name is not registered, or its parent's namespace manages it outside ENS's registries. |
+| [`dns.setRecords`](/docs/reference/sdk/dns/set-records) | when the name is not registered, or its parent's namespace manages it outside ENS's registries. |
+| [`name.reclaim`](/docs/reference/sdk/name/reclaim) | when the name is not registered, or its parent's namespace manages it outside ENS's registries. |
+| [`name.setManager`](/docs/reference/sdk/name/set-manager) | when the name is not registered, or its parent's namespace manages it outside ENS's registries. |
+| [`name.setTtl`](/docs/reference/sdk/name/set-ttl) | when the name is not registered, or its parent's namespace manages it outside ENS's registries. |
+| [`name.transfer`](/docs/reference/sdk/name/transfer) | when the name cannot be sent, or its parent's namespace manages it outside ENS's registries. |
+| [`record.set`](/docs/reference/sdk/record/set) | when the name is not registered, or its parent's namespace manages it outside ENS's registries. |
+| [`registry.attach`](/docs/reference/sdk/registry/attach) | when the name is not registered, or its parent's namespace manages it outside ENS's registries. |
+| [`resolver.create`](/docs/reference/sdk/resolver/create) | when the name is not registered, or its parent's namespace manages it outside ENS's registries. |
+| [`resolver.link`](/docs/reference/sdk/resolver/link) | when the name is not registered, or its parent's namespace manages it outside ENS's registries. |
+| [`resolver.set`](/docs/reference/sdk/resolver/set) | when the name is not registered, or its parent's namespace manages it outside ENS's registries. |
+| [`subname.create`](/docs/reference/sdk/subname/create) | when the child exists or the parent is not registered, or its parent's namespace manages it outside ENS's registries. |
+| [`subname.remove`](/docs/reference/sdk/subname/remove) | when the child or parent does not exist, or its parent's namespace manages it outside ENS's registries. |
+| [`subname.update`](/docs/reference/sdk/subname/update) | when the child or parent does not exist, or an emancipated child expired, or its parent's namespace manages it outside ENS's registries. |
+| [`wrapper.setChildFuses`](/docs/reference/sdk/wrapper/set-child-fuses) | when the name is not wrapped, or its parent's namespace manages it outside ENS's registries. |
+| [`wrapper.setFuses`](/docs/reference/sdk/wrapper/set-fuses) | when the name is not wrapped, or its parent's namespace manages it outside ENS's registries. |
+| [`wrapper.unwrap`](/docs/reference/sdk/wrapper/unwrap) | when the name is not wrapped, or its parent's namespace manages it outside ENS's registries. |
+| [`wrapper.wrap`](/docs/reference/sdk/wrapper/wrap) | when the name cannot be wrapped, or its parent's namespace manages it outside ENS's registries. |
 
 ## Catch it
 

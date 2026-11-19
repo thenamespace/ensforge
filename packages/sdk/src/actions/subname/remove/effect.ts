@@ -5,11 +5,10 @@ import { encodeFunctionData, hexToBigInt, zeroAddress, type Address } from "viem
 
 import type { Client } from "../../../client/types.js";
 import { ConfigError } from "../../../errors/classes/ConfigError.js";
-import { NameStateError } from "../../../errors/classes/NameStateError.js";
 import type { AnyError } from "../../../errors/types.js";
 import * as Action from "../../../internal/action/index.js";
 import { addressOf } from "../../../internal/address.js";
-import { requireV1Contracts, singleStepPlan } from "../../../internal/name/write.js";
+import { notRegistered, requireV1Contracts, singleStepPlan } from "../../../internal/name/write.js";
 import { checkLoaded } from "../../../internal/permission/check.js";
 import { explainRemoval } from "../../../internal/permission/subname.js";
 import { loadSubname, type LoadedSubname } from "../../../internal/subname/load.js";
@@ -100,11 +99,10 @@ export const plan = Effect.fnUntraced(function* (
 
   const subname = yield* loadSubname(client, options.name);
   if (subname.child.state.status === "available") {
-    return yield* Effect.fail(
-      new NameStateError({
-        code: "NAME_NOT_REGISTERED",
-        shortMessage: `${subname.child.data.parts.name} does not exist.`,
-      }),
+    return yield* notRegistered(
+      client,
+      subname.child,
+      `${subname.child.data.parts.name} does not exist.`,
     );
   }
 

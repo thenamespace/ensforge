@@ -55,6 +55,7 @@ export const errorsByCode: { readonly [code in Code]: () => AnyError } = {
   VERIFICATION_FAILED: () => new Classes.MigrationError({ code: "VERIFICATION_FAILED" }),
   NAME_NOT_AVAILABLE: () => new Classes.NameStateError({ code: "NAME_NOT_AVAILABLE" }),
   NAME_NOT_REGISTERED: () => new Classes.NameStateError({ code: "NAME_NOT_REGISTERED" }),
+  NAME_EXTERNAL: () => new Classes.NameStateError({ code: "NAME_EXTERNAL" }),
   NAME_RESERVED: () => new Classes.NameStateError({ code: "NAME_RESERVED" }),
   NAME_EXPIRED: () => new Classes.NameStateError({ code: "NAME_EXPIRED" }),
   NAME_NOT_RENEWABLE: () => new Classes.NameStateError({ code: "NAME_NOT_RENEWABLE" }),

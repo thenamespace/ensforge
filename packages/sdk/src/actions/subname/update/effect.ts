@@ -10,6 +10,7 @@ import { UnsupportedError } from "../../../errors/classes/UnsupportedError.js";
 import type { AnyError } from "../../../errors/types.js";
 import * as Action from "../../../internal/action/index.js";
 import {
+  notRegistered,
   requireAddress,
   requireV1Contracts,
   singleStepPlan,
@@ -161,11 +162,10 @@ export const plan = Effect.fnUntraced(function* (
 
   const subname = yield* loadSubname(client, options.name);
   if (subname.child.state.status === "available") {
-    return yield* Effect.fail(
-      new NameStateError({
-        code: "NAME_NOT_REGISTERED",
-        shortMessage: `${subname.child.data.parts.name} does not exist.`,
-      }),
+    return yield* notRegistered(
+      client,
+      subname.child,
+      `${subname.child.data.parts.name} does not exist.`,
     );
   }
   // An emancipated child loses its owner when it expires: the NameWrapper no longer holds it, and

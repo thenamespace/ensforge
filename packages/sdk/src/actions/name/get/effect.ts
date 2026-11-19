@@ -4,8 +4,8 @@ import type { Client } from "../../../client/types.js";
 import type { AnyError } from "../../../errors/types.js";
 import * as Action from "../../../internal/action/index.js";
 import { loadName } from "../../../internal/name/load.js";
-import { describeResolver } from "../../../internal/resolver/describe.js";
-import { servingResolver } from "../../../internal/resolver/serving.js";
+import { inheritedResolver, probeServed } from "../../../internal/name/served.js";
+import { toServedState } from "../../../internal/name/state.js";
 import * as Rpc from "../../../internal/rpc/index.js";
 import type { get as Promises } from "./index.js";
 
@@ -28,13 +28,17 @@ export const get = Effect.fn("ensforge.name.get")(
     if (state.resolver !== null) return { ...state, inheritedResolver: null };
 
     const foundName = yield* Effect.fromResult(found);
-    const served = yield* servingResolver(client, data.parts.name, foundName, options);
+    const served = yield* inheritedResolver(client, data.parts, foundName, options);
     if (served === null) return { ...state, inheritedResolver: null };
-    // A parent's resolver serves this name only as an ENSIP-10 extended resolver.
-    const extended =
-      !served.inherited ||
-      (yield* describeResolver(client, served.address, data.parts.node, options)).profiles.extended;
-    return { ...state, inheritedResolver: extended ? served.address : null };
+    if (loaded.kind !== "available" || !served.inherited) {
+      return { ...state, inheritedResolver: served.address };
+    }
+
+    const kind = yield* probeServed(client, data.parts, served.address, options);
+    return {
+      ...(kind === null ? state : toServedState(state, kind)),
+      inheritedResolver: served.address,
+    };
   },
   Action.withContext("name.get", { contractKind: "registry" }),
 );

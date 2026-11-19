@@ -27,9 +27,9 @@ Retrying the same call fails the same way until the cause is fixed (`retryable: 
 
 | Action | When |
 | --- | --- |
-| [`wrapper.setChildFuses`](/docs/reference/sdk/wrapper/set-child-fuses) | when the name is not wrapped. |
-| [`wrapper.setFuses`](/docs/reference/sdk/wrapper/set-fuses) | when the name is not wrapped. |
-| [`wrapper.unwrap`](/docs/reference/sdk/wrapper/unwrap) | when the name is not wrapped. |
+| [`wrapper.setChildFuses`](/docs/reference/sdk/wrapper/set-child-fuses) | when the name is not wrapped, or its parent's namespace manages it outside ENS's registries. |
+| [`wrapper.setFuses`](/docs/reference/sdk/wrapper/set-fuses) | when the name is not wrapped, or its parent's namespace manages it outside ENS's registries. |
+| [`wrapper.unwrap`](/docs/reference/sdk/wrapper/unwrap) | when the name is not wrapped, or its parent's namespace manages it outside ENS's registries. |
 
 ## Catch it
 

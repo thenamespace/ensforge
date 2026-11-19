@@ -812,7 +812,7 @@
   },
   "X15": {
     "tests": [
-      "tests/integration/test/reads/name.test.ts > a wildcard subname is available and has no expiry, yet resolves"
+      "tests/integration/test/reads/name.test.ts > a wildcard subname is in no registry, yet resolves"
     ]
   },
   "X16": {
@@ -2102,7 +2102,7 @@
   },
   "M:B13": {
     "tests": [
-      "tests/integration/test/reads/name.test.ts > a wildcard subname is available and has no expiry, yet resolves",
+      "tests/integration/test/reads/name.test.ts > a wildcard subname is in no registry, yet resolves",
       "tests/integration/test/reads/resolver.test.ts > describes each generation and kind of resolver",
       "tests/integration/test/reads/resolver.test.ts > reads misbehaving resolvers as missing records, and fails strict reads with a typed error"
     ]
