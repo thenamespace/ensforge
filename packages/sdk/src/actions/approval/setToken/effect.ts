@@ -6,9 +6,14 @@ import { encodeFunctionData, zeroAddress } from "viem";
 import type { Client } from "../../../client/types.js";
 import type { AnyError } from "../../../errors/types.js";
 import * as Action from "../../../internal/action/index.js";
-import { approvableToken } from "../../../internal/approval/token.js";
+import { approvableToken, l2ApprovableToken } from "../../../internal/approval/token.js";
 import { loadName } from "../../../internal/name/load.js";
-import { requireAddress, requireRegistered, singleStepPlan } from "../../../internal/name/write.js";
+import {
+  l2WriteTargetOf,
+  requireAddress,
+  requireRegistered,
+  singleStepPlan,
+} from "../../../internal/name/write.js";
 import { explainFor } from "../../../internal/permission/check.js";
 import type { Plan } from "../../../plan/Plan.js";
 import type { Write } from "../../../Types.js";
@@ -21,10 +26,15 @@ export const plan = Effect.fnUntraced(function* (
 ): Effect.fn.Return<Plan, AnyError> {
   const to = options.to === null ? zeroAddress : yield* requireAddress(options.to, "to");
   const loaded = yield* loadName(client, options.name);
-  yield* requireRegistered(client, loaded);
-  const token = yield* approvableToken(client, loaded);
+  // A name ENS does not hold may live on an L2: its token is approved there.
+  const l2 = yield* l2WriteTargetOf(client, loaded);
+  if (l2 === null) yield* requireRegistered(client, loaded);
+  const token =
+    l2 === null
+      ? yield* approvableToken(client, loaded)
+      : yield* l2ApprovableToken(l2.client, l2.location, loaded.data.parts);
 
-  return singleStepPlan(client, {
+  return singleStepPlan(l2?.client ?? client, {
     operation: "approval.setToken",
     account: options.account,
     description: options.to === null ? "Clear approval" : "Approve name",

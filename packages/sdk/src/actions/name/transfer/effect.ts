@@ -13,6 +13,7 @@ import * as Action from "../../../internal/action/index.js";
 import { addressOf } from "../../../internal/address.js";
 import { loadName, type LoadedName } from "../../../internal/name/load.js";
 import {
+  l2WriteTargetOf,
   requireAddress,
   requireRegistered,
   requireV1Contracts,
@@ -196,6 +197,33 @@ export const plan = Effect.fnUntraced(function* (
 ): Effect.fn.Return<Plan, AnyError> {
   const to = yield* requireAddress(options.to, "to");
   const loaded = yield* loadName(client, options.name);
+  const sender = addressOf(options.account) ?? client.account;
+
+  // A name ENS does not hold may live on an L2: its token moves there.
+  const l2 = yield* l2WriteTargetOf(client, loaded);
+  if (l2 !== null) {
+    if (options.records === "handover") {
+      return yield* Effect.fail(
+        new InvalidInputError({
+          code: "INVALID_RECORD_VALUE",
+          field: "records",
+          input: "handover",
+          shortMessage:
+            "Nothing to hand over: the records of an L2 name follow its owner on their own.",
+        }),
+      );
+    }
+    const { l2TransferCalls } = yield* Effect.promise(
+      () => import("../../../internal/namespace/l2/index.js"),
+    );
+    const calls = yield* l2TransferCalls(l2, loaded.data.parts, to, options.role ?? "owner");
+    return makePlan({
+      operation: "name.transfer",
+      chainId: l2.client.chain.id,
+      account: sender,
+      steps: [{ id: "write", description: "Transfer name", calls }],
+    });
+  }
   yield* requireRegistered(client, loaded);
 
   const { state } = loaded;
@@ -224,7 +252,6 @@ export const plan = Effect.fnUntraced(function* (
       : yield* requireV1Contracts(client).pipe(
           Effect.flatMap((contracts) => v1Calls(contracts, loaded, to, options.role ?? "owner")),
         );
-  const sender = addressOf(options.account) ?? client.account;
   const control = yield* recordControl(client, loaded, sender, to, options.records ?? "keep");
 
   return makePlan({

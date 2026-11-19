@@ -597,6 +597,10 @@ export declare namespace setTtlSync {
  * - Unwrapped `.eth` names: `role: "owner"` (default) moves the registrar token and the registry
  *   ownership (manager); `role: "registrant"` moves only the registrar token.
  * - Other unwrapped ENSv1 names change their registry owner.
+ * - A name in an L2 namespace moves on its L2, by the client's wallet on that chain: its ERC-721
+ *   token, or Linea Names' NameWrapper token. A Basenames second-level name also moves its
+ *   registry record (`reclaim`) unless `role` is `"registrant"`; a Basenames subname changes its
+ *   registry owner.
  *
  * **Gotchas**
  *
@@ -634,6 +638,8 @@ export declare namespace setTtlSync {
  * @throws `Errors.NameStateError` (`REGISTRY_NOT_EMANCIPATED`) when the name's registry is not emancipated and `unsafe` is not set.
  * @throws `Errors.UnauthorizedError` (`NOT_OWNER`, `TRANSFER_DISALLOWED`) when the account may not send it, or the recipient (an HCA) refuses it.
  * @throws `Errors.UnsupportedError` (`UNSUPPORTED_PROTOCOL`) for `role: "registrant"` on names without a registrant.
+ * @throws `Errors.UnsupportedError` (`UNSUPPORTED_ON_DEPLOYMENT`) for `role: "registrant"` on an L2 name without a token, or a route (`via`) on an L2 name.
+ * @throws `Errors.ConfigError` (`CHAIN_NOT_CONFIGURED`) when the name lives on an L2 the client cannot reach.
  * @throws `Errors.UserRejectedError` (`USER_REJECTED`) when the user rejects the request.
  * @throws `Errors.WalletError` (`CHAIN_MISMATCH`, `ACCOUNT_NOT_FOUND`) when the wallet is on another chain or has no account to sign with.
  * @throws `Errors.UnsupportedError` (`WALLET_BATCH_UNSUPPORTED`) with `mode: "batch"` or a paymaster when the wallet cannot send calls as one batch.
@@ -696,6 +702,8 @@ export declare namespace transfer {
  * @throws `Errors.NameStateError` (`REGISTRY_NOT_EMANCIPATED`) when the name's registry is not emancipated and `unsafe` is not set.
  * @throws `Errors.UnauthorizedError` (`NOT_OWNER`, `TRANSFER_DISALLOWED`) when the account may not send it, or the recipient (an HCA) refuses it.
  * @throws `Errors.UnsupportedError` (`UNSUPPORTED_PROTOCOL`) for `role: "registrant"` on names without a registrant.
+ * @throws `Errors.UnsupportedError` (`UNSUPPORTED_ON_DEPLOYMENT`) for `role: "registrant"` on an L2 name without a token, or a route (`via`) on an L2 name.
+ * @throws `Errors.ConfigError` (`CHAIN_NOT_CONFIGURED`) when the name lives on an L2 the client cannot reach.
  * @throws `Errors.TransactionError` (`TRANSACTION_REVERTED`, `RECEIPT_TIMEOUT`, `NONCE_CONFLICT`) when confirmation fails or the wallet's nonce is already used.
  *
  * @see {@link transfer} to resolve on submission

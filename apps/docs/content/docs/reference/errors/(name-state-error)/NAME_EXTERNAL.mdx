@@ -31,6 +31,8 @@ Retrying the same call fails the same way until the cause is fixed (`retryable: 
 
 | Action | When |
 | --- | --- |
+| [`approval.getOperator`](/docs/reference/sdk/approval/get-operator) | for a `name` that is not registered, or that a namespace outside ENS and its L2s manages. |
+| [`approval.setOperator`](/docs/reference/sdk/approval/set-operator) | for a `name` that is not registered, or that a namespace outside ENS and its L2s manages. |
 | [`approval.setToken`](/docs/reference/sdk/approval/set-token) | when the name is not registered, or its parent's namespace manages it outside ENS's registries. |
 | [`dns.setRecords`](/docs/reference/sdk/dns/set-records) | when the name is not registered, or its parent's namespace manages it outside ENS's registries. |
 | [`name.reclaim`](/docs/reference/sdk/name/reclaim) | when the name is not registered, or its parent's namespace manages it outside ENS's registries. |

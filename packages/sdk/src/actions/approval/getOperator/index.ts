@@ -17,6 +17,8 @@ import * as Impl from "./effect.js";
  *
  * - `contract`: the ENSv1 `"registry"`, `"registrar"` (BaseRegistrar) or `"wrapper"`
  *   (NameWrapper), or any ENSv2 registry or resolver by address.
+ * - `name` instead of `contract`: the contract that holds the name's token, on the chain the name
+ *   lives on.
  *
  * **Example** (Checking a NameWrapper operator)
  *
@@ -42,6 +44,7 @@ import * as Impl from "./effect.js";
  *
  * @throws `Errors.InvalidInputError` (`INVALID_ADDRESS`) for invalid addresses.
  * @throws `Errors.UnsupportedError` (`UNSUPPORTED_ON_DEPLOYMENT`) for ENSv1 contracts without ENSv1.
+ * @throws `Errors.NameStateError` (`NAME_NOT_REGISTERED`, `NAME_EXTERNAL`) for a `name` that is not registered, or that a namespace outside ENS and its L2s manages.
  * @throws `Errors.NetworkError` (`RPC_REQUEST_FAILED`, `RPC_TIMEOUT`, `RATE_LIMITED`) when the RPC request fails.
  *
  * @see {@link Actions.approval.setOperator} to change it
@@ -64,13 +67,26 @@ export declare namespace getOperator {
       owner: string;
       /** Account that may be approved. */
       operator: string;
-      /** `"registry"`, `"registrar"`, `"wrapper"`, or a registry or resolver address. */
-      contract: ApprovalContract;
-    };
+    } & (
+      | {
+          /** `"registry"`, `"registrar"`, `"wrapper"`, or a registry or resolver address. */
+          contract: ApprovalContract;
+          name?: undefined;
+        }
+      | {
+          /** A name whose token contract to read, on the chain the name lives on. */
+          name: string;
+          contract?: undefined;
+        }
+    );
   /** Whether `operator` is approved for all of `owner`'s names on the contract. */
   type ReturnType = boolean;
   /** Errors {@link getOperator} can fail with. */
-  type ErrorType = Errors.CommonError | Errors.InvalidInputError | Errors.UnsupportedError;
+  type ErrorType =
+    | Errors.CommonError
+    | Errors.InvalidInputError
+    | Errors.UnsupportedError
+    | Errors.NameStateError;
 }
 
 /** Builds a deferred read for `Actions.batch`. */

@@ -9,11 +9,11 @@ type Actions.approval.getDelegate.Options = Pick<Options, 'signal'> & (BlockOpti
 const Actions.approval.getDelegate.path: 'approval.getDelegate'
 function Actions.approval.getDelegate.request(options: Pick<Options, 'signal'> & (BlockOptions & { name: string; delegate: string; owner?: string | undefined; })) => Request<boolean, ErrorType>
 type Actions.approval.getDelegate.ReturnType = boolean
-function Actions.approval.getOperator(client: Client<object> | ViemClientLike, options: Pick<Options, 'signal'> & (BlockOptions & { owner: string; operator: string; contract: ApprovalContract; })) => Promise<boolean>
-type Actions.approval.getOperator.ErrorType = InvalidInputError | UnsupportedError | CommonError
-type Actions.approval.getOperator.Options = Pick<Options, 'signal'> & (BlockOptions & { owner: string; operator: string; contract: ApprovalContract; })
+function Actions.approval.getOperator(client: Client<object> | ViemClientLike, options: (Pick<Options, 'signal'> & BlockOptions) & ({ owner: string; operator: string; } & ({ contract: ApprovalContract; name?: undefined; } | { name: string; contract?: undefined; }))) => Promise<boolean>
+type Actions.approval.getOperator.ErrorType = InvalidInputError | NameStateError | UnsupportedError | CommonError
+type Actions.approval.getOperator.Options = (Pick<Options, 'signal'> & BlockOptions) & ({ owner: string; operator: string; } & ({ contract: ApprovalContract; name?: undefined; } | { name: string; contract?: undefined; }))
 const Actions.approval.getOperator.path: 'approval.getOperator'
-function Actions.approval.getOperator.request(options: Pick<Options, 'signal'> & (BlockOptions & { owner: string; operator: string; contract: ApprovalContract; })) => Request<boolean, ErrorType>
+function Actions.approval.getOperator.request(options: (Pick<Options, 'signal'> & BlockOptions) & ({ owner: string; operator: string; } & ({ contract: ApprovalContract; name?: undefined; } | { name: string; contract?: undefined; }))) => Request<boolean, ErrorType>
 type Actions.approval.getOperator.ReturnType = boolean
 function Actions.approval.getToken(client: Client<object> | ViemClientLike, options: Pick<Options, 'signal'> & (BlockOptions & { name: string; })) => Promise<ReturnType>
 type Actions.approval.getToken.ErrorType = InvalidInputError | UnsupportedError | CommonError
@@ -38,10 +38,10 @@ type Actions.approval.setDelegateSync.Options = setDelegate.Options & Write.Opti
 const Actions.approval.setDelegateSync.path: 'approval.setDelegateSync'
 type Actions.approval.setDelegateSync.ReturnType = Result & { readonly receipt: TransactionReceipt; readonly receipts: readonly TransactionReceipt[]; }
 function Actions.approval.setOperator(client: Client<object> | ViemClientLike, options: setOperator.Options & Write.Options) => Promise<Result>
-type Actions.approval.setOperator.ErrorType = InvalidInputError | WriteError
+type Actions.approval.setOperator.ErrorType = InvalidInputError | NameStateError | WriteError
 function Actions.approval.setOperator.estimateGas(client: Client<object> | ViemClientLike, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Estimate>
 const Actions.approval.setOperator.estimateGas.path: string
-type Actions.approval.setOperator.Options = { operator: string; approved: boolean; contract: ApprovalContract; }
+type Actions.approval.setOperator.Options = { operator: string; approved: boolean; } & ({ contract: ApprovalContract; name?: undefined; } | { name: string; contract?: undefined; })
 const Actions.approval.setOperator.path: 'approval.setOperator'
 function Actions.approval.setOperator.prepare(client: Client<object> | ViemClientLike, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Plan>
 const Actions.approval.setOperator.prepare.path: string
@@ -49,7 +49,7 @@ type Actions.approval.setOperator.ReturnType = { readonly hash: `0x${string}`; r
 function Actions.approval.setOperator.simulate(client: Client<object> | ViemClientLike, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Simulation>
 const Actions.approval.setOperator.simulate.path: string
 function Actions.approval.setOperatorSync(client: Client<object> | ViemClientLike, options: setOperator.Options & Write.Options & { confirmations?: number | undefined; timeout?: number | undefined; }) => Promise<SyncResult>
-type Actions.approval.setOperatorSync.ErrorType = InvalidInputError | WriteError
+type Actions.approval.setOperatorSync.ErrorType = InvalidInputError | NameStateError | WriteError
 type Actions.approval.setOperatorSync.Options = setOperator.Options & Write.Options & { confirmations?: number | undefined; timeout?: number | undefined; }
 const Actions.approval.setOperatorSync.path: 'approval.setOperatorSync'
 type Actions.approval.setOperatorSync.ReturnType = Result & { readonly receipt: TransactionReceipt; readonly receipts: readonly TransactionReceipt[]; }

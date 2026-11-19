@@ -35,8 +35,10 @@ Retrying the same call fails the same way until the cause is fixed (`retryable: 
 | [`migration.get`](/docs/reference/sdk/migration/get) | where ENSv2 is not deployed. |
 | [`migration.migrate`](/docs/reference/sdk/migration/migrate) | where ENSv2 is not deployed. |
 | [`name.getLabel`](/docs/reference/sdk/name/get-label) | without an ENSv2 deployment. |
+| [`name.transfer`](/docs/reference/sdk/name/transfer) | for `role: "registrant"` on an L2 name without a token, or a route (`via`) on an L2 name. |
 | [`primaryName.set`](/docs/reference/sdk/primary-name/set) | for a chain without an L2 reverse registrar. |
 | [`primaryName.signClaim`](/docs/reference/sdk/primary-name/sign-claim) | for a chain without an L2 reverse registrar. |
+| [`record.set`](/docs/reference/sdk/record/set) | for `resolver` or a route (`via`) on an L2 name. |
 | [`registration.commit`](/docs/reference/sdk/registration/commit) | for an unaccepted token or without ENSv2. |
 | [`registration.getCommitmentStatus`](/docs/reference/sdk/registration/get-commitment-status) | without ENSv2. |
 | [`registration.getParameters`](/docs/reference/sdk/registration/get-parameters) | without ENSv2. |

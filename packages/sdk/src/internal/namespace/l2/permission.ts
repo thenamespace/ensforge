@@ -11,6 +11,7 @@ import type { L2Location } from "../../name/location.js";
 import type { NameParts } from "../../name/parts.js";
 import * as Rpc from "../../rpc/index.js";
 import { l2ResolverOf } from "./records.js";
+import { l2OperatorContract, l2TokenOf } from "./tokens.js";
 
 /** Whether an account may write a name's records on its L2, and as what. */
 export type RecordAccess = {
@@ -208,4 +209,67 @@ export const recordAccess: (
         : denied(contracts.publicResolver, owner);
     }
   }
+});
+
+/**
+ * Whether an account may transfer an L2 name (or approve its token), as its token contract checks
+ * it (`client` is on the L2): the holder, the token's approved address, or an operator of the
+ * holder. A Basenames subname is a registry record: its owner, or an operator the registry records.
+ */
+export const transferAccess: (
+  client: Client,
+  location: L2Location,
+  parts: NameParts,
+  account: Address,
+) => Effect.Effect<RecordAccess, AnyError> = Effect.fnUntraced(function* (
+  client: Client,
+  location: L2Location,
+  parts: NameParts,
+  account: Address,
+): Effect.fn.Return<RecordAccess, AnyError> {
+  const token = l2TokenOf(client, location, parts);
+  const registry = l2OperatorContract(client, location, parts);
+  if (registry === null) return denied(null, null);
+
+  const [holder, approved] =
+    token === null
+      ? [
+          yield* Rpc.readContract(client, {
+            address: registry,
+            abi: Abis.v1.ensRegistry,
+            functionName: "owner",
+            args: [parts.node],
+          }),
+          undefined,
+        ]
+      : yield* Effect.all(
+          [
+            // Both revert once the name has expired.
+            Rpc.readContractOrUndefined(client, {
+              address: token.contract,
+              abi: Abis.shared.erc721,
+              functionName: "ownerOf",
+              args: [token.tokenId],
+            }),
+            Rpc.readContractOrUndefined(client, {
+              address: token.contract,
+              abi: Abis.shared.erc721,
+              functionName: "getApproved",
+              args: [token.tokenId],
+            }),
+          ],
+          { concurrency: "unbounded" },
+        );
+  const owner = nonZeroAddress(holder);
+  if (owner === null) return denied(registry, null);
+  if (is(owner, account)) return { allowed: true, via: "owner", contract: registry, owner };
+  if (is(approved, account)) return { allowed: true, via: "approved", contract: registry, owner };
+  // `isApprovedForAll(owner, operator)` has the same selector on the registry and every token.
+  const operator = yield* Rpc.readContract(client, {
+    address: registry,
+    abi: Abis.shared.erc721,
+    functionName: "isApprovedForAll",
+    args: [owner, account],
+  });
+  return { allowed: operator, via: operator ? "operator" : null, contract: registry, owner };
 });

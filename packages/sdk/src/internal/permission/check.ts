@@ -12,6 +12,7 @@ import { isOpaqueRevert, type Explainer } from "../action/write.js";
 import { loadName, type LoadedName } from "../name/load.js";
 import type { L2Location } from "../name/location.js";
 import { requireAddress } from "../name/write.js";
+import type { RecordAccess } from "../namespace/l2/index.js";
 import { evaluate } from "./evaluate.js";
 import { readPermissionFacts } from "./facts.js";
 
@@ -44,14 +45,16 @@ const unsupportedOnL2: PermissionCheck = {
     {
       type: "blocked",
       reason: "unsupported",
-      detail: "ensforge writes only the records of L2 names; their namespace manages the rest.",
+      detail:
+        "ensforge writes the records, owner and approvals of L2 names; their namespace manages the rest.",
     },
   ],
 };
 
 /**
- * Checks on a name in an L2 namespace: record writes as its resolver authorizes them on the L2,
- * everything else unsupported. Unknown (`allowed: null`) when the client cannot reach the L2.
+ * Checks on a name in an L2 namespace, as its contracts authorize them on the L2: record writes,
+ * and transfers (which approving the token takes too); everything else unsupported. Unknown
+ * (`allowed: null`) when the client cannot reach the L2.
  */
 const checkOnL2 = Effect.fnUntraced(function* (
   client: Client,
@@ -62,18 +65,33 @@ const checkOnL2 = Effect.fnUntraced(function* (
 ): Effect.fn.Return<readonly PermissionCheck[], AnyError> {
   const { l2Client } = yield* Effect.promise(() => import("../name/location.js"));
   const l2 = yield* l2Client(client, location, false);
-  const access =
-    l2 === null
-      ? null
-      : yield* Effect.promise(() => import("../namespace/l2/index.js")).pipe(
-          Effect.flatMap(({ recordAccess }) =>
-            recordAccess(l2, location, loaded.data.parts, account),
-          ),
-        );
+  const { parts } = loaded.data;
+  const { recordAccess, transferAccess } = yield* Effect.promise(
+    () => import("../namespace/l2/index.js"),
+  );
+  // Each access is read once, and only when an operation needs it.
+  const accessFor = (
+    test: (operation: Operation) => boolean,
+    read: (l2: Client) => Effect.Effect<RecordAccess, AnyError>,
+  ) => (l2 === null || !Arr.some(operations, test) ? Effect.undefined : read(l2));
+  const [records, transfer] = yield* Effect.all(
+    [
+      accessFor(
+        (operation) => typeof operation === "object",
+        (on) => recordAccess(on, location, parts, account),
+      ),
+      accessFor(
+        (operation) => operation === "transfer",
+        (on) => transferAccess(on, location, parts, account),
+      ),
+    ],
+    { concurrency: "unbounded" },
+  );
 
   return Arr.map(operations, (operation): PermissionCheck => {
-    if (typeof operation !== "object") return unsupportedOnL2;
-    if (access === null) {
+    if (typeof operation !== "object" && operation !== "transfer") return unsupportedOnL2;
+    const access = typeof operation === "object" ? records : transfer;
+    if (access === undefined) {
       return { allowed: null, via: null, contract: null, resource: null, missing: [] };
     }
     return {

@@ -1,7 +1,7 @@
 import { Effect } from "effect";
 import { absurd } from "effect/Function";
 
-import type { Deployments } from "@ensforge/contracts";
+import { Deployments } from "@ensforge/contracts";
 import { getAddress, isAddress, type Account, type Address } from "viem";
 
 import type { Client } from "../../client/types.js";
@@ -13,29 +13,61 @@ import { make as makePlan } from "../../plan/make.js";
 import type { Plan } from "../../plan/Plan.js";
 import { addressOf } from "../address.js";
 import type { LoadedName } from "./load.js";
+import type { L2WriteTarget } from "./location.js";
 import { servedName } from "./served.js";
 
 /**
- * The failure for a name no registry holds: `NAME_EXTERNAL` when a parent's resolver serves it
- * (an L2 or off-chain name), otherwise `NAME_NOT_REGISTERED` with `shortMessage`.
+ * The failure for a name no registry holds: `NAME_EXTERNAL` when it lives on an L2 or a parent's
+ * resolver serves it (naming the L2 or the off-chain provider when ensforge knows it), otherwise
+ * `NAME_NOT_REGISTERED` with `shortMessage`.
  */
-export const notRegistered = (
+export const notRegistered = Effect.fnUntraced(function* (
   client: Client,
   loaded: LoadedName,
   shortMessage?: string,
-): Effect.Effect<never, AnyError> =>
-  servedName(client, loaded).pipe(
-    Effect.flatMap((served) =>
-      Effect.fail(
-        served === null
-          ? new NameStateError({ code: "NAME_NOT_REGISTERED", shortMessage })
-          : new NameStateError({
-              code: "NAME_EXTERNAL",
-              context: { name: loaded.data.parts.name, contract: served.resolver },
-            }),
-      ),
-    ),
+): Effect.fn.Return<never, AnyError> {
+  const { parts } = loaded.data;
+  if (loaded.kind === "available") {
+    const { l2Refusal } = yield* Effect.promise(() => import("./location.js"));
+    const refusal = yield* l2Refusal(client, parts);
+    if (refusal !== null) return yield* Effect.fail(refusal);
+  }
+
+  const served = yield* servedName(client, loaded);
+  if (served === null) {
+    return yield* Effect.fail(new NameStateError({ code: "NAME_NOT_REGISTERED", shortMessage }));
+  }
+  const provider =
+    served.kind === "offchain"
+      ? Deployments.offchainProvider({ chainId: client.chain.id, resolver: served.resolver })
+      : undefined;
+  return yield* Effect.fail(
+    new NameStateError({
+      code: "NAME_EXTERNAL",
+      ...(provider === undefined
+        ? {}
+        : {
+            shortMessage: `${parts.name} is served by ${provider.name} from its own database. ensforge can read it, not write it.`,
+            hint: `Change it with ${provider.name}'s app or API.`,
+          }),
+      context: { name: parts.name, contract: served.resolver },
+    }),
   );
+});
+
+/**
+ * Where a write on a name no ENS registry holds goes: its L2 and its state there, failing when
+ * the name is not registered there. `null` for names in ENS and names in no L2 namespace.
+ */
+export const l2WriteTargetOf = (
+  client: Client,
+  loaded: LoadedName,
+): Effect.Effect<L2WriteTarget | null, AnyError> =>
+  loaded.kind === "available"
+    ? Effect.promise(() => import("./location.js")).pipe(
+        Effect.flatMap(({ l2WriteTarget }) => l2WriteTarget(client, loaded.data.parts)),
+      )
+    : Effect.succeed(null);
 
 /**
  * Fails unless the name is registered (not available, expired, in grace, reserved or managed

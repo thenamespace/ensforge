@@ -3,6 +3,7 @@ import { Effect } from "effect";
 import type { Address } from "viem";
 
 import type { Client } from "../../client/types.js";
+import { UnsupportedError } from "../../errors/classes/UnsupportedError.js";
 import type { EnsforgeError } from "../../errors/EnsforgeError.js";
 import type { AnyError } from "../../errors/types.js";
 import type { Plan } from "../../plan/Plan.js";
@@ -97,6 +98,18 @@ export const write = <options, error extends EnsforgeError>(
   ): Effect.fn.Return<{ readonly plan: Plan; readonly target: Client }, error | AnyError> {
     const plan = yield* planner(client, options);
     const target = yield* chainClient(client, plan.chainId);
+    // Routes are written for the ENS chain; a write on an L2 name goes to the wallet.
+    if (target !== client && options.via !== undefined) {
+      return yield* Effect.fail(
+        new UnsupportedError({
+          code: "UNSUPPORTED_ON_DEPLOYMENT",
+          feature: "Sending through a route (`via`) on another chain",
+          shortMessage: `Routes (\`via\`) cannot send writes on chain ${plan.chainId}.`,
+          hint: "Send the write without `via`; wallet batching and paymasters still apply.",
+          context: { chainId: plan.chainId },
+        }),
+      );
+    }
     return {
       plan: yield* routePlan(
         target,

@@ -3,11 +3,14 @@ import { Effect } from "effect";
 import { Deployments } from "@ensforge/contracts";
 
 import type { NameNamespace, NameStatus } from "../../actions/name/get/types.js";
+import { stateOf } from "../../client/state.js";
 import type { Client } from "../../client/types.js";
 import { ConfigError } from "../../errors/classes/ConfigError.js";
+import { NameStateError } from "../../errors/classes/NameStateError.js";
 import type { AnyError } from "../../errors/types.js";
 import type { Read } from "../../Types.js";
 import { remembered } from "../namespace/cache.js";
+import type { L2State } from "../namespace/l2/index.js";
 import { servingResolver } from "../resolver/serving.js";
 import * as Rpc from "../rpc/index.js";
 import { chainClient, hasChain } from "../write/chain.js";
@@ -101,5 +104,94 @@ export const l2ReadTarget = (
         : l2Client(client, location, strict).pipe(
             Effect.map((l2) => (l2 === null ? null : { location, client: l2 })),
           ),
+    ),
+  );
+
+/** A registered L2 name a write reaches: where it lives, a client on its L2 and its state there. */
+export type L2WriteTarget = {
+  readonly location: L2Location;
+  readonly client: Client;
+  readonly state: L2State;
+};
+
+const familyNames: Record<Deployments.NamespaceId, string> = {
+  basenames: "Basenames",
+  linea: "Linea Names",
+  celonames: "Celonames",
+  durin: "Durin",
+  namespace: "Namespace",
+};
+
+/** Where an L2 name lives, for messages: "Base (chain 8453) in Basenames". */
+const placeOf = (client: Client, location: L2Location): string => {
+  const chain = stateOf(client)?.clientOf(location.chainId)?.chain?.name;
+  const id = `chain ${location.chainId}`;
+  return `${chain === undefined ? id : `${chain} (${id})`} in ${familyNames[location.id]}`;
+};
+
+/**
+ * The L2 a write on a name ENS does not hold goes to, or `null` for names in no L2 namespace.
+ * Writes never fall back to Ethereum: an L2 the client cannot reach fails with
+ * `CHAIN_NOT_CONFIGURED`, and a name its L2 does not hold as registered fails as an ENS name would.
+ */
+export const l2WriteTarget = Effect.fnUntraced(function* (
+  client: Client,
+  parts: NameParts,
+): Effect.fn.Return<L2WriteTarget | null, AnyError> {
+  const location = yield* l2LocationOf(client, parts, {});
+  if (location === null) return null;
+  const l2 = yield* l2Client(client, location, true);
+  if (l2 === null) return null;
+
+  const { readL2State } = yield* Effect.promise(() => import("../namespace/l2/index.js"));
+  const state = yield* readL2State(l2, location, parts);
+  const context = { chainId: location.chainId };
+  switch (state.status) {
+    case "registered":
+      return { location, client: l2, state };
+    case "grace":
+    case "expired":
+      return yield* Effect.fail(
+        new NameStateError({
+          code: "NAME_EXPIRED",
+          shortMessage: `${parts.name} has expired on ${placeOf(client, location)}.`,
+          hint: "Renew it with its namespace's app.",
+          context,
+        }),
+      );
+    default:
+      return yield* Effect.fail(
+        new NameStateError({
+          code: "NAME_NOT_REGISTERED",
+          shortMessage: `${parts.name} is not registered on ${placeOf(client, location)}.`,
+          context,
+        }),
+      );
+  }
+});
+
+/**
+ * `NAME_EXTERNAL` for a write ensforge does not make on L2 names, naming where the name lives, or
+ * `null` for names in no L2 namespace. A name that cannot be located is left to the caller.
+ */
+export const l2Refusal = (
+  client: Client,
+  parts: NameParts,
+): Effect.Effect<NameStateError | null, AnyError> =>
+  l2LocationOf(client, parts, {}).pipe(
+    Effect.orElseSucceed(() => null),
+    Effect.map((location) =>
+      location === null
+        ? null
+        : new NameStateError({
+            code: "NAME_EXTERNAL",
+            shortMessage: `${parts.name} lives on ${placeOf(client, location)}. ensforge can change its records, owner and approvals, not this.`,
+            hint: "Use record.set, name.transfer or the approval actions, or the namespace's own app.",
+            context: {
+              name: parts.name,
+              chainId: location.chainId,
+              ...(location.registry === null ? {} : { contract: location.registry }),
+            },
+          }),
     ),
   );

@@ -8,10 +8,10 @@ const Actions.approval.getDelegate.path: 'approval.getDelegate'
 type Actions.approval.getDelegate.ErrorType = InvalidInputError | NotFoundError | CommonError
 type Actions.approval.getDelegate.Options = Pick<Options, 'signal'> & (BlockOptions & { name: string; delegate: string; owner?: string | undefined; })
 type Actions.approval.getDelegate.ReturnType = boolean
-function Actions.approval.getOperator(client: ClientBase<{}>, options: Pick<Options, 'signal'> & (BlockOptions & { owner: string; operator: string; contract: ApprovalContract; })) => Effect<boolean, ErrorType, never>
+function Actions.approval.getOperator(client: ClientBase<{}>, options: (Pick<Options, 'signal'> & BlockOptions) & ({ owner: string; operator: string; } & ({ contract: ApprovalContract; name?: undefined; } | { name: string; contract?: undefined; }))) => Effect<boolean, ErrorType, never>
 const Actions.approval.getOperator.path: 'approval.getOperator'
-type Actions.approval.getOperator.ErrorType = InvalidInputError | UnsupportedError | CommonError
-type Actions.approval.getOperator.Options = Pick<Options, 'signal'> & (BlockOptions & { owner: string; operator: string; contract: ApprovalContract; })
+type Actions.approval.getOperator.ErrorType = InvalidInputError | NameStateError | UnsupportedError | CommonError
+type Actions.approval.getOperator.Options = (Pick<Options, 'signal'> & BlockOptions) & ({ owner: string; operator: string; } & ({ contract: ApprovalContract; name?: undefined; } | { name: string; contract?: undefined; }))
 type Actions.approval.getOperator.ReturnType = boolean
 function Actions.approval.getToken(client: ClientBase<{}>, options: Pick<Options, 'signal'> & (BlockOptions & { name: string; })) => Effect<ReturnType, ErrorType, never>
 const Actions.approval.getToken.path: 'approval.getToken'
@@ -31,17 +31,17 @@ const Actions.approval.setDelegateSync.path: 'approval.setDelegateSync'
 type Actions.approval.setDelegateSync.ErrorType = InvalidInputError | NotFoundError | UnauthorizedError | WriteError
 type Actions.approval.setDelegateSync.Options = setDelegate.Options & Write.Options & { confirmations?: number | undefined; timeout?: number | undefined; }
 type Actions.approval.setDelegateSync.ReturnType = Result & { readonly receipt: TransactionReceipt; readonly receipts: readonly TransactionReceipt[]; }
-function Actions.approval.setOperator(client: ClientBase<{}>, options: setOperator.Options & Write.Options) => Effect<Result, ErrorType, never>
-const Actions.approval.setOperator.prepare: ((client: ClientBase<{}>, options: Options & Pick<Options, 'account' | 'via'>) => Effect<Plan, ErrorType, never>) & { readonly path: string; }
-const Actions.approval.setOperator.simulate: ((client: ClientBase<{}>, options: Options & Pick<Options, 'account' | 'via'>) => Effect<Simulation, ErrorType, never>) & { readonly path: string; }
-const Actions.approval.setOperator.estimateGas: ((client: ClientBase<{}>, options: Options & Pick<Options, 'account' | 'via'>) => Effect<Estimate, ErrorType, never>) & { readonly path: string; }
+function Actions.approval.setOperator(client: ClientBase<{}>, options: (Options & Pick<Options, 'account'>) & Options) => Effect<Result, ErrorType, never>
+const Actions.approval.setOperator.prepare: ((client: ClientBase<{}>, options: (Options & Pick<Options, 'account'>) & Pick<Options, 'account' | 'via'>) => Effect<Plan, ErrorType, never>) & { readonly path: string; }
+const Actions.approval.setOperator.simulate: ((client: ClientBase<{}>, options: (Options & Pick<Options, 'account'>) & Pick<Options, 'account' | 'via'>) => Effect<Simulation, ErrorType, never>) & { readonly path: string; }
+const Actions.approval.setOperator.estimateGas: ((client: ClientBase<{}>, options: (Options & Pick<Options, 'account'>) & Pick<Options, 'account' | 'via'>) => Effect<Estimate, ErrorType, never>) & { readonly path: string; }
 const Actions.approval.setOperator.path: 'approval.setOperator'
-type Actions.approval.setOperator.ErrorType = InvalidInputError | WriteError
-type Actions.approval.setOperator.Options = { operator: string; approved: boolean; contract: ApprovalContract; }
+type Actions.approval.setOperator.ErrorType = InvalidInputError | NameStateError | WriteError
+type Actions.approval.setOperator.Options = { operator: string; approved: boolean; } & ({ contract: ApprovalContract; name?: undefined; } | { name: string; contract?: undefined; })
 type Actions.approval.setOperator.ReturnType = { readonly hash: `0x${string}`; readonly hashes: readonly `0x${string}`[]; readonly id: string | undefined; readonly plan: Plan; }
-function Actions.approval.setOperatorSync(client: ClientBase<{}>, options: setOperator.Options & Write.Options & { confirmations?: number | undefined; timeout?: number | undefined; }) => Effect<SyncResult, ErrorType, never>
+function Actions.approval.setOperatorSync(client: ClientBase<{}>, options: (Options & Pick<Options, 'account'>) & Options & { confirmations?: number | undefined; timeout?: number | undefined; }) => Effect<SyncResult, ErrorType, never>
 const Actions.approval.setOperatorSync.path: 'approval.setOperatorSync'
-type Actions.approval.setOperatorSync.ErrorType = InvalidInputError | WriteError
+type Actions.approval.setOperatorSync.ErrorType = InvalidInputError | NameStateError | WriteError
 type Actions.approval.setOperatorSync.Options = setOperator.Options & Write.Options & { confirmations?: number | undefined; timeout?: number | undefined; }
 type Actions.approval.setOperatorSync.ReturnType = Result & { readonly receipt: TransactionReceipt; readonly receipts: readonly TransactionReceipt[]; }
 function Actions.approval.setToken(client: ClientBase<{}>, options: setToken.Options & Write.Options) => Effect<Result, ErrorType, never>

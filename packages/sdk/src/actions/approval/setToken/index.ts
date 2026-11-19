@@ -17,6 +17,8 @@ import * as Impl from "./effect.js";
  * - Wrapped names approve on the NameWrapper (blocked by `cannotApprove`); unwrapped `.eth`
  *   names on the BaseRegistrar.
  * - `to: null` clears it. ENSv2 names use operators instead.
+ * - A name in an L2 namespace approves its token on its L2: Linea Names on their NameWrapper,
+ *   other families on their ERC-721 registrar or registry. Basenames subnames have no token.
  *
  * **Example** (Approving a buyer)
  *

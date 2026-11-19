@@ -17,6 +17,7 @@ import * as Impl from "./effect.js";
  *
  * - Wrapped names use the NameWrapper token; unwrapped `.eth` names the BaseRegistrar token.
  * - ENSv2 names have no single-token approval; use operators.
+ * - A name in an L2 namespace reads its token's approval on its L2.
  *
  * **Example** (Reading a name's approval)
  *
