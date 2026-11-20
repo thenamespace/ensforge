@@ -1,6 +1,6 @@
 {
   "name": "@ensforge/sdk",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "description": "The SDK for ENS: look up names, read and write records, and register and manage names",
   "keywords": [
     "ens",

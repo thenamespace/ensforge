@@ -1,5 +1,45 @@
 # @ensforge/hca
 
+## 1.1.0
+
+### Minor Changes
+
+- 4497b28: Smaller bundles, with unchanged types and behaviour.
+
+  - Error translation (viem errors and reverts decoded against every ENS contract error) loads on the first failure that needs it instead of with every action. One read (`Actions.record.getText`) is 20% smaller up front (42.5 → 34.1 kB gzip), the Effect API 23%, `@ensforge/hca` 22% and `@ensforge/react` 10%. `Errors.fromCause` and `Errors.describe` stay synchronous.
+  - `ensActions()` loads its rarely used groups (`approval`, `dns`, `event`, `migration`, `permission`, `registry`, `role`, `wrapper`) and `batch` with their first call instead of with the client: a client with every action is 15% smaller up front (107.6 → 91.7 kB gzip). Their own decorators (`migrationActions()`, …) still load with the client.
+  - Code for L2 and off-chain names loads only when a name needs it.
+
+- 4497b28: **Breaking:** `Ensforge.create` configures one client for every chain.
+
+  - `Ensforge.create({ chain })` is enough to read: ensforge builds its own viem clients and uses each chain's public RPC when `transports` has none for it (`publicRpc`, default `true`).
+  - `transports: { [chainId]: Transport }` sets the RPC of any chain, the ENS chain included. Reuse a viem client with `custom(client)`.
+  - `wallet` signs on every chain: a write on another chain asks the wallet to switch first (`switchChain`, default `true`). A getter receives the chain the write is for.
+  - A local `account` (`privateKeyToAccount(key)`) signs on any chain itself, without a wallet client.
+  - `pollingInterval` and `cacheTime` apply to the clients ensforge builds.
+  - `ens.client(chainId?)` returns the viem client of any chain (the ENS chain by default).
+  - Standalone actions take any viem client as `ViemClientLike`: a `PublicClient`, `WalletClient`, test client or `createClient` client. It leaves out viem's generic `extend` and typed `request`, so apps that create the viem client inline type-check with about 69% fewer type instantiations. HCA actions take the same type.
+  - `Ensforge.fromWagmi` builds on the same options; nothing changes for wagmi apps. A write on a chain the wagmi config does not have fails with `CHAIN_NOT_CONFIGURED` before the wallet is asked to switch.
+
+  | 1.0                                                      | 1.1                                                                                                      |
+  | -------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+  | `Ensforge.create({ publicClient })`                      | `Ensforge.create({ chain, transports: { [chain.id]: transport } })`, or just `{ chain }` for public RPCs |
+  | `walletClient`                                           | `wallet`                                                                                                 |
+  | `chains: { [id]: { publicClient, walletClient } }`       | `transports: { [id]: transport }`; the one `wallet` (or local `account`) signs there                     |
+  | `ens.publicClient`                                       | `ens.client()`                                                                                           |
+  | `ChainClients` type                                      | removed                                                                                                  |
+  | `CHAIN_NOT_CONFIGURED` for a chain missing from `chains` | only for a chain without a transport when `publicRpc` is `false`, or a chain ensforge does not know      |
+
+### Patch Changes
+
+- Updated dependencies [b35e6c5]
+- Updated dependencies [4497b28]
+- Updated dependencies [4497b28]
+- Updated dependencies [4497b28]
+- Updated dependencies [4497b28]
+  - @ensforge/contracts@1.1.0
+  - @ensforge/sdk@1.1.0
+
 ## 1.0.1
 
 ### Patch Changes
