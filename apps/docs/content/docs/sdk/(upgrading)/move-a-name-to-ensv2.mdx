@@ -142,6 +142,7 @@ const { plan } = await ens.migration.migrateSync({
 | `preserveManager`        | `boolean`                              | `false`                                                    | Give each unwrapped name's ENSv1 manager `setResolver` and the record setter roles.  |
 | `migrateParents`         | `boolean`                              | `false`                                                    | Migrate the ENSv1 parents of locked subnames first.                                  |
 | `renew`                  | `{ duration, paymentToken? }`          | none                                                       | Renew names in their grace period first.                                             |
+| `resume`                 | `boolean`                              | `false`                                                    | Finish names an interrupted migration already moved, instead of failing.             |
 
 `resolver` choices:
 
@@ -181,7 +182,52 @@ flowchart LR
   E --> F[ENSv1 managers]
 ```
 
-Steps after the transfer depend on it. From a plain wallet each step is its own transaction, so the plan carries a `NOT_ATOMIC` warning. Send with `mode: "batch"` or `via: hca()` to make them one. If a migration stops after the transfer, migrating again fails with `ALREADY_MIGRATED`; finish it with [`plan.resume`](/docs/reference/sdk/plan/resume) instead.
+Steps after the transfer depend on it. From a plain wallet each step is its own transaction, so the plan carries a `NOT_ATOMIC` warning. Send with `mode: "batch"` or `via: hca()` to make them one.
+
+## Finish a migration that stopped
+
+A migration can stop after the transfer, for example when the user closes the wallet prompt. The name is then on ENSv2, but the steps after the transfer did not run. Migrating it again fails with `ALREADY_MIGRATED`.
+
+If you saved the plan, finish it with [`plan.resume`](/docs/reference/sdk/plan/resume). See [Save and resume plans](/docs/sdk/save-and-resume-plans).
+
+Without the saved plan, migrate again with `resume: true`:
+
+```ts title="resume-migration.ts"
+import { createWalletClient, http, type Hex } from "viem";
+import { privateKeyToAccount } from "viem/accounts";
+import { sepolia } from "viem/chains";
+import { Ensforge, ensActions } from "@ensforge/sdk";
+
+const account = privateKeyToAccount(process.env.PRIVATE_KEY as Hex);
+const transport = http(process.env.SEPOLIA_RPC_URL);
+
+const ens = Ensforge.create({
+  chain: sepolia,
+  transports: { [sepolia.id]: transport },
+  wallet: createWalletClient({ account, chain: sepolia, transport }),
+}).extend(ensActions());
+
+const { plan } = await ens.migration.migrateSync({
+  names: { name: "ensforge-docs-locked.eth", subnames: ["pay"] },
+  resume: true,
+});
+```
+
+Pass the same names, records and subnames as the first run. `plan.steps` holds only the steps that were left.
+
+With `resume: true`, ensforge reads each name from the chain and plans only what is missing:
+
+| Left undone                                                       | What resume does                                                                                                     |
+| ----------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| Subnames of a locked name, not yet in its WrapperRegistry         | Registers the subnames still on ENSv1. Subnames already registered are skipped.                                      |
+| Records on PublicResolverV2 for a locked `cannotSetResolver` name | Writes the `records` you pass. The transfer clears the ENSv1 resolver, so ensforge cannot read the old records back. |
+| A locked child that did not move                                  | Migrates it as usual, into its parent's WrapperRegistry.                                                             |
+| An HCA delegation on PublicResolverV2                             | Revokes it.                                                                                                          |
+
+- Names that never moved migrate as usual in the same plan.
+- When nothing is left, it fails with `ALREADY_MIGRATED`, so running it twice is safe.
+- A locked `cannotSetResolver` name with an empty PublicResolverV2 fails with `RECORDS_UNKNOWN` unless you pass its `records`, or `allowEmptyResolver` to finish without them.
+- ENSv1 managers cannot be restored by resume, because the transfer clears them. With `preserveManager`, the plan warns `MANAGER_NOT_PRESERVED`; grant the roles with [`role.grant`](/docs/reference/sdk/role/grant).
 
 Wrapped subnames keep their wrapper expiry when it is in the future. One whose expiry has passed is recreated without an expiry, with a `SUBNAME_EXPIRY_EXTENDED` warning.
 
@@ -209,7 +255,7 @@ A blocker applies. The error lists them, and `migration.get` shows them before y
 
 ### `ALREADY_MIGRATED`
 
-The name is already on ENSv2. See [`ALREADY_MIGRATED`](/docs/reference/errors/ALREADY_MIGRATED).
+The name is already on ENSv2. If a migration stopped after the transfer, finish it with `resume: true` (see [Finish a migration that stopped](#finish-a-migration-that-stopped)). See [`ALREADY_MIGRATED`](/docs/reference/errors/ALREADY_MIGRATED).
 
 ### `RECORDS_UNKNOWN`
 

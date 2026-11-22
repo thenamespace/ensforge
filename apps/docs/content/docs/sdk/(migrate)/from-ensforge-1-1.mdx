@@ -1,0 +1,124 @@
+---
+title: From ensforge 1.1
+description: Upgrade an app from ensforge 1.1 to 1.2, with every default that changed to match the ENS app and the code that keeps the old behaviour.
+keywords: [migration, upgrade, "1.2", breaking changes, resolver, unsafe, roles, sponsored, resume]
+---
+
+ensforge 1.2 brings ensforge in line with the ENS app. Some defaults changed to match it. Most apps need no code changes. This guide lists every change that can affect 1.1 code, and how to keep the old behaviour where that is still possible.
+
+Code blocks that mark lines with `[!code --]` and `[!code ++]` are diffs: they show the old and the new line together, so the docs build does not compile them.
+
+## What changed
+
+| Area                       | 1.1                                                        | 1.2                                                                                  |
+| -------------------------- | ---------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| Registration resolver      | A new PermissionedResolver per name                        | The signer's shared resolver (`resolver: "owned"`), as the ENS app does              |
+| `name.transfer`            | Safe transfer only, refused when the registry disallows it | `unsafe: "auto"`: an unsafe transfer when needed, with the warning `TRANSFER_UNSAFE` |
+| `record.set({ resolver })` | Merged new records into what the resolver held             | Starts a fresh record on a resolver that already holds the name's records            |
+| Migration records          | Copied what it could read                                  | Fails with `RECORDS_UNKNOWN` when a record cannot be copied                          |
+| Renewal step ids           | One `renew` step                                           | One step per `renewBatch` call: `renew:v2:0`, `renew:v1:0`, …                        |
+| `wrapper.unwrap`           | Sent the name to the signer                                | Leaves the name with its current holder                                              |
+| Role names                 | Any role name, read by bit position                        | Names from the target's own table (`Role.RegistryName`, `Role.ResolverName`)         |
+| `rhinestone()`             | Requested sponsored gas                                    | The HCA pays its fees; `sponsored: true` asks for sponsorship                        |
+| `via: hca()`               | Failed when the HCA held too little                        | Funds the HCA from the owner's wallet                                                |
+
+## 1. Update the packages
+
+```sh title="terminal"
+pnpm add @ensforge/sdk@latest @ensforge/contracts@latest
+```
+
+Also update `@ensforge/react` and `@ensforge/hca` if you use them. The public packages version together.
+
+## 2. Registration uses one resolver per wallet
+
+A name registered for the signer goes on the signer's shared PermissionedResolver, at the address the ENS app uses. It is deployed with the first registration and reused after that. A name registered for another `owner` keeps a resolver of its own.
+
+To keep one resolver per name, pass `resolver: "new"`:
+
+```ts no-check title="register.ts"
+await ens.registration.registerSync({
+  names: "alice.eth",
+  duration: Duration.years(1),
+  resolver: "new", // [!code ++]
+});
+```
+
+A commitment made by ensforge 1.1 with the default resolver must be revealed with `resolver: "new"`. Without it, the commitment no longer matches, and `register` commits again.
+
+See [Resolvers and shared records](/docs/sdk/resolvers-and-shared-records).
+
+## 3. Transfers move the name when the registry allows only an unsafe transfer
+
+Some ENSv2 registries, such as those of names made with `subname.create`, allow only `unsafeTransfer`. In 1.1 such transfers failed. In 1.2 `name.transfer` sends them, and the plan carries a `TRANSFER_UNSAFE` warning saying why. The receiver is still checked.
+
+To refuse instead, pass `unsafe: false`:
+
+```ts no-check title="transfer.ts"
+await ens.name.transfer({
+  name: "pay.alice.eth",
+  to: recipient,
+  unsafe: false, // [!code ++]
+});
+```
+
+## 4. Switching resolvers starts a fresh record
+
+`record.set({ resolver })` moves a name to another resolver. When that resolver already holds records for the name, 1.2 starts a fresh record there, as `clear: true` would, so records shared with other names are not changed. Pass `clear: false` to merge as before:
+
+```ts no-check title="switch-resolver.ts"
+await ens.record.set({
+  name: "alice.eth",
+  resolver: newResolver,
+  texts: { url: "https://alice.example" },
+  clear: false, // [!code ++]
+});
+```
+
+## 5. Migration refuses to leave records behind
+
+A record that `migration.migrate` cannot copy, such as a public key, or an incomplete list from the indexer, now fails with [`RECORDS_UNKNOWN`](/docs/reference/errors/RECORDS_UNKNOWN). Pass the name's `records`, keep its resolver with `resolver: "keep"`, or pass `allowIncompleteRecords` to copy the others.
+
+A migration that stopped after its transfer can now be finished with `resume: true`. See [Finish a migration that stopped](/docs/sdk/move-a-name-to-ensv2#finish-a-migration-that-stopped).
+
+## 6. Role names follow the target
+
+Registry and resolver roles share bit positions. In 1.1, `roles: ["setAddr"]` with `target: "registry"` granted the registry's `registrar` role. In 1.2 a name that is not in the target's table fails with `INVALID_ROLES`, and the option types accept only that table's names.
+
+Code that passes a `Role.Name[]` variable must narrow it:
+
+```ts no-check title="roles.ts"
+import type { Role } from "@ensforge/sdk";
+
+const roles: Role.Name[] = ["setResolver"]; // [!code --]
+const roles: Role.RegistryName[] = ["setResolver"]; // [!code ++]
+
+await ens.role.grant({ name: "alice.eth", target: "registry", grantee, roles });
+```
+
+See [Roles and permissions](/docs/sdk/roles-and-permissions).
+
+## 7. Check the smaller changes
+
+- `registration.renew` makes one plan step per `renewBatch` call. Code that looks up a step by id reads `renew:v2:0`, `renew:v1:0`, and so on, or `renew` when there is one call. A resumed renewal skips the calls already mined.
+- `wrapper.unwrap` leaves the name with its current holder. Pass `owner` to send it to the signer or elsewhere.
+- `register`, `commit`, `record.set` and `resolver.set` refuse a resolver address without a contract with `RESOLVER_NOT_DEPLOYED`. `resolver.set({ allowNonContract: true })` still allows one.
+- Registration and renewal durations must be at most 100 years (`INVALID_DURATION`).
+- PermissionedResolvers that ensforge deploys give their writers every role. A shared resolver created by ensforge 1.0 or 1.1 still works, with the warning `RESOLVER_ROLES_PARTIAL`.
+
+## 8. HCA writes
+
+These apply only to `@ensforge/hca`:
+
+- `rhinestone()` no longer requests sponsored gas. Executions pay their fee from the HCA. If your Rhinestone project sponsors gas, pass `sponsored: true`.
+- When the HCA holds less than its calls and fees need, `hca()` moves the shortfall from the owner's wallet, and the plan warns `HCA_FUNDING`. Pass `hca({ funding: "none" })` to fail with `INSUFFICIENT_TOKEN_BALANCE` instead.
+- The orchestrator's route is checked before signing. A route that does more than the requested calls, or refunds more than `maxRefund`, fails with `HCA_ROUTE_REJECTED`.
+- Session-signed intents need the ENS-patched `@rhinestone/sdk@1.22.0`.
+
+```ts no-check title="hca.ts"
+const via = hca({
+  executors: [rhinestone({ sdk, sponsored: true })], // [!code ++]
+});
+```
+
+See [Use smart accounts](/docs/sdk/use-smart-accounts).
