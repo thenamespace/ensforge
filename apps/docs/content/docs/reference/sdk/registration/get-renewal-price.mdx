@@ -36,11 +36,21 @@ Call it as `ens.registration.getRenewalPrice(options)` on a client, or `Actions.
 
 ## Parameters
 
+With `names` and `duration`:
+
 | Option | Type | Default | Description |
 | --- | --- | --- | --- |
 | `names` (required) | `string \| readonly string[]` |  | One or more `.eth` second-level names. Normalized automatically. |
-| `duration` (required) | `bigint` |  | Renewal length in seconds. |
 | `paymentToken` | `PaymentToken` | `"usdc"` | Token to pay with. |
+| `duration` (required) | `bigint` |  | Renewal length in seconds, the same for every name. |
+
+With `names` and `until`:
+
+| Option | Type | Default | Description |
+| --- | --- | --- | --- |
+| `names` (required) | `string \| readonly string[]` |  | One or more `.eth` second-level names. Normalized automatically. |
+| `paymentToken` | `PaymentToken` | `"usdc"` | Token to pay with. |
+| `until` (required) | `bigint` |  | Expiry to renew every name up to; a name already reaching it costs nothing. |
 
 Also takes the [read options](/docs/reference/sdk/client#read-options).
 
@@ -52,7 +62,7 @@ Resolves to `getRenewalPrice.ReturnType`. The total and one item per name, in `t
 | --- | --- | --- |
 | `total` | `bigint` |  |
 | `token` | `TokenInfo` |  |
-| `items` | `readonly { readonly name: string; readonly route: RenewalRoute; readonly amount: bigint; }[]` |  |
+| `items` | `` readonly { readonly name: string; readonly route: RenewalRoute; readonly amount: bigint; /** The name's current expiry, as a Unix timestamp. */ readonly expiry: bigint; /** Seconds the renewal adds (`0n` for a name already reaching `until`). */ readonly duration: bigint; }[] `` |  |
 
 ## Errors
 

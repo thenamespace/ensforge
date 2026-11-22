@@ -96,10 +96,10 @@ export const acceptedTokenInfo = Effect.fnUntraced(function* (
 
 /**
  * Checks that `payer` holds `balanceRequired` (default `amount`) of `token`, and returns the
- * approval `spender` still needs for `amount` (none when the allowance covers it). Checking up
- * front turns token reverts, which are plain strings for USDC and DAI, into
- * `InsufficientFundsError`. A route's `payer` (an HCA) is funded from the signer before it pays,
- * so `funder`'s balance counts too.
+ * approval `spender` still needs: none when the allowance covers `amount`, else `amount` plus
+ * `headroom`. Checking up front turns token reverts, which are plain strings for USDC and DAI,
+ * into `InsufficientFundsError`. A route's `payer` (an HCA) is funded from the signer before it
+ * pays, so `funder`'s balance counts too.
  */
 export const paymentCalls = Effect.fnUntraced(function* (
   client: Client,
@@ -108,6 +108,7 @@ export const paymentCalls = Effect.fnUntraced(function* (
     readonly token: Address;
     readonly spender: Address;
     readonly amount: bigint;
+    readonly headroom?: bigint | undefined;
     readonly balanceRequired?: bigint | undefined;
     readonly funder?: Address | undefined;
   },
@@ -152,7 +153,7 @@ export const paymentCalls = Effect.fnUntraced(function* (
       data: encodeFunctionData({
         abi: Abis.shared.erc20,
         functionName: "approve",
-        args: [options.spender, options.amount],
+        args: [options.spender, options.amount + (options.headroom ?? 0n)],
       }),
       value: 0n,
     },

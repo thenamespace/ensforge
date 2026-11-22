@@ -8,7 +8,15 @@ import { Actions } from "@ensforge/sdk/effect";
 import { Chain, Devnet } from "@ensforge/test-devnet";
 import { Fixtures } from "@ensforge/test-fixtures";
 import { expectFailure } from "@ensforge/test-harness";
-import { encodeFunctionData, erc20Abi, pad, parseAbi, toHex, zeroAddress } from "viem";
+import {
+  encodeFunctionData,
+  erc20Abi,
+  isAddressEqual,
+  pad,
+  parseAbi,
+  toHex,
+  zeroAddress,
+} from "viem";
 
 import { Clients } from "../support/clients.ts";
 import { ethEntry, mintUsdc, usdcOf } from "../support/contracts.ts";
@@ -17,6 +25,43 @@ import { Wallets } from "../support/wallets.ts";
 
 describe("registration", () => {
   onProfile("mainnet-shaped")("mainnet-shaped", (it) => {
+    // Regression: an allowance covering the exact price was approved again, because the check
+    // used the price plus the 2% headroom a new approval adds.
+    it.effect(
+      "approves nothing when the allowance covers the price",
+      () =>
+        Effect.gen(function* () {
+          const devnet = yield* Devnet;
+          const chain = yield* Chain;
+          const clients = yield* Clients;
+          const ens = clients.make({ account: devnet.accounts.alice });
+          const options = { names: "qqqqq.eth", duration: Duration.years(1) } as const;
+
+          yield* chain.isolated(
+            Effect.gen(function* () {
+              const { total } = yield* Actions.registration.getPrice(ens, {
+                name: options.names,
+                duration: options.duration,
+              });
+              yield* chain.write({
+                address: devnet.contract("v2.usdc"),
+                abi: erc20Abi,
+                functionName: "approve",
+                args: [devnet.contract("v2.ethRegistrar"), total],
+                account: devnet.accounts.alice,
+              });
+
+              const plan = yield* Actions.registration.register.prepare(ens, options);
+
+              assert.isFalse(
+                Arr.some(plan.calls, (call) => isAddressEqual(call.to, devnet.contract("v2.usdc"))),
+              );
+            }),
+          );
+        }),
+      { meta: { cases: ["G20"] } },
+    );
+
     it.effect(
       "registers a name through commit, wait and reveal, paying the quote",
       () =>

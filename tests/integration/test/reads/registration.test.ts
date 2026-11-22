@@ -139,6 +139,56 @@ describe("registration reads", () => {
     );
 
     it.effect(
+      "quotes the registrar's own price, and a past block with that block's oracle",
+      () =>
+        Effect.gen(function* () {
+          const devnet = yield* Devnet;
+          const chain = yield* Chain;
+          const fixtures = yield* Fixtures;
+          const { reader } = yield* Clients;
+          const premium = fixtures.byId("registration.v2-premium").name;
+          const taken = fixtures.byId("v2.registered").name;
+          const registrar = devnet.contract("v2.ethRegistrar");
+          const duration = Duration.years(1);
+
+          const [base, premiumPart] = yield* chain.read({
+            address: registrar,
+            abi: Abis.v2.ethRegistrar,
+            functionName: "getRegisterPrice",
+            args: [Str.slice(0, -4)(premium), duration, devnet.contract("v2.usdc")],
+          });
+          const quote = yield* Actions.registration.getPrice(reader, { name: premium, duration });
+          assert.deepInclude(quote, { base, premium: premiumPart });
+
+          yield* chain.isolated(
+            Effect.gen(function* () {
+              const blockNumber = yield* chain.blockNumber;
+              const before = yield* Actions.registration.getPrice(reader, {
+                name: taken,
+                duration,
+              });
+              // The owner replaces the oracle with an address that prices nothing.
+              yield* chain.write({
+                address: registrar,
+                abi: Abis.v2.ethRegistrar,
+                functionName: "setRentPriceOracle",
+                args: [devnet.accounts.user],
+                account: devnet.accounts.owner,
+              });
+
+              const historical = yield* Actions.registration.getPrice(reader, {
+                name: taken,
+                duration,
+                blockNumber,
+              });
+              assert.deepStrictEqual(historical, before);
+            }),
+          );
+        }),
+      { meta: { cases: ["G14"] } },
+    );
+
+    it.effect(
       "converts prices to each token, rounding up",
       () =>
         Effect.gen(function* () {

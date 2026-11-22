@@ -34,7 +34,13 @@ export const getRenewalPrice = Effect.fn("ensforge.registration.getRenewalPrice"
     return {
       total: Arr.reduce(quotes, 0n, (sum, quote) => sum + quote.amount),
       token: info,
-      items: Arr.map(quotes, ({ name, route, amount }) => ({ name, route, amount })),
+      items: Arr.map(quotes, ({ name, route, amount, expiry, duration }) => ({
+        name,
+        route,
+        amount,
+        expiry,
+        duration,
+      })),
     };
   },
   Action.withContext("registration.getRenewalPrice", { contractKind: "registrar" }),

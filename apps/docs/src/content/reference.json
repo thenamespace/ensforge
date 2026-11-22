@@ -829,7 +829,7 @@
       "name": "Errors",
       "npm": null,
       "url": "/docs/reference/errors",
-      "count": 107,
+      "count": 108,
       "unit": "codes",
       "description": "Every error code by class, with what happened, how to fix it and what to show users.",
       "items": [
@@ -1182,6 +1182,11 @@
           "name": "NAME_NOT_RENEWABLE",
           "url": "/docs/reference/errors/NAME_NOT_RENEWABLE",
           "summary": "The name cannot be renewed."
+        },
+        {
+          "name": "NAME_ALREADY_RENEWED",
+          "url": "/docs/reference/errors/NAME_ALREADY_RENEWED",
+          "summary": "Every name already expires at or after until."
         },
         {
           "name": "NAME_LOCKED",

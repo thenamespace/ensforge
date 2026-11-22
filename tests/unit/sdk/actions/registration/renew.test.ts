@@ -1,13 +1,21 @@
 import { assert, describe, it } from "@effect/vitest";
 /* oxlint-disable typescript/no-unsafe-type-assertion -- stub arguments arrive as `unknown[]`, decoded against the stubbed ABI */
-import { Array as Arr, Effect } from "effect";
+import { Array as Arr, Effect, Option, Record as Rec } from "effect";
 
 import { Abis, Deployments } from "@ensforge/contracts";
 import { Actions, Duration } from "@ensforge/sdk/effect";
 import * as Ensforge from "@ensforge/sdk/internal/client/Ensforge";
 import { expectFailure, scriptedTransport } from "@ensforge/test-harness";
 import { contractScript } from "@ensforge/test-harness/contracts-eth-call";
-import { decodeFunctionData, isAddressEqual, numberToHex, zeroHash, type Address } from "viem";
+import {
+  decodeFunctionData,
+  isAddressEqual,
+  labelhash,
+  multicall3Abi,
+  numberToHex,
+  zeroHash,
+  type Address,
+} from "viem";
 import { mainnet } from "viem/chains";
 
 import { other, signer } from "../world.js";
@@ -16,6 +24,7 @@ const { ethRegistrar } = Deployments.mainnet.v2.contracts;
 const { ethRenewerV1 } = Deployments.mainnet.v2.migration;
 const { usdc } = Deployments.mainnet.v2.paymentTokens;
 const year = Duration.years(1);
+const now = 1_800_000_000n;
 
 type Renewal = {
   /** Labels each renewal route accepts, with their price. */
@@ -24,6 +33,8 @@ type Renewal = {
   /** The USDC balance of `holder` (default 10^12 for everyone). */
   readonly balanceOf?: (holder: Address) => bigint;
   readonly allowance?: (spender: Address) => bigint;
+  /** Each label's expiry on its route (default a year from now). */
+  readonly expiry?: Readonly<Record<string, bigint>>;
 };
 
 /** Scripted `isRenewable`/`getRenewPrice` of a renewal route accepting `prices`' labels. */
@@ -54,6 +65,29 @@ const clientFor = (renewal: Renewal) => {
             allowance: ([, spender]) => renewal.allowance?.(spender as Address) ?? 0n,
           },
         },
+        {
+          address: Deployments.mainnet.v2.contracts.ethRegistry,
+          abi: Abis.v2.permissionedRegistry,
+          functions: {
+            findExpiry: ([label]) => renewal.expiry?.[String(label)] ?? now + year,
+          },
+        },
+        {
+          address: Deployments.mainnet.v1.contracts.baseRegistrar,
+          abi: Abis.v1.baseRegistrar,
+          functions: {
+            nameExpires: ([id]) =>
+              Arr.findFirst(
+                Rec.toEntries(renewal.expiry ?? {}),
+                ([label]) => BigInt(labelhash(label)) === id,
+              ).pipe(Option.match({ onNone: () => now + year, onSome: ([, expiry]) => expiry })),
+          },
+        },
+        {
+          address: mainnet.contracts.multicall3.address,
+          abi: multicall3Abi,
+          functions: { getCurrentBlockTimestamp: () => now },
+        },
       ],
     }),
   );
@@ -77,10 +111,11 @@ describe("registration.renew.prepare", () => {
         duration: year,
       });
 
-      const [approve, renew] = plan.steps;
+      // Each route's renew call is its own step, so a resume never renews a mined one again.
+      const [approve, ...renews] = plan.steps;
       assert.deepStrictEqual(
         Arr.map(plan.steps, (step) => step.id),
-        ["approve", "renew"],
+        ["approve", "renew:v2:0", "renew:v1:0"],
       );
       assert.deepStrictEqual(
         Arr.map(approve?.calls ?? [], (call) => [
@@ -93,10 +128,10 @@ describe("registration.renew.prepare", () => {
         ],
       );
       assert.deepStrictEqual(
-        Arr.map(renew?.calls ?? [], (call) => [
-          call.to,
-          decodeFunctionData({ abi: Abis.v2.ethRegistrar, data: call.data }),
-        ]),
+        Arr.map(
+          Arr.flatMap(renews, (step) => step.calls),
+          (call) => [call.to, decodeFunctionData({ abi: Abis.v2.ethRegistrar, data: call.data })],
+        ),
         [
           [
             ethRegistrar,
@@ -203,6 +238,104 @@ describe("registration.renew.prepare", () => {
         _tag: "InsufficientFundsError",
         code: "INSUFFICIENT_TOKEN_BALANCE",
       });
+    }),
+  );
+
+  // Regression: a name renewed in grace by less than it has been expired was paid for and stayed
+  // expired.
+  it.effect("refuses a grace renewal that leaves the name expired, naming the minimum", () =>
+    Effect.gen(function* () {
+      const ens = clientFor({ v2: { alice: 5n }, v1: {}, expiry: { alice: now - 20n * 86_400n } });
+
+      const error = yield* expectFailure(
+        Actions.registration.renew.prepare(ens, { names: "alice.eth", duration: 7n * 86_400n }),
+        { _tag: "InvalidInputError", code: "DURATION_TOO_SHORT" },
+      );
+      assert.include(error.hint, `${21n * 86_400n + 1n} seconds`);
+      yield* Actions.registration.renew.prepare(ens, {
+        names: "alice.eth",
+        duration: 21n * 86_400n + 1n,
+      });
+    }),
+  );
+
+  it.effect("renews each name up to `until`, skipping names that already reach it", () =>
+    Effect.gen(function* () {
+      const until = now + 2n * year;
+      const ens = clientFor({
+        v2: { alice: 5n, bob: 7n },
+        v1: { carol: 11n },
+        expiry: { alice: now + year, bob: until, carol: now + 10n },
+      });
+
+      const plan = yield* Actions.registration.renew.prepare(ens, {
+        names: ["alice.eth", "bob.eth", "carol.eth"],
+        until,
+      });
+
+      assert.deepStrictEqual(
+        Arr.flatMap(plan.steps, (step) =>
+          step.id === "approve"
+            ? []
+            : Arr.map(step.calls, (call) => {
+                const decoded = decodeFunctionData({ abi: Abis.v2.ethRegistrar, data: call.data });
+                return decoded.functionName === "renew" ? decoded.args[0] : undefined;
+              }),
+        ),
+        [
+          { label: "alice", duration: year, referrer: zeroHash },
+          { label: "carol", duration: 2n * year - 10n, referrer: zeroHash },
+        ],
+      );
+      assert.deepStrictEqual(
+        Arr.map(plan.warnings, (warning) => warning.code),
+        ["NAME_ALREADY_RENEWED"],
+      );
+    }),
+  );
+
+  it.effect.each([
+    ["every name already reaches it", now + year, "NameStateError", "NAME_ALREADY_RENEWED"],
+    ["it is in the past", now, "InvalidInputError", "INVALID_EXPIRY"],
+  ] as const)("refuses `until` when %s", ([, until, tag, code]) =>
+    expectFailure(
+      Actions.registration.renew.prepare(clientFor({ v2: { alice: 5n }, v1: {} }), {
+        names: "alice.eth",
+        until,
+      }),
+      { _tag: tag, code },
+    ),
+  );
+
+  it.effect.each([
+    ["0x01", numberToHex(1n, { size: 32 })],
+    [other, numberToHex(BigInt(other), { size: 32 })],
+  ] as const)("left-pads a referrer of up to 32 bytes: %s", ([referrer, padded]) =>
+    Effect.gen(function* () {
+      const plan = yield* Actions.registration.renew.prepare(
+        clientFor({ v2: { alice: 5n }, v1: {}, allowance: () => 5n }),
+        { names: "alice.eth", duration: year, referrer },
+      );
+
+      const decoded = decodeFunctionData({
+        abi: Abis.v2.ethRegistrar,
+        data: plan.calls[0]?.data ?? "0x",
+      });
+      assert.deepInclude(decoded.args?.[0], { referrer: padded });
+    }),
+  );
+
+  it.effect("warns when a name was written in another form", () =>
+    Effect.gen(function* () {
+      const plan = yield* Actions.registration.renew.prepare(
+        clientFor({ v2: { alice: 5n }, v1: {} }),
+        { names: "Alice.ETH", duration: year },
+      );
+
+      assert.deepStrictEqual(
+        Arr.map(plan.warnings, (warning) => warning.code),
+        ["NAME_NORMALIZED"],
+      );
     }),
   );
 });

@@ -199,6 +199,140 @@ describe("renewal", () => {
       { meta: { cases: ["A05"] } },
     );
 
+    // Regression: renewing a name 20 days into grace by 7 days was paid and left it expired.
+    it.effect(
+      "refuses a grace renewal that would leave the name expired, before the wallet is asked",
+      () =>
+        Effect.gen(function* () {
+          const chain = yield* Chain;
+          const { accounts } = yield* Devnet;
+          const clients = yield* Clients;
+          const { name, facts } = (yield* Fixtures).byId("v2.registered");
+          const ens = clients.make({ account: accounts.alice });
+          const expiry = BigInt(String(facts["expiry"]));
+
+          yield* chain.atTimestamp(
+            expiry + Duration.days(20),
+            Effect.gen(function* () {
+              yield* expectFailure(
+                Actions.registration.renew.prepare(ens, {
+                  names: name,
+                  duration: Duration.days(7),
+                }),
+                { _tag: "InvalidInputError", code: "DURATION_TOO_SHORT" },
+              );
+              yield* Actions.registration.renewSync(ens, {
+                names: name,
+                duration: Duration.days(22),
+              });
+              const status = yield* Actions.name.get(ens, { name });
+              assert.strictEqual(status?.status, "registered");
+            }),
+          );
+        }),
+      { meta: { cases: ["G11"] } },
+    );
+
+    it.effect(
+      "renews names up to one expiry, so a retry renews nothing twice",
+      () =>
+        Effect.gen(function* () {
+          const { accounts } = yield* Devnet;
+          const chain = yield* Chain;
+          const clients = yield* Clients;
+          const fixtures = yield* Fixtures;
+          const ens = clients.make({ account: accounts.carol });
+          const names = [fixtures.byId("v2.registered").name, fixtures.byId("v2.grace").name];
+
+          yield* chain.isolated(
+            Effect.gen(function* () {
+              const before = yield* Effect.forEach(names, (name) => ethEntry(name), {
+                concurrency: 1,
+              });
+              const until =
+                Arr.reduce(before, 0n, (latest, entry) =>
+                  entry.expiry > latest ? entry.expiry : latest,
+                ) + Duration.years(1);
+              yield* Actions.registration.renewSync(ens, { names, until });
+
+              const after = yield* Effect.forEach(names, (name) => ethEntry(name), {
+                concurrency: 1,
+              });
+              assert.deepStrictEqual(
+                Arr.map(after, (entry) => entry.expiry),
+                [until, until],
+              );
+              yield* expectFailure(Actions.registration.renew.prepare(ens, { names, until }), {
+                _tag: "NameStateError",
+                code: "NAME_ALREADY_RENEWED",
+              });
+            }),
+          );
+        }),
+      { meta: { cases: ["A05"] } },
+    );
+
+    // Regression: both routes' renewals were one step, so a resume after the first mined renewed
+    // (and charged for) it again.
+    it.effect(
+      "resumes a renewal over two routes without renewing the mined one again",
+      () =>
+        Effect.gen(function* () {
+          const devnet = yield* Devnet;
+          const { accounts } = devnet;
+          const chain = yield* Chain;
+          const clients = yield* Clients;
+          const wallets = yield* Wallets;
+          const fixtures = yield* Fixtures;
+          const v2Name = fixtures.byId("v2.registered").name;
+          const v1Name = fixtures.byId("v2.reserved").name;
+          const duration = Duration.years(1);
+          const storage = Plan.memoryStorage();
+          const expiries = Effect.all(
+            [
+              Effect.map(ethEntry(v2Name), (entry) => entry.expiry),
+              chain.read({
+                address: devnet.contract("v1.baseRegistrar"),
+                abi: Abis.v1.baseRegistrar,
+                functionName: "nameExpires",
+                args: [Name.toTokenId(v1Name)],
+              }),
+            ],
+            { concurrency: 1 },
+          );
+
+          yield* chain.isolated(
+            Effect.gen(function* () {
+              const before = yield* expiries;
+              // The wallet signs the approval and the first renewal, then stops.
+              const first = clients.make({
+                account: accounts.carol,
+                wallet: wallets.make(accounts.carol, { rejectAfter: 2 }),
+                storage,
+              });
+              const options = { names: [v2Name, v1Name], duration };
+              const steps = (yield* Actions.registration.renew.prepare(first, options)).steps;
+              const sends = Arr.filter(steps, (step) => step.id !== "approve").length;
+              yield* expectFailure(Actions.registration.renewSync(first, options), {
+                _tag: "UserRejectedError",
+                code: "USER_REJECTED",
+              });
+              const [record] = yield* Actions.plan.list(first, {});
+              if (record === undefined) assert.fail("the plan was not saved");
+
+              const wallet = wallets.make(accounts.carol);
+              const second = clients.make({ account: accounts.carol, wallet, storage });
+              yield* Actions.plan.resumeSync(second, { id: record.plan.id });
+
+              assert.strictEqual(sends, 2);
+              const after = yield* expiries;
+              assert.deepStrictEqual(after, [before[0] + duration, before[1] + duration]);
+            }),
+          );
+        }),
+      { meta: { cases: ["A05"] } },
+    );
+
     it.effect(
       "renews an ENSv2 name until its grace period ends",
       () =>

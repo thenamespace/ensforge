@@ -50,7 +50,7 @@ Call it as `ens.registration.commit(options)` on a client, or `Actions.registrat
 | `primaryName` | `boolean` |  | Set the (single) name as the signer's primary name; adds its `eth` address record. |
 | `paymentToken` | `PaymentToken` | `"usdc"` | Token to pay with. |
 | `subregistry` | `string` |  | ENSv2 registry for the names' subnames. |
-| `referrer` | `Hex` |  | Referrer recorded by the registrar: 32 bytes, or an address (left-padded). |
+| `referrer` | `Hex` |  | Referrer recorded by the registrar: up to 32 bytes of hex, left-padded (an address works). |
 | `secret` | `Hex` |  | Secret from an earlier `commit` or `register`, to finish that registration. |
 
 Also takes the [write options](/docs/reference/sdk/client#write-options).

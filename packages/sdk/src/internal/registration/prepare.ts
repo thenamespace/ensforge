@@ -19,7 +19,7 @@ import * as Rpc from "../rpc/index.js";
 import { makeCommitment, randomSecret, resolverSalt } from "./commitment.js";
 import { requireRegistrationContracts, type RegistrationContracts } from "./contracts.js";
 import { requireDuration } from "./duration.js";
-import { parseEthNames, type EthName } from "./labels.js";
+import { normalizedWarnings, parseEthNames, type EthName } from "./labels.js";
 import { paymentTokenAddress, requirePaymentToken } from "./payment.js";
 import { referrerOf } from "./referrer.js";
 
@@ -347,7 +347,7 @@ export const prepareRegistration = Effect.fnUntraced(function* (
     total: Arr.reduce(prepared, 0n, (sum, name) => sum + name.price.base + name.price.premium),
     records: options.records,
     ownedDeploy: owned?.deploy,
-    warnings: owned?.warnings ?? [],
+    warnings: [...normalizedWarnings(input.names, names), ...(owned?.warnings ?? [])],
     explicitResolver: options.resolver ?? undefined,
     shared: owned !== undefined,
     minCommitmentAge,

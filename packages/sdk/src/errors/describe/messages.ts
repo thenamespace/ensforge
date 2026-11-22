@@ -118,6 +118,10 @@ export const messages: { readonly [code in Code]: Template<code> } = {
     title: "Cannot renew",
     message: `${thisName(error)} cannot be renewed.`,
   }),
+  NAME_ALREADY_RENEWED: () => ({
+    title: "Already renewed",
+    message: "These names are already renewed until the date you chose.",
+  }),
   NAME_LOCKED: (error) => ({
     title: "Name locked",
     message: `${thisName(error)} is locked and cannot be changed.`,

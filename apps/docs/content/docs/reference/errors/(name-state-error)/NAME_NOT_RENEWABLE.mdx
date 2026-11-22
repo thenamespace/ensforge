@@ -28,7 +28,7 @@ Retrying the same call fails the same way until the cause is fixed (`retryable: 
 | Action | When |
 | --- | --- |
 | [`registration.getRenewalPrice`](/docs/reference/sdk/registration/get-renewal-price) | when a name is neither registered nor in its grace period. |
-| [`registration.renew`](/docs/reference/sdk/registration/renew) | when a name is neither registered nor in its grace period. |
+| [`registration.renew`](/docs/reference/sdk/registration/renew) | when a name is neither registered nor in its grace period, or every name already reaches `until`. |
 
 ## Catch it
 

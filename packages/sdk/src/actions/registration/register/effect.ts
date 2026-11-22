@@ -43,14 +43,14 @@ export const plan = Effect.fnUntraced(function* (
   const registration = yield* prepareRegistration(client, options, signer, sender);
   const { toCommit, committedAt, warnings } = pendingCommitments(registration);
   // The registrar charges the price at `register`, which can drift from the quote (the premium
-  // decays, the oracle can change), so the approval leaves 2% headroom; the balance check stays
-  // exact.
+  // decays, the oracle can change), so a new approval leaves 2% headroom; an allowance that
+  // covers the exact price needs none, and the balance check stays exact.
   const approvals = yield* paymentCalls(client, {
     payer: sender,
     token: registration.token,
     spender: registration.contracts.registrar,
-    amount: registration.total + registration.total / 50n,
-    balanceRequired: registration.total,
+    amount: registration.total,
+    headroom: registration.total / 50n,
     ...(routed ? { funder: signer } : {}),
   });
 

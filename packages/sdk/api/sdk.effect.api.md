@@ -449,11 +449,11 @@ const Actions.registration.getPrice.path: 'registration.getPrice'
 type Actions.registration.getPrice.ErrorType = InvalidInputError | UnsupportedError | CommonError
 type Actions.registration.getPrice.Options = Pick<Options, 'signal'> & (BlockOptions & { name: string; duration: bigint; paymentToken?: PaymentToken | undefined; at?: bigint | undefined; })
 type Actions.registration.getPrice.ReturnType = { readonly base: bigint; readonly premium: bigint; readonly total: bigint; readonly token: TokenInfo; }
-function Actions.registration.getRenewalPrice(client: ClientBase<{}>, options: Pick<Options, 'signal'> & (BlockOptions & { names: string | readonly string[]; duration: bigint; paymentToken?: PaymentToken | undefined; })) => Effect<ReturnType, ErrorType, never>
+function Actions.registration.getRenewalPrice(client: ClientBase<{}>, options: (Pick<Options, 'signal'> & BlockOptions) & ({ names: string | readonly string[]; paymentToken?: PaymentToken | undefined; } & ({ duration: bigint; until?: undefined; } | { until: bigint; duration?: undefined; }))) => Effect<ReturnType, ErrorType, never>
 const Actions.registration.getRenewalPrice.path: 'registration.getRenewalPrice'
 type Actions.registration.getRenewalPrice.ErrorType = InvalidInputError | NameStateError | UnsupportedError | CommonError
-type Actions.registration.getRenewalPrice.Options = Pick<Options, 'signal'> & (BlockOptions & { names: string | readonly string[]; duration: bigint; paymentToken?: PaymentToken | undefined; })
-type Actions.registration.getRenewalPrice.ReturnType = { readonly total: bigint; readonly token: TokenInfo; readonly items: readonly { readonly name: string; readonly route: RenewalRoute; readonly amount: bigint; }[]; }
+type Actions.registration.getRenewalPrice.Options = (Pick<Options, 'signal'> & BlockOptions) & ({ names: string | readonly string[]; paymentToken?: PaymentToken | undefined; } & ({ duration: bigint; until?: undefined; } | { until: bigint; duration?: undefined; }))
+type Actions.registration.getRenewalPrice.ReturnType = { readonly total: bigint; readonly token: TokenInfo; readonly items: readonly { readonly name: string; readonly route: RenewalRoute; readonly amount: bigint; readonly expiry: bigint; readonly duration: bigint; }[]; }
 function Actions.registration.isAvailable(client: ClientBase<{}>, options: Pick<Options, 'signal'> & (BlockOptions & { name: string; })) => Effect<boolean, ErrorType, never>
 const Actions.registration.isAvailable.path: 'registration.isAvailable'
 type Actions.registration.isAvailable.ErrorType = InvalidInputError | UnsupportedError | CommonError
@@ -472,13 +472,13 @@ const Actions.registration.registerSync.path: 'registration.registerSync'
 type Actions.registration.registerSync.ErrorType = InvalidInputError | NameStateError | NotFoundError | WriteError
 type Actions.registration.registerSync.Options = register.Options & Write.Options & { confirmations?: number | undefined; timeout?: number | undefined; }
 type Actions.registration.registerSync.ReturnType = Result & { readonly receipt: TransactionReceipt; readonly receipts: readonly TransactionReceipt[]; } & { readonly secret: `0x${string}`; readonly names: readonly { readonly name: string; readonly tokenId: bigint; readonly expiry: bigint; }[]; readonly paid: bigint; }
-function Actions.registration.renew(client: ClientBase<{}>, options: renew.Options & Pick<Options, 'account' | 'via'> & Write.Options) => Effect<Result, ErrorType, never>
-const Actions.registration.renew.prepare: ((client: ClientBase<{}>, options: Options & Pick<Options, 'account' | 'via'>) => Effect<Plan, ErrorType, never>) & { readonly path: string; }
-const Actions.registration.renew.simulate: ((client: ClientBase<{}>, options: Options & Pick<Options, 'account' | 'via'>) => Effect<Simulation, ErrorType, never>) & { readonly path: string; }
-const Actions.registration.renew.estimateGas: ((client: ClientBase<{}>, options: Options & Pick<Options, 'account' | 'via'>) => Effect<Estimate, ErrorType, never>) & { readonly path: string; }
+function Actions.registration.renew(client: ClientBase<{}>, options: (Options & Pick<Options, 'account' | 'via'>) & Options) => Effect<Result, ErrorType, never>
+const Actions.registration.renew.prepare: ((client: ClientBase<{}>, options: (Options & Pick<Options, 'account' | 'via'>) & Pick<Options, 'account' | 'via'>) => Effect<Plan, ErrorType, never>) & { readonly path: string; }
+const Actions.registration.renew.simulate: ((client: ClientBase<{}>, options: (Options & Pick<Options, 'account' | 'via'>) & Pick<Options, 'account' | 'via'>) => Effect<Simulation, ErrorType, never>) & { readonly path: string; }
+const Actions.registration.renew.estimateGas: ((client: ClientBase<{}>, options: (Options & Pick<Options, 'account' | 'via'>) & Pick<Options, 'account' | 'via'>) => Effect<Estimate, ErrorType, never>) & { readonly path: string; }
 const Actions.registration.renew.path: 'registration.renew'
 type Actions.registration.renew.ErrorType = InvalidInputError | NameStateError | WriteError
-type Actions.registration.renew.Options = { names: string | readonly string[]; duration: bigint; paymentToken?: PaymentToken | undefined; referrer?: `0x${string}` | undefined; }
+type Actions.registration.renew.Options = { names: string | readonly string[]; paymentToken?: PaymentToken | undefined; referrer?: `0x${string}` | undefined; } & ({ duration: bigint; until?: undefined; } | { until: bigint; duration?: undefined; })
 type Actions.registration.renew.ReturnType = { readonly hash: `0x${string}`; readonly hashes: readonly `0x${string}`[]; readonly id: string | undefined; readonly plan: Plan; }
 function Actions.registration.renewSync(client: ClientBase<{}>, options: renew.Options & Write.Options & { confirmations?: number | undefined; timeout?: number | undefined; }) => Effect<ReturnType, ErrorType, never>
 const Actions.registration.renewSync.path: 'registration.renewSync'
@@ -1123,7 +1123,7 @@ type Errors.MigrationError.Code = 'ALREADY_MIGRATED' | 'NAME_NOT_LOCKED' | 'NOT_
 type Errors.MigrationError.Options = ClassOptions<Code> & { readonly blockers?: readonly string[] | undefined; }
 class Errors.NameStateError {
   constructor(options: { readonly code: Code; readonly shortMessage?: string | undefined; readonly hint?: string | undefined; readonly details?: readonly string[] | undefined; readonly context?: Context | undefined; readonly cause?: unknown; }) => NameStateError
-  code: 'NAME_EXPIRED' | 'NAME_EXTERNAL' | 'NAME_HAS_SUBNAMES' | 'NAME_LOCKED' | 'NAME_NOT_AVAILABLE' | 'NAME_NOT_REGISTERED' | 'NAME_NOT_RENEWABLE' | 'NAME_NOT_WRAPPED' | 'NAME_REQUIRES_MIGRATION' | 'NAME_RESERVED' | 'NAME_UNREACHABLE' | 'NAME_WRAPPED' | 'PARENT_NOT_MIGRATED' | 'REGISTRY_NOT_EMANCIPATED'
+  code: 'NAME_ALREADY_RENEWED' | 'NAME_EXPIRED' | 'NAME_EXTERNAL' | 'NAME_HAS_SUBNAMES' | 'NAME_LOCKED' | 'NAME_NOT_AVAILABLE' | 'NAME_NOT_REGISTERED' | 'NAME_NOT_RENEWABLE' | 'NAME_NOT_WRAPPED' | 'NAME_REQUIRES_MIGRATION' | 'NAME_RESERVED' | 'NAME_UNREACHABLE' | 'NAME_WRAPPED' | 'PARENT_NOT_MIGRATED' | 'REGISTRY_NOT_EMANCIPATED'
   ~ensforge/error: true
   _tag: 'NameStateError'
   name: 'NameStateError'
@@ -1146,7 +1146,7 @@ class Errors.NameStateError {
   ~effect/Runtime/errorExitCode: number
   ~effect/Runtime/errorReported: boolean
 }
-type Errors.NameStateError.Code = 'NAME_EXPIRED' | 'NAME_EXTERNAL' | 'NAME_HAS_SUBNAMES' | 'NAME_LOCKED' | 'NAME_NOT_AVAILABLE' | 'NAME_NOT_REGISTERED' | 'NAME_NOT_RENEWABLE' | 'NAME_NOT_WRAPPED' | 'NAME_REQUIRES_MIGRATION' | 'NAME_RESERVED' | 'NAME_UNREACHABLE' | 'NAME_WRAPPED' | 'PARENT_NOT_MIGRATED' | 'REGISTRY_NOT_EMANCIPATED'
+type Errors.NameStateError.Code = 'NAME_ALREADY_RENEWED' | 'NAME_EXPIRED' | 'NAME_EXTERNAL' | 'NAME_HAS_SUBNAMES' | 'NAME_LOCKED' | 'NAME_NOT_AVAILABLE' | 'NAME_NOT_REGISTERED' | 'NAME_NOT_RENEWABLE' | 'NAME_NOT_WRAPPED' | 'NAME_REQUIRES_MIGRATION' | 'NAME_RESERVED' | 'NAME_UNREACHABLE' | 'NAME_WRAPPED' | 'PARENT_NOT_MIGRATED' | 'REGISTRY_NOT_EMANCIPATED'
 type Errors.NameStateError.Options = { readonly code: Code; readonly shortMessage?: string | undefined; readonly hint?: string | undefined; readonly details?: readonly string[] | undefined; readonly context?: Context | undefined; readonly cause?: unknown; }
 class Errors.NetworkError {
   constructor(options: ClassOptions<Code> & { readonly status?: number | undefined; }) => NetworkError

@@ -14,6 +14,10 @@ const defaults: {
   NAME_RESERVED: () => ({ shortMessage: "The name is reserved." }),
   NAME_EXPIRED: () => ({ shortMessage: "The name has expired." }),
   NAME_NOT_RENEWABLE: () => ({ shortMessage: "The name cannot be renewed." }),
+  NAME_ALREADY_RENEWED: () => ({
+    shortMessage: "Every name already expires at or after `until`.",
+    hint: "Nothing is left to renew; a retry with the same `until` renews only names still short of it.",
+  }),
   NAME_LOCKED: () => ({ shortMessage: "The name is locked." }),
   NAME_NOT_WRAPPED: () => ({ shortMessage: "The name is not wrapped in the NameWrapper." }),
   NAME_WRAPPED: () => ({ shortMessage: "The name is already wrapped in the NameWrapper." }),
@@ -58,6 +62,7 @@ export declare namespace NameStateError {
     | "NAME_RESERVED"
     | "NAME_EXPIRED"
     | "NAME_NOT_RENEWABLE"
+    | "NAME_ALREADY_RENEWED"
     | "NAME_LOCKED"
     | "NAME_NOT_WRAPPED"
     | "NAME_WRAPPED"

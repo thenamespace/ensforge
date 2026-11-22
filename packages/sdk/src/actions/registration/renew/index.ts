@@ -22,6 +22,12 @@ import * as Impl from "./effect.js";
  * - Token approvals are added for each contract whose allowance is short.
  * - Anyone can renew any name; the payer is the signer.
  * - A name listed twice is renewed once, for `duration`.
+ * - `until` renews each name up to one expiry instead: names already reaching it are skipped
+ *   (warning `NAME_ALREADY_RENEWED`), so retrying after a failure never pays twice.
+ * - A name in its grace period must end up at least a day past now; a shorter renewal would be
+ *   paid and leave it expired, so it fails with `DURATION_TOO_SHORT` before anything is sent.
+ * - Approvals are for the exact price. Each `renewBatch` call (25 names at most) is its own step,
+ *   so a resumed plan does not renew a mined chunk again.
  *
  * **Example** (Renewing names)
  *
@@ -45,8 +51,8 @@ import * as Impl from "./effect.js";
  * yield* Actions.registration.renew(ens, { names: ["alice.eth", "bob.eth"], duration: 31536000n })
  * ```
  *
- * @throws `Errors.InvalidInputError` (`INVALID_NAME`, `INVALID_ADDRESS`, `INVALID_DURATION`, `DURATION_TOO_SHORT`) for invalid input, including a duration over 100 years.
- * @throws `Errors.NameStateError` (`NAME_NOT_RENEWABLE`) when a name is neither registered nor in its grace period.
+ * @throws `Errors.InvalidInputError` (`INVALID_NAME`, `INVALID_ADDRESS`, `INVALID_DURATION`, `DURATION_TOO_SHORT`, `INVALID_EXPIRY`) for invalid input, a duration over 100 years, a renewal that leaves a name expired, or an `until` in the past.
+ * @throws `Errors.NameStateError` (`NAME_NOT_RENEWABLE`, `NAME_ALREADY_RENEWED`) when a name is neither registered nor in its grace period, or every name already reaches `until`.
  * @throws `Errors.InsufficientFundsError` (`INSUFFICIENT_TOKEN_BALANCE`) when the signer cannot pay in the payment token.
  * @throws `Errors.UnsupportedError` (`PAYMENT_TOKEN_UNSUPPORTED`, `UNSUPPORTED_ON_DEPLOYMENT`) for an unaccepted token or without ENSv2.
  * @throws `Errors.ConfigError` (`WALLET_NOT_CONFIGURED`) when no signing account is known.
@@ -71,17 +77,29 @@ export declare namespace renew {
   type Options = {
     /** One or more `.eth` second-level names. Normalized automatically. */
     names: string | readonly string[];
-    /** Renewal length in seconds. */
-    duration: bigint;
     /**
      * Token to pay with.
      *
      * @default "usdc"
      */
     paymentToken?: PaymentToken | undefined;
-    /** Referrer recorded by the registrar: 32 bytes, or an address (left-padded). */
+    /** Referrer recorded by the registrar: up to 32 bytes of hex, left-padded (an address works). */
     referrer?: Hex | undefined;
-  };
+  } & (
+    | {
+        /** Renewal length in seconds, the same for every name. */
+        duration: bigint;
+        until?: undefined;
+      }
+    | {
+        /**
+         * Expiry, as a Unix timestamp, to renew every name up to: each is extended by what it
+         * lacks, and names already reaching it are skipped. Safe to retry.
+         */
+        until: bigint;
+        duration?: undefined;
+      }
+  );
   /** Submitted transaction hashes and the plan that produced them. */
   type ReturnType = Write.Result;
   /** Errors {@link renew} can fail with. */
@@ -137,8 +155,8 @@ renew.estimateGas = Action.promiseOf(
  * yield* Actions.registration.renewSync(ens, { names: ["alice.eth", "bob.eth"], duration: 31536000n })
  * ```
  *
- * @throws `Errors.InvalidInputError` (`INVALID_NAME`, `INVALID_ADDRESS`, `INVALID_DURATION`, `DURATION_TOO_SHORT`) for invalid input, including a duration over 100 years.
- * @throws `Errors.NameStateError` (`NAME_NOT_RENEWABLE`) when a name is neither registered nor in its grace period.
+ * @throws `Errors.InvalidInputError` (`INVALID_NAME`, `INVALID_ADDRESS`, `INVALID_DURATION`, `DURATION_TOO_SHORT`, `INVALID_EXPIRY`) for invalid input, a duration over 100 years, a renewal that leaves a name expired, or an `until` in the past.
+ * @throws `Errors.NameStateError` (`NAME_NOT_RENEWABLE`, `NAME_ALREADY_RENEWED`) when a name is neither registered nor in its grace period, or every name already reaches `until`.
  * @throws `Errors.InsufficientFundsError` (`INSUFFICIENT_TOKEN_BALANCE`) when the signer cannot pay in the payment token.
  * @throws `Errors.UnsupportedError` (`PAYMENT_TOKEN_UNSUPPORTED`, `UNSUPPORTED_ON_DEPLOYMENT`) for an unaccepted token or without ENSv2.
  * @throws `Errors.ConfigError` (`WALLET_NOT_CONFIGURED`) when no signing account is known.

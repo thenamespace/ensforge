@@ -25,8 +25,30 @@ export const getPrice = Effect.fn("ensforge.registration.getPrice")(
     const token = yield* paymentTokenAddress(contracts, options.paymentToken);
     const at = blockAt(options);
 
-    const { state, gracePeriod, minDuration, now, info } = yield* Effect.all(
+    // The oracle can be replaced: a quote at a past block uses the oracle of that block.
+    const oracle =
+      options.blockNumber === undefined && options.blockTag === undefined
+        ? contracts.oracle
+        : yield* Rpc.readContract(client, {
+            address: contracts.registrar,
+            abi: Abis.v2.ethRegistrar,
+            functionName: "rentPriceOracle",
+            ...at,
+          });
+    const { state, gracePeriod, minDuration, now, info, quoted } = yield* Effect.all(
       {
+        // Now, the registrar's own price is the one `register` pays; it refuses a taken name,
+        // which is priced through the oracle instead.
+        quoted:
+          options.at === undefined
+            ? Rpc.readContractOrUndefined(client, {
+                address: contracts.registrar,
+                abi: Abis.v2.ethRegistrar,
+                functionName: "getRegisterPrice",
+                args: [label, options.duration, token],
+                ...at,
+              })
+            : Effect.undefined,
         state: Rpc.readContract(client, {
           address: contracts.ethRegistry,
           abi: Abis.v2.permissionedRegistry,
@@ -47,7 +69,7 @@ export const getPrice = Effect.fn("ensforge.registration.getPrice")(
           ...at,
         }),
         now: Rpc.blockTimestamp(client, options),
-        info: acceptedTokenInfo(client, contracts, token),
+        info: acceptedTokenInfo(client, { ...contracts, oracle }, token),
       },
       { concurrency: "unbounded" },
     );
@@ -57,13 +79,18 @@ export const getPrice = Effect.fn("ensforge.registration.getPrice")(
       );
     }
 
+    if (quoted !== undefined) {
+      const [base, premium] = quoted;
+      return { base, premium, total: base + premium, token: info };
+    }
+
     // The registrar prices a name by how long it has been available (ETHRegistrar
     // `_availablePeriod`); computing that period for `at` gives the premium at a future time.
     const time = options.at ?? now;
     const end = state.expiry + gracePeriod;
     const availableFor = state.expiry === 0n ? time : time > end ? time - end : 0n;
     const [base, premium] = yield* Rpc.readContract(client, {
-      address: contracts.oracle,
+      address: oracle,
       abi: Abis.v2.standardRentPriceOracle,
       functionName: "getRegisterPrice",
       args: [label, availableFor, options.duration, token],

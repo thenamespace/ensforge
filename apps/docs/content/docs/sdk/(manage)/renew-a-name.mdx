@@ -1,7 +1,7 @@
 ---
 title: Renew a name
-description: Quote and renew one or more .eth names for a chosen duration, including names that are already in their grace period after expiry.
-keywords: [registration.renew, getRenewalPrice, grace period, ETHRenewerV1, renewBatch]
+description: Quote and renew one or more .eth names for a chosen duration or up to one expiry date, including names that are already in their grace period.
+keywords: [registration.renew, getRenewalPrice, grace period, until, ETHRenewerV1, renewBatch]
 ---
 
 You will extend the registration of one or more [`.eth` names](/docs/reference/glossary#eth-name). Anyone can renew any name: the signer pays, and the owner does not change. ensforge picks the right contract for each name, so [ENSv1](/docs/reference/glossary#ensv1) and [ENSv2](/docs/reference/glossary#ensv2) names renew in the same call.
@@ -31,7 +31,7 @@ const { total, token, items } = await ens.registration.getRenewalPrice({
 });
 ```
 
-Each entry of `items` has the `name`, its `amount` and its `route`:
+Each entry of `items` has the `name`, its `amount`, its `route`, its current `expiry` and the `duration` the renewal adds:
 
 | `route`          | Contract                  | Names                                          |
 | ---------------- | ------------------------- | ---------------------------------------------- |
@@ -40,7 +40,7 @@ Each entry of `items` has the `name`, its `amount` and its `route`:
 
 ## 2. Renew
 
-[`registration.renew`](/docs/reference/sdk/registration/renew) sends one `renewBatch` call per route, with a token approval for each contract whose allowance is short. `registration.renewSync` also waits for the receipts.
+[`registration.renew`](/docs/reference/sdk/registration/renew) sends one `renewBatch` call per route, each its own step, with a token approval for each contract whose allowance is short. The approval is for the exact price. `registration.renewSync` also waits for the receipts.
 
 **Example** (Renewing Two Names)
 
@@ -68,11 +68,43 @@ const { hashes } = await ens.registration.renewSync({
 | Option         | Type                        | Default  | Description                                                     |
 | -------------- | --------------------------- | -------- | --------------------------------------------------------------- |
 | `names`        | `string \| string[]`        | required | `.eth` second-level names. A name listed twice is renewed once. |
-| `duration`     | `bigint`                    | required | Renewal length in seconds.                                      |
+| `duration`     | `bigint`                    | required | Renewal length in seconds. Pass `duration` or `until`.          |
+| `until`        | `bigint`                    | none     | Expiry, as a Unix timestamp, to renew every name up to.         |
 | `paymentToken` | `"usdc" \| "dai" \| string` | `"usdc"` | Token to pay with.                                              |
 | `referrer`     | `Hex`                       | none     | Referrer the registrar records.                                 |
 
 `renew` returns `{ hash, hashes, id, plan }`. `renewSync` adds `receipt` and `receipts`, the renewed `names` with their new `expiry`, and `paid`, the amount charged in the token's smallest unit. All write options apply too. See [How writes work](/docs/sdk/writing-to-ens).
+
+## Renew every name up to one date
+
+With `until`, each name is extended by what it lacks to reach that expiry, so names with different expiries end on the same day. A name that already expires on or after `until` is skipped, with a `NAME_ALREADY_RENEWED` warning. That makes a retry safe: after a failure, call `renew` again with the same `until` and only the names still short of it are renewed and paid for.
+
+**Example** (Renewing Two Names to the Same Date)
+
+```ts title="renew-until.ts"
+import { createWalletClient, http, type Hex } from "viem";
+import { privateKeyToAccount } from "viem/accounts";
+import { sepolia } from "viem/chains";
+import { Ensforge, ensActions } from "@ensforge/sdk";
+
+const account = privateKeyToAccount(process.env.PRIVATE_KEY as Hex);
+const transport = http(process.env.SEPOLIA_RPC_URL);
+
+const ens = Ensforge.create({
+  chain: sepolia,
+  transports: { [sepolia.id]: transport },
+  wallet: createWalletClient({ account, chain: sepolia, transport }),
+}).extend(ensActions());
+
+await ens.registration.renewSync({
+  names: ["ensforge-docs-demo.eth", "ensforge-docs-demo-2.eth"],
+  until: 1_900_000_000n,
+});
+```
+
+## Renew a name in its grace period
+
+A name in its grace period stays expired until its new expiry passes the current time. ensforge refuses a renewal that would leave it expired, or expire within a day, with `DURATION_TOO_SHORT` before the wallet is asked. The error's hint names the shortest duration that works.
 
 ## Check the result
 
@@ -95,7 +127,11 @@ The signer cannot pay the quote. See [`INSUFFICIENT_TOKEN_BALANCE`](/docs/refere
 
 ### `DURATION_TOO_SHORT`
 
-`duration` is shorter than the registrar's minimum. See [`DURATION_TOO_SHORT`](/docs/reference/errors/DURATION_TOO_SHORT).
+`duration` is shorter than the registrar's minimum, or too short to bring a name in its grace period back to at least a day past now. See [`DURATION_TOO_SHORT`](/docs/reference/errors/DURATION_TOO_SHORT).
+
+### `NAME_ALREADY_RENEWED`
+
+Every name already expires on or after `until`, so nothing is left to renew. See [`NAME_ALREADY_RENEWED`](/docs/reference/errors/NAME_ALREADY_RENEWED).
 
 ### `PAYMENT_TOKEN_UNSUPPORTED`
 

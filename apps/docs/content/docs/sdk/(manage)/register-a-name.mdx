@@ -110,14 +110,18 @@ const { names, paid, secret } = await ens.registration.registerSync({
 | `resolver`     | `string \| null`            | `"owned"`, or `"new"` for another owner | `"owned"` uses the signer's shared resolver. `"new"` deploys one per name. An address uses that resolver. `null` registers without a resolver. |
 | `records`      | `object`                    | none                                    | Records for every name.                                                                                                                        |
 | `primaryName`  | `boolean`                   | `false`                                 | Set the single name as the signer's primary name.                                                                                              |
-| `paymentToken` | `"usdc" \| "dai" \| string` | `"usdc"`                                | Token to pay with. The registrar does not accept ETH.                                                                                          |
+| `paymentToken` | `"usdc" \| "dai" \| string` | `"usdc"`                                | Token to pay with, or its address. The registrar does not accept ETH.                                                                          |
 | `subregistry`  | `string`                    | none                                    | ENSv2 registry for the names' subnames.                                                                                                        |
-| `referrer`     | `Hex`                       | none                                    | Referrer the registrar records: 32 bytes, or an address.                                                                                       |
+| `referrer`     | `Hex`                       | none                                    | Referrer the registrar records: up to 32 bytes of hex, left-padded, or an address.                                                             |
 | `secret`       | `Hex`                       | a random secret                         | Secret from an earlier `commit` or `register`, to finish that registration.                                                                    |
 
 All write options also apply: `account`, `simulate`, `signal`, `mode`, `maxBundleCalls`, `onStep`, `via` and `paymaster`. See [How writes work](/docs/sdk/writing-to-ens).
 
-The approval covers the quote plus 2%, because the price is charged at `register` and can drift, for example while a premium decays. You pay only the actual price.
+A new approval covers the quote plus 2%, because the price is charged at `register` and can drift, for example while a premium decays. You pay only the actual price. An allowance that already covers the quote is used as it is.
+
+A name typed in another form, such as `Alice.eth`, is registered in its normalized form. The plan then carries a `NAME_NORMALIZED` warning naming it.
+
+On Sepolia, `"usdc"` is the deployment's test USDC, which the ENS app also pays in. The Sepolia price oracle was deployed accepting Circle's test USDC too: pass its address, `0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238`, as `paymentToken`. A token the oracle no longer accepts fails with `PAYMENT_TOKEN_UNSUPPORTED` before anything is sent.
 
 ## Split the flow across sessions
 

@@ -549,12 +549,12 @@ type Actions.registration.getPrice.Options = Pick<Options, 'signal'> & (BlockOpt
 const Actions.registration.getPrice.path: 'registration.getPrice'
 function Actions.registration.getPrice.request(options: Pick<Options, 'signal'> & (BlockOptions & { name: string; duration: bigint; paymentToken?: PaymentToken | undefined; at?: bigint | undefined; })) => Request<ReturnType, ErrorType>
 type Actions.registration.getPrice.ReturnType = { readonly base: bigint; readonly premium: bigint; readonly total: bigint; readonly token: TokenInfo; }
-function Actions.registration.getRenewalPrice(client: Client<object> | ViemClientLike, options: Pick<Options, 'signal'> & (BlockOptions & { names: string | readonly string[]; duration: bigint; paymentToken?: PaymentToken | undefined; })) => Promise<ReturnType>
+function Actions.registration.getRenewalPrice(client: Client<object> | ViemClientLike, options: (Pick<Options, 'signal'> & BlockOptions) & ({ names: string | readonly string[]; paymentToken?: PaymentToken | undefined; } & ({ duration: bigint; until?: undefined; } | { until: bigint; duration?: undefined; }))) => Promise<ReturnType>
 type Actions.registration.getRenewalPrice.ErrorType = InvalidInputError | NameStateError | UnsupportedError | CommonError
-type Actions.registration.getRenewalPrice.Options = Pick<Options, 'signal'> & (BlockOptions & { names: string | readonly string[]; duration: bigint; paymentToken?: PaymentToken | undefined; })
+type Actions.registration.getRenewalPrice.Options = (Pick<Options, 'signal'> & BlockOptions) & ({ names: string | readonly string[]; paymentToken?: PaymentToken | undefined; } & ({ duration: bigint; until?: undefined; } | { until: bigint; duration?: undefined; }))
 const Actions.registration.getRenewalPrice.path: 'registration.getRenewalPrice'
-function Actions.registration.getRenewalPrice.request(options: Pick<Options, 'signal'> & (BlockOptions & { names: string | readonly string[]; duration: bigint; paymentToken?: PaymentToken | undefined; })) => Request<ReturnType, ErrorType>
-type Actions.registration.getRenewalPrice.ReturnType = { readonly total: bigint; readonly token: TokenInfo; readonly items: readonly { readonly name: string; readonly route: RenewalRoute; readonly amount: bigint; }[]; }
+function Actions.registration.getRenewalPrice.request(options: (Pick<Options, 'signal'> & BlockOptions) & ({ names: string | readonly string[]; paymentToken?: PaymentToken | undefined; } & ({ duration: bigint; until?: undefined; } | { until: bigint; duration?: undefined; }))) => Request<ReturnType, ErrorType>
+type Actions.registration.getRenewalPrice.ReturnType = { readonly total: bigint; readonly token: TokenInfo; readonly items: readonly { readonly name: string; readonly route: RenewalRoute; readonly amount: bigint; readonly expiry: bigint; readonly duration: bigint; }[]; }
 function Actions.registration.isAvailable(client: Client<object> | ViemClientLike, options: Pick<Options, 'signal'> & (BlockOptions & { name: string; })) => Promise<boolean>
 type Actions.registration.isAvailable.ErrorType = InvalidInputError | UnsupportedError | CommonError
 type Actions.registration.isAvailable.Options = Pick<Options, 'signal'> & (BlockOptions & { name: string; })
@@ -581,7 +581,7 @@ function Actions.registration.renew(client: Client<object> | ViemClientLike, opt
 type Actions.registration.renew.ErrorType = InvalidInputError | NameStateError | WriteError
 function Actions.registration.renew.estimateGas(client: Client<object> | ViemClientLike, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Estimate>
 const Actions.registration.renew.estimateGas.path: string
-type Actions.registration.renew.Options = { names: string | readonly string[]; duration: bigint; paymentToken?: PaymentToken | undefined; referrer?: `0x${string}` | undefined; }
+type Actions.registration.renew.Options = { names: string | readonly string[]; paymentToken?: PaymentToken | undefined; referrer?: `0x${string}` | undefined; } & ({ duration: bigint; until?: undefined; } | { until: bigint; duration?: undefined; })
 const Actions.registration.renew.path: 'registration.renew'
 function Actions.registration.renew.prepare(client: Client<object> | ViemClientLike, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Plan>
 const Actions.registration.renew.prepare.path: string
@@ -1237,7 +1237,7 @@ type Errors.MigrationError.Code = 'ALREADY_MIGRATED' | 'NAME_NOT_LOCKED' | 'NOT_
 type Errors.MigrationError.Options = ClassOptions<Code> & { readonly blockers?: readonly string[] | undefined; }
 class Errors.NameStateError {
   constructor(options: { readonly code: Code; readonly shortMessage?: string | undefined; readonly hint?: string | undefined; readonly details?: readonly string[] | undefined; readonly context?: Context | undefined; readonly cause?: unknown; }) => NameStateError
-  code: 'NAME_EXPIRED' | 'NAME_EXTERNAL' | 'NAME_HAS_SUBNAMES' | 'NAME_LOCKED' | 'NAME_NOT_AVAILABLE' | 'NAME_NOT_REGISTERED' | 'NAME_NOT_RENEWABLE' | 'NAME_NOT_WRAPPED' | 'NAME_REQUIRES_MIGRATION' | 'NAME_RESERVED' | 'NAME_UNREACHABLE' | 'NAME_WRAPPED' | 'PARENT_NOT_MIGRATED' | 'REGISTRY_NOT_EMANCIPATED'
+  code: 'NAME_ALREADY_RENEWED' | 'NAME_EXPIRED' | 'NAME_EXTERNAL' | 'NAME_HAS_SUBNAMES' | 'NAME_LOCKED' | 'NAME_NOT_AVAILABLE' | 'NAME_NOT_REGISTERED' | 'NAME_NOT_RENEWABLE' | 'NAME_NOT_WRAPPED' | 'NAME_REQUIRES_MIGRATION' | 'NAME_RESERVED' | 'NAME_UNREACHABLE' | 'NAME_WRAPPED' | 'PARENT_NOT_MIGRATED' | 'REGISTRY_NOT_EMANCIPATED'
   ~ensforge/error: true
   _tag: 'NameStateError'
   name: 'NameStateError'
@@ -1255,7 +1255,7 @@ class Errors.NameStateError {
   toJSON: () => Json
   render: any
 }
-type Errors.NameStateError.Code = 'NAME_EXPIRED' | 'NAME_EXTERNAL' | 'NAME_HAS_SUBNAMES' | 'NAME_LOCKED' | 'NAME_NOT_AVAILABLE' | 'NAME_NOT_REGISTERED' | 'NAME_NOT_RENEWABLE' | 'NAME_NOT_WRAPPED' | 'NAME_REQUIRES_MIGRATION' | 'NAME_RESERVED' | 'NAME_UNREACHABLE' | 'NAME_WRAPPED' | 'PARENT_NOT_MIGRATED' | 'REGISTRY_NOT_EMANCIPATED'
+type Errors.NameStateError.Code = 'NAME_ALREADY_RENEWED' | 'NAME_EXPIRED' | 'NAME_EXTERNAL' | 'NAME_HAS_SUBNAMES' | 'NAME_LOCKED' | 'NAME_NOT_AVAILABLE' | 'NAME_NOT_REGISTERED' | 'NAME_NOT_RENEWABLE' | 'NAME_NOT_WRAPPED' | 'NAME_REQUIRES_MIGRATION' | 'NAME_RESERVED' | 'NAME_UNREACHABLE' | 'NAME_WRAPPED' | 'PARENT_NOT_MIGRATED' | 'REGISTRY_NOT_EMANCIPATED'
 type Errors.NameStateError.Options = { readonly code: Code; readonly shortMessage?: string | undefined; readonly hint?: string | undefined; readonly details?: readonly string[] | undefined; readonly context?: Context | undefined; readonly cause?: unknown; }
 class Errors.NetworkError {
   constructor(options: ClassOptions<Code> & { readonly status?: number | undefined; }) => NetworkError

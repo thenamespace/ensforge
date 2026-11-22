@@ -123,7 +123,7 @@ export declare namespace register {
     paymentToken?: PaymentToken | undefined;
     /** ENSv2 registry for the names' subnames. */
     subregistry?: string | undefined;
-    /** Referrer recorded by the registrar: 32 bytes, or an address (left-padded). */
+    /** Referrer recorded by the registrar: up to 32 bytes of hex, left-padded (an address works). */
     referrer?: Hex | undefined;
     /** Secret from an earlier `commit` or `register`, to finish that registration. */
     secret?: Hex | undefined;
