@@ -211,6 +211,11 @@ export const messages: { readonly [code in Code]: Template<code> } = {
     message: `${thisName(error)} is not set up to hold records yet.`,
     action: "Set a resolver first.",
   }),
+  RESOLVER_NOT_DEPLOYED: () => ({
+    title: "Resolver not deployed",
+    message: "The resolver address has no contract, so it cannot hold records.",
+    action: "Choose a deployed resolver.",
+  }),
   RECORD_NOT_FOUND: () => ({ title: "Not set", message: "This record is not set." }),
   PRIMARY_NAME_NOT_SET: () => ({
     title: "No primary name",

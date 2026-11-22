@@ -47,8 +47,9 @@ import * as Impl from "./effect.js";
  * yield* Actions.registration.commit(ens, { names: "alice.eth", duration: 31536000n })
  * ```
  *
- * @throws `Errors.InvalidInputError` (`INVALID_NAME`, `INVALID_ADDRESS`, `DURATION_TOO_SHORT`, `INVALID_RECORD_VALUE`) for invalid input.
+ * @throws `Errors.InvalidInputError` (`INVALID_NAME`, `INVALID_ADDRESS`, `INVALID_DURATION`, `DURATION_TOO_SHORT`, `INVALID_RECORD_VALUE`) for invalid input, including a zero owner or a duration over 100 years.
  * @throws `Errors.NameStateError` (`NAME_NOT_AVAILABLE`) when a name is taken or in its grace period.
+ * @throws `Errors.NotFoundError` (`RESOLVER_NOT_DEPLOYED`, `REGISTRY_NOT_FOUND`) when no contract is deployed at the given resolver or subregistry.
  * @throws `Errors.CommitmentError` (`COMMITMENT_TOO_NEW`, `COMMITMENT_TOO_OLD`, `COMMITMENT_EXISTS`) for a resumed commitment outside its window.
  * @throws `Errors.UnsupportedError` (`PAYMENT_TOKEN_UNSUPPORTED`, `UNSUPPORTED_ON_DEPLOYMENT`) for an unaccepted token or without ENSv2.
  * @throws `Errors.ConfigError` (`WALLET_NOT_CONFIGURED`) when no signing account is known.
@@ -78,6 +79,7 @@ export declare namespace commit {
     | Errors.WriteError
     | Errors.InvalidInputError
     | Errors.NameStateError
+    | Errors.NotFoundError
     | Errors.CommitmentError;
 }
 
@@ -130,8 +132,9 @@ commit.estimateGas = Action.promiseOf(
  * yield* Actions.registration.commitSync(ens, { names: "alice.eth", duration: 31536000n })
  * ```
  *
- * @throws `Errors.InvalidInputError` (`INVALID_NAME`, `INVALID_ADDRESS`, `DURATION_TOO_SHORT`, `INVALID_RECORD_VALUE`) for invalid input.
+ * @throws `Errors.InvalidInputError` (`INVALID_NAME`, `INVALID_ADDRESS`, `INVALID_DURATION`, `DURATION_TOO_SHORT`, `INVALID_RECORD_VALUE`) for invalid input, including a zero owner or a duration over 100 years.
  * @throws `Errors.NameStateError` (`NAME_NOT_AVAILABLE`) when a name is taken or in its grace period.
+ * @throws `Errors.NotFoundError` (`RESOLVER_NOT_DEPLOYED`, `REGISTRY_NOT_FOUND`) when no contract is deployed at the given resolver or subregistry.
  * @throws `Errors.CommitmentError` (`COMMITMENT_TOO_NEW`, `COMMITMENT_TOO_OLD`, `COMMITMENT_EXISTS`) for a resumed commitment outside its window.
  * @throws `Errors.UnsupportedError` (`PAYMENT_TOKEN_UNSUPPORTED`, `UNSUPPORTED_ON_DEPLOYMENT`) for an unaccepted token or without ENSv2.
  * @throws `Errors.ConfigError` (`WALLET_NOT_CONFIGURED`) when no signing account is known.
@@ -163,6 +166,7 @@ export declare namespace commitSync {
     | Errors.WriteError
     | Errors.InvalidInputError
     | Errors.NameStateError
+    | Errors.NotFoundError
     | Errors.CommitmentError;
 }
 

@@ -7,7 +7,7 @@ import { expectFailure } from "@ensforge/test-harness";
 import { decodeFunctionData, getAddress, zeroAddress } from "viem";
 import { namehash } from "viem/ens";
 
-import { clientFor, decodeCalls, resolverA, signer, v2Registry } from "../world.js";
+import { clientFor, decodeCalls, other, resolverA, signer, v2Registry } from "../world.js";
 
 const name = "alice.eth";
 const node = namehash(name);
@@ -153,5 +153,17 @@ describe("record.set.prepare", () => {
         );
       }),
     { meta: { cases: ["K06", "K07", "K24"] } },
+  );
+
+  // Writes to an address without code succeed and do nothing.
+  it.effect("refuses a resolver address without a contract", () =>
+    expectFailure(
+      Actions.record.set.prepare(clientFor({ name: "alice.eth", v1: { owner: signer } }).ens, {
+        name: "alice.eth",
+        resolver: other,
+        texts: { url: "https://alice.example" },
+      }),
+      { _tag: "NotFoundError", code: "RESOLVER_NOT_DEPLOYED" },
+    ),
   );
 });

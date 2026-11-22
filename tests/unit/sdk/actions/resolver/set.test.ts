@@ -113,4 +113,24 @@ describe("resolver.set.prepare", () => {
       expected,
     ),
   );
+
+  // Writes to an address without code succeed and do nothing; one deployed later may be named.
+  it.effect("refuses a resolver address without a contract, unless allowed", () =>
+    Effect.gen(function* () {
+      const { ens } = clientFor({ name, v1: { owner: signer } });
+
+      yield* expectFailure(Actions.resolver.set.prepare(ens, { name, resolver: other }), {
+        _tag: "NotFoundError",
+        code: "RESOLVER_NOT_DEPLOYED",
+      });
+      const plan = yield* Actions.resolver.set.prepare(ens, {
+        name,
+        resolver: other,
+        allowNonContract: true,
+      });
+      assert.deepStrictEqual(decodeCalls(plan.calls, abis), [
+        [v1.registry, "setResolver", [node, other]],
+      ]);
+    }),
+  );
 });

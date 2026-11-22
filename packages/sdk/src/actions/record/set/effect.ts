@@ -92,8 +92,10 @@ export const plan = Effect.fnUntraced(function* (
 
   // One round: how the setters key the name, the profiles the resolver declares, and whether it
   // implements ERC-165 at all (within the gas EIP-165 allows `supportsInterface`).
-  const { keying, resolverInfo, erc165 } = yield* Effect.all(
+  const { deployed, keying, resolverInfo, erc165 } = yield* Effect.all(
     {
+      // Writes to an address without code succeed and do nothing.
+      deployed: Rpc.hasCode(target, resolver),
       keying: setterKeying(target, resolver),
       resolverInfo: describeResolver(target, resolver, loaded.data.parts.node),
       erc165: Rpc.readContractOrUndefined(target, {
@@ -106,6 +108,11 @@ export const plan = Effect.fnUntraced(function* (
     },
     { concurrency: "unbounded" },
   );
+  if (!deployed) {
+    return yield* Effect.fail(
+      new NotFoundError({ code: "RESOLVER_NOT_DEPLOYED", resource: resolver }),
+    );
+  }
   if (resolverInfo.authorization === "none") {
     return yield* Effect.fail(
       new UnsupportedError({

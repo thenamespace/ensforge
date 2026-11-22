@@ -336,7 +336,7 @@ describe("HCA", () => {
               assert.isTrue(registerCallsCheck);
               const withSubregistry = yield* Actions.registration.register.prepare(ens, {
                 ...registration,
-                subregistry: bob,
+                subregistry: devnet.contract("v2.ethRegistry"),
               });
               yield* expectFailure(
                 HcaActions.hca.checkSessionCalls(ens, { session, calls: withSubregistry.calls }),

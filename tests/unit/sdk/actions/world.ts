@@ -117,6 +117,22 @@ const defaultExpiry = now + Duration.years(1);
 const includes = (addresses: readonly Address[] | undefined, address: Address) =>
   Arr.some(addresses ?? [], (listed) => isAddressEqual(listed, address));
 
+/** Every resolver the world deploys: they have code and answer as resolvers. */
+const resolversOf = (world: World): Address[] =>
+  Arr.filter(
+    [
+      resolverA,
+      ...(world.permissioned ?? []),
+      ...(world.extended ?? []),
+      ...(world.found === undefined ? [] : [world.found.resolver]),
+      ...Arr.flatMap(
+        [{ v1: world.v1, v2: world.v2 }, ...Rec.values(world.names ?? {})],
+        (entry) => [entry.v1?.resolver, entry.v2?.resolver],
+      ),
+    ],
+    (address): address is Address => address !== undefined && address !== zeroAddress,
+  );
+
 const stubs = (world: World): ContractStub[] => {
   const entries = new Map<string, Entry>([
     ...Rec.toEntries(world.names ?? {}),
@@ -202,20 +218,7 @@ const stubs = (world: World): ContractStub[] => {
       Option.toArray(Option.fromNullishOr(entries.get(name)?.v2?.subregistry)),
     ),
   ];
-  const resolvers = [
-    resolverA,
-    ...(world.permissioned ?? []),
-    ...(world.extended ?? []),
-    ...(world.found === undefined ? [] : [world.found.resolver]),
-    ...Arr.flatMap(names, (name) => [
-      entries.get(name)?.v1?.resolver,
-      entries.get(name)?.v2?.resolver,
-    ]),
-  ];
-  const deployedResolvers = Arr.filter(
-    resolvers,
-    (address): address is Address => address !== undefined && address !== zeroAddress,
-  );
+  const deployedResolvers = resolversOf(world);
 
   return [
     {
@@ -395,8 +398,8 @@ export const clientFor = (world: World) => {
   const { transport, calls } = scriptedTransport(
     contractScript({
       contracts: stubs(world),
-      // Registries and PermissionedResolvers are contracts too: role targets are checked for code.
-      code: [...Rec.keys(world.contracts ?? {}), v2Registry, ...(world.permissioned ?? [])],
+      // Registries and resolvers are contracts too: role targets and resolvers are checked for code.
+      code: [...Rec.keys(world.contracts ?? {}), v2Registry, ...resolversOf(world)],
     }),
   );
   const { name, chainId, v1: deploymentV1 } = Deployments.mainnet;

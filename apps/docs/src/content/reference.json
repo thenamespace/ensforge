@@ -824,7 +824,7 @@
       "name": "Errors",
       "npm": null,
       "url": "/docs/reference/errors",
-      "count": 104,
+      "count": 105,
       "unit": "codes",
       "description": "Every error code by class, with what happened, how to fix it and what to show users.",
       "items": [
@@ -1237,6 +1237,11 @@
           "name": "RESOLVER_NOT_FOUND",
           "url": "/docs/reference/errors/RESOLVER_NOT_FOUND",
           "summary": "The name has no resolver."
+        },
+        {
+          "name": "RESOLVER_NOT_DEPLOYED",
+          "url": "/docs/reference/errors/RESOLVER_NOT_DEPLOYED",
+          "summary": "No contract is deployed at the resolver address."
         },
         {
           "name": "RECORD_NOT_FOUND",

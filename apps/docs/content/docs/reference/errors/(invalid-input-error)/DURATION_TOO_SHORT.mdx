@@ -27,10 +27,10 @@ Retrying the same call fails the same way until the cause is fixed (`retryable: 
 
 | Action | When |
 | --- | --- |
-| [`registration.commit`](/docs/reference/sdk/registration/commit) | for invalid input. |
+| [`registration.commit`](/docs/reference/sdk/registration/commit) | for invalid input, including a zero owner or a duration over 100 years. |
 | [`registration.getPrice`](/docs/reference/sdk/registration/get-price) | for invalid input. |
-| [`registration.register`](/docs/reference/sdk/registration/register) | for invalid input. |
-| [`registration.renew`](/docs/reference/sdk/registration/renew) | for invalid input. |
+| [`registration.register`](/docs/reference/sdk/registration/register) | for invalid input, including a zero owner or a duration over 100 years. |
+| [`registration.renew`](/docs/reference/sdk/registration/renew) | for invalid input, including a duration over 100 years. |
 
 ## Catch it
 

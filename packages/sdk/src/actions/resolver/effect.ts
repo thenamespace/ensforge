@@ -497,6 +497,7 @@ export declare namespace resolve {
  * @throws `Errors.InvalidInputError` (`INVALID_NAME`, `INVALID_ADDRESS`) for invalid input.
  * @throws `Errors.NameStateError` (`NAME_EXPIRED`, `NAME_RESERVED`, `NAME_NOT_REGISTERED`, `NAME_EXTERNAL`) when the name is not registered, or its parent's namespace manages it outside ENS's registries.
  * @throws `Errors.NameStateError` (`NAME_UNREACHABLE`) when ENSv2 resolution no longer reaches the name.
+ * @throws `Errors.NotFoundError` (`RESOLVER_NOT_DEPLOYED`) when no contract is deployed at the resolver address, unless `allowNonContract`.
  * @throws `Errors.UnsupportedError` (`UNSUPPORTED_PROTOCOL`) for `"default"` on ENSv2 names.
  * @throws `Errors.UnsupportedError` (`UNSUPPORTED_ON_DEPLOYMENT`) for a resolver other than Linea's PublicResolver on a Linea name.
  * @throws `Errors.ConfigError` (`CHAIN_NOT_CONFIGURED`) when the name lives on an L2 the client cannot reach.
@@ -556,6 +557,7 @@ export declare namespace set {
  * @throws `Errors.InvalidInputError` (`INVALID_NAME`, `INVALID_ADDRESS`) for invalid input.
  * @throws `Errors.NameStateError` (`NAME_EXPIRED`, `NAME_RESERVED`, `NAME_NOT_REGISTERED`, `NAME_EXTERNAL`) when the name is not registered, or its parent's namespace manages it outside ENS's registries.
  * @throws `Errors.NameStateError` (`NAME_UNREACHABLE`) when ENSv2 resolution no longer reaches the name.
+ * @throws `Errors.NotFoundError` (`RESOLVER_NOT_DEPLOYED`) when no contract is deployed at the resolver address, unless `allowNonContract`.
  * @throws `Errors.UnsupportedError` (`UNSUPPORTED_PROTOCOL`) for `"default"` on ENSv2 names.
  * @throws `Errors.UnsupportedError` (`UNSUPPORTED_ON_DEPLOYMENT`) for a resolver other than Linea's PublicResolver on a Linea name.
  * @throws `Errors.ConfigError` (`CHAIN_NOT_CONFIGURED`) when the name lives on an L2 the client cannot reach.

@@ -39,9 +39,9 @@ Retrying the same call fails the same way until the cause is fixed (`retryable: 
 | [`permission.setRecordAccess`](/docs/reference/sdk/permission/set-record-access) | for invalid input or an unconfirmed widening. |
 | [`plan.reconcile`](/docs/reference/sdk/plan/reconcile) | for an unknown step or an unrelated transaction. |
 | [`record.set`](/docs/reference/sdk/record/set) | for invalid input. |
-| [`registration.commit`](/docs/reference/sdk/registration/commit) | for invalid input. |
+| [`registration.commit`](/docs/reference/sdk/registration/commit) | for invalid input, including a zero owner or a duration over 100 years. |
 | [`registration.getCommitmentStatus`](/docs/reference/sdk/registration/get-commitment-status) | when the commitment is not 32 bytes. |
-| [`registration.register`](/docs/reference/sdk/registration/register) | for invalid input. |
+| [`registration.register`](/docs/reference/sdk/registration/register) | for invalid input, including a zero owner or a duration over 100 years. |
 | [`registry.upgrade`](/docs/reference/sdk/registry/upgrade) | for invalid input or an up-to-date registry. |
 | [`resolver.create`](/docs/reference/sdk/resolver/create) | for invalid input, or a `salt` whose resolver already exists. |
 | [`resolver.link`](/docs/reference/sdk/resolver/link) | for invalid input or a target without records. |

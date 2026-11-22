@@ -18,6 +18,7 @@ import { deployPermissionedResolver } from "../resolver/deploy.js";
 import * as Rpc from "../rpc/index.js";
 import { makeCommitment, randomSecret, resolverSalt } from "./commitment.js";
 import { requireRegistrationContracts, type RegistrationContracts } from "./contracts.js";
+import { requireDuration } from "./duration.js";
 import { parseEthNames, type EthName } from "./labels.js";
 import { paymentTokenAddress, requirePaymentToken } from "./payment.js";
 import { referrerOf } from "./referrer.js";
@@ -94,6 +95,17 @@ const validateOptions = Effect.fnUntraced(function* (
   AnyError
 > {
   const owner = input.owner === undefined ? signer : yield* requireAddress(input.owner, "owner");
+  // The registrar refuses the zero owner only at `register`, after the commitment was paid for.
+  if (isAddressEqual(owner, zeroAddress)) {
+    return yield* Effect.fail(
+      new InvalidInputError({
+        code: "INVALID_ADDRESS",
+        field: "owner",
+        input: owner,
+        shortMessage: "A name cannot be registered to the zero address.",
+      }),
+    );
+  }
   const subregistry =
     input.subregistry === undefined
       ? zeroAddress
@@ -168,6 +180,7 @@ export const prepareRegistration = Effect.fnUntraced(function* (
   sender: Address = signer,
 ): Effect.fn.Return<PreparedRegistration, AnyError> {
   const names = yield* parseEthNames(input.names);
+  yield* requireDuration(input.duration);
   const contracts = yield* requireRegistrationContracts(client);
   const validated = yield* validateOptions(input, signer, names);
   // The shared resolver is the sender's: through a route, the HCA deploys its own one.
@@ -212,27 +225,60 @@ export const prepareRegistration = Effect.fnUntraced(function* (
       ),
     { concurrency: "unbounded" },
   );
-  const { quoted, minDuration, minCommitmentAge, maxCommitmentAge, now } = yield* Effect.all(
-    {
-      quoted: quotes,
-      accepted: requirePaymentToken(client, contracts, token),
-      minDuration: Rpc.readContract(client, {
-        ...registrar,
-        functionName: "MIN_REGISTER_DURATION",
-      }),
-      minCommitmentAge: Rpc.readContract(client, {
-        ...registrar,
-        functionName: "MIN_COMMITMENT_AGE",
-      }),
-      maxCommitmentAge: Rpc.readContract(client, {
-        ...registrar,
-        functionName: "MAX_COMMITMENT_AGE",
-      }),
-      now: Rpc.blockTimestamp(client, {}),
-    },
-    { concurrency: "unbounded" },
-  );
+  // Calls to an address without code succeed and do nothing: records would be lost, and a
+  // subregistry would hold no subnames.
+  const explicitResolver = typeof options.resolver === "string" ? options.resolver : undefined;
+  const subregistry = isAddressEqual(options.subregistry, zeroAddress)
+    ? undefined
+    : options.subregistry;
+  const { quoted, minDuration, minCommitmentAge, maxCommitmentAge, now, deployed } =
+    yield* Effect.all(
+      {
+        deployed: Effect.all(
+          {
+            resolver:
+              explicitResolver === undefined || owned !== undefined
+                ? Effect.succeed(true)
+                : Rpc.hasCode(client, explicitResolver),
+            subregistry:
+              subregistry === undefined ? Effect.succeed(true) : Rpc.hasCode(client, subregistry),
+          },
+          { concurrency: "unbounded" },
+        ),
+        quoted: quotes,
+        accepted: requirePaymentToken(client, contracts, token),
+        minDuration: Rpc.readContract(client, {
+          ...registrar,
+          functionName: "MIN_REGISTER_DURATION",
+        }),
+        minCommitmentAge: Rpc.readContract(client, {
+          ...registrar,
+          functionName: "MIN_COMMITMENT_AGE",
+        }),
+        maxCommitmentAge: Rpc.readContract(client, {
+          ...registrar,
+          functionName: "MAX_COMMITMENT_AGE",
+        }),
+        now: Rpc.blockTimestamp(client, {}),
+      },
+      { concurrency: "unbounded" },
+    );
 
+  if (!deployed.resolver) {
+    return yield* Effect.fail(
+      new NotFoundError({ code: "RESOLVER_NOT_DEPLOYED", resource: explicitResolver }),
+    );
+  }
+  if (!deployed.subregistry) {
+    return yield* Effect.fail(
+      new NotFoundError({
+        code: "REGISTRY_NOT_FOUND",
+        resource: subregistry,
+        shortMessage: `No contract is deployed at the subregistry address ${subregistry}.`,
+        hint: "Deploy the registry first, for example with registry.deploy.",
+      }),
+    );
+  }
   if (input.duration < minDuration) {
     return yield* Effect.fail(
       new InvalidInputError({ code: "DURATION_TOO_SHORT", input: input.duration }),

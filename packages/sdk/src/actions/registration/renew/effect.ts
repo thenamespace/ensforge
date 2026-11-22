@@ -9,6 +9,7 @@ import type { AnyError } from "../../../errors/types.js";
 import * as Action from "../../../internal/action/index.js";
 import { addressOf } from "../../../internal/address.js";
 import { requireRegistrationContracts } from "../../../internal/registration/contracts.js";
+import { requireDuration } from "../../../internal/registration/duration.js";
 import { renewedNames } from "../../../internal/registration/events.js";
 import { parseEthNames } from "../../../internal/registration/labels.js";
 import { paymentCalls, paymentTokenAddress } from "../../../internal/registration/payment.js";
@@ -64,6 +65,7 @@ export const plan = Effect.fnUntraced(function* (
   // The account that sends `renew` pays: the signer, or the account a route (`via`) sends from.
   const payer = (yield* routeSender(client, options.via, signer)) ?? signer;
   const names = yield* parseEthNames(options.names);
+  yield* requireDuration(options.duration);
   const contracts = yield* requireRegistrationContracts(client);
   const referrer = yield* referrerOf(options.referrer);
   const token = yield* paymentTokenAddress(contracts, options.paymentToken);

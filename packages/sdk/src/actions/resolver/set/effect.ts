@@ -44,7 +44,9 @@ export const plan = Effect.fnUntraced(function* (
   const resolver =
     options.resolver === null
       ? zeroAddress
-      : yield* requestedResolver(client, loaded, options.resolver);
+      : yield* requestedResolver(client, loaded, options.resolver, {
+          allowNonContract: options.allowNonContract,
+        });
 
   return singleStepPlan(client, {
     operation: "resolver.set",

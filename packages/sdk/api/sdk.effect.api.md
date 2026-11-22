@@ -426,12 +426,12 @@ const Actions.registration.commit.prepare: ((client: ClientBase<{}>, options: Op
 const Actions.registration.commit.simulate: ((client: ClientBase<{}>, options: Options & Pick<Options, 'account' | 'via'>) => Effect<Simulation, ErrorType, never>) & { readonly path: string; }
 const Actions.registration.commit.estimateGas: ((client: ClientBase<{}>, options: Options & Pick<Options, 'account' | 'via'>) => Effect<Estimate, ErrorType, never>) & { readonly path: string; }
 const Actions.registration.commit.path: 'registration.commit'
-type Actions.registration.commit.ErrorType = CommitmentError | InvalidInputError | NameStateError | WriteError
+type Actions.registration.commit.ErrorType = CommitmentError | InvalidInputError | NameStateError | NotFoundError | WriteError
 type Actions.registration.commit.Options = { names: string | readonly string[]; duration: bigint; owner?: string | undefined; resolver?: string | null | undefined; records?: Omit<Options, 'clear' | 'name' | 'pubkey' | 'resolver'> | undefined; primaryName?: boolean | undefined; paymentToken?: PaymentToken | undefined; subregistry?: string | undefined; referrer?: `0x${string}` | undefined; secret?: `0x${string}` | undefined; }
 type Actions.registration.commit.ReturnType = Result & { readonly secret: `0x${string}`; readonly commitments: readonly `0x${string}`[]; }
 function Actions.registration.commitSync(client: ClientBase<{}>, options: register.Options & Write.Options & { confirmations?: number | undefined; timeout?: number | undefined; }) => Effect<ReturnType, ErrorType, never>
 const Actions.registration.commitSync.path: 'registration.commitSync'
-type Actions.registration.commitSync.ErrorType = CommitmentError | InvalidInputError | NameStateError | WriteError
+type Actions.registration.commitSync.ErrorType = CommitmentError | InvalidInputError | NameStateError | NotFoundError | WriteError
 type Actions.registration.commitSync.Options = register.Options & Write.Options & { confirmations?: number | undefined; timeout?: number | undefined; }
 type Actions.registration.commitSync.ReturnType = Result & { readonly receipt: TransactionReceipt; readonly receipts: readonly TransactionReceipt[]; } & { readonly secret: `0x${string}`; readonly commitments: readonly `0x${string}`[]; readonly readyAt: bigint; }
 function Actions.registration.getCommitmentStatus(client: ClientBase<{}>, options: Pick<Options, 'signal'> & (BlockOptions & { commitment: `0x${string}`; })) => Effect<ReturnType, ErrorType, never>
@@ -464,12 +464,12 @@ const Actions.registration.register.prepare: ((client: ClientBase<{}>, options: 
 const Actions.registration.register.simulate: ((client: ClientBase<{}>, options: Options & Pick<Options, 'account' | 'via'>) => Effect<Simulation, ErrorType, never>) & { readonly path: string; }
 const Actions.registration.register.estimateGas: ((client: ClientBase<{}>, options: Options & Pick<Options, 'account' | 'via'>) => Effect<Estimate, ErrorType, never>) & { readonly path: string; }
 const Actions.registration.register.path: 'registration.register'
-type Actions.registration.register.ErrorType = CommitmentError | InvalidInputError | NameStateError | WriteError
+type Actions.registration.register.ErrorType = CommitmentError | InvalidInputError | NameStateError | NotFoundError | WriteError
 type Actions.registration.register.Options = { names: string | readonly string[]; duration: bigint; owner?: string | undefined; resolver?: string | null | undefined; records?: Omit<Options, 'clear' | 'name' | 'pubkey' | 'resolver'> | undefined; primaryName?: boolean | undefined; paymentToken?: PaymentToken | undefined; subregistry?: string | undefined; referrer?: `0x${string}` | undefined; secret?: `0x${string}` | undefined; }
 type Actions.registration.register.ReturnType = Result & { readonly secret: `0x${string}`; }
 function Actions.registration.registerSync(client: ClientBase<{}>, options: register.Options & Write.Options & { confirmations?: number | undefined; timeout?: number | undefined; }) => Effect<ReturnType, ErrorType, never>
 const Actions.registration.registerSync.path: 'registration.registerSync'
-type Actions.registration.registerSync.ErrorType = CommitmentError | InvalidInputError | NameStateError | WriteError
+type Actions.registration.registerSync.ErrorType = CommitmentError | InvalidInputError | NameStateError | NotFoundError | WriteError
 type Actions.registration.registerSync.Options = register.Options & Write.Options & { confirmations?: number | undefined; timeout?: number | undefined; }
 type Actions.registration.registerSync.ReturnType = Result & { readonly receipt: TransactionReceipt; readonly receipts: readonly TransactionReceipt[]; } & { readonly secret: `0x${string}`; readonly names: readonly { readonly name: string; readonly tokenId: bigint; readonly expiry: bigint; }[]; readonly paid: bigint; }
 function Actions.registration.renew(client: ClientBase<{}>, options: renew.Options & Pick<Options, 'account' | 'via'> & Write.Options) => Effect<Result, ErrorType, never>
@@ -588,12 +588,12 @@ const Actions.resolver.set.prepare: ((client: ClientBase<{}>, options: Options &
 const Actions.resolver.set.simulate: ((client: ClientBase<{}>, options: Options & Pick<Options, 'account' | 'via'>) => Effect<Simulation, ErrorType, never>) & { readonly path: string; }
 const Actions.resolver.set.estimateGas: ((client: ClientBase<{}>, options: Options & Pick<Options, 'account' | 'via'>) => Effect<Estimate, ErrorType, never>) & { readonly path: string; }
 const Actions.resolver.set.path: 'resolver.set'
-type Actions.resolver.set.ErrorType = InvalidInputError | NameStateError | UnauthorizedError | WriteError
-type Actions.resolver.set.Options = { name: string; resolver: 'default' | `0x${string}` | null; }
+type Actions.resolver.set.ErrorType = InvalidInputError | NameStateError | NotFoundError | UnauthorizedError | WriteError
+type Actions.resolver.set.Options = { name: string; resolver: 'default' | `0x${string}` | null; allowNonContract?: boolean | undefined; }
 type Actions.resolver.set.ReturnType = { readonly hash: `0x${string}`; readonly hashes: readonly `0x${string}`[]; readonly id: string | undefined; readonly plan: Plan; }
 function Actions.resolver.setSync(client: ClientBase<{}>, options: set.Options & Write.Options & { confirmations?: number | undefined; timeout?: number | undefined; }) => Effect<SyncResult, ErrorType, never>
 const Actions.resolver.setSync.path: 'resolver.setSync'
-type Actions.resolver.setSync.ErrorType = InvalidInputError | NameStateError | UnauthorizedError | WriteError
+type Actions.resolver.setSync.ErrorType = InvalidInputError | NameStateError | NotFoundError | UnauthorizedError | WriteError
 type Actions.resolver.setSync.Options = set.Options & Write.Options & { confirmations?: number | undefined; timeout?: number | undefined; }
 type Actions.resolver.setSync.ReturnType = Result & { readonly receipt: TransactionReceipt; readonly receipts: readonly TransactionReceipt[]; }
 function Actions.resolver.upgrade(client: ClientBase<{}>, options: upgrade.Options & Write.Options) => Effect<Result, ErrorType, never>
@@ -778,7 +778,7 @@ type Ensforge.ViemClient = Client_Base<Transport, Chain | undefined, Account | u
 type Ensforge.ViemClientLike = Pick<ViemWalletClient, 'account' | 'batch' | 'cacheTime' | 'ccipRead' | 'chain' | 'key' | 'name' | 'pollingInterval' | 'transport' | 'type' | 'uid'> & { readonly request: EIP1193RequestFn; }
 type Ensforge.ViemWalletClient = Client_Base<Transport, Chain | undefined, Account | undefined, undefined, Tokens | undefined> & { extend: <const client extends Extended & ExactPartial<ExtendableProtectedActions<Transport, Chain | undefined, Account | undefined, Tokens | undefined>>>(fn: (client: Client<Transport, Chain | undefined, Account | undefined, undefined, { [x: string]: unknown; account?: undefined; batch?: undefined; cacheTime?: undefined; ccipRead?: undefined; chain?: undefined; dataSuffix?: undefined; experimental_blockTag?: undefined; key?: undefined; name?: undefined; pollingInterval?: undefined; request?: undefined; tokens?: undefined; transport?: undefined; type?: undefined; uid?: undefined; } | undefined, Tokens | undefined>) => client) => Client<Transport, Chain | undefined, Account | undefined, undefined, { [K in keyof client]: client[K]; }, Tokens | undefined>; scope: (options?: { signal?: AbortSignal | undefined; } | undefined) => Client<Transport, Chain | undefined, Account | undefined, undefined, { [x: string]: unknown; account?: undefined; batch?: undefined; cacheTime?: undefined; ccipRead?: undefined; chain?: undefined; dataSuffix?: undefined; experimental_blockTag?: undefined; key?: undefined; name?: undefined; pollingInterval?: undefined; request?: undefined; tokens?: undefined; transport?: undefined; type?: undefined; uid?: undefined; } | undefined, Tokens | undefined>; }
 type Errors.AnyError = CommitmentError | ConfigError | ContractRevertError | DnsError | GatewayError | IndexerError | InsufficientFundsError | InternalError | InvalidInputError | MigrationError | NameStateError | NetworkError | NotFoundError | PlanError | TransactionError | UnauthorizedError | UnsupportedError | UserRejectedError | WalletError
-type Errors.Code = 'CONTRACT_REVERTED' | 'UNEXPECTED' | 'USER_REJECTED' | WalletError.Code | InsufficientFundsError.Code | GatewayError.Code | TransactionError.Code | CommitmentError.Code | DnsError.Code | NetworkError.Code | MigrationError.Code | PlanError.Code | IndexerError.Code | UnsupportedError.Code | NotFoundError.Code | UnauthorizedError.Code | ConfigError.Code | InvalidInputError.Code | NameStateError.Code
+type Errors.Code = 'CONTRACT_REVERTED' | 'UNEXPECTED' | 'USER_REJECTED' | WalletError.Code | InsufficientFundsError.Code | GatewayError.Code | TransactionError.Code | CommitmentError.Code | DnsError.Code | NetworkError.Code | MigrationError.Code | PlanError.Code | IndexerError.Code | UnsupportedError.Code | UnauthorizedError.Code | ConfigError.Code | NotFoundError.Code | InvalidInputError.Code | NameStateError.Code
 class Errors.CommitmentError {
   constructor(options: ClassOptions<Code> & { readonly commitment?: `0x${string}` | undefined; readonly readyAt?: bigint | undefined; readonly expiresAt?: bigint | undefined; }) => CommitmentError
   cause: unknown
@@ -868,9 +868,9 @@ class Errors.ContractRevertError {
 }
 type Errors.ContractRevertError.Code = 'CONTRACT_REVERTED'
 type Errors.ContractRevertError.Options = ClassOptions<'CONTRACT_REVERTED'> & { readonly errorName?: string | undefined; readonly args?: readonly unknown[] | undefined; readonly data?: `0x${string}` | undefined; }
-function Errors.describe<error extends EnsforgeError = CommitmentError | ConfigError | ContractRevertError | DnsError | GatewayError | IndexerError | InsufficientFundsError | InternalError | InvalidInputError | MigrationError | NameStateError | NetworkError | NotFoundError | PlanError | TransactionError | UnauthorizedError | UnsupportedError | UserRejectedError | WalletError>(value: unknown, options?: DescribeOptions<error> | undefined) => Copy & { readonly code: 'CONTRACT_REVERTED' | 'UNEXPECTED' | 'USER_REJECTED' | WalletError.Code | InsufficientFundsError.Code | GatewayError.Code | TransactionError.Code | CommitmentError.Code | DnsError.Code | NetworkError.Code | MigrationError.Code | PlanError.Code | IndexerError.Code | UnsupportedError.Code | NotFoundError.Code | UnauthorizedError.Code | ConfigError.Code | InvalidInputError.Code | NameStateError.Code | (string & {}); readonly retryable: boolean; readonly severity: 'error' | 'info' | 'warning'; }
+function Errors.describe<error extends EnsforgeError = CommitmentError | ConfigError | ContractRevertError | DnsError | GatewayError | IndexerError | InsufficientFundsError | InternalError | InvalidInputError | MigrationError | NameStateError | NetworkError | NotFoundError | PlanError | TransactionError | UnauthorizedError | UnsupportedError | UserRejectedError | WalletError>(value: unknown, options?: DescribeOptions<error> | undefined) => Copy & { readonly code: 'CONTRACT_REVERTED' | 'UNEXPECTED' | 'USER_REJECTED' | WalletError.Code | InsufficientFundsError.Code | GatewayError.Code | TransactionError.Code | CommitmentError.Code | DnsError.Code | NetworkError.Code | MigrationError.Code | PlanError.Code | IndexerError.Code | UnsupportedError.Code | UnauthorizedError.Code | ConfigError.Code | NotFoundError.Code | InvalidInputError.Code | NameStateError.Code | (string & {}); readonly retryable: boolean; readonly severity: 'error' | 'info' | 'warning'; }
 type Errors.DescribeOptions = { readonly messages?: { readonly [code in error['code']]?: (error: error extends { readonly code: infer codes; } ? code extends codes ? error : never : never) => Partial<Copy>; }; }
-type Errors.Description = Copy & { readonly code: 'CONTRACT_REVERTED' | 'UNEXPECTED' | 'USER_REJECTED' | WalletError.Code | InsufficientFundsError.Code | GatewayError.Code | TransactionError.Code | CommitmentError.Code | DnsError.Code | NetworkError.Code | MigrationError.Code | PlanError.Code | IndexerError.Code | UnsupportedError.Code | NotFoundError.Code | UnauthorizedError.Code | ConfigError.Code | InvalidInputError.Code | NameStateError.Code | (string & {}); readonly retryable: boolean; readonly severity: 'error' | 'info' | 'warning'; }
+type Errors.Description = Copy & { readonly code: 'CONTRACT_REVERTED' | 'UNEXPECTED' | 'USER_REJECTED' | WalletError.Code | InsufficientFundsError.Code | GatewayError.Code | TransactionError.Code | CommitmentError.Code | DnsError.Code | NetworkError.Code | MigrationError.Code | PlanError.Code | IndexerError.Code | UnsupportedError.Code | UnauthorizedError.Code | ConfigError.Code | NotFoundError.Code | InvalidInputError.Code | NameStateError.Code | (string & {}); readonly retryable: boolean; readonly severity: 'error' | 'info' | 'warning'; }
 class Errors.DnsError {
   constructor(options: ClassOptions<Code> & { readonly onchainOwner?: `0x${string}` | undefined; readonly dnsOwner?: `0x${string}` | undefined; }) => DnsError
   ~ensforge/error: true
@@ -1165,15 +1165,15 @@ type Errors.NetworkError.Code = 'LOG_RANGE_TOO_LARGE' | 'RATE_LIMITED' | 'RPC_RE
 type Errors.NetworkError.Options = ClassOptions<Code> & { readonly status?: number | undefined; }
 class Errors.NotFoundError {
   constructor(options: ClassOptions<Code> & { readonly resource?: string | undefined; }) => NotFoundError
-  code: 'INDEXER_NOT_FOUND' | 'PLAN_NOT_FOUND' | 'PRIMARY_NAME_MISMATCH' | 'PRIMARY_NAME_NOT_SET' | 'RECORD_NOT_FOUND' | 'REGISTRY_NOT_FOUND' | 'RESOLVER_NOT_FOUND'
+  code: 'INDEXER_NOT_FOUND' | 'PLAN_NOT_FOUND' | 'PRIMARY_NAME_MISMATCH' | 'PRIMARY_NAME_NOT_SET' | 'RECORD_NOT_FOUND' | 'REGISTRY_NOT_FOUND' | 'RESOLVER_NOT_DEPLOYED' | 'RESOLVER_NOT_FOUND'
   ~ensforge/error: true
   _tag: 'NotFoundError'
   name: 'NotFoundError'
+  shortMessage: string
   resource: string | undefined
   message: string
   stack: string
   cause: unknown
-  shortMessage: string
   hint: string | undefined
   details: readonly string[]
   retryable: boolean
@@ -1189,7 +1189,7 @@ class Errors.NotFoundError {
   ~effect/Runtime/errorExitCode: number
   ~effect/Runtime/errorReported: boolean
 }
-type Errors.NotFoundError.Code = 'INDEXER_NOT_FOUND' | 'PLAN_NOT_FOUND' | 'PRIMARY_NAME_MISMATCH' | 'PRIMARY_NAME_NOT_SET' | 'RECORD_NOT_FOUND' | 'REGISTRY_NOT_FOUND' | 'RESOLVER_NOT_FOUND'
+type Errors.NotFoundError.Code = 'INDEXER_NOT_FOUND' | 'PLAN_NOT_FOUND' | 'PRIMARY_NAME_MISMATCH' | 'PRIMARY_NAME_NOT_SET' | 'RECORD_NOT_FOUND' | 'REGISTRY_NOT_FOUND' | 'RESOLVER_NOT_DEPLOYED' | 'RESOLVER_NOT_FOUND'
 type Errors.NotFoundError.Options = ClassOptions<Code> & { readonly resource?: string | undefined; }
 class Errors.PlanError {
   constructor(options: { readonly code: Code; readonly shortMessage?: string | undefined; readonly hint?: string | undefined; readonly details?: readonly string[] | undefined; readonly context?: Context | undefined; readonly cause?: unknown; }) => PlanError

@@ -629,6 +629,50 @@ describe("registration", () => {
       { meta: { cases: ["G18"] } },
     );
 
+    // Each of these reverts only at `register`, after the commitment was paid for and waited out,
+    // or (calls to an address without code) succeeds and does nothing.
+    it.effect(
+      "refuses resolvers, subregistries, owners and durations register would fail on",
+      () =>
+        Effect.gen(function* () {
+          const { accounts } = yield* Devnet;
+          const ens = (yield* Clients).make({ account: accounts.alice });
+          const base = { names: "preflight.eth", duration: Duration.years(1) };
+
+          for (const prepare of [
+            Actions.registration.commit.prepare,
+            Actions.registration.register.prepare,
+          ]) {
+            yield* expectFailure(prepare(ens, { ...base, resolver: accounts.bob }), {
+              _tag: "NotFoundError",
+              code: "RESOLVER_NOT_DEPLOYED",
+            });
+            yield* expectFailure(prepare(ens, { ...base, subregistry: accounts.bob }), {
+              _tag: "NotFoundError",
+              code: "REGISTRY_NOT_FOUND",
+            });
+            yield* expectFailure(prepare(ens, { ...base, owner: zeroAddress }), {
+              _tag: "InvalidInputError",
+              code: "INVALID_ADDRESS",
+            });
+            for (const duration of [Duration.years(101), 2n ** 64n, -1n]) {
+              yield* expectFailure(prepare(ens, { ...base, duration }), {
+                _tag: "InvalidInputError",
+                code: "INVALID_DURATION",
+              });
+            }
+          }
+          yield* expectFailure(
+            Actions.registration.renew.prepare(ens, {
+              names: (yield* Fixtures).byId("v2.registered").name,
+              duration: Duration.years(101),
+            }),
+            { _tag: "InvalidInputError", code: "INVALID_DURATION" },
+          );
+        }),
+      { meta: { cases: ["G09", "G22"] } },
+    );
+
     it.effect(
       "deploys the signer's shared resolver once, and reuses it for later names",
       () =>

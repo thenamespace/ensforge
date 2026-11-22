@@ -71,6 +71,7 @@ export const errorsByCode: { readonly [code in Code]: () => AnyError } = {
   RATE_LIMITED: () => new Classes.NetworkError({ code: "RATE_LIMITED" }),
   LOG_RANGE_TOO_LARGE: () => new Classes.NetworkError({ code: "LOG_RANGE_TOO_LARGE" }),
   RESOLVER_NOT_FOUND: () => new Classes.NotFoundError({ code: "RESOLVER_NOT_FOUND" }),
+  RESOLVER_NOT_DEPLOYED: () => new Classes.NotFoundError({ code: "RESOLVER_NOT_DEPLOYED" }),
   RECORD_NOT_FOUND: () => new Classes.NotFoundError({ code: "RECORD_NOT_FOUND" }),
   PRIMARY_NAME_NOT_SET: () => new Classes.NotFoundError({ code: "PRIMARY_NAME_NOT_SET" }),
   PRIMARY_NAME_MISMATCH: () => new Classes.NotFoundError({ code: "PRIMARY_NAME_MISMATCH" }),

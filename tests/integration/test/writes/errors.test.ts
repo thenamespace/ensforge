@@ -1232,7 +1232,9 @@ describe("send failures", () => {
             yield* expectFailure(
               Actions.resolver.setSync(clients.make({ account: carol }), {
                 name,
+                // Any address will do: the write is about to lose its role.
                 resolver: stranger,
+                allowNonContract: true,
                 onStep: (event) => {
                   if (event.status === "submitted") Effect.runForkWith(context)(revokeFirst);
                 },

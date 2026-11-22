@@ -58,11 +58,11 @@ Retrying the same call fails the same way until the cause is fixed (`retryable: 
 | [`primaryName.set`](/docs/reference/sdk/primary-name/set) | for invalid input. |
 | [`primaryName.signClaim`](/docs/reference/sdk/primary-name/sign-claim) | for invalid input. |
 | [`record.set`](/docs/reference/sdk/record/set) | for invalid input. |
-| [`registration.commit`](/docs/reference/sdk/registration/commit) | for invalid input. |
+| [`registration.commit`](/docs/reference/sdk/registration/commit) | for invalid input, including a zero owner or a duration over 100 years. |
 | [`registration.getPrice`](/docs/reference/sdk/registration/get-price) | for invalid input. |
 | [`registration.getRenewalPrice`](/docs/reference/sdk/registration/get-renewal-price) | for invalid input. |
-| [`registration.register`](/docs/reference/sdk/registration/register) | for invalid input. |
-| [`registration.renew`](/docs/reference/sdk/registration/renew) | for invalid input. |
+| [`registration.register`](/docs/reference/sdk/registration/register) | for invalid input, including a zero owner or a duration over 100 years. |
+| [`registration.renew`](/docs/reference/sdk/registration/renew) | for invalid input, including a duration over 100 years. |
 | [`registry.attach`](/docs/reference/sdk/registry/attach) | for invalid input. |
 | [`registry.deploy`](/docs/reference/sdk/registry/deploy) | for invalid input. |
 | [`registry.get`](/docs/reference/sdk/registry/get) | for invalid input. |

@@ -3,6 +3,7 @@
   "pagesIndex": "not-found-error",
   "pages": [
     "RESOLVER_NOT_FOUND",
+    "RESOLVER_NOT_DEPLOYED",
     "RECORD_NOT_FOUND",
     "PRIMARY_NAME_NOT_SET",
     "PRIMARY_NAME_MISMATCH",

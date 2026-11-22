@@ -1288,7 +1288,8 @@
   "G09": {
     "tests": [
       "tests/integration/test/writes/registration.test.ts > refuses names that cannot be registered before the wallet is asked",
-      "tests/integration/test/writes/renewal.test.ts > refuses names that cannot be renewed before the wallet is asked"
+      "tests/integration/test/writes/renewal.test.ts > refuses names that cannot be renewed before the wallet is asked",
+      "tests/integration/test/writes/registration.test.ts > refuses resolvers, subregistries, owners and durations register would fail on"
     ]
   },
   "G10": {
@@ -1357,7 +1358,8 @@
   },
   "G22": {
     "tests": [
-      "tests/integration/test/writes/registration.test.ts > refuses names that cannot be registered before the wallet is asked"
+      "tests/integration/test/writes/registration.test.ts > refuses names that cannot be registered before the wallet is asked",
+      "tests/integration/test/writes/registration.test.ts > refuses resolvers, subregistries, owners and durations register would fail on"
     ]
   },
   "G23": {

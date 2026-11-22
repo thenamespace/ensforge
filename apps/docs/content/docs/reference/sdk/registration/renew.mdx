@@ -62,7 +62,7 @@ Resolves to `Write.Result`. Submitted transaction hashes and the plan that produ
 
 | Error | Codes | When |
 | --- | --- | --- |
-| [`InvalidInputError`](/docs/reference/errors/invalid-input-error) | [`INVALID_NAME`](/docs/reference/errors/INVALID_NAME), [`INVALID_ADDRESS`](/docs/reference/errors/INVALID_ADDRESS), [`DURATION_TOO_SHORT`](/docs/reference/errors/DURATION_TOO_SHORT) | invalid input. |
+| [`InvalidInputError`](/docs/reference/errors/invalid-input-error) | [`INVALID_NAME`](/docs/reference/errors/INVALID_NAME), [`INVALID_ADDRESS`](/docs/reference/errors/INVALID_ADDRESS), [`INVALID_DURATION`](/docs/reference/errors/INVALID_DURATION), [`DURATION_TOO_SHORT`](/docs/reference/errors/DURATION_TOO_SHORT) | invalid input, including a duration over 100 years. |
 | [`NameStateError`](/docs/reference/errors/name-state-error) | [`NAME_NOT_RENEWABLE`](/docs/reference/errors/NAME_NOT_RENEWABLE) | a name is neither registered nor in its grace period. |
 | [`InsufficientFundsError`](/docs/reference/errors/insufficient-funds-error) | [`INSUFFICIENT_TOKEN_BALANCE`](/docs/reference/errors/INSUFFICIENT_TOKEN_BALANCE) | the signer cannot pay in the payment token. |
 | [`UnsupportedError`](/docs/reference/errors/unsupported-error) | [`PAYMENT_TOKEN_UNSUPPORTED`](/docs/reference/errors/PAYMENT_TOKEN_UNSUPPORTED), [`UNSUPPORTED_ON_DEPLOYMENT`](/docs/reference/errors/UNSUPPORTED_ON_DEPLOYMENT) | an unaccepted token or without ENSv2. |
