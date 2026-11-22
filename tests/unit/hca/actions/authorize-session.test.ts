@@ -1,7 +1,9 @@
 import { assert, describe, it } from "@effect/vitest";
 import { Array as Arr, Effect } from "effect";
 
+import { Deployments } from "@ensforge/contracts";
 import { Actions } from "@ensforge/hca/effect";
+import { expectFailure } from "@ensforge/test-harness";
 
 import { hcaAddress, makeClient, owner, ownerSignature } from "../fixtures";
 
@@ -30,6 +32,34 @@ describe("hca.authorizeSession on an HCA that is not deployed", () => {
           ({ method }) => method === "eth_sendTransaction" || method === "wallet_sendCalls",
         ),
       );
+    }),
+  );
+});
+
+// Approvals are signed under the smart-session domain only; the `"hca"` domain's name and version
+// are not known, so a deployment that expects it is refused before the wallet is asked.
+describe("hca.authorizeSession on a deployment ensforge cannot sign for", () => {
+  it.effect("refuses the hca session domain", () =>
+    Effect.gen(function* () {
+      const { sepolia } = Deployments;
+      const deployment = {
+        ...sepolia,
+        v2: {
+          ...sepolia.v2,
+          capabilities: { ...sepolia.v2.capabilities, hcaSessionDomain: "hca" },
+        },
+      } as const;
+      const { client, calls } = makeClient({ wallet: true, deployment });
+
+      yield* expectFailure(
+        Actions.hca.authorizeSession(client, {
+          sessionKey: "0x00000000000000000000000000000000000000cc",
+          resolver: "0x00000000000000000000000000000000000000bb",
+          validUntil: 4_000_000_000,
+        }),
+        { _tag: "HcaError", code: "HCA_UNAVAILABLE" },
+      );
+      assert.isFalse(Arr.some(calls, ({ method }) => method === "eth_signTypedData_v4"));
     }),
   );
 });

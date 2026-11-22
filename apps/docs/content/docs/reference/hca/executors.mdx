@@ -457,14 +457,16 @@ type RhinestoneOptions
 | --- | --- | --- | --- |
 | `sdk` (required) | `RhinestoneSdk` |  | A Rhinestone SDK instance with standalone HCA support, created by the app. |
 | `sessionSigner` | `Account` |  | The session key's signer, for session executions. |
+| `ownerAccount` | `Account` | the wallet's account; a browser wallet's signs through the wallet | The HCA owner's signer for owner-signed executions. |
 | `sponsored` | `boolean` |  | Sponsor executions; otherwise fees are paid in the session's refund token. @default true |
 
 ### `RhinestoneSdk`
 
 **Experimental**
 
-The parts of a Rhinestone SDK instance the executor uses; any SDK release with standalone
-HCA support (`type: "hca"`, `version: "ens-standalone-1.1.0"`) fits.
+The parts of a Rhinestone SDK instance the executor uses. It needs standalone HCA support
+(`type: "hca"`, `version: "ens-standalone-1.1.0"`), which no SDK release has yet: use
+`@rhinestone/sdk@1.22.0` with the ENS app's patch, as the ENS app does.
 
 ```ts
 type RhinestoneSdk

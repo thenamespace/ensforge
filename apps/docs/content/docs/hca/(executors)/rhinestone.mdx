@@ -13,16 +13,17 @@ keywords: [rhinestone, intents, session, sponsored, refund token, HCA_SDK_UNSUPP
 
 ## Prerequisites
 
-- A Rhinestone SDK instance that supports the standalone ENS HCA (account type `hca`, version `ens-standalone-1.1.0`). Stock `@rhinestone/sdk` 3.2.0 knows only an older HCA account type, so it needs a build with standalone HCA support, as the ENS app uses. Create the instance in your app. ensforge does not depend on the SDK.
+- A Rhinestone SDK instance that supports the standalone ENS HCA (account type `hca`, version `ens-standalone-1.1.0`). No released `@rhinestone/sdk` supports it yet. The ENS app uses `@rhinestone/sdk@1.22.0` with its patch [`patches/@rhinestone__sdk@1.22.0.patch`](https://github.com/ensdomains/apps-monorepo/tree/main/patches) (MIT), applied with pnpm's `patchedDependencies`. Use the same version and patch: session executions need the patch's enable proof. Create the instance in your app. ensforge does not depend on the SDK.
 - For sessions, the session key's signer (a viem account) and an authorized session. See [Sessions](/docs/hca/sessions).
 
 ## Create the executor
 
-| Option          | Type            | Default | Description                                                                    |
-| --------------- | --------------- | ------- | ------------------------------------------------------------------------------ |
-| `sdk`           | `RhinestoneSdk` | none    | A Rhinestone SDK instance with standalone HCA support.                         |
-| `sessionSigner` | `Account`       | none    | The session key's signer. Required for session executions.                     |
-| `sponsored`     | `boolean`       | `true`  | Sponsor executions. When `false`, fees are paid in the session's refund token. |
+| Option          | Type            | Default              | Description                                                                    |
+| --------------- | --------------- | -------------------- | ------------------------------------------------------------------------------ |
+| `sdk`           | `RhinestoneSdk` | none                 | A Rhinestone SDK instance with standalone HCA support.                         |
+| `sessionSigner` | `Account`       | none                 | The session key's signer. Required for session executions.                     |
+| `ownerAccount`  | `Account`       | the wallet's account | The HCA owner's signer. A browser wallet's account signs through the wallet.   |
+| `sponsored`     | `boolean`       | `true`               | Sponsor executions. When `false`, fees are paid in the session's refund token. |
 
 **Example** (A Prompt-Free Route)
 

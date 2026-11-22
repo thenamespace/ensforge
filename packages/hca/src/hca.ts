@@ -116,10 +116,16 @@ export const hca = (options: HcaOptions = {}): Write.Via => {
       );
     }
     if (session !== undefined) {
-      const problem = yield* sessionProblem(client, session);
-      if (problem !== undefined || !isAddressEqual(session.owner, owner)) {
+      const problem =
+        (yield* sessionProblem(client, session)) ??
+        (!isAddressEqual(session.owner, owner)
+          ? "another owner"
+          : !isAddressEqual(session.hca, account.address)
+            ? "another account"
+            : undefined);
+      if (problem !== undefined) {
         return yield* Effect.fail(
-          new HcaError({ code: "HCA_SESSION_INVALID", details: [problem ?? "another owner"] }),
+          new HcaError({ code: "HCA_SESSION_INVALID", details: [problem] }),
         );
       }
     }

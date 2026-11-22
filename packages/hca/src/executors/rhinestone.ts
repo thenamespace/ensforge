@@ -6,15 +6,25 @@ import { Abis } from "@ensforge/contracts";
 import { hcaSessionSalt } from "@ensforge/contracts/v2/experimental/hca";
 import type { Write } from "@ensforge/sdk";
 import type { Client } from "@ensforge/sdk/extension";
-import { concat, isAddressEqual, zeroAddress, type Account, type Address, type Hex } from "viem";
-import { readContract } from "viem/actions";
+import {
+  concat,
+  isAddressEqual,
+  zeroAddress,
+  type Account,
+  type Address,
+  type Hex,
+  type SignTypedDataParameters,
+} from "viem";
+import { toAccount } from "viem/accounts";
+import { readContract, signMessage, signTypedData } from "viem/actions";
 
 import { HcaError } from "../errors/classes/HcaError.js";
 import type { ExecutionRequest, Executor } from "../types.js";
 
 /**
- * The parts of a Rhinestone SDK instance the executor uses; any SDK release with standalone
- * HCA support (`type: "hca"`, `version: "ens-standalone-1.1.0"`) fits.
+ * The parts of a Rhinestone SDK instance the executor uses. It needs standalone HCA support
+ * (`type: "hca"`, `version: "ens-standalone-1.1.0"`), which no SDK release has yet: use
+ * `@rhinestone/sdk@1.22.0` with the ENS app's patch, as the ENS app does.
  *
  * @stability experimental
  * @category executors
@@ -54,8 +64,39 @@ export type RhinestoneOptions = {
   sdk: RhinestoneSdk;
   /** The session key's signer, for session executions. */
   sessionSigner?: Account | undefined;
+  /**
+   * The HCA owner's signer for owner-signed executions.
+   *
+   * @default the wallet's account; a browser wallet's signs through the wallet
+   */
+  ownerAccount?: Account | undefined;
   /** Sponsor executions; otherwise fees are paid in the session's refund token. @default true */
   sponsored?: boolean | undefined;
+};
+
+// Rhinestone signs with the account itself. A browser wallet's account (`json-rpc`) cannot sign
+// on its own, so it signs through the wallet client, which asks the wallet.
+const ownerAccountOf = (context: Write.Via.Context): Account | undefined => {
+  const walletClient = context.walletClient;
+  const account = walletClient?.account;
+  if (walletClient === undefined || account === undefined || account.type === "local") {
+    return account;
+  }
+  return toAccount({
+    address: account.address,
+    signMessage: ({ message }) => signMessage(walletClient, { account, message }),
+    signTypedData: (typedData) =>
+      // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- viem's generic typed-data definition and the action's parameters cannot be related
+      signTypedData(walletClient, { ...typedData, account } as SignTypedDataParameters),
+    signTransaction: () =>
+      Promise.reject(
+        new HcaError({
+          code: "HCA_EXECUTOR_UNSUPPORTED",
+          executor: "rhinestone",
+          shortMessage: "Rhinestone intents are signed as messages, not transactions.",
+        }),
+      ),
+  });
 };
 
 /**
@@ -108,7 +149,7 @@ export const rhinestone = (options: RhinestoneOptions): Executor => {
   const account = async (request: ExecutionRequest, context: Write.Via.Context) => {
     const v2 = (context.client as Client).deployment.v2;
     const hca = v2?.hca;
-    const owner = context.walletClient?.account;
+    const owner = options.ownerAccount ?? ownerAccountOf(context);
     if (v2 === undefined || hca === undefined || owner === undefined) {
       throw new HcaError({ code: "HCA_EXECUTOR_UNSUPPORTED", executor: "rhinestone" });
     }
@@ -184,6 +225,18 @@ export const rhinestone = (options: RhinestoneOptions): Executor => {
                     sessionDigest: entry.sessionDigest,
                   })),
                   sessionToEnableIndex: 0,
+                  // The ENS SDK patch packs these into the proof the validator checks on every
+                  // session-signed intent; it hashes them back into the session's salt.
+                  hcaSessionNonce: session.terms.sessionNonce,
+                  hcaSessionConfig: {
+                    sessionKey: session.sessionKey,
+                    validUntil: session.terms.validUntil,
+                    resolver: session.terms.resolver,
+                    refundToken: session.terms.refundToken,
+                    maxRefundExchangeRate: session.terms.maxRefundExchangeRate,
+                    maxRefundGasOverhead: Number(session.terms.maxRefundGasOverhead),
+                    maxRefundAmount: session.terms.maxRefundAmount,
+                  },
                 },
               },
             }),

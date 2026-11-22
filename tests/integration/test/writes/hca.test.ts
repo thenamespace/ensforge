@@ -320,6 +320,41 @@ describe("HCA", () => {
       { meta: { cases: ["Z02", "Z05"] } },
     );
 
+    it.effect(
+      "revokes a session signed before its HCA was deployed",
+      () =>
+        Effect.gen(function* () {
+          const devnet = yield* Devnet;
+          const chain = yield* Chain;
+          const clients = yield* Clients;
+          // An account the fixtures gave no HCA.
+          const ens = clients.make({ account: devnet.accounts.user });
+
+          yield* chain.isolated(
+            Effect.gen(function* () {
+              const now = yield* chain.now;
+              const session = yield* HcaActions.hca.authorizeSession(ens, {
+                sessionKey: devnet.accounts.bob,
+                resolver: devnet.contract("v2.publicResolver"),
+                validUntil: Number(now) + 3600,
+              });
+              assert.isFalse((yield* HcaActions.hca.get(ens, {})).deployed);
+
+              // Anyone could deploy the HCA and use the session, so revoking deploys it first.
+              const result = yield* HcaActions.hca.revokeSessionsSync(ens, {});
+              assert.deepStrictEqual(
+                Arr.map(result.plan.warnings, (warning) => warning.code),
+                ["HCA_DEPLOYED"],
+              );
+              assert.isTrue((yield* HcaActions.hca.get(ens, {})).deployed);
+              const revoked = yield* HcaActions.hca.getSession(ens, { session });
+              assert.deepStrictEqual(revoked, { valid: false, problem: "revoked" });
+            }),
+          );
+        }),
+      { meta: { cases: ["Z05"] } },
+    );
+
     it.effect("fails typed when the owner rejects a session approval", () =>
       Effect.gen(function* () {
         const devnet = yield* Devnet;

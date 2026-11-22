@@ -336,6 +336,7 @@ describe("hca route: sending", () => {
 describe("hca route: sessions", () => {
   it.effect.each<readonly [string, HcaSession, string]>([
     ["of another owner", { ...session, owner: stranger }, "another owner"],
+    ["for another account", { ...session, hca: stranger }, "another account"],
     ["that expired", { ...session, terms: { ...session.terms, validUntil: 1 } }, "expired"],
   ])("refuses a session %s", ([, invalid, detail]) =>
     Effect.gen(function* () {

@@ -47,7 +47,7 @@ import * as Impl from "./effect.js";
  *
  * @throws `Errors.UserRejectedError` (`USER_REJECTED`) when the owner declines.
  * @throws `Errors.InvalidInputError` (`INVALID_ADDRESS`) for invalid addresses.
- * @throws `Errors.HcaError` (`HCA_UNAVAILABLE`) on chains without an HCA deployment.
+ * @throws `Errors.HcaError` (`HCA_UNAVAILABLE`) on chains without an HCA deployment, or whose session domain ensforge cannot sign.
  *
  * @stability experimental
  * @category hca

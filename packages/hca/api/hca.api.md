@@ -345,11 +345,11 @@ function pimlico(options: { apiKey: string; sponsor?: boolean | undefined; spons
 // @stability experimental
 type PimlicoOptions = { apiKey: string; sponsor?: boolean | undefined; sponsorshipPolicyId?: string | undefined; }
 // @stability experimental
-function rhinestone(options: { sdk: RhinestoneSdk; sessionSigner?: Account | undefined; sponsored?: boolean | undefined; }) => { readonly id: string; readonly capabilities: { readonly sessions: boolean; readonly sponsorship: boolean; readonly deploys: boolean; }; readonly send?: ((request: ExecutionRequest, context: Context) => Promise<string>) | undefined; readonly status?: ((reference: string, context: Context) => Promise<Status>) | undefined; readonly quote?: ((request: ExecutionRequest, context: Context) => Promise<readonly Fee[]>) | undefined; }
+function rhinestone(options: { sdk: RhinestoneSdk; sessionSigner?: Account | undefined; ownerAccount?: Account | undefined; sponsored?: boolean | undefined; }) => { readonly id: string; readonly capabilities: { readonly sessions: boolean; readonly sponsorship: boolean; readonly deploys: boolean; }; readonly send?: ((request: ExecutionRequest, context: Context) => Promise<string>) | undefined; readonly status?: ((reference: string, context: Context) => Promise<Status>) | undefined; readonly quote?: ((request: ExecutionRequest, context: Context) => Promise<readonly Fee[]>) | undefined; }
 // @stability experimental
 type RhinestoneAccount = { readonly getAddress: () => `0x${string}`; readonly prepareTransaction: (transaction: unknown) => Promise<unknown>; readonly signTransaction: (prepared: unknown) => Promise<unknown>; readonly submitTransaction: (signed: unknown) => Promise<{ readonly id: string | bigint; }>; }
 // @stability experimental
-type RhinestoneOptions = { sdk: RhinestoneSdk; sessionSigner?: Account | undefined; sponsored?: boolean | undefined; }
+type RhinestoneOptions = { sdk: RhinestoneSdk; sessionSigner?: Account | undefined; ownerAccount?: Account | undefined; sponsored?: boolean | undefined; }
 // @stability experimental
 type RhinestoneSdk = { readonly createAccount: (config: unknown) => Promise<RhinestoneAccount>; readonly getIntentStatus: (id: bigint) => Promise<{ readonly status: string; readonly fill?: { readonly hash?: `0x${string}` | undefined; } | undefined; }>; }
 ```

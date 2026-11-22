@@ -75,7 +75,7 @@ Resolves to `HcaSession`. The approved session, to store.
 | --- | --- | --- |
 | [`UserRejectedError`](/docs/reference/errors/user-rejected-error) | [`USER_REJECTED`](/docs/reference/errors/USER_REJECTED) | the owner declines. |
 | [`InvalidInputError`](/docs/reference/errors/invalid-input-error) | [`INVALID_ADDRESS`](/docs/reference/errors/INVALID_ADDRESS) | invalid addresses. |
-| [`HcaError`](/docs/reference/errors/hca-error) | [`HCA_UNAVAILABLE`](/docs/reference/errors/HCA_UNAVAILABLE) | on chains without an HCA deployment. |
+| [`HcaError`](/docs/reference/errors/hca-error) | [`HCA_UNAVAILABLE`](/docs/reference/errors/HCA_UNAVAILABLE) | on chains without an HCA deployment, or whose session domain ensforge cannot sign. |
 
 It can also fail with the errors every read can (`Errors.CommonError`: `ConfigError`, `ContractRevertError`, `InternalError`, `NetworkError`).
 

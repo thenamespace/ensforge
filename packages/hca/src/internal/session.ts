@@ -41,6 +41,18 @@ export const authorize = Effect.fnUntraced(function* (
   },
 ): Effect.fn.Return<HcaSession, AnyError | HcaError> {
   const deployment = yield* requireHca(client);
+  // The approval is always signed under the smart-session domain; a deployment whose validator
+  // expects the `"hca"` domain would reject it, and that domain's name and version are unknown.
+  const signingDomain = deployment.v2.capabilities.hcaSessionDomain ?? "smart-session";
+  if (signingDomain !== "smart-session") {
+    return yield* Effect.fail(
+      new HcaError({
+        code: "HCA_UNAVAILABLE",
+        shortMessage:
+          "This deployment's HCA validator expects a session domain ensforge cannot sign.",
+      }),
+    );
+  }
   const account = yield* readAccount(client, { owner });
   const refundToken = options.refund?.token ?? deployment.v2.paymentTokens?.usdc;
   if (refundToken === undefined) {
@@ -88,7 +100,7 @@ export const authorize = Effect.fnUntraced(function* (
     sessionDigest,
     chains: [{ chainId: client.chain.id, sessionDigest }],
     ownerSignature,
-    signingDomain: client.deployment.v2?.capabilities.hcaSessionDomain ?? "smart-session",
+    signingDomain,
   } satisfies HcaSession;
 });
 

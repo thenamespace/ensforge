@@ -1753,7 +1753,8 @@
     "tests": [
       "tests/integration/test/writes/hca-session.test.ts > accepts an authorized session's first use, and refuses one outside its approval",
       "tests/integration/test/writes/hca.test.ts > HCA > mainnet-shaped > authorizes a session, checks its calls, and revokes it",
-      "tests/integration/test/writes/hca.test.ts > authorizes a session, checks its calls, and revokes it"
+      "tests/integration/test/writes/hca.test.ts > authorizes a session, checks its calls, and revokes it",
+      "tests/integration/test/writes/hca.test.ts > revokes a session signed before its HCA was deployed"
     ]
   },
   "Z06": {

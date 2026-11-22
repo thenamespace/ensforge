@@ -153,9 +153,45 @@ describe("rhinestone executor: requests", () => {
               { chainId: 1n, sessionDigest: `0x${Str.repeat(32)("01")}` },
             ],
             sessionToEnableIndex: 0,
+            // The ENS SDK patch packs these into the proof the validator checks.
+            hcaSessionNonce: 0n,
+            hcaSessionConfig: {
+              sessionKey: sessionSigner.address,
+              validUntil: 4_000_000_000,
+              resolver: zeroAddress,
+              refundToken,
+              maxRefundExchangeRate: 1n,
+              maxRefundGasOverhead: 1,
+              maxRefundAmount: 1n,
+            },
           },
         },
       });
+    }),
+  );
+
+  // Rhinestone signs with the account itself; a browser wallet's signs through the wallet.
+  it.effect("signs as a browser wallet's account through the wallet client", () =>
+    Effect.gen(function* () {
+      const { sdk, configs } = recordingSdk();
+      const executor = rhinestone({ sdk });
+      const browser = {
+        ...contextFor(),
+        walletClient: createWalletClient({
+          account: ownerAccount.address,
+          chain: sepolia,
+          transport,
+        }),
+      };
+
+      yield* Effect.promise(() => defined(executor.send)(request, browser));
+
+      const signer = Reflect.get(
+        Reflect.get(Reflect.get(configs[0] ?? {}, "owners"), "accounts"),
+        0,
+      );
+      assert.include(signer, { address: ownerAccount.address, type: "local" });
+      assert.isFunction(Reflect.get(signer, "signTypedData"));
     }),
   );
 
