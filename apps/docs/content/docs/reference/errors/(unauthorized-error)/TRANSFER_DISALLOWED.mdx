@@ -31,7 +31,7 @@ Retrying the same call fails the same way until the cause is fixed (`retryable: 
 
 | Action | When |
 | --- | --- |
-| [`name.transfer`](/docs/reference/sdk/name/transfer) | when the account may not send it, or the recipient (an HCA) refuses it. |
+| [`name.transfer`](/docs/reference/sdk/name/transfer) | when the account may not send it, other accounts hold its roles and `unsafe` is `false`, or the recipient (an HCA) refuses it. |
 
 ## Catch it
 

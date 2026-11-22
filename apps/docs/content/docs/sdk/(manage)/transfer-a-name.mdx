@@ -48,13 +48,29 @@ What moves depends on where the name lives:
 | Unwrapped `.eth` name on ENSv1 | The registrar token and the registry ownership (the manager). |
 | Other unwrapped ENSv1 name     | The registry owner.                                           |
 
-| Option    | Type                      | Default   | Description                                                                 |
-| --------- | ------------------------- | --------- | --------------------------------------------------------------------------- |
-| `name`    | `string`                  | required  | The name to send. Normalised automatically.                                 |
-| `to`      | `string`                  | required  | The recipient address.                                                      |
-| `role`    | `"owner" \| "registrant"` | `"owner"` | Unwrapped `.eth` names only. `"registrant"` moves only the registrar token. |
-| `unsafe`  | `boolean`                 | `false`   | ENSv2 only. Send even while other accounts still hold roles on the name.    |
-| `records` | `"keep" \| "handover"`    | `"keep"`  | ENSv2 only. What happens to the sender's roles on the name's resolver.      |
+| Option          | Type                      | Default   | Description                                                                                   |
+| --------------- | ------------------------- | --------- | --------------------------------------------------------------------------------------------- |
+| `name`          | `string`                  | required  | The name to send. Normalised automatically.                                                   |
+| `to`            | `string`                  | required  | The recipient address.                                                                        |
+| `role`          | `"owner" \| "registrant"` | `"owner"` | Unwrapped `.eth` names only. `"registrant"` moves only the registrar token.                   |
+| `unsafe`        | `boolean \| "auto"`       | `"auto"`  | ENSv2 only. How the token moves. See [Safe and unsafe transfers](#safe-and-unsafe-transfers). |
+| `delegates`     | `"keep" \| "revoke"`      | `"keep"`  | ENSv2 only. What happens to roles other accounts hold on the name.                            |
+| `records`       | `"keep" \| "handover"`    | `"keep"`  | ENSv2 only. What happens to the sender's roles on the name's resolver.                        |
+| `setEthAddress` | `boolean`                 | `false`   | Point the name's ETH address at the recipient first, in the same step.                        |
+
+## Safe and unsafe transfers
+
+An ENSv2 registry allows a safe transfer only when it is emancipated and the owner alone holds the name's unemancipated roles. Otherwise someone else keeps some control of the name after it moves: the registry's root role holders, or the accounts holding those roles.
+
+With the default `unsafe: "auto"`, ensforge sends a safe transfer when the registry allows one. Otherwise it sends `unsafeTransfer`, which still checks that the recipient can receive the name, and the plan carries a `TRANSFER_UNSAFE` warning saying why. `unsafe: true` always sends `unsafeTransfer`. `unsafe: false` fails before sending instead: with `REGISTRY_NOT_EMANCIPATED`, or with `TRANSFER_DISALLOWED` when other accounts hold roles.
+
+Subnames created with `subname.create` sit in registries that are not emancipated by default, so their transfers are unsafe.
+
+## Revoke other accounts' roles
+
+Roles other accounts hold on an ENSv2 name stay with them after the transfer, and the plan carries a `ROLES_RETAINED` warning naming them. Pass `delegates: "revoke"` to revoke them in the same step, before the move. The indexer lists the accounts that hold roles, and ensforge checks each one on chain. The transfer is refused with `INDEXER_BEHIND` when they do not account for every role, so no holder is left behind silently. Without an indexer it fails with `INDEXER_NOT_CONFIGURED`.
+
+Roles the sender has no admin role for cannot be revoked; they stay, with the warning.
 
 ## 2. Decide who keeps control of the records
 
@@ -88,6 +104,10 @@ await ens.name.transferSync({
 
 `"handover"` is refused for the sender's shared `"owned"` resolver, because its roles cover other names too. See [Resolvers and shared records](/docs/sdk/resolvers-and-shared-records).
 
+## Give a subname away as its parent's owner (ENSv1)
+
+`name.transfer` sends a name as its holder. To give an ENSv1 subname to another account as the owner of its parent, use [`subname.update`](/docs/reference/sdk/subname/update) with `owner`. See [Create subnames](/docs/sdk/create-subnames).
+
 ## Give only the registrar token (ENSv1)
 
 An unwrapped `.eth` name on ENSv1 has two holders. The [registrant](/docs/reference/glossary#registrant) holds the registrar token and owns the name. The [manager](/docs/reference/glossary#manager) is the registry owner and edits records and subnames. See [Who can change a name](/docs/sdk/who-can-change-a-name).
@@ -114,7 +134,11 @@ The signer does not own the name. Send from the owner's account. See [`NOT_OWNER
 
 ### `TRANSFER_DISALLOWED`
 
-The owner lacks the role to transfer, other accounts hold roles on an ENSv2 name, or the recipient (an HCA) refuses it. Revoke the other roles, or pass `unsafe: true`. See [`TRANSFER_DISALLOWED`](/docs/reference/errors/TRANSFER_DISALLOWED).
+The owner lacks the role to transfer, other accounts hold roles on an ENSv2 name and `unsafe` is `false`, or the recipient (an HCA) refuses it. Revoke the other roles with `delegates: "revoke"`, or keep the default `unsafe: "auto"`. See [`TRANSFER_DISALLOWED`](/docs/reference/errors/TRANSFER_DISALLOWED).
+
+### `INDEXER_BEHIND`
+
+With `delegates: "revoke"`, the indexer did not list every account that holds roles on the name. Retry once it catches up, or keep the roles with `delegates: "keep"`. See [`INDEXER_BEHIND`](/docs/reference/errors/INDEXER_BEHIND).
 
 ### `NAME_EXPIRED`, `NAME_RESERVED` or `NAME_NOT_REGISTERED`
 

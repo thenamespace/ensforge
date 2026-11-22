@@ -25,6 +25,13 @@ import type { upgrade as upgradeTypes, upgradeSync as upgradeSyncTypes } from ".
  * - `setSubregistry` on the registry holding the name, then `setParent` on the new registry so
  *   its canonical name points back to the name (skip with `setParent: false`).
  * - `registry: null` detaches the current subregistry.
+ * - A name that already has another subregistry fails with `SUBREGISTRY_EXISTS` unless
+ *   `replace: true`: replacing it orphans every subname in it. The check is made when the plan is
+ *   prepared.
+ * - The registry must be an ENSv2 registry, not the root or `.eth` one (`INVALID_ADDRESS`). An
+ *   outdated implementation gets the warning `REGISTRY_UPGRADE_AVAILABLE`.
+ * - `setParent` records the name's label; a label known only by its hash is read from the ENSv2
+ *   LabelStore, and skipped with the warning `REGISTRY_PARENT_UNSET` when even that lacks it.
  *
  * **Example** (Attaching a registry)
  *
@@ -48,8 +55,9 @@ import type { upgrade as upgradeTypes, upgradeSync as upgradeSyncTypes } from ".
  * yield* Actions.registry.attach(ens, { name: "alice.eth", registry: "0x02cA46F62f6C9F655364bf9Fd4f11Fb8f01C5753" })
  * ```
  *
- * @throws `Errors.InvalidInputError` (`INVALID_NAME`, `INVALID_ADDRESS`) for invalid input.
+ * @throws `Errors.InvalidInputError` (`INVALID_NAME`, `INVALID_ADDRESS`) for invalid input, or a registry address that is not a registry a name can hold.
  * @throws `Errors.NameStateError` (`NAME_NOT_REGISTERED`, `NAME_EXTERNAL`, `NAME_EXPIRED`) when the name is not registered, or its parent's namespace manages it outside ENS's registries.
+ * @throws `Errors.NameStateError` (`SUBREGISTRY_EXISTS`) when the name already has another subregistry and `replace` is not set.
  * @throws `Errors.NameStateError` (`NAME_UNREACHABLE`) when ENSv2 resolution no longer reaches the name.
  * @throws `Errors.UnsupportedError` (`UNSUPPORTED_PROTOCOL`) for ENSv1 names.
  * @throws `Errors.UnauthorizedError` (`MISSING_ROLES`) when the account may not change it.
@@ -106,8 +114,9 @@ export declare namespace attach {
  * yield* Actions.registry.attachSync(ens, { name: "alice.eth", registry: "0x02cA46F62f6C9F655364bf9Fd4f11Fb8f01C5753" })
  * ```
  *
- * @throws `Errors.InvalidInputError` (`INVALID_NAME`, `INVALID_ADDRESS`) for invalid input.
+ * @throws `Errors.InvalidInputError` (`INVALID_NAME`, `INVALID_ADDRESS`) for invalid input, or a registry address that is not a registry a name can hold.
  * @throws `Errors.NameStateError` (`NAME_NOT_REGISTERED`, `NAME_EXTERNAL`, `NAME_EXPIRED`) when the name is not registered, or its parent's namespace manages it outside ENS's registries.
+ * @throws `Errors.NameStateError` (`SUBREGISTRY_EXISTS`) when the name already has another subregistry and `replace` is not set.
  * @throws `Errors.NameStateError` (`NAME_UNREACHABLE`) when ENSv2 resolution no longer reaches the name.
  * @throws `Errors.UnsupportedError` (`UNSUPPORTED_PROTOCOL`) for ENSv1 names.
  * @throws `Errors.UnauthorizedError` (`MISSING_ROLES`) when the account may not change it.
@@ -141,7 +150,8 @@ export declare namespace attachSync {
  *   (`plan.deploys`, returned as `registry`).
  * - `owner` (the signer by default) gets every root role; `emancipated` withholds the roles
  *   that would let owners take children back.
- * - `attachTo` makes it that name's subregistry in the same plan.
+ * - `attachTo` makes it that name's subregistry in the same plan. A name that already has one
+ *   fails with `SUBREGISTRY_EXISTS` unless `replace: true`.
  *
  * **Example** (Deploying a subregistry)
  *
@@ -168,6 +178,7 @@ export declare namespace attachSync {
  * @throws `Errors.InvalidInputError` (`INVALID_NAME`, `INVALID_ADDRESS`, `INVALID_ROLES`) for invalid input.
  * @throws `Errors.UnsupportedError` (`UNSUPPORTED_ON_DEPLOYMENT`, `UNSUPPORTED_PROTOCOL`) without ENSv2, or for an ENSv1 `attachTo`.
  * @throws `Errors.UnauthorizedError` (`MISSING_ROLES`) when the account may not set the name's subregistry.
+ * @throws `Errors.NameStateError` (`SUBREGISTRY_EXISTS`) when `attachTo` already has a subregistry and `replace` is not set.
  * @throws `Errors.ConfigError` (`WALLET_NOT_CONFIGURED`) when no signing account is known.
  * @throws `Errors.UserRejectedError` (`USER_REJECTED`) when the user rejects the request.
  * @throws `Errors.WalletError` (`CHAIN_MISMATCH`, `ACCOUNT_NOT_FOUND`) when the wallet is on another chain or has no account to sign with.
@@ -225,6 +236,7 @@ export declare namespace deploy {
  * @throws `Errors.InvalidInputError` (`INVALID_NAME`, `INVALID_ADDRESS`, `INVALID_ROLES`) for invalid input.
  * @throws `Errors.UnsupportedError` (`UNSUPPORTED_ON_DEPLOYMENT`, `UNSUPPORTED_PROTOCOL`) without ENSv2, or for an ENSv1 `attachTo`.
  * @throws `Errors.UnauthorizedError` (`MISSING_ROLES`) when the account may not set the name's subregistry.
+ * @throws `Errors.NameStateError` (`SUBREGISTRY_EXISTS`) when `attachTo` already has a subregistry and `replace` is not set.
  * @throws `Errors.ConfigError` (`WALLET_NOT_CONFIGURED`) when no signing account is known.
  * @throws `Errors.TransactionError` (`TRANSACTION_REVERTED`, `RECEIPT_TIMEOUT`, `NONCE_CONFLICT`) when confirmation fails or the wallet's nonce is already used.
  *

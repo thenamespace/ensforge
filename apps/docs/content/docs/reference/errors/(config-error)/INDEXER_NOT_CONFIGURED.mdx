@@ -50,6 +50,7 @@ Retrying the same call fails the same way until the cause is fixed (`retryable: 
 | [`indexer.getSubnames`](/docs/reference/sdk/indexer/get-subnames) | when the client has no indexer. |
 | [`indexer.lookup`](/docs/reference/sdk/indexer/lookup) | when the client has no indexer. |
 | [`indexer.search`](/docs/reference/sdk/indexer/search) | when the client has no indexer. |
+| [`name.transfer`](/docs/reference/sdk/name/transfer) | with `delegates: "revoke"` when other accounts hold roles and no indexer is configured. |
 
 Any action can fail with `ConfigError`: it is part of `Errors.CommonError`.
 

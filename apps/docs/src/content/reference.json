@@ -829,7 +829,7 @@
       "name": "Errors",
       "npm": null,
       "url": "/docs/reference/errors",
-      "count": 108,
+      "count": 109,
       "unit": "codes",
       "description": "Every error code by class, with what happened, how to fix it and what to show users.",
       "items": [
@@ -1227,6 +1227,11 @@
           "name": "REGISTRY_NOT_EMANCIPATED",
           "url": "/docs/reference/errors/REGISTRY_NOT_EMANCIPATED",
           "summary": "The registry is not emancipated, so this transfer is unsafe."
+        },
+        {
+          "name": "SUBREGISTRY_EXISTS",
+          "url": "/docs/reference/errors/SUBREGISTRY_EXISTS",
+          "summary": "The name already has a subregistry; replacing it orphans every subname in it."
         },
         {
           "name": "RPC_REQUEST_FAILED",

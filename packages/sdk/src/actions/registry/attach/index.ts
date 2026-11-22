@@ -17,6 +17,13 @@ import * as Impl from "./effect.js";
  * - `setSubregistry` on the registry holding the name, then `setParent` on the new registry so
  *   its canonical name points back to the name (skip with `setParent: false`).
  * - `registry: null` detaches the current subregistry.
+ * - A name that already has another subregistry fails with `SUBREGISTRY_EXISTS` unless
+ *   `replace: true`: replacing it orphans every subname in it. The check is made when the plan is
+ *   prepared.
+ * - The registry must be an ENSv2 registry, not the root or `.eth` one (`INVALID_ADDRESS`). An
+ *   outdated implementation gets the warning `REGISTRY_UPGRADE_AVAILABLE`.
+ * - `setParent` records the name's label; a label known only by its hash is read from the ENSv2
+ *   LabelStore, and skipped with the warning `REGISTRY_PARENT_UNSET` when even that lacks it.
  *
  * **Example** (Attaching a registry)
  *
@@ -40,8 +47,9 @@ import * as Impl from "./effect.js";
  * yield* Actions.registry.attach(ens, { name: "alice.eth", registry: "0x02cA46F62f6C9F655364bf9Fd4f11Fb8f01C5753" })
  * ```
  *
- * @throws `Errors.InvalidInputError` (`INVALID_NAME`, `INVALID_ADDRESS`) for invalid input.
+ * @throws `Errors.InvalidInputError` (`INVALID_NAME`, `INVALID_ADDRESS`) for invalid input, or a registry address that is not a registry a name can hold.
  * @throws `Errors.NameStateError` (`NAME_NOT_REGISTERED`, `NAME_EXTERNAL`, `NAME_EXPIRED`) when the name is not registered, or its parent's namespace manages it outside ENS's registries.
+ * @throws `Errors.NameStateError` (`SUBREGISTRY_EXISTS`) when the name already has another subregistry and `replace` is not set.
  * @throws `Errors.NameStateError` (`NAME_UNREACHABLE`) when ENSv2 resolution no longer reaches the name.
  * @throws `Errors.UnsupportedError` (`UNSUPPORTED_PROTOCOL`) for ENSv1 names.
  * @throws `Errors.UnauthorizedError` (`MISSING_ROLES`) when the account may not change it.
@@ -74,6 +82,8 @@ export declare namespace attach {
      * @default true
      */
     setParent?: boolean | undefined;
+    /** Replace a subregistry the name already has, orphaning the subnames in it. */
+    replace?: boolean | undefined;
   };
   /** Submitted transaction hashes and the plan that produced them. */
   type ReturnType = Write.Result;
@@ -134,8 +144,9 @@ attach.estimateGas = Action.promiseOf(
  * yield* Actions.registry.attachSync(ens, { name: "alice.eth", registry: "0x02cA46F62f6C9F655364bf9Fd4f11Fb8f01C5753" })
  * ```
  *
- * @throws `Errors.InvalidInputError` (`INVALID_NAME`, `INVALID_ADDRESS`) for invalid input.
+ * @throws `Errors.InvalidInputError` (`INVALID_NAME`, `INVALID_ADDRESS`) for invalid input, or a registry address that is not a registry a name can hold.
  * @throws `Errors.NameStateError` (`NAME_NOT_REGISTERED`, `NAME_EXTERNAL`, `NAME_EXPIRED`) when the name is not registered, or its parent's namespace manages it outside ENS's registries.
+ * @throws `Errors.NameStateError` (`SUBREGISTRY_EXISTS`) when the name already has another subregistry and `replace` is not set.
  * @throws `Errors.NameStateError` (`NAME_UNREACHABLE`) when ENSv2 resolution no longer reaches the name.
  * @throws `Errors.UnsupportedError` (`UNSUPPORTED_PROTOCOL`) for ENSv1 names.
  * @throws `Errors.UnauthorizedError` (`MISSING_ROLES`) when the account may not change it.

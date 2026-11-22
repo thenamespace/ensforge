@@ -1,5 +1,6 @@
 import { Array as Arr, Effect, Formatter, Option } from "effect";
 
+import type { Actions as PromiseActions, Errors, Plan } from "@ensforge/sdk";
 import { Actions } from "@ensforge/sdk/effect";
 import type { Client } from "@ensforge/test-integration/support/clients";
 import type { Address } from "viem";
@@ -9,8 +10,17 @@ import { SequenceFailure, type Context } from "../model/command.ts";
 import { subLabel, actorNames } from "../model/world.ts";
 import type { sampler } from "./sample.ts";
 
+type Simulate = (
+  ens: Client,
+  name: string,
+  to: Address,
+) => Effect.Effect<Plan.Simulation, Errors.AnyError>;
+
 /** Each checked operation, with a simulation of the write that performs it. */
-const operations = [
+const operations: readonly {
+  readonly operation: PromiseActions.permission.check.Options["operation"];
+  readonly simulate: Simulate;
+}[] = [
   {
     operation: "transfer",
     simulate: (ens: Client, name: string, to: Address) =>
@@ -31,7 +41,7 @@ const operations = [
     simulate: (ens: Client, name: string) =>
       Actions.record.set.simulate(ens, { name, texts: { url: "https://oracle.example" } }),
   },
-] as const;
+];
 
 /**
  * The permission oracle: for a sampled name, operation and account, `permission.check` allows the

@@ -29,7 +29,7 @@ import { explainFor } from "../../../internal/permission/check.js";
 import { evaluateChildRewrite } from "../../../internal/permission/evaluate.js";
 import { readPermissionFacts } from "../../../internal/permission/facts.js";
 import { recordsCall } from "../../../internal/records/write-call.js";
-import { attachCalls, deployUserRegistry } from "../../../internal/registry/deploy.js";
+import { attachCalls, deployUserRegistry, parentLabel } from "../../../internal/registry/deploy.js";
 import { deployPermissionedResolver } from "../../../internal/resolver/deploy.js";
 import { roleBitmapOf } from "../../../internal/role/bitmap.js";
 import { loadSubname, type LoadedSubname } from "../../../internal/subname/load.js";
@@ -123,12 +123,13 @@ const v2Steps = Effect.fnUntraced(function* (
     });
     registry = deployment.address;
     deployRegistry = deployment.call;
+    const parentName = yield* parentLabel(client, parent.data.parts);
     attach = attachCalls({
       // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- a v2 or wrapped name's state always carries this field; `Name.State` types it as nullable for every protocol
       parentRegistry: parent.state.registry as Address,
       // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- a v2 or wrapped name's state always carries this field; `Name.State` types it as nullable for every protocol
       tokenId: parent.state.tokenId as bigint,
-      label: parent.data.parts.label,
+      label: parentName.label,
       registry,
       detach: false,
     });

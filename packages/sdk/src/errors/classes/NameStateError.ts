@@ -36,6 +36,10 @@ const defaults: {
   PARENT_NOT_MIGRATED: () => ({
     shortMessage: "The parent name has not been migrated to ENSv2.",
   }),
+  SUBREGISTRY_EXISTS: () => ({
+    shortMessage: "The name already has a subregistry; replacing it orphans every subname in it.",
+    hint: "Pass `replace: true` to replace it anyway.",
+  }),
   REGISTRY_NOT_EMANCIPATED: () => ({
     shortMessage: "The registry is not emancipated, so this transfer is unsafe.",
   }),
@@ -70,6 +74,7 @@ export declare namespace NameStateError {
     | "NAME_UNREACHABLE"
     | "NAME_REQUIRES_MIGRATION"
     | "PARENT_NOT_MIGRATED"
-    | "REGISTRY_NOT_EMANCIPATED";
+    | "REGISTRY_NOT_EMANCIPATED"
+    | "SUBREGISTRY_EXISTS";
   type Options = EnsforgeError.ClassOptions<Code>;
 }

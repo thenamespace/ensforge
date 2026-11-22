@@ -21,7 +21,8 @@ import * as Impl from "./effect.js";
  *   (`plan.deploys`, returned as `registry`).
  * - `owner` (the signer by default) gets every root role; `emancipated` withholds the roles
  *   that would let owners take children back.
- * - `attachTo` makes it that name's subregistry in the same plan.
+ * - `attachTo` makes it that name's subregistry in the same plan. A name that already has one
+ *   fails with `SUBREGISTRY_EXISTS` unless `replace: true`.
  *
  * **Example** (Deploying a subregistry)
  *
@@ -48,6 +49,7 @@ import * as Impl from "./effect.js";
  * @throws `Errors.InvalidInputError` (`INVALID_NAME`, `INVALID_ADDRESS`, `INVALID_ROLES`) for invalid input.
  * @throws `Errors.UnsupportedError` (`UNSUPPORTED_ON_DEPLOYMENT`, `UNSUPPORTED_PROTOCOL`) without ENSv2, or for an ENSv1 `attachTo`.
  * @throws `Errors.UnauthorizedError` (`MISSING_ROLES`) when the account may not set the name's subregistry.
+ * @throws `Errors.NameStateError` (`SUBREGISTRY_EXISTS`) when `attachTo` already has a subregistry and `replace` is not set.
  * @throws `Errors.ConfigError` (`WALLET_NOT_CONFIGURED`) when no signing account is known.
  * @throws `Errors.UserRejectedError` (`USER_REJECTED`) when the user rejects the request.
  * @throws `Errors.WalletError` (`CHAIN_MISMATCH`, `ACCOUNT_NOT_FOUND`) when the wallet is on another chain or has no account to sign with.
@@ -82,6 +84,8 @@ export declare namespace deploy {
     emancipated?: boolean | undefined;
     /** ENSv2 name to attach it to as subregistry. Normalized automatically. */
     attachTo?: string | undefined;
+    /** With `attachTo`: replace a subregistry the name already has, orphaning its subnames. */
+    replace?: boolean | undefined;
     /**
      * CREATE2 salt; together with the account it decides the address.
      *
@@ -92,7 +96,11 @@ export declare namespace deploy {
   /** Submitted hashes, the plan and the new registry's address. */
   type ReturnType = Write.Result & { readonly registry: Address };
   /** Errors {@link deploy} can fail with. */
-  type ErrorType = Errors.WriteError | Errors.InvalidInputError | Errors.UnauthorizedError;
+  type ErrorType =
+    | Errors.WriteError
+    | Errors.InvalidInputError
+    | Errors.UnauthorizedError
+    | Errors.NameStateError;
 }
 
 // Explicit types keep these declarations free of Effect types.
@@ -147,6 +155,7 @@ deploy.estimateGas = Action.promiseOf(
  * @throws `Errors.InvalidInputError` (`INVALID_NAME`, `INVALID_ADDRESS`, `INVALID_ROLES`) for invalid input.
  * @throws `Errors.UnsupportedError` (`UNSUPPORTED_ON_DEPLOYMENT`, `UNSUPPORTED_PROTOCOL`) without ENSv2, or for an ENSv1 `attachTo`.
  * @throws `Errors.UnauthorizedError` (`MISSING_ROLES`) when the account may not set the name's subregistry.
+ * @throws `Errors.NameStateError` (`SUBREGISTRY_EXISTS`) when `attachTo` already has a subregistry and `replace` is not set.
  * @throws `Errors.ConfigError` (`WALLET_NOT_CONFIGURED`) when no signing account is known.
  * @throws `Errors.TransactionError` (`TRANSACTION_REVERTED`, `RECEIPT_TIMEOUT`, `NONCE_CONFLICT`) when confirmation fails or the wallet's nonce is already used.
  *
@@ -168,7 +177,11 @@ export declare namespace deploySync {
   /** Receipts, hashes, the plan and the new registry's address. */
   type ReturnType = Write.SyncResult & { readonly registry: Address };
   /** Errors {@link deploySync} can fail with. */
-  type ErrorType = Errors.WriteError | Errors.InvalidInputError | Errors.UnauthorizedError;
+  type ErrorType =
+    | Errors.WriteError
+    | Errors.InvalidInputError
+    | Errors.UnauthorizedError
+    | Errors.NameStateError;
 }
 
 /** Path of the action, e.g. for cache keys. */

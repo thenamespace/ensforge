@@ -350,10 +350,10 @@ type name.setTtlSync.Options = setTtl.Options & Write.Options & { confirmations?
 const name.setTtlSync.path: 'name.setTtlSync'
 type name.setTtlSync.ReturnType = Result & { readonly receipt: TransactionReceipt; readonly receipts: readonly TransactionReceipt[]; }
 function name.transfer(client: Client<object> | ViemClientLike, options: transfer.Options & Write.Options) => Promise<Result>
-type name.transfer.ErrorType = InvalidInputError | NameStateError | UnauthorizedError | WriteError
+type name.transfer.ErrorType = IndexerError | InvalidInputError | NameStateError | UnauthorizedError | WriteError
 function name.transfer.estimateGas(client: Client<object> | ViemClientLike, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Estimate>
 const name.transfer.estimateGas.path: string
-type name.transfer.Options = { name: string; to: string; role?: 'owner' | 'registrant' | undefined; unsafe?: boolean | undefined; records?: 'handover' | 'keep' | undefined; }
+type name.transfer.Options = { name: string; to: string; role?: 'owner' | 'registrant' | undefined; unsafe?: 'auto' | boolean | undefined; delegates?: 'keep' | 'revoke' | undefined; setEthAddress?: boolean | undefined; records?: 'handover' | 'keep' | undefined; }
 const name.transfer.path: 'name.transfer'
 function name.transfer.prepare(client: Client<object> | ViemClientLike, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Plan>
 const name.transfer.prepare.path: string
@@ -361,7 +361,7 @@ type name.transfer.ReturnType = { readonly hash: `0x${string}`; readonly hashes:
 function name.transfer.simulate(client: Client<object> | ViemClientLike, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Simulation>
 const name.transfer.simulate.path: string
 function name.transferSync(client: Client<object> | ViemClientLike, options: transfer.Options & Write.Options & { confirmations?: number | undefined; timeout?: number | undefined; }) => Promise<SyncResult>
-type name.transferSync.ErrorType = InvalidInputError | NameStateError | UnauthorizedError | WriteError
+type name.transferSync.ErrorType = IndexerError | InvalidInputError | NameStateError | UnauthorizedError | WriteError
 type name.transferSync.Options = transfer.Options & Write.Options & { confirmations?: number | undefined; timeout?: number | undefined; }
 const name.transferSync.path: 'name.transferSync'
 type name.transferSync.ReturnType = Result & { readonly receipt: TransactionReceipt; readonly receipts: readonly TransactionReceipt[]; }
@@ -597,7 +597,7 @@ function registry.attach(client: Client<object> | ViemClientLike, options: attac
 type registry.attach.ErrorType = InvalidInputError | NameStateError | UnauthorizedError | WriteError
 function registry.attach.estimateGas(client: Client<object> | ViemClientLike, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Estimate>
 const registry.attach.estimateGas.path: string
-type registry.attach.Options = { name: string; registry: string | null; setParent?: boolean | undefined; }
+type registry.attach.Options = { name: string; registry: string | null; setParent?: boolean | undefined; replace?: boolean | undefined; }
 const registry.attach.path: 'registry.attach'
 function registry.attach.prepare(client: Client<object> | ViemClientLike, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Plan>
 const registry.attach.prepare.path: string
@@ -610,10 +610,10 @@ type registry.attachSync.Options = attach.Options & Write.Options & { confirmati
 const registry.attachSync.path: 'registry.attachSync'
 type registry.attachSync.ReturnType = Result & { readonly receipt: TransactionReceipt; readonly receipts: readonly TransactionReceipt[]; }
 function registry.deploy(client: Client<object> | ViemClientLike, options: deploy.Options & Write.Options) => Promise<ReturnType>
-type registry.deploy.ErrorType = InvalidInputError | UnauthorizedError | WriteError
+type registry.deploy.ErrorType = InvalidInputError | NameStateError | UnauthorizedError | WriteError
 function registry.deploy.estimateGas(client: Client<object> | ViemClientLike, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Estimate>
 const registry.deploy.estimateGas.path: string
-type registry.deploy.Options = { owner?: string | undefined; grants?: readonly { account: string; roles: bigint | readonly ('canName' | 'canNameAdmin' | 'canTransfer' | 'canTransferAdmin' | 'registerReserved' | 'registerReservedAdmin' | 'registrar' | 'registrarAdmin' | 'renew' | 'renewAdmin' | 'setParent' | 'setParentAdmin' | 'setResolver' | 'setResolverAdmin' | 'setSubregistry' | 'setSubregistryAdmin' | 'setUri' | 'setUriAdmin' | 'unregister' | 'unregisterAdmin' | 'upgrade' | 'upgradeAdmin' | 'wasReserved')[]; }[] | undefined; emancipated?: boolean | undefined; attachTo?: string | undefined; salt?: bigint | undefined; }
+type registry.deploy.Options = { owner?: string | undefined; grants?: readonly { account: string; roles: bigint | readonly ('canName' | 'canNameAdmin' | 'canTransfer' | 'canTransferAdmin' | 'registerReserved' | 'registerReservedAdmin' | 'registrar' | 'registrarAdmin' | 'renew' | 'renewAdmin' | 'setParent' | 'setParentAdmin' | 'setResolver' | 'setResolverAdmin' | 'setSubregistry' | 'setSubregistryAdmin' | 'setUri' | 'setUriAdmin' | 'unregister' | 'unregisterAdmin' | 'upgrade' | 'upgradeAdmin' | 'wasReserved')[]; }[] | undefined; emancipated?: boolean | undefined; attachTo?: string | undefined; replace?: boolean | undefined; salt?: bigint | undefined; }
 const registry.deploy.path: 'registry.deploy'
 function registry.deploy.prepare(client: Client<object> | ViemClientLike, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Plan>
 const registry.deploy.prepare.path: string
@@ -621,7 +621,7 @@ type registry.deploy.ReturnType = Result & { readonly registry: `0x${string}`; }
 function registry.deploy.simulate(client: Client<object> | ViemClientLike, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Simulation>
 const registry.deploy.simulate.path: string
 function registry.deploySync(client: Client<object> | ViemClientLike, options: deploy.Options & Write.Options & { confirmations?: number | undefined; timeout?: number | undefined; }) => Promise<ReturnType>
-type registry.deploySync.ErrorType = InvalidInputError | UnauthorizedError | WriteError
+type registry.deploySync.ErrorType = InvalidInputError | NameStateError | UnauthorizedError | WriteError
 type registry.deploySync.Options = deploy.Options & Write.Options & { confirmations?: number | undefined; timeout?: number | undefined; }
 const registry.deploySync.path: 'registry.deploySync'
 type registry.deploySync.ReturnType = Result & { readonly receipt: TransactionReceipt; readonly receipts: readonly TransactionReceipt[]; } & { readonly registry: `0x${string}`; }

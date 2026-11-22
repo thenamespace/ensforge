@@ -1,11 +1,13 @@
 import { Effect, Array as Arr } from "effect";
 
-import { Abis } from "@ensforge/contracts";
+import { Abis, Roles } from "@ensforge/contracts";
 import type { Deployments } from "@ensforge/contracts";
 import { encodeFunctionData, hexToBigInt, isAddressEqual, type Address } from "viem";
 
 import type { Client } from "../../../client/types.js";
 import { InvalidInputError } from "../../../errors/classes/InvalidInputError.js";
+import { NameStateError } from "../../../errors/classes/NameStateError.js";
+import { UnauthorizedError } from "../../../errors/classes/UnauthorizedError.js";
 import { UnsupportedError } from "../../../errors/classes/UnsupportedError.js";
 import type { AnyError } from "../../../errors/types.js";
 import * as Action from "../../../internal/action/index.js";
@@ -17,13 +19,16 @@ import {
   requireRegistered,
   requireV1Contracts,
 } from "../../../internal/name/write.js";
-import { explainFor } from "../../../internal/permission/check.js";
+import { checkLoaded, explainFor } from "../../../internal/permission/check.js";
 import { setterKeying } from "../../../internal/records/setter-keying.js";
+import { recordsCall } from "../../../internal/records/write-call.js";
+import { delegatesOf, regeneratedTokenId } from "../../../internal/registry/delegates.js";
 import { resolverSharing } from "../../../internal/resolver/sharing.js";
 import * as Rpc from "../../../internal/rpc/index.js";
 import { make as makePlan } from "../../../plan/make.js";
 import type { Plan } from "../../../plan/Plan.js";
 import type { Write } from "../../../Types.js";
+import * as Role from "../../../utils/Role.js";
 import type { transfer as Promises } from "./index.js";
 
 const call = (to: Address, data: `0x${string}`): Plan.Call => ({ to, data, value: 0n });
@@ -191,6 +196,133 @@ const recordControl = Effect.fnUntraced(function* (
   };
 });
 
+/**
+ * The v2 move: revocations of others' roles (with `delegates: "revoke"`), then the transfer of
+ * the token ID they leave. A safe transfer needs an emancipated registry and the owner as the
+ * only holder of its unemancipated roles (checked against the token ID, as the registry does);
+ * `"auto"` falls back to `unsafeTransfer`, which still checks the receiver, and says why.
+ */
+const v2Calls = Effect.fnUntraced(function* (
+  client: Client,
+  loaded: LoadedName,
+  options: {
+    readonly to: Address;
+    readonly sender: Address | undefined;
+    readonly unsafe: boolean | "auto";
+    readonly delegates: "keep" | "revoke";
+    readonly warnings: Plan.Warning[];
+  },
+): Effect.fn.Return<Plan.Call[], AnyError> {
+  const { state, data } = loaded;
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- a v2 name's state always carries these fields; `Name.State` types them as nullable for every protocol
+  const [registry, tokenId, owner, resource] = [
+    state.registry,
+    state.tokenId,
+    state.owner,
+    state.resource,
+  ] as [Address, bigint, Address, bigint];
+  const read = { address: registry, abi: Abis.v2.permissionedRegistry } as const;
+
+  const { delegates, emancipated, onlyAssignee } = yield* Effect.all(
+    {
+      delegates: delegatesOf(client, {
+        name: data.parts.name,
+        registry,
+        resource,
+        tokenId,
+        owner,
+        sender: options.sender ?? owner,
+        revoke: options.delegates === "revoke",
+      }),
+      emancipated: Rpc.readContract(client, { ...read, functionName: "isEmancipated" }),
+      onlyAssignee: Rpc.readContract(client, {
+        ...read,
+        functionName: "isOnlyAssignee",
+        args: [tokenId, Roles.registryBitmaps.unemancipated, owner],
+      }),
+    },
+    { concurrency: "unbounded" },
+  );
+  if (delegates.retained !== 0n) {
+    options.warnings.push({
+      code: "ROLES_RETAINED",
+      message: `Other accounts keep ${Arr.join(Role.toNames(delegates.retained, "registry"), ", ")} on ${data.parts.name} after the transfer.`,
+    });
+  }
+
+  // A regenerated token fails the registry's single-assignee check whatever its holders, so a
+  // transfer after revocations is never a safe one (contracts-v2 v1.0.1).
+  const safe = emancipated && onlyAssignee && delegates.regenerations === 0;
+  const reason = !emancipated
+    ? "The registry is not emancipated: its root role holders keep control of the name."
+    : "Other accounts hold roles on the name, or held them since its token was last minted.";
+  if (options.unsafe === false && !safe) {
+    return yield* Effect.fail(
+      !emancipated
+        ? new NameStateError({ code: "REGISTRY_NOT_EMANCIPATED", shortMessage: reason })
+        : new UnauthorizedError({
+            code: "TRANSFER_DISALLOWED",
+            shortMessage: reason,
+            hint: 'Revoke the other roles (`delegates: "revoke"`), or transfer with `unsafe: "auto"`.',
+          }),
+    );
+  }
+  const unsafe = options.unsafe === true || !safe;
+  if (unsafe && options.unsafe === "auto") {
+    options.warnings.push({ code: "TRANSFER_UNSAFE", message: reason });
+  }
+
+  const moved = regeneratedTokenId(tokenId, delegates.regenerations);
+  return [
+    ...delegates.revokes,
+    call(
+      registry,
+      unsafe
+        ? encodeFunctionData({
+            ...read,
+            functionName: "unsafeTransfer",
+            args: [options.to, moved, "0x"],
+          })
+        : encodeFunctionData({
+            ...read,
+            functionName: "safeTransferFrom",
+            args: [owner, options.to, moved, 1n, "0x"],
+          }),
+    ),
+  ];
+});
+
+/**
+ * The write of `to` as the name's ETH address on its current resolver, or a warning when the
+ * sender cannot write there (no resolver, or a resolver whose permissions refuse or are unknown).
+ */
+const ethAddressCall = Effect.fnUntraced(function* (
+  client: Client,
+  loaded: LoadedName,
+  sender: Address | undefined,
+  to: Address,
+): Effect.fn.Return<
+  { readonly calls: readonly Plan.Call[]; readonly warnings: readonly Plan.Warning[] },
+  AnyError
+> {
+  const resolver = loaded.state.resolver;
+  const skipped = (why: string) => ({
+    calls: [],
+    warnings: [
+      {
+        code: "ETH_ADDRESS_NOT_SET",
+        message: `The ETH address of ${loaded.data.parts.name} is not changed: ${why}.`,
+      },
+    ],
+  });
+  if (resolver === null) return skipped("it has no resolver");
+  if (sender === undefined) return skipped("no signer is known");
+  const [check] = yield* checkLoaded(client, loaded, sender, [{ setRecord: "address", key: 60n }]);
+  if (check?.allowed !== true) return skipped("the sender cannot write its resolver");
+  const write = yield* recordsCall(client, resolver, loaded.data.parts, { addresses: { eth: to } });
+  return { calls: [write], warnings: [] };
+});
+
 /** @internal Builds the plan of `Actions.name.transfer`. */
 export const plan = Effect.fnUntraced(function* (
   client: Client,
@@ -228,31 +360,25 @@ export const plan = Effect.fnUntraced(function* (
   yield* requireRegistered(client, loaded);
 
   const { state } = loaded;
-  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- a v2 or wrapped name's state always carries this field; `Name.State` types it as nullable for every protocol
-  const tokenId = state.tokenId as bigint;
+  const warnings: Plan.Warning[] = [];
   const calls =
     state.protocol === "v2"
-      ? [
-          call(
-            // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- a v2 or wrapped name's state always carries this field; `Name.State` types it as nullable for every protocol
-            state.registry as Address,
-            options.unsafe === true
-              ? encodeFunctionData({
-                  abi: Abis.v2.permissionedRegistry,
-                  functionName: "unsafeTransfer",
-                  args: [to, tokenId, "0x"],
-                })
-              : encodeFunctionData({
-                  abi: Abis.v2.permissionedRegistry,
-                  functionName: "safeTransferFrom",
-                  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- a v2 or wrapped name's state always carries this field; `Name.State` types it as nullable for every protocol
-                  args: [state.owner as Address, to, tokenId, 1n, "0x"],
-                }),
-          ),
-        ]
+      ? yield* v2Calls(client, loaded, {
+          to,
+          sender,
+          unsafe: options.unsafe ?? "auto",
+          delegates: options.delegates ?? "keep",
+          warnings,
+        })
       : yield* requireV1Contracts(client).pipe(
           Effect.flatMap((contracts) => v1Calls(contracts, loaded, to, options.role ?? "owner")),
         );
+  // The recipient's address is written first, while the sender still controls the records.
+  const ethAddress =
+    options.setEthAddress === true
+      ? yield* ethAddressCall(client, loaded, sender, to)
+      : { calls: [], warnings: [] };
+  warnings.push(...ethAddress.warnings);
   const control = yield* recordControl(client, loaded, sender, to, options.records ?? "keep");
 
   return makePlan({
@@ -263,10 +389,10 @@ export const plan = Effect.fnUntraced(function* (
       {
         id: "write",
         description: "Transfer name",
-        calls: [...control.before, ...calls, ...control.after],
+        calls: [...ethAddress.calls, ...control.before, ...calls, ...control.after],
       },
     ],
-    warnings: control.warnings,
+    warnings: [...warnings, ...control.warnings],
   });
 });
 

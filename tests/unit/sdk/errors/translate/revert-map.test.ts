@@ -411,7 +411,7 @@ describe("revertMap fields", () => {
     "%s hints at unsafe transfers",
     (errorName) => {
       for (const data of overloads(errorName)) {
-        assert.include(fromRevert({ data }, {}).hint, "`unsafe: true`");
+        assert.include(fromRevert({ data }, {}).hint, '`unsafe: "auto"`');
       }
     },
   );

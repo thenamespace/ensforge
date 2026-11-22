@@ -315,6 +315,53 @@ describe("subnames, wrapper and registries", () => {
         }),
       { meta: { cases: ["M:A18"] } },
     );
+
+    // Regression: attaching over a subregistry replaced it, orphaning every subname in it, and
+    // any address was accepted as a registry.
+    it.effect(
+      "refuses to replace a subregistry unless asked, and to attach what is not a registry",
+      () =>
+        Effect.gen(function* () {
+          const fixtures = yield* Fixtures;
+          const devnet = yield* Devnet;
+          const chain = yield* Chain;
+          const clients = yield* Clients;
+          const ens = clients.make({ account: devnet.accounts.alice });
+          const name = fixtures.byId("v2.registered").name;
+
+          yield* chain.isolated(
+            Effect.gen(function* () {
+              const { registry: first } = yield* Actions.registry.deploySync(ens, {
+                attachTo: name,
+              });
+              yield* expectFailure(Actions.registry.deploy(ens, { attachTo: name }), {
+                _tag: "NameStateError",
+                code: "SUBREGISTRY_EXISTS",
+              });
+              const { registry: second } = yield* Actions.registry.deploySync(ens, {});
+              yield* expectFailure(Actions.registry.attach(ens, { name, registry: second }), {
+                _tag: "NameStateError",
+                code: "SUBREGISTRY_EXISTS",
+              });
+              for (const registry of [
+                devnet.contract("v2.ethRegistry"),
+                devnet.contract("v2.publicResolver"),
+              ]) {
+                yield* expectFailure(
+                  Actions.registry.attach(ens, { name, registry, replace: true }),
+                  { _tag: "InvalidInputError", code: "INVALID_ADDRESS" },
+                );
+              }
+
+              yield* Actions.registry.attachSync(ens, { name, registry: second, replace: true });
+              const attached = yield* Actions.registry.get(ens, { name });
+              assert.notStrictEqual(attached?.address, first);
+              assert.strictEqual(attached?.address, second);
+            }),
+          );
+        }),
+      { meta: { cases: ["M:A18"] } },
+    );
   });
 
   onProfile("v1-live")("v1-live", (it) => {

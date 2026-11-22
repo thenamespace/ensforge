@@ -63,7 +63,7 @@ Retrying the same call fails the same way until the cause is fixed (`retryable: 
 | [`registration.getRenewalPrice`](/docs/reference/sdk/registration/get-renewal-price) | for invalid input. |
 | [`registration.register`](/docs/reference/sdk/registration/register) | for invalid input, including a zero owner or a duration over 100 years. |
 | [`registration.renew`](/docs/reference/sdk/registration/renew) | for invalid input, a duration over 100 years, a renewal that leaves a name expired, or an `until` in the past. |
-| [`registry.attach`](/docs/reference/sdk/registry/attach) | for invalid input. |
+| [`registry.attach`](/docs/reference/sdk/registry/attach) | for invalid input, or a registry address that is not a registry a name can hold. |
 | [`registry.deploy`](/docs/reference/sdk/registry/deploy) | for invalid input. |
 | [`registry.get`](/docs/reference/sdk/registry/get) | for invalid input. |
 | [`registry.setUri`](/docs/reference/sdk/registry/set-uri) | for invalid input. |

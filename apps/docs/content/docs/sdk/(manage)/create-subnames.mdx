@@ -69,6 +69,63 @@ const { hash } = await ens.subname.createSync({
   subregistries](/docs/sdk/registries-and-subregistries).
 </Callout>
 
+## ENSv2 child defaults
+
+On ENSv2, a child's owner gets the roles the `.eth` registrar grants a new owner, with their admin roles: `setSubregistry`, `setResolver` and `canTransferAdmin`. The child never expires. Its owner cannot remove it, because `unregister` is not among those roles. The ENS app's subnames instead give the owner every role and expire after a year.
+
+To match that, pass the roles and an expiry yourself.
+
+**Example** (Creating a Subname Like the ENS App)
+
+```ts twoslash title="subname-app-defaults.ts"
+import { createWalletClient, http, type Hex } from "viem";
+import { privateKeyToAccount } from "viem/accounts";
+import { sepolia } from "viem/chains";
+import { Duration, Ensforge, ensActions } from "@ensforge/sdk";
+
+const account = privateKeyToAccount(process.env.PRIVATE_KEY as Hex);
+const transport = http(process.env.SEPOLIA_RPC_URL);
+
+const ens = Ensforge.create({
+  chain: sepolia,
+  transports: { [sepolia.id]: transport },
+  wallet: createWalletClient({ account, chain: sepolia, transport }),
+}).extend(ensActions());
+
+await ens.subname.createSync({
+  name: "pay.ensforge-docs-demo.eth",
+  roles: [
+    "setSubregistry",
+    "setSubregistryAdmin",
+    "setResolver",
+    "setResolverAdmin",
+    "canTransferAdmin",
+    "unregister",
+    "unregisterAdmin",
+  ],
+  expiry: BigInt(Math.floor(Date.now() / 1000)) + Duration.years(1),
+});
+```
+
+## Who can change or remove a subname
+
+The parent's owner and the child's owner have different powers, and they depend on how each is held.
+
+```mermaid
+flowchart TD
+  A["Change or remove a subname"] --> B{"Where is the parent?"}
+  B -->|ENSv2| C{"Is the parent's subregistry emancipated?"}
+  C -->|No| D["Its root role holders can remove and repoint the child"]
+  C -->|Yes| E["Only the child's own roles apply"]
+  B -->|ENSv1, unwrapped| F["The parent's manager can rewrite or remove the child"]
+  B -->|ENSv1, wrapped| G{"Is parentCannotControl burned on the child?"}
+  G -->|No| H["The parent's owner can rewrite or remove the child"]
+  G -->|Yes| I["The parent can only extend its expiry"]
+```
+
+- `subname.update` and `subname.remove` pick the route the signer has authority on, and refuse with the route's error when it has none.
+- On ENSv2, `name.transfer` moves a child as its owner. Its default `unsafe: "auto"` sends an unsafe transfer when the subregistry is not emancipated, and says so. See [Transfer a name](/docs/sdk/transfer-a-name).
+
 ## 2. Change a subname from its parent
 
 [`subname.update`](/docs/reference/sdk/subname/update) changes a child's resolver or [expiry](/docs/reference/glossary#expiry) without asking its owner. `owner` changes only on ENSv1.

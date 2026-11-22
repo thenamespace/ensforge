@@ -142,6 +142,10 @@ export const messages: { readonly [code in Code]: Template<code> } = {
     title: "Name already wrapped",
     message: `${thisName(error)} is already wrapped.`,
   }),
+  SUBREGISTRY_EXISTS: (error) => ({
+    title: "Subnames in place",
+    message: `${thisName(error)} already holds subnames that replacing its registry would remove.`,
+  }),
   NAME_HAS_SUBNAMES: (error) => ({
     title: "Name has subnames",
     message: `${thisName(error)} has subnames, which would keep resolving without it.`,
