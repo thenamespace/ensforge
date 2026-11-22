@@ -39,11 +39,21 @@ layer(Services.layer({ profile: "mainnet-shaped", services: ["indexer", "aa"] })
         onStep: chain.passWaits,
       });
 
-      const bundled = Arr.filter(result.plan.steps, (step) => step.calls.length > 1).length;
-      assert.isAbove(bundled, 0);
-      assert.strictEqual(
-        Arr.filter(wallet.methods, (method) => method === "wallet_sendCalls").length,
-        bundled,
+      // The commit goes alone; the steps after its wait share one bundle.
+      assert.deepStrictEqual(
+        Arr.map(result.plan.steps, (step) => [step.id, step.calls.length]),
+        [
+          ["commit", 1],
+          ["register", 2],
+          ["primaryName", 2],
+        ],
+      );
+      assert.deepStrictEqual(
+        Arr.filter(
+          wallet.methods,
+          (method) => method === "eth_sendTransaction" || method === "wallet_sendCalls",
+        ),
+        ["eth_sendTransaction", "wallet_sendCalls"],
       );
 
       yield* services.waitForIndexed();
