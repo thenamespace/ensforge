@@ -285,10 +285,10 @@ describe("registration", () => {
 
     // ETHRegistry mints with an ERC-1155 safe transfer, so an EIP-7702 EOA accepts the name only
     // if its delegate's code does. This one delegates to a receiver mock whose configuration
-    // lives in storage the EOA does not have. ensforge does not pre-check the owner (KL-20): the
-    // commit is sent, and the register step fails in simulation.
+    // lives in storage the EOA does not have. The register step is simulated after the
+    // commitment's wait, so this fails before the commit is sent.
     it.effect(
-      "fails the register step when the owner's delegated code rejects the name's token",
+      "refuses an owner whose delegated code rejects the name's token, before the commit",
       () =>
         Effect.gen(function* () {
           const { accounts } = yield* Devnet;
@@ -312,8 +312,8 @@ describe("registration", () => {
               assert.strictEqual(error.errorName, "ERC1155InvalidReceiver");
               assert.deepStrictEqual(
                 Arr.filter(wallet.methods, (method) => method === "eth_sendTransaction"),
-                ["eth_sendTransaction"],
-                "the commit only",
+                [],
+                "not even the commit",
               );
               const availableAfterCommit = yield* Actions.registration.isAvailable(ens, {
                 name: "qqqqq.eth",
@@ -608,10 +608,11 @@ describe("registration", () => {
           const devnet = yield* Devnet;
           const chain = yield* Chain;
           const clients = yield* Clients;
-          const ens = clients.make({ account: devnet.accounts.alice });
+          const wallet = (yield* Wallets).make(devnet.accounts.alice);
+          const ens = clients.make({ account: devnet.accounts.alice, wallet });
 
-          // A contract without `onERC1155Received`, as a DAO timelock. ensforge does not check
-          // the owner before committing (KL-20): the reveal reverts.
+          // A contract without `onERC1155Received`, as a DAO timelock. The reveal is simulated
+          // after the commitment's wait, so this fails before the commit is sent.
           const error = yield* chain.isolated(
             expectFailure(
               Actions.registration.registerSync(ens, {
@@ -625,6 +626,7 @@ describe("registration", () => {
             ),
           );
           assert.strictEqual(error.errorName, "ERC1155InvalidReceiver");
+          assert.deepStrictEqual(wallet.methods, [], "the wallet is never asked");
         }),
       { meta: { cases: ["G18"] } },
     );

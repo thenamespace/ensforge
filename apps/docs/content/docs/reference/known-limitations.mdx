@@ -157,7 +157,9 @@ step's calls. `commit` and a later `register` with the same `secret` split the f
 ### Contracts that reject ERC-1155 tokens cannot own ENSv2 names
 
 ENSv2 sends the new name to its owner as an ERC-1155 token. If `owner` is a contract that does not
-accept ERC-1155 tokens, the register step reverts after the commit was sent.
+accept ERC-1155 tokens, the register step reverts. On an RPC that supports `eth_simulateV1`,
+ensforge simulates the register step after the commitment's wait, so the plan fails before the
+commit is sent. On other RPCs, the register step reverts after the commit was sent.
 
 **What to do:** register to an account, or to a contract that implements `onERC1155Received`.
 

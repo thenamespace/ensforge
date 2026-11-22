@@ -84,10 +84,12 @@ before a payment). It uses `eth_simulateV1` when the RPC supports it. On other R
 alone against current state, and a call that depends on an earlier one can fail in the simulation
 even though sending would succeed. Send with `simulate: false` there.
 
-<Callout type="info" title="Only the steps before the first wait are simulated">
-  A registration waits for chain time between its commit and its register transaction. `.simulate`
-  and `.estimateGas` cover the steps before that wait. ensforge simulates each later step right
-  before it sends it.
+<Callout type="info" title="Steps after a wait">
+  A registration waits for chain time between its commit and its register transaction. On an RPC
+  that supports `eth_simulateV1`, `.simulate` runs the steps after the wait in a later simulated
+  block, timed after it. On other RPCs it covers only the steps before the wait. `.estimateGas`
+  covers the steps before the wait. ensforge simulates each later step again right before it sends
+  it.
 </Callout>
 
 ## 3. Estimate the gas

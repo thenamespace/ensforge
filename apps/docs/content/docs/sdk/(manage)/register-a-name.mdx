@@ -211,4 +211,4 @@ The client has no wallet and you passed no `account`. Pass `wallet` (or a local 
 
 ### The register step reverts after the wait
 
-If `owner` is a contract that rejects ERC-1155 tokens, the register step reverts after the commit was already sent. Use an owner that can receive them, such as an account or a contract that implements `onERC1155Received`.
+If `owner` is a contract that rejects ERC-1155 tokens, the register step reverts. On an RPC that supports `eth_simulateV1`, ensforge finds this before the commit is sent. On other RPCs, the register step reverts after the commit was already sent. Use an owner that can receive them, such as an account or a contract that implements `onERC1155Received`.

@@ -6,7 +6,16 @@ import * as Ensforge from "@ensforge/sdk/internal/client/Ensforge";
 import { estimatePlan, simulatePlan } from "@ensforge/sdk/internal/internal/write/simulate";
 import { make as makePlan } from "@ensforge/sdk/internal/plan/make";
 import { expectFailure, scriptedTransport } from "@ensforge/test-harness";
-import { encodeErrorResult, getAddress, isHex, pad, type Address, type Hex } from "viem";
+import {
+  encodeErrorResult,
+  getAddress,
+  hexToBigInt,
+  isHex,
+  numberToHex,
+  pad,
+  type Address,
+  type Hex,
+} from "viem";
 import { mainnet } from "viem/chains";
 
 import { paramsOf, recordOf, requestsOf, simulatedCalls } from "./wallet";
@@ -82,6 +91,59 @@ const plan = makePlan({
     { id: "register", description: "register", calls: [call("0x04")], waitFor: { seconds: 60n } },
   ],
 });
+
+/** A block as a node returns it. */
+const block = (number: bigint, timestamp: bigint) => ({
+  number: numberToHex(number),
+  hash: pad(numberToHex(number)),
+  timestamp: numberToHex(timestamp),
+  gasLimit: "0x1c9c380",
+  gasUsed: "0x0",
+  transactions: [],
+});
+
+/**
+ * A node that simulates each requested block at the time asked for (block 100 at time 1000 is
+ * the latest), so steps after a wait run after it; `reverts` as for {@link node}.
+ */
+const timedNode = (reverts: Readonly<Record<Hex, Hex>> = {}, honoursTimes = true) => {
+  const { transport, calls } = scriptedTransport(({ method, params }) => {
+    if (method === "eth_getBlockByNumber") return block(100n, 1000n);
+    if (method !== "eth_simulateV1") return undefined;
+    const blocks = recordOf(paramsOf(params)[0]).blockStateCalls;
+    return Arr.map(Arr.isArray(blocks) ? blocks : [], (requested, index) => {
+      const { blockOverrides, calls: blockCalls } = recordOf(requested);
+      const overrides = recordOf(blockOverrides);
+      // Blocks follow the latest (100 at time 1000); a node that ignores the times asked for puts
+      // each a second after the one before.
+      const next = 101n + BigInt(index);
+      const time =
+        honoursTimes && isHex(overrides.time) ? hexToBigInt(overrides.time) : next + 900n;
+      return {
+        ...block(next, time),
+        calls: Arr.map(Arr.isArray(blockCalls) ? blockCalls : [], (simulated) => {
+          const { data } = recordOf(simulated);
+          const revert = isHex(data) ? reverts[data] : undefined;
+          return revert === undefined
+            ? { status: "0x1", returnData: "0x", gasUsed: "0x5208", logs: [] }
+            : {
+                status: "0x0",
+                returnData: revert,
+                gasUsed: "0x5208",
+                logs: [],
+                error: { code: 3, message: "execution reverted", data: revert },
+              };
+        }),
+      };
+    });
+  });
+  const client = Ensforge.create({
+    chain: mainnet,
+    transports: { [mainnet.id]: transport },
+    publicRpc: false,
+  });
+  return { client, calls };
+};
 
 describe("simulatePlan", () => {
   it.effect("runs the steps before the first wait in order and reports each step's error", () =>
@@ -234,5 +296,94 @@ describe("estimatePlan", () => {
       assert.strictEqual(error.context.contract, target);
       assert.strictEqual(error.context.account, account);
     }),
+  );
+});
+
+// A registration is simulated after its commitment has aged, so its failures show before the
+// commitment is paid for.
+describe("simulatePlan across waits", () => {
+  it.effect("runs the steps after a wait in a block timed after it", () =>
+    Effect.gen(function* () {
+      const { client, calls } = timedNode({ "0x04": reason });
+
+      const simulation = yield* simulatePlan(client, plan, account);
+
+      assert.deepStrictEqual(
+        Arr.map(simulation.steps, ({ id, ok }) => [id, ok]),
+        [
+          ["commit", true],
+          ["approve", true],
+          ["register", false],
+        ],
+      );
+      const error = simulation.steps[2]?.error;
+      assert.strictEqual(error?._tag, "ContractRevertError");
+      assert.strictEqual(error?.context.contract, target);
+      const [request] = requestsOf(calls, "eth_simulateV1");
+      const blocks = request?.blockStateCalls;
+      // One request: blocks after the latest (100 at time 1000), each call from the account.
+      assert.deepStrictEqual(
+        Arr.map(Arr.isArray(blocks) ? blocks : [], (requested) => {
+          const { blockOverrides, calls: blockCalls } = recordOf(requested);
+          return [
+            recordOf(blockOverrides),
+            Arr.map(
+              Arr.isArray(blockCalls) ? blockCalls : [],
+              (simulated) => recordOf(simulated).from,
+            ),
+          ];
+        }),
+        [
+          [{ number: numberToHex(101n), time: numberToHex(1001n) }, [account, account, account]],
+          [{ number: numberToHex(102n), time: numberToHex(1001n + 1n + 60n) }, [account]],
+        ],
+      );
+    }),
+  );
+
+  // A step after a wait would then fail only because no time passed.
+  it.effect("falls back to the steps before the first wait on a node that ignores the times", () =>
+    Effect.gen(function* () {
+      const { client } = timedNode({ "0x04": reason }, false);
+
+      const simulation = yield* simulatePlan(client, plan, account);
+
+      assert.strictEqual(simulation.ok, true);
+      assert.deepStrictEqual(
+        Arr.map(simulation.steps, ({ id }) => id),
+        ["commit", "approve"],
+      );
+    }),
+  );
+
+  it.effect("simulates a plan without waits in one block at current state", () =>
+    Effect.gen(function* () {
+      const { client, calls } = timedNode();
+      const single = makePlan({
+        operation: "test",
+        chainId: 1,
+        account,
+        steps: [{ id: "write", description: "write", calls: [call("0x01")] }],
+      });
+
+      yield* simulatePlan(client, single, account);
+
+      assert.deepStrictEqual(requestsOf(calls, "eth_getBlockByNumber"), []);
+    }),
+  );
+
+  it.effect(
+    "falls back to the steps before the first wait on a node without block simulation",
+    () =>
+      Effect.gen(function* () {
+        const { client } = node();
+
+        const simulation = yield* simulatePlan(client, plan, account);
+
+        assert.deepStrictEqual(
+          Arr.map(simulation.steps, ({ id }) => id),
+          ["commit", "approve"],
+        );
+      }),
   );
 });
