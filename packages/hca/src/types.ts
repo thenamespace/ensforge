@@ -146,3 +146,13 @@ export type QuotedRefund = {
   /** The most the relayer may take. */
   readonly amount: bigint;
 };
+
+/**
+ * How `hca()` funds the HCA from the owner's wallet: automatically (`"auto"`, or with a permit
+ * `deadline` in seconds), or never (`"none"`).
+ *
+ * @stability experimental
+ * @category hca
+ * @since 1.2.0
+ */
+export type HcaFunding = "auto" | "none" | { readonly deadline?: number | undefined };

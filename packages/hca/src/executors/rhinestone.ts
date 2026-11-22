@@ -277,8 +277,23 @@ export const rhinestone = (options: RhinestoneOptions): Executor => {
       });
     }
     const chain = context.publicClient.chain;
+    // Funds the calls pull into the HCA (a permit and transferFrom first), declared so the
+    // planner prices an execution the HCA can pay only once they arrive.
+    const [opening] = request.calls;
+    const permit =
+      opening === undefined ? undefined : decodeCall(Abis.shared.erc2612, opening.data);
+    const inflow =
+      opening === undefined || permit?.functionName !== "permit"
+        ? undefined
+        : { token: opening.to, amount: permit.args[2] };
     return {
       chain,
+      ...(inflow === undefined
+        ? {}
+        : {
+            auxiliaryFunds: { [chain?.id ?? request.chainId]: { [inflow.token]: inflow.amount } },
+            sourceAssets: [inflow.token],
+          }),
       calls: Arr.map(request.calls, (call) => ({
         to: call.to,
         data: call.data,

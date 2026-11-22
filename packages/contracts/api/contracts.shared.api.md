@@ -298,6 +298,11 @@ const erc20Abi: Abi
   function totalSupply() view returns (uint256)
   function transfer(address,uint256) returns (bool)
   function transferFrom(address,address,uint256) returns (bool)
+const erc2612Abi: Abi
+  function permit(address,address,uint256,uint256,uint8,bytes32,bytes32)
+  function nonces(address) view returns (uint256)
+  function version() view returns (string)
+  function eip712Domain() view returns (bytes1,string,string,uint256,address,bytes32,uint256[])
 const erc721Abi: Abi
   event Approval(address,address,uint256)
   event ApprovalForAll(address,address,bool)

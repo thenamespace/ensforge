@@ -14,6 +14,7 @@ export { dnssecGatewayAbi as dnssecGateway } from "../shared/dnssec-gateway.js";
 export { erc1155Abi as erc1155 } from "../shared/erc1155.js";
 export { erc165Abi as erc165 } from "../shared/erc165.js";
 export { erc20Abi as erc20 } from "../shared/erc20.js";
+export { erc2612Abi as erc2612 } from "../shared/erc2612.js";
 export { ensErrorsAbi as errors } from "../shared/errors.js";
 export { ensEventsAbi as events } from "../shared/events.js";
 export { erc721Abi as erc721 } from "../shared/erc721.js";

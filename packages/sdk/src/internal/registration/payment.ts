@@ -98,7 +98,8 @@ export const acceptedTokenInfo = Effect.fnUntraced(function* (
  * Checks that `payer` holds `balanceRequired` (default `amount`) of `token`, and returns the
  * approval `spender` still needs for `amount` (none when the allowance covers it). Checking up
  * front turns token reverts, which are plain strings for USDC and DAI, into
- * `InsufficientFundsError`.
+ * `InsufficientFundsError`. A route's `payer` (an HCA) is funded from the signer before it pays,
+ * so `funder`'s balance counts too.
  */
 export const paymentCalls = Effect.fnUntraced(function* (
   client: Client,
@@ -108,17 +109,21 @@ export const paymentCalls = Effect.fnUntraced(function* (
     readonly spender: Address;
     readonly amount: bigint;
     readonly balanceRequired?: bigint | undefined;
+    readonly funder?: Address | undefined;
   },
 ): Effect.fn.Return<readonly Plan.Call[], AnyError> {
   const required = options.balanceRequired ?? options.amount;
-  const { balance, allowance } = yield* Effect.all(
+  const balanceOf = (account: Address) =>
+    Rpc.readContract(client, {
+      address: options.token,
+      abi: Abis.shared.erc20,
+      functionName: "balanceOf",
+      args: [account],
+    });
+  const { held, funds, allowance } = yield* Effect.all(
     {
-      balance: Rpc.readContract(client, {
-        address: options.token,
-        abi: Abis.shared.erc20,
-        functionName: "balanceOf",
-        args: [options.payer],
-      }),
+      held: balanceOf(options.payer),
+      funds: options.funder === undefined ? Effect.succeed(0n) : balanceOf(options.funder),
       allowance: Rpc.readContract(client, {
         address: options.token,
         abi: Abis.shared.erc20,
@@ -129,6 +134,7 @@ export const paymentCalls = Effect.fnUntraced(function* (
     { concurrency: "unbounded" },
   );
 
+  const balance = held + funds;
   if (balance < required) {
     return yield* Effect.fail(
       new InsufficientFundsError({

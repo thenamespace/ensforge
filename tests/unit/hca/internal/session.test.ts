@@ -309,3 +309,49 @@ describe("sessionProblem", () => {
     }),
   );
 });
+
+// HCAOwnerAndSessionValidator `_checkRegistrationExecutions`: one permit pull of the refund token.
+describe("checkSessionCalls with a funding pull", () => {
+  const permit = (holder: Address, spender: Address, value: bigint, permitToken = token) =>
+    to(
+      permitToken,
+      encodeFunctionData({
+        abi: Abis.shared.erc2612,
+        functionName: "permit",
+        args: [holder, spender, value, 1n, 27, zeroHash, zeroHash],
+      }),
+    );
+  const pull = (value: bigint, pullToken = token) =>
+    to(
+      pullToken,
+      encodeFunctionData({
+        abi: Abis.shared.erc20,
+        functionName: "transferFrom",
+        args: [owner, hcaAddress, value],
+      }),
+    );
+  const commit = to(
+    registrar,
+    encodeFunctionData({ abi: Abis.v2.ethRegistrar, functionName: "commit", args: [zeroHash] }),
+  );
+
+  it.effect("allows the owner's permit and pull of the refund token next to an action", () =>
+    check([permit(owner, hcaAddress, 5n), pull(5n), commit]),
+  );
+
+  it.effect.each([
+    ["a pull without its permit", [pull(5n), commit]],
+    ["a permit without its pull", [permit(owner, hcaAddress, 5n), commit]],
+    ["the pair alone", [permit(owner, hcaAddress, 5n), pull(5n)]],
+    ["another amount", [permit(owner, hcaAddress, 5n), pull(6n), commit]],
+    ["another token", [permit(owner, hcaAddress, 5n, stranger), pull(5n, stranger), commit]],
+    ["another spender", [permit(owner, stranger, 5n), pull(5n), commit]],
+    ["another holder", [permit(stranger, hcaAddress, 5n), pull(5n), commit]],
+    [
+      "a second pair",
+      [permit(owner, hcaAddress, 5n), pull(5n), permit(owner, hcaAddress, 5n), pull(5n), commit],
+    ],
+  ] as const)("refuses %s", ([, calls]) =>
+    expectFailure(check(calls), { _tag: "HcaError", code: "HCA_ACTION_NOT_ALLOWED" }),
+  );
+});

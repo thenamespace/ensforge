@@ -22,7 +22,26 @@ Two costs exist. The **gas** pays for running the execution. The **spend** is wh
 | `bundler()` or `pimlico()` with a paymaster    | The [paymaster](/docs/reference/glossary#paymaster).           | The HCA.                                       | The HCA.                    |
 | `rhinestone()`                                 | The HCA, in its fee token. With `sponsored: true`, Rhinestone. | The HCA.                                       | The HCA.                    |
 
-The HCA is `msg.sender` of the calls it runs, so tokens a call spends come from the HCA's balance, not the wallet's. A registration through `via: hca()` fails with [`INSUFFICIENT_TOKEN_BALANCE`](/docs/reference/errors/INSUFFICIENT_TOKEN_BALANCE) before it is sent when the HCA cannot pay. Fund the HCA first.
+The HCA is `msg.sender` of the calls it runs, so tokens a call spends come from the HCA's balance, not the wallet's.
+
+## Fund the HCA from the wallet
+
+When the HCA holds less than a write spends, `hca()` moves the difference from the owner's wallet. The amount covers the tokens the calls spend and the fees the executor quotes for each execution, with a 5% margin on each fee.
+
+- With `owner()`, the setup step sends a `transfer` to the HCA from the wallet.
+- With an executor that relays the execution, such as `rhinestone()`, the owner signs an EIP-2612 permit while the plan is prepared. The first HCA execution then pulls the tokens with `transferFrom`. A session may pull only its refund token this way.
+
+The plan shows the transfer before you send it. It has an `HCA_FUNDING` warning and a balance requirement on the owner's account for the amount.
+
+**Example** (Refusing to Fund the HCA)
+
+```ts title="no-funding.ts"
+import { hca } from "@ensforge/hca";
+
+const via = hca({ funding: "none" });
+```
+
+With `funding: "none"`, a write the HCA cannot pay for fails with [`INSUFFICIENT_TOKEN_BALANCE`](/docs/reference/errors/INSUFFICIENT_TOKEN_BALANCE) before it is sent. A permit is valid for one hour; pass `funding: { deadline }` in seconds to change it.
 
 ## Fund an HCA before it exists
 

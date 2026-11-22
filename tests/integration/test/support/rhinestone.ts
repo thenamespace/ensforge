@@ -136,7 +136,8 @@ export class Rhinestone extends Context.Service<
       const chain = yield* Chain;
       const context = yield* Effect.context();
       const run = <A, E>(effect: Effect.Effect<A, E>) => Effect.runPromiseWith(context)(effect);
-      const executor = devnet.contract("hca.intentExecutor");
+      // Looked up on use: profiles without HCA contracts build this layer too.
+      const executor = () => devnet.contract("hca.intentExecutor");
       const fills: Hash[] = [];
       let nonce = 0n;
 
@@ -149,7 +150,7 @@ export class Rhinestone extends Context.Service<
         const proof = enableProof(signers);
         nonce += 1n;
         const digest = yield* chain.read({
-          address: executor,
+          address: executor(),
           abi: intentExecutorAbi,
           functionName: "singleChainDigest",
           args: [hca, nonce, executions(transaction.calls)],
@@ -257,7 +258,7 @@ export class Rhinestone extends Context.Service<
                   });
                 }
                 const receipt = yield* chain.write({
-                  address: executor,
+                  address: executor(),
                   abi: intentExecutorAbi,
                   functionName: "executeWithSession",
                   args: [address, executions(intent.calls), intent.nonce, intent.signature],

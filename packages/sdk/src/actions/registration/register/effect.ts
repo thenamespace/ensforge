@@ -50,6 +50,7 @@ export const plan = Effect.fnUntraced(function* (
     spender: registration.contracts.registrar,
     amount: registration.total + registration.total / 50n,
     balanceRequired: registration.total,
+    ...(routed ? { funder: signer } : {}),
   });
 
   // The approval rides with the commits, so a batching wallet asks once before the wait.
@@ -115,7 +116,14 @@ export const plan = Effect.fnUntraced(function* (
     chainId: client.chain.id,
     account: signer,
     steps,
-    requirements: [{ kind: "balance", amount: registration.total, token: registration.token }],
+    requirements: [
+      {
+        kind: "balance",
+        amount: registration.total,
+        token: registration.token,
+        ...(routed ? { account: sender } : {}),
+      },
+    ],
     warnings: [...registration.warnings, ...warnings],
     deploys: Arr.flatMap(registration.names, (name) =>
       name.deploy === undefined ? [] : [{ contract: "resolver" as const, address: name.resolver }],

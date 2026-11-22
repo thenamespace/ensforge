@@ -225,7 +225,8 @@ const notAllowed = (call: Plan.Call, reason: string) => {
 /**
  * Checks calls against the session policy before anything is signed: registrations to the owner
  * with the session's resolver, the session resolver's deployment and records, primary names,
- * and payment approvals to the registrar. Value must be zero.
+ * payment approvals to the registrar, and one permit pull of the refund token from the owner.
+ * Value must be zero.
  */
 export const checkSessionCalls = Effect.fnUntraced(function* (
   client: Client,
@@ -236,8 +237,49 @@ export const checkSessionCalls = Effect.fnUntraced(function* (
   const registrar = deployment.v2.contracts.ethRegistrar;
   const resolver = session.terms.resolver;
 
-  for (const call of calls) {
+  // The validator lets a session pull its refund token from the owner once per execution: a
+  // permit followed by a transferFrom of the same amount to the HCA, next to an action.
+  let pulled = false;
+  let skip = false;
+  for (const [index, call] of calls.entries()) {
+    if (skip) {
+      skip = false;
+      continue;
+    }
     if (call.value !== 0n) return yield* Effect.fail(notAllowed(call, "sessions send no value"));
+
+    const permit = decodeCall(Abis.shared.erc2612, call.data);
+    if (permit?.functionName === "permit") {
+      const [permitOwner, spender, value] = permit.args;
+      const next = calls[index + 1];
+      const pull = next === undefined ? undefined : decodeCall(Abis.shared.erc20, next.data);
+      const paired =
+        next !== undefined &&
+        pull?.functionName === "transferFrom" &&
+        isAddressEqual(next.to, call.to) &&
+        next.value === 0n &&
+        isAddressEqual(pull.args[0], session.owner) &&
+        isAddressEqual(pull.args[1], session.hca) &&
+        pull.args[2] === value;
+      if (
+        pulled ||
+        !paired ||
+        calls.length < 3 ||
+        !isAddressEqual(call.to, session.terms.refundToken) ||
+        !isAddressEqual(permitOwner, session.owner) ||
+        !isAddressEqual(spender, session.hca)
+      ) {
+        return yield* Effect.fail(
+          notAllowed(
+            call,
+            "a session pulls only its refund token from the owner, once, as a permit and a transferFrom of the same amount next to an action",
+          ),
+        );
+      }
+      pulled = true;
+      skip = true;
+      continue;
+    }
 
     if (isAddressEqual(call.to, registrar)) {
       const decoded = decodeCall(Abis.v2.ethRegistrar, call.data);
@@ -306,6 +348,9 @@ export const checkSessionCalls = Effect.fnUntraced(function* (
     }
 
     const approval = decodeCall(Abis.shared.erc20, call.data);
+    if (approval?.functionName === "transferFrom") {
+      return yield* Effect.fail(notAllowed(call, "a pull needs its permit in the same execution"));
+    }
     if (approval?.functionName === "approve") {
       const [spender] = approval.args;
       if (isAddressEqual(spender, registrar)) continue;

@@ -678,6 +678,11 @@ const Abis.shared.erc20: Abi
   function totalSupply() view returns (uint256)
   function transfer(address,uint256) returns (bool)
   function transferFrom(address,address,uint256) returns (bool)
+const Abis.shared.erc2612: Abi
+  function permit(address,address,uint256,uint256,uint8,bytes32,bytes32)
+  function nonces(address) view returns (uint256)
+  function version() view returns (string)
+  function eip712Domain() view returns (bytes1,string,string,uint256,address,bytes32,uint256[])
 const Abis.shared.erc721: Abi
   event Approval(address,address,uint256)
   event ApprovalForAll(address,address,bool)

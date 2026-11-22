@@ -69,7 +69,13 @@ export declare namespace Plan {
 
   /** Something the account must have before the plan can succeed. */
   type Requirement =
-    | { readonly kind: "balance"; readonly amount: bigint; readonly token?: Address | undefined }
+    | {
+        readonly kind: "balance";
+        readonly amount: bigint;
+        readonly token?: Address | undefined;
+        /** Who must hold it: the account a route sends from, e.g. the HCA. @default the plan's account */
+        readonly account?: Address | undefined;
+      }
     | {
         readonly kind: "approval";
         readonly token: Address;

@@ -1,7 +1,7 @@
 ---
 title: "Executors"
 description: "Look up the HCA route, the executors that send hosted contract account calls, and their options in the experimental @ensforge/hca package."
-keywords: ["bundler","defineExecutor","hca","hcaActions","hcaAdminActions","owner","pimlico","rhinestone","BundlerOptions","ExecutionRequest","Executor","HcaAccount","HcaActions","HcaAdminActions","HcaOptions","HcaProblem","HcaSession","PimlicoOptions","QuotedRefund","RhinestoneAccount"]
+keywords: ["bundler","defineExecutor","hca","hcaActions","hcaAdminActions","owner","pimlico","rhinestone","BundlerOptions","ExecutionRequest","Executor","HcaAccount","HcaActions","HcaAdminActions","HcaFunding","HcaOptions","HcaProblem","HcaSession","PimlicoOptions","QuotedRefund"]
 generated: true
 ---
 
@@ -105,6 +105,9 @@ gaslessly through a bundler, or prompt-free through a Rhinestone session.
 
 - The HCA runs the calls (`msg.sender`), so it needs authority over what they touch: migration
   and registration plan for it; other writes need the HCA to hold the roles they use.
+- When the HCA holds less than the calls spend plus the executor's quoted fees, the shortfall
+  moves from the owner's wallet (`funding`): an owner transfer, or a permit pull inside the
+  first relayed execution (warning `HCA_FUNDING`).
 - With an EIP-5792 wallet the owner's steps (approvals, deployment, executions) share one bundle.
 - Never selected implicitly: the user should agree to use their HCA.
 
@@ -366,6 +369,17 @@ type HcaAdminActions
 | --- | --- | --- |
 | `hcaAdmin` | `{ /** Reads who governs ENS HCAs: the factory owner and whether implementations are approved. */ readonly getGovernance: Bound<typeof hcaAdmin.getGovernance>; /** Grants root roles on the HCA upgrade set (role admins only). Resolves once the transaction is submitted. */ readonly grantUpgradeSetRoles: BoundWrite<typeof hcaAdmin.grantUpgradeSetRoles>; /** Grants root roles on the HCA upgrade set (role admins only). Resolves once the receipt is in. */ readonly grantUpgradeSetRolesSync: Bound<typeof hcaAdmin.grantUpgradeSetRolesSync>; /** Renounces ownership of the HCA factory, freezing its implementation approvals (factory owner only). Resolves once the transaction is submitted. */ readonly renounceGovernance: BoundWrite<typeof hcaAdmin.renounceGovernance>; /** Renounces ownership of the HCA factory, freezing its implementation approvals (factory owner only). Resolves once the receipt is in. */ readonly renounceGovernanceSync: Bound<typeof hcaAdmin.renounceGovernanceSync>; /** Revokes root roles on the HCA upgrade set (role admins only). Resolves once the transaction is submitted. */ readonly revokeUpgradeSetRoles: BoundWrite<typeof hcaAdmin.revokeUpgradeSetRoles>; /** Revokes root roles on the HCA upgrade set (role admins only). Resolves once the receipt is in. */ readonly revokeUpgradeSetRolesSync: Bound<typeof hcaAdmin.revokeUpgradeSetRolesSync>; /** Approves or revokes an implementation for new HCA deployments (factory owner only). Resolves once the transaction is submitted. */ readonly setDeploymentApproval: BoundWrite<typeof hcaAdmin.setDeploymentApproval>; /** Approves or revokes an implementation for new HCA deployments (factory owner only). Resolves once the receipt is in. */ readonly setDeploymentApprovalSync: Bound<typeof hcaAdmin.setDeploymentApprovalSync>; /** Approves or revokes an implementation in the HCA upgrade set (role holders only). Resolves once the transaction is submitted. */ readonly setUpgradeApproval: BoundWrite<typeof hcaAdmin.setUpgradeApproval>; /** Approves or revokes an implementation in the HCA upgrade set (role holders only). Resolves once the receipt is in. */ readonly setUpgradeApprovalSync: Bound<typeof hcaAdmin.setUpgradeApprovalSync>; /** Transfers ownership of the HCA factory (factory owner only). Resolves once the transaction is submitted. */ readonly transferGovernance: BoundWrite<typeof hcaAdmin.transferGovernance>; /** Transfers ownership of the HCA factory (factory owner only). Resolves once the receipt is in. */ readonly transferGovernanceSync: Bound<typeof hcaAdmin.transferGovernanceSync>; }` |  |
 
+### `HcaFunding`
+
+**Experimental**
+
+How `hca()` funds the HCA from the owner's wallet: automatically (`"auto"`, or with a permit
+`deadline` in seconds), or never (`"none"`).
+
+```ts
+type HcaFunding = "auto" | "none" | { readonly deadline?: number | undefined };
+```
+
 ### `HcaOptions`
 
 **Experimental**
@@ -380,6 +394,7 @@ type HcaOptions
 | --- | --- | --- | --- |
 | `executors` | `readonly Executor[]` | `[owner()]` | How executions run. `hca()` picks the first executor that can run the request (one with sessions when `session` is set) once, and never falls back to another when a send fails. |
 | `session` | `HcaSession` |  | Run as this session (no owner prompts); needs an executor with sessions (`rhinestone()`). |
+| `funding` | `HcaFunding` | `"auto"` | Move what the HCA is short of from the owner's wallet: tokens its calls spend and the fees executors charge. `"auto"` adds an owner transfer, or for relaying executors a permit (signed while the plan is prepared, valid for `deadline` seconds) and a pull inside the first execution. `"none"` fails with [`INSUFFICIENT_TOKEN_BALANCE`](/docs/reference/errors/INSUFFICIENT_TOKEN_BALANCE) instead. |
 
 ### `HcaProblem`
 

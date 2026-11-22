@@ -97,7 +97,7 @@ describe("HCA", () => {
     );
 
     it.effect(
-      "registers a name for the owner, paid by the HCA, with the owner's primary name",
+      "registers a name for the owner, paid by the HCA from the owner's wallet, with the owner's primary name",
       () =>
         Effect.gen(function* () {
           const { accounts } = yield* Devnet;
@@ -109,15 +109,18 @@ describe("HCA", () => {
 
           yield* chain.isolated(
             Effect.gen(function* () {
-              // The HCA sends `register`, so it pays; without funds it is refused before sending.
+              // The HCA sends `register` and pays; the owner's wallet funds what it is short of.
               const account = yield* HcaActions.hca.predictAddress(ens, {});
-              yield* expectFailure(Actions.registration.register.prepare(ens, options), {
-                _tag: "InsufficientFundsError",
-                code: "INSUFFICIENT_TOKEN_BALANCE",
-              });
+              yield* mintUsdc(accounts.carol, 1_000_000_000n);
+              const before = yield* usdcOf(accounts.carol);
+              yield* expectFailure(
+                Actions.registration.register.prepare(ens, {
+                  ...options,
+                  via: hca({ funding: "none" }),
+                }),
+                { _tag: "InsufficientFundsError", code: "INSUFFICIENT_TOKEN_BALANCE" },
+              );
 
-              yield* mintUsdc(account, 1_000_000_000n);
-              const before = yield* usdcOf(account);
               const result = yield* Actions.registration.registerSync(ens, {
                 ...options,
                 primaryName: true,
@@ -125,9 +128,12 @@ describe("HCA", () => {
               });
 
               assert.strictEqual((yield* ethEntry(name)).owner, accounts.carol);
-              assert.strictEqual(before - (yield* usdcOf(account)), result.paid);
-              // The reverse record is the owner's, so the owner sets it.
-              assert.deepInclude(result.plan.steps.at(-1), { id: "primaryName", from: "signer" });
+              assert.include(
+                Arr.map(result.plan.warnings, (warning) => warning.code),
+                "HCA_FUNDING",
+              );
+              const moved = before - (yield* usdcOf(accounts.carol));
+              assert.strictEqual(moved - (yield* usdcOf(account)), result.paid);
               const primaryNameAfterRegistration = yield* Actions.primaryName.get(ens, {
                 address: accounts.carol,
               });

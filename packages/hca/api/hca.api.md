@@ -333,7 +333,9 @@ class HcaError {
 type HcaError.Code = 'HCA_ACTION_NOT_ALLOWED' | 'HCA_BUNDLER_REJECTED' | 'HCA_EXECUTION_FAILED' | 'HCA_EXECUTION_TIMEOUT' | 'HCA_EXECUTOR_UNSUPPORTED' | 'HCA_NOT_VERIFIED' | 'HCA_PAYMASTER_REJECTED' | 'HCA_ROUTE_REJECTED' | 'HCA_SDK_UNSUPPORTED' | 'HCA_SESSION_INVALID' | 'HCA_UNAVAILABLE' | 'HCA_UPGRADE_NOT_ALLOWED'
 type HcaError.Options = ClassOptions<Code> & { readonly executor?: string | undefined; }
 // @stability experimental
-type HcaOptions = { executors?: readonly Executor[] | undefined; session?: HcaSession | undefined; }
+type HcaFunding = 'auto' | 'none' | { readonly deadline?: number | undefined; }
+// @stability experimental
+type HcaOptions = { executors?: readonly Executor[] | undefined; session?: HcaSession | undefined; funding?: HcaFunding | undefined; }
 // @stability experimental
 type HcaProblem = 'address-mismatch' | 'not-certified' | 'owner-mismatch' | 'owner-unavailable' | 'unknown-account' | 'untrusted-implementation'
 // @stability experimental

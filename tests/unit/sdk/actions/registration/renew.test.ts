@@ -179,27 +179,30 @@ describe("registration.renew.prepare", () => {
     ),
   );
 
-  // Regression: a route's account sends `renew` and pays, but the payment was planned for the signer.
-  it.effect("plans the payment for the account a route sends from", () =>
+  // Regression: a route's account sends `renew` and pays, but the payment was planned for the
+  // signer. The signer's balance counts too, since a route funds its account first.
+  it.effect("plans the payment for the account a route sends from, funded by the signer", () =>
     Effect.gen(function* () {
-      // Only the signer holds the token.
-      const ens = clientFor({
+      const options = {
+        names: "alice.eth",
+        duration: year,
+        // `sender` is the route's adapter boundary, a Promise by contract.
+        // oxlint-disable-next-line effecttsgo/async-function -- the Promise-typed sender boundary under test
+        via: { id: "account", sender: async () => other },
+      } as const;
+      const funded = clientFor({
         v2: { alice: 5n },
         v1: {},
         balanceOf: (holder) => (isAddressEqual(holder, signer) ? 10n ** 12n : 0n),
       });
-      const options = { names: "alice.eth", duration: year } as const;
+      const empty = clientFor({ v2: { alice: 5n }, v1: {}, balanceOf: () => 0n });
 
-      yield* Actions.registration.renew.prepare(ens, options);
-      yield* expectFailure(
-        Actions.registration.renew.prepare(ens, {
-          ...options,
-          // `sender` is the route's adapter boundary, a Promise by contract.
-          // oxlint-disable-next-line effecttsgo/async-function -- the Promise-typed sender boundary under test
-          via: { id: "account", sender: async () => other },
-        }),
-        { _tag: "InsufficientFundsError", code: "INSUFFICIENT_TOKEN_BALANCE" },
-      );
+      const plan = yield* Actions.registration.renew.prepare(funded, options);
+      assert.deepInclude(plan.requirements[0], { kind: "balance", account: other });
+      yield* expectFailure(Actions.registration.renew.prepare(empty, options), {
+        _tag: "InsufficientFundsError",
+        code: "INSUFFICIENT_TOKEN_BALANCE",
+      });
     }),
   );
 });

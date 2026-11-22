@@ -1,7 +1,7 @@
 import { Effect, Array as Arr } from "effect";
 
 import { Abis } from "@ensforge/contracts";
-import { encodeFunctionData, type Address } from "viem";
+import { encodeFunctionData, isAddressEqual, type Address } from "viem";
 
 import type { Client } from "../../../client/types.js";
 import { ConfigError } from "../../../errors/classes/ConfigError.js";
@@ -91,6 +91,7 @@ export const plan = Effect.fnUntraced(function* (
         spender,
         amount: Arr.reduce(group, 0n, (sum, quote) => sum + quote.amount),
         balanceRequired: total,
+        ...(isAddressEqual(payer, signer) ? {} : { funder: signer }),
       }),
     { concurrency: "unbounded" },
   )).flat();
@@ -119,7 +120,14 @@ export const plan = Effect.fnUntraced(function* (
     chainId: client.chain.id,
     account: signer,
     steps,
-    requirements: [{ kind: "balance", amount: total, token }],
+    requirements: [
+      {
+        kind: "balance",
+        amount: total,
+        token,
+        ...(isAddressEqual(payer, signer) ? {} : { account: payer }),
+      },
+    ],
   });
 });
 

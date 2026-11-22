@@ -10,8 +10,9 @@ import { predictAddress, readAccount } from "./internal/account.js";
 import { tokenApprovals } from "./internal/approvals.js";
 import { deployCall, executeByOwnerCall, innerCalls } from "./internal/calls.js";
 import { requireHca } from "./internal/deployment.js";
+import { planFunding } from "./internal/funding.js";
 import { checkSessionCalls, sessionProblem } from "./internal/session.js";
-import type { ExecutionRequest, Executor, HcaSession } from "./types.js";
+import type { ExecutionRequest, Executor, HcaFunding, HcaSession } from "./types.js";
 
 /**
  * Options of {@link hca}.
@@ -30,6 +31,15 @@ export type HcaOptions = {
   executors?: readonly Executor[] | undefined;
   /** Run as this session (no owner prompts); needs an executor with sessions (`rhinestone()`). */
   session?: HcaSession | undefined;
+  /**
+   * Move what the HCA is short of from the owner's wallet: tokens its calls spend and the fees
+   * executors charge. `"auto"` adds an owner transfer, or for relaying executors a permit (signed
+   * while the plan is prepared, valid for `deadline` seconds) and a pull inside the first
+   * execution. `"none"` fails with `INSUFFICIENT_TOKEN_BALANCE` instead.
+   *
+   * @default "auto"
+   */
+  funding?: HcaFunding | undefined;
 };
 
 // Keeps one execution well inside a block's gas; the ENS app bounds its batches the same way.
@@ -62,6 +72,9 @@ const ownerOf = (context: Write.Via.Context): Address => {
  *
  * - The HCA runs the calls (`msg.sender`), so it needs authority over what they touch: migration
  *   and registration plan for it; other writes need the HCA to hold the roles they use.
+ * - When the HCA holds less than the calls spend plus the executor's quoted fees, the shortfall
+ *   moves from the owner's wallet (`funding`): an owner transfer, or a permit pull inside the
+ *   first relayed execution (warning `HCA_FUNDING`).
  * - With an EIP-5792 wallet the owner's steps (approvals, deployment, executions) share one bundle.
  * - Never selected implicitly: the user should agree to use their HCA.
  *
@@ -198,14 +211,6 @@ export const hca = (options: HcaOptions = {}): Write.Via => {
       batch.push(step);
     }
     flush();
-    if (setup.length > 0) {
-      steps.unshift({
-        id: "hca-setup",
-        description: "Set up your HCA",
-        calls: setup,
-        from: "signer",
-      });
-    }
 
     // Each HCA execution is its own intent with its own fee; only the first deploys the HCA.
     const quote = executor.quote;
@@ -239,10 +244,45 @@ export const hca = (options: HcaOptions = {}): Write.Via => {
           );
     const fees = quoted === undefined ? plan.fees : Arr.flatten(quoted);
 
+    // What the HCA spends and pays in fees comes from the owner's wallet when the HCA is short.
+    const funding = yield* planFunding(client, {
+      plan,
+      owner,
+      hca: account.address,
+      fees: fees ?? [],
+      relayed: executor.send !== undefined,
+      session,
+      wallet: context.walletClient,
+      mode: options.funding ?? "auto",
+    });
+    const first = Arr.findFirstIndex(steps, (step) => step.from !== "signer");
+    const opening = Option.flatMap(first, (index) => Arr.get(steps, index));
+    if (funding.pulls.length > 0 && Option.isSome(first) && Option.isSome(opening)) {
+      const calls = [
+        ...funding.pulls,
+        ...Arr.flatMap(opening.value.calls, (call) => innerCalls(call) ?? []),
+      ];
+      if (session !== undefined) yield* checkSessionCalls(client, session, calls);
+      steps[first.value] = {
+        ...opening.value,
+        calls: [executeByOwnerCall(account.address, calls, false)],
+      };
+    }
+    warnings.push(...funding.warnings);
+    if (setup.length > 0 || funding.transfers.length > 0) {
+      steps.unshift({
+        id: "hca-setup",
+        description: "Set up your HCA",
+        calls: [...setup, ...funding.transfers],
+        from: "signer",
+      });
+    }
+
     return {
       ...plan,
       steps,
       calls: Arr.flatMap(steps, (step) => step.calls),
+      requirements: [...plan.requirements, ...funding.requirements],
       warnings,
       ...(fees === undefined ? {} : { fees }),
     } satisfies Plan;
