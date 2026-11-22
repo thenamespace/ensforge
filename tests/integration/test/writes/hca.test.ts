@@ -1,6 +1,8 @@
 import { assert, describe } from "@effect/vitest";
 import { Effect, Array as Arr } from "effect";
 
+import { Abis, Roles } from "@ensforge/contracts";
+import { ownedResolverSalt, predictVerifiableProxyAddress } from "@ensforge/contracts/v2";
 import { hca } from "@ensforge/hca";
 import { Actions as HcaActions } from "@ensforge/hca/effect";
 import { Duration } from "@ensforge/sdk";
@@ -8,7 +10,7 @@ import { Actions } from "@ensforge/sdk/effect";
 import { Chain, Devnet } from "@ensforge/test-devnet";
 import { factAddress, Fixtures } from "@ensforge/test-fixtures";
 import { expectFailure } from "@ensforge/test-harness";
-import { parseEther } from "viem";
+import { parseEther, zeroAddress, type Address } from "viem";
 
 import { Clients } from "../support/clients.ts";
 import { ethEntry, mintUsdc, usdcOf } from "../support/contracts.ts";
@@ -134,6 +136,84 @@ describe("HCA", () => {
           );
         }),
       { meta: { cases: ["M:D9"] } },
+    );
+
+    it.effect(
+      "deploys resolvers the HCA and the owner can both write",
+      () =>
+        Effect.gen(function* () {
+          const devnet = yield* Devnet;
+          const { accounts } = devnet;
+          const chain = yield* Chain;
+          const clients = yield* Clients;
+          const ens = clients.make({ account: accounts.carol });
+          const hasAllRoles = (resolver: Address, account: Address) =>
+            chain.read({
+              address: resolver,
+              abi: Abis.v2.permissionedResolver,
+              functionName: "hasRootRoles",
+              args: [Roles.enhancedAccessControl.allRoles, account],
+            });
+
+          yield* chain.isolated(
+            Effect.gen(function* () {
+              const account = yield* HcaActions.hca.predictAddress(ens, {});
+              yield* mintUsdc(account, 1_000_000_000n);
+              const register = (name: string, resolver?: "owned") =>
+                Actions.registration.registerSync(ens, {
+                  names: name,
+                  duration: Duration.years(1),
+                  ...(resolver === undefined ? {} : { resolver }),
+                  via: hca(),
+                  onStep: chain.passWaits,
+                });
+              yield* register("hca-own.eth");
+              yield* register("hca-shared.eth", "owned");
+
+              // The HCA deploys its own shared resolver, at the address the ENS app uses for it.
+              const factory = devnet.contract("v2.verifiableFactory");
+              const proxyLogic = yield* chain.read({
+                address: factory,
+                abi: Abis.v2.verifiableFactory,
+                functionName: "proxyLogic",
+              });
+              const shared = yield* Actions.resolver.get(ens, { name: "hca-shared.eth" });
+              assert.strictEqual(
+                shared?.address,
+                predictVerifiableProxyAddress({
+                  factory,
+                  proxyLogic,
+                  deployer: account,
+                  salt: ownedResolverSalt(account),
+                }),
+              );
+
+              // Both resolvers give the HCA and the owner every role, so either writes records.
+              for (const name of ["hca-own.eth", "hca-shared.eth"]) {
+                const resolver =
+                  (yield* Actions.resolver.get(ens, { name }))?.address ?? zeroAddress;
+                const holders = yield* Effect.all(
+                  [hasAllRoles(resolver, account), hasAllRoles(resolver, accounts.carol)],
+                  { concurrency: 1 },
+                );
+                assert.deepStrictEqual(holders, [true, true], name);
+                yield* Actions.record.setSync(ens, {
+                  name,
+                  texts: { url: `https://${name}` },
+                  via: hca(),
+                });
+                const url = yield* Actions.record.getText(ens, { name, key: "url" });
+                assert.strictEqual(url, `https://${name}`);
+              }
+
+              // The address of a resolver the HCA creates comes from the HCA, which deploys it.
+              const { resolver } = yield* Actions.resolver.createSync(ens, { via: hca() });
+              const created = yield* hasAllRoles(resolver, account);
+              assert.isTrue(created);
+            }),
+          );
+        }),
+      { meta: { cases: ["M:D9", "G29"] } },
     );
 
     it.effect(

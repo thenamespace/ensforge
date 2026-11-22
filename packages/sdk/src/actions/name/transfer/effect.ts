@@ -158,7 +158,7 @@ const recordControl = Effect.fnUntraced(function* (
   // The signer's shared resolver serves its other names too; handing it over would give them away.
   const owned = yield* deployPermissionedResolver(client, {
     deployer: sender,
-    owner: sender,
+    writers: [sender],
     salt: ownedResolverSalt(sender),
   });
   if (isAddressEqual(owned.address, resolver)) {

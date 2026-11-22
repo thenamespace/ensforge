@@ -1,7 +1,6 @@
 import { Effect, Array as Arr } from "effect";
 
 import { Abis } from "@ensforge/contracts";
-import { ownedResolverSalt } from "@ensforge/contracts/v2";
 import { isAddressEqual, isHex, zeroAddress, type Address, type Hex } from "viem";
 
 import type { PaymentToken } from "../../actions/registration/types.js";
@@ -14,6 +13,7 @@ import type { Plan } from "../../plan/Plan.js";
 import { sameAddress } from "../address.js";
 import { requireAddress } from "../name/write.js";
 import type { RecordWrites } from "../records/write-profiles.js";
+import { accountResolver, resolverWriters } from "../resolver/account.js";
 import { deployPermissionedResolver } from "../resolver/deploy.js";
 import * as Rpc from "../rpc/index.js";
 import { makeCommitment, randomSecret, resolverSalt } from "./commitment.js";
@@ -28,8 +28,8 @@ export type RegistrationInput = {
   readonly duration: bigint;
   readonly owner?: string | undefined;
   /**
-   * `undefined`: a new PermissionedResolver per name; `"owned"`: the signer's shared one (the ENS
-   * app's address); `null`: none.
+   * `undefined`: a new PermissionedResolver per name; `"owned"`: the sender's shared one (the ENS
+   * app's address for the wallet, or for the HCA a route sends through); `null`: none.
    */
   readonly resolver?: string | null | undefined;
   readonly records?: Omit<RecordWrites, "clear" | "pubkey"> | undefined;
@@ -66,6 +66,8 @@ export type PreparedRegistration = {
   readonly records: Omit<RecordWrites, "clear" | "pubkey"> | undefined;
   /** The shared `"owned"` resolver's deployment, when it does not exist yet. */
   readonly ownedDeploy: Plan.Call | undefined;
+  /** Warnings about the shared resolver. */
+  readonly warnings: readonly Plan.Warning[];
   /** Explicit (or shared) resolver; records then need their own step. */
   readonly explicitResolver: Address | undefined;
   readonly minCommitmentAge: bigint;
@@ -153,23 +155,6 @@ const validateOptions = Effect.fnUntraced(function* (
   return { owner, subregistry, resolver, secret: input.secret ?? randomSecret(), records };
 });
 
-/** The signer's shared PermissionedResolver: its address, and its deployment when missing. */
-const ownedResolver = Effect.fnUntraced(function* (
-  client: Client,
-  signer: Address,
-): Effect.fn.Return<
-  { readonly address: Address; readonly deploy: Plan.Call | undefined },
-  AnyError
-> {
-  const deployment = yield* deployPermissionedResolver(client, {
-    deployer: signer,
-    owner: signer,
-    salt: ownedResolverSalt(signer),
-  });
-  const exists = yield* Rpc.hasCode(client, deployment.address);
-  return { address: deployment.address, deploy: exists ? undefined : deployment.call };
-});
-
 /**
  * Validates a registration and computes everything its plan needs, in two batched rounds:
  * availability, validity, prices and registrar parameters, then commitments and resolver
@@ -185,7 +170,14 @@ export const prepareRegistration = Effect.fnUntraced(function* (
   const names = yield* parseEthNames(input.names);
   const contracts = yield* requireRegistrationContracts(client);
   const validated = yield* validateOptions(input, signer, names);
-  const owned = validated.resolver === "owned" ? yield* ownedResolver(client, signer) : undefined;
+  // The shared resolver is the sender's: through a route, the HCA deploys its own one.
+  const owned =
+    validated.resolver === "owned"
+      ? yield* accountResolver(client, {
+          account: sender,
+          writers: resolverWriters(sender, signer, signer),
+        })
+      : undefined;
   const options = {
     ...validated,
     resolver: validated.resolver === "owned" ? owned?.address : validated.resolver,
@@ -274,6 +266,7 @@ export const prepareRegistration = Effect.fnUntraced(function* (
         contracts,
         name,
         options,
+        signer,
         sender,
         referrer,
         duration: input.duration,
@@ -295,6 +288,7 @@ export const prepareRegistration = Effect.fnUntraced(function* (
     total: Arr.reduce(prepared, 0n, (sum, name) => sum + name.price.base + name.price.premium),
     records: options.records,
     ownedDeploy: owned?.deploy,
+    warnings: owned?.warnings ?? [],
     explicitResolver: options.resolver ?? undefined,
     minCommitmentAge,
     maxCommitmentAge,
@@ -315,6 +309,7 @@ const prepareName = Effect.fnUntraced(function* (
       readonly secret: Hex;
       readonly records: Omit<RecordWrites, "clear" | "pubkey"> | undefined;
     };
+    readonly signer: Address;
     readonly sender: Address;
     readonly referrer: Hex;
     readonly duration: bigint;
@@ -330,7 +325,7 @@ const prepareName = Effect.fnUntraced(function* (
     // salt comes from the secret: a resumed registration recomputes the same address.
     const deployment = yield* deployPermissionedResolver(client, {
       deployer: context.sender,
-      owner: options.owner,
+      writers: resolverWriters(context.sender, options.owner, context.signer),
       salt: resolverSalt(options.secret, name.label),
       name,
       records: options.records,

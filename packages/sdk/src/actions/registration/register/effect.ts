@@ -63,20 +63,12 @@ export const plan = Effect.fnUntraced(function* (
   } else if (approvals.length > 0) {
     steps.push({ id: "approve", description: "Approve payment", calls: approvals });
   }
-  // The signer's shared resolver gets its address from the signer, so the signer deploys it.
-  if (routed && registration.ownedDeploy !== undefined) {
-    steps.push({
-      id: "resolver",
-      description: "Deploy resolver",
-      calls: [registration.ownedDeploy],
-      from: "signer",
-    });
-  }
   steps.push({
     id: "register",
     description: "Register",
     calls: [
-      ...(registration.ownedDeploy === undefined || routed ? [] : [registration.ownedDeploy]),
+      // The shared resolver is the sender's, so it deploys it along with the registration.
+      ...(registration.ownedDeploy === undefined ? [] : [registration.ownedDeploy]),
       ...Arr.flatMap(registration.names, (name) => [
         ...(name.deploy === undefined ? [] : [name.deploy]),
         registerCall(registration, name),
@@ -119,6 +111,7 @@ export const plan = Effect.fnUntraced(function* (
     account: signer,
     steps,
     requirements: [{ kind: "balance", amount: registration.total, token: registration.token }],
+    warnings: registration.warnings,
     deploys: Arr.flatMap(registration.names, (name) =>
       name.deploy === undefined ? [] : [{ contract: "resolver" as const, address: name.resolver }],
     ),

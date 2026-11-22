@@ -1,7 +1,7 @@
 import { Effect, String as Str, Array as Arr } from "effect";
 
 import { Abis, Roles } from "@ensforge/contracts";
-import { ownedResolverSalt, predictVerifiableProxyAddress } from "@ensforge/contracts/v2";
+import { predictVerifiableProxyAddress } from "@ensforge/contracts/v2";
 import {
   encodeAbiParameters,
   encodeFunctionData,
@@ -25,6 +25,7 @@ import { nonZeroAddress } from "../address.js";
 import { parentOf } from "../name/parts.js";
 import { requireAddress } from "../name/write.js";
 import { recordsCall } from "../records/write-call.js";
+import { accountResolver, resolverWriters } from "../resolver/account.js";
 import { deployPermissionedResolver } from "../resolver/deploy.js";
 import * as Rpc from "../rpc/index.js";
 import { discoverSubnames } from "./discover.js";
@@ -297,7 +298,7 @@ export const planMigration = Effect.fnUntraced(function* (
           : [];
       const deployment = yield* deployPermissionedResolver(client, {
         deployer: sender,
-        owner,
+        writers: resolverWriters(sender, owner, signer),
         salt: migrationResolverSalt(parts.node),
         grants,
         name: parts,
@@ -319,20 +320,19 @@ export const planMigration = Effect.fnUntraced(function* (
           }),
         );
       }
-      const deployment = yield* deployPermissionedResolver(client, {
-        deployer: sender,
-        owner: signer,
-        salt: ownedResolverSalt(sender),
-        ...(routed ? { grants: [{ account: sender, roleBitmap: managerRecordRoles }] } : {}),
-      });
-      resolver = deployment.address;
       if (owned === undefined) {
-        owned = resolver;
-        if (!(yield* Rpc.hasCode(client, resolver))) {
-          setup.push(deployment.call);
-          deploys.push({ contract: "resolver", address: resolver });
+        const shared = yield* accountResolver(client, {
+          account: sender,
+          writers: resolverWriters(sender, signer, signer),
+        });
+        owned = shared.address;
+        warnings.push(...shared.warnings);
+        if (shared.deploy !== undefined) {
+          setup.push(shared.deploy);
+          deploys.push({ contract: "resolver", address: owned });
         }
       }
+      resolver = owned;
       if (copied !== undefined) {
         const copiedRecords = yield* recordsCall(client, resolver, parts, copied, "name");
         records.push(copiedRecords);

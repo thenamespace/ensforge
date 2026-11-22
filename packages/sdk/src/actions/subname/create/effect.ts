@@ -73,7 +73,7 @@ const childResolver = Effect.fnUntraced(function* (
 
   const deployment = yield* deployPermissionedResolver(client, {
     deployer: signer,
-    owner,
+    writers: [owner],
     salt: randomSalt(),
     name: subname.child.data.parts,
     records,

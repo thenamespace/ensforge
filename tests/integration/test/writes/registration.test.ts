@@ -1,13 +1,14 @@
 import { assert, describe } from "@effect/vitest";
-import { Effect, Array as Arr, Option, String as Str, pipe } from "effect";
+import { Effect, Array as Arr, Option, Record as Rec, String as Str, pipe } from "effect";
 
-import { Abis } from "@ensforge/contracts";
+import { Abis, Roles } from "@ensforge/contracts";
+import { ownedResolverSalt, predictVerifiableProxyAddress } from "@ensforge/contracts/v2";
 import { Duration } from "@ensforge/sdk";
 import { Actions } from "@ensforge/sdk/effect";
 import { Chain, Devnet } from "@ensforge/test-devnet";
 import { Fixtures } from "@ensforge/test-fixtures";
 import { expectFailure } from "@ensforge/test-harness";
-import { erc20Abi, pad, parseAbi, toHex } from "viem";
+import { encodeFunctionData, erc20Abi, pad, parseAbi, toHex, zeroAddress } from "viem";
 
 import { Clients } from "../support/clients.ts";
 import { ethEntry, mintUsdc, usdcOf } from "../support/contracts.ts";
@@ -669,6 +670,97 @@ describe("registration", () => {
               assert.strictEqual(one?.address, two?.address);
               const text = yield* Actions.record.getText(ens, { name: "rrrrr.eth", key: "url" });
               assert.strictEqual(text, "https://rrrrr.eth");
+              // The ENS app uses this resolver only when the signer holds the full role mask.
+              const complete = yield* chain.read({
+                address: one?.address ?? zeroAddress,
+                abi: Abis.v2.permissionedResolver,
+                functionName: "hasRootRoles",
+                args: [Roles.enhancedAccessControl.allRoles, accounts.alice],
+              });
+              assert.isTrue(complete);
+            }),
+          );
+        }),
+      { meta: { cases: ["G29"] } },
+    );
+
+    it.effect(
+      "reuses a shared resolver created by ensforge 1.1, whose roles cannot be widened",
+      () =>
+        Effect.gen(function* () {
+          const devnet = yield* Devnet;
+          const { accounts } = devnet;
+          const chain = yield* Chain;
+          const clients = yield* Clients;
+          const ens = clients.make({ account: accounts.user });
+
+          yield* chain.isolated(
+            Effect.gen(function* () {
+              // ensforge 1.1 granted the roles defined then, and their admins, not the full mask.
+              const factory = devnet.contract("v2.verifiableFactory");
+              yield* chain.write({
+                address: factory,
+                abi: Abis.v2.verifiableFactory,
+                functionName: "deployProxy",
+                args: [
+                  devnet.contract("v2.permissionedResolverImplementation"),
+                  ownedResolverSalt(accounts.user),
+                  encodeFunctionData({
+                    abi: Abis.v2.permissionedResolver,
+                    functionName: "initialize",
+                    args: [
+                      [
+                        {
+                          account: accounts.user,
+                          roleBitmap: Arr.reduce(
+                            Rec.values(Roles.resolver),
+                            0n,
+                            (bitmap, role) => bitmap | role,
+                          ),
+                        },
+                      ],
+                      [],
+                    ],
+                  }),
+                ],
+                account: accounts.user,
+              });
+              const proxyLogic = yield* chain.read({
+                address: factory,
+                abi: Abis.v2.verifiableFactory,
+                functionName: "proxyLogic",
+              });
+              const resolver = predictVerifiableProxyAddress({
+                factory,
+                proxyLogic,
+                deployer: accounts.user,
+                salt: ownedResolverSalt(accounts.user),
+              });
+
+              // The admin roles of the undefined bits were never granted, so nobody can grant them.
+              const widened = yield* Effect.flip(
+                Effect.asVoid(
+                  chain.simulate({
+                    address: resolver,
+                    abi: Abis.v2.permissionedResolver,
+                    functionName: "grantRootRoles",
+                    args: [Roles.enhancedAccessControl.allRoles, accounts.user],
+                    account: accounts.user,
+                  }),
+                ),
+              );
+              assert.include(String(widened.cause), "EACCannotGrantRoles");
+
+              yield* mintUsdc(accounts.user, 1_000_000_000n);
+              const plan = yield* Actions.registration.register.prepare(ens, {
+                names: "partial-roles.eth",
+                duration: Duration.years(1),
+                resolver: "owned",
+              });
+              assert.deepStrictEqual(
+                Arr.map(plan.warnings, (warning) => warning.code),
+                ["RESOLVER_ROLES_PARTIAL"],
+              );
             }),
           );
         }),

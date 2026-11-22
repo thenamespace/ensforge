@@ -1387,7 +1387,9 @@
   },
   "G29": {
     "tests": [
-      "tests/integration/test/writes/registration.test.ts > deploys the signer's shared resolver once, and reuses it for later names"
+      "tests/integration/test/writes/registration.test.ts > deploys the signer's shared resolver once, and reuses it for later names",
+      "tests/integration/test/writes/registration.test.ts > reuses a shared resolver created by ensforge 1.1, whose roles cannot be widened",
+      "tests/integration/test/writes/hca.test.ts > deploys resolvers the HCA and the owner can both write"
     ]
   },
   "G30": {
@@ -2244,7 +2246,8 @@
   "M:D9": {
     "tests": [
       "tests/integration/test/writes/hca.test.ts > migrates several names in one execution",
-      "tests/integration/test/writes/hca.test.ts > registers a name for the owner, paid by the HCA, with the owner's primary name"
+      "tests/integration/test/writes/hca.test.ts > registers a name for the owner, paid by the HCA, with the owner's primary name",
+      "tests/integration/test/writes/hca.test.ts > deploys resolvers the HCA and the owner can both write"
     ]
   },
   "M:D10": {

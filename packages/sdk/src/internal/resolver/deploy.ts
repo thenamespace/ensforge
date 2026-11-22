@@ -1,13 +1,12 @@
-import { Effect, Array as Arr, Record as Rec } from "effect";
+import { Effect, Array as Arr } from "effect";
 
-import { Abis } from "@ensforge/contracts";
+import { Abis, Roles } from "@ensforge/contracts";
 import { encodeFunctionData, type Address } from "viem";
 
 import type { Client } from "../../client/types.js";
 import { UnsupportedError } from "../../errors/classes/UnsupportedError.js";
 import type { AnyError } from "../../errors/types.js";
 import type { Plan } from "../../plan/Plan.js";
-import * as Role from "../../utils/Role.js";
 import { tryAny } from "../anyError.js";
 import { deployProxy } from "../factory/verifiable-proxy.js";
 import type { NameParts } from "../name/parts.js";
@@ -18,15 +17,15 @@ import {
 } from "../records/write-profiles.js";
 
 /**
- * The deployment of an ENSv2 PermissionedResolver at a CREATE2 address: `owner` gets every role
- * (plus `grants`), and `records` for `name` are written during `initialize`, when role checks do
- * not apply.
+ * The deployment of an ENSv2 PermissionedResolver at a CREATE2 address: each of `writers` gets
+ * every role, in order (plus `grants`), and `records` for `name` are written during `initialize`,
+ * when role checks do not apply.
  */
 export const deployPermissionedResolver = Effect.fnUntraced(function* (
   client: Client,
   options: {
     readonly deployer: Address;
-    readonly owner: Address;
+    readonly writers: readonly [Address, ...Address[]];
     readonly salt: bigint;
     readonly grants?: readonly { readonly account: Address; readonly roleBitmap: bigint }[];
     readonly name?: NameParts | undefined;
@@ -59,11 +58,12 @@ export const deployPermissionedResolver = Effect.fnUntraced(function* (
       functionName: "initialize",
       args: [
         [
-          // The owner gets every PermissionedResolver role and its admin role.
-          {
-            account: options.owner,
-            roleBitmap: Arr.reduce(Rec.values(Role.resolver), 0n, (bitmap, role) => bitmap | role),
-          },
+          // The full mask, not only the roles defined today: the ENS app requires it, and an
+          // account can never grant itself the admin roles it was not given here.
+          ...Arr.map(options.writers, (account) => ({
+            account,
+            roleBitmap: Roles.enhancedAccessControl.allRoles,
+          })),
           ...(options.grants ?? []),
         ],
         recordCalls,

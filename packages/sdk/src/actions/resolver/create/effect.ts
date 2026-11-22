@@ -15,9 +15,11 @@ import { parseName } from "../../../internal/name/normalize.js";
 import { setResolverCall } from "../../../internal/name/set-resolver.js";
 import { requireAddress, requireRegistered } from "../../../internal/name/write.js";
 import { explainFor } from "../../../internal/permission/check.js";
+import { resolverWriters } from "../../../internal/resolver/account.js";
 import { deployPermissionedResolver } from "../../../internal/resolver/deploy.js";
 import { roleBitmapOf } from "../../../internal/role/bitmap.js";
 import * as Rpc from "../../../internal/rpc/index.js";
+import { routeSender } from "../../../internal/write/via.js";
 import { make as makePlan } from "../../../plan/make.js";
 import type { Plan } from "../../../plan/Plan.js";
 import type { Write } from "../../../Types.js";
@@ -26,18 +28,20 @@ import type { create as Promises } from "./index.js";
 /** @internal Builds the plan of `Actions.resolver.create`. */
 export const plan = Effect.fnUntraced(function* (
   client: Client,
-  options: Promises.Options & Pick<Write.Options, "account">,
+  options: Promises.Options & Pick<Write.Options, "account" | "via">,
 ): Effect.fn.Return<Plan, AnyError> {
   if (client.deployment.v2 === undefined) {
     return yield* Effect.fail(
       new UnsupportedError({ code: "UNSUPPORTED_ON_DEPLOYMENT", feature: "PermissionedResolver" }),
     );
   }
-  // CREATE2 addresses depend on the sender, so the account must be known up front.
-  const deployer = addressOf(options.account) ?? client.account;
-  if (deployer === undefined) {
+  // CREATE2 addresses depend on the sender, so the account must be known up front. Through a
+  // route, the route's account (an HCA) sends `deployProxy`.
+  const signer = addressOf(options.account) ?? client.account;
+  if (signer === undefined) {
     return yield* Effect.fail(new ConfigError({ code: "WALLET_NOT_CONFIGURED" }));
   }
+  const deployer = (yield* routeSender(client, options.via, signer)) ?? signer;
   if (options.records !== undefined && options.name === undefined) {
     return yield* Effect.fail(
       new InvalidInputError({
@@ -50,8 +54,8 @@ export const plan = Effect.fnUntraced(function* (
   }
 
   const owner =
-    options.owner === undefined ? deployer : yield* requireAddress(options.owner, "owner");
-  // The owner's grant is added by `deployPermissionedResolver`.
+    options.owner === undefined ? signer : yield* requireAddress(options.owner, "owner");
+  // The writers' grants are added by `deployPermissionedResolver`.
   const grants = yield* Effect.forEach(
     options.grants ?? [],
     (grant) =>
@@ -65,7 +69,7 @@ export const plan = Effect.fnUntraced(function* (
   const parts = options.name === undefined ? undefined : yield* parseName(options.name);
   const deployment = yield* deployPermissionedResolver(client, {
     deployer,
-    owner,
+    writers: resolverWriters(deployer, owner, signer),
     salt: options.salt ?? randomSalt(),
     grants,
     name: parts,
@@ -102,7 +106,7 @@ export const plan = Effect.fnUntraced(function* (
   return makePlan({
     operation: "resolver.create",
     chainId: client.chain.id,
-    account: deployer,
+    account: signer,
     steps,
     deploys: [{ contract: "resolver", address: deployment.address }],
   });
