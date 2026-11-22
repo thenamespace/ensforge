@@ -92,6 +92,8 @@ export type World = Entry & {
   readonly v1Only?: boolean | undefined;
   /** Further contracts, e.g. an L2 namespace's Ethereum resolver. */
   readonly stubs?: readonly ContractStub[] | undefined;
+  /** Role assignee counts by registry resource (`"0"` the root, `"1"` a name), a nybble per role. */
+  readonly assignees?: Readonly<Record<string, bigint>> | undefined;
   /** What resolvers answer for `name(node)`, by node (reverse records). */
   readonly nameRecords?: Readonly<Record<Hex, string>> | undefined;
   /** The HCA each account owns, which the HCA factory reports as authorized for it. */
@@ -206,6 +208,11 @@ const stubs = (world: World): ContractStub[] => {
             ),
           )?.roles ?? 0n,
         isOnlyAssignee: ([id]) => v2Of(id as bigint)?.v2.onlyAssignee ?? true,
+        // Every name's roles live under resource 1 here (see `getState`), the root under 0.
+        getAssigneeCount: ([resource, bitmap]) => [
+          (world.assignees?.[String(resource)] ?? 0n) & ((bitmap as bigint) * 0xfn),
+          0n,
+        ],
         isEmancipated: () => true,
         isApprovedForAll: () => false,
       },

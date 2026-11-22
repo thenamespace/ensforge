@@ -16,6 +16,9 @@ import * as Impl from "./effect.js";
  * **Details**
  *
  * - Revoking needs the matching admin roles.
+ * - Revoking `canTransferAdmin` from the name's owner fails with `INVALID_ROLES` unless
+ *   `allowIrreversible`: the name could not be transferred until it expires. Removing the last
+ *   holder of an admin role, with none at the root, carries a `ROLE_ADMIN_LOCKOUT` warning.
  * - Role names are read from `target`'s table only: registry and resolver roles share bit
  *   positions, so a resolver role name for a registry (`setAddr`, the registry's `registrar` bit)
  *   fails with `INVALID_ROLES`. An explicit `contract`, or a name's resolver, must report the
@@ -74,6 +77,13 @@ export declare namespace revoke {
     contract?: string | undefined;
     /** Root roles, applying to every name, instead of the name's. */
     root?: boolean | undefined;
+    /**
+     * Revoke `canTransferAdmin` from the name's owner, which freezes the name until it expires:
+     * admin roles cannot be granted on a name again.
+     *
+     * @default false
+     */
+    allowIrreversible?: boolean | undefined;
   } & (
     | {
         /** Registry roles. */

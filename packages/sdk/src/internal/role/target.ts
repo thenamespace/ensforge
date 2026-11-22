@@ -26,6 +26,8 @@ export type ResolvedRoleTarget = {
   readonly resource: bigint;
   /** ID `grantRoles`/`revokeRoles` take on a registry (any ID of the name). */
   readonly anyId: bigint | undefined;
+  /** The name's owner, for a name's registry roles. */
+  readonly owner: Address | undefined;
 };
 
 const invalid = (shortMessage: string) =>
@@ -78,7 +80,7 @@ export const resolveRoleTarget = Effect.fnUntraced(function* (
   if (options.contract !== undefined || options.target === "resolver") {
     yield* requireContractKind(client, contract, options.target);
   }
-  if (root) return { contract, resource: 0n, anyId: undefined };
+  if (root) return { contract, resource: 0n, anyId: undefined, owner: undefined };
 
   // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- a name target was loaded above
   const anyId = hexToBigInt((loaded as NonNullable<typeof loaded>).data.parts.labelhash);
@@ -94,7 +96,7 @@ export const resolveRoleTarget = Effect.fnUntraced(function* (
           functionName: "getResource",
           args: [anyId],
         });
-  return { contract, resource, anyId };
+  return { contract, resource, anyId, owner: loaded?.state.owner ?? undefined };
 });
 
 /** Fails unless `contract` reports (ERC-165) being an ENSv2 registry or PermissionedResolver, as `target` says. */

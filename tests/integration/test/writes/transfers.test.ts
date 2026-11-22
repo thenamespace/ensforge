@@ -153,6 +153,7 @@ describe("transfers and managers", () => {
                 roles: ["canTransferAdmin"],
                 target: "registry",
                 name,
+                allowIrreversible: true,
               });
               for (const unsafe of [false, true]) {
                 yield* expectFailure(Actions.name.transfer(ens, { name, to: carol, unsafe }), {

@@ -559,7 +559,8 @@
   "W33": {
     "tests": [
       "tests/integration/test/writes/access.test.ts > refuses role grants to no account, and child registries to owners without the role",
-      "tests/integration/test/writes/access.test.ts > refuses role names and contracts of the other kind before sending"
+      "tests/integration/test/writes/access.test.ts > refuses role names and contracts of the other kind before sending",
+      "tests/integration/test/writes/access.test.ts > refuses to revoke canTransferAdmin from the owner, which would freeze the name"
     ]
   },
   "W34": {

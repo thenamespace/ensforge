@@ -1,5 +1,5 @@
 import { assert, describe, it } from "@effect/vitest";
-import { Effect } from "effect";
+import { Array as Arr, Effect } from "effect";
 
 import { Abis, Roles } from "@ensforge/contracts";
 import { Actions } from "@ensforge/sdk/effect";
@@ -50,5 +50,66 @@ describe("role.revoke.prepare", () => {
       }),
       { _tag: "InvalidInputError", code },
     ),
+  );
+
+  // The registry checks `canTransferAdmin` on the owner's token before every transfer, and admin
+  // roles can never be granted on a token again.
+  it.effect("refuses to freeze the owner's name unless asked to", () =>
+    Effect.gen(function* () {
+      const owned = {
+        name,
+        v2: { owner: signer, resolver: resolverA, roles: Roles.registry.canTransferAdmin },
+      };
+      const options = {
+        name,
+        target: "registry",
+        holder: signer,
+        roles: ["canTransferAdmin"],
+      } as const;
+
+      yield* expectFailure(Actions.role.revoke.prepare(clientFor(owned).ens, options), {
+        _tag: "InvalidInputError",
+        code: "INVALID_ROLES",
+      });
+      const plan = yield* Actions.role.revoke.prepare(clientFor(owned).ens, {
+        ...options,
+        allowIrreversible: true,
+      });
+      assert.strictEqual(plan.calls.length, 1);
+    }),
+  );
+
+  it.effect.each([
+    // setResolverAdmin also regenerates the token ID.
+    [
+      "the last holder, with nobody at the root",
+      0n,
+      ["TOKEN_ID_REGENERATED", "ROLE_ADMIN_LOCKOUT"],
+    ],
+    [
+      "the last holder, with a root holder",
+      Roles.registry.setResolverAdmin,
+      ["TOKEN_ID_REGENERATED"],
+    ],
+  ] as const)("warns when revoking an admin role from %s", ([, root, codes]) =>
+    Effect.gen(function* () {
+      const lastAdmin = {
+        name,
+        v2: { owner: signer, resolver: resolverA, roles: Roles.registry.setResolverAdmin },
+        assignees: { "0": root, "1": Roles.registry.setResolverAdmin },
+      };
+
+      const plan = yield* Actions.role.revoke.prepare(clientFor(lastAdmin).ens, {
+        name,
+        target: "registry",
+        holder: signer,
+        roles: ["setResolverAdmin"],
+      });
+
+      assert.deepStrictEqual<readonly string[]>(
+        Arr.map(plan.warnings, (warning) => warning.code),
+        codes,
+      );
+    }),
   );
 });

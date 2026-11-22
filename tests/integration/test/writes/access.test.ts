@@ -472,6 +472,40 @@ describe("access writes", () => {
     );
 
     it.effect(
+      "refuses to revoke canTransferAdmin from the owner, which would freeze the name",
+      () =>
+        Effect.gen(function* () {
+          const fixtures = yield* Fixtures;
+          const { alice, bob } = (yield* Devnet).accounts;
+          const chain = yield* Chain;
+          const ens = (yield* Clients).make({ account: alice });
+          const name = fixtures.byId("v2.registered").name;
+          const revoke = {
+            name,
+            target: "registry",
+            holder: alice,
+            roles: ["canTransferAdmin"],
+          } as const;
+
+          yield* expectFailure(Actions.role.revoke.prepare(ens, revoke), {
+            _tag: "InvalidInputError",
+            code: "INVALID_ROLES",
+          });
+          // Admin roles cannot be granted on a name again: nobody can transfer it until it expires.
+          yield* chain.isolated(
+            Effect.gen(function* () {
+              yield* Actions.role.revokeSync(ens, { ...revoke, allowIrreversible: true });
+              yield* expectFailure(Actions.name.transferSync(ens, { name, to: bob }), {
+                _tag: "UnauthorizedError",
+                code: "TRANSFER_DISALLOWED",
+              });
+            }),
+          );
+        }),
+      { meta: { cases: ["W33"] } },
+    );
+
+    it.effect(
       "refuses role names and contracts of the other kind before sending",
       () =>
         Effect.gen(function* () {
