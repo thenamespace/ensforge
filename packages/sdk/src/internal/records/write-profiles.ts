@@ -26,6 +26,8 @@ export type RecordWrites = {
   readonly texts?: Readonly<Record<string, string | null>> | undefined;
   readonly addresses?: Readonly<Record<string, string | null>> | undefined;
   readonly contentHash?: string | null | undefined;
+  /** An encoded content hash, written as is: one copied from a resolver, whose codec may be unknown. */
+  readonly contentHashBytes?: Hex | undefined;
   readonly abi?:
     | { readonly contentType?: bigint | undefined; readonly value: Abi | Hex | null }
     | undefined;
@@ -130,15 +132,21 @@ export const encodeRecordWrites = (
     );
   }
 
-  if (writes.contentHash !== undefined) {
+  if (writes.contentHash !== undefined || writes.contentHashBytes !== undefined) {
     const { contentHash } = codecs;
-    if (writes.contentHash !== null && contentHash === undefined) {
+    if (
+      writes.contentHashBytes === undefined &&
+      writes.contentHash !== null &&
+      writes.contentHash !== undefined &&
+      contentHash === undefined
+    ) {
       throw new Error("The content-hash codec was not loaded (see recordWriteCodecs).");
     }
     const hash =
-      writes.contentHash === null || contentHash === undefined
+      writes.contentHashBytes ??
+      (writes.contentHash === null || writes.contentHash === undefined || contentHash === undefined
         ? "0x"
-        : contentHash.encode(writes.contentHash);
+        : contentHash.encode(writes.contentHash));
     calls.push(
       byName
         ? encodeFunctionData({
@@ -275,7 +283,11 @@ export const writtenProfiles = (
   const profiles: readonly (readonly [keyof ResolverProfiles, string, boolean])[] = [
     ["text", "text records", Rec.keys(writes.texts ?? {}).length > 0],
     ["addresses", "address records", Rec.keys(writes.addresses ?? {}).length > 0],
-    ["contentHash", "content hash records", writes.contentHash !== undefined],
+    [
+      "contentHash",
+      "content hash records",
+      writes.contentHash !== undefined || writes.contentHashBytes !== undefined,
+    ],
     ["abi", "ABI records", writes.abi !== undefined],
     ["pubkey", "public key records", writes.pubkey !== undefined],
     ["name", "name records", writes.nameRecord !== undefined],

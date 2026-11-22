@@ -1614,7 +1614,8 @@
   },
   "M07": {
     "tests": [
-      "tests/integration/test/writes/migration.test.ts > migrates a locked name into a WrapperRegistry, then its locked child"
+      "tests/integration/test/writes/migration.test.ts > migrates a locked name into a WrapperRegistry, then its locked child",
+      "tests/integration/test/writes/migration.test.ts > copies a locked name's records to PublicResolverV2, or refuses to leave them behind"
     ]
   },
   "M08": {

@@ -573,6 +573,43 @@ describe("migration", () => {
       { meta: { cases: ["M:A8"] } },
     );
 
+    // A locked cannotSetResolver name gets an empty PublicResolverV2 that only its new owner can
+    // write, after the irreversible transfer: through an HCA the signer first makes the HCA the
+    // node's delegate, so the copy runs in the same execution; for another owner it is refused.
+    it.effect(
+      "copies a locked name's records to PublicResolverV2, or refuses to leave them behind",
+      () =>
+        Effect.gen(function* () {
+          const fixtures = yield* Fixtures;
+          const { alice, bob } = (yield* Devnet).accounts;
+          const chain = yield* Chain;
+          const ens = (yield* Clients).make({ account: alice });
+          const name = fixtures.byId("v1.wrapped.locked.cannot-set-resolver").name;
+          const names = { name, records: { texts: { url: "https://alice.example" } } };
+
+          const status = yield* Actions.migration.get(ens, { name, account: alice });
+          assert.strictEqual(status.resolver.plan, "public-v2");
+          const refused = yield* expectFailure(
+            Actions.migration.migrate.prepare(ens, { names, owner: bob }),
+            { _tag: "MigrationError", code: "NOT_ELIGIBLE" },
+          );
+          assert.include([...(refused.blockers ?? [])], "records-not-replayable");
+
+          yield* chain.isolated(
+            Effect.gen(function* () {
+              yield* Actions.migration.migrateSync(ens, {
+                names,
+                via: hca(),
+                onStep: chain.passWaits,
+              });
+              const url = yield* Actions.record.getText(ens, { name, key: "url" });
+              assert.strictEqual(url, "https://alice.example");
+            }),
+          );
+        }),
+      { meta: { cases: ["M07"] } },
+    );
+
     it.effect(
       "refuses blocked names before the wallet is asked",
       () =>

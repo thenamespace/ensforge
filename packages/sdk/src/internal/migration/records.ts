@@ -1,14 +1,19 @@
 import { Effect, Array as Arr, Record as Rec, String as Str } from "effect";
 
+import { Abis } from "@ensforge/contracts";
+import { isHex, type Address, type Hex } from "viem";
+
 import type { NameInput } from "../../actions/migration/types.js";
 import type { Client } from "../../client/types.js";
 import { MigrationError } from "../../errors/classes/MigrationError.js";
 import type { AnyError } from "../../errors/types.js";
 import type { Plan } from "../../plan/Plan.js";
 import * as CoinType from "../../utils/CoinType.js";
+import { namehash } from "../../utils/Name.js";
 import { callIndexer } from "../indexer/call.js";
 import { readRecords } from "../records/read.js";
 import type { RecordWrites } from "../records/write-profiles.js";
+import * as Rpc from "../rpc/index.js";
 
 /** Records to copy, as `record.set` takes them. */
 export type CopiedRecords = Omit<RecordWrites, "clear" | "pubkey">;
@@ -64,6 +69,10 @@ const readCopy = Effect.fnUntraced(function* (
     readonly texts: readonly string[];
     readonly addresses: readonly bigint[];
     readonly contentHash: boolean;
+    readonly abi?: boolean | undefined;
+    readonly interfaces?: readonly Hex[] | undefined;
+    readonly data?: readonly string[] | undefined;
+    readonly nameRecord?: boolean | undefined;
   },
 ): Effect.fn.Return<CopiedRecords, AnyError> {
   const read = yield* readRecords(client, {
@@ -72,8 +81,35 @@ const readCopy = Effect.fnUntraced(function* (
       texts: selection.texts,
       addresses: selection.addresses,
       ...(selection.contentHash ? { contentHash: true } : {}),
+      ...(selection.abi === true ? { abi: true } : {}),
+      ...(selection.nameRecord === true ? { nameRecord: true } : {}),
+      ...(selection.interfaces === undefined ? {} : { interfaces: selection.interfaces }),
+      ...(selection.data === undefined ? {} : { data: selection.data }),
     },
   });
+  // The encoded content hash, copied as is: a codec ensforge cannot decode is still kept. A
+  // resolver that only answers through `resolve` (off-chain, wildcard) gives the decoded URI.
+  const contentHashBytes =
+    selection.contentHash && read.resolver !== null && read.contentHash !== null
+      ? yield* Rpc.readContractOrUndefined(client, {
+          address: read.resolver,
+          abi: Abis.v1.publicResolver,
+          functionName: "contenthash",
+          args: [namehash(name)],
+        })
+      : undefined;
+  const interfaces = Rec.fromEntries(
+    Arr.filter(
+      Rec.toEntries(read.interfaces ?? {}),
+      (entry): entry is [Hex, Address] => entry[1] !== null,
+    ),
+  );
+  const data = Rec.fromEntries(
+    Arr.filter(
+      Rec.toEntries(read.data ?? {}),
+      (entry): entry is [string, Hex] => entry[1] !== null,
+    ),
+  );
 
   const texts = Rec.fromEntries(
     Arr.filter(
@@ -97,9 +133,19 @@ const readCopy = Effect.fnUntraced(function* (
   return {
     ...(Rec.keys(texts).length > 0 ? { texts } : {}),
     ...(Rec.keys(addresses).length > 0 ? { addresses } : {}),
-    ...(read.contentHash === null || read.contentHash === undefined
+    ...(contentHashBytes !== undefined && contentHashBytes !== "0x"
+      ? { contentHashBytes }
+      : read.contentHash === null || read.contentHash === undefined
+        ? {}
+        : { contentHash: read.contentHash.uri }),
+    ...(read.abi === null || read.abi === undefined
       ? {}
-      : { contentHash: read.contentHash.uri }),
+      : { abi: { contentType: read.abi.contentType, value: read.abi.data } }),
+    ...(Rec.keys(interfaces).length > 0 ? { interfaces } : {}),
+    ...(Rec.keys(data).length > 0 ? { data } : {}),
+    ...(read.nameRecord === null || read.nameRecord === undefined || read.nameRecord === ""
+      ? {}
+      : { nameRecord: read.nameRecord }),
   };
 });
 
@@ -108,7 +154,11 @@ export type RecordInventory = {
   readonly texts: readonly string[];
   readonly addresses: readonly bigint[];
   readonly contentHash: boolean;
-  /** Keys that are not copied: ABIs, public keys, interfaces, data records. */
+  readonly abi: boolean;
+  readonly interfaces: readonly Hex[];
+  readonly data: readonly string[];
+  readonly nameRecord: boolean;
+  /** Keys that cannot be copied: public keys (no ENSv2 resolver stores them), unknown keys. */
   readonly skipped: readonly string[];
   /** Whether the indexer listed every key (`false` when it reported keys it cannot read). */
   readonly complete: boolean;
@@ -133,19 +183,32 @@ export const recordInventory = Effect.fnUntraced(function* (
 
   const texts: string[] = [];
   const addresses: bigint[] = [];
+  const interfaces: Hex[] = [];
+  const data: string[] = [];
   const skipped: string[] = [];
   let contentHash = false;
+  let abi = false;
+  let nameRecord = false;
   for (const key of result.inventory.keys) {
+    const interfaceId = Str.slice(10)(key);
     if (Str.startsWith("text:")(key)) texts.push(Str.slice(5)(key));
     else if (Str.startsWith("addr:")(key) && /^\d+$/.test(Str.slice(5)(key)))
       addresses.push(BigInt(Str.slice(5)(key)));
     else if (key === "contenthash") contentHash = true;
+    else if (key === "abi" || Str.startsWith("abi:")(key)) abi = true;
+    else if (Str.startsWith("interface:")(key) && isHex(interfaceId)) interfaces.push(interfaceId);
+    else if (Str.startsWith("data:")(key)) data.push(Str.slice(5)(key));
+    else if (key === "name") nameRecord = true;
     else skipped.push(key);
   }
   return {
     texts,
     addresses,
     contentHash,
+    abi,
+    interfaces,
+    data,
+    nameRecord,
     skipped,
     complete: result.completeness === "full" && result.inventory.unsupportedKeys.length === 0,
   };
@@ -176,6 +239,22 @@ export const recordsToCopy = Effect.fnUntraced(function* (
 
   const inventory = yield* recordInventory(client, name);
   if (inventory !== null) {
+    // Records left behind stay on a resolver nobody edits any more: refuse unless asked to.
+    const missing = [
+      ...(inventory.skipped.length > 0
+        ? [`its ${Arr.join(inventory.skipped, ", ")} records cannot be copied`]
+        : []),
+      ...(inventory.complete ? [] : ["the indexer could not list every record"]),
+    ];
+    if (missing.length > 0 && !options.allowIncomplete) {
+      return yield* Effect.fail(
+        new MigrationError({
+          code: "RECORDS_UNKNOWN",
+          shortMessage: `Not every record of ${name} can be copied: ${Arr.join(missing, "; ")}.`,
+          hint: 'Pass the name\'s records, keep its resolver (`resolver: "keep"`), or pass `allowIncompleteRecords` to copy the others.',
+        }),
+      );
+    }
     const warnings: Plan.Warning[] = [];
     if (inventory.skipped.length > 0) {
       warnings.push({

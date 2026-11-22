@@ -39,6 +39,7 @@ export type MigrationInput = {
   readonly resolver?: string | undefined;
   readonly owner?: string | undefined;
   readonly allowIncompleteRecords?: boolean | undefined;
+  readonly allowEmptyResolver?: boolean | undefined;
   readonly allowLeavingSubnames?: boolean | undefined;
   readonly preserveManager?: boolean | undefined;
   readonly migrateParents?: boolean | undefined;
@@ -118,6 +119,22 @@ const migrationResolverSalt = (node: Hex): bigint =>
       ),
     ),
   );
+
+/** `PublicResolverV2.approve`: lets `delegate` write `node`'s records for the caller. */
+const delegateCall = (
+  resolver: Address,
+  node: Hex,
+  delegate: Address,
+  approved: boolean,
+): Plan.Call => ({
+  to: resolver,
+  data: encodeFunctionData({
+    abi: Abis.v2.publicResolver,
+    functionName: "approve",
+    args: [node, delegate, approved],
+  }),
+  value: 0n,
+});
 
 /** Inspects the names, adding unmigrated locked parents when `migrateParents` asks for them. */
 const inspectAll = Effect.fnUntraced(function* (
@@ -256,6 +273,8 @@ export const planMigration = Effect.fnUntraced(function* (
   const registries: Plan.Call[] = [];
   const records: Plan.Call[] = [];
   const afterRecords: Plan.Call[] = [];
+  const delegations: Plan.Call[] = [];
+  const undelegations: Plan.Call[] = [];
   const managers: Plan.Call[] = [];
   const deploys: Plan.Deployment[] = [];
   const warnings: Plan.Warning[] = [];
@@ -296,12 +315,19 @@ export const planMigration = Effect.fnUntraced(function* (
     let copied: CopiedRecords | undefined;
     const plan = status.resolver.plan;
     if (plan === "new" || plan === "owned" || plan === "public-v2") {
+      // A custom resolver's records are read through resolution, off-chain ones included.
       const copy = yield* recordsToCopy(client, config, status.name, {
-        hasRecords: inspection.publicResolver,
+        hasRecords: status.resolver.current !== null,
         allowIncomplete: input.allowIncompleteRecords === true,
       });
       copied = copy.records;
       warnings.push(...copy.warnings);
+      if (copied !== undefined && !inspection.publicResolver && config?.records === undefined) {
+        warnings.push({
+          code: "RECORDS_FROM_CUSTOM_RESOLVER",
+          message: `${status.name}'s records are read through resolution, including any served off-chain, and written on-chain.`,
+        });
+      }
     }
     if (plan === "new") {
       const grants =
@@ -356,14 +382,34 @@ export const planMigration = Effect.fnUntraced(function* (
       // The controller swaps the ENSv1 public resolver for PublicResolverV2, which starts empty.
       resolver = v2.contracts.publicResolver;
       if (copied !== undefined) {
-        if (!isAddressEqual(owner, signer) || routed) {
+        // Only the new owner (or its delegate) writes there, once the name has moved: the copy
+        // follows the transfer. For another owner nobody in this plan can write them.
+        if (!isAddressEqual(owner, signer)) {
+          if (input.allowEmptyResolver !== true) {
+            return yield* Effect.fail(
+              new MigrationError({
+                code: "NOT_ELIGIBLE",
+                blockers: ["records-not-replayable"],
+                context: { name: status.name },
+                hint: "Migrate it to yourself and transfer it afterwards, or pass `allowEmptyResolver` to migrate it without its records.",
+              }),
+            );
+          }
           warnings.push({
             code: "RECORDS_NOT_COPIED",
             message: `${status.name} gets PublicResolverV2; its owner writes the records there after migrating.`,
           });
         } else {
-          const copiedRecords = yield* recordsCall(client, resolver, parts, copied, "node");
-          afterRecords.push(copiedRecords);
+          const recordsAfter = yield* recordsCall(client, resolver, parts, copied, "node");
+          afterRecords.push(recordsAfter);
+          // A routed sender writes as the signer's delegate on the node, approved before the
+          // name is the signer's (approvals are keyed by the approving account).
+          if (routed) {
+            delegations.push(delegateCall(v2.contracts.publicResolver, parts.node, sender, true));
+            undelegations.push(
+              delegateCall(v2.contracts.publicResolver, parts.node, sender, false),
+            );
+          }
         }
       }
     } else if (plan === "keep" && inspection.publicResolver) {
@@ -518,6 +564,7 @@ export const planMigration = Effect.fnUntraced(function* (
       });
     }
   };
+  chunked("delegate", "Let the HCA copy records to PublicResolverV2", delegations, "signer");
   chunked("setup", "Create resolvers and registries", setup);
   chunked("subnames", "Recreate subnames", registries);
   chunked("records", "Copy records", records);
@@ -541,6 +588,14 @@ export const planMigration = Effect.fnUntraced(function* (
     );
   }
   chunked("records-after", "Copy records to PublicResolverV2", afterRecords);
+  chunked("undelegate", "Revoke the HCA's record access", undelegations, "signer");
+  if (afterRecords.length > 0 && !routed) {
+    warnings.push({
+      code: "RECORDS_AFTER_MIGRATION",
+      message:
+        'Records are copied to PublicResolverV2 after the irreversible transfer; send with `mode: "batch"` to make both one transaction.',
+    });
+  }
   // The names' new holder grants the managers; a routed sender holds no roles on them.
   chunked("manager", "Restore ENSv1 managers", managers, routed ? "signer" : undefined);
 

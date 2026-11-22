@@ -37,6 +37,8 @@ export type Route = "unwrapped" | "wrapped-unlocked" | "wrapped-locked" | "locke
  *   the parent's migration created; the child's transfer into it could not be undone.
  * - `wrapper-out-of-sync`: the name was renewed without the NameWrapper being told, which now
  *   reports it with no owner or fuses; run `wrapper.sync` first.
+ * - `records-not-replayable`: a locked `cannotSetResolver` name with records goes to another
+ *   owner, who alone can write them on its new PublicResolverV2.
  *
  * @category migration
  * @since 1.0.0
@@ -53,7 +55,8 @@ export type Blocker =
   | "locked-resolver"
   | "unknown-label"
   | "uncertified-parent-registry"
-  | "wrapper-out-of-sync";
+  | "wrapper-out-of-sync"
+  | "records-not-replayable";
 
 /**
  * Where a name's records end up:

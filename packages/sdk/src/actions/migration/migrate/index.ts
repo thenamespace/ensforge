@@ -25,7 +25,16 @@ import * as Impl from "./effect.js";
  *   resolvers are kept. `resolver: "owned"` uses the signer's shared resolver (the ENS app's).
  * - Records and subnames are those given per name; otherwise, with an indexer, every record key
  *   it lists (values read on-chain) and the live subnames at every depth; without one,
- *   `allowIncompleteRecords` copies the common records. Locked names follow their fuses.
+ *   `allowIncompleteRecords` copies the common records. Records it cannot copy (a public key,
+ *   an unknown key, or an incomplete list from the indexer) fail with `RECORDS_UNKNOWN` unless
+ *   `allowIncompleteRecords`. ABI, interface, data and raw content-hash records are copied.
+ * - A custom resolver's records are copied too when the name gets a new resolver, read through
+ *   resolution, off-chain ones included (warning `RECORDS_FROM_CUSTOM_RESOLVER`).
+ * - Locked names follow their fuses. A locked `cannotSetResolver` name gets an empty
+ *   PublicResolverV2, which its new owner writes after the transfer: through an HCA, the signer
+ *   first approves the HCA as the node's delegate, so the copy runs in the same execution.
+ *   Migrating such a name with records to another `owner` fails (`records-not-replayable`)
+ *   unless `allowEmptyResolver`.
  * - The sending account keeps no roles on a subname registry it deploys for someone else.
  * - An interrupted migration can run again: existing resolvers and registries are reused.
  *
@@ -91,8 +100,16 @@ export declare namespace migrate {
     resolver?: "new" | "owned" | "keep" | (string & {}) | undefined;
     /** ENSv2 owner of the names. Defaults to each token's holder. */
     owner?: string | undefined;
-    /** Copy the common records when a name's records are not given. */
+    /**
+     * Migrate when not every record can be copied: the common records without an indexer, the
+     * others when some keys cannot be copied or the indexer's list is incomplete.
+     */
     allowIncompleteRecords?: boolean | undefined;
+    /**
+     * Migrate a locked `cannotSetResolver` name to another `owner` without its records: the
+     * PublicResolverV2 it gets starts empty, and only its new owner can write there.
+     */
+    allowEmptyResolver?: boolean | undefined;
     /** Migrate even when a listed subname cannot be recreated. */
     allowLeavingSubnames?: boolean | undefined;
     /** Give each unwrapped name's ENSv1 manager `setResolver` and the record setter roles. */
