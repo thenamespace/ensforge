@@ -1,9 +1,9 @@
 import { assert, describe } from "@effect/vitest";
 import { Effect, Record as Rec, Array as Arr, String as Str } from "effect";
 
-import { Abis } from "@ensforge/contracts";
+import { Abis, Roles } from "@ensforge/contracts";
 import { hca } from "@ensforge/hca";
-import { Duration, Name, Plan } from "@ensforge/sdk";
+import { Duration, Name, Plan, Role } from "@ensforge/sdk";
 import { Actions } from "@ensforge/sdk/effect";
 import { Chain, Devnet } from "@ensforge/test-devnet";
 import { factAddress, Fixtures } from "@ensforge/test-fixtures";
@@ -268,6 +268,94 @@ describe("migration", () => {
                 (yield* Actions.name.get(ens, { name: emancipated })).kind,
                 "v1-wrapped",
               );
+            }),
+          );
+        }),
+      { meta: { cases: ["M20"] } },
+    );
+
+    // Regression: a locked child listed before its locked parent got no target registry.
+    it.effect(
+      "migrates a locked child listed before its locked parent",
+      () =>
+        Effect.gen(function* () {
+          const fixtures = yield* Fixtures;
+          const { alice } = (yield* Devnet).accounts;
+          const chain = yield* Chain;
+          const ens = (yield* Clients).make({ account: alice });
+          const parent = fixtures.byId("v1.wrapped.locked").name;
+          const child = `kept.${parent}`;
+
+          yield* chain.isolated(
+            Effect.gen(function* () {
+              yield* Actions.subname.createSync(ens, {
+                name: child,
+                resolver: null,
+                fuses: ["parentCannotControl", "cannotUnwrap"],
+              });
+              yield* Actions.migration.migrateSync(ens, {
+                names: [child, parent],
+                resolver: "keep",
+                onStep: chain.passWaits,
+              });
+              const migrated = yield* Actions.name.get(ens, { name: child });
+              assert.deepInclude(migrated, { kind: "v2-migrated", owner: alice });
+            }),
+          );
+        }),
+      { meta: { cases: ["M20"] } },
+    );
+
+    // Regression: an emancipated child without cannotUnwrap is detached, not locked. The receiver
+    // deploys it no WrapperRegistry, so its subnames were registered into an address without
+    // code: the calls succeeded, nothing was stored, and the migration reported success.
+    it.effect(
+      "migrates a detached child with its subnames in a registry of its own",
+      () =>
+        Effect.gen(function* () {
+          const fixtures = yield* Fixtures;
+          const devnet = yield* Devnet;
+          const chain = yield* Chain;
+          const clients = yield* Clients;
+          const { alice, bob, carol } = devnet.accounts;
+          const parent = fixtures.byId("v1.wrapped.locked").name;
+          const detached = fixtures.byId("v1.wrapped.sub.emancipated").name;
+          const holder = clients.make({ account: bob });
+          const grandchild = `x.${detached}`;
+
+          yield* chain.isolated(
+            Effect.gen(function* () {
+              yield* Actions.migration.migrateSync(clients.make({ account: alice }), {
+                names: parent,
+                resolver: "keep",
+                onStep: chain.passWaits,
+              });
+              yield* Actions.subname.createSync(holder, {
+                name: grandchild,
+                owner: carol,
+                resolver: null,
+              });
+
+              const status = yield* Actions.migration.get(holder, { name: detached, account: bob });
+              assert.strictEqual(status.route, "locked-child");
+              assert.deepStrictEqual(status.blockers, []);
+              assert.isNull(status.after.subregistry);
+              assert.sameMembers(
+                [...status.after.roles],
+                [...Role.toNames(Roles.registryBitmaps.registration, "registry")],
+              );
+
+              const { plan } = yield* Actions.migration.migrateSync(holder, {
+                names: { name: detached, subnames: [grandchild] },
+                resolver: "keep",
+                onStep: chain.passWaits,
+              });
+              assert.notInclude(
+                Arr.map(plan.steps, (step) => step.id),
+                "wrapped-subnames",
+              );
+              const recreated = yield* Actions.name.get(holder, { name: grandchild });
+              assert.deepInclude(recreated, { protocol: "v2", owner: carol });
             }),
           );
         }),

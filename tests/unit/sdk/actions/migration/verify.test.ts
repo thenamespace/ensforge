@@ -17,6 +17,7 @@ describe("migration.migrate verification", () => {
         owner: other,
         resolver: resolverA,
         subregistry: null,
+        subnames: [],
         records: undefined,
       };
 

@@ -37,6 +37,8 @@ export type Recreation = {
   readonly wrapped: readonly Plan.Call[];
   readonly leftBehind: readonly LeftBehind[];
   readonly warnings: readonly Plan.Warning[];
+  /** Subnames registered in ENSv2, with their owners. */
+  readonly recreated: readonly { readonly name: string; readonly owner: Address }[];
 };
 
 /** Where a level of subnames is registered. */
@@ -132,6 +134,7 @@ export const planRecreation = Effect.fnUntraced(function* (
   const wrapped: Plan.Call[] = [];
   const leftBehind: LeftBehind[] = [];
   const warnings: Plan.Warning[] = [];
+  const recreated: { readonly name: string; readonly owner: Address }[] = [];
   const temporary = new Set<Address>();
 
   const userRegistry = Effect.fnUntraced(function* (
@@ -249,6 +252,7 @@ export const planRecreation = Effect.fnUntraced(function* (
       };
       if (target.kind === "wrapper") wrapped.push(register);
       else registryCalls.get(target.address)?.push(register);
+      recreated.push({ name: state.name, owner: holder });
       if (subregistry !== zeroAddress) {
         levels.push({ name, target: { kind: "user", address: subregistry } });
       }
@@ -273,5 +277,6 @@ export const planRecreation = Effect.fnUntraced(function* (
     wrapped,
     leftBehind,
     warnings,
+    recreated,
   };
 });

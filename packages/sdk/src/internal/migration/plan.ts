@@ -1,4 +1,4 @@
-import { Effect, String as Str, Array as Arr } from "effect";
+import { Effect, String as Str, Array as Arr, Order } from "effect";
 
 import { Abis, Roles } from "@ensforge/contracts";
 import { predictVerifiableProxyAddress } from "@ensforge/contracts/v2";
@@ -31,7 +31,7 @@ import * as Rpc from "../rpc/index.js";
 import { discoverSubnames } from "./discover.js";
 import { inspectMigration, type Inspection, type ResolverChoice } from "./inspect.js";
 import { recordsToCopy, type CopiedRecords } from "./records.js";
-import { planRecreation } from "./subnames.js";
+import { planRecreation, type Recreation } from "./subnames.js";
 
 /** What `migration.migrate` takes, besides the signer. */
 export type MigrationInput = {
@@ -53,6 +53,8 @@ export type Expectation = {
   readonly resolver: Address | null;
   readonly subregistry: Address | null;
   readonly records: CopiedRecords | undefined;
+  /** Subnames recreated in ENSv2, with their owners. */
+  readonly subnames: readonly { readonly name: string; readonly owner: Address }[];
 };
 
 /** The migration part of a plan: steps, deployments, warnings, expectations. */
@@ -227,11 +229,21 @@ export const planMigration = Effect.fnUntraced(function* (
   const newOwner =
     input.owner === undefined ? undefined : yield* requireAddress(input.owner, "owner");
 
-  const entries = yield* inspectAll(client, inputs, {
+  // Parents first, whatever the input order: a locked child migrates into the WrapperRegistry its
+  // parent gets.
+  const inspected = yield* inspectAll(client, inputs, {
     signer,
     resolver: resolverChoice,
     migrateParents: input.migrateParents === true,
   });
+  const entries = Arr.sort(
+    inspected,
+    Order.mapInput(
+      Order.Number,
+      (entry: { readonly inspection: Inspection }) =>
+        Str.split(".")(entry.inspection.status.name).length,
+    ),
+  );
   yield* requireEligible(entries, { renewing: input.renewing === true });
 
   const proxyLogic = yield* Rpc.readContract(client, {
@@ -277,7 +289,7 @@ export const planMigration = Effect.fnUntraced(function* (
       );
     }
     const owner = newOwner ?? holder;
-    const locked = route === "wrapped-locked" || route === "locked-child";
+    const { locked } = inspection;
 
     // Resolver: create or reuse one, keep the current one, or let the controller decide.
     let resolver: Address = status.resolver.current ?? zeroAddress;
@@ -370,8 +382,16 @@ export const planMigration = Effect.fnUntraced(function* (
         ? v2.migration.unlockedMigrationController
         : route === "wrapped-locked"
           ? v2.migration.lockedMigrationController
-          : // oxlint-disable-next-line typescript/no-unnecessary-type-assertion, typescript/no-unsafe-type-assertion -- a v2 name's state always carries its registry (`Name.State` types it as nullable); tsc needs the assertion
-            (parentRegistry?.address ?? (loaded.data.v2?.registry as Address));
+          : (parentRegistry?.address ?? loaded.data.v2?.registry);
+    if (target === undefined) {
+      return yield* Effect.fail(
+        new MigrationError({
+          code: "NOT_ELIGIBLE",
+          blockers: ["parent-not-migrated"],
+          context: { name: status.name },
+        }),
+      );
+    }
     const depth = route === "locked-child" ? (parentRegistry?.depth ?? -1) + 1 : 0;
     const wrapperRegistry = locked
       ? predictVerifiableProxyAddress({
@@ -388,6 +408,7 @@ export const planMigration = Effect.fnUntraced(function* (
     // Subnames, listed or found by the indexer, at any depth: an unlocked name recreates them in
     // a new UserRegistry, a locked one in its WrapperRegistry once it migrated.
     let subregistry: Address = zeroAddress;
+    let recreated: Recreation["recreated"] = [];
     let subnames = config?.subnames;
     const discovered = subnames === undefined ? yield* discoverSubnames(client, status.name) : null;
     if (discovered !== null) {
@@ -405,7 +426,9 @@ export const planMigration = Effect.fnUntraced(function* (
         subnames,
         owner,
         sender,
-        parentRegistry: v2.contracts.ethRegistry,
+        // The registry the name lives in after migrating: its parent's WrapperRegistry for a
+        // child, else the ETHRegistry.
+        parentRegistry: route === "locked-child" ? target : v2.contracts.ethRegistry,
         wrapperRegistry:
           wrapperRegistry === undefined
             ? undefined
@@ -425,6 +448,7 @@ export const planMigration = Effect.fnUntraced(function* (
         );
       }
       subregistry = recreation.registry ?? zeroAddress;
+      recreated = recreation.recreated;
       for (const deployment of recreation.deploys) {
         setup.push(deployment.call);
         deploys.push({ contract: "registry", address: deployment.address });
@@ -471,8 +495,9 @@ export const planMigration = Effect.fnUntraced(function* (
       name: status.name,
       owner,
       resolver: plan === "keep" && locked ? null : nonZeroAddress(resolver),
-      subregistry: locked ? null : nonZeroAddress(subregistry),
+      subregistry: locked ? (wrapperRegistry ?? null) : nonZeroAddress(subregistry),
       records: copied,
+      subnames: recreated,
     });
   }
 

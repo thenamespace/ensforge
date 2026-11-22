@@ -12,9 +12,11 @@ import * as Fuse from "../../utils/Fuse.js";
 import * as Role from "../../utils/Role.js";
 import { nonZeroAddress, sameAddress } from "../address.js";
 import { loadName, type LoadedName } from "../name/load.js";
+import { parentOf } from "../name/parts.js";
 import { RegistryStatus } from "../name/read.js";
 import { blockAt } from "../rpc/block.js";
 import * as Rpc from "../rpc/index.js";
+import { isCertifiedWrapperRegistry } from "./wrapper-registry.js";
 
 /** How the caller wants each name's resolver handled; `undefined` picks per name. */
 export type ResolverChoice = "new" | "owned" | "keep" | Address | undefined;
@@ -27,11 +29,21 @@ export type Inspection = {
   readonly fuses: number;
   /** Whether the current resolver is an ENS public resolver (its records can be copied). */
   readonly publicResolver: boolean;
+  /**
+   * Locked (`cannotUnwrap`): the receiver deploys it a WrapperRegistry and derives its roles from
+   * its fuses. An emancipated child without it is detached: registered like an unlocked name.
+   */
+  readonly locked: boolean;
 };
 
-const lockedFuseRoles = (fuses: number): bigint => {
-  // LockedWrapperReceiver._tokenRoleBitmapFromFuses.
-  let roles = Fuse.has(fuses, "cannotSetResolver") ? 0n : Roles.registry.setResolver;
+/**
+ * `LockedWrapperReceiver._tokenRoleBitmapFromFuses` for this build: builds that grant a renew
+ * role add it, before admin roles are derived, for `canExtendExpiry`.
+ */
+const lockedFuseRoles = (fuses: number, renewRole: boolean): bigint => {
+  let roles =
+    (Fuse.has(fuses, "cannotSetResolver") ? 0n : Roles.registry.setResolver) |
+    (renewRole && Fuse.has(fuses, "canExtendExpiry") ? Roles.registry.renew : 0n);
   if (!Fuse.has(fuses, "cannotBurnFuses")) roles |= roles << 128n;
   if (!Fuse.has(fuses, "cannotTransfer")) roles |= Roles.registry.canTransferAdmin;
   return roles;
@@ -94,6 +106,7 @@ export const inspectMigration = Effect.fnUntraced(function* (
     loaded,
     fuses,
     publicResolver: false,
+    locked: false,
   });
   if (kind === "v2-migrated") return unmigratable("migrated");
   if (kind !== "v1-unwrapped" && kind !== "v1-wrapped") return unmigratable("not-required");
@@ -169,6 +182,11 @@ export const inspectMigration = Effect.fnUntraced(function* (
     data.v2 !== undefined && data.v2.state.status === RegistryStatus.reserved ? data.v2 : undefined;
   if (route === "locked-child") {
     if (data.v2 === undefined) blockers.push("parent-not-migrated");
+    // The child's transfer into its parent's registry cannot be undone: it must be the one the
+    // parent's migration created.
+    else if (!(yield* isCertifiedWrapperRegistry(client, parentOf(state.name), data.v2.registry))) {
+      blockers.push("uncertified-parent-registry");
+    }
   } else if (route !== null && reservation === undefined) blockers.push("not-reserved");
 
   const publicResolver =
@@ -182,7 +200,8 @@ export const inspectMigration = Effect.fnUntraced(function* (
         ],
         (address) => isAddressEqual(address, resolver),
       ));
-  const locked = route === "wrapped-locked" || route === "locked-child";
+  const locked =
+    (route === "wrapped-locked" || route === "locked-child") && Fuse.has(fuses, "cannotUnwrap");
   const plan = resolverPlan(options.resolver, {
     resolver,
     publicResolver,
@@ -202,10 +221,12 @@ export const inspectMigration = Effect.fnUntraced(function* (
 
   const renewRole = v2.capabilities.lockedMigrationRenewal === "renew-role";
   const extendable = Fuse.has(fuses, "canExtendExpiry");
-  const roles = !locked
-    ? Roles.registryBitmaps.registration
-    : lockedFuseRoles(fuses) |
-      (route === "locked-child" && extendable && renewRole
+  // A detached child is registered with the registration roles; builds that grant a renew role
+  // add it with its admin.
+  const roles = locked
+    ? lockedFuseRoles(fuses, renewRole)
+    : Roles.registryBitmaps.registration |
+      (route === "locked-child" && renewRole
         ? Roles.registry.renew | Roles.registry.renewAdmin
         : 0n);
   const expiry =
@@ -219,6 +240,7 @@ export const inspectMigration = Effect.fnUntraced(function* (
     loaded,
     fuses,
     publicResolver,
+    locked,
     status: {
       name: state.name,
       status: blockers.length === 0 ? "eligible" : "blocked",

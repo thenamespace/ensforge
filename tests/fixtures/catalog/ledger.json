@@ -1677,7 +1677,9 @@
   },
   "M20": {
     "tests": [
-      "tests/integration/test/writes/migration.test.ts > registers a locked name's controlled subnames in its WrapperRegistry once it migrated"
+      "tests/integration/test/writes/migration.test.ts > registers a locked name's controlled subnames in its WrapperRegistry once it migrated",
+      "tests/integration/test/writes/migration.test.ts > migrates a locked child listed before its locked parent",
+      "tests/integration/test/writes/migration.test.ts > migrates a detached child with its subnames in a registry of its own"
     ]
   },
   "M21": {

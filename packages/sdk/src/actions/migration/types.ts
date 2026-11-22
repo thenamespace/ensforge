@@ -33,6 +33,8 @@ export type Route = "unwrapped" | "wrapped-unlocked" | "wrapped-locked" | "locke
  *   (`subnames`).
  * - `locked-resolver`: `cannotSetResolver` keeps a resolver that could no longer be edited.
  * - `unknown-label`: only the label's hash is known.
+ * - `uncertified-parent-registry`: a locked child's parent registry is not the WrapperRegistry
+ *   the parent's migration created; the child's transfer into it could not be undone.
  *
  * @category migration
  * @since 1.0.0
@@ -47,7 +49,8 @@ export type Blocker =
   | "parent-not-migrated"
   | "unlocked-child"
   | "locked-resolver"
-  | "unknown-label";
+  | "unknown-label"
+  | "uncertified-parent-registry";
 
 /**
  * Where a name's records end up:
