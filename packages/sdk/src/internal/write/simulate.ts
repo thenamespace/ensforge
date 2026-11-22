@@ -107,10 +107,13 @@ const simulateAcrossWaits = Effect.fnUntraced(function* (
     return blocks;
   });
   const latest = yield* fromPromise(() => getBlock(client.client()));
-  // Every block a second after the one before it, plus its wait.
+  // Every block a second after the one before it, plus its wait (from a fixed time, when given).
   let time = latest.timestamp;
   const blocks = Arr.map(segments, (segment, index) => {
-    time += 1n + (segment[0]?.waitFor?.seconds ?? 0n);
+    const wait = segment[0]?.waitFor;
+    const after =
+      wait?.since === undefined ? time + 1n + (wait?.seconds ?? 0n) : wait.since + wait.seconds;
+    time = after > time ? after : time + 1n;
     const calls = Arr.flatMap(segment, (step) => step.calls);
     return {
       calls,

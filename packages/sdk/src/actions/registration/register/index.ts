@@ -27,6 +27,8 @@ import * as Impl from "./effect.js";
  * - By default each name gets its own PermissionedResolver with `records` written at creation; its
  *   ETH address defaults to the owner (`addresses: { eth: null }` leaves it unset).
  * - The result's `secret` resumes an interrupted registration: call again with the same options and `secret`.
+ *   A commitment that is not ready yet is waited for; one that expired is made again, with the
+ *   plan warning `COMMITMENT_RECOMMITTED`.
  *
  * **Gotchas**
  *
@@ -58,7 +60,6 @@ import * as Impl from "./effect.js";
  * @throws `Errors.InvalidInputError` (`INVALID_NAME`, `INVALID_ADDRESS`, `INVALID_DURATION`, `DURATION_TOO_SHORT`, `INVALID_RECORD_VALUE`) for invalid input, including a zero owner or a duration over 100 years.
  * @throws `Errors.NameStateError` (`NAME_NOT_AVAILABLE`) when a name is taken or in its grace period.
  * @throws `Errors.NotFoundError` (`RESOLVER_NOT_DEPLOYED`, `REGISTRY_NOT_FOUND`) when no contract is deployed at the given resolver or subregistry.
- * @throws `Errors.CommitmentError` (`COMMITMENT_TOO_NEW`, `COMMITMENT_TOO_OLD`, `COMMITMENT_EXISTS`) for a resumed commitment outside its window.
  * @throws `Errors.InsufficientFundsError` (`INSUFFICIENT_TOKEN_BALANCE`) when the signer cannot pay in the payment token.
  * @throws `Errors.UnsupportedError` (`PAYMENT_TOKEN_UNSUPPORTED`, `UNSUPPORTED_ON_DEPLOYMENT`) for an unaccepted token or without ENSv2.
  * @throws `Errors.ConfigError` (`WALLET_NOT_CONFIGURED`) when no signing account is known.
@@ -122,8 +123,7 @@ export declare namespace register {
     | Errors.WriteError
     | Errors.InvalidInputError
     | Errors.NameStateError
-    | Errors.NotFoundError
-    | Errors.CommitmentError;
+    | Errors.NotFoundError;
 }
 
 // Explicit types keep these declarations free of Effect types.
@@ -178,7 +178,6 @@ register.estimateGas = Action.promiseOf(
  * @throws `Errors.InvalidInputError` (`INVALID_NAME`, `INVALID_ADDRESS`, `INVALID_DURATION`, `DURATION_TOO_SHORT`, `INVALID_RECORD_VALUE`) for invalid input, including a zero owner or a duration over 100 years.
  * @throws `Errors.NameStateError` (`NAME_NOT_AVAILABLE`) when a name is taken or in its grace period.
  * @throws `Errors.NotFoundError` (`RESOLVER_NOT_DEPLOYED`, `REGISTRY_NOT_FOUND`) when no contract is deployed at the given resolver or subregistry.
- * @throws `Errors.CommitmentError` (`COMMITMENT_TOO_NEW`, `COMMITMENT_TOO_OLD`, `COMMITMENT_EXISTS`) for a resumed commitment outside its window.
  * @throws `Errors.InsufficientFundsError` (`INSUFFICIENT_TOKEN_BALANCE`) when the signer cannot pay in the payment token.
  * @throws `Errors.UnsupportedError` (`PAYMENT_TOKEN_UNSUPPORTED`, `UNSUPPORTED_ON_DEPLOYMENT`) for an unaccepted token or without ENSv2.
  * @throws `Errors.ConfigError` (`WALLET_NOT_CONFIGURED`) when no signing account is known.
@@ -214,8 +213,7 @@ export declare namespace registerSync {
     | Errors.WriteError
     | Errors.InvalidInputError
     | Errors.NameStateError
-    | Errors.NotFoundError
-    | Errors.CommitmentError;
+    | Errors.NotFoundError;
 }
 
 /** Path of the action, e.g. for cache keys. */

@@ -464,12 +464,12 @@ const Actions.registration.register.prepare: ((client: ClientBase<{}>, options: 
 const Actions.registration.register.simulate: ((client: ClientBase<{}>, options: Options & Pick<Options, 'account' | 'via'>) => Effect<Simulation, ErrorType, never>) & { readonly path: string; }
 const Actions.registration.register.estimateGas: ((client: ClientBase<{}>, options: Options & Pick<Options, 'account' | 'via'>) => Effect<Estimate, ErrorType, never>) & { readonly path: string; }
 const Actions.registration.register.path: 'registration.register'
-type Actions.registration.register.ErrorType = CommitmentError | InvalidInputError | NameStateError | NotFoundError | WriteError
+type Actions.registration.register.ErrorType = InvalidInputError | NameStateError | NotFoundError | WriteError
 type Actions.registration.register.Options = { names: string | readonly string[]; duration: bigint; owner?: string | undefined; resolver?: string | null | undefined; records?: Omit<Options, 'clear' | 'name' | 'pubkey' | 'resolver'> | undefined; primaryName?: boolean | undefined; paymentToken?: PaymentToken | undefined; subregistry?: string | undefined; referrer?: `0x${string}` | undefined; secret?: `0x${string}` | undefined; }
 type Actions.registration.register.ReturnType = Result & { readonly secret: `0x${string}`; }
 function Actions.registration.registerSync(client: ClientBase<{}>, options: register.Options & Write.Options & { confirmations?: number | undefined; timeout?: number | undefined; }) => Effect<ReturnType, ErrorType, never>
 const Actions.registration.registerSync.path: 'registration.registerSync'
-type Actions.registration.registerSync.ErrorType = CommitmentError | InvalidInputError | NameStateError | NotFoundError | WriteError
+type Actions.registration.registerSync.ErrorType = InvalidInputError | NameStateError | NotFoundError | WriteError
 type Actions.registration.registerSync.Options = register.Options & Write.Options & { confirmations?: number | undefined; timeout?: number | undefined; }
 type Actions.registration.registerSync.ReturnType = Result & { readonly receipt: TransactionReceipt; readonly receipts: readonly TransactionReceipt[]; } & { readonly secret: `0x${string}`; readonly names: readonly { readonly name: string; readonly tokenId: bigint; readonly expiry: bigint; }[]; readonly paid: bigint; }
 function Actions.registration.renew(client: ClientBase<{}>, options: renew.Options & Pick<Options, 'account' | 'via'> & Write.Options) => Effect<Result, ErrorType, never>
@@ -1408,7 +1408,7 @@ type Plan.Fee = { readonly kind: 'bridge' | 'execution' | 'gas'; readonly token:
 type Plan.Record = { readonly plan: Plan; readonly status: 'completed' | 'failed' | 'pending'; readonly submitted: Readonly<Record<string, readonly `0x${string}`[]>>; readonly bundles: Readonly<Record<string, string>>; readonly references?: Readonly<Record<string, string>> | undefined; readonly error?: string | undefined; readonly updatedAt: number; }
 type Plan.Requirement = { readonly kind: 'balance'; readonly amount: bigint; readonly token?: `0x${string}` | undefined; } | { readonly kind: 'approval'; readonly token: `0x${string}`; readonly spender: `0x${string}`; readonly amount: bigint; }
 type Plan.Simulation = { readonly ok: boolean; readonly plan: Plan; readonly steps: readonly { readonly id: string; readonly ok: boolean; readonly error?: AnyError | undefined; }[]; }
-type Plan.Step = { readonly id: string; readonly description: string; readonly calls: readonly Call[]; readonly waitFor?: { readonly seconds: bigint; } | undefined; readonly from?: 'signer' | undefined; }
+type Plan.Step = { readonly id: string; readonly description: string; readonly calls: readonly Call[]; readonly waitFor?: { readonly seconds: bigint; readonly since?: bigint | undefined; } | undefined; readonly from?: 'signer' | undefined; }
 type Plan.Storage = { readonly get: (id: string) => Promise<Record | undefined>; readonly set: (record: Record) => Promise<void>; readonly delete: (id: string) => Promise<void>; readonly list: () => Promise<readonly Record[]>; }
 type Plan.Warning = { readonly code: string; readonly message: string; }
 type Read.BlockOptions = { blockNumber?: bigint | undefined; blockTag?: undefined; } | { blockNumber?: undefined; blockTag?: BlockTag | undefined; }

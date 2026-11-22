@@ -1,5 +1,5 @@
 import { assert, describe, it } from "@effect/vitest";
-import { Effect } from "effect";
+import { Array as Arr, Effect } from "effect";
 
 import { Abis, Deployments } from "@ensforge/contracts";
 import { Actions } from "@ensforge/sdk/effect";
@@ -65,25 +65,27 @@ describe("registration.getCommitmentStatus", () => {
 });
 
 describe("registration.register.prepare", () => {
-  it.effect("rejects a commitment from the moment the registrar does", () =>
-    Effect.gen(function* () {
-      const codes = yield* Effect.forEach(
-        [maxAge - 1n, maxAge],
-        (age) =>
-          // Only the fields the commitment check reads.
-          pendingCommitments(
-            // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- a partial fixture of the fields the check reads
-            {
-              names: [{ committedAt, commitment }],
-              minCommitmentAge: minAge,
-              maxCommitmentAge: maxAge,
-              now: committedAt + age,
-            } as unknown as PreparedRegistration,
-          ).pipe(Effect.match({ onSuccess: () => "usable", onFailure: (error) => error.code })),
-        { concurrency: 1 },
-      );
+  // The registrar refuses committing again only while a commitment is unexpired.
+  it.effect("commits again from the moment the registrar lets it", () =>
+    Effect.sync(() => {
+      const commitsAgain = Arr.map([maxAge - 1n, maxAge], (age) => {
+        // Only the fields the commitment check reads.
+        const { toCommit, warnings } = pendingCommitments(
+          // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- a partial fixture of the fields the check reads
+          {
+            names: [{ name: "alice.eth", committedAt, commitment }],
+            minCommitmentAge: minAge,
+            maxCommitmentAge: maxAge,
+            now: committedAt + age,
+          } as unknown as PreparedRegistration,
+        );
+        return [toCommit.length, Arr.map(warnings, (warning) => warning.code)];
+      });
 
-      assert.deepStrictEqual(codes, ["usable", "COMMITMENT_TOO_OLD"]);
+      assert.deepStrictEqual(commitsAgain, [
+        [0, []],
+        [1, ["COMMITMENT_RECOMMITTED"]],
+      ]);
     }),
   );
 });

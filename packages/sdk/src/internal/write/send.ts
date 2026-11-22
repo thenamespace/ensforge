@@ -126,13 +126,22 @@ export const sendPlan = Effect.fnUntraced(
           for (const done of previous.steps)
             emit({ step: done, status: "confirmed", hashes: previous.hashes });
           const confirmed = receipts.at(-1);
-          if (step.waitFor !== undefined && confirmed !== undefined) {
+          if (
+            step.waitFor !== undefined &&
+            step.waitFor.since === undefined &&
+            confirmed !== undefined
+          ) {
             emit({ step, status: "waiting" });
             const block = yield* fromPromise(() =>
               getBlock(client.client(), { blockNumber: confirmed.blockNumber }),
             );
             yield* waitForChainTime(client, block.timestamp + step.waitFor.seconds);
           }
+        }
+        // A wait from a fixed time (a commitment made earlier) needs no step before it.
+        if (step.waitFor?.since !== undefined) {
+          emit({ step, status: "waiting" });
+          yield* waitForChainTime(client, step.waitFor.since + step.waitFor.seconds);
         }
 
         // Consecutive steps without a wait join one bundle when the wallet sends bundles.

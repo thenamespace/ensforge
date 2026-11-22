@@ -57,10 +57,12 @@ export declare namespace Plan {
     readonly description: string;
     readonly calls: readonly Call[];
     /**
-     * Chain time to wait after the previous step is confirmed before sending this one, e.g. the
-     * registration commitment age.
+     * Chain time to wait before sending this one, e.g. the registration commitment age: `seconds`
+     * after `since` (a chain timestamp), or after the block that confirmed the previous step.
      */
-    readonly waitFor?: { readonly seconds: bigint } | undefined;
+    readonly waitFor?:
+      | { readonly seconds: bigint; readonly since?: bigint | undefined }
+      | undefined;
     /** `signer`: the signer must send it itself, even through a route (e.g. a token approval). */
     readonly from?: "signer" | undefined;
   };

@@ -40,7 +40,7 @@ export const plan = Effect.fnUntraced(function* (
   const sender = (yield* routeSender(client, options.via, signer)) ?? signer;
   const routed = !isAddressEqual(sender, signer);
   const registration = yield* prepareRegistration(client, options, signer, sender);
-  const toCommit = yield* pendingCommitments(registration);
+  const { toCommit, committedAt, warnings } = pendingCommitments(registration);
   // The registrar charges the price at `register`, which can drift from the quote (the premium
   // decays, the oracle can change), so the approval leaves 2% headroom; the balance check stays
   // exact.
@@ -75,8 +75,13 @@ export const plan = Effect.fnUntraced(function* (
       ]),
     ],
     // The registrar accepts a commitment `MIN_COMMITMENT_AGE` after the block that recorded it;
-    // one extra second keeps `register` out of the boundary block.
-    ...(toCommit.length > 0 ? { waitFor: { seconds: registration.minCommitmentAge + 1n } } : {}),
+    // one extra second keeps `register` out of the boundary block. A commitment made earlier is
+    // waited for from its own block.
+    ...(toCommit.length > 0
+      ? { waitFor: { seconds: registration.minCommitmentAge + 1n } }
+      : committedAt === undefined
+        ? {}
+        : { waitFor: { seconds: registration.minCommitmentAge + 1n, since: committedAt } }),
   });
   // Records on the owner's resolver and the owner's reverse record are the signer's to write.
   const { explicitResolver, records } = registration;
@@ -111,7 +116,7 @@ export const plan = Effect.fnUntraced(function* (
     account: signer,
     steps,
     requirements: [{ kind: "balance", amount: registration.total, token: registration.token }],
-    warnings: registration.warnings,
+    warnings: [...registration.warnings, ...warnings],
     deploys: Arr.flatMap(registration.names, (name) =>
       name.deploy === undefined ? [] : [{ contract: "resolver" as const, address: name.resolver }],
     ),

@@ -41,7 +41,11 @@ type WriteParameters = Parameters<DevnetClient["writeContract"]>[0];
 /** The parts of an ensforge plan event (`Plan.Event`) that `passWaits` reads. */
 type PlanEvent = {
   readonly status: string;
-  readonly step: { readonly waitFor?: { readonly seconds: bigint } | undefined };
+  readonly step: {
+    readonly waitFor?:
+      | { readonly seconds: bigint; readonly since?: bigint | undefined }
+      | undefined;
+  };
 };
 type SimulateParameters = Parameters<DevnetClient["simulateContract"]>[0];
 
@@ -192,9 +196,22 @@ export class Chain extends Context.Service<
             setNextBlockTimestamp(timestamp).pipe(Effect.andThen(mine()), Effect.andThen(effect)),
           ),
         passWaits: (event) => {
-          const seconds = event.step.waitFor?.seconds;
-          if (event.status !== "waiting" || seconds === undefined) return;
-          Effect.runForkWith(context)(increaseTime(Number(seconds)).pipe(Effect.andThen(mine())));
+          const wait = event.step.waitFor;
+          if (event.status !== "waiting" || wait === undefined) return;
+          // A wait from a fixed time ends at that time plus the wait, which may already be near.
+          const { since, seconds: waited } = wait;
+          const forward =
+            since === undefined
+              ? Effect.succeed(waited)
+              : Effect.map(latestBlock, (block) => since + waited - block.timestamp);
+          Effect.runForkWith(context)(
+            forward.pipe(
+              Effect.flatMap((seconds) =>
+                seconds > 0n ? increaseTime(Number(seconds)) : Effect.void,
+              ),
+              Effect.andThen(mine()),
+            ),
+          );
         },
       });
     }),

@@ -1272,7 +1272,7 @@
   "G06": {
     "tests": [
       "tests/integration/test/reads/registration.test.ts > tracks a commitment through its window",
-      "tests/integration/test/writes/registration.test.ts > registers from an earlier commitment only inside its window"
+      "tests/integration/test/writes/registration.test.ts > waits for an earlier commitment that is not ready, and commits again once it expired"
     ]
   },
   "G07": {
@@ -1348,12 +1348,12 @@
     "tests": [
       "tests/integration/test/writes/plans.test.ts > confirms a submitted step on resume, and sends a dropped one again",
       "tests/integration/test/writes/plans.test.ts > resumes an interrupted registration without committing again",
-      "tests/integration/test/writes/registration.test.ts > registers from an earlier commitment only inside its window"
+      "tests/integration/test/writes/registration.test.ts > waits for an earlier commitment that is not ready, and commits again once it expired"
     ]
   },
   "G21": {
     "tests": [
-      "tests/integration/test/writes/registration.test.ts > registers from an earlier commitment only inside its window"
+      "tests/integration/test/writes/registration.test.ts > waits for an earlier commitment that is not ready, and commits again once it expired"
     ]
   },
   "G22": {

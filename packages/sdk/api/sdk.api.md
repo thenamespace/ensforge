@@ -562,7 +562,7 @@ const Actions.registration.isAvailable.path: 'registration.isAvailable'
 function Actions.registration.isAvailable.request(options: Pick<Options, 'signal'> & (BlockOptions & { name: string; })) => Request<boolean, ErrorType>
 type Actions.registration.isAvailable.ReturnType = boolean
 function Actions.registration.register(client: Client<object> | ViemClientLike, options: register.Options & Write.Options) => Promise<ReturnType>
-type Actions.registration.register.ErrorType = CommitmentError | InvalidInputError | NameStateError | NotFoundError | WriteError
+type Actions.registration.register.ErrorType = InvalidInputError | NameStateError | NotFoundError | WriteError
 function Actions.registration.register.estimateGas(client: Client<object> | ViemClientLike, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Estimate>
 const Actions.registration.register.estimateGas.path: string
 type Actions.registration.register.Options = { names: string | readonly string[]; duration: bigint; owner?: string | undefined; resolver?: string | null | undefined; records?: Omit<Options, 'clear' | 'name' | 'pubkey' | 'resolver'> | undefined; primaryName?: boolean | undefined; paymentToken?: PaymentToken | undefined; subregistry?: string | undefined; referrer?: `0x${string}` | undefined; secret?: `0x${string}` | undefined; }
@@ -573,7 +573,7 @@ type Actions.registration.register.ReturnType = Result & { readonly secret: `0x$
 function Actions.registration.register.simulate(client: Client<object> | ViemClientLike, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Simulation>
 const Actions.registration.register.simulate.path: string
 function Actions.registration.registerSync(client: Client<object> | ViemClientLike, options: register.Options & Write.Options & { confirmations?: number | undefined; timeout?: number | undefined; }) => Promise<ReturnType>
-type Actions.registration.registerSync.ErrorType = CommitmentError | InvalidInputError | NameStateError | NotFoundError | WriteError
+type Actions.registration.registerSync.ErrorType = InvalidInputError | NameStateError | NotFoundError | WriteError
 type Actions.registration.registerSync.Options = register.Options & Write.Options & { confirmations?: number | undefined; timeout?: number | undefined; }
 const Actions.registration.registerSync.path: 'registration.registerSync'
 type Actions.registration.registerSync.ReturnType = Result & { readonly receipt: TransactionReceipt; readonly receipts: readonly TransactionReceipt[]; } & { readonly secret: `0x${string}`; readonly names: readonly { readonly name: string; readonly tokenId: bigint; readonly expiry: bigint; }[]; readonly paid: bigint; }
@@ -1479,7 +1479,7 @@ type Plan.Fee = { readonly kind: 'bridge' | 'execution' | 'gas'; readonly token:
 type Plan.Record = { readonly plan: Plan; readonly status: 'completed' | 'failed' | 'pending'; readonly submitted: Readonly<Record<string, readonly `0x${string}`[]>>; readonly bundles: Readonly<Record<string, string>>; readonly references?: Readonly<Record<string, string>> | undefined; readonly error?: string | undefined; readonly updatedAt: number; }
 type Plan.Requirement = { readonly kind: 'balance'; readonly amount: bigint; readonly token?: `0x${string}` | undefined; } | { readonly kind: 'approval'; readonly token: `0x${string}`; readonly spender: `0x${string}`; readonly amount: bigint; }
 type Plan.Simulation = { readonly ok: boolean; readonly plan: Plan; readonly steps: readonly { readonly id: string; readonly ok: boolean; readonly error?: AnyError | undefined; }[]; }
-type Plan.Step = { readonly id: string; readonly description: string; readonly calls: readonly Call[]; readonly waitFor?: { readonly seconds: bigint; } | undefined; readonly from?: 'signer' | undefined; }
+type Plan.Step = { readonly id: string; readonly description: string; readonly calls: readonly Call[]; readonly waitFor?: { readonly seconds: bigint; readonly since?: bigint | undefined; } | undefined; readonly from?: 'signer' | undefined; }
 type Plan.Storage = { readonly get: (id: string) => Promise<Record | undefined>; readonly set: (record: Record) => Promise<void>; readonly delete: (id: string) => Promise<void>; readonly list: () => Promise<readonly Record[]>; }
 type Plan.Warning = { readonly code: string; readonly message: string; }
 function planActions() => (client: Client<object>) => PlanActions

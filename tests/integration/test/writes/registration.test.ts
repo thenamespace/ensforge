@@ -79,8 +79,10 @@ describe("registration", () => {
       { meta: { cases: ["L33"] } },
     );
 
+    // The registrar accepts a commitment between its minimum and maximum age; committing again is
+    // refused only while it is unexpired.
     it.effect(
-      "registers from an earlier commitment only inside its window",
+      "waits for an earlier commitment that is not ready, and commits again once it expired",
       () =>
         Effect.gen(function* () {
           const { accounts } = yield* Devnet;
@@ -91,34 +93,43 @@ describe("registration", () => {
 
           yield* chain.isolated(
             Effect.gen(function* () {
-              const { secret, readyAt } = yield* Actions.registration.commitSync(ens, options);
-              yield* expectFailure(Actions.registration.registerSync(ens, { ...options, secret }), {
-                _tag: "CommitmentError",
-                code: "COMMITMENT_TOO_NEW",
+              const { secret } = yield* Actions.registration.commitSync(ens, options);
+              const result = yield* Actions.registration.registerSync(ens, {
+                ...options,
+                secret,
+                onStep: chain.passWaits,
               });
 
+              // Only the reveal is left to send, after the commitment's age.
+              assert.deepStrictEqual(
+                Arr.map(result.plan.steps, (step) => step.id),
+                ["register"],
+              );
+              assert.strictEqual((yield* ethEntry("qqqqq.eth")).owner, accounts.alice);
+            }),
+          );
+
+          yield* chain.isolated(
+            Effect.gen(function* () {
+              const { secret, readyAt } = yield* Actions.registration.commitSync(ens, options);
               const parameters = yield* Actions.registration.getParameters(ens);
               const expiresAt = readyAt - parameters.minCommitmentAge + parameters.maxCommitmentAge;
               yield* chain.atTimestamp(
                 expiresAt,
-                expectFailure(Actions.registration.registerSync(ens, { ...options, secret }), {
-                  _tag: "CommitmentError",
-                  code: "COMMITMENT_TOO_OLD",
-                }),
-              );
-
-              yield* chain.atTimestamp(
-                readyAt,
                 Effect.gen(function* () {
                   const result = yield* Actions.registration.registerSync(ens, {
                     ...options,
                     secret,
+                    onStep: chain.passWaits,
                   });
 
-                  // Only the reveal is left to send.
+                  assert.deepStrictEqual(
+                    Arr.map(result.plan.warnings, (warning) => warning.code),
+                    ["COMMITMENT_RECOMMITTED"],
+                  );
                   assert.deepStrictEqual(
                     Arr.map(result.plan.steps, (step) => step.id),
-                    ["register"],
+                    ["commit", "register"],
                   );
                   assert.strictEqual((yield* ethEntry("qqqqq.eth")).owner, accounts.alice);
                 }),

@@ -1037,7 +1037,7 @@ type Step
 | `id` | `string` |  |
 | `description` | `string` | Short description for progress UIs, e.g. "Set records". |
 | `calls` | `readonly Call[]` |  |
-| `waitFor` (optional) | `{ readonly seconds: bigint }` | Chain time to wait after the previous step is confirmed before sending this one, e.g. the registration commitment age. |
+| `waitFor` (optional) | `{ readonly seconds: bigint; readonly since?: bigint \| undefined }` | Chain time to wait before sending this one, e.g. the registration commitment age: `seconds` after `since` (a chain timestamp), or after the block that confirmed the previous step. |
 | `from` (optional) | `"signer"` | `signer`: the signer must send it itself, even through a route (e.g. a token approval). |
 
 ### `Plan.Storage`
