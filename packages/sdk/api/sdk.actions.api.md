@@ -869,6 +869,22 @@ type wrapper.setFusesSync.ErrorType = InvalidInputError | NameStateError | Unaut
 type wrapper.setFusesSync.Options = setFuses.Options & Write.Options & { confirmations?: number | undefined; timeout?: number | undefined; }
 const wrapper.setFusesSync.path: 'wrapper.setFusesSync'
 type wrapper.setFusesSync.ReturnType = Result & { readonly receipt: TransactionReceipt; readonly receipts: readonly TransactionReceipt[]; }
+function wrapper.sync(client: Client<object> | ViemClientLike, options: sync.Options & Write.Options) => Promise<Result>
+type wrapper.sync.ErrorType = InvalidInputError | WriteError
+function wrapper.sync.estimateGas(client: Client<object> | ViemClientLike, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Estimate>
+const wrapper.sync.estimateGas.path: string
+type wrapper.sync.Options = { names: string | readonly string[]; }
+const wrapper.sync.path: 'wrapper.sync'
+function wrapper.sync.prepare(client: Client<object> | ViemClientLike, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Plan>
+const wrapper.sync.prepare.path: string
+type wrapper.sync.ReturnType = { readonly hash: `0x${string}`; readonly hashes: readonly `0x${string}`[]; readonly id: string | undefined; readonly plan: Plan; }
+function wrapper.sync.simulate(client: Client<object> | ViemClientLike, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Simulation>
+const wrapper.sync.simulate.path: string
+function wrapper.syncSync(client: Client<object> | ViemClientLike, options: sync.Options & Write.Options & { confirmations?: number | undefined; timeout?: number | undefined; }) => Promise<SyncResult>
+type wrapper.syncSync.ErrorType = InvalidInputError | WriteError
+type wrapper.syncSync.Options = sync.Options & Write.Options & { confirmations?: number | undefined; timeout?: number | undefined; }
+const wrapper.syncSync.path: 'wrapper.syncSync'
+type wrapper.syncSync.ReturnType = Result & { readonly receipt: TransactionReceipt; readonly receipts: readonly TransactionReceipt[]; }
 function wrapper.unwrap(client: Client<object> | ViemClientLike, options: unwrap.Options & Write.Options) => Promise<Result>
 type wrapper.unwrap.ErrorType = InvalidInputError | NameStateError | UnauthorizedError | WriteError
 function wrapper.unwrap.estimateGas(client: Client<object> | ViemClientLike, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Estimate>

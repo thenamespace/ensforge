@@ -53,6 +53,7 @@ Retrying the same call fails the same way until the cause is fixed (`retryable: 
 | [`subname.create`](/docs/reference/sdk/subname/create) | for `fuses`, `expiry`, `roles` or `emancipate` under an L2 name, or a resolver other than Linea's PublicResolver under a Linea name. |
 | [`subname.update`](/docs/reference/sdk/subname/update) | for `expiry` under an L2 name, or a resolver other than Linea's PublicResolver under a Linea name. |
 | [`wrapper.getFuses`](/docs/reference/sdk/wrapper/get-fuses) | without ENSv1. |
+| [`wrapper.sync`](/docs/reference/sdk/wrapper/sync) | without ENSv2. |
 
 Any write can fail with `UnsupportedError`: it is part of `Errors.WriteError`.
 

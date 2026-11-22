@@ -35,6 +35,8 @@ export type Route = "unwrapped" | "wrapped-unlocked" | "wrapped-locked" | "locke
  * - `unknown-label`: only the label's hash is known.
  * - `uncertified-parent-registry`: a locked child's parent registry is not the WrapperRegistry
  *   the parent's migration created; the child's transfer into it could not be undone.
+ * - `wrapper-out-of-sync`: the name was renewed without the NameWrapper being told, which now
+ *   reports it with no owner or fuses; run `wrapper.sync` first.
  *
  * @category migration
  * @since 1.0.0
@@ -50,7 +52,8 @@ export type Blocker =
   | "unlocked-child"
   | "locked-resolver"
   | "unknown-label"
-  | "uncertified-parent-registry";
+  | "uncertified-parent-registry"
+  | "wrapper-out-of-sync";
 
 /**
  * Where a name's records end up:

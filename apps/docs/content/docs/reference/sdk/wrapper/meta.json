@@ -4,6 +4,7 @@
     "get-fuses",
     "set-child-fuses",
     "set-fuses",
+    "sync",
     "unwrap",
     "wrap"
   ]

@@ -5,7 +5,7 @@
       "name": "SDK",
       "npm": "@ensforge/sdk",
       "url": "/docs/reference/sdk",
-      "count": 92,
+      "count": 93,
       "unit": "actions",
       "description": "Every action by domain, plus the client, batching, utilities and indexers.",
       "items": [
@@ -473,6 +473,11 @@
           "name": "wrapper.setFuses",
           "url": "/docs/reference/sdk/wrapper/set-fuses",
           "summary": "Burns owner-controlled fuses on a wrapped ENSv1 name."
+        },
+        {
+          "name": "wrapper.sync",
+          "url": "/docs/reference/sdk/wrapper/sync",
+          "summary": "Brings the NameWrapper's expiry of wrapped .eth names up to their registration's."
         },
         {
           "name": "wrapper.unwrap",

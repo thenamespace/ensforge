@@ -710,6 +710,19 @@ const Actions.wrapper.setFusesSync.path: 'wrapper.setFusesSync'
 type Actions.wrapper.setFusesSync.ErrorType = InvalidInputError | NameStateError | UnauthorizedError | WriteError
 type Actions.wrapper.setFusesSync.Options = setFuses.Options & Write.Options & { confirmations?: number | undefined; timeout?: number | undefined; }
 type Actions.wrapper.setFusesSync.ReturnType = Result & { readonly receipt: TransactionReceipt; readonly receipts: readonly TransactionReceipt[]; }
+function Actions.wrapper.sync(client: ClientBase<{}>, options: sync.Options & Write.Options) => Effect<Result, ErrorType, never>
+const Actions.wrapper.sync.prepare: ((client: ClientBase<{}>, options: Options & Pick<Options, 'account' | 'via'>) => Effect<Plan, ErrorType, never>) & { readonly path: string; }
+const Actions.wrapper.sync.simulate: ((client: ClientBase<{}>, options: Options & Pick<Options, 'account' | 'via'>) => Effect<Simulation, ErrorType, never>) & { readonly path: string; }
+const Actions.wrapper.sync.estimateGas: ((client: ClientBase<{}>, options: Options & Pick<Options, 'account' | 'via'>) => Effect<Estimate, ErrorType, never>) & { readonly path: string; }
+const Actions.wrapper.sync.path: 'wrapper.sync'
+type Actions.wrapper.sync.ErrorType = InvalidInputError | WriteError
+type Actions.wrapper.sync.Options = { names: string | readonly string[]; }
+type Actions.wrapper.sync.ReturnType = { readonly hash: `0x${string}`; readonly hashes: readonly `0x${string}`[]; readonly id: string | undefined; readonly plan: Plan; }
+function Actions.wrapper.syncSync(client: ClientBase<{}>, options: sync.Options & Write.Options & { confirmations?: number | undefined; timeout?: number | undefined; }) => Effect<SyncResult, ErrorType, never>
+const Actions.wrapper.syncSync.path: 'wrapper.syncSync'
+type Actions.wrapper.syncSync.ErrorType = InvalidInputError | WriteError
+type Actions.wrapper.syncSync.Options = sync.Options & Write.Options & { confirmations?: number | undefined; timeout?: number | undefined; }
+type Actions.wrapper.syncSync.ReturnType = Result & { readonly receipt: TransactionReceipt; readonly receipts: readonly TransactionReceipt[]; }
 function Actions.wrapper.unwrap(client: ClientBase<{}>, options: unwrap.Options & Write.Options) => Effect<Result, ErrorType, never>
 const Actions.wrapper.unwrap.prepare: ((client: ClientBase<{}>, options: Options & Pick<Options, 'account' | 'via'>) => Effect<Plan, ErrorType, never>) & { readonly path: string; }
 const Actions.wrapper.unwrap.simulate: ((client: ClientBase<{}>, options: Options & Pick<Options, 'account' | 'via'>) => Effect<Simulation, ErrorType, never>) & { readonly path: string; }

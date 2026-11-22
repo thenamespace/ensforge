@@ -869,6 +869,22 @@ type Actions.wrapper.setFusesSync.ErrorType = InvalidInputError | NameStateError
 type Actions.wrapper.setFusesSync.Options = setFuses.Options & Write.Options & { confirmations?: number | undefined; timeout?: number | undefined; }
 const Actions.wrapper.setFusesSync.path: 'wrapper.setFusesSync'
 type Actions.wrapper.setFusesSync.ReturnType = Result & { readonly receipt: TransactionReceipt; readonly receipts: readonly TransactionReceipt[]; }
+function Actions.wrapper.sync(client: Client<object> | ViemClientLike, options: sync.Options & Write.Options) => Promise<Result>
+type Actions.wrapper.sync.ErrorType = InvalidInputError | WriteError
+function Actions.wrapper.sync.estimateGas(client: Client<object> | ViemClientLike, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Estimate>
+const Actions.wrapper.sync.estimateGas.path: string
+type Actions.wrapper.sync.Options = { names: string | readonly string[]; }
+const Actions.wrapper.sync.path: 'wrapper.sync'
+function Actions.wrapper.sync.prepare(client: Client<object> | ViemClientLike, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Plan>
+const Actions.wrapper.sync.prepare.path: string
+type Actions.wrapper.sync.ReturnType = { readonly hash: `0x${string}`; readonly hashes: readonly `0x${string}`[]; readonly id: string | undefined; readonly plan: Plan; }
+function Actions.wrapper.sync.simulate(client: Client<object> | ViemClientLike, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Simulation>
+const Actions.wrapper.sync.simulate.path: string
+function Actions.wrapper.syncSync(client: Client<object> | ViemClientLike, options: sync.Options & Write.Options & { confirmations?: number | undefined; timeout?: number | undefined; }) => Promise<SyncResult>
+type Actions.wrapper.syncSync.ErrorType = InvalidInputError | WriteError
+type Actions.wrapper.syncSync.Options = sync.Options & Write.Options & { confirmations?: number | undefined; timeout?: number | undefined; }
+const Actions.wrapper.syncSync.path: 'wrapper.syncSync'
+type Actions.wrapper.syncSync.ReturnType = Result & { readonly receipt: TransactionReceipt; readonly receipts: readonly TransactionReceipt[]; }
 function Actions.wrapper.unwrap(client: Client<object> | ViemClientLike, options: unwrap.Options & Write.Options) => Promise<Result>
 type Actions.wrapper.unwrap.ErrorType = InvalidInputError | NameStateError | UnauthorizedError | WriteError
 function Actions.wrapper.unwrap.estimateGas(client: Client<object> | ViemClientLike, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Estimate>
@@ -1520,7 +1536,7 @@ type RoleActions = { readonly role: { readonly get: Bound<typeof get>; readonly 
 function subnameActions() => (client: Client<object>) => SubnameActions
 type SubnameActions = { readonly subname: { readonly create: BoundWrite<typeof create>; readonly createSync: Bound<typeof createSync>; readonly remove: BoundWrite<typeof remove>; readonly removeSync: Bound<typeof removeSync>; readonly update: BoundWrite<typeof update>; readonly updateSync: Bound<typeof updateSync>; }; }
 function wrapperActions() => (client: Client<object>) => WrapperActions
-type WrapperActions = { readonly wrapper: { readonly getFuses: Bound<typeof getFuses>; readonly setChildFuses: BoundWrite<typeof setChildFuses>; readonly setChildFusesSync: Bound<typeof setChildFusesSync>; readonly setFuses: BoundWrite<typeof setFuses>; readonly setFusesSync: Bound<typeof setFusesSync>; readonly unwrap: BoundWrite<typeof unwrap>; readonly unwrapSync: Bound<typeof unwrapSync>; readonly wrap: BoundWrite<typeof wrap>; readonly wrapSync: Bound<typeof wrapSync>; }; }
+type WrapperActions = { readonly wrapper: { readonly getFuses: Bound<typeof getFuses>; readonly setChildFuses: BoundWrite<typeof setChildFuses>; readonly setChildFusesSync: Bound<typeof setChildFusesSync>; readonly setFuses: BoundWrite<typeof setFuses>; readonly setFusesSync: Bound<typeof setFusesSync>; readonly sync: BoundWrite<typeof sync>; readonly syncSync: Bound<typeof syncSync>; readonly unwrap: BoundWrite<typeof unwrap>; readonly unwrapSync: Bound<typeof unwrapSync>; readonly wrap: BoundWrite<typeof wrap>; readonly wrapSync: Bound<typeof wrapSync>; }; }
 type Write.Method = ((client: Like, options: options & Pick<Options, 'account' | 'via'>) => Promise<value>) & { readonly path: string; }
 type Write.Mode = 'auto' | 'batch' | 'sequential'
 type Write.Options = { account?: `0x${string}` | Account | undefined; simulate?: boolean | undefined; signal?: AbortSignal | undefined; mode?: Mode | undefined; maxBundleCalls?: number | undefined; onStep?: ((event: Event) => void) | undefined; via?: Via | undefined; paymaster?: { readonly url: string; readonly context?: Readonly<Record<string, unknown>>; } | undefined; }

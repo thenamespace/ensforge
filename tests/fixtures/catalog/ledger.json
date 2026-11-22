@@ -1452,7 +1452,8 @@
   },
   "T08": {
     "tests": [
-      "tests/integration/test/writes/migration.test.ts > copies records to a new resolver, keeps the manager, and renews a name in grace first"
+      "tests/integration/test/writes/migration.test.ts > copies records to a new resolver, keeps the manager, and renews a name in grace first",
+      "tests/integration/test/writes/migration.test.ts > migrates a name late in grace, after its reservation lapsed, with a renewal"
     ]
   },
   "T09": {
@@ -1941,7 +1942,8 @@
       "tests/integration/test/reads/access.test.ts > reports what an account may do, and why not",
       "tests/integration/test/reads/name.test.ts > v1.wrapped.locked",
       "tests/integration/test/writes/hierarchy.test.ts > wraps, burns fuses, and refuses what burned fuses forbid",
-      "tests/integration/test/writes/transfers.test.ts > transfers each ENSv1 role it is asked to"
+      "tests/integration/test/writes/transfers.test.ts > transfers each ENSv1 role it is asked to",
+      "tests/integration/test/writes/migration.test.ts > refuses a name whose NameWrapper expiry is out of date until it is synced"
     ]
   },
   "M:A9": {

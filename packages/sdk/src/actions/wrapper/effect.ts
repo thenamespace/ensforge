@@ -14,6 +14,8 @@ import type {
   setFuses as setFusesTypes,
   setFusesSync as setFusesSyncTypes,
 } from "./setFuses/index.js";
+import * as syncImpl from "./sync/effect.js";
+import type { sync as syncTypes, syncSync as syncSyncTypes } from "./sync/index.js";
 import * as unwrapImpl from "./unwrap/effect.js";
 import type { unwrap as unwrapTypes, unwrapSync as unwrapSyncTypes } from "./unwrap/index.js";
 import * as wrapImpl from "./wrap/effect.js";
@@ -322,6 +324,116 @@ export declare namespace setFusesSync {
   type Options = setFusesSyncTypes.Options;
   type ReturnType = setFusesSyncTypes.ReturnType;
   type ErrorType = setFusesSyncTypes.ErrorType;
+}
+
+/**
+ * Brings the NameWrapper's expiry of wrapped `.eth` names up to their registration's. Resolves once the transaction is submitted.
+ *
+ * **When to use**
+ *
+ * Use when `migration.get` reports `wrapper-out-of-sync`: the name was renewed without the
+ * NameWrapper being told, so after its old expiry the NameWrapper shows it with no owner or
+ * fuses. Use {@link syncSync} to wait for the receipt.
+ *
+ * **Details**
+ *
+ * - Calls `ETHRenewerV1.syncWrapper`, which anyone may call; it changes nothing but the
+ *   NameWrapper's expiry.
+ * - Renewing through `registration.renew` syncs the NameWrapper as well.
+ *
+ * **Example** (Syncing a name before migrating it)
+ *
+ * ```ts
+ * const { hash } = await ens.wrapper.sync({ names: "alice.eth" })
+ * ```
+ *
+ * **Example** (Syncing a name with a standalone call)
+ *
+ * ```ts
+ * import { Actions } from "@ensforge/sdk"
+ *
+ * await Actions.wrapper.sync(ens, { names: "alice.eth" })
+ * ```
+ *
+ * **Example** (Syncing a name in an Effect program)
+ *
+ * ```ts
+ * import { Actions } from "@ensforge/sdk/effect"
+ *
+ * yield* Actions.wrapper.sync(ens, { names: "alice.eth" })
+ * ```
+ *
+ * @throws `Errors.InvalidInputError` (`INVALID_NAME`) for names that are not `.eth` second-level names.
+ * @throws `Errors.UnsupportedError` (`UNSUPPORTED_ON_DEPLOYMENT`) without ENSv2.
+ * @throws `Errors.UserRejectedError` (`USER_REJECTED`) when the user rejects the request.
+ * @throws `Errors.WalletError` (`CHAIN_MISMATCH`, `ACCOUNT_NOT_FOUND`) when the wallet is on another chain or has no account to sign with.
+ * @throws `Errors.UnsupportedError` (`WALLET_BATCH_UNSUPPORTED`) with `mode: "batch"` or a paymaster when the wallet cannot send calls as one batch.
+ *
+ * @see {@link Actions.migration.get} for the `wrapper-out-of-sync` blocker
+ * @stability stable
+ * @category writing
+ * @since 1.2.0
+ */
+export const sync = /* @__PURE__ */ Object.assign(
+  ((...args: Parameters<typeof syncImpl.sync>) => syncImpl.sync(...args)) as Action.Declared<
+    typeof syncImpl.sync,
+    syncTypes.ErrorType
+  >,
+  syncImpl.syncMethods as Action.Declared<typeof syncImpl.syncMethods, syncTypes.ErrorType>,
+  { path: "wrapper.sync" as const },
+);
+export declare namespace sync {
+  type Options = syncTypes.Options;
+  type ReturnType = syncTypes.ReturnType;
+  type ErrorType = syncTypes.ErrorType;
+}
+
+/**
+ * Brings the NameWrapper's expiry of wrapped `.eth` names up to their registration's. Resolves once the receipt is in.
+ *
+ * **When to use**
+ *
+ * Use when the next step depends on the change being on-chain, such as migrating the name.
+ *
+ * **Example** (Syncing a name and waiting)
+ *
+ * ```ts
+ * const { receipt } = await ens.wrapper.syncSync({ names: "alice.eth" })
+ * ```
+ *
+ * **Example** (Waiting with a standalone call)
+ *
+ * ```ts
+ * import { Actions } from "@ensforge/sdk"
+ *
+ * await Actions.wrapper.syncSync(ens, { names: "alice.eth" })
+ * ```
+ *
+ * **Example** (Waiting in an Effect program)
+ *
+ * ```ts
+ * import { Actions } from "@ensforge/sdk/effect"
+ *
+ * yield* Actions.wrapper.syncSync(ens, { names: "alice.eth" })
+ * ```
+ *
+ * @throws `Errors.InvalidInputError` (`INVALID_NAME`) for names that are not `.eth` second-level names.
+ * @throws `Errors.UnsupportedError` (`UNSUPPORTED_ON_DEPLOYMENT`) without ENSv2.
+ * @throws `Errors.TransactionError` (`TRANSACTION_REVERTED`, `RECEIPT_TIMEOUT`, `NONCE_CONFLICT`) when confirmation fails or the wallet's nonce is already used.
+ *
+ * @see {@link sync} to resolve on submission
+ * @stability stable
+ * @category writing
+ * @since 1.2.0
+ */
+export const syncSync = /* @__PURE__ */ Object.assign(
+  syncImpl.syncSync as Action.Declared<typeof syncImpl.syncSync, syncSyncTypes.ErrorType>,
+  { path: "wrapper.syncSync" as const },
+);
+export declare namespace syncSync {
+  type Options = syncSyncTypes.Options;
+  type ReturnType = syncSyncTypes.ReturnType;
+  type ErrorType = syncSyncTypes.ErrorType;
 }
 
 /**

@@ -14,6 +14,7 @@ import {
   hexToBigInt,
   namehash,
   parseAbi,
+  parseEther,
   zeroAddress,
   type Address,
 } from "viem";
@@ -488,6 +489,88 @@ describe("migration", () => {
           );
         }),
       { meta: { cases: ["T08", "O30"] } },
+    );
+
+    // Late in grace the ENSv2 reservation has lapsed, but renewing through ETHRenewerV1 revives
+    // it: such a name migrates with `renew`.
+    it.effect(
+      "migrates a name late in grace, after its reservation lapsed, with a renewal",
+      () =>
+        Effect.gen(function* () {
+          const fixtures = yield* Fixtures;
+          const { alice } = (yield* Devnet).accounts;
+          const chain = yield* Chain;
+          const ens = (yield* Clients).make({ account: alice });
+          const name = fixtures.byId("v1.unwrapped.grace").name;
+          const before = yield* Actions.migration.get(ens, { name, account: alice });
+          const lapsed = (before.reservationExpiry ?? 0n) + Duration.days(1);
+          const graceEnds = (before.expiry ?? 0n) + Duration.days(90);
+          assert.isBelow(Number(lapsed), Number(graceEnds), "the reservation lapses within grace");
+
+          yield* chain.atTimestamp(
+            lapsed,
+            Effect.gen(function* () {
+              const status = yield* Actions.migration.get(ens, { name, account: alice });
+              assert.deepStrictEqual(status.blockers, ["expired"]);
+              yield* Actions.migration.migrateSync(ens, {
+                names: name,
+                resolver: "keep",
+                renew: { duration: Duration.years(1) },
+                onStep: chain.passWaits,
+              });
+              const migrated = yield* Actions.name.get(ens, { name });
+              assert.strictEqual(migrated.kind, "v2-migrated");
+            }),
+          );
+        }),
+      { meta: { cases: ["T08"] } },
+    );
+
+    // A name renewed on the registrar without the NameWrapper being told shows, past its old
+    // wrapper expiry, with no owner or fuses: a locked name would look unlocked and unowned.
+    it.effect(
+      "refuses a name whose NameWrapper expiry is out of date until it is synced",
+      () =>
+        Effect.gen(function* () {
+          const fixtures = yield* Fixtures;
+          const devnet = yield* Devnet;
+          const { alice } = devnet.accounts;
+          const chain = yield* Chain;
+          const ens = (yield* Clients).make({ account: alice });
+          const name = fixtures.byId("v1.wrapped.locked").name;
+          const renewer = devnet.contract("v2.ethRenewerV1");
+
+          yield* chain.isolated(
+            Effect.gen(function* () {
+              // A registrar controller renews the token directly, skipping the NameWrapper.
+              yield* chain.impersonate(renewer);
+              yield* chain.setBalance(renewer, parseEther("1"));
+              yield* chain.write({
+                address: devnet.contract("v1.baseRegistrar"),
+                abi: Abis.v1.baseRegistrar,
+                functionName: "renew",
+                args: [Name.toTokenId(name), Duration.years(5)],
+                account: renewer,
+              });
+              const fuses = yield* Actions.wrapper.getFuses(ens, { name });
+              const stale = (fuses?.expiry ?? 0n) + Duration.days(1);
+
+              yield* chain.atTimestamp(
+                stale,
+                Effect.gen(function* () {
+                  const before = yield* Actions.migration.get(ens, { name, account: alice });
+                  assert.include([...before.blockers], "wrapper-out-of-sync");
+
+                  yield* Actions.wrapper.syncSync(ens, { names: name });
+                  const after = yield* Actions.migration.get(ens, { name, account: alice });
+                  assert.notInclude([...after.blockers], "wrapper-out-of-sync");
+                  assert.strictEqual(after.route, "wrapped-locked");
+                }),
+              );
+            }),
+          );
+        }),
+      { meta: { cases: ["M:A8"] } },
     );
 
     it.effect(

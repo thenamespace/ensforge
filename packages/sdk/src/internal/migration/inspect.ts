@@ -14,6 +14,7 @@ import { nonZeroAddress, sameAddress } from "../address.js";
 import { loadName, type LoadedName } from "../name/load.js";
 import { parentOf } from "../name/parts.js";
 import { RegistryStatus } from "../name/read.js";
+import { v2RenewsForV1 } from "../name/state.js";
 import { blockAt } from "../rpc/block.js";
 import * as Rpc from "../rpc/index.js";
 import { isCertifiedWrapperRegistry } from "./wrapper-registry.js";
@@ -121,6 +122,22 @@ export const inspectMigration = Effect.fnUntraced(function* (
   const blockers: Blocker[] = blocker === undefined ? [] : [blocker];
   if (data.parts.encodedLabel) blockers.push("unknown-label");
   if (state.status === "grace" || state.status === "expired") blockers.push("expired");
+  // Renewed without the NameWrapper being told: past its old expiry the NameWrapper reports no
+  // owner or fuses, though the NameWrapper still holds the name. `wrapper.sync` fixes it.
+  const registrar = v1?.registrar;
+  if (
+    data.parts.isEth2ld &&
+    v1 !== undefined &&
+    registrar !== undefined &&
+    nonZeroAddress(v1.wrapper.owner) === null &&
+    v1.wrapper.expiry < data.now &&
+    registrar.expiry > data.now &&
+    v1.wrapper.expiry < registrar.expiry + registrar.gracePeriod &&
+    sameAddress(registrar.registrant, v1Contracts.nameWrapper) &&
+    sameAddress(v1.registryOwner, v1Contracts.nameWrapper)
+  ) {
+    blockers.push("wrapper-out-of-sync");
+  }
 
   const unwrapped = route === "unwrapped";
   const owner = unwrapped ? state.registrant : nonZeroAddress(v1?.wrapper.owner);
@@ -187,7 +204,14 @@ export const inspectMigration = Effect.fnUntraced(function* (
     else if (!(yield* isCertifiedWrapperRegistry(client, parentOf(state.name), data.v2.registry))) {
       blockers.push("uncertified-parent-registry");
     }
-  } else if (route !== null && reservation === undefined) blockers.push("not-reserved");
+  } else if (
+    route !== null &&
+    reservation === undefined &&
+    // Late in grace the reservation has lapsed, but renewing through ETHRenewerV1 revives it.
+    !(blockers.includes("expired") && data.v2 !== undefined && v2RenewsForV1(data.now, data.v2))
+  ) {
+    blockers.push("not-reserved");
+  }
 
   const publicResolver =
     resolver !== null &&
