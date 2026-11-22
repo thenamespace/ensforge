@@ -12,7 +12,7 @@ import type { Errors } from "@ensforge/sdk";
 import { expectFailure } from "@ensforge/test-harness";
 import { decodeFunctionData, zeroHash, type Address } from "viem";
 
-import { contracts, hcaAddress, hcaOf, makeClient, owner } from "../fixtures";
+import { contracts, hcaAddress, hcaOf, makeClient, owner, proxyLogic } from "../fixtures";
 
 // A success type of `unknown` would turn `expectFailure`'s flipped error channel into `unknown`.
 type FailingAction = readonly [
@@ -170,6 +170,34 @@ describe("hca input validation", () => {
 });
 
 describe("hca verification", () => {
+  // The implementation comes from VerifiableFactory, which checks the proxy's CREATE2 address and
+  // reads its implementation slot, not from what the account says about itself.
+  it.effect("does not trust an implementation the factory cannot verify", () =>
+    Effect.gen(function* () {
+      const { client } = makeClient({
+        deployed: true,
+        stubs: [
+          {
+            address: Deployments.sepolia.v2.contracts.verifiableFactory,
+            abi: Abis.v2.verifiableFactory,
+            functions: {
+              proxyLogic: () => proxyLogic,
+              verifyContract: () => {
+                throw new Error("not a verifiable proxy");
+              },
+            },
+          },
+        ],
+      });
+
+      const error = yield* expectFailure(Actions.hca.verify(client, {}), {
+        _tag: "HcaError",
+        code: "HCA_NOT_VERIFIED",
+      });
+      assert.deepStrictEqual(error.details, ["untrusted-implementation"]);
+    }),
+  );
+
   // The signer's HCA is deployed but answers for another owner and account kind.
   const { client } = makeClient({
     deployed: true,
@@ -180,7 +208,6 @@ describe("hca verification", () => {
         functions: {
           ownerAndSessionNonce: () => [other, 0n],
           accountId: () => "something-else",
-          getImplementation: () => contracts.standaloneImplementation,
         },
       },
     ],

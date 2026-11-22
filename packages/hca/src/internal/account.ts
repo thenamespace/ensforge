@@ -84,11 +84,14 @@ export const readAccount = Effect.fnUntraced(function* (
           functionName: "accountId",
         }),
       ),
+      // The factory reads the proxy's implementation slot after checking its CREATE2 address, so
+      // the account cannot report another; a revert leaves it untrusted.
       optional(
         Rpc.readContract(client, {
-          address,
-          abi: standaloneSingleOwnerHcaV2Abi,
-          functionName: "getImplementation",
+          address: deployment.verifiableFactory,
+          abi: Abis.v2.verifiableFactory,
+          functionName: "verifyContract",
+          args: [address],
         }),
       ),
       optional(

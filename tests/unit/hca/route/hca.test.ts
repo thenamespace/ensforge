@@ -361,7 +361,6 @@ describe("hca route: preconditions", () => {
             functions: {
               ownerAndSessionNonce: () => [other, 0n],
               accountId: () => "something-else",
-              getImplementation: () => contracts.standaloneImplementation,
             },
           },
         ],

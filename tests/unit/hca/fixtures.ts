@@ -106,7 +106,10 @@ export const makeClient = (world: World = {}) => {
       {
         address: v2.contracts.verifiableFactory,
         abi: Abis.v2.verifiableFactory,
-        functions: { proxyLogic: () => proxyLogic },
+        functions: {
+          proxyLogic: () => proxyLogic,
+          verifyContract: () => contracts.standaloneImplementation,
+        },
       },
       {
         address: hcaAddress,
@@ -114,7 +117,6 @@ export const makeClient = (world: World = {}) => {
         functions: {
           ownerAndSessionNonce: () => [owner, world.sessionNonce ?? 0n],
           accountId: () => "ens-standalone-hca.1.1.0",
-          getImplementation: () => contracts.standaloneImplementation,
         },
       },
       {
