@@ -17,7 +17,11 @@ import {
 } from "../world.js";
 
 const name = "alice.eth";
-const v2Name: World = { name, v2: { owner: signer, resolver: resolverA } };
+const v2Name: World = {
+  name,
+  v2: { owner: signer, resolver: resolverA },
+  permissioned: [resolverA],
+};
 
 describe("role.grant.prepare", () => {
   it.effect.each([
@@ -41,6 +45,21 @@ describe("role.grant.prepare", () => {
       resolverA,
       "grantRootRoles",
       [3n, other],
+    ],
+    // `registrar` and `setAddr` are both bit 0: the name is read from the target's table.
+    [
+      "the registry role that shares its bit with a resolver role",
+      { name, root: true, roles: ["registrar"] },
+      v2Registry,
+      "grantRootRoles",
+      [Roles.registry.registrar, other],
+    ],
+    [
+      "registry roles on an explicit registry",
+      { root: true, contract: v2Registry, roles: ["renew"] },
+      v2Registry,
+      "grantRootRoles",
+      [Roles.registry.renew, other],
     ],
   ] as const)("grants %s", ([, options, to, functionName, args]) =>
     Effect.gen(function* () {
@@ -90,9 +109,44 @@ describe("role.grant.prepare", () => {
     [
       "per-name resolver roles",
       v2Name,
-      { name, target: "resolver" },
+      { name, target: "resolver", roles: ["setText"] },
       "InvalidInputError",
       "INVALID_RECORD_VALUE",
+    ],
+    [
+      "a resolver role name for a registry",
+      v2Name,
+      { name, root: true, target: "registry", roles: ["setAddr"] },
+      "InvalidInputError",
+      "INVALID_ROLES",
+    ],
+    [
+      "a registry role name for a resolver",
+      v2Name,
+      { name, root: true, target: "resolver", roles: ["registrar"] },
+      "InvalidInputError",
+      "INVALID_ROLES",
+    ],
+    [
+      "a resolver given as the registry",
+      v2Name,
+      { root: true, target: "registry", contract: resolverA },
+      "InvalidInputError",
+      "INVALID_ADDRESS",
+    ],
+    [
+      "a name's resolver that is not a PermissionedResolver",
+      { name, v2: { owner: signer, resolver: resolverA } },
+      { name, root: true, target: "resolver", roles: ["setText"] },
+      "InvalidInputError",
+      "INVALID_ADDRESS",
+    ],
+    [
+      "an explicit contract without code",
+      v2Name,
+      { root: true, target: "registry", contract: other },
+      "InvalidInputError",
+      "INVALID_ADDRESS",
     ],
     [
       "neither a name nor root",

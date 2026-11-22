@@ -90,7 +90,9 @@ export declare namespace create {
      */
     owner?: string | undefined;
     /** Extra role grants, by role name or bitmap. */
-    grants?: readonly { account: string; roles: readonly Role.Name[] | bigint }[] | undefined;
+    grants?:
+      | readonly { account: string; roles: readonly Role.ResolverName[] | bigint }[]
+      | undefined;
     /**
      * CREATE2 salt; together with the account it decides the address.
      *

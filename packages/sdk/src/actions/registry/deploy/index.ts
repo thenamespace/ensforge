@@ -75,7 +75,9 @@ export declare namespace deploy {
      */
     owner?: string | undefined;
     /** Extra root role grants, by role name or bitmap. */
-    grants?: readonly { account: string; roles: readonly Role.Name[] | bigint }[] | undefined;
+    grants?:
+      | readonly { account: string; roles: readonly Role.RegistryName[] | bigint }[]
+      | undefined;
     /** Withhold the roles that would let the owners take children back. */
     emancipated?: boolean | undefined;
     /** ENSv2 name to attach it to as subregistry. Normalized automatically. */

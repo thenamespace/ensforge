@@ -435,6 +435,63 @@ describe("access writes", () => {
     );
 
     it.effect(
+      "refuses role names and contracts of the other kind before sending",
+      () =>
+        Effect.gen(function* () {
+          const devnet = yield* Devnet;
+          const { alice } = devnet.accounts;
+          const chain = yield* Chain;
+          const ens = (yield* Clients).make({ account: alice });
+          const registry = devnet.contract("v2.ethRegistry");
+
+          yield* chain.isolated(
+            Effect.gen(function* () {
+              const { resolver } = yield* Actions.resolver.createSync(ens, {});
+              // The devnet's registry and PermissionedResolver report their kind (ERC-165).
+              yield* Actions.role.grant.prepare(ens, {
+                grantee: alice,
+                roles: ["renew"],
+                target: "registry",
+                contract: registry,
+                root: true,
+              });
+              yield* Actions.role.grant.prepare(ens, {
+                grantee: alice,
+                roles: ["setText"],
+                target: "resolver",
+                contract: resolver,
+                root: true,
+              });
+
+              // `setAddr` is bit 0, the registry's `registrar` role.
+              yield* expectFailure(
+                Actions.role.grant.prepare(ens, {
+                  grantee: alice,
+                  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- a resolver role name, which the registry options reject
+                  roles: ["setAddr"] as unknown as ["renew"],
+                  target: "registry",
+                  contract: registry,
+                  root: true,
+                }),
+                { _tag: "InvalidInputError", code: "INVALID_ROLES" },
+              );
+              yield* expectFailure(
+                Actions.role.grant.prepare(ens, {
+                  grantee: alice,
+                  roles: ["setText"],
+                  target: "resolver",
+                  contract: registry,
+                  root: true,
+                }),
+                { _tag: "InvalidInputError", code: "INVALID_ADDRESS" },
+              );
+            }),
+          );
+        }),
+      { meta: { cases: ["W33"] } },
+    );
+
+    it.effect(
       "gives an account access to chosen records only",
       () =>
         Effect.gen(function* () {

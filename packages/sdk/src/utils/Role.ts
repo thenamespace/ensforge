@@ -48,6 +48,24 @@ export const resolver: typeof Roles.resolver = Roles.resolver;
 export type Name = keyof typeof registry | keyof typeof resolver;
 
 /**
+ * A registry role name.
+ *
+ * @stability stable
+ * @category roles
+ * @since 1.2.0
+ */
+export type RegistryName = keyof typeof registry;
+
+/**
+ * A PermissionedResolver role name.
+ *
+ * @stability stable
+ * @category roles
+ * @since 1.2.0
+ */
+export type ResolverName = keyof typeof resolver;
+
+/**
  * Which contract a role bitmap belongs to. Registry and resolver roles share bit positions.
  *
  * @stability stable
@@ -56,11 +74,44 @@ export type Name = keyof typeof registry | keyof typeof resolver;
  */
 export type Target = "registry" | "resolver";
 
+/**
+ * The role names of `target`'s table.
+ *
+ * @stability stable
+ * @category roles
+ * @since 1.2.0
+ */
+export type NameOf<target extends Target> = {
+  readonly registry: RegistryName;
+  readonly resolver: ResolverName;
+}[target];
+
 // Names shared by both tables (`canName`, `upgrade`, …) have the same bits, so one lookup works.
 const bits: Readonly<Record<string, bigint>> = { ...registry, ...resolver };
 
+const bitmapOf = (names: readonly Name[], target: Target | undefined): bigint => {
+  const table: Readonly<Record<string, bigint>> =
+    target === undefined ? bits : target === "registry" ? registry : resolver;
+  return Arr.reduce(names, 0n, (bitmap, name) => {
+    const bit = table[name];
+    if (bit === undefined) {
+      throw new InvalidInputError({
+        code: "INVALID_ROLES",
+        field: "roles",
+        input: name,
+        ...(target !== undefined && bits[name] !== undefined
+          ? { shortMessage: `"${name}" is not a ${target} role.` }
+          : {}),
+      });
+    }
+    return bitmap | bit;
+  });
+};
+
 /**
- * Bitmap with every role in `names` set.
+ * Bitmap with every role in `names` set. With `target`, only that contract's role names are
+ * accepted: registry and resolver roles share bit positions, so `setAddr` on a registry would be
+ * its `registrar` role.
  *
  * **Example** (Building a bitmap)
  *
@@ -68,22 +119,22 @@ const bits: Readonly<Record<string, bigint>> = { ...registry, ...resolver };
  * import { Role } from "@ensforge/sdk"
  *
  * Role.from(["setText", "setAddr"])
+ * Role.from(["setResolver"], "registry")
  * ```
  *
- * @throws `Errors.InvalidInputError` (`INVALID_ROLES`) for unknown role names.
+ * @throws `Errors.InvalidInputError` (`INVALID_ROLES`) for unknown role names, or names of the
+ * other contract.
  * @stability stable
  * @category roles
  * @since 1.0.0
  */
-export const from = (names: readonly Name[]): bigint =>
-  Arr.reduce(names, 0n, (bitmap, name) => {
-    const bit = bits[name];
-    if (bit === undefined) throw new InvalidInputError({ code: "INVALID_ROLES", input: name });
-    return bitmap | bit;
-  });
+export const from: {
+  (names: readonly Name[]): bigint;
+  <const target extends Target>(names: readonly NameOf<target>[], target: target): bigint;
+} = (names: readonly Name[], target?: Target): bigint => bitmapOf(names, target);
 
 /**
- * Whether `bitmap` has every role in `names`.
+ * Whether `bitmap` has every role in `names`, optionally only among `target`'s role names.
  *
  * **Example** (Checking roles)
  *
@@ -95,13 +146,21 @@ export const from = (names: readonly Name[]): bigint =>
  * Role.has(bitmap, ["setText", "setAddr"])  // true
  * ```
  *
- * @throws `Errors.InvalidInputError` (`INVALID_ROLES`) for unknown role names.
+ * @throws `Errors.InvalidInputError` (`INVALID_ROLES`) for unknown role names, or names of the
+ * other contract.
  * @stability stable
  * @category roles
  * @since 1.0.0
  */
-export const has = (bitmap: bigint, names: Name | readonly Name[]): boolean => {
-  const required = from(typeof names === "string" ? [names] : names);
+export const has: {
+  (bitmap: bigint, names: Name | readonly Name[]): boolean;
+  <const target extends Target>(
+    bitmap: bigint,
+    names: NameOf<target> | readonly NameOf<target>[],
+    target: target,
+  ): boolean;
+} = (bitmap: bigint, names: Name | readonly Name[], target?: Target): boolean => {
+  const required = bitmapOf(typeof names === "string" ? [names] : names, target);
   return (bitmap & required) === required;
 };
 

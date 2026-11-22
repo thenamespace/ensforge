@@ -61,7 +61,7 @@ export const plan = Effect.fnUntraced(function* (
     (grant) =>
       Effect.gen(function* () {
         const account = yield* requireAddress(grant.account, "grants.account");
-        const roleBitmap = yield* roleBitmapOf(grant.roles);
+        const roleBitmap = yield* roleBitmapOf(grant.roles, "resolver");
         return { account, roleBitmap };
       }),
     { concurrency: 1 },

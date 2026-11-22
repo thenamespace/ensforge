@@ -1,7 +1,7 @@
 import { Effect } from "effect";
 
-import { Abis } from "@ensforge/contracts";
-import { hexToBigInt, type Address } from "viem";
+import { Abis, InterfaceIds } from "@ensforge/contracts";
+import { hexToBigInt, type Address, type Hex } from "viem";
 
 import type { Client } from "../../client/types.js";
 import { InvalidInputError } from "../../errors/classes/InvalidInputError.js";
@@ -73,6 +73,11 @@ export const resolveRoleTarget = Effect.fnUntraced(function* (
         : invalid("Pass `name` or `contract`."),
     );
   }
+  // Registry and resolver roles share bit positions, so a grant on the wrong kind of contract
+  // would give other roles. A name's registry is one by construction; check everything else.
+  if (options.contract !== undefined || options.target === "resolver") {
+    yield* requireContractKind(client, contract, options.target);
+  }
   if (root) return { contract, resource: 0n, anyId: undefined };
 
   // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- a name target was loaded above
@@ -90,4 +95,46 @@ export const resolveRoleTarget = Effect.fnUntraced(function* (
           args: [anyId],
         });
   return { contract, resource, anyId };
+});
+
+/** Fails unless `contract` reports (ERC-165) being an ENSv2 registry or PermissionedResolver, as `target` says. */
+const requireContractKind = Effect.fnUntraced(function* (
+  client: Client,
+  contract: Address,
+  target: RoleTarget["target"],
+): Effect.fn.Return<void, AnyError> {
+  const supports = (interfaceId: Hex) =>
+    Rpc.readContractOrUndefined(client, {
+      address: contract,
+      abi: Abis.shared.erc165,
+      functionName: "supportsInterface",
+      args: [interfaceId],
+    });
+  const kind = (yield* Rpc.hasCode(client, contract))
+    ? yield* Effect.all(
+        {
+          registry: supports(InterfaceIds.registry.permissionedRegistry),
+          resolver: supports(InterfaceIds.resolver.permissionedResolver),
+        },
+        { concurrency: "unbounded" },
+      )
+    : { registry: false, resolver: false };
+  const actual =
+    kind.registry === true && kind.resolver !== true
+      ? "registry"
+      : kind.resolver === true && kind.registry !== true
+        ? "resolver"
+        : undefined;
+  if (actual === target) return undefined;
+
+  const expected = target === "registry" ? "an ENSv2 registry" : "an ENSv2 PermissionedResolver";
+  return yield* Effect.fail(
+    new InvalidInputError({
+      code: "INVALID_ADDRESS",
+      field: "contract",
+      input: contract,
+      shortMessage: `${contract} is not ${expected}. No roles were changed.`,
+      ...(actual === undefined ? {} : { hint: `Pass \`target: "${actual}"\` for its roles.` }),
+    }),
+  );
 });

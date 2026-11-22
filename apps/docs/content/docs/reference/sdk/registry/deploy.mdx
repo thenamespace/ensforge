@@ -39,7 +39,7 @@ Call it as `ens.registry.deploy(options)` on a client, or `Actions.registry.depl
 | Option | Type | Default | Description |
 | --- | --- | --- | --- |
 | `owner` | `string` | the signing account | Account that gets the root roles. |
-| `grants` | `readonly { account: string; roles: readonly Role.Name[] \| bigint }[]` |  | Extra root role grants, by role name or bitmap. |
+| `grants` | `readonly { account: string; roles: readonly Role.RegistryName[] \| bigint }[]` |  | Extra root role grants, by role name or bitmap. |
 | `emancipated` | `boolean` |  | Withhold the roles that would let the owners take children back. |
 | `attachTo` | `string` |  | ENSv2 name to attach it to as subregistry. Normalized automatically. |
 | `salt` | `bigint` | a random salt | CREATE2 salt; together with the account it decides the address. |

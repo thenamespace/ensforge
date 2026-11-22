@@ -158,6 +158,7 @@ const stubs = (world: World): ContractStub[] => {
       address: registry,
       abi: Abis.v2.userRegistry,
       functions: {
+        supportsInterface: ([id]) => id === InterfaceIds.registry.permissionedRegistry,
         getState: ([id]) => {
           const found = v2Of(id as bigint);
           // ENSv2 reserves the labels of ENSv1 names that have not migrated.
@@ -329,7 +330,8 @@ const stubs = (world: World): ContractStub[] => {
       ],
       functions: {
         supportsInterface: ([id]) =>
-          includes(world.permissioned, address) ||
+          (id === InterfaceIds.resolver.permissionedResolver &&
+            includes(world.permissioned, address)) ||
           (id === InterfaceIds.resolverProfiles.extended && includes(world.extended, address)),
         recordVersions: () => 0n,
         resolve: () => {
@@ -362,7 +364,8 @@ export const clientFor = (world: World) => {
   const { transport, calls } = scriptedTransport(
     contractScript({
       contracts: stubs(world),
-      code: Rec.keys(world.contracts ?? {}),
+      // Registries and PermissionedResolvers are contracts too: role targets are checked for code.
+      code: [...Rec.keys(world.contracts ?? {}), v2Registry, ...(world.permissioned ?? [])],
     }),
   );
   const { name, chainId, v1: deploymentV1 } = Deployments.mainnet;

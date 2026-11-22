@@ -613,7 +613,7 @@ function registry.deploy(client: Client<object> | ViemClientLike, options: deplo
 type registry.deploy.ErrorType = InvalidInputError | UnauthorizedError | WriteError
 function registry.deploy.estimateGas(client: Client<object> | ViemClientLike, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Estimate>
 const registry.deploy.estimateGas.path: string
-type registry.deploy.Options = { owner?: string | undefined; grants?: readonly { account: string; roles: bigint | readonly Name[]; }[] | undefined; emancipated?: boolean | undefined; attachTo?: string | undefined; salt?: bigint | undefined; }
+type registry.deploy.Options = { owner?: string | undefined; grants?: readonly { account: string; roles: bigint | readonly ('canName' | 'canNameAdmin' | 'canTransfer' | 'canTransferAdmin' | 'registerReserved' | 'registerReservedAdmin' | 'registrar' | 'registrarAdmin' | 'renew' | 'renewAdmin' | 'setParent' | 'setParentAdmin' | 'setResolver' | 'setResolverAdmin' | 'setSubregistry' | 'setSubregistryAdmin' | 'setUri' | 'setUriAdmin' | 'unregister' | 'unregisterAdmin' | 'upgrade' | 'upgradeAdmin' | 'wasReserved')[]; }[] | undefined; emancipated?: boolean | undefined; attachTo?: string | undefined; salt?: bigint | undefined; }
 const registry.deploy.path: 'registry.deploy'
 function registry.deploy.prepare(client: Client<object> | ViemClientLike, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Plan>
 const registry.deploy.prepare.path: string
@@ -667,7 +667,7 @@ function resolver.create(client: Client<object> | ViemClientLike, options: creat
 type resolver.create.ErrorType = InvalidInputError | NameStateError | UnauthorizedError | WriteError
 function resolver.create.estimateGas(client: Client<object> | ViemClientLike, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Estimate>
 const resolver.create.estimateGas.path: string
-type resolver.create.Options = { name?: string | undefined; records?: Omit<Options, 'clear' | 'name' | 'pubkey' | 'resolver'> | undefined; owner?: string | undefined; grants?: readonly { account: string; roles: bigint | readonly Name[]; }[] | undefined; salt?: bigint | undefined; }
+type resolver.create.Options = { name?: string | undefined; records?: Omit<Options, 'clear' | 'name' | 'pubkey' | 'resolver'> | undefined; owner?: string | undefined; grants?: readonly { account: string; roles: bigint | readonly ('canName' | 'canNameAdmin' | 'link' | 'linkAdmin' | 'setAbi' | 'setAbiAdmin' | 'setAddr' | 'setAddrAdmin' | 'setContenthash' | 'setContenthashAdmin' | 'setData' | 'setDataAdmin' | 'setInterface' | 'setInterfaceAdmin' | 'setName' | 'setNameAdmin' | 'setText' | 'setTextAdmin' | 'upgrade' | 'upgradeAdmin')[]; }[] | undefined; salt?: bigint | undefined; }
 const resolver.create.path: 'resolver.create'
 function resolver.create.prepare(client: Client<object> | ViemClientLike, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Plan>
 const resolver.create.prepare.path: string
@@ -755,7 +755,7 @@ function role.grant(client: Client<object> | ViemClientLike, options: grant.Opti
 type role.grant.ErrorType = InvalidInputError | UnauthorizedError | WriteError
 function role.grant.estimateGas(client: Client<object> | ViemClientLike, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Estimate>
 const role.grant.estimateGas.path: string
-type role.grant.Options = { grantee: string; roles: bigint | readonly Name[]; target: 'registry' | 'resolver'; name?: string | undefined; contract?: string | undefined; root?: boolean | undefined; }
+type role.grant.Options = { grantee: string; name?: string | undefined; contract?: string | undefined; root?: boolean | undefined; } & ({ target: 'registry'; roles: bigint | readonly ('canName' | 'canNameAdmin' | 'canTransfer' | 'canTransferAdmin' | 'registerReserved' | 'registerReservedAdmin' | 'registrar' | 'registrarAdmin' | 'renew' | 'renewAdmin' | 'setParent' | 'setParentAdmin' | 'setResolver' | 'setResolverAdmin' | 'setSubregistry' | 'setSubregistryAdmin' | 'setUri' | 'setUriAdmin' | 'unregister' | 'unregisterAdmin' | 'upgrade' | 'upgradeAdmin' | 'wasReserved')[]; } | { target: 'resolver'; roles: bigint | readonly ('canName' | 'canNameAdmin' | 'link' | 'linkAdmin' | 'setAbi' | 'setAbiAdmin' | 'setAddr' | 'setAddrAdmin' | 'setContenthash' | 'setContenthashAdmin' | 'setData' | 'setDataAdmin' | 'setInterface' | 'setInterfaceAdmin' | 'setName' | 'setNameAdmin' | 'setText' | 'setTextAdmin' | 'upgrade' | 'upgradeAdmin')[]; })
 const role.grant.path: 'role.grant'
 function role.grant.prepare(client: Client<object> | ViemClientLike, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Plan>
 const role.grant.prepare.path: string
@@ -771,7 +771,7 @@ function role.revoke(client: Client<object> | ViemClientLike, options: revoke.Op
 type role.revoke.ErrorType = InvalidInputError | UnauthorizedError | WriteError
 function role.revoke.estimateGas(client: Client<object> | ViemClientLike, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Estimate>
 const role.revoke.estimateGas.path: string
-type role.revoke.Options = { holder: string; roles: bigint | readonly Name[]; target: 'registry' | 'resolver'; name?: string | undefined; contract?: string | undefined; root?: boolean | undefined; }
+type role.revoke.Options = { holder: string; name?: string | undefined; contract?: string | undefined; root?: boolean | undefined; } & ({ target: 'registry'; roles: bigint | readonly ('canName' | 'canNameAdmin' | 'canTransfer' | 'canTransferAdmin' | 'registerReserved' | 'registerReservedAdmin' | 'registrar' | 'registrarAdmin' | 'renew' | 'renewAdmin' | 'setParent' | 'setParentAdmin' | 'setResolver' | 'setResolverAdmin' | 'setSubregistry' | 'setSubregistryAdmin' | 'setUri' | 'setUriAdmin' | 'unregister' | 'unregisterAdmin' | 'upgrade' | 'upgradeAdmin' | 'wasReserved')[]; } | { target: 'resolver'; roles: bigint | readonly ('canName' | 'canNameAdmin' | 'link' | 'linkAdmin' | 'setAbi' | 'setAbiAdmin' | 'setAddr' | 'setAddrAdmin' | 'setContenthash' | 'setContenthashAdmin' | 'setData' | 'setDataAdmin' | 'setInterface' | 'setInterfaceAdmin' | 'setName' | 'setNameAdmin' | 'setText' | 'setTextAdmin' | 'upgrade' | 'upgradeAdmin')[]; })
 const role.revoke.path: 'role.revoke'
 function role.revoke.prepare(client: Client<object> | ViemClientLike, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Plan>
 const role.revoke.prepare.path: string
@@ -787,7 +787,7 @@ function subname.create(client: Client<object> | ViemClientLike, options: create
 type subname.create.ErrorType = InvalidInputError | NameStateError | UnauthorizedError | WriteError
 function subname.create.estimateGas(client: Client<object> | ViemClientLike, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Estimate>
 const subname.create.estimateGas.path: string
-type subname.create.Options = { name: string; owner?: string | undefined; resolver?: string | null | undefined; records?: Omit<Options, 'clear' | 'name' | 'pubkey' | 'resolver'> | undefined; expiry?: bigint | undefined; fuses?: readonly ('canExtendExpiry' | 'cannotApprove' | 'cannotBurnFuses' | 'cannotCreateSubdomain' | 'cannotSetResolver' | 'cannotSetTtl' | 'cannotTransfer' | 'cannotUnwrap' | 'isDotEth' | 'parentCannotControl')[] | undefined; roles?: bigint | readonly Name[] | undefined; emancipate?: boolean | undefined; upsert?: boolean | undefined; }
+type subname.create.Options = { name: string; owner?: string | undefined; resolver?: string | null | undefined; records?: Omit<Options, 'clear' | 'name' | 'pubkey' | 'resolver'> | undefined; expiry?: bigint | undefined; fuses?: readonly ('canExtendExpiry' | 'cannotApprove' | 'cannotBurnFuses' | 'cannotCreateSubdomain' | 'cannotSetResolver' | 'cannotSetTtl' | 'cannotTransfer' | 'cannotUnwrap' | 'isDotEth' | 'parentCannotControl')[] | undefined; roles?: bigint | readonly ('canName' | 'canNameAdmin' | 'canTransfer' | 'canTransferAdmin' | 'registerReserved' | 'registerReservedAdmin' | 'registrar' | 'registrarAdmin' | 'renew' | 'renewAdmin' | 'setParent' | 'setParentAdmin' | 'setResolver' | 'setResolverAdmin' | 'setSubregistry' | 'setSubregistryAdmin' | 'setUri' | 'setUriAdmin' | 'unregister' | 'unregisterAdmin' | 'upgrade' | 'upgradeAdmin' | 'wasReserved')[] | undefined; emancipate?: boolean | undefined; upsert?: boolean | undefined; }
 const subname.create.path: 'subname.create'
 function subname.create.prepare(client: Client<object> | ViemClientLike, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Plan>
 const subname.create.prepare.path: string

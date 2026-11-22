@@ -540,28 +540,31 @@ const bitmap = Role.from(["setText", Role.admin("setText")])
 
 ### `Role.from`
 
-Bitmap with every role in `names` set.
+Bitmap with every role in `names` set. With `target`, only that contract's role names are
+accepted: registry and resolver roles share bit positions, so `setAddr` on a registry would be
+its `registrar` role.
 
 ```ts
-function from(names: readonly Name[]): bigint
+const from: { (names: readonly Name[]): bigint; <const target extends Target>(names: readonly NameOf<target>[], target: target): bigint; }
 ```
 
 ```ts title="Building a bitmap"
 import { Role } from "@ensforge/sdk"
 
 Role.from(["setText", "setAddr"])
+Role.from(["setResolver"], "registry")
 ```
 
 Errors:
 
-- `InvalidInputError` ([`INVALID_ROLES`](/docs/reference/errors/INVALID_ROLES)) for unknown role names.
+- `InvalidInputError` ([`INVALID_ROLES`](/docs/reference/errors/INVALID_ROLES)) for unknown role names, or names of the other contract.
 
 ### `Role.has`
 
-Whether `bitmap` has every role in `names`.
+Whether `bitmap` has every role in `names`, optionally only among `target`'s role names.
 
 ```ts
-function has(bitmap: bigint, names: Name | readonly Name[]): boolean
+const has: { (bitmap: bigint, names: Name | readonly Name[]): boolean; <const target extends Target>( bitmap: bigint, names: NameOf<target> | readonly NameOf<target>[], target: target, ): boolean; }
 ```
 
 ```ts title="Checking roles"
@@ -574,7 +577,7 @@ Role.has(bitmap, ["setText", "setAddr"])  // true
 
 Errors:
 
-- `InvalidInputError` ([`INVALID_ROLES`](/docs/reference/errors/INVALID_ROLES)) for unknown role names.
+- `InvalidInputError` ([`INVALID_ROLES`](/docs/reference/errors/INVALID_ROLES)) for unknown role names, or names of the other contract.
 
 ### `Role.registry`
 
@@ -624,6 +627,30 @@ A registry or resolver role name.
 
 ```ts
 type Name = keyof typeof registry | keyof typeof resolver;
+```
+
+### `Role.NameOf`
+
+The role names of `target`'s table.
+
+```ts
+type NameOf<target extends Target> = { readonly registry: RegistryName; readonly resolver: ResolverName; }[target];
+```
+
+### `Role.RegistryName`
+
+A registry role name.
+
+```ts
+type RegistryName = keyof typeof registry;
+```
+
+### `Role.ResolverName`
+
+A PermissionedResolver role name.
+
+```ts
+type ResolverName = keyof typeof resolver;
 ```
 
 ### `Role.Target`

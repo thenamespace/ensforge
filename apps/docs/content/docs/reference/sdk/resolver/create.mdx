@@ -51,7 +51,7 @@ Call it as `ens.resolver.create(options)` on a client, or `Actions.resolver.crea
 | `name` | `string` |  | Name to point at the new resolver; required for `records`. Normalized automatically. |
 | `records` | `Omit<recordSet.Options, "name" \| "resolver" \| "clear" \| "pubkey">` |  | Records for `name`, written while the resolver is initialized. |
 | `owner` | `string` | the signing account | Account that gets every resolver role. |
-| `grants` | `readonly { account: string; roles: readonly Role.Name[] \| bigint }[]` |  | Extra role grants, by role name or bitmap. |
+| `grants` | `readonly { account: string; roles: readonly Role.ResolverName[] \| bigint }[]` |  | Extra role grants, by role name or bitmap. |
 | `salt` | `bigint` | a random salt | CREATE2 salt; together with the account it decides the address. |
 
 Also takes the [write options](/docs/reference/sdk/client#write-options).

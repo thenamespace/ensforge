@@ -111,7 +111,7 @@ export declare namespace create {
     /** NameWrapper fuses to burn on the child (wrapped ENSv1 parents). */
     fuses?: readonly Fuse.Name[] | undefined;
     /** ENSv2 roles for the child's owner, by name or bitmap. */
-    roles?: readonly Role.Name[] | bigint | undefined;
+    roles?: readonly Role.RegistryName[] | bigint | undefined;
     /** Emancipate the parent's subregistry if this plan deploys it. */
     emancipate?: boolean | undefined;
     /** Update the child's resolver and records if it already exists. */

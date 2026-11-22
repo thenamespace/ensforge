@@ -123,7 +123,7 @@ const v2Steps = Effect.fnUntraced(function* (
   const roleBitmap =
     options.roles === undefined
       ? Roles.registryBitmaps.registration
-      : yield* roleBitmapOf(options.roles);
+      : yield* roleBitmapOf(options.roles, "registry");
   const write: Plan.Call = exists
     ? {
         to: registry,

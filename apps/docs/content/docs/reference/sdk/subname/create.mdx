@@ -62,7 +62,7 @@ In React, use [`useCreateSubname`](/docs/reference/react/use-create-subname).
 | `records` | `Omit<recordSet.Options, "name" \| "resolver" \| "clear" \| "pubkey">` |  | Records of the child. |
 | `expiry` | `bigint` | never for ENSv2 children; for wrapped children, the maximum when `parentCannotControl` is burned, else none | Expiry as a Unix timestamp. |
 | `fuses` | `readonly Fuse.Name[]` |  | NameWrapper fuses to burn on the child (wrapped ENSv1 parents). |
-| `roles` | `readonly Role.Name[] \| bigint` |  | ENSv2 roles for the child's owner, by name or bitmap. |
+| `roles` | `readonly Role.RegistryName[] \| bigint` |  | ENSv2 roles for the child's owner, by name or bitmap. |
 | `emancipate` | `boolean` |  | Emancipate the parent's subregistry if this plan deploys it. |
 | `upsert` | `boolean` |  | Update the child's resolver and records if it already exists. |
 

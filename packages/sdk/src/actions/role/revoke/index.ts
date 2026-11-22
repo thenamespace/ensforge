@@ -16,6 +16,10 @@ import * as Impl from "./effect.js";
  * **Details**
  *
  * - Revoking needs the matching admin roles.
+ * - Role names are read from `target`'s table only: registry and resolver roles share bit
+ *   positions, so a resolver role name for a registry (`setAddr`, the registry's `registrar` bit)
+ *   fails with `INVALID_ROLES`. An explicit `contract`, or a name's resolver, must report the
+ *   kind `target` names (ERC-165), or the plan fails with `INVALID_ADDRESS`.
  * - Some roles regenerate the name's token ID; the plan carries a `TOKEN_ID_REGENERATED` warning.
  *
  * **Example** (Revoking a role)
@@ -64,17 +68,26 @@ export declare namespace revoke {
   type Options = {
     /** Account that loses the roles. */
     holder: string;
-    /** Roles by name, e.g. `["setResolver"]`, or as a bitmap. */
-    roles: readonly Role.Name[] | bigint;
-    /** Registry or PermissionedResolver roles (resolvers: root only). */
-    target: "registry" | "resolver";
     /** ENS name whose registry or resolver to use. Normalized automatically. */
     name?: string | undefined;
     /** Registry or resolver address, instead of the name's. */
     contract?: string | undefined;
     /** Root roles, applying to every name, instead of the name's. */
     root?: boolean | undefined;
-  };
+  } & (
+    | {
+        /** Registry roles. */
+        target: "registry";
+        /** Registry roles by name, e.g. `["setResolver"]`, or as a bitmap. */
+        roles: readonly Role.RegistryName[] | bigint;
+      }
+    | {
+        /** PermissionedResolver roles (root only). */
+        target: "resolver";
+        /** Resolver roles by name, e.g. `["setText"]`, or as a bitmap. */
+        roles: readonly Role.ResolverName[] | bigint;
+      }
+  );
   /** Submitted transaction hashes and the plan that produced them. */
   type ReturnType = Write.Result;
   /** Errors {@link revoke} can fail with. */
