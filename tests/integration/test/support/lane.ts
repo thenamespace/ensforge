@@ -6,12 +6,19 @@ import { Fixtures } from "@ensforge/test-fixtures";
 
 import { Clients } from "./clients.ts";
 import { Gateways } from "./gateways.ts";
+import { Rhinestone } from "./rhinestone.ts";
 import { Wallets } from "./wallets.ts";
 
-/** The chain lane's services on a running devnet: `Chain`, `Clients`, `Wallets`, `Gateways`. */
-export const chainServices = Layer.mergeAll(Clients.layer, Wallets.layer, Gateways.layer).pipe(
-  Layer.provideMerge(Chain.layer),
-);
+/**
+ * The chain lane's services on a running devnet: `Chain`, `Clients`, `Wallets`, `Gateways`,
+ * `Rhinestone`.
+ */
+export const chainServices = Layer.mergeAll(
+  Clients.layer,
+  Wallets.layer,
+  Gateways.layer,
+  Rhinestone.layer,
+).pipe(Layer.provideMerge(Chain.layer));
 
 /**
  * A seeded profile for a test file, with `Fixtures`, `Devnet` and the chain services. Chain tests

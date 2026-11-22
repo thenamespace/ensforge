@@ -9,8 +9,10 @@ import {
   hcaSignedSession,
   standaloneSingleOwnerHcaV2Abi,
 } from "@ensforge/contracts/v2/experimental/hca";
-import type { HcaSession } from "@ensforge/hca";
+import { hca, rhinestone, type HcaSession } from "@ensforge/hca";
 import { Actions as HcaActions } from "@ensforge/hca/effect";
+import { Duration } from "@ensforge/sdk";
+import { Actions } from "@ensforge/sdk/effect";
 import { Chain, Devnet } from "@ensforge/test-devnet";
 import {
   ContractFunctionRevertedError,
@@ -34,7 +36,9 @@ import {
 } from "viem";
 
 import { Clients } from "../support/clients.ts";
+import { mintUsdc } from "../support/contracts.ts";
 import { onProfile } from "../support/lane.ts";
+import { Rhinestone } from "../support/rhinestone.ts";
 
 // A session ensforge authorized, enabled the way Rhinestone's IntentExecutor presents it: a
 // first-use envelope (`FIXED_SESSION_REFUND_ENABLE_MODE`) carrying the owner's approval, checked by
@@ -335,6 +339,62 @@ describe("HCA sessions on the validator", () => {
           );
         }),
       { meta: { cases: ["Z02", "Z03", "Z05"] } },
+    );
+
+    it.effect(
+      "writes records with a session through rhinestone(), checked by the validator",
+      () =>
+        Effect.gen(function* () {
+          const devnet = yield* Devnet;
+          const chain = yield* Chain;
+          const clients = yield* Clients;
+          const rhinestoneDevnet = yield* Rhinestone;
+          const { carol, bob } = devnet.accounts;
+          const ens = clients.make({ account: carol });
+          const name = "hca-session-records.eth";
+
+          yield* chain.isolated(
+            Effect.gen(function* () {
+              const account = yield* HcaActions.hca.predictAddress(ens, {});
+              yield* mintUsdc(account, 1_000_000_000n);
+              yield* Actions.registration.registerSync(ens, {
+                names: name,
+                duration: Duration.years(1),
+                resolver: "owned",
+                via: hca(),
+                onStep: chain.passWaits,
+              });
+              const resolver = (yield* Actions.resolver.get(ens, { name }))?.address ?? zeroAddress;
+              const now = yield* chain.now;
+              const session = yield* HcaActions.hca.authorizeSession(ens, {
+                sessionKey: bob,
+                resolver,
+                validUntil: Number(now) + 3600,
+              });
+
+              // The intent carries the session's terms and approval as the patched SDK packs them.
+              const filled = rhinestoneDevnet.filled();
+              yield* Actions.record.setSync(ens, {
+                name,
+                texts: { url: "https://session.example" },
+                via: hca({
+                  executors: [
+                    rhinestone({
+                      sdk: rhinestoneDevnet.sdk,
+                      sessionSigner: rhinestoneDevnet.signer(bob),
+                    }),
+                  ],
+                  session,
+                }),
+              });
+
+              const url = yield* Actions.record.getText(ens, { name, key: "url" });
+              assert.strictEqual(url, "https://session.example");
+              assert.strictEqual(rhinestoneDevnet.filled(), filled + 1);
+            }),
+          );
+        }),
+      { meta: { cases: ["Z02"] } },
     );
   });
 });
