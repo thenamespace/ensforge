@@ -17,6 +17,10 @@ const defaults: {
   NAME_LOCKED: () => ({ shortMessage: "The name is locked." }),
   NAME_NOT_WRAPPED: () => ({ shortMessage: "The name is not wrapped in the NameWrapper." }),
   NAME_WRAPPED: () => ({ shortMessage: "The name is already wrapped in the NameWrapper." }),
+  NAME_HAS_SUBNAMES: () => ({
+    shortMessage: "The name has subnames, which would keep resolving without it.",
+    hint: "Remove its subnames first, or pass `allowOrphanedSubnames: true`.",
+  }),
   NAME_UNREACHABLE: () => ({
     shortMessage: "ENSv2 resolution no longer reaches this ENSv1 name.",
     hint: "ENSv2 resolves it elsewhere: an ancestor moved to ENSv2 without it, or ENSv2 holds no reservation for it. Ask the parent's owner to recreate it there.",
@@ -57,6 +61,7 @@ export declare namespace NameStateError {
     | "NAME_LOCKED"
     | "NAME_NOT_WRAPPED"
     | "NAME_WRAPPED"
+    | "NAME_HAS_SUBNAMES"
     | "NAME_UNREACHABLE"
     | "NAME_REQUIRES_MIGRATION"
     | "PARENT_NOT_MIGRATED"

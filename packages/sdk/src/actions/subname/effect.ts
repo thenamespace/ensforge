@@ -24,8 +24,16 @@ import type { update as updateTypes, updateSync as updateSyncTypes } from "./upd
  *   registrar grants (resolver, subregistry, transfers); `roles` and `expiry` override them.
  * - ENSv1 parents use `setSubnodeRecord`; wrapped parents take `fuses` and an `expiry`.
  * - By default the child gets its own PermissionedResolver with `records` written at creation;
+ *   on a deployment without ENSv2, an ENSv1 child gets the public resolver instead.
  *   `resolver: "parent"` shares the parent's resolver, `null` creates it without one.
- * - `upsert` updates an existing child's resolver and records instead of failing.
+ * - Records on an existing resolver for another `owner` are written while the signer holds the
+ *   new child, which then goes to `owner`; wrapped `fuses` are burned last.
+ * - `upsert` changes only what it is given on an existing child, which keeps its owner unless
+ *   `owner` is passed. An ENSv1 child goes through the same routes as `subname.update`; an
+ *   ENSv2 child takes `resolver`, `records` and `expiry` (a renewal), and refuses `owner`,
+ *   `roles` and `emancipate`, which change with `name.transfer` and `role.grant`.
+ * - A wrapped parent cannot create a child that an emancipated holder unwrapped until the
+ *   child's old expiry: it fails with `FUSE_BURNED`.
  * - Under a Basenames or Linea name the child is created on the L2 with `setSubnodeRecord`, on
  *   the family's current resolver by default. Records for another `owner` are written while
  *   the signer holds the child, which then goes to `owner`, in the same step.
@@ -164,6 +172,9 @@ export declare namespace createSync {
  *   nothing, and the plan carries a `WRAPPER_TOKEN_STRANDED` warning.
  * - When no route is allowed, it fails before anything is sent, naming the route the signer has
  *   authority on.
+ * - An ENSv1 child with subnames of its own (expired ones included) fails with
+ *   `NAME_HAS_SUBNAMES` unless `allowOrphanedSubnames`: they would keep resolving. The check
+ *   needs an indexer; without one the plan carries a `SUBNAMES_UNCHECKED` warning.
  * - Under a Basenames or Linea name the same calls run on the L2.
  *
  * **Gotchas**
@@ -196,6 +207,7 @@ export declare namespace createSync {
  * @throws `Errors.InvalidInputError` (`INVALID_NAME`) for invalid input.
  * @throws `Errors.NameStateError` (`NAME_NOT_REGISTERED`, `NAME_EXTERNAL`, `NAME_EXPIRED`) when the child or parent does not exist, or its parent's namespace manages it outside ENS's registries.
  * @throws `Errors.NameStateError` (`NAME_RESERVED`, `NAME_UNREACHABLE`) when the parent is reserved or ENSv2 resolution no longer reaches it.
+ * @throws `Errors.NameStateError` (`NAME_HAS_SUBNAMES`) when the indexer knows subnames of an ENSv1 child, unless `allowOrphanedSubnames`.
  * @throws `Errors.UnauthorizedError` (`MISSING_ROLES`, `NOT_OWNER`, `FUSE_BURNED`) when the account may not remove it.
  * @throws `Errors.ConfigError` (`WALLET_NOT_CONFIGURED`) when no signing account is known.
  * @throws `Errors.ConfigError` (`CHAIN_NOT_CONFIGURED`) when the name lives on an L2 the client cannot reach.
@@ -255,6 +267,7 @@ export declare namespace remove {
  * @throws `Errors.InvalidInputError` (`INVALID_NAME`) for invalid input.
  * @throws `Errors.NameStateError` (`NAME_NOT_REGISTERED`, `NAME_EXTERNAL`, `NAME_EXPIRED`) when the child or parent does not exist, or its parent's namespace manages it outside ENS's registries.
  * @throws `Errors.NameStateError` (`NAME_RESERVED`, `NAME_UNREACHABLE`) when the parent is reserved or ENSv2 resolution no longer reaches it.
+ * @throws `Errors.NameStateError` (`NAME_HAS_SUBNAMES`) when the indexer knows subnames of an ENSv1 child, unless `allowOrphanedSubnames`.
  * @throws `Errors.UnauthorizedError` (`MISSING_ROLES`, `NOT_OWNER`, `FUSE_BURNED`) when the account may not remove it.
  * @throws `Errors.ConfigError` (`WALLET_NOT_CONFIGURED`) when no signing account is known.
  * @throws `Errors.ConfigError` (`CHAIN_NOT_CONFIGURED`) when the name lives on an L2 the client cannot reach.

@@ -3,6 +3,7 @@ import { Array as Arr, Option, Record as Rec, String as Str } from "effect";
 import { Abis, Deployments, InterfaceIds } from "@ensforge/contracts";
 import { standaloneHcaFactoryV2InterfaceAbi } from "@ensforge/contracts/v2/experimental/hca";
 import { Duration, Name } from "@ensforge/sdk/effect";
+import type { Indexer } from "@ensforge/sdk/indexer";
 import * as Ensforge from "@ensforge/sdk/internal/client/Ensforge";
 import type { Plan } from "@ensforge/sdk/internal/plan/Plan";
 import { scriptedTransport } from "@ensforge/test-harness";
@@ -94,6 +95,8 @@ export type World = Entry & {
   readonly stubs?: readonly ContractStub[] | undefined;
   /** Role assignee counts by registry resource (`"0"` the root, `"1"` a name), a nybble per role. */
   readonly assignees?: Readonly<Record<string, bigint>> | undefined;
+  /** The client's indexer. */
+  readonly indexer?: Indexer | undefined;
   /** What resolvers answer for `name(node)`, by node (reverse records). */
   readonly nameRecords?: Readonly<Record<Hex, string>> | undefined;
   /** The HCA each account owns, which the HCA factory reports as authorized for it. */
@@ -247,6 +250,8 @@ const stubs = (world: World): ContractStub[] => {
       address: v1.nameWrapper,
       abi: Abis.v1.nameWrapper,
       functions: {
+        isApprovedForAll: () => world.approvedForAll ?? false,
+        getApproved: () => zeroAddress,
         getData: ([id]) => {
           const wrapper = v1Of(
             Option.getOrUndefined(
@@ -263,6 +268,8 @@ const stubs = (world: World): ContractStub[] => {
       address: v1.baseRegistrar,
       abi: Abis.v1.baseRegistrar,
       functions: {
+        isApprovedForAll: () => false,
+        getApproved: () => zeroAddress,
         ownerOf: ([id]) => {
           const state = v1Of(byToken(id));
           return state?.registrant ?? registryOwner(state);
@@ -415,6 +422,7 @@ export const clientFor = (world: World) => {
     transports: { [mainnet.id]: transport },
     publicRpc: false,
     account: signer,
+    ...(world.indexer === undefined ? {} : { indexer: world.indexer }),
     ...(world.v1Only === true ? { deployment: { name, chainId, v1: deploymentV1 } } : {}),
     // One eth_call per read keeps the script simple; batching is not under test here.
     batch: { multicall: false },

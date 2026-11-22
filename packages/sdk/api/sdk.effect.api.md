@@ -659,7 +659,7 @@ const Actions.subname.remove.simulate: ((client: ClientBase<{}>, options: Option
 const Actions.subname.remove.estimateGas: ((client: ClientBase<{}>, options: Options & Pick<Options, 'account' | 'via'>) => Effect<Estimate, ErrorType, never>) & { readonly path: string; }
 const Actions.subname.remove.path: 'subname.remove'
 type Actions.subname.remove.ErrorType = InvalidInputError | NameStateError | UnauthorizedError | WriteError
-type Actions.subname.remove.Options = { name: string; }
+type Actions.subname.remove.Options = { name: string; allowOrphanedSubnames?: boolean | undefined; }
 type Actions.subname.remove.ReturnType = { readonly hash: `0x${string}`; readonly hashes: readonly `0x${string}`[]; readonly id: string | undefined; readonly plan: Plan; }
 function Actions.subname.removeSync(client: ClientBase<{}>, options: remove.Options & Write.Options & { confirmations?: number | undefined; timeout?: number | undefined; }) => Effect<SyncResult, ErrorType, never>
 const Actions.subname.removeSync.path: 'subname.removeSync'
@@ -1110,7 +1110,7 @@ type Errors.MigrationError.Code = 'ALREADY_MIGRATED' | 'NAME_NOT_LOCKED' | 'NOT_
 type Errors.MigrationError.Options = ClassOptions<Code> & { readonly blockers?: readonly string[] | undefined; }
 class Errors.NameStateError {
   constructor(options: { readonly code: Code; readonly shortMessage?: string | undefined; readonly hint?: string | undefined; readonly details?: readonly string[] | undefined; readonly context?: Context | undefined; readonly cause?: unknown; }) => NameStateError
-  code: 'NAME_EXPIRED' | 'NAME_EXTERNAL' | 'NAME_LOCKED' | 'NAME_NOT_AVAILABLE' | 'NAME_NOT_REGISTERED' | 'NAME_NOT_RENEWABLE' | 'NAME_NOT_WRAPPED' | 'NAME_REQUIRES_MIGRATION' | 'NAME_RESERVED' | 'NAME_UNREACHABLE' | 'NAME_WRAPPED' | 'PARENT_NOT_MIGRATED' | 'REGISTRY_NOT_EMANCIPATED'
+  code: 'NAME_EXPIRED' | 'NAME_EXTERNAL' | 'NAME_HAS_SUBNAMES' | 'NAME_LOCKED' | 'NAME_NOT_AVAILABLE' | 'NAME_NOT_REGISTERED' | 'NAME_NOT_RENEWABLE' | 'NAME_NOT_WRAPPED' | 'NAME_REQUIRES_MIGRATION' | 'NAME_RESERVED' | 'NAME_UNREACHABLE' | 'NAME_WRAPPED' | 'PARENT_NOT_MIGRATED' | 'REGISTRY_NOT_EMANCIPATED'
   ~ensforge/error: true
   _tag: 'NameStateError'
   name: 'NameStateError'
@@ -1133,7 +1133,7 @@ class Errors.NameStateError {
   ~effect/Runtime/errorExitCode: number
   ~effect/Runtime/errorReported: boolean
 }
-type Errors.NameStateError.Code = 'NAME_EXPIRED' | 'NAME_EXTERNAL' | 'NAME_LOCKED' | 'NAME_NOT_AVAILABLE' | 'NAME_NOT_REGISTERED' | 'NAME_NOT_RENEWABLE' | 'NAME_NOT_WRAPPED' | 'NAME_REQUIRES_MIGRATION' | 'NAME_RESERVED' | 'NAME_UNREACHABLE' | 'NAME_WRAPPED' | 'PARENT_NOT_MIGRATED' | 'REGISTRY_NOT_EMANCIPATED'
+type Errors.NameStateError.Code = 'NAME_EXPIRED' | 'NAME_EXTERNAL' | 'NAME_HAS_SUBNAMES' | 'NAME_LOCKED' | 'NAME_NOT_AVAILABLE' | 'NAME_NOT_REGISTERED' | 'NAME_NOT_RENEWABLE' | 'NAME_NOT_WRAPPED' | 'NAME_REQUIRES_MIGRATION' | 'NAME_RESERVED' | 'NAME_UNREACHABLE' | 'NAME_WRAPPED' | 'PARENT_NOT_MIGRATED' | 'REGISTRY_NOT_EMANCIPATED'
 type Errors.NameStateError.Options = { readonly code: Code; readonly shortMessage?: string | undefined; readonly hint?: string | undefined; readonly details?: readonly string[] | undefined; readonly context?: Context | undefined; readonly cause?: unknown; }
 class Errors.NetworkError {
   constructor(options: ClassOptions<Code> & { readonly status?: number | undefined; }) => NetworkError

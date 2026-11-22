@@ -272,7 +272,8 @@
   "O11": {
     "tests": [
       "tests/integration/test/reads/name.test.ts > v1.unwrapped.sub.wrapped-parent",
-      "tests/integration/test/writes/hierarchy.test.ts > removes and changes an unwrapped child of a wrapped parent"
+      "tests/integration/test/writes/hierarchy.test.ts > removes and changes an unwrapped child of a wrapped parent",
+      "tests/integration/test/writes/hierarchy.test.ts > creates a child with records on an existing resolver for another owner"
     ]
   },
   "O12": {
@@ -512,7 +513,8 @@
   "W22": {
     "tests": [
       "tests/integration/test/writes/wrapper.test.ts > lets a child's owner burn it, unless cannotUnwrap is burned",
-      "tests/integration/test/writes/hierarchy.test.ts > removes an emancipated child as its holder, though the signer holds the parent"
+      "tests/integration/test/writes/hierarchy.test.ts > removes an emancipated child as its holder, though the signer holds the parent",
+      "tests/integration/test/writes/hierarchy.test.ts > refuses to recreate a child its emancipation still protects"
     ]
   },
   "W23": {

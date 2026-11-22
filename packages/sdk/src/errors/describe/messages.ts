@@ -138,6 +138,11 @@ export const messages: { readonly [code in Code]: Template<code> } = {
     title: "Name already wrapped",
     message: `${thisName(error)} is already wrapped.`,
   }),
+  NAME_HAS_SUBNAMES: (error) => ({
+    title: "Name has subnames",
+    message: `${thisName(error)} has subnames, which would keep resolving without it.`,
+    action: "Remove its subnames first.",
+  }),
   NAME_REQUIRES_MIGRATION: (error) => ({
     title: "Upgrade required",
     message: `${thisName(error)} needs to be upgraded to the new ENS first.`,

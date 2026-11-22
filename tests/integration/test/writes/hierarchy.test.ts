@@ -3,7 +3,7 @@ import { Effect, Array as Arr, String as Str } from "effect";
 
 import { Abis } from "@ensforge/contracts";
 import { nameWrapperFuses as fuse } from "@ensforge/contracts/v1";
-import { Duration, Name } from "@ensforge/sdk";
+import { Duration, Fuse, Name } from "@ensforge/sdk";
 import { Actions } from "@ensforge/sdk/effect";
 import { Chain, Devnet } from "@ensforge/test-devnet";
 import { Fixtures } from "@ensforge/test-fixtures";
@@ -458,6 +458,80 @@ describe("subnames, wrapper and registries", () => {
               yield* Actions.subname.removeSync(ens, { name });
               const owners = yield* v1Owners(name);
               assert.deepInclude(owners, { registry: zeroAddress });
+            }),
+          );
+        }),
+      { meta: { cases: ["W22"] } },
+    );
+
+    // Records on an existing resolver need the owner's authority, so a child for someone else is
+    // created for the signer, given its records, then handed over; fuses are burned last, as
+    // cannotTransfer would block the hand-over.
+    it.effect(
+      "creates a child with records on an existing resolver for another owner",
+      () =>
+        Effect.gen(function* () {
+          const fixtures = yield* Fixtures;
+          const devnet = yield* Devnet;
+          const { alice, bob } = devnet.accounts;
+          const chain = yield* Chain;
+          const ens = (yield* Clients).make({ account: alice });
+          const resolver = devnet.contract("v1.publicResolver");
+          const records = { texts: { url: "https://bob.example" } };
+
+          for (const [parent, fuses] of [
+            [fixtures.byId("v1.unwrapped").name, undefined],
+            [
+              fixtures.byId("v1.wrapped.locked").name,
+              ["parentCannotControl", "cannotUnwrap", "cannotTransfer"] as const,
+            ],
+          ] as const) {
+            const name = `kid.${parent}`;
+            yield* chain.isolated(
+              Effect.gen(function* () {
+                yield* Actions.subname.createSync(ens, {
+                  name,
+                  owner: bob,
+                  resolver,
+                  records,
+                  ...(fuses === undefined ? {} : { fuses }),
+                });
+                const created = yield* Actions.name.get(ens, { name });
+                const url = yield* Actions.record.getText(ens, { name, key: "url" });
+                assert.strictEqual(created.owner, bob, name);
+                assert.strictEqual(url, "https://bob.example", name);
+                if (fuses !== undefined) {
+                  const wrapped = yield* Actions.wrapper.getFuses(ens, { name });
+                  assert.isTrue(Fuse.has(wrapped?.fuses ?? 0, "cannotTransfer"));
+                }
+              }),
+            );
+          }
+        }),
+      { meta: { cases: ["O11"] } },
+    );
+
+    // An emancipated child its holder unwrapped and cleared looks available, but the NameWrapper
+    // keeps its parentCannotControl until the old expiry: the parent cannot recreate it.
+    it.effect(
+      "refuses to recreate a child its emancipation still protects",
+      () =>
+        Effect.gen(function* () {
+          const fixtures = yield* Fixtures;
+          const { alice, bob } = (yield* Devnet).accounts;
+          const chain = yield* Chain;
+          const clients = yield* Clients;
+          const holder = clients.make({ account: bob });
+          const { name } = fixtures.byId("v1.wrapped.sub.emancipated");
+
+          yield* chain.isolated(
+            Effect.gen(function* () {
+              yield* Actions.wrapper.unwrapSync(holder, { name });
+              yield* Actions.subname.removeSync(holder, { name });
+              yield* expectFailure(
+                Actions.subname.create.prepare(clients.make({ account: alice }), { name }),
+                { _tag: "UnauthorizedError", code: "FUSE_BURNED" },
+              );
             }),
           );
         }),

@@ -803,7 +803,7 @@ function subname.remove(client: Client<object> | ViemClientLike, options: remove
 type subname.remove.ErrorType = InvalidInputError | NameStateError | UnauthorizedError | WriteError
 function subname.remove.estimateGas(client: Client<object> | ViemClientLike, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Estimate>
 const subname.remove.estimateGas.path: string
-type subname.remove.Options = { name: string; }
+type subname.remove.Options = { name: string; allowOrphanedSubnames?: boolean | undefined; }
 const subname.remove.path: 'subname.remove'
 function subname.remove.prepare(client: Client<object> | ViemClientLike, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Plan>
 const subname.remove.prepare.path: string

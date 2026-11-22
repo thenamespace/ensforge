@@ -145,3 +145,20 @@ export const extendExpiry = (
       args: [parentNode, labelhash, expiry],
     }),
   );
+
+/** Burns a wrapped child's fuses from its parent, and sets its expiry. */
+export const setChildFuses = (
+  nameWrapper: Address,
+  parentNode: Hex,
+  labelhash: Hex,
+  fuses: number,
+  expiry: bigint,
+): Plan.Call =>
+  call(
+    nameWrapper,
+    encodeFunctionData({
+      abi: Abis.v1.nameWrapper,
+      functionName: "setChildFuses",
+      args: [parentNode, labelhash, fuses, expiry],
+    }),
+  );

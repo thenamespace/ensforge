@@ -1,4 +1,4 @@
-import { Effect } from "effect";
+import { Effect, Array as Arr, Option } from "effect";
 
 import { Abis } from "@ensforge/contracts";
 import { encodeFunctionData, hexToBigInt, type Address } from "viem";
@@ -9,6 +9,7 @@ import { NameStateError } from "../../../errors/classes/NameStateError.js";
 import type { AnyError } from "../../../errors/types.js";
 import * as Action from "../../../internal/action/index.js";
 import { addressOf } from "../../../internal/address.js";
+import { callIndexer } from "../../../internal/indexer/call.js";
 import { notRegistered, singleStepPlan } from "../../../internal/name/write.js";
 import { explainRemoval } from "../../../internal/permission/subname.js";
 import { loadSubname, type LoadedSubname } from "../../../internal/subname/load.js";
@@ -27,6 +28,48 @@ const v2RemoveCall = ({ child }: LoadedSubname): Plan.Call => ({
     args: [hexToBigInt(child.data.parts.labelhash)],
   }),
   value: 0n,
+});
+
+/**
+ * Fails when the indexer knows subnames of the ENSv1 child, expired ones included: removing the
+ * child leaves them in the registry, where they keep resolving. Without an indexer, or when it
+ * cannot answer, it warns instead.
+ */
+const orphansCheck = Effect.fnUntraced(function* (
+  client: Client,
+  { child }: LoadedSubname,
+): Effect.fn.Return<readonly Plan.Warning[], AnyError> {
+  const unchecked: Plan.Warning = {
+    code: "SUBNAMES_UNCHECKED",
+    message: `Without an indexer, subnames of ${child.data.parts.name} cannot be found; removing it leaves them resolving.`,
+  };
+  if (client.config.indexer === undefined) return [unchecked];
+  const page = yield* callIndexer(client, "getSubnames", {
+    name: child.data.parts.name,
+    namespace: "ens",
+    includeExpired: true,
+    limit: 20,
+  }).pipe(
+    Effect.asSome,
+    Effect.catchTag("NotFoundError", () => Effect.succeedSome(null)),
+    Effect.orElseSucceed(() => Option.none()),
+  );
+  if (Option.isNone(page)) return [unchecked];
+  // Released and unregistered children no longer resolve.
+  const live = Arr.filter(
+    page.value?.items ?? [],
+    (item) => item.status === "active" || item.status === "expired" || item.status === null,
+  );
+  if (live.length === 0) return [];
+  return yield* Effect.fail(
+    new NameStateError({
+      code: "NAME_HAS_SUBNAMES",
+      shortMessage: `${child.data.parts.name} has subnames (${Arr.join(
+        Arr.map(live, (item) => item.name),
+        ", ",
+      )}), which would keep resolving without it.`,
+    }),
+  );
 });
 
 /** @internal Builds the plan of `Actions.subname.remove`. */
@@ -68,15 +111,23 @@ export const plan = Effect.fnUntraced(function* (
     );
   }
 
-  const route =
-    subname.child.state.protocol === "v2"
-      ? { calls: [v2RemoveCall(subname)], warnings: [] }
-      : yield* removeRoute(client, subname, signer);
+  if (subname.child.state.protocol === "v2") {
+    return singleStepPlan(client, {
+      operation: "subname.remove",
+      account: options.account,
+      description: "Remove subname",
+      calls: [v2RemoveCall(subname)],
+    });
+  }
+  const children =
+    options.allowOrphanedSubnames === true ? [] : yield* orphansCheck(client, subname);
+  const route = yield* removeRoute(client, subname, signer);
   return singleStepPlan(client, {
     operation: "subname.remove",
     account: options.account,
     description: "Remove subname",
-    ...route,
+    calls: route.calls,
+    warnings: [...children, ...route.warnings],
   });
 });
 

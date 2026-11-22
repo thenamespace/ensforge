@@ -62,6 +62,7 @@ export const errorsByCode: { readonly [code in Code]: () => AnyError } = {
   NAME_LOCKED: () => new Classes.NameStateError({ code: "NAME_LOCKED" }),
   NAME_NOT_WRAPPED: () => new Classes.NameStateError({ code: "NAME_NOT_WRAPPED" }),
   NAME_WRAPPED: () => new Classes.NameStateError({ code: "NAME_WRAPPED" }),
+  NAME_HAS_SUBNAMES: () => new Classes.NameStateError({ code: "NAME_HAS_SUBNAMES" }),
   NAME_UNREACHABLE: () => new Classes.NameStateError({ code: "NAME_UNREACHABLE" }),
   NAME_REQUIRES_MIGRATION: () => new Classes.NameStateError({ code: "NAME_REQUIRES_MIGRATION" }),
   PARENT_NOT_MIGRATED: () => new Classes.NameStateError({ code: "PARENT_NOT_MIGRATED" }),

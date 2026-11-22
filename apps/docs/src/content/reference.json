@@ -824,7 +824,7 @@
       "name": "Errors",
       "npm": null,
       "url": "/docs/reference/errors",
-      "count": 105,
+      "count": 106,
       "unit": "codes",
       "description": "Every error code by class, with what happened, how to fix it and what to show users.",
       "items": [
@@ -1192,6 +1192,11 @@
           "name": "NAME_WRAPPED",
           "url": "/docs/reference/errors/NAME_WRAPPED",
           "summary": "The name is already wrapped in the NameWrapper."
+        },
+        {
+          "name": "NAME_HAS_SUBNAMES",
+          "url": "/docs/reference/errors/NAME_HAS_SUBNAMES",
+          "summary": "The name has subnames, which would keep resolving without it."
         },
         {
           "name": "NAME_UNREACHABLE",
