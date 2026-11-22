@@ -135,6 +135,7 @@ export const singleStepPlan = (
     readonly account: Account | Address | undefined;
     readonly description: string;
     readonly calls: readonly Plan.Call[];
+    readonly warnings?: readonly Plan.Warning[] | undefined;
   },
 ): Plan =>
   makePlan({
@@ -142,6 +143,7 @@ export const singleStepPlan = (
     chainId: client.chain.id,
     account: addressOf(options.account) ?? client.account,
     steps: [{ id: "write", description: options.description, calls: options.calls }],
+    warnings: options.warnings,
   });
 
 /** ENSv1 contracts of the deployment; fails on ENSv2-only deployments. */

@@ -6,7 +6,7 @@ import type { Write } from "../../../Types.js";
 import * as Impl from "./effect.js";
 
 /**
- * Changes a subname from its parent: owner, resolver or expiry, in one plan. Resolves once the transaction is submitted.
+ * Changes a subname's owner, resolver or expiry, in one plan, from its parent or as its holder. Resolves once the transaction is submitted.
  *
  * **When to use**
  *
@@ -18,9 +18,16 @@ import * as Impl from "./effect.js";
  *   {@link Actions.name.transfer}, or by removing and recreating the child. On the deployment's
  *   current UserRegistry, extending the expiry needs the `renew` role at the subregistry's root;
  *   older registries also accept it on the child.
- * - ENSv1: one `setSubnodeRecord` keeps what is not changed; wrapped children extend their
- *   expiry with `extendExpiry`. Unwrapped ENSv1 subnames have no expiry. Under an unwrapped
- *   parent the registry rewrites a wrapped child, which unwraps it.
+ * - ENSv1: from the parent, one `setSubnodeRecord` keeps what is not changed; wrapped children
+ *   extend their expiry with `extendExpiry`. Unwrapped ENSv1 subnames have no expiry. When the
+ *   parent cannot make the change (an emancipated child, or an unwrapped child of a wrapped
+ *   parent), the child's own holder makes it: resolver, expiry, then owner.
+ * - Under an unwrapped parent, a wrapped child keeps the NameWrapper as its registry owner, so
+ *   its token keeps control. Giving it another owner from the parent takes it from the
+ *   NameWrapper: its token stays with the holder but controls nothing, and the plan carries a
+ *   `WRAPPER_TOKEN_STRANDED` warning.
+ * - A child named by its labelhash (`[af2c…]`) is changed through the NameWrapper with its real
+ *   label, from the NameWrapper's record of it; without one it fails with `INVALID_NAME`.
  * - Under a Basenames or Linea name: one `setSubnodeRecord` on the L2; `expiry` is not supported.
  *
  * **Gotchas**
@@ -54,6 +61,7 @@ import * as Impl from "./effect.js";
  * @throws `Errors.InvalidInputError` (`INVALID_NAME`, `INVALID_ADDRESS`, `INVALID_RECORD_VALUE`, `INVALID_EXPIRY`) for invalid input.
  * @throws `Errors.NameStateError` (`NAME_NOT_REGISTERED`, `NAME_EXTERNAL`, `NAME_EXPIRED`) when the child or parent does not exist, or an emancipated child expired, or its parent's namespace manages it outside ENS's registries.
  * @throws `Errors.NameStateError` (`NAME_RESERVED`, `NAME_UNREACHABLE`) when the parent is reserved or ENSv2 resolution no longer reaches it.
+ * @throws `Errors.NameStateError` (`NAME_NOT_WRAPPED`) when a wrapped parent changes an unwrapped child, which only its holder can.
  * @throws `Errors.UnsupportedError` (`UNSUPPORTED_PROTOCOL`) for an ENSv2 owner change or an unwrapped ENSv1 expiry.
  * @throws `Errors.UnsupportedError` (`UNSUPPORTED_ON_DEPLOYMENT`) for `expiry` under an L2 name, or a resolver other than Linea's PublicResolver under a Linea name.
  * @throws `Errors.ConfigError` (`CHAIN_NOT_CONFIGURED`) when the name lives on an L2 the client cannot reach.
@@ -117,7 +125,7 @@ update.estimateGas = Action.promiseOf(
 ) as Write.Method<update.Options, Plan.Estimate>;
 
 /**
- * Changes a subname from its parent: owner, resolver or expiry, in one plan. Resolves once the receipt is in.
+ * Changes a subname's owner, resolver or expiry, in one plan, from its parent or as its holder. Resolves once the receipt is in.
  *
  * **When to use**
  *
@@ -148,6 +156,7 @@ update.estimateGas = Action.promiseOf(
  * @throws `Errors.InvalidInputError` (`INVALID_NAME`, `INVALID_ADDRESS`, `INVALID_RECORD_VALUE`, `INVALID_EXPIRY`) for invalid input.
  * @throws `Errors.NameStateError` (`NAME_NOT_REGISTERED`, `NAME_EXTERNAL`, `NAME_EXPIRED`) when the child or parent does not exist, or an emancipated child expired, or its parent's namespace manages it outside ENS's registries.
  * @throws `Errors.NameStateError` (`NAME_RESERVED`, `NAME_UNREACHABLE`) when the parent is reserved or ENSv2 resolution no longer reaches it.
+ * @throws `Errors.NameStateError` (`NAME_NOT_WRAPPED`) when a wrapped parent changes an unwrapped child, which only its holder can.
  * @throws `Errors.UnsupportedError` (`UNSUPPORTED_PROTOCOL`) for an ENSv2 owner change or an unwrapped ENSv1 expiry.
  * @throws `Errors.UnsupportedError` (`UNSUPPORTED_ON_DEPLOYMENT`) for `expiry` under an L2 name, or a resolver other than Linea's PublicResolver under a Linea name.
  * @throws `Errors.ConfigError` (`CHAIN_NOT_CONFIGURED`) when the name lives on an L2 the client cannot reach.

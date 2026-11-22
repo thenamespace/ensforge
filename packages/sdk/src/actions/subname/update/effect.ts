@@ -4,20 +4,17 @@ import { Abis } from "@ensforge/contracts";
 import { encodeFunctionData, hexToBigInt, zeroAddress, type Address } from "viem";
 
 import type { Client } from "../../../client/types.js";
+import { ConfigError } from "../../../errors/classes/ConfigError.js";
 import { InvalidInputError } from "../../../errors/classes/InvalidInputError.js";
 import { NameStateError } from "../../../errors/classes/NameStateError.js";
 import { UnsupportedError } from "../../../errors/classes/UnsupportedError.js";
 import type { AnyError } from "../../../errors/types.js";
 import * as Action from "../../../internal/action/index.js";
-import * as V1Calls from "../../../internal/name/v1-calls.js";
-import {
-  notRegistered,
-  requireAddress,
-  requireV1Contracts,
-  singleStepPlan,
-} from "../../../internal/name/write.js";
+import { addressOf } from "../../../internal/address.js";
+import { notRegistered, requireAddress, singleStepPlan } from "../../../internal/name/write.js";
 import { explainUpdate } from "../../../internal/permission/subname.js";
 import { loadSubname, type LoadedSubname } from "../../../internal/subname/load.js";
+import { updateRoute } from "../../../internal/subname/v1-route.js";
 import type { Plan } from "../../../plan/Plan.js";
 import type { Write } from "../../../Types.js";
 import type { update as Promises } from "./index.js";
@@ -60,73 +57,6 @@ const v2Calls = (
   ];
 };
 
-/**
- * ENSv1: owner and resolver are rewritten from the parent with `setSubnodeRecord`, keeping what
- * is not changed; a wrapped child's expiry is extended with `extendExpiry`. An unwrapped parent
- * rewrites the child in the registry, which unwraps a wrapped child.
- */
-const v1Calls = Effect.fnUntraced(function* (
-  client: Client,
-  { parent, child, label, route }: LoadedSubname,
-  changes: {
-    readonly owner: Address | undefined;
-    readonly resolver: Address | undefined;
-    readonly expiry: bigint | undefined;
-  },
-): Effect.fn.Return<Plan.Call[], AnyError> {
-  const contracts = yield* requireV1Contracts(client);
-  const { state, data } = child;
-  const owner = changes.owner ?? state.owner ?? zeroAddress;
-  const resolver = changes.resolver ?? state.resolver ?? zeroAddress;
-  const record = changes.owner !== undefined || changes.resolver !== undefined;
-  const subnode = {
-    parentNode: parent.data.parts.node,
-    label,
-    labelhash: data.parts.labelhash,
-    owner,
-    resolver,
-  };
-  const ttl = state.ttl ?? 0n;
-
-  if (!state.wrapped || (route === "v1" && record)) {
-    if (changes.expiry !== undefined) {
-      return yield* Effect.fail(
-        new UnsupportedError({
-          code: "UNSUPPORTED_PROTOCOL",
-          protocol: "v1",
-          feature: "expiry of unwrapped ENSv1 subnames",
-        }),
-      );
-    }
-    return [V1Calls.setSubnodeRecord(contracts.registry, false, { ...subnode, ttl })];
-  }
-
-  return [
-    ...(record
-      ? [
-          V1Calls.setSubnodeRecord(contracts.nameWrapper, true, {
-            ...subnode,
-            ttl,
-            expiry: changes.expiry ?? state.expiry ?? 0n,
-          }),
-        ]
-      : []),
-    ...(changes.expiry !== undefined && !record
-      ? [
-          {
-            to: contracts.nameWrapper,
-            data: encodeFunctionData({
-              abi: Abis.v1.nameWrapper,
-              functionName: "extendExpiry",
-              args: [parent.data.parts.node, data.parts.labelhash, changes.expiry],
-            }),
-            value: 0n,
-          },
-        ]
-      : []),
-  ];
-});
-
 /** @internal Builds the plan of `Actions.subname.update`. */
 export const plan = Effect.fnUntraced(function* (
   client: Client,
@@ -147,6 +77,10 @@ export const plan = Effect.fnUntraced(function* (
     );
   }
 
+  const signer = addressOf(options.account) ?? client.account;
+  if (signer === undefined) {
+    return yield* Effect.fail(new ConfigError({ code: "WALLET_NOT_CONFIGURED" }));
+  }
   const subname = yield* loadSubname(client, options.name);
   if (subname.route === "l2") {
     if (subname.childState.status !== "registered") {
@@ -196,7 +130,7 @@ export const plan = Effect.fnUntraced(function* (
         ? zeroAddress
         : yield* requireAddress(options.resolver, "resolver");
 
-  let calls: Plan.Call[];
+  let route: { readonly calls: readonly Plan.Call[]; readonly warnings: readonly Plan.Warning[] };
   if (subname.child.state.protocol === "v2") {
     if (owner !== undefined) {
       return yield* Effect.fail(
@@ -208,16 +142,20 @@ export const plan = Effect.fnUntraced(function* (
         }),
       );
     }
-    calls = v2Calls(subname, { resolver, expiry: options.expiry });
+    route = { calls: v2Calls(subname, { resolver, expiry: options.expiry }), warnings: [] };
   } else {
-    calls = yield* v1Calls(client, subname, { owner, resolver, expiry: options.expiry });
+    route = yield* updateRoute(client, subname, signer, {
+      owner,
+      resolver,
+      expiry: options.expiry,
+    });
   }
 
   return singleStepPlan(client, {
     operation: "subname.update",
     account: options.account,
     description: "Update subname",
-    calls,
+    ...route,
   });
 });
 

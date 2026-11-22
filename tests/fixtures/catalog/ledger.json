@@ -259,14 +259,21 @@
   },
   "O09": {
     "tests": [
-      "tests/integration/test/writes/hierarchy.test.ts > rewrites a wrapped child of an unwrapped parent in the registry, unwrapping it"
+      "tests/integration/test/writes/hierarchy.test.ts > rewrites a wrapped child of an unwrapped parent in the registry, unwrapping it",
+      "tests/integration/test/writes/hierarchy.test.ts > changes a wrapped child's resolver from its unwrapped parent, keeping it wrapped"
     ]
   },
   "O10": {
-    "tests": ["tests/integration/test/reads/name.test.ts > v1.wrapped.sub.unwrapped-parent"]
+    "tests": [
+      "tests/integration/test/reads/name.test.ts > v1.wrapped.sub.unwrapped-parent",
+      "tests/integration/test/writes/hierarchy.test.ts > updates a wrapped child named by its labelhash with its real label"
+    ]
   },
   "O11": {
-    "tests": ["tests/integration/test/reads/name.test.ts > v1.unwrapped.sub.wrapped-parent"]
+    "tests": [
+      "tests/integration/test/reads/name.test.ts > v1.unwrapped.sub.wrapped-parent",
+      "tests/integration/test/writes/hierarchy.test.ts > removes and changes an unwrapped child of a wrapped parent"
+    ]
   },
   "O12": {
     "tests": [
@@ -504,7 +511,8 @@
   },
   "W22": {
     "tests": [
-      "tests/integration/test/writes/wrapper.test.ts > lets a child's owner burn it, unless cannotUnwrap is burned"
+      "tests/integration/test/writes/wrapper.test.ts > lets a child's owner burn it, unless cannotUnwrap is burned",
+      "tests/integration/test/writes/hierarchy.test.ts > removes an emancipated child as its holder, though the signer holds the parent"
     ]
   },
   "W23": {

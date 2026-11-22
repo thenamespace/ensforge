@@ -16,9 +16,13 @@ import * as Impl from "./effect.js";
  *
  * - ENSv2: `unregister` in the parent's subregistry, which also clears the child's resolver and
  *   subregistry so nothing carries over to a later owner.
- * - ENSv1: owner and resolver are set to zero, from the parent when the signer owns it or is
- *   its operator, otherwise as the child's owner. Under an unwrapped parent the registry clears a wrapped
- *   child, which unwraps it.
+ * - ENSv1: owner and resolver are set to zero, from the parent when it can reach the child,
+ *   otherwise as the child's holder. A wrapped parent first wraps an unwrapped child to the
+ *   signer, since the NameWrapper only clears children it holds. Under an unwrapped parent, a
+ *   wrapped child is cleared in the registry: its token stays with its holder but controls
+ *   nothing, and the plan carries a `WRAPPER_TOKEN_STRANDED` warning.
+ * - When no route is allowed, it fails before anything is sent, naming the route the signer has
+ *   authority on.
  * - Under a Basenames or Linea name the same calls run on the L2.
  *
  * **Gotchas**

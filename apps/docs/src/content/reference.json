@@ -457,7 +457,7 @@
         {
           "name": "subname.update",
           "url": "/docs/reference/sdk/subname/update",
-          "summary": "Changes a subname from its parent: owner, resolver or expiry, in one plan."
+          "summary": "Changes a subname's owner, resolver or expiry, in one plan, from its parent or as its holder."
         },
         {
           "name": "wrapper.getFuses",
