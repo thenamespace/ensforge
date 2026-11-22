@@ -334,7 +334,7 @@ export declare namespace setFusesSync {
  * **Details**
  *
  * - `owner` becomes the registry owner and, for `.eth` names, the registrant. Defaults to the
- *   signer.
+ *   name's current holder, so an approved operator unwrapping it does not take it.
  * - Blocked once `cannotUnwrap` is burned.
  *
  * **Example** (Unwrapping a name)

@@ -192,6 +192,24 @@ describe("wrapper.unwrap.prepare", () => {
     }),
   );
 
+  // An approved operator unwrapping for the holder must not take the name.
+  it.effect("leaves the name with its holder by default", () =>
+    Effect.gen(function* () {
+      const { ens } = clientFor({
+        name: "alice.eth",
+        v1: { owner: other, wrapper: { owner: other, fuses: 0, expiry: now + 1000n } },
+        approvedForAll: true,
+      });
+
+      const plan = yield* Actions.wrapper.unwrap.prepare(ens, { name: "alice.eth" });
+
+      assert.deepStrictEqual(
+        decodeFunctionData({ abi: Abis.v1.nameWrapper, data: plan.calls[0]?.data ?? "0x" }).args,
+        [labelhash("alice"), other, other],
+      );
+    }),
+  );
+
   it.effect("refuses once cannotUnwrap is burned", () =>
     expectFailure(
       Actions.wrapper.unwrap.prepare(
