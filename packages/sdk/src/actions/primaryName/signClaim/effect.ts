@@ -87,7 +87,11 @@ export const signClaim = Effect.fn("ensforge.primaryName.signClaim")(function* (
       ),
     );
   }
-  const registrars = yield* Effect.forEach(chainIds, l2Registrar, { concurrency: 1 });
+  const registrars = yield* Effect.forEach(
+    chainIds,
+    (chainId) => l2Registrar(client.chain.id, chainId),
+    { concurrency: 1 },
+  );
   // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- the collection is known to be non-empty or the index in range here; `noUncheckedIndexedAccess` cannot see it
   const registrar = registrars[0] as Address;
   if (Arr.some(registrars, (other) => !isAddressEqual(other, registrar))) {

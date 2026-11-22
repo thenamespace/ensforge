@@ -88,6 +88,7 @@ describe("InterfaceIds.resolver and initializers", () => {
     ],
     [InterfaceIds.wrapperRegistryInitializable.fuseDerived, "initialize(bytes32,address)"],
     [InterfaceIds.erc165, "supportsInterface(bytes4)"],
+    [InterfaceIds.resolver.addressSetter, "setAddress(bytes,uint256,bytes)"],
   ])("%s is the selector of %s", (id, signature) => {
     assert.strictEqual(toFunctionSelector(signature), id);
   });

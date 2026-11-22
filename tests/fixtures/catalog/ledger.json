@@ -1039,7 +1039,7 @@
   },
   "K40": {
     "tests": [
-      "tests/integration/test/writes/records.test.ts > reveals a PermissionedResolver's default record when a name's records are cleared"
+      "tests/integration/test/writes/records.test.ts > clears a name's records without revealing the PermissionedResolver's default record"
     ]
   },
   "K41": {

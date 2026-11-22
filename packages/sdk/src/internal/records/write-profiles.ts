@@ -29,8 +29,17 @@ export type RecordWrites = {
   /** An encoded content hash, written as is: one copied from a resolver, whose codec may be unknown. */
   readonly contentHashBytes?: Hex | undefined;
   readonly abi?:
-    | { readonly contentType?: bigint | undefined; readonly value: Abi | Hex | null }
+    | {
+        readonly contentType?: bigint | undefined;
+        // oxlint-disable-next-line typescript/no-redundant-type-constituents -- `Hex` documents that hex is stored as given
+        readonly value: Abi | Hex | string | null;
+      }
     | undefined;
+  /**
+   * Internal: the content types a `{ value: null }` ABI without `contentType` clears, read from
+   * the resolver (every stored type). Type 1 when not given.
+   */
+  readonly abiContentTypes?: readonly bigint[] | undefined;
   readonly pubkey?: { readonly x: Hex; readonly y: Hex } | null | undefined;
   readonly nameRecord?: string | null | undefined;
   readonly interfaces?: Readonly<Record<Hex, Address | null>> | undefined;
@@ -56,6 +65,11 @@ export const recordWriteCodecs = (writes: RecordWrites) =>
       }
     }),
     contentHash: writes.contentHash !== undefined && writes.contentHash !== null,
+    abiEncode:
+      writes.abi !== undefined &&
+      typeof writes.abi.value === "object" &&
+      writes.abi.value !== null &&
+      (writes.abi.contentType === 2n || writes.abi.contentType === 4n),
   });
 
 /**
@@ -74,8 +88,7 @@ export const encodeRecordWrites = (
 
   if (writes.clear === true) {
     // A PermissionedResolver has no `clearRecords`: linking the name to record 0 detaches it from
-    // its record (it then reads the resolver's default record), and the setters below allocate a
-    // fresh one.
+    // its record, and the setters below allocate a fresh one.
     calls.push(
       byName
         ? encodeFunctionData({
@@ -163,33 +176,62 @@ export const encodeRecordWrites = (
   }
 
   if (writes.abi !== undefined) {
-    // Only JSON (content type 1) is encoded from an `Abi`; other content types take raw bytes.
+    // An `Abi` is encoded as JSON (1), zlib-compressed JSON (2) or CBOR (4); a URI (8) is a
+    // string; hex is written as it is.
     const { value } = writes.abi;
     const contentType = writes.abi.contentType ?? 1n;
-    const encodable = value === null || isHex(value) || contentType === 1n;
-    if (![1n, 2n, 4n, 8n].includes(contentType) || !encodable) {
+    const uri = typeof value === "string" && !isHex(value);
+    const valid =
+      [1n, 2n, 4n, 8n].includes(contentType) &&
+      (contentType === 8n ? value === null || typeof value === "string" : !uri);
+    if (!valid) {
       throw new InvalidInputError({
         code: "INVALID_RECORD_VALUE",
         field: "abi.contentType",
         input: contentType,
+        shortMessage:
+          contentType === 8n
+            ? "A URI ABI record (content type 8) takes the URI as a string."
+            : uri
+              ? "Only a URI ABI record (content type 8) takes a string; pass the ABI or hex bytes."
+              : undefined,
       });
     }
 
-    // oxlint-disable-next-line effecttsgo/global-json -- Effect's Schema is large, and this is on every ENS write's static path
-    const data = value === null ? "0x" : isHex(value) ? value : stringToHex(JSON.stringify(value));
-    calls.push(
-      byName
-        ? encodeFunctionData({
-            abi: Abis.v2.permissionedResolver,
-            functionName: "setABI",
-            args: [target.dns, contentType, data],
-          })
-        : encodeFunctionData({
-            abi: Abis.v1.publicResolver,
-            functionName: "setABI",
-            args: [target.node, contentType, data],
-          }),
-    );
+    // Deleting without a content type clears every type the resolver holds.
+    const types =
+      value === null && writes.abi.contentType === undefined
+        ? writes.abiContentTypes !== undefined && writes.abiContentTypes.length > 0
+          ? writes.abiContentTypes
+          : [1n]
+        : [contentType];
+    for (const type of types) {
+      const data =
+        value === null
+          ? "0x"
+          : typeof value === "string"
+            ? isHex(value)
+              ? value
+              : stringToHex(value)
+            : type === 1n
+              ? // oxlint-disable-next-line effecttsgo/global-json -- Effect's Schema is large, and this is on every ENS write's static path
+                stringToHex(JSON.stringify(value))
+              : // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- `recordWriteCodecs` loads the encoder whenever a compressed or CBOR ABI is written
+                (codecs.encodeAbiRecord as (contentType: bigint, abi: Abi) => Hex)(type, value);
+      calls.push(
+        byName
+          ? encodeFunctionData({
+              abi: Abis.v2.permissionedResolver,
+              functionName: "setABI",
+              args: [target.dns, type, data],
+            })
+          : encodeFunctionData({
+              abi: Abis.v1.publicResolver,
+              functionName: "setABI",
+              args: [target.node, type, data],
+            }),
+      );
+    }
   }
 
   if (writes.pubkey !== undefined) {
@@ -270,6 +312,17 @@ export const encodeRecordWrites = (
     );
   }
 
+  // A lone link to record 0 leaves the name reading the resolver's default record (the root
+  // name's): one setter allocates a fresh, empty record of its own, as the ENS app does.
+  if (writes.clear === true && byName && calls.length === 1) {
+    calls.push(
+      encodeFunctionData({
+        abi: Abis.v2.permissionedResolver,
+        functionName: "setText",
+        args: [target.dns, "description", ""],
+      }),
+    );
+  }
   return calls;
 };
 

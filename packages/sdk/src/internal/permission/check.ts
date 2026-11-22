@@ -116,14 +116,36 @@ export const explainFor =
   <options>(
     nameOf: (options: options) => string,
     operationsOf: (options: options) => readonly Operation[],
+    /** The resolver record operations are checked on, when not the name's current one. */
+    resolverOf?: (
+      client: Client,
+      options: options,
+      loaded: LoadedName,
+    ) => Effect.Effect<Address | undefined, AnyError>,
   ): Explainer<options> =>
   (client, options, account, error) =>
     Effect.gen(function* () {
       const loaded = yield* loadName(client, nameOf(options));
       const expiring = expiringBeforeNextBlock(loaded);
       if (expiring !== undefined || !isOpaqueRevert(error)) return expiring;
-      const checks = yield* checkLoaded(client, loaded, account, operationsOf(options));
-      return explainDenied(checks, account);
+      const operations = operationsOf(options);
+      const resolver =
+        resolverOf === undefined ? undefined : yield* resolverOf(client, options, loaded);
+      if (resolver === undefined) {
+        const checks = yield* checkLoaded(client, loaded, account, operations);
+        return explainDenied(checks, account);
+      }
+      const onResolver = { ...loaded, state: { ...loaded.state, resolver } };
+      const records = Arr.filter(operations, (operation) => typeof operation === "object");
+      const others = Arr.filter(operations, (operation) => typeof operation !== "object");
+      const checks = yield* Effect.all(
+        [
+          checkLoaded(client, onResolver, account, records),
+          checkLoaded(client, loaded, account, others),
+        ],
+        { concurrency: "unbounded" },
+      );
+      return explainDenied(Arr.flatten(checks), account);
     });
 
 /** The account to check: the option, else the client's account. */

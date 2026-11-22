@@ -791,7 +791,9 @@ const registry = profile?.v1?.contracts.registry
 The ENSv1 `L2ReverseRegistrar` (ens-contracts v1.7.0) of each chain it is deployed on, by chain
 ID: where an address sets its primary name for that chain (`<coinType>.reverse`). Its ABI is
 `Abis.v1.l2ReverseRegistrar`. Every mainnet L2 shares one address, and every testnet another,
-so one signed name claim covers all of them.
+so one signed name claim covers all of them. Mainnet L2s are read through Ethereum mainnet and
+testnets through Sepolia: see `mainnetL2ReverseRegistrars` and
+`testnetL2ReverseRegistrars`.
 
 ### `Deployments.list`
 
@@ -810,6 +812,13 @@ const chainIds = Deployments.list().map((profile) => profile.chainId)
 ### `Deployments.mainnet`
 
 ENSv1 and ENSv2 on Ethereum mainnet.
+
+### `Deployments.mainnetL2ReverseRegistrars`
+
+The ENSv1 `L2ReverseRegistrar` (ens-contracts v1.7.0) of each mainnet L2, by chain ID: where an
+address sets its primary name for that chain (`<coinType>.reverse`), read through Ethereum
+mainnet. Its ABI is `Abis.v1.l2ReverseRegistrar`. Every one shares one address, so one signed
+name claim covers all of them.
 
 ### `Deployments.namespaceOf`
 
@@ -875,3 +884,8 @@ are not on any chain.
 ### `Deployments.sepolia`
 
 ENSv1 (legacy) and ENSv2 on Sepolia.
+
+### `Deployments.testnetL2ReverseRegistrars`
+
+The ENSv1 `L2ReverseRegistrar` of each testnet L2, by chain ID, read through Sepolia. Every one
+shares one address.

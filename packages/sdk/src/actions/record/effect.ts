@@ -360,9 +360,12 @@ export declare namespace getText {
  *
  * **Gotchas**
  *
- * - The ENSv2 PermissionedResolver has no `pubkey` records. `clear` there links the name to record
- *   0 (needs the root `link` role), so it reads the resolver's default record until new records
- *   are written.
+ * - The ENSv2 PermissionedResolver has no `pubkey` records. `clear` there unlinks the name from its
+ *   record (needs the root `link` role) and gives it a fresh one; a clear with nothing else writes
+ *   an empty `description` text, so the name never reads the resolver's default record.
+ * - Switching `resolver` to one that already holds records for the name starts the name on a fresh
+ *   record there, as `clear: true` would; `clear: false` keeps them and writes next to them. A
+ *   node-keyed resolver that cannot clear keeps them, with the warning `RECORDS_MAY_REMAIN`.
  * - Older resolvers lack newer profiles (the 2020 public resolver has no `data` records and cannot
  *   `clear`), and resolvers that keep their records off-chain (EIP-3668, ERC-5559, ERC-7884) take
  *   no on-chain writes. Both fail with `RESOLVER_PROFILE_UNSUPPORTED`; for an off-chain resolver,

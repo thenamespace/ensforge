@@ -177,6 +177,7 @@ export declare namespace get {
  * @throws `Errors.InvalidInputError` (`INVALID_NAME`, `INVALID_ADDRESS`) for invalid input.
  * @throws `Errors.InvalidInputError` (`INVALID_COIN_TYPE`) for a coin that is not an EVM chain, or a chain the claim does not cover.
  * @throws `Errors.NotFoundError` (`PRIMARY_NAME_MISMATCH`) when the name does not resolve to the address.
+ * @throws `Errors.NotFoundError` (`RESOLVER_NOT_FOUND`) with `ensureForward` when the name has no resolver to write its address to.
  * @throws `Errors.ConfigError` (`WALLET_NOT_CONFIGURED`) when no signing account is known.
  * @throws `Errors.ConfigError` (`CHAIN_NOT_CONFIGURED`) for an L2 that is not in the client's `chains`.
  * @throws `Errors.UnsupportedError` (`UNSUPPORTED_ON_DEPLOYMENT`) for a chain without an L2 reverse registrar.
@@ -237,6 +238,7 @@ export declare namespace set {
  * @throws `Errors.InvalidInputError` (`INVALID_NAME`, `INVALID_ADDRESS`) for invalid input.
  * @throws `Errors.InvalidInputError` (`INVALID_COIN_TYPE`) for a coin that is not an EVM chain, or a chain the claim does not cover.
  * @throws `Errors.NotFoundError` (`PRIMARY_NAME_MISMATCH`) when the name does not resolve to the address.
+ * @throws `Errors.NotFoundError` (`RESOLVER_NOT_FOUND`) with `ensureForward` when the name has no resolver to write its address to.
  * @throws `Errors.ConfigError` (`WALLET_NOT_CONFIGURED`) when no signing account is known.
  * @throws `Errors.ConfigError` (`CHAIN_NOT_CONFIGURED`) for an L2 that is not in the client's `chains`.
  * @throws `Errors.UnauthorizedError` (`NOT_APPROVED`) when the signer may not name the address.

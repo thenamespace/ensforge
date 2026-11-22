@@ -13,14 +13,30 @@ import * as Rpc from "../rpc/index.js";
  */
 export type SetterKeying = "node" | "name";
 
-/** Detects how the resolver's setters address a name; resolvers without ERC-165 use nodes. */
+/**
+ * Detects how the resolver's setters address a name: by name for a PermissionedResolver or any
+ * resolver declaring `IAddressSetter`; resolvers without ERC-165 use nodes.
+ */
 export const setterKeying = (
   client: Client,
   resolver: Address,
-): Effect.Effect<SetterKeying, AnyError> =>
-  Rpc.readContractOrUndefined(client, {
-    address: resolver,
-    abi: Abis.shared.erc165,
-    functionName: "supportsInterface",
-    args: [InterfaceIds.resolver.permissionedResolver],
-  }).pipe(Effect.map((permissioned) => (permissioned === true ? "name" : "node")));
+): Effect.Effect<SetterKeying, AnyError> => {
+  const supports = (interfaceId: `0x${string}`) =>
+    Rpc.readContractOrUndefined(client, {
+      address: resolver,
+      abi: Abis.shared.erc165,
+      functionName: "supportsInterface",
+      args: [interfaceId],
+    });
+  return Effect.all(
+    [
+      supports(InterfaceIds.resolver.permissionedResolver),
+      supports(InterfaceIds.resolver.addressSetter),
+    ],
+    { concurrency: "unbounded" },
+  ).pipe(
+    Effect.map(([permissioned, addressSetter]) =>
+      permissioned === true || addressSetter === true ? "name" : "node",
+    ),
+  );
+};

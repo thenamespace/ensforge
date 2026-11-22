@@ -43,12 +43,15 @@ const { hash } = await ens.primaryName.setSync({ name: "ensforge-docs-demo.eth" 
 
 Pass `name: null` to clear it. Names with encoded [labels](/docs/reference/glossary#label) (`[af2c…]`) are rejected, because readers show only [normalised](/docs/reference/glossary#normalisation) names.
 
-| Option    | Type                                | Default    | Description                                                             |
-| --------- | ----------------------------------- | ---------- | ----------------------------------------------------------------------- |
-| `name`    | `string \| null`                    | required   | The primary name, or `null` to clear it.                                |
-| `address` | `string`                            | the signer | The address to name. See [Name another address](#name-another-address). |
-| `coin`    | `"eth" \| "default" \| { chainId }` | `"eth"`    | Where to set it. See below.                                             |
-| `verify`  | `boolean`                           | `true`     | Check that `name` resolves to the address before sending.               |
+| Option          | Type                                | Default    | Description                                                                                                       |
+| --------------- | ----------------------------------- | ---------- | ----------------------------------------------------------------------------------------------------------------- |
+| `name`          | `string \| null`                    | required   | The primary name, or `null` to clear it.                                                                          |
+| `address`       | `string`                            | the signer | The address to name. See [Name another address](#name-another-address).                                           |
+| `coin`          | `"eth" \| "default" \| { chainId }` | `"eth"`    | Where to set it. See below.                                                                                       |
+| `verify`        | `boolean`                           | `true`     | Check that `name` resolves to the address before sending.                                                         |
+| `ensureForward` | `boolean`                           | `false`    | Write the missing address record first instead of failing. See [Fix the forward record](#fix-the-forward-record). |
+
+On Sepolia, `coin: { chainId: 11155111 }` names Ethereum (`addr.reverse`), as on mainnet.
 
 ## 2. Choose where it applies
 
@@ -103,7 +106,9 @@ await ens.primaryName.setSync({
 
 The plan is for the L2, and resumes there. `primaryName.get` on a client that reaches the L2 sees the name as soon as the transaction is mined. Readers that go through Ethereum verify it against the L2's state as committed to Ethereum, so they see it only once that state is, which can take a while after the receipt.
 
-Supported L2s are those with an L2 reverse registrar: OP Mainnet, Base, Arbitrum One, Linea and Scroll, and their Sepolia testnets. Other chains fail with [`UNSUPPORTED_ON_DEPLOYMENT`](/docs/reference/errors/UNSUPPORTED_ON_DEPLOYMENT).
+Supported L2s are those with an L2 reverse registrar: OP Mainnet, Base, Arbitrum One, Linea and Scroll, and their Sepolia testnets. A client on Ethereum mainnet sets primary names on the mainnet L2s, and a client on Sepolia on the testnets. Other chains, and an L2 of the other network, fail with [`UNSUPPORTED_ON_DEPLOYMENT`](/docs/reference/errors/UNSUPPORTED_ON_DEPLOYMENT) before anything is sent.
+
+ensforge refuses an L2 primary name whose forward record does not match, with `PRIMARY_NAME_MISMATCH`, unless you pass `verify: false`. The ENS portal only warns in that case. ensforge is stricter on purpose: readers cannot verify such a name, so they would not show it.
 
 ## 4. Set it on several L2s with one signature
 
@@ -162,6 +167,32 @@ export async function relayClaim(body: string) {
 
 `relayer` signs with an account funded on that L2, and pays the gas. Validate the posted body before you submit it. The signature, not the sender, authorises the name.
 
+## Fix the forward record
+
+A primary name verifies only when the name resolves back to the address. By default ensforge refuses a name that does not, with `PRIMARY_NAME_MISMATCH`. Pass `ensureForward: true` to write the address record first, in the same plan. For `coin: "eth"` it writes the ETH address. For `"default"` or `"all"` it writes the default EVM address, so the name verifies on every EVM chain.
+
+**Example** (Setting a Primary Name and Its Address Record)
+
+```ts title="ensure-forward.ts"
+import { createWalletClient, http, type Hex } from "viem";
+import { privateKeyToAccount } from "viem/accounts";
+import { sepolia } from "viem/chains";
+import { Ensforge, ensActions } from "@ensforge/sdk";
+
+const account = privateKeyToAccount(process.env.PRIVATE_KEY as Hex);
+const transport = http(process.env.SEPOLIA_RPC_URL);
+
+const ens = Ensforge.create({
+  chain: sepolia,
+  transports: { [sepolia.id]: transport },
+  wallet: createWalletClient({ account, chain: sepolia, transport }),
+}).extend(ensActions());
+
+await ens.primaryName.setSync({ name: "ensforge-docs-demo.eth", ensureForward: true });
+```
+
+`ensureForward` is for the signer's own name, on Ethereum and default coins. For an L2, write the name's address for that chain with `record.set` first.
+
 ## Name another address
 
 `address` names another account. The signer must be the address's registry operator or, for a contract, its `Ownable` owner or its ContractNamer. Any other signer fails before sending with [`NOT_APPROVED`](/docs/reference/errors/NOT_APPROVED).
@@ -176,7 +207,7 @@ Read it back with [`primaryName.get`](/docs/reference/sdk/primary-name/get). See
 
 ### `PRIMARY_NAME_MISMATCH`
 
-The name does not resolve to the address. Add an address record with `record.set`, then set the primary name. For an L2, the name needs an address for that chain's coin type or a default EVM address. See [`PRIMARY_NAME_MISMATCH`](/docs/reference/errors/PRIMARY_NAME_MISMATCH).
+The name does not resolve to the address. Add an address record with `record.set`, then set the primary name, or pass `ensureForward: true`. For an L2, the name needs an address for that chain's coin type or a default EVM address. See [`PRIMARY_NAME_MISMATCH`](/docs/reference/errors/PRIMARY_NAME_MISMATCH).
 
 ### `CHAIN_NOT_CONFIGURED`
 

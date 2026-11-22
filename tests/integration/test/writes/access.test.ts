@@ -24,6 +24,45 @@ import { onProfile } from "../support/lane.ts";
 describe("access writes", () => {
   onProfile("mainnet-shaped")("mainnet-shaped", (it) => {
     it.effect(
+      "writes the missing forward address with ensureForward, instead of refusing",
+      () =>
+        Effect.gen(function* () {
+          const fixtures = yield* Fixtures;
+          const { alice, bob } = (yield* Devnet).accounts;
+          const chain = yield* Chain;
+          const ens = (yield* Clients).make({ account: alice });
+          const name = fixtures.byId("records.v1").name;
+
+          yield* chain.isolated(
+            Effect.gen(function* () {
+              yield* Actions.record.setSync(ens, { name, addresses: { eth: bob } });
+              yield* expectFailure(Actions.primaryName.set(ens, { name }), {
+                _tag: "NotFoundError",
+                code: "PRIMARY_NAME_MISMATCH",
+              });
+
+              yield* Actions.primaryName.setSync(ens, { name, ensureForward: true });
+              const address = yield* Actions.record.getAddress(ens, { name });
+              assert.strictEqual(address, alice);
+              const primary = yield* Actions.primaryName.get(ens, { address: alice });
+              assert.strictEqual(primary, name);
+            }),
+          );
+          // Without a resolver there is nowhere to write the address.
+          yield* chain.isolated(
+            Effect.gen(function* () {
+              yield* Actions.resolver.setSync(ens, { name, resolver: null });
+              yield* expectFailure(Actions.primaryName.set(ens, { name, ensureForward: true }), {
+                _tag: "NotFoundError",
+                code: "RESOLVER_NOT_FOUND",
+              });
+            }),
+          );
+        }),
+      { meta: { cases: ["P01"] } },
+    );
+
+    it.effect(
       "sets and clears a primary name",
       () =>
         Effect.gen(function* () {

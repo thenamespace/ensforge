@@ -448,7 +448,7 @@ type Actions.primaryName.set.ClaimOptions = { claim: Claim; signature: `0x${stri
 type Actions.primaryName.set.ErrorType = InvalidInputError | NotFoundError | UnauthorizedError | WriteError
 function Actions.primaryName.set.estimateGas(client: Client<object> | ViemClientLike, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Estimate>
 const Actions.primaryName.set.estimateGas.path: string
-type Actions.primaryName.set.NameOptions = { name: string | null; address?: string | undefined; coin?: Input | undefined; verify?: boolean | undefined; claim?: undefined; signature?: undefined; }
+type Actions.primaryName.set.NameOptions = { name: string | null; address?: string | undefined; coin?: Input | undefined; verify?: boolean | undefined; ensureForward?: boolean | undefined; claim?: undefined; signature?: undefined; }
 type Actions.primaryName.set.Options = ClaimOptions | NameOptions
 const Actions.primaryName.set.path: 'primaryName.set'
 function Actions.primaryName.set.prepare(client: Client<object> | ViemClientLike, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Plan>
@@ -503,7 +503,7 @@ function Actions.record.set(client: Client<object> | ViemClientLike, options: se
 type Actions.record.set.ErrorType = InvalidInputError | NameStateError | NotFoundError | UnauthorizedError | WriteError
 function Actions.record.set.estimateGas(client: Client<object> | ViemClientLike, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Estimate>
 const Actions.record.set.estimateGas.path: string
-type Actions.record.set.Options = { name: string; texts?: Readonly<Record<string, string | null>> | undefined; addresses?: Readonly<Record<string, string | null>> | undefined; contentHash?: string | null | undefined; abi?: { contentType?: 1n | 2n | 4n | 8n | undefined; value: Abi | `0x${string}` | null; } | undefined; pubkey?: { x: `0x${string}`; y: `0x${string}`; } | null | undefined; nameRecord?: string | null | undefined; interfaces?: Readonly<Record<`0x${string}`, `0x${string}` | null>> | undefined; data?: Readonly<Record<string, `0x${string}` | null>> | undefined; clear?: boolean | undefined; resolver?: 'default' | `0x${string}` | undefined; }
+type Actions.record.set.Options = { name: string; texts?: Readonly<Record<string, string | null>> | undefined; addresses?: Readonly<Record<string, string | null>> | undefined; contentHash?: string | null | undefined; abi?: { contentType?: 1n | 2n | 4n | 8n | undefined; value: string | Abi | null; } | undefined; pubkey?: { x: `0x${string}`; y: `0x${string}`; } | null | undefined; nameRecord?: string | null | undefined; interfaces?: Readonly<Record<`0x${string}`, `0x${string}` | null>> | undefined; data?: Readonly<Record<string, `0x${string}` | null>> | undefined; clear?: boolean | undefined; resolver?: 'default' | `0x${string}` | undefined; }
 const Actions.record.set.path: 'record.set'
 function Actions.record.set.prepare(client: Client<object> | ViemClientLike, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Plan>
 const Actions.record.set.prepare.path: string
@@ -695,7 +695,7 @@ function Actions.resolver.link(client: Client<object> | ViemClientLike, options:
 type Actions.resolver.link.ErrorType = InvalidInputError | NameStateError | NotFoundError | UnauthorizedError | WriteError
 function Actions.resolver.link.estimateGas(client: Client<object> | ViemClientLike, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Estimate>
 const Actions.resolver.link.estimateGas.path: string
-type Actions.resolver.link.Options = { name: string; to: string | { recordId: bigint; }; }
+type Actions.resolver.link.Options = { name: string; to: string | { recordId: bigint; } | null; }
 const Actions.resolver.link.path: 'resolver.link'
 function Actions.resolver.link.prepare(client: Client<object> | ViemClientLike, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Plan>
 const Actions.resolver.link.prepare.path: string

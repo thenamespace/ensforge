@@ -34,9 +34,12 @@ import * as Impl from "./effect.js";
  *
  * **Gotchas**
  *
- * - The ENSv2 PermissionedResolver has no `pubkey` records. `clear` there links the name to record
- *   0 (needs the root `link` role), so it reads the resolver's default record until new records
- *   are written.
+ * - The ENSv2 PermissionedResolver has no `pubkey` records. `clear` there unlinks the name from its
+ *   record (needs the root `link` role) and gives it a fresh one; a clear with nothing else writes
+ *   an empty `description` text, so the name never reads the resolver's default record.
+ * - Switching `resolver` to one that already holds records for the name starts the name on a fresh
+ *   record there, as `clear: true` would; `clear: false` keeps them and writes next to them. A
+ *   node-keyed resolver that cannot clear keeps them, with the warning `RECORDS_MAY_REMAIN`.
  * - Older resolvers lack newer profiles (the 2020 public resolver has no `data` records and cannot
  *   `clear`), and resolvers that keep their records off-chain (EIP-3668, ERC-5559, ERC-7884) take
  *   no on-chain writes. Both fail with `RESOLVER_PROFILE_UNSUPPORTED`; for an off-chain resolver,
@@ -112,10 +115,17 @@ export declare namespace set {
     /** Content hash URI such as `ipfs://…`. `null` deletes it. */
     contentHash?: string | null | undefined;
     /**
-     * ABI record (ENSIP-4). An `Abi` is stored as JSON (content type 1); hex bytes are stored as
-     * given under `contentType`. `null` deletes the record of that content type.
+     * ABI record (ENSIP-4). An `Abi` is stored as JSON (content type 1, the default), compressed
+     * JSON (2) or CBOR (4); a URI (8) is a string; hex bytes are stored as given. `null` deletes
+     * the record of `contentType`, or of every content type the resolver holds when it is omitted.
      */
-    abi?: { contentType?: 1n | 2n | 4n | 8n | undefined; value: Abi | Hex | null } | undefined;
+    abi?:
+      | {
+          contentType?: 1n | 2n | 4n | 8n | undefined;
+          // oxlint-disable-next-line typescript/no-redundant-type-constituents -- `Hex` documents that hex is stored as given
+          value: Abi | Hex | string | null;
+        }
+      | undefined;
     /** SECP256k1 public key. `null` deletes it. Node-based resolvers only. */
     pubkey?: { x: Hex; y: Hex } | null | undefined;
     /** Name record (the `name()` of reverse names). `null` deletes it. */
@@ -124,7 +134,11 @@ export declare namespace set {
     interfaces?: Readonly<Record<Hex, Address | null>> | undefined;
     /** Data records (ENSIP-24) by key. `null` deletes one. */
     data?: Readonly<Record<string, Hex | null>> | undefined;
-    /** Deletes every existing record first. */
+    /**
+     * Deletes every existing record first.
+     *
+     * @default true when `resolver` switches to one that already holds records for the name
+     */
     clear?: boolean | undefined;
     /**
      * Writes the records to this resolver, then points the name at it.

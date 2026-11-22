@@ -21,6 +21,7 @@ import { make as makePlan } from "../../../plan/make.js";
 import type { Plan } from "../../../plan/Plan.js";
 import type { Write } from "../../../Types.js";
 import * as CoinType from "../../../utils/CoinType.js";
+import { plan as recordsPlan } from "../../record/set/effect.js";
 import type { set as Promises } from "./index.js";
 import { claimPlan, l2Plan } from "./l2.js";
 
@@ -71,7 +72,10 @@ export const plan = Effect.fnUntraced(function* (
     return yield* Effect.fail(new ConfigError({ code: "WALLET_NOT_CONFIGURED" }));
   const target =
     options.address === undefined ? signer : yield* requireAddress(options.address, "address");
-  const coinType = yield* primaryNameCoinType(options.coin === "all" ? "default" : options.coin);
+  const coinType = yield* primaryNameCoinType(
+    options.coin === "all" ? "default" : options.coin,
+    client.chain.id,
+  );
   const name = options.name === null ? "" : yield* normalizeName(options.name);
   // Readers show only ENSIP-15 names, which an encoded label (`[af2c…]`) is not.
   if (Str.includes("[")(name)) {
@@ -88,6 +92,17 @@ export const plan = Effect.fnUntraced(function* (
   const chainId = CoinType.toChainId(coinType);
   const sender = (yield* routeSender(client, options.via, signer)) ?? signer;
   if (coinType !== ethCoinType && coinType !== defaultEvmCoinType && chainId !== null) {
+    if (options.ensureForward === true) {
+      return yield* Effect.fail(
+        new InvalidInputError({
+          code: "INVALID_COIN_TYPE",
+          field: "coin",
+          input: options.coin,
+          shortMessage: "`ensureForward` writes Ethereum and default addresses only.",
+          hint: "Set the name's address for that chain with record.set first.",
+        }),
+      );
+    }
     if (!isAddressEqual(sender, signer)) {
       return yield* Effect.fail(
         new UnsupportedError({
@@ -100,10 +115,42 @@ export const plan = Effect.fnUntraced(function* (
     return yield* l2Plan(client, options, chainId, name);
   }
 
-  const warnings =
-    name !== "" && options.verify !== false
-      ? yield* forwardMatch(client, name, target, coinType)
-      : [];
+  // `ensureForward` writes the missing forward record first: the ETH address for an Ethereum
+  // name, the default EVM address for a default one.
+  const ensureForward = options.ensureForward === true && name !== "";
+  if (ensureForward && !isAddressEqual(target, signer)) {
+    return yield* Effect.fail(
+      new InvalidInputError({
+        code: "INVALID_ADDRESS",
+        field: "address",
+        input: target,
+        shortMessage: "`ensureForward` sets the signer's own name only.",
+      }),
+    );
+  }
+  const forward =
+    name === "" || options.verify === false
+      ? { warnings: [], steps: [] }
+      : yield* forwardMatch(client, name, target, coinType).pipe(
+          Effect.map((warnings) => ({ warnings, steps: [] as readonly Plan.Step[] })),
+          Effect.catchIf(
+            (error) =>
+              ensureForward &&
+              error._tag === "NotFoundError" &&
+              error.code === "PRIMARY_NAME_MISMATCH",
+            () =>
+              recordsPlan(client, {
+                name,
+                addresses: {
+                  [coinType === ethCoinType ? "eth" : String(defaultEvmCoinType)]: target,
+                },
+                account: options.account,
+              }).pipe(
+                Effect.map((records) => ({ warnings: records.warnings, steps: records.steps })),
+              ),
+          ),
+        );
+  const warnings = forward.warnings;
   const reverse = yield* reverseCalls(client, {
     target,
     signer,
@@ -118,6 +165,7 @@ export const plan = Effect.fnUntraced(function* (
     chainId: client.chain.id,
     account: signer,
     steps: [
+      ...forward.steps,
       ...(reverse.calls.length === 0 ? [] : [{ id: "write", description, calls: reverse.calls }]),
       ...(reverse.signerCalls.length === 0
         ? []

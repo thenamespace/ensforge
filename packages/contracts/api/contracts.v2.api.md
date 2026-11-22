@@ -869,8 +869,8 @@ const rentPriceOracleV2InterfaceAbi: Abi
   function getRegisterPrice(string,uint64,uint64,address) view returns (uint256,uint256)
   function getRenewPrice(string,uint64,uint64,address) view returns (uint256)
   function isPaymentToken(address) view returns (bool)
-type ResolverInterfaceId = '0x33cc44a0' | '0x8c2427cc'
-const resolverInterfaceIds: { readonly permissionedResolver: '0x8c2427cc'; readonly permissionedResolverInitializable: '0x33cc44a0'; }
+type ResolverInterfaceId = '0x33cc44a0' | '0x8c2427cc' | '0xb4436dde'
+const resolverInterfaceIds: { readonly permissionedResolver: '0x8c2427cc'; readonly permissionedResolverInitializable: '0x33cc44a0'; readonly addressSetter: '0xb4436dde'; }
 type ResolverRole = bigint
 const resolverRoles: { readonly setAddr: bigint; readonly setAddrAdmin: bigint; readonly setText: bigint; readonly setTextAdmin: bigint; readonly setContenthash: bigint; readonly setContenthashAdmin: bigint; readonly setAbi: bigint; readonly setAbiAdmin: bigint; readonly setInterface: bigint; readonly setInterfaceAdmin: bigint; readonly setName: bigint; readonly setNameAdmin: bigint; readonly link: bigint; readonly linkAdmin: bigint; readonly setData: bigint; readonly setDataAdmin: bigint; readonly canName: bigint; readonly canNameAdmin: bigint; readonly upgrade: bigint; readonly upgradeAdmin: bigint; }
 const reverseRegistrarAdapterV2Abi: Abi

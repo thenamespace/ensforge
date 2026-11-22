@@ -24,8 +24,18 @@ export const recordRoles: Record<
   link: "link",
 };
 
-/** The record operations a `record.set` write performs. */
-export const writeOperations = (writes: RecordWrites): RecordOperation[] => [
+/**
+ * The record operations a `record.set` write performs. A lone clear also writes a placeholder
+ * text on a PermissionedResolver, to give the name a fresh record.
+ */
+export const writeOperations = (writes: RecordWrites): RecordOperation[] => {
+  const operations = writeOperationsOf(writes);
+  return writes.clear === true && operations.length === 1
+    ? [...operations, { setRecord: "text", key: "description" }]
+    : operations;
+};
+
+const writeOperationsOf = (writes: RecordWrites): RecordOperation[] => [
   ...Arr.map(Rec.keys(writes.texts ?? {}), (key) => ({ setRecord: "text" as const, key })),
   ...Arr.map(Rec.keys(writes.addresses ?? {}), (key) => ({
     setRecord: "address" as const,

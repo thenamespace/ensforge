@@ -6,12 +6,14 @@ import { CoinType, Name } from "@ensforge/sdk";
 import { Actions } from "@ensforge/sdk/effect";
 import { Chain, Devnet } from "@ensforge/test-devnet";
 import { Fixtures } from "@ensforge/test-fixtures";
+import { expectFailure } from "@ensforge/test-harness";
 import {
   bytesToHex,
   concat,
   decodeFunctionResult,
   encodeFunctionData,
   namehash,
+  parseAbi,
   stringToHex,
   toFunctionSelector,
   zeroAddress,
@@ -158,20 +160,148 @@ describe("record writes", () => {
 
           yield* chain.isolated(
             Effect.gen(function* () {
-              // Clearing a linked name gives it an empty record of its own (`linkToRecord(name, 0)`).
+              const shared = yield* Actions.resolver.getLink(ens, { name: target });
+              // Clearing a linked name gives it an empty record of its own.
               yield* Actions.record.setSync(ens, { name: linked, clear: true });
-              const link = yield* Actions.resolver.getLink(ens, { name: linked });
-              assert.isNull(link);
+              const own = yield* Actions.resolver.getLink(ens, { name: linked });
+              assert.notStrictEqual(own?.recordId, shared?.recordId);
               const urlAfterClear = yield* url;
               assert.isNull(urlAfterClear);
 
               yield* Actions.resolver.linkSync(ens, { name: linked, to: target });
               const urlAfterLink = yield* url;
               assert.strictEqual(urlAfterLink, "https://ensforge.com");
+
+              // Unlinking does the same, and the records stay with the name it shared them with.
+              yield* Actions.resolver.linkSync(ens, { name: linked, to: null });
+              const urlAfterUnlink = yield* url;
+              assert.isNull(urlAfterUnlink);
+              const targetUrl = yield* Actions.record.getText(ens, { name: target, key: "url" });
+              assert.strictEqual(targetUrl, "https://ensforge.com");
             }),
           );
         }),
       { meta: { cases: ["R22", "M:B7"] } },
+    );
+
+    // Regression: switching back to a resolver where the name still shared a record wrote the new
+    // records into that shared record, changing every name linked to it.
+    it.effect(
+      "starts a name on a fresh record when it switches to a resolver holding one for it",
+      () =>
+        Effect.gen(function* () {
+          const fixtures = yield* Fixtures;
+          const { accounts } = yield* Devnet;
+          const chain = yield* Chain;
+          const ens = (yield* Clients).make({ account: accounts.bob });
+          const linked = fixtures.byId("records.v2.linked").name;
+          const target = fixtures.byId("records.v2").name;
+
+          yield* chain.isolated(
+            Effect.gen(function* () {
+              const shared = yield* Actions.resolver.get(ens, { name: linked });
+              yield* Actions.resolver.setSync(ens, { name: linked, resolver: null });
+              yield* Actions.record.setSync(ens, {
+                name: linked,
+                resolver: shared?.address ?? zeroAddress,
+                texts: { url: "https://switched.example" },
+              });
+
+              const linkedUrl = yield* Actions.record.getText(ens, { name: linked, key: "url" });
+              assert.strictEqual(linkedUrl, "https://switched.example");
+              const targetUrl = yield* Actions.record.getText(ens, { name: target, key: "url" });
+              assert.strictEqual(targetUrl, "https://ensforge.com");
+            }),
+          );
+        }),
+      { meta: { cases: ["R22"] } },
+    );
+
+    // Regression: a refused write to the resolver being switched to was explained against the
+    // name's current resolver, where the signer may write.
+    it.effect(
+      "explains a refused write against the resolver it switches to",
+      () =>
+        Effect.gen(function* () {
+          const fixtures = yield* Fixtures;
+          const { accounts } = yield* Devnet;
+          const ens = (yield* Clients).make({ account: accounts.alice });
+          const name = fixtures.byId("v2.registered").name;
+          const other = yield* Actions.resolver.get(ens, {
+            name: fixtures.byId("records.v2").name,
+          });
+          const resolver = other?.address ?? zeroAddress;
+
+          const error = yield* expectFailure(
+            Actions.record.set(ens, { name, resolver, texts: { url: "https://x.example" } }),
+            { _tag: "UnauthorizedError", code: "MISSING_ROLES" },
+          );
+          assert.strictEqual(error.context.contract, resolver);
+        }),
+      { meta: { cases: ["R22"] } },
+    );
+
+    it.effect(
+      "writes compressed and URI ABI records, and deletes every content type at once",
+      () =>
+        Effect.gen(function* () {
+          const fixtures = yield* Fixtures;
+          const { accounts } = yield* Devnet;
+          const chain = yield* Chain;
+          const ens = (yield* Clients).make({ account: accounts.bob });
+          const name = fixtures.byId("records.v2").name;
+          const abi = parseAbi(["function ping() returns (bool)"]);
+          const abiOf = Actions.record
+            .get(ens, { name, abi: true })
+            .pipe(Effect.map((records) => records.abi));
+
+          yield* chain.isolated(
+            Effect.gen(function* () {
+              yield* Actions.record.setSync(ens, { name, abi: { value: null } });
+              yield* Actions.record.setSync(ens, { name, abi: { contentType: 2n, value: abi } });
+              const compressed = yield* abiOf;
+              assert.deepInclude(compressed, { contentType: 2n, abi });
+
+              yield* Actions.record.setSync(ens, {
+                name,
+                abi: { contentType: 8n, value: "ipfs://abi.example" },
+              });
+              // Regression: deleting without a content type cleared only JSON (type 1).
+              yield* Actions.record.setSync(ens, { name, abi: { value: null } });
+              const deleted = yield* abiOf;
+              assert.isNull(deleted);
+            }),
+          );
+        }),
+      { meta: { cases: ["K26"] } },
+    );
+
+    // ENSIP-19: an unset EVM address falls back to the default EVM address; the zero address is a
+    // set one, which blocks the fallback.
+    it.effect(
+      "falls back to the default EVM address for a deleted ETH address, not for the zero address",
+      () =>
+        Effect.gen(function* () {
+          const fixtures = yield* Fixtures;
+          const { accounts } = yield* Devnet;
+          const chain = yield* Chain;
+          const ens = (yield* Clients).make({ account: accounts.bob });
+          const name = fixtures.byId("records.v2").name;
+          const eth = Actions.record.getAddress(ens, { name });
+
+          yield* chain.isolated(
+            Effect.gen(function* () {
+              yield* Actions.record.setSync(ens, { name, addresses: { eth: null } });
+              const fallback = yield* eth;
+              assert.strictEqual(fallback, accounts.carol);
+
+              yield* Actions.record.setSync(ens, { name, addresses: { eth: zeroAddress } });
+              const blocked = yield* eth;
+              assert.isNull(blocked);
+            }),
+          );
+        }),
+      { meta: { cases: ["K02"] } },
     );
 
     it.effect(
@@ -288,7 +418,7 @@ describe("record writes", () => {
     );
 
     it.effect(
-      "reveals a PermissionedResolver's default record when a name's records are cleared",
+      "clears a name's records without revealing the PermissionedResolver's default record",
       () =>
         Effect.gen(function* () {
           const fixtures = yield* Fixtures;
@@ -304,9 +434,10 @@ describe("record writes", () => {
               const ownUrl = yield* url;
               assert.strictEqual(ownUrl, "https://own.example");
 
+              // Regression: the cleared name read the resolver's default record (the root name's).
               yield* Actions.record.setSync(ens, { name, clear: true });
-              const defaultUrl = yield* url;
-              assert.strictEqual(defaultUrl, "https://default.example");
+              const urlAfterClear = yield* url;
+              assert.isNull(urlAfterClear);
             }),
           );
         }),

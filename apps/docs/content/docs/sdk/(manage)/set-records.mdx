@@ -60,7 +60,7 @@ const { hash } = await ens.record.setSync({
 | `texts`       | `Record<string, string \| null>` | Text records by key.                                   |
 | `addresses`   | `Record<string, string \| null>` | Address records by coin symbol or coin type.           |
 | `contentHash` | `string \| null`                 | Content hash URI.                                      |
-| `abi`         | `{ contentType?, value }`        | ABI record (ENSIP-4). An `Abi` is stored as JSON.      |
+| `abi`         | `{ contentType?, value }`        | ABI record (ENSIP-4). See [ABI records](#abi-records). |
 | `pubkey`      | `{ x, y } \| null`               | SECP256k1 public key. Not on the PermissionedResolver. |
 | `nameRecord`  | `string \| null`                 | The `name` record, used by reverse names.              |
 | `interfaces`  | `Record<Hex, Address \| null>`   | ERC-165 implementers by 4-byte interface ID.           |
@@ -95,7 +95,13 @@ await ens.record.setSync({
 });
 ```
 
-On an ENSv2 PermissionedResolver, `clear` links the name to record 0 instead of deleting. The name then reads the resolver's default record, which is empty unless someone set it. It also needs the root `link` [role](/docs/reference/glossary#role).
+On an ENSv2 PermissionedResolver, `clear` unlinks the name from its record and gives it a fresh, empty one. Names it shared the record with keep theirs. A clear with nothing else to write also writes an empty `description` text, so the name never reads the resolver's default record. It needs the root `link` [role](/docs/reference/glossary#role). [`resolver.link`](/docs/reference/sdk/resolver/link) with `to: null` does the same for a linked name.
+
+Deleting the ETH address with `addresses: { eth: null }` leaves it unset. On a PermissionedResolver the name then shows its default EVM address, as ENSIP-19 defines for an unset EVM address. To show no ETH address even with a default, set it to the zero address.
+
+### ABI records
+
+An `Abi` is stored as JSON by default (content type 1). Pass `contentType: 2n` for zlib-compressed JSON or `4n` for CBOR; ensforge encodes either. Content type 8 is a URI, given as a string. Hex bytes are stored as given, under any content type. `value: null` with a `contentType` deletes that content type; without one it deletes every content type the resolver holds.
 
 ## 3. Write to a new resolver and switch to it
 
@@ -124,6 +130,8 @@ await ens.record.setSync({
   texts: { url: "https://example.com" },
 });
 ```
+
+When the new resolver already holds records for the name, the name starts on a fresh record there, as with `clear: true`. On a PermissionedResolver this also stops the new records from changing names that share an old record with it. Pass `clear: false` to keep those records and write next to them. A node-keyed resolver that cannot clear keeps them, with a `RECORDS_MAY_REMAIN` warning.
 
 `resolver: "default"` is the ENSv1 public resolver, for ENSv1 names only. ENSv2 names pass the address of a resolver such as their own PermissionedResolver. See [Change the resolver](/docs/sdk/change-the-resolver).
 

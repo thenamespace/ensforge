@@ -24,6 +24,7 @@ export { hasAddressResolverAbi as hasAddressResolver } from "../shared/resolver-
 export { interfaceResolverAbi as interfaceResolver } from "../shared/resolver-profiles/interface.js";
 export { multicallResolverAbi as multicallResolver } from "../shared/resolver-profiles/multicall.js";
 export { nameResolverAbi as nameResolver } from "../shared/resolver-profiles/name.js";
+export { ownableAbi as ownable } from "../shared/ownable.js";
 export { pubkeyResolverAbi as pubkeyResolver } from "../shared/resolver-profiles/pubkey.js";
 export { textResolverAbi as textResolver } from "../shared/resolver-profiles/text.js";
 export { universalResolverFindResolverAbi as universalResolverFindResolver } from "../shared/universal-resolver.js";

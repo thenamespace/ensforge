@@ -341,6 +341,8 @@ const nameResolverAbi: Abi
   event NameChanged(bytes32,string)
   function name(bytes32) view returns (string)
 const nameResolverInterfaceId: '0x691f3431'
+const ownableAbi: Abi
+  function owner() view returns (address)
 const pubkeyResolverAbi: Abi
   event PubkeyChanged(bytes32,bytes32,bytes32)
   function pubkey(bytes32) view returns (bytes32,bytes32)

@@ -41,7 +41,11 @@ import type {
   V2PaymentTokens,
 } from "./deployments/types.js";
 
-export { l2ReverseRegistrars } from "./deployments/l2-reverse-registrars.js";
+export {
+  l2ReverseRegistrars,
+  mainnetL2ReverseRegistrars,
+  testnetL2ReverseRegistrars,
+} from "./deployments/l2-reverse-registrars.js";
 export { offchainProviders } from "./deployments/namespaces.js";
 export type {
   NamespaceId,

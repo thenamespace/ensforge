@@ -273,4 +273,22 @@ describe("primaryName.set.prepare", () => {
       { _tag: "UnsupportedError", code: "UNSUPPORTED_ON_DEPLOYMENT" },
     ),
   );
+
+  // Regression: a testnet L2 was accepted on mainnet and failed later, on a chain the client has
+  // no transport for.
+  it.effect("refuses an L2 of the other network, naming the network to use", () =>
+    Effect.gen(function* () {
+      const { ens } = clientFor({ name: "alice.eth" });
+
+      const error = yield* expectFailure(
+        Actions.primaryName.set.prepare(ens, {
+          name: "alice.eth",
+          coin: { chainId: 84532 },
+          verify: false,
+        }),
+        { _tag: "UnsupportedError", code: "UNSUPPORTED_ON_DEPLOYMENT" },
+      );
+      assert.include(error.hint, "Sepolia");
+    }),
+  );
 });

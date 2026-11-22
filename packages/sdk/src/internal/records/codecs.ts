@@ -1,7 +1,7 @@
 import { Effect, Array as Arr } from "effect";
 
 import { coinTypeToNameMap } from "@ensdomains/address-encoder";
-import type { Hex } from "viem";
+import type { Abi, Hex } from "viem";
 
 import type * as ContentHash from "../../utils/ContentHash.js";
 import type { AbiRecord } from "./abi-record.js";
@@ -21,6 +21,7 @@ export type RecordCodecs = {
   readonly encodeAddress: (coinType: bigint, address: string) => Hex;
   readonly contentHash: typeof ContentHash | undefined;
   readonly decodeAbiRecord: ((contentType: bigint, data: Hex) => AbiRecord | null) | undefined;
+  readonly encodeAbiRecord: ((contentType: bigint, abi: Abi) => Hex) | undefined;
 };
 
 /** Loads the codecs for these coin types, and the content-hash or ABI codecs when asked. */
@@ -28,6 +29,7 @@ export const loadRecordCodecs = (needs: {
   readonly coinTypes: readonly bigint[];
   readonly contentHash?: boolean | undefined;
   readonly abi?: boolean | undefined;
+  readonly abiEncode?: boolean | undefined;
 }): Effect.Effect<RecordCodecs> => {
   const nonEvm = [...new Set(Arr.filter(needs.coinTypes, (coinType) => !isEvmCoinType(coinType)))];
   return Effect.all(
@@ -59,10 +61,14 @@ export const loadRecordCodecs = (needs: {
         needs.abi === true
           ? Effect.promise(() => import("./abi-record-decode.js"))
           : Effect.undefined,
+      abiEncode:
+        needs.abiEncode === true
+          ? Effect.promise(() => import("./abi-record-encode.js"))
+          : Effect.undefined,
     },
     { concurrency: "unbounded" },
   ).pipe(
-    Effect.map(({ coders, contentHash, abi }) => {
+    Effect.map(({ coders, contentHash, abi, abiEncode }) => {
       const byCoinType = new Map(coders);
       return {
         decodeAddress: (coinType, data) =>
@@ -71,6 +77,7 @@ export const loadRecordCodecs = (needs: {
           encodeAddressWith(coinType, address, byCoinType.get(coinType)),
         contentHash,
         decodeAbiRecord: abi?.decodeAbiRecord,
+        encodeAbiRecord: abiEncode?.encodeAbiRecord,
       };
     }),
   );

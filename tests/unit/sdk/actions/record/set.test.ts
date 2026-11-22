@@ -86,6 +86,7 @@ describe("record.set.prepare", () => {
         name,
         resolver: resolverA,
         texts: { url: "x" },
+        clear: false,
       });
 
       assert.deepStrictEqual(
@@ -98,6 +99,30 @@ describe("record.set.prepare", () => {
           [resolverA, "setText", [node, "url", "x"]],
           [v2Registry, "setResolver", [7n, resolverA]],
         ],
+      );
+    }),
+  );
+
+  // Regression: the new resolver's old records for the name stayed, mixed with the new ones.
+  it.effect("clears what the new resolver holds for the name, unless `clear: false`", () =>
+    Effect.gen(function* () {
+      const { ens } = clientFor({ name, v2: { owner: signer, tokenId: 7n } });
+
+      const plan = yield* Actions.record.set.prepare(ens, {
+        name,
+        resolver: resolverA,
+        texts: { url: "x" },
+      });
+
+      const [records] = plan.calls;
+      const decoded = decodeFunctionData({
+        abi: Abis.shared.multicallResolver,
+        data: records?.data ?? "0x",
+      });
+      const [first] = decoded.args?.[0] ?? [];
+      assert.strictEqual(
+        decodeFunctionData({ abi: Abis.v1.publicResolver, data: first ?? "0x" }).functionName,
+        "clearRecords",
       );
     }),
   );
