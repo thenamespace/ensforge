@@ -103,7 +103,8 @@ describe("subname.create.prepare", () => {
     }),
   );
 
-  it.effect("updates an existing child with `upsert`", () =>
+  // Regression: the owner defaulted to the signer, so an upsert took the child from its owner.
+  it.effect("updates an existing child with `upsert`, keeping its owner", () =>
     Effect.gen(function* () {
       const { ens } = clientFor(under(parentV1, { v1: { owner: other } }));
 
@@ -114,6 +115,49 @@ describe("subname.create.prepare", () => {
       });
 
       assert.strictEqual(plan.steps[0]?.description, "Update subname");
+      assert.deepStrictEqual(decodeCalls(plan.calls, Abis.v1.ensRegistry), [
+        [
+          registry,
+          "setSubnodeRecord",
+          [namehash("alice.eth"), labelhash("pay"), other, resolverA, 0n],
+        ],
+      ]);
+    }),
+  );
+
+  // An existing ENSv2 child's owner and roles change with name.transfer and role.grant.
+  it.effect("refuses owner changes to an existing ENSv2 child with `upsert`", () =>
+    expectFailure(
+      Actions.subname.create.prepare(clientFor(under(parentV2, { v2: { owner: other } })).ens, {
+        name: child,
+        owner: signer,
+        upsert: true,
+      }),
+      { _tag: "UnsupportedError", code: "UNSUPPORTED_PROTOCOL" },
+    ),
+  );
+
+  // Without ENSv2 there is no PermissionedResolver to deploy.
+  it.effect("gives an ENSv1 child the public resolver on a deployment without ENSv2", () =>
+    Effect.gen(function* () {
+      const { ens } = clientFor({ ...under(parentV1), v1Only: true });
+
+      const plan = yield* Actions.subname.create.prepare(ens, { name: child });
+
+      assert.deepStrictEqual(plan.deploys, []);
+      assert.deepStrictEqual(decodeCalls(plan.calls, Abis.v1.ensRegistry), [
+        [
+          registry,
+          "setSubnodeRecord",
+          [
+            namehash("alice.eth"),
+            labelhash("pay"),
+            signer,
+            Deployments.mainnet.v1.contracts.publicResolver,
+            0n,
+          ],
+        ],
+      ]);
     }),
   );
 

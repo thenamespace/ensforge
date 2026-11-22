@@ -3,5 +3,6 @@
 export { getFuses } from "./getFuses/index.js";
 export { setChildFuses, setChildFusesSync } from "./setChildFuses/index.js";
 export { setFuses, setFusesSync } from "./setFuses/index.js";
+export { sync, syncSync } from "./sync/index.js";
 export { unwrap, unwrapSync } from "./unwrap/index.js";
 export { wrap, wrapSync } from "./wrap/index.js";

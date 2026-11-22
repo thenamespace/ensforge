@@ -13,8 +13,9 @@ import * as Impl from "./effect.js";
  *
  * **Details**
  *
- * - Bumps the HCA's session nonce; must be the owner's own transaction (never routed through the
- *   HCA).
+ * - Bumps the HCA's session nonce; always the owner's own transaction, so `via` is ignored.
+ * - An HCA that is not deployed yet is deployed first: a session signed for it would become
+ *   usable as soon as anyone deployed it. The plan carries the warning `HCA_DEPLOYED`.
  *
  * **Example** (Revoking every session)
  *
@@ -38,7 +39,6 @@ import * as Impl from "./effect.js";
  * yield* Actions.hca.revokeSessions(ens, {})
  * ```
  *
- * @throws `Errors.HcaError` (`HCA_NOT_VERIFIED`) when the HCA is not deployed.
  * @throws `Errors.HcaError` (`HCA_UNAVAILABLE`) on chains without an HCA deployment.
  *
  * @stability experimental
@@ -110,7 +110,6 @@ revokeSessions.estimateGas = Action.promiseOf(
  * yield* Actions.hca.revokeSessionsSync(ens, {})
  * ```
  *
- * @throws `Errors.HcaError` (`HCA_NOT_VERIFIED`) when the HCA is not deployed.
  * @throws `Errors.HcaError` (`HCA_UNAVAILABLE`) on chains without an HCA deployment.
  * @throws `Errors.TransactionError` (`TRANSACTION_REVERTED`, `RECEIPT_TIMEOUT`) when confirmation fails.
  *

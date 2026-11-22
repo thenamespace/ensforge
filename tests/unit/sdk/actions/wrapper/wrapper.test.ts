@@ -192,6 +192,24 @@ describe("wrapper.unwrap.prepare", () => {
     }),
   );
 
+  // An approved operator unwrapping for the holder must not take the name.
+  it.effect("leaves the name with its holder by default", () =>
+    Effect.gen(function* () {
+      const { ens } = clientFor({
+        name: "alice.eth",
+        v1: { owner: other, wrapper: { owner: other, fuses: 0, expiry: now + 1000n } },
+        approvedForAll: true,
+      });
+
+      const plan = yield* Actions.wrapper.unwrap.prepare(ens, { name: "alice.eth" });
+
+      assert.deepStrictEqual(
+        decodeFunctionData({ abi: Abis.v1.nameWrapper, data: plan.calls[0]?.data ?? "0x" }).args,
+        [labelhash("alice"), other, other],
+      );
+    }),
+  );
+
   it.effect("refuses once cannotUnwrap is burned", () =>
     expectFailure(
       Actions.wrapper.unwrap.prepare(
@@ -199,6 +217,31 @@ describe("wrapper.unwrap.prepare", () => {
         { name: "alice.eth", owner: other },
       ),
       { _tag: "UnauthorizedError", code: "FUSE_BURNED" },
+    ),
+  );
+});
+
+describe("wrapper.sync.prepare", () => {
+  it.effect("syncs the NameWrapper's expiry through ETHRenewerV1", () =>
+    Effect.gen(function* () {
+      const plan = yield* Actions.wrapper.sync.prepare(clientFor({ name: "alice.eth" }).ens, {
+        names: ["alice.eth", "bob.eth"],
+      });
+
+      assert.strictEqual(plan.calls[0]?.to, Deployments.mainnet.v2.migration.ethRenewerV1);
+      assert.deepStrictEqual(
+        decodeFunctionData({ abi: Abis.v2.ethRenewerV1, data: plan.calls[0]?.data ?? "0x" }),
+        { functionName: "syncWrapper", args: [["alice", "bob"]] },
+      );
+    }),
+  );
+
+  it.effect("needs ENSv2", () =>
+    expectFailure(
+      Actions.wrapper.sync.prepare(clientFor({ name: "alice.eth", v1Only: true }).ens, {
+        names: "alice.eth",
+      }),
+      { _tag: "UnsupportedError", code: "UNSUPPORTED_ON_DEPLOYMENT" },
     ),
   );
 });

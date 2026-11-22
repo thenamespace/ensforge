@@ -3,7 +3,7 @@ import { Action, type Like } from "@ensforge/sdk/extension";
 import type { Address } from "viem";
 
 import type { HcaError } from "../../../errors/classes/HcaError.js";
-import type { HcaSession } from "../../../types.js";
+import type { Executor, HcaSession } from "../../../types.js";
 import * as Impl from "./effect.js";
 
 /**
@@ -20,8 +20,9 @@ import * as Impl from "./effect.js";
  *   session), set the owner's primary name and approve registration payments.
  * - It stays valid until `validUntil` or until the owner calls `revokeSessions`. Store the
  *   returned session; it holds no secret.
- * - Refund ceilings default to the ENS app's: $20k per ETH, 500k gas of overhead, 100 USDC per
- *   intent.
+ * - Refund ceilings default to the ENS app's: $20k per ETH and 100 USDC per intent. The gas
+ *   overhead ceiling is four times what `executor` quotes for a commit (500k to 100M gas), or
+ *   500k without an executor or a quote.
  *
  * **Example** (Authorizing a session)
  *
@@ -46,8 +47,8 @@ import * as Impl from "./effect.js";
  * ```
  *
  * @throws `Errors.UserRejectedError` (`USER_REJECTED`) when the owner declines.
- * @throws `Errors.InvalidInputError` (`INVALID_ADDRESS`) for invalid addresses.
- * @throws `Errors.HcaError` (`HCA_UNAVAILABLE`) on chains without an HCA deployment.
+ * @throws `Errors.InvalidInputError` (`INVALID_ADDRESS`, `INVALID_RECORD_VALUE`) for invalid addresses, or refund caps the validator cannot store.
+ * @throws `Errors.HcaError` (`HCA_UNAVAILABLE`) on chains without an HCA deployment, or whose session domain ensforge cannot sign.
  *
  * @stability experimental
  * @category hca
@@ -65,8 +66,13 @@ export declare namespace authorizeSession {
   type Options = {
     /** Public address of the session key the app keeps. */
     sessionKey: string;
-    /** The one resolver the session may deploy and edit (an existing resolver, or a PermissionedResolver proxy the session deploys from the HCA at that address). */
-    resolver: string;
+    /**
+     * The one resolver the session may deploy and edit (an existing resolver, or a
+     * PermissionedResolver proxy the session deploys from the HCA at that address).
+     *
+     * @default the HCA's shared PermissionedResolver, which registrations through the HCA use
+     */
+    resolver?: string | undefined;
     /** Unix seconds after which the session stops working. */
     validUntil: number;
     /** Refund ceilings for Rhinestone executions, in the refund token's units. */
@@ -78,6 +84,8 @@ export declare namespace authorizeSession {
           readonly maxAmount?: bigint | undefined;
         }
       | undefined;
+    /** Executor that quotes the refund, to size `refund.maxGasOverhead` (`rhinestone()`). */
+    executor?: Executor | undefined;
     /** Signer (the HCA owner). @default the client's account */
     account?: Address | undefined;
   };

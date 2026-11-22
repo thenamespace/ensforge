@@ -63,15 +63,24 @@ export declare namespace getRenewalPrice {
     Read.BlockOptions & {
       /** One or more `.eth` second-level names. Normalized automatically. */
       names: string | readonly string[];
-      /** Renewal length in seconds. */
-      duration: bigint;
       /**
        * Token to pay with.
        *
        * @default "usdc"
        */
       paymentToken?: PaymentToken | undefined;
-    };
+    } & (
+      | {
+          /** Renewal length in seconds, the same for every name. */
+          duration: bigint;
+          until?: undefined;
+        }
+      | {
+          /** Expiry to renew every name up to; a name already reaching it costs nothing. */
+          until: bigint;
+          duration?: undefined;
+        }
+    );
   /** The total and one item per name, in `token` units. */
   type ReturnType = {
     readonly total: bigint;
@@ -80,6 +89,10 @@ export declare namespace getRenewalPrice {
       readonly name: string;
       readonly route: RenewalRoute;
       readonly amount: bigint;
+      /** The name's current expiry, as a Unix timestamp. */
+      readonly expiry: bigint;
+      /** Seconds the renewal adds (`0n` for a name already reaching `until`). */
+      readonly duration: bigint;
     }[];
   };
   /** Errors {@link getRenewalPrice} can fail with. */

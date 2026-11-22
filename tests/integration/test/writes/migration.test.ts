@@ -1,10 +1,11 @@
 import { assert, describe } from "@effect/vitest";
 import { Effect, Record as Rec, Array as Arr, String as Str } from "effect";
 
-import { Abis } from "@ensforge/contracts";
+import { Abis, Roles } from "@ensforge/contracts";
 import { hca } from "@ensforge/hca";
-import { Duration, Name, Plan } from "@ensforge/sdk";
+import { Duration, Name, Plan, Role } from "@ensforge/sdk";
 import { Actions } from "@ensforge/sdk/effect";
+import { defineIndexer } from "@ensforge/sdk/indexer";
 import { Chain, Devnet } from "@ensforge/test-devnet";
 import { factAddress, Fixtures } from "@ensforge/test-fixtures";
 import { expectFailure } from "@ensforge/test-harness";
@@ -14,6 +15,8 @@ import {
   hexToBigInt,
   namehash,
   parseAbi,
+  pad,
+  parseEther,
   zeroAddress,
   type Address,
 } from "viem";
@@ -47,12 +50,24 @@ describe("migration", () => {
                 const status = yield* Actions.migration.get(ens, { name, account: alice });
                 assert.strictEqual(status.route, route);
 
-                yield* Actions.migration.migrateSync(ens, {
+                const result = yield* Actions.migration.migrateSync(ens, {
                   names: name,
                   resolver: "keep",
                   onStep: chain.passWaits,
                 });
 
+                // The planner's gas estimates cover what the transactions used.
+                const used = Arr.reduce(
+                  result.receipts,
+                  0n,
+                  (sum, receipt) => sum + receipt.gasUsed,
+                );
+                const estimated = Arr.reduce(
+                  result.plan.steps,
+                  0n,
+                  (sum, step) => sum + (step.gas ?? 0n),
+                );
+                assert.isTrue(used <= estimated, `${id}: ${used} used, ${estimated} estimated`);
                 const entry = yield* ethEntry(name);
                 assert.strictEqual(entry.owner, alice, id);
                 // The name keeps its reservation's expiry exactly.
@@ -72,6 +87,28 @@ describe("migration", () => {
           }
         }),
       { meta: { cases: ["M:A20", "M:A21", "O27", "M06", "T07"] } },
+    );
+
+    // Regression: a contract owner that refuses ERC-1155 tokens reverted the transfer step, after
+    // the setup step was already paid for.
+    it.effect(
+      "refuses an owner that cannot receive the name before anything is sent",
+      () =>
+        Effect.gen(function* () {
+          const fixtures = yield* Fixtures;
+          const devnet = yield* Devnet;
+          const ens = (yield* Clients).make({ account: devnet.accounts.alice });
+
+          const error = yield* expectFailure(
+            Actions.migration.migrate.prepare(ens, {
+              names: fixtures.byId("v2.reserved").name,
+              owner: devnet.contract("v2.publicResolver"),
+            }),
+            { _tag: "MigrationError", code: "NOT_ELIGIBLE" },
+          );
+          assert.deepStrictEqual(error.blockers, ["recipient-cannot-receive"]);
+        }),
+      { meta: { cases: ["M06"] } },
     );
 
     it.effect(
@@ -199,11 +236,19 @@ describe("migration", () => {
               });
 
               // `a` is not listed: it is recreated as the level that holds `b`.
-              yield* Actions.migration.migrateSync(ens, {
+              const result = yield* Actions.migration.migrateSync(ens, {
                 names: { name, subnames: ["b.a"] },
                 resolver: "keep",
                 onStep: chain.passWaits,
               });
+              // Registry deployments and registrations stay within the planner's estimates too.
+              const used = Arr.reduce(result.receipts, 0n, (sum, receipt) => sum + receipt.gasUsed);
+              const estimated = Arr.reduce(
+                result.plan.steps,
+                0n,
+                (sum, step) => sum + (step.gas ?? 0n),
+              );
+              assert.isTrue(used <= estimated, `${used} used, ${estimated} estimated`);
 
               const parent = yield* Actions.name.get(ens, { name: a });
               assert.deepInclude(parent, { kind: "v2-native", owner: bob });
@@ -243,6 +288,7 @@ describe("migration", () => {
 
           yield* chain.isolated(
             Effect.gen(function* () {
+              const wrapperExpiry = (yield* v1Owners(controlled)).wrapped?.[2];
               const { plan } = yield* Actions.migration.migrateSync(ens, {
                 names: { name: parent, subnames: [controlled, emancipated] },
                 resolver: "keep",
@@ -264,10 +310,390 @@ describe("migration", () => {
                 owner: bob,
                 registry: registry?.address ?? null,
               });
+              // Regression: every recreated subname was given the maximum expiry.
+              assert.strictEqual(controlledName.expiry, wrapperExpiry);
               assert.strictEqual(
                 (yield* Actions.name.get(ens, { name: emancipated })).kind,
                 "v1-wrapped",
               );
+            }),
+          );
+        }),
+      { meta: { cases: ["M20"] } },
+    );
+
+    // Regression: a stop between the transfer and the subnames' registration left them missing,
+    // and migrating again failed with ALREADY_MIGRATED.
+    it.effect(
+      "finishes an interrupted migration's subnames with plan.resume",
+      () =>
+        Effect.gen(function* () {
+          const fixtures = yield* Fixtures;
+          const devnet = yield* Devnet;
+          const chain = yield* Chain;
+          const clients = yield* Clients;
+          const wallets = yield* Wallets;
+          const { alice, bob } = devnet.accounts;
+          const parent = fixtures.byId("v1.wrapped.locked").name;
+          const controlled = fixtures.byId("v1.wrapped.sub").name;
+          const storage = Plan.memoryStorage();
+          const options = {
+            names: { name: parent, subnames: [controlled] },
+            resolver: "keep",
+            onStep: chain.passWaits,
+          } as const;
+
+          yield* chain.isolated(
+            Effect.gen(function* () {
+              // The wallet signs the transfer, then stops.
+              const first = clients.make({
+                account: alice,
+                wallet: wallets.make(alice, { rejectAfter: 1 }),
+                storage,
+              });
+              const prepared = yield* Actions.migration.migrate.prepare(first, options);
+              assert.include(
+                Arr.map(prepared.warnings, (warning) => warning.code),
+                "NOT_ATOMIC",
+              );
+              yield* expectFailure(Actions.migration.migrateSync(first, options), {
+                _tag: "UserRejectedError",
+                code: "USER_REJECTED",
+              });
+              assert.strictEqual(
+                (yield* Actions.name.get(first, { name: controlled })).kind,
+                "v1-wrapped",
+              );
+              const [record] = yield* Actions.plan.list(first, {});
+              if (record === undefined) assert.fail("the plan was not saved");
+
+              const second = clients.make({ account: alice, storage });
+              yield* Actions.plan.resumeSync(second, {
+                id: record.plan.id,
+                onStep: chain.passWaits,
+              });
+              const resumed = yield* Actions.name.get(second, { name: controlled });
+              assert.deepInclude(resumed, { kind: "v2-native", owner: bob });
+            }),
+          );
+        }),
+      { meta: { cases: ["M20"] } },
+    );
+
+    // Regression: without the stored plan, a migration stopped after its transfer could not be
+    // finished: migrating again failed with ALREADY_MIGRATED.
+    it.effect(
+      "finishes a migration stopped after its transfer with resume, once",
+      () =>
+        Effect.gen(function* () {
+          const fixtures = yield* Fixtures;
+          const devnet = yield* Devnet;
+          const chain = yield* Chain;
+          const clients = yield* Clients;
+          const wallets = yield* Wallets;
+          const { alice, bob } = devnet.accounts;
+          const parent = fixtures.byId("v1.wrapped.locked").name;
+          const controlled = fixtures.byId("v1.wrapped.sub").name;
+          const options = {
+            names: { name: parent, subnames: [controlled] },
+            resolver: "keep",
+            onStep: chain.passWaits,
+          } as const;
+
+          yield* chain.isolated(
+            Effect.gen(function* () {
+              const first = clients.make({
+                account: alice,
+                wallet: wallets.make(alice, { rejectAfter: 1 }),
+              });
+              yield* expectFailure(Actions.migration.migrateSync(first, options), {
+                _tag: "UserRejectedError",
+                code: "USER_REJECTED",
+              });
+
+              const ens = clients.make({ account: alice });
+              yield* expectFailure(Actions.migration.migrate.prepare(ens, options), {
+                _tag: "MigrationError",
+                code: "ALREADY_MIGRATED",
+              });
+              const result = yield* Actions.migration.migrateSync(ens, {
+                ...options,
+                resume: true,
+              });
+              assert.deepStrictEqual(
+                Arr.map(result.plan.steps, (step) => step.id),
+                ["wrapped-subnames"],
+              );
+              const resumed = yield* Actions.name.get(ens, { name: controlled });
+              assert.deepInclude(resumed, { kind: "v2-native", owner: bob });
+
+              yield* expectFailure(
+                Actions.migration.migrate.prepare(ens, { ...options, resume: true }),
+                { _tag: "MigrationError", code: "ALREADY_MIGRATED" },
+              );
+            }),
+          );
+        }),
+      { meta: { cases: ["M20"] } },
+    );
+
+    it.effect(
+      "resumes a migrated parent and migrates its locked child in one plan",
+      () =>
+        Effect.gen(function* () {
+          const fixtures = yield* Fixtures;
+          const devnet = yield* Devnet;
+          const chain = yield* Chain;
+          const clients = yield* Clients;
+          const wallets = yield* Wallets;
+          const { alice, bob } = devnet.accounts;
+          const parent = fixtures.byId("v1.wrapped.locked").name;
+          const controlled = fixtures.byId("v1.wrapped.sub").name;
+          const child = `kept.${parent}`;
+          const names = { name: parent, subnames: [controlled] };
+
+          yield* chain.isolated(
+            Effect.gen(function* () {
+              const ens = clients.make({ account: alice });
+              yield* Actions.subname.createSync(ens, {
+                name: child,
+                resolver: null,
+                fuses: ["parentCannotControl", "cannotUnwrap"],
+              });
+              const first = clients.make({
+                account: alice,
+                wallet: wallets.make(alice, { rejectAfter: 1 }),
+              });
+              yield* expectFailure(
+                Actions.migration.migrateSync(first, {
+                  names,
+                  resolver: "keep",
+                  onStep: chain.passWaits,
+                }),
+                { _tag: "UserRejectedError", code: "USER_REJECTED" },
+              );
+
+              const result = yield* Actions.migration.migrateSync(ens, {
+                names: [names, child],
+                resolver: "keep",
+                resume: true,
+                onStep: chain.passWaits,
+              });
+              assert.deepStrictEqual(
+                Arr.map(result.plan.steps, (step) => step.id),
+                ["migrate", "wrapped-subnames"],
+              );
+              const migratedChild = yield* Actions.name.get(ens, { name: child });
+              assert.deepInclude(migratedChild, { kind: "v2-migrated", owner: alice });
+              const recreated = yield* Actions.name.get(ens, { name: controlled });
+              assert.deepInclude(recreated, { kind: "v2-native", owner: bob });
+            }),
+          );
+        }),
+      { meta: { cases: ["M20"] } },
+    );
+
+    // Regression: a retry after an interrupted run reused the resolver it had created, whatever
+    // the new owner or records.
+    it.effect(
+      "re-checks a resolver an interrupted migration created before reusing it",
+      () =>
+        Effect.gen(function* () {
+          const fixtures = yield* Fixtures;
+          const devnet = yield* Devnet;
+          const chain = yield* Chain;
+          const clients = yield* Clients;
+          const wallets = yield* Wallets;
+          const { alice, bob } = devnet.accounts;
+          const name = fixtures.byId("v2.reserved").name;
+          const options = { names: { name, records: { texts: { url: "https://first.example" } } } };
+
+          yield* chain.isolated(
+            Effect.gen(function* () {
+              // Only the resolver's deployment is sent.
+              const first = clients.make({
+                account: alice,
+                wallet: wallets.make(alice, { rejectAfter: 1 }),
+              });
+              yield* expectFailure(Actions.migration.migrateSync(first, options), {
+                _tag: "UserRejectedError",
+                code: "USER_REJECTED",
+              });
+
+              const ens = clients.make({ account: alice });
+              const conflict = yield* expectFailure(
+                Actions.migration.migrate.prepare(ens, { ...options, owner: bob }),
+                { _tag: "MigrationError", code: "NOT_ELIGIBLE" },
+              );
+              assert.deepStrictEqual(conflict.blockers, ["resolver-conflict"]);
+
+              yield* Actions.migration.migrateSync(ens, {
+                names: { name, records: { texts: { url: "https://second.example" } } },
+                onStep: chain.passWaits,
+              });
+              const url = yield* Actions.record.getText(ens, { name, key: "url" });
+              assert.strictEqual(url, "https://second.example");
+            }),
+          );
+        }),
+      { meta: { cases: ["M06"] } },
+    );
+
+    // Regression: a locked child moved into whatever registry its parent pointed at, though the
+    // transfer cannot be undone.
+    it.effect(
+      "refuses a locked child whose parent registry is not the WrapperRegistry its migration made",
+      () =>
+        Effect.gen(function* () {
+          const fixtures = yield* Fixtures;
+          const devnet = yield* Devnet;
+          const chain = yield* Chain;
+          const clients = yield* Clients;
+          const { bob } = devnet.accounts;
+          const parent = fixtures.byId("migration.locked");
+          const child = String(parent.facts["child"]);
+
+          yield* chain.isolated(
+            Effect.gen(function* () {
+              // The parent's registry proxy now runs a UserRegistry: it is no WrapperRegistry.
+              const registry = yield* Actions.registry.get(clients.reader, { name: parent.name });
+              if (registry === null) assert.fail("the parent has no registry");
+              yield* chain.setStorage(
+                registry.address,
+                "0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc",
+                pad(devnet.contract("v2.userRegistryImplementation")),
+              );
+
+              const ens = clients.make({ account: bob });
+              const error = yield* expectFailure(
+                Actions.migration.migrate.prepare(ens, { names: child, resolver: "keep" }),
+                { _tag: "MigrationError", code: "NOT_ELIGIBLE" },
+              );
+              assert.include([...error.blockers], "uncertified-parent-registry");
+            }),
+          );
+        }),
+      { meta: { cases: ["M04"] } },
+    );
+
+    // MigrationHelper finds the parent's WrapperRegistry when it runs, so a parent migrated in
+    // the same execution counts.
+    it.effect(
+      "migrates a locked parent and its locked child through the signer's HCA in one plan",
+      () =>
+        Effect.gen(function* () {
+          const fixtures = yield* Fixtures;
+          const { alice } = (yield* Devnet).accounts;
+          const chain = yield* Chain;
+          const ens = (yield* Clients).make({ account: alice });
+          const parent = fixtures.byId("v1.wrapped.locked").name;
+          const child = `kept.${parent}`;
+
+          yield* chain.isolated(
+            Effect.gen(function* () {
+              yield* Actions.subname.createSync(ens, {
+                name: child,
+                resolver: null,
+                fuses: ["parentCannotControl", "cannotUnwrap"],
+              });
+              yield* Actions.migration.migrateSync(ens, {
+                names: [child, parent],
+                resolver: "keep",
+                via: hca(),
+                onStep: chain.passWaits,
+              });
+              for (const name of [parent, child]) {
+                const migrated = yield* Actions.name.get(ens, { name });
+                assert.deepInclude(migrated, { kind: "v2-migrated", owner: alice }, name);
+              }
+            }),
+          );
+        }),
+      { meta: { cases: ["M20"] } },
+    );
+
+    // Regression: a locked child listed before its locked parent got no target registry.
+    it.effect(
+      "migrates a locked child listed before its locked parent",
+      () =>
+        Effect.gen(function* () {
+          const fixtures = yield* Fixtures;
+          const { alice } = (yield* Devnet).accounts;
+          const chain = yield* Chain;
+          const ens = (yield* Clients).make({ account: alice });
+          const parent = fixtures.byId("v1.wrapped.locked").name;
+          const child = `kept.${parent}`;
+
+          yield* chain.isolated(
+            Effect.gen(function* () {
+              yield* Actions.subname.createSync(ens, {
+                name: child,
+                resolver: null,
+                fuses: ["parentCannotControl", "cannotUnwrap"],
+              });
+              yield* Actions.migration.migrateSync(ens, {
+                names: [child, parent],
+                resolver: "keep",
+                onStep: chain.passWaits,
+              });
+              const migrated = yield* Actions.name.get(ens, { name: child });
+              assert.deepInclude(migrated, { kind: "v2-migrated", owner: alice });
+            }),
+          );
+        }),
+      { meta: { cases: ["M20"] } },
+    );
+
+    // Regression: an emancipated child without cannotUnwrap is detached, not locked. The receiver
+    // deploys it no WrapperRegistry, so its subnames were registered into an address without
+    // code: the calls succeeded, nothing was stored, and the migration reported success.
+    it.effect(
+      "migrates a detached child with its subnames in a registry of its own",
+      () =>
+        Effect.gen(function* () {
+          const fixtures = yield* Fixtures;
+          const devnet = yield* Devnet;
+          const chain = yield* Chain;
+          const clients = yield* Clients;
+          const { alice, bob, carol } = devnet.accounts;
+          const parent = fixtures.byId("v1.wrapped.locked").name;
+          const detached = fixtures.byId("v1.wrapped.sub.emancipated").name;
+          const holder = clients.make({ account: bob });
+          const grandchild = `x.${detached}`;
+
+          yield* chain.isolated(
+            Effect.gen(function* () {
+              yield* Actions.migration.migrateSync(clients.make({ account: alice }), {
+                names: parent,
+                resolver: "keep",
+                onStep: chain.passWaits,
+              });
+              yield* Actions.subname.createSync(holder, {
+                name: grandchild,
+                owner: carol,
+                resolver: null,
+              });
+
+              const status = yield* Actions.migration.get(holder, { name: detached, account: bob });
+              assert.strictEqual(status.route, "locked-child");
+              assert.deepStrictEqual(status.blockers, []);
+              assert.isNull(status.after.subregistry);
+              assert.sameMembers(
+                [...status.after.roles],
+                [...Role.toNames(Roles.registryBitmaps.registration, "registry")],
+              );
+
+              const { plan } = yield* Actions.migration.migrateSync(holder, {
+                names: { name: detached, subnames: [grandchild] },
+                resolver: "keep",
+                onStep: chain.passWaits,
+              });
+              assert.notInclude(
+                Arr.map(plan.steps, (step) => step.id),
+                "wrapped-subnames",
+              );
+              const recreated = yield* Actions.name.get(holder, { name: grandchild });
+              assert.deepInclude(recreated, { protocol: "v2", owner: carol });
             }),
           );
         }),
@@ -373,6 +799,24 @@ describe("migration", () => {
               assert.include([...roles.names], "setResolver");
             }),
           );
+          // The same, asked for on the name alone (and refused on it alone, against the batch).
+          yield* chain.isolated(
+            Effect.gen(function* () {
+              const perName = yield* Actions.migration.migrate.prepare(ens, {
+                names: { name: managed, preserveManager: true },
+                resolver: "keep",
+              });
+              const optedOut = yield* Actions.migration.migrate.prepare(ens, {
+                names: { name: managed, preserveManager: false },
+                resolver: "keep",
+                preserveManager: true,
+              });
+              assert.deepStrictEqual(
+                Arr.map([perName, optedOut], (plan) => Arr.map(plan.steps, (step) => step.id)),
+                [["migrate", "manager"], ["migrate"]],
+              );
+            }),
+          );
 
           const inGrace = fixtures.byId("v1.unwrapped.grace").name;
           yield* expectFailure(
@@ -400,6 +844,235 @@ describe("migration", () => {
           );
         }),
       { meta: { cases: ["T08", "O30"] } },
+    );
+
+    // The indexer lists every record key; the values, ABI and interface ones included, are read
+    // on chain and written to the new resolver.
+    it.effect(
+      "copies the ABI and interface records the indexer lists",
+      () =>
+        Effect.gen(function* () {
+          const fixtures = yield* Fixtures;
+          const { alice } = (yield* Devnet).accounts;
+          const chain = yield* Chain;
+          const clients = yield* Clients;
+          const name = fixtures.byId("records.v1").name;
+          const selection = {
+            name,
+            texts: ["url"],
+            abi: true,
+            interfaces: ["0x01ffc9a7"],
+          } as const;
+          const indexer = defineIndexer({
+            id: "records",
+            getRecords: () =>
+              Promise.resolve({
+                namespace: "ens",
+                resolver: null,
+                texts: {},
+                addresses: {},
+                contentHash: null,
+                answers: {},
+                inventory: {
+                  keys: ["text:url", "abi", "interface:0x01ffc9a7"],
+                  unsetKeys: [],
+                  unsupportedKeys: [],
+                },
+              }),
+            getSubnames: () =>
+              Promise.resolve({ items: [], cursor: null, hasMore: false, totalCount: 0 }),
+          });
+          const ens = clients.make({ account: alice, indexer });
+
+          yield* chain.isolated(
+            Effect.gen(function* () {
+              const before = yield* Actions.record.get(ens, selection);
+              assert.isNotNull(before.abi);
+              assert.notDeepEqual(before.interfaces, { "0x01ffc9a7": null });
+
+              yield* Actions.migration.migrateSync(ens, {
+                names: name,
+                resolver: "new",
+                onStep: chain.passWaits,
+              });
+              const after = yield* Actions.record.get(ens, selection);
+              assert.strictEqual(
+                (yield* Actions.resolver.get(ens, { name }))?.kind,
+                "permissioned-resolver",
+              );
+              assert.deepStrictEqual(
+                { texts: after.texts, abi: after.abi, interfaces: after.interfaces },
+                { texts: before.texts, abi: before.abi, interfaces: before.interfaces },
+              );
+            }),
+          );
+        }),
+      { meta: { cases: ["T08"] } },
+    );
+
+    // Late in grace the ENSv2 reservation has lapsed, but renewing through ETHRenewerV1 revives
+    // it: such a name migrates with `renew`.
+    it.effect(
+      "migrates a name late in grace, after its reservation lapsed, with a renewal",
+      () =>
+        Effect.gen(function* () {
+          const fixtures = yield* Fixtures;
+          const { alice } = (yield* Devnet).accounts;
+          const chain = yield* Chain;
+          const ens = (yield* Clients).make({ account: alice });
+          const name = fixtures.byId("v1.unwrapped.grace").name;
+          const before = yield* Actions.migration.get(ens, { name, account: alice });
+          const lapsed = (before.reservationExpiry ?? 0n) + Duration.days(1);
+          const graceEnds = (before.expiry ?? 0n) + Duration.days(90);
+          assert.isBelow(Number(lapsed), Number(graceEnds), "the reservation lapses within grace");
+
+          yield* chain.atTimestamp(
+            lapsed,
+            Effect.gen(function* () {
+              const status = yield* Actions.migration.get(ens, { name, account: alice });
+              assert.deepStrictEqual(status.blockers, ["expired"]);
+              yield* Actions.migration.migrateSync(ens, {
+                names: name,
+                resolver: "keep",
+                renew: { duration: Duration.years(1) },
+                onStep: chain.passWaits,
+              });
+              const migrated = yield* Actions.name.get(ens, { name });
+              assert.strictEqual(migrated.kind, "v2-migrated");
+            }),
+          );
+        }),
+      { meta: { cases: ["T08"] } },
+    );
+
+    // A name renewed on the registrar without the NameWrapper being told shows, past its old
+    // wrapper expiry, with no owner or fuses: a locked name would look unlocked and unowned.
+    it.effect(
+      "refuses a name whose NameWrapper expiry is out of date until it is synced",
+      () =>
+        Effect.gen(function* () {
+          const fixtures = yield* Fixtures;
+          const devnet = yield* Devnet;
+          const { alice } = devnet.accounts;
+          const chain = yield* Chain;
+          const ens = (yield* Clients).make({ account: alice });
+          const name = fixtures.byId("v1.wrapped.locked").name;
+          const renewer = devnet.contract("v2.ethRenewerV1");
+
+          yield* chain.isolated(
+            Effect.gen(function* () {
+              // A registrar controller renews the token directly, skipping the NameWrapper.
+              yield* chain.impersonate(renewer);
+              yield* chain.setBalance(renewer, parseEther("1"));
+              yield* chain.write({
+                address: devnet.contract("v1.baseRegistrar"),
+                abi: Abis.v1.baseRegistrar,
+                functionName: "renew",
+                args: [Name.toTokenId(name), Duration.years(5)],
+                account: renewer,
+              });
+              const fuses = yield* Actions.wrapper.getFuses(ens, { name });
+              const stale = (fuses?.expiry ?? 0n) + Duration.days(1);
+
+              yield* chain.atTimestamp(
+                stale,
+                Effect.gen(function* () {
+                  const before = yield* Actions.migration.get(ens, { name, account: alice });
+                  assert.include([...before.blockers], "wrapper-out-of-sync");
+
+                  yield* Actions.wrapper.syncSync(ens, { names: name });
+                  const after = yield* Actions.migration.get(ens, { name, account: alice });
+                  assert.notInclude([...after.blockers], "wrapper-out-of-sync");
+                  assert.strictEqual(after.route, "wrapped-locked");
+                }),
+              );
+            }),
+          );
+        }),
+      { meta: { cases: ["M:A8"] } },
+    );
+
+    // A locked cannotSetResolver name gets an empty PublicResolverV2 that only its new owner can
+    // write, after the irreversible transfer: through an HCA the signer first makes the HCA the
+    // node's delegate, so the copy runs in the same execution; for another owner it is refused.
+    it.effect(
+      "copies a locked name's records to PublicResolverV2, or refuses to leave them behind",
+      () =>
+        Effect.gen(function* () {
+          const fixtures = yield* Fixtures;
+          const { alice, bob } = (yield* Devnet).accounts;
+          const chain = yield* Chain;
+          const ens = (yield* Clients).make({ account: alice });
+          const name = fixtures.byId("v1.wrapped.locked.cannot-set-resolver").name;
+          const names = { name, records: { texts: { url: "https://alice.example" } } };
+
+          const status = yield* Actions.migration.get(ens, { name, account: alice });
+          assert.strictEqual(status.resolver.plan, "public-v2");
+          const refused = yield* expectFailure(
+            Actions.migration.migrate.prepare(ens, { names, owner: bob }),
+            { _tag: "MigrationError", code: "NOT_ELIGIBLE" },
+          );
+          assert.include([...(refused.blockers ?? [])], "records-not-replayable");
+
+          yield* chain.isolated(
+            Effect.gen(function* () {
+              yield* Actions.migration.migrateSync(ens, {
+                names,
+                via: hca(),
+                onStep: chain.passWaits,
+              });
+              const url = yield* Actions.record.getText(ens, { name, key: "url" });
+              assert.strictEqual(url, "https://alice.example");
+            }),
+          );
+        }),
+      { meta: { cases: ["M07"] } },
+    );
+
+    // Regression: a stop between the transfer and the copy left PublicResolverV2 empty, with the
+    // ENSv1 resolver cleared, so nothing could read the records back.
+    it.effect(
+      "resumes a locked name's PublicResolverV2 copy from the given records",
+      () =>
+        Effect.gen(function* () {
+          const fixtures = yield* Fixtures;
+          const { alice } = (yield* Devnet).accounts;
+          const chain = yield* Chain;
+          const clients = yield* Clients;
+          const wallets = yield* Wallets;
+          const name = fixtures.byId("v1.wrapped.locked.cannot-set-resolver").name;
+          const records = { texts: { url: "https://alice.example" } };
+
+          yield* chain.isolated(
+            Effect.gen(function* () {
+              const first = clients.make({
+                account: alice,
+                wallet: wallets.make(alice, { rejectAfter: 1 }),
+              });
+              yield* expectFailure(
+                Actions.migration.migrateSync(first, {
+                  names: { name, records },
+                  onStep: chain.passWaits,
+                }),
+                { _tag: "UserRejectedError", code: "USER_REJECTED" },
+              );
+
+              const ens = clients.make({ account: alice });
+              yield* expectFailure(
+                Actions.migration.migrate.prepare(ens, { names: name, resume: true }),
+                { _tag: "MigrationError", code: "RECORDS_UNKNOWN" },
+              );
+              yield* Actions.migration.migrateSync(ens, {
+                names: { name, records },
+                resume: true,
+                onStep: chain.passWaits,
+              });
+              const url = yield* Actions.record.getText(ens, { name, key: "url" });
+              assert.strictEqual(url, "https://alice.example");
+            }),
+          );
+        }),
+      { meta: { cases: ["M07"] } },
     );
 
     it.effect(

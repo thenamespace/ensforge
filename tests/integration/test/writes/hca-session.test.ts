@@ -1,7 +1,7 @@
 import { assert, describe } from "@effect/vitest";
 import { Effect, Array as Arr } from "effect";
 
-import { Abis } from "@ensforge/contracts";
+import { Abis, Roles } from "@ensforge/contracts";
 import {
   hcaOwnerAndSessionValidatorV2Abi,
   hcaSessionSalt,
@@ -9,8 +9,10 @@ import {
   hcaSignedSession,
   standaloneSingleOwnerHcaV2Abi,
 } from "@ensforge/contracts/v2/experimental/hca";
-import type { HcaSession } from "@ensforge/hca";
+import { hca, rhinestone, type HcaSession } from "@ensforge/hca";
 import { Actions as HcaActions } from "@ensforge/hca/effect";
+import { Duration } from "@ensforge/sdk";
+import { Actions } from "@ensforge/sdk/effect";
 import { Chain, Devnet } from "@ensforge/test-devnet";
 import {
   ContractFunctionRevertedError,
@@ -34,7 +36,9 @@ import {
 } from "viem";
 
 import { Clients } from "../support/clients.ts";
+import { ethEntry, mintUsdc, usdcOf } from "../support/contracts.ts";
 import { onProfile } from "../support/lane.ts";
+import { Rhinestone } from "../support/rhinestone.ts";
 
 // A session ensforge authorized, enabled the way Rhinestone's IntentExecutor presents it: a
 // first-use envelope (`FIXED_SESSION_REFUND_ENABLE_MODE`) carrying the owner's approval, checked by
@@ -335,6 +339,205 @@ describe("HCA sessions on the validator", () => {
           );
         }),
       { meta: { cases: ["Z02", "Z03", "Z05"] } },
+    );
+
+    it.effect(
+      "writes records with a session through rhinestone(), checked by the validator",
+      () =>
+        Effect.gen(function* () {
+          const devnet = yield* Devnet;
+          const chain = yield* Chain;
+          const clients = yield* Clients;
+          const rhinestoneDevnet = yield* Rhinestone;
+          const { carol, bob } = devnet.accounts;
+          const ens = clients.make({ account: carol });
+          const name = "hca-session-records.eth";
+
+          yield* chain.isolated(
+            Effect.gen(function* () {
+              const account = yield* HcaActions.hca.predictAddress(ens, {});
+              yield* mintUsdc(account, 1_000_000_000n);
+              yield* Actions.registration.registerSync(ens, {
+                names: name,
+                duration: Duration.years(1),
+                resolver: "owned",
+                via: hca(),
+                onStep: chain.passWaits,
+              });
+              const resolver = (yield* Actions.resolver.get(ens, { name }))?.address ?? zeroAddress;
+              const now = yield* chain.now;
+              const session = yield* HcaActions.hca.authorizeSession(ens, {
+                sessionKey: bob,
+                resolver,
+                validUntil: Number(now) + 3600,
+              });
+
+              // The intent carries the session's terms and approval as the patched SDK packs them.
+              const filled = rhinestoneDevnet.filled();
+              yield* Actions.record.setSync(ens, {
+                name,
+                texts: { url: "https://session.example" },
+                via: hca({
+                  executors: [
+                    rhinestone({
+                      sdk: rhinestoneDevnet.sdk,
+                      sessionSigner: rhinestoneDevnet.signer(bob),
+                    }),
+                  ],
+                  session,
+                }),
+              });
+
+              const url = yield* Actions.record.getText(ens, { name, key: "url" });
+              assert.strictEqual(url, "https://session.example");
+              assert.strictEqual(rhinestoneDevnet.filled(), filled + 1);
+            }),
+          );
+        }),
+      { meta: { cases: ["Z02"] } },
+    );
+
+    it.effect(
+      "registers with a session, pulling the price from the owner's wallet with a permit",
+      () =>
+        Effect.gen(function* () {
+          const devnet = yield* Devnet;
+          const chain = yield* Chain;
+          const clients = yield* Clients;
+          const rhinestoneDevnet = yield* Rhinestone;
+          const { carol, bob } = devnet.accounts;
+          const ens = clients.make({ account: carol });
+
+          yield* chain.isolated(
+            Effect.gen(function* () {
+              // A first registration through the owner deploys the HCA and its shared resolver.
+              yield* mintUsdc(carol, 1_000_000_000n);
+              yield* Actions.registration.registerSync(ens, {
+                names: "hca-session-first.eth",
+                duration: Duration.years(1),
+                resolver: "owned",
+                via: hca(),
+                onStep: chain.passWaits,
+              });
+              const account = yield* HcaActions.hca.predictAddress(ens, {});
+              const resolver =
+                (yield* Actions.resolver.get(ens, { name: "hca-session-first.eth" }))?.address ??
+                zeroAddress;
+              const now = yield* chain.now;
+              const session = yield* HcaActions.hca.authorizeSession(ens, {
+                sessionKey: bob,
+                resolver,
+                validUntil: Number(now) + 3600,
+              });
+              const held = yield* usdcOf(account);
+              const before = yield* usdcOf(carol);
+
+              const result = yield* Actions.registration.registerSync(ens, {
+                names: "hca-session-funded.eth",
+                duration: Duration.years(1),
+                resolver: "owned",
+                via: hca({
+                  executors: [
+                    rhinestone({
+                      sdk: rhinestoneDevnet.sdk,
+                      sessionSigner: rhinestoneDevnet.signer(bob),
+                    }),
+                  ],
+                  session,
+                }),
+                onStep: chain.passWaits,
+              });
+
+              assert.strictEqual((yield* ethEntry("hca-session-funded.eth")).owner, carol);
+              const pulled = before - (yield* usdcOf(carol));
+              assert.strictEqual(held + pulled - (yield* usdcOf(account)), result.paid);
+              assert.include(
+                Arr.map(result.plan.warnings, (warning) => warning.code),
+                "HCA_FUNDING",
+              );
+            }),
+          );
+        }),
+      { meta: { cases: ["Z02"] } },
+    );
+
+    it.effect(
+      "registers a fresh name with records and a primary name through a session, in one reveal",
+      () =>
+        Effect.gen(function* () {
+          const devnet = yield* Devnet;
+          const chain = yield* Chain;
+          const clients = yield* Clients;
+          const rhinestoneDevnet = yield* Rhinestone;
+          // An account the fixtures gave no HCA.
+          const { user, bob } = devnet.accounts;
+          const ens = clients.make({ account: user });
+          const name = "hca-session-fresh.eth";
+
+          yield* chain.isolated(
+            Effect.gen(function* () {
+              yield* mintUsdc(user, 1_000_000_000n);
+              const now = yield* chain.now;
+              // The session's resolver defaults to the HCA's shared one, which it may deploy.
+              const session = yield* HcaActions.hca.authorizeSession(ens, {
+                sessionKey: bob,
+                validUntil: Number(now) + 3600,
+              });
+              const filled = rhinestoneDevnet.filled();
+
+              const result = yield* Actions.registration.registerSync(ens, {
+                names: name,
+                duration: Duration.years(1),
+                records: { texts: { url: "https://fresh.example" } },
+                primaryName: true,
+                via: hca({
+                  executors: [
+                    rhinestone({
+                      sdk: rhinestoneDevnet.sdk,
+                      sessionSigner: rhinestoneDevnet.signer(bob),
+                    }),
+                  ],
+                  session,
+                }),
+                onStep: chain.passWaits,
+              });
+
+              // Two intents, the commit and the reveal; the wallet signed only the session and
+              // the funding permit.
+              assert.deepStrictEqual(
+                Arr.map(result.plan.steps, (step) => step.from ?? "hca"),
+                ["hca", "hca"],
+              );
+              assert.strictEqual(rhinestoneDevnet.filled(), filled + 2);
+              const resolver = yield* Actions.resolver.get(ens, { name });
+              assert.strictEqual(resolver?.address, session.terms.resolver);
+              const holders = yield* Effect.forEach(
+                [session.hca, user],
+                (account) =>
+                  chain.read({
+                    address: session.terms.resolver,
+                    abi: Abis.v2.permissionedResolver,
+                    functionName: "hasRootRoles",
+                    args: [Roles.enhancedAccessControl.allRoles, account],
+                  }),
+                { concurrency: 1 },
+              );
+              assert.deepStrictEqual(holders, [true, true]);
+              const url = yield* Actions.record.getText(ens, { name, key: "url" });
+              assert.strictEqual(url, "https://fresh.example");
+              const primary = yield* Actions.primaryName.get(ens, { address: user });
+              assert.strictEqual(primary, name);
+              const allowance = yield* chain.read({
+                address: devnet.contract("v2.usdc"),
+                abi: Abis.shared.erc20,
+                functionName: "allowance",
+                args: [session.hca, devnet.contract("v2.ethRegistrar")],
+              });
+              assert.strictEqual(allowance, 0n);
+            }),
+          );
+        }),
+      { meta: { cases: ["Z02"] } },
     );
   });
 });

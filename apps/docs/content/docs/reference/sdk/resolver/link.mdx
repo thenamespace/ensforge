@@ -38,7 +38,7 @@ Call it as `ens.resolver.link(options)` on a client, or `Actions.resolver.link(c
 | Option | Type | Default | Description |
 | --- | --- | --- | --- |
 | `name` (required) | `string` |  | ENS name. Normalized automatically. |
-| `to` (required) | `string \| { recordId: bigint }` |  | Name or record ID to link to. |
+| `to` (required) | `string \| { recordId: bigint } \| null` |  | Name or record ID to link to, or `null` to unlink: the name then gets an empty record of its own, while the records it shared stay with the other names. |
 
 Also takes the [write options](/docs/reference/sdk/client#write-options).
 

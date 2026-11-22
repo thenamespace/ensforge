@@ -30,9 +30,14 @@ export const staleTransfer = Effect.fnUntraced(function* (
         return undefined;
       }
     })();
-    if (transfer?.functionName !== "safeTransferFrom") continue;
+    const tokenId =
+      transfer?.functionName === "safeTransferFrom"
+        ? transfer.args[2]
+        : transfer?.functionName === "unsafeTransfer"
+          ? transfer.args[1]
+          : undefined;
+    if (tokenId === undefined) continue;
 
-    const [, , tokenId] = transfer.args;
     const current = yield* Rpc.readContractOrUndefined(client, {
       address: call.to,
       abi: Abis.v2.permissionedRegistry,

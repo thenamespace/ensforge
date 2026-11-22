@@ -1,15 +1,18 @@
 import { assert, describe, it } from "@effect/vitest";
-import { Effect } from "effect";
+import { Array as Arr, Effect } from "effect";
 
 import { Abis, Deployments } from "@ensforge/contracts";
-import { standaloneSingleOwnerHcaV2Abi } from "@ensforge/contracts/v2/experimental/hca";
+import {
+  standaloneHcaFactoryV2Abi,
+  standaloneSingleOwnerHcaV2Abi,
+} from "@ensforge/contracts/v2/experimental/hca";
 import type { HcaError, HcaSession } from "@ensforge/hca";
 import { Actions } from "@ensforge/hca/effect";
 import type { Errors } from "@ensforge/sdk";
 import { expectFailure } from "@ensforge/test-harness";
 import { decodeFunctionData, zeroHash, type Address } from "viem";
 
-import { contracts, hcaAddress, hcaOf, makeClient, owner } from "../fixtures";
+import { contracts, hcaAddress, hcaOf, makeClient, owner, proxyLogic } from "../fixtures";
 
 // A success type of `unknown` would turn `expectFailure`'s flipped error channel into `unknown`.
 type FailingAction = readonly [
@@ -167,6 +170,34 @@ describe("hca input validation", () => {
 });
 
 describe("hca verification", () => {
+  // The implementation comes from VerifiableFactory, which checks the proxy's CREATE2 address and
+  // reads its implementation slot, not from what the account says about itself.
+  it.effect("does not trust an implementation the factory cannot verify", () =>
+    Effect.gen(function* () {
+      const { client } = makeClient({
+        deployed: true,
+        stubs: [
+          {
+            address: Deployments.sepolia.v2.contracts.verifiableFactory,
+            abi: Abis.v2.verifiableFactory,
+            functions: {
+              proxyLogic: () => proxyLogic,
+              verifyContract: () => {
+                throw new Error("not a verifiable proxy");
+              },
+            },
+          },
+        ],
+      });
+
+      const error = yield* expectFailure(Actions.hca.verify(client, {}), {
+        _tag: "HcaError",
+        code: "HCA_NOT_VERIFIED",
+      });
+      assert.deepStrictEqual(error.details, ["untrusted-implementation"]);
+    }),
+  );
+
   // The signer's HCA is deployed but answers for another owner and account kind.
   const { client } = makeClient({
     deployed: true,
@@ -177,7 +208,6 @@ describe("hca verification", () => {
         functions: {
           ownerAndSessionNonce: () => [other, 0n],
           accountId: () => "something-else",
-          getImplementation: () => contracts.standaloneImplementation,
         },
       },
     ],
@@ -196,31 +226,42 @@ describe("hca verification", () => {
 });
 
 describe("hca write preconditions", () => {
-  it.effect("revokeSessions needs a deployed HCA", () =>
-    Effect.gen(function* () {
-      const { client } = makeClient();
+  // A session signed for an undeployed HCA becomes usable once anyone deploys it.
+  it.effect.each([
+    ["a deployed HCA", true, ["revokeSessions"], []],
+    [
+      "an undeployed HCA, deploying it first",
+      false,
+      ["deploy", "revokeSessions"],
+      ["HCA_DEPLOYED"],
+    ],
+  ] as const)(
+    "revokeSessions revokes on %s, from the owner itself",
+    ([, deployed, calls, warnings]) =>
+      Effect.gen(function* () {
+        const { client } = makeClient({ deployed });
 
-      yield* expectFailure(Actions.hca.revokeSessions.prepare(client, {}), {
-        _tag: "HcaError",
-        code: "HCA_NOT_VERIFIED",
-      });
-    }),
-  );
+        const plan = yield* Actions.hca.revokeSessions.prepare(client, {});
 
-  it.effect("revokeSessions calls the HCA itself, never through it", () =>
-    Effect.gen(function* () {
-      const { client } = makeClient({ deployed: true });
-
-      const plan = yield* Actions.hca.revokeSessions.prepare(client, {});
-
-      const [call] = plan.calls;
-      assert.isDefined(call);
-      assert.strictEqual(call.to, hcaAddress);
-      assert.strictEqual(
-        decodeFunctionData({ abi: standaloneSingleOwnerHcaV2Abi, data: call.data }).functionName,
-        "revokeSessions",
-      );
-    }),
+        assert.deepStrictEqual(
+          Arr.map(plan.calls, (call) => [
+            call.to,
+            decodeFunctionData({
+              abi: [...standaloneSingleOwnerHcaV2Abi, ...standaloneHcaFactoryV2Abi],
+              data: call.data,
+            }).functionName,
+          ]),
+          Arr.map(calls, (functionName) => [
+            functionName === "deploy" ? contracts.standaloneFactory : hcaAddress,
+            functionName,
+          ]),
+        );
+        assert.deepStrictEqual(plan.steps[0]?.from, "signer");
+        assert.deepStrictEqual<readonly string[]>(
+          Arr.map(plan.warnings, (warning) => warning.code),
+          warnings,
+        );
+      }),
   );
 
   it.effect.each([

@@ -1,7 +1,13 @@
 import { Effect, Array as Arr, Option } from "effect";
 
-import type { Address } from "viem";
-import { call as viemCall, estimateGas as viemEstimateGas, simulateCalls } from "viem/actions";
+import type { Address, Hex } from "viem";
+import {
+  call as viemCall,
+  estimateGas as viemEstimateGas,
+  getBlock,
+  simulateBlocks,
+  simulateCalls,
+} from "viem/actions";
 
 import type { Client } from "../../client/types.js";
 import { ContractRevertError } from "../../errors/classes/ContractRevertError.js";
@@ -13,8 +19,9 @@ import { withHeadroom } from "./gas.js";
 
 /**
  * Steps that can run against current state: everything before the first wait. Later steps depend
- * on time passing after earlier ones are mined (e.g. register after commit), so they are
- * simulated right before they are sent.
+ * on time passing after earlier ones are mined (e.g. register after commit): {@link simulatePlan}
+ * runs them in later simulated blocks when the node can, and they are simulated again right
+ * before they are sent.
  */
 export const simulatableSteps = (plan: Plan): readonly Plan.Step[] => {
   const firstWait = Arr.findFirstIndex(plan.steps, (step) => step.waitFor !== undefined);
@@ -23,6 +30,37 @@ export const simulatableSteps = (plan: Plan): readonly Plan.Step[] => {
 
 /** The outcome of one call: its error when it failed, and the gas it used. */
 type CallOutcome = { readonly error: AnyError | undefined; readonly gas: bigint | undefined };
+
+/** One simulated call's outcome, with a revert without data reported as a revert. */
+const outcomeOf = (
+  result: {
+    readonly status: "success" | "failure";
+    readonly data: Hex;
+    readonly error?: unknown;
+    readonly gasUsed: bigint;
+  },
+  context: {
+    readonly contract: Address | undefined;
+    readonly account: Address | undefined;
+    readonly chainId: number;
+  },
+): Effect.Effect<CallOutcome> => {
+  const error =
+    result.status === "success"
+      ? Effect.undefined
+      : // A failure is always a revert; without data viem reports it as "zero data", which
+        // would read as a missing contract.
+        result.data === "0x"
+        ? Effect.succeed(
+            new ContractRevertError({
+              code: "CONTRACT_REVERTED",
+              data: "0x",
+              context: { ...context, revert: { errorName: undefined, data: "0x" } },
+            }),
+          )
+        : toAnyError(result.error, context);
+  return Effect.map(error, (failure) => ({ error: failure, gas: result.gasUsed }));
+};
 
 /**
  * Runs `calls` in order with `eth_simulateV1`, so each call sees the state the previous ones
@@ -44,28 +82,75 @@ const simulateSequence = (
     Effect.flatMap(({ results }) =>
       Effect.forEach(
         results,
-        (result, index) => {
-          const context = { contract: calls[index]?.to, account, chainId: client.chain.id };
-          const error =
-            result.status === "success"
-              ? Effect.undefined
-              : // A failure is always a revert; without data viem reports it as "zero data", which
-                // would read as a missing contract.
-                result.data === "0x"
-                ? Effect.succeed(
-                    new ContractRevertError({
-                      code: "CONTRACT_REVERTED",
-                      data: "0x",
-                      context: { ...context, revert: { errorName: undefined, data: "0x" } },
-                    }),
-                  )
-                : toAnyError(result.error, context);
-          return Effect.map(error, (failure) => ({ error: failure, gas: result.gasUsed }));
-        },
+        (result, index) =>
+          outcomeOf(result, { contract: calls[index]?.to, account, chainId: client.chain.id }),
         { concurrency: "unbounded" },
       ),
     ),
   );
+
+/**
+ * Runs every step with `eth_simulateV1`, one simulated block per wait: each block after a wait is
+ * timed that long after the one before, so a registration is simulated after its commitment has
+ * aged. `None` when the node ignores the times asked for (a step after a wait would then fail
+ * only because no time passed); fails when it cannot simulate blocks.
+ */
+const simulateAcrossWaits = Effect.fnUntraced(function* (
+  client: Client,
+  account: Address | undefined,
+  steps: readonly Plan.Step[],
+): Effect.fn.Return<Option.Option<readonly CallOutcome[]>, AnyError> {
+  const segments = Arr.reduce(steps, [] as Plan.Step[][], (blocks, step) => {
+    const last = blocks.at(-1);
+    if (last === undefined || step.waitFor !== undefined) blocks.push([step]);
+    else last.push(step);
+    return blocks;
+  });
+  const latest = yield* fromPromise(() => getBlock(client.client()));
+  // Every block a second after the one before it, plus its wait (from a fixed time, when given).
+  let time = latest.timestamp;
+  const blocks = Arr.map(segments, (segment, index) => {
+    const wait = segment[0]?.waitFor;
+    const after =
+      wait?.since === undefined ? time + 1n + (wait?.seconds ?? 0n) : wait.since + wait.seconds;
+    time = after > time ? after : time + 1n;
+    const calls = Arr.flatMap(segment, (step) => step.calls);
+    return {
+      calls,
+      time,
+      request: {
+        blockOverrides: { number: latest.number + BigInt(index) + 1n, time },
+        calls: Arr.map(calls, (call) => ({
+          ...(account === undefined ? {} : { account }),
+          to: call.to,
+          data: call.data,
+          value: call.value,
+        })),
+      },
+    };
+  });
+
+  const simulated = yield* fromPromise(
+    () => simulateBlocks(client.client(), { blocks: Arr.map(blocks, (block) => block.request) }),
+    { account, chainId: client.chain.id },
+  );
+  const honoured = Arr.every(blocks, (block, index) => simulated[index]?.timestamp === block.time);
+  if (!honoured) return Option.none();
+  const outcomes = yield* Effect.forEach(
+    Arr.flatMap(blocks, (block, index) =>
+      Arr.map(block.calls, (call, position) => ({
+        call,
+        result: simulated[index]?.calls[position],
+      })),
+    ),
+    ({ call, result }) =>
+      result === undefined
+        ? Effect.succeed({ error: undefined, gas: undefined })
+        : outcomeOf(result, { contract: call.to, account, chainId: client.chain.id }),
+    { concurrency: "unbounded" },
+  );
+  return Option.some(outcomes);
+});
 
 /** Fallback for RPCs without `eth_simulateV1`: each call alone against current state. */
 const simulateEach = (
@@ -144,12 +229,22 @@ export const simulatePlan = Effect.fnUntraced(function* (
   plan: Plan,
   account: Address | undefined,
 ): Effect.fn.Return<Plan.Simulation> {
-  const steps = simulatableSteps(plan);
-  const outcomes = yield* simulateCallsInOrder(
-    client,
-    account,
-    Arr.flatMap(steps, (step) => step.calls),
-  );
+  // Steps after a wait run in later simulated blocks; nodes without that see only the steps
+  // before the first wait.
+  const across =
+    simulatableSteps(plan).length < plan.steps.length
+      ? yield* simulateAcrossWaits(client, account, plan.steps).pipe(
+          Effect.orElseSucceed(() => Option.none()),
+        )
+      : Option.none<readonly CallOutcome[]>();
+  const steps = Option.isSome(across) ? plan.steps : simulatableSteps(plan);
+  const outcomes = Option.isSome(across)
+    ? across.value
+    : yield* simulateCallsInOrder(
+        client,
+        account,
+        Arr.flatMap(steps, (step) => step.calls),
+      );
   const results = stepResults(steps, outcomes);
 
   return { ok: Arr.every(results, (step) => step.ok), plan, steps: results };

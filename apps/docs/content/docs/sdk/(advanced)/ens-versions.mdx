@@ -16,7 +16,7 @@ show where a name lives, move names to ENSv2, or use features only one version h
 | Where names are kept     | One registry for every name                                              | A tree of registries: each name can have its own registry for its subnames (a **subregistry**) |
 | How a name is held       | Registry owner, plus a `.eth` registration token or a Name Wrapper token | One ERC-1155 token in the parent's registry                                                    |
 | Who else may act         | Operators, token approvals, resolver delegates; Name Wrapper fuses       | **Roles**, granted per name or per registry                                                    |
-| Default resolver         | Shared public resolver                                                   | A **PermissionedResolver** per name, with roles per record                                     |
+| Default resolver         | Shared public resolver                                                   | A **PermissionedResolver** per wallet, with roles per record                                   |
 | New `.eth` registrations | Not offered by ensforge: new names register on ENSv2                     | Paid in an ERC-20 token (USDC by default), as are renewals on both versions                    |
 
 Both share what matters to most apps: names, [records](/docs/reference/glossary#record),

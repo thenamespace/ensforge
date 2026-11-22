@@ -103,7 +103,11 @@ const refusals: readonly Refusal[] = [
     label: "a bad referrer",
     path: "registration.commit",
     account: "alice",
-    options: () => ({ names: "qqqqq.eth", duration: Duration.years(1), referrer: "0x12" }),
+    options: () => ({
+      names: "qqqqq.eth",
+      duration: Duration.years(1),
+      referrer: "0x121212121212121212121212121212121212121212121212121212121212121212",
+    }),
     expected: invalid("INVALID_RECORD_VALUE"),
   },
   {
@@ -117,7 +121,11 @@ const refusals: readonly Refusal[] = [
     label: "a bad referrer",
     path: "registration.register",
     account: "alice",
-    options: () => ({ names: "qqqqq.eth", duration: Duration.years(1), referrer: "0x12" }),
+    options: () => ({
+      names: "qqqqq.eth",
+      duration: Duration.years(1),
+      referrer: "0x121212121212121212121212121212121212121212121212121212121212121212",
+    }),
     expected: invalid("INVALID_RECORD_VALUE"),
   },
   {
@@ -1232,7 +1240,9 @@ describe("send failures", () => {
             yield* expectFailure(
               Actions.resolver.setSync(clients.make({ account: carol }), {
                 name,
+                // Any address will do: the write is about to lose its role.
                 resolver: stranger,
+                allowNonContract: true,
                 onStep: (event) => {
                   if (event.status === "submitted") Effect.runForkWith(context)(revokeFirst);
                 },

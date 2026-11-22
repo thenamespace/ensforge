@@ -62,4 +62,9 @@ export const messages: {
     title: "Configuration problem",
     message: "This app is misconfigured for ENS accounts.",
   }),
+  HCA_ROUTE_REJECTED: () => ({
+    title: "Transaction stopped",
+    message: "The transaction prepared for your ENS account was not the one you asked for.",
+    action: "Nothing was signed. Try again later.",
+  }),
 };

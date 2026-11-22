@@ -1,7 +1,7 @@
 import { Effect, Array as Arr, Option } from "effect";
 
 import { Abis, InterfaceIds } from "@ensforge/contracts";
-import { isAddressEqual, type Address } from "viem";
+import { decodeFunctionResult, encodeFunctionData, isAddressEqual, type Address } from "viem";
 
 import type { Client } from "../../../client/types.js";
 import { InvalidInputError } from "../../../errors/classes/InvalidInputError.js";
@@ -92,8 +92,10 @@ export const plan = Effect.fnUntraced(function* (
 
   // One round: how the setters key the name, the profiles the resolver declares, and whether it
   // implements ERC-165 at all (within the gas EIP-165 allows `supportsInterface`).
-  const { keying, resolverInfo, erc165 } = yield* Effect.all(
+  const { deployed, keying, resolverInfo, erc165 } = yield* Effect.all(
     {
+      // Writes to an address without code succeed and do nothing.
+      deployed: Rpc.hasCode(target, resolver),
       keying: setterKeying(target, resolver),
       resolverInfo: describeResolver(target, resolver, loaded.data.parts.node),
       erc165: Rpc.readContractOrUndefined(target, {
@@ -106,6 +108,11 @@ export const plan = Effect.fnUntraced(function* (
     },
     { concurrency: "unbounded" },
   );
+  if (!deployed) {
+    return yield* Effect.fail(
+      new NotFoundError({ code: "RESOLVER_NOT_DEPLOYED", resource: resolver }),
+    );
+  }
   if (resolverInfo.authorization === "none") {
     return yield* Effect.fail(
       new UnsupportedError({
@@ -141,8 +148,79 @@ export const plan = Effect.fnUntraced(function* (
     );
   }
 
-  const codecs = yield* recordWriteCodecs(options);
-  const calls = yield* tryAny(() => encodeRecordWrites(keying, loaded.data.parts, options, codecs));
+  // Switching to a resolver that already holds a record for the name would merge the new writes
+  // into it, and on a PermissionedResolver change every name linked to the same record: start
+  // the name on a fresh record unless `clear: false`.
+  const warnings: Plan.Warning[] = [];
+  const switching =
+    resolverChange !== undefined &&
+    (loaded.state.resolver === null || !isAddressEqual(loaded.state.resolver, resolver));
+  let clear = options.clear;
+  if (switching && clear === undefined) {
+    if (keying === "name") {
+      const recordId = yield* Rpc.readContractOrUndefined(target, {
+        address: resolver,
+        abi: Abis.v2.permissionedResolver,
+        functionName: "getRecordId",
+        args: [loaded.data.parts.node],
+      });
+      if (recordId !== undefined && recordId !== 0n) clear = true;
+    } else if (resolverInfo.version !== null) {
+      clear = true;
+    } else {
+      warnings.push({
+        code: "RECORDS_MAY_REMAIN",
+        message: `The new resolver may already hold records for ${loaded.data.parts.name}; it cannot clear them, so they stay next to these.`,
+      });
+    }
+  }
+  // An ABI deleted without a content type clears each stored one (at most four; the resolver
+  // answers the lowest stored type within the mask asked for). A PermissionedResolver answers
+  // reads only through `resolve`.
+  const abiContentTypes: bigint[] = [];
+  if (options.abi?.value === null && options.abi.contentType === undefined) {
+    const { node, dns } = loaded.data.parts;
+    let mask = 15n;
+    while (mask !== 0n) {
+      const query = encodeFunctionData({
+        abi: Abis.shared.abiResolver,
+        functionName: "ABI",
+        args: [node, mask],
+      });
+      const answer =
+        keying === "name"
+          ? yield* Rpc.readContractOrUndefined(target, {
+              address: resolver,
+              abi: Abis.shared.extendedResolver,
+              functionName: "resolve",
+              args: [dns, query],
+            })
+          : undefined;
+      const stored =
+        keying === "name"
+          ? answer === undefined || answer === "0x"
+            ? undefined
+            : decodeFunctionResult({
+                abi: Abis.shared.abiResolver,
+                functionName: "ABI",
+                data: answer,
+              })
+          : yield* Rpc.readContractOrUndefined(target, {
+              address: resolver,
+              abi: Abis.shared.abiResolver,
+              functionName: "ABI",
+              args: [node, mask],
+            });
+      const type = stored?.[0] ?? 0n;
+      if (type === 0n || (mask & type) === 0n) break;
+      abiContentTypes.push(type);
+      mask &= ~type;
+    }
+  }
+  const writes = { ...options, clear, abiContentTypes };
+
+  const codecs = yield* recordWriteCodecs(writes);
+  const calls = yield* tryAny(() => encodeRecordWrites(keying, loaded.data.parts, writes, codecs));
 
   // Records go to the new resolver before the name points at it, so a failed or rejected write
   // never leaves the name on an empty resolver. Neither resolver family authorizes record writes
@@ -178,6 +256,7 @@ export const plan = Effect.fnUntraced(function* (
         calls: stepCalls,
       },
     ],
+    warnings,
   });
 });
 
@@ -191,6 +270,14 @@ const write = Action.write(
       ...writeOperations(options),
       ...(options.resolver === undefined ? [] : ["setResolver" as const]),
     ],
+    // Records go to the resolver being switched to, so its permissions are the ones to explain.
+    (client, options, loaded) =>
+      options.resolver === undefined
+        ? Effect.undefined
+        : requestedResolver(client, loaded, options.resolver).pipe(
+            Effect.option,
+            Effect.map(Option.getOrUndefined),
+          ),
   ),
 );
 

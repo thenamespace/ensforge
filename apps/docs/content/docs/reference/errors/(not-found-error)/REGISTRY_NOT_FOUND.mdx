@@ -27,6 +27,8 @@ Retrying the same call fails the same way until the cause is fixed (`retryable: 
 
 | Action | When |
 | --- | --- |
+| [`registration.commit`](/docs/reference/sdk/registration/commit) | when no contract is deployed at the given resolver or subregistry. |
+| [`registration.register`](/docs/reference/sdk/registration/register) | when no contract is deployed at the given resolver or subregistry. |
 | [`registry.get`](/docs/reference/sdk/registry/get) | with `strict` when the name has no subregistry. |
 | [`registry.setUri`](/docs/reference/sdk/registry/set-uri) | when the name has no subregistry. |
 | [`registry.upgrade`](/docs/reference/sdk/registry/upgrade) | when the name has no subregistry. |

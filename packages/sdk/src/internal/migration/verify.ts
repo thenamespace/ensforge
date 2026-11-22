@@ -27,6 +27,18 @@ const differences = Effect.fnUntraced(function* (
   if (!same(state.subregistry, expected.subregistry))
     found.push(`${expected.name} subregistry is ${state.subregistry}`);
 
+  // Recreated subnames, whose registration into a registry without code would succeed silently.
+  const children = yield* Effect.forEach(
+    expected.subnames,
+    (child) => Effect.map(loadName(client, child.name), (loaded) => ({ child, loaded })),
+    { concurrency: "unbounded" },
+  );
+  for (const { child, loaded } of children) {
+    if (loaded.state.protocol !== "v2" || !same(loaded.state.owner, child.owner)) {
+      found.push(`${child.name} was not recreated in ENSv2 for ${child.owner}`);
+    }
+  }
+
   const copied = expected.records;
   if (copied === undefined) return found;
   const read = yield* readRecords(client, {

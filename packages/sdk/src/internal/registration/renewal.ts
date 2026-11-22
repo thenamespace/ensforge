@@ -1,7 +1,7 @@
 import { Effect } from "effect";
 
 import { Abis } from "@ensforge/contracts";
-import type { Address } from "viem";
+import { hexToBigInt, labelhash, type Address } from "viem";
 
 import type { RenewalRoute } from "../../actions/registration/types.js";
 import type { Client } from "../../client/types.js";
@@ -21,56 +21,75 @@ export type RenewalQuote = {
   /** Contract that renews the name and pulls the payment. */
   readonly spender: Address;
   readonly amount: bigint;
+  /** The name's expiry before the renewal, on its route's registrar. */
+  readonly expiry: bigint;
+  /** Seconds the renewal adds; `0n` for a name that already reaches `until`. */
+  readonly duration: bigint;
 };
 
+/** How long to renew: the same duration for every name, or each name up to one expiry. */
+export type RenewalLength =
+  | { readonly duration: bigint; readonly until?: undefined }
+  | { readonly until: bigint; readonly duration?: undefined };
+
 /**
- * Quotes renewals in one batched round: both contracts are asked whether each name is renewable
- * and for its price, and the one that accepts it is the route. Both share the `IETHRenewer` ABI.
+ * Quotes renewals in two batched rounds: both contracts are asked whether each name is renewable,
+ * and its expiry is read on each route's registrar; then the route that accepts it prices its
+ * duration (to `until` when given). Both renewers share the `IETHRenewer` ABI.
  */
 export const quoteRenewals = Effect.fnUntraced(function* (
   client: Client,
   contracts: RegistrationContracts,
   options: {
     readonly names: readonly EthName[];
-    readonly duration: bigint;
     readonly token: Address;
-  } & Read.BlockOptions,
+  } & RenewalLength &
+    Read.BlockOptions,
 ): Effect.fn.Return<readonly RenewalQuote[], AnyError> {
   const at = blockAt(options);
-  const ask = (address: Address, label: string) =>
-    Effect.all(
-      {
-        renewable: Rpc.readContractOrUndefined(client, {
-          address,
-          abi: Abis.v2.ethRegistrar,
-          functionName: "isRenewable",
-          args: [label],
-          ...at,
-        }),
-        price: Rpc.readContractOrUndefined(client, {
-          address,
-          abi: Abis.v2.ethRegistrar,
-          functionName: "getRenewPrice",
-          args: [label, options.duration, options.token],
-          ...at,
-        }),
-      },
-      { concurrency: "unbounded" },
-    );
+  const baseRegistrar = client.deployment.v1?.contracts.baseRegistrar;
+  const renewable = (address: Address, label: string) =>
+    Rpc.readContractOrUndefined(client, {
+      address,
+      abi: Abis.v2.ethRegistrar,
+      functionName: "isRenewable",
+      args: [label],
+      ...at,
+    });
 
   return yield* Effect.forEach(
     options.names,
     (name) =>
       Effect.gen(function* () {
-        const { v2, v1 } = yield* Effect.all(
-          { v2: ask(contracts.registrar, name.label), v1: ask(contracts.renewer, name.label) },
+        const { v2, v1, v2Expiry, v1Expiry } = yield* Effect.all(
+          {
+            v2: renewable(contracts.registrar, name.label),
+            v1: renewable(contracts.renewer, name.label),
+            v2Expiry: Rpc.readContractOrUndefined(client, {
+              address: contracts.ethRegistry,
+              abi: Abis.v2.permissionedRegistry,
+              functionName: "findExpiry",
+              args: [name.label],
+              ...at,
+            }),
+            v1Expiry:
+              baseRegistrar === undefined
+                ? Effect.undefined
+                : Rpc.readContractOrUndefined(client, {
+                    address: baseRegistrar,
+                    abi: Abis.v1.baseRegistrar,
+                    functionName: "nameExpires",
+                    args: [hexToBigInt(labelhash(name.label))],
+                    ...at,
+                  }),
+          },
           { concurrency: "unbounded" },
         );
         const chosen =
-          v2.renewable === true
-            ? { route: "v2-registrar" as const, spender: contracts.registrar, price: v2.price }
-            : v1.renewable === true
-              ? { route: "v1-renewer" as const, spender: contracts.renewer, price: v1.price }
+          v2 === true
+            ? { route: "v2-registrar" as const, spender: contracts.registrar, expiry: v2Expiry }
+            : v1 === true
+              ? { route: "v1-renewer" as const, spender: contracts.renewer, expiry: v1Expiry }
               : undefined;
         if (chosen === undefined) {
           return yield* Effect.fail(
@@ -82,19 +101,26 @@ export const quoteRenewals = Effect.fnUntraced(function* (
           );
         }
 
-        // A renewable name without a price means the price call reverted (e.g. the duration is
-        // too short); read it again without swallowing the error.
         const { route, spender } = chosen;
+        const expiry = chosen.expiry ?? 0n;
+        const duration =
+          options.until === undefined
+            ? options.duration
+            : options.until > expiry
+              ? options.until - expiry
+              : 0n;
+        // A price call that reverts (e.g. the duration is too short) fails here, typed.
         const amount =
-          chosen.price ??
-          (yield* Rpc.readContract(client, {
-            address: spender,
-            abi: Abis.v2.ethRegistrar,
-            functionName: "getRenewPrice",
-            args: [name.label, options.duration, options.token],
-            ...at,
-          }));
-        return { name: name.name, label: name.label, route, spender, amount };
+          options.until !== undefined && duration === 0n
+            ? 0n
+            : yield* Rpc.readContract(client, {
+                address: spender,
+                abi: Abis.v2.ethRegistrar,
+                functionName: "getRenewPrice",
+                args: [name.label, duration, options.token],
+                ...at,
+              });
+        return { name: name.name, label: name.label, route, spender, amount, expiry, duration };
       }),
     { concurrency: "unbounded" },
   );

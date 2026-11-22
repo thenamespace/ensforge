@@ -1,8 +1,8 @@
-import { Effect, Record as Rec } from "effect";
+import { Effect, Record as Rec, String as Str } from "effect";
 
 import { Abis } from "@ensforge/contracts";
 import { Name } from "@ensforge/sdk";
-import { Chain } from "@ensforge/test-devnet";
+import { Chain, Devnet } from "@ensforge/test-devnet";
 import {
   decodeFunctionResult,
   encodeFunctionData,
@@ -13,7 +13,7 @@ import {
   type Hex,
 } from "viem";
 
-import { withV1, withV2, type Model, type V1Name, type V2Name } from "./model.ts";
+import { withV1, withV2, type Model, type Primary, type V1Name, type V2Name } from "./model.ts";
 import { readV1, readV2, type World } from "./world.ts";
 
 /**
@@ -80,7 +80,42 @@ const v1Entry = Effect.fnUntraced(function* (name: string, previous?: V1Name) {
   } satisfies V1Name;
 });
 
-/** The model at the start of a sequence: the seeded ENSv1 names, no fuzz names yet. */
+/** An address's reverse records as the chain holds them (see {@link Primary}). */
+const readPrimary = Effect.fnUntraced(function* (address: Address) {
+  const devnet = yield* Devnet;
+  const chain = yield* Chain;
+  const node = namehash(`${Str.toLowerCase(Str.slice(2)(address))}.addr.reverse`);
+  const resolver = yield* Effect.orDie(
+    chain.read({
+      address: devnet.contract("v1.registry"),
+      abi: Abis.v1.ensRegistry,
+      functionName: "resolver",
+      args: [node],
+    }),
+  );
+  const eth =
+    BigInt(resolver) === 0n
+      ? null
+      : yield* chain
+          .read({
+            address: resolver,
+            abi: Abis.v1.publicResolver,
+            functionName: "name",
+            args: [node],
+          })
+          .pipe(Effect.orElseSucceed(() => ""));
+  const fallback = yield* Effect.orDie(
+    chain.read({
+      address: devnet.contract("v1.defaultReverseRegistrar"),
+      abi: Abis.v1.defaultReverseRegistrar,
+      functionName: "nameForAddr",
+      args: [address],
+    }),
+  );
+  return { eth, fallback } satisfies Primary;
+});
+
+/** The model at the start of a sequence: the seeded ENSv1 names and reverse records. */
 export const initialModel = Effect.fnUntraced(function* (world: World) {
   const chain = yield* Chain;
   const entries = yield* Effect.forEach(
@@ -88,12 +123,16 @@ export const initialModel = Effect.fnUntraced(function* (world: World) {
     (name) => Effect.map(v1Entry(name), (entry) => [name, entry] as const),
     { concurrency: 1 },
   );
-
+  const primary = yield* Effect.forEach(
+    Rec.values(world.actors),
+    (address) => Effect.map(readPrimary(address), (records) => [address, records] as const),
+    { concurrency: 1 },
+  );
   return {
     now: yield* Effect.orDie(chain.now),
     v2: {},
     v1: Rec.fromEntries(entries),
-    primary: {},
+    primary: Rec.fromEntries(primary),
     operators: {},
   } satisfies Model;
 });

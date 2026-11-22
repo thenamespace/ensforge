@@ -33,7 +33,7 @@ export const plan = Effect.fnUntraced(function* (
   // Resolver addresses in the commitment come from the account that will send `register`.
   const sender = (yield* routeSender(client, options.via, signer)) ?? signer;
   const registration = yield* prepareRegistration(client, options, signer, sender);
-  const toCommit = yield* pendingCommitments(registration);
+  const { toCommit, warnings } = pendingCommitments(registration);
   if (toCommit.length === 0) {
     return yield* Effect.fail(
       new CommitmentError({
@@ -54,6 +54,7 @@ export const plan = Effect.fnUntraced(function* (
         calls: Arr.map(toCommit, (name) => commitCall(registration, name)),
       },
     ],
+    warnings: [...registration.warnings, ...warnings],
   });
 });
 

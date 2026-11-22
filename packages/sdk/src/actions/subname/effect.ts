@@ -24,8 +24,16 @@ import type { update as updateTypes, updateSync as updateSyncTypes } from "./upd
  *   registrar grants (resolver, subregistry, transfers); `roles` and `expiry` override them.
  * - ENSv1 parents use `setSubnodeRecord`; wrapped parents take `fuses` and an `expiry`.
  * - By default the child gets its own PermissionedResolver with `records` written at creation;
+ *   on a deployment without ENSv2, an ENSv1 child gets the public resolver instead.
  *   `resolver: "parent"` shares the parent's resolver, `null` creates it without one.
- * - `upsert` updates an existing child's resolver and records instead of failing.
+ * - Records on an existing resolver for another `owner` are written while the signer holds the
+ *   new child, which then goes to `owner`; wrapped `fuses` are burned last.
+ * - `upsert` changes only what it is given on an existing child, which keeps its owner unless
+ *   `owner` is passed. An ENSv1 child goes through the same routes as `subname.update`; an
+ *   ENSv2 child takes `resolver`, `records` and `expiry` (a renewal), and refuses `owner`,
+ *   `roles` and `emancipate`, which change with `name.transfer` and `role.grant`.
+ * - A wrapped parent cannot create a child that an emancipated holder unwrapped until the
+ *   child's old expiry: it fails with `FUSE_BURNED`.
  * - Under a Basenames or Linea name the child is created on the L2 with `setSubnodeRecord`, on
  *   the family's current resolver by default. Records for another `owner` are written while
  *   the signer holds the child, which then goes to `owner`, in the same step.
@@ -157,9 +165,16 @@ export declare namespace createSync {
  *
  * - ENSv2: `unregister` in the parent's subregistry, which also clears the child's resolver and
  *   subregistry so nothing carries over to a later owner.
- * - ENSv1: owner and resolver are set to zero, from the parent when the signer owns it or is
- *   its operator, otherwise as the child's owner. Under an unwrapped parent the registry clears a wrapped
- *   child, which unwraps it.
+ * - ENSv1: owner and resolver are set to zero, from the parent when it can reach the child,
+ *   otherwise as the child's holder. A wrapped parent first wraps an unwrapped child to the
+ *   signer, since the NameWrapper only clears children it holds. Under an unwrapped parent, a
+ *   wrapped child is cleared in the registry: its token stays with its holder but controls
+ *   nothing, and the plan carries a `WRAPPER_TOKEN_STRANDED` warning.
+ * - When no route is allowed, it fails before anything is sent, naming the route the signer has
+ *   authority on.
+ * - An ENSv1 child with subnames of its own (expired ones included) fails with
+ *   `NAME_HAS_SUBNAMES` unless `allowOrphanedSubnames`: they would keep resolving. The check
+ *   needs an indexer; without one the plan carries a `SUBNAMES_UNCHECKED` warning.
  * - Under a Basenames or Linea name the same calls run on the L2.
  *
  * **Gotchas**
@@ -192,6 +207,7 @@ export declare namespace createSync {
  * @throws `Errors.InvalidInputError` (`INVALID_NAME`) for invalid input.
  * @throws `Errors.NameStateError` (`NAME_NOT_REGISTERED`, `NAME_EXTERNAL`, `NAME_EXPIRED`) when the child or parent does not exist, or its parent's namespace manages it outside ENS's registries.
  * @throws `Errors.NameStateError` (`NAME_RESERVED`, `NAME_UNREACHABLE`) when the parent is reserved or ENSv2 resolution no longer reaches it.
+ * @throws `Errors.NameStateError` (`NAME_HAS_SUBNAMES`) when the indexer knows subnames of an ENSv1 child, unless `allowOrphanedSubnames`.
  * @throws `Errors.UnauthorizedError` (`MISSING_ROLES`, `NOT_OWNER`, `FUSE_BURNED`) when the account may not remove it.
  * @throws `Errors.ConfigError` (`WALLET_NOT_CONFIGURED`) when no signing account is known.
  * @throws `Errors.ConfigError` (`CHAIN_NOT_CONFIGURED`) when the name lives on an L2 the client cannot reach.
@@ -251,6 +267,7 @@ export declare namespace remove {
  * @throws `Errors.InvalidInputError` (`INVALID_NAME`) for invalid input.
  * @throws `Errors.NameStateError` (`NAME_NOT_REGISTERED`, `NAME_EXTERNAL`, `NAME_EXPIRED`) when the child or parent does not exist, or its parent's namespace manages it outside ENS's registries.
  * @throws `Errors.NameStateError` (`NAME_RESERVED`, `NAME_UNREACHABLE`) when the parent is reserved or ENSv2 resolution no longer reaches it.
+ * @throws `Errors.NameStateError` (`NAME_HAS_SUBNAMES`) when the indexer knows subnames of an ENSv1 child, unless `allowOrphanedSubnames`.
  * @throws `Errors.UnauthorizedError` (`MISSING_ROLES`, `NOT_OWNER`, `FUSE_BURNED`) when the account may not remove it.
  * @throws `Errors.ConfigError` (`WALLET_NOT_CONFIGURED`) when no signing account is known.
  * @throws `Errors.ConfigError` (`CHAIN_NOT_CONFIGURED`) when the name lives on an L2 the client cannot reach.
@@ -272,7 +289,7 @@ export declare namespace removeSync {
 }
 
 /**
- * Changes a subname from its parent: owner, resolver or expiry, in one plan. Resolves once the transaction is submitted.
+ * Changes a subname's owner, resolver or expiry, in one plan, from its parent or as its holder. Resolves once the transaction is submitted.
  *
  * **When to use**
  *
@@ -284,9 +301,16 @@ export declare namespace removeSync {
  *   {@link Actions.name.transfer}, or by removing and recreating the child. On the deployment's
  *   current UserRegistry, extending the expiry needs the `renew` role at the subregistry's root;
  *   older registries also accept it on the child.
- * - ENSv1: one `setSubnodeRecord` keeps what is not changed; wrapped children extend their
- *   expiry with `extendExpiry`. Unwrapped ENSv1 subnames have no expiry. Under an unwrapped
- *   parent the registry rewrites a wrapped child, which unwraps it.
+ * - ENSv1: from the parent, one `setSubnodeRecord` keeps what is not changed; wrapped children
+ *   extend their expiry with `extendExpiry`. Unwrapped ENSv1 subnames have no expiry. When the
+ *   parent cannot make the change (an emancipated child, or an unwrapped child of a wrapped
+ *   parent), the child's own holder makes it: resolver, expiry, then owner.
+ * - Under an unwrapped parent, a wrapped child keeps the NameWrapper as its registry owner, so
+ *   its token keeps control. Giving it another owner from the parent takes it from the
+ *   NameWrapper: its token stays with the holder but controls nothing, and the plan carries a
+ *   `WRAPPER_TOKEN_STRANDED` warning.
+ * - A child named by its labelhash (`[af2c…]`) is changed through the NameWrapper with its real
+ *   label, from the NameWrapper's record of it; without one it fails with `INVALID_NAME`.
  * - Under a Basenames or Linea name: one `setSubnodeRecord` on the L2; `expiry` is not supported.
  *
  * **Gotchas**
@@ -320,6 +344,7 @@ export declare namespace removeSync {
  * @throws `Errors.InvalidInputError` (`INVALID_NAME`, `INVALID_ADDRESS`, `INVALID_RECORD_VALUE`, `INVALID_EXPIRY`) for invalid input.
  * @throws `Errors.NameStateError` (`NAME_NOT_REGISTERED`, `NAME_EXTERNAL`, `NAME_EXPIRED`) when the child or parent does not exist, or an emancipated child expired, or its parent's namespace manages it outside ENS's registries.
  * @throws `Errors.NameStateError` (`NAME_RESERVED`, `NAME_UNREACHABLE`) when the parent is reserved or ENSv2 resolution no longer reaches it.
+ * @throws `Errors.NameStateError` (`NAME_NOT_WRAPPED`) when a wrapped parent changes an unwrapped child, which only its holder can.
  * @throws `Errors.UnsupportedError` (`UNSUPPORTED_PROTOCOL`) for an ENSv2 owner change or an unwrapped ENSv1 expiry.
  * @throws `Errors.UnsupportedError` (`UNSUPPORTED_ON_DEPLOYMENT`) for `expiry` under an L2 name, or a resolver other than Linea's PublicResolver under a Linea name.
  * @throws `Errors.ConfigError` (`CHAIN_NOT_CONFIGURED`) when the name lives on an L2 the client cannot reach.
@@ -349,7 +374,7 @@ export declare namespace update {
 }
 
 /**
- * Changes a subname from its parent: owner, resolver or expiry, in one plan. Resolves once the receipt is in.
+ * Changes a subname's owner, resolver or expiry, in one plan, from its parent or as its holder. Resolves once the receipt is in.
  *
  * **When to use**
  *
@@ -380,6 +405,7 @@ export declare namespace update {
  * @throws `Errors.InvalidInputError` (`INVALID_NAME`, `INVALID_ADDRESS`, `INVALID_RECORD_VALUE`, `INVALID_EXPIRY`) for invalid input.
  * @throws `Errors.NameStateError` (`NAME_NOT_REGISTERED`, `NAME_EXTERNAL`, `NAME_EXPIRED`) when the child or parent does not exist, or an emancipated child expired, or its parent's namespace manages it outside ENS's registries.
  * @throws `Errors.NameStateError` (`NAME_RESERVED`, `NAME_UNREACHABLE`) when the parent is reserved or ENSv2 resolution no longer reaches it.
+ * @throws `Errors.NameStateError` (`NAME_NOT_WRAPPED`) when a wrapped parent changes an unwrapped child, which only its holder can.
  * @throws `Errors.UnsupportedError` (`UNSUPPORTED_PROTOCOL`) for an ENSv2 owner change or an unwrapped ENSv1 expiry.
  * @throws `Errors.UnsupportedError` (`UNSUPPORTED_ON_DEPLOYMENT`) for `expiry` under an L2 name, or a resolver other than Linea's PublicResolver under a Linea name.
  * @throws `Errors.ConfigError` (`CHAIN_NOT_CONFIGURED`) when the name lives on an L2 the client cannot reach.

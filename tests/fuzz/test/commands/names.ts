@@ -1,9 +1,9 @@
-import { Effect, Schema, Array as Arr } from "effect";
+import { Effect, Record as Rec, Schema, Array as Arr } from "effect";
 
 import { Duration } from "@ensforge/sdk";
 import { Actions } from "@ensforge/sdk/effect";
 import { Chain } from "@ensforge/test-devnet";
-import type { Address } from "viem";
+import { isAddressEqual, type Address } from "viem";
 
 import {
   either,
@@ -25,7 +25,7 @@ import {
   withV2,
   type Model,
 } from "../model/model.ts";
-import { resyncV1 } from "../model/sync.ts";
+import { readUrl, resyncV1 } from "../model/sync.ts";
 import { actorNames, readV2, v2Labels, type World } from "../model/world.ts";
 
 export const Register = Schema.Struct({
@@ -106,15 +106,26 @@ export const register: CommandSpec<typeof Register.Type> = {
       );
       if (!outcome.ok) return model;
 
-      // The expiry and the deployed resolver are chosen by the chain.
+      // The expiry and the deployed resolver are chosen by the chain. The actor's shared resolver
+      // keeps the records it held for the name before, which the model does not track per
+      // resolver; a resolver this registration deployed holds only what it wrote.
       const entry = yield* readV2(label);
+      const reused = Arr.some(
+        Rec.values(model.v2),
+        (known) =>
+          known?.ownResolver !== undefined &&
+          known.ownResolver !== null &&
+          entry.resolver !== null &&
+          isAddressEqual(known.ownResolver, entry.resolver),
+      );
+      const kept = url === null && reused ? yield* readUrl(entry.resolver, `${label}.eth`) : null;
       return withV2(model, label, {
         owner: actor.address,
         expiry: entry.expiry,
         resolver: entry.resolver,
         ownResolver: entry.resolver,
         recordsAdmin: actor.address,
-        url,
+        url: url ?? kept,
         addr: actor.address,
         delegates: [],
         sub: null,

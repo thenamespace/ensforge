@@ -21,6 +21,10 @@ export type WrapperActions = {
     readonly setFuses: BoundWrite<typeof wrapper.setFuses>;
     /** Burns owner-controlled fuses on a wrapped ENSv1 name. Resolves once the receipt is in. */
     readonly setFusesSync: Bound<typeof wrapper.setFusesSync>;
+    /** Brings the NameWrapper's expiry of wrapped `.eth` names up to their registration's. Resolves once the transaction is submitted. */
+    readonly sync: BoundWrite<typeof wrapper.sync>;
+    /** Brings the NameWrapper's expiry of wrapped `.eth` names up to their registration's. Resolves once the receipt is in. */
+    readonly syncSync: Bound<typeof wrapper.syncSync>;
     /** Unwraps an ENSv1 name from the NameWrapper. Resolves once the transaction is submitted. */
     readonly unwrap: BoundWrite<typeof wrapper.unwrap>;
     /** Unwraps an ENSv1 name from the NameWrapper. Resolves once the receipt is in. */
@@ -69,6 +73,18 @@ export const wrapperActions =
         },
       ),
       setFusesSync: (options) => wrapper.setFusesSync(client, options),
+      sync: Object.assign(
+        (options: Parameters<typeof wrapper.sync>[1]) => wrapper.sync(client, options),
+        {
+          prepare: (options: Parameters<typeof wrapper.sync.prepare>[1]) =>
+            wrapper.sync.prepare(client, options),
+          simulate: (options: Parameters<typeof wrapper.sync.simulate>[1]) =>
+            wrapper.sync.simulate(client, options),
+          estimateGas: (options: Parameters<typeof wrapper.sync.estimateGas>[1]) =>
+            wrapper.sync.estimateGas(client, options),
+        },
+      ),
+      syncSync: (options) => wrapper.syncSync(client, options),
       unwrap: Object.assign(
         (options: Parameters<typeof wrapper.unwrap>[1]) => wrapper.unwrap(client, options),
         {

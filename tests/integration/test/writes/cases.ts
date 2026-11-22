@@ -117,5 +117,6 @@ export const writeCases = (
       account: "alice",
       options: { name: nameOf("v1.wrapped.sub"), fuses: ["parentCannotControl"] },
     },
+    "wrapper.sync": { account: "alice", options: { names: nameOf("v1.wrapped") } },
   };
 };

@@ -25,7 +25,7 @@ const flags = (status: NameStatus, isEth2ld: boolean) => ({
 const v2Registers = (now: bigint, v2: V2Data): boolean =>
   v2.state.status === RegistryStatus.available && now - v2.state.expiry >= (v2.gracePeriod ?? 0n);
 
-const v2RenewsForV1 = (now: bigint, v2: V2Data): boolean =>
+export const v2RenewsForV1 = (now: bigint, v2: V2Data): boolean =>
   v2.state.status === RegistryStatus.reserved ||
   (v2.state.status === RegistryStatus.available &&
     nonZeroAddress(v2.state.latestOwner) === null &&

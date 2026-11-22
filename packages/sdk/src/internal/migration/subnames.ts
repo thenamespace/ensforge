@@ -14,6 +14,7 @@ import {
 
 import type { Client } from "../../client/types.js";
 import { InvalidInputError } from "../../errors/classes/InvalidInputError.js";
+import { MigrationError } from "../../errors/classes/MigrationError.js";
 import type { AnyError } from "../../errors/types.js";
 import type { Plan } from "../../plan/Plan.js";
 import * as Fuse from "../../utils/Fuse.js";
@@ -37,6 +38,8 @@ export type Recreation = {
   readonly wrapped: readonly Plan.Call[];
   readonly leftBehind: readonly LeftBehind[];
   readonly warnings: readonly Plan.Warning[];
+  /** Subnames registered in ENSv2, with their owners. */
+  readonly recreated: readonly { readonly name: string; readonly owner: Address }[];
 };
 
 /** Where a level of subnames is registered. */
@@ -132,6 +135,7 @@ export const planRecreation = Effect.fnUntraced(function* (
   const wrapped: Plan.Call[] = [];
   const leftBehind: LeftBehind[] = [];
   const warnings: Plan.Warning[] = [];
+  const recreated: { readonly name: string; readonly owner: Address }[] = [];
   const temporary = new Set<Address>();
 
   const userRegistry = Effect.fnUntraced(function* (
@@ -150,7 +154,27 @@ export const planRecreation = Effect.fnUntraced(function* (
       grants: holds ? [] : [{ account: sender, roleBitmap: recreationRoles }],
     });
     const { address } = deployment;
-    if (!(yield* Rpc.hasCode(client, address))) deploys.push(deployment);
+    if (!(yield* Rpc.hasCode(client, address))) {
+      deploys.push(deployment);
+    } else {
+      // Deployed by an interrupted run: it must belong to the same holder.
+      const owns = yield* Rpc.readContractOrUndefined(client, {
+        address,
+        abi: Abis.v2.userRegistry,
+        functionName: "hasRootRoles",
+        args: [rootRoles(false), holder],
+      });
+      if (owns !== true) {
+        return yield* Effect.fail(
+          new MigrationError({
+            code: "NOT_ELIGIBLE",
+            blockers: ["registry-conflict"],
+            context: { contract: address },
+            hint: "An earlier migration created this subname's registry for another holder.",
+          }),
+        );
+      }
+    }
     if (!holds) temporary.add(address);
     registryCalls.set(address, [
       {
@@ -226,6 +250,17 @@ export const planRecreation = Effect.fnUntraced(function* (
         continue;
       }
 
+      // A wrapped child keeps a future wrapper expiry. An unwrapped one has none, and a past or
+      // zero one cannot be set, so they never expire, as they keep resolving on ENSv1.
+      const wrapperExpiry = kind === "v1-wrapped" ? (data.v1?.wrapper.expiry ?? 0n) : 0n;
+      const expiry = wrapperExpiry > data.now ? wrapperExpiry : maxUint64;
+      if (kind === "v1-wrapped" && wrapperExpiry !== 0n && expiry === maxUint64) {
+        warnings.push({
+          code: "SUBNAME_EXPIRY_EXTENDED",
+          message: `${state.name}'s wrapper expiry has passed, so it is recreated without an expiry.`,
+        });
+      }
+
       const holder = getAddress(state.owner);
       const subregistry =
         childrenOf(name).length > 0
@@ -242,13 +277,14 @@ export const planRecreation = Effect.fnUntraced(function* (
             subregistry,
             state.resolver ?? zeroAddress,
             rootRoles(false),
-            maxUint64,
+            expiry,
           ],
         }),
         value: 0n,
       };
       if (target.kind === "wrapper") wrapped.push(register);
       else registryCalls.get(target.address)?.push(register);
+      recreated.push({ name: state.name, owner: holder });
       if (subregistry !== zeroAddress) {
         levels.push({ name, target: { kind: "user", address: subregistry } });
       }
@@ -273,5 +309,6 @@ export const planRecreation = Effect.fnUntraced(function* (
     wrapped,
     leftBehind,
     warnings,
+    recreated,
   };
 });

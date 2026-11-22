@@ -89,14 +89,21 @@ export declare namespace get {
  * **Details**
  *
  * - `coin: "eth"` (default) sets the Ethereum primary name in `addr.reverse`; `"default"` sets the
- *   fallback for every EVM chain in `default.reverse` (ENSIP-19).
+ *   fallback for every EVM chain in `default.reverse` (ENSIP-19), as the ENS app does; `"all"`
+ *   sets the default and, with `name: null`, clears both.
  * - An L2 such as `coin: { chainId: 8453 }` sets that chain's primary name in its reverse registrar,
  *   with a transaction on that chain: the client needs it in `chains` (`Ensforge.create`, or the
  *   wagmi config with `fromWagmi`). The plan is for that chain, and resumes there.
  * - `claim` and `signature` from `primaryName.signClaim` submit a signed claim instead, from any
  *   account: one signature sets the name on each of its chains, and a server can relay it.
- * - An `addr.reverse` name outranks `default.reverse` on Ethereum, so `"default"` also sets
- *   `addr.reverse` when it holds a different name.
+ * - An `addr.reverse` entry outranks `default.reverse` on Ethereum, even with an empty name, so
+ *   setting `"default"` also clears an `addr.reverse` entry that holds another name. Clearing
+ *   `"eth"` removes the entry, so the default name applies on Ethereum again; clearing
+ *   `"default"` leaves `addr.reverse` alone.
+ * - Through `via: hca()`, the HCA sets the owner's name with the adapters' HCA entry points. An
+ *   `"eth"` name has none, and a route that is not the signer's HCA cannot name the signer, so
+ *   those go to the signer with a `PRIMARY_NAME_ROUTED_TO_SIGNER` warning. L2 primary names
+ *   cannot go through such a route.
  * - A default name with only an Ethereum address verifies on Ethereum alone; the plan carries a
  *   `DEFAULT_PRIMARY_NAME_ETHEREUM_ONLY` warning.
  * - `address` names another account: the signer must be its registry operator or, for a contract,
@@ -170,6 +177,7 @@ export declare namespace get {
  * @throws `Errors.InvalidInputError` (`INVALID_NAME`, `INVALID_ADDRESS`) for invalid input.
  * @throws `Errors.InvalidInputError` (`INVALID_COIN_TYPE`) for a coin that is not an EVM chain, or a chain the claim does not cover.
  * @throws `Errors.NotFoundError` (`PRIMARY_NAME_MISMATCH`) when the name does not resolve to the address.
+ * @throws `Errors.NotFoundError` (`RESOLVER_NOT_FOUND`) with `ensureForward` when the name has no resolver to write its address to.
  * @throws `Errors.ConfigError` (`WALLET_NOT_CONFIGURED`) when no signing account is known.
  * @throws `Errors.ConfigError` (`CHAIN_NOT_CONFIGURED`) for an L2 that is not in the client's `chains`.
  * @throws `Errors.UnsupportedError` (`UNSUPPORTED_ON_DEPLOYMENT`) for a chain without an L2 reverse registrar.
@@ -230,6 +238,7 @@ export declare namespace set {
  * @throws `Errors.InvalidInputError` (`INVALID_NAME`, `INVALID_ADDRESS`) for invalid input.
  * @throws `Errors.InvalidInputError` (`INVALID_COIN_TYPE`) for a coin that is not an EVM chain, or a chain the claim does not cover.
  * @throws `Errors.NotFoundError` (`PRIMARY_NAME_MISMATCH`) when the name does not resolve to the address.
+ * @throws `Errors.NotFoundError` (`RESOLVER_NOT_FOUND`) with `ensureForward` when the name has no resolver to write its address to.
  * @throws `Errors.ConfigError` (`WALLET_NOT_CONFIGURED`) when no signing account is known.
  * @throws `Errors.ConfigError` (`CHAIN_NOT_CONFIGURED`) for an L2 that is not in the client's `chains`.
  * @throws `Errors.UnauthorizedError` (`NOT_APPROVED`) when the signer may not name the address.

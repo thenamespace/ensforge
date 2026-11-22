@@ -34,9 +34,12 @@ import * as Impl from "./effect.js";
  *
  * **Gotchas**
  *
- * - The ENSv2 PermissionedResolver has no `pubkey` records. `clear` there links the name to record
- *   0 (needs the root `link` role), so it reads the resolver's default record until new records
- *   are written.
+ * - The ENSv2 PermissionedResolver has no `pubkey` records. `clear` there unlinks the name from its
+ *   record (needs the root `link` role) and gives it a fresh one; a clear with nothing else writes
+ *   an empty `description` text, so the name never reads the resolver's default record.
+ * - Switching `resolver` to one that already holds records for the name starts the name on a fresh
+ *   record there, as `clear: true` would; `clear: false` keeps them and writes next to them. A
+ *   node-keyed resolver that cannot clear keeps them, with the warning `RECORDS_MAY_REMAIN`.
  * - Older resolvers lack newer profiles (the 2020 public resolver has no `data` records and cannot
  *   `clear`), and resolvers that keep their records off-chain (EIP-3668, ERC-5559, ERC-7884) take
  *   no on-chain writes. Both fail with `RESOLVER_PROFILE_UNSUPPORTED`; for an off-chain resolver,
@@ -76,6 +79,7 @@ import * as Impl from "./effect.js";
  *
  * @throws `Errors.InvalidInputError` (`INVALID_NAME`, `INVALID_ADDRESS`, `INVALID_COIN_TYPE`, `INVALID_CONTENT_HASH`, `INVALID_RECORD_VALUE`) for invalid input.
  * @throws `Errors.NotFoundError` (`RESOLVER_NOT_FOUND`) when the name has no resolver of its own.
+ * @throws `Errors.NotFoundError` (`RESOLVER_NOT_DEPLOYED`) when no contract is deployed at the resolver it writes to.
  * @throws `Errors.UnsupportedError` (`RESOLVER_PROFILE_UNSUPPORTED`, `UNSUPPORTED_PROTOCOL`) for records the resolver does not support (`feature` names them), a resolver that keeps its records off-chain or takes no writes, or `resolver: "default"` on an ENSv2 name.
  * @throws `Errors.UnsupportedError` (`UNSUPPORTED_ON_DEPLOYMENT`) for a route (`via`) on an L2 name, or a resolver other than Linea's PublicResolver on a Linea name.
  * @throws `Errors.ConfigError` (`CHAIN_NOT_CONFIGURED`) when the name lives on an L2 the client cannot reach.
@@ -111,10 +115,17 @@ export declare namespace set {
     /** Content hash URI such as `ipfs://…`. `null` deletes it. */
     contentHash?: string | null | undefined;
     /**
-     * ABI record (ENSIP-4). An `Abi` is stored as JSON (content type 1); hex bytes are stored as
-     * given under `contentType`. `null` deletes the record of that content type.
+     * ABI record (ENSIP-4). An `Abi` is stored as JSON (content type 1, the default), compressed
+     * JSON (2) or CBOR (4); a URI (8) is a string; hex bytes are stored as given. `null` deletes
+     * the record of `contentType`, or of every content type the resolver holds when it is omitted.
      */
-    abi?: { contentType?: 1n | 2n | 4n | 8n | undefined; value: Abi | Hex | null } | undefined;
+    abi?:
+      | {
+          contentType?: 1n | 2n | 4n | 8n | undefined;
+          // oxlint-disable-next-line typescript/no-redundant-type-constituents -- `Hex` documents that hex is stored as given
+          value: Abi | Hex | string | null;
+        }
+      | undefined;
     /** SECP256k1 public key. `null` deletes it. Node-based resolvers only. */
     pubkey?: { x: Hex; y: Hex } | null | undefined;
     /** Name record (the `name()` of reverse names). `null` deletes it. */
@@ -123,7 +134,11 @@ export declare namespace set {
     interfaces?: Readonly<Record<Hex, Address | null>> | undefined;
     /** Data records (ENSIP-24) by key. `null` deletes one. */
     data?: Readonly<Record<string, Hex | null>> | undefined;
-    /** Deletes every existing record first. */
+    /**
+     * Deletes every existing record first.
+     *
+     * @default true when `resolver` switches to one that already holds records for the name
+     */
     clear?: boolean | undefined;
     /**
      * Writes the records to this resolver, then points the name at it.
@@ -193,6 +208,7 @@ set.estimateGas = Action.promiseOf(
  *
  * @throws `Errors.InvalidInputError` (`INVALID_NAME`, `INVALID_ADDRESS`, `INVALID_COIN_TYPE`, `INVALID_CONTENT_HASH`, `INVALID_RECORD_VALUE`) for invalid input.
  * @throws `Errors.NotFoundError` (`RESOLVER_NOT_FOUND`) when the name has no resolver of its own.
+ * @throws `Errors.NotFoundError` (`RESOLVER_NOT_DEPLOYED`) when no contract is deployed at the resolver it writes to.
  * @throws `Errors.UnsupportedError` (`RESOLVER_PROFILE_UNSUPPORTED`, `UNSUPPORTED_PROTOCOL`) for records the resolver does not support, a resolver that keeps its records off-chain or takes no writes, or `resolver: "default"` on an ENSv2 name.
  * @throws `Errors.NameStateError` (`NAME_EXPIRED`, `NAME_RESERVED`, `NAME_NOT_REGISTERED`, `NAME_EXTERNAL`) when the name is not registered, or its parent's namespace manages it outside ENS's registries.
  * @throws `Errors.NameStateError` (`NAME_UNREACHABLE`) when ENSv2 resolution no longer reaches the name.

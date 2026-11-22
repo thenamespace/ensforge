@@ -15,7 +15,7 @@ import * as Impl from "./effect.js";
  * **Details**
  *
  * - `owner` becomes the registry owner and, for `.eth` names, the registrant. Defaults to the
- *   signer.
+ *   name's current holder, so an approved operator unwrapping it does not take it.
  * - Blocked once `cannotUnwrap` is burned.
  *
  * **Example** (Unwrapping a name)
@@ -66,7 +66,7 @@ export declare namespace unwrap {
   type Options = {
     /** ENSv1 name. Normalized automatically. */
     name: string;
-    /** Owner after unwrapping. Defaults to the signer. */
+    /** Owner after unwrapping. Defaults to the name's current holder. */
     owner?: string | undefined;
   };
   /** Submitted transaction hashes and the plan that produced them. */

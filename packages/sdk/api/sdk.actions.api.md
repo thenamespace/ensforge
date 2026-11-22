@@ -271,7 +271,7 @@ function migration.migrate(client: Client<object> | ViemClientLike, options: mig
 type migration.migrate.ErrorType = InvalidInputError | MigrationError | NameStateError | UnauthorizedError | WriteError
 function migration.migrate.estimateGas(client: Client<object> | ViemClientLike, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Estimate>
 const migration.migrate.estimateGas.path: string
-type migration.migrate.Options = { names: readonly NameInput[] | NameInput; resolver?: 'keep' | 'new' | 'owned' | (string & {}) | undefined; owner?: string | undefined; allowIncompleteRecords?: boolean | undefined; allowLeavingSubnames?: boolean | undefined; preserveManager?: boolean | undefined; migrateParents?: boolean | undefined; renew?: { readonly duration: bigint; readonly paymentToken?: PaymentToken | undefined; } | undefined; }
+type migration.migrate.Options = { names: readonly NameInput[] | NameInput; resolver?: 'keep' | 'new' | 'owned' | (string & {}) | undefined; owner?: string | undefined; allowIncompleteRecords?: boolean | undefined; allowEmptyResolver?: boolean | undefined; allowLeavingSubnames?: boolean | undefined; preserveManager?: boolean | undefined; migrateParents?: boolean | undefined; resume?: boolean | undefined; renew?: { readonly duration: bigint; readonly paymentToken?: PaymentToken | undefined; } | undefined; }
 const migration.migrate.path: 'migration.migrate'
 function migration.migrate.prepare(client: Client<object> | ViemClientLike, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Plan>
 const migration.migrate.prepare.path: string
@@ -350,10 +350,10 @@ type name.setTtlSync.Options = setTtl.Options & Write.Options & { confirmations?
 const name.setTtlSync.path: 'name.setTtlSync'
 type name.setTtlSync.ReturnType = Result & { readonly receipt: TransactionReceipt; readonly receipts: readonly TransactionReceipt[]; }
 function name.transfer(client: Client<object> | ViemClientLike, options: transfer.Options & Write.Options) => Promise<Result>
-type name.transfer.ErrorType = InvalidInputError | NameStateError | UnauthorizedError | WriteError
+type name.transfer.ErrorType = IndexerError | InvalidInputError | NameStateError | UnauthorizedError | WriteError
 function name.transfer.estimateGas(client: Client<object> | ViemClientLike, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Estimate>
 const name.transfer.estimateGas.path: string
-type name.transfer.Options = { name: string; to: string; role?: 'owner' | 'registrant' | undefined; unsafe?: boolean | undefined; records?: 'handover' | 'keep' | undefined; }
+type name.transfer.Options = { name: string; to: string; role?: 'owner' | 'registrant' | undefined; unsafe?: 'auto' | boolean | undefined; delegates?: 'keep' | 'revoke' | undefined; setEthAddress?: boolean | undefined; records?: 'handover' | 'keep' | undefined; }
 const name.transfer.path: 'name.transfer'
 function name.transfer.prepare(client: Client<object> | ViemClientLike, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Plan>
 const name.transfer.prepare.path: string
@@ -361,7 +361,7 @@ type name.transfer.ReturnType = { readonly hash: `0x${string}`; readonly hashes:
 function name.transfer.simulate(client: Client<object> | ViemClientLike, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Simulation>
 const name.transfer.simulate.path: string
 function name.transferSync(client: Client<object> | ViemClientLike, options: transfer.Options & Write.Options & { confirmations?: number | undefined; timeout?: number | undefined; }) => Promise<SyncResult>
-type name.transferSync.ErrorType = InvalidInputError | NameStateError | UnauthorizedError | WriteError
+type name.transferSync.ErrorType = IndexerError | InvalidInputError | NameStateError | UnauthorizedError | WriteError
 type name.transferSync.Options = transfer.Options & Write.Options & { confirmations?: number | undefined; timeout?: number | undefined; }
 const name.transferSync.path: 'name.transferSync'
 type name.transferSync.ReturnType = Result & { readonly receipt: TransactionReceipt; readonly receipts: readonly TransactionReceipt[]; }
@@ -448,7 +448,7 @@ type primaryName.set.ClaimOptions = { claim: Claim; signature: `0x${string}`; co
 type primaryName.set.ErrorType = InvalidInputError | NotFoundError | UnauthorizedError | WriteError
 function primaryName.set.estimateGas(client: Client<object> | ViemClientLike, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Estimate>
 const primaryName.set.estimateGas.path: string
-type primaryName.set.NameOptions = { name: string | null; address?: string | undefined; coin?: Input | undefined; verify?: boolean | undefined; claim?: undefined; signature?: undefined; }
+type primaryName.set.NameOptions = { name: string | null; address?: string | undefined; coin?: Input | undefined; verify?: boolean | undefined; ensureForward?: boolean | undefined; claim?: undefined; signature?: undefined; }
 type primaryName.set.Options = ClaimOptions | NameOptions
 const primaryName.set.path: 'primaryName.set'
 function primaryName.set.prepare(client: Client<object> | ViemClientLike, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Plan>
@@ -503,7 +503,7 @@ function record.set(client: Client<object> | ViemClientLike, options: set.Option
 type record.set.ErrorType = InvalidInputError | NameStateError | NotFoundError | UnauthorizedError | WriteError
 function record.set.estimateGas(client: Client<object> | ViemClientLike, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Estimate>
 const record.set.estimateGas.path: string
-type record.set.Options = { name: string; texts?: Readonly<Record<string, string | null>> | undefined; addresses?: Readonly<Record<string, string | null>> | undefined; contentHash?: string | null | undefined; abi?: { contentType?: 1n | 2n | 4n | 8n | undefined; value: Abi | `0x${string}` | null; } | undefined; pubkey?: { x: `0x${string}`; y: `0x${string}`; } | null | undefined; nameRecord?: string | null | undefined; interfaces?: Readonly<Record<`0x${string}`, `0x${string}` | null>> | undefined; data?: Readonly<Record<string, `0x${string}` | null>> | undefined; clear?: boolean | undefined; resolver?: 'default' | `0x${string}` | undefined; }
+type record.set.Options = { name: string; texts?: Readonly<Record<string, string | null>> | undefined; addresses?: Readonly<Record<string, string | null>> | undefined; contentHash?: string | null | undefined; abi?: { contentType?: 1n | 2n | 4n | 8n | undefined; value: string | Abi | null; } | undefined; pubkey?: { x: `0x${string}`; y: `0x${string}`; } | null | undefined; nameRecord?: string | null | undefined; interfaces?: Readonly<Record<`0x${string}`, `0x${string}` | null>> | undefined; data?: Readonly<Record<string, `0x${string}` | null>> | undefined; clear?: boolean | undefined; resolver?: 'default' | `0x${string}` | undefined; }
 const record.set.path: 'record.set'
 function record.set.prepare(client: Client<object> | ViemClientLike, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Plan>
 const record.set.prepare.path: string
@@ -516,7 +516,7 @@ type record.setSync.Options = set.Options & Write.Options & { confirmations?: nu
 const record.setSync.path: 'record.setSync'
 type record.setSync.ReturnType = Result & { readonly receipt: TransactionReceipt; readonly receipts: readonly TransactionReceipt[]; }
 function registration.commit(client: Client<object> | ViemClientLike, options: register.Options & Write.Options) => Promise<ReturnType>
-type registration.commit.ErrorType = CommitmentError | InvalidInputError | NameStateError | WriteError
+type registration.commit.ErrorType = CommitmentError | InvalidInputError | NameStateError | NotFoundError | WriteError
 function registration.commit.estimateGas(client: Client<object> | ViemClientLike, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Estimate>
 const registration.commit.estimateGas.path: string
 type registration.commit.Options = { names: string | readonly string[]; duration: bigint; owner?: string | undefined; resolver?: string | null | undefined; records?: Omit<Options, 'clear' | 'name' | 'pubkey' | 'resolver'> | undefined; primaryName?: boolean | undefined; paymentToken?: PaymentToken | undefined; subregistry?: string | undefined; referrer?: `0x${string}` | undefined; secret?: `0x${string}` | undefined; }
@@ -527,7 +527,7 @@ type registration.commit.ReturnType = Result & { readonly secret: `0x${string}`;
 function registration.commit.simulate(client: Client<object> | ViemClientLike, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Simulation>
 const registration.commit.simulate.path: string
 function registration.commitSync(client: Client<object> | ViemClientLike, options: register.Options & Write.Options & { confirmations?: number | undefined; timeout?: number | undefined; }) => Promise<ReturnType>
-type registration.commitSync.ErrorType = CommitmentError | InvalidInputError | NameStateError | WriteError
+type registration.commitSync.ErrorType = CommitmentError | InvalidInputError | NameStateError | NotFoundError | WriteError
 type registration.commitSync.Options = register.Options & Write.Options & { confirmations?: number | undefined; timeout?: number | undefined; }
 const registration.commitSync.path: 'registration.commitSync'
 type registration.commitSync.ReturnType = Result & { readonly receipt: TransactionReceipt; readonly receipts: readonly TransactionReceipt[]; } & { readonly secret: `0x${string}`; readonly commitments: readonly `0x${string}`[]; readonly readyAt: bigint; }
@@ -549,12 +549,12 @@ type registration.getPrice.Options = Pick<Options, 'signal'> & (BlockOptions & {
 const registration.getPrice.path: 'registration.getPrice'
 function registration.getPrice.request(options: Pick<Options, 'signal'> & (BlockOptions & { name: string; duration: bigint; paymentToken?: PaymentToken | undefined; at?: bigint | undefined; })) => Request<ReturnType, ErrorType>
 type registration.getPrice.ReturnType = { readonly base: bigint; readonly premium: bigint; readonly total: bigint; readonly token: TokenInfo; }
-function registration.getRenewalPrice(client: Client<object> | ViemClientLike, options: Pick<Options, 'signal'> & (BlockOptions & { names: string | readonly string[]; duration: bigint; paymentToken?: PaymentToken | undefined; })) => Promise<ReturnType>
+function registration.getRenewalPrice(client: Client<object> | ViemClientLike, options: (Pick<Options, 'signal'> & BlockOptions) & ({ names: string | readonly string[]; paymentToken?: PaymentToken | undefined; } & ({ duration: bigint; until?: undefined; } | { until: bigint; duration?: undefined; }))) => Promise<ReturnType>
 type registration.getRenewalPrice.ErrorType = InvalidInputError | NameStateError | UnsupportedError | CommonError
-type registration.getRenewalPrice.Options = Pick<Options, 'signal'> & (BlockOptions & { names: string | readonly string[]; duration: bigint; paymentToken?: PaymentToken | undefined; })
+type registration.getRenewalPrice.Options = (Pick<Options, 'signal'> & BlockOptions) & ({ names: string | readonly string[]; paymentToken?: PaymentToken | undefined; } & ({ duration: bigint; until?: undefined; } | { until: bigint; duration?: undefined; }))
 const registration.getRenewalPrice.path: 'registration.getRenewalPrice'
-function registration.getRenewalPrice.request(options: Pick<Options, 'signal'> & (BlockOptions & { names: string | readonly string[]; duration: bigint; paymentToken?: PaymentToken | undefined; })) => Request<ReturnType, ErrorType>
-type registration.getRenewalPrice.ReturnType = { readonly total: bigint; readonly token: TokenInfo; readonly items: readonly { readonly name: string; readonly route: RenewalRoute; readonly amount: bigint; }[]; }
+function registration.getRenewalPrice.request(options: (Pick<Options, 'signal'> & BlockOptions) & ({ names: string | readonly string[]; paymentToken?: PaymentToken | undefined; } & ({ duration: bigint; until?: undefined; } | { until: bigint; duration?: undefined; }))) => Request<ReturnType, ErrorType>
+type registration.getRenewalPrice.ReturnType = { readonly total: bigint; readonly token: TokenInfo; readonly items: readonly { readonly name: string; readonly route: RenewalRoute; readonly amount: bigint; readonly expiry: bigint; readonly duration: bigint; }[]; }
 function registration.isAvailable(client: Client<object> | ViemClientLike, options: Pick<Options, 'signal'> & (BlockOptions & { name: string; })) => Promise<boolean>
 type registration.isAvailable.ErrorType = InvalidInputError | UnsupportedError | CommonError
 type registration.isAvailable.Options = Pick<Options, 'signal'> & (BlockOptions & { name: string; })
@@ -562,7 +562,7 @@ const registration.isAvailable.path: 'registration.isAvailable'
 function registration.isAvailable.request(options: Pick<Options, 'signal'> & (BlockOptions & { name: string; })) => Request<boolean, ErrorType>
 type registration.isAvailable.ReturnType = boolean
 function registration.register(client: Client<object> | ViemClientLike, options: register.Options & Write.Options) => Promise<ReturnType>
-type registration.register.ErrorType = CommitmentError | InvalidInputError | NameStateError | WriteError
+type registration.register.ErrorType = InvalidInputError | NameStateError | NotFoundError | WriteError
 function registration.register.estimateGas(client: Client<object> | ViemClientLike, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Estimate>
 const registration.register.estimateGas.path: string
 type registration.register.Options = { names: string | readonly string[]; duration: bigint; owner?: string | undefined; resolver?: string | null | undefined; records?: Omit<Options, 'clear' | 'name' | 'pubkey' | 'resolver'> | undefined; primaryName?: boolean | undefined; paymentToken?: PaymentToken | undefined; subregistry?: string | undefined; referrer?: `0x${string}` | undefined; secret?: `0x${string}` | undefined; }
@@ -573,7 +573,7 @@ type registration.register.ReturnType = Result & { readonly secret: `0x${string}
 function registration.register.simulate(client: Client<object> | ViemClientLike, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Simulation>
 const registration.register.simulate.path: string
 function registration.registerSync(client: Client<object> | ViemClientLike, options: register.Options & Write.Options & { confirmations?: number | undefined; timeout?: number | undefined; }) => Promise<ReturnType>
-type registration.registerSync.ErrorType = CommitmentError | InvalidInputError | NameStateError | WriteError
+type registration.registerSync.ErrorType = InvalidInputError | NameStateError | NotFoundError | WriteError
 type registration.registerSync.Options = register.Options & Write.Options & { confirmations?: number | undefined; timeout?: number | undefined; }
 const registration.registerSync.path: 'registration.registerSync'
 type registration.registerSync.ReturnType = Result & { readonly receipt: TransactionReceipt; readonly receipts: readonly TransactionReceipt[]; } & { readonly secret: `0x${string}`; readonly names: readonly { readonly name: string; readonly tokenId: bigint; readonly expiry: bigint; }[]; readonly paid: bigint; }
@@ -581,7 +581,7 @@ function registration.renew(client: Client<object> | ViemClientLike, options: re
 type registration.renew.ErrorType = InvalidInputError | NameStateError | WriteError
 function registration.renew.estimateGas(client: Client<object> | ViemClientLike, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Estimate>
 const registration.renew.estimateGas.path: string
-type registration.renew.Options = { names: string | readonly string[]; duration: bigint; paymentToken?: PaymentToken | undefined; referrer?: `0x${string}` | undefined; }
+type registration.renew.Options = { names: string | readonly string[]; paymentToken?: PaymentToken | undefined; referrer?: `0x${string}` | undefined; } & ({ duration: bigint; until?: undefined; } | { until: bigint; duration?: undefined; })
 const registration.renew.path: 'registration.renew'
 function registration.renew.prepare(client: Client<object> | ViemClientLike, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Plan>
 const registration.renew.prepare.path: string
@@ -597,7 +597,7 @@ function registry.attach(client: Client<object> | ViemClientLike, options: attac
 type registry.attach.ErrorType = InvalidInputError | NameStateError | UnauthorizedError | WriteError
 function registry.attach.estimateGas(client: Client<object> | ViemClientLike, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Estimate>
 const registry.attach.estimateGas.path: string
-type registry.attach.Options = { name: string; registry: string | null; setParent?: boolean | undefined; }
+type registry.attach.Options = { name: string; registry: string | null; setParent?: boolean | undefined; replace?: boolean | undefined; }
 const registry.attach.path: 'registry.attach'
 function registry.attach.prepare(client: Client<object> | ViemClientLike, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Plan>
 const registry.attach.prepare.path: string
@@ -610,10 +610,10 @@ type registry.attachSync.Options = attach.Options & Write.Options & { confirmati
 const registry.attachSync.path: 'registry.attachSync'
 type registry.attachSync.ReturnType = Result & { readonly receipt: TransactionReceipt; readonly receipts: readonly TransactionReceipt[]; }
 function registry.deploy(client: Client<object> | ViemClientLike, options: deploy.Options & Write.Options) => Promise<ReturnType>
-type registry.deploy.ErrorType = InvalidInputError | UnauthorizedError | WriteError
+type registry.deploy.ErrorType = InvalidInputError | NameStateError | UnauthorizedError | WriteError
 function registry.deploy.estimateGas(client: Client<object> | ViemClientLike, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Estimate>
 const registry.deploy.estimateGas.path: string
-type registry.deploy.Options = { owner?: string | undefined; grants?: readonly { account: string; roles: bigint | readonly Name[]; }[] | undefined; emancipated?: boolean | undefined; attachTo?: string | undefined; salt?: bigint | undefined; }
+type registry.deploy.Options = { owner?: string | undefined; grants?: readonly { account: string; roles: bigint | readonly ('canName' | 'canNameAdmin' | 'canTransfer' | 'canTransferAdmin' | 'registerReserved' | 'registerReservedAdmin' | 'registrar' | 'registrarAdmin' | 'renew' | 'renewAdmin' | 'setParent' | 'setParentAdmin' | 'setResolver' | 'setResolverAdmin' | 'setSubregistry' | 'setSubregistryAdmin' | 'setUri' | 'setUriAdmin' | 'unregister' | 'unregisterAdmin' | 'upgrade' | 'upgradeAdmin' | 'wasReserved')[]; }[] | undefined; emancipated?: boolean | undefined; attachTo?: string | undefined; replace?: boolean | undefined; salt?: bigint | undefined; }
 const registry.deploy.path: 'registry.deploy'
 function registry.deploy.prepare(client: Client<object> | ViemClientLike, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Plan>
 const registry.deploy.prepare.path: string
@@ -621,7 +621,7 @@ type registry.deploy.ReturnType = Result & { readonly registry: `0x${string}`; }
 function registry.deploy.simulate(client: Client<object> | ViemClientLike, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Simulation>
 const registry.deploy.simulate.path: string
 function registry.deploySync(client: Client<object> | ViemClientLike, options: deploy.Options & Write.Options & { confirmations?: number | undefined; timeout?: number | undefined; }) => Promise<ReturnType>
-type registry.deploySync.ErrorType = InvalidInputError | UnauthorizedError | WriteError
+type registry.deploySync.ErrorType = InvalidInputError | NameStateError | UnauthorizedError | WriteError
 type registry.deploySync.Options = deploy.Options & Write.Options & { confirmations?: number | undefined; timeout?: number | undefined; }
 const registry.deploySync.path: 'registry.deploySync'
 type registry.deploySync.ReturnType = Result & { readonly receipt: TransactionReceipt; readonly receipts: readonly TransactionReceipt[]; } & { readonly registry: `0x${string}`; }
@@ -667,7 +667,7 @@ function resolver.create(client: Client<object> | ViemClientLike, options: creat
 type resolver.create.ErrorType = InvalidInputError | NameStateError | UnauthorizedError | WriteError
 function resolver.create.estimateGas(client: Client<object> | ViemClientLike, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Estimate>
 const resolver.create.estimateGas.path: string
-type resolver.create.Options = { name?: string | undefined; records?: Omit<Options, 'clear' | 'name' | 'pubkey' | 'resolver'> | undefined; owner?: string | undefined; grants?: readonly { account: string; roles: bigint | readonly Name[]; }[] | undefined; salt?: bigint | undefined; }
+type resolver.create.Options = { name?: string | undefined; records?: Omit<Options, 'clear' | 'name' | 'pubkey' | 'resolver'> | undefined; owner?: string | undefined; grants?: readonly { account: string; roles: bigint | readonly ('canName' | 'canNameAdmin' | 'link' | 'linkAdmin' | 'setAbi' | 'setAbiAdmin' | 'setAddr' | 'setAddrAdmin' | 'setContenthash' | 'setContenthashAdmin' | 'setData' | 'setDataAdmin' | 'setInterface' | 'setInterfaceAdmin' | 'setName' | 'setNameAdmin' | 'setText' | 'setTextAdmin' | 'upgrade' | 'upgradeAdmin')[]; }[] | undefined; salt?: bigint | undefined; }
 const resolver.create.path: 'resolver.create'
 function resolver.create.prepare(client: Client<object> | ViemClientLike, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Plan>
 const resolver.create.prepare.path: string
@@ -695,7 +695,7 @@ function resolver.link(client: Client<object> | ViemClientLike, options: link.Op
 type resolver.link.ErrorType = InvalidInputError | NameStateError | NotFoundError | UnauthorizedError | WriteError
 function resolver.link.estimateGas(client: Client<object> | ViemClientLike, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Estimate>
 const resolver.link.estimateGas.path: string
-type resolver.link.Options = { name: string; to: string | { recordId: bigint; }; }
+type resolver.link.Options = { name: string; to: string | { recordId: bigint; } | null; }
 const resolver.link.path: 'resolver.link'
 function resolver.link.prepare(client: Client<object> | ViemClientLike, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Plan>
 const resolver.link.prepare.path: string
@@ -714,10 +714,10 @@ const resolver.resolve.path: 'resolver.resolve'
 function resolver.resolve.request(options: Omit<Options, 'strict'> & { name: string; data: `0x${string}`; }) => Request<ReturnType, ErrorType>
 type resolver.resolve.ReturnType = { readonly data: `0x${string}`; readonly resolver: `0x${string}`; }
 function resolver.set(client: Client<object> | ViemClientLike, options: set.Options & Write.Options) => Promise<Result>
-type resolver.set.ErrorType = InvalidInputError | NameStateError | UnauthorizedError | WriteError
+type resolver.set.ErrorType = InvalidInputError | NameStateError | NotFoundError | UnauthorizedError | WriteError
 function resolver.set.estimateGas(client: Client<object> | ViemClientLike, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Estimate>
 const resolver.set.estimateGas.path: string
-type resolver.set.Options = { name: string; resolver: 'default' | `0x${string}` | null; }
+type resolver.set.Options = { name: string; resolver: 'default' | `0x${string}` | null; allowNonContract?: boolean | undefined; }
 const resolver.set.path: 'resolver.set'
 function resolver.set.prepare(client: Client<object> | ViemClientLike, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Plan>
 const resolver.set.prepare.path: string
@@ -725,7 +725,7 @@ type resolver.set.ReturnType = { readonly hash: `0x${string}`; readonly hashes: 
 function resolver.set.simulate(client: Client<object> | ViemClientLike, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Simulation>
 const resolver.set.simulate.path: string
 function resolver.setSync(client: Client<object> | ViemClientLike, options: set.Options & Write.Options & { confirmations?: number | undefined; timeout?: number | undefined; }) => Promise<SyncResult>
-type resolver.setSync.ErrorType = InvalidInputError | NameStateError | UnauthorizedError | WriteError
+type resolver.setSync.ErrorType = InvalidInputError | NameStateError | NotFoundError | UnauthorizedError | WriteError
 type resolver.setSync.Options = set.Options & Write.Options & { confirmations?: number | undefined; timeout?: number | undefined; }
 const resolver.setSync.path: 'resolver.setSync'
 type resolver.setSync.ReturnType = Result & { readonly receipt: TransactionReceipt; readonly receipts: readonly TransactionReceipt[]; }
@@ -755,7 +755,7 @@ function role.grant(client: Client<object> | ViemClientLike, options: grant.Opti
 type role.grant.ErrorType = InvalidInputError | UnauthorizedError | WriteError
 function role.grant.estimateGas(client: Client<object> | ViemClientLike, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Estimate>
 const role.grant.estimateGas.path: string
-type role.grant.Options = { grantee: string; roles: bigint | readonly Name[]; target: 'registry' | 'resolver'; name?: string | undefined; contract?: string | undefined; root?: boolean | undefined; }
+type role.grant.Options = { grantee: string; name?: string | undefined; contract?: string | undefined; root?: boolean | undefined; } & ({ target: 'registry'; roles: bigint | readonly ('canName' | 'canNameAdmin' | 'canTransfer' | 'canTransferAdmin' | 'registerReserved' | 'registerReservedAdmin' | 'registrar' | 'registrarAdmin' | 'renew' | 'renewAdmin' | 'setParent' | 'setParentAdmin' | 'setResolver' | 'setResolverAdmin' | 'setSubregistry' | 'setSubregistryAdmin' | 'setUri' | 'setUriAdmin' | 'unregister' | 'unregisterAdmin' | 'upgrade' | 'upgradeAdmin' | 'wasReserved')[]; } | { target: 'resolver'; roles: bigint | readonly ('canName' | 'canNameAdmin' | 'link' | 'linkAdmin' | 'setAbi' | 'setAbiAdmin' | 'setAddr' | 'setAddrAdmin' | 'setContenthash' | 'setContenthashAdmin' | 'setData' | 'setDataAdmin' | 'setInterface' | 'setInterfaceAdmin' | 'setName' | 'setNameAdmin' | 'setText' | 'setTextAdmin' | 'upgrade' | 'upgradeAdmin')[]; })
 const role.grant.path: 'role.grant'
 function role.grant.prepare(client: Client<object> | ViemClientLike, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Plan>
 const role.grant.prepare.path: string
@@ -771,7 +771,7 @@ function role.revoke(client: Client<object> | ViemClientLike, options: revoke.Op
 type role.revoke.ErrorType = InvalidInputError | UnauthorizedError | WriteError
 function role.revoke.estimateGas(client: Client<object> | ViemClientLike, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Estimate>
 const role.revoke.estimateGas.path: string
-type role.revoke.Options = { holder: string; roles: bigint | readonly Name[]; target: 'registry' | 'resolver'; name?: string | undefined; contract?: string | undefined; root?: boolean | undefined; }
+type role.revoke.Options = { holder: string; name?: string | undefined; contract?: string | undefined; root?: boolean | undefined; allowIrreversible?: boolean | undefined; } & ({ target: 'registry'; roles: bigint | readonly ('canName' | 'canNameAdmin' | 'canTransfer' | 'canTransferAdmin' | 'registerReserved' | 'registerReservedAdmin' | 'registrar' | 'registrarAdmin' | 'renew' | 'renewAdmin' | 'setParent' | 'setParentAdmin' | 'setResolver' | 'setResolverAdmin' | 'setSubregistry' | 'setSubregistryAdmin' | 'setUri' | 'setUriAdmin' | 'unregister' | 'unregisterAdmin' | 'upgrade' | 'upgradeAdmin' | 'wasReserved')[]; } | { target: 'resolver'; roles: bigint | readonly ('canName' | 'canNameAdmin' | 'link' | 'linkAdmin' | 'setAbi' | 'setAbiAdmin' | 'setAddr' | 'setAddrAdmin' | 'setContenthash' | 'setContenthashAdmin' | 'setData' | 'setDataAdmin' | 'setInterface' | 'setInterfaceAdmin' | 'setName' | 'setNameAdmin' | 'setText' | 'setTextAdmin' | 'upgrade' | 'upgradeAdmin')[]; })
 const role.revoke.path: 'role.revoke'
 function role.revoke.prepare(client: Client<object> | ViemClientLike, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Plan>
 const role.revoke.prepare.path: string
@@ -787,7 +787,7 @@ function subname.create(client: Client<object> | ViemClientLike, options: create
 type subname.create.ErrorType = InvalidInputError | NameStateError | UnauthorizedError | WriteError
 function subname.create.estimateGas(client: Client<object> | ViemClientLike, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Estimate>
 const subname.create.estimateGas.path: string
-type subname.create.Options = { name: string; owner?: string | undefined; resolver?: string | null | undefined; records?: Omit<Options, 'clear' | 'name' | 'pubkey' | 'resolver'> | undefined; expiry?: bigint | undefined; fuses?: readonly ('canExtendExpiry' | 'cannotApprove' | 'cannotBurnFuses' | 'cannotCreateSubdomain' | 'cannotSetResolver' | 'cannotSetTtl' | 'cannotTransfer' | 'cannotUnwrap' | 'isDotEth' | 'parentCannotControl')[] | undefined; roles?: bigint | readonly Name[] | undefined; emancipate?: boolean | undefined; upsert?: boolean | undefined; }
+type subname.create.Options = { name: string; owner?: string | undefined; resolver?: string | null | undefined; records?: Omit<Options, 'clear' | 'name' | 'pubkey' | 'resolver'> | undefined; expiry?: bigint | undefined; fuses?: readonly ('canExtendExpiry' | 'cannotApprove' | 'cannotBurnFuses' | 'cannotCreateSubdomain' | 'cannotSetResolver' | 'cannotSetTtl' | 'cannotTransfer' | 'cannotUnwrap' | 'isDotEth' | 'parentCannotControl')[] | undefined; roles?: bigint | readonly ('canName' | 'canNameAdmin' | 'canTransfer' | 'canTransferAdmin' | 'registerReserved' | 'registerReservedAdmin' | 'registrar' | 'registrarAdmin' | 'renew' | 'renewAdmin' | 'setParent' | 'setParentAdmin' | 'setResolver' | 'setResolverAdmin' | 'setSubregistry' | 'setSubregistryAdmin' | 'setUri' | 'setUriAdmin' | 'unregister' | 'unregisterAdmin' | 'upgrade' | 'upgradeAdmin' | 'wasReserved')[] | undefined; emancipate?: boolean | undefined; upsert?: boolean | undefined; }
 const subname.create.path: 'subname.create'
 function subname.create.prepare(client: Client<object> | ViemClientLike, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Plan>
 const subname.create.prepare.path: string
@@ -803,7 +803,7 @@ function subname.remove(client: Client<object> | ViemClientLike, options: remove
 type subname.remove.ErrorType = InvalidInputError | NameStateError | UnauthorizedError | WriteError
 function subname.remove.estimateGas(client: Client<object> | ViemClientLike, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Estimate>
 const subname.remove.estimateGas.path: string
-type subname.remove.Options = { name: string; }
+type subname.remove.Options = { name: string; allowOrphanedSubnames?: boolean | undefined; }
 const subname.remove.path: 'subname.remove'
 function subname.remove.prepare(client: Client<object> | ViemClientLike, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Plan>
 const subname.remove.prepare.path: string
@@ -869,6 +869,22 @@ type wrapper.setFusesSync.ErrorType = InvalidInputError | NameStateError | Unaut
 type wrapper.setFusesSync.Options = setFuses.Options & Write.Options & { confirmations?: number | undefined; timeout?: number | undefined; }
 const wrapper.setFusesSync.path: 'wrapper.setFusesSync'
 type wrapper.setFusesSync.ReturnType = Result & { readonly receipt: TransactionReceipt; readonly receipts: readonly TransactionReceipt[]; }
+function wrapper.sync(client: Client<object> | ViemClientLike, options: sync.Options & Write.Options) => Promise<Result>
+type wrapper.sync.ErrorType = InvalidInputError | WriteError
+function wrapper.sync.estimateGas(client: Client<object> | ViemClientLike, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Estimate>
+const wrapper.sync.estimateGas.path: string
+type wrapper.sync.Options = { names: string | readonly string[]; }
+const wrapper.sync.path: 'wrapper.sync'
+function wrapper.sync.prepare(client: Client<object> | ViemClientLike, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Plan>
+const wrapper.sync.prepare.path: string
+type wrapper.sync.ReturnType = { readonly hash: `0x${string}`; readonly hashes: readonly `0x${string}`[]; readonly id: string | undefined; readonly plan: Plan; }
+function wrapper.sync.simulate(client: Client<object> | ViemClientLike, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Simulation>
+const wrapper.sync.simulate.path: string
+function wrapper.syncSync(client: Client<object> | ViemClientLike, options: sync.Options & Write.Options & { confirmations?: number | undefined; timeout?: number | undefined; }) => Promise<SyncResult>
+type wrapper.syncSync.ErrorType = InvalidInputError | WriteError
+type wrapper.syncSync.Options = sync.Options & Write.Options & { confirmations?: number | undefined; timeout?: number | undefined; }
+const wrapper.syncSync.path: 'wrapper.syncSync'
+type wrapper.syncSync.ReturnType = Result & { readonly receipt: TransactionReceipt; readonly receipts: readonly TransactionReceipt[]; }
 function wrapper.unwrap(client: Client<object> | ViemClientLike, options: unwrap.Options & Write.Options) => Promise<Result>
 type wrapper.unwrap.ErrorType = InvalidInputError | NameStateError | UnauthorizedError | WriteError
 function wrapper.unwrap.estimateGas(client: Client<object> | ViemClientLike, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Estimate>

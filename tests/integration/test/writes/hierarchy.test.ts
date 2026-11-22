@@ -1,14 +1,14 @@
 import { assert, describe } from "@effect/vitest";
-import { Effect, Array as Arr } from "effect";
+import { Effect, Array as Arr, String as Str } from "effect";
 
 import { Abis } from "@ensforge/contracts";
 import { nameWrapperFuses as fuse } from "@ensforge/contracts/v1";
-import { Duration, Name } from "@ensforge/sdk";
+import { Duration, Fuse, Name } from "@ensforge/sdk";
 import { Actions } from "@ensforge/sdk/effect";
 import { Chain, Devnet } from "@ensforge/test-devnet";
 import { Fixtures } from "@ensforge/test-fixtures";
 import { expectFailure } from "@ensforge/test-harness";
-import { parseEventLogs, zeroAddress } from "viem";
+import { labelhash, parseEventLogs, zeroAddress } from "viem";
 
 import { Clients } from "../support/clients.ts";
 import { v1Owners } from "../support/contracts.ts";
@@ -315,6 +315,53 @@ describe("subnames, wrapper and registries", () => {
         }),
       { meta: { cases: ["M:A18"] } },
     );
+
+    // Regression: attaching over a subregistry replaced it, orphaning every subname in it, and
+    // any address was accepted as a registry.
+    it.effect(
+      "refuses to replace a subregistry unless asked, and to attach what is not a registry",
+      () =>
+        Effect.gen(function* () {
+          const fixtures = yield* Fixtures;
+          const devnet = yield* Devnet;
+          const chain = yield* Chain;
+          const clients = yield* Clients;
+          const ens = clients.make({ account: devnet.accounts.alice });
+          const name = fixtures.byId("v2.registered").name;
+
+          yield* chain.isolated(
+            Effect.gen(function* () {
+              const { registry: first } = yield* Actions.registry.deploySync(ens, {
+                attachTo: name,
+              });
+              yield* expectFailure(Actions.registry.deploy(ens, { attachTo: name }), {
+                _tag: "NameStateError",
+                code: "SUBREGISTRY_EXISTS",
+              });
+              const { registry: second } = yield* Actions.registry.deploySync(ens, {});
+              yield* expectFailure(Actions.registry.attach(ens, { name, registry: second }), {
+                _tag: "NameStateError",
+                code: "SUBREGISTRY_EXISTS",
+              });
+              for (const registry of [
+                devnet.contract("v2.ethRegistry"),
+                devnet.contract("v2.publicResolver"),
+              ]) {
+                yield* expectFailure(
+                  Actions.registry.attach(ens, { name, registry, replace: true }),
+                  { _tag: "InvalidInputError", code: "INVALID_ADDRESS" },
+                );
+              }
+
+              yield* Actions.registry.attachSync(ens, { name, registry: second, replace: true });
+              const attached = yield* Actions.registry.get(ens, { name });
+              assert.notStrictEqual(attached?.address, first);
+              assert.strictEqual(attached?.address, second);
+            }),
+          );
+        }),
+      { meta: { cases: ["M:A18"] } },
+    );
   });
 
   onProfile("v1-live")("v1-live", (it) => {
@@ -334,7 +381,14 @@ describe("subnames, wrapper and registries", () => {
 
           yield* chain.isolated(
             Effect.gen(function* () {
-              const { receipt } = yield* Actions.subname.updateSync(ens, { name, owner: carol });
+              const { receipt, plan } = yield* Actions.subname.updateSync(ens, {
+                name,
+                owner: carol,
+              });
+              assert.deepStrictEqual(
+                Arr.map(plan.warnings, (warning) => warning.code),
+                ["WRAPPER_TOKEN_STRANDED"],
+              );
               const updatedName = yield* Actions.name.get(ens, { name });
               assert.deepInclude(updatedName, {
                 wrapped: false,
@@ -359,6 +413,200 @@ describe("subnames, wrapper and registries", () => {
           );
         }),
       { meta: { cases: ["O09"] } },
+    );
+
+    // Regression: a resolver-only update wrote the token holder as registry owner, which took the
+    // name away from the NameWrapper and left bob's token controlling nothing.
+    it.effect(
+      "changes a wrapped child's resolver from its unwrapped parent, keeping it wrapped",
+      () =>
+        Effect.gen(function* () {
+          const fixtures = yield* Fixtures;
+          const devnet = yield* Devnet;
+          const { alice, bob } = devnet.accounts;
+          const chain = yield* Chain;
+          const ens = (yield* Clients).make({ account: alice });
+          const { name } = fixtures.byId("v1.wrapped.sub.unwrapped-parent");
+          const resolver = devnet.contract("v1.publicResolver");
+
+          yield* chain.isolated(
+            Effect.gen(function* () {
+              yield* Actions.subname.updateSync(ens, { name, resolver });
+              const owners = yield* v1Owners(name);
+              assert.strictEqual(owners.registry, devnet.contract("v1.nameWrapper"));
+              assert.strictEqual(owners.wrapped?.[0], bob);
+              const after = yield* Actions.resolver.get(ens, { name });
+              assert.strictEqual(after?.address, resolver);
+            }),
+          );
+        }),
+      { meta: { cases: ["O09"] } },
+    );
+
+    // The NameWrapper only zeroes children it holds, so a wrapped parent wraps the child to the
+    // signer first; the child's own holder changes it in the registry.
+    it.effect(
+      "removes and changes an unwrapped child of a wrapped parent",
+      () =>
+        Effect.gen(function* () {
+          const fixtures = yield* Fixtures;
+          const devnet = yield* Devnet;
+          const { alice, bob, carol } = devnet.accounts;
+          const chain = yield* Chain;
+          const clients = yield* Clients;
+          const parent = clients.make({ account: alice });
+          const holder = clients.make({ account: bob });
+          const { name } = fixtures.byId("v1.unwrapped.sub.wrapped-parent");
+
+          yield* chain.isolated(
+            Effect.gen(function* () {
+              const { plan } = yield* Actions.subname.removeSync(parent, { name });
+              assert.strictEqual(plan.calls.length, 2);
+              const owners = yield* v1Owners(name);
+              assert.deepInclude(owners, { registry: zeroAddress });
+              assert.isNull((yield* Actions.name.get(parent, { name })).resolver);
+            }),
+          );
+          yield* expectFailure(Actions.subname.update.prepare(parent, { name, owner: carol }), {
+            _tag: "NameStateError",
+            code: "NAME_NOT_WRAPPED",
+          });
+          yield* chain.isolated(
+            Effect.gen(function* () {
+              const resolver = devnet.contract("v1.publicResolver");
+              yield* Actions.subname.updateSync(holder, { name, resolver, owner: carol });
+              assert.strictEqual((yield* v1Owners(name)).registry, carol);
+              assert.strictEqual(
+                (yield* Actions.resolver.get(holder, { name }))?.address,
+                resolver,
+              );
+            }),
+          );
+        }),
+      { meta: { cases: ["O11"] } },
+    );
+
+    // An emancipated child is beyond its parent's reach, even when the signer also holds the
+    // parent: it is cleared as its holder, through the NameWrapper.
+    it.effect(
+      "removes an emancipated child as its holder, though the signer holds the parent",
+      () =>
+        Effect.gen(function* () {
+          const fixtures = yield* Fixtures;
+          const { alice, bob } = (yield* Devnet).accounts;
+          const chain = yield* Chain;
+          const clients = yield* Clients;
+          const ens = clients.make({ account: alice });
+          const { name } = fixtures.byId("v1.wrapped.sub.emancipated");
+
+          yield* chain.isolated(
+            Effect.gen(function* () {
+              yield* Actions.name.transferSync(clients.make({ account: bob }), { name, to: alice });
+              yield* Actions.subname.removeSync(ens, { name });
+              const owners = yield* v1Owners(name);
+              assert.deepInclude(owners, { registry: zeroAddress });
+            }),
+          );
+        }),
+      { meta: { cases: ["W22"] } },
+    );
+
+    // Records on an existing resolver need the owner's authority, so a child for someone else is
+    // created for the signer, given its records, then handed over; fuses are burned last, as
+    // cannotTransfer would block the hand-over.
+    it.effect(
+      "creates a child with records on an existing resolver for another owner",
+      () =>
+        Effect.gen(function* () {
+          const fixtures = yield* Fixtures;
+          const devnet = yield* Devnet;
+          const { alice, bob } = devnet.accounts;
+          const chain = yield* Chain;
+          const ens = (yield* Clients).make({ account: alice });
+          const resolver = devnet.contract("v1.publicResolver");
+          const records = { texts: { url: "https://bob.example" } };
+
+          for (const [parent, fuses] of [
+            [fixtures.byId("v1.unwrapped").name, undefined],
+            [
+              fixtures.byId("v1.wrapped.locked").name,
+              ["parentCannotControl", "cannotUnwrap", "cannotTransfer"] as const,
+            ],
+          ] as const) {
+            const name = `kid.${parent}`;
+            yield* chain.isolated(
+              Effect.gen(function* () {
+                yield* Actions.subname.createSync(ens, {
+                  name,
+                  owner: bob,
+                  resolver,
+                  records,
+                  ...(fuses === undefined ? {} : { fuses }),
+                });
+                const created = yield* Actions.name.get(ens, { name });
+                const url = yield* Actions.record.getText(ens, { name, key: "url" });
+                assert.strictEqual(created.owner, bob, name);
+                assert.strictEqual(url, "https://bob.example", name);
+                if (fuses !== undefined) {
+                  const wrapped = yield* Actions.wrapper.getFuses(ens, { name });
+                  assert.isTrue(Fuse.has(wrapped?.fuses ?? 0, "cannotTransfer"));
+                }
+              }),
+            );
+          }
+        }),
+      { meta: { cases: ["O11"] } },
+    );
+
+    // An emancipated child its holder unwrapped and cleared looks available, but the NameWrapper
+    // keeps its parentCannotControl until the old expiry: the parent cannot recreate it.
+    it.effect(
+      "refuses to recreate a child its emancipation still protects",
+      () =>
+        Effect.gen(function* () {
+          const fixtures = yield* Fixtures;
+          const { alice, bob } = (yield* Devnet).accounts;
+          const chain = yield* Chain;
+          const clients = yield* Clients;
+          const holder = clients.make({ account: bob });
+          const { name } = fixtures.byId("v1.wrapped.sub.emancipated");
+
+          yield* chain.isolated(
+            Effect.gen(function* () {
+              yield* Actions.wrapper.unwrapSync(holder, { name });
+              yield* Actions.subname.removeSync(holder, { name });
+              yield* expectFailure(
+                Actions.subname.create.prepare(clients.make({ account: alice }), { name }),
+                { _tag: "UnauthorizedError", code: "FUSE_BURNED" },
+              );
+            }),
+          );
+        }),
+      { meta: { cases: ["W22"] } },
+    );
+
+    // NameWrapper calls take the label and hash it again: an encoded label is recovered from the
+    // NameWrapper's record of the child, or the write would name another child.
+    it.effect(
+      "updates a wrapped child named by its labelhash with its real label",
+      () =>
+        Effect.gen(function* () {
+          const fixtures = yield* Fixtures;
+          const { alice, carol } = (yield* Devnet).accounts;
+          const chain = yield* Chain;
+          const ens = (yield* Clients).make({ account: alice });
+          const { name } = fixtures.byId("v1.wrapped.sub");
+          const [label, ...rest] = Str.split(".")(name);
+          const encoded = `[${Str.slice(2)(labelhash(label))}].${Arr.join(rest, ".")}`;
+
+          yield* chain.isolated(
+            Effect.gen(function* () {
+              yield* Actions.subname.updateSync(ens, { name: encoded, owner: carol });
+              assert.strictEqual((yield* v1Owners(name)).wrapped?.[0], carol);
+            }),
+          );
+        }),
+      { meta: { cases: ["O10"] } },
     );
   });
 });

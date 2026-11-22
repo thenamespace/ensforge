@@ -16,9 +16,16 @@ import * as Impl from "./effect.js";
  *
  * - ENSv2: `unregister` in the parent's subregistry, which also clears the child's resolver and
  *   subregistry so nothing carries over to a later owner.
- * - ENSv1: owner and resolver are set to zero, from the parent when the signer owns it or is
- *   its operator, otherwise as the child's owner. Under an unwrapped parent the registry clears a wrapped
- *   child, which unwraps it.
+ * - ENSv1: owner and resolver are set to zero, from the parent when it can reach the child,
+ *   otherwise as the child's holder. A wrapped parent first wraps an unwrapped child to the
+ *   signer, since the NameWrapper only clears children it holds. Under an unwrapped parent, a
+ *   wrapped child is cleared in the registry: its token stays with its holder but controls
+ *   nothing, and the plan carries a `WRAPPER_TOKEN_STRANDED` warning.
+ * - When no route is allowed, it fails before anything is sent, naming the route the signer has
+ *   authority on.
+ * - An ENSv1 child with subnames of its own (expired ones included) fails with
+ *   `NAME_HAS_SUBNAMES` unless `allowOrphanedSubnames`: they would keep resolving. The check
+ *   needs an indexer; without one the plan carries a `SUBNAMES_UNCHECKED` warning.
  * - Under a Basenames or Linea name the same calls run on the L2.
  *
  * **Gotchas**
@@ -51,6 +58,7 @@ import * as Impl from "./effect.js";
  * @throws `Errors.InvalidInputError` (`INVALID_NAME`) for invalid input.
  * @throws `Errors.NameStateError` (`NAME_NOT_REGISTERED`, `NAME_EXTERNAL`, `NAME_EXPIRED`) when the child or parent does not exist, or its parent's namespace manages it outside ENS's registries.
  * @throws `Errors.NameStateError` (`NAME_RESERVED`, `NAME_UNREACHABLE`) when the parent is reserved or ENSv2 resolution no longer reaches it.
+ * @throws `Errors.NameStateError` (`NAME_HAS_SUBNAMES`) when the indexer knows subnames of an ENSv1 child, unless `allowOrphanedSubnames`.
  * @throws `Errors.UnauthorizedError` (`MISSING_ROLES`, `NOT_OWNER`, `FUSE_BURNED`) when the account may not remove it.
  * @throws `Errors.ConfigError` (`WALLET_NOT_CONFIGURED`) when no signing account is known.
  * @throws `Errors.ConfigError` (`CHAIN_NOT_CONFIGURED`) when the name lives on an L2 the client cannot reach.
@@ -75,6 +83,13 @@ export declare namespace remove {
   type Options = {
     /** Full name of the child. Normalized automatically. */
     name: string;
+    /**
+     * Remove an ENSv1 child that has subnames of its own. They stay in the registry and keep
+     * resolving.
+     *
+     * @default false
+     */
+    allowOrphanedSubnames?: boolean | undefined;
   };
   /** Submitted transaction hashes and the plan that produced them. */
   type ReturnType = Write.Result;
@@ -138,6 +153,7 @@ remove.estimateGas = Action.promiseOf(
  * @throws `Errors.InvalidInputError` (`INVALID_NAME`) for invalid input.
  * @throws `Errors.NameStateError` (`NAME_NOT_REGISTERED`, `NAME_EXTERNAL`, `NAME_EXPIRED`) when the child or parent does not exist, or its parent's namespace manages it outside ENS's registries.
  * @throws `Errors.NameStateError` (`NAME_RESERVED`, `NAME_UNREACHABLE`) when the parent is reserved or ENSv2 resolution no longer reaches it.
+ * @throws `Errors.NameStateError` (`NAME_HAS_SUBNAMES`) when the indexer knows subnames of an ENSv1 child, unless `allowOrphanedSubnames`.
  * @throws `Errors.UnauthorizedError` (`MISSING_ROLES`, `NOT_OWNER`, `FUSE_BURNED`) when the account may not remove it.
  * @throws `Errors.ConfigError` (`WALLET_NOT_CONFIGURED`) when no signing account is known.
  * @throws `Errors.ConfigError` (`CHAIN_NOT_CONFIGURED`) when the name lives on an L2 the client cannot reach.

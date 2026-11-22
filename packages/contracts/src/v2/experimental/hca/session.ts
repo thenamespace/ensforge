@@ -284,3 +284,41 @@ export const hcaDeploymentSalt = (options: {
       [options.userSalt ?? 0n, options.owner, options.implementation],
     ),
   );
+
+/**
+ * Refund ceilings for a new HCA session, sized like the ENS app's: four times a quoted gas
+ * overhead, between 500k and 100M gas, with $20k per ETH and 100 USDC per intent. Without a quote
+ * the overhead ceiling is 500k.
+ *
+ * **Details**
+ *
+ * - The overhead ceiling also bounds what a relayer may charge per intent, so size it from a
+ *   quote instead of raising it to the maximum.
+ *
+ * **Example** (Sizing caps from a quote)
+ *
+ * ```ts
+ * import { hcaRefundCaps } from "@ensforge/contracts/v2/experimental/hca"
+ *
+ * const caps = hcaRefundCaps(3_000_000n) // maxGasOverhead: 12_000_000n
+ * ```
+ *
+ * @stability experimental
+ * @since 1.2.0
+ */
+export const hcaRefundCaps = (
+  quotedGasOverhead?: bigint,
+): {
+  readonly maxExchangeRate: bigint;
+  readonly maxGasOverhead: bigint;
+  readonly maxAmount: bigint;
+} => {
+  const floor = 500_000n;
+  const ceiling = 100_000_000n;
+  const sized = (quotedGasOverhead ?? 0n) * 4n;
+  return {
+    maxExchangeRate: 20_000_000_000n,
+    maxGasOverhead: sized < floor ? floor : sized > ceiling ? ceiling : sized,
+    maxAmount: 100_000_000n,
+  };
+};

@@ -57,17 +57,27 @@ export declare namespace Plan {
     readonly description: string;
     readonly calls: readonly Call[];
     /**
-     * Chain time to wait after the previous step is confirmed before sending this one, e.g. the
-     * registration commitment age.
+     * Chain time to wait before sending this one, e.g. the registration commitment age: `seconds`
+     * after `since` (a chain timestamp), or after the block that confirmed the previous step.
      */
-    readonly waitFor?: { readonly seconds: bigint } | undefined;
+    readonly waitFor?:
+      | { readonly seconds: bigint; readonly since?: bigint | undefined }
+      | undefined;
     /** `signer`: the signer must send it itself, even through a route (e.g. a token approval). */
     readonly from?: "signer" | undefined;
+    /** Gas the step's calls are estimated to use, when the planner knows it (migrations). */
+    readonly gas?: bigint | undefined;
   };
 
   /** Something the account must have before the plan can succeed. */
   type Requirement =
-    | { readonly kind: "balance"; readonly amount: bigint; readonly token?: Address | undefined }
+    | {
+        readonly kind: "balance";
+        readonly amount: bigint;
+        readonly token?: Address | undefined;
+        /** Who must hold it: the account a route sends from, e.g. the HCA. @default the plan's account */
+        readonly account?: Address | undefined;
+      }
     | {
         readonly kind: "approval";
         readonly token: Address;

@@ -1,8 +1,9 @@
 import { Array as Arr, Effect, Option } from "effect";
 
+import { Abis } from "@ensforge/contracts";
 import type { Plan, Write } from "@ensforge/sdk";
-import type { Client } from "@ensforge/sdk/extension";
-import { isAddressEqual, type Address } from "viem";
+import { Rpc, type Client } from "@ensforge/sdk/extension";
+import { encodeFunctionData, isAddressEqual, type Address } from "viem";
 
 import { HcaError } from "./errors/classes/HcaError.js";
 import { owner as ownerExecutor } from "./executors/owner.js";
@@ -10,8 +11,9 @@ import { predictAddress, readAccount } from "./internal/account.js";
 import { tokenApprovals } from "./internal/approvals.js";
 import { deployCall, executeByOwnerCall, innerCalls } from "./internal/calls.js";
 import { requireHca } from "./internal/deployment.js";
+import { planFunding } from "./internal/funding.js";
 import { checkSessionCalls, sessionProblem } from "./internal/session.js";
-import type { ExecutionRequest, Executor, HcaSession } from "./types.js";
+import type { ExecutionRequest, Executor, HcaFunding, HcaSession } from "./types.js";
 
 /**
  * Options of {@link hca}.
@@ -30,10 +32,23 @@ export type HcaOptions = {
   executors?: readonly Executor[] | undefined;
   /** Run as this session (no owner prompts); needs an executor with sessions (`rhinestone()`). */
   session?: HcaSession | undefined;
+  /**
+   * Move what the HCA is short of from the owner's wallet: tokens its calls spend and the fees
+   * executors charge. `"auto"` adds an owner transfer, or for relaying executors a permit (signed
+   * while the plan is prepared, valid for `deadline` seconds) and a pull inside the first
+   * execution. `"none"` fails with `INSUFFICIENT_TOKEN_BALANCE` instead.
+   *
+   * @default "auto"
+   */
+  funding?: HcaFunding | undefined;
 };
 
 // Keeps one execution well inside a block's gas; the ENS app bounds its batches the same way.
+// A step without an estimate counts 200k per call, and `executeByOwner` adds its own overhead.
 const maxCallsPerExecution = 32;
+const maxGasPerExecution = 15_000_000n;
+const executionOverhead = 100_000n;
+const gasOf = (step: Plan.Step): bigint => step.gas ?? BigInt(step.calls.length) * 200_000n;
 
 const run = <value, failure>(effect: Effect.Effect<value, failure>): Promise<value> =>
   Effect.runPromise(effect);
@@ -62,6 +77,9 @@ const ownerOf = (context: Write.Via.Context): Address => {
  *
  * - The HCA runs the calls (`msg.sender`), so it needs authority over what they touch: migration
  *   and registration plan for it; other writes need the HCA to hold the roles they use.
+ * - When the HCA holds less than the calls spend plus the executor's quoted fees, the shortfall
+ *   moves from the owner's wallet (`funding`): an owner transfer, or a permit pull inside the
+ *   first relayed execution (warning `HCA_FUNDING`).
  * - With an EIP-5792 wallet the owner's steps (approvals, deployment, executions) share one bundle.
  * - Never selected implicitly: the user should agree to use their HCA.
  *
@@ -116,10 +134,16 @@ export const hca = (options: HcaOptions = {}): Write.Via => {
       );
     }
     if (session !== undefined) {
-      const problem = yield* sessionProblem(client, session);
-      if (problem !== undefined || !isAddressEqual(session.owner, owner)) {
+      const problem =
+        (yield* sessionProblem(client, session)) ??
+        (!isAddressEqual(session.owner, owner)
+          ? "another owner"
+          : !isAddressEqual(session.hca, account.address)
+            ? "another account"
+            : undefined);
+      if (problem !== undefined) {
         return yield* Effect.fail(
-          new HcaError({ code: "HCA_SESSION_INVALID", details: [problem ?? "another owner"] }),
+          new HcaError({ code: "HCA_SESSION_INVALID", details: [problem] }),
         );
       }
     }
@@ -136,8 +160,22 @@ export const hca = (options: HcaOptions = {}): Write.Via => {
         hca: account.address,
         baseRegistrar: v1?.baseRegistrar,
         nameWrapper: v1?.nameWrapper,
+        migrationHelper: client.deployment.v2?.migration.migrationHelper,
       },
     );
+    // MigrationHelper's NameWrapper approval is only for this migration: added when missing, and
+    // revoked once the names moved. An approval the owner already gave is left as it was.
+    const helper = client.deployment.v2?.migration.migrationHelper;
+    const addsHelperOperator =
+      approvals.helperOperator !== undefined &&
+      helper !== undefined &&
+      v1 !== undefined &&
+      !(yield* Rpc.readContract(client, {
+        address: v1.nameWrapper,
+        abi: Abis.v1.nameWrapper,
+        functionName: "isApprovedForAll",
+        args: [owner, helper],
+      }));
     if (approvals.wrapper) {
       warnings.push({
         code: "HCA_WRAPPER_APPROVAL",
@@ -156,6 +194,9 @@ export const hca = (options: HcaOptions = {}): Write.Via => {
           ]
         : []),
       ...approvals.calls,
+      ...(addsHelperOperator && approvals.helperOperator !== undefined
+        ? [approvals.helperOperator]
+        : []),
     ];
 
     // Consecutive HCA steps without a wait run as one atomic execution, up to a call budget.
@@ -176,6 +217,7 @@ export const hca = (options: HcaOptions = {}): Write.Via => {
         ),
         // The wallet funds its own executions; bundlers and intents spend the HCA's balance.
         calls: [executeByOwnerCall(account.address, calls, executor.send === undefined)],
+        gas: Arr.reduce(batch, executionOverhead, (total, member) => total + gasOf(member)),
         ...(first.waitFor === undefined ? {} : { waitFor: first.waitFor }),
       });
       batch = [];
@@ -188,50 +230,107 @@ export const hca = (options: HcaOptions = {}): Write.Via => {
       }
       if (session !== undefined) yield* checkSessionCalls(client, session, step.calls);
       const size = Arr.reduce(batch, 0, (total, member) => total + member.calls.length);
-      if (step.waitFor !== undefined || size + step.calls.length > maxCallsPerExecution) flush();
+      const gas = Arr.reduce(batch, executionOverhead, (total, member) => total + gasOf(member));
+      if (
+        step.waitFor !== undefined ||
+        size + step.calls.length > maxCallsPerExecution ||
+        gas + gasOf(step) > maxGasPerExecution
+      ) {
+        flush();
+      }
       batch.push(step);
     }
     flush();
-    if (setup.length > 0) {
-      steps.unshift({
-        id: "hca-setup",
-        description: "Set up your HCA",
-        calls: setup,
+
+    // Each HCA execution is its own intent with its own fee; only the first deploys the HCA.
+    const quote = executor.quote;
+    const executions = Arr.filter(steps, (step) => step.from !== "signer");
+    const quoted =
+      quote === undefined
+        ? undefined
+        : yield* Effect.forEach(
+            executions,
+            (step, index) =>
+              Effect.tryPromise({
+                try: () =>
+                  quote(
+                    {
+                      chainId: client.chain.id,
+                      hca: account.address,
+                      owner,
+                      deployed: account.deployed || index > 0,
+                      calls: Arr.flatMap(step.calls, (call) => innerCalls(call) ?? []),
+                      session,
+                      description: step.description,
+                    },
+                    context,
+                  ),
+                catch: (cause) =>
+                  cause instanceof HcaError
+                    ? cause
+                    : new HcaError({ code: "HCA_EXECUTION_FAILED", cause }),
+              }),
+            { concurrency: "unbounded" },
+          );
+    const fees = quoted === undefined ? plan.fees : Arr.flatten(quoted);
+
+    // What the HCA spends and pays in fees comes from the owner's wallet when the HCA is short.
+    const funding = yield* planFunding(client, {
+      plan,
+      owner,
+      hca: account.address,
+      fees: fees ?? [],
+      relayed: executor.send !== undefined,
+      session,
+      wallet: context.walletClient,
+      mode: options.funding ?? "auto",
+    });
+    const first = Arr.findFirstIndex(steps, (step) => step.from !== "signer");
+    const opening = Option.flatMap(first, (index) => Arr.get(steps, index));
+    if (funding.pulls.length > 0 && Option.isSome(first) && Option.isSome(opening)) {
+      const calls = [
+        ...funding.pulls,
+        ...Arr.flatMap(opening.value.calls, (call) => innerCalls(call) ?? []),
+      ];
+      if (session !== undefined) yield* checkSessionCalls(client, session, calls);
+      steps[first.value] = {
+        ...opening.value,
+        calls: [executeByOwnerCall(account.address, calls, false)],
+      };
+    }
+    warnings.push(...funding.warnings);
+    if (addsHelperOperator && helper !== undefined && v1 !== undefined) {
+      steps.push({
+        id: "hca-cleanup",
+        description: "Revoke MigrationHelper's NameWrapper approval",
+        calls: [
+          {
+            to: v1.nameWrapper,
+            data: encodeFunctionData({
+              abi: Abis.v1.nameWrapper,
+              functionName: "setApprovalForAll",
+              args: [helper, false],
+            }),
+            value: 0n,
+          },
+        ],
         from: "signer",
       });
     }
-
-    const quote = executor.quote;
-    const fees =
-      quote === undefined
-        ? plan.fees
-        : yield* Effect.tryPromise({
-            try: () =>
-              quote(
-                {
-                  chainId: client.chain.id,
-                  hca: account.address,
-                  owner,
-                  deployed: account.deployed,
-                  calls: Arr.flatMap(steps, (step) => {
-                    const [first] = step.calls;
-                    return first === undefined ? [] : (innerCalls(first) ?? []);
-                  }),
-                  session,
-                  description: plan.operation,
-                },
-                context,
-              ),
-            catch: (cause) =>
-              cause instanceof HcaError
-                ? cause
-                : new HcaError({ code: "HCA_EXECUTION_FAILED", cause }),
-          });
+    if (setup.length > 0 || funding.transfers.length > 0) {
+      steps.unshift({
+        id: "hca-setup",
+        description: "Set up your HCA",
+        calls: [...setup, ...funding.transfers],
+        from: "signer",
+      });
+    }
 
     return {
       ...plan,
       steps,
       calls: Arr.flatMap(steps, (step) => step.calls),
+      requirements: [...plan.requirements, ...funding.requirements],
       warnings,
       ...(fees === undefined ? {} : { fees }),
     } satisfies Plan;

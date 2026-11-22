@@ -68,8 +68,11 @@ export declare namespace link {
   type Options = {
     /** ENS name. Normalized automatically. */
     name: string;
-    /** Name or record ID to link to. */
-    to: string | { recordId: bigint };
+    /**
+     * Name or record ID to link to, or `null` to unlink: the name then gets an empty record of its
+     * own, while the records it shared stay with the other names.
+     */
+    to: string | { recordId: bigint } | null;
   };
   /** Submitted transaction hashes and the plan that produced them. */
   type ReturnType = Write.Result;

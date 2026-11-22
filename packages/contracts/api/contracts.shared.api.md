@@ -283,6 +283,8 @@ const erc1155Abi: Abi
   function setApprovalForAll(address,bool)
   function supportsInterface(bytes4) view returns (bool)
   function uri(uint256) view returns (string)
+const erc1155ReceiverAbi: Abi
+  function onERC1155Received(address,address,uint256,uint256,bytes) returns (bytes4)
 const erc165Abi: Abi
   function supportsInterface(bytes4) view returns (bool)
 const erc165InterfaceId: '0x01ffc9a7'
@@ -298,6 +300,11 @@ const erc20Abi: Abi
   function totalSupply() view returns (uint256)
   function transfer(address,uint256) returns (bool)
   function transferFrom(address,address,uint256) returns (bool)
+const erc2612Abi: Abi
+  function permit(address,address,uint256,uint256,uint8,bytes32,bytes32)
+  function nonces(address) view returns (uint256)
+  function version() view returns (string)
+  function eip712Domain() view returns (bytes1,string,string,uint256,address,bytes32,uint256[])
 const erc721Abi: Abi
   event Approval(address,address,uint256)
   event ApprovalForAll(address,address,bool)
@@ -336,6 +343,8 @@ const nameResolverAbi: Abi
   event NameChanged(bytes32,string)
   function name(bytes32) view returns (string)
 const nameResolverInterfaceId: '0x691f3431'
+const ownableAbi: Abi
+  function owner() view returns (address)
 const pubkeyResolverAbi: Abi
   event PubkeyChanged(bytes32,bytes32,bytes32)
   function pubkey(bytes32) view returns (bytes32,bytes32)

@@ -121,4 +121,38 @@ export type Executor = {
   readonly quote?:
     | ((request: ExecutionRequest, context: Write.Via.Context) => Promise<readonly Plan.Fee[]>)
     | undefined;
+  /**
+   * The gas refund an execution of `request` would carry, to size a new session's refund caps
+   * (`hca.authorizeSession({ executor })`); `undefined` when it carries none.
+   */
+  readonly quoteRefund?:
+    | ((request: ExecutionRequest, context: Write.Via.Context) => Promise<QuotedRefund | undefined>)
+    | undefined;
 };
+
+/**
+ * The gas refund an executor quotes for an execution: what the HCA pays the relayer, in a token.
+ *
+ * @stability experimental
+ * @category executors
+ * @since 1.2.0
+ */
+export type QuotedRefund = {
+  readonly token: Address;
+  /** Token units per unit of gas, scaled by 1e18. */
+  readonly exchangeRate: bigint;
+  /** Gas added to the measured gas when the refund is computed. */
+  readonly gasOverhead: bigint;
+  /** The most the relayer may take. */
+  readonly amount: bigint;
+};
+
+/**
+ * How `hca()` funds the HCA from the owner's wallet: automatically (`"auto"`, or with a permit
+ * `deadline` in seconds), or never (`"none"`).
+ *
+ * @stability experimental
+ * @category hca
+ * @since 1.2.0
+ */
+export type HcaFunding = "auto" | "none" | { readonly deadline?: number | undefined };

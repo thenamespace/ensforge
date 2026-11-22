@@ -7,6 +7,10 @@ const defaults: {
     shortMessage: `The name${o.resource === undefined ? "" : ` ${o.resource}`} has no resolver.`,
     hint: "Set one with resolver.set.",
   }),
+  RESOLVER_NOT_DEPLOYED: (o: NotFoundError.Options) => ({
+    shortMessage: `No contract is deployed at the resolver address${o.resource === undefined ? "" : ` ${o.resource}`}.`,
+    hint: "Deploy it first, for example with resolver.create, or pass another resolver.",
+  }),
   RECORD_NOT_FOUND: (o: NotFoundError.Options) => ({
     shortMessage: `The record${o.resource === undefined ? "" : ` ${o.resource}`} is not set.`,
   }),
@@ -43,6 +47,7 @@ export class NotFoundError extends EnsforgeError<"NotFoundError", NotFoundError.
 export declare namespace NotFoundError {
   type Code =
     | "RESOLVER_NOT_FOUND"
+    | "RESOLVER_NOT_DEPLOYED"
     | "RECORD_NOT_FOUND"
     | "PRIMARY_NAME_NOT_SET"
     | "PRIMARY_NAME_MISMATCH"

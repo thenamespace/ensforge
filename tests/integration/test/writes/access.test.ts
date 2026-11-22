@@ -24,6 +24,45 @@ import { onProfile } from "../support/lane.ts";
 describe("access writes", () => {
   onProfile("mainnet-shaped")("mainnet-shaped", (it) => {
     it.effect(
+      "writes the missing forward address with ensureForward, instead of refusing",
+      () =>
+        Effect.gen(function* () {
+          const fixtures = yield* Fixtures;
+          const { alice, bob } = (yield* Devnet).accounts;
+          const chain = yield* Chain;
+          const ens = (yield* Clients).make({ account: alice });
+          const name = fixtures.byId("records.v1").name;
+
+          yield* chain.isolated(
+            Effect.gen(function* () {
+              yield* Actions.record.setSync(ens, { name, addresses: { eth: bob } });
+              yield* expectFailure(Actions.primaryName.set(ens, { name }), {
+                _tag: "NotFoundError",
+                code: "PRIMARY_NAME_MISMATCH",
+              });
+
+              yield* Actions.primaryName.setSync(ens, { name, ensureForward: true });
+              const address = yield* Actions.record.getAddress(ens, { name });
+              assert.strictEqual(address, alice);
+              const primary = yield* Actions.primaryName.get(ens, { address: alice });
+              assert.strictEqual(primary, name);
+            }),
+          );
+          // Without a resolver there is nowhere to write the address.
+          yield* chain.isolated(
+            Effect.gen(function* () {
+              yield* Actions.resolver.setSync(ens, { name, resolver: null });
+              yield* expectFailure(Actions.primaryName.set(ens, { name, ensureForward: true }), {
+                _tag: "NotFoundError",
+                code: "RESOLVER_NOT_FOUND",
+              });
+            }),
+          );
+        }),
+      { meta: { cases: ["P01"] } },
+    );
+
+    it.effect(
       "sets and clears a primary name",
       () =>
         Effect.gen(function* () {
@@ -49,6 +88,43 @@ describe("access writes", () => {
           );
         }),
       { meta: { cases: ["M:C3", "P02"] } },
+    );
+
+    // On Ethereum an `addr.reverse` entry with a resolver hides the default name, even empty.
+    it.effect(
+      "falls back to the default name once the Ethereum name is cleared",
+      () =>
+        Effect.gen(function* () {
+          const fixtures = yield* Fixtures;
+          const { alice } = (yield* Devnet).accounts;
+          const chain = yield* Chain;
+          const ens = (yield* Clients).make({ account: alice });
+          const fallback = fixtures.byId("records.v1").name;
+          const ethereum = fixtures.byId("v2.registered").name;
+          const expectPrimaryName = (expected: string | null) =>
+            Effect.map(Actions.primaryName.get(ens, { address: alice, verify: false }), (name) =>
+              assert.strictEqual(name, expected),
+            );
+
+          yield* chain.isolated(
+            Effect.gen(function* () {
+              yield* Actions.primaryName.setSync(ens, { name: fallback, coin: "default" });
+              yield* Actions.primaryName.setSync(ens, { name: ethereum, verify: false });
+              yield* expectPrimaryName(ethereum);
+
+              yield* Actions.primaryName.setSync(ens, { name: null });
+              yield* expectPrimaryName(fallback);
+
+              // Setting the default again keeps it visible; clearing all removes both.
+              yield* Actions.primaryName.setSync(ens, { name: ethereum, verify: false });
+              yield* Actions.primaryName.setSync(ens, { name: fallback, coin: "default" });
+              yield* expectPrimaryName(fallback);
+              yield* Actions.primaryName.setSync(ens, { name: null, coin: "all" });
+              yield* expectPrimaryName(null);
+            }),
+          );
+        }),
+      { meta: { cases: ["P02"] } },
     );
 
     // LabelStore is no Ownable; it delegates `isContractNamer` to the shared ContractNamer, which
@@ -432,6 +508,97 @@ describe("access writes", () => {
           );
         }),
       { meta: { cases: ["W33", "W34"] } },
+    );
+
+    it.effect(
+      "refuses to revoke canTransferAdmin from the owner, which would freeze the name",
+      () =>
+        Effect.gen(function* () {
+          const fixtures = yield* Fixtures;
+          const { alice, bob } = (yield* Devnet).accounts;
+          const chain = yield* Chain;
+          const ens = (yield* Clients).make({ account: alice });
+          const name = fixtures.byId("v2.registered").name;
+          const revoke = {
+            name,
+            target: "registry",
+            holder: alice,
+            roles: ["canTransferAdmin"],
+          } as const;
+
+          yield* expectFailure(Actions.role.revoke.prepare(ens, revoke), {
+            _tag: "InvalidInputError",
+            code: "INVALID_ROLES",
+          });
+          // Admin roles cannot be granted on a name again: nobody can transfer it until it expires.
+          yield* chain.isolated(
+            Effect.gen(function* () {
+              yield* Actions.role.revokeSync(ens, { ...revoke, allowIrreversible: true });
+              yield* expectFailure(Actions.name.transferSync(ens, { name, to: bob }), {
+                _tag: "UnauthorizedError",
+                code: "TRANSFER_DISALLOWED",
+              });
+            }),
+          );
+        }),
+      { meta: { cases: ["W33"] } },
+    );
+
+    it.effect(
+      "refuses role names and contracts of the other kind before sending",
+      () =>
+        Effect.gen(function* () {
+          const devnet = yield* Devnet;
+          const { alice } = devnet.accounts;
+          const chain = yield* Chain;
+          const ens = (yield* Clients).make({ account: alice });
+          const registry = devnet.contract("v2.ethRegistry");
+
+          yield* chain.isolated(
+            Effect.gen(function* () {
+              const { resolver } = yield* Actions.resolver.createSync(ens, {});
+              // The devnet's registry and PermissionedResolver report their kind (ERC-165).
+              yield* Actions.role.grant.prepare(ens, {
+                grantee: alice,
+                roles: ["renew"],
+                target: "registry",
+                contract: registry,
+                root: true,
+              });
+              yield* Actions.role.grant.prepare(ens, {
+                grantee: alice,
+                roles: ["setText"],
+                target: "resolver",
+                contract: resolver,
+                root: true,
+              });
+
+              // `setAddr` is bit 0, the registry's `registrar` role.
+              yield* expectFailure(
+                Actions.role.grant.prepare(ens, {
+                  grantee: alice,
+                  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- a resolver role name, which the registry options reject
+                  roles: ["setAddr"] as unknown as ["renew"],
+                  target: "registry",
+                  contract: registry,
+                  root: true,
+                }),
+                { _tag: "InvalidInputError", code: "INVALID_ROLES" },
+              );
+              yield* expectFailure(
+                Actions.role.grant.prepare(ens, {
+                  grantee: alice,
+                  roles: ["setText"],
+                  target: "resolver",
+                  contract: registry,
+                  root: true,
+                }),
+                { _tag: "InvalidInputError", code: "INVALID_ADDRESS" },
+              );
+            }),
+          );
+        }),
+      { meta: { cases: ["W33"] } },
     );
 
     it.effect(

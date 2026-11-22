@@ -61,9 +61,10 @@ import type { renew as renewTypes, renewSync as renewSyncTypes } from "./renew/i
  * yield* Actions.registration.commit(ens, { names: "alice.eth", duration: 31536000n })
  * ```
  *
- * @throws `Errors.InvalidInputError` (`INVALID_NAME`, `INVALID_ADDRESS`, `DURATION_TOO_SHORT`, `INVALID_RECORD_VALUE`) for invalid input.
+ * @throws `Errors.InvalidInputError` (`INVALID_NAME`, `INVALID_ADDRESS`, `INVALID_DURATION`, `DURATION_TOO_SHORT`, `INVALID_RECORD_VALUE`) for invalid input, including a zero owner or a duration over 100 years.
  * @throws `Errors.NameStateError` (`NAME_NOT_AVAILABLE`) when a name is taken or in its grace period.
- * @throws `Errors.CommitmentError` (`COMMITMENT_TOO_NEW`, `COMMITMENT_TOO_OLD`, `COMMITMENT_EXISTS`) for a resumed commitment outside its window.
+ * @throws `Errors.NotFoundError` (`RESOLVER_NOT_DEPLOYED`, `REGISTRY_NOT_FOUND`) when no contract is deployed at the given resolver or subregistry.
+ * @throws `Errors.CommitmentError` (`COMMITMENT_EXISTS`) when every name already has a commitment that has not expired.
  * @throws `Errors.UnsupportedError` (`PAYMENT_TOKEN_UNSUPPORTED`, `UNSUPPORTED_ON_DEPLOYMENT`) for an unaccepted token or without ENSv2.
  * @throws `Errors.ConfigError` (`WALLET_NOT_CONFIGURED`) when no signing account is known.
  * @throws `Errors.UserRejectedError` (`USER_REJECTED`) when the user rejects the request.
@@ -119,9 +120,10 @@ export declare namespace commit {
  * yield* Actions.registration.commitSync(ens, { names: "alice.eth", duration: 31536000n })
  * ```
  *
- * @throws `Errors.InvalidInputError` (`INVALID_NAME`, `INVALID_ADDRESS`, `DURATION_TOO_SHORT`, `INVALID_RECORD_VALUE`) for invalid input.
+ * @throws `Errors.InvalidInputError` (`INVALID_NAME`, `INVALID_ADDRESS`, `INVALID_DURATION`, `DURATION_TOO_SHORT`, `INVALID_RECORD_VALUE`) for invalid input, including a zero owner or a duration over 100 years.
  * @throws `Errors.NameStateError` (`NAME_NOT_AVAILABLE`) when a name is taken or in its grace period.
- * @throws `Errors.CommitmentError` (`COMMITMENT_TOO_NEW`, `COMMITMENT_TOO_OLD`, `COMMITMENT_EXISTS`) for a resumed commitment outside its window.
+ * @throws `Errors.NotFoundError` (`RESOLVER_NOT_DEPLOYED`, `REGISTRY_NOT_FOUND`) when no contract is deployed at the given resolver or subregistry.
+ * @throws `Errors.CommitmentError` (`COMMITMENT_EXISTS`) when every name already has a commitment that has not expired.
  * @throws `Errors.UnsupportedError` (`PAYMENT_TOKEN_UNSUPPORTED`, `UNSUPPORTED_ON_DEPLOYMENT`) for an unaccepted token or without ENSv2.
  * @throws `Errors.ConfigError` (`WALLET_NOT_CONFIGURED`) when no signing account is known.
  * @throws `Errors.TransactionError` (`TRANSACTION_REVERTED`, `RECEIPT_TIMEOUT`, `NONCE_CONFLICT`) when confirmation fails or the wallet's nonce is already used.
@@ -443,14 +445,26 @@ export declare namespace isAvailable {
  * - The approval covers the quote plus 2%, since the price is charged at `register` and can drift
  *   (e.g. a decaying premium); only the actual price is paid.
  * - Paid in ERC-20 (USDC by default); the registrar does not accept ETH.
- * - By default each name gets its own PermissionedResolver with `records` written at creation; its
- *   ETH address defaults to the owner (`addresses: { eth: null }` leaves it unset).
+ * - By default a name the signer owns goes on the signer's shared PermissionedResolver (one per
+ *   wallet, at the ENS app's address), deployed once with the first registration; `records` are
+ *   written there after `register`. A name for another owner gets its own PermissionedResolver,
+ *   with `records` written at creation. The ETH address defaults to the owner
+ *   (`addresses: { eth: null }` leaves it unset).
+ * - A primary name is the owner's default name (`default.reverse`); an `addr.reverse` entry with
+ *   another name, which would hide it on Ethereum, is cleared.
+ * - Through `via: hca()` the reveal is one HCA execution: the payment approval, the registrations,
+ *   the shared resolver (deployed by the HCA, writable by the HCA and the owner), its records,
+ *   the primary name, and the approval reset to zero. Only the commit comes before the wait.
  * - The result's `secret` resumes an interrupted registration: call again with the same options and `secret`.
+ *   A commitment that is not ready yet is waited for; one that expired is made again, with the
+ *   plan warning `COMMITMENT_RECOMMITTED`.
  *
  * **Gotchas**
  *
  * - Resolves after the last transaction is submitted, at least a minute after the commit.
- * - Resuming needs exactly the same options: they are part of the commitment.
+ * - Resuming needs exactly the same options: they are part of the commitment. A commitment made
+ *   by ensforge 1.1 with the default resolver needs `resolver: "new"` to be revealed; without it
+ *   `register` commits again.
  *
  * **Example** (Registering a name)
  *
@@ -474,10 +488,10 @@ export declare namespace isAvailable {
  * yield* Actions.registration.register(ens, { names: "alice.eth", duration: 31536000n, records: { texts: { url: "https://alice.dev" } } })
  * ```
  *
- * @throws `Errors.InvalidInputError` (`INVALID_NAME`, `INVALID_ADDRESS`, `DURATION_TOO_SHORT`, `INVALID_RECORD_VALUE`) for invalid input.
+ * @throws `Errors.InvalidInputError` (`INVALID_NAME`, `INVALID_ADDRESS`, `INVALID_DURATION`, `DURATION_TOO_SHORT`, `INVALID_RECORD_VALUE`) for invalid input, including a zero owner or a duration over 100 years.
  * @throws `Errors.NameStateError` (`NAME_NOT_AVAILABLE`) when a name is taken or in its grace period.
- * @throws `Errors.CommitmentError` (`COMMITMENT_TOO_NEW`, `COMMITMENT_TOO_OLD`, `COMMITMENT_EXISTS`) for a resumed commitment outside its window.
- * @throws `Errors.InsufficientFundsError` (`INSUFFICIENT_TOKEN_BALANCE`) when the signer cannot pay in the payment token.
+ * @throws `Errors.NotFoundError` (`RESOLVER_NOT_DEPLOYED`, `REGISTRY_NOT_FOUND`) when no contract is deployed at the given resolver or subregistry.
+ * @throws `Errors.InsufficientFundsError` (`INSUFFICIENT_TOKEN_BALANCE`) when the signer (with a route, its account and the signer together) cannot pay in the payment token.
  * @throws `Errors.UnsupportedError` (`PAYMENT_TOKEN_UNSUPPORTED`, `UNSUPPORTED_ON_DEPLOYMENT`) for an unaccepted token or without ENSv2.
  * @throws `Errors.ConfigError` (`WALLET_NOT_CONFIGURED`) when no signing account is known.
  * @throws `Errors.UserRejectedError` (`USER_REJECTED`) when the user rejects the request.
@@ -536,10 +550,10 @@ export declare namespace register {
  * yield* Actions.registration.registerSync(ens, { names: "alice.eth", duration: 31536000n, records: { texts: { url: "https://alice.dev" } } })
  * ```
  *
- * @throws `Errors.InvalidInputError` (`INVALID_NAME`, `INVALID_ADDRESS`, `DURATION_TOO_SHORT`, `INVALID_RECORD_VALUE`) for invalid input.
+ * @throws `Errors.InvalidInputError` (`INVALID_NAME`, `INVALID_ADDRESS`, `INVALID_DURATION`, `DURATION_TOO_SHORT`, `INVALID_RECORD_VALUE`) for invalid input, including a zero owner or a duration over 100 years.
  * @throws `Errors.NameStateError` (`NAME_NOT_AVAILABLE`) when a name is taken or in its grace period.
- * @throws `Errors.CommitmentError` (`COMMITMENT_TOO_NEW`, `COMMITMENT_TOO_OLD`, `COMMITMENT_EXISTS`) for a resumed commitment outside its window.
- * @throws `Errors.InsufficientFundsError` (`INSUFFICIENT_TOKEN_BALANCE`) when the signer cannot pay in the payment token.
+ * @throws `Errors.NotFoundError` (`RESOLVER_NOT_DEPLOYED`, `REGISTRY_NOT_FOUND`) when no contract is deployed at the given resolver or subregistry.
+ * @throws `Errors.InsufficientFundsError` (`INSUFFICIENT_TOKEN_BALANCE`) when the signer (with a route, its account and the signer together) cannot pay in the payment token.
  * @throws `Errors.UnsupportedError` (`PAYMENT_TOKEN_UNSUPPORTED`, `UNSUPPORTED_ON_DEPLOYMENT`) for an unaccepted token or without ENSv2.
  * @throws `Errors.ConfigError` (`WALLET_NOT_CONFIGURED`) when no signing account is known.
  * @throws `Errors.TransactionError` (`TRANSACTION_REVERTED`, `RECEIPT_TIMEOUT`, `NONCE_CONFLICT`) when confirmation fails or the wallet's nonce is already used.
@@ -576,6 +590,12 @@ export declare namespace registerSync {
  * - Token approvals are added for each contract whose allowance is short.
  * - Anyone can renew any name; the payer is the signer.
  * - A name listed twice is renewed once, for `duration`.
+ * - `until` renews each name up to one expiry instead: names already reaching it are skipped
+ *   (warning `NAME_ALREADY_RENEWED`), so retrying after a failure never pays twice.
+ * - A name in its grace period must end up at least a day past now; a shorter renewal would be
+ *   paid and leave it expired, so it fails with `DURATION_TOO_SHORT` before anything is sent.
+ * - Approvals are for the exact price. Each `renewBatch` call (25 names at most) is its own step,
+ *   so a resumed plan does not renew a mined chunk again.
  *
  * **Example** (Renewing names)
  *
@@ -599,8 +619,8 @@ export declare namespace registerSync {
  * yield* Actions.registration.renew(ens, { names: ["alice.eth", "bob.eth"], duration: 31536000n })
  * ```
  *
- * @throws `Errors.InvalidInputError` (`INVALID_NAME`, `INVALID_ADDRESS`, `DURATION_TOO_SHORT`) for invalid input.
- * @throws `Errors.NameStateError` (`NAME_NOT_RENEWABLE`) when a name is neither registered nor in its grace period.
+ * @throws `Errors.InvalidInputError` (`INVALID_NAME`, `INVALID_ADDRESS`, `INVALID_DURATION`, `DURATION_TOO_SHORT`, `INVALID_EXPIRY`) for invalid input, a duration over 100 years, a renewal that leaves a name expired, or an `until` in the past.
+ * @throws `Errors.NameStateError` (`NAME_NOT_RENEWABLE`, `NAME_ALREADY_RENEWED`) when a name is neither registered nor in its grace period, or every name already reaches `until`.
  * @throws `Errors.InsufficientFundsError` (`INSUFFICIENT_TOKEN_BALANCE`) when the signer cannot pay in the payment token.
  * @throws `Errors.UnsupportedError` (`PAYMENT_TOKEN_UNSUPPORTED`, `UNSUPPORTED_ON_DEPLOYMENT`) for an unaccepted token or without ENSv2.
  * @throws `Errors.ConfigError` (`WALLET_NOT_CONFIGURED`) when no signing account is known.
@@ -656,8 +676,8 @@ export declare namespace renew {
  * yield* Actions.registration.renewSync(ens, { names: ["alice.eth", "bob.eth"], duration: 31536000n })
  * ```
  *
- * @throws `Errors.InvalidInputError` (`INVALID_NAME`, `INVALID_ADDRESS`, `DURATION_TOO_SHORT`) for invalid input.
- * @throws `Errors.NameStateError` (`NAME_NOT_RENEWABLE`) when a name is neither registered nor in its grace period.
+ * @throws `Errors.InvalidInputError` (`INVALID_NAME`, `INVALID_ADDRESS`, `INVALID_DURATION`, `DURATION_TOO_SHORT`, `INVALID_EXPIRY`) for invalid input, a duration over 100 years, a renewal that leaves a name expired, or an `until` in the past.
+ * @throws `Errors.NameStateError` (`NAME_NOT_RENEWABLE`, `NAME_ALREADY_RENEWED`) when a name is neither registered nor in its grace period, or every name already reaches `until`.
  * @throws `Errors.InsufficientFundsError` (`INSUFFICIENT_TOKEN_BALANCE`) when the signer cannot pay in the payment token.
  * @throws `Errors.UnsupportedError` (`PAYMENT_TOKEN_UNSUPPORTED`, `UNSUPPORTED_ON_DEPLOYMENT`) for an unaccepted token or without ENSv2.
  * @throws `Errors.ConfigError` (`WALLET_NOT_CONFIGURED`) when no signing account is known.

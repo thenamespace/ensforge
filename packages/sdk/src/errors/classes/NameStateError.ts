@@ -14,9 +14,17 @@ const defaults: {
   NAME_RESERVED: () => ({ shortMessage: "The name is reserved." }),
   NAME_EXPIRED: () => ({ shortMessage: "The name has expired." }),
   NAME_NOT_RENEWABLE: () => ({ shortMessage: "The name cannot be renewed." }),
+  NAME_ALREADY_RENEWED: () => ({
+    shortMessage: "Every name already expires at or after `until`.",
+    hint: "Nothing is left to renew; a retry with the same `until` renews only names still short of it.",
+  }),
   NAME_LOCKED: () => ({ shortMessage: "The name is locked." }),
   NAME_NOT_WRAPPED: () => ({ shortMessage: "The name is not wrapped in the NameWrapper." }),
   NAME_WRAPPED: () => ({ shortMessage: "The name is already wrapped in the NameWrapper." }),
+  NAME_HAS_SUBNAMES: () => ({
+    shortMessage: "The name has subnames, which would keep resolving without it.",
+    hint: "Remove its subnames first, or pass `allowOrphanedSubnames: true`.",
+  }),
   NAME_UNREACHABLE: () => ({
     shortMessage: "ENSv2 resolution no longer reaches this ENSv1 name.",
     hint: "ENSv2 resolves it elsewhere: an ancestor moved to ENSv2 without it, or ENSv2 holds no reservation for it. Ask the parent's owner to recreate it there.",
@@ -27,6 +35,10 @@ const defaults: {
   }),
   PARENT_NOT_MIGRATED: () => ({
     shortMessage: "The parent name has not been migrated to ENSv2.",
+  }),
+  SUBREGISTRY_EXISTS: () => ({
+    shortMessage: "The name already has a subregistry; replacing it orphans every subname in it.",
+    hint: "Pass `replace: true` to replace it anyway.",
   }),
   REGISTRY_NOT_EMANCIPATED: () => ({
     shortMessage: "The registry is not emancipated, so this transfer is unsafe.",
@@ -54,12 +66,15 @@ export declare namespace NameStateError {
     | "NAME_RESERVED"
     | "NAME_EXPIRED"
     | "NAME_NOT_RENEWABLE"
+    | "NAME_ALREADY_RENEWED"
     | "NAME_LOCKED"
     | "NAME_NOT_WRAPPED"
     | "NAME_WRAPPED"
+    | "NAME_HAS_SUBNAMES"
     | "NAME_UNREACHABLE"
     | "NAME_REQUIRES_MIGRATION"
     | "PARENT_NOT_MIGRATED"
-    | "REGISTRY_NOT_EMANCIPATED";
+    | "REGISTRY_NOT_EMANCIPATED"
+    | "SUBREGISTRY_EXISTS";
   type Options = EnsforgeError.ClassOptions<Code>;
 }

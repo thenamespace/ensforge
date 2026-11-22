@@ -7,7 +7,7 @@ import { expectFailure } from "@ensforge/test-harness";
 import { decodeFunctionData, getAddress, zeroAddress } from "viem";
 import { namehash } from "viem/ens";
 
-import { clientFor, decodeCalls, resolverA, signer, v2Registry } from "../world.js";
+import { clientFor, decodeCalls, other, resolverA, signer, v2Registry } from "../world.js";
 
 const name = "alice.eth";
 const node = namehash(name);
@@ -86,6 +86,7 @@ describe("record.set.prepare", () => {
         name,
         resolver: resolverA,
         texts: { url: "x" },
+        clear: false,
       });
 
       assert.deepStrictEqual(
@@ -98,6 +99,30 @@ describe("record.set.prepare", () => {
           [resolverA, "setText", [node, "url", "x"]],
           [v2Registry, "setResolver", [7n, resolverA]],
         ],
+      );
+    }),
+  );
+
+  // Regression: the new resolver's old records for the name stayed, mixed with the new ones.
+  it.effect("clears what the new resolver holds for the name, unless `clear: false`", () =>
+    Effect.gen(function* () {
+      const { ens } = clientFor({ name, v2: { owner: signer, tokenId: 7n } });
+
+      const plan = yield* Actions.record.set.prepare(ens, {
+        name,
+        resolver: resolverA,
+        texts: { url: "x" },
+      });
+
+      const [records] = plan.calls;
+      const decoded = decodeFunctionData({
+        abi: Abis.shared.multicallResolver,
+        data: records?.data ?? "0x",
+      });
+      const [first] = decoded.args?.[0] ?? [];
+      assert.strictEqual(
+        decodeFunctionData({ abi: Abis.v1.publicResolver, data: first ?? "0x" }).functionName,
+        "clearRecords",
       );
     }),
   );
@@ -153,5 +178,17 @@ describe("record.set.prepare", () => {
         );
       }),
     { meta: { cases: ["K06", "K07", "K24"] } },
+  );
+
+  // Writes to an address without code succeed and do nothing.
+  it.effect("refuses a resolver address without a contract", () =>
+    expectFailure(
+      Actions.record.set.prepare(clientFor({ name: "alice.eth", v1: { owner: signer } }).ens, {
+        name: "alice.eth",
+        resolver: other,
+        texts: { url: "https://alice.example" },
+      }),
+      { _tag: "NotFoundError", code: "RESOLVER_NOT_DEPLOYED" },
+    ),
   );
 });

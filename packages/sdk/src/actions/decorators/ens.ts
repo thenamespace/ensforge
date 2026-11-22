@@ -301,6 +301,19 @@ const wrapperOnDemand = (client: Client<object>): WrapperActions => ({
     ),
     setFusesSync: (options) =>
       loadWrapper().then((actions) => actions.setFusesSync(client, options)),
+    sync: Object.assign(
+      (options: Parameters<typeof wrapper.sync>[1]) =>
+        loadWrapper().then((actions) => actions.sync(client, options)),
+      {
+        prepare: (options: Parameters<typeof wrapper.sync.prepare>[1]) =>
+          loadWrapper().then((actions) => actions.sync.prepare(client, options)),
+        simulate: (options: Parameters<typeof wrapper.sync.simulate>[1]) =>
+          loadWrapper().then((actions) => actions.sync.simulate(client, options)),
+        estimateGas: (options: Parameters<typeof wrapper.sync.estimateGas>[1]) =>
+          loadWrapper().then((actions) => actions.sync.estimateGas(client, options)),
+      },
+    ),
+    syncSync: (options) => loadWrapper().then((actions) => actions.syncSync(client, options)),
     unwrap: Object.assign(
       (options: Parameters<typeof wrapper.unwrap>[1]) =>
         loadWrapper().then((actions) => actions.unwrap(client, options)),

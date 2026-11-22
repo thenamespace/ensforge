@@ -168,8 +168,9 @@ export declare namespace addDepositSync {
  *   session), set the owner's primary name and approve registration payments.
  * - It stays valid until `validUntil` or until the owner calls `revokeSessions`. Store the
  *   returned session; it holds no secret.
- * - Refund ceilings default to the ENS app's: $20k per ETH, 500k gas of overhead, 100 USDC per
- *   intent.
+ * - Refund ceilings default to the ENS app's: $20k per ETH and 100 USDC per intent. The gas
+ *   overhead ceiling is four times what `executor` quotes for a commit (500k to 100M gas), or
+ *   500k without an executor or a quote.
  *
  * **Example** (Authorizing a session)
  *
@@ -194,8 +195,8 @@ export declare namespace addDepositSync {
  * ```
  *
  * @throws `Errors.UserRejectedError` (`USER_REJECTED`) when the owner declines.
- * @throws `Errors.InvalidInputError` (`INVALID_ADDRESS`) for invalid addresses.
- * @throws `Errors.HcaError` (`HCA_UNAVAILABLE`) on chains without an HCA deployment.
+ * @throws `Errors.InvalidInputError` (`INVALID_ADDRESS`, `INVALID_RECORD_VALUE`) for invalid addresses, or refund caps the validator cannot store.
+ * @throws `Errors.HcaError` (`HCA_UNAVAILABLE`) on chains without an HCA deployment, or whose session domain ensforge cannot sign.
  *
  * @stability experimental
  * @category hca
@@ -743,8 +744,9 @@ export declare namespace predictAddress {
  *
  * **Details**
  *
- * - Bumps the HCA's session nonce; must be the owner's own transaction (never routed through the
- *   HCA).
+ * - Bumps the HCA's session nonce; always the owner's own transaction, so `via` is ignored.
+ * - An HCA that is not deployed yet is deployed first: a session signed for it would become
+ *   usable as soon as anyone deployed it. The plan carries the warning `HCA_DEPLOYED`.
  *
  * **Example** (Revoking every session)
  *
@@ -768,7 +770,6 @@ export declare namespace predictAddress {
  * yield* Actions.hca.revokeSessions(ens, {})
  * ```
  *
- * @throws `Errors.HcaError` (`HCA_NOT_VERIFIED`) when the HCA is not deployed.
  * @throws `Errors.HcaError` (`HCA_UNAVAILABLE`) on chains without an HCA deployment.
  *
  * @stability experimental
@@ -822,7 +823,6 @@ export declare namespace revokeSessions {
  * yield* Actions.hca.revokeSessionsSync(ens, {})
  * ```
  *
- * @throws `Errors.HcaError` (`HCA_NOT_VERIFIED`) when the HCA is not deployed.
  * @throws `Errors.HcaError` (`HCA_UNAVAILABLE`) on chains without an HCA deployment.
  * @throws `Errors.TransactionError` (`TRANSACTION_REVERTED`, `RECEIPT_TIMEOUT`) when confirmation fails.
  *

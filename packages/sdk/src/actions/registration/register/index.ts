@@ -24,14 +24,26 @@ import * as Impl from "./effect.js";
  * - The approval covers the quote plus 2%, since the price is charged at `register` and can drift
  *   (e.g. a decaying premium); only the actual price is paid.
  * - Paid in ERC-20 (USDC by default); the registrar does not accept ETH.
- * - By default each name gets its own PermissionedResolver with `records` written at creation; its
- *   ETH address defaults to the owner (`addresses: { eth: null }` leaves it unset).
+ * - By default a name the signer owns goes on the signer's shared PermissionedResolver (one per
+ *   wallet, at the ENS app's address), deployed once with the first registration; `records` are
+ *   written there after `register`. A name for another owner gets its own PermissionedResolver,
+ *   with `records` written at creation. The ETH address defaults to the owner
+ *   (`addresses: { eth: null }` leaves it unset).
+ * - A primary name is the owner's default name (`default.reverse`); an `addr.reverse` entry with
+ *   another name, which would hide it on Ethereum, is cleared.
+ * - Through `via: hca()` the reveal is one HCA execution: the payment approval, the registrations,
+ *   the shared resolver (deployed by the HCA, writable by the HCA and the owner), its records,
+ *   the primary name, and the approval reset to zero. Only the commit comes before the wait.
  * - The result's `secret` resumes an interrupted registration: call again with the same options and `secret`.
+ *   A commitment that is not ready yet is waited for; one that expired is made again, with the
+ *   plan warning `COMMITMENT_RECOMMITTED`.
  *
  * **Gotchas**
  *
  * - Resolves after the last transaction is submitted, at least a minute after the commit.
- * - Resuming needs exactly the same options: they are part of the commitment.
+ * - Resuming needs exactly the same options: they are part of the commitment. A commitment made
+ *   by ensforge 1.1 with the default resolver needs `resolver: "new"` to be revealed; without it
+ *   `register` commits again.
  *
  * **Example** (Registering a name)
  *
@@ -55,10 +67,10 @@ import * as Impl from "./effect.js";
  * yield* Actions.registration.register(ens, { names: "alice.eth", duration: 31536000n, records: { texts: { url: "https://alice.dev" } } })
  * ```
  *
- * @throws `Errors.InvalidInputError` (`INVALID_NAME`, `INVALID_ADDRESS`, `DURATION_TOO_SHORT`, `INVALID_RECORD_VALUE`) for invalid input.
+ * @throws `Errors.InvalidInputError` (`INVALID_NAME`, `INVALID_ADDRESS`, `INVALID_DURATION`, `DURATION_TOO_SHORT`, `INVALID_RECORD_VALUE`) for invalid input, including a zero owner or a duration over 100 years.
  * @throws `Errors.NameStateError` (`NAME_NOT_AVAILABLE`) when a name is taken or in its grace period.
- * @throws `Errors.CommitmentError` (`COMMITMENT_TOO_NEW`, `COMMITMENT_TOO_OLD`, `COMMITMENT_EXISTS`) for a resumed commitment outside its window.
- * @throws `Errors.InsufficientFundsError` (`INSUFFICIENT_TOKEN_BALANCE`) when the signer cannot pay in the payment token.
+ * @throws `Errors.NotFoundError` (`RESOLVER_NOT_DEPLOYED`, `REGISTRY_NOT_FOUND`) when no contract is deployed at the given resolver or subregistry.
+ * @throws `Errors.InsufficientFundsError` (`INSUFFICIENT_TOKEN_BALANCE`) when the signer (with a route, its account and the signer together) cannot pay in the payment token.
  * @throws `Errors.UnsupportedError` (`PAYMENT_TOKEN_UNSUPPORTED`, `UNSUPPORTED_ON_DEPLOYMENT`) for an unaccepted token or without ENSv2.
  * @throws `Errors.ConfigError` (`WALLET_NOT_CONFIGURED`) when no signing account is known.
  * @throws `Errors.UserRejectedError` (`USER_REJECTED`) when the user rejects the request.
@@ -91,10 +103,12 @@ export declare namespace register {
      */
     owner?: string | undefined;
     /**
-     * Resolver for the names. By default each name gets its own PermissionedResolver, deployed in
-     * the same plan with `records` written at creation. `"owned"` uses the signer's shared
-     * PermissionedResolver (the ENS app's address), deployed once and reused; its roles cover
-     * every name on it. `null` registers without a resolver.
+     * Resolver for the names. `"owned"` uses the sender's shared PermissionedResolver (the ENS
+     * app's address for the wallet or its HCA), deployed once and reused; its roles cover every
+     * name on it. `"new"` deploys a PermissionedResolver per name, with `records` written at
+     * creation. An address uses that resolver; `null` registers without one.
+     *
+     * @default "owned" for names the signer owns, otherwise "new"
      */
     resolver?: string | null | undefined;
     /** Records for every name, written when its resolver is created (or right after registering). */
@@ -109,7 +123,7 @@ export declare namespace register {
     paymentToken?: PaymentToken | undefined;
     /** ENSv2 registry for the names' subnames. */
     subregistry?: string | undefined;
-    /** Referrer recorded by the registrar: 32 bytes, or an address (left-padded). */
+    /** Referrer recorded by the registrar: up to 32 bytes of hex, left-padded (an address works). */
     referrer?: Hex | undefined;
     /** Secret from an earlier `commit` or `register`, to finish that registration. */
     secret?: Hex | undefined;
@@ -121,7 +135,7 @@ export declare namespace register {
     | Errors.WriteError
     | Errors.InvalidInputError
     | Errors.NameStateError
-    | Errors.CommitmentError;
+    | Errors.NotFoundError;
 }
 
 // Explicit types keep these declarations free of Effect types.
@@ -173,10 +187,10 @@ register.estimateGas = Action.promiseOf(
  * yield* Actions.registration.registerSync(ens, { names: "alice.eth", duration: 31536000n, records: { texts: { url: "https://alice.dev" } } })
  * ```
  *
- * @throws `Errors.InvalidInputError` (`INVALID_NAME`, `INVALID_ADDRESS`, `DURATION_TOO_SHORT`, `INVALID_RECORD_VALUE`) for invalid input.
+ * @throws `Errors.InvalidInputError` (`INVALID_NAME`, `INVALID_ADDRESS`, `INVALID_DURATION`, `DURATION_TOO_SHORT`, `INVALID_RECORD_VALUE`) for invalid input, including a zero owner or a duration over 100 years.
  * @throws `Errors.NameStateError` (`NAME_NOT_AVAILABLE`) when a name is taken or in its grace period.
- * @throws `Errors.CommitmentError` (`COMMITMENT_TOO_NEW`, `COMMITMENT_TOO_OLD`, `COMMITMENT_EXISTS`) for a resumed commitment outside its window.
- * @throws `Errors.InsufficientFundsError` (`INSUFFICIENT_TOKEN_BALANCE`) when the signer cannot pay in the payment token.
+ * @throws `Errors.NotFoundError` (`RESOLVER_NOT_DEPLOYED`, `REGISTRY_NOT_FOUND`) when no contract is deployed at the given resolver or subregistry.
+ * @throws `Errors.InsufficientFundsError` (`INSUFFICIENT_TOKEN_BALANCE`) when the signer (with a route, its account and the signer together) cannot pay in the payment token.
  * @throws `Errors.UnsupportedError` (`PAYMENT_TOKEN_UNSUPPORTED`, `UNSUPPORTED_ON_DEPLOYMENT`) for an unaccepted token or without ENSv2.
  * @throws `Errors.ConfigError` (`WALLET_NOT_CONFIGURED`) when no signing account is known.
  * @throws `Errors.TransactionError` (`TRANSACTION_REVERTED`, `RECEIPT_TIMEOUT`, `NONCE_CONFLICT`) when confirmation fails or the wallet's nonce is already used.
@@ -211,7 +225,7 @@ export declare namespace registerSync {
     | Errors.WriteError
     | Errors.InvalidInputError
     | Errors.NameStateError
-    | Errors.CommitmentError;
+    | Errors.NotFoundError;
 }
 
 /** Path of the action, e.g. for cache keys. */

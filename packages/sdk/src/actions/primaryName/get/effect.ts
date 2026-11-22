@@ -1,6 +1,6 @@
 import { Effect, String as Str } from "effect";
 
-import { Abis, Deployments } from "@ensforge/contracts";
+import { Abis } from "@ensforge/contracts";
 import { decodeFunctionResult, encodeFunctionData, type Address } from "viem";
 
 import type { Client } from "../../../client/types.js";
@@ -12,7 +12,12 @@ import * as Action from "../../../internal/action/index.js";
 import { normalizeName } from "../../../internal/name/normalize.js";
 import { requireAddress } from "../../../internal/name/write.js";
 import { defaultEvmCoinType } from "../../../internal/records/read-profiles.js";
-import { ethCoinType, primaryNameCoinType, reverseName } from "../../../internal/reverse/coin.js";
+import {
+  ethCoinType,
+  l2RegistrarsOf,
+  primaryNameCoinType,
+  reverseName,
+} from "../../../internal/reverse/coin.js";
 import * as Rpc from "../../../internal/rpc/index.js";
 import { chainClient, hasChain } from "../../../internal/write/chain.js";
 import * as CoinType from "../../../utils/CoinType.js";
@@ -87,10 +92,7 @@ const lookup = Effect.fnUntraced(function* (
     coinType === ethCoinType || coinType === defaultEvmCoinType
       ? null
       : CoinType.toChainId(coinType);
-  const registrar =
-    chainId === null
-      ? undefined
-      : (Deployments.l2ReverseRegistrars as Readonly<Record<number, Address>>)[chainId];
+  const registrar = chainId === null ? undefined : l2RegistrarsOf(client.chain.id)[chainId];
   if (
     chainId === null ||
     registrar === undefined ||
@@ -125,7 +127,7 @@ export const get = Effect.fn("ensforge.primaryName.get")(
     options: Promises.Options,
   ): Effect.fn.Return<Promises.ReturnType, AnyError> {
     const address = yield* requireAddress(options.address, "address");
-    const coinType = yield* primaryNameCoinType(options.coin);
+    const coinType = yield* primaryNameCoinType(options.coin, client.chain.id);
     const strict = options.strict === true;
 
     const name = yield* lookup(client, address, coinType, options).pipe(

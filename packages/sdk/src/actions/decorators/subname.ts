@@ -19,9 +19,9 @@ export type SubnameActions = {
     readonly remove: BoundWrite<typeof subname.remove>;
     /** Removes a subname. Resolves once the receipt is in. */
     readonly removeSync: Bound<typeof subname.removeSync>;
-    /** Changes a subname from its parent: owner, resolver or expiry, in one plan. Resolves once the transaction is submitted. */
+    /** Changes a subname's owner, resolver or expiry, in one plan, from its parent or as its holder. Resolves once the transaction is submitted. */
     readonly update: BoundWrite<typeof subname.update>;
-    /** Changes a subname from its parent: owner, resolver or expiry, in one plan. Resolves once the receipt is in. */
+    /** Changes a subname's owner, resolver or expiry, in one plan, from its parent or as its holder. Resolves once the receipt is in. */
     readonly updateSync: Bound<typeof subname.updateSync>;
   };
 };

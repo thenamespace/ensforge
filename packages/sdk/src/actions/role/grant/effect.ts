@@ -19,7 +19,7 @@ export const plan = Effect.fnUntraced(function* (
   options: Promises.Options & Pick<Write.Options, "account">,
 ): Effect.fn.Return<Plan, AnyError> {
   const account = yield* requireAddress(options.grantee, "grantee");
-  const roles = yield* roleBitmapOf(options.roles);
+  const roles = yield* roleBitmapOf(options.roles, options.target);
   const target = yield* resolveRoleTarget(client, options);
   // Registry and resolver share the EAC functions; the registry ABI covers both.
   const abi = Abis.v2.permissionedRegistry;

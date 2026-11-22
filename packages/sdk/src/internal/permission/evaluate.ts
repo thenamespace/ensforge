@@ -13,7 +13,7 @@ import type {
 } from "../../actions/permission/get/types.js";
 import type { UnauthorizedError } from "../../errors/classes/UnauthorizedError.js";
 import * as Fuse from "../../utils/Fuse.js";
-import { sameAddress } from "../address.js";
+import { nonZeroAddress, sameAddress } from "../address.js";
 import type { LoadedName } from "../name/load.js";
 import { recordResource, type PermissionFacts } from "./facts.js";
 import { recordRoles } from "./records.js";
@@ -365,9 +365,11 @@ export const evaluate = (
 
 /**
  * Whether the parent's account may rewrite or clear an existing child with `setSubnodeRecord`
- * (`subname.update`, `subname.remove`): it needs the parent's authority over children, and
- * through the NameWrapper the child must not be emancipated. An unwrapped parent rewrites any
- * child in the registry.
+ * (`subname.update`, `subname.remove`): it needs the parent's authority over children. An
+ * unwrapped parent rewrites any child in the registry. Through the NameWrapper, its own check
+ * applies (`_checkCanCallSetSubnodeOwner`): a child that expired without an owner may be
+ * recreated unless the parent burned `cannotCreateSubdomain`; any other child unless it burned
+ * `parentCannotControl`, which an unwrapped child keeps until its old expiry.
  */
 export const evaluateChildRewrite = (
   parentFacts: PermissionFacts,
@@ -375,13 +377,22 @@ export const evaluateChildRewrite = (
   contracts: Contracts | undefined,
 ): PermissionCheck => {
   const check = evaluate(parentFacts, "removeSubname", contracts);
-  const throughWrapper =
-    parentFacts.loaded.state.protocol === "v1" &&
-    parentFacts.loaded.state.wrapped &&
-    child.state.wrapped;
-  return check.allowed === true &&
-    throughWrapper &&
-    Fuse.has(child.data.v1?.wrapper.fuses ?? 0, "parentCannotControl")
+  const parent = parentFacts.loaded;
+  if (check.allowed === false || parent.state.protocol !== "v1" || !parent.state.wrapped) {
+    return check;
+  }
+
+  const wrapper = child.data.v1?.wrapper;
+  const expired = (wrapper?.expiry ?? 0n) < child.data.now;
+  const ownerless =
+    nonZeroAddress(wrapper?.owner ?? null) === null ||
+    nonZeroAddress(child.data.v1?.registryOwner ?? null) === null;
+  if (expired && ownerless) {
+    return Fuse.has(parent.data.v1?.wrapper.fuses ?? 0, "cannotCreateSubdomain")
+      ? blocked("fuse", "The parent burned cannotCreateSubdomain.", check.contract)
+      : check;
+  }
+  return Fuse.has(wrapper?.fuses ?? 0, "parentCannotControl")
     ? blocked("fuse", "The child is emancipated (parentCannotControl).", check.contract)
     : check;
 };

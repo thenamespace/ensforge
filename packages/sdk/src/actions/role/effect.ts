@@ -78,6 +78,10 @@ export declare namespace get {
  * - Name roles go to the name's resource in the registry holding it; root roles apply to every
  *   name in that registry or on that resolver.
  * - Granting needs the matching admin roles.
+ * - Role names are read from `target`'s table only: registry and resolver roles share bit
+ *   positions, so a resolver role name for a registry (`setAddr`, the registry's `registrar` bit)
+ *   fails with `INVALID_ROLES`. An explicit `contract`, or a name's resolver, must report the
+ *   kind `target` names (ERC-165), or the plan fails with `INVALID_ADDRESS`.
  * - Some roles regenerate the name's token ID; the plan carries a `TOKEN_ID_REGENERATED` warning.
  *
  * **Gotchas**
@@ -194,6 +198,13 @@ export declare namespace grantSync {
  * **Details**
  *
  * - Revoking needs the matching admin roles.
+ * - Revoking `canTransferAdmin` from the name's owner fails with `INVALID_ROLES` unless
+ *   `allowIrreversible`: the name could not be transferred until it expires. Removing the last
+ *   holder of an admin role, with none at the root, carries a `ROLE_ADMIN_LOCKOUT` warning.
+ * - Role names are read from `target`'s table only: registry and resolver roles share bit
+ *   positions, so a resolver role name for a registry (`setAddr`, the registry's `registrar` bit)
+ *   fails with `INVALID_ROLES`. An explicit `contract`, or a name's resolver, must report the
+ *   kind `target` names (ERC-165), or the plan fails with `INVALID_ADDRESS`.
  * - Some roles regenerate the name's token ID; the plan carries a `TOKEN_ID_REGENERATED` warning.
  *
  * **Example** (Revoking a role)

@@ -1,4 +1,5 @@
 import { assert } from "@effect/vitest";
+import { String as Str } from "effect";
 
 import { Deployments, Abis } from "@ensforge/contracts";
 import {
@@ -17,6 +18,9 @@ import {
   getContractAddress,
   keccak256,
   multicall3Abi,
+  pad,
+  zeroAddress,
+  zeroHash,
   type Address,
   type Hex,
 } from "viem";
@@ -102,7 +106,10 @@ export const makeClient = (world: World = {}) => {
       {
         address: v2.contracts.verifiableFactory,
         abi: Abis.v2.verifiableFactory,
-        functions: { proxyLogic: () => proxyLogic },
+        functions: {
+          proxyLogic: () => proxyLogic,
+          verifyContract: () => contracts.standaloneImplementation,
+        },
       },
       {
         address: hcaAddress,
@@ -110,7 +117,6 @@ export const makeClient = (world: World = {}) => {
         functions: {
           ownerAndSessionNonce: () => [owner, world.sessionNonce ?? 0n],
           accountId: () => "ens-standalone-hca.1.1.0",
-          getImplementation: () => contracts.standaloneImplementation,
         },
       },
       {
@@ -144,4 +150,73 @@ export const makeClient = (world: World = {}) => {
     walletClient,
   };
   return { client, context, calls };
+};
+
+/**
+ * The route the Rhinestone orchestrator prepares for `calls`: one single-chain, unfunded
+ * IntentExecutor element run by the HCA, with `refund` as its gas refund (none by default).
+ */
+export const rhinestoneRoute = (options: {
+  readonly calls: readonly { readonly to: Address; readonly data: Hex; readonly value: bigint }[];
+  readonly hca?: Address;
+  readonly refund?: {
+    readonly token: Address;
+    readonly exchangeRate: bigint;
+    readonly gasOverhead: bigint;
+    readonly amount: bigint;
+  };
+  readonly gasPrice?: bigint;
+  readonly spent?: bigint;
+}) => {
+  const hca = options.hca ?? hcaAddress;
+  const refund = options.refund;
+  return {
+    intentOp: {
+      sponsor: hca,
+      nonce: 9n,
+      elements: [
+        {
+          chainId: BigInt(sepolia.id),
+          idsAndAmounts: [],
+          spendTokens: [],
+          mandate: {
+            recipient: hca,
+            destinationChainId: BigInt(sepolia.id),
+            tokenOut: [],
+            preClaimOps: { vt: zeroHash, ops: [] },
+            destinationOps: { vt: pad("0x0201", { dir: "right" }), ops: options.calls },
+            qualifier: {
+              settlementContext: {
+                settlementLayer: "INTENT_EXECUTOR",
+                fundingMethod: "NO_FUNDING",
+                using7579: true,
+                gasRefund:
+                  refund === undefined
+                    ? { token: zeroAddress, exchangeRate: 0n, overhead: 0n }
+                    : {
+                        token: refund.token,
+                        exchangeRate: refund.exchangeRate,
+                        overhead: (refund.amount << 128n) | refund.gasOverhead,
+                      },
+              },
+            },
+          },
+        },
+      ],
+      ...(options.gasPrice === undefined
+        ? {}
+        : { signedMetadata: { gasPrices: { [String(sepolia.id)]: String(options.gasPrice) } } }),
+    },
+    ...(options.spent === undefined || refund === undefined
+      ? {}
+      : {
+          intentCost: {
+            tokensSpent: {
+              [String(sepolia.id)]: {
+                [Str.toLowerCase(refund.token)]: { unlocked: String(options.spent) },
+              },
+            },
+          },
+        }),
+  };
 };

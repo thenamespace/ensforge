@@ -39,7 +39,7 @@ Retrying the same call fails the same way until the cause is fixed (`retryable: 
 | [`name.reclaim`](/docs/reference/sdk/name/reclaim) | when the account is not the registrant. |
 | [`name.setManager`](/docs/reference/sdk/name/set-manager) | when the account is neither registrant nor manager. |
 | [`name.setTtl`](/docs/reference/sdk/name/set-ttl) | when the account may not change it. |
-| [`name.transfer`](/docs/reference/sdk/name/transfer) | when the account may not send it, or the recipient (an HCA) refuses it. |
+| [`name.transfer`](/docs/reference/sdk/name/transfer) | when the account may not send it, other accounts hold its roles and `unsafe` is `false`, or the recipient (an HCA) refuses it. |
 | [`permission.setRecordAccess`](/docs/reference/sdk/permission/set-record-access) | when the account may not grant access. |
 | [`record.set`](/docs/reference/sdk/record/set) | when the account may not edit records. |
 | [`resolver.create`](/docs/reference/sdk/resolver/create) | when the account may not point the name at it. |

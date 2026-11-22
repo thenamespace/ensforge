@@ -47,7 +47,8 @@ export const plan = Effect.fnUntraced(function* (
   }
 
   const owner = yield* requireAddress(
-    options.owner ?? addressOf(options.account) ?? client.account ?? state.owner ?? "",
+    // An operator unwrapping for the holder leaves the name with the holder.
+    options.owner ?? state.owner ?? addressOf(options.account) ?? client.account ?? "",
     "owner",
   );
   const calldata = parts.isEth2ld

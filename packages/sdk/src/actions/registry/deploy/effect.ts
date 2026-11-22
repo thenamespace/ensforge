@@ -14,7 +14,12 @@ import {
   requireProtocol,
   requireRegistered,
 } from "../../../internal/name/write.js";
-import { attachCalls, deployUserRegistry } from "../../../internal/registry/deploy.js";
+import {
+  attachCalls,
+  deployUserRegistry,
+  parentLabel,
+  requireNoSubregistry,
+} from "../../../internal/registry/deploy.js";
 import { roleBitmapOf } from "../../../internal/role/bitmap.js";
 import { make as makePlan } from "../../../plan/make.js";
 import type { Plan } from "../../../plan/Plan.js";
@@ -38,7 +43,7 @@ export const plan = Effect.fnUntraced(function* (
     (grant) =>
       Effect.gen(function* () {
         const account = yield* requireAddress(grant.account, "grants.account");
-        const roleBitmap = yield* roleBitmapOf(grant.roles);
+        const roleBitmap = yield* roleBitmapOf(grant.roles, "registry");
         return { account, roleBitmap };
       }),
     { concurrency: 1 },
@@ -49,6 +54,8 @@ export const plan = Effect.fnUntraced(function* (
     yield* requireRegistered(client, attachTo);
     yield* requireProtocol(attachTo, "v2", "subregistries");
   }
+  const parent =
+    attachTo === undefined ? undefined : yield* parentLabel(client, attachTo.data.parts);
 
   // Attaching calls `setParent` on the new registry, so the signer needs root roles there too.
   const deployment = yield* deployUserRegistry(client, {
@@ -58,6 +65,8 @@ export const plan = Effect.fnUntraced(function* (
     salt: options.salt ?? randomSalt(),
     grants,
   });
+  if (attachTo !== undefined)
+    yield* requireNoSubregistry(attachTo, deployment.address, options.replace);
   const steps: Plan.Step[] = [
     { id: "deploy", description: "Deploy registry", calls: [deployment.call] },
   ];
@@ -69,7 +78,7 @@ export const plan = Effect.fnUntraced(function* (
         // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- a v2 or wrapped name's state always carries this field; `Name.State` types it as nullable for every protocol
         parentRegistry: attachTo.state.registry as Address,
         tokenId: attachTo.state.tokenId ?? hexToBigInt(attachTo.data.parts.labelhash),
-        label: attachTo.data.parts.label,
+        label: parent?.label,
         registry: deployment.address,
         detach: false,
       }),
@@ -82,6 +91,7 @@ export const plan = Effect.fnUntraced(function* (
     account: signer,
     steps,
     deploys: [{ contract: "registry", address: deployment.address }],
+    warnings: parent?.warnings ?? [],
   });
 });
 

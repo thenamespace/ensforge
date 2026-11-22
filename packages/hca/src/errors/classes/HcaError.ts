@@ -46,6 +46,11 @@ const defaults: {
     shortMessage: "The Rhinestone SDK does not support the standalone ENS HCA.",
     hint: "Use a Rhinestone SDK with standalone HCA support (`ens-standalone-1.1.0`).",
   }),
+  HCA_ROUTE_REJECTED: () => ({
+    shortMessage:
+      "The execution service returned a different transaction than ensforge asked for; nothing was signed.",
+    hint: "`details` lists each difference. Do not retry blindly: check the executor's configuration.",
+  }),
 };
 
 const retryable = new Set<string>(["HCA_BUNDLER_REJECTED"]);
@@ -86,7 +91,8 @@ export declare namespace HcaError {
     | "HCA_EXECUTION_FAILED"
     | "HCA_EXECUTION_TIMEOUT"
     | "HCA_UPGRADE_NOT_ALLOWED"
-    | "HCA_SDK_UNSUPPORTED";
+    | "HCA_SDK_UNSUPPORTED"
+    | "HCA_ROUTE_REJECTED";
   type Options = Errors.EnsforgeError.ClassOptions<Code> & {
     readonly executor?: string | undefined;
   };

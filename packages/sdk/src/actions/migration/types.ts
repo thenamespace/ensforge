@@ -33,6 +33,16 @@ export type Route = "unwrapped" | "wrapped-unlocked" | "wrapped-locked" | "locke
  *   (`subnames`).
  * - `locked-resolver`: `cannotSetResolver` keeps a resolver that could no longer be edited.
  * - `unknown-label`: only the label's hash is known.
+ * - `uncertified-parent-registry`: a locked child's parent registry is not the WrapperRegistry
+ *   the parent's migration created; the child's transfer into it could not be undone.
+ * - `wrapper-out-of-sync`: the name was renewed without the NameWrapper being told, which now
+ *   reports it with no owner or fuses; run `wrapper.sync` first.
+ * - `records-not-replayable`: a locked `cannotSetResolver` name with records goes to another
+ *   owner, who alone can write them on its new PublicResolverV2.
+ * - `recipient-cannot-receive`: the new owner is a contract (or an EIP-7702 account) that does not
+ *   accept ERC-1155 tokens, so the transfer would revert.
+ * - `resolver-conflict`, `registry-conflict`: an earlier, interrupted migration deployed the
+ *   name's resolver or a subname's registry for another owner; its address cannot be redeployed.
  *
  * @category migration
  * @since 1.0.0
@@ -47,7 +57,13 @@ export type Blocker =
   | "parent-not-migrated"
   | "unlocked-child"
   | "locked-resolver"
-  | "unknown-label";
+  | "unknown-label"
+  | "uncertified-parent-registry"
+  | "wrapper-out-of-sync"
+  | "records-not-replayable"
+  | "recipient-cannot-receive"
+  | "resolver-conflict"
+  | "registry-conflict";
 
 /**
  * Where a name's records end up:
@@ -156,4 +172,9 @@ export type NameInput =
        * (beyond 500 the list is required); `[]` recreates none.
        */
       readonly subnames?: readonly string[] | undefined;
+      /**
+       * Give this unwrapped name's ENSv1 manager its record roles on the new resolver; overrides
+       * `migrate`'s `preserveManager` for this name.
+       */
+      readonly preserveManager?: boolean | undefined;
     };

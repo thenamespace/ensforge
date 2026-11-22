@@ -118,6 +118,10 @@ export const messages: { readonly [code in Code]: Template<code> } = {
     title: "Cannot renew",
     message: `${thisName(error)} cannot be renewed.`,
   }),
+  NAME_ALREADY_RENEWED: () => ({
+    title: "Already renewed",
+    message: "These names are already renewed until the date you chose.",
+  }),
   NAME_LOCKED: (error) => ({
     title: "Name locked",
     message: `${thisName(error)} is locked and cannot be changed.`,
@@ -137,6 +141,15 @@ export const messages: { readonly [code in Code]: Template<code> } = {
   NAME_WRAPPED: (error) => ({
     title: "Name already wrapped",
     message: `${thisName(error)} is already wrapped.`,
+  }),
+  SUBREGISTRY_EXISTS: (error) => ({
+    title: "Subnames in place",
+    message: `${thisName(error)} already holds subnames that replacing its registry would remove.`,
+  }),
+  NAME_HAS_SUBNAMES: (error) => ({
+    title: "Name has subnames",
+    message: `${thisName(error)} has subnames, which would keep resolving without it.`,
+    action: "Remove its subnames first.",
   }),
   NAME_REQUIRES_MIGRATION: (error) => ({
     title: "Upgrade required",
@@ -210,6 +223,11 @@ export const messages: { readonly [code in Code]: Template<code> } = {
     title: "No resolver",
     message: `${thisName(error)} is not set up to hold records yet.`,
     action: "Set a resolver first.",
+  }),
+  RESOLVER_NOT_DEPLOYED: () => ({
+    title: "Resolver not deployed",
+    message: "The resolver address has no contract, so it cannot hold records.",
+    action: "Choose a deployed resolver.",
   }),
   RECORD_NOT_FOUND: () => ({ title: "Not set", message: "This record is not set." }),
   PRIMARY_NAME_NOT_SET: () => ({

@@ -32,6 +32,9 @@ Retrying the same call fails the same way until the cause is fixed (`retryable: 
 | Action | When |
 | --- | --- |
 | [`primaryName.signClaim`](/docs/reference/sdk/primary-name/sign-claim) | when `expiresIn` is not between 1 and 3600 seconds. |
+| [`registration.commit`](/docs/reference/sdk/registration/commit) | for invalid input, including a zero owner or a duration over 100 years. |
+| [`registration.register`](/docs/reference/sdk/registration/register) | for invalid input, including a zero owner or a duration over 100 years. |
+| [`registration.renew`](/docs/reference/sdk/registration/renew) | for invalid input, a duration over 100 years, a renewal that leaves a name expired, or an `until` in the past. |
 
 ## Catch it
 

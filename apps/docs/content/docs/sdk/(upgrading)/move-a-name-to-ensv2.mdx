@@ -129,7 +129,8 @@ const { plan } = await ens.migration.migrateSync({
 
 - `records` is the name's full profile, written to its new resolver.
 - `subnames` lists the subnames to recreate, at any depth, as full names or relative to the name (`"pay"`, `"b.a"`). `[]` recreates none.
-- An interrupted migration can run again. Existing resolvers and registries are reused.
+- An interrupted migration can run again. Resolvers and registries it already created are reused, after a check that they still belong to the same owner. A retry for another owner fails with `NOT_ELIGIBLE` and the blocker `resolver-conflict` or `registry-conflict`.
+- `preserveManager` can also be set on one name in `names`, which overrides the option for that name.
 
 | Option                   | Type                                   | Default                                                    | Description                                                                          |
 | ------------------------ | -------------------------------------- | ---------------------------------------------------------- | ------------------------------------------------------------------------------------ |
@@ -141,15 +142,16 @@ const { plan } = await ens.migration.migrateSync({
 | `preserveManager`        | `boolean`                              | `false`                                                    | Give each unwrapped name's ENSv1 manager `setResolver` and the record setter roles.  |
 | `migrateParents`         | `boolean`                              | `false`                                                    | Migrate the ENSv1 parents of locked subnames first.                                  |
 | `renew`                  | `{ duration, paymentToken? }`          | none                                                       | Renew names in their grace period first.                                             |
+| `resume`                 | `boolean`                              | `false`                                                    | Finish names an interrupted migration already moved, instead of failing.             |
 
 `resolver` choices:
 
-| Value      | Result                                                                             |
-| ---------- | ---------------------------------------------------------------------------------- |
-| `"new"`    | A PermissionedResolver created for the name, with its records copied in.           |
-| `"owned"`  | The account's shared PermissionedResolver (the ENS app's address), records copied. |
-| `"keep"`   | The current resolver. Records on an ENSv1 public resolver become read-only.        |
-| An address | A resolver you name.                                                               |
+| Value      | Result                                                                                                                            |
+| ---------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| `"new"`    | A PermissionedResolver created for the name, with its records copied in.                                                          |
+| `"owned"`  | The sending account's shared PermissionedResolver, records copied. Through `via: hca()` it is the ENS app's resolver for the HCA. |
+| `"keep"`   | The current resolver. Records on an ENSv1 public resolver become read-only.                                                       |
+| An address | A resolver you name.                                                                                                              |
 
 <Callout type="warn" title="Name every record and subname unless you use an indexer">
   ENSv2 drops ENSv1 subnames that are not recreated, and records left on an ENSv1 public resolver
@@ -157,6 +159,81 @@ const { plan } = await ens.migration.migrateSync({
   `RECORDS_UNKNOWN` unless you pass `records` or `allowIncompleteRecords`. Pass every record and
   subname you want to keep. Subname records stay on their ENSv1 resolvers.
 </Callout>
+
+## What is copied, and what refuses
+
+Records are copied from the name's current resolver when it gets a new one, through resolution, so records served off-chain are written on-chain. ABI, interface, data, name and content hash records are copied with the rest. A record that cannot be copied, such as a public key, fails the migration with `RECORDS_UNKNOWN` unless you pass `allowIncompleteRecords`. Nothing is left behind silently.
+
+Before anything is sent, the migration also refuses:
+
+- An owner that cannot receive the name's ENSv2 token: a contract, or an EIP-7702 account, that does not accept ERC-1155 tokens. The blocker is `recipient-cannot-receive`.
+- A locked child whose parent's registry is not the WrapperRegistry the parent's migration created (`uncertified-parent-registry`).
+
+## Steps, gas and atomicity
+
+The plan is split into steps by estimated gas, so each step fits in one transaction. `plan.steps[].gas` holds the estimate.
+
+```mermaid
+flowchart LR
+  A[Setup: resolvers and registries] --> B[Records]
+  B --> C[Transfer: irreversible]
+  C --> D[Subnames in WrapperRegistries]
+  D --> E[Records on PublicResolverV2]
+  E --> F[ENSv1 managers]
+```
+
+Steps after the transfer depend on it. From a plain wallet each step is its own transaction, so the plan carries a `NOT_ATOMIC` warning. Send with `mode: "batch"` or `via: hca()` to make them one.
+
+## Finish a migration that stopped
+
+A migration can stop after the transfer, for example when the user closes the wallet prompt. The name is then on ENSv2, but the steps after the transfer did not run. Migrating it again fails with `ALREADY_MIGRATED`.
+
+If you saved the plan, finish it with [`plan.resume`](/docs/reference/sdk/plan/resume). See [Save and resume plans](/docs/sdk/save-and-resume-plans).
+
+Without the saved plan, migrate again with `resume: true`:
+
+```ts title="resume-migration.ts"
+import { createWalletClient, http, type Hex } from "viem";
+import { privateKeyToAccount } from "viem/accounts";
+import { sepolia } from "viem/chains";
+import { Ensforge, ensActions } from "@ensforge/sdk";
+
+const account = privateKeyToAccount(process.env.PRIVATE_KEY as Hex);
+const transport = http(process.env.SEPOLIA_RPC_URL);
+
+const ens = Ensforge.create({
+  chain: sepolia,
+  transports: { [sepolia.id]: transport },
+  wallet: createWalletClient({ account, chain: sepolia, transport }),
+}).extend(ensActions());
+
+const { plan } = await ens.migration.migrateSync({
+  names: { name: "ensforge-docs-locked.eth", subnames: ["pay"] },
+  resume: true,
+});
+```
+
+Pass the same names, records and subnames as the first run. `plan.steps` holds only the steps that were left.
+
+With `resume: true`, ensforge reads each name from the chain and plans only what is missing:
+
+| Left undone                                                       | What resume does                                                                                                     |
+| ----------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| Subnames of a locked name, not yet in its WrapperRegistry         | Registers the subnames still on ENSv1. Subnames already registered are skipped.                                      |
+| Records on PublicResolverV2 for a locked `cannotSetResolver` name | Writes the `records` you pass. The transfer clears the ENSv1 resolver, so ensforge cannot read the old records back. |
+| A locked child that did not move                                  | Migrates it as usual, into its parent's WrapperRegistry.                                                             |
+| An HCA delegation on PublicResolverV2                             | Revokes it.                                                                                                          |
+
+- Names that never moved migrate as usual in the same plan.
+- When nothing is left, it fails with `ALREADY_MIGRATED`, so running it twice is safe.
+- A locked `cannotSetResolver` name with an empty PublicResolverV2 fails with `RECORDS_UNKNOWN` unless you pass its `records`, or `allowEmptyResolver` to finish without them.
+- ENSv1 managers cannot be restored by resume, because the transfer clears them. With `preserveManager`, the plan warns `MANAGER_NOT_PRESERVED`; grant the roles with [`role.grant`](/docs/reference/sdk/role/grant).
+
+Wrapped subnames keep their wrapper expiry when it is in the future. One whose expiry has passed is recreated without an expiry, with a `SUBNAME_EXPIRY_EXTENDED` warning.
+
+## Migrate through an HCA
+
+With `via: hca()`, the HCA migrates the names through ENS's MigrationHelper, as the ENS app does. The owner approves MigrationHelper, not the HCA, for the tokens. A NameWrapper approval that ensforge adds for the migration is revoked in a last step. The HCA never becomes an operator of the owner's names. See [Use smart accounts](/docs/sdk/use-smart-accounts).
 
 ## 3. Check the result
 
@@ -178,7 +255,7 @@ A blocker applies. The error lists them, and `migration.get` shows them before y
 
 ### `ALREADY_MIGRATED`
 
-The name is already on ENSv2. See [`ALREADY_MIGRATED`](/docs/reference/errors/ALREADY_MIGRATED).
+The name is already on ENSv2. If a migration stopped after the transfer, finish it with `resume: true` (see [Finish a migration that stopped](#finish-a-migration-that-stopped)). See [`ALREADY_MIGRATED`](/docs/reference/errors/ALREADY_MIGRATED).
 
 ### `RECORDS_UNKNOWN`
 

@@ -18,7 +18,7 @@ Use to return a wrapped name to the ENSv1 registry (and the `.eth` registrar). U
 ## Details
 
 - `owner` becomes the registry owner and, for `.eth` names, the registrant. Defaults to the
-  signer.
+  name's current holder, so an approved operator unwrapping it does not take it.
 - Blocked once `cannotUnwrap` is burned.
 
 ## Signature
@@ -37,7 +37,7 @@ Call it as `ens.wrapper.unwrap(options)` on a client, or `Actions.wrapper.unwrap
 | Option | Type | Default | Description |
 | --- | --- | --- | --- |
 | `name` (required) | `string` |  | ENSv1 name. Normalized automatically. |
-| `owner` | `string` |  | Owner after unwrapping. Defaults to the signer. |
+| `owner` | `string` |  | Owner after unwrapping. Defaults to the name's current holder. |
 
 Also takes the [write options](/docs/reference/sdk/client#write-options).
 

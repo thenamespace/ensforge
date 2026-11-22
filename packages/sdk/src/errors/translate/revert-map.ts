@@ -119,6 +119,16 @@ export const revertMap: Readonly<Record<string, Mapper>> = {
   PermissionDenied: notOwner,
   ERC1155MissingApprovalForAll: notApproved,
   UnauthorizedNamer: notApproved,
+  HCADeploymentNotTrusted: () =>
+    new UnauthorizedError({
+      code: "NOT_APPROVED",
+      hint: "The sender is not an HCA the adapter trusts; send from the account itself or its own HCA.",
+    }),
+  HCAOwnerMismatch: () =>
+    new UnauthorizedError({
+      code: "NOT_APPROVED",
+      hint: "The HCA belongs to another account; an HCA names only its owner.",
+    }),
   NotApprovedOperator: notApproved,
   OperationProhibited: () => new UnauthorizedError({ code: "FUSE_BURNED" }),
   TransferDisallowed: transferDisallowed,
@@ -130,7 +140,7 @@ export const revertMap: Readonly<Record<string, Mapper>> = {
   TransferUnsafeWithMultipleAssignees: () =>
     new UnauthorizedError({
       code: "TRANSFER_DISALLOWED",
-      hint: "Other accounts hold roles on the name; pass `unsafe: true` to transfer anyway.",
+      hint: 'Other accounts hold roles on the name. Revoke them first (`delegates: "revoke"`), or transfer with `unsafe: "auto"` (the default) or `true`.',
     }),
   NameNotAvailable: nameNotAvailable,
   LabelAlreadyRegistered: nameNotAvailable,
@@ -145,7 +155,7 @@ export const revertMap: Readonly<Record<string, Mapper>> = {
   TransferUnsafeUntilRegistryIsEmancipated: () =>
     new NameStateError({
       code: "REGISTRY_NOT_EMANCIPATED",
-      hint: "Pass `unsafe: true` to transfer without the receiver checks.",
+      hint: 'The registry\'s root role holders keep control of its names. Transfer with `unsafe: "auto"` (the default) or `true` to move it anyway.',
     }),
   CommitmentTooNew: commitmentTooNew,
   CommitmentTooOld: commitmentTooOld,

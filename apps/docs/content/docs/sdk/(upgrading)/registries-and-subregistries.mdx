@@ -107,6 +107,7 @@ const { registry } = await ens.registry.deploySync({
 | `grants`      | `{ account, roles }[]` | none       | Extra root role grants.                                      |
 | `emancipated` | `boolean`              | `false`    | Withhold the roles that would let owners take children back. |
 | `attachTo`    | `string`               | none       | ENSv2 name to attach it to.                                  |
+| `replace`     | `boolean`              | `false`    | With `attachTo`, replace a subregistry the name already has. |
 | `salt`        | `bigint`               | random     | CREATE2 salt. With the account, it decides the address.      |
 
 ## 3. Attach or detach a registry
@@ -135,6 +136,10 @@ await ens.registry.attachSync({
   registry: "0x1111111111111111111111111111111111111111", // a registry you deployed
 });
 ```
+
+- A name that already has another subregistry is refused with `SUBREGISTRY_EXISTS`, because replacing it orphans every subname in it. Pass `replace: true` to replace it anyway. The check is made when the plan is prepared.
+- The address must be an ENSv2 registry, and not the root or `.eth` registry, or the attach fails with `INVALID_ADDRESS`. A registry on an older implementation gets a `REGISTRY_UPGRADE_AVAILABLE` warning.
+- `setParent` records the name's label. A label known only by its hash is read from the ENSv2 LabelStore. When even that lacks it, `setParent` is skipped with a `REGISTRY_PARENT_UNSET` warning.
 
 ## 4. Upgrade a registry
 
@@ -207,6 +212,10 @@ await ens.registry.setUriSync({
 ```
 
 ## Troubleshooting
+
+### `SUBREGISTRY_EXISTS`
+
+The name already has a subregistry. Pass `replace: true` if you mean to replace it and leave its subnames behind. See [`SUBREGISTRY_EXISTS`](/docs/reference/errors/SUBREGISTRY_EXISTS).
 
 ### `UPGRADE_NOT_APPROVED`
 

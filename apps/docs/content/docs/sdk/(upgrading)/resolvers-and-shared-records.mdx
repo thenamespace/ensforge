@@ -20,7 +20,7 @@ You will create a resolver, link names to one record set and upgrade the resolve
 ## Prerequisites
 
 - A wallet client. See [Create a client](/docs/sdk/create-a-client).
-- An ENSv2 name. Names registered with ensforge already get their own resolver. See [Register a name](/docs/sdk/register-a-name).
+- An ENSv2 name. Names registered with ensforge already have a PermissionedResolver: the wallet's shared one, or their own. See [Register a name](/docs/sdk/register-a-name).
 - For roles, see [Roles and permissions](/docs/sdk/roles-and-permissions).
 
 ## 1. Create a resolver
@@ -122,8 +122,8 @@ const shared = a !== null && b !== null && a.resolver === b.resolver && a.record
 
 <Callout type="warn" title="Shared resolvers share roles">
   Setter roles on a PermissionedResolver cover every name that uses it. Names that share a resolver,
-  for example subnames created with `resolver: "parent"`, share who can edit. Keep the default of
-  one resolver per name to scope access per name.
+  such as the names one wallet registers or subnames created with `resolver: "parent"`, share who
+  can edit. Register with `resolver: "new"` to scope access per name.
 </Callout>
 
 ## 3. Upgrade a resolver

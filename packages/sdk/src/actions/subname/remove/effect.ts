@@ -1,7 +1,7 @@
-import { Effect } from "effect";
+import { Effect, Array as Arr, Option } from "effect";
 
 import { Abis } from "@ensforge/contracts";
-import { encodeFunctionData, hexToBigInt, zeroAddress, type Address } from "viem";
+import { encodeFunctionData, hexToBigInt, type Address } from "viem";
 
 import type { Client } from "../../../client/types.js";
 import { ConfigError } from "../../../errors/classes/ConfigError.js";
@@ -9,59 +9,67 @@ import { NameStateError } from "../../../errors/classes/NameStateError.js";
 import type { AnyError } from "../../../errors/types.js";
 import * as Action from "../../../internal/action/index.js";
 import { addressOf } from "../../../internal/address.js";
-import * as V1Calls from "../../../internal/name/v1-calls.js";
-import { notRegistered, requireV1Contracts, singleStepPlan } from "../../../internal/name/write.js";
-import { checkLoaded } from "../../../internal/permission/check.js";
+import { callIndexer } from "../../../internal/indexer/call.js";
+import { notRegistered, singleStepPlan } from "../../../internal/name/write.js";
 import { explainRemoval } from "../../../internal/permission/subname.js";
 import { loadSubname, type LoadedSubname } from "../../../internal/subname/load.js";
+import { removeRoute } from "../../../internal/subname/v1-route.js";
 import type { Plan } from "../../../plan/Plan.js";
 import type { Write } from "../../../Types.js";
 import type { remove as Promises } from "./index.js";
 
-/**
- * The call that removes the child. ENSv2 unregisters it, which also clears its resolver and
- * subregistry. ENSv1 sets owner and resolver to zero, from the parent when the signer has the
- * parent's authority (owner or operator), otherwise as the child's owner. An unwrapped parent
- * clears the child in the registry, which unwraps a wrapped child.
- */
-const removeCall = Effect.fnUntraced(function* (
-  client: Client,
-  { parent, child, label, route }: LoadedSubname,
-  signer: Address,
-): Effect.fn.Return<Plan.Call, AnyError> {
-  const { node, labelhash } = child.data.parts;
-  if (child.state.protocol === "v2") {
-    return {
-      // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- a v2 or wrapped name's state always carries this field; `Name.State` types it as nullable for every protocol
-      to: child.state.registry as Address,
-      data: encodeFunctionData({
-        abi: Abis.v2.permissionedRegistry,
-        functionName: "unregister",
-        args: [hexToBigInt(labelhash)],
-      }),
-      value: 0n,
-    };
-  }
+/** ENSv2 unregisters the child, which also clears its resolver and subregistry. */
+const v2RemoveCall = ({ child }: LoadedSubname): Plan.Call => ({
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- a v2 or wrapped name's state always carries this field; `Name.State` types it as nullable for every protocol
+  to: child.state.registry as Address,
+  data: encodeFunctionData({
+    abi: Abis.v2.permissionedRegistry,
+    functionName: "unregister",
+    args: [hexToBigInt(child.data.parts.labelhash)],
+  }),
+  value: 0n,
+});
 
-  const contracts = yield* requireV1Contracts(client);
-  const [parentCheck] =
-    route === "v2" ? [] : yield* checkLoaded(client, parent, signer, ["removeSubname"]);
-  const viaParent = parentCheck?.allowed === true;
-  const cleared = {
-    parentNode: parent.data.parts.node,
-    label,
-    labelhash,
-    owner: zeroAddress,
-    resolver: zeroAddress,
+/**
+ * Fails when the indexer knows subnames of the ENSv1 child, expired ones included: removing the
+ * child leaves them in the registry, where they keep resolving. Without an indexer, or when it
+ * cannot answer, it warns instead.
+ */
+const orphansCheck = Effect.fnUntraced(function* (
+  client: Client,
+  { child }: LoadedSubname,
+): Effect.fn.Return<readonly Plan.Warning[], AnyError> {
+  const unchecked: Plan.Warning = {
+    code: "SUBNAMES_UNCHECKED",
+    message: `Without an indexer, subnames of ${child.data.parts.name} cannot be found; removing it leaves them resolving.`,
   };
-  if (child.state.wrapped && !(route === "v1" && viaParent)) {
-    return viaParent
-      ? V1Calls.setSubnodeRecord(contracts.nameWrapper, true, cleared)
-      : V1Calls.clearRecord(contracts.nameWrapper, node);
-  }
-  return route === "v1" && viaParent
-    ? V1Calls.setSubnodeRecord(contracts.registry, false, cleared)
-    : V1Calls.clearRecord(contracts.registry, node);
+  if (client.config.indexer === undefined) return [unchecked];
+  const page = yield* callIndexer(client, "getSubnames", {
+    name: child.data.parts.name,
+    namespace: "ens",
+    includeExpired: true,
+    limit: 20,
+  }).pipe(
+    Effect.asSome,
+    Effect.catchTag("NotFoundError", () => Effect.succeedSome(null)),
+    Effect.orElseSucceed(() => Option.none()),
+  );
+  if (Option.isNone(page)) return [unchecked];
+  // Released and unregistered children no longer resolve.
+  const live = Arr.filter(
+    page.value?.items ?? [],
+    (item) => item.status === "active" || item.status === "expired" || item.status === null,
+  );
+  if (live.length === 0) return [];
+  return yield* Effect.fail(
+    new NameStateError({
+      code: "NAME_HAS_SUBNAMES",
+      shortMessage: `${child.data.parts.name} has subnames (${Arr.join(
+        Arr.map(live, (item) => item.name),
+        ", ",
+      )}), which would keep resolving without it.`,
+    }),
+  );
 });
 
 /** @internal Builds the plan of `Actions.subname.remove`. */
@@ -103,11 +111,23 @@ export const plan = Effect.fnUntraced(function* (
     );
   }
 
+  if (subname.child.state.protocol === "v2") {
+    return singleStepPlan(client, {
+      operation: "subname.remove",
+      account: options.account,
+      description: "Remove subname",
+      calls: [v2RemoveCall(subname)],
+    });
+  }
+  const children =
+    options.allowOrphanedSubnames === true ? [] : yield* orphansCheck(client, subname);
+  const route = yield* removeRoute(client, subname, signer);
   return singleStepPlan(client, {
     operation: "subname.remove",
     account: options.account,
     description: "Remove subname",
-    calls: [yield* removeCall(client, subname, signer)],
+    calls: route.calls,
+    warnings: [...children, ...route.warnings],
   });
 });
 

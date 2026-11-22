@@ -1,7 +1,9 @@
 import { Array as Arr, Option, Record as Rec, String as Str } from "effect";
 
 import { Abis, Deployments, InterfaceIds } from "@ensforge/contracts";
+import { standaloneHcaFactoryV2InterfaceAbi } from "@ensforge/contracts/v2/experimental/hca";
 import { Duration, Name } from "@ensforge/sdk/effect";
+import type { Indexer } from "@ensforge/sdk/indexer";
 import * as Ensforge from "@ensforge/sdk/internal/client/Ensforge";
 import type { Plan } from "@ensforge/sdk/internal/plan/Plan";
 import { scriptedTransport } from "@ensforge/test-harness";
@@ -14,6 +16,7 @@ import {
   hexToBigInt,
   isAddressEqual,
   multicall3Abi,
+  parseAbi,
   zeroAddress,
   type Abi,
   type Address,
@@ -35,6 +38,8 @@ export const other = getAddress("0x0000000000000000000000000000000000000b0b");
 export const resolverA = getAddress("0x00000000000000000000000000000000000000a1");
 /** The ENSv2 registry every top-level ENSv2 name lives in. */
 export const v2Registry = getAddress("0x00000000000000000000000000000000000000e7");
+/** The StandaloneHCAFactory the reverse adapters trust. */
+export const hcaFactory = getAddress("0x00000000000000000000000000000000000000fa");
 /** The chain's current time, in seconds. */
 export const now = 1_800_000_000n;
 
@@ -88,6 +93,14 @@ export type World = Entry & {
   readonly v1Only?: boolean | undefined;
   /** Further contracts, e.g. an L2 namespace's Ethereum resolver. */
   readonly stubs?: readonly ContractStub[] | undefined;
+  /** Role assignee counts by registry resource (`"0"` the root, `"1"` a name), a nybble per role. */
+  readonly assignees?: Readonly<Record<string, bigint>> | undefined;
+  /** The client's indexer. */
+  readonly indexer?: Indexer | undefined;
+  /** What resolvers answer for `name(node)`, by node (reverse records). */
+  readonly nameRecords?: Readonly<Record<Hex, string>> | undefined;
+  /** The HCA each account owns, which the HCA factory reports as authorized for it. */
+  readonly hcas?: Readonly<Record<Address, Address>> | undefined;
   /** Contract accounts, by address: their Ownable `owner()` and the accounts `isContractNamer` approves. */
   readonly contracts?:
     | Readonly<Record<Address, { readonly owner: Address; readonly namers: readonly Address[] }>>
@@ -108,6 +121,22 @@ const defaultExpiry = now + Duration.years(1);
 
 const includes = (addresses: readonly Address[] | undefined, address: Address) =>
   Arr.some(addresses ?? [], (listed) => isAddressEqual(listed, address));
+
+/** Every resolver the world deploys: they have code and answer as resolvers. */
+const resolversOf = (world: World): Address[] =>
+  Arr.filter(
+    [
+      resolverA,
+      ...(world.permissioned ?? []),
+      ...(world.extended ?? []),
+      ...(world.found === undefined ? [] : [world.found.resolver]),
+      ...Arr.flatMap(
+        [{ v1: world.v1, v2: world.v2 }, ...Rec.values(world.names ?? {})],
+        (entry) => [entry.v1?.resolver, entry.v2?.resolver],
+      ),
+    ],
+    (address): address is Address => address !== undefined && address !== zeroAddress,
+  );
 
 const stubs = (world: World): ContractStub[] => {
   const entries = new Map<string, Entry>([
@@ -158,6 +187,7 @@ const stubs = (world: World): ContractStub[] => {
       address: registry,
       abi: Abis.v2.userRegistry,
       functions: {
+        supportsInterface: ([id]) => id === InterfaceIds.registry.permissionedRegistry,
         getState: ([id]) => {
           const found = v2Of(id as bigint);
           // ENSv2 reserves the labels of ENSv1 names that have not migrated.
@@ -181,6 +211,11 @@ const stubs = (world: World): ContractStub[] => {
             ),
           )?.roles ?? 0n,
         isOnlyAssignee: ([id]) => v2Of(id as bigint)?.v2.onlyAssignee ?? true,
+        // Every name's roles live under resource 1 here (see `getState`), the root under 0.
+        getAssigneeCount: ([resource, bitmap]) => [
+          (world.assignees?.[String(resource)] ?? 0n) & ((bitmap as bigint) * 0xfn),
+          0n,
+        ],
         isEmancipated: () => true,
         isApprovedForAll: () => false,
       },
@@ -193,20 +228,7 @@ const stubs = (world: World): ContractStub[] => {
       Option.toArray(Option.fromNullishOr(entries.get(name)?.v2?.subregistry)),
     ),
   ];
-  const resolvers = [
-    resolverA,
-    ...(world.permissioned ?? []),
-    ...(world.extended ?? []),
-    ...(world.found === undefined ? [] : [world.found.resolver]),
-    ...Arr.flatMap(names, (name) => [
-      entries.get(name)?.v1?.resolver,
-      entries.get(name)?.v2?.resolver,
-    ]),
-  ];
-  const deployedResolvers = Arr.filter(
-    resolvers,
-    (address): address is Address => address !== undefined && address !== zeroAddress,
-  );
+  const deployedResolvers = resolversOf(world);
 
   return [
     {
@@ -228,6 +250,8 @@ const stubs = (world: World): ContractStub[] => {
       address: v1.nameWrapper,
       abi: Abis.v1.nameWrapper,
       functions: {
+        isApprovedForAll: () => world.approvedForAll ?? false,
+        getApproved: () => zeroAddress,
         getData: ([id]) => {
           const wrapper = v1Of(
             Option.getOrUndefined(
@@ -244,6 +268,8 @@ const stubs = (world: World): ContractStub[] => {
       address: v1.baseRegistrar,
       abi: Abis.v1.baseRegistrar,
       functions: {
+        isApprovedForAll: () => false,
+        getApproved: () => zeroAddress,
         ownerOf: ([id]) => {
           const state = v1Of(byToken(id));
           return state?.registrant ?? registryOwner(state);
@@ -276,6 +302,27 @@ const stubs = (world: World): ContractStub[] => {
       address: v2.verifiableFactory,
       abi: Abis.v2.verifiableFactory,
       functions: { proxyLogic: () => resolverA },
+    },
+    {
+      address: v2.defaultReverseRegistrarAdapter,
+      abi: Abis.v2.defaultReverseRegistrarAdapter,
+      functions: { STANDALONE_HCA_FACTORY: () => hcaFactory },
+    },
+    {
+      address: hcaFactory,
+      abi: standaloneHcaFactoryV2InterfaceAbi,
+      functions: {
+        authorizedOwnerOf: ([hca]) =>
+          Option.getOrElse(
+            Option.map(
+              Arr.findFirst(Rec.toEntries(world.hcas ?? {}), ([, owned]) =>
+                isAddressEqual(owned, hca as Address),
+              ),
+              ([owner]) => owner,
+            ),
+            () => zeroAddress,
+          ),
+      },
     },
     ...Arr.map(registries, (registry) => registryStub(registry)),
     {
@@ -326,12 +373,15 @@ const stubs = (world: World): ContractStub[] => {
         ...Abis.shared.erc165,
         ...Abis.shared.versionableResolver,
         ...Abis.shared.extendedResolver,
+        ...parseAbi(["function name(bytes32 node) view returns (string)"]),
       ],
       functions: {
         supportsInterface: ([id]) =>
-          includes(world.permissioned, address) ||
+          (id === InterfaceIds.resolver.permissionedResolver &&
+            includes(world.permissioned, address)) ||
           (id === InterfaceIds.resolverProfiles.extended && includes(world.extended, address)),
         recordVersions: () => 0n,
+        name: ([node]) => world.nameRecords?.[node as Hex] ?? "",
         resolve: () => {
           const answer = world.served?.[address];
           if (answer === "offchain") {
@@ -362,7 +412,8 @@ export const clientFor = (world: World) => {
   const { transport, calls } = scriptedTransport(
     contractScript({
       contracts: stubs(world),
-      code: Rec.keys(world.contracts ?? {}),
+      // Registries and resolvers are contracts too: role targets and resolvers are checked for code.
+      code: [...Rec.keys(world.contracts ?? {}), v2Registry, ...resolversOf(world)],
     }),
   );
   const { name, chainId, v1: deploymentV1 } = Deployments.mainnet;
@@ -371,6 +422,7 @@ export const clientFor = (world: World) => {
     transports: { [mainnet.id]: transport },
     publicRpc: false,
     account: signer,
+    ...(world.indexer === undefined ? {} : { indexer: world.indexer }),
     ...(world.v1Only === true ? { deployment: { name, chainId, v1: deploymentV1 } } : {}),
     // One eth_call per read keeps the script simple; batching is not under test here.
     batch: { multicall: false },

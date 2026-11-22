@@ -23,8 +23,16 @@ import * as Impl from "./effect.js";
  *   registrar grants (resolver, subregistry, transfers); `roles` and `expiry` override them.
  * - ENSv1 parents use `setSubnodeRecord`; wrapped parents take `fuses` and an `expiry`.
  * - By default the child gets its own PermissionedResolver with `records` written at creation;
+ *   on a deployment without ENSv2, an ENSv1 child gets the public resolver instead.
  *   `resolver: "parent"` shares the parent's resolver, `null` creates it without one.
- * - `upsert` updates an existing child's resolver and records instead of failing.
+ * - Records on an existing resolver for another `owner` are written while the signer holds the
+ *   new child, which then goes to `owner`; wrapped `fuses` are burned last.
+ * - `upsert` changes only what it is given on an existing child, which keeps its owner unless
+ *   `owner` is passed. An ENSv1 child goes through the same routes as `subname.update`; an
+ *   ENSv2 child takes `resolver`, `records` and `expiry` (a renewal), and refuses `owner`,
+ *   `roles` and `emancipate`, which change with `name.transfer` and `role.grant`.
+ * - A wrapped parent cannot create a child that an emancipated holder unwrapped until the
+ *   child's old expiry: it fails with `FUSE_BURNED`.
  * - Under a Basenames or Linea name the child is created on the L2 with `setSubnodeRecord`, on
  *   the family's current resolver by default. Records for another `owner` are written while
  *   the signer holds the child, which then goes to `owner`, in the same step.
@@ -111,10 +119,10 @@ export declare namespace create {
     /** NameWrapper fuses to burn on the child (wrapped ENSv1 parents). */
     fuses?: readonly Fuse.Name[] | undefined;
     /** ENSv2 roles for the child's owner, by name or bitmap. */
-    roles?: readonly Role.Name[] | bigint | undefined;
+    roles?: readonly Role.RegistryName[] | bigint | undefined;
     /** Emancipate the parent's subregistry if this plan deploys it. */
     emancipate?: boolean | undefined;
-    /** Update the child's resolver and records if it already exists. */
+    /** Update the child if it already exists, changing only what is passed. */
     upsert?: boolean | undefined;
   };
   /** Submitted transaction hashes and the plan that produced them. */

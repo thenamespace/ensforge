@@ -1,7 +1,9 @@
 import { assert, describe } from "@effect/vitest";
-import { Effect } from "effect";
+import { Array as Arr, Effect } from "effect";
 
+import { Abis, Roles } from "@ensforge/contracts";
 import { Actions } from "@ensforge/sdk/effect";
+import { defineIndexer } from "@ensforge/sdk/indexer";
 import { Chain, Devnet } from "@ensforge/test-devnet";
 import { Fixtures } from "@ensforge/test-fixtures";
 import { expectFailure } from "@ensforge/test-harness";
@@ -112,26 +114,124 @@ describe("transfers and managers", () => {
             }),
           );
 
-          // Another account holds a role: a safe transfer would leave it in place (GHSA-hvjh).
+          // Another account holds a role, which stays after the move (GHSA-hvjh): the transfer is
+          // unsafe, and the plan says so; `unsafe: false` refuses before sending.
           yield* expectFailure(
-            Actions.name.transfer(ens, { name: delegated, to: accounts.carol }),
-            {
-              _tag: "UnauthorizedError",
-              code: "TRANSFER_DISALLOWED",
-            },
+            Actions.name.transfer(ens, { name: delegated, to: accounts.carol, unsafe: false }),
+            { _tag: "UnauthorizedError", code: "TRANSFER_DISALLOWED" },
           );
           yield* chain.isolated(
             Effect.gen(function* () {
-              yield* Actions.name.transferSync(ens, {
+              const { plan } = yield* Actions.name.transferSync(ens, {
                 name: delegated,
                 to: accounts.carol,
-                unsafe: true,
               });
+              assert.deepStrictEqual(
+                Arr.map(plan.warnings, (warning) => warning.code),
+                ["ROLES_RETAINED", "TRANSFER_UNSAFE"],
+              );
               assert.strictEqual((yield* ethEntry(delegated)).owner, accounts.carol);
             }),
           );
         }),
       { meta: { cases: ["M:A14", "M:A24"] } },
+    );
+
+    // Regression: a transfer left other accounts' roles on the name, so they kept control of it
+    // under its new owner.
+    it.effect(
+      "revokes others' roles before the move, with holders the indexer lists and the chain confirms",
+      () =>
+        Effect.gen(function* () {
+          const fixtures = yield* Fixtures;
+          const devnet = yield* Devnet;
+          const chain = yield* Chain;
+          const clients = yield* Clients;
+          const { alice, bob, carol } = devnet.accounts;
+          const { name } = fixtures.byId("v2.roles");
+          const holders = (addresses: readonly `0x${string}`[]) =>
+            defineIndexer({
+              id: "permissions",
+              getPermissions: () =>
+                Promise.resolve({
+                  items: Arr.map(addresses, (address) => ({
+                    address,
+                    name,
+                    registrationId: "1",
+                    powers: ["set_resolver"],
+                    scope: "registration",
+                    relation: "holder" as const,
+                    wrapperState: null,
+                    lineage: null,
+                  })),
+                  cursor: null,
+                  hasMore: false,
+                  totalCount: addresses.length,
+                }),
+            });
+          const options = { name, to: bob, delegates: "revoke" } as const;
+
+          yield* expectFailure(Actions.name.transfer(clients.make({ account: alice }), options), {
+            _tag: "ConfigError",
+            code: "INDEXER_NOT_CONFIGURED",
+          });
+          // An indexer that misses carol cannot account for her role: refused, not left behind.
+          yield* expectFailure(
+            Actions.name.transfer(clients.make({ account: alice, indexer: holders([]) }), options),
+            { _tag: "IndexerError", code: "INDEXER_BEHIND" },
+          );
+          yield* chain.isolated(
+            Effect.gen(function* () {
+              const ens = clients.make({ account: alice, indexer: holders([carol, bob]) });
+              const { plan } = yield* Actions.name.transferSync(ens, options);
+
+              assert.strictEqual((yield* ethEntry(name)).owner, bob);
+              assert.notInclude(
+                Arr.map(plan.warnings, (warning) => warning.code),
+                "ROLES_RETAINED",
+              );
+              const kept = yield* chain.read({
+                address: devnet.contract("v2.ethRegistry"),
+                abi: Abis.v2.permissionedRegistry,
+                functionName: "hasRoles",
+                args: [(yield* ethEntry(name)).tokenId, Roles.registry.setResolver, carol],
+              });
+              assert.isFalse(kept);
+            }),
+          );
+        }),
+      { meta: { cases: ["M:A24"] } },
+    );
+
+    it.effect(
+      "points the name's ETH address at the recipient before moving it",
+      () =>
+        Effect.gen(function* () {
+          const fixtures = yield* Fixtures;
+          const { accounts } = yield* Devnet;
+          const chain = yield* Chain;
+          const clients = yield* Clients;
+
+          for (const id of ["records.v1", "records.v2"]) {
+            const { name } = fixtures.byId(id);
+            const owner = (yield* Actions.name.get(clients.reader, { name })).owner;
+            if (owner === null) assert.fail(`${id} has no owner`);
+            const ens = clients.make({ account: owner });
+            yield* chain.isolated(
+              Effect.gen(function* () {
+                yield* Actions.name.transferSync(ens, {
+                  name,
+                  to: accounts.carol,
+                  setEthAddress: true,
+                });
+
+                const address = yield* Actions.record.getAddress(ens, { name });
+                assert.strictEqual(address, accounts.carol, id);
+              }),
+            );
+          }
+        }),
+      { meta: { cases: ["W29"] } },
     );
 
     it.effect(
@@ -153,6 +253,7 @@ describe("transfers and managers", () => {
                 roles: ["canTransferAdmin"],
                 target: "registry",
                 name,
+                allowIrreversible: true,
               });
               for (const unsafe of [false, true]) {
                 yield* expectFailure(Actions.name.transfer(ens, { name, to: carol, unsafe }), {
@@ -167,16 +268,21 @@ describe("transfers and managers", () => {
             { _tag: "NameStateError", code: "NAME_EXPIRED" },
           );
 
-          // A child of a registry its parent still controls moves only unsafely.
+          // A child of a registry its parent still controls moves only unsafely: by default, with
+          // a warning saying why; `unsafe: false` refuses before sending.
           const child = fixtures.byId("v2.subnames").name;
           const owner = clients.make({ account: bob });
-          yield* expectFailure(Actions.name.transfer(owner, { name: child, to: carol }), {
-            _tag: "NameStateError",
-            code: "REGISTRY_NOT_EMANCIPATED",
-          });
+          yield* expectFailure(
+            Actions.name.transfer(owner, { name: child, to: carol, unsafe: false }),
+            { _tag: "NameStateError", code: "REGISTRY_NOT_EMANCIPATED" },
+          );
           yield* chain.isolated(
             Effect.gen(function* () {
-              yield* Actions.name.transferSync(owner, { name: child, to: carol, unsafe: true });
+              const { plan } = yield* Actions.name.transferSync(owner, { name: child, to: carol });
+              assert.deepStrictEqual(
+                Arr.map(plan.warnings, (warning) => warning.code),
+                ["TRANSFER_UNSAFE"],
+              );
               assert.strictEqual((yield* Actions.name.get(owner, { name: child })).owner, carol);
             }),
           );
@@ -348,6 +454,47 @@ describe("transfers and managers", () => {
     );
 
     // Regression: the refusal was one shared error, so every later one named the first call's name.
+    it.effect(
+      "refuses to hand over a resolver that holds another name's records",
+      () =>
+        Effect.gen(function* () {
+          const fixtures = yield* Fixtures;
+          const { alice, carol } = (yield* Devnet).accounts;
+          const chain = yield* Chain;
+          const ens = (yield* Clients).make({ account: alice });
+          const name = fixtures.byId("v2.registered").name;
+          const sibling = `kid.${name}`;
+
+          yield* chain.isolated(
+            Effect.gen(function* () {
+              // One resolver from resolver.create, then shared with a second name.
+              const { resolver } = yield* Actions.resolver.createSync(ens, {
+                name,
+                records: { texts: { url: "https://alice.example" } },
+              });
+              yield* Actions.subname.createSync(ens, { name: sibling, resolver });
+              yield* Actions.record.setSync(ens, {
+                name: sibling,
+                texts: { url: "https://kid.example" },
+              });
+
+              // Its roles cover both names, so giving them to carol would give her the sibling.
+              yield* expectFailure(
+                Actions.name.transfer.prepare(ens, { name, to: carol, records: "handover" }),
+                { _tag: "InvalidInputError", code: "INVALID_RECORD_VALUE" },
+              );
+              const kept = yield* Actions.permission.check(ens, {
+                name: sibling,
+                operation: { setRecord: "text", key: "url" },
+                account: alice,
+              });
+              assert.isTrue(kept.allowed);
+            }),
+          );
+        }),
+      { meta: { cases: ["M:B5"] } },
+    );
+
     it.effect("names each refused handover's own name", () =>
       Effect.gen(function* () {
         const fixtures = yield* Fixtures;

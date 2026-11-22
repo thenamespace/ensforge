@@ -1,13 +1,22 @@
 import { assert, describe } from "@effect/vitest";
-import { Effect, Array as Arr, Option, String as Str, pipe } from "effect";
+import { Effect, Array as Arr, Option, Record as Rec, String as Str, pipe } from "effect";
 
-import { Abis } from "@ensforge/contracts";
+import { Abis, Roles } from "@ensforge/contracts";
+import { ownedResolverSalt, predictVerifiableProxyAddress } from "@ensforge/contracts/v2";
 import { Duration } from "@ensforge/sdk";
 import { Actions } from "@ensforge/sdk/effect";
 import { Chain, Devnet } from "@ensforge/test-devnet";
 import { Fixtures } from "@ensforge/test-fixtures";
 import { expectFailure } from "@ensforge/test-harness";
-import { erc20Abi, pad, parseAbi, toHex } from "viem";
+import {
+  encodeFunctionData,
+  erc20Abi,
+  isAddressEqual,
+  pad,
+  parseAbi,
+  toHex,
+  zeroAddress,
+} from "viem";
 
 import { Clients } from "../support/clients.ts";
 import { ethEntry, mintUsdc, usdcOf } from "../support/contracts.ts";
@@ -16,6 +25,43 @@ import { Wallets } from "../support/wallets.ts";
 
 describe("registration", () => {
   onProfile("mainnet-shaped")("mainnet-shaped", (it) => {
+    // Regression: an allowance covering the exact price was approved again, because the check
+    // used the price plus the 2% headroom a new approval adds.
+    it.effect(
+      "approves nothing when the allowance covers the price",
+      () =>
+        Effect.gen(function* () {
+          const devnet = yield* Devnet;
+          const chain = yield* Chain;
+          const clients = yield* Clients;
+          const ens = clients.make({ account: devnet.accounts.alice });
+          const options = { names: "qqqqq.eth", duration: Duration.years(1) } as const;
+
+          yield* chain.isolated(
+            Effect.gen(function* () {
+              const { total } = yield* Actions.registration.getPrice(ens, {
+                name: options.names,
+                duration: options.duration,
+              });
+              yield* chain.write({
+                address: devnet.contract("v2.usdc"),
+                abi: erc20Abi,
+                functionName: "approve",
+                args: [devnet.contract("v2.ethRegistrar"), total],
+                account: devnet.accounts.alice,
+              });
+
+              const plan = yield* Actions.registration.register.prepare(ens, options);
+
+              assert.isFalse(
+                Arr.some(plan.calls, (call) => isAddressEqual(call.to, devnet.contract("v2.usdc"))),
+              );
+            }),
+          );
+        }),
+      { meta: { cases: ["G20"] } },
+    );
+
     it.effect(
       "registers a name through commit, wait and reveal, paying the quote",
       () =>
@@ -78,8 +124,10 @@ describe("registration", () => {
       { meta: { cases: ["L33"] } },
     );
 
+    // The registrar accepts a commitment between its minimum and maximum age; committing again is
+    // refused only while it is unexpired.
     it.effect(
-      "registers from an earlier commitment only inside its window",
+      "waits for an earlier commitment that is not ready, and commits again once it expired",
       () =>
         Effect.gen(function* () {
           const { accounts } = yield* Devnet;
@@ -90,34 +138,43 @@ describe("registration", () => {
 
           yield* chain.isolated(
             Effect.gen(function* () {
-              const { secret, readyAt } = yield* Actions.registration.commitSync(ens, options);
-              yield* expectFailure(Actions.registration.registerSync(ens, { ...options, secret }), {
-                _tag: "CommitmentError",
-                code: "COMMITMENT_TOO_NEW",
+              const { secret } = yield* Actions.registration.commitSync(ens, options);
+              const result = yield* Actions.registration.registerSync(ens, {
+                ...options,
+                secret,
+                onStep: chain.passWaits,
               });
 
+              // Only the reveal is left to send, after the commitment's age.
+              assert.deepStrictEqual(
+                Arr.map(result.plan.steps, (step) => step.id),
+                ["register"],
+              );
+              assert.strictEqual((yield* ethEntry("qqqqq.eth")).owner, accounts.alice);
+            }),
+          );
+
+          yield* chain.isolated(
+            Effect.gen(function* () {
+              const { secret, readyAt } = yield* Actions.registration.commitSync(ens, options);
               const parameters = yield* Actions.registration.getParameters(ens);
               const expiresAt = readyAt - parameters.minCommitmentAge + parameters.maxCommitmentAge;
               yield* chain.atTimestamp(
                 expiresAt,
-                expectFailure(Actions.registration.registerSync(ens, { ...options, secret }), {
-                  _tag: "CommitmentError",
-                  code: "COMMITMENT_TOO_OLD",
-                }),
-              );
-
-              yield* chain.atTimestamp(
-                readyAt,
                 Effect.gen(function* () {
                   const result = yield* Actions.registration.registerSync(ens, {
                     ...options,
                     secret,
+                    onStep: chain.passWaits,
                   });
 
-                  // Only the reveal is left to send.
+                  assert.deepStrictEqual(
+                    Arr.map(result.plan.warnings, (warning) => warning.code),
+                    ["COMMITMENT_RECOMMITTED"],
+                  );
                   assert.deepStrictEqual(
                     Arr.map(result.plan.steps, (step) => step.id),
-                    ["register"],
+                    ["commit", "register"],
                   );
                   assert.strictEqual((yield* ethEntry("qqqqq.eth")).owner, accounts.alice);
                 }),
@@ -284,10 +341,10 @@ describe("registration", () => {
 
     // ETHRegistry mints with an ERC-1155 safe transfer, so an EIP-7702 EOA accepts the name only
     // if its delegate's code does. This one delegates to a receiver mock whose configuration
-    // lives in storage the EOA does not have. ensforge does not pre-check the owner (KL-20): the
-    // commit is sent, and the register step fails in simulation.
+    // lives in storage the EOA does not have. The register step is simulated after the
+    // commitment's wait, so this fails before the commit is sent.
     it.effect(
-      "fails the register step when the owner's delegated code rejects the name's token",
+      "refuses an owner whose delegated code rejects the name's token, before the commit",
       () =>
         Effect.gen(function* () {
           const { accounts } = yield* Devnet;
@@ -311,8 +368,8 @@ describe("registration", () => {
               assert.strictEqual(error.errorName, "ERC1155InvalidReceiver");
               assert.deepStrictEqual(
                 Arr.filter(wallet.methods, (method) => method === "eth_sendTransaction"),
-                ["eth_sendTransaction"],
-                "the commit only",
+                [],
+                "not even the commit",
               );
               const availableAfterCommit = yield* Actions.registration.isAvailable(ens, {
                 name: "qqqqq.eth",
@@ -607,10 +664,11 @@ describe("registration", () => {
           const devnet = yield* Devnet;
           const chain = yield* Chain;
           const clients = yield* Clients;
-          const ens = clients.make({ account: devnet.accounts.alice });
+          const wallet = (yield* Wallets).make(devnet.accounts.alice);
+          const ens = clients.make({ account: devnet.accounts.alice, wallet });
 
-          // A contract without `onERC1155Received`, as a DAO timelock. ensforge does not check
-          // the owner before committing (KL-20): the reveal reverts.
+          // A contract without `onERC1155Received`, as a DAO timelock. The reveal is simulated
+          // after the commitment's wait, so this fails before the commit is sent.
           const error = yield* chain.isolated(
             expectFailure(
               Actions.registration.registerSync(ens, {
@@ -624,23 +682,68 @@ describe("registration", () => {
             ),
           );
           assert.strictEqual(error.errorName, "ERC1155InvalidReceiver");
+          assert.deepStrictEqual(wallet.methods, [], "the wallet is never asked");
         }),
       { meta: { cases: ["G18"] } },
     );
 
+    // Each of these reverts only at `register`, after the commitment was paid for and waited out,
+    // or (calls to an address without code) succeeds and does nothing.
     it.effect(
-      "deploys the signer's shared resolver once, and reuses it for later names",
+      "refuses resolvers, subregistries, owners and durations register would fail on",
+      () =>
+        Effect.gen(function* () {
+          const { accounts } = yield* Devnet;
+          const ens = (yield* Clients).make({ account: accounts.alice });
+          const base = { names: "preflight.eth", duration: Duration.years(1) };
+
+          for (const prepare of [
+            Actions.registration.commit.prepare,
+            Actions.registration.register.prepare,
+          ]) {
+            yield* expectFailure(prepare(ens, { ...base, resolver: accounts.bob }), {
+              _tag: "NotFoundError",
+              code: "RESOLVER_NOT_DEPLOYED",
+            });
+            yield* expectFailure(prepare(ens, { ...base, subregistry: accounts.bob }), {
+              _tag: "NotFoundError",
+              code: "REGISTRY_NOT_FOUND",
+            });
+            yield* expectFailure(prepare(ens, { ...base, owner: zeroAddress }), {
+              _tag: "InvalidInputError",
+              code: "INVALID_ADDRESS",
+            });
+            for (const duration of [Duration.years(101), 2n ** 64n, -1n]) {
+              yield* expectFailure(prepare(ens, { ...base, duration }), {
+                _tag: "InvalidInputError",
+                code: "INVALID_DURATION",
+              });
+            }
+          }
+          yield* expectFailure(
+            Actions.registration.renew.prepare(ens, {
+              names: (yield* Fixtures).byId("v2.registered").name,
+              duration: Duration.years(101),
+            }),
+            { _tag: "InvalidInputError", code: "INVALID_DURATION" },
+          );
+        }),
+      { meta: { cases: ["G09", "G22"] } },
+    );
+
+    it.effect(
+      "deploys the signer's shared resolver once by default, and reuses it for later names",
       () =>
         Effect.gen(function* () {
           const { accounts } = yield* Devnet;
           const chain = yield* Chain;
           const clients = yield* Clients;
           const ens = clients.make({ account: accounts.alice });
-          const register = (name: string) =>
+          const register = (name: string, resolver?: "owned" | "new") =>
             Actions.registration.registerSync(ens, {
               names: name,
               duration: Duration.years(1),
-              resolver: "owned",
+              ...(resolver === undefined ? {} : { resolver }),
               records: { texts: { url: `https://${name}` } },
               onStep: chain.passWaits,
             });
@@ -648,9 +751,13 @@ describe("registration", () => {
           yield* chain.isolated(
             Effect.gen(function* () {
               const first = yield* register("qqqqq.eth");
-              const second = yield* register("rrrrr.eth");
+              const second = yield* register("rrrrr.eth", "owned");
+              // `"new"` still gives a name a resolver of its own.
+              yield* register("sssss.eth", "new");
+              const own = yield* Actions.resolver.get(ens, { name: "sssss.eth" });
 
-              // The first reveal also deploys the resolver; the second only registers.
+              // The first reveal also deploys the resolver; both write the records after
+              // registering, in the same step.
               const callsOf = (result: typeof first) =>
                 Option.getOrUndefined(
                   Option.map(
@@ -658,7 +765,7 @@ describe("registration", () => {
                     (step) => step.calls.length,
                   ),
                 );
-              assert.deepStrictEqual([callsOf(first), callsOf(second)], [2, 1]);
+              assert.deepStrictEqual([callsOf(first), callsOf(second)], [3, 2]);
               const [one, two] = yield* Effect.all(
                 [
                   Actions.resolver.get(ens, { name: "qqqqq.eth" }),
@@ -667,8 +774,100 @@ describe("registration", () => {
                 { concurrency: 1 },
               );
               assert.strictEqual(one?.address, two?.address);
+              assert.notStrictEqual(own?.address, one?.address);
               const text = yield* Actions.record.getText(ens, { name: "rrrrr.eth", key: "url" });
               assert.strictEqual(text, "https://rrrrr.eth");
+              // The ENS app uses this resolver only when the signer holds the full role mask.
+              const complete = yield* chain.read({
+                address: one?.address ?? zeroAddress,
+                abi: Abis.v2.permissionedResolver,
+                functionName: "hasRootRoles",
+                args: [Roles.enhancedAccessControl.allRoles, accounts.alice],
+              });
+              assert.isTrue(complete);
+            }),
+          );
+        }),
+      { meta: { cases: ["G29"] } },
+    );
+
+    it.effect(
+      "reuses a shared resolver created by ensforge 1.1, whose roles cannot be widened",
+      () =>
+        Effect.gen(function* () {
+          const devnet = yield* Devnet;
+          const { accounts } = devnet;
+          const chain = yield* Chain;
+          const clients = yield* Clients;
+          const ens = clients.make({ account: accounts.user });
+
+          yield* chain.isolated(
+            Effect.gen(function* () {
+              // ensforge 1.1 granted the roles defined then, and their admins, not the full mask.
+              const factory = devnet.contract("v2.verifiableFactory");
+              yield* chain.write({
+                address: factory,
+                abi: Abis.v2.verifiableFactory,
+                functionName: "deployProxy",
+                args: [
+                  devnet.contract("v2.permissionedResolverImplementation"),
+                  ownedResolverSalt(accounts.user),
+                  encodeFunctionData({
+                    abi: Abis.v2.permissionedResolver,
+                    functionName: "initialize",
+                    args: [
+                      [
+                        {
+                          account: accounts.user,
+                          roleBitmap: Arr.reduce(
+                            Rec.values(Roles.resolver),
+                            0n,
+                            (bitmap, role) => bitmap | role,
+                          ),
+                        },
+                      ],
+                      [],
+                    ],
+                  }),
+                ],
+                account: accounts.user,
+              });
+              const proxyLogic = yield* chain.read({
+                address: factory,
+                abi: Abis.v2.verifiableFactory,
+                functionName: "proxyLogic",
+              });
+              const resolver = predictVerifiableProxyAddress({
+                factory,
+                proxyLogic,
+                deployer: accounts.user,
+                salt: ownedResolverSalt(accounts.user),
+              });
+
+              // The admin roles of the undefined bits were never granted, so nobody can grant them.
+              const widened = yield* Effect.flip(
+                Effect.asVoid(
+                  chain.simulate({
+                    address: resolver,
+                    abi: Abis.v2.permissionedResolver,
+                    functionName: "grantRootRoles",
+                    args: [Roles.enhancedAccessControl.allRoles, accounts.user],
+                    account: accounts.user,
+                  }),
+                ),
+              );
+              assert.include(String(widened.cause), "EACCannotGrantRoles");
+
+              yield* mintUsdc(accounts.user, 1_000_000_000n);
+              const plan = yield* Actions.registration.register.prepare(ens, {
+                names: "partial-roles.eth",
+                duration: Duration.years(1),
+                resolver: "owned",
+              });
+              assert.deepStrictEqual(
+                Arr.map(plan.warnings, (warning) => warning.code),
+                ["RESOLVER_ROLES_PARTIAL"],
+              );
             }),
           );
         }),

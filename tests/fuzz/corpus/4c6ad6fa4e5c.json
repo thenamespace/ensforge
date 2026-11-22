@@ -1,0 +1,26 @@
+{
+  "seed": 20261117,
+  "failure": "step 2 ({\"kind\":\"register\",\"name\":0,\"actor\":1,\"years\":1,\"url\":false}): fuzzalpha.eth: ensforge reads text url https://fuzzalpha.example/1801800771, the model null",
+  "commands": [
+    {
+      "kind": "register",
+      "name": 0,
+      "actor": 4,
+      "years": 1,
+      "url": true
+    },
+    {
+      "kind": "wait",
+      "name": 0,
+      "boundary": "graceEnd",
+      "offset": 1
+    },
+    {
+      "kind": "register",
+      "name": 0,
+      "actor": 1,
+      "years": 1,
+      "url": false
+    }
+  ]
+}

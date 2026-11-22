@@ -4,9 +4,11 @@ import { Abis } from "@ensforge/contracts";
 import { encodeFunctionData, type Address } from "viem";
 
 import type { Client } from "../../client/types.js";
+import { NotFoundError } from "../../errors/classes/NotFoundError.js";
 import { UnsupportedError } from "../../errors/classes/UnsupportedError.js";
 import type { AnyError } from "../../errors/types.js";
 import type { Plan } from "../../plan/Plan.js";
+import * as Rpc from "../rpc/index.js";
 import type { LoadedName } from "./load.js";
 import * as V1Calls from "./v1-calls.js";
 import { requireAddress, requireV1Contracts } from "./write.js";
@@ -45,16 +47,27 @@ export const setResolverCall = (
 /**
  * The resolver a `resolver` option asks for. `"default"` is the ENSv1 public resolver: the ENSv2
  * PublicResolverV2 only authorizes names known to the NameWrapper, and ENSv2 names otherwise get
- * a PermissionedResolver of their own.
+ * a PermissionedResolver of their own. Calls to an address without code succeed and do nothing,
+ * so an address must have code unless `allowNonContract` (a resolver deployed later at a known
+ * address).
  */
-export const requestedResolver = (
+export const requestedResolver = Effect.fnUntraced(function* (
   client: Client,
   { state }: LoadedName,
   resolver: string,
-): Effect.Effect<Address, AnyError> => {
-  if (resolver !== "default") return requireAddress(resolver, "resolver");
+  options: { readonly allowNonContract?: boolean | undefined } = {},
+): Effect.fn.Return<Address, AnyError> {
+  if (resolver !== "default") {
+    const address = yield* requireAddress(resolver, "resolver");
+    if (options.allowNonContract !== true && !(yield* Rpc.hasCode(client, address))) {
+      return yield* Effect.fail(
+        new NotFoundError({ code: "RESOLVER_NOT_DEPLOYED", resource: address }),
+      );
+    }
+    return address;
+  }
   if (state.protocol === "v2") {
-    return Effect.fail(
+    return yield* Effect.fail(
       new UnsupportedError({
         code: "UNSUPPORTED_PROTOCOL",
         protocol: "v2",
@@ -63,5 +76,5 @@ export const requestedResolver = (
       }),
     );
   }
-  return requireV1Contracts(client).pipe(Effect.map((contracts) => contracts.publicResolver));
-};
+  return (yield* requireV1Contracts(client)).publicResolver;
+});

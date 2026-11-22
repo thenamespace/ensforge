@@ -259,14 +259,22 @@
   },
   "O09": {
     "tests": [
-      "tests/integration/test/writes/hierarchy.test.ts > rewrites a wrapped child of an unwrapped parent in the registry, unwrapping it"
+      "tests/integration/test/writes/hierarchy.test.ts > rewrites a wrapped child of an unwrapped parent in the registry, unwrapping it",
+      "tests/integration/test/writes/hierarchy.test.ts > changes a wrapped child's resolver from its unwrapped parent, keeping it wrapped"
     ]
   },
   "O10": {
-    "tests": ["tests/integration/test/reads/name.test.ts > v1.wrapped.sub.unwrapped-parent"]
+    "tests": [
+      "tests/integration/test/reads/name.test.ts > v1.wrapped.sub.unwrapped-parent",
+      "tests/integration/test/writes/hierarchy.test.ts > updates a wrapped child named by its labelhash with its real label"
+    ]
   },
   "O11": {
-    "tests": ["tests/integration/test/reads/name.test.ts > v1.unwrapped.sub.wrapped-parent"]
+    "tests": [
+      "tests/integration/test/reads/name.test.ts > v1.unwrapped.sub.wrapped-parent",
+      "tests/integration/test/writes/hierarchy.test.ts > removes and changes an unwrapped child of a wrapped parent",
+      "tests/integration/test/writes/hierarchy.test.ts > creates a child with records on an existing resolver for another owner"
+    ]
   },
   "O12": {
     "tests": [
@@ -504,7 +512,9 @@
   },
   "W22": {
     "tests": [
-      "tests/integration/test/writes/wrapper.test.ts > lets a child's owner burn it, unless cannotUnwrap is burned"
+      "tests/integration/test/writes/wrapper.test.ts > lets a child's owner burn it, unless cannotUnwrap is burned",
+      "tests/integration/test/writes/hierarchy.test.ts > removes an emancipated child as its holder, though the signer holds the parent",
+      "tests/integration/test/writes/hierarchy.test.ts > refuses to recreate a child its emancipation still protects"
     ]
   },
   "W23": {
@@ -558,7 +568,9 @@
   },
   "W33": {
     "tests": [
-      "tests/integration/test/writes/access.test.ts > refuses role grants to no account, and child registries to owners without the role"
+      "tests/integration/test/writes/access.test.ts > refuses role grants to no account, and child registries to owners without the role",
+      "tests/integration/test/writes/access.test.ts > refuses role names and contracts of the other kind before sending",
+      "tests/integration/test/writes/access.test.ts > refuses to revoke canTransferAdmin from the owner, which would freeze the name"
     ]
   },
   "W34": {
@@ -1027,7 +1039,7 @@
   },
   "K40": {
     "tests": [
-      "tests/integration/test/writes/records.test.ts > reveals a PermissionedResolver's default record when a name's records are cleared"
+      "tests/integration/test/writes/records.test.ts > clears a name's records without revealing the PermissionedResolver's default record"
     ]
   },
   "K41": {
@@ -1043,7 +1055,11 @@
     ]
   },
   "P02": {
-    "tests": ["tests/integration/test/writes/access.test.ts > sets and clears a primary name"]
+    "tests": [
+      "tests/integration/test/writes/access.test.ts > sets and clears a primary name",
+      "tests/integration/test/writes/access.test.ts > falls back to the default name once the Ethereum name is cleared",
+      "tests/integration/test/writes/hca.test.ts > sets the owner's default name through its HCA, not the HCA's"
+    ]
   },
   "P03": {
     "tests": [
@@ -1267,7 +1283,7 @@
   "G06": {
     "tests": [
       "tests/integration/test/reads/registration.test.ts > tracks a commitment through its window",
-      "tests/integration/test/writes/registration.test.ts > registers from an earlier commitment only inside its window"
+      "tests/integration/test/writes/registration.test.ts > waits for an earlier commitment that is not ready, and commits again once it expired"
     ]
   },
   "G07": {
@@ -1283,7 +1299,8 @@
   "G09": {
     "tests": [
       "tests/integration/test/writes/registration.test.ts > refuses names that cannot be registered before the wallet is asked",
-      "tests/integration/test/writes/renewal.test.ts > refuses names that cannot be renewed before the wallet is asked"
+      "tests/integration/test/writes/renewal.test.ts > refuses names that cannot be renewed before the wallet is asked",
+      "tests/integration/test/writes/registration.test.ts > refuses resolvers, subregistries, owners and durations register would fail on"
     ]
   },
   "G10": {
@@ -1342,17 +1359,18 @@
     "tests": [
       "tests/integration/test/writes/plans.test.ts > confirms a submitted step on resume, and sends a dropped one again",
       "tests/integration/test/writes/plans.test.ts > resumes an interrupted registration without committing again",
-      "tests/integration/test/writes/registration.test.ts > registers from an earlier commitment only inside its window"
+      "tests/integration/test/writes/registration.test.ts > waits for an earlier commitment that is not ready, and commits again once it expired"
     ]
   },
   "G21": {
     "tests": [
-      "tests/integration/test/writes/registration.test.ts > registers from an earlier commitment only inside its window"
+      "tests/integration/test/writes/registration.test.ts > waits for an earlier commitment that is not ready, and commits again once it expired"
     ]
   },
   "G22": {
     "tests": [
-      "tests/integration/test/writes/registration.test.ts > refuses names that cannot be registered before the wallet is asked"
+      "tests/integration/test/writes/registration.test.ts > refuses names that cannot be registered before the wallet is asked",
+      "tests/integration/test/writes/registration.test.ts > refuses resolvers, subregistries, owners and durations register would fail on"
     ]
   },
   "G23": {
@@ -1387,7 +1405,9 @@
   },
   "G29": {
     "tests": [
-      "tests/integration/test/writes/registration.test.ts > deploys the signer's shared resolver once, and reuses it for later names"
+      "tests/integration/test/writes/registration.test.ts > deploys the signer's shared resolver once by default, and reuses it for later names",
+      "tests/integration/test/writes/registration.test.ts > reuses a shared resolver created by ensforge 1.1, whose roles cannot be widened",
+      "tests/integration/test/writes/hca.test.ts > deploys resolvers the HCA and the owner can both write"
     ]
   },
   "G30": {
@@ -1432,7 +1452,8 @@
   },
   "T08": {
     "tests": [
-      "tests/integration/test/writes/migration.test.ts > copies records to a new resolver, keeps the manager, and renews a name in grace first"
+      "tests/integration/test/writes/migration.test.ts > copies records to a new resolver, keeps the manager, and renews a name in grace first",
+      "tests/integration/test/writes/migration.test.ts > migrates a name late in grace, after its reservation lapsed, with a renewal"
     ]
   },
   "T09": {
@@ -1593,7 +1614,8 @@
   },
   "M07": {
     "tests": [
-      "tests/integration/test/writes/migration.test.ts > migrates a locked name into a WrapperRegistry, then its locked child"
+      "tests/integration/test/writes/migration.test.ts > migrates a locked name into a WrapperRegistry, then its locked child",
+      "tests/integration/test/writes/migration.test.ts > copies a locked name's records to PublicResolverV2, or refuses to leave them behind"
     ]
   },
   "M08": {
@@ -1657,7 +1679,9 @@
   },
   "M20": {
     "tests": [
-      "tests/integration/test/writes/migration.test.ts > registers a locked name's controlled subnames in its WrapperRegistry once it migrated"
+      "tests/integration/test/writes/migration.test.ts > registers a locked name's controlled subnames in its WrapperRegistry once it migrated",
+      "tests/integration/test/writes/migration.test.ts > migrates a locked child listed before its locked parent",
+      "tests/integration/test/writes/migration.test.ts > migrates a detached child with its subnames in a registry of its own"
     ]
   },
   "M21": {
@@ -1731,6 +1755,9 @@
   "Z02": {
     "tests": [
       "tests/integration/test/writes/hca-session.test.ts > accepts an authorized session's first use, and refuses one outside its approval",
+      "tests/integration/test/writes/hca-session.test.ts > registers a fresh name with records and a primary name through a session, in one reveal",
+      "tests/integration/test/writes/hca-session.test.ts > registers with a session, pulling the price from the owner's wallet with a permit",
+      "tests/integration/test/writes/hca-session.test.ts > writes records with a session through rhinestone(), checked by the validator",
       "tests/integration/test/writes/hca.test.ts > HCA > mainnet-shaped > authorizes a session, checks its calls, and revokes it",
       "tests/integration/test/writes/hca.test.ts > authorizes a session, checks its calls, and revokes it"
     ]
@@ -1750,7 +1777,8 @@
     "tests": [
       "tests/integration/test/writes/hca-session.test.ts > accepts an authorized session's first use, and refuses one outside its approval",
       "tests/integration/test/writes/hca.test.ts > HCA > mainnet-shaped > authorizes a session, checks its calls, and revokes it",
-      "tests/integration/test/writes/hca.test.ts > authorizes a session, checks its calls, and revokes it"
+      "tests/integration/test/writes/hca.test.ts > authorizes a session, checks its calls, and revokes it",
+      "tests/integration/test/writes/hca.test.ts > revokes a session signed before its HCA was deployed"
     ]
   },
   "Z06": {
@@ -1918,7 +1946,8 @@
       "tests/integration/test/reads/access.test.ts > reports what an account may do, and why not",
       "tests/integration/test/reads/name.test.ts > v1.wrapped.locked",
       "tests/integration/test/writes/hierarchy.test.ts > wraps, burns fuses, and refuses what burned fuses forbid",
-      "tests/integration/test/writes/transfers.test.ts > transfers each ENSv1 role it is asked to"
+      "tests/integration/test/writes/transfers.test.ts > transfers each ENSv1 role it is asked to",
+      "tests/integration/test/writes/migration.test.ts > refuses a name whose NameWrapper expiry is out of date until it is synced"
     ]
   },
   "M:A9": {
@@ -2065,7 +2094,8 @@
       "tests/integration/test/writes/access-matrix.test.ts > record.set as ENSv2 owner",
       "tests/integration/test/writes/access-matrix.test.ts > record.set as ENSv2 stranger",
       "tests/integration/test/writes/records.test.ts > creates a resolver with records and points a name at it",
-      "tests/integration/test/writes/transfers.test.ts > hands record access over with an ENSv2 name, unless the resolver serves other names"
+      "tests/integration/test/writes/transfers.test.ts > hands record access over with an ENSv2 name, unless the resolver serves other names",
+      "tests/integration/test/writes/transfers.test.ts > refuses to hand over a resolver that holds another name's records"
     ]
   },
   "M:B6": {
@@ -2243,8 +2273,10 @@
   },
   "M:D9": {
     "tests": [
-      "tests/integration/test/writes/hca.test.ts > migrates several names in one execution",
-      "tests/integration/test/writes/hca.test.ts > registers a name for the owner, paid by the HCA, with the owner's primary name"
+      "tests/integration/test/writes/hca.test.ts > migrates several names in one execution, through MigrationHelper",
+      "tests/integration/test/writes/hca.test.ts > registers a name for the owner, paid by the HCA from the owner's wallet, with the owner's primary name",
+      "tests/integration/test/writes/hca.test.ts > deploys resolvers the HCA and the owner can both write",
+      "tests/integration/test/writes/hca.test.ts > sets the owner's default name through its HCA, not the HCA's"
     ]
   },
   "M:D10": {

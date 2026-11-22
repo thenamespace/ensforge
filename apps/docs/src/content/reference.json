@@ -5,7 +5,7 @@
       "name": "SDK",
       "npm": "@ensforge/sdk",
       "url": "/docs/reference/sdk",
-      "count": 92,
+      "count": 93,
       "unit": "actions",
       "description": "Every action by domain, plus the client, batching, utilities and indexers.",
       "items": [
@@ -457,7 +457,7 @@
         {
           "name": "subname.update",
           "url": "/docs/reference/sdk/subname/update",
-          "summary": "Changes a subname from its parent: owner, resolver or expiry, in one plan."
+          "summary": "Changes a subname's owner, resolver or expiry, in one plan, from its parent or as its holder."
         },
         {
           "name": "wrapper.getFuses",
@@ -473,6 +473,11 @@
           "name": "wrapper.setFuses",
           "url": "/docs/reference/sdk/wrapper/set-fuses",
           "summary": "Burns owner-controlled fuses on a wrapped ENSv1 name."
+        },
+        {
+          "name": "wrapper.sync",
+          "url": "/docs/reference/sdk/wrapper/sync",
+          "summary": "Brings the NameWrapper's expiry of wrapped .eth names up to their registration's."
         },
         {
           "name": "wrapper.unwrap",
@@ -824,7 +829,7 @@
       "name": "Errors",
       "npm": null,
       "url": "/docs/reference/errors",
-      "count": 104,
+      "count": 109,
       "unit": "codes",
       "description": "Every error code by class, with what happened, how to fix it and what to show users.",
       "items": [
@@ -1179,6 +1184,11 @@
           "summary": "The name cannot be renewed."
         },
         {
+          "name": "NAME_ALREADY_RENEWED",
+          "url": "/docs/reference/errors/NAME_ALREADY_RENEWED",
+          "summary": "Every name already expires at or after until."
+        },
+        {
           "name": "NAME_LOCKED",
           "url": "/docs/reference/errors/NAME_LOCKED",
           "summary": "The name is locked."
@@ -1192,6 +1202,11 @@
           "name": "NAME_WRAPPED",
           "url": "/docs/reference/errors/NAME_WRAPPED",
           "summary": "The name is already wrapped in the NameWrapper."
+        },
+        {
+          "name": "NAME_HAS_SUBNAMES",
+          "url": "/docs/reference/errors/NAME_HAS_SUBNAMES",
+          "summary": "The name has subnames, which would keep resolving without it."
         },
         {
           "name": "NAME_UNREACHABLE",
@@ -1212,6 +1227,11 @@
           "name": "REGISTRY_NOT_EMANCIPATED",
           "url": "/docs/reference/errors/REGISTRY_NOT_EMANCIPATED",
           "summary": "The registry is not emancipated, so this transfer is unsafe."
+        },
+        {
+          "name": "SUBREGISTRY_EXISTS",
+          "url": "/docs/reference/errors/SUBREGISTRY_EXISTS",
+          "summary": "The name already has a subregistry; replacing it orphans every subname in it."
         },
         {
           "name": "RPC_REQUEST_FAILED",
@@ -1237,6 +1257,11 @@
           "name": "RESOLVER_NOT_FOUND",
           "url": "/docs/reference/errors/RESOLVER_NOT_FOUND",
           "summary": "The name has no resolver."
+        },
+        {
+          "name": "RESOLVER_NOT_DEPLOYED",
+          "url": "/docs/reference/errors/RESOLVER_NOT_DEPLOYED",
+          "summary": "No contract is deployed at the resolver address."
         },
         {
           "name": "RECORD_NOT_FOUND",
@@ -1447,6 +1472,11 @@
           "name": "HCA_SDK_UNSUPPORTED",
           "url": "/docs/reference/errors/HCA_SDK_UNSUPPORTED",
           "summary": "The Rhinestone SDK does not support the standalone ENS HCA."
+        },
+        {
+          "name": "HCA_ROUTE_REJECTED",
+          "url": "/docs/reference/errors/HCA_ROUTE_REJECTED",
+          "summary": "The execution service returned a different transaction than ensforge asked for; nothing was signed."
         }
       ]
     }

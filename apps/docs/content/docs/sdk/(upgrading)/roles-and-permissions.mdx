@@ -193,9 +193,10 @@ await ens.permission.setRecordAccessSync({
 - Delegates and `"all"` need `allowScopeWidening: true`.
 
 <Callout type="warn" title="Resolver roles cover every name on that resolver">
-  Setter roles are per record kind, not per name. If names share a resolver (`resolver: "parent"`),
-  the grantee edits the same records on all of them. By default each name has its own resolver. See
-  [Resolvers and shared records](/docs/sdk/resolvers-and-shared-records).
+  Setter roles are per record kind, not per name. If names share a resolver, the grantee edits the
+  same records on all of them. Names a wallet registers share its resolver by default, as do
+  subnames created with `resolver: "parent"`. Register with `resolver: "new"` to give a name a
+  resolver of its own. See [Resolvers and shared records](/docs/sdk/resolvers-and-shared-records).
 </Callout>
 
 ## Troubleshooting

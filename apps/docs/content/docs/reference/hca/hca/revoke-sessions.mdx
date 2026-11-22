@@ -23,8 +23,9 @@ Use when a session key may be lost or compromised, or to end all prompt-free acc
 
 ## Details
 
-- Bumps the HCA's session nonce; must be the owner's own transaction (never routed through the
-  HCA).
+- Bumps the HCA's session nonce; always the owner's own transaction, so `via` is ignored.
+- An HCA that is not deployed yet is deployed first: a session signed for it would become
+  usable as soon as anyone deployed it. The plan carries the warning `HCA_DEPLOYED`.
 
 ## Signature
 
@@ -56,7 +57,6 @@ Resolves to `Write.Result`. Submitted transaction hashes and the plan that produ
 
 | Error | Codes | When |
 | --- | --- | --- |
-| [`HcaError`](/docs/reference/errors/hca-error) | [`HCA_NOT_VERIFIED`](/docs/reference/errors/HCA_NOT_VERIFIED) | the HCA is not deployed. |
 | [`HcaError`](/docs/reference/errors/hca-error) | [`HCA_UNAVAILABLE`](/docs/reference/errors/HCA_UNAVAILABLE) | on chains without an HCA deployment. |
 
 It can also fail with the errors every write can (`Errors.WriteError`: the common errors plus `InsufficientFundsError`, `TransactionError`, `UnsupportedError`, `UserRejectedError`, `WalletError`).

@@ -15,8 +15,14 @@ import * as Impl from "./effect.js";
  *
  * **Details**
  *
- * - ENSv2 names move their registry token. With `unsafe`, the transfer also succeeds while other
- *   accounts still hold roles on the name.
+ * - ENSv2 names move their registry token. The registry allows a safe transfer only when it is
+ *   emancipated and the owner alone holds the name's unemancipated roles; otherwise ensforge sends
+ *   `unsafeTransfer`, which still checks the receiver, with the warning `TRANSFER_UNSAFE` saying
+ *   why. `unsafe: false` fails before sending instead.
+ * - ENSv2: roles other accounts hold on the name stay with them after the move (warning
+ *   `ROLES_RETAINED`). `delegates: "revoke"` revokes them in the same step first: the indexer
+ *   lists the holders, each is checked on chain, and the transfer refuses (`INDEXER_BEHIND`) when
+ *   they do not account for every role. Roles the sender cannot revoke stay, with the warning.
  * - Wrapped ENSv1 names move their NameWrapper token.
  * - Unwrapped `.eth` names: `role: "owner"` (default) moves the registrar token and the registry
  *   ownership (manager); `role: "registrant"` moves only the registrar token.
@@ -26,13 +32,20 @@ import * as Impl from "./effect.js";
  *   registry record (`reclaim`) unless `role` is `"registrant"`; a Basenames subname changes its
  *   registry owner.
  *
+ * - `setEthAddress` points the name's ETH address at the recipient in the same step, before the
+ *   move.
+ * - Giving an ENSv1 subname to another account as its parent's owner is `subname.update({ owner })`.
+ *
  * **Gotchas**
  *
  * - Expired, reserved and unregistered names cannot be transferred.
  * - ENSv2: roles on the name's PermissionedResolver stay with the sender, who can still edit its
  *   records (the plan carries a `RECORD_CONTROL_RETAINED` warning). `records: "handover"` grants
- *   them to the recipient and revokes the sender's in the same step; it is refused for the
- *   sender's shared `"owned"` resolver, whose roles cover other names.
+ *   them to the recipient and revokes the sender's in the same step. Resolver roles cover every
+ *   name on the resolver, so handover is refused unless the resolver provably serves only this
+ *   name: it is not the sender's or owner's shared `"owned"` resolver, and it holds no record of
+ *   another name. With an indexer, other names pointing at it are refused too; without one, a name
+ *   that points at the resolver but has no records yet cannot be seen.
  *
  * **Example** (Sending a name)
  *
@@ -59,8 +72,10 @@ import * as Impl from "./effect.js";
  * @throws `Errors.InvalidInputError` (`INVALID_NAME`, `INVALID_ADDRESS`) for invalid input.
  * @throws `Errors.NameStateError` (`NAME_EXPIRED`, `NAME_RESERVED`, `NAME_NOT_REGISTERED`, `NAME_EXTERNAL`) when the name cannot be sent, or its parent's namespace manages it outside ENS's registries.
  * @throws `Errors.NameStateError` (`NAME_UNREACHABLE`) when ENSv2 resolution no longer reaches the name.
- * @throws `Errors.NameStateError` (`REGISTRY_NOT_EMANCIPATED`) when the name's registry is not emancipated and `unsafe` is not set.
- * @throws `Errors.UnauthorizedError` (`NOT_OWNER`, `TRANSFER_DISALLOWED`) when the account may not send it, or the recipient (an HCA) refuses it.
+ * @throws `Errors.NameStateError` (`REGISTRY_NOT_EMANCIPATED`) when the name's registry is not emancipated and `unsafe` is `false`.
+ * @throws `Errors.UnauthorizedError` (`NOT_OWNER`, `TRANSFER_DISALLOWED`) when the account may not send it, other accounts hold its roles and `unsafe` is `false`, or the recipient (an HCA) refuses it.
+ * @throws `Errors.ConfigError` (`INDEXER_NOT_CONFIGURED`) with `delegates: "revoke"` when other accounts hold roles and no indexer is configured.
+ * @throws `Errors.IndexerError` (`INDEXER_BEHIND`) with `delegates: "revoke"` when the indexer does not list every holder.
  * @throws `Errors.UnsupportedError` (`UNSUPPORTED_PROTOCOL`) for `role: "registrant"` on names without a registrant.
  * @throws `Errors.UnsupportedError` (`UNSUPPORTED_ON_DEPLOYMENT`) for `role: "registrant"` on an L2 name without a token, or a route (`via`) on an L2 name.
  * @throws `Errors.ConfigError` (`CHAIN_NOT_CONFIGURED`) when the name lives on an L2 the client cannot reach.
@@ -95,11 +110,27 @@ export declare namespace transfer {
      */
     role?: "owner" | "registrant" | undefined;
     /**
-     * ENSv2 only: transfer even while other accounts hold roles on the name.
+     * ENSv2: how the token moves. `"auto"` sends a safe transfer when the registry allows one,
+     * else `unsafeTransfer` (which still checks the receiver) with the warning `TRANSFER_UNSAFE`
+     * saying why; `true` always sends `unsafeTransfer`; `false` fails before sending instead.
      *
-     * @default false
+     * @default "auto"
      */
-    unsafe?: boolean | undefined;
+    unsafe?: boolean | "auto" | undefined;
+    /**
+     * ENSv2: roles other accounts hold on the name. `"keep"` leaves them (warning
+     * `ROLES_RETAINED`); `"revoke"` revokes them before the move, with holders listed by the
+     * indexer and checked on chain.
+     *
+     * @default "keep"
+     */
+    delegates?: "keep" | "revoke" | undefined;
+    /**
+     * Write `to` as the name's ETH address on its current resolver first, while the sender still
+     * controls it; skipped with the warning `ETH_ADDRESS_NOT_SET` when the sender cannot write
+     * there.
+     */
+    setEthAddress?: boolean | undefined;
     /**
      * ENSv2: what happens to the sender's roles on the name's PermissionedResolver.
      *
@@ -114,7 +145,8 @@ export declare namespace transfer {
     | Errors.WriteError
     | Errors.InvalidInputError
     | Errors.NameStateError
-    | Errors.UnauthorizedError;
+    | Errors.UnauthorizedError
+    | Errors.IndexerError;
 }
 
 // Explicit types keep these declarations free of Effect types.
@@ -169,8 +201,10 @@ transfer.estimateGas = Action.promiseOf(
  * @throws `Errors.InvalidInputError` (`INVALID_NAME`, `INVALID_ADDRESS`) for invalid input.
  * @throws `Errors.NameStateError` (`NAME_EXPIRED`, `NAME_RESERVED`, `NAME_NOT_REGISTERED`, `NAME_EXTERNAL`) when the name cannot be sent, or its parent's namespace manages it outside ENS's registries.
  * @throws `Errors.NameStateError` (`NAME_UNREACHABLE`) when ENSv2 resolution no longer reaches the name.
- * @throws `Errors.NameStateError` (`REGISTRY_NOT_EMANCIPATED`) when the name's registry is not emancipated and `unsafe` is not set.
- * @throws `Errors.UnauthorizedError` (`NOT_OWNER`, `TRANSFER_DISALLOWED`) when the account may not send it, or the recipient (an HCA) refuses it.
+ * @throws `Errors.NameStateError` (`REGISTRY_NOT_EMANCIPATED`) when the name's registry is not emancipated and `unsafe` is `false`.
+ * @throws `Errors.UnauthorizedError` (`NOT_OWNER`, `TRANSFER_DISALLOWED`) when the account may not send it, other accounts hold its roles and `unsafe` is `false`, or the recipient (an HCA) refuses it.
+ * @throws `Errors.ConfigError` (`INDEXER_NOT_CONFIGURED`) with `delegates: "revoke"` when other accounts hold roles and no indexer is configured.
+ * @throws `Errors.IndexerError` (`INDEXER_BEHIND`) with `delegates: "revoke"` when the indexer does not list every holder.
  * @throws `Errors.UnsupportedError` (`UNSUPPORTED_PROTOCOL`) for `role: "registrant"` on names without a registrant.
  * @throws `Errors.UnsupportedError` (`UNSUPPORTED_ON_DEPLOYMENT`) for `role: "registrant"` on an L2 name without a token, or a route (`via`) on an L2 name.
  * @throws `Errors.ConfigError` (`CHAIN_NOT_CONFIGURED`) when the name lives on an L2 the client cannot reach.
@@ -198,7 +232,8 @@ export declare namespace transferSync {
     | Errors.WriteError
     | Errors.InvalidInputError
     | Errors.NameStateError
-    | Errors.UnauthorizedError;
+    | Errors.UnauthorizedError
+    | Errors.IndexerError;
 }
 
 /** Path of the action, e.g. for cache keys. */

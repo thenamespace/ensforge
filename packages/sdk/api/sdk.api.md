@@ -271,7 +271,7 @@ function Actions.migration.migrate(client: Client<object> | ViemClientLike, opti
 type Actions.migration.migrate.ErrorType = InvalidInputError | MigrationError | NameStateError | UnauthorizedError | WriteError
 function Actions.migration.migrate.estimateGas(client: Client<object> | ViemClientLike, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Estimate>
 const Actions.migration.migrate.estimateGas.path: string
-type Actions.migration.migrate.Options = { names: readonly NameInput[] | NameInput; resolver?: 'keep' | 'new' | 'owned' | (string & {}) | undefined; owner?: string | undefined; allowIncompleteRecords?: boolean | undefined; allowLeavingSubnames?: boolean | undefined; preserveManager?: boolean | undefined; migrateParents?: boolean | undefined; renew?: { readonly duration: bigint; readonly paymentToken?: PaymentToken | undefined; } | undefined; }
+type Actions.migration.migrate.Options = { names: readonly NameInput[] | NameInput; resolver?: 'keep' | 'new' | 'owned' | (string & {}) | undefined; owner?: string | undefined; allowIncompleteRecords?: boolean | undefined; allowEmptyResolver?: boolean | undefined; allowLeavingSubnames?: boolean | undefined; preserveManager?: boolean | undefined; migrateParents?: boolean | undefined; resume?: boolean | undefined; renew?: { readonly duration: bigint; readonly paymentToken?: PaymentToken | undefined; } | undefined; }
 const Actions.migration.migrate.path: 'migration.migrate'
 function Actions.migration.migrate.prepare(client: Client<object> | ViemClientLike, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Plan>
 const Actions.migration.migrate.prepare.path: string
@@ -350,10 +350,10 @@ type Actions.name.setTtlSync.Options = setTtl.Options & Write.Options & { confir
 const Actions.name.setTtlSync.path: 'name.setTtlSync'
 type Actions.name.setTtlSync.ReturnType = Result & { readonly receipt: TransactionReceipt; readonly receipts: readonly TransactionReceipt[]; }
 function Actions.name.transfer(client: Client<object> | ViemClientLike, options: transfer.Options & Write.Options) => Promise<Result>
-type Actions.name.transfer.ErrorType = InvalidInputError | NameStateError | UnauthorizedError | WriteError
+type Actions.name.transfer.ErrorType = IndexerError | InvalidInputError | NameStateError | UnauthorizedError | WriteError
 function Actions.name.transfer.estimateGas(client: Client<object> | ViemClientLike, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Estimate>
 const Actions.name.transfer.estimateGas.path: string
-type Actions.name.transfer.Options = { name: string; to: string; role?: 'owner' | 'registrant' | undefined; unsafe?: boolean | undefined; records?: 'handover' | 'keep' | undefined; }
+type Actions.name.transfer.Options = { name: string; to: string; role?: 'owner' | 'registrant' | undefined; unsafe?: 'auto' | boolean | undefined; delegates?: 'keep' | 'revoke' | undefined; setEthAddress?: boolean | undefined; records?: 'handover' | 'keep' | undefined; }
 const Actions.name.transfer.path: 'name.transfer'
 function Actions.name.transfer.prepare(client: Client<object> | ViemClientLike, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Plan>
 const Actions.name.transfer.prepare.path: string
@@ -361,7 +361,7 @@ type Actions.name.transfer.ReturnType = { readonly hash: `0x${string}`; readonly
 function Actions.name.transfer.simulate(client: Client<object> | ViemClientLike, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Simulation>
 const Actions.name.transfer.simulate.path: string
 function Actions.name.transferSync(client: Client<object> | ViemClientLike, options: transfer.Options & Write.Options & { confirmations?: number | undefined; timeout?: number | undefined; }) => Promise<SyncResult>
-type Actions.name.transferSync.ErrorType = InvalidInputError | NameStateError | UnauthorizedError | WriteError
+type Actions.name.transferSync.ErrorType = IndexerError | InvalidInputError | NameStateError | UnauthorizedError | WriteError
 type Actions.name.transferSync.Options = transfer.Options & Write.Options & { confirmations?: number | undefined; timeout?: number | undefined; }
 const Actions.name.transferSync.path: 'name.transferSync'
 type Actions.name.transferSync.ReturnType = Result & { readonly receipt: TransactionReceipt; readonly receipts: readonly TransactionReceipt[]; }
@@ -448,7 +448,7 @@ type Actions.primaryName.set.ClaimOptions = { claim: Claim; signature: `0x${stri
 type Actions.primaryName.set.ErrorType = InvalidInputError | NotFoundError | UnauthorizedError | WriteError
 function Actions.primaryName.set.estimateGas(client: Client<object> | ViemClientLike, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Estimate>
 const Actions.primaryName.set.estimateGas.path: string
-type Actions.primaryName.set.NameOptions = { name: string | null; address?: string | undefined; coin?: Input | undefined; verify?: boolean | undefined; claim?: undefined; signature?: undefined; }
+type Actions.primaryName.set.NameOptions = { name: string | null; address?: string | undefined; coin?: Input | undefined; verify?: boolean | undefined; ensureForward?: boolean | undefined; claim?: undefined; signature?: undefined; }
 type Actions.primaryName.set.Options = ClaimOptions | NameOptions
 const Actions.primaryName.set.path: 'primaryName.set'
 function Actions.primaryName.set.prepare(client: Client<object> | ViemClientLike, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Plan>
@@ -503,7 +503,7 @@ function Actions.record.set(client: Client<object> | ViemClientLike, options: se
 type Actions.record.set.ErrorType = InvalidInputError | NameStateError | NotFoundError | UnauthorizedError | WriteError
 function Actions.record.set.estimateGas(client: Client<object> | ViemClientLike, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Estimate>
 const Actions.record.set.estimateGas.path: string
-type Actions.record.set.Options = { name: string; texts?: Readonly<Record<string, string | null>> | undefined; addresses?: Readonly<Record<string, string | null>> | undefined; contentHash?: string | null | undefined; abi?: { contentType?: 1n | 2n | 4n | 8n | undefined; value: Abi | `0x${string}` | null; } | undefined; pubkey?: { x: `0x${string}`; y: `0x${string}`; } | null | undefined; nameRecord?: string | null | undefined; interfaces?: Readonly<Record<`0x${string}`, `0x${string}` | null>> | undefined; data?: Readonly<Record<string, `0x${string}` | null>> | undefined; clear?: boolean | undefined; resolver?: 'default' | `0x${string}` | undefined; }
+type Actions.record.set.Options = { name: string; texts?: Readonly<Record<string, string | null>> | undefined; addresses?: Readonly<Record<string, string | null>> | undefined; contentHash?: string | null | undefined; abi?: { contentType?: 1n | 2n | 4n | 8n | undefined; value: string | Abi | null; } | undefined; pubkey?: { x: `0x${string}`; y: `0x${string}`; } | null | undefined; nameRecord?: string | null | undefined; interfaces?: Readonly<Record<`0x${string}`, `0x${string}` | null>> | undefined; data?: Readonly<Record<string, `0x${string}` | null>> | undefined; clear?: boolean | undefined; resolver?: 'default' | `0x${string}` | undefined; }
 const Actions.record.set.path: 'record.set'
 function Actions.record.set.prepare(client: Client<object> | ViemClientLike, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Plan>
 const Actions.record.set.prepare.path: string
@@ -516,7 +516,7 @@ type Actions.record.setSync.Options = set.Options & Write.Options & { confirmati
 const Actions.record.setSync.path: 'record.setSync'
 type Actions.record.setSync.ReturnType = Result & { readonly receipt: TransactionReceipt; readonly receipts: readonly TransactionReceipt[]; }
 function Actions.registration.commit(client: Client<object> | ViemClientLike, options: register.Options & Write.Options) => Promise<ReturnType>
-type Actions.registration.commit.ErrorType = CommitmentError | InvalidInputError | NameStateError | WriteError
+type Actions.registration.commit.ErrorType = CommitmentError | InvalidInputError | NameStateError | NotFoundError | WriteError
 function Actions.registration.commit.estimateGas(client: Client<object> | ViemClientLike, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Estimate>
 const Actions.registration.commit.estimateGas.path: string
 type Actions.registration.commit.Options = { names: string | readonly string[]; duration: bigint; owner?: string | undefined; resolver?: string | null | undefined; records?: Omit<Options, 'clear' | 'name' | 'pubkey' | 'resolver'> | undefined; primaryName?: boolean | undefined; paymentToken?: PaymentToken | undefined; subregistry?: string | undefined; referrer?: `0x${string}` | undefined; secret?: `0x${string}` | undefined; }
@@ -527,7 +527,7 @@ type Actions.registration.commit.ReturnType = Result & { readonly secret: `0x${s
 function Actions.registration.commit.simulate(client: Client<object> | ViemClientLike, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Simulation>
 const Actions.registration.commit.simulate.path: string
 function Actions.registration.commitSync(client: Client<object> | ViemClientLike, options: register.Options & Write.Options & { confirmations?: number | undefined; timeout?: number | undefined; }) => Promise<ReturnType>
-type Actions.registration.commitSync.ErrorType = CommitmentError | InvalidInputError | NameStateError | WriteError
+type Actions.registration.commitSync.ErrorType = CommitmentError | InvalidInputError | NameStateError | NotFoundError | WriteError
 type Actions.registration.commitSync.Options = register.Options & Write.Options & { confirmations?: number | undefined; timeout?: number | undefined; }
 const Actions.registration.commitSync.path: 'registration.commitSync'
 type Actions.registration.commitSync.ReturnType = Result & { readonly receipt: TransactionReceipt; readonly receipts: readonly TransactionReceipt[]; } & { readonly secret: `0x${string}`; readonly commitments: readonly `0x${string}`[]; readonly readyAt: bigint; }
@@ -549,12 +549,12 @@ type Actions.registration.getPrice.Options = Pick<Options, 'signal'> & (BlockOpt
 const Actions.registration.getPrice.path: 'registration.getPrice'
 function Actions.registration.getPrice.request(options: Pick<Options, 'signal'> & (BlockOptions & { name: string; duration: bigint; paymentToken?: PaymentToken | undefined; at?: bigint | undefined; })) => Request<ReturnType, ErrorType>
 type Actions.registration.getPrice.ReturnType = { readonly base: bigint; readonly premium: bigint; readonly total: bigint; readonly token: TokenInfo; }
-function Actions.registration.getRenewalPrice(client: Client<object> | ViemClientLike, options: Pick<Options, 'signal'> & (BlockOptions & { names: string | readonly string[]; duration: bigint; paymentToken?: PaymentToken | undefined; })) => Promise<ReturnType>
+function Actions.registration.getRenewalPrice(client: Client<object> | ViemClientLike, options: (Pick<Options, 'signal'> & BlockOptions) & ({ names: string | readonly string[]; paymentToken?: PaymentToken | undefined; } & ({ duration: bigint; until?: undefined; } | { until: bigint; duration?: undefined; }))) => Promise<ReturnType>
 type Actions.registration.getRenewalPrice.ErrorType = InvalidInputError | NameStateError | UnsupportedError | CommonError
-type Actions.registration.getRenewalPrice.Options = Pick<Options, 'signal'> & (BlockOptions & { names: string | readonly string[]; duration: bigint; paymentToken?: PaymentToken | undefined; })
+type Actions.registration.getRenewalPrice.Options = (Pick<Options, 'signal'> & BlockOptions) & ({ names: string | readonly string[]; paymentToken?: PaymentToken | undefined; } & ({ duration: bigint; until?: undefined; } | { until: bigint; duration?: undefined; }))
 const Actions.registration.getRenewalPrice.path: 'registration.getRenewalPrice'
-function Actions.registration.getRenewalPrice.request(options: Pick<Options, 'signal'> & (BlockOptions & { names: string | readonly string[]; duration: bigint; paymentToken?: PaymentToken | undefined; })) => Request<ReturnType, ErrorType>
-type Actions.registration.getRenewalPrice.ReturnType = { readonly total: bigint; readonly token: TokenInfo; readonly items: readonly { readonly name: string; readonly route: RenewalRoute; readonly amount: bigint; }[]; }
+function Actions.registration.getRenewalPrice.request(options: (Pick<Options, 'signal'> & BlockOptions) & ({ names: string | readonly string[]; paymentToken?: PaymentToken | undefined; } & ({ duration: bigint; until?: undefined; } | { until: bigint; duration?: undefined; }))) => Request<ReturnType, ErrorType>
+type Actions.registration.getRenewalPrice.ReturnType = { readonly total: bigint; readonly token: TokenInfo; readonly items: readonly { readonly name: string; readonly route: RenewalRoute; readonly amount: bigint; readonly expiry: bigint; readonly duration: bigint; }[]; }
 function Actions.registration.isAvailable(client: Client<object> | ViemClientLike, options: Pick<Options, 'signal'> & (BlockOptions & { name: string; })) => Promise<boolean>
 type Actions.registration.isAvailable.ErrorType = InvalidInputError | UnsupportedError | CommonError
 type Actions.registration.isAvailable.Options = Pick<Options, 'signal'> & (BlockOptions & { name: string; })
@@ -562,7 +562,7 @@ const Actions.registration.isAvailable.path: 'registration.isAvailable'
 function Actions.registration.isAvailable.request(options: Pick<Options, 'signal'> & (BlockOptions & { name: string; })) => Request<boolean, ErrorType>
 type Actions.registration.isAvailable.ReturnType = boolean
 function Actions.registration.register(client: Client<object> | ViemClientLike, options: register.Options & Write.Options) => Promise<ReturnType>
-type Actions.registration.register.ErrorType = CommitmentError | InvalidInputError | NameStateError | WriteError
+type Actions.registration.register.ErrorType = InvalidInputError | NameStateError | NotFoundError | WriteError
 function Actions.registration.register.estimateGas(client: Client<object> | ViemClientLike, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Estimate>
 const Actions.registration.register.estimateGas.path: string
 type Actions.registration.register.Options = { names: string | readonly string[]; duration: bigint; owner?: string | undefined; resolver?: string | null | undefined; records?: Omit<Options, 'clear' | 'name' | 'pubkey' | 'resolver'> | undefined; primaryName?: boolean | undefined; paymentToken?: PaymentToken | undefined; subregistry?: string | undefined; referrer?: `0x${string}` | undefined; secret?: `0x${string}` | undefined; }
@@ -573,7 +573,7 @@ type Actions.registration.register.ReturnType = Result & { readonly secret: `0x$
 function Actions.registration.register.simulate(client: Client<object> | ViemClientLike, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Simulation>
 const Actions.registration.register.simulate.path: string
 function Actions.registration.registerSync(client: Client<object> | ViemClientLike, options: register.Options & Write.Options & { confirmations?: number | undefined; timeout?: number | undefined; }) => Promise<ReturnType>
-type Actions.registration.registerSync.ErrorType = CommitmentError | InvalidInputError | NameStateError | WriteError
+type Actions.registration.registerSync.ErrorType = InvalidInputError | NameStateError | NotFoundError | WriteError
 type Actions.registration.registerSync.Options = register.Options & Write.Options & { confirmations?: number | undefined; timeout?: number | undefined; }
 const Actions.registration.registerSync.path: 'registration.registerSync'
 type Actions.registration.registerSync.ReturnType = Result & { readonly receipt: TransactionReceipt; readonly receipts: readonly TransactionReceipt[]; } & { readonly secret: `0x${string}`; readonly names: readonly { readonly name: string; readonly tokenId: bigint; readonly expiry: bigint; }[]; readonly paid: bigint; }
@@ -581,7 +581,7 @@ function Actions.registration.renew(client: Client<object> | ViemClientLike, opt
 type Actions.registration.renew.ErrorType = InvalidInputError | NameStateError | WriteError
 function Actions.registration.renew.estimateGas(client: Client<object> | ViemClientLike, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Estimate>
 const Actions.registration.renew.estimateGas.path: string
-type Actions.registration.renew.Options = { names: string | readonly string[]; duration: bigint; paymentToken?: PaymentToken | undefined; referrer?: `0x${string}` | undefined; }
+type Actions.registration.renew.Options = { names: string | readonly string[]; paymentToken?: PaymentToken | undefined; referrer?: `0x${string}` | undefined; } & ({ duration: bigint; until?: undefined; } | { until: bigint; duration?: undefined; })
 const Actions.registration.renew.path: 'registration.renew'
 function Actions.registration.renew.prepare(client: Client<object> | ViemClientLike, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Plan>
 const Actions.registration.renew.prepare.path: string
@@ -597,7 +597,7 @@ function Actions.registry.attach(client: Client<object> | ViemClientLike, option
 type Actions.registry.attach.ErrorType = InvalidInputError | NameStateError | UnauthorizedError | WriteError
 function Actions.registry.attach.estimateGas(client: Client<object> | ViemClientLike, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Estimate>
 const Actions.registry.attach.estimateGas.path: string
-type Actions.registry.attach.Options = { name: string; registry: string | null; setParent?: boolean | undefined; }
+type Actions.registry.attach.Options = { name: string; registry: string | null; setParent?: boolean | undefined; replace?: boolean | undefined; }
 const Actions.registry.attach.path: 'registry.attach'
 function Actions.registry.attach.prepare(client: Client<object> | ViemClientLike, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Plan>
 const Actions.registry.attach.prepare.path: string
@@ -610,10 +610,10 @@ type Actions.registry.attachSync.Options = attach.Options & Write.Options & { co
 const Actions.registry.attachSync.path: 'registry.attachSync'
 type Actions.registry.attachSync.ReturnType = Result & { readonly receipt: TransactionReceipt; readonly receipts: readonly TransactionReceipt[]; }
 function Actions.registry.deploy(client: Client<object> | ViemClientLike, options: deploy.Options & Write.Options) => Promise<ReturnType>
-type Actions.registry.deploy.ErrorType = InvalidInputError | UnauthorizedError | WriteError
+type Actions.registry.deploy.ErrorType = InvalidInputError | NameStateError | UnauthorizedError | WriteError
 function Actions.registry.deploy.estimateGas(client: Client<object> | ViemClientLike, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Estimate>
 const Actions.registry.deploy.estimateGas.path: string
-type Actions.registry.deploy.Options = { owner?: string | undefined; grants?: readonly { account: string; roles: bigint | readonly Name[]; }[] | undefined; emancipated?: boolean | undefined; attachTo?: string | undefined; salt?: bigint | undefined; }
+type Actions.registry.deploy.Options = { owner?: string | undefined; grants?: readonly { account: string; roles: bigint | readonly ('canName' | 'canNameAdmin' | 'canTransfer' | 'canTransferAdmin' | 'registerReserved' | 'registerReservedAdmin' | 'registrar' | 'registrarAdmin' | 'renew' | 'renewAdmin' | 'setParent' | 'setParentAdmin' | 'setResolver' | 'setResolverAdmin' | 'setSubregistry' | 'setSubregistryAdmin' | 'setUri' | 'setUriAdmin' | 'unregister' | 'unregisterAdmin' | 'upgrade' | 'upgradeAdmin' | 'wasReserved')[]; }[] | undefined; emancipated?: boolean | undefined; attachTo?: string | undefined; replace?: boolean | undefined; salt?: bigint | undefined; }
 const Actions.registry.deploy.path: 'registry.deploy'
 function Actions.registry.deploy.prepare(client: Client<object> | ViemClientLike, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Plan>
 const Actions.registry.deploy.prepare.path: string
@@ -621,7 +621,7 @@ type Actions.registry.deploy.ReturnType = Result & { readonly registry: `0x${str
 function Actions.registry.deploy.simulate(client: Client<object> | ViemClientLike, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Simulation>
 const Actions.registry.deploy.simulate.path: string
 function Actions.registry.deploySync(client: Client<object> | ViemClientLike, options: deploy.Options & Write.Options & { confirmations?: number | undefined; timeout?: number | undefined; }) => Promise<ReturnType>
-type Actions.registry.deploySync.ErrorType = InvalidInputError | UnauthorizedError | WriteError
+type Actions.registry.deploySync.ErrorType = InvalidInputError | NameStateError | UnauthorizedError | WriteError
 type Actions.registry.deploySync.Options = deploy.Options & Write.Options & { confirmations?: number | undefined; timeout?: number | undefined; }
 const Actions.registry.deploySync.path: 'registry.deploySync'
 type Actions.registry.deploySync.ReturnType = Result & { readonly receipt: TransactionReceipt; readonly receipts: readonly TransactionReceipt[]; } & { readonly registry: `0x${string}`; }
@@ -667,7 +667,7 @@ function Actions.resolver.create(client: Client<object> | ViemClientLike, option
 type Actions.resolver.create.ErrorType = InvalidInputError | NameStateError | UnauthorizedError | WriteError
 function Actions.resolver.create.estimateGas(client: Client<object> | ViemClientLike, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Estimate>
 const Actions.resolver.create.estimateGas.path: string
-type Actions.resolver.create.Options = { name?: string | undefined; records?: Omit<Options, 'clear' | 'name' | 'pubkey' | 'resolver'> | undefined; owner?: string | undefined; grants?: readonly { account: string; roles: bigint | readonly Name[]; }[] | undefined; salt?: bigint | undefined; }
+type Actions.resolver.create.Options = { name?: string | undefined; records?: Omit<Options, 'clear' | 'name' | 'pubkey' | 'resolver'> | undefined; owner?: string | undefined; grants?: readonly { account: string; roles: bigint | readonly ('canName' | 'canNameAdmin' | 'link' | 'linkAdmin' | 'setAbi' | 'setAbiAdmin' | 'setAddr' | 'setAddrAdmin' | 'setContenthash' | 'setContenthashAdmin' | 'setData' | 'setDataAdmin' | 'setInterface' | 'setInterfaceAdmin' | 'setName' | 'setNameAdmin' | 'setText' | 'setTextAdmin' | 'upgrade' | 'upgradeAdmin')[]; }[] | undefined; salt?: bigint | undefined; }
 const Actions.resolver.create.path: 'resolver.create'
 function Actions.resolver.create.prepare(client: Client<object> | ViemClientLike, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Plan>
 const Actions.resolver.create.prepare.path: string
@@ -695,7 +695,7 @@ function Actions.resolver.link(client: Client<object> | ViemClientLike, options:
 type Actions.resolver.link.ErrorType = InvalidInputError | NameStateError | NotFoundError | UnauthorizedError | WriteError
 function Actions.resolver.link.estimateGas(client: Client<object> | ViemClientLike, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Estimate>
 const Actions.resolver.link.estimateGas.path: string
-type Actions.resolver.link.Options = { name: string; to: string | { recordId: bigint; }; }
+type Actions.resolver.link.Options = { name: string; to: string | { recordId: bigint; } | null; }
 const Actions.resolver.link.path: 'resolver.link'
 function Actions.resolver.link.prepare(client: Client<object> | ViemClientLike, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Plan>
 const Actions.resolver.link.prepare.path: string
@@ -714,10 +714,10 @@ const Actions.resolver.resolve.path: 'resolver.resolve'
 function Actions.resolver.resolve.request(options: Omit<Options, 'strict'> & { name: string; data: `0x${string}`; }) => Request<ReturnType, ErrorType>
 type Actions.resolver.resolve.ReturnType = { readonly data: `0x${string}`; readonly resolver: `0x${string}`; }
 function Actions.resolver.set(client: Client<object> | ViemClientLike, options: set.Options & Write.Options) => Promise<Result>
-type Actions.resolver.set.ErrorType = InvalidInputError | NameStateError | UnauthorizedError | WriteError
+type Actions.resolver.set.ErrorType = InvalidInputError | NameStateError | NotFoundError | UnauthorizedError | WriteError
 function Actions.resolver.set.estimateGas(client: Client<object> | ViemClientLike, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Estimate>
 const Actions.resolver.set.estimateGas.path: string
-type Actions.resolver.set.Options = { name: string; resolver: 'default' | `0x${string}` | null; }
+type Actions.resolver.set.Options = { name: string; resolver: 'default' | `0x${string}` | null; allowNonContract?: boolean | undefined; }
 const Actions.resolver.set.path: 'resolver.set'
 function Actions.resolver.set.prepare(client: Client<object> | ViemClientLike, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Plan>
 const Actions.resolver.set.prepare.path: string
@@ -725,7 +725,7 @@ type Actions.resolver.set.ReturnType = { readonly hash: `0x${string}`; readonly 
 function Actions.resolver.set.simulate(client: Client<object> | ViemClientLike, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Simulation>
 const Actions.resolver.set.simulate.path: string
 function Actions.resolver.setSync(client: Client<object> | ViemClientLike, options: set.Options & Write.Options & { confirmations?: number | undefined; timeout?: number | undefined; }) => Promise<SyncResult>
-type Actions.resolver.setSync.ErrorType = InvalidInputError | NameStateError | UnauthorizedError | WriteError
+type Actions.resolver.setSync.ErrorType = InvalidInputError | NameStateError | NotFoundError | UnauthorizedError | WriteError
 type Actions.resolver.setSync.Options = set.Options & Write.Options & { confirmations?: number | undefined; timeout?: number | undefined; }
 const Actions.resolver.setSync.path: 'resolver.setSync'
 type Actions.resolver.setSync.ReturnType = Result & { readonly receipt: TransactionReceipt; readonly receipts: readonly TransactionReceipt[]; }
@@ -755,7 +755,7 @@ function Actions.role.grant(client: Client<object> | ViemClientLike, options: gr
 type Actions.role.grant.ErrorType = InvalidInputError | UnauthorizedError | WriteError
 function Actions.role.grant.estimateGas(client: Client<object> | ViemClientLike, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Estimate>
 const Actions.role.grant.estimateGas.path: string
-type Actions.role.grant.Options = { grantee: string; roles: bigint | readonly Name[]; target: 'registry' | 'resolver'; name?: string | undefined; contract?: string | undefined; root?: boolean | undefined; }
+type Actions.role.grant.Options = { grantee: string; name?: string | undefined; contract?: string | undefined; root?: boolean | undefined; } & ({ target: 'registry'; roles: bigint | readonly ('canName' | 'canNameAdmin' | 'canTransfer' | 'canTransferAdmin' | 'registerReserved' | 'registerReservedAdmin' | 'registrar' | 'registrarAdmin' | 'renew' | 'renewAdmin' | 'setParent' | 'setParentAdmin' | 'setResolver' | 'setResolverAdmin' | 'setSubregistry' | 'setSubregistryAdmin' | 'setUri' | 'setUriAdmin' | 'unregister' | 'unregisterAdmin' | 'upgrade' | 'upgradeAdmin' | 'wasReserved')[]; } | { target: 'resolver'; roles: bigint | readonly ('canName' | 'canNameAdmin' | 'link' | 'linkAdmin' | 'setAbi' | 'setAbiAdmin' | 'setAddr' | 'setAddrAdmin' | 'setContenthash' | 'setContenthashAdmin' | 'setData' | 'setDataAdmin' | 'setInterface' | 'setInterfaceAdmin' | 'setName' | 'setNameAdmin' | 'setText' | 'setTextAdmin' | 'upgrade' | 'upgradeAdmin')[]; })
 const Actions.role.grant.path: 'role.grant'
 function Actions.role.grant.prepare(client: Client<object> | ViemClientLike, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Plan>
 const Actions.role.grant.prepare.path: string
@@ -771,7 +771,7 @@ function Actions.role.revoke(client: Client<object> | ViemClientLike, options: r
 type Actions.role.revoke.ErrorType = InvalidInputError | UnauthorizedError | WriteError
 function Actions.role.revoke.estimateGas(client: Client<object> | ViemClientLike, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Estimate>
 const Actions.role.revoke.estimateGas.path: string
-type Actions.role.revoke.Options = { holder: string; roles: bigint | readonly Name[]; target: 'registry' | 'resolver'; name?: string | undefined; contract?: string | undefined; root?: boolean | undefined; }
+type Actions.role.revoke.Options = { holder: string; name?: string | undefined; contract?: string | undefined; root?: boolean | undefined; allowIrreversible?: boolean | undefined; } & ({ target: 'registry'; roles: bigint | readonly ('canName' | 'canNameAdmin' | 'canTransfer' | 'canTransferAdmin' | 'registerReserved' | 'registerReservedAdmin' | 'registrar' | 'registrarAdmin' | 'renew' | 'renewAdmin' | 'setParent' | 'setParentAdmin' | 'setResolver' | 'setResolverAdmin' | 'setSubregistry' | 'setSubregistryAdmin' | 'setUri' | 'setUriAdmin' | 'unregister' | 'unregisterAdmin' | 'upgrade' | 'upgradeAdmin' | 'wasReserved')[]; } | { target: 'resolver'; roles: bigint | readonly ('canName' | 'canNameAdmin' | 'link' | 'linkAdmin' | 'setAbi' | 'setAbiAdmin' | 'setAddr' | 'setAddrAdmin' | 'setContenthash' | 'setContenthashAdmin' | 'setData' | 'setDataAdmin' | 'setInterface' | 'setInterfaceAdmin' | 'setName' | 'setNameAdmin' | 'setText' | 'setTextAdmin' | 'upgrade' | 'upgradeAdmin')[]; })
 const Actions.role.revoke.path: 'role.revoke'
 function Actions.role.revoke.prepare(client: Client<object> | ViemClientLike, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Plan>
 const Actions.role.revoke.prepare.path: string
@@ -787,7 +787,7 @@ function Actions.subname.create(client: Client<object> | ViemClientLike, options
 type Actions.subname.create.ErrorType = InvalidInputError | NameStateError | UnauthorizedError | WriteError
 function Actions.subname.create.estimateGas(client: Client<object> | ViemClientLike, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Estimate>
 const Actions.subname.create.estimateGas.path: string
-type Actions.subname.create.Options = { name: string; owner?: string | undefined; resolver?: string | null | undefined; records?: Omit<Options, 'clear' | 'name' | 'pubkey' | 'resolver'> | undefined; expiry?: bigint | undefined; fuses?: readonly ('canExtendExpiry' | 'cannotApprove' | 'cannotBurnFuses' | 'cannotCreateSubdomain' | 'cannotSetResolver' | 'cannotSetTtl' | 'cannotTransfer' | 'cannotUnwrap' | 'isDotEth' | 'parentCannotControl')[] | undefined; roles?: bigint | readonly Name[] | undefined; emancipate?: boolean | undefined; upsert?: boolean | undefined; }
+type Actions.subname.create.Options = { name: string; owner?: string | undefined; resolver?: string | null | undefined; records?: Omit<Options, 'clear' | 'name' | 'pubkey' | 'resolver'> | undefined; expiry?: bigint | undefined; fuses?: readonly ('canExtendExpiry' | 'cannotApprove' | 'cannotBurnFuses' | 'cannotCreateSubdomain' | 'cannotSetResolver' | 'cannotSetTtl' | 'cannotTransfer' | 'cannotUnwrap' | 'isDotEth' | 'parentCannotControl')[] | undefined; roles?: bigint | readonly ('canName' | 'canNameAdmin' | 'canTransfer' | 'canTransferAdmin' | 'registerReserved' | 'registerReservedAdmin' | 'registrar' | 'registrarAdmin' | 'renew' | 'renewAdmin' | 'setParent' | 'setParentAdmin' | 'setResolver' | 'setResolverAdmin' | 'setSubregistry' | 'setSubregistryAdmin' | 'setUri' | 'setUriAdmin' | 'unregister' | 'unregisterAdmin' | 'upgrade' | 'upgradeAdmin' | 'wasReserved')[] | undefined; emancipate?: boolean | undefined; upsert?: boolean | undefined; }
 const Actions.subname.create.path: 'subname.create'
 function Actions.subname.create.prepare(client: Client<object> | ViemClientLike, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Plan>
 const Actions.subname.create.prepare.path: string
@@ -803,7 +803,7 @@ function Actions.subname.remove(client: Client<object> | ViemClientLike, options
 type Actions.subname.remove.ErrorType = InvalidInputError | NameStateError | UnauthorizedError | WriteError
 function Actions.subname.remove.estimateGas(client: Client<object> | ViemClientLike, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Estimate>
 const Actions.subname.remove.estimateGas.path: string
-type Actions.subname.remove.Options = { name: string; }
+type Actions.subname.remove.Options = { name: string; allowOrphanedSubnames?: boolean | undefined; }
 const Actions.subname.remove.path: 'subname.remove'
 function Actions.subname.remove.prepare(client: Client<object> | ViemClientLike, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Plan>
 const Actions.subname.remove.prepare.path: string
@@ -869,6 +869,22 @@ type Actions.wrapper.setFusesSync.ErrorType = InvalidInputError | NameStateError
 type Actions.wrapper.setFusesSync.Options = setFuses.Options & Write.Options & { confirmations?: number | undefined; timeout?: number | undefined; }
 const Actions.wrapper.setFusesSync.path: 'wrapper.setFusesSync'
 type Actions.wrapper.setFusesSync.ReturnType = Result & { readonly receipt: TransactionReceipt; readonly receipts: readonly TransactionReceipt[]; }
+function Actions.wrapper.sync(client: Client<object> | ViemClientLike, options: sync.Options & Write.Options) => Promise<Result>
+type Actions.wrapper.sync.ErrorType = InvalidInputError | WriteError
+function Actions.wrapper.sync.estimateGas(client: Client<object> | ViemClientLike, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Estimate>
+const Actions.wrapper.sync.estimateGas.path: string
+type Actions.wrapper.sync.Options = { names: string | readonly string[]; }
+const Actions.wrapper.sync.path: 'wrapper.sync'
+function Actions.wrapper.sync.prepare(client: Client<object> | ViemClientLike, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Plan>
+const Actions.wrapper.sync.prepare.path: string
+type Actions.wrapper.sync.ReturnType = { readonly hash: `0x${string}`; readonly hashes: readonly `0x${string}`[]; readonly id: string | undefined; readonly plan: Plan; }
+function Actions.wrapper.sync.simulate(client: Client<object> | ViemClientLike, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Simulation>
+const Actions.wrapper.sync.simulate.path: string
+function Actions.wrapper.syncSync(client: Client<object> | ViemClientLike, options: sync.Options & Write.Options & { confirmations?: number | undefined; timeout?: number | undefined; }) => Promise<SyncResult>
+type Actions.wrapper.syncSync.ErrorType = InvalidInputError | WriteError
+type Actions.wrapper.syncSync.Options = sync.Options & Write.Options & { confirmations?: number | undefined; timeout?: number | undefined; }
+const Actions.wrapper.syncSync.path: 'wrapper.syncSync'
+type Actions.wrapper.syncSync.ReturnType = Result & { readonly receipt: TransactionReceipt; readonly receipts: readonly TransactionReceipt[]; }
 function Actions.wrapper.unwrap(client: Client<object> | ViemClientLike, options: unwrap.Options & Write.Options) => Promise<Result>
 type Actions.wrapper.unwrap.ErrorType = InvalidInputError | NameStateError | UnauthorizedError | WriteError
 function Actions.wrapper.unwrap.estimateGas(client: Client<object> | ViemClientLike, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Estimate>
@@ -944,7 +960,7 @@ type Ensforge.ViemClient = Client_Base<Transport, Chain | undefined, Account | u
 type Ensforge.ViemClientLike = Pick<ViemWalletClient, 'account' | 'batch' | 'cacheTime' | 'ccipRead' | 'chain' | 'key' | 'name' | 'pollingInterval' | 'transport' | 'type' | 'uid'> & { readonly request: EIP1193RequestFn; }
 type Ensforge.ViemWalletClient = Client_Base<Transport, Chain | undefined, Account | undefined, undefined, Tokens | undefined> & { extend: <const client extends Extended & ExactPartial<ExtendableProtectedActions<Transport, Chain | undefined, Account | undefined, Tokens | undefined>>>(fn: (client: Client<Transport, Chain | undefined, Account | undefined, undefined, { [x: string]: unknown; account?: undefined; batch?: undefined; cacheTime?: undefined; ccipRead?: undefined; chain?: undefined; dataSuffix?: undefined; experimental_blockTag?: undefined; key?: undefined; name?: undefined; pollingInterval?: undefined; request?: undefined; tokens?: undefined; transport?: undefined; type?: undefined; uid?: undefined; } | undefined, Tokens | undefined>) => client) => Client<Transport, Chain | undefined, Account | undefined, undefined, { [K in keyof client]: client[K]; }, Tokens | undefined>; scope: (options?: { signal?: AbortSignal | undefined; } | undefined) => Client<Transport, Chain | undefined, Account | undefined, undefined, { [x: string]: unknown; account?: undefined; batch?: undefined; cacheTime?: undefined; ccipRead?: undefined; chain?: undefined; dataSuffix?: undefined; experimental_blockTag?: undefined; key?: undefined; name?: undefined; pollingInterval?: undefined; request?: undefined; tokens?: undefined; transport?: undefined; type?: undefined; uid?: undefined; } | undefined, Tokens | undefined>; }
 type Errors.AnyError = CommitmentError | ConfigError | ContractRevertError | DnsError | GatewayError | IndexerError | InsufficientFundsError | InternalError | InvalidInputError | MigrationError | NameStateError | NetworkError | NotFoundError | PlanError | TransactionError | UnauthorizedError | UnsupportedError | UserRejectedError | WalletError
-type Errors.Code = 'CONTRACT_REVERTED' | 'UNEXPECTED' | 'USER_REJECTED' | WalletError.Code | InsufficientFundsError.Code | GatewayError.Code | TransactionError.Code | CommitmentError.Code | DnsError.Code | NetworkError.Code | MigrationError.Code | PlanError.Code | IndexerError.Code | UnsupportedError.Code | NotFoundError.Code | UnauthorizedError.Code | ConfigError.Code | InvalidInputError.Code | NameStateError.Code
+type Errors.Code = 'CONTRACT_REVERTED' | 'UNEXPECTED' | 'USER_REJECTED' | WalletError.Code | InsufficientFundsError.Code | GatewayError.Code | TransactionError.Code | CommitmentError.Code | DnsError.Code | NetworkError.Code | MigrationError.Code | PlanError.Code | IndexerError.Code | UnsupportedError.Code | UnauthorizedError.Code | ConfigError.Code | NotFoundError.Code | InvalidInputError.Code | NameStateError.Code
 class Errors.CommitmentError {
   constructor(options: ClassOptions<Code> & { readonly commitment?: `0x${string}` | undefined; readonly readyAt?: bigint | undefined; readonly expiresAt?: bigint | undefined; }) => CommitmentError
   cause: unknown
@@ -1019,9 +1035,9 @@ class Errors.ContractRevertError {
 }
 type Errors.ContractRevertError.Code = 'CONTRACT_REVERTED'
 type Errors.ContractRevertError.Options = ClassOptions<'CONTRACT_REVERTED'> & { readonly errorName?: string | undefined; readonly args?: readonly unknown[] | undefined; readonly data?: `0x${string}` | undefined; }
-function Errors.describe<error extends EnsforgeError = CommitmentError | ConfigError | ContractRevertError | DnsError | GatewayError | IndexerError | InsufficientFundsError | InternalError | InvalidInputError | MigrationError | NameStateError | NetworkError | NotFoundError | PlanError | TransactionError | UnauthorizedError | UnsupportedError | UserRejectedError | WalletError>(value: unknown, options?: DescribeOptions<error> | undefined) => Copy & { readonly code: 'CONTRACT_REVERTED' | 'UNEXPECTED' | 'USER_REJECTED' | WalletError.Code | InsufficientFundsError.Code | GatewayError.Code | TransactionError.Code | CommitmentError.Code | DnsError.Code | NetworkError.Code | MigrationError.Code | PlanError.Code | IndexerError.Code | UnsupportedError.Code | NotFoundError.Code | UnauthorizedError.Code | ConfigError.Code | InvalidInputError.Code | NameStateError.Code | (string & {}); readonly retryable: boolean; readonly severity: 'error' | 'info' | 'warning'; }
+function Errors.describe<error extends EnsforgeError = CommitmentError | ConfigError | ContractRevertError | DnsError | GatewayError | IndexerError | InsufficientFundsError | InternalError | InvalidInputError | MigrationError | NameStateError | NetworkError | NotFoundError | PlanError | TransactionError | UnauthorizedError | UnsupportedError | UserRejectedError | WalletError>(value: unknown, options?: DescribeOptions<error> | undefined) => Copy & { readonly code: 'CONTRACT_REVERTED' | 'UNEXPECTED' | 'USER_REJECTED' | WalletError.Code | InsufficientFundsError.Code | GatewayError.Code | TransactionError.Code | CommitmentError.Code | DnsError.Code | NetworkError.Code | MigrationError.Code | PlanError.Code | IndexerError.Code | UnsupportedError.Code | UnauthorizedError.Code | ConfigError.Code | NotFoundError.Code | InvalidInputError.Code | NameStateError.Code | (string & {}); readonly retryable: boolean; readonly severity: 'error' | 'info' | 'warning'; }
 type Errors.DescribeOptions = { readonly messages?: { readonly [code in error['code']]?: (error: error extends { readonly code: infer codes; } ? code extends codes ? error : never : never) => Partial<Copy>; }; }
-type Errors.Description = Copy & { readonly code: 'CONTRACT_REVERTED' | 'UNEXPECTED' | 'USER_REJECTED' | WalletError.Code | InsufficientFundsError.Code | GatewayError.Code | TransactionError.Code | CommitmentError.Code | DnsError.Code | NetworkError.Code | MigrationError.Code | PlanError.Code | IndexerError.Code | UnsupportedError.Code | NotFoundError.Code | UnauthorizedError.Code | ConfigError.Code | InvalidInputError.Code | NameStateError.Code | (string & {}); readonly retryable: boolean; readonly severity: 'error' | 'info' | 'warning'; }
+type Errors.Description = Copy & { readonly code: 'CONTRACT_REVERTED' | 'UNEXPECTED' | 'USER_REJECTED' | WalletError.Code | InsufficientFundsError.Code | GatewayError.Code | TransactionError.Code | CommitmentError.Code | DnsError.Code | NetworkError.Code | MigrationError.Code | PlanError.Code | IndexerError.Code | UnsupportedError.Code | UnauthorizedError.Code | ConfigError.Code | NotFoundError.Code | InvalidInputError.Code | NameStateError.Code | (string & {}); readonly retryable: boolean; readonly severity: 'error' | 'info' | 'warning'; }
 class Errors.DnsError {
   constructor(options: ClassOptions<Code> & { readonly onchainOwner?: `0x${string}` | undefined; readonly dnsOwner?: `0x${string}` | undefined; }) => DnsError
   ~ensforge/error: true
@@ -1221,7 +1237,7 @@ type Errors.MigrationError.Code = 'ALREADY_MIGRATED' | 'NAME_NOT_LOCKED' | 'NOT_
 type Errors.MigrationError.Options = ClassOptions<Code> & { readonly blockers?: readonly string[] | undefined; }
 class Errors.NameStateError {
   constructor(options: { readonly code: Code; readonly shortMessage?: string | undefined; readonly hint?: string | undefined; readonly details?: readonly string[] | undefined; readonly context?: Context | undefined; readonly cause?: unknown; }) => NameStateError
-  code: 'NAME_EXPIRED' | 'NAME_EXTERNAL' | 'NAME_LOCKED' | 'NAME_NOT_AVAILABLE' | 'NAME_NOT_REGISTERED' | 'NAME_NOT_RENEWABLE' | 'NAME_NOT_WRAPPED' | 'NAME_REQUIRES_MIGRATION' | 'NAME_RESERVED' | 'NAME_UNREACHABLE' | 'NAME_WRAPPED' | 'PARENT_NOT_MIGRATED' | 'REGISTRY_NOT_EMANCIPATED'
+  code: 'NAME_ALREADY_RENEWED' | 'NAME_EXPIRED' | 'NAME_EXTERNAL' | 'NAME_HAS_SUBNAMES' | 'NAME_LOCKED' | 'NAME_NOT_AVAILABLE' | 'NAME_NOT_REGISTERED' | 'NAME_NOT_RENEWABLE' | 'NAME_NOT_WRAPPED' | 'NAME_REQUIRES_MIGRATION' | 'NAME_RESERVED' | 'NAME_UNREACHABLE' | 'NAME_WRAPPED' | 'PARENT_NOT_MIGRATED' | 'REGISTRY_NOT_EMANCIPATED' | 'SUBREGISTRY_EXISTS'
   ~ensforge/error: true
   _tag: 'NameStateError'
   name: 'NameStateError'
@@ -1239,7 +1255,7 @@ class Errors.NameStateError {
   toJSON: () => Json
   render: any
 }
-type Errors.NameStateError.Code = 'NAME_EXPIRED' | 'NAME_EXTERNAL' | 'NAME_LOCKED' | 'NAME_NOT_AVAILABLE' | 'NAME_NOT_REGISTERED' | 'NAME_NOT_RENEWABLE' | 'NAME_NOT_WRAPPED' | 'NAME_REQUIRES_MIGRATION' | 'NAME_RESERVED' | 'NAME_UNREACHABLE' | 'NAME_WRAPPED' | 'PARENT_NOT_MIGRATED' | 'REGISTRY_NOT_EMANCIPATED'
+type Errors.NameStateError.Code = 'NAME_ALREADY_RENEWED' | 'NAME_EXPIRED' | 'NAME_EXTERNAL' | 'NAME_HAS_SUBNAMES' | 'NAME_LOCKED' | 'NAME_NOT_AVAILABLE' | 'NAME_NOT_REGISTERED' | 'NAME_NOT_RENEWABLE' | 'NAME_NOT_WRAPPED' | 'NAME_REQUIRES_MIGRATION' | 'NAME_RESERVED' | 'NAME_UNREACHABLE' | 'NAME_WRAPPED' | 'PARENT_NOT_MIGRATED' | 'REGISTRY_NOT_EMANCIPATED' | 'SUBREGISTRY_EXISTS'
 type Errors.NameStateError.Options = { readonly code: Code; readonly shortMessage?: string | undefined; readonly hint?: string | undefined; readonly details?: readonly string[] | undefined; readonly context?: Context | undefined; readonly cause?: unknown; }
 class Errors.NetworkError {
   constructor(options: ClassOptions<Code> & { readonly status?: number | undefined; }) => NetworkError
@@ -1266,15 +1282,15 @@ type Errors.NetworkError.Code = 'LOG_RANGE_TOO_LARGE' | 'RATE_LIMITED' | 'RPC_RE
 type Errors.NetworkError.Options = ClassOptions<Code> & { readonly status?: number | undefined; }
 class Errors.NotFoundError {
   constructor(options: ClassOptions<Code> & { readonly resource?: string | undefined; }) => NotFoundError
-  code: 'INDEXER_NOT_FOUND' | 'PLAN_NOT_FOUND' | 'PRIMARY_NAME_MISMATCH' | 'PRIMARY_NAME_NOT_SET' | 'RECORD_NOT_FOUND' | 'REGISTRY_NOT_FOUND' | 'RESOLVER_NOT_FOUND'
+  code: 'INDEXER_NOT_FOUND' | 'PLAN_NOT_FOUND' | 'PRIMARY_NAME_MISMATCH' | 'PRIMARY_NAME_NOT_SET' | 'RECORD_NOT_FOUND' | 'REGISTRY_NOT_FOUND' | 'RESOLVER_NOT_DEPLOYED' | 'RESOLVER_NOT_FOUND'
   ~ensforge/error: true
   _tag: 'NotFoundError'
   name: 'NotFoundError'
+  shortMessage: string
   resource: string | undefined
   message: string
   stack: string
   cause: unknown
-  shortMessage: string
   hint: string | undefined
   details: readonly string[]
   retryable: boolean
@@ -1285,7 +1301,7 @@ class Errors.NotFoundError {
   toJSON: () => Json
   render: any
 }
-type Errors.NotFoundError.Code = 'INDEXER_NOT_FOUND' | 'PLAN_NOT_FOUND' | 'PRIMARY_NAME_MISMATCH' | 'PRIMARY_NAME_NOT_SET' | 'RECORD_NOT_FOUND' | 'REGISTRY_NOT_FOUND' | 'RESOLVER_NOT_FOUND'
+type Errors.NotFoundError.Code = 'INDEXER_NOT_FOUND' | 'PLAN_NOT_FOUND' | 'PRIMARY_NAME_MISMATCH' | 'PRIMARY_NAME_NOT_SET' | 'RECORD_NOT_FOUND' | 'REGISTRY_NOT_FOUND' | 'RESOLVER_NOT_DEPLOYED' | 'RESOLVER_NOT_FOUND'
 type Errors.NotFoundError.Options = ClassOptions<Code> & { readonly resource?: string | undefined; }
 class Errors.PlanError {
   constructor(options: { readonly code: Code; readonly shortMessage?: string | undefined; readonly hint?: string | undefined; readonly details?: readonly string[] | undefined; readonly context?: Context | undefined; readonly cause?: unknown; }) => PlanError
@@ -1477,9 +1493,9 @@ type Plan.Estimate = { readonly plan: Plan; readonly gas: bigint; readonly value
 type Plan.Event = { readonly step: Step; readonly status: 'confirmed' | 'failed' | 'submitted' | 'waiting'; readonly hashes?: readonly `0x${string}`[] | undefined; readonly bundleId?: string | undefined; readonly reference?: string | undefined; readonly error?: AnyError | undefined; }
 type Plan.Fee = { readonly kind: 'bridge' | 'execution' | 'gas'; readonly token: 'native' | `0x${string}`; readonly amount: bigint; readonly maximum: bigint; readonly sponsored: boolean; }
 type Plan.Record = { readonly plan: Plan; readonly status: 'completed' | 'failed' | 'pending'; readonly submitted: Readonly<Record<string, readonly `0x${string}`[]>>; readonly bundles: Readonly<Record<string, string>>; readonly references?: Readonly<Record<string, string>> | undefined; readonly error?: string | undefined; readonly updatedAt: number; }
-type Plan.Requirement = { readonly kind: 'balance'; readonly amount: bigint; readonly token?: `0x${string}` | undefined; } | { readonly kind: 'approval'; readonly token: `0x${string}`; readonly spender: `0x${string}`; readonly amount: bigint; }
+type Plan.Requirement = { readonly kind: 'balance'; readonly amount: bigint; readonly token?: `0x${string}` | undefined; readonly account?: `0x${string}` | undefined; } | { readonly kind: 'approval'; readonly token: `0x${string}`; readonly spender: `0x${string}`; readonly amount: bigint; }
 type Plan.Simulation = { readonly ok: boolean; readonly plan: Plan; readonly steps: readonly { readonly id: string; readonly ok: boolean; readonly error?: AnyError | undefined; }[]; }
-type Plan.Step = { readonly id: string; readonly description: string; readonly calls: readonly Call[]; readonly waitFor?: { readonly seconds: bigint; } | undefined; readonly from?: 'signer' | undefined; }
+type Plan.Step = { readonly id: string; readonly description: string; readonly calls: readonly Call[]; readonly waitFor?: { readonly seconds: bigint; readonly since?: bigint | undefined; } | undefined; readonly from?: 'signer' | undefined; readonly gas?: bigint | undefined; }
 type Plan.Storage = { readonly get: (id: string) => Promise<Record | undefined>; readonly set: (record: Record) => Promise<void>; readonly delete: (id: string) => Promise<void>; readonly list: () => Promise<readonly Record[]>; }
 type Plan.Warning = { readonly code: string; readonly message: string; }
 function planActions() => (client: Client<object>) => PlanActions
@@ -1504,10 +1520,15 @@ function resolverActions() => (client: Client<object>) => ResolverActions
 type ResolverActions = { readonly resolver: { readonly create: BoundWrite<typeof create>; readonly createSync: Bound<typeof createSync>; readonly get: Bound<typeof get>; readonly getLink: Bound<typeof getLink>; readonly link: BoundWrite<typeof link>; readonly linkSync: Bound<typeof linkSync>; readonly resolve: Bound<typeof resolve>; readonly set: BoundWrite<typeof set>; readonly setSync: Bound<typeof setSync>; readonly upgrade: BoundWrite<typeof upgrade>; readonly upgradeSync: Bound<typeof upgradeSync>; }; }
 function Role.admin<const name extends Name>(name: name) => `${name}Admin`
 function Role.from(names: readonly Name[]) => bigint
+function Role.from<const target extends Target>(names: readonly NameOf<target>[], target: target) => bigint
 function Role.has(bitmap: bigint, names: readonly Name[] | Name) => boolean
+function Role.has<const target extends Target>(bitmap: bigint, names: readonly NameOf<target>[] | NameOf<target>, target: target) => boolean
 type Role.Name = 'canName' | 'canNameAdmin' | 'canTransfer' | 'canTransferAdmin' | 'link' | 'linkAdmin' | 'registerReserved' | 'registerReservedAdmin' | 'registrar' | 'registrarAdmin' | 'renew' | 'renewAdmin' | 'setAbi' | 'setAbiAdmin' | 'setAddr' | 'setAddrAdmin' | 'setContenthash' | 'setContenthashAdmin' | 'setData' | 'setDataAdmin' | 'setInterface' | 'setInterfaceAdmin' | 'setName' | 'setNameAdmin' | 'setParent' | 'setParentAdmin' | 'setResolver' | 'setResolverAdmin' | 'setSubregistry' | 'setSubregistryAdmin' | 'setText' | 'setTextAdmin' | 'setUri' | 'setUriAdmin' | 'unregister' | 'unregisterAdmin' | 'upgrade' | 'upgradeAdmin' | 'wasReserved'
+type Role.NameOf = { readonly registry: 'canName' | 'canNameAdmin' | 'canTransfer' | 'canTransferAdmin' | 'registerReserved' | 'registerReservedAdmin' | 'registrar' | 'registrarAdmin' | 'renew' | 'renewAdmin' | 'setParent' | 'setParentAdmin' | 'setResolver' | 'setResolverAdmin' | 'setSubregistry' | 'setSubregistryAdmin' | 'setUri' | 'setUriAdmin' | 'unregister' | 'unregisterAdmin' | 'upgrade' | 'upgradeAdmin' | 'wasReserved'; readonly resolver: 'canName' | 'canNameAdmin' | 'link' | 'linkAdmin' | 'setAbi' | 'setAbiAdmin' | 'setAddr' | 'setAddrAdmin' | 'setContenthash' | 'setContenthashAdmin' | 'setData' | 'setDataAdmin' | 'setInterface' | 'setInterfaceAdmin' | 'setName' | 'setNameAdmin' | 'setText' | 'setTextAdmin' | 'upgrade' | 'upgradeAdmin'; }[target]
 const Role.registry: { readonly registrar: bigint; readonly registrarAdmin: bigint; readonly registerReserved: bigint; readonly registerReservedAdmin: bigint; readonly setParent: bigint; readonly setParentAdmin: bigint; readonly unregister: bigint; readonly unregisterAdmin: bigint; readonly renew: bigint; readonly renewAdmin: bigint; readonly setSubregistry: bigint; readonly setSubregistryAdmin: bigint; readonly setResolver: bigint; readonly setResolverAdmin: bigint; readonly canTransfer: bigint; readonly canTransferAdmin: bigint; readonly wasReserved: bigint; readonly setUri: bigint; readonly setUriAdmin: bigint; readonly canName: bigint; readonly canNameAdmin: bigint; readonly upgrade: bigint; readonly upgradeAdmin: bigint; }
+type Role.RegistryName = 'canName' | 'canNameAdmin' | 'canTransfer' | 'canTransferAdmin' | 'registerReserved' | 'registerReservedAdmin' | 'registrar' | 'registrarAdmin' | 'renew' | 'renewAdmin' | 'setParent' | 'setParentAdmin' | 'setResolver' | 'setResolverAdmin' | 'setSubregistry' | 'setSubregistryAdmin' | 'setUri' | 'setUriAdmin' | 'unregister' | 'unregisterAdmin' | 'upgrade' | 'upgradeAdmin' | 'wasReserved'
 const Role.resolver: { readonly setAddr: bigint; readonly setAddrAdmin: bigint; readonly setText: bigint; readonly setTextAdmin: bigint; readonly setContenthash: bigint; readonly setContenthashAdmin: bigint; readonly setAbi: bigint; readonly setAbiAdmin: bigint; readonly setInterface: bigint; readonly setInterfaceAdmin: bigint; readonly setName: bigint; readonly setNameAdmin: bigint; readonly link: bigint; readonly linkAdmin: bigint; readonly setData: bigint; readonly setDataAdmin: bigint; readonly canName: bigint; readonly canNameAdmin: bigint; readonly upgrade: bigint; readonly upgradeAdmin: bigint; }
+type Role.ResolverName = 'canName' | 'canNameAdmin' | 'link' | 'linkAdmin' | 'setAbi' | 'setAbiAdmin' | 'setAddr' | 'setAddrAdmin' | 'setContenthash' | 'setContenthashAdmin' | 'setData' | 'setDataAdmin' | 'setInterface' | 'setInterfaceAdmin' | 'setName' | 'setNameAdmin' | 'setText' | 'setTextAdmin' | 'upgrade' | 'upgradeAdmin'
 type Role.Target = 'registry' | 'resolver'
 function Role.toNames(bitmap: bigint, target: 'registry' | 'resolver') => readonly Name[]
 function roleActions() => (client: Client<object>) => RoleActions
@@ -1515,7 +1536,7 @@ type RoleActions = { readonly role: { readonly get: Bound<typeof get>; readonly 
 function subnameActions() => (client: Client<object>) => SubnameActions
 type SubnameActions = { readonly subname: { readonly create: BoundWrite<typeof create>; readonly createSync: Bound<typeof createSync>; readonly remove: BoundWrite<typeof remove>; readonly removeSync: Bound<typeof removeSync>; readonly update: BoundWrite<typeof update>; readonly updateSync: Bound<typeof updateSync>; }; }
 function wrapperActions() => (client: Client<object>) => WrapperActions
-type WrapperActions = { readonly wrapper: { readonly getFuses: Bound<typeof getFuses>; readonly setChildFuses: BoundWrite<typeof setChildFuses>; readonly setChildFusesSync: Bound<typeof setChildFusesSync>; readonly setFuses: BoundWrite<typeof setFuses>; readonly setFusesSync: Bound<typeof setFusesSync>; readonly unwrap: BoundWrite<typeof unwrap>; readonly unwrapSync: Bound<typeof unwrapSync>; readonly wrap: BoundWrite<typeof wrap>; readonly wrapSync: Bound<typeof wrapSync>; }; }
+type WrapperActions = { readonly wrapper: { readonly getFuses: Bound<typeof getFuses>; readonly setChildFuses: BoundWrite<typeof setChildFuses>; readonly setChildFusesSync: Bound<typeof setChildFusesSync>; readonly setFuses: BoundWrite<typeof setFuses>; readonly setFusesSync: Bound<typeof setFusesSync>; readonly sync: BoundWrite<typeof sync>; readonly syncSync: Bound<typeof syncSync>; readonly unwrap: BoundWrite<typeof unwrap>; readonly unwrapSync: Bound<typeof unwrapSync>; readonly wrap: BoundWrite<typeof wrap>; readonly wrapSync: Bound<typeof wrapSync>; }; }
 type Write.Method = ((client: Like, options: options & Pick<Options, 'account' | 'via'>) => Promise<value>) & { readonly path: string; }
 type Write.Mode = 'auto' | 'batch' | 'sequential'
 type Write.Options = { account?: `0x${string}` | Account | undefined; simulate?: boolean | undefined; signal?: AbortSignal | undefined; mode?: Mode | undefined; maxBundleCalls?: number | undefined; onStep?: ((event: Event) => void) | undefined; via?: Via | undefined; paymaster?: { readonly url: string; readonly context?: Readonly<Record<string, unknown>>; } | undefined; }

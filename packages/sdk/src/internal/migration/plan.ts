@@ -1,7 +1,7 @@
-import { Effect, String as Str, Array as Arr } from "effect";
+import { Option, Effect, String as Str, Array as Arr, Order } from "effect";
 
 import { Abis, Roles } from "@ensforge/contracts";
-import { ownedResolverSalt, predictVerifiableProxyAddress } from "@ensforge/contracts/v2";
+import { predictVerifiableProxyAddress } from "@ensforge/contracts/v2";
 import {
   encodeAbiParameters,
   encodeFunctionData,
@@ -21,16 +21,22 @@ import { MigrationError } from "../../errors/classes/MigrationError.js";
 import { UnsupportedError } from "../../errors/classes/UnsupportedError.js";
 import type { AnyError } from "../../errors/types.js";
 import type { Plan } from "../../plan/Plan.js";
+import { dnsEncode } from "../../utils/Name.js";
 import { nonZeroAddress } from "../address.js";
 import { parentOf } from "../name/parts.js";
 import { requireAddress } from "../name/write.js";
 import { recordsCall } from "../records/write-call.js";
+import { accountResolver, resolverWriters } from "../resolver/account.js";
 import { deployPermissionedResolver } from "../resolver/deploy.js";
 import * as Rpc from "../rpc/index.js";
+import { isSignerHca } from "../write/signer-hca.js";
 import { discoverSubnames } from "./discover.js";
+import { maxWrappedPerTransfer, packByGas } from "./gas.js";
 import { inspectMigration, type Inspection, type ResolverChoice } from "./inspect.js";
+import { canReceiveName } from "./recipient.js";
 import { recordsToCopy, type CopiedRecords } from "./records.js";
-import { planRecreation } from "./subnames.js";
+import { planResumed } from "./resume.js";
+import { planRecreation, type Recreation } from "./subnames.js";
 
 /** What `migration.migrate` takes, besides the signer. */
 export type MigrationInput = {
@@ -38,11 +44,14 @@ export type MigrationInput = {
   readonly resolver?: string | undefined;
   readonly owner?: string | undefined;
   readonly allowIncompleteRecords?: boolean | undefined;
+  readonly allowEmptyResolver?: boolean | undefined;
   readonly allowLeavingSubnames?: boolean | undefined;
   readonly preserveManager?: boolean | undefined;
   readonly migrateParents?: boolean | undefined;
   /** Names in grace are renewed by an earlier step. */
   readonly renewing?: boolean | undefined;
+  /** Names already on ENSv2 get only the steps an interrupted run left after the transfer. */
+  readonly resume?: boolean | undefined;
 };
 
 /** The ENSv2 state a migrated name should reach, checked by `migrateSync`. */
@@ -52,6 +61,8 @@ export type Expectation = {
   readonly resolver: Address | null;
   readonly subregistry: Address | null;
   readonly records: CopiedRecords | undefined;
+  /** Subnames recreated in ENSv2, with their owners. */
+  readonly subnames: readonly { readonly name: string; readonly owner: Address }[];
 };
 
 /** The migration part of a plan: steps, deployments, warnings, expectations. */
@@ -101,9 +112,6 @@ const managerRecordRoles =
   Roles.resolver.setName |
   Roles.resolver.setData;
 
-// Steps stay well inside a block's gas limit; a migration transfer costs about 200k gas.
-const maxCallsPerStep = 30;
-
 const migrationResolverDomain = keccak256(stringToHex("ensforge.migration.resolver"));
 /** One resolver per name and deployer, so an interrupted migration finds it again. */
 const migrationResolverSalt = (node: Hex): bigint =>
@@ -115,6 +123,22 @@ const migrationResolverSalt = (node: Hex): bigint =>
       ),
     ),
   );
+
+/** `PublicResolverV2.approve`: lets `delegate` write `node`'s records for the caller. */
+const delegateCall = (
+  resolver: Address,
+  node: Hex,
+  delegate: Address,
+  approved: boolean,
+): Plan.Call => ({
+  to: resolver,
+  data: encodeFunctionData({
+    abi: Abis.v2.publicResolver,
+    functionName: "approve",
+    args: [node, delegate, approved],
+  }),
+  value: 0n,
+});
 
 /** Inspects the names, adding unmigrated locked parents when `migrateParents` asks for them. */
 const inspectAll = Effect.fnUntraced(function* (
@@ -161,14 +185,19 @@ const inspectAll = Effect.fnUntraced(function* (
 /** Fails with the first name that cannot migrate, unless an earlier step clears its blocker. */
 const requireEligible = (
   entries: readonly { readonly inspection: Inspection }[],
-  options: { readonly renewing: boolean },
+  options: { readonly renewing: boolean; readonly resume: boolean },
 ): Effect.Effect<void, AnyError> => {
   const migrating = new Set(Arr.map(entries, (entry) => entry.inspection.status.name));
   for (const { inspection } of entries) {
     const { status } = inspection;
+    if (status.status === "migrated" && options.resume) continue;
     if (status.status === "migrated") {
       return Effect.fail(
-        new MigrationError({ code: "ALREADY_MIGRATED", context: { name: status.name } }),
+        new MigrationError({
+          code: "ALREADY_MIGRATED",
+          context: { name: status.name },
+          hint: "Pass `resume: true` to finish a migration that stopped after its transfer.",
+        }),
       );
     }
     const blockers = Arr.filter(
@@ -206,6 +235,12 @@ export const planMigration = Effect.fnUntraced(function* (
   // `sender` runs the calls (an HCA through `via`): it deploys, so addresses derive from it, and it
   // needs roles on what it deploys to keep writing. The signer keeps holding the names.
   const routed = !isAddressEqual(sender, signer);
+  // Through the signer's own HCA, MigrationHelper moves the tokens: the owner approves it instead
+  // of the HCA, which never becomes an operator of the owner's names.
+  const helper =
+    routed && (yield* isSignerHca(client, sender, signer))
+      ? client.deployment.v2?.migration.migrationHelper
+      : undefined;
   const v1 = client.deployment.v1?.contracts;
   const v2 = client.deployment.v2;
   if (v1 === undefined || v2 === undefined) {
@@ -226,12 +261,25 @@ export const planMigration = Effect.fnUntraced(function* (
   const newOwner =
     input.owner === undefined ? undefined : yield* requireAddress(input.owner, "owner");
 
-  const entries = yield* inspectAll(client, inputs, {
+  // Parents first, whatever the input order: a locked child migrates into the WrapperRegistry its
+  // parent gets.
+  const inspected = yield* inspectAll(client, inputs, {
     signer,
     resolver: resolverChoice,
     migrateParents: input.migrateParents === true,
   });
-  yield* requireEligible(entries, { renewing: input.renewing === true });
+  const entries = Arr.sort(
+    inspected,
+    Order.mapInput(
+      Order.Number,
+      (entry: { readonly inspection: Inspection }) =>
+        Str.split(".")(entry.inspection.status.name).length,
+    ),
+  );
+  yield* requireEligible(entries, {
+    renewing: input.renewing === true,
+    resume: input.resume === true,
+  });
 
   const proxyLogic = yield* Rpc.readContract(client, {
     address: v2.contracts.verifiableFactory,
@@ -243,6 +291,8 @@ export const planMigration = Effect.fnUntraced(function* (
   const registries: Plan.Call[] = [];
   const records: Plan.Call[] = [];
   const afterRecords: Plan.Call[] = [];
+  const delegations: Plan.Call[] = [];
+  const undelegations: Plan.Call[] = [];
   const managers: Plan.Call[] = [];
   const deploys: Plan.Deployment[] = [];
   const warnings: Plan.Warning[] = [];
@@ -257,8 +307,37 @@ export const planMigration = Effect.fnUntraced(function* (
   >();
 
   let owned: Address | undefined;
+  const receivable = new Map<string, boolean>();
   for (const { input: nameInput, inspection } of entries) {
     const { status, loaded } = inspection;
+    if (status.status === "migrated") {
+      const resumed = yield* planResumed(client, {
+        input: nameInput,
+        inspection,
+        signer,
+        sender,
+        allowLeavingSubnames: input.allowLeavingSubnames === true,
+        allowEmptyResolver: input.allowEmptyResolver === true,
+        preserveManager: input.preserveManager === true,
+      });
+      if (resumed.wrapped.length > 0) wrapped.push({ depth: 0, calls: resumed.wrapped });
+      if (resumed.records !== undefined) {
+        afterRecords.push(resumed.records);
+        if (routed && !resumed.delegated) {
+          delegations.push(
+            delegateCall(v2.contracts.publicResolver, loaded.data.parts.node, sender, true),
+          );
+        }
+      }
+      if (routed && (resumed.records !== undefined || resumed.delegated)) {
+        undelegations.push(
+          delegateCall(v2.contracts.publicResolver, loaded.data.parts.node, sender, false),
+        );
+      }
+      warnings.push(...resumed.warnings);
+      expectations.push(resumed.expectation);
+      continue;
+    }
     const config = typeof nameInput === "string" ? undefined : nameInput;
     const { parts } = loaded.data;
     const route = status.route;
@@ -276,28 +355,52 @@ export const planMigration = Effect.fnUntraced(function* (
       );
     }
     const owner = newOwner ?? holder;
-    const locked = route === "wrapped-locked" || route === "locked-child";
+    const { locked } = inspection;
+    // The registry mints to the owner with an ERC-1155 acceptance check; a contract that refuses
+    // would revert the irreversible transfer step, after its setup was paid for.
+    const ownerKey = Str.toLowerCase(owner);
+    const receives =
+      receivable.get(ownerKey) ??
+      (yield* canReceiveName(client, owner, { registry: v2.contracts.ethRegistry, from: holder }));
+    receivable.set(ownerKey, receives);
+    if (!receives) {
+      return yield* Effect.fail(
+        new MigrationError({
+          code: "NOT_ELIGIBLE",
+          blockers: ["recipient-cannot-receive"],
+          context: { name: status.name },
+          hint: `${owner} cannot receive ENSv2 names. Migrate to another owner.`,
+        }),
+      );
+    }
 
     // Resolver: create or reuse one, keep the current one, or let the controller decide.
     let resolver: Address = status.resolver.current ?? zeroAddress;
     let copied: CopiedRecords | undefined;
     const plan = status.resolver.plan;
     if (plan === "new" || plan === "owned" || plan === "public-v2") {
+      // A custom resolver's records are read through resolution, off-chain ones included.
       const copy = yield* recordsToCopy(client, config, status.name, {
-        hasRecords: inspection.publicResolver,
+        hasRecords: status.resolver.current !== null,
         allowIncomplete: input.allowIncompleteRecords === true,
       });
       copied = copy.records;
       warnings.push(...copy.warnings);
+      if (copied !== undefined && !inspection.publicResolver && config?.records === undefined) {
+        warnings.push({
+          code: "RECORDS_FROM_CUSTOM_RESOLVER",
+          message: `${status.name}'s records are read through resolution, including any served off-chain, and written on-chain.`,
+        });
+      }
     }
     if (plan === "new") {
       const grants =
-        input.preserveManager === true && status.manager !== null
+        (config?.preserveManager ?? input.preserveManager) === true && status.manager !== null
           ? [{ account: status.manager, roleBitmap: managerRecordRoles }]
           : [];
       const deployment = yield* deployPermissionedResolver(client, {
         deployer: sender,
-        owner,
+        writers: resolverWriters(sender, owner, signer),
         salt: migrationResolverSalt(parts.node),
         grants,
         name: parts,
@@ -307,6 +410,36 @@ export const planMigration = Effect.fnUntraced(function* (
       if (!(yield* Rpc.hasCode(client, resolver))) {
         setup.push(deployment.call);
         deploys.push({ contract: "resolver", address: resolver });
+      } else {
+        // An interrupted run deployed it: it must still be this migration's, with every writer
+        // holding its roles. Its records were written at creation, so this run's go in the
+        // records step.
+        const writers = resolverWriters(sender, owner, signer);
+        const holders = yield* Effect.forEach(
+          writers,
+          (writer) =>
+            Rpc.readContractOrUndefined(client, {
+              address: resolver,
+              abi: Abis.v2.permissionedResolver,
+              functionName: "hasRootRoles",
+              args: [Roles.enhancedAccessControl.allRoles, writer],
+            }),
+          { concurrency: "unbounded" },
+        );
+        if (!Arr.every(holders, (holds) => holds === true)) {
+          return yield* Effect.fail(
+            new MigrationError({
+              code: "NOT_ELIGIBLE",
+              blockers: ["resolver-conflict"],
+              context: { name: status.name, contract: resolver },
+              hint: "An earlier migration created this name's resolver for another owner. Migrate to that owner, or choose another `resolver`.",
+            }),
+          );
+        }
+        if (copied !== undefined) {
+          const write = yield* recordsCall(client, resolver, parts, copied, "name");
+          records.push(write);
+        }
       }
     } else if (plan === "owned") {
       if (!isAddressEqual(owner, signer)) {
@@ -319,20 +452,19 @@ export const planMigration = Effect.fnUntraced(function* (
           }),
         );
       }
-      const deployment = yield* deployPermissionedResolver(client, {
-        deployer: sender,
-        owner: signer,
-        salt: ownedResolverSalt(sender),
-        ...(routed ? { grants: [{ account: sender, roleBitmap: managerRecordRoles }] } : {}),
-      });
-      resolver = deployment.address;
       if (owned === undefined) {
-        owned = resolver;
-        if (!(yield* Rpc.hasCode(client, resolver))) {
-          setup.push(deployment.call);
-          deploys.push({ contract: "resolver", address: resolver });
+        const shared = yield* accountResolver(client, {
+          account: sender,
+          writers: resolverWriters(sender, signer, signer),
+        });
+        owned = shared.address;
+        warnings.push(...shared.warnings);
+        if (shared.deploy !== undefined) {
+          setup.push(shared.deploy);
+          deploys.push({ contract: "resolver", address: owned });
         }
       }
+      resolver = owned;
       if (copied !== undefined) {
         const copiedRecords = yield* recordsCall(client, resolver, parts, copied, "name");
         records.push(copiedRecords);
@@ -344,14 +476,34 @@ export const planMigration = Effect.fnUntraced(function* (
       // The controller swaps the ENSv1 public resolver for PublicResolverV2, which starts empty.
       resolver = v2.contracts.publicResolver;
       if (copied !== undefined) {
-        if (!isAddressEqual(owner, signer) || routed) {
+        // Only the new owner (or its delegate) writes there, once the name has moved: the copy
+        // follows the transfer. For another owner nobody in this plan can write them.
+        if (!isAddressEqual(owner, signer)) {
+          if (input.allowEmptyResolver !== true) {
+            return yield* Effect.fail(
+              new MigrationError({
+                code: "NOT_ELIGIBLE",
+                blockers: ["records-not-replayable"],
+                context: { name: status.name },
+                hint: "Migrate it to yourself and transfer it afterwards, or pass `allowEmptyResolver` to migrate it without its records.",
+              }),
+            );
+          }
           warnings.push({
             code: "RECORDS_NOT_COPIED",
             message: `${status.name} gets PublicResolverV2; its owner writes the records there after migrating.`,
           });
         } else {
-          const copiedRecords = yield* recordsCall(client, resolver, parts, copied, "node");
-          afterRecords.push(copiedRecords);
+          const recordsAfter = yield* recordsCall(client, resolver, parts, copied, "node");
+          afterRecords.push(recordsAfter);
+          // A routed sender writes as the signer's delegate on the node, approved before the
+          // name is the signer's (approvals are keyed by the approving account).
+          if (routed) {
+            delegations.push(delegateCall(v2.contracts.publicResolver, parts.node, sender, true));
+            undelegations.push(
+              delegateCall(v2.contracts.publicResolver, parts.node, sender, false),
+            );
+          }
         }
       }
     } else if (plan === "keep" && inspection.publicResolver) {
@@ -370,8 +522,16 @@ export const planMigration = Effect.fnUntraced(function* (
         ? v2.migration.unlockedMigrationController
         : route === "wrapped-locked"
           ? v2.migration.lockedMigrationController
-          : // oxlint-disable-next-line typescript/no-unnecessary-type-assertion, typescript/no-unsafe-type-assertion -- a v2 name's state always carries its registry (`Name.State` types it as nullable); tsc needs the assertion
-            (parentRegistry?.address ?? (loaded.data.v2?.registry as Address));
+          : (parentRegistry?.address ?? loaded.data.v2?.registry);
+    if (target === undefined) {
+      return yield* Effect.fail(
+        new MigrationError({
+          code: "NOT_ELIGIBLE",
+          blockers: ["parent-not-migrated"],
+          context: { name: status.name },
+        }),
+      );
+    }
     const depth = route === "locked-child" ? (parentRegistry?.depth ?? -1) + 1 : 0;
     const wrapperRegistry = locked
       ? predictVerifiableProxyAddress({
@@ -388,6 +548,7 @@ export const planMigration = Effect.fnUntraced(function* (
     // Subnames, listed or found by the indexer, at any depth: an unlocked name recreates them in
     // a new UserRegistry, a locked one in its WrapperRegistry once it migrated.
     let subregistry: Address = zeroAddress;
+    let recreated: Recreation["recreated"] = [];
     let subnames = config?.subnames;
     const discovered = subnames === undefined ? yield* discoverSubnames(client, status.name) : null;
     if (discovered !== null) {
@@ -405,7 +566,9 @@ export const planMigration = Effect.fnUntraced(function* (
         subnames,
         owner,
         sender,
-        parentRegistry: v2.contracts.ethRegistry,
+        // The registry the name lives in after migrating: its parent's WrapperRegistry for a
+        // child, else the ETHRegistry.
+        parentRegistry: route === "locked-child" ? target : v2.contracts.ethRegistry,
         wrapperRegistry:
           wrapperRegistry === undefined
             ? undefined
@@ -425,6 +588,7 @@ export const planMigration = Effect.fnUntraced(function* (
         );
       }
       subregistry = recreation.registry ?? zeroAddress;
+      recreated = recreation.recreated;
       for (const deployment of recreation.deploys) {
         setup.push(deployment.call);
         deploys.push({ contract: "registry", address: deployment.address });
@@ -448,7 +612,7 @@ export const planMigration = Effect.fnUntraced(function* (
       data: { label: parts.label, owner, subregistry, resolver },
     });
 
-    if (input.preserveManager === true && status.manager !== null) {
+    if ((config?.preserveManager ?? input.preserveManager) === true && status.manager !== null) {
       if (isAddressEqual(owner, signer)) {
         managers.push({
           to: v2.contracts.ethRegistry,
@@ -471,28 +635,31 @@ export const planMigration = Effect.fnUntraced(function* (
       name: status.name,
       owner,
       resolver: plan === "keep" && locked ? null : nonZeroAddress(resolver),
-      subregistry: locked ? null : nonZeroAddress(subregistry),
+      subregistry: locked ? (wrapperRegistry ?? null) : nonZeroAddress(subregistry),
       records: copied,
+      subnames: recreated,
     });
   }
 
   const steps: Plan.Step[] = [];
+  // Steps are packed by estimated gas, so each stays within one transaction's limit.
   const chunked = (
     id: string,
     description: string,
     calls: readonly Plan.Call[],
     from?: "signer",
   ) => {
-    for (let index = 0; index < calls.length; index += maxCallsPerStep) {
-      const part = index / maxCallsPerStep;
+    for (const [part, pack] of packByGas(calls).entries()) {
       steps.push({
         id: part === 0 ? id : `${id}-${part + 1}`,
         description,
-        calls: calls.slice(index, index + maxCallsPerStep),
+        calls: pack.calls,
+        gas: pack.gas,
         ...(from === undefined ? {} : { from }),
       });
     }
   };
+  chunked("delegate", "Let the HCA copy records to PublicResolverV2", delegations, "signer");
   chunked("setup", "Create resolvers and registries", setup);
   chunked("subnames", "Recreate subnames", registries);
   chunked("records", "Copy records", records);
@@ -500,12 +667,14 @@ export const planMigration = Effect.fnUntraced(function* (
   const deepest = Math.max(0, ...Arr.map(moves, (move) => move.depth));
   for (let depth = 0; depth <= deepest; depth += 1) {
     const group = Arr.filter(moves, (move) => move.depth === depth);
-    if (group.length === 0) continue;
-    chunked(
-      depth === 0 ? "migrate" : `migrate-children-${depth}`,
-      depth === 0 ? "Migrate names" : "Migrate locked subnames",
-      transferCalls(v1, group),
-    );
+    // A resumed name's registrations go out even when no name moves at its depth.
+    if (group.length > 0) {
+      chunked(
+        depth === 0 ? "migrate" : `migrate-children-${depth}`,
+        depth === 0 ? "Migrate names" : "Migrate locked subnames",
+        helper === undefined ? transferCalls(v1, group) : helperCalls(helper, group),
+      );
+    }
     chunked(
       depth === 0 ? "wrapped-subnames" : `wrapped-subnames-children-${depth}`,
       "Recreate subnames in WrapperRegistries",
@@ -516,8 +685,42 @@ export const planMigration = Effect.fnUntraced(function* (
     );
   }
   chunked("records-after", "Copy records to PublicResolverV2", afterRecords);
+  chunked("undelegate", "Revoke the HCA's record access", undelegations, "signer");
+  if (afterRecords.length > 0 && !routed) {
+    warnings.push({
+      code: "RECORDS_AFTER_MIGRATION",
+      message:
+        'Records are copied to PublicResolverV2 after the irreversible transfer; send with `mode: "batch"` to make both one transaction.',
+    });
+  }
   // The names' new holder grants the managers; a routed sender holds no roles on them.
   chunked("manager", "Restore ENSv1 managers", managers, routed ? "signer" : undefined);
+  // Without a route, each step after the transfer is its own transaction; a stop between them
+  // leaves the names migrated with their subnames or managers missing until the plan resumes.
+  const transferred = Arr.findFirstIndex(steps, (step) => Str.startsWith("migrate")(step.id));
+  const after = Option.match(transferred, {
+    onNone: () => [],
+    onSome: (index) => Arr.drop(steps, index + 1),
+  });
+  if (!routed && after.length > 0) {
+    warnings.push({
+      code: "NOT_ATOMIC",
+      message:
+        'Steps after the irreversible transfer are separate transactions. Send with `mode: "batch"` or `via: hca()` to make them one, or finish an interrupted run with plan.resume.',
+    });
+  }
+
+  // Everything was migrated and finished: a resume with nothing to send.
+  const [finished] = Arr.map(entries, (entry) => entry.inspection.status.name);
+  if (steps.length === 0 && finished !== undefined) {
+    return yield* Effect.fail(
+      new MigrationError({
+        code: "ALREADY_MIGRATED",
+        shortMessage: `${finished} is already on ENSv2, with nothing left to finish.`,
+        context: { name: finished },
+      }),
+    );
+  }
 
   return {
     steps,
@@ -530,6 +733,52 @@ export const planMigration = Effect.fnUntraced(function* (
     ),
   };
 });
+
+/**
+ * `MigrationHelper.migrate` calls that migrate `moves` for the signer's HCA, each within one
+ * step's gas. The helper sends `.eth` names to their controllers and locked children to their
+ * parent's registry (found when it runs, so a parent migrated in the same call counts); a
+ * NameWrapper batch needs one holder.
+ */
+const helperCalls = (helper: Address, moves: readonly Move[]): Plan.Call[] =>
+  Arr.map(Arr.chunksOf(moves, maxWrappedPerTransfer), (chunk) => {
+    const byHolder = (route: Move["status"]["route"]) => {
+      const groups = new Map<string, MigrationData[]>();
+      for (const move of Arr.filter(chunk, (each) => each.status.route === route)) {
+        const key = Str.toLowerCase(move.holder);
+        groups.set(key, [...(groups.get(key) ?? []), move.data]);
+      }
+      return [...groups.values()];
+    };
+    const children = new Map<string, Map<string, MigrationData[]>>();
+    for (const move of Arr.filter(chunk, (each) => each.status.route === "locked-child")) {
+      const parent = parentOf(move.status.name);
+      const holders = children.get(parent) ?? new Map<string, MigrationData[]>();
+      const key = Str.toLowerCase(move.holder);
+      holders.set(key, [...(holders.get(key) ?? []), move.data]);
+      children.set(parent, holders);
+    }
+    return {
+      to: helper,
+      data: encodeFunctionData({
+        abi: Abis.v2.migrationHelper,
+        functionName: "migrate",
+        args: [
+          Arr.map(
+            Arr.filter(chunk, (move) => move.status.route === "unwrapped"),
+            (move) => move.data,
+          ),
+          byHolder("wrapped-unlocked"),
+          byHolder("wrapped-locked"),
+          Arr.map([...children], ([parent, holders]) => ({
+            parentName: dnsEncode(parent),
+            groups: [...holders.values()],
+          })),
+        ],
+      }),
+      value: 0n,
+    };
+  });
 
 /**
  * The token transfers that migrate `moves`: one ERC-721 transfer per unwrapped name, and one
@@ -564,7 +813,10 @@ const transferCalls = (
     wrapped.set(key, [...(wrapped.get(key) ?? []), move]);
   }
 
-  for (const group of wrapped.values()) {
+  // A batched transfer is one call, so it is split to fit a step on its own.
+  for (const group of Arr.flatMap([...wrapped.values()], (all) =>
+    Arr.chunksOf(all, maxWrappedPerTransfer),
+  )) {
     const [first] = group;
     if (first === undefined) continue;
     const { holder } = first;

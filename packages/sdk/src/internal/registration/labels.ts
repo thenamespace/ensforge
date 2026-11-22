@@ -2,6 +2,7 @@ import { Effect, Array as Arr } from "effect";
 
 import { InvalidInputError } from "../../errors/classes/InvalidInputError.js";
 import type { AnyError } from "../../errors/types.js";
+import type { Plan } from "../../plan/Plan.js";
 import { parseName } from "../name/normalize.js";
 import type { NameParts } from "../name/parts.js";
 
@@ -40,3 +41,27 @@ export const parseEthNames = (
 export const parseEthName = (name: string): Effect.Effect<EthName, AnyError> =>
   // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- the collection is known to be non-empty or the index in range here; `noUncheckedIndexedAccess` cannot see it
   parseEthNames(name).pipe(Effect.map((names) => names[0] as EthName));
+
+/**
+ * A `NAME_NORMALIZED` warning naming inputs that normalization changed: the plan registers or
+ * renews the normalized name, which a user who typed another form should see.
+ */
+export const normalizedWarnings = (
+  input: string | readonly string[],
+  names: readonly EthName[],
+): readonly Plan.Warning[] => {
+  const changed = Arr.filter(
+    typeof input === "string" ? [input] : input,
+    (raw) => !Arr.some(names, (name) => name.name === raw),
+  );
+  if (changed.length === 0) return [];
+  return [
+    {
+      code: "NAME_NORMALIZED",
+      message: `${Arr.join(changed, ", ")} changed when normalized; the plan uses ${Arr.join(
+        Arr.map(names, (name) => name.name),
+        ", ",
+      )}.`,
+    },
+  ];
+};

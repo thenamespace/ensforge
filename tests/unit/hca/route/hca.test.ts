@@ -13,9 +13,16 @@ import type { Executor } from "@ensforge/hca/internal/types";
 import type { Plan } from "@ensforge/sdk";
 import { makePlan } from "@ensforge/sdk/extension";
 import { expectRejection, expectThrow } from "@ensforge/test-harness";
-import { decodeFunctionData, encodeFunctionData, type Address, type Hex } from "viem";
+import {
+  decodeFunctionData,
+  encodeFunctionData,
+  getAddress,
+  zeroHash,
+  type Address,
+  type Hex,
+} from "viem";
 
-import { contracts, hcaAddress, makeClient, owner, v1 } from "../fixtures";
+import { contracts, defined, hcaAddress, makeClient, owner, v1 } from "../fixtures";
 
 const target: Address = "0x00000000000000000000000000000000000000aa";
 const other: Address = "0x00000000000000000000000000000000000000bb";
@@ -214,6 +221,26 @@ describe("hca route: setup step", () => {
 });
 
 describe("hca route: executions", () => {
+  // Regression: steps were merged up to 32 calls whatever they cost, so two heavy migration steps
+  // became one execution over a transaction's gas limit.
+  it.effect("merges steps only while their estimated gas fits one execution", () =>
+    Effect.gen(function* () {
+      const plan = yield* prepare([
+        step("a", [call()], { gas: 9_000_000n }),
+        step("b", [call()], { gas: 9_000_000n }),
+        step("c", [call()], { gas: 1_000_000n }),
+      ]);
+
+      assert.deepStrictEqual(
+        Arr.map(plan.steps, (s) => [s.id, s.gas]),
+        [
+          ["a", 9_100_000n],
+          ["b+c", 10_100_000n],
+        ],
+      );
+    }),
+  );
+
   it.effect("merges consecutive steps into one execution and keeps signer steps apart", () =>
     Effect.gen(function* () {
       const plan = yield* prepare([
@@ -334,7 +361,6 @@ describe("hca route: preconditions", () => {
             functions: {
               ownerAndSessionNonce: () => [other, 0n],
               accountId: () => "something-else",
-              getImplementation: () => contracts.standaloneImplementation,
             },
           },
         ],
@@ -352,6 +378,121 @@ describe("hca route: preconditions", () => {
         "unknown-account",
         "not-certified",
       ]);
+    }),
+  );
+});
+
+// The HCA pays for what it runs, so `hca()` moves the shortfall from the owner's wallet.
+describe("hca route: funding", () => {
+  const token: Address = "0x00000000000000000000000000000000000000cc";
+  const spend = makePlan({
+    operation: "test",
+    chainId: 11155111,
+    account: owner,
+    steps: [step("register", [call()])],
+    requirements: [{ kind: "balance", amount: 100n, token, account: hcaAddress }],
+  });
+  const fee: Plan.Fee = {
+    kind: "execution",
+    token,
+    amount: 100n,
+    maximum: 1_000n,
+    sponsored: false,
+  };
+  const quoting = defineExecutor({
+    id: "relayer",
+    capabilities: { sessions: true, sponsorship: true, deploys: true },
+    send: () => Promise.resolve("1"),
+    quote: () => Promise.resolve([fee]),
+  });
+
+  /** `hca()`'s plan for `spend`, with an HCA holding `held` of the token and a permit token. */
+  const funded = (held: bigint, options: Parameters<typeof hca>[0] = {}) => {
+    const { context, calls } = makeClient({
+      deployed: true,
+      wallet: true,
+      stubs: [
+        {
+          address: token,
+          abi: [...Abis.shared.erc20, ...Abis.shared.erc2612],
+          functions: {
+            balanceOf: ([holder]) => (holder === hcaAddress ? held : 1_000_000n),
+            nonces: () => 3n,
+            eip712Domain: () => ["0x0f", "USD Coin", "2", 11155111n, token, zeroHash, []],
+          },
+        },
+      ],
+    });
+    const { prepare: prepareRoute } = hca(options);
+    assert.isDefined(prepareRoute);
+    const run = () => prepareRoute(spend, context);
+    return { run, plan: Effect.promise(run), calls };
+  };
+
+  it.effect("adds an owner transfer of the shortfall when the owner's wallet sends", () =>
+    Effect.gen(function* () {
+      const plan = yield* funded(30n).plan;
+
+      const [setup] = plan.steps;
+      assert.deepInclude(setup, { id: "hca-setup", from: "signer" });
+      assert.deepStrictEqual(setup?.calls, [
+        {
+          to: token,
+          data: encodeFunctionData({
+            abi: Abis.shared.erc20,
+            functionName: "transfer",
+            args: [hcaAddress, 70n],
+          }),
+          value: 0n,
+        },
+      ]);
+      assert.deepInclude(plan.requirements, {
+        kind: "balance",
+        amount: 70n,
+        token,
+        account: owner,
+      });
+      assert.include(
+        Arr.map(plan.warnings, (warning) => warning.code),
+        "HCA_FUNDING",
+      );
+    }),
+  );
+
+  // Spend 100 + fee 100 with a 5% margin, less the 30 the HCA holds.
+  it.effect("opens a relayed execution with the owner's permit and pull, fees included", () =>
+    Effect.gen(function* () {
+      const { plan: planned, calls } = funded(30n, { executors: [quoting] });
+      const plan = yield* planned;
+
+      assert.isFalse(Arr.some(plan.steps, (each) => each.id === "hca-setup"));
+      const [permit, pull, action] = executions(plan.steps[0]?.calls[0]);
+      assert.strictEqual(
+        decodeFunctionData({ abi: Abis.shared.erc2612, data: defined(permit).callData }).args?.[2],
+        175n,
+      );
+      assert.deepStrictEqual(
+        decodeFunctionData({ abi: Abis.shared.erc20, data: defined(pull).callData }).args,
+        [owner, hcaAddress, 175n],
+      );
+      assert.strictEqual(action?.target, getAddress(target));
+      assert.isTrue(Arr.some(calls, ({ method }) => method === "eth_signTypedData_v4"));
+    }),
+  );
+
+  it.effect("funds nothing when the HCA holds enough", () =>
+    Effect.gen(function* () {
+      const plan = yield* funded(1_000n, { executors: [quoting] }).plan;
+
+      assert.lengthOf(executions(plan.steps[0]?.calls[0]), 1);
+      assert.deepStrictEqual(plan.requirements, spend.requirements);
+    }),
+  );
+
+  it.effect('fails typed with `funding: "none"` when the HCA is short', () =>
+    expectRejection(funded(30n, { funding: "none" }).run, {
+      _tag: "InsufficientFundsError",
+      code: "INSUFFICIENT_TOKEN_BALANCE",
     }),
   );
 });

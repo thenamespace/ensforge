@@ -4,9 +4,10 @@ import { Name } from "@ensforge/sdk";
 import { Actions, type Errors } from "@ensforge/sdk/effect";
 import { isAddressEqual, type Address } from "viem";
 
+import { targetsOf } from "../commands/names.ts";
 import { forwardOf } from "../commands/primary.ts";
 import { SequenceFailure, type Context } from "../model/command.ts";
-import { v1Resolves, v1Status, v2Status, type Model } from "../model/model.ts";
+import { ethereumName, v1Resolves, v1Status, v2Status, type Model } from "../model/model.ts";
 import { subLabel, v2Labels } from "../model/world.ts";
 
 const sameAddress = (actual: Address | null, expected: Address | null) =>
@@ -94,10 +95,13 @@ export const readsMatchModel = Effect.fnUntraced(function* (
     yield* checkSub(context, name, entry.sub);
   }
 
-  // Only actors whose primary name a command set are known to the model.
-  for (const [address, primary] of Rec.toEntries(model.primary)) {
+  // Readers show the Ethereum name only when it resolves back to the address. A name the
+  // fixtures seeded lies outside the model (it may expire unmodelled), so it is not checked.
+  for (const [address, records] of Rec.toEntries(model.primary)) {
+    const primary = ethereumName(records);
+    if (primary !== "" && !targetsOf(world).includes(primary)) continue;
     const expected =
-      primary !== null && forwardOf(model, world, primary) === address ? primary : null;
+      primary !== "" && forwardOf(model, world, primary) === address ? primary : null;
     const actual = yield* Actions.primaryName.get(reader, { address });
     if (actual !== expected) return yield* mismatch(address, "primary name", actual, expected);
   }

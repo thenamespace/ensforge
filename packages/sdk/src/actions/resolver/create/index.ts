@@ -21,13 +21,15 @@ import * as Impl from "./effect.js";
  * - The resolver is a verifiable proxy from the VerifiableFactory; its address is known before
  *   sending (`plan.deploys`) and returned as `resolver`.
  * - `owner` (the signer by default) gets every role; `grants` add more accounts.
+ * - Through `via` (an HCA), the route's account deploys the resolver, and it and the signer both
+ *   get every role.
  * - With `name`, `records` are written during initialization and the name is pointed at the
  *   new resolver in the same plan.
  *
  * **Gotchas**
  *
- * - The address depends on the sending account and `salt`: send from the account the plan was
- *   prepared for. A `salt` already used by that account fails with `SALT_TAKEN`, whose
+ * - The address depends on the sending account (the route's account through `via`) and `salt`:
+ *   send from the account the plan was prepared for. A `salt` already used by that account fails with `SALT_TAKEN`, whose
  *   `context.contract` is the existing resolver; point the name at it with `resolver.set`.
  *
  * **Example** (Creating a resolver with records)
@@ -88,7 +90,9 @@ export declare namespace create {
      */
     owner?: string | undefined;
     /** Extra role grants, by role name or bitmap. */
-    grants?: readonly { account: string; roles: readonly Role.Name[] | bigint }[] | undefined;
+    grants?:
+      | readonly { account: string; roles: readonly Role.ResolverName[] | bigint }[]
+      | undefined;
     /**
      * CREATE2 salt; together with the account it decides the address.
      *

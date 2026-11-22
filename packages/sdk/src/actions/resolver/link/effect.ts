@@ -10,6 +10,11 @@ import * as Action from "../../../internal/action/index.js";
 import { loadName } from "../../../internal/name/load.js";
 import { parseName } from "../../../internal/name/normalize.js";
 import { requireRegistered, singleStepPlan } from "../../../internal/name/write.js";
+import {
+  encodeRecordWrites,
+  recordWriteCodecs,
+  resolverCall,
+} from "../../../internal/records/write-profiles.js";
 import { requirePermissionedResolver } from "../../../internal/resolver/permissioned.js";
 import * as Rpc from "../../../internal/rpc/index.js";
 import type { Plan } from "../../../plan/Plan.js";
@@ -34,6 +39,23 @@ export const plan = Effect.fnUntraced(function* (
   yield* requireRegistered(client, loaded);
   const resolver = yield* requirePermissionedResolver(client, loaded, "record links");
   const source = loaded.data.parts.dns;
+
+  // Detaching gives the name an empty record of its own. A bare link to record 0 would leave it
+  // reading the resolver's default record instead.
+  if (options.to === null) {
+    const codecs = yield* recordWriteCodecs({ clear: true });
+    return singleStepPlan(client, {
+      operation: "resolver.link",
+      account: options.account,
+      description: "Unlink records",
+      calls: [
+        resolverCall(
+          resolver,
+          encodeRecordWrites("name", loaded.data.parts, { clear: true }, codecs),
+        ),
+      ],
+    });
+  }
 
   let data;
   if (typeof options.to === "string") {

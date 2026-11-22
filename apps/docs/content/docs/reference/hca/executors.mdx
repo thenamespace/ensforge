@@ -1,7 +1,7 @@
 ---
 title: "Executors"
 description: "Look up the HCA route, the executors that send hosted contract account calls, and their options in the experimental @ensforge/hca package."
-keywords: ["bundler","defineExecutor","hca","hcaActions","hcaAdminActions","owner","pimlico","rhinestone","BundlerOptions","ExecutionRequest","Executor","HcaAccount","HcaActions","HcaAdminActions","HcaOptions","HcaProblem","HcaSession","PimlicoOptions","RhinestoneAccount","RhinestoneOptions"]
+keywords: ["bundler","defineExecutor","hca","hcaActions","hcaAdminActions","owner","pimlico","rhinestone","BundlerOptions","ExecutionRequest","Executor","HcaAccount","HcaActions","HcaAdminActions","HcaFunding","HcaOptions","HcaProblem","HcaSession","PimlicoOptions","QuotedRefund"]
 generated: true
 ---
 
@@ -105,6 +105,9 @@ gaslessly through a bundler, or prompt-free through a Rhinestone session.
 
 - The HCA runs the calls (`msg.sender`), so it needs authority over what they touch: migration
   and registration plan for it; other writes need the HCA to hold the roles they use.
+- When the HCA holds less than the calls spend plus the executor's quoted fees, the shortfall
+  moves from the owner's wallet (`funding`): an owner transfer, or a permit pull inside the
+  first relayed execution (warning `HCA_FUNDING`).
 - With an EIP-5792 wallet the owner's steps (approvals, deployment, executions) share one bundle.
 - Never selected implicitly: the user should agree to use their HCA.
 
@@ -229,6 +232,10 @@ Use for prompt-free registration and record updates with a session (`hca.authori
 and for sponsored or stablecoin-paid executions.
 
 - ensforge checks session calls against the HCA policy before anything is signed.
+- The orchestrator's route is checked before signing: an owner-signed intent must run exactly
+  the requested calls from the HCA with a refund within `maxRefund` ([`HCA_ROUTE_REJECTED`](/docs/reference/errors/HCA_ROUTE_REJECTED)),
+  and a session's refund must stay within its caps ([`HCA_SESSION_INVALID`](/docs/reference/errors/HCA_SESSION_INVALID)).
+- Fees are paid by the HCA in `feeToken` unless `sponsored`; `quote` prices each execution.
 - The SDK account must derive the same HCA address, or the executor fails with
   [`HCA_SDK_UNSUPPORTED`](/docs/reference/errors/HCA_SDK_UNSUPPORTED) (stock SDK releases without the standalone HCA derive another).
 - Status follows the intent until its fill transaction is mined.
@@ -239,16 +246,16 @@ import { hca, rhinestone } from "@ensforge/hca"
 const via = hca({ executors: [rhinestone({ sdk, sessionSigner })], session })
 ```
 
-```ts title="Owner-signed, sponsored"
+```ts title="Owner-signed, fees paid in USDC by the HCA"
 import { hca, rhinestone } from "@ensforge/hca"
 
 const via = hca({ executors: [rhinestone({ sdk })] })
 ```
 
-```ts title="Paying fees in the refund token"
+```ts title="Sponsored by the app's Rhinestone project"
 import { rhinestone } from "@ensforge/hca"
 
-rhinestone({ sdk, sessionSigner, sponsored: false })
+rhinestone({ sdk, sessionSigner, sponsored: true })
 ```
 
 ## Types
@@ -309,6 +316,7 @@ type Executor
 | `send` (optional) | `((request: ExecutionRequest, context: Write.Via.Context) => Promise<string>)` | Sends one execution and returns a reference to follow it. Omitted for `owner()`, whose executions are ordinary wallet transactions. |
 | `status` (optional) | `((reference: string, context: Write.Via.Context) => Promise<Write.Via.Status>)` | Where a sent execution is. |
 | `quote` (optional) | `((request: ExecutionRequest, context: Write.Via.Context) => Promise<readonly Plan.Fee[]>)` | Fees the executor will charge for a request, shown on the plan before sending. |
+| `quoteRefund` (optional) | `((request: ExecutionRequest, context: Write.Via.Context) => Promise<QuotedRefund \| undefined>)` | The gas refund an execution of `request` would carry, to size a new session's refund caps (`hca.authorizeSession({ executor })`); `undefined` when it carries none. |
 
 ### `HcaAccount`
 
@@ -361,6 +369,17 @@ type HcaAdminActions
 | --- | --- | --- |
 | `hcaAdmin` | `{ /** Reads who governs ENS HCAs: the factory owner and whether implementations are approved. */ readonly getGovernance: Bound<typeof hcaAdmin.getGovernance>; /** Grants root roles on the HCA upgrade set (role admins only). Resolves once the transaction is submitted. */ readonly grantUpgradeSetRoles: BoundWrite<typeof hcaAdmin.grantUpgradeSetRoles>; /** Grants root roles on the HCA upgrade set (role admins only). Resolves once the receipt is in. */ readonly grantUpgradeSetRolesSync: Bound<typeof hcaAdmin.grantUpgradeSetRolesSync>; /** Renounces ownership of the HCA factory, freezing its implementation approvals (factory owner only). Resolves once the transaction is submitted. */ readonly renounceGovernance: BoundWrite<typeof hcaAdmin.renounceGovernance>; /** Renounces ownership of the HCA factory, freezing its implementation approvals (factory owner only). Resolves once the receipt is in. */ readonly renounceGovernanceSync: Bound<typeof hcaAdmin.renounceGovernanceSync>; /** Revokes root roles on the HCA upgrade set (role admins only). Resolves once the transaction is submitted. */ readonly revokeUpgradeSetRoles: BoundWrite<typeof hcaAdmin.revokeUpgradeSetRoles>; /** Revokes root roles on the HCA upgrade set (role admins only). Resolves once the receipt is in. */ readonly revokeUpgradeSetRolesSync: Bound<typeof hcaAdmin.revokeUpgradeSetRolesSync>; /** Approves or revokes an implementation for new HCA deployments (factory owner only). Resolves once the transaction is submitted. */ readonly setDeploymentApproval: BoundWrite<typeof hcaAdmin.setDeploymentApproval>; /** Approves or revokes an implementation for new HCA deployments (factory owner only). Resolves once the receipt is in. */ readonly setDeploymentApprovalSync: Bound<typeof hcaAdmin.setDeploymentApprovalSync>; /** Approves or revokes an implementation in the HCA upgrade set (role holders only). Resolves once the transaction is submitted. */ readonly setUpgradeApproval: BoundWrite<typeof hcaAdmin.setUpgradeApproval>; /** Approves or revokes an implementation in the HCA upgrade set (role holders only). Resolves once the receipt is in. */ readonly setUpgradeApprovalSync: Bound<typeof hcaAdmin.setUpgradeApprovalSync>; /** Transfers ownership of the HCA factory (factory owner only). Resolves once the transaction is submitted. */ readonly transferGovernance: BoundWrite<typeof hcaAdmin.transferGovernance>; /** Transfers ownership of the HCA factory (factory owner only). Resolves once the receipt is in. */ readonly transferGovernanceSync: Bound<typeof hcaAdmin.transferGovernanceSync>; }` |  |
 
+### `HcaFunding`
+
+**Experimental**
+
+How `hca()` funds the HCA from the owner's wallet: automatically (`"auto"`, or with a permit
+`deadline` in seconds), or never (`"none"`).
+
+```ts
+type HcaFunding = "auto" | "none" | { readonly deadline?: number | undefined };
+```
+
 ### `HcaOptions`
 
 **Experimental**
@@ -375,6 +394,7 @@ type HcaOptions
 | --- | --- | --- | --- |
 | `executors` | `readonly Executor[]` | `[owner()]` | How executions run. `hca()` picks the first executor that can run the request (one with sessions when `session` is set) once, and never falls back to another when a send fails. |
 | `session` | `HcaSession` |  | Run as this session (no owner prompts); needs an executor with sessions (`rhinestone()`). |
+| `funding` | `HcaFunding` | `"auto"` | Move what the HCA is short of from the owner's wallet: tokens its calls spend and the fees executors charge. `"auto"` adds an owner transfer, or for relaying executors a permit (signed while the plan is prepared, valid for `deadline` seconds) and a pull inside the first execution. `"none"` fails with [`INSUFFICIENT_TOKEN_BALANCE`](/docs/reference/errors/INSUFFICIENT_TOKEN_BALANCE) instead. |
 
 ### `HcaProblem`
 
@@ -426,6 +446,23 @@ type PimlicoOptions
 | `sponsor` | `boolean` |  | Sponsor UserOperations with Pimlico's paymaster. @default false |
 | `sponsorshipPolicyId` | `string` |  | Pimlico sponsorship policy id. |
 
+### `QuotedRefund`
+
+**Experimental**
+
+The gas refund an executor quotes for an execution: what the HCA pays the relayer, in a token.
+
+```ts
+type QuotedRefund
+```
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `token` | `Address` |  |
+| `exchangeRate` | `bigint` | Token units per unit of gas, scaled by 1e18. |
+| `gasOverhead` | `bigint` | Gas added to the measured gas when the refund is computed. |
+| `amount` | `bigint` | The most the relayer may take. |
+
 ### `RhinestoneAccount`
 
 **Experimental**
@@ -442,6 +479,7 @@ type RhinestoneAccount
 | `prepareTransaction` | `(transaction: unknown) => Promise<unknown>` |  |
 | `signTransaction` | `(prepared: unknown) => Promise<unknown>` |  |
 | `submitTransaction` | `(signed: unknown) => Promise<{ readonly id: bigint \| string }>` |  |
+| `getTransactionMessages` (optional) | `((prepared: unknown) => { readonly origin: readonly TypedDataDefinition[]; readonly destination: TypedDataDefinition; })` | The typed data an owner signs for a prepared transaction; checked against the route. |
 
 ### `RhinestoneOptions`
 
@@ -457,14 +495,18 @@ type RhinestoneOptions
 | --- | --- | --- | --- |
 | `sdk` (required) | `RhinestoneSdk` |  | A Rhinestone SDK instance with standalone HCA support, created by the app. |
 | `sessionSigner` | `Account` |  | The session key's signer, for session executions. |
-| `sponsored` | `boolean` |  | Sponsor executions; otherwise fees are paid in the session's refund token. @default true |
+| `ownerAccount` | `Account` | the wallet's account; a browser wallet's signs through the wallet | The HCA owner's signer for owner-signed executions. |
+| `sponsored` | `boolean` | `false` | Ask the orchestrator to sponsor fees. Needs a Rhinestone project that sponsors gas; otherwise the HCA pays each execution's fee in `feeToken`. |
+| `feeToken` | `Address` | the session's refund token, else the deployment's USDC | Token the HCA pays fees in. A session pays only in its refund token. |
+| `maxRefund` | `{ readonly exchangeRate?: bigint \| undefined; readonly gasOverhead?: bigint \| undefined; readonly amount?: bigint \| undefined; }` | `20e9 per gas, 100M gas of overhead and 100 USDC, as a session's widest caps` | Ceilings on an owner-signed execution's refund; a route above them is not signed ([`HCA_ROUTE_REJECTED`](/docs/reference/errors/HCA_ROUTE_REJECTED)). Sessions use their own caps. |
 
 ### `RhinestoneSdk`
 
 **Experimental**
 
-The parts of a Rhinestone SDK instance the executor uses; any SDK release with standalone
-HCA support (`type: "hca"`, `version: "ens-standalone-1.1.0"`) fits.
+The parts of a Rhinestone SDK instance the executor uses. It needs standalone HCA support
+(`type: "hca"`, `version: "ens-standalone-1.1.0"`), which no SDK release has yet: use
+`@rhinestone/sdk@1.22.0` with the ENS app's patch, as the ENS app does.
 
 ```ts
 type RhinestoneSdk
