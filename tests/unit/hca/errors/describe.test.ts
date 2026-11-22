@@ -17,6 +17,7 @@ const everyCode: { readonly [code in HcaError.Code]: true } = {
   HCA_EXECUTION_TIMEOUT: true,
   HCA_UPGRADE_NOT_ALLOWED: true,
   HCA_SDK_UNSUPPORTED: true,
+  HCA_ROUTE_REJECTED: true,
 };
 
 describe("Errors.describe for HcaError", () => {

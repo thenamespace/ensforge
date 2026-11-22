@@ -33,15 +33,16 @@ Nothing else is allowed. Renewals, transfers, [subnames](/docs/reference/glossar
 
 `authorizeSession` asks the owner for one EIP-712 signature, made for the HCA's predicted address. It sends no transaction and needs no deployed HCA, so you can authorize a session before the account exists. Whether the account accepts the session on its first use before it is deployed is not confirmed, so deploy the HCA with [`hca.deploy`](/docs/reference/hca/hca/deploy) before the session runs.
 
-| Option       | Type      | Description                                                                                           |
-| ------------ | --------- | ----------------------------------------------------------------------------------------------------- |
-| `sessionKey` | `string`  | Public address of the session key your app keeps.                                                     |
-| `resolver`   | `string`  | The one resolver whose records the session may set.                                                   |
-| `validUntil` | `number`  | Unix seconds after which the session stops working.                                                   |
-| `refund`     | object    | Refund ceilings for Rhinestone executions: `token`, `maxExchangeRate`, `maxGasOverhead`, `maxAmount`. |
-| `account`    | `Address` | The HCA's owner. Defaults to the client's account.                                                    |
+| Option       | Type       | Description                                                                                           |
+| ------------ | ---------- | ----------------------------------------------------------------------------------------------------- |
+| `sessionKey` | `string`   | Public address of the session key your app keeps.                                                     |
+| `resolver`   | `string`   | The one resolver whose records the session may set.                                                   |
+| `validUntil` | `number`   | Unix seconds after which the session stops working.                                                   |
+| `refund`     | object     | Refund ceilings for Rhinestone executions: `token`, `maxExchangeRate`, `maxGasOverhead`, `maxAmount`. |
+| `executor`   | `Executor` | An executor that quotes refunds, such as `rhinestone()`, to size `maxGasOverhead`.                    |
+| `account`    | `Address`  | The HCA's owner. Defaults to the client's account.                                                    |
 
-Without `refund`, the token is the deployment's USDC and the ceilings are the ENS app's: $20k per ETH, 500k gas of overhead and 100 USDC per intent.
+Without `refund`, the token is the deployment's USDC and the ceilings are the ENS app's: $20k per ETH and 100 USDC per intent. The gas overhead ceiling is four times what `executor` quotes for a commit, between 500k and 100M gas. Without an executor, or when the quote fails, it is 500k. The ceiling also bounds what a relayer may charge per intent, so it is sized from a quote rather than set to the maximum. `hcaRefundCaps` from `@ensforge/contracts/v2/experimental/hca` gives the same ceilings for a quote you make yourself.
 
 **Example** (Authorizing a Session for One Day)
 

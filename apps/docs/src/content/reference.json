@@ -829,7 +829,7 @@
       "name": "Errors",
       "npm": null,
       "url": "/docs/reference/errors",
-      "count": 106,
+      "count": 107,
       "unit": "codes",
       "description": "Every error code by class, with what happened, how to fix it and what to show users.",
       "items": [
@@ -1462,6 +1462,11 @@
           "name": "HCA_SDK_UNSUPPORTED",
           "url": "/docs/reference/errors/HCA_SDK_UNSUPPORTED",
           "summary": "The Rhinestone SDK does not support the standalone ENS HCA."
+        },
+        {
+          "name": "HCA_ROUTE_REJECTED",
+          "url": "/docs/reference/errors/HCA_ROUTE_REJECTED",
+          "summary": "The execution service returned a different transaction than ensforge asked for; nothing was signed."
         }
       ]
     }

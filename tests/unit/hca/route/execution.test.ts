@@ -142,9 +142,40 @@ describe("hca route: prepared plans", () => {
           deployed: true,
           calls: [call],
           session: undefined,
-          description: "records.set",
+          description: "a",
         },
       ]);
+    }),
+  );
+
+  // A registration's commit and reveal are two intents, each charged its own fee.
+  it.effect("quotes each HCA execution on its own, deploying only in the first", () =>
+    Effect.gen(function* () {
+      const { executor, quoted } = recording();
+      const plan = planOf([
+        { id: "commit", description: "commit", calls: [call] },
+        {
+          id: "register",
+          description: "register",
+          calls: [{ ...call, to: stranger }],
+          waitFor: { seconds: 60n },
+        },
+      ]);
+
+      const routed = yield* prepared(
+        hca({ executors: [executor] }),
+        plan,
+        makeClient({ deployed: false }).context,
+      );
+
+      assert.deepStrictEqual(routed.fees, [...fees, ...fees]);
+      assert.deepStrictEqual(
+        Arr.map(quoted, (request) => [request.description, request.deployed, request.calls]),
+        [
+          ["commit", false, [call]],
+          ["register", true, [{ ...call, to: getAddress(stranger) }]],
+        ],
+      );
     }),
   );
 

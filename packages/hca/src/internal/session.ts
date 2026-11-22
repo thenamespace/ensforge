@@ -1,8 +1,9 @@
-import { Array as Arr, Effect, String as Str } from "effect";
+import { Array as Arr, Effect, Option, String as Str } from "effect";
 
 import { Abis } from "@ensforge/contracts";
 import { predictVerifiableProxyAddress } from "@ensforge/contracts/v2";
 import {
+  hcaRefundCaps,
   hcaSessionDigest,
   hcaSessionPermissionId,
   hcaSessionSalt,
@@ -10,13 +11,22 @@ import {
   hcaSignedSession,
   type HcaSessionTerms,
 } from "@ensforge/contracts/v2/experimental/hca";
-import type { Plan } from "@ensforge/sdk";
+import { Errors, type Plan } from "@ensforge/sdk";
 import { Rpc, type AnyError, type Client, type ViemWalletClient } from "@ensforge/sdk/extension";
-import { isAddressEqual, zeroAddress, type Address, type Hex } from "viem";
+import {
+  encodeFunctionData,
+  isAddressEqual,
+  maxUint48,
+  maxUint96,
+  zeroAddress,
+  zeroHash,
+  type Address,
+  type Hex,
+} from "viem";
 import { signTypedData } from "viem/actions";
 
 import { HcaError } from "../errors/classes/HcaError.js";
-import type { HcaSession } from "../types.js";
+import type { Executor, HcaSession } from "../types.js";
 import { readAccount } from "./account.js";
 import { decodeCall } from "./decode.js";
 import { requireHca } from "./deployment.js";
@@ -38,6 +48,7 @@ export const authorize = Effect.fnUntraced(function* (
           readonly maxAmount?: bigint | undefined;
         }
       | undefined;
+    readonly executor?: Executor | undefined;
   },
 ): Effect.fn.Return<HcaSession, AnyError | HcaError> {
   const deployment = yield* requireHca(client);
@@ -64,17 +75,72 @@ export const authorize = Effect.fnUntraced(function* (
     );
   }
 
-  // Refund ceilings default to the ENS app's: $20k per ETH, 500k gas of overhead, 100 USDC per
-  // intent.
+  // The overhead ceiling is sized from a commit-shaped quote when an executor can give one, as
+  // the ENS app does; a failed quote keeps the 500k floor rather than failing the approval.
+  const quoteRefund = options.executor?.quoteRefund;
+  const quoted =
+    options.refund?.maxGasOverhead !== undefined || quoteRefund === undefined
+      ? undefined
+      : yield* Rpc.fromPromise(() =>
+          quoteRefund(
+            {
+              chainId: client.chain.id,
+              hca: account.address,
+              owner,
+              deployed: account.deployed,
+              calls: [
+                {
+                  to: deployment.v2.contracts.ethRegistrar,
+                  data: encodeFunctionData({
+                    abi: Abis.v2.ethRegistrar,
+                    functionName: "commit",
+                    args: [zeroHash],
+                  }),
+                  value: 0n,
+                },
+              ],
+              description: "Quote a session's refund",
+            },
+            {
+              client,
+              chainId: client.chain.id,
+              account: owner,
+              publicClient: client.client(),
+              walletClient: wallet,
+            },
+          ),
+        ).pipe(Effect.orElseSucceed(() => undefined));
+  const caps = hcaRefundCaps(quoted?.gasOverhead);
+
   const terms: HcaSessionTerms = {
     sessionNonce: account.sessionNonce,
     validUntil: options.validUntil,
     resolver: options.resolver,
     refundToken,
-    maxRefundExchangeRate: options.refund?.maxExchangeRate ?? 20_000_000_000n,
-    maxRefundGasOverhead: options.refund?.maxGasOverhead ?? 500_000n,
-    maxRefundAmount: options.refund?.maxAmount ?? 100_000_000n,
+    maxRefundExchangeRate: options.refund?.maxExchangeRate ?? caps.maxExchangeRate,
+    maxRefundGasOverhead: options.refund?.maxGasOverhead ?? caps.maxGasOverhead,
+    maxRefundAmount: options.refund?.maxAmount ?? caps.maxAmount,
   };
+  // The validator packs the caps as uint96 and uint48: a larger value would be signed truncated.
+  const overflow = Arr.findFirst(
+    [
+      ["refund.maxExchangeRate", terms.maxRefundExchangeRate, maxUint96],
+      ["refund.maxGasOverhead", terms.maxRefundGasOverhead, maxUint48],
+      ["refund.maxAmount", terms.maxRefundAmount, maxUint96],
+    ] as const,
+    ([, value, max]) => value < 0n || value > max,
+  );
+  if (Option.isSome(overflow)) {
+    const [field, value] = overflow.value;
+    return yield* Effect.fail(
+      new Errors.InvalidInputError({
+        code: "INVALID_RECORD_VALUE",
+        field,
+        input: value,
+        shortMessage: `\`${field}\` is outside what the HCA validator can store.`,
+      }),
+    );
+  }
   const salt = hcaSessionSalt(terms);
   const session = hcaSignedSession({
     account: account.address,

@@ -168,8 +168,9 @@ export declare namespace addDepositSync {
  *   session), set the owner's primary name and approve registration payments.
  * - It stays valid until `validUntil` or until the owner calls `revokeSessions`. Store the
  *   returned session; it holds no secret.
- * - Refund ceilings default to the ENS app's: $20k per ETH, 500k gas of overhead, 100 USDC per
- *   intent.
+ * - Refund ceilings default to the ENS app's: $20k per ETH and 100 USDC per intent. The gas
+ *   overhead ceiling is four times what `executor` quotes for a commit (500k to 100M gas), or
+ *   500k without an executor or a quote.
  *
  * **Example** (Authorizing a session)
  *
@@ -194,7 +195,7 @@ export declare namespace addDepositSync {
  * ```
  *
  * @throws `Errors.UserRejectedError` (`USER_REJECTED`) when the owner declines.
- * @throws `Errors.InvalidInputError` (`INVALID_ADDRESS`) for invalid addresses.
+ * @throws `Errors.InvalidInputError` (`INVALID_ADDRESS`, `INVALID_RECORD_VALUE`) for invalid addresses, or refund caps the validator cannot store.
  * @throws `Errors.HcaError` (`HCA_UNAVAILABLE`) on chains without an HCA deployment, or whose session domain ensforge cannot sign.
  *
  * @stability experimental

@@ -11,7 +11,15 @@ import { concat, createWalletClient, zeroAddress, zeroHash, type Address } from 
 import { privateKeyToAccount } from "viem/accounts";
 import { sepolia } from "viem/chains";
 
-import { defined, hcaAddress, makeClient, owner, proxyLogic, v2 } from "../fixtures";
+import {
+  defined,
+  hcaAddress,
+  makeClient,
+  owner,
+  proxyLogic,
+  rhinestoneRoute,
+  v2,
+} from "../fixtures";
 
 // What the Rhinestone SDK is asked to do: the account it derives and the transactions it prepares.
 
@@ -28,9 +36,12 @@ const recordingSdk = () => {
       configs.push(config);
       return Promise.resolve({
         getAddress: () => hcaAddress,
+        // The orchestrator answers with a route that runs exactly the requested calls.
         prepareTransaction: (transaction) => {
           prepared.push(transaction);
-          return Promise.resolve(transaction);
+          return Promise.resolve({
+            intentRoute: rhinestoneRoute({ calls: Reflect.get(Object(transaction), "calls") }),
+          });
         },
         signTransaction: (transaction) => Promise.resolve(transaction),
         submitTransaction: () => Promise.resolve({ id: 7n }),
@@ -82,7 +93,7 @@ const session: HcaSession = {
 };
 
 describe("rhinestone executor: requests", () => {
-  it.effect("derives the owner's standalone HCA, sponsored by default", () =>
+  it.effect("derives the owner's standalone HCA, paying fees in USDC by default", () =>
     Effect.gen(function* () {
       const { sdk, configs, prepared } = recordingSdk();
       const executor = rhinestone({ sdk });
@@ -119,7 +130,8 @@ describe("rhinestone executor: requests", () => {
       assert.deepStrictEqual(prepared[0], {
         chain: contextFor().publicClient.chain,
         calls: [{ to: owner, data: "0xabcd", value: 3n }],
-        sponsored: true,
+        sponsored: false,
+        feeAsset: v2.paymentTokens.usdc,
       });
     }),
   );
@@ -195,16 +207,29 @@ describe("rhinestone executor: requests", () => {
     }),
   );
 
-  // Without a session the owner's wallet signs; no session signer is needed.
-  it.effect("sends without a session signer when there is no session", () =>
+  // Without a session the owner's wallet signs; no session signer is needed. A sponsored
+  // execution names no fee token.
+  it.effect("sends sponsored without a session signer when there is no session", () =>
     Effect.gen(function* () {
       const { sdk, prepared } = recordingSdk();
-      const executor = rhinestone({ sdk, sponsored: false });
+      const executor = rhinestone({ sdk, sponsored: true });
 
       yield* Effect.promise(() => defined(executor.send)(request, contextFor()));
 
+      assert.include(prepared[0], { sponsored: true });
       assert.notProperty(prepared[0], "feeAsset");
       assert.notProperty(prepared[0], "signers");
+    }),
+  );
+
+  it.effect("refuses a fee token a session cannot refund in", () =>
+    Effect.gen(function* () {
+      const executor = rhinestone({ sdk: recordingSdk().sdk, sessionSigner, feeToken: owner });
+
+      yield* expectRejection(() => defined(executor.send)({ ...request, session }, contextFor()), {
+        _tag: "HcaError",
+        code: "HCA_EXECUTOR_UNSUPPORTED",
+      });
     }),
   );
 

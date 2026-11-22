@@ -19,10 +19,10 @@ type Actions.hca.addDepositSync.ErrorType = HcaError | InvalidInputError | Write
 type Actions.hca.addDepositSync.Options = addDeposit.Options & Write.Options & { confirmations?: number | undefined; timeout?: number | undefined; }
 type Actions.hca.addDepositSync.ReturnType = Result & { readonly receipt: TransactionReceipt; readonly receipts: readonly TransactionReceipt[]; }
 // @stability experimental
-function Actions.hca.authorizeSession(client: ClientBase<{}>, options: { sessionKey: string; resolver: string; validUntil: number; refund?: { readonly token?: `0x${string}` | undefined; readonly maxExchangeRate?: bigint | undefined; readonly maxGasOverhead?: bigint | undefined; readonly maxAmount?: bigint | undefined; } | undefined; account?: `0x${string}` | undefined; }) => Effect<HcaSession, ErrorType, never>
+function Actions.hca.authorizeSession(client: ClientBase<{}>, options: { sessionKey: string; resolver: string; validUntil: number; refund?: { readonly token?: `0x${string}` | undefined; readonly maxExchangeRate?: bigint | undefined; readonly maxGasOverhead?: bigint | undefined; readonly maxAmount?: bigint | undefined; } | undefined; executor?: Executor | undefined; account?: `0x${string}` | undefined; }) => Effect<HcaSession, ErrorType, never>
 const Actions.hca.authorizeSession.path: 'hca.authorizeSession'
 type Actions.hca.authorizeSession.ErrorType = HcaError | InvalidInputError | UserRejectedError | CommonError
-type Actions.hca.authorizeSession.Options = { sessionKey: string; resolver: string; validUntil: number; refund?: { readonly token?: `0x${string}` | undefined; readonly maxExchangeRate?: bigint | undefined; readonly maxGasOverhead?: bigint | undefined; readonly maxAmount?: bigint | undefined; } | undefined; account?: `0x${string}` | undefined; }
+type Actions.hca.authorizeSession.Options = { sessionKey: string; resolver: string; validUntil: number; refund?: { readonly token?: `0x${string}` | undefined; readonly maxExchangeRate?: bigint | undefined; readonly maxGasOverhead?: bigint | undefined; readonly maxAmount?: bigint | undefined; } | undefined; executor?: Executor | undefined; account?: `0x${string}` | undefined; }
 type Actions.hca.authorizeSession.ReturnType = { readonly chainId: number; readonly hca: `0x${string}`; readonly owner: `0x${string}`; readonly sessionKey: `0x${string}`; readonly terms: HcaSessionTerms; readonly permissionId: `0x${string}`; readonly sessionDigest: `0x${string}`; readonly chains: readonly { readonly chainId: number; readonly sessionDigest: `0x${string}`; }[]; readonly ownerSignature: `0x${string}`; readonly signingDomain: 'hca' | 'smart-session'; }
 // @stability experimental
 function Actions.hca.checkSessionCalls(client: ClientBase<{}>, options: { session: HcaSession; calls: readonly Call[]; }) => Effect<true, ErrorType, never>
@@ -240,7 +240,8 @@ type Actions.hcaAdmin.transferGovernanceSync.ReturnType = Result & { readonly re
 // @stability experimental
 class HcaError {
   constructor(options: ClassOptions<Code> & { readonly executor?: string | undefined; }) => HcaError
-  code: 'HCA_ACTION_NOT_ALLOWED' | 'HCA_BUNDLER_REJECTED' | 'HCA_EXECUTION_FAILED' | 'HCA_EXECUTION_TIMEOUT' | 'HCA_EXECUTOR_UNSUPPORTED' | 'HCA_NOT_VERIFIED' | 'HCA_PAYMASTER_REJECTED' | 'HCA_SDK_UNSUPPORTED' | 'HCA_SESSION_INVALID' | 'HCA_UNAVAILABLE' | 'HCA_UPGRADE_NOT_ALLOWED'
+  cause: unknown
+  code: 'HCA_ACTION_NOT_ALLOWED' | 'HCA_BUNDLER_REJECTED' | 'HCA_EXECUTION_FAILED' | 'HCA_EXECUTION_TIMEOUT' | 'HCA_EXECUTOR_UNSUPPORTED' | 'HCA_NOT_VERIFIED' | 'HCA_PAYMASTER_REJECTED' | 'HCA_ROUTE_REJECTED' | 'HCA_SDK_UNSUPPORTED' | 'HCA_SESSION_INVALID' | 'HCA_UNAVAILABLE' | 'HCA_UPGRADE_NOT_ALLOWED'
   ~ensforge/error: true
   _tag: 'HcaError'
   name: 'HcaError'
@@ -249,7 +250,6 @@ class HcaError {
   executor: string | undefined
   message: string
   stack: string
-  cause: unknown
   details: readonly string[]
   retryable: boolean
   context: { readonly operation?: string | undefined; readonly name?: string | undefined; readonly account?: `0x${string}` | undefined; readonly chainId?: number | undefined; readonly contract?: `0x${string}` | undefined; readonly functionName?: string | undefined; readonly contractKind?: 'registrar' | 'registry' | 'resolver' | 'wrapper' | undefined; readonly selector?: `0x${string}` | undefined; readonly registry?: `0x${string}` | undefined; readonly planId?: string | undefined; readonly step?: string | undefined; readonly revert?: { readonly errorName: string | undefined; readonly data: `0x${string}` | undefined; } | undefined; }
@@ -264,6 +264,6 @@ class HcaError {
   ~effect/Runtime/errorExitCode: number
   ~effect/Runtime/errorReported: boolean
 }
-type HcaError.Code = 'HCA_ACTION_NOT_ALLOWED' | 'HCA_BUNDLER_REJECTED' | 'HCA_EXECUTION_FAILED' | 'HCA_EXECUTION_TIMEOUT' | 'HCA_EXECUTOR_UNSUPPORTED' | 'HCA_NOT_VERIFIED' | 'HCA_PAYMASTER_REJECTED' | 'HCA_SDK_UNSUPPORTED' | 'HCA_SESSION_INVALID' | 'HCA_UNAVAILABLE' | 'HCA_UPGRADE_NOT_ALLOWED'
+type HcaError.Code = 'HCA_ACTION_NOT_ALLOWED' | 'HCA_BUNDLER_REJECTED' | 'HCA_EXECUTION_FAILED' | 'HCA_EXECUTION_TIMEOUT' | 'HCA_EXECUTOR_UNSUPPORTED' | 'HCA_NOT_VERIFIED' | 'HCA_PAYMASTER_REJECTED' | 'HCA_ROUTE_REJECTED' | 'HCA_SDK_UNSUPPORTED' | 'HCA_SESSION_INVALID' | 'HCA_UNAVAILABLE' | 'HCA_UPGRADE_NOT_ALLOWED'
 type HcaError.Options = ClassOptions<Code> & { readonly executor?: string | undefined; }
 ```

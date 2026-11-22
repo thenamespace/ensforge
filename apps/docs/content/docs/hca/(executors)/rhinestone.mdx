@@ -1,7 +1,17 @@
 ---
 title: Rhinestone
-description: Run HCA executions as Rhinestone intents, signed by the owner or run without a prompt with a session, and set a refund token.
-keywords: [rhinestone, intents, session, sponsored, refund token, HCA_SDK_UNSUPPORTED]
+description: Run HCA executions as Rhinestone intents, signed by the owner or run without a prompt with a session, and choose how fees are paid.
+keywords:
+  [
+    rhinestone,
+    intents,
+    session,
+    sponsored,
+    fee token,
+    refund token,
+    HCA_SDK_UNSUPPORTED,
+    HCA_ROUTE_REJECTED,
+  ]
 ---
 
 <Callout type="info" title="Experimental">
@@ -18,12 +28,14 @@ keywords: [rhinestone, intents, session, sponsored, refund token, HCA_SDK_UNSUPP
 
 ## Create the executor
 
-| Option          | Type            | Default              | Description                                                                    |
-| --------------- | --------------- | -------------------- | ------------------------------------------------------------------------------ |
-| `sdk`           | `RhinestoneSdk` | none                 | A Rhinestone SDK instance with standalone HCA support.                         |
-| `sessionSigner` | `Account`       | none                 | The session key's signer. Required for session executions.                     |
-| `ownerAccount`  | `Account`       | the wallet's account | The HCA owner's signer. A browser wallet's account signs through the wallet.   |
-| `sponsored`     | `boolean`       | `true`               | Sponsor executions. When `false`, fees are paid in the session's refund token. |
+| Option          | Type            | Default                                         | Description                                                                           |
+| --------------- | --------------- | ----------------------------------------------- | ------------------------------------------------------------------------------------- |
+| `sdk`           | `RhinestoneSdk` | none                                            | A Rhinestone SDK instance with standalone HCA support.                                |
+| `sessionSigner` | `Account`       | none                                            | The session key's signer. Required for session executions.                            |
+| `ownerAccount`  | `Account`       | the wallet's account                            | The HCA owner's signer. A browser wallet's account signs through the wallet.          |
+| `sponsored`     | `boolean`       | `false`                                         | Ask Rhinestone to sponsor fees. Needs a Rhinestone project that sponsors gas.         |
+| `feeToken`      | `Address`       | the session's refund token, else USDC           | The token the HCA pays fees in. A session pays only in its refund token.              |
+| `maxRefund`     | object          | 20e9 per gas, 100M gas of overhead and 100 USDC | Ceilings on an owner-signed execution's fee: `exchangeRate`, `gasOverhead`, `amount`. |
 
 **Example** (A Prompt-Free Route)
 
@@ -43,7 +55,7 @@ Pass `via` to a write the session allows. See [Sessions](/docs/hca/sessions) for
 
 ## Owner-signed executions
 
-Without a `session`, `rhinestone({ sdk })` sends owner-signed, sponsored intents.
+Without a `session`, `rhinestone({ sdk })` sends owner-signed intents. The HCA pays each execution's fee in USDC.
 
 ```ts title="owner-signed.ts"
 import { hca, rhinestone, type RhinestoneSdk } from "@ensforge/hca";
@@ -53,23 +65,29 @@ declare const sdk: RhinestoneSdk;
 const via = hca({ executors: [rhinestone({ sdk })] });
 ```
 
-## Pay fees in the refund token
+## Sponsored executions
 
-With `sponsored: false`, a session execution pays its fees in the session's refund token. The session sets the token and its ceilings when you authorize it.
+By default the HCA pays each execution's fee, in its session's refund token or in USDC. If your Rhinestone project sponsors gas, pass `sponsored: true` and the HCA pays nothing.
 
-```ts title="refund-token.ts"
+```ts title="sponsored.ts"
 import { rhinestone, type RhinestoneSdk } from "@ensforge/hca";
 import type { Account } from "viem";
 
 declare const sdk: RhinestoneSdk;
 declare const sessionSigner: Account;
 
-const executor = rhinestone({ sdk, sessionSigner, sponsored: false });
+const executor = rhinestone({ sdk, sessionSigner, sponsored: true });
 ```
+
+## Fees on the plan
+
+`hca()` asks the executor to quote each HCA execution. A registration has two executions, the commit and the reveal, so its plan lists two fees in `plan.fees`. Each fee is the most the execution's refund can take for its gas, never above the refund's signed cap.
 
 ## What ensforge checks
 
 - Before signing, ensforge checks every session call against the HCA policy. A call outside it fails with [`HCA_ACTION_NOT_ALLOWED`](/docs/reference/errors/HCA_ACTION_NOT_ALLOWED) and nothing is signed.
+- The orchestrator returns the route it will run, and ensforge checks it before signing. An owner-signed route must run exactly the requested calls from the HCA, after at most one fee approval to the gas refund paymaster. It must stay on this chain, move no other funds and keep its refund within `maxRefund`. Otherwise the executor fails with [`HCA_ROUTE_REJECTED`](/docs/reference/errors/HCA_ROUTE_REJECTED) and nothing is signed.
+- A session's calls are bounded on chain by the HCA validator. Its refund is checked against the session's caps before signing, and fails with `HCA_SESSION_INVALID` when it is above them.
 - The SDK account must derive the same HCA address as ensforge. Otherwise the executor fails with `HCA_SDK_UNSUPPORTED` before it signs anything.
 - Status follows the intent until it has a fill transaction. An intent that is `FAILED` or `EXPIRED` reports as failed.
 
@@ -79,6 +97,10 @@ const executor = rhinestone({ sdk, sessionSigner, sponsored: false });
 
 The Rhinestone SDK derives a different address than the owner's HCA. Use an SDK release with standalone HCA support (`ens-standalone-1.1.0`). See [`HCA_SDK_UNSUPPORTED`](/docs/reference/errors/HCA_SDK_UNSUPPORTED).
 
+### `HCA_ROUTE_REJECTED`
+
+The orchestrator returned a different transaction than the one ensforge asked for, so nothing was signed. The error's `details` list each difference. A refund above `maxRefund` also lands here: raise `maxRefund` if the fee is expected. See [`HCA_ROUTE_REJECTED`](/docs/reference/errors/HCA_ROUTE_REJECTED).
+
 ### `HCA_EXECUTOR_UNSUPPORTED`
 
-The write has no wallet account, the chain has no HCA deployment, or a session execution has no `sessionSigner`. `hca()` also throws it when you pass a `session` and no executor in the list runs sessions. See [`HCA_EXECUTOR_UNSUPPORTED`](/docs/reference/errors/HCA_EXECUTOR_UNSUPPORTED).
+The write has no wallet account, the chain has no HCA deployment, or a session execution has no `sessionSigner`. It also fails when no fee token is known, or when `feeToken` is not the session's refund token. `hca()` also throws it when you pass a `session` and no executor in the list runs sessions. See [`HCA_EXECUTOR_UNSUPPORTED`](/docs/reference/errors/HCA_EXECUTOR_UNSUPPORTED).

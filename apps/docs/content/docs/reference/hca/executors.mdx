@@ -1,7 +1,7 @@
 ---
 title: "Executors"
 description: "Look up the HCA route, the executors that send hosted contract account calls, and their options in the experimental @ensforge/hca package."
-keywords: ["bundler","defineExecutor","hca","hcaActions","hcaAdminActions","owner","pimlico","rhinestone","BundlerOptions","ExecutionRequest","Executor","HcaAccount","HcaActions","HcaAdminActions","HcaOptions","HcaProblem","HcaSession","PimlicoOptions","RhinestoneAccount","RhinestoneOptions"]
+keywords: ["bundler","defineExecutor","hca","hcaActions","hcaAdminActions","owner","pimlico","rhinestone","BundlerOptions","ExecutionRequest","Executor","HcaAccount","HcaActions","HcaAdminActions","HcaOptions","HcaProblem","HcaSession","PimlicoOptions","QuotedRefund","RhinestoneAccount"]
 generated: true
 ---
 
@@ -229,6 +229,10 @@ Use for prompt-free registration and record updates with a session (`hca.authori
 and for sponsored or stablecoin-paid executions.
 
 - ensforge checks session calls against the HCA policy before anything is signed.
+- The orchestrator's route is checked before signing: an owner-signed intent must run exactly
+  the requested calls from the HCA with a refund within `maxRefund` ([`HCA_ROUTE_REJECTED`](/docs/reference/errors/HCA_ROUTE_REJECTED)),
+  and a session's refund must stay within its caps ([`HCA_SESSION_INVALID`](/docs/reference/errors/HCA_SESSION_INVALID)).
+- Fees are paid by the HCA in `feeToken` unless `sponsored`; `quote` prices each execution.
 - The SDK account must derive the same HCA address, or the executor fails with
   [`HCA_SDK_UNSUPPORTED`](/docs/reference/errors/HCA_SDK_UNSUPPORTED) (stock SDK releases without the standalone HCA derive another).
 - Status follows the intent until its fill transaction is mined.
@@ -239,16 +243,16 @@ import { hca, rhinestone } from "@ensforge/hca"
 const via = hca({ executors: [rhinestone({ sdk, sessionSigner })], session })
 ```
 
-```ts title="Owner-signed, sponsored"
+```ts title="Owner-signed, fees paid in USDC by the HCA"
 import { hca, rhinestone } from "@ensforge/hca"
 
 const via = hca({ executors: [rhinestone({ sdk })] })
 ```
 
-```ts title="Paying fees in the refund token"
+```ts title="Sponsored by the app's Rhinestone project"
 import { rhinestone } from "@ensforge/hca"
 
-rhinestone({ sdk, sessionSigner, sponsored: false })
+rhinestone({ sdk, sessionSigner, sponsored: true })
 ```
 
 ## Types
@@ -309,6 +313,7 @@ type Executor
 | `send` (optional) | `((request: ExecutionRequest, context: Write.Via.Context) => Promise<string>)` | Sends one execution and returns a reference to follow it. Omitted for `owner()`, whose executions are ordinary wallet transactions. |
 | `status` (optional) | `((reference: string, context: Write.Via.Context) => Promise<Write.Via.Status>)` | Where a sent execution is. |
 | `quote` (optional) | `((request: ExecutionRequest, context: Write.Via.Context) => Promise<readonly Plan.Fee[]>)` | Fees the executor will charge for a request, shown on the plan before sending. |
+| `quoteRefund` (optional) | `((request: ExecutionRequest, context: Write.Via.Context) => Promise<QuotedRefund \| undefined>)` | The gas refund an execution of `request` would carry, to size a new session's refund caps (`hca.authorizeSession({ executor })`); `undefined` when it carries none. |
 
 ### `HcaAccount`
 
@@ -426,6 +431,23 @@ type PimlicoOptions
 | `sponsor` | `boolean` |  | Sponsor UserOperations with Pimlico's paymaster. @default false |
 | `sponsorshipPolicyId` | `string` |  | Pimlico sponsorship policy id. |
 
+### `QuotedRefund`
+
+**Experimental**
+
+The gas refund an executor quotes for an execution: what the HCA pays the relayer, in a token.
+
+```ts
+type QuotedRefund
+```
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `token` | `Address` |  |
+| `exchangeRate` | `bigint` | Token units per unit of gas, scaled by 1e18. |
+| `gasOverhead` | `bigint` | Gas added to the measured gas when the refund is computed. |
+| `amount` | `bigint` | The most the relayer may take. |
+
 ### `RhinestoneAccount`
 
 **Experimental**
@@ -442,6 +464,7 @@ type RhinestoneAccount
 | `prepareTransaction` | `(transaction: unknown) => Promise<unknown>` |  |
 | `signTransaction` | `(prepared: unknown) => Promise<unknown>` |  |
 | `submitTransaction` | `(signed: unknown) => Promise<{ readonly id: bigint \| string }>` |  |
+| `getTransactionMessages` (optional) | `((prepared: unknown) => { readonly origin: readonly TypedDataDefinition[]; readonly destination: TypedDataDefinition; })` | The typed data an owner signs for a prepared transaction; checked against the route. |
 
 ### `RhinestoneOptions`
 
@@ -458,7 +481,9 @@ type RhinestoneOptions
 | `sdk` (required) | `RhinestoneSdk` |  | A Rhinestone SDK instance with standalone HCA support, created by the app. |
 | `sessionSigner` | `Account` |  | The session key's signer, for session executions. |
 | `ownerAccount` | `Account` | the wallet's account; a browser wallet's signs through the wallet | The HCA owner's signer for owner-signed executions. |
-| `sponsored` | `boolean` |  | Sponsor executions; otherwise fees are paid in the session's refund token. @default true |
+| `sponsored` | `boolean` | `false` | Ask the orchestrator to sponsor fees. Needs a Rhinestone project that sponsors gas; otherwise the HCA pays each execution's fee in `feeToken`. |
+| `feeToken` | `Address` | the session's refund token, else the deployment's USDC | Token the HCA pays fees in. A session pays only in its refund token. |
+| `maxRefund` | `{ readonly exchangeRate?: bigint \| undefined; readonly gasOverhead?: bigint \| undefined; readonly amount?: bigint \| undefined; }` | `20e9 per gas, 100M gas of overhead and 100 USDC, as a session's widest caps` | Ceilings on an owner-signed execution's refund; a route above them is not signed ([`HCA_ROUTE_REJECTED`](/docs/reference/errors/HCA_ROUTE_REJECTED)). Sessions use their own caps. |
 
 ### `RhinestoneSdk`
 

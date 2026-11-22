@@ -27,5 +27,6 @@ export const authorizeSession = Effect.fn("ensforge.hca.authorizeSession")(funct
     resolver,
     validUntil: options.validUntil,
     refund: options.refund,
+    executor: options.executor,
   });
 }, Action.withContext("hca.authorizeSession"));

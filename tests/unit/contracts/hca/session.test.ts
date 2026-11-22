@@ -2,6 +2,7 @@ import { assert, describe, it } from "@effect/vitest";
 import { Array as Arr } from "effect";
 
 import {
+  hcaRefundCaps,
   hcaSessionApprovalDigest,
   hcaSessionDigest,
   hcaSessionPermissionId,
@@ -145,5 +146,18 @@ describe("HCA session typed data", () => {
       (change) => hcaSessionSalt({ ...terms, ...change }),
     );
     assert.strictEqual(new Set([base, ...changed]).size, 8);
+  });
+
+  it.each([
+    [undefined, 500_000n],
+    [100_000n, 500_000n],
+    [3_000_000n, 12_000_000n],
+    [30_000_000n, 100_000_000n],
+  ] as const)("sizes the overhead ceiling from a quote of %s", (quoted, ceiling) => {
+    assert.deepStrictEqual(hcaRefundCaps(quoted), {
+      maxExchangeRate: 20_000_000_000n,
+      maxGasOverhead: ceiling,
+      maxAmount: 100_000_000n,
+    });
   });
 });

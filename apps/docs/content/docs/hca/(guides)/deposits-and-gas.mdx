@@ -15,12 +15,12 @@ An [HCA](/docs/reference/glossary#hca) is its own account, so it can hold funds 
 
 Two costs exist. The **gas** pays for running the execution. The **spend** is what the calls themselves pay, such as ETH sent with a call or a registration fee in tokens.
 
-| Executor                                       | Pays the gas                                                             | Pays ETH the calls send                        | Pays tokens the calls spend |
-| ---------------------------------------------- | ------------------------------------------------------------------------ | ---------------------------------------------- | --------------------------- |
-| `owner()`                                      | The owner's wallet.                                                      | The owner's wallet, sent with the transaction. | The HCA.                    |
-| `bundler()` or `pimlico()` without a paymaster | The HCA.                                                                 | The HCA.                                       | The HCA.                    |
-| `bundler()` or `pimlico()` with a paymaster    | The [paymaster](/docs/reference/glossary#paymaster).                     | The HCA.                                       | The HCA.                    |
-| `rhinestone()`                                 | Sponsored by default. With `sponsored: false`, a session's refund token. | The HCA.                                       | The HCA.                    |
+| Executor                                       | Pays the gas                                                   | Pays ETH the calls send                        | Pays tokens the calls spend |
+| ---------------------------------------------- | -------------------------------------------------------------- | ---------------------------------------------- | --------------------------- |
+| `owner()`                                      | The owner's wallet.                                            | The owner's wallet, sent with the transaction. | The HCA.                    |
+| `bundler()` or `pimlico()` without a paymaster | The HCA.                                                       | The HCA.                                       | The HCA.                    |
+| `bundler()` or `pimlico()` with a paymaster    | The [paymaster](/docs/reference/glossary#paymaster).           | The HCA.                                       | The HCA.                    |
+| `rhinestone()`                                 | The HCA, in its fee token. With `sponsored: true`, Rhinestone. | The HCA.                                       | The HCA.                    |
 
 The HCA is `msg.sender` of the calls it runs, so tokens a call spends come from the HCA's balance, not the wallet's. A registration through `via: hca()` fails with [`INSUFFICIENT_TOKEN_BALANCE`](/docs/reference/errors/INSUFFICIENT_TOKEN_BALANCE) before it is sent when the HCA cannot pay. Fund the HCA first.
 

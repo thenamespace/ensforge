@@ -207,32 +207,37 @@ export const hca = (options: HcaOptions = {}): Write.Via => {
       });
     }
 
+    // Each HCA execution is its own intent with its own fee; only the first deploys the HCA.
     const quote = executor.quote;
-    const fees =
+    const executions = Arr.filter(steps, (step) => step.from !== "signer");
+    const quoted =
       quote === undefined
-        ? plan.fees
-        : yield* Effect.tryPromise({
-            try: () =>
-              quote(
-                {
-                  chainId: client.chain.id,
-                  hca: account.address,
-                  owner,
-                  deployed: account.deployed,
-                  calls: Arr.flatMap(steps, (step) => {
-                    const [first] = step.calls;
-                    return first === undefined ? [] : (innerCalls(first) ?? []);
-                  }),
-                  session,
-                  description: plan.operation,
-                },
-                context,
-              ),
-            catch: (cause) =>
-              cause instanceof HcaError
-                ? cause
-                : new HcaError({ code: "HCA_EXECUTION_FAILED", cause }),
-          });
+        ? undefined
+        : yield* Effect.forEach(
+            executions,
+            (step, index) =>
+              Effect.tryPromise({
+                try: () =>
+                  quote(
+                    {
+                      chainId: client.chain.id,
+                      hca: account.address,
+                      owner,
+                      deployed: account.deployed || index > 0,
+                      calls: Arr.flatMap(step.calls, (call) => innerCalls(call) ?? []),
+                      session,
+                      description: step.description,
+                    },
+                    context,
+                  ),
+                catch: (cause) =>
+                  cause instanceof HcaError
+                    ? cause
+                    : new HcaError({ code: "HCA_EXECUTION_FAILED", cause }),
+              }),
+            { concurrency: "unbounded" },
+          );
+    const fees = quoted === undefined ? plan.fees : Arr.flatten(quoted);
 
     return {
       ...plan,

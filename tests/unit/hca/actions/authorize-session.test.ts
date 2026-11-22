@@ -2,10 +2,11 @@ import { assert, describe, it } from "@effect/vitest";
 import { Array as Arr, Effect } from "effect";
 
 import { Deployments } from "@ensforge/contracts";
+import { defineExecutor, type Executor } from "@ensforge/hca";
 import { Actions } from "@ensforge/hca/effect";
 import { expectFailure } from "@ensforge/test-harness";
 
-import { hcaAddress, makeClient, owner, ownerSignature } from "../fixtures";
+import { hcaAddress, makeClient, owner, ownerSignature, v2 } from "../fixtures";
 
 // The owner approves a session with one typed-data signature, so the HCA need not exist yet: the
 // session names the address the factory will create, and the validator checks the approval when
@@ -60,6 +61,61 @@ describe("hca.authorizeSession on a deployment ensforge cannot sign for", () => 
         { _tag: "HcaError", code: "HCA_UNAVAILABLE" },
       );
       assert.isFalse(Arr.some(calls, ({ method }) => method === "eth_signTypedData_v4"));
+    }),
+  );
+});
+
+/** An executor that only quotes refunds. */
+const quoting = (quoteRefund: Executor["quoteRefund"]): Executor =>
+  defineExecutor({
+    id: "quoting",
+    capabilities: { sessions: true, sponsorship: true, deploys: true },
+    quoteRefund,
+  });
+
+// The gas-overhead cap bounds what a relayer may charge per intent, so it is sized from a quote.
+describe("hca.authorizeSession refund caps", () => {
+  const options = {
+    sessionKey: "0x00000000000000000000000000000000000000cc",
+    resolver: "0x00000000000000000000000000000000000000bb",
+    validUntil: 4_000_000_000,
+  } as const;
+  const refund = { token: v2.paymentTokens.usdc, exchangeRate: 1n, amount: 1n };
+
+  it.effect.each([
+    [
+      "a quote",
+      quoting(() => Promise.resolve({ ...refund, gasOverhead: 3_000_000n })),
+      12_000_000n,
+    ],
+    ["a failed quote", quoting(() => Promise.reject(new Error("offline"))), 500_000n],
+    ["no executor", undefined, 500_000n],
+  ] as const)("sizes the overhead cap from %s", ([, executor, cap]) =>
+    Effect.gen(function* () {
+      const { client } = makeClient({ wallet: true });
+
+      const session = yield* Actions.hca.authorizeSession(client, { ...options, executor });
+
+      assert.strictEqual(session.terms.maxRefundGasOverhead, cap);
+    }),
+  );
+
+  it.effect("keeps an explicit overhead cap, and refuses one the validator cannot store", () =>
+    Effect.gen(function* () {
+      const { client } = makeClient({ wallet: true });
+      const executor = quoting(() => Promise.resolve({ ...refund, gasOverhead: 3_000_000n }));
+
+      const session = yield* Actions.hca.authorizeSession(client, {
+        ...options,
+        executor,
+        refund: { maxGasOverhead: 1_000n },
+      });
+      assert.strictEqual(session.terms.maxRefundGasOverhead, 1_000n);
+
+      yield* expectFailure(
+        Actions.hca.authorizeSession(client, { ...options, refund: { maxGasOverhead: 1n << 48n } }),
+        { _tag: "InvalidInputError", code: "INVALID_RECORD_VALUE" },
+      );
     }),
   );
 });
