@@ -348,6 +348,47 @@ describe("transfers and managers", () => {
     );
 
     // Regression: the refusal was one shared error, so every later one named the first call's name.
+    it.effect(
+      "refuses to hand over a resolver that holds another name's records",
+      () =>
+        Effect.gen(function* () {
+          const fixtures = yield* Fixtures;
+          const { alice, carol } = (yield* Devnet).accounts;
+          const chain = yield* Chain;
+          const ens = (yield* Clients).make({ account: alice });
+          const name = fixtures.byId("v2.registered").name;
+          const sibling = `kid.${name}`;
+
+          yield* chain.isolated(
+            Effect.gen(function* () {
+              // One resolver from resolver.create, then shared with a second name.
+              const { resolver } = yield* Actions.resolver.createSync(ens, {
+                name,
+                records: { texts: { url: "https://alice.example" } },
+              });
+              yield* Actions.subname.createSync(ens, { name: sibling, resolver });
+              yield* Actions.record.setSync(ens, {
+                name: sibling,
+                texts: { url: "https://kid.example" },
+              });
+
+              // Its roles cover both names, so giving them to carol would give her the sibling.
+              yield* expectFailure(
+                Actions.name.transfer.prepare(ens, { name, to: carol, records: "handover" }),
+                { _tag: "InvalidInputError", code: "INVALID_RECORD_VALUE" },
+              );
+              const kept = yield* Actions.permission.check(ens, {
+                name: sibling,
+                operation: { setRecord: "text", key: "url" },
+                account: alice,
+              });
+              assert.isTrue(kept.allowed);
+            }),
+          );
+        }),
+      { meta: { cases: ["M:B5"] } },
+    );
+
     it.effect("names each refused handover's own name", () =>
       Effect.gen(function* () {
         const fixtures = yield* Fixtures;

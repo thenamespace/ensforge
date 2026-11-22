@@ -1,8 +1,7 @@
-import { Effect } from "effect";
+import { Effect, Array as Arr } from "effect";
 
 import { Abis } from "@ensforge/contracts";
 import type { Deployments } from "@ensforge/contracts";
-import { ownedResolverSalt } from "@ensforge/contracts/v2";
 import { encodeFunctionData, hexToBigInt, isAddressEqual, type Address } from "viem";
 
 import type { Client } from "../../../client/types.js";
@@ -20,7 +19,7 @@ import {
 } from "../../../internal/name/write.js";
 import { explainFor } from "../../../internal/permission/check.js";
 import { setterKeying } from "../../../internal/records/setter-keying.js";
-import { deployPermissionedResolver } from "../../../internal/resolver/deploy.js";
+import { resolverSharing } from "../../../internal/resolver/sharing.js";
 import * as Rpc from "../../../internal/rpc/index.js";
 import { make as makePlan } from "../../../plan/make.js";
 import type { Plan } from "../../../plan/Plan.js";
@@ -155,20 +154,22 @@ const recordControl = Effect.fnUntraced(function* (
     };
   }
 
-  // The signer's shared resolver serves its other names too; handing it over would give them away.
-  const owned = yield* deployPermissionedResolver(client, {
-    deployer: sender,
-    writers: [sender],
-    salt: ownedResolverSalt(sender),
+  // Resolver roles cover every name on the resolver, so only a resolver of this name alone is
+  // handed over.
+  const sharing = yield* resolverSharing(client, {
+    resolver,
+    name: loaded.data.parts.name,
+    node: loaded.data.parts.node,
+    // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- a v2 name's state always carries its owner; `Name.State` types it as nullable for every protocol
+    accounts: Arr.dedupeWith([sender, loaded.state.owner as Address], isAddressEqual),
   });
-  if (isAddressEqual(owned.address, resolver)) {
+  if (sharing.problem !== undefined) {
     return yield* Effect.fail(
       new InvalidInputError({
         code: "INVALID_RECORD_VALUE",
         field: "records",
         input: records,
-        shortMessage:
-          "The name uses the sender's shared resolver; its roles cover other names too.",
+        shortMessage: sharing.problem,
         hint: "Give the name its own resolver first, or grant record access with permission.setRecordAccess.",
       }),
     );
@@ -186,7 +187,7 @@ const recordControl = Effect.fnUntraced(function* (
   return {
     before: [rolesCall("grantRootRoles", to)],
     after: [rolesCall("revokeRootRoles", sender)],
-    warnings: [],
+    warnings: [...sharing.warnings],
   };
 });
 

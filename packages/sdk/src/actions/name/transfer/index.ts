@@ -31,8 +31,11 @@ import * as Impl from "./effect.js";
  * - Expired, reserved and unregistered names cannot be transferred.
  * - ENSv2: roles on the name's PermissionedResolver stay with the sender, who can still edit its
  *   records (the plan carries a `RECORD_CONTROL_RETAINED` warning). `records: "handover"` grants
- *   them to the recipient and revokes the sender's in the same step; it is refused for the
- *   sender's shared `"owned"` resolver, whose roles cover other names.
+ *   them to the recipient and revokes the sender's in the same step. Resolver roles cover every
+ *   name on the resolver, so handover is refused unless the resolver provably serves only this
+ *   name: it is not the sender's or owner's shared `"owned"` resolver, and it holds no record of
+ *   another name. With an indexer, other names pointing at it are refused too; without one, a name
+ *   that points at the resolver but has no records yet cannot be seen.
  *
  * **Example** (Sending a name)
  *

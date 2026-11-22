@@ -73,3 +73,14 @@ export const accountResolver = Effect.fnUntraced(function* (
         ],
   };
 });
+
+/** The address of `account`'s shared PermissionedResolver (see {@link accountResolver}). */
+export const accountResolverAddress = (
+  client: Client,
+  account: Address,
+): Effect.Effect<Address, AnyError> =>
+  deployPermissionedResolver(client, {
+    deployer: account,
+    writers: [account],
+    salt: ownedResolverSalt(account),
+  }).pipe(Effect.map((deployment) => deployment.address));

@@ -2069,7 +2069,8 @@
       "tests/integration/test/writes/access-matrix.test.ts > record.set as ENSv2 owner",
       "tests/integration/test/writes/access-matrix.test.ts > record.set as ENSv2 stranger",
       "tests/integration/test/writes/records.test.ts > creates a resolver with records and points a name at it",
-      "tests/integration/test/writes/transfers.test.ts > hands record access over with an ENSv2 name, unless the resolver serves other names"
+      "tests/integration/test/writes/transfers.test.ts > hands record access over with an ENSv2 name, unless the resolver serves other names",
+      "tests/integration/test/writes/transfers.test.ts > refuses to hand over a resolver that holds another name's records"
     ]
   },
   "M:B6": {
