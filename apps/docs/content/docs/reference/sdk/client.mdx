@@ -1039,6 +1039,7 @@ type Step
 | `calls` | `readonly Call[]` |  |
 | `waitFor` (optional) | `{ readonly seconds: bigint; readonly since?: bigint \| undefined }` | Chain time to wait before sending this one, e.g. the registration commitment age: `seconds` after `since` (a chain timestamp), or after the block that confirmed the previous step. |
 | `from` (optional) | `"signer"` | `signer`: the signer must send it itself, even through a route (e.g. a token approval). |
+| `gas` (optional) | `bigint` | Gas the step's calls are estimated to use, when the planner knows it (migrations). |
 
 ### `Plan.Storage`
 

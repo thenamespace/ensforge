@@ -80,6 +80,7 @@ generated: true
 | `Abis.shared.dnsZoneResolver` | 1 | 1 | 0 | DNS zone hash resolver profile. |
 | `Abis.shared.dnssecGateway` | 1 | 0 | 0 | Off-chain DNSSEC gateway interface (`IDNSGateway`, ENSIP-17): returns the signed RRSets that prove a DNS record, in the shape `DNSRegistrar.proveAndClaim` and DNSSEC oracles accept. |
 | `Abis.shared.erc1155` | 8 | 4 | 7 | [ERC-1155 Multi Token Standard](https://ethereum.org/en/developers/docs/standards/tokens/erc-1155) |
+| `Abis.shared.erc1155Receiver` | 1 | 0 | 0 | `IERC1155Receiver.onERC1155Received`: a contract that receives ERC-1155 tokens (an ENSv2 name) answers it with its own selector, `0xf23a6e61`. |
 | `Abis.shared.erc165` | 1 | 0 | 0 | ERC-165 interface detection. |
 | `Abis.shared.erc20` | 9 | 2 | 0 | [ERC-20 Token Standard](https://ethereum.org/en/developers/docs/standards/tokens/erc-20) |
 | `Abis.shared.erc2612` | 4 | 0 | 0 | ERC-20 permits (EIP-2612) and the token's EIP-712 domain (ERC-5267 `eip712Domain`, or the older `version()`), for signing a `permit` that lets another account pull the owner's tokens. |

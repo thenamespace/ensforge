@@ -12,6 +12,7 @@ export { dnsRecordResolverAbi as dnsRecordResolver } from "../shared/resolver-pr
 export { dnsZoneResolverAbi as dnsZoneResolver } from "../shared/resolver-profiles/dns-zone.js";
 export { dnssecGatewayAbi as dnssecGateway } from "../shared/dnssec-gateway.js";
 export { erc1155Abi as erc1155 } from "../shared/erc1155.js";
+export { erc1155ReceiverAbi as erc1155Receiver } from "../shared/erc1155.js";
 export { erc165Abi as erc165 } from "../shared/erc165.js";
 export { erc20Abi as erc20 } from "../shared/erc20.js";
 export { erc2612Abi as erc2612 } from "../shared/erc2612.js";

@@ -48,12 +48,24 @@ describe("migration", () => {
                 const status = yield* Actions.migration.get(ens, { name, account: alice });
                 assert.strictEqual(status.route, route);
 
-                yield* Actions.migration.migrateSync(ens, {
+                const result = yield* Actions.migration.migrateSync(ens, {
                   names: name,
                   resolver: "keep",
                   onStep: chain.passWaits,
                 });
 
+                // The planner's gas estimates cover what the transactions used.
+                const used = Arr.reduce(
+                  result.receipts,
+                  0n,
+                  (sum, receipt) => sum + receipt.gasUsed,
+                );
+                const estimated = Arr.reduce(
+                  result.plan.steps,
+                  0n,
+                  (sum, step) => sum + (step.gas ?? 0n),
+                );
+                assert.isTrue(used <= estimated, `${id}: ${used} used, ${estimated} estimated`);
                 const entry = yield* ethEntry(name);
                 assert.strictEqual(entry.owner, alice, id);
                 // The name keeps its reservation's expiry exactly.
@@ -73,6 +85,28 @@ describe("migration", () => {
           }
         }),
       { meta: { cases: ["M:A20", "M:A21", "O27", "M06", "T07"] } },
+    );
+
+    // Regression: a contract owner that refuses ERC-1155 tokens reverted the transfer step, after
+    // the setup step was already paid for.
+    it.effect(
+      "refuses an owner that cannot receive the name before anything is sent",
+      () =>
+        Effect.gen(function* () {
+          const fixtures = yield* Fixtures;
+          const devnet = yield* Devnet;
+          const ens = (yield* Clients).make({ account: devnet.accounts.alice });
+
+          const error = yield* expectFailure(
+            Actions.migration.migrate.prepare(ens, {
+              names: fixtures.byId("v2.reserved").name,
+              owner: devnet.contract("v2.publicResolver"),
+            }),
+            { _tag: "MigrationError", code: "NOT_ELIGIBLE" },
+          );
+          assert.deepStrictEqual(error.blockers, ["recipient-cannot-receive"]);
+        }),
+      { meta: { cases: ["M06"] } },
     );
 
     it.effect(
@@ -200,11 +234,19 @@ describe("migration", () => {
               });
 
               // `a` is not listed: it is recreated as the level that holds `b`.
-              yield* Actions.migration.migrateSync(ens, {
+              const result = yield* Actions.migration.migrateSync(ens, {
                 names: { name, subnames: ["b.a"] },
                 resolver: "keep",
                 onStep: chain.passWaits,
               });
+              // Registry deployments and registrations stay within the planner's estimates too.
+              const used = Arr.reduce(result.receipts, 0n, (sum, receipt) => sum + receipt.gasUsed);
+              const estimated = Arr.reduce(
+                result.plan.steps,
+                0n,
+                (sum, step) => sum + (step.gas ?? 0n),
+              );
+              assert.isTrue(used <= estimated, `${used} used, ${estimated} estimated`);
 
               const parent = yield* Actions.name.get(ens, { name: a });
               assert.deepInclude(parent, { kind: "v2-native", owner: bob });
@@ -244,6 +286,7 @@ describe("migration", () => {
 
           yield* chain.isolated(
             Effect.gen(function* () {
+              const wrapperExpiry = (yield* v1Owners(controlled)).wrapped?.[2];
               const { plan } = yield* Actions.migration.migrateSync(ens, {
                 names: { name: parent, subnames: [controlled, emancipated] },
                 resolver: "keep",
@@ -265,6 +308,8 @@ describe("migration", () => {
                 owner: bob,
                 registry: registry?.address ?? null,
               });
+              // Regression: every recreated subname was given the maximum expiry.
+              assert.strictEqual(controlledName.expiry, wrapperExpiry);
               assert.strictEqual(
                 (yield* Actions.name.get(ens, { name: emancipated })).kind,
                 "v1-wrapped",
@@ -273,6 +318,110 @@ describe("migration", () => {
           );
         }),
       { meta: { cases: ["M20"] } },
+    );
+
+    // Regression: a stop between the transfer and the subnames' registration left them missing,
+    // and migrating again failed with ALREADY_MIGRATED.
+    it.effect(
+      "finishes an interrupted migration's subnames with plan.resume",
+      () =>
+        Effect.gen(function* () {
+          const fixtures = yield* Fixtures;
+          const devnet = yield* Devnet;
+          const chain = yield* Chain;
+          const clients = yield* Clients;
+          const wallets = yield* Wallets;
+          const { alice, bob } = devnet.accounts;
+          const parent = fixtures.byId("v1.wrapped.locked").name;
+          const controlled = fixtures.byId("v1.wrapped.sub").name;
+          const storage = Plan.memoryStorage();
+          const options = {
+            names: { name: parent, subnames: [controlled] },
+            resolver: "keep",
+            onStep: chain.passWaits,
+          } as const;
+
+          yield* chain.isolated(
+            Effect.gen(function* () {
+              // The wallet signs the transfer, then stops.
+              const first = clients.make({
+                account: alice,
+                wallet: wallets.make(alice, { rejectAfter: 1 }),
+                storage,
+              });
+              const prepared = yield* Actions.migration.migrate.prepare(first, options);
+              assert.include(
+                Arr.map(prepared.warnings, (warning) => warning.code),
+                "NOT_ATOMIC",
+              );
+              yield* expectFailure(Actions.migration.migrateSync(first, options), {
+                _tag: "UserRejectedError",
+                code: "USER_REJECTED",
+              });
+              assert.strictEqual(
+                (yield* Actions.name.get(first, { name: controlled })).kind,
+                "v1-wrapped",
+              );
+              const [record] = yield* Actions.plan.list(first, {});
+              if (record === undefined) assert.fail("the plan was not saved");
+
+              const second = clients.make({ account: alice, storage });
+              yield* Actions.plan.resumeSync(second, {
+                id: record.plan.id,
+                onStep: chain.passWaits,
+              });
+              const resumed = yield* Actions.name.get(second, { name: controlled });
+              assert.deepInclude(resumed, { kind: "v2-native", owner: bob });
+            }),
+          );
+        }),
+      { meta: { cases: ["M20"] } },
+    );
+
+    // Regression: a retry after an interrupted run reused the resolver it had created, whatever
+    // the new owner or records.
+    it.effect(
+      "re-checks a resolver an interrupted migration created before reusing it",
+      () =>
+        Effect.gen(function* () {
+          const fixtures = yield* Fixtures;
+          const devnet = yield* Devnet;
+          const chain = yield* Chain;
+          const clients = yield* Clients;
+          const wallets = yield* Wallets;
+          const { alice, bob } = devnet.accounts;
+          const name = fixtures.byId("v2.reserved").name;
+          const options = { names: { name, records: { texts: { url: "https://first.example" } } } };
+
+          yield* chain.isolated(
+            Effect.gen(function* () {
+              // Only the resolver's deployment is sent.
+              const first = clients.make({
+                account: alice,
+                wallet: wallets.make(alice, { rejectAfter: 1 }),
+              });
+              yield* expectFailure(Actions.migration.migrateSync(first, options), {
+                _tag: "UserRejectedError",
+                code: "USER_REJECTED",
+              });
+
+              const ens = clients.make({ account: alice });
+              const conflict = yield* expectFailure(
+                Actions.migration.migrate.prepare(ens, { ...options, owner: bob }),
+                { _tag: "MigrationError", code: "NOT_ELIGIBLE" },
+              );
+              assert.deepStrictEqual(conflict.blockers, ["resolver-conflict"]);
+
+              yield* Actions.migration.migrateSync(ens, {
+                names: { name, records: { texts: { url: "https://second.example" } } },
+                onStep: chain.passWaits,
+              });
+              const url = yield* Actions.record.getText(ens, { name, key: "url" });
+              assert.strictEqual(url, "https://second.example");
+            }),
+          );
+        }),
+      { meta: { cases: ["M06"] } },
     );
 
     // Regression: a locked child listed before its locked parent got no target registry.
@@ -460,6 +609,24 @@ describe("migration", () => {
                 name: managed,
               });
               assert.include([...roles.names], "setResolver");
+            }),
+          );
+          // The same, asked for on the name alone (and refused on it alone, against the batch).
+          yield* chain.isolated(
+            Effect.gen(function* () {
+              const perName = yield* Actions.migration.migrate.prepare(ens, {
+                names: { name: managed, preserveManager: true },
+                resolver: "keep",
+              });
+              const optedOut = yield* Actions.migration.migrate.prepare(ens, {
+                names: { name: managed, preserveManager: false },
+                resolver: "keep",
+                preserveManager: true,
+              });
+              assert.deepStrictEqual(
+                Arr.map([perName, optedOut], (plan) => Arr.map(plan.steps, (step) => step.id)),
+                [["migrate", "manager"], ["migrate"]],
+              );
             }),
           );
 

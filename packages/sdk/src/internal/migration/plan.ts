@@ -1,4 +1,4 @@
-import { Effect, String as Str, Array as Arr, Order } from "effect";
+import { Option, Effect, String as Str, Array as Arr, Order } from "effect";
 
 import { Abis, Roles } from "@ensforge/contracts";
 import { predictVerifiableProxyAddress } from "@ensforge/contracts/v2";
@@ -21,6 +21,7 @@ import { MigrationError } from "../../errors/classes/MigrationError.js";
 import { UnsupportedError } from "../../errors/classes/UnsupportedError.js";
 import type { AnyError } from "../../errors/types.js";
 import type { Plan } from "../../plan/Plan.js";
+import { dnsEncode } from "../../utils/Name.js";
 import { nonZeroAddress } from "../address.js";
 import { parentOf } from "../name/parts.js";
 import { requireAddress } from "../name/write.js";
@@ -28,8 +29,11 @@ import { recordsCall } from "../records/write-call.js";
 import { accountResolver, resolverWriters } from "../resolver/account.js";
 import { deployPermissionedResolver } from "../resolver/deploy.js";
 import * as Rpc from "../rpc/index.js";
+import { isSignerHca } from "../write/signer-hca.js";
 import { discoverSubnames } from "./discover.js";
+import { maxWrappedPerTransfer, packByGas } from "./gas.js";
 import { inspectMigration, type Inspection, type ResolverChoice } from "./inspect.js";
+import { canReceiveName } from "./recipient.js";
 import { recordsToCopy, type CopiedRecords } from "./records.js";
 import { planRecreation, type Recreation } from "./subnames.js";
 
@@ -104,9 +108,6 @@ const managerRecordRoles =
   Roles.resolver.setInterface |
   Roles.resolver.setName |
   Roles.resolver.setData;
-
-// Steps stay well inside a block's gas limit; a migration transfer costs about 200k gas.
-const maxCallsPerStep = 30;
 
 const migrationResolverDomain = keccak256(stringToHex("ensforge.migration.resolver"));
 /** One resolver per name and deployer, so an interrupted migration finds it again. */
@@ -226,6 +227,12 @@ export const planMigration = Effect.fnUntraced(function* (
   // `sender` runs the calls (an HCA through `via`): it deploys, so addresses derive from it, and it
   // needs roles on what it deploys to keep writing. The signer keeps holding the names.
   const routed = !isAddressEqual(sender, signer);
+  // Through the signer's own HCA, MigrationHelper moves the tokens: the owner approves it instead
+  // of the HCA, which never becomes an operator of the owner's names.
+  const helper =
+    routed && (yield* isSignerHca(client, sender, signer))
+      ? client.deployment.v2?.migration.migrationHelper
+      : undefined;
   const v1 = client.deployment.v1?.contracts;
   const v2 = client.deployment.v2;
   if (v1 === undefined || v2 === undefined) {
@@ -289,6 +296,7 @@ export const planMigration = Effect.fnUntraced(function* (
   >();
 
   let owned: Address | undefined;
+  const receivable = new Map<string, boolean>();
   for (const { input: nameInput, inspection } of entries) {
     const { status, loaded } = inspection;
     const config = typeof nameInput === "string" ? undefined : nameInput;
@@ -309,6 +317,23 @@ export const planMigration = Effect.fnUntraced(function* (
     }
     const owner = newOwner ?? holder;
     const { locked } = inspection;
+    // The registry mints to the owner with an ERC-1155 acceptance check; a contract that refuses
+    // would revert the irreversible transfer step, after its setup was paid for.
+    const ownerKey = Str.toLowerCase(owner);
+    const receives =
+      receivable.get(ownerKey) ??
+      (yield* canReceiveName(client, owner, { registry: v2.contracts.ethRegistry, from: holder }));
+    receivable.set(ownerKey, receives);
+    if (!receives) {
+      return yield* Effect.fail(
+        new MigrationError({
+          code: "NOT_ELIGIBLE",
+          blockers: ["recipient-cannot-receive"],
+          context: { name: status.name },
+          hint: `${owner} cannot receive ENSv2 names. Migrate to another owner.`,
+        }),
+      );
+    }
 
     // Resolver: create or reuse one, keep the current one, or let the controller decide.
     let resolver: Address = status.resolver.current ?? zeroAddress;
@@ -331,7 +356,7 @@ export const planMigration = Effect.fnUntraced(function* (
     }
     if (plan === "new") {
       const grants =
-        input.preserveManager === true && status.manager !== null
+        (config?.preserveManager ?? input.preserveManager) === true && status.manager !== null
           ? [{ account: status.manager, roleBitmap: managerRecordRoles }]
           : [];
       const deployment = yield* deployPermissionedResolver(client, {
@@ -346,6 +371,36 @@ export const planMigration = Effect.fnUntraced(function* (
       if (!(yield* Rpc.hasCode(client, resolver))) {
         setup.push(deployment.call);
         deploys.push({ contract: "resolver", address: resolver });
+      } else {
+        // An interrupted run deployed it: it must still be this migration's, with every writer
+        // holding its roles. Its records were written at creation, so this run's go in the
+        // records step.
+        const writers = resolverWriters(sender, owner, signer);
+        const holders = yield* Effect.forEach(
+          writers,
+          (writer) =>
+            Rpc.readContractOrUndefined(client, {
+              address: resolver,
+              abi: Abis.v2.permissionedResolver,
+              functionName: "hasRootRoles",
+              args: [Roles.enhancedAccessControl.allRoles, writer],
+            }),
+          { concurrency: "unbounded" },
+        );
+        if (!Arr.every(holders, (holds) => holds === true)) {
+          return yield* Effect.fail(
+            new MigrationError({
+              code: "NOT_ELIGIBLE",
+              blockers: ["resolver-conflict"],
+              context: { name: status.name, contract: resolver },
+              hint: "An earlier migration created this name's resolver for another owner. Migrate to that owner, or choose another `resolver`.",
+            }),
+          );
+        }
+        if (copied !== undefined) {
+          const write = yield* recordsCall(client, resolver, parts, copied, "name");
+          records.push(write);
+        }
       }
     } else if (plan === "owned") {
       if (!isAddressEqual(owner, signer)) {
@@ -518,7 +573,7 @@ export const planMigration = Effect.fnUntraced(function* (
       data: { label: parts.label, owner, subregistry, resolver },
     });
 
-    if (input.preserveManager === true && status.manager !== null) {
+    if ((config?.preserveManager ?? input.preserveManager) === true && status.manager !== null) {
       if (isAddressEqual(owner, signer)) {
         managers.push({
           to: v2.contracts.ethRegistry,
@@ -548,18 +603,19 @@ export const planMigration = Effect.fnUntraced(function* (
   }
 
   const steps: Plan.Step[] = [];
+  // Steps are packed by estimated gas, so each stays within one transaction's limit.
   const chunked = (
     id: string,
     description: string,
     calls: readonly Plan.Call[],
     from?: "signer",
   ) => {
-    for (let index = 0; index < calls.length; index += maxCallsPerStep) {
-      const part = index / maxCallsPerStep;
+    for (const [part, pack] of packByGas(calls).entries()) {
       steps.push({
         id: part === 0 ? id : `${id}-${part + 1}`,
         description,
-        calls: calls.slice(index, index + maxCallsPerStep),
+        calls: pack.calls,
+        gas: pack.gas,
         ...(from === undefined ? {} : { from }),
       });
     }
@@ -576,7 +632,7 @@ export const planMigration = Effect.fnUntraced(function* (
     chunked(
       depth === 0 ? "migrate" : `migrate-children-${depth}`,
       depth === 0 ? "Migrate names" : "Migrate locked subnames",
-      transferCalls(v1, group),
+      helper === undefined ? transferCalls(v1, group) : helperCalls(helper, group),
     );
     chunked(
       depth === 0 ? "wrapped-subnames" : `wrapped-subnames-children-${depth}`,
@@ -598,6 +654,20 @@ export const planMigration = Effect.fnUntraced(function* (
   }
   // The names' new holder grants the managers; a routed sender holds no roles on them.
   chunked("manager", "Restore ENSv1 managers", managers, routed ? "signer" : undefined);
+  // Without a route, each step after the transfer is its own transaction; a stop between them
+  // leaves the names migrated with their subnames or managers missing until the plan resumes.
+  const transferred = Arr.findFirstIndex(steps, (step) => Str.startsWith("migrate")(step.id));
+  const after = Option.match(transferred, {
+    onNone: () => [],
+    onSome: (index) => Arr.drop(steps, index + 1),
+  });
+  if (!routed && after.length > 0) {
+    warnings.push({
+      code: "NOT_ATOMIC",
+      message:
+        'Steps after the irreversible transfer are separate transactions. Send with `mode: "batch"` or `via: hca()` to make them one, or finish an interrupted run with plan.resume.',
+    });
+  }
 
   return {
     steps,
@@ -610,6 +680,52 @@ export const planMigration = Effect.fnUntraced(function* (
     ),
   };
 });
+
+/**
+ * `MigrationHelper.migrate` calls that migrate `moves` for the signer's HCA, each within one
+ * step's gas. The helper sends `.eth` names to their controllers and locked children to their
+ * parent's registry (found when it runs, so a parent migrated in the same call counts); a
+ * NameWrapper batch needs one holder.
+ */
+const helperCalls = (helper: Address, moves: readonly Move[]): Plan.Call[] =>
+  Arr.map(Arr.chunksOf(moves, maxWrappedPerTransfer), (chunk) => {
+    const byHolder = (route: Move["status"]["route"]) => {
+      const groups = new Map<string, MigrationData[]>();
+      for (const move of Arr.filter(chunk, (each) => each.status.route === route)) {
+        const key = Str.toLowerCase(move.holder);
+        groups.set(key, [...(groups.get(key) ?? []), move.data]);
+      }
+      return [...groups.values()];
+    };
+    const children = new Map<string, Map<string, MigrationData[]>>();
+    for (const move of Arr.filter(chunk, (each) => each.status.route === "locked-child")) {
+      const parent = parentOf(move.status.name);
+      const holders = children.get(parent) ?? new Map<string, MigrationData[]>();
+      const key = Str.toLowerCase(move.holder);
+      holders.set(key, [...(holders.get(key) ?? []), move.data]);
+      children.set(parent, holders);
+    }
+    return {
+      to: helper,
+      data: encodeFunctionData({
+        abi: Abis.v2.migrationHelper,
+        functionName: "migrate",
+        args: [
+          Arr.map(
+            Arr.filter(chunk, (move) => move.status.route === "unwrapped"),
+            (move) => move.data,
+          ),
+          byHolder("wrapped-unlocked"),
+          byHolder("wrapped-locked"),
+          Arr.map([...children], ([parent, holders]) => ({
+            parentName: dnsEncode(parent),
+            groups: [...holders.values()],
+          })),
+        ],
+      }),
+      value: 0n,
+    };
+  });
 
 /**
  * The token transfers that migrate `moves`: one ERC-721 transfer per unwrapped name, and one
@@ -644,7 +760,10 @@ const transferCalls = (
     wrapped.set(key, [...(wrapped.get(key) ?? []), move]);
   }
 
-  for (const group of wrapped.values()) {
+  // A batched transfer is one call, so it is split to fit a step on its own.
+  for (const group of Arr.flatMap([...wrapped.values()], (all) =>
+    Arr.chunksOf(all, maxWrappedPerTransfer),
+  )) {
     const [first] = group;
     if (first === undefined) continue;
     const { holder } = first;

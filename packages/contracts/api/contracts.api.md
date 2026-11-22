@@ -664,6 +664,8 @@ const Abis.shared.erc1155: Abi
   function setApprovalForAll(address,bool)
   function supportsInterface(bytes4) view returns (bool)
   function uri(uint256) view returns (string)
+const Abis.shared.erc1155Receiver: Abi
+  function onERC1155Received(address,address,uint256,uint256,bytes) returns (bytes4)
 const Abis.shared.erc165: Abi
   function supportsInterface(bytes4) view returns (bool)
 const Abis.shared.erc20: Abi

@@ -283,6 +283,8 @@ const erc1155Abi: Abi
   function setApprovalForAll(address,bool)
   function supportsInterface(bytes4) view returns (bool)
   function uri(uint256) view returns (string)
+const erc1155ReceiverAbi: Abi
+  function onERC1155Received(address,address,uint256,uint256,bytes) returns (bytes4)
 const erc165Abi: Abi
   function supportsInterface(bytes4) view returns (bool)
 const erc165InterfaceId: '0x01ffc9a7'

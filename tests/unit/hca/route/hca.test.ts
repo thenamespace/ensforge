@@ -221,6 +221,26 @@ describe("hca route: setup step", () => {
 });
 
 describe("hca route: executions", () => {
+  // Regression: steps were merged up to 32 calls whatever they cost, so two heavy migration steps
+  // became one execution over a transaction's gas limit.
+  it.effect("merges steps only while their estimated gas fits one execution", () =>
+    Effect.gen(function* () {
+      const plan = yield* prepare([
+        step("a", [call()], { gas: 9_000_000n }),
+        step("b", [call()], { gas: 9_000_000n }),
+        step("c", [call()], { gas: 1_000_000n }),
+      ]);
+
+      assert.deepStrictEqual(
+        Arr.map(plan.steps, (s) => [s.id, s.gas]),
+        [
+          ["a", 9_100_000n],
+          ["b+c", 10_100_000n],
+        ],
+      );
+    }),
+  );
+
   it.effect("merges consecutive steps into one execution and keeps signer steps apart", () =>
     Effect.gen(function* () {
       const plan = yield* prepare([

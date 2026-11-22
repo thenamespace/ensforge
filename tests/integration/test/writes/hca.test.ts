@@ -62,10 +62,11 @@ describe("HCA", () => {
     );
 
     it.effect(
-      "migrates several names in one execution",
+      "migrates several names in one execution, through MigrationHelper",
       () =>
         Effect.gen(function* () {
-          const { accounts } = yield* Devnet;
+          const devnet = yield* Devnet;
+          const { accounts } = devnet;
           const chain = yield* Chain;
           const clients = yield* Clients;
           const fixtures = yield* Fixtures;
@@ -81,15 +82,30 @@ describe("HCA", () => {
                 onStep: chain.passWaits,
               });
 
-              // The HCA's deployment and the token approvals, then one execution for both names.
+              // The HCA's deployment and the approvals to MigrationHelper, one execution for both
+              // names, then the NameWrapper approval revoked again.
               assert.deepStrictEqual(
                 Arr.map(result.plan.steps, (step) => step.id),
-                ["hca-setup", "migrate"],
+                ["hca-setup", "migrate", "hca-cleanup"],
               );
               for (const name of names) {
                 assert.strictEqual((yield* ethEntry(name)).owner, accounts.alice, name);
                 assert.isTrue((yield* Actions.name.get(ens, { name })).migrated, name);
               }
+              // Regression: the HCA stayed a NameWrapper operator of every wrapped name alice holds.
+              const hcaAddress = yield* HcaActions.hca.predictAddress(ens, {});
+              const operators = yield* Effect.forEach(
+                [hcaAddress, devnet.contract("v2.migrationHelper")],
+                (operator) =>
+                  chain.read({
+                    address: devnet.contract("v1.nameWrapper"),
+                    abi: Abis.v1.nameWrapper,
+                    functionName: "isApprovedForAll",
+                    args: [accounts.alice, operator],
+                  }),
+                { concurrency: 1 },
+              );
+              assert.deepStrictEqual(operators, [false, false]);
             }),
           );
         }),

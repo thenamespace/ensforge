@@ -1,8 +1,9 @@
 import { Array as Arr, Effect, Option } from "effect";
 
+import { Abis } from "@ensforge/contracts";
 import type { Plan, Write } from "@ensforge/sdk";
-import type { Client } from "@ensforge/sdk/extension";
-import { isAddressEqual, type Address } from "viem";
+import { Rpc, type Client } from "@ensforge/sdk/extension";
+import { encodeFunctionData, isAddressEqual, type Address } from "viem";
 
 import { HcaError } from "./errors/classes/HcaError.js";
 import { owner as ownerExecutor } from "./executors/owner.js";
@@ -43,7 +44,11 @@ export type HcaOptions = {
 };
 
 // Keeps one execution well inside a block's gas; the ENS app bounds its batches the same way.
+// A step without an estimate counts 200k per call, and `executeByOwner` adds its own overhead.
 const maxCallsPerExecution = 32;
+const maxGasPerExecution = 15_000_000n;
+const executionOverhead = 100_000n;
+const gasOf = (step: Plan.Step): bigint => step.gas ?? BigInt(step.calls.length) * 200_000n;
 
 const run = <value, failure>(effect: Effect.Effect<value, failure>): Promise<value> =>
   Effect.runPromise(effect);
@@ -155,8 +160,22 @@ export const hca = (options: HcaOptions = {}): Write.Via => {
         hca: account.address,
         baseRegistrar: v1?.baseRegistrar,
         nameWrapper: v1?.nameWrapper,
+        migrationHelper: client.deployment.v2?.migration.migrationHelper,
       },
     );
+    // MigrationHelper's NameWrapper approval is only for this migration: added when missing, and
+    // revoked once the names moved. An approval the owner already gave is left as it was.
+    const helper = client.deployment.v2?.migration.migrationHelper;
+    const addsHelperOperator =
+      approvals.helperOperator !== undefined &&
+      helper !== undefined &&
+      v1 !== undefined &&
+      !(yield* Rpc.readContract(client, {
+        address: v1.nameWrapper,
+        abi: Abis.v1.nameWrapper,
+        functionName: "isApprovedForAll",
+        args: [owner, helper],
+      }));
     if (approvals.wrapper) {
       warnings.push({
         code: "HCA_WRAPPER_APPROVAL",
@@ -175,6 +194,9 @@ export const hca = (options: HcaOptions = {}): Write.Via => {
           ]
         : []),
       ...approvals.calls,
+      ...(addsHelperOperator && approvals.helperOperator !== undefined
+        ? [approvals.helperOperator]
+        : []),
     ];
 
     // Consecutive HCA steps without a wait run as one atomic execution, up to a call budget.
@@ -195,6 +217,7 @@ export const hca = (options: HcaOptions = {}): Write.Via => {
         ),
         // The wallet funds its own executions; bundlers and intents spend the HCA's balance.
         calls: [executeByOwnerCall(account.address, calls, executor.send === undefined)],
+        gas: Arr.reduce(batch, executionOverhead, (total, member) => total + gasOf(member)),
         ...(first.waitFor === undefined ? {} : { waitFor: first.waitFor }),
       });
       batch = [];
@@ -207,7 +230,14 @@ export const hca = (options: HcaOptions = {}): Write.Via => {
       }
       if (session !== undefined) yield* checkSessionCalls(client, session, step.calls);
       const size = Arr.reduce(batch, 0, (total, member) => total + member.calls.length);
-      if (step.waitFor !== undefined || size + step.calls.length > maxCallsPerExecution) flush();
+      const gas = Arr.reduce(batch, executionOverhead, (total, member) => total + gasOf(member));
+      if (
+        step.waitFor !== undefined ||
+        size + step.calls.length > maxCallsPerExecution ||
+        gas + gasOf(step) > maxGasPerExecution
+      ) {
+        flush();
+      }
       batch.push(step);
     }
     flush();
@@ -269,6 +299,24 @@ export const hca = (options: HcaOptions = {}): Write.Via => {
       };
     }
     warnings.push(...funding.warnings);
+    if (addsHelperOperator && helper !== undefined && v1 !== undefined) {
+      steps.push({
+        id: "hca-cleanup",
+        description: "Revoke MigrationHelper's NameWrapper approval",
+        calls: [
+          {
+            to: v1.nameWrapper,
+            data: encodeFunctionData({
+              abi: Abis.v1.nameWrapper,
+              functionName: "setApprovalForAll",
+              args: [helper, false],
+            }),
+            value: 0n,
+          },
+        ],
+        from: "signer",
+      });
+    }
     if (setup.length > 0 || funding.transfers.length > 0) {
       steps.unshift({
         id: "hca-setup",

@@ -80,7 +80,8 @@ export declare namespace get {
  *   subnames in its WrapperRegistry → restore ENSv1 managers.
  * - Direct token transfers from the holder: no approvals are needed.
  * - By default a name on an ENS public resolver gets its own PermissionedResolver; custom
- *   resolvers are kept. `resolver: "owned"` uses the signer's shared resolver (the ENS app's).
+ *   resolvers are kept. `resolver: "owned"` uses the sending account's shared resolver: the
+ *   signer's from a wallet, the ENS app's for the HCA through `via: hca()`.
  * - Records and subnames are those given per name; otherwise, with an indexer, every record key
  *   it lists (values read on-chain) and the live subnames at every depth; without one,
  *   `allowIncompleteRecords` copies the common records. Records it cannot copy (a public key,
@@ -94,7 +95,16 @@ export declare namespace get {
  *   Migrating such a name with records to another `owner` fails (`records-not-replayable`)
  *   unless `allowEmptyResolver`.
  * - The sending account keeps no roles on a subname registry it deploys for someone else.
- * - An interrupted migration can run again: existing resolvers and registries are reused.
+ * - An interrupted migration can run again: resolvers and registries it created are reused once
+ *   checked to belong to the same owner (`resolver-conflict`, `registry-conflict` otherwise). After
+ *   the transfer, finish it with `plan.resume`; steps after it are separate transactions without a
+ *   route or `mode: "batch"` (warning `NOT_ATOMIC`).
+ * - Steps are sized by estimated gas (`plan.steps[].gas`) to fit one transaction each.
+ * - Through the signer's HCA, MigrationHelper moves the tokens: the owner approves it, and the
+ *   NameWrapper approval added for the run is revoked in a last step.
+ * - An owner that cannot receive ERC-1155 tokens is refused (`recipient-cannot-receive`).
+ * - Wrapped subnames keep a future wrapper expiry; a past one is dropped
+ *   (`SUBNAME_EXPIRY_EXTENDED`).
  *
  * **Gotchas**
  *

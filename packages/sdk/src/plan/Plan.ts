@@ -65,6 +65,8 @@ export declare namespace Plan {
       | undefined;
     /** `signer`: the signer must send it itself, even through a route (e.g. a token approval). */
     readonly from?: "signer" | undefined;
+    /** Gas the step's calls are estimated to use, when the planner knows it (migrations). */
+    readonly gas?: bigint | undefined;
   };
 
   /** Something the account must have before the plan can succeed. */

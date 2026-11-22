@@ -2273,7 +2273,7 @@
   },
   "M:D9": {
     "tests": [
-      "tests/integration/test/writes/hca.test.ts > migrates several names in one execution",
+      "tests/integration/test/writes/hca.test.ts > migrates several names in one execution, through MigrationHelper",
       "tests/integration/test/writes/hca.test.ts > registers a name for the owner, paid by the HCA from the owner's wallet, with the owner's primary name",
       "tests/integration/test/writes/hca.test.ts > deploys resolvers the HCA and the owner can both write",
       "tests/integration/test/writes/hca.test.ts > sets the owner's default name through its HCA, not the HCA's"
