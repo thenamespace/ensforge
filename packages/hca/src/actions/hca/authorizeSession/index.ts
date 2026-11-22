@@ -66,8 +66,13 @@ export declare namespace authorizeSession {
   type Options = {
     /** Public address of the session key the app keeps. */
     sessionKey: string;
-    /** The one resolver the session may deploy and edit (an existing resolver, or a PermissionedResolver proxy the session deploys from the HCA at that address). */
-    resolver: string;
+    /**
+     * The one resolver the session may deploy and edit (an existing resolver, or a
+     * PermissionedResolver proxy the session deploys from the HCA at that address).
+     *
+     * @default the HCA's shared PermissionedResolver, which registrations through the HCA use
+     */
+    resolver?: string | undefined;
     /** Unix seconds after which the session stops working. */
     validUntil: number;
     /** Refund ceilings for Rhinestone executions, in the refund token's units. */

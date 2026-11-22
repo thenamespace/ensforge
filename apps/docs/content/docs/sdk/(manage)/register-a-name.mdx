@@ -38,16 +38,19 @@ sequenceDiagram
   W->>R: set records and primary name
 ```
 
-| Step id       | What it sends                                                                          |
-| ------------- | -------------------------------------------------------------------------------------- |
-| `approve`     | The token approval, only when the commit step does not already carry it.               |
-| `commit`      | The token approval (when the allowance is short) and the commitment.                   |
-| `resolver`    | Deploys the signer's shared resolver, only for `resolver: "owned"` with a `via` route. |
-| `register`    | Deploys each name's resolver, then registers. Waits for the commitment age first.      |
-| `records`     | Records on the owner's resolver, when `resolver` is explicit.                          |
-| `primaryName` | The reverse record, when `primaryName` is set.                                         |
+| Step id       | What it sends                                                                                           |
+| ------------- | ------------------------------------------------------------------------------------------------------- |
+| `approve`     | The token approval, only when the commit step does not already carry it.                                |
+| `commit`      | The token approval (when the allowance is short) and the commitment.                                    |
+| `register`    | Deploys the resolver if needed, registers, then writes the records. Waits for the commitment age first. |
+| `records`     | Records on a resolver you pass by address.                                                              |
+| `primaryName` | The primary name, when `primaryName` is set.                                                            |
 
-By default each name gets its own [resolver](/docs/reference/glossary#resolver), deployed in the `register` step with `records` written at creation. See [Resolvers and shared records](/docs/sdk/resolvers-and-shared-records).
+By default the names go on the signer's shared [resolver](/docs/reference/glossary#resolver): one PermissionedResolver per wallet, at the address the ENS app uses. The first registration deploys it in the `register` step, and later ones reuse it. The `records` are written in the same step, after `register`. A name registered for another owner gets its own resolver instead, with the records written when it is created. Pass `resolver: "new"` to give a name its own resolver anyway. See [Resolvers and shared records](/docs/sdk/resolvers-and-shared-records).
+
+## Register through an HCA
+
+With `via: hca()`, the commit is one HCA execution and everything after the wait is another. The second execution approves the payment, deploys the HCA's shared resolver if needed, registers, writes the records, sets the primary name and resets the approval to zero. The HCA and its owner both get every role on that resolver, as in the ENS app. With a [session](/docs/hca/sessions), no step asks the wallet to sign. See [Deposits and gas](/docs/hca/deposits-and-gas) for how the HCA is funded.
 
 ## 1. Register and wait
 
@@ -80,8 +83,8 @@ const { names, paid, secret } = await ens.registration.registerSync({
 ```
 
 - `names` takes one name or an array. Several names share one plan.
-- `records` are written when each name's resolver is created. Their shape is the one `record.set` takes. See [Set records](/docs/sdk/set-records).
-- `primaryName: true` sets the single name as the signer's [primary name](/docs/reference/glossary#primary-name) and adds its `eth` address record. It needs exactly one name, owned by the signer. See [Set a primary name](/docs/sdk/set-a-primary-name).
+- `records` are written on the resolver in the `register` step. Their shape is the one `record.set` takes. See [Set records](/docs/sdk/set-records).
+- `primaryName: true` sets the single name as the signer's [primary name](/docs/reference/glossary#primary-name) and adds its `eth` address record. It needs exactly one name, owned by the signer. It writes the default name, as the ENS app does, and clears an `addr.reverse` entry with another name. See [Set a primary name](/docs/sdk/set-a-primary-name).
 - `onStep` is called as each step waits, is submitted, is confirmed or fails.
 - The wallet prompts once per step, or once for several steps when it supports EIP-5792 batches. See [Send a transaction](/docs/sdk/send-a-transaction).
 
@@ -99,18 +102,18 @@ const { names, paid, secret } = await ens.registration.registerSync({
 
 ## Options
 
-| Option         | Type                        | Default                 | Description                                                                       |
-| -------------- | --------------------------- | ----------------------- | --------------------------------------------------------------------------------- |
-| `names`        | `string \| string[]`        | required                | `.eth` second-level names. Normalised automatically.                              |
-| `duration`     | `bigint`                    | required                | Length in seconds. Use `Duration.years(1)`.                                       |
-| `owner`        | `string`                    | the signer              | Owner of the names.                                                               |
-| `resolver`     | `string \| null`            | a new resolver per name | `"owned"` uses the signer's shared resolver. `null` registers without a resolver. |
-| `records`      | `object`                    | none                    | Records for every name.                                                           |
-| `primaryName`  | `boolean`                   | `false`                 | Set the single name as the signer's primary name.                                 |
-| `paymentToken` | `"usdc" \| "dai" \| string` | `"usdc"`                | Token to pay with. The registrar does not accept ETH.                             |
-| `subregistry`  | `string`                    | none                    | ENSv2 registry for the names' subnames.                                           |
-| `referrer`     | `Hex`                       | none                    | Referrer the registrar records: 32 bytes, or an address.                          |
-| `secret`       | `Hex`                       | a random secret         | Secret from an earlier `commit` or `register`, to finish that registration.       |
+| Option         | Type                        | Default                                 | Description                                                                                                                                    |
+| -------------- | --------------------------- | --------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| `names`        | `string \| string[]`        | required                                | `.eth` second-level names. Normalised automatically.                                                                                           |
+| `duration`     | `bigint`                    | required                                | Length in seconds. Use `Duration.years(1)`.                                                                                                    |
+| `owner`        | `string`                    | the signer                              | Owner of the names.                                                                                                                            |
+| `resolver`     | `string \| null`            | `"owned"`, or `"new"` for another owner | `"owned"` uses the signer's shared resolver. `"new"` deploys one per name. An address uses that resolver. `null` registers without a resolver. |
+| `records`      | `object`                    | none                                    | Records for every name.                                                                                                                        |
+| `primaryName`  | `boolean`                   | `false`                                 | Set the single name as the signer's primary name.                                                                                              |
+| `paymentToken` | `"usdc" \| "dai" \| string` | `"usdc"`                                | Token to pay with. The registrar does not accept ETH.                                                                                          |
+| `subregistry`  | `string`                    | none                                    | ENSv2 registry for the names' subnames.                                                                                                        |
+| `referrer`     | `Hex`                       | none                                    | Referrer the registrar records: 32 bytes, or an address.                                                                                       |
+| `secret`       | `Hex`                       | a random secret                         | Secret from an earlier `commit` or `register`, to finish that registration.                                                                    |
 
 All write options also apply: `account`, `simulate`, `signal`, `mode`, `maxBundleCalls`, `onStep`, `via` and `paymaster`. See [How writes work](/docs/sdk/writing-to-ens).
 

@@ -45,7 +45,7 @@ Call it as `ens.registration.commit(options)` on a client, or `Actions.registrat
 | `names` (required) | `string \| readonly string[]` |  | One or more `.eth` second-level names; several share one plan. Normalized automatically. |
 | `duration` (required) | `bigint` |  | Registration length in seconds, e.g. `Duration.years(1)`. |
 | `owner` | `string` | the signing account | Owner of the names. |
-| `resolver` | `string \| null` |  | Resolver for the names. By default each name gets its own PermissionedResolver, deployed in the same plan with `records` written at creation. `"owned"` uses the signer's shared PermissionedResolver (the ENS app's address), deployed once and reused; its roles cover every name on it. `null` registers without a resolver. |
+| `resolver` | `string \| null` | `"owned" for names the signer owns, otherwise "new"` | Resolver for the names. `"owned"` uses the sender's shared PermissionedResolver (the ENS app's address for the wallet or its HCA), deployed once and reused; its roles cover every name on it. `"new"` deploys a PermissionedResolver per name, with `records` written at creation. An address uses that resolver; `null` registers without one. |
 | `records` | `Omit<recordSet.Options, "name" \| "resolver" \| "clear" \| "pubkey">` |  | Records for every name, written when its resolver is created (or right after registering). |
 | `primaryName` | `boolean` |  | Set the (single) name as the signer's primary name; adds its `eth` address record. |
 | `paymentToken` | `PaymentToken` | `"usdc"` | Token to pay with. |

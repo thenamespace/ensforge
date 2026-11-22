@@ -1405,7 +1405,7 @@
   },
   "G29": {
     "tests": [
-      "tests/integration/test/writes/registration.test.ts > deploys the signer's shared resolver once, and reuses it for later names",
+      "tests/integration/test/writes/registration.test.ts > deploys the signer's shared resolver once by default, and reuses it for later names",
       "tests/integration/test/writes/registration.test.ts > reuses a shared resolver created by ensforge 1.1, whose roles cannot be widened",
       "tests/integration/test/writes/hca.test.ts > deploys resolvers the HCA and the owner can both write"
     ]
@@ -1755,6 +1755,7 @@
   "Z02": {
     "tests": [
       "tests/integration/test/writes/hca-session.test.ts > accepts an authorized session's first use, and refuses one outside its approval",
+      "tests/integration/test/writes/hca-session.test.ts > registers a fresh name with records and a primary name through a session, in one reveal",
       "tests/integration/test/writes/hca-session.test.ts > registers with a session, pulling the price from the owner's wallet with a permit",
       "tests/integration/test/writes/hca-session.test.ts > writes records with a session through rhinestone(), checked by the validator",
       "tests/integration/test/writes/hca.test.ts > HCA > mainnet-shaped > authorizes a session, checks its calls, and revokes it",

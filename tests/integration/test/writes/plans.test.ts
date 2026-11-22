@@ -56,10 +56,11 @@ describe("plan runtime", () => {
               const second = clients.make({ account: accounts.alice, wallet, storage });
               yield* Actions.plan.resumeSync(second, { id, onStep: chain.passWaits });
 
+              // The reveal only: the shared resolver's deployment, the registration, its records.
               assert.strictEqual(
                 Arr.filter(wallet.methods, (method) => method === "eth_sendTransaction").length,
-                2,
-                "approve and register only",
+                3,
+                "the reveal only",
               );
               assert.strictEqual((yield* ethEntry("qqqqq.eth")).owner, accounts.alice);
               assert.strictEqual((yield* Actions.plan.get(second, { id }))?.status, "completed");
@@ -112,10 +113,10 @@ describe("plan runtime", () => {
                 const second = clients.make({ account: accounts.alice, wallet, storage });
                 yield* Actions.plan.resumeSync(second, { id, onStep: chain.passWaits });
 
-                // approve + register, and the commit again only when it was dropped.
+                // The reveal's three calls, and the commit again only when it was dropped.
                 assert.strictEqual(
                   Arr.filter(wallet.methods, (method) => method === "eth_sendTransaction").length,
-                  dropped ? 3 : 2,
+                  dropped ? 4 : 3,
                   `dropped: ${dropped}`,
                 );
                 assert.strictEqual((yield* ethEntry("qqqqq.eth")).owner, accounts.alice);
@@ -180,9 +181,10 @@ describe("plan runtime", () => {
             const wallet = wallets.make(accounts.alice);
             const second = clients.make({ account: accounts.alice, wallet, storage });
             yield* Actions.plan.resumeSync(second, { id, onStep: chain.passWaits });
+            // The reveal: the shared resolver's deployment, the registration, its records.
             assert.strictEqual(
               Arr.filter(wallet.methods, (method) => method === "eth_sendTransaction").length,
-              2,
+              3,
             );
           }),
         );

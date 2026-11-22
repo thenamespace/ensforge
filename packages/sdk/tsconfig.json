@@ -18,7 +18,8 @@
         "allowedExperimentalApis": [
           "@ensforge/contracts/namespaces/durin",
           "@ensforge/contracts/deployments/namespace-types",
-          "@ensforge/contracts/v2/experimental/hca/standalone-hca-factory-interface#standaloneHcaFactoryV2InterfaceAbi"
+          "@ensforge/contracts/v2/experimental/hca/standalone-hca-factory-interface#standaloneHcaFactoryV2InterfaceAbi",
+          "@ensforge/contracts/v2/experimental/hca/session#hcaDeploymentSalt"
         ]
       }
     ]

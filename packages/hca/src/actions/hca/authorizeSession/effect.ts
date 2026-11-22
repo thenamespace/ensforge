@@ -18,7 +18,10 @@ export const authorizeSession = Effect.fn("ensforge.hca.authorizeSession")(funct
   options: Promises.Options,
 ): Effect.fn.Return<Promises.ReturnType, AnyError | HcaError> {
   const sessionKey = yield* requireAddress(options.sessionKey, "sessionKey");
-  const resolver = yield* requireAddress(options.resolver, "resolver");
+  const resolver =
+    options.resolver === undefined
+      ? undefined
+      : yield* requireAddress(options.resolver, "resolver");
   const signer = yield* resolveSigner(client, options.account);
   const owner = typeof signer.account === "object" ? signer.account.address : signer.account;
 

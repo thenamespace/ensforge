@@ -27,7 +27,7 @@ Nothing else is allowed. Renewals, transfers, [subnames](/docs/reference/glossar
 
 - A client with a wallet and the HCA actions. See [Installation](/docs/hca/installation).
 - A Rhinestone SDK with standalone HCA support and a session key. See [Rhinestone](/docs/hca/rhinestone).
-- A resolver address for the session: the one resolver whose records the session may set. Any resolver that the session policy approves works: an existing resolver, or a PermissionedResolver proxy that the HCA deploys at that address through ENS's VerifiableFactory. There is no separate API for either. The HCA calls the resolver, so the HCA must be allowed to write records there.
+- Optionally, a resolver address for the session: the one resolver whose records the session may set. By default it is the HCA's shared PermissionedResolver, the one registrations through the HCA use, which the session may deploy. Another resolver works when the HCA is allowed to write records there.
 
 ## 1. Authorize the session
 
@@ -36,7 +36,7 @@ Nothing else is allowed. Renewals, transfers, [subnames](/docs/reference/glossar
 | Option       | Type       | Description                                                                                           |
 | ------------ | ---------- | ----------------------------------------------------------------------------------------------------- |
 | `sessionKey` | `string`   | Public address of the session key your app keeps.                                                     |
-| `resolver`   | `string`   | The one resolver whose records the session may set.                                                   |
+| `resolver`   | `string`   | The one resolver whose records the session may set. Defaults to the HCA's shared resolver.            |
 | `validUntil` | `number`   | Unix seconds after which the session stops working.                                                   |
 | `refund`     | object     | Refund ceilings for Rhinestone executions: `token`, `maxExchangeRate`, `maxGasOverhead`, `maxAmount`. |
 | `executor`   | `Executor` | An executor that quotes refunds, such as `rhinestone()`, to size `maxGasOverhead`.                    |
@@ -63,11 +63,9 @@ const ens = Ensforge.create({
   .extend(ensActions())
   .extend(hcaActions());
 const sessionAccount = privateKeyToAccount(generatePrivateKey());
-const resolver = "0x0000000000000000000000000000000000000001"; // placeholder: your session resolver
 
 const session = await ens.hca.authorizeSession({
   sessionKey: sessionAccount.address,
-  resolver,
   validUntil: Math.floor(Date.now() / 1000) + 24 * 60 * 60,
 });
 ```
@@ -138,12 +136,13 @@ const via = hca({ executors: [rhinestone({ sdk, sessionSigner })], session });
 await ens.registration.registerSync({
   names: "my-new-name.eth", // placeholder
   duration: Duration.years(1),
-  resolver: session.terms.resolver,
+  records: { texts: { url: "https://example.com" } },
+  primaryName: true,
   via,
 });
 ```
 
-A registration through a session must use the session's resolver, `session.terms.resolver`. The HCA pays for the registration, so it must hold the payment token. Without it, the registration fails with `INSUFFICIENT_TOKEN_BALANCE` before anything is sent. See [Deposits and gas](/docs/hca/deposits-and-gas).
+A registration through a session must use the session's resolver. With the default session resolver, registrations through the HCA use it already. The reveal is one execution: it deploys the resolver on first use, registers, writes the records and sets the primary name. The HCA pays for the registration. When it holds too little, the owner signs a permit while the plan is prepared, and the commit execution pulls the shortfall from the wallet. See [Deposits and gas](/docs/hca/deposits-and-gas).
 
 To edit records, route `ens.record.set` the same way: `ens.record.set({ name, texts: { url }, via })`. The name's resolver must be the session's resolver.
 

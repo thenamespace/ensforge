@@ -1,7 +1,7 @@
 import { assert, describe, it } from "@effect/vitest";
-import { Effect } from "effect";
+import { Array as Arr, Effect } from "effect";
 
-import { Abis } from "@ensforge/contracts";
+import { Abis, Roles } from "@ensforge/contracts";
 import { checkSessionCalls, sessionProblem } from "@ensforge/hca/internal/internal/session";
 import type { HcaSession } from "@ensforge/hca/internal/types";
 import type { Plan } from "@ensforge/sdk";
@@ -71,13 +71,26 @@ const multicall = (calls: readonly `0x${string}`[]) =>
     functionName: "multicall",
     args: [calls],
   });
-const deployProxy = (implementation: Address, salt: bigint) =>
+/** The resolver deployment the session policy accepts: every role to the HCA, then the owner. */
+const initialize = (
+  grants: readonly { readonly account: Address; readonly roleBitmap: bigint }[] = [
+    { account: hcaAddress, roleBitmap: Roles.enhancedAccessControl.allRoles },
+    { account: owner, roleBitmap: Roles.enhancedAccessControl.allRoles },
+  ],
+  calls: readonly `0x${string}`[] = [],
+) =>
+  encodeFunctionData({
+    abi: Abis.v2.permissionedResolver,
+    functionName: "initialize",
+    args: [grants, calls],
+  });
+const deployProxy = (implementation: Address, salt: bigint, initData = initialize()) =>
   to(
     v2.contracts.verifiableFactory,
     encodeFunctionData({
       abi: Abis.v2.verifiableFactory,
       functionName: "deployProxy",
-      args: [implementation, salt, "0x"],
+      args: [implementation, salt, initData],
     }),
   );
 const approve = (spender: Address) =>
@@ -198,6 +211,56 @@ describe("checkSessionCalls", () => {
       deployProxy(v2.implementations.permissionedResolver, 8n),
       "only the session resolver may be deployed",
     ],
+    ...Arr.map(
+      [
+        [
+          "the owner before the HCA",
+          [
+            { account: owner, roleBitmap: Roles.enhancedAccessControl.allRoles },
+            { account: hcaAddress, roleBitmap: Roles.enhancedAccessControl.allRoles },
+          ],
+          [],
+        ],
+        [
+          "fewer roles",
+          [
+            { account: hcaAddress, roleBitmap: Roles.enhancedAccessControl.allRoles },
+            { account: owner, roleBitmap: 1n },
+          ],
+          [],
+        ],
+        [
+          "a third account",
+          [
+            { account: hcaAddress, roleBitmap: Roles.enhancedAccessControl.allRoles },
+            { account: owner, roleBitmap: Roles.enhancedAccessControl.allRoles },
+            { account: stranger, roleBitmap: 1n },
+          ],
+          [],
+        ],
+        [
+          "a call other than a record",
+          undefined,
+          [
+            encodeFunctionData({
+              abi: Abis.v2.permissionedResolver,
+              functionName: "grantRootRoles",
+              args: [1n, stranger],
+            }),
+          ],
+        ],
+      ] as const,
+      ([what, grants, calls]) =>
+        [
+          `a session resolver created with ${what}`,
+          deployProxy(
+            v2.implementations.permissionedResolver,
+            resolverSalt,
+            initialize(grants, calls),
+          ),
+          "the session resolver gives every role to the HCA and the owner, and is created with records only",
+        ] as const,
+    ),
     [
       "someone else's primary name",
       to(

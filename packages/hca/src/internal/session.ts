@@ -1,7 +1,7 @@
 import { Array as Arr, Effect, Option, String as Str } from "effect";
 
-import { Abis } from "@ensforge/contracts";
-import { predictVerifiableProxyAddress } from "@ensforge/contracts/v2";
+import { Abis, Roles } from "@ensforge/contracts";
+import { ownedResolverSalt, predictVerifiableProxyAddress } from "@ensforge/contracts/v2";
 import {
   hcaRefundCaps,
   hcaSessionDigest,
@@ -38,7 +38,8 @@ export const authorize = Effect.fnUntraced(function* (
   owner: Address,
   options: {
     readonly sessionKey: Address;
-    readonly resolver: Address;
+    /** @default the HCA's shared PermissionedResolver */
+    readonly resolver?: Address | undefined;
     readonly validUntil: number;
     readonly refund?:
       | {
@@ -65,6 +66,23 @@ export const authorize = Effect.fnUntraced(function* (
     );
   }
   const account = yield* readAccount(client, { owner });
+  // The resolver the ENS app gives every HCA: the one its registrations deploy and write.
+  const proxyLogic =
+    options.resolver === undefined
+      ? yield* Rpc.readContract(client, {
+          address: deployment.verifiableFactory,
+          abi: Abis.v2.verifiableFactory,
+          functionName: "proxyLogic",
+        })
+      : undefined;
+  const resolver =
+    options.resolver ??
+    predictVerifiableProxyAddress({
+      factory: deployment.verifiableFactory,
+      proxyLogic: proxyLogic ?? zeroAddress,
+      deployer: account.address,
+      salt: ownedResolverSalt(account.address),
+    });
   const refundToken = options.refund?.token ?? deployment.v2.paymentTokens?.usdc;
   if (refundToken === undefined) {
     return yield* Effect.fail(
@@ -115,7 +133,7 @@ export const authorize = Effect.fnUntraced(function* (
   const terms: HcaSessionTerms = {
     sessionNonce: account.sessionNonce,
     validUntil: options.validUntil,
-    resolver: options.resolver,
+    resolver,
     refundToken,
     maxRefundExchangeRate: options.refund?.maxExchangeRate ?? caps.maxExchangeRate,
     maxRefundGasOverhead: options.refund?.maxGasOverhead ?? caps.maxGasOverhead,
@@ -305,10 +323,48 @@ export const checkSessionCalls = Effect.fnUntraced(function* (
     if (isAddressEqual(call.to, deployment.verifiableFactory)) {
       const decoded = decodeCall(Abis.v2.verifiableFactory, call.data);
       if (decoded?.functionName === "deployProxy") {
-        const [implementation, salt] = decoded.args;
+        const [implementation, salt, data] = decoded.args;
         const permitted = deployment.v2.implementations.permissionedResolver;
         if (!isAddressEqual(implementation, permitted))
           return yield* Effect.fail(notAllowed(call, "only the approved PermissionedResolver"));
+        // HCAResolverPolicyLib.checkDeployment: every role to the HCA, then to the owner, and only
+        // record writes at creation, encoded exactly as `initialize` encodes them.
+        const initialize = decodeCall(Abis.v2.permissionedResolver, data);
+        const [grants, records] =
+          initialize?.functionName === "initialize" ? initialize.args : [[], []];
+        const expected = [session.hca, session.owner];
+        const canonical =
+          initialize?.functionName === "initialize" &&
+          grants.length === 2 &&
+          Arr.every(
+            Arr.zip(grants, expected),
+            ([grant, account]) =>
+              isAddressEqual(grant.account, account) &&
+              grant.roleBitmap === Roles.enhancedAccessControl.allRoles,
+          ) &&
+          Arr.every(records, isRecordCall) &&
+          Str.toLowerCase(
+            encodeFunctionData({
+              abi: Abis.v2.verifiableFactory,
+              functionName: "deployProxy",
+              args: [
+                implementation,
+                salt,
+                encodeFunctionData({
+                  abi: Abis.v2.permissionedResolver,
+                  functionName: "initialize",
+                  args: [grants, records],
+                }),
+              ],
+            }),
+          ) === Str.toLowerCase(call.data);
+        if (!canonical)
+          return yield* Effect.fail(
+            notAllowed(
+              call,
+              "the session resolver gives every role to the HCA and the owner, and is created with records only",
+            ),
+          );
         const proxyLogic = yield* Rpc.readContract(client, {
           address: deployment.verifiableFactory,
           abi: Abis.v2.verifiableFactory,

@@ -48,7 +48,7 @@ Call it as `ens.hca.authorizeSession(options)` on a client, or `Actions.hca.auth
 | Option | Type | Default | Description |
 | --- | --- | --- | --- |
 | `sessionKey` (required) | `string` |  | Public address of the session key the app keeps. |
-| `resolver` (required) | `string` |  | The one resolver the session may deploy and edit (an existing resolver, or a PermissionedResolver proxy the session deploys from the HCA at that address). |
+| `resolver` | `string` | the HCA's shared PermissionedResolver, which registrations through the HCA use | The one resolver the session may deploy and edit (an existing resolver, or a PermissionedResolver proxy the session deploys from the HCA at that address). |
 | `validUntil` (required) | `number` |  | Unix seconds after which the session stops working. |
 | `refund` | `{ readonly token?: Address \| undefined; readonly maxExchangeRate?: bigint \| undefined; readonly maxGasOverhead?: bigint \| undefined; readonly maxAmount?: bigint \| undefined; }` |  | Refund ceilings for Rhinestone executions, in the refund token's units. |
 | `executor` | `Executor` |  | Executor that quotes the refund, to size `refund.maxGasOverhead` (`rhinestone()`). |

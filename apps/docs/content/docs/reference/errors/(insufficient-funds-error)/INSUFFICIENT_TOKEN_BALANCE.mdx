@@ -27,7 +27,7 @@ Retrying the same call fails the same way until the cause is fixed (`retryable: 
 
 | Action | When |
 | --- | --- |
-| [`registration.register`](/docs/reference/sdk/registration/register) | when the signer cannot pay in the payment token. |
+| [`registration.register`](/docs/reference/sdk/registration/register) | when the signer (with a route, its account and the signer together) cannot pay in the payment token. |
 | [`registration.renew`](/docs/reference/sdk/registration/renew) | when the signer cannot pay in the payment token. |
 
 Any write can fail with `InsufficientFundsError`: it is part of `Errors.WriteError`.

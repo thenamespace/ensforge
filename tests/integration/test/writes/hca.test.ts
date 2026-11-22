@@ -132,6 +132,11 @@ describe("HCA", () => {
                 Arr.map(result.plan.warnings, (warning) => warning.code),
                 "HCA_FUNDING",
               );
+              // The reveal is one HCA execution, the primary name included.
+              assert.deepStrictEqual(
+                Arr.map(result.plan.steps, (step) => step.id),
+                ["hca-setup", "commit", "register"],
+              );
               const moved = before - (yield* usdcOf(accounts.carol));
               assert.strictEqual(moved - (yield* usdcOf(account)), result.paid);
               const primaryNameAfterRegistration = yield* Actions.primaryName.get(ens, {

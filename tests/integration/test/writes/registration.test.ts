@@ -687,18 +687,18 @@ describe("registration", () => {
     );
 
     it.effect(
-      "deploys the signer's shared resolver once, and reuses it for later names",
+      "deploys the signer's shared resolver once by default, and reuses it for later names",
       () =>
         Effect.gen(function* () {
           const { accounts } = yield* Devnet;
           const chain = yield* Chain;
           const clients = yield* Clients;
           const ens = clients.make({ account: accounts.alice });
-          const register = (name: string) =>
+          const register = (name: string, resolver?: "owned" | "new") =>
             Actions.registration.registerSync(ens, {
               names: name,
               duration: Duration.years(1),
-              resolver: "owned",
+              ...(resolver === undefined ? {} : { resolver }),
               records: { texts: { url: `https://${name}` } },
               onStep: chain.passWaits,
             });
@@ -706,9 +706,13 @@ describe("registration", () => {
           yield* chain.isolated(
             Effect.gen(function* () {
               const first = yield* register("qqqqq.eth");
-              const second = yield* register("rrrrr.eth");
+              const second = yield* register("rrrrr.eth", "owned");
+              // `"new"` still gives a name a resolver of its own.
+              yield* register("sssss.eth", "new");
+              const own = yield* Actions.resolver.get(ens, { name: "sssss.eth" });
 
-              // The first reveal also deploys the resolver; the second only registers.
+              // The first reveal also deploys the resolver; both write the records after
+              // registering, in the same step.
               const callsOf = (result: typeof first) =>
                 Option.getOrUndefined(
                   Option.map(
@@ -716,7 +720,7 @@ describe("registration", () => {
                     (step) => step.calls.length,
                   ),
                 );
-              assert.deepStrictEqual([callsOf(first), callsOf(second)], [2, 1]);
+              assert.deepStrictEqual([callsOf(first), callsOf(second)], [3, 2]);
               const [one, two] = yield* Effect.all(
                 [
                   Actions.resolver.get(ens, { name: "qqqqq.eth" }),
@@ -725,6 +729,7 @@ describe("registration", () => {
                 { concurrency: 1 },
               );
               assert.strictEqual(one?.address, two?.address);
+              assert.notStrictEqual(own?.address, one?.address);
               const text = yield* Actions.record.getText(ens, { name: "rrrrr.eth", key: "url" });
               assert.strictEqual(text, "https://rrrrr.eth");
               // The ENS app uses this resolver only when the signer holds the full role mask.

@@ -29,8 +29,9 @@ export type RegistrationInput = {
   readonly duration: bigint;
   readonly owner?: string | undefined;
   /**
-   * `undefined`: a new PermissionedResolver per name; `"owned"`: the sender's shared one (the ENS
-   * app's address for the wallet, or for the HCA a route sends through); `null`: none.
+   * `"owned"`: the sender's shared PermissionedResolver (the ENS app's address for the wallet, or
+   * for the HCA a route sends through); `"new"`: a new one per name; an address; `null`: none.
+   * By default the shared one for names the signer owns, and a new one per name otherwise.
    */
   readonly resolver?: string | null | undefined;
   readonly records?: Omit<RecordWrites, "clear" | "pubkey"> | undefined;
@@ -69,8 +70,10 @@ export type PreparedRegistration = {
   readonly ownedDeploy: Plan.Call | undefined;
   /** Warnings about the shared resolver. */
   readonly warnings: readonly Plan.Warning[];
-  /** Explicit (or shared) resolver; records then need their own step. */
+  /** Explicit (or shared) resolver; records then need their own calls. */
   readonly explicitResolver: Address | undefined;
+  /** Whether `explicitResolver` is the sender's shared resolver, which the sender writes. */
+  readonly shared: boolean;
   readonly minCommitmentAge: bigint;
   readonly maxCommitmentAge: bigint;
   readonly now: bigint;
@@ -88,7 +91,7 @@ const validateOptions = Effect.fnUntraced(function* (
   {
     owner: Address;
     subregistry: Address;
-    resolver: Address | "owned" | null | undefined;
+    resolver: Address | "owned" | "new" | null;
     secret: Hex;
     records: Omit<RecordWrites, "clear" | "pubkey"> | undefined;
   },
@@ -110,10 +113,15 @@ const validateOptions = Effect.fnUntraced(function* (
     input.subregistry === undefined
       ? zeroAddress
       : yield* requireAddress(input.subregistry, "subregistry");
+  // One shared resolver per wallet, as the ENS app keeps; a name for someone else gets its own.
   const resolver =
-    input.resolver === undefined || input.resolver === null || input.resolver === "owned"
-      ? input.resolver
-      : yield* requireAddress(input.resolver, "resolver");
+    input.resolver === undefined
+      ? isAddressEqual(owner, signer)
+        ? "owned"
+        : "new"
+      : input.resolver === null || input.resolver === "owned" || input.resolver === "new"
+        ? input.resolver
+        : yield* requireAddress(input.resolver, "resolver");
   // The shared resolver's address comes from the deployer, which must be the owner it serves.
   if (resolver === "owned" && !isAddressEqual(owner, signer)) {
     return yield* Effect.fail(
@@ -159,7 +167,7 @@ const validateOptions = Effect.fnUntraced(function* (
 
   // A resolver ensforge creates points the name at its owner unless the caller says otherwise.
   const addresses = records?.addresses;
-  const managed = resolver === undefined || resolver === "owned";
+  const managed = resolver === "new" || resolver === "owned";
   if (managed && addresses?.["eth"] === undefined && addresses?.["60"] === undefined) {
     records = { ...records, addresses: { ...addresses, eth: owner } };
   }
@@ -193,7 +201,12 @@ export const prepareRegistration = Effect.fnUntraced(function* (
       : undefined;
   const options = {
     ...validated,
-    resolver: validated.resolver === "owned" ? owned?.address : validated.resolver,
+    resolver:
+      validated.resolver === "owned"
+        ? owned?.address
+        : validated.resolver === "new"
+          ? undefined
+          : validated.resolver,
   };
   const token = yield* paymentTokenAddress(contracts, input.paymentToken);
   const referrer = yield* referrerOf(input.referrer);
@@ -336,6 +349,7 @@ export const prepareRegistration = Effect.fnUntraced(function* (
     ownedDeploy: owned?.deploy,
     warnings: owned?.warnings ?? [],
     explicitResolver: options.resolver ?? undefined,
+    shared: owned !== undefined,
     minCommitmentAge,
     maxCommitmentAge,
     now,
