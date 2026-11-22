@@ -35,6 +35,7 @@ import { maxWrappedPerTransfer, packByGas } from "./gas.js";
 import { inspectMigration, type Inspection, type ResolverChoice } from "./inspect.js";
 import { canReceiveName } from "./recipient.js";
 import { recordsToCopy, type CopiedRecords } from "./records.js";
+import { planResumed } from "./resume.js";
 import { planRecreation, type Recreation } from "./subnames.js";
 
 /** What `migration.migrate` takes, besides the signer. */
@@ -49,6 +50,8 @@ export type MigrationInput = {
   readonly migrateParents?: boolean | undefined;
   /** Names in grace are renewed by an earlier step. */
   readonly renewing?: boolean | undefined;
+  /** Names already on ENSv2 get only the steps an interrupted run left after the transfer. */
+  readonly resume?: boolean | undefined;
 };
 
 /** The ENSv2 state a migrated name should reach, checked by `migrateSync`. */
@@ -182,14 +185,19 @@ const inspectAll = Effect.fnUntraced(function* (
 /** Fails with the first name that cannot migrate, unless an earlier step clears its blocker. */
 const requireEligible = (
   entries: readonly { readonly inspection: Inspection }[],
-  options: { readonly renewing: boolean },
+  options: { readonly renewing: boolean; readonly resume: boolean },
 ): Effect.Effect<void, AnyError> => {
   const migrating = new Set(Arr.map(entries, (entry) => entry.inspection.status.name));
   for (const { inspection } of entries) {
     const { status } = inspection;
+    if (status.status === "migrated" && options.resume) continue;
     if (status.status === "migrated") {
       return Effect.fail(
-        new MigrationError({ code: "ALREADY_MIGRATED", context: { name: status.name } }),
+        new MigrationError({
+          code: "ALREADY_MIGRATED",
+          context: { name: status.name },
+          hint: "Pass `resume: true` to finish a migration that stopped after its transfer.",
+        }),
       );
     }
     const blockers = Arr.filter(
@@ -268,7 +276,10 @@ export const planMigration = Effect.fnUntraced(function* (
         Str.split(".")(entry.inspection.status.name).length,
     ),
   );
-  yield* requireEligible(entries, { renewing: input.renewing === true });
+  yield* requireEligible(entries, {
+    renewing: input.renewing === true,
+    resume: input.resume === true,
+  });
 
   const proxyLogic = yield* Rpc.readContract(client, {
     address: v2.contracts.verifiableFactory,
@@ -299,6 +310,34 @@ export const planMigration = Effect.fnUntraced(function* (
   const receivable = new Map<string, boolean>();
   for (const { input: nameInput, inspection } of entries) {
     const { status, loaded } = inspection;
+    if (status.status === "migrated") {
+      const resumed = yield* planResumed(client, {
+        input: nameInput,
+        inspection,
+        signer,
+        sender,
+        allowLeavingSubnames: input.allowLeavingSubnames === true,
+        allowEmptyResolver: input.allowEmptyResolver === true,
+        preserveManager: input.preserveManager === true,
+      });
+      if (resumed.wrapped.length > 0) wrapped.push({ depth: 0, calls: resumed.wrapped });
+      if (resumed.records !== undefined) {
+        afterRecords.push(resumed.records);
+        if (routed && !resumed.delegated) {
+          delegations.push(
+            delegateCall(v2.contracts.publicResolver, loaded.data.parts.node, sender, true),
+          );
+        }
+      }
+      if (routed && (resumed.records !== undefined || resumed.delegated)) {
+        undelegations.push(
+          delegateCall(v2.contracts.publicResolver, loaded.data.parts.node, sender, false),
+        );
+      }
+      warnings.push(...resumed.warnings);
+      expectations.push(resumed.expectation);
+      continue;
+    }
     const config = typeof nameInput === "string" ? undefined : nameInput;
     const { parts } = loaded.data;
     const route = status.route;
@@ -628,12 +667,14 @@ export const planMigration = Effect.fnUntraced(function* (
   const deepest = Math.max(0, ...Arr.map(moves, (move) => move.depth));
   for (let depth = 0; depth <= deepest; depth += 1) {
     const group = Arr.filter(moves, (move) => move.depth === depth);
-    if (group.length === 0) continue;
-    chunked(
-      depth === 0 ? "migrate" : `migrate-children-${depth}`,
-      depth === 0 ? "Migrate names" : "Migrate locked subnames",
-      helper === undefined ? transferCalls(v1, group) : helperCalls(helper, group),
-    );
+    // A resumed name's registrations go out even when no name moves at its depth.
+    if (group.length > 0) {
+      chunked(
+        depth === 0 ? "migrate" : `migrate-children-${depth}`,
+        depth === 0 ? "Migrate names" : "Migrate locked subnames",
+        helper === undefined ? transferCalls(v1, group) : helperCalls(helper, group),
+      );
+    }
     chunked(
       depth === 0 ? "wrapped-subnames" : `wrapped-subnames-children-${depth}`,
       "Recreate subnames in WrapperRegistries",
@@ -667,6 +708,18 @@ export const planMigration = Effect.fnUntraced(function* (
       message:
         'Steps after the irreversible transfer are separate transactions. Send with `mode: "batch"` or `via: hca()` to make them one, or finish an interrupted run with plan.resume.',
     });
+  }
+
+  // Everything was migrated and finished: a resume with nothing to send.
+  const [finished] = Arr.map(entries, (entry) => entry.inspection.status.name);
+  if (steps.length === 0 && finished !== undefined) {
+    return yield* Effect.fail(
+      new MigrationError({
+        code: "ALREADY_MIGRATED",
+        shortMessage: `${finished} is already on ENSv2, with nothing left to finish.`,
+        context: { name: finished },
+      }),
+    );
   }
 
   return {

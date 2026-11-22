@@ -96,9 +96,12 @@ export declare namespace get {
  *   unless `allowEmptyResolver`.
  * - The sending account keeps no roles on a subname registry it deploys for someone else.
  * - An interrupted migration can run again: resolvers and registries it created are reused once
- *   checked to belong to the same owner (`resolver-conflict`, `registry-conflict` otherwise). After
- *   the transfer, finish it with `plan.resume`; steps after it are separate transactions without a
- *   route or `mode: "batch"` (warning `NOT_ATOMIC`).
+ *   checked to belong to the same owner (`resolver-conflict`, `registry-conflict` otherwise).
+ *   Steps after the transfer are separate transactions without a route or `mode: "batch"`
+ *   (warning `NOT_ATOMIC`). Finish a run stopped after the transfer with `plan.resume`, or, without
+ *   the stored plan, with `resume: true`: names already on ENSv2 then get only what is left (their
+ *   subnames still on ENSv1, and PublicResolverV2 records from `records`), and names not moved yet
+ *   migrate as usual. With nothing left it fails with `ALREADY_MIGRATED`.
  * - Steps are sized by estimated gas (`plan.steps[].gas`) to fit one transaction each.
  * - Through the signer's HCA, MigrationHelper moves the tokens: the owner approves it, and the
  *   NameWrapper approval added for the run is revoked in a last step.

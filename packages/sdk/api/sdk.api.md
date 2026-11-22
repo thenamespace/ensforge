@@ -271,7 +271,7 @@ function Actions.migration.migrate(client: Client<object> | ViemClientLike, opti
 type Actions.migration.migrate.ErrorType = InvalidInputError | MigrationError | NameStateError | UnauthorizedError | WriteError
 function Actions.migration.migrate.estimateGas(client: Client<object> | ViemClientLike, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Estimate>
 const Actions.migration.migrate.estimateGas.path: string
-type Actions.migration.migrate.Options = { names: readonly NameInput[] | NameInput; resolver?: 'keep' | 'new' | 'owned' | (string & {}) | undefined; owner?: string | undefined; allowIncompleteRecords?: boolean | undefined; allowEmptyResolver?: boolean | undefined; allowLeavingSubnames?: boolean | undefined; preserveManager?: boolean | undefined; migrateParents?: boolean | undefined; renew?: { readonly duration: bigint; readonly paymentToken?: PaymentToken | undefined; } | undefined; }
+type Actions.migration.migrate.Options = { names: readonly NameInput[] | NameInput; resolver?: 'keep' | 'new' | 'owned' | (string & {}) | undefined; owner?: string | undefined; allowIncompleteRecords?: boolean | undefined; allowEmptyResolver?: boolean | undefined; allowLeavingSubnames?: boolean | undefined; preserveManager?: boolean | undefined; migrateParents?: boolean | undefined; resume?: boolean | undefined; renew?: { readonly duration: bigint; readonly paymentToken?: PaymentToken | undefined; } | undefined; }
 const Actions.migration.migrate.path: 'migration.migrate'
 function Actions.migration.migrate.prepare(client: Client<object> | ViemClientLike, options: Options & Pick<Options, 'account' | 'via'>) => Promise<Plan>
 const Actions.migration.migrate.prepare.path: string
