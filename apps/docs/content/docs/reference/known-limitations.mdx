@@ -70,13 +70,27 @@ edit those records on every name that uses the resolver.
 **What to do:** keep one resolver per name, as ensforge does by default. Share a resolver only with
 accounts you trust for every name on it.
 
-### Predicted resolver addresses assume the signer sends
+### Predicted resolver addresses assume the planned sender
 
-`resolver.create` predicts the new resolver's address from the account that sends the deploy call.
-If a relayer or a bundler sends it instead, the resolver lands at another address.
+`resolver.create` predicts the new resolver's address from the account that sends the deploy call:
+the signer, or the HCA when you pass `via: hca()`. If another relayer or a bundler sends it
+instead, the resolver lands at another address.
 
-**What to do:** send `resolver.create` from the account itself, or read the address from the
-receipt.
+**What to do:** send `resolver.create` from the account itself or through `via`, or read the
+address from the receipt.
+
+### Shared resolvers created by ensforge 1.0 or 1.1 lack some roles
+
+`resolver: "owned"` in `registration.register` and `migration.migrate` uses one shared
+PermissionedResolver per account. ensforge 1.0 and 1.1 gave the account only the roles defined at
+the time, not every role. The ENS app does not use such a resolver for profile editing or
+migration. The missing roles cannot be added later: nobody holds the admin roles that grant them.
+
+ensforge 1.2 and later grant every role, and still write records on an older shared resolver. A
+plan that reuses one carries the warning `RESOLVER_ROLES_PARTIAL`.
+
+**What to do:** ensforge keeps working with the resolver. To edit the name in the ENS app, point
+the name at another resolver, for example one from `resolver.create`.
 
 ### Some coins are not supported
 
