@@ -1044,7 +1044,11 @@
     ]
   },
   "P02": {
-    "tests": ["tests/integration/test/writes/access.test.ts > sets and clears a primary name"]
+    "tests": [
+      "tests/integration/test/writes/access.test.ts > sets and clears a primary name",
+      "tests/integration/test/writes/access.test.ts > falls back to the default name once the Ethereum name is cleared",
+      "tests/integration/test/writes/hca.test.ts > sets the owner's default name through its HCA, not the HCA's"
+    ]
   },
   "P03": {
     "tests": [
@@ -2250,7 +2254,8 @@
     "tests": [
       "tests/integration/test/writes/hca.test.ts > migrates several names in one execution",
       "tests/integration/test/writes/hca.test.ts > registers a name for the owner, paid by the HCA, with the owner's primary name",
-      "tests/integration/test/writes/hca.test.ts > deploys resolvers the HCA and the owner can both write"
+      "tests/integration/test/writes/hca.test.ts > deploys resolvers the HCA and the owner can both write",
+      "tests/integration/test/writes/hca.test.ts > sets the owner's default name through its HCA, not the HCA's"
     ]
   },
   "M:D10": {

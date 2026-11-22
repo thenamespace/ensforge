@@ -217,6 +217,52 @@ describe("HCA", () => {
     );
 
     it.effect(
+      "sets the owner's default name through its HCA, not the HCA's",
+      () =>
+        Effect.gen(function* () {
+          const { accounts } = yield* Devnet;
+          const chain = yield* Chain;
+          const clients = yield* Clients;
+          const fixtures = yield* Fixtures;
+          const ens = clients.make({ account: accounts.alice });
+          const name = fixtures.byId("records.v1").name;
+
+          yield* chain.isolated(
+            Effect.gen(function* () {
+              const result = yield* Actions.primaryName.setSync(ens, {
+                name,
+                coin: "default",
+                via: hca(),
+              });
+
+              // One HCA execution through the adapter, with no signer step.
+              assert.isFalse(Arr.some(result.plan.steps, (step) => step.from === "signer"));
+              const account = yield* HcaActions.hca.predictAddress(ens, {});
+              const [owner, ofHca] = yield* Effect.all(
+                [
+                  // The name has only an Ethereum address, so the default name verifies on
+                  // Ethereum alone; read what is stored.
+                  Actions.primaryName.get(ens, {
+                    address: accounts.alice,
+                    coin: "default",
+                    verify: false,
+                  }),
+                  Actions.primaryName.get(ens, {
+                    address: account,
+                    coin: "default",
+                    verify: false,
+                  }),
+                ],
+                { concurrency: 1 },
+              );
+              assert.deepStrictEqual([owner, ofHca], [name, null]);
+            }),
+          );
+        }),
+      { meta: { cases: ["M:D9", "P02"] } },
+    );
+
+    it.effect(
       "refuses a name token sent to the HCA",
       () =>
         Effect.gen(function* () {

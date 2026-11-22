@@ -365,15 +365,15 @@ const Actions.primaryName.get.path: 'primaryName.get'
 type Actions.primaryName.get.ErrorType = DnsError | GatewayError | InvalidInputError | NotFoundError | CommonError
 type Actions.primaryName.get.Options = Options & { address: string; coin?: Input | undefined; verify?: boolean | undefined; }
 type Actions.primaryName.get.ReturnType = string | null
-function Actions.primaryName.set(client: ClientBase<{}>, options: (Options & Pick<Options, 'account'>) & Options) => Effect<Result, ErrorType, never>
-const Actions.primaryName.set.prepare: ((client: ClientBase<{}>, options: (Options & Pick<Options, 'account'>) & Pick<Options, 'account' | 'via'>) => Effect<Plan, ErrorType, never>) & { readonly path: string; }
-const Actions.primaryName.set.simulate: ((client: ClientBase<{}>, options: (Options & Pick<Options, 'account'>) & Pick<Options, 'account' | 'via'>) => Effect<Simulation, ErrorType, never>) & { readonly path: string; }
-const Actions.primaryName.set.estimateGas: ((client: ClientBase<{}>, options: (Options & Pick<Options, 'account'>) & Pick<Options, 'account' | 'via'>) => Effect<Estimate, ErrorType, never>) & { readonly path: string; }
+function Actions.primaryName.set(client: ClientBase<{}>, options: (Options & Pick<Options, 'account' | 'via'>) & Options) => Effect<Result, ErrorType, never>
+const Actions.primaryName.set.prepare: ((client: ClientBase<{}>, options: (Options & Pick<Options, 'account' | 'via'>) & Pick<Options, 'account' | 'via'>) => Effect<Plan, ErrorType, never>) & { readonly path: string; }
+const Actions.primaryName.set.simulate: ((client: ClientBase<{}>, options: (Options & Pick<Options, 'account' | 'via'>) & Pick<Options, 'account' | 'via'>) => Effect<Simulation, ErrorType, never>) & { readonly path: string; }
+const Actions.primaryName.set.estimateGas: ((client: ClientBase<{}>, options: (Options & Pick<Options, 'account' | 'via'>) & Pick<Options, 'account' | 'via'>) => Effect<Estimate, ErrorType, never>) & { readonly path: string; }
 const Actions.primaryName.set.path: 'primaryName.set'
 type Actions.primaryName.set.ErrorType = InvalidInputError | NotFoundError | UnauthorizedError | WriteError
 type Actions.primaryName.set.Options = ClaimOptions | NameOptions
 type Actions.primaryName.set.ReturnType = { readonly hash: `0x${string}`; readonly hashes: readonly `0x${string}`[]; readonly id: string | undefined; readonly plan: Plan; }
-function Actions.primaryName.setSync(client: ClientBase<{}>, options: (Options & Pick<Options, 'account'>) & Options & { confirmations?: number | undefined; timeout?: number | undefined; }) => Effect<SyncResult, ErrorType, never>
+function Actions.primaryName.setSync(client: ClientBase<{}>, options: (Options & Pick<Options, 'account' | 'via'>) & Options & { confirmations?: number | undefined; timeout?: number | undefined; }) => Effect<SyncResult, ErrorType, never>
 const Actions.primaryName.setSync.path: 'primaryName.setSync'
 type Actions.primaryName.setSync.ErrorType = InvalidInputError | NotFoundError | UnauthorizedError | WriteError
 type Actions.primaryName.setSync.Options = set.Options & Write.Options & { confirmations?: number | undefined; timeout?: number | undefined; }

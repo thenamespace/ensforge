@@ -1,6 +1,7 @@
 import { Array as Arr, Option, Record as Rec, String as Str } from "effect";
 
 import { Abis, Deployments, InterfaceIds } from "@ensforge/contracts";
+import { standaloneHcaFactoryV2InterfaceAbi } from "@ensforge/contracts/v2/experimental/hca";
 import { Duration, Name } from "@ensforge/sdk/effect";
 import * as Ensforge from "@ensforge/sdk/internal/client/Ensforge";
 import type { Plan } from "@ensforge/sdk/internal/plan/Plan";
@@ -14,6 +15,7 @@ import {
   hexToBigInt,
   isAddressEqual,
   multicall3Abi,
+  parseAbi,
   zeroAddress,
   type Abi,
   type Address,
@@ -35,6 +37,8 @@ export const other = getAddress("0x0000000000000000000000000000000000000b0b");
 export const resolverA = getAddress("0x00000000000000000000000000000000000000a1");
 /** The ENSv2 registry every top-level ENSv2 name lives in. */
 export const v2Registry = getAddress("0x00000000000000000000000000000000000000e7");
+/** The StandaloneHCAFactory the reverse adapters trust. */
+export const hcaFactory = getAddress("0x00000000000000000000000000000000000000fa");
 /** The chain's current time, in seconds. */
 export const now = 1_800_000_000n;
 
@@ -88,6 +92,10 @@ export type World = Entry & {
   readonly v1Only?: boolean | undefined;
   /** Further contracts, e.g. an L2 namespace's Ethereum resolver. */
   readonly stubs?: readonly ContractStub[] | undefined;
+  /** What resolvers answer for `name(node)`, by node (reverse records). */
+  readonly nameRecords?: Readonly<Record<Hex, string>> | undefined;
+  /** The HCA each account owns, which the HCA factory reports as authorized for it. */
+  readonly hcas?: Readonly<Record<Address, Address>> | undefined;
   /** Contract accounts, by address: their Ownable `owner()` and the accounts `isContractNamer` approves. */
   readonly contracts?:
     | Readonly<Record<Address, { readonly owner: Address; readonly namers: readonly Address[] }>>
@@ -278,6 +286,27 @@ const stubs = (world: World): ContractStub[] => {
       abi: Abis.v2.verifiableFactory,
       functions: { proxyLogic: () => resolverA },
     },
+    {
+      address: v2.defaultReverseRegistrarAdapter,
+      abi: Abis.v2.defaultReverseRegistrarAdapter,
+      functions: { STANDALONE_HCA_FACTORY: () => hcaFactory },
+    },
+    {
+      address: hcaFactory,
+      abi: standaloneHcaFactoryV2InterfaceAbi,
+      functions: {
+        authorizedOwnerOf: ([hca]) =>
+          Option.getOrElse(
+            Option.map(
+              Arr.findFirst(Rec.toEntries(world.hcas ?? {}), ([, owned]) =>
+                isAddressEqual(owned, hca as Address),
+              ),
+              ([owner]) => owner,
+            ),
+            () => zeroAddress,
+          ),
+      },
+    },
     ...Arr.map(registries, (registry) => registryStub(registry)),
     {
       address: Deployments.mainnet.v2.migration.publicResolverSet,
@@ -327,6 +356,7 @@ const stubs = (world: World): ContractStub[] => {
         ...Abis.shared.erc165,
         ...Abis.shared.versionableResolver,
         ...Abis.shared.extendedResolver,
+        ...parseAbi(["function name(bytes32 node) view returns (string)"]),
       ],
       functions: {
         supportsInterface: ([id]) =>
@@ -334,6 +364,7 @@ const stubs = (world: World): ContractStub[] => {
             includes(world.permissioned, address)) ||
           (id === InterfaceIds.resolverProfiles.extended && includes(world.extended, address)),
         recordVersions: () => 0n,
+        name: ([node]) => world.nameRecords?.[node as Hex] ?? "",
         resolve: () => {
           const answer = world.served?.[address];
           if (answer === "offchain") {

@@ -58,9 +58,21 @@ Pass `name: null` to clear it. Names with encoded [labels](/docs/reference/gloss
 | ------------------- | ------------------------------ | ------------------------------------------ |
 | `"eth"` (default)   | `addr.reverse`                 | Ethereum.                                  |
 | `"default"`         | `default.reverse`              | Every EVM chain, as a fallback (ENSIP-19). |
+| `"all"`             | Both                           | Every EVM chain, and clears both.          |
 | `{ chainId: 8453 }` | That chain's reverse registrar | That L2 only.                              |
 
-A name in `addr.reverse` outranks `default.reverse` on Ethereum, so `"default"` also sets `addr.reverse` when it holds a different name. A default name whose only address record is an Ethereum address verifies on Ethereum alone. The plan carries a `DEFAULT_PRIMARY_NAME_ETHEREUM_ONLY` warning in that case.
+The ENS app writes the default name. On Ethereum, an `addr.reverse` entry outranks `default.reverse`, even when its name is empty. So setting `"default"` also clears an `addr.reverse` entry that holds another name. Clearing `"eth"` removes the entry, and the default name applies on Ethereum again. Clearing `"default"` leaves `addr.reverse` alone, and `"all"` with `name: null` clears both.
+
+```mermaid
+flowchart TD
+  A["Primary name on Ethereum"] --> B{"addr.reverse entry has a resolver?"}
+  B -- yes --> C["Its name, even if empty"]
+  B -- no --> D["The default.reverse name"]
+```
+
+A default name whose only address record is an Ethereum address verifies on Ethereum alone. The plan carries a `DEFAULT_PRIMARY_NAME_ETHEREUM_ONLY` warning in that case.
+
+Through `via: hca()`, the HCA sets its owner's default name. No HCA entry point writes an `"eth"` name, so that part goes to the wallet, with a `PRIMARY_NAME_ROUTED_TO_SIGNER` warning.
 
 ## 3. Set a primary name on an L2
 

@@ -51,6 +51,43 @@ describe("access writes", () => {
       { meta: { cases: ["M:C3", "P02"] } },
     );
 
+    // On Ethereum an `addr.reverse` entry with a resolver hides the default name, even empty.
+    it.effect(
+      "falls back to the default name once the Ethereum name is cleared",
+      () =>
+        Effect.gen(function* () {
+          const fixtures = yield* Fixtures;
+          const { alice } = (yield* Devnet).accounts;
+          const chain = yield* Chain;
+          const ens = (yield* Clients).make({ account: alice });
+          const fallback = fixtures.byId("records.v1").name;
+          const ethereum = fixtures.byId("v2.registered").name;
+          const expectPrimaryName = (expected: string | null) =>
+            Effect.map(Actions.primaryName.get(ens, { address: alice, verify: false }), (name) =>
+              assert.strictEqual(name, expected),
+            );
+
+          yield* chain.isolated(
+            Effect.gen(function* () {
+              yield* Actions.primaryName.setSync(ens, { name: fallback, coin: "default" });
+              yield* Actions.primaryName.setSync(ens, { name: ethereum, verify: false });
+              yield* expectPrimaryName(ethereum);
+
+              yield* Actions.primaryName.setSync(ens, { name: null });
+              yield* expectPrimaryName(fallback);
+
+              // Setting the default again keeps it visible; clearing all removes both.
+              yield* Actions.primaryName.setSync(ens, { name: ethereum, verify: false });
+              yield* Actions.primaryName.setSync(ens, { name: fallback, coin: "default" });
+              yield* expectPrimaryName(fallback);
+              yield* Actions.primaryName.setSync(ens, { name: null, coin: "all" });
+              yield* expectPrimaryName(null);
+            }),
+          );
+        }),
+      { meta: { cases: ["P02"] } },
+    );
+
     // LabelStore is no Ownable; it delegates `isContractNamer` to the shared ContractNamer, which
     // `owner` owns. Naming it claims its reverse node through the ENSv2 adapter, then sets the name.
     it.effect(

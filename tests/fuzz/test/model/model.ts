@@ -47,12 +47,25 @@ export type V1Name = {
   readonly migrated: boolean;
 };
 
+/**
+ * An address's reverse records on Ethereum. `eth` is the `addr.reverse` entry: `null` when its
+ * node has no resolver, else the name it answers (possibly `""`). `fallback` is the
+ * `default.reverse` name (`""` when unset).
+ */
+export type Primary = { readonly eth: string | null; readonly fallback: string };
+
+/**
+ * The name Ethereum shows for an address (ENSIP-19): the `addr.reverse` entry when its node has
+ * a resolver, even an empty name; otherwise the `default.reverse` name.
+ */
+export const ethereumName = (primary: Primary): string => primary.eth ?? primary.fallback;
+
 export type Model = {
   readonly now: bigint;
   readonly v2: Readonly<Record<string, V2Name | undefined>>;
   readonly v1: Readonly<Record<string, V1Name>>;
-  /** Primary name each actor set, by address. */
-  readonly primary: Readonly<Record<Address, string | null>>;
+  /** Each actor's reverse records, by address. */
+  readonly primary: Readonly<Record<Address, Primary>>;
   /** ETH registry operators: `owner → operators`. */
   readonly operators: Readonly<Record<Address, readonly Address[]>>;
 };

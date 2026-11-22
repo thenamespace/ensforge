@@ -18,7 +18,7 @@ import {
   pendingCommitments,
   registerCall,
 } from "../../../internal/registration/steps.js";
-import { ethPrimaryNameCalls } from "../../../internal/reverse/calls.js";
+import { ethNameCalls } from "../../../internal/reverse/calls.js";
 import { routeSender } from "../../../internal/write/via.js";
 import { make as makePlan } from "../../../plan/make.js";
 import type { Plan } from "../../../plan/Plan.js";
@@ -100,7 +100,7 @@ export const plan = Effect.fnUntraced(function* (
     steps.push({
       id: "primaryName",
       description: "Set primary name",
-      calls: yield* ethPrimaryNameCalls(client, signer, signer, first.name),
+      calls: yield* ethNameCalls(client, signer, signer, first.name),
       ...(routed ? { from: "signer" as const } : {}),
     });
   }

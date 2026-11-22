@@ -114,8 +114,9 @@ describe("primaryName.get", () => {
                 account: carol,
               });
 
-            // Only a reverse node without a resolver falls back to `default.reverse`, and after
-            // the launch not even that: the ENSv1 bridge stops at the node carol holds.
+            // Only a reverse node without a resolver falls back to `default.reverse`. After the
+            // launch the fallback name does not verify: rev-carol-default.eth has no resolver
+            // through ENSv2 resolution.
             yield* chain.isolated(
               Effect.gen(function* () {
                 yield* setResolver(zeroAddress);

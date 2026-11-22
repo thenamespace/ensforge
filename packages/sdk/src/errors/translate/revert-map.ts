@@ -119,6 +119,16 @@ export const revertMap: Readonly<Record<string, Mapper>> = {
   PermissionDenied: notOwner,
   ERC1155MissingApprovalForAll: notApproved,
   UnauthorizedNamer: notApproved,
+  HCADeploymentNotTrusted: () =>
+    new UnauthorizedError({
+      code: "NOT_APPROVED",
+      hint: "The sender is not an HCA the adapter trusts; send from the account itself or its own HCA.",
+    }),
+  HCAOwnerMismatch: () =>
+    new UnauthorizedError({
+      code: "NOT_APPROVED",
+      hint: "The HCA belongs to another account; an HCA names only its owner.",
+    }),
   NotApprovedOperator: notApproved,
   OperationProhibited: () => new UnauthorizedError({ code: "FUSE_BURNED" }),
   TransferDisallowed: transferDisallowed,

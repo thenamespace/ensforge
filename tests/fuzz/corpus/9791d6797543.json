@@ -1,0 +1,12 @@
+{
+  "seed": 20261117,
+  "failure": "step 0 ({\"kind\":\"primary\",\"name\":0,\"actor\":1,\"clear\":true}): 0x976EA74026E726554dB657fA54763abd0C3a0aa9: ensforge reads primary name rev-bob.eth, the model null",
+  "commands": [
+    {
+      "kind": "primary",
+      "name": 0,
+      "actor": 1,
+      "clear": true
+    }
+  ]
+}

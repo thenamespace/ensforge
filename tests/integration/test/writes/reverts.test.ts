@@ -1057,6 +1057,30 @@ describe("contract errors", () => {
           args: [devnet.contract("v2.labelStore"), devnet.contract("v1.publicResolver")],
         });
         assert.strictEqual(revert, "UnauthorizedNamer");
+
+        // The HCA entry points accept only an HCA the factory deployed, naming its own owner.
+        const { alice, bob } = devnet.accounts;
+        const clients = yield* Clients;
+        const hcaOfAlice = yield* HcaActions.hca.predictAddress(
+          clients.make({ account: alice }),
+          {},
+        );
+        const claimWithHca = (from: Address, account: Address) =>
+          revertOf({
+            from,
+            to: devnet.contract("v2.reverseRegistrarAdapter"),
+            abi: Abis.v2.reverseRegistrarAdapter,
+            functionName: "claimWithHCA",
+            args: [account, zeroAddress],
+          });
+        const [untrusted, mismatched] = yield* Effect.all(
+          [claimWithHca(bob, bob), claimWithHca(hcaOfAlice, bob)],
+          { concurrency: 1 },
+        );
+        assert.deepStrictEqual(
+          [untrusted, mismatched],
+          ["HCADeploymentNotTrusted", "HCAOwnerMismatch"],
+        );
       }),
     );
 
