@@ -42,6 +42,8 @@ const expected: Readonly<Record<string, Expected | Readonly<Record<number, Expec
   PermissionDenied: { _tag: "UnauthorizedError", code: "NOT_OWNER" },
   ERC1155MissingApprovalForAll: { _tag: "UnauthorizedError", code: "NOT_APPROVED" },
   UnauthorizedNamer: { _tag: "UnauthorizedError", code: "NOT_APPROVED" },
+  HCADeploymentNotTrusted: { _tag: "UnauthorizedError", code: "NOT_APPROVED" },
+  HCAOwnerMismatch: { _tag: "UnauthorizedError", code: "NOT_APPROVED" },
   NotApprovedOperator: { _tag: "UnauthorizedError", code: "NOT_APPROVED" },
   OperationProhibited: { _tag: "UnauthorizedError", code: "FUSE_BURNED" },
   TransferDisallowed: { _tag: "UnauthorizedError", code: "TRANSFER_DISALLOWED" },
