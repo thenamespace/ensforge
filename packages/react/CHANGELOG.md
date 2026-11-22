@@ -1,5 +1,12 @@
 # @ensforge/react
 
+## 1.2.0
+
+### Patch Changes
+
+- Updated dependencies [d1b9625]
+  - @ensforge/sdk@1.2.0
+
 ## 1.1.0
 
 ### Minor Changes
